@@ -1,10 +1,10 @@
 /**
- * tr UI — workshop
+ * tr UI workshop
  */
 
 export default {
   'collab.codeCopied': 'Kod kopyalandı',
-  'collab.codeGenerated': 'İşbirliği kodu oluşturuldu — birlikte düzenlemek için paylaşın.',
+  'collab.codeGenerated': 'İşbirliği kodu oluşturuldu birlikte düzenlemek için paylaşın.',
   'collab.copy': 'Kopyala',
   'collab.copyFailed': 'Kopyalanamadı',
   'collab.copyLink': 'Bağlantıyı kopyala',
@@ -33,14 +33,14 @@ export default {
   'collab.saveFailed': 'Diyagram kaydedilemedi',
   'collab.scanToJoin': 'Katılmak için tarayın',
   'collab.schoolDescActive':
-    'Okul işbirliği açık. Arkadaşlar: Ana sayfada İşbirliği → Okul’dan bu diyagramı seçin — kod gerekmez.',
-  'collab.schoolStarted': 'Okul işbirliği açık — arkadaşlar İşbirliği → Okul’dan katılabilir.',
+    'Okul işbirliği açık. Arkadaşlar: Ana sayfada İşbirliği Okul’dan bu diyagramı seçin kod gerekmez.',
+  'collab.schoolStarted': 'Okul işbirliği açık arkadaşlar İşbirliği Okul’dan katılabilir.',
   'collab.sectionNetwork': 'Paylaşımlı işbirliği (kod)',
   'collab.sectionSchool': 'Okul işbirliği',
   'collab.sessionDuration': 'Oturum süresi',
   'collab.sessionRemaining': 'Oturumun bitmesine',
   'collab.shareDescNetwork':
-    'Kodu veya bağlantıyı paylaşın — diğerleri İşbirliği → Paylaşımlı’dan girer.',
+    'Kodu veya bağlantıyı paylaşın diğerleri İşbirliği Paylaşımlı’dan girer.',
   'collab.start': 'Başlat',
   'collab.startFailed': 'Başarısız: {msg}',
   'collab.title': 'Çevrimiçi işbirliği',
@@ -58,7 +58,7 @@ export default {
   'workshop.archiveTeachingGroup': 'Arşiv öğretim grubu',
   'workshop.archiveTeachingGroupConfirm':
     'Bu öğretim grubu arşivlensin mi? Öğretim grubu listesinden kaybolacaktır.',
-  'workshop.backToConversations': '← Konuşmalar',
+  'workshop.backToConversations': 'Konuşmalar',
   'workshop.bold': 'Gözü pek',
   'workshop.browseChannels': 'Öğretim gruplarına göz atın',
   'workshop.by': 'ile',
@@ -68,8 +68,8 @@ export default {
   'workshop.channelAvatarPlaceholder': 'Emoji veya kısa etiket',
   'workshop.channelColor': 'Kanal rengi',
   'workshop.channelInviteReceived':
-    "“{name}” listesine eklendiniz. Görüntülemek için Atölye'yi açın.",
-  'workshop.channelKindGroup': 'Öğretim grubu (üst düzey, örneğin 教研组)',
+    "“{name}listesine eklendiniz. Görüntülemek için Atölye'yi açın.",
+  'workshop.channelKindGroup': 'Öğretim grubu (üst düzey, örneğin 教研',
   'workshop.channelKindLessonStudy': 'Grup altında ders çalışması (课例)',
   'workshop.channelNameLabel': 'İsim',
   'workshop.channelNamePlaceholder': 'örneğin STEM öğretim grubu',
@@ -139,7 +139,7 @@ export default {
   'workshop.generalChat': 'Genel Sohbet',
   'workshop.inbox': 'Gelen kutusu',
   'workshop.inboxHintPickChannel':
-    "Okumak ve yanıtlamak için kenar çubuğunda bir kanal veya doğrudan mesaj açın. Görünümler → Gelen Kutusu'ndan istediğiniz zaman buraya dönebilirsiniz.",
+    "Okumak ve yanıtlamak için kenar çubuğunda bir kanal veya doğrudan mesaj açın. Görünümler Gelen Kutusu'ndan istediğiniz zaman buraya dönebilirsiniz.",
   'workshop.inboxSummaryTitle': 'Gelen kutunuz',
   'workshop.inboxUnreadChannels': 'Kanallarda okunmamış',
   'workshop.inboxUnreadDms': 'Okunmamış doğrudan mesajlar',
@@ -171,7 +171,7 @@ export default {
   'workshop.markAsRead': 'Okundu olarak işaretle',
   'workshop.markStudyResolved': 'Çalışmayı çözümlendi olarak işaretle',
   'workshop.members': 'üyeler',
-  'workshop.mentionAmbiguous': 'Belirsiz adlar — benzersiz görünen adı olan birini seçin: {0}',
+  'workshop.mentionAmbiguous': 'Belirsiz adlar benzersiz görünen adı olan birini seçin: {0}',
   'workshop.mentionUnknown':
     'Bilinmeyen bahisler (yalnızca aynı kuruluştaki kullanıcılar ve personel): {0}',
   'workshop.mentionedInChannel': "#{0}'de sizden bahsedildi",
@@ -305,7 +305,7 @@ export default {
   'workshop.viewingSchool': 'Görüntüleniyor: {0}',
   'workshop.views': 'Görünümler',
   'workshop.welcomeChannelsBody':
-    'Burada bir "kanal" genellikle bir öğretim araştırma grubuna (教研组) veya PLC\'ye karşılık gelir: ekip başına bir paylaşılan alan (örn. Matematik PLC, İngilizce PLC). Kimin katılacağını ve alanın nasıl gruplandırılacağını tanımlar.',
+    'Burada bir "kanal" genellikle bir öğretim araştırma grubuna (教研 veya PLC\'ye karşılık gelir: ekip başına bir paylaşılan alan (örn. Matematik PLC, İngilizce PLC). Kimin katılacağını ve alanın nasıl gruplandırılacağını tanımlar.',
   'workshop.welcomeChannelsTitle': 'PLC / konu grupları',
   'workshop.welcomeConversationsBody':
     'Bir ders çalışmasının içinde başlıklı konuşmaları (örneğin öğretim tasarımı, yansıtma veya takip görevleri) açarsınız, böylece konuların takip edilmesi kolay olur.',
@@ -319,9 +319,9 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'Kılavuz sayfası ve çalışma sayfası tasarımı',
   'workshop.welcomeExampleLSEng1C2': 'Okuma sonrası görevler ve aktarım',
   'workshop.welcomeExampleLSEng1C3': 'Gözlem geri bildirimi ve yansıması',
-  'workshop.welcomeExampleLSEng2': 'Ders çalışması: Yazma — aynı ders, farklı öğretmenler',
+  'workshop.welcomeExampleLSEng2': 'Ders çalışması: Yazma aynı ders, farklı öğretmenler',
   'workshop.welcomeExampleLSEng2C1': 'Puan anahtarı pilotu ve revizyonu',
-  'workshop.welcomeExampleLSMath1': 'Ders çalışması: “Fonksiyon kavramı” cilalama haftası',
+  'workshop.welcomeExampleLSMath1': 'Ders çalışması: “Fonksiyon kavramıcilalama haftası',
   'workshop.welcomeExampleLSMath1C1': 'Hedefler ve etkinlik tasarımı',
   'workshop.welcomeExampleLSMath1C2': 'Soru sorma ve kurul çalışması',
   'workshop.welcomeExampleLSMath1C3': 'Ders sonrası yansıma ve sonraki adımlar',
@@ -349,9 +349,17 @@ export default {
   'workshopCanvas.errorGeneric': 'İşbirliği hatası',
   'workshopCanvas.reconnectFailed':
     'Ortak çalışmaya yeniden bağlanılamadı. Lütfen sayfayı yenileyin',
-  'workshopCanvas.returnedHomeIdle':
-    'Eve döndüm – 30 dakika boyunca diyagramda düzenleme yapılmadı.',
-  'workshopCanvas.userJoined': 'Kullanıcı {userId} katıldı',
-  'workshopCanvas.userLeft': 'Kullanıcı {userId} ayrıldı',
+  'workshopCanvas.returnedHomeIdle': 'Eve döndüm 30 dakika boyunca diyagramda düzenleme yapılmadı.',
+  'workshopCanvas.userJoined': 'Kullanıcı {username} katıldı',
+  'workshopCanvas.usersJoined': '{count} users joined',
+  'workshopCanvas.userLeft': 'Kullanıcı {username} ayrıldı',
+  'workshopCanvas.usersLeft': '{count} users left',
   'workshopCanvas.wsError': 'İşbirliği bağlantı hatası, lütfen ağınızı kontrol edin',
+  'workshopCanvas.returnedHomeRoomIdle':
+    'Collaboration ended: no diagram edits in this session for a while.',
+  'workshopCanvas.roomIdleWarningToast':
+    'No diagram edits lately collaboration ends when the countdown hits zero unless someone edits.',
+  'workshopCanvas.otherTabCollaborationActive':
+    'Collaboration continues in another tab or window for this account.',
+  'workshopCanvas.joinQrAlt': 'Join collaboration QR code',
 }

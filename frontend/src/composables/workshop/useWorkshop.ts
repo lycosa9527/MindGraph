@@ -9,53 +9,44 @@ import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useAuthStore } from '@/stores'
 
-export interface ParticipantInfo {
-  user_id: number
-  username: string
-}
+import {
+  collectNodeIdsFromOutboundPayload,
+  useCollabOutboundQueue,
+} from './useCollabOutboundQueue'
+import { useCollabSyncVersion } from './useCollabSyncVersion'
+import { useWorkshopHeartbeat } from './useWorkshopHeartbeat'
+import { dispatchWorkshopMessage } from './useWorkshopMessageHandlers'
+import type {
+  WorkshopAuthContext,
+  WorkshopMessageDispatchDeps,
+  WorkshopMutableSessionState,
+} from './useWorkshopMessageHandlers'
+import { useWorkshopPresence } from './useWorkshopPresence'
+import {
+  WORKSHOP_RECONNECT,
+  WORKSHOP_RESYNC_WATCHDOG,
+  computeReconnectDelayMs,
+  nextPendingResyncBackoffMs,
+  shouldScheduleReconnect,
+} from './useWorkshopReconnect'
+import type {
+  ActiveEditor,
+  ConnectionStatus,
+  ParticipantInfo,
+  RemoteNodeSelection,
+  WorkshopRole,
+  WorkshopUpdate,
+} from './useWorkshopTypes'
 
-export interface WorkshopUpdate {
-  type:
-    | 'update'
-    | 'user_joined'
-    | 'user_left'
-    | 'joined'
-    | 'snapshot'
-    | 'error'
-    | 'pong'
-    | 'node_editing'
-    | 'node_selected'
-  diagram_id?: string
-  spec?: Record<string, unknown>
-  nodes?: Array<Record<string, unknown>> // Granular: only changed nodes
-  connections?: Array<Record<string, unknown>> // Granular: only changed connections
-  user_id?: number
-  username?: string
-  timestamp?: string
-  participants?: number[] // Backward compatibility
-  participants_with_names?: ParticipantInfo[] // New: includes usernames
-  message?: string
-  node_id?: string
-  editing?: boolean
-  color?: string
-  emoji?: string
-  selected?: boolean
-  owner_id?: number
-  version?: number
-}
-
-export interface RemoteNodeSelection {
-  nodeId: string
-  username: string
-  color: string
-}
-
-export interface ActiveEditor {
-  user_id: number
-  username: string
-  color: string
-  emoji: string
-}
+export type {
+  ActiveEditor,
+  ConnectionStatus,
+  NodeEditingEvent,
+  ParticipantInfo,
+  RemoteNodeSelection,
+  WorkshopRole,
+  WorkshopUpdate,
+} from './useWorkshopTypes'
 
 export function useWorkshop(
   workshopCode: Ref<string | null>,
@@ -63,28 +54,156 @@ export function useWorkshop(
   onUpdate?: (spec: Record<string, unknown>) => void,
   onGranularUpdate?: (
     nodes?: Array<Record<string, unknown>>,
-    connections?: Array<Record<string, unknown>>
+    connections?: Array<Record<string, unknown>>,
+    deletedNodeIds?: string[],
+    deletedConnectionIds?: string[]
   ) => void,
   onNodeEditing?: (nodeId: string, editor: ActiveEditor | null) => void,
   onServerSnapshot?: (spec: Record<string, unknown>, version: number) => void
 ) {
   const ws = ref<WebSocket | null>(null)
   const isConnected = ref(false)
-  const participants = ref<number[]>([]) // Backward compatibility
-  const participantsWithNames = ref<ParticipantInfo[]>([]) // New: includes usernames
+  const connectionStatus = ref<ConnectionStatus>('connected')
+  const participants = ref<number[]>([])
+  const participantsWithNames = ref<ParticipantInfo[]>([])
   const reconnectAttempts = ref(0)
-  const maxReconnectAttempts = 5
-  const reconnectDelay = 3000
-  const activeEditors = ref<Map<string, ActiveEditor>>(new Map()) // node_id -> ActiveEditor
-  /** Remote users' selected node (for dashed outline); excludes current user. */
+  const maxReconnectAttempts = WORKSHOP_RECONNECT.MAX_ATTEMPTS
+  const activeEditors = ref<Map<string, ActiveEditor>>(new Map())
   const remoteSelectionsByUser = ref<Map<number, RemoteNodeSelection>>(new Map())
   const diagramOwnerId = ref<number | null>(null)
+  const workshopRole = ref<WorkshopRole>('editor')
+
+  let _sessionDiagramIdValue: string | null = null
+  const sessionMutable: WorkshopMutableSessionState = {
+    get sessionDiagramId() {
+      return _sessionDiagramIdValue
+    },
+    set sessionDiagramId(v: string | null) {
+      _sessionDiagramIdValue = v
+      sessionDiagramIdRef.value = v
+    },
+  }
+
+  /** Reactive version/sequencing state — single source of truth for all cursors. */
+  const version = useCollabSyncVersion()
+
+  /**
+   * Outbound queue: holds every `update` payload until the server acks it.
+   *   - Held while WS is not OPEN or `pendingResync` is true.
+   *   - Replayed in order on reconnect / after snapshot lands.
+   *   - Each op carries a `client_op_id` so the server can dedupe.
+   */
+  const outboundQueue = useCollabOutboundQueue({
+    send: (payload) => {
+      const sock = ws.value
+      if (!sock || sock.readyState !== WebSocket.OPEN) {
+        throw new Error('socket_not_open')
+      }
+      sock.send(JSON.stringify(payload))
+    },
+    canFlush: () => {
+      const sock = ws.value
+      if (!sock || sock.readyState !== WebSocket.OPEN) {
+        return false
+      }
+      // Hold all outbound traffic while the client is recovering from a gap;
+      // the snapshot reply will reset state and tryFlush() will be invoked.
+      if (version.pendingResync.value) {
+        return false
+      }
+      return true
+    },
+  })
+  watch(
+    () => version.pendingResync.value,
+    (pending) => {
+      if (!pending) {
+        outboundQueue.tryFlush()
+      }
+    },
+  )
+  const joinResumeToken = ref<string | null>(null)
+  const sessionDiagramTitleRef = ref<string | null>(null)
+  // Reactive mirror of sessionMutable.sessionDiagramId so callers can use it
+  // as the authoritative diagram ID for stop/resync even when activeDiagramId
+  // differs (e.g., host navigated to a different diagram mid-session).
+  const sessionDiagramIdRef = ref<string | null>(null)
+
   let reconnectTimeout: ReturnType<typeof setTimeout> | null = null
+  let pendingResyncTimer: ReturnType<typeof setTimeout> | null = null
+  let pendingResyncInterval: ReturnType<typeof setInterval> | null = null
+  let pendingResyncRetryStep = 0
+
+  function clearPendingResyncWatchdog(): void {
+    if (pendingResyncTimer) {
+      clearTimeout(pendingResyncTimer)
+      pendingResyncTimer = null
+    }
+    if (pendingResyncInterval) {
+      clearInterval(pendingResyncInterval)
+      pendingResyncInterval = null
+    }
+    pendingResyncRetryStep = 0
+  }
 
   const authStore = useAuthStore()
   const notify = useNotifications()
   const { t } = useLanguage()
   const router = useRouter()
+
+  const presence = useWorkshopPresence()
+  const { startHeartbeat, stopHeartbeat, recordPong } = useWorkshopHeartbeat(ws, isConnected)
+
+  function schedulePendingResyncWatchdog(sock: WebSocket): void {
+    clearPendingResyncWatchdog()
+    const runStep = (): void => {
+      if (!version.pendingResync.value) {
+        clearPendingResyncWatchdog()
+        return
+      }
+      if (sock.readyState !== WebSocket.OPEN) {
+        clearPendingResyncWatchdog()
+        return
+      }
+      const diagram = sessionMutable.sessionDiagramId ?? diagramId.value
+      if (!diagram) {
+        pendingResyncTimer = setTimeout(runStep, WORKSHOP_RESYNC_WATCHDOG.INITIAL_WAIT_MS)
+        return
+      }
+      sock.send(JSON.stringify({ type: 'resync', diagram_id: diagram }))
+      pendingResyncRetryStep += 1
+      if (pendingResyncRetryStep < WORKSHOP_RESYNC_WATCHDOG.MAX_RETRIES) {
+        const delay = nextPendingResyncBackoffMs(pendingResyncRetryStep)
+        pendingResyncTimer = setTimeout(runStep, delay)
+      } else {
+        notify.warning(t('workshopCanvas.resyncWaiting'))
+        let steadyFires = 0
+        pendingResyncInterval = setInterval(() => {
+          if (!version.pendingResync.value || sock.readyState !== WebSocket.OPEN) {
+            clearPendingResyncWatchdog()
+            return
+          }
+          steadyFires += 1
+          // After 2 steady-state resync sends with no snapshot reply, the server
+          // or network is stuck — force a full reconnect to clear the stale state.
+          if (steadyFires > 2) {
+            clearPendingResyncWatchdog()
+            if (import.meta.env.DEV) {
+              console.warn('[CollabSync] pendingResync stuck after retries — forcing reconnect')
+            }
+            reconnect()
+            return
+          }
+          const d = sessionMutable.sessionDiagramId ?? diagramId.value
+          if (d) {
+            sock.send(JSON.stringify({ type: 'resync', diagram_id: d }))
+          }
+        }, WORKSHOP_RESYNC_WATCHDOG.STEADY_INTERVAL_MS)
+        pendingResyncTimer = null
+      }
+    }
+    pendingResyncTimer = setTimeout(runStep, WORKSHOP_RESYNC_WATCHDOG.INITIAL_WAIT_MS)
+  }
 
   const isDiagramOwner = computed(() => {
     if (!workshopCode.value) {
@@ -96,173 +215,159 @@ export function useWorkshop(
     return String(diagramOwnerId.value) === String(authStore.user?.id ?? '')
   })
 
-  // Get WebSocket URL
   function getWebSocketUrl(code: string): string {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const host = window.location.host
-    return `${protocol}//${host}/api/ws/canvas-collab/${code}`
+    let base = `${protocol}//${host}/api/ws/canvas-collab/${code}`
+    const resume = joinResumeToken.value?.trim()
+    if (resume) {
+      const sep = base.includes('?') ? '&' : '?'
+      base += `${sep}resume=${encodeURIComponent(resume)}`
+    }
+    return base
   }
 
-  // Connect to presentation-mode WebSocket
+  const authContext: WorkshopAuthContext = {
+    getCurrentUserIdString: () => String(authStore.user?.id ?? ''),
+  }
+
+  /** True when joined as a collaborator who is not the diagram owner (host). */
+  function collaborationParticipantIsGuest(): boolean {
+    if (!workshopCode.value || diagramOwnerId.value == null || authStore.user?.id == null) {
+      return false
+    }
+    return String(authStore.user.id) !== String(diagramOwnerId.value)
+  }
+
+  let guestForcedExitHandled = false
+
+  function performGuestForcedExit(reason?: string): void {
+    if (guestForcedExitHandled) {
+      return
+    }
+    guestForcedExitHandled = true
+    // Room-idle kicks do not show a toast in the ``kicked`` handler; mirror close ``4010``.
+    if (reason === 'room_idle') {
+      notify.info(t('workshopCanvas.returnedHomeRoomIdle'))
+    }
+    eventBus.emit('workshop:code-changed', { code: null, visibility: null })
+    void router.replace({ name: 'MindGraph' }).catch(() => {})
+  }
+
+  const messageDeps: WorkshopMessageDispatchDeps = {
+    workshopCode,
+    diagramId,
+    mutable: sessionMutable,
+    version,
+    participants,
+    participantsWithNames,
+    workshopRole,
+    diagramOwnerId,
+    activeEditors,
+    remoteSelectionsByUser,
+    joinResumeToken,
+    sessionDiagramTitle: sessionDiagramTitleRef,
+    auth: authContext,
+    onUpdate,
+    onGranularUpdate,
+    onNodeEditing,
+    onServerSnapshot,
+    clearRoomIdleCountdownUi: presence.clearRoomIdleCountdownUi,
+    applyRoomIdleWarningFromServer: presence.applyRoomIdleWarningFromServer,
+    schedulePresenceNotification: presence.schedulePresenceNotification,
+    clearPendingResyncWatchdog,
+    schedulePendingResyncWatchdog,
+    flushOutboundQueue: () => {
+      outboundQueue.tryFlush()
+    },
+    acknowledgeOutboundUpdate: (id) => {
+      outboundQueue.acknowledge(id)
+    },
+    collectAcknowledgedNodeIds: (clientOpId) => {
+      const ops = outboundQueue.snapshot()
+      const op =
+        typeof clientOpId === 'string' && clientOpId
+          ? ops.find((o) => o.id === clientOpId)
+          : ops[0]
+      if (!op) {
+        return []
+      }
+      return collectNodeIdsFromOutboundPayload(op.payload)
+    },
+    recordTransportPong: recordPong,
+    notify: {
+      error: (m) => notify.error(m),
+      warning: (m) => notify.warning(m),
+      info: (m) => notify.info(m),
+    },
+    t,
+    onGuestForcedExit: ({ reason }) => performGuestForcedExit(reason),
+  }
+
   function connect() {
-    if (!workshopCode.value || !diagramId.value) {
+    if (!workshopCode.value) {
       return
     }
 
-    if (ws.value?.readyState === WebSocket.OPEN) {
-      return // Already connected
+    if (ws.value && ws.value.readyState <= WebSocket.CONNECTING) {
+      // OPEN (1) or CONNECTING (0): socket is live or mid-handshake.
+      return
+    }
+
+    if (ws.value && ws.value.readyState === WebSocket.CLOSING) {
+      // CLOSING (2): the previous socket is tearing down.
+      // Wait for its onclose to fire, then reconnect once it completes.
+      ws.value.addEventListener('close', () => connect(), { once: true })
+      return
     }
 
     try {
       const url = getWebSocketUrl(workshopCode.value)
+      joinResumeToken.value = null
       const socket = new WebSocket(url)
+      socket.binaryType = 'arraybuffer'
+      let errorNotified = false
 
       socket.onopen = () => {
+        guestForcedExitHandled = false
         isConnected.value = true
+        connectionStatus.value = 'connected'
         reconnectAttempts.value = 0
+        clearPendingResyncWatchdog()
+        version.reset()
 
-        // Send join message
-        socket.send(
-          JSON.stringify({
-            type: 'join',
-            diagram_id: diagramId.value,
-          })
-        )
+        const joinMsg: Record<string, unknown> = { type: 'join' }
+        if (diagramId.value) {
+          joinMsg.diagram_id = diagramId.value
+        }
+        socket.send(JSON.stringify(joinMsg))
+
+        // Server has lost prior socket context; mark every still-queued op as
+        // not-in-flight so it gets re-sent.  We do NOT flush yet — the queue is
+        // gated behind pendingResync, which `version.reset()` set false above
+        // but the join handshake should land first.  The queue will flush as
+        // soon as snapshot/joined arrives (which clears pendingResync) or as
+        // soon as the next sendUpdate triggers tryFlush().
+        outboundQueue.resetInFlight()
+        if (outboundQueue.hasPending.value) {
+          outboundQueue.tryFlush()
+        }
       }
 
       socket.onmessage = (event) => {
         try {
-          const message: WorkshopUpdate = JSON.parse(event.data)
-
-          switch (message.type) {
-            case 'joined':
-              participants.value = message.participants || []
-              participantsWithNames.value = message.participants_with_names || []
-              if (message.owner_id !== undefined && message.owner_id !== null) {
-                diagramOwnerId.value = Number(message.owner_id)
-              }
-              break
-
-            case 'snapshot':
-              if (message.spec && onServerSnapshot) {
-                onServerSnapshot(message.spec, message.version ?? 1)
-              }
-              break
-
-            case 'update':
-              // Handle granular updates (preferred) or full spec (backward compatibility)
-              if (message.nodes !== undefined || message.connections !== undefined) {
-                // Granular update: merge only changed nodes/connections
-                if (onGranularUpdate) {
-                  onGranularUpdate(message.nodes, message.connections)
-                } else if (onUpdate) {
-                  // Fallback: if no granular handler, use full update handler
-                  if (import.meta.env.DEV) {
-                    console.warn(
-                      '[WorkshopWS] Granular update received but no onGranularUpdate handler'
-                    )
-                  }
-                }
-              } else if (message.spec && onUpdate) {
-                // Full spec update (backward compatibility)
-                onUpdate(message.spec)
-              }
-              break
-
-            case 'node_editing':
-              if (message.node_id) {
-                if (message.editing && message.user_id && message.color && message.emoji) {
-                  // User started editing
-                  const editor: ActiveEditor = {
-                    user_id: message.user_id,
-                    username: message.username || `User ${message.user_id}`,
-                    color: message.color,
-                    emoji: message.emoji,
-                  }
-                  activeEditors.value.set(message.node_id, editor)
-
-                  // Show notification if not current user
-                  if (
-                    message.user_id !== undefined &&
-                    String(message.user_id) !== authStore.user?.id
-                  ) {
-                    notify.info(
-                      t('workshopCanvas.editingNode', {
-                        username: editor.username,
-                        emoji: editor.emoji,
-                      })
-                    )
-                  }
-
-                  if (onNodeEditing) {
-                    onNodeEditing(message.node_id, editor)
-                  }
-                } else {
-                  // User stopped editing
-                  activeEditors.value.delete(message.node_id)
-
-                  if (onNodeEditing) {
-                    onNodeEditing(message.node_id, null)
-                  }
-                }
-              }
-              break
-
-            case 'user_joined': {
-              const joinedId = message.user_id
-              if (joinedId == null) {
-                break
-              }
-              participants.value = [...(participants.value || []), joinedId]
-              notify.info(t('workshopCanvas.userJoined', { userId: String(message.user_id) }))
-              break
-            }
-
-            case 'user_left': {
-              const leftId = message.user_id
-              participants.value = (participants.value || []).filter((id) => id !== leftId)
-              if (leftId != null) {
-                remoteSelectionsByUser.value.delete(leftId)
-                remoteSelectionsByUser.value = new Map(remoteSelectionsByUser.value)
-              }
-              notify.info(t('workshopCanvas.userLeft', { userId: String(message.user_id) }))
-              break
-            }
-
-            case 'node_selected': {
-              const uid = message.user_id
-              const nid = message.node_id
-              if (uid == null || !nid) {
-                break
-              }
-              if (String(uid) === String(authStore.user?.id ?? '')) {
-                break
-              }
-              if (message.selected === false) {
-                remoteSelectionsByUser.value.delete(uid)
-              } else {
-                remoteSelectionsByUser.value.set(uid, {
-                  nodeId: nid,
-                  username: message.username || `User ${uid}`,
-                  color: message.color || '#f97316',
-                })
-              }
-              remoteSelectionsByUser.value = new Map(remoteSelectionsByUser.value)
-              break
-            }
-
-            case 'error':
-              notify.error(message.message || t('workshopCanvas.errorGeneric'))
-              break
-
-            case 'pong':
-              // Heartbeat response
-              break
+          let rawData: string
+          if (typeof event.data === 'string') {
+            rawData = event.data
+          } else if (event.data instanceof ArrayBuffer) {
+            rawData = new TextDecoder().decode(event.data)
+          } else {
+            return
           }
-        } catch (error) {
-          if (import.meta.env.DEV) {
-            console.error('[WorkshopWS] Failed to parse message:', error)
-          }
+          const message = JSON.parse(rawData) as WorkshopUpdate
+          dispatchWorkshopMessage(message, socket, messageDeps)
+        } catch {
+          notify.warning(t('workshopCanvas.wsError'))
         }
       }
 
@@ -271,38 +376,93 @@ export function useWorkshop(
           console.error('[WorkshopWS] WebSocket error:', error)
         }
         isConnected.value = false
+        errorNotified = true
         notify.error(t('workshopCanvas.wsError'))
       }
 
       socket.onclose = (event) => {
         isConnected.value = false
 
-        if (event.code === 4002) {
+        if (
+          guestForcedExitHandled &&
+          (event.code === 4002 || event.code === 4010 || event.code === 4011)
+        ) {
           disconnect()
-          eventBus.emit('workshop:code-changed', { code: null })
-          notify.info(t('workshopCanvas.returnedHomeIdle'))
-          void router.push('/mindgraph')
+          guestForcedExitHandled = false
           return
         }
 
-        // Show error notification if not a normal closure
-        if (event.code !== 1000 && event.code !== 1001) {
+        if (event.code === 4001) {
+          // JWT expired mid-session — cannot reconnect with the same token.
+          // Clear session state and show a warning so the user knows to re-login.
+          disconnect()
+          sessionStorage.removeItem('mg_workshop_code')
+          sessionStorage.removeItem('mg_workshop_diagram_id')
+          eventBus.emit('workshop:code-changed', { code: null, visibility: null })
+          notify.warning(t('workshopCanvas.sessionExpiredReconnect'))
+          return
+        }
+
+        if (event.code === 4002) {
+          disconnect()
+          eventBus.emit('workshop:code-changed', { code: null, visibility: null })
+          notify.info(t('workshopCanvas.returnedHomeIdle'))
+          void router.replace({ name: 'MindGraph' }).catch(() => {})
+          return
+        }
+
+        if (event.code === 4010) {
+          disconnect()
+          eventBus.emit('workshop:code-changed', { code: null, visibility: null })
+          notify.info(t('workshopCanvas.returnedHomeRoomIdle'))
+          void router.replace({ name: 'MindGraph' }).catch(() => {})
+          return
+        }
+
+        if (event.code === 4011) {
+          const sendGuestHome = collaborationParticipantIsGuest()
+          disconnect()
+          eventBus.emit('workshop:code-changed', { code: null, visibility: null })
+          if (sendGuestHome) {
+            void router.replace({ name: 'MindGraph' }).catch(() => {})
+          }
+          return
+        }
+
+        if (event.code === 4003) {
+          notify.info(event.reason || t('workshopCanvas.otherTabCollaborationActive'))
+          disconnect()
+          return
+        }
+
+        if (event.code === 4014) {
+          notify.warning(t('workshopCanvas.connectionClosedSlow'))
+          disconnect()
+          return
+        }
+
+        if (!errorNotified && event.code !== 1000 && event.code !== 1001) {
           const reason = event.reason || t('workshopCanvas.connectionClosed')
           notify.warning(t('workshopCanvas.connectionClosedReason', { reason }))
         }
 
-        // Attempt to reconnect
-        if (
-          reconnectAttempts.value < maxReconnectAttempts &&
-          workshopCode.value &&
-          event.code !== 1000
-        ) {
+        if (shouldScheduleReconnect(reconnectAttempts.value, event.code) && workshopCode.value) {
+          activeEditors.value.clear()
+          remoteSelectionsByUser.value.clear()
+          clearPendingResyncWatchdog()
+          version.reset()
+          connectionStatus.value = 'reconnecting'
+          const delay =
+            computeReconnectDelayMs(reconnectAttempts.value) +
+            Math.random() * WORKSHOP_RECONNECT.JITTER_MS
           reconnectAttempts.value++
           reconnectTimeout = setTimeout(() => {
             connect()
-          }, reconnectDelay)
+          }, delay)
         } else if (reconnectAttempts.value >= maxReconnectAttempts) {
           notify.error(t('workshopCanvas.reconnectFailed'))
+          disconnect()
+          connectionStatus.value = 'failed'
         }
       }
 
@@ -315,80 +475,137 @@ export function useWorkshop(
     }
   }
 
-  // Disconnect from presentation mode
   function disconnect() {
-    // Clear reconnect timeout
+    presence.clearRoomIdleCountdownUi()
+    presence.clearPresenceCoalescer()
+    clearNodeEditingThrottles()
+    clearPendingResyncWatchdog()
     if (reconnectTimeout) {
       clearTimeout(reconnectTimeout)
       reconnectTimeout = null
     }
 
-    // Reset reconnect attempts
     reconnectAttempts.value = 0
 
-    // Close WebSocket
     if (ws.value) {
       try {
         ws.value.close()
       } catch (error) {
-        console.error('[WorkshopWS] Error closing WebSocket:', error)
+        if (import.meta.env.DEV) {
+          console.error('[WorkshopWS] Error closing WebSocket:', error)
+        }
       }
       ws.value = null
     }
 
-    // Clear state
     isConnected.value = false
+    connectionStatus.value = 'connected'
     participants.value = []
     participantsWithNames.value = []
     activeEditors.value.clear()
     remoteSelectionsByUser.value.clear()
     diagramOwnerId.value = null
+    sessionMutable.sessionDiagramId = null
+    sessionDiagramIdRef.value = null
+    version.reset()
+    outboundQueue.clear()
+    joinResumeToken.value = null
+    sessionDiagramTitleRef.value = null
 
-    // Stop heartbeat
     stopHeartbeat()
   }
 
-  // Send diagram update (granular or full spec)
+  /**
+   * Build the wire payload for an update.  Returns `null` if there is no
+   * granular content and no full spec — the caller should treat this as a
+   * no-op.
+   */
+  function buildUpdatePayload(
+    spec?: Record<string, unknown>,
+    nodes?: Array<Record<string, unknown>>,
+    connections?: Array<Record<string, unknown>>,
+    deletedNodeIds?: string[],
+    deletedConnectionIds?: string[],
+  ): Record<string, unknown> | null {
+    const hasGranular =
+      nodes !== undefined ||
+      connections !== undefined ||
+      (deletedNodeIds && deletedNodeIds.length > 0) ||
+      (deletedConnectionIds && deletedConnectionIds.length > 0)
+
+    if (!hasGranular && !spec) {
+      return null
+    }
+
+    const updateMessage: Record<string, unknown> = {
+      type: 'update',
+      diagram_id: sessionMutable.sessionDiagramId ?? diagramId.value,
+      timestamp: new Date().toISOString(),
+    }
+
+    if (hasGranular) {
+      if (nodes !== undefined) {
+        updateMessage.nodes = nodes
+      }
+      if (connections !== undefined) {
+        updateMessage.connections = connections
+      }
+      if (deletedNodeIds && deletedNodeIds.length > 0) {
+        updateMessage.deleted_node_ids = deletedNodeIds
+      }
+      if (deletedConnectionIds && deletedConnectionIds.length > 0) {
+        updateMessage.deleted_connection_ids = deletedConnectionIds
+      }
+    } else if (spec) {
+      updateMessage.spec = spec
+    }
+
+    return updateMessage
+  }
+
   function sendUpdate(
     spec?: Record<string, unknown>,
     nodes?: Array<Record<string, unknown>>,
-    connections?: Array<Record<string, unknown>>
-  ) {
-    if (!ws.value || ws.value.readyState !== WebSocket.OPEN) {
-      return
-    }
-
-    try {
-      const message: Record<string, unknown> = {
-        type: 'update',
-        diagram_id: diagramId.value,
-        timestamp: new Date().toISOString(),
-      }
-
-      // Prefer granular updates
-      if (nodes !== undefined || connections !== undefined) {
-        if (nodes !== undefined) {
-          message.nodes = nodes
-        }
-        if (connections !== undefined) {
-          message.connections = connections
-        }
-      } else if (spec) {
-        // Fallback to full spec
-        message.spec = spec
-      } else {
-        if (import.meta.env.DEV) {
-          console.warn('[WorkshopWS] sendUpdate called without spec, nodes, or connections')
-        }
-        return
-      }
-
-      ws.value.send(JSON.stringify(message))
-    } catch (error) {
+    connections?: Array<Record<string, unknown>>,
+    deletedNodeIds?: string[],
+    deletedConnectionIds?: string[]
+  ): string | null {
+    const payload = buildUpdatePayload(
+      spec,
+      nodes,
+      connections,
+      deletedNodeIds,
+      deletedConnectionIds,
+    )
+    if (!payload) {
       if (import.meta.env.DEV) {
-        console.error('[WorkshopWS] Failed to send update:', error)
+        console.warn(
+          '[WorkshopWS] sendUpdate called without spec, nodes, connections, or deletions',
+        )
       }
+      return null
     }
+
+    presence.clearRoomIdleCountdownUi()
+
+    if (import.meta.env.DEV) {
+      console.log('[CollabSync] sendUpdate enqueue', {
+        wsReady: ws.value?.readyState,
+        pendingResync: version.pendingResync.value,
+        hasGranular:
+          nodes !== undefined ||
+          connections !== undefined ||
+          (deletedNodeIds?.length ?? 0) > 0 ||
+          (deletedConnectionIds?.length ?? 0) > 0,
+        nodes: nodes?.length ?? 0,
+        conns: connections?.length ?? 0,
+        delNodes: deletedNodeIds?.length ?? 0,
+        delConns: deletedConnectionIds?.length ?? 0,
+        queueDepth: outboundQueue.size.value,
+      })
+    }
+
+    return outboundQueue.enqueue(payload as Record<string, unknown> & { type: string })
   }
 
   function sendNodeSelected(nodeId: string | null, selected: boolean) {
@@ -411,73 +628,85 @@ export function useWorkshop(
     }
   }
 
-  // Notify when user starts/stops editing a node
-  function notifyNodeEditing(nodeId: string, editing: boolean) {
+  const nodeEditingThrottleMap = new Map<
+    string,
+    { timer: ReturnType<typeof setTimeout> | null; lastEditing: boolean }
+  >()
+  const NODE_EDITING_THROTTLE_MS = 100
+
+  function sendNodeEditingRaw(nodeId: string, editing: boolean): void {
     if (!ws.value || ws.value.readyState !== WebSocket.OPEN) {
       return
     }
-
     try {
-      ws.value.send(
-        JSON.stringify({
-          type: 'node_editing',
-          node_id: nodeId,
-          editing,
-        })
-      )
+      ws.value.send(JSON.stringify({ type: 'node_editing', node_id: nodeId, editing }))
     } catch (error) {
-      console.error('[WorkshopWS] Failed to send node_editing:', error)
-    }
-  }
-
-  // Send ping (heartbeat)
-  function ping() {
-    if (!ws.value || ws.value.readyState !== WebSocket.OPEN) {
-      return
-    }
-
-    try {
-      ws.value.send(JSON.stringify({ type: 'ping' }))
-    } catch (error) {
-      console.error('[WorkshopWS] Failed to send ping:', error)
-    }
-  }
-
-  // Setup heartbeat
-  let heartbeatInterval: ReturnType<typeof setInterval> | null = null
-  function startHeartbeat() {
-    if (heartbeatInterval) {
-      clearInterval(heartbeatInterval)
-    }
-    heartbeatInterval = setInterval(() => {
-      if (isConnected.value) {
-        ping()
+      if (import.meta.env.DEV) {
+        console.error('[WorkshopWS] Failed to send node_editing:', error)
       }
-    }, 30000) // Ping every 30 seconds
-  }
-
-  function stopHeartbeat() {
-    if (heartbeatInterval) {
-      clearInterval(heartbeatInterval)
-      heartbeatInterval = null
     }
   }
 
-  // Watch for code changes and connect/disconnect
+  function notifyNodeEditing(nodeId: string, editing: boolean) {
+    let state = nodeEditingThrottleMap.get(nodeId)
+    if (!state) {
+      state = { timer: null, lastEditing: editing }
+      nodeEditingThrottleMap.set(nodeId, state)
+    }
+    state.lastEditing = editing
+    if (state.timer === null) {
+      sendNodeEditingRaw(nodeId, editing)
+      state.timer = setTimeout(() => {
+        const s = nodeEditingThrottleMap.get(nodeId)
+        if (s) {
+          s.timer = null
+          sendNodeEditingRaw(nodeId, s.lastEditing)
+        }
+      }, NODE_EDITING_THROTTLE_MS)
+    }
+  }
+
+  /**
+   * Send a claim_node_edit request before entering edit mode.
+   * The server responds with node_edit_claimed{granted:true/false}.
+   * On grant the server also broadcasts node_editing{editing:true} to all participants.
+   * This replaces sending node_editing{editing:true} from the client on the open path.
+   */
+  function sendClaimNodeEdit(nodeId: string): void {
+    if (!ws.value || ws.value.readyState !== WebSocket.OPEN) {
+      return
+    }
+    try {
+      ws.value.send(JSON.stringify({ type: 'claim_node_edit', node_id: nodeId }))
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error('[WorkshopWS] Failed to send claim_node_edit:', error)
+      }
+    }
+  }
+
+  function clearNodeEditingThrottles(): void {
+    nodeEditingThrottleMap.forEach((state) => {
+      if (state.timer !== null) {
+        clearTimeout(state.timer)
+        state.timer = null
+      }
+    })
+    nodeEditingThrottleMap.clear()
+  }
+
   let codeWatcher: (() => void) | null = null
 
   function watchCode() {
-    // Stop existing watcher
     if (codeWatcher) {
       codeWatcher()
       codeWatcher = null
     }
 
-    // Create new watcher for code/diagram changes
     codeWatcher = watch(
       [workshopCode, diagramId],
-      ([code, id]) => {
-        if (code && id) {
+      ([code]) => {
+        if (code) {
           connect()
           startHeartbeat()
         } else {
@@ -488,32 +717,59 @@ export function useWorkshop(
     )
   }
 
-  // Cleanup on unmount
   onUnmounted(() => {
-    // Stop watcher
     if (codeWatcher) {
       codeWatcher()
       codeWatcher = null
     }
 
-    // Disconnect and cleanup
     disconnect()
     stopHeartbeat()
   })
 
+  function reconnect() {
+    reconnectAttempts.value = 0
+    connectionStatus.value = 'connected'
+    if (ws.value && ws.value.readyState !== WebSocket.CLOSED) {
+      ws.value.close(1000, 'manual_reconnect')
+    }
+    connect()
+  }
+
+  /**
+   * Optimistically mark the current user as the diagram owner before the WS
+   * `joined` message arrives.  Called by checkAndReconnectWorkshop when the
+   * REST status endpoint already confirms is_owner=true, so isDiagramOwner is
+   * immediately true during the WS handshake window instead of flickering to
+   * false (guest) until the server echoes owner_id back.
+   */
+  function setOwnerIdOptimistic(userId: number): void {
+    diagramOwnerId.value = userId
+  }
+
   return {
     isConnected,
+    connectionStatus: computed(() => connectionStatus.value),
     participants,
     participantsWithNames: computed(() => participantsWithNames.value),
     activeEditors: computed(() => activeEditors.value),
     remoteSelectionsByUser: computed(() => remoteSelectionsByUser.value),
     diagramOwnerId: computed(() => diagramOwnerId.value),
+    lastLiveSpecVersion: version.liveVersion,
+    collabSyncVersion: version,
+    roomIdleSecondsRemaining: computed(() => presence.roomIdleSecondsRemaining.value),
+    workshopRole: computed(() => workshopRole.value),
     isDiagramOwner,
+    sessionDiagramId: computed(() => sessionDiagramIdRef.value),
+    sessionDiagramTitle: computed(() => sessionDiagramTitleRef.value),
     connect,
     disconnect,
+    reconnect,
     sendUpdate,
     sendNodeSelected,
     notifyNodeEditing,
+    sendClaimNodeEdit,
+    setOwnerIdOptimistic,
     watchCode,
   }
 }

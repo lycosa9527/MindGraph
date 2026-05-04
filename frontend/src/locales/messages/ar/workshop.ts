@@ -1,10 +1,10 @@
 /**
- * ar UI — workshop
+ * ar UI workshop
  */
 
 export default {
   'collab.codeCopied': 'تم نسخ الرمز',
-  'collab.codeGenerated': 'تم إنشاء رمز التعاون — شارِكه ليحرّر الآخرون معك.',
+  'collab.codeGenerated': 'تم إنشاء رمز التعاون شارِكه ليحرّر الآخرون معك.',
   'collab.copy': 'نسخ',
   'collab.copyFailed': 'تعذّر النسخ',
   'collab.copyLink': 'نسخ الرابط',
@@ -32,13 +32,13 @@ export default {
   'collab.saveFailed': 'تعذّر حفظ المخطط',
   'collab.scanToJoin': 'امسح الرمز للانضمام',
   'collab.schoolDescActive':
-    'تعاون المدرسة مفعّل. للزملاء: من الصفحة الرئيسية اختر «تعاون ← مدرسة» ثم هذا المخطط — دون الحاجة إلى رمز.',
-  'collab.schoolStarted': 'تعاون المدرسة مفعّل — يمكن الانضمام من «تعاون ← مدرسة».',
+    'تعاون المدرسة مفعّل. للزملاء: من الصفحة الرئيسية اختر «تعاون مدرسة» ثم هذا المخطط دون الحاجة إلى رمز.',
+  'collab.schoolStarted': 'تعاون المدرسة مفعّل يمكن الانضمام من «تعاون مدرسة».',
   'collab.sectionNetwork': 'تعاون مشترك (رمز)',
   'collab.sectionSchool': 'تعاون المدرسة',
   'collab.sessionDuration': 'مدة الجلسة',
   'collab.sessionRemaining': 'تنتهي الجلسة خلال',
-  'collab.shareDescNetwork': 'شارِك الرمز أو الرابط — يدخل الآخرون عبر «تعاون ← مشترك».',
+  'collab.shareDescNetwork': 'شارِك الرمز أو الرابط يدخل الآخرون عبر «تعاون مشترك».',
   'collab.start': 'بدء',
   'collab.startFailed': 'فشل البدء: {msg}',
   'collab.title': 'التعاون عبر الإنترنت',
@@ -65,7 +65,7 @@ export default {
   'workshop.channelAvatarPlaceholder': 'رمز تعبيري أو تسمية قصيرة',
   'workshop.channelColor': 'لون القناة',
   'workshop.channelInviteReceived': 'أُضِفت إلى «{name}». افتح ورشة العمل لعرضها.',
-  'workshop.channelKindGroup': 'مجموعة تدريس (مستوى أعلى، مثل 教研组)',
+  'workshop.channelKindGroup': 'مجموعة تدريس (مستوى أعلى، مثل 教研',
   'workshop.channelKindLessonStudy': 'دراسة درس ضمن مجموعة (课例)',
   'workshop.channelNameLabel': 'الاسم',
   'workshop.channelNamePlaceholder': 'مثال: مجموعة تدريس STEM',
@@ -134,7 +134,7 @@ export default {
   'workshop.generalChat': 'محادثة عامة',
   'workshop.inbox': 'صندوق الوارد',
   'workshop.inboxHintPickChannel':
-    'افتح قناة أو رسالة مباشرة في الشريط الجانبي للقراءة والرد. يمكنك العودة هنا في أي وقت عبر «عروض ← صندوق الوارد».',
+    'افتح قناة أو رسالة مباشرة في الشريط الجانبي للقراءة والرد. يمكنك العودة هنا في أي وقت عبر «عروض صندوق الوارد».',
   'workshop.inboxSummaryTitle': 'صندوق واردك',
   'workshop.inboxUnreadChannels': 'غير مقروء في القنوات',
   'workshop.inboxUnreadDms': 'رسائل مباشرة غير مقروءة',
@@ -166,7 +166,7 @@ export default {
   'workshop.markAsRead': 'تعليم كمقروء',
   'workshop.markStudyResolved': 'تعليم الدراسة كمنتهية',
   'workshop.members': 'أعضاء',
-  'workshop.mentionAmbiguous': 'أسماء غير واضحة — اختر شخصًا باسم عرض فريد: {0}',
+  'workshop.mentionAmbiguous': 'أسماء غير واضحة اختر شخصًا باسم عرض فريد: {0}',
   'workshop.mentionUnknown': 'إشارات غير معروفة (مستخدمو الجهة نفسها والطاقم فقط): {0}',
   'workshop.mentionedInChannel': 'تمت الإشارة إليك في #{0}',
   'workshop.mentionedInTopic': 'تمت الإشارة إليك في {0}',
@@ -187,7 +187,7 @@ export default {
   'workshop.newConversation': 'محادثة جديدة',
   'workshop.newDM': 'رسالة مباشرة جديدة',
   'workshop.newDirectMessage': 'رسالة مباشرة جديدة',
-  'workshop.newMessage': 'رسالة جديدة…',
+  'workshop.newMessage': 'رسالة جديدة...',
   'workshop.newTopic': 'محادثة جديدة',
   'workshop.noChannelsAvailable': 'لا توجد قنوات متاحة',
   'workshop.noChannelsJoined': 'لم تنضمّ إلى أي قناة',
@@ -238,8 +238,8 @@ export default {
   'workshop.roleAdmin': 'مسؤول',
   'workshop.roleManager': 'مدير',
   'workshop.roleOwner': 'مالك',
-  'workshop.searchMembers': 'البحث عن أعضاء…',
-  'workshop.searchMessages': 'البحث في الرسائل…',
+  'workshop.searchMembers': 'البحث عن أعضاء...',
+  'workshop.searchMessages': 'البحث في الرسائل...',
   'workshop.selectChannelForSettings':
     'اختر مجموعة تدريس أو دراسة درس أولًا، ثم افتح الإعدادات هنا.',
   'workshop.selectConversation': 'اختر محادثة',
@@ -276,12 +276,12 @@ export default {
   'workshop.toggleContacts': 'إظهار/إخفاء جهات الاتصال',
   'workshop.topicCount': 'محادثات',
   'workshop.topicDescription': 'الوصف',
-  'workshop.topicDescriptionPlaceholder': 'صف موضوع المحادثة…',
+  'workshop.topicDescriptionPlaceholder': 'صف موضوع المحادثة...',
   'workshop.topicSettings': 'إعدادات المحادثة',
   'workshop.topicTitle': 'العنوان',
   'workshop.topicTitlePlaceholder': 'مثال: خريطة تفكير تصميمي للفصل 3',
   'workshop.topics': 'المحادثات',
-  'workshop.typeMessagePlaceholder': 'اكتب رسالة… (Enter للإرسال، Shift+Enter سطر جديد)',
+  'workshop.typeMessagePlaceholder': 'اكتب رسالة(Enter للإرسال، Shift+Enter سطر جديد)',
   'workshop.unfollowTopic': 'إلغاء متابعة المحادثة',
   'workshop.unknown': 'غير معروف',
   'workshop.unmuteChannel': 'إلغاء كتم القناة',
@@ -298,13 +298,13 @@ export default {
   'workshop.viewingSchool': 'العرض: {0}',
   'workshop.views': 'العروض',
   'workshop.welcomeChannelsBody':
-    'غالبًا ما تُطابق «القناة» هنا مجموعة بحث تدريسي (教研组) أو مجتمع تعلّم مهني (PLC): مساحة مشتركة واحدة لكل فريق (مثل PLC الرياضيات أو PLC الإنجليزية). تحدد من يشارك وكيف تُجمَّع المساحة.',
+    'غالبًا ما تُطابق «القناة» هنا مجموعة بحث تدريسي (教研 أو مجتمع تعلّم مهني (PLC): مساحة مشتركة واحدة لكل فريق (مثل PLC الرياضيات أو PLC الإنجليزية). تحدد من يشارك وكيف تُجمَّع المساحة.',
   'workshop.welcomeChannelsTitle': 'مجموعات المادة / مجتمعات التعلّم',
   'workshop.welcomeConversationsBody':
-    'داخل دراسة الدرس تفتح محادثات بعناوين —مثل التصميم التعليمي، التأمل، أو مهام المتابعة— لتبقى الخيوط سهلة التتبع.',
+    'داخل دراسة الدرس تفتح محادثات بعناوين —مثالتصميم التعليمي، التأمل، أو مهام المتابعةلتبقى الخيوط سهلة التتبع.',
   'workshop.welcomeConversationsTitle': 'المحادثات',
   'workshop.welcomeExampleCaption':
-    'مثال توضيحي (مدرسة خيالية) — PLC الرياضيات وPLC الإنجليزية، كل منهما بدراسات درس ومحادثات نموذجية.',
+    'مثال توضيحي (مدرسة خيالية) PLC الرياضيات وPLC الإنجليزية، كل منهما بدراسات درس ومحادثات نموذجية.',
   'workshop.welcomeExampleConvLabel': 'المحادثات',
   'workshop.welcomeExampleGroupEnglish': 'PLC الإنجليزية',
   'workshop.welcomeExampleGroupMath': 'PLC الرياضيات',
@@ -312,13 +312,13 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'تصميم ورقة الإرشاد وورقة العمل',
   'workshop.welcomeExampleLSEng1C2': 'مهام ما بعد القراءة والنقل',
   'workshop.welcomeExampleLSEng1C3': 'ملاحظات المشاهدة والتأمل',
-  'workshop.welcomeExampleLSEng2': 'دراسة درس: الكتابة — درس واحد ومعلمون مختلفون',
+  'workshop.welcomeExampleLSEng2': 'دراسة درس: الكتابة درس واحد ومعلمون مختلفون',
   'workshop.welcomeExampleLSEng2C1': 'تجربة سلم التقييم ومراجعته',
   'workshop.welcomeExampleLSMath1': 'دراسة درس: أسبوع صقل «مفهوم الدوال»',
   'workshop.welcomeExampleLSMath1C1': 'الأهداف وتصميم النشاط',
   'workshop.welcomeExampleLSMath1C2': 'التساؤل واستخدام اللوح',
   'workshop.welcomeExampleLSMath1C3': 'تأمل ما بعد الدرس والخطوات التالية',
-  'workshop.welcomeExampleLSMath2': 'دراسة درس: مراجعة ثانوي — المشتقات',
+  'workshop.welcomeExampleLSMath2': 'دراسة درس: مراجعة ثانوي المشتقات',
   'workshop.welcomeExampleLSMath2C1': 'مهام متدرجة وتقييم',
   'workshop.welcomeExampleMsgLabel': 'الرسائل داخل كل محادثة',
   'workshop.welcomeExampleOrg': 'مدرسة تشنشي الإعدادية',
@@ -326,7 +326,7 @@ export default {
   'workshop.welcomeIntro':
     'ورشة العمل هي مساحة مدرستك للنقاش المنظم: شارِك الإعلانات، نفِّذ دراسات الدروس، وحافظ على تنظيم المحادثات بجانب عملك التدريسي.',
   'workshop.welcomeLessonStudyBody':
-    'قنوات دراسة الدرس عادةً تتبع تلك المجموعة. كل منها مساحة لدورة درس واحدة —تخطيطًا، مشاهدة، وتأملًا— وقد ترتبط بمخططات أو حالات.',
+    'قنوات دراسة الدرس عادةً تتبع تلك المجموعة. كل منها مساحة لدورة درس واحدة —تخطيطًامشاهدة، وتأملًاوقد ترتبط بمخططات أو حالات.',
   'workshop.welcomeLessonStudyTitle': 'دراسات الدروس',
   'workshop.welcomeMessagesBody':
     'الرسائل هي المنشورات الفردية في تدفق القناة الرئيسية أو داخل محادثة. الردود والإشارات والملفات كلها مربوطة بالرسائل.',
@@ -342,8 +342,17 @@ export default {
   'workshopCanvas.errorGeneric': 'خطأ في التعاون',
   'workshopCanvas.reconnectFailed': 'تعذّر إعادة الاتصال بالتعاون، يُرجى تحديث الصفحة',
   'workshopCanvas.returnedHomeIdle':
-    'عُدتَ إلى الصفحة الرئيسية — لا تعديلات على المخطط منذ 30 دقيقة.',
-  'workshopCanvas.userJoined': 'انضمّ المستخدم {userId}',
-  'workshopCanvas.userLeft': 'غادر المستخدم {userId}',
+    'عُدتَ إلى الصفحة الرئيسية لا تعديلات على المخطط منذ 30 دقيقة.',
+  'workshopCanvas.userJoined': 'انضمّ المستخدم {username}',
+  'workshopCanvas.usersJoined': '{count} users joined',
+  'workshopCanvas.userLeft': 'غادر المستخدم {username}',
+  'workshopCanvas.usersLeft': '{count} users left',
   'workshopCanvas.wsError': 'خطأ في اتصال التعاون، يُرجى التحقق من الشبكة',
+  'workshopCanvas.returnedHomeRoomIdle':
+    'Collaboration ended: no diagram edits in this session for a while.',
+  'workshopCanvas.roomIdleWarningToast':
+    'No diagram edits lately collaboration ends when the countdown hits zero unless someone edits.',
+  'workshopCanvas.otherTabCollaborationActive':
+    'Collaboration continues in another tab or window for this account.',
+  'workshopCanvas.joinQrAlt': 'Join collaboration QR code',
 }

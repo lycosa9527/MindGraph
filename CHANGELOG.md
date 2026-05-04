@@ -5,6 +5,211 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.116.0] - 2026-05-04
+
+### Added
+
+- **`services/online_collab/`** — consolidated workshop / online collaboration backend (live spec, participants, Redis scripts and health, org listing, lifecycle, DB helpers); supersedes the legacy **`services/workshop/`** package removed in this release.
+- **Canvas collaboration UX**: [`CanvasCollabOverlay.vue`](frontend/src/components/canvas/CanvasCollabOverlay.vue), [`CollabUserRail.vue`](frontend/src/components/canvas/CollabUserRail.vue), [`MindGraphCollabPanel.vue`](frontend/src/components/mindgraph/MindGraphCollabPanel.vue); shared palette constants in [`frontend/src/shared/collabPalette.ts`](frontend/src/shared/collabPalette.ts).
+- **Workshop client plumbing**: [`useCollabOutboundQueue.ts`](frontend/src/composables/workshop/useCollabOutboundQueue.ts), [`useCollabSyncVersion.ts`](frontend/src/composables/workshop/useCollabSyncVersion.ts), [`useCanvasPageMountedHandlers.ts`](frontend/src/composables/canvasPage/useCanvasPageMountedHandlers.ts); composable splits [`useWorkshopHeartbeat.ts`](frontend/src/composables/workshop/useWorkshopHeartbeat.ts), [`useWorkshopMessageHandlers.ts`](frontend/src/composables/workshop/useWorkshopMessageHandlers.ts), [`useWorkshopPresence.ts`](frontend/src/composables/workshop/useWorkshopPresence.ts), [`useWorkshopReconnect.ts`](frontend/src/composables/workshop/useWorkshopReconnect.ts), [`useWorkshopTypes.ts`](frontend/src/composables/workshop/useWorkshopTypes.ts).
+- **Application lifespan**: collab / DB / Redis integration and shutdown helpers under [`services/infrastructure/lifecycle/`](services/infrastructure/lifecycle/) (`lifespan_collab_integration.py`, `lifespan_db_integration.py`, `lifespan_redis_integration.py`, `lifespan_shutdown.py`) extracted from the main [`lifespan.py`](services/infrastructure/lifecycle/lifespan.py) module.
+- **CI and load tooling**: [`.github/workflows/ci.yml`](.github/workflows/ci.yml), [`.github/workflows/nightly-collab.yml`](.github/workflows/nightly-collab.yml); [`loadtests/collab/`](loadtests/collab/); [`scripts/collab_synthetic_probe.py`](scripts/collab_synthetic_probe.py) and related scripts.
+- **Frontend tests**: [`frontend/vitest.config.ts`](frontend/vitest.config.ts), [`frontend/tests/`](frontend/tests/).
+- **Backend tests**: expanded collab / workshop / fanout / live-spec coverage under [`tests/`](tests/) (palette sync, WS JSON limits, join resume, update schema, integration probes, etc.).
+
+### Changed
+
+- **Workshop WebSocket surface**: [`workshop_ws_handlers.py`](routers/api/workshop_ws_handlers.py), [`workshop_ws_connect.py`](routers/api/workshop_ws_connect.py), [`workshop_ws_disconnect.py`](routers/api/workshop_ws_disconnect.py), [`workshop_ws_broadcast.py`](routers/api/workshop_ws_broadcast.py), [`workshop_ws_auth.py`](routers/api/workshop_ws_auth.py), plus focused helpers [`workshop_ws_handlers_update.py`](routers/api/workshop_ws_handlers_update.py), [`workshop_ws_update_schema.py`](routers/api/workshop_ws_update_schema.py).
+- **Connection state, fanout, and metrics**: [`workshop_ws_connection_state.py`](services/features/workshop_ws_connection_state.py), [`workshop_ws_fanout_delivery.py`](services/features/workshop_ws_fanout_delivery.py), [`ws_redis_fanout_listener.py`](services/features/ws_redis_fanout_listener.py), [`ws_redis_fanout_publish.py`](services/features/ws_redis_fanout_publish.py), [`ws_redis_fanout_config.py`](services/features/ws_redis_fanout_config.py), [`ws_pg_notify_fanout.py`](services/features/ws_pg_notify_fanout.py), [`ws_metrics.py`](services/infrastructure/monitoring/ws_metrics.py); supporting utilities [`ws_context.py`](utils/ws_context.py), [`ws_limits.py`](utils/ws_limits.py), [`ws_session_registry.py`](utils/ws_session_registry.py), [`collab_ws_origin.py`](utils/collab_ws_origin.py).
+- **Frontend canvas**: [`useCanvasPageWorkshopCollab.ts`](frontend/src/composables/canvasPage/useCanvasPageWorkshopCollab.ts), [`useWorkshop.ts`](frontend/src/composables/workshop/useWorkshop.ts), [`CanvasPage.vue`](frontend/src/pages/CanvasPage.vue), [`MindGraphContainer.vue`](frontend/src/components/mindgraph/MindGraphContainer.vue), [`OnlineCollabModal.vue`](frontend/src/components/canvas/OnlineCollabModal.vue), [`ZoomControls.vue`](frontend/src/components/canvas/ZoomControls.vue), [`DiagramHistory.vue`](frontend/src/components/sidebar/DiagramHistory.vue), [`diagramCanvas.css`](frontend/src/components/diagram/diagramCanvas.css), live subtitle / translation stores and related utilities.
+- **Internationalization**: new and updated **canvas** / **workshop** / **sidebar** strings across locale bundles under [`frontend/src/locales/messages/`](frontend/src/locales/messages/).
+- **APIs and persistence**: [`routers/api/diagrams.py`](routers/api/diagrams.py), [`redis_diagram_cache.py`](services/redis/cache/redis_diagram_cache.py), [`config/database.py`](config/database.py); domain touch-ups ([`debateverse.py`](models/domain/debateverse.py), [`school_zone.py`](models/domain/school_zone.py)).
+- **Environment reference**: [`env.example`](env.example) expanded for collab, Redis, and related deployment options.
+
+### Removed
+
+- **`services/workshop/`** — legacy workshop package; behavior lives under **`services/online_collab/`** and the refactored WebSocket / fanout layers above.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.116.0).
+
+## [5.115.0] - 2026-05-03
+
+### Changed
+
+- **Workshop live spec is RedisJSON-only on Redis 8+** ([`services/online_collab/spec/`](services/online_collab/spec/)): startup asserts `INFO server` → `redis_version >= 8.0.0` when online collab is enabled ([`check_online_collab_redis_version`](services/online_collab/redis/online_collab_redis_health.py)); string `SETEX`/`GET` fallbacks and the optimistic-lock `WATCH`/string merge loop for `workshop:live_spec:{code}` are removed. Each WS merge runs a single pipelines path: `JSON.MERGE` or `JSON.SET`, optional `JSON.NUMINCRBY` on `$.v`, `EXPIRE` (GT), changed-keys `SADD`, `EXPIRE` on the set, and `INCR` on `snapshot_seq` in one `MULTI/EXEC` when `COLLAB_REDIS_HASH_TAGS=1`. The historical `COLLAB_REDIS_JSON_LIVE_SPEC` toggle is obsolete at the code level (live spec always uses `JSON.*`).
+
+### Observability
+
+- **Renamed collab JSON health counter**: `ws_redisjson_fallback_total` / `record_ws_redisjson_fallback` → **`ws_redisjson_failure_total`** / `record_ws_redisjson_failure_total` ([`ws_metrics.py`](services/infrastructure/monitoring/ws_metrics.py)). Log-based collab alerts treat any non-zero failure count as `ws_redisjson_failure_nonzero`.
+
+### Documentation
+
+- **Pre-deploy drain runbook**: [`docs/runbooks/online_collab_redisjson_baseline.md`](docs/runbooks/online_collab_redisjson_baseline.md) (`COLLAB_DISABLED`, flush live specs to Postgres, delete `workshop:live_spec:*`, deploy, re-enable).
+- **Cluster ops**: [`docs/operations/redis_cluster_online_collab.md`](docs/operations/redis_cluster_online_collab.md) — Redis 8.0 floor and hash-tag co-location for live spec / snapshot seq / changed keys.
+
+### Tests
+
+- [`tests/test_redis_version_assertion.py`](tests/test_redis_version_assertion.py), [`tests/test_live_spec_pipeline_commands.py`](tests/test_live_spec_pipeline_commands.py), [`tests/test_live_spec_hash_tag_colocation.py`](tests/test_live_spec_hash_tag_colocation.py).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.115.0).
+
+### Load verification
+
+- Before production cutover at 200–500 concurrent editors, run [`loadtests/collab`](loadtests/collab/) against staging and confirm `ws_redisjson_failure_total` stays **0** and broadcast latency is acceptable; attach results to the release notes / PR as needed.
+
+## [5.114.0] - 2026-05-03
+
+### Added
+
+- **GitHub Actions CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)): on push and pull request to `main`, `master`, and `develop` — Python 3.13 app import smoke, targeted **Pylint** on collaboration and WebSocket paths, focused **pytest** collab suite, and **Vitest** for the frontend.
+- **Manual collab load / soak workflow** ([`.github/workflows/nightly-collab.yml`](.github/workflows/nightly-collab.yml)): `workflow_dispatch` job to run **Locust** against a supplied HTTPS origin, session JWT, and workshop codes; optional Redis churn via `CLIENT PAUSE` when a `redis://` target is provided.
+- **Prompt language registry artifact** ([`data/prompt_language_registry.json`](data/prompt_language_registry.json)): checked-in registry used by prompt-output language sync checks and the frontend `build-prompt-registry` prebuild step.
+
+### Changed
+
+- **Workshop client composables** ([`frontend/src/composables/workshop/`](frontend/src/composables/workshop/)): split heartbeat, inbound message dispatch, presence, reconnect/backoff helpers, and shared **TypeScript** types out of [`useWorkshop.ts`](frontend/src/composables/workshop/useWorkshop.ts) into [`useWorkshopHeartbeat.ts`](frontend/src/composables/workshop/useWorkshopHeartbeat.ts), [`useWorkshopMessageHandlers.ts`](frontend/src/composables/workshop/useWorkshopMessageHandlers.ts), [`useWorkshopPresence.ts`](frontend/src/composables/workshop/useWorkshopPresence.ts), [`useWorkshopReconnect.ts`](frontend/src/composables/workshop/useWorkshopReconnect.ts), and [`useWorkshopTypes.ts`](frontend/src/composables/workshop/useWorkshopTypes.ts) for clearer boundaries and testing ([`frontend/tests/useWorkshopReconnect.spec.ts`](frontend/tests/useWorkshopReconnect.spec.ts)).
+- **Environment reference** ([`env.example`](env.example)): online collab and related settings documented and aligned with current options.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.114.0).
+
+## [5.113.0] - 2026-05-02
+
+### Online Collab Production Hardening
+
+This release completes a full production-hardening pass of the online collaboration (workshop) module, targeting 200–500 concurrent teachers per session. All changes are native-asyncio with no wrapper layers, fully leveraging Redis 8.6 and PostgreSQL 18.3 features.
+
+#### Fanout Topology (P0 + P1)
+
+- **Per-connection writer tasks with bounded queues**: replaced `ws.send_json` calls with an `asyncio.Queue`-backed `_writer_loop` per handle (`ConnectionHandle`). Slow consumers are evicted without affecting others (`WORKSHOP_SLOW_CONSUMER_EVICT=1`).
+- **Pre-serialized sharded fanout** ([`services/features/workshop_ws_fanout_delivery.py`](services/features/workshop_ws_fanout_delivery.py)): payload encoded to bytes **once** per broadcast; room split into shards of `_SHARD_SIZE` peers, each shard processed concurrently via `asyncio.TaskGroup + asyncio.Semaphore(WORKSHOP_FANOUT_SHARD_CONCURRENCY, default 50)`.
+- **50 ms time-windowed coalescing**: node-editing frames within a 50 ms window are coalesced per peer before being queued, cutting queue pressure by ~80% in large rooms.
+- **Per-message-type backpressure policy**: `update` and `node_editing` frames use `put_nowait` (drop-on-full); `join` / `room_state` / `error` frames always enqueue.
+- **Redis Pub/Sub as sole broadcast path** (P1): fixed a critical bug where `XREADGROUP` load-balances to only one consumer group member, breaking broadcast semantics. Streams are now an optional audit log only (`COLLAB_REDIS_STREAMS_AUDIT=1`). Primary delivery uses `SPUBLISH` (sharded, default) → `PUBLISH` → PG LISTEN/NOTIFY fallback.
+
+#### Final sweep — gaps (2026-05-02)
+
+- **Superseded session teardown**: prior tab’s writer/flush tasks are torn down before the new handle replaces it; superseded sockets close with 4003.
+- **FCALL node editor merge**: `mg_node_editing_set` / `del` Lua performs read-modify-write so co-editors are not dropped under races.
+- **Fan-out force-close**: `_close_one_handle` finalizes writer shutdown and cancels flush tasks to avoid orphaned queues.
+- **Client resync**: pending snapshot gaps time out with capped resync retries, `sessionDiagramId` fallback, presence coalescing, and structural lock timer cleanup on canvas leave.
+- **DB flush gating**: `schedule_live_spec_db_flush` runs only when live-spec merge succeeds.
+- **Metrics / ops**: semaphore wait + hot-path Redis read latencies in JSON snapshot; dead Prometheus formatter removed; log-based `collab_alerts` includes sampled `live_spec_db_flush_lag_detected` when Redis activity leads flush timestamps.
+- **Startup / shutdown**: Redis Functions preload after script load; graceful registry drain; shutdown scan flushes all `workshop:live_spec:*` to Postgres before the DB pool closes; debounced flush timers cancelled first.
+- **Limits**: Uvicorn `ws_max_size=1MiB`, collab inbound text capped at 1 MiB (configurable), JSON nesting depth capped for inbound messages.
+- **Kill switch / hygiene**: `COLLAB_DISABLED` closes new collab handshakes; GDPR purge hook for user deletion; `__seq__` stripped from snapshot/flush payloads.
+- **Deliverables**: GitHub Actions CI (targeted pylint + pytest + vitest), Locust skeleton under `loadtests/collab`, synthetic dual-client probe `scripts/collab_synthetic_probe.py`, runbooks under `docs/runbooks/online_collab_*.md`, cluster notes in `docs/operations/redis_cluster_online_collab.md`.
+
+### Wrapper Removal (P2)
+
+- Deleted `online_collab_bg_tasks.py` (`spawn_bg`): replaced with raw `asyncio.create_task` + explicit task reference on owner objects.
+- Deleted `workshop_ws_safe_send.py` (`safe_send_json`): per-WS `asyncio.Lock` + `asyncio.timeout(1.5)` inlined at each send site; `WeakKeyDictionary` moved to `workshop_ws_connection_state.py`.
+- Deleted `online_collab_asyncio_timeouts.py` (wrapper timeouts): replaced with inline `asyncio.timeout(...)` context managers.
+- Removed `LatencyTimer`: replaced with `time.perf_counter()` + `asyncio.create_task(tdigest_record_latency(...))` at each of the four call sites.
+
+#### Redis 8.6 Optimisations (P3)
+
+- **Participants as HASH** ([`services/online_collab/participant/online_collab_participant_ops.py`](services/online_collab/participant/online_collab_participant_ops.py)): `participants:{code}` converted from SET to HASH (field = user_id, value = join-epoch). Per-field TTL via `HEXPIRE` (Redis 7.4+) with whole-key `EXPIRE` fallback; downgrade counted by `record_ws_hexpire_downgrade`.
+- **RedisJSON as default live-spec backend** (`COLLAB_REDIS_JSON_LIVE_SPEC=1` default): `JSON.MERGE` for granular patches, `JSON.SET` for full replacements. Falls back to WATCH/MULTI/EXEC loop on failure; fallback counted by `record_ws_redisjson_fallback`.
+- **Lua scripts preloaded at startup** ([`services/online_collab/redis/online_collab_redis_scripts.py`](services/online_collab/redis/online_collab_redis_scripts.py)): join-cap and rate-limiter scripts loaded via `SCRIPT LOAD`; hot paths use `EVALSHA` with transparent `NOSCRIPT` reload.
+- **Pipelined `CONFIG GET`** ([`services/online_collab/redis/online_collab_redis_health.py`](services/online_collab/redis/online_collab_redis_health.py)): three `CONFIG GET` calls (`appendonly`, `appendfsync`, `maxmemory-policy`) collapsed into one pipeline round-trip.
+- **Atomic rate-limiter Lua script** ([`services/online_collab/participant/online_collab_ws_rate_limit.py`](services/online_collab/participant/online_collab_ws_rate_limit.py)): user + IP checks combined into a single `EVALSHA` call, eliminating the race between separate checks.
+- **Sharded Pub/Sub default** (`COLLAB_REDIS_SPUBLISH=1`): `SPUBLISH` used by default for Redis Cluster-aware broadcasting with PUBLISH fallback for pre-7.0 servers.
+- **CLIENT TRACKING extended**: `CLIENT TRACKING ON BCAST PREFIX` now covers `workshop:registry:` in addition to the session prefix, ensuring session meta-cache invalidation across workers.
+- **EXPIRE GT everywhere**: all TTL refresh paths (`json_merge_patch`, `json_set_nodes`, editor hash) use `gt=True` so TTLs are only extended, never shortened, on update paths.
+- **Optional `WAIT 1 200` for write durability** (`COLLAB_REDIS_WAIT_DURABILITY=1`): env-gated `WAIT 1 200` after `create_session` and `destroy_session` pipelines ensures commands propagate to at least one replica.
+- **Pipelined org session listing** ([`services/online_collab/core/online_collab_org_listing.py`](services/online_collab/core/online_collab_org_listing.py)): N+1 Redis problem fixed — all `HGETALL` and `HLEN` calls for an org's sessions are batched into one pipeline.
+- **FIFO OrderedDict eviction**: `_node_editing_dedup_cache` and `session_meta_cache._cache` use `OrderedDict.popitem(last=False)` to evict oldest entries instead of `clear()`, preventing thundering-herd re-fill.
+- **Atomic Redis purge for cluster** ([`services/online_collab/redis/online_collab_redis_keys.py`](services/online_collab/redis/online_collab_redis_keys.py)): `purge_online_collab_redis_keys` uses `pipeline(transaction=True)` when hash tags are enabled; per-key `UNLINK`/`DEL` fallback for MOVED errors.
+
+#### PostgreSQL 18.3 Optimisations (P4)
+
+- **MERGE for cleanup** ([`services/online_collab/core/online_collab_lifecycle.py`](services/online_collab/core/online_collab_lifecycle.py)): `cleanup_expired_online_collabs_impl` uses `MERGE INTO ... RETURNING t.id, s.workshop_code` to atomically clear expired sessions and retrieve the pre-update `workshop_code` for Redis purging in one statement (previously `UPDATE ... RETURNING` could not reliably surface the pre-update code).
+- **Partial JSONB writes** ([`services/online_collab/spec/online_collab_live_spec_ops.py`](services/online_collab/spec/online_collab_live_spec_ops.py)): `apply_live_update` now returns a `(doc, version, changed_keys)` 3-tuple. `changed_keys` (a `frozenset`) drives `jsonb_set` for only the changed top-level keys, cutting wire traffic 70–90% for large diagrams. Full-replace (`__full__` sentinel) still writes the whole column.
+- **PG LISTEN/NOTIFY fallback** ([`services/features/ws_pg_notify_fanout.py`](services/features/ws_pg_notify_fanout.py)): activated via `COLLAB_PG_NOTIFY_FALLBACK=1`; publishes to a per-machine PG channel when Redis Pub/Sub `publish` raises `RedisError`; listener runs as a background `asyncio.Task`.
+- **SQLAlchemy compiled-statement cache** ([`services/online_collab/db/online_collab_stmt_cache.py`](services/online_collab/db/online_collab_stmt_cache.py)): `STMT_DIAGRAM_BY_ID`, `STMT_DIAGRAM_SPEC_BY_ID`, `STMT_DIAGRAM_UPDATE_SPEC` pre-compiled with `bindparam` for zero-parse-overhead on hot paths; `create_async_engine(query_cache_size=DATABASE_QUERY_CACHE_SIZE)` (default 1200).
+- **Connection pool startup assertion** ([`config/database.py`](config/database.py)): `DATABASE_POOL_HARD_ASSERT=1` aborts startup when `worker_count × pool_size > max_connections`.
+
+#### Concurrency & Safety (P5)
+
+- **`asyncio.Semaphore` on idle-monitor TaskGroup** (`COLLAB_IDLE_MONITOR_CONCURRENCY`, default 20): bounds concurrent stale-code evaluations per cycle.
+- **`asyncio.Semaphore` on fanout shard TaskGroup** (`WORKSHOP_FANOUT_SHARD_CONCURRENCY`, default 50): limits concurrent shard processing within `deliver_local_workshop_broadcast`.
+- **`destroy_session` lock always released**: refactored to `try...finally` — the per-code `asyncio.Lock` is guaranteed to release even when purge raises.
+- **`asyncio.to_thread` for large JSON/deepcopy** ([`services/online_collab/common/online_collab_json_offload.py`](services/online_collab/common/online_collab_json_offload.py)): `dumps_maybe_offload`, `loads_maybe_offload`, `deepcopy_maybe_offload` forward to a thread pool when payload exceeds `COLLAB_JSON_THREAD_OFFLOAD_BYTES` (default 64 KiB), keeping the event loop responsive.
+- **Per-room `asyncio.Lock` for `ACTIVE_CONNECTIONS`** ([`services/features/workshop_ws_connection_state.py`](services/features/workshop_ws_connection_state.py)): `register_connection` and `unregister_connection` are guarded by a per-room lock, preventing concurrent mutation races.
+
+#### Module Splits (P6)
+
+| Before | After | Lines |
+|--------|-------|-------|
+| `online_collab_manager.py` (874 LOC) | `online_collab_session_redis.py`, `online_collab_join.py`, `online_collab_org_listing.py` + thin facade | Each ≤ 700 |
+| `online_collab_lifecycle.py` (706 LOC) | `_cleanup`, `_start`, `_stop` submodules | Each ≤ 650 |
+| `workshop_ws_handlers.py` (924 LOC) | `workshop_ws_handlers.py` (dispatcher) + `workshop_ws_handlers_update.py` | 507 + 400 |
+
+#### Observability (P7)
+
+New counters added to [`services/infrastructure/monitoring/ws_metrics.py`](services/infrastructure/monitoring/ws_metrics.py):
+
+| Counter | Description |
+|---------|-------------|
+| `ws_watcherror_retry_total` | WATCH/MULTI/EXEC retries on live-spec contention |
+| `ws_hexpire_downgrade_total` | HEXPIRE → EXPIRE downgrades (Redis < 7.4) |
+| `ws_redisjson_fallback_total` | RedisJSON path failures, fell back to WATCH loop |
+| `ws_fanout_publish_success_total` | Successful Redis pub/sub publish calls |
+| `ws_fanout_publish_failure_total` | Failed Redis pub/sub publish calls |
+| `ws_idle_monitor_cycle_total` | Idle-monitor loop cycles with stale codes found |
+| `ws_cleanup_partition_size_total` | Total expired sessions purged across cleanup runs |
+| `ws_broadcast_latency_samples_total` | Broadcast latency samples (p50/p95/p99 via T-Digest when `COLLAB_REDIS_TIMESERIES=1`) |
+
+#### Environment Variable Reference
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `COLLAB_REDIS_JSON_LIVE_SPEC` | `1` | Use RedisJSON for live-spec storage (0 = WATCH loop only) |
+| `COLLAB_REDIS_SPUBLISH` | `1` | Use `SPUBLISH` (sharded pub/sub) for broadcast |
+| `COLLAB_REDIS_STREAMS_AUDIT` | `0` | Append `XADD` audit log after each publish |
+| `COLLAB_REDIS_WAIT_DURABILITY` | `0` | `WAIT 1 200` after create/destroy session pipeline |
+| `COLLAB_REDIS_HASH_TAGS` | `0` | Use Redis hash tags for cluster key co-location |
+| `COLLAB_PG_NOTIFY_FALLBACK` | `0` | PG LISTEN/NOTIFY fallback when Redis publish fails |
+| `COLLAB_IDLE_MONITOR_CONCURRENCY` | `20` | Max concurrent stale-code evaluations per idle-monitor cycle |
+| `COLLAB_JSON_THREAD_OFFLOAD_BYTES` | `65536` | Payload size threshold for offloading JSON ops to thread pool |
+| `WORKSHOP_FANOUT_SHARD_CONCURRENCY` | `50` | Max concurrent shard tasks in `deliver_local_workshop_broadcast` |
+| `WORKSHOP_SLOW_CONSUMER_EVICT` | `1` | Evict slow consumers on queue full |
+
+### Added
+- **Online collab backend package** ([`services/online_collab/`](services/online_collab/)): `services/workshop/` rehomed and split into `core/` (manager, idle monitor, lifecycle, status, room code), `common/` (async helpers, background tasks, collab palette), `redis/`, `participant/`, `spec/`; public exports `OnlineCollabManager`, `get_online_collab_manager`, `start_online_collab_manager`, `generate_online_collab_code`, `start_online_collab_cleanup_scheduler`. **Data plane unchanged**: diagram `workshop_*` columns, existing Redis key prefixes, env vars, and HTTP/WS routes stay as they are.
+
+- **Canvas collab UI** ([`frontend/src/components/canvas/CanvasCollabOverlay.vue`](frontend/src/components/canvas/CanvasCollabOverlay.vue), [`frontend/src/components/canvas/CollabUserRail.vue`](frontend/src/components/canvas/CollabUserRail.vue), [`frontend/src/components/mindgraph/MindGraphCollabPanel.vue`](frontend/src/components/mindgraph/MindGraphCollabPanel.vue), [`frontend/src/shared/collabPalette.ts`](frontend/src/shared/collabPalette.ts)): overlay, participant rail, and mind-graph collab panel wired to shared palette helpers aligned with the server collab palette.
+
+- **Workshop reconnect helper + Vitest** ([`frontend/src/composables/workshop/useWorkshopReconnect.ts`](frontend/src/composables/workshop/useWorkshopReconnect.ts), [`frontend/tests/useWorkshopReconnect.spec.ts`](frontend/tests/useWorkshopReconnect.spec.ts), [`frontend/vitest.config.ts`](frontend/vitest.config.ts)): composable for reconnect behaviour; minimal Vitest config (`tests/**/*.spec.ts`, jsdom) separate from `vite.config.ts`.
+
+### Changed
+- **Workshop / collab WebSocket stack** ([`routers/api/workshop_ws.py`](routers/api/workshop_ws.py), [`routers/api/workshop_ws_auth.py`](routers/api/workshop_ws_auth.py), [`routers/api/workshop_ws_broadcast.py`](routers/api/workshop_ws_broadcast.py), [`routers/api/workshop_ws_connect.py`](routers/api/workshop_ws_connect.py), [`routers/api/workshop_ws_disconnect.py`](routers/api/workshop_ws_disconnect.py), [`routers/api/workshop_ws_handlers.py`](routers/api/workshop_ws_handlers.py), [`services/features/workshop_ws_fanout_delivery.py`](services/features/workshop_ws_fanout_delivery.py), [`services/features/ws_redis_fanout_config.py`](services/features/ws_redis_fanout_config.py), [`services/features/ws_redis_fanout_listener.py`](services/features/ws_redis_fanout_listener.py), [`services/features/ws_redis_fanout_publish.py`](services/features/ws_redis_fanout_publish.py)): modular routers and fan-out wiring; metrics and lifespan imports updated for `online_collab` ([`services/infrastructure/lifecycle/lifespan.py`](services/infrastructure/lifecycle/lifespan.py), [`services/infrastructure/monitoring/ws_metrics.py`](services/infrastructure/monitoring/ws_metrics.py)).
+
+- **Diagrams API + models** ([`routers/api/diagrams.py`](routers/api/diagrams.py), [`models/responses.py`](models/responses.py)): responses and collab-related handling aligned with the refactored backend.
+
+- **Canvas / workshop composables & shell** ([`frontend/src/composables/canvasPage/useCanvasPageWorkshopCollab.ts`](frontend/src/composables/canvasPage/useCanvasPageWorkshopCollab.ts), [`frontend/src/composables/canvasPage/useCanvasPageMountedHandlers.ts`](frontend/src/composables/canvasPage/useCanvasPageMountedHandlers.ts), [`frontend/src/composables/canvasPage/useCanvasPageLibrarySnapshots.ts`](frontend/src/composables/canvasPage/useCanvasPageLibrarySnapshots.ts), [`frontend/src/composables/workshop/useWorkshop.ts`](frontend/src/composables/workshop/useWorkshop.ts), [`frontend/src/composables/core/useEventBus.ts`](frontend/src/composables/core/useEventBus.ts), [`frontend/src/pages/CanvasPage.vue`](frontend/src/pages/CanvasPage.vue), [`frontend/src/components/mindgraph/MindGraphContainer.vue`](frontend/src/components/mindgraph/MindGraphContainer.vue)): collab lifecycle, mounts, and event bus typings updated for the new UI and reconnect path.
+
+- **Toolbar, modal, zoom, history, palette** ([`frontend/src/components/canvas/CanvasToolbarAiSection.vue`](frontend/src/components/canvas/CanvasToolbarAiSection.vue), [`frontend/src/components/canvas/CanvasTopBar.vue`](frontend/src/components/canvas/CanvasTopBar.vue), [`frontend/src/components/canvas/OnlineCollabModal.vue`](frontend/src/components/canvas/OnlineCollabModal.vue), [`frontend/src/components/canvas/ZoomControls.vue`](frontend/src/components/canvas/ZoomControls.vue), [`frontend/src/components/sidebar/DiagramHistory.vue`](frontend/src/components/sidebar/DiagramHistory.vue), [`frontend/src/components/panels/NodePalettePanel.vue`](frontend/src/components/panels/NodePalettePanel.vue), [`frontend/src/composables/canvasToolbar/useCanvasToolbarApps.ts`](frontend/src/composables/canvasToolbar/useCanvasToolbarApps.ts)): collab entry points and controls tweaked for the new overlay/rail flow.
+
+- **Diagram store / spec I/O** ([`frontend/src/stores/savedDiagrams.ts`](frontend/src/stores/savedDiagrams.ts), [`frontend/src/stores/diagram/specIO.ts`](frontend/src/stores/diagram/specIO.ts)): persistence paths consistent with collab snapshot behaviour.
+
+- **Landing i18n component** ([`frontend/src/components/mindgraph/InternationalLanding.vue`](frontend/src/components/mindgraph/InternationalLanding.vue), [`frontend/src/components/mindgraph/MindGraphLanguageSwitcher.vue`](frontend/src/components/mindgraph/MindGraphLanguageSwitcher.vue)): small alignment with collab/language UX.
+
+- **Locales** ([`frontend/src/locales/messages/**/canvas.ts`](frontend/src/locales/messages/), [`frontend/src/locales/messages/**/workshop.ts`](frontend/src/locales/messages/), [`frontend/src/locales/messages/en/sidebar.ts`](frontend/src/locales/messages/en/sidebar.ts), [`frontend/src/locales/messages/zh/sidebar.ts`](frontend/src/locales/messages/zh/sidebar.ts), [`frontend/src/locales/messages/zh-tw/sidebar.ts`](frontend/src/locales/messages/zh-tw/sidebar.ts)): canvas, workshop, and sidebar strings for collab UI.
+
+- **Canvas stylesheet** ([`frontend/src/components/diagram/diagramCanvas.css`](frontend/src/components/diagram/diagramCanvas.css)): styles for collab overlay layers.
+
+- **Canvas barrel** ([`frontend/src/components/canvas/index.ts`](frontend/src/components/canvas/index.ts)): exports updated for new components.
+
+### Frontend package version
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.113.0).
+
 ## [5.112.0] - 2026-04-30
 
 ### Added

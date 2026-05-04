@@ -48,6 +48,7 @@ async def ws_managed_session(
     max_per_user_endpoint: Optional[int] = None,
     max_per_user_global: Optional[int] = None,
     close_error_fn: Optional[Callable[[str, str], str]] = None,
+    redis_collab_cap: bool = False,
     **meta: Any,
 ) -> AsyncIterator[WsSession]:
     """
@@ -67,6 +68,8 @@ async def ws_managed_session(
             sessions across all endpoints.
         close_error_fn: Optional callable(code_str, message) -> str that returns
             an error JSON payload sent before closing on limit violation.
+        redis_collab_cap: When ``True``, enforce optional Redis global collab socket
+            cap (``COLLAB_WS_REDIS_GLOBAL_SOCKET_CAP=1``) after local limits.
         **meta: Endpoint-specific metadata stored on the session object.
     """
     # ── 1. Enforce per-user limits ───────────────────────────────────────────
@@ -111,6 +114,28 @@ async def ws_managed_session(
             await websocket.close(code=4029, reason="Too many connections")
             return
 
+    redis_cap_acquired = False
+    if redis_collab_cap and endpoint == "collab":
+        from services.infrastructure.ws.redis_collab_conn_cap import (
+            redis_collab_socket_cap_enabled,
+            try_acquire_collab_redis_socket_slot,
+        )
+        if redis_collab_socket_cap_enabled():
+            if not await try_acquire_collab_redis_socket_slot(user_id):
+                logger.warning(
+                    "[WSContext] Redis global collab limit reached user_id=%s",
+                    user_id,
+                )
+                if close_error_fn is not None:
+                    from utils.ws_limits import safe_websocket_send_text
+                    await safe_websocket_send_text(
+                        websocket,
+                        close_error_fn("connection_limit", "Too many connections"),
+                    )
+                await websocket.close(code=4029, reason="Too many connections")
+                return
+            redis_cap_acquired = True
+
     # ── 2. Register ──────────────────────────────────────────────────────────
     # registry.register() also bumps the per-endpoint in-process counter.
     session = await _registry.register(user_id, endpoint, websocket, **meta)
@@ -134,6 +159,13 @@ async def ws_managed_session(
         # registry.unregister() also decrements the per-endpoint counter.
         await _registry.unregister(session.session_id)
         await redis_increment_active_total(-1)
+        if redis_cap_acquired:
+            from services.infrastructure.ws.redis_collab_conn_cap import (
+                redis_collab_socket_cap_enabled,
+                release_collab_redis_socket_slot,
+            )
+            if redis_collab_socket_cap_enabled():
+                await release_collab_redis_socket_slot(user_id)
         duration = time.monotonic() - _started
         logger.info(
             "[WSSession] CLOSE session=%s endpoint=%s user_id=%s duration=%.1fs",

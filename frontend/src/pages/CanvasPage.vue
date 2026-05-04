@@ -20,7 +20,7 @@
  * - LLM completed: flush and save once
  * - Auto-updates if diagram is already in library; auto-saves new if slots available
  */
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
@@ -37,6 +37,7 @@ import {
   PresentationTimerOverlay,
   ZoomControls,
 } from '@/components/canvas'
+import CanvasCollabOverlay from '@/components/canvas/CanvasCollabOverlay.vue'
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
 import { MindmatePanel, NodePalettePanel, RootConceptModal } from '@/components/panels'
 import {
@@ -57,13 +58,13 @@ import {
   diagramTypeMap,
   diagramTypeToChineseMap,
 } from '@/composables/canvasPage/diagramTypeMaps'
-import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { registerCanvasPageDiagramEventBus } from '@/composables/canvasPage/registerCanvasPageDiagramEventBus'
 import { useCanvasPageEditorShortcuts } from '@/composables/canvasPage/useCanvasPageEditorShortcuts'
-import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
 import { useCanvasPageLibrarySnapshots } from '@/composables/canvasPage/useCanvasPageLibrarySnapshots'
+import { useCanvasPageMountedHandlers } from '@/composables/canvasPage/useCanvasPageMountedHandlers'
 import { useCanvasPagePresentation } from '@/composables/canvasPage/useCanvasPagePresentation'
 import { useCanvasPageWorkshopCollab } from '@/composables/canvasPage/useCanvasPageWorkshopCollab'
+import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
 import {
   canvasVirtualKeyboardOpen,
   ensureCanvasVirtualKeyboardUiVersionSync,
@@ -93,7 +94,6 @@ import {
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
-import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
 const route = useRoute()
 const router = useRouter()
@@ -146,11 +146,48 @@ presentationShortcutBus.on('presentation:toggle_virtual_keyboard_requested', () 
 
 const {
   workshopCode,
+  workshopVisibility,
   activeEditors,
   collabLockedNodeIds,
   applyJoinWorkshopFromQuery,
+  applyWorkshopCodeFromSession,
+  checkAndReconnectWorkshop,
   resetPreviousDiagramTracking,
+  participantsWithNames,
+  ownerUsername,
+  roomIdleSecondsRemaining,
+  connectionStatus,
+  reconnect,
+  isDiagramOwner,
+  workshopRole,
+  isViewer,
+  sessionDiagramId,
+  sessionDiagramTitle,
 } = useCanvasPageWorkshopCollab()
+
+const isCollabGuest = computed(() => workshopCode.value != null && !isDiagramOwner.value)
+
+const currentDiagramId = computed(() => savedDiagramsStore.activeDiagramId ?? null)
+
+const collabOverlayRef = ref<InstanceType<typeof CanvasCollabOverlay> | null>(null)
+
+function handleOpenCollab(mode: 'organization' | 'network' | 'stop') {
+  if (mode === 'stop') {
+    void collabOverlayRef.value?.stopNow()
+    return
+  }
+  collabOverlayRef.value?.openCollab(mode)
+}
+
+function handleCollabSession(payload: {
+  code: string | null
+  visibility: 'organization' | 'network' | null
+}) {
+  eventBus.emit('workshop:code-changed', {
+    code: payload.code,
+    visibility: payload.visibility,
+  })
+}
 
 // Singletons must be created during setup (not in onMounted); they use useI18n / onUnmounted.
 getPanelCoordinator()
@@ -192,13 +229,27 @@ const { startRecommendations } = useInlineRecommendations()
 
 useConceptMapRelationshipTabFromSelection({ startRecommendations })
 
+useCanvasPageMountedHandlers({
+  snapshotHistory,
+  startRecommendations,
+  startNodePaletteSession,
+  isDiagramOwner,
+})
+
 function handleNodeDoubleClick(_node: { id?: string; type?: string }): void {
   // Double-click only enters edit mode. Inline recommendations are triggered by Tab
   // when user is editing a node (see node_editor:tab_pressed listener).
 }
 
 // Auto-save: event-driven, config-based (useDiagramAutoSave)
-const diagramAutoSave = useDiagramAutoSave()
+// Collab guests must not auto-save: their edits belong to the host's session diagram,
+// saving a copy would change activeDiagramId, mutate the URL, and trigger
+// loadDiagramFromLibrary which overwrites the live collab view.
+// The host's autosave is also suppressed while a workshop is live: the server
+// rejects REST PUT with 409 during an active session; changes are persisted
+// through the WebSocket collab pipeline instead.
+const isCollabActive = computed(() => diagramStore.collabSessionActive)
+const diagramAutoSave = useDiagramAutoSave({ isCollabGuest, isCollabActive })
 
 // Tick counter for relative time reactivity (increments every RELATIVE_TIME_TICK_MS)
 const relativeTimeTick = ref(0)
@@ -269,7 +320,7 @@ const diagramType = computed<DiagramType | null>(() => {
 })
 
 const { loadDiagramFromLibrary, handleSnapshotRecall, handleSnapshotDelete } =
-  useCanvasPageLibrarySnapshots({ diagramAutoSave, snapshotHistory })
+  useCanvasPageLibrarySnapshots({ diagramAutoSave, snapshotHistory, isDiagramOwner })
 
 function normalizedRouteDiagramId(): string | undefined {
   const raw = route.query.diagramId ?? route.query.diagram_id
@@ -362,6 +413,7 @@ watch(
   async (newId, oldId) => {
     if (newId && typeof newId === 'string' && newId !== oldId) {
       await loadDiagramFromLibrary(newId)
+      void checkAndReconnectWorkshop(newId)
     } else if (!newId && oldId) {
       // Route dropped the diagramId — clear stale snapshot badges
       snapshotHistory.clearSnapshots()
@@ -375,139 +427,32 @@ onMounted(async () => {
   // Initialize inline recommendations coordinator (topic updates, pane click, etc.)
   inlineRecCoordinator.setup()
 
-  // Snapshot: capture current diagram spec to DB
-  eventBus.onWithOwner(
-    'snapshot:requested',
-    async () => {
-      const diagramId = savedDiagramsStore.activeDiagramId
-      if (!diagramId) return
-      const spec = diagramStore.getSpecForSave()
-      if (!spec) return
-      const result = await snapshotHistory.takeSnapshot(diagramId, spec)
-      if (!result) {
-        return
-      }
-      if (result.ok) {
-        notify.success(t('canvas.toolbar.snapshotTaken', { n: result.snapshot.version_number }))
-        return
-      }
-      const { status, message } = result
-      if (status === 413) {
-        notify.error(t('canvas.toolbar.snapshotTooLarge', { max: SAVE.MAX_SPEC_SIZE_KB }))
-        return
-      }
-      if (status === 429) {
-        notify.error(t('canvas.toolbar.snapshotRateLimited'))
-        return
-      }
-      if (status === 404) {
-        notify.error(t('canvas.toolbar.snapshotDiagramNotFound'))
-        return
-      }
-      if (status === 409) {
-        const hint = message.toLowerCase()
-        if (hint.includes('save the diagram') || hint.includes('saved to the database')) {
-          notify.error(t('canvas.toolbar.snapshotSaveFirst'))
-        } else {
-          notify.error(message || t('canvas.toolbar.snapshotConflict'))
-        }
-        return
-      }
-      if (message) {
-        notify.error(message)
-        return
-      }
-      notify.error(t('canvas.toolbar.snapshotFailed'))
-    },
-    'CanvasPage'
-  )
-
-  // Tab inline: topic → focus review; topic→root target → root review; eligible → Tab rec SSE.
-  eventBus.onWithOwner(
-    'node_editor:tab_pressed',
-    (data: { nodeId?: string; draftText?: string }) => {
-      const nodeId = data?.nodeId
-      if (!nodeId) return
-
-      if (diagramStore.type === 'concept_map' && nodeId === 'topic') {
-        const draft = typeof data.draftText === 'string' ? data.draftText.trim() : ''
-        if (draft) {
-          eventBus.emit('node:text_updated', { nodeId: 'topic', text: draft })
-        }
-        void focusReviewStore.runFocusReviewManual()
-        return
-      }
-
-      if (diagramStore.type === 'concept_map') {
-        const rootTid = getTopicRootConceptTargetId(diagramStore.data?.connections)
-        if (rootTid && nodeId === rootTid) {
-          const draft = typeof data.draftText === 'string' ? data.draftText.trim() : ''
-          if (draft) {
-            eventBus.emit('node:text_updated', { nodeId: rootTid, text: draft })
-          }
-          if (!authStore.isAuthenticated) {
-            notify.warning(t('notification.signInToUse'))
-            return
-          }
-          void rootConceptReviewStore.runRootConceptManual()
-          return
-        }
-      }
-
-      const nodes = diagramStore.data?.nodes ?? []
-      const node = nodes.find((n: { id?: string }) => n.id === nodeId) as
-        | { id?: string; type?: string }
-        | undefined
-      if (
-        !node ||
-        !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
-      )
-        return
-      if (!inlineRecStore.isReady) return
-      if (diagramStore.type === 'concept_map') {
-        if (!llmResultsStore.selectedModel) {
-          notify.warning(
-            t(
-              'notification.conceptMapTabNeedsAi',
-              'Please enable AI in the bar before Tab recommendations.'
-            )
-          )
-          return
-        }
-        if (!authStore.isAuthenticated) {
-          notify.warning(t('notification.signInToUse'))
-          return
-        }
-      }
-      void startRecommendations(nodeId)
-    },
-    'CanvasPage'
-  )
-
-  // Node palette: listen for open events (singleton created at setup top).
-  // Concept maps are handled by RootConceptModal.onMounted → initializeConceptMapRootModal(),
-  // which runs bootstrap_domains + sequential per-tab streams. Firing startSession() here in
-  // parallel would launch a second concurrent NODE_PALETTE_START request on the same session
-  // and topic, causing duplicate RAG initialization, flickering suggestions (each stream calls
-  // setNodePaletteSuggestions([]) when append=false), and intermittent "No response returned"
-  // cancellations when one of the racing streams aborts.
-  eventBus.onWithOwner(
-    'nodePalette:opened',
-    (data: { hasRestoredSession?: boolean; wasPanelAlreadyOpen?: boolean }) => {
-      if (diagramStore.type === 'concept_map') return
-      if (!data.hasRestoredSession && diagramStore.data?.nodes?.length) {
-        nextTick().then(() =>
-          startNodePaletteSession({ keepSessionId: data.wasPanelAlreadyOpen ?? false })
-        )
-      }
-    },
-    'CanvasPage'
-  )
-
   // Fetch diagrams to know current slot count
   await savedDiagramsStore.fetchDiagrams()
 
-  // Priority 1: Load saved diagram by ID from library (accept diagramId or legacy diagram_id)
+  // Priority 1: Guest joining a collab session via join_workshop query param.
+  // The diagram spec arrives from the server via the WebSocket snapshot message —
+  // do not attempt a library load (the diagram belongs to the host, not the guest).
+  if (route.query.join_workshop) {
+    applyJoinWorkshopFromQuery()
+    return
+  }
+
+  // Priority 1.5: Restore a guest workshop session after a page refresh.
+  // applyJoinWorkshopFromQuery strips the ?join_workshop param from the URL, so
+  // on a subsequent refresh the URL carries no trace of the session. sessionStorage
+  // survives tab-level refreshes (but not tab close), making it the right scope.
+  // If both keys are present, re-join the live session and skip the DB diagram load.
+  {
+    const savedCode = sessionStorage.getItem('mg_workshop_code')
+    const savedDiagramId = sessionStorage.getItem('mg_workshop_diagram_id')
+    if (savedCode && savedDiagramId) {
+      applyWorkshopCodeFromSession(savedCode, savedDiagramId)
+      return
+    }
+  }
+
+  // Priority 2: Load a saved diagram by ID from the library.
   const diagramIdRaw = route.query.diagramId ?? route.query.diagram_id
   const diagramId =
     typeof diagramIdRaw === 'string'
@@ -517,8 +462,8 @@ onMounted(async () => {
         : undefined
   if (diagramId) {
     await loadDiagramFromLibrary(String(diagramId))
-    applyJoinWorkshopFromQuery()
-    return // Don't load default template if loading from library
+    void checkAndReconnectWorkshop(String(diagramId))
+    return
   }
 
   // Priority 1b: Load imported diagram from `.mg` (landing page Import button)
@@ -716,29 +661,39 @@ onUnmounted(() => {
         :is-saving="diagramAutoSave.isSaving.value"
         :snapshots="snapshotHistory.snapshots.value"
         :active-snapshot-version="snapshotHistory.activeSnapshotVersion.value"
+        :workshop-code="workshopCode"
+        :is-collab-guest="isCollabGuest"
+        :is-viewer="isViewer"
+        :workshop-role="workshopRole"
         @save-requested="handleSaveKey"
         @snapshot-recall="handleSnapshotRecall"
         @snapshot-delete="handleSnapshotDelete"
       />
     </CanvasChrome>
 
-    <!-- Collaboration strip when workshop session is active -->
-    <div
-      v-if="workshopCode"
-      class="fixed top-0 left-0 right-0 z-40 flex items-center justify-center gap-2 px-3 py-1.5 text-xs text-white bg-slate-800/90 backdrop-blur-sm border-b border-slate-600/60 pointer-events-none"
-      role="status"
-    >
-      <span>{{ t('canvasPage.collaborationFooter') }}</span>
-      <span class="opacity-60">·</span>
-      <span class="font-mono">{{ workshopCode }}</span>
-    </div>
+    <!-- Collab UI: participant rail, session modal, active-session banner -->
+    <CanvasCollabOverlay
+      ref="collabOverlayRef"
+      :workshop-code="workshopCode"
+      :workshop-visibility="workshopVisibility"
+      :participants="participantsWithNames"
+      :diagram-id="currentDiagramId"
+      :session-diagram-id="sessionDiagramId"
+      :session-diagram-title="sessionDiagramTitle"
+      :owner-username="ownerUsername"
+      :room-idle-remaining-seconds="roomIdleSecondsRemaining"
+      :connection-status="connectionStatus"
+      :is-collab-guest="isCollabGuest"
+      @collabSession="handleCollabSession"
+      @retryConnection="reconnect"
+    />
 
     <!-- Main canvas area - merged chrome (top bar + toolbar) in CanvasChrome -->
     <div class="flex-1 relative overflow-hidden flex flex-row min-h-0">
       <!-- Node Palette panel (瀑布流) - left 50%, inset to clear floating toolbars -->
       <Transition name="node-palette-slide">
         <div
-          v-if="panelsStore.nodePalettePanel.isOpen"
+          v-if="panelsStore.nodePalettePanel.isOpen && !isViewer"
           class="node-palette-panel-split shrink-0 flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden ml-4 mr-2 self-stretch"
           :style="{
             width: '50%',
@@ -772,7 +727,7 @@ onUnmounted(() => {
           :show-minimap="false"
           :fit-view-on-init="diagramStore.type !== 'concept_map'"
           :concept-map-initial-topic-fit="false"
-          :hand-tool-active="handToolActive"
+          :hand-tool-active="handToolActive || isViewer"
           :collab-locked-node-ids="collabLockedNodeIds"
           :presentation-rail-open="presentationRailOpen"
           @node-double-click="handleNodeDoubleClick"
@@ -842,12 +797,15 @@ onUnmounted(() => {
           <ZoomControls
             :zoom="canvasZoom"
             :presentation-rail-open="presentationRailOpen"
+            :workshop-code="workshopCode"
+            :is-collab-guest="isCollabGuest"
             @zoomChange="handleZoomChange"
             @zoomIn="handleZoomIn"
             @zoomOut="handleZoomOut"
             @fitToScreen="handleFitToScreen"
             @handToolToggle="handleHandToolToggle"
             @startPresentation="handleStartPresentation"
+            @openCollab="handleOpenCollab"
           />
         </div>
       </div>

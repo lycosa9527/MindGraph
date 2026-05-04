@@ -533,5 +533,15 @@ export default {
   'mindgraphLanding.schoolCollab': 'School collaboration',
   'mindgraphLanding.sharedCodeHint': 'Enter the invitation code (xxx-xxx) to join their session.',
   'mindgraphLanding.sharedCollab': 'Shared collaboration',
+  'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome': "Hello {username}, I'm your AI visual thinking assistant",
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
+  'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
+  'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
+  'canvasPage.collabRetryConnection': 'Retry',
+  'canvasPage.collabParticipantsAria': 'Collaboration participants',
+  'canvasPage.collabConnected': 'Connected',
+  'canvas.topBar.viewOnly': 'View only',
+  'canvasPage.collabParticipantsMore': 'more',
 }

@@ -1,10 +1,10 @@
 /**
- * tl UI — workshop
+ * tl UI workshop
  */
 
 export default {
   'collab.codeCopied': 'Nakopya ang code',
-  'collab.codeGenerated': 'Nabuo ang collaboration code — ibahagi para sama-samang mag-edit.',
+  'collab.codeGenerated': 'Nabuo ang collaboration code ibahagi para sama-samang mag-edit.',
   'collab.copy': 'Kopyahin',
   'collab.copyFailed': 'Hindi nakopya',
   'collab.copyLink': 'Kopyahin ang link',
@@ -33,15 +33,15 @@ export default {
   'collab.saveFailed': 'Hindi na-save ang diagram',
   'collab.scanToJoin': 'I-scan para sumali',
   'collab.schoolDescActive':
-    'Naka-on ang school collaboration. Mga kasamahan: gamitin ang Makipagtulungan → School sa home page at piliin ang diagram na ito — hindi kailangan ng code.',
+    'Naka-on ang school collaboration. Mga kasamahan: gamitin ang Makipagtulungan School sa home page at piliin ang diagram na ito hindi kailangan ng code.',
   'collab.schoolStarted':
-    'Naka-on ang school collaboration — maaaring sumali ang mga kasamahan mula sa Makipagtulungan → School.',
+    'Naka-on ang school collaboration maaaring sumali ang mga kasamahan mula sa Makipagtulungan School.',
   'collab.sectionNetwork': 'Ibinabahaging kolaborasyon (kodigo)',
   'collab.sectionSchool': 'Kolaborasyon sa paaralan',
   'collab.sessionDuration': 'Tagal ng session',
   'collab.sessionRemaining': 'Magtatapos ang session sa loob ng',
   'collab.shareDescNetwork':
-    'Ibahagi ang code o link — ilalagay ito ng iba sa ilalim ng Makipagtulungan → Shared.',
+    'Ibahagi ang code o link ilalagay ito ng iba sa ilalim ng Makipagtulungan Shared.',
   'collab.start': 'Simulan',
   'collab.startFailed': 'Hindi nasimulan: {msg}',
   'collab.title': 'Online na kolaborasyon',
@@ -61,7 +61,7 @@ export default {
   'workshop.archiveTeachingGroup': 'I-archive ang grupo sa pagtuturo',
   'workshop.archiveTeachingGroupConfirm':
     'I-archive ang grupo sa pagtuturo na ito? Mawawala ito sa listahan ng grupo sa pagtuturo.',
-  'workshop.backToConversations': '← Mga usapan',
+  'workshop.backToConversations': 'Mga usapan',
   'workshop.bold': 'Makapal',
   'workshop.browseChannels': 'Tumingin ng mga grupo sa pagtuturo',
   'workshop.by': 'ni',
@@ -70,9 +70,8 @@ export default {
   'workshop.channelAvatarEmoji': 'Icon (opsyonal)',
   'workshop.channelAvatarPlaceholder': 'Emoji o maikling label',
   'workshop.channelColor': 'Kulay ng channel',
-  'workshop.channelInviteReceived':
-    'Idinagdag ka sa “{name}”. Buksan ang Workshop para tingnan ito.',
-  'workshop.channelKindGroup': 'Grupo sa pagtuturo (top-level, hal. 教研组)',
+  'workshop.channelInviteReceived': 'Idinagdag ka sa “{name} Buksan ang Workshop para tingnan ito.',
+  'workshop.channelKindGroup': 'Grupo sa pagtuturo (top-level, hal. 教研',
   'workshop.channelKindLessonStudy': 'Lesson study sa ilalim ng grupo (课例)',
   'workshop.channelNameLabel': 'Pangalan',
   'workshop.channelNamePlaceholder': 'hal. Grupo sa STEM',
@@ -143,7 +142,7 @@ export default {
   'workshop.generalChat': 'Pangkalahatang chat',
   'workshop.inbox': 'Kahon ng papasok',
   'workshop.inboxHintPickChannel':
-    'Buksan ang channel o direktang mensahe sa sidebar para basahin at sagutin. Maaari kang bumalik dito anumang oras mula sa Mga view → Inbox.',
+    'Buksan ang channel o direktang mensahe sa sidebar para basahin at sagutin. Maaari kang bumalik dito anumang oras mula sa Mga view Inbox.',
   'workshop.inboxSummaryTitle': 'Ang iyong inbox',
   'workshop.inboxUnreadChannels': 'Hindi pa nababasa sa chat',
   'workshop.inboxUnreadDms': 'Hindi pa nababasang direktang mensahe',
@@ -176,7 +175,7 @@ export default {
   'workshop.markStudyResolved': 'Markahan ang pag-aaral bilang tapos na',
   'workshop.members': 'mga miyembro',
   'workshop.mentionAmbiguous':
-    'May magkaparehong pangalan — pumili ng may natatanging display name: {0}',
+    'May magkaparehong pangalan pumili ng may natatanging display name: {0}',
   'workshop.mentionUnknown':
     'Hindi kilalang mention (mga user sa parehong organisasyon at staff lang): {0}',
   'workshop.mentionedInChannel': 'Binanggit ka sa #{0}',
@@ -310,27 +309,27 @@ export default {
   'workshop.viewingSchool': 'Tinitingnan: {0}',
   'workshop.views': 'Mga view',
   'workshop.welcomeChannelsBody':
-    'Ang “channel” dito ay madalas tumutugma sa teaching research group (教研组) o PLC: isang shared space bawat koponan (hal. Math PLC, English PLC). Tinutukoy nito kung sino ang kasali at kung paano naka-group ang espasyo.',
+    'Ang “channeldito ay madalas tumutugma sa teaching research group (教研 o PLC: isang shared space bawat koponan (hal. Math PLC, English PLC). Tinutukoy nito kung sino ang kasali at kung paano naka-group ang espasyo.',
   'workshop.welcomeChannelsTitle': 'PLC / mga grupo batay sa asignatura',
   'workshop.welcomeConversationsBody':
     'Sa loob ng lesson study ay binubuksan mo ang may pamagat na mga usapan—halimbawa instructional design, pagmuni-muni, o follow-up na gawain—para madaling sundan ang mga thread.',
   'workshop.welcomeConversationsTitle': 'Mga usapan',
   'workshop.welcomeExampleCaption':
-    'Halimbawang larawan (kathang-isip na paaralan) — Math PLC at English PLC, bawat isa may lesson study at halimbawang usapan.',
+    'Halimbawang larawan (kathang-isip na paaralan) Math PLC at English PLC, bawat isa may lesson study at halimbawang usapan.',
   'workshop.welcomeExampleConvLabel': 'Mga usapan',
   'workshop.welcomeExampleGroupEnglish': 'PLC sa Ingles',
   'workshop.welcomeExampleGroupMath': 'PLC sa Matematika',
-  'workshop.welcomeExampleLSEng1': 'Lesson study: Estratehiya sa pagbasa — G7',
+  'workshop.welcomeExampleLSEng1': 'Lesson study: Estratehiya sa pagbasa G7',
   'workshop.welcomeExampleLSEng1C1': 'Guide sheet at disenyo ng worksheet',
   'workshop.welcomeExampleLSEng1C2': 'Mga gawain pagkatapos magbasa at transfer',
   'workshop.welcomeExampleLSEng1C3': 'Feedback sa obserbasyon at pagmuni-muni',
-  'workshop.welcomeExampleLSEng2': 'Lesson study: Pagsulat — iisang aralin, magkakaibang guro',
+  'workshop.welcomeExampleLSEng2': 'Lesson study: Pagsulat iisang aralin, magkakaibang guro',
   'workshop.welcomeExampleLSEng2C1': 'Pilot ng rubric at rebisyon',
-  'workshop.welcomeExampleLSMath1': 'Lesson study: Linggo ng paglinis ng “Konsepto ng function”',
+  'workshop.welcomeExampleLSMath1': 'Lesson study: Linggo ng paglinis ng “Konsepto ng function…',
   'workshop.welcomeExampleLSMath1C1': 'Layunin at disenyo ng aktibidad',
   'workshop.welcomeExampleLSMath1C2': 'Pagtatanong at gawain sa board',
   'workshop.welcomeExampleLSMath1C3': 'Pagmuni-muni pagkatapos ng aralin at susunod na hakbang',
-  'workshop.welcomeExampleLSMath2': 'Lesson study: Pagsusuri ng senior — derivatives',
+  'workshop.welcomeExampleLSMath2': 'Lesson study: Pagsusuri ng senior derivatives',
   'workshop.welcomeExampleLSMath2C1': 'Mga tiered na gawain at assessment',
   'workshop.welcomeExampleMsgLabel': 'Ang mga mensahe ay nasa loob ng bawat usapan',
   'workshop.welcomeExampleOrg': 'Mataas na Paaralan ng Chenxi',
@@ -355,9 +354,17 @@ export default {
   'workshopCanvas.errorGeneric': 'Error sa collaboration',
   'workshopCanvas.reconnectFailed':
     'Hindi makakonekta muli sa collaboration, pakirefresh ang pahina',
-  'workshopCanvas.returnedHomeIdle':
-    'Bumalik sa home — walang edit sa diagram sa loob ng 30 minuto.',
-  'workshopCanvas.userJoined': 'Sumali ang user {userId}',
-  'workshopCanvas.userLeft': 'Umalis ang user {userId}',
+  'workshopCanvas.returnedHomeIdle': 'Bumalik sa home walang edit sa diagram sa loob ng 30 minuto.',
+  'workshopCanvas.userJoined': 'Sumali ang user {username}',
+  'workshopCanvas.usersJoined': '{count} users joined',
+  'workshopCanvas.userLeft': 'Umalis ang user {username}',
+  'workshopCanvas.usersLeft': '{count} users left',
   'workshopCanvas.wsError': 'Error sa collaboration connection, pakisuri ang network mo',
+  'workshopCanvas.returnedHomeRoomIdle':
+    'Collaboration ended: no diagram edits in this session for a while.',
+  'workshopCanvas.roomIdleWarningToast':
+    'No diagram edits lately collaboration ends when the countdown hits zero unless someone edits.',
+  'workshopCanvas.otherTabCollaborationActive':
+    'Collaboration continues in another tab or window for this account.',
+  'workshopCanvas.joinQrAlt': 'Join collaboration QR code',
 }

@@ -24,6 +24,7 @@ export interface KeyboardShortcut {
 
 export function useKeyboard(shortcuts: KeyboardShortcut[]) {
   function handleKeydown(event: KeyboardEvent): void {
+    if (!event.key) return
     for (const shortcut of shortcuts) {
       const keyMatch = event.key.toLowerCase() === shortcut.key.toLowerCase()
       const ctrlMatch = !!shortcut.ctrl === (event.ctrlKey || event.metaKey)

@@ -277,7 +277,23 @@ export type EventTypes = {
   'node_editor:insert_text_consumed': { nodeId: string }
 
   // Workshop Events
-  'workshop:code-changed': { code: string | null }
+  'workshop:code-changed': {
+    code: string | null
+    visibility?: 'organization' | 'network' | null
+  }
+  'workshop:role-changed': {
+    userId?: number
+    role: string
+  }
+  'workshop:host-started': Record<string, never>
+  /** Emitted when another participant acquires (locked=true) or releases (locked=false) the room write lock. */
+  'workshop:write-locked': { userId: number; locked: boolean }
+  /** Emitted when the server acks a sent update; carries the set of node ids that were in that op. */
+  'workshop:collab-ack': { nodeIds: string[] }
+  /** Emitted when a subset of node patches were silently dropped by the server's lock filter. */
+  'workshop:partial-filtered': { nodeIds: string[] }
+  /** Emitted when the server denies a node_edit claim because another user holds the lock. */
+  'workshop:node-edit-denied': { nodeId: string; heldByUsername: string }
 
   // Selection Events
   'selection:changed': { selectedNodes: unknown[] }

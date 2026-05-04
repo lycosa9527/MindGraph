@@ -36,6 +36,33 @@ from services.infrastructure.monitoring.ws_metrics import record_ws_connection_d
 logger = logging.getLogger(__name__)
 
 
+async def _finalize_collab_writer_before_close(session: WsSession) -> None:
+    """
+    Stop the per-connection writer for workshop sockets so shutdown does not
+    drop buffered frames before the socket close.
+    """
+    if session.endpoint != "collab":
+        return
+    try:
+        code_val = session.meta.get("code")
+        if not isinstance(code_val, str) or not code_val:
+            return
+        from services.features.workshop_ws_connection_state import (  # pylint: disable=import-outside-toplevel
+            ACTIVE_CONNECTIONS,
+            finalize_handle_writer_shutdown,
+        )
+
+        room = ACTIVE_CONNECTIONS.get(code_val)
+        if not room:
+            return
+        handle = room.get(session.user_id)
+        if handle is None:
+            return
+        await finalize_handle_writer_shutdown(handle)
+    except Exception:
+        pass
+
+
 @dataclass
 class WsSession:
     """Metadata record for one open WebSocket connection."""
@@ -210,6 +237,7 @@ class WsSessionRegistry:
             return
 
         async def _close(session: WsSession) -> None:
+            await _finalize_collab_writer_before_close(session)
             with contextlib.suppress(Exception):
                 await session.websocket.close(code=code, reason=reason)
 
@@ -239,6 +267,7 @@ class WsSessionRegistry:
             return
 
         async def _close(session: WsSession) -> None:
+            await _finalize_collab_writer_before_close(session)
             with contextlib.suppress(Exception):
                 await session.websocket.close(code=code, reason=reason)
 

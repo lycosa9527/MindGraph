@@ -1,0 +1,90 @@
+# Optional long-running collab soak + chaos hooks (manual trigger by default).
+
+name: nightly-collab-load
+
+on:
+  workflow_dispatch:
+    inputs:
+      collab_locust_host:
+        description: HTTPS base URL of the staging/prod-front deployment (MindGraph HTTPS origin)
+        required: true
+        type: string
+      collab_jwt:
+        description: Session JWT (passed as COLLAB_JWT env)
+        required: true
+        type: string
+      collab_codes:
+        description: Comma-separated codes matching WORKSHOP_SIZES order
+        required: true
+        type: string
+      workshop_sizes:
+        description: Locust sizing grammar (default 5x100,1x500)
+        required: false
+        default: 5x100,1x500
+      redis_cli_target:
+        description: >-
+          redis://[[user]:pass@]host:6379/db — optional churn step CLIENT PAUSE (WRITE, 2s).
+          Leave blank to skip. Requires runner network path to staging Redis — most teams omit.
+        required: false
+        type: string
+      concurrent_users:
+        description: Locust swarm size (-u)
+        required: false
+        default: "500"
+        type: string
+      spawn_rate:
+        description: Locust spawn ramp (-r)
+        required: false
+        default: "20"
+        type: string
+      duration_min:
+        description: Locust soak duration (-t Xm)
+        required: false
+        default: "5"
+        type: string
+
+jobs:
+  locust-collab-ws-soak:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install locust websocket-client
+
+      - name: Conditional Redis chatter (CLIENT PAUSE)
+        env:
+          TARGET: ${{ inputs.redis_cli_target }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${TARGET:-}" ]]; then
+            echo "redis_cli_target empty — skipping pause step"
+            exit 0
+          fi
+          sudo apt-get update -qq
+          sudo apt-get install -y redis-tools >/dev/null
+          redis-cli -u "${TARGET}" CLIENT PAUSE 2000 WRITE || {
+            echo "Redis CLIENT PAUSE failed — ensure runner can reach the URL and ACL allows PAUSE"; exit 1
+          }
+
+      - name: Run Locust canvas-collab WebSocket soak
+        working-directory: loadtests/collab
+        env:
+          COLLAB_LOCUST_HOST: ${{ inputs.collab_locust_host }}
+          COLLAB_JWT: ${{ inputs.collab_jwt }}
+          COLLAB_CODES: ${{ inputs.collab_codes }}
+          WORKSHOP_SIZES: ${{ inputs.workshop_sizes }}
+        run: |
+          locust -f locustfile.py \
+            --headless \
+            -u "${{ inputs.concurrent_users }}" \
+            -r "${{ inputs.spawn_rate }}" \
+            -t "${{ inputs.duration_min }}m" \
+            --tags collab

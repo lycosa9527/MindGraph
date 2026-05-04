@@ -532,5 +532,15 @@ export default {
   'mindgraphLanding.schoolCollab': 'Шкільна співпраця',
   'mindgraphLanding.sharedCodeHint': 'Введіть код запрошення (xxx-xxx), щоб приєднатися до сеансу.',
   'mindgraphLanding.sharedCollab': 'Спільна співпраця',
+  'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome': 'Вітаю, {username}, я ваш помічник ШІ з візуального мислення',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
+  'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
+  'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
+  'canvasPage.collabRetryConnection': 'Retry',
+  'canvasPage.collabParticipantsAria': 'Collaboration participants',
+  'canvasPage.collabConnected': 'Connected',
+  'canvas.topBar.viewOnly': 'View only',
+  'canvasPage.collabParticipantsMore': 'more',
 }

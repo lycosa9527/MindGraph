@@ -34,6 +34,7 @@ const emit = defineEmits<{
         type="primary"
         size="small"
         class="ai-btn"
+        :disabled="aiBlockedByCollab"
         @click="emit('conceptGeneration')"
       >
         <Sparkles class="w-4 h-4" />

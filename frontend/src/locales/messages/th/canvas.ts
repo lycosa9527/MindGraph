@@ -526,5 +526,15 @@ export default {
   'mindgraphLanding.schoolCollab': 'ร่วมมือกับโรงเรียน',
   'mindgraphLanding.sharedCodeHint': 'ใส่รหัสเชิญ (xxx-xxx) เพื่อเข้าร่วมเซสชัน',
   'mindgraphLanding.sharedCollab': 'ร่วมมือแบบแชร์',
+  'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome': 'สวัสดี {username} ฉันคือผู้ช่วยการคิดเชิงภาพ AI ของคุณ',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
+  'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
+  'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
+  'canvasPage.collabRetryConnection': 'Retry',
+  'canvasPage.collabParticipantsAria': 'Collaboration participants',
+  'canvasPage.collabConnected': 'Connected',
+  'canvas.topBar.viewOnly': 'View only',
+  'canvasPage.collabParticipantsMore': 'more',
 }

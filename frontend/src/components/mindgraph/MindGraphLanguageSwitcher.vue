@@ -75,44 +75,46 @@ function onSelect(code: string): void {
       popper-class="mindgraph-lang-switcher-popper"
       @command="onSelect"
     >
-    <ElButton
-      :class="
-        props.variant === 'floating'
-          ? 'mindgraph-lang-switcher mindgraph-lang-switcher--floating'
-          : 'mindgraph-lang-switcher mindgraph-lang-switcher--header'
-      "
-      size="small"
-      :title="t('mindgraphLanding.languageMenuTitle')"
-      :aria-label="t('mindgraphLanding.languageMenuTitle')"
-    >
-      <Languages class="w-[17px] h-[17px] shrink-0" />
-      <span class="mindgraph-lang-switcher__code">{{ buttonLabelShort }}</span>
-    </ElButton>
-    <template #dropdown>
-      <ElDropdownMenu class="mindgraph-lang-switcher__menu max-h-[min(420px,70vh)] overflow-y-auto">
-        <ElDropdownItem
-          v-for="row in languageRows"
-          :key="row.code"
-          :command="row.code"
+      <ElButton
+        :class="
+          props.variant === 'floating'
+            ? 'mindgraph-lang-switcher mindgraph-lang-switcher--floating'
+            : 'mindgraph-lang-switcher mindgraph-lang-switcher--header'
+        "
+        size="small"
+        :title="t('mindgraphLanding.languageMenuTitle')"
+        :aria-label="t('mindgraphLanding.languageMenuTitle')"
+      >
+        <Languages class="w-[17px] h-[17px] shrink-0" />
+        <span class="mindgraph-lang-switcher__code">{{ buttonLabelShort }}</span>
+      </ElButton>
+      <template #dropdown>
+        <ElDropdownMenu
+          class="mindgraph-lang-switcher__menu max-h-[min(420px,70vh)] overflow-y-auto"
         >
-          <span class="mindgraph-lang-switcher__row">
-            <span
-              class="mindgraph-lang-switcher__label"
-              dir="auto"
-              :lang="row.code"
-            >
-              {{ row.label }}
+          <ElDropdownItem
+            v-for="row in languageRows"
+            :key="row.code"
+            :command="row.code"
+          >
+            <span class="mindgraph-lang-switcher__row">
+              <span
+                class="mindgraph-lang-switcher__label"
+                dir="auto"
+                :lang="row.code"
+              >
+                {{ row.label }}
+              </span>
+              <Check
+                v-if="row.code === uiStore.language"
+                class="mindgraph-lang-switcher__check w-4 h-4 shrink-0 opacity-70"
+                aria-hidden="true"
+              />
             </span>
-            <Check
-              v-if="row.code === uiStore.language"
-              class="mindgraph-lang-switcher__check w-4 h-4 shrink-0 opacity-70"
-              aria-hidden="true"
-            />
-          </span>
-        </ElDropdownItem>
-      </ElDropdownMenu>
-    </template>
-  </ElDropdown>
+          </ElDropdownItem>
+        </ElDropdownMenu>
+      </template>
+    </ElDropdown>
   </div>
 </template>
 
@@ -190,15 +192,65 @@ function onSelect(code: string): void {
 <!-- Teleported dropdown — width lives on popper, not scoped subtree -->
 <style>
 .mindgraph-lang-switcher-popper.el-popper {
-  max-width: min(176px, calc(100vw - 24px));
+  /* firm width: menu never wider than the popper */
+  width: min(180px, calc(100vw - 24px)) !important;
+  max-width: min(180px, calc(100vw - 24px)) !important;
+  box-sizing: border-box !important;
+  padding: 4px !important;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 10px !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.07),
+    0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
+  overflow: hidden !important;
 }
 
 .mindgraph-lang-switcher-popper .el-dropdown-menu {
-  width: min(176px, calc(100vw - 24px));
-  padding: 4px 0;
+  /* fill the popper exactly; no independent fixed px width */
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  overflow-x: hidden !important;
+  /* pre-allocate scrollbar gutter so vertical bar never shifts content */
+  scrollbar-gutter: stable;
 }
 
 .mindgraph-lang-switcher-popper .el-dropdown-menu__item {
-  padding: 6px 8px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0 !important;
+  border-radius: 6px;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.mindgraph-lang-switcher-popper .el-dropdown-menu__item:hover,
+.mindgraph-lang-switcher-popper .el-dropdown-menu__item:focus {
+  background: #f5f5f4 !important;
+  color: #1c1917;
+}
+
+.mindgraph-lang-switcher-popper .el-dropdown-menu__item:active {
+  background: #e7e5e4 !important;
+}
+
+/* Inner row: centred label + gutter checkmark */
+.mindgraph-lang-switcher-popper .mindgraph-lang-switcher__row {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 7px 24px 7px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #44403c;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+}
+
+.mindgraph-lang-switcher-popper .el-dropdown-menu__item:hover .mindgraph-lang-switcher__row,
+.mindgraph-lang-switcher-popper .el-dropdown-menu__item:focus .mindgraph-lang-switcher__row {
+  color: #1c1917;
 }
 </style>

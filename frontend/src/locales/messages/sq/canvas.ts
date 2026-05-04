@@ -538,6 +538,16 @@ export default {
   'mindgraphLanding.sharedCodeHint':
     'Shkruaj kodin e ftesës (xxx-xxx) për t’u bashkuar me sesionin e tyre.',
   'mindgraphLanding.sharedCollab': 'Bashkëpunim i ndarë',
+  'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome':
     'Përshëndetje {username}, unë jam asistenti yt i mendimit pamor me IA',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
+  'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
+  'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
+  'canvasPage.collabRetryConnection': 'Retry',
+  'canvasPage.collabParticipantsAria': 'Collaboration participants',
+  'canvasPage.collabConnected': 'Connected',
+  'canvas.topBar.viewOnly': 'View only',
+  'canvasPage.collabParticipantsMore': 'more',
 }

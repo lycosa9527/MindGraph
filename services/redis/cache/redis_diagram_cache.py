@@ -276,6 +276,79 @@ class RedisDiagramCache:
             logger.error("[DiagramCache] Database connection failed: %s", exc)
             return False
 
+    async def _update_meta_only_in_database(
+        self,
+        diagram_id: str,
+        user_id: int,
+        title: str,
+        thumbnail: Optional[str],
+        updated_at: datetime,
+    ) -> bool:
+        """Update title/thumbnail only (spec column untouched)."""
+        try:
+            async with AsyncSessionLocal() as db:
+                try:
+                    stmt = (
+                        sa_update(Diagram)
+                        .where(Diagram.id == diagram_id, Diagram.user_id == user_id)
+                        .values(
+                            title=title,
+                            thumbnail=thumbnail,
+                            updated_at=updated_at,
+                        )
+                    )
+                    result = await db.execute(stmt)
+                    if result.rowcount == 0:
+                        return False
+                    await db.commit()
+                    return True
+                except Exception as exc:
+                    await db.rollback()
+                    logger.error("[DiagramCache] meta-only DB update failed: %s", exc)
+                    return False
+        except Exception as exc:
+            logger.error("[DiagramCache] meta-only DB connection failed: %s", exc)
+            return False
+
+    async def update_diagram_meta_only(
+        self,
+        user_id: int,
+        diagram_id: str,
+        title: str,
+        thumbnail: Optional[str],
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Persist title/thumbnail without touching ``spec`` (collab-safe).
+
+        Used when a live workshop is active: cache-aside ``spec`` would be stale
+        relative to Redis live_spec.
+        """
+        existing = await self.get_diagram(user_id, diagram_id)
+        if not existing:
+            return False, "Diagram not found"
+        now = datetime.now(UTC)
+        ok = await self._update_meta_only_in_database(
+            diagram_id, user_id, title, thumbnail, now,
+        )
+        if not ok:
+            return False, "Failed to update diagram metadata"
+
+        if self._use_redis():
+            redis = get_async_redis()
+            if redis:
+                try:
+                    diagram_key = self._get_diagram_key(user_id, diagram_id)
+                    list_key = self._get_user_list_key(user_id)
+                    async with redis.pipeline(transaction=False) as pipe:
+                        pipe.delete(diagram_key)
+                        pipe.delete(list_key)
+                        await pipe.execute()
+                except Exception as exc:
+                    logger.warning(
+                        "[DiagramCache] meta-only cache invalidate failed: %s", exc,
+                    )
+        return True, None
+
     async def _update_in_database(
         self,
         diagram_id: str,
@@ -534,6 +607,7 @@ class RedisDiagramCache:
                 items = []
                 for d in diagrams:
                     updated_at_val = getattr(d, "updated_at", None)
+                    expires_at_val = getattr(d, "workshop_expires_at", None)
                     items.append(
                         {
                             "id": getattr(d, "id", ""),
@@ -542,6 +616,10 @@ class RedisDiagramCache:
                             "thumbnail": getattr(d, "thumbnail", None),
                             "updated_at": (updated_at_val.isoformat() if updated_at_val is not None else None),
                             "is_pinned": getattr(d, "is_pinned", False),
+                            "workshop_code": getattr(d, "workshop_code", None) or None,
+                            "workshop_expires_at": (
+                                expires_at_val.isoformat() if expires_at_val is not None else None
+                            ),
                         }
                     )
                 return items
@@ -775,6 +853,18 @@ class RedisDiagramCache:
         except Exception as e:
             logger.warning("[DiagramCache] Preload failed for user %s: %s", user_id, e)
             return False
+
+    async def invalidate_user_list(self, user_id: int) -> None:
+        """Delete the cached diagram list for a user (e.g. after workshop start/stop)."""
+        if not self._use_redis():
+            return
+        redis = get_async_redis()
+        if not redis:
+            return
+        try:
+            await redis.delete(self._get_user_list_key(user_id))
+        except Exception as exc:
+            logger.warning("[DiagramCache] invalidate_user_list failed user=%s: %s", user_id, exc)
 
     def get_stats(self) -> Dict[str, Any]:
         """Get cache statistics."""

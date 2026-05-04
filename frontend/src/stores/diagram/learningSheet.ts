@@ -112,7 +112,10 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
           ...node,
           text: LEARNING_SHEET_PLACEHOLDER,
           data: {
-            ...mindMapEstimatedData(node.data as Record<string, unknown>, LEARNING_SHEET_PLACEHOLDER),
+            ...mindMapEstimatedData(
+              node.data as Record<string, unknown>,
+              LEARNING_SHEET_PLACEHOLDER
+            ),
             hidden: true,
             hiddenAnswer: nodeData.hiddenAnswer,
           },

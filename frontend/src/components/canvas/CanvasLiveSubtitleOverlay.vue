@@ -8,6 +8,7 @@
  * Teleported to <body> so it floats above all presentation layers.
  */
 import { computed, ref } from 'vue'
+
 import { useDraggable, useWindowSize } from '@vueuse/core'
 
 interface CaptionLine {
@@ -113,8 +114,14 @@ const showListening = computed(
 
         <!-- Listening pulse — connected but silent -->
         <Transition name="dots-fade">
-          <div v-if="showListening" class="dots-row">
-            <span class="listening-dots" aria-label="listening">
+          <div
+            v-if="showListening"
+            class="dots-row"
+          >
+            <span
+              class="listening-dots"
+              aria-label="listening"
+            >
               <span class="dot" />
               <span class="dot" />
               <span class="dot" />
@@ -123,7 +130,11 @@ const showListening = computed(
         </Transition>
 
         <!-- Committed lines + live sentence -->
-        <TransitionGroup name="caption-line" tag="div" class="captions-stack">
+        <TransitionGroup
+          name="caption-line"
+          tag="div"
+          class="captions-stack"
+        >
           <p
             v-for="(line, idx) in lines"
             :key="line.id"
@@ -213,8 +224,12 @@ const showListening = computed(
     radial-gradient(circle, #fff 2px, transparent 2px);
   background-size: 8px 6px;
   background-position:
-    0 0, 8px 0, 16px 0,
-    0 6px, 8px 6px, 16px 6px;
+    0 0,
+    8px 0,
+    16px 0,
+    0 6px,
+    8px 6px,
+    16px 6px;
   background-repeat: no-repeat;
 }
 
@@ -309,12 +324,24 @@ const showListening = computed(
   animation: dot-pulse 1.5s ease-in-out infinite;
 }
 
-.dot:nth-child(2) { animation-delay: 0.2s; }
-.dot:nth-child(3) { animation-delay: 0.4s; }
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
 
 @keyframes dot-pulse {
-  0%, 80%, 100% { opacity: 0.25; transform: scale(0.85); }
-  40%            { opacity: 1;    transform: scale(1.15); }
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.85);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
 }
 
 /* ── mount / unmount ────────────────────────────────────────────── */

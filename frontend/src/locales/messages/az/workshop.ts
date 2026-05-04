@@ -1,10 +1,10 @@
 /**
- * az UI — workshop
+ * az UI workshop
  */
 
 export default {
   'collab.codeCopied': 'Kod kopyalandı',
-  'collab.codeGenerated': 'Əməkdaşlıq kodu yaradıldı — paylaşın.',
+  'collab.codeGenerated': 'Əməkdaşlıq kodu yaradıldı paylaşın.',
   'collab.copy': 'Kopyala',
   'collab.copyFailed': 'Kopyalanmadı',
   'collab.copyLink': 'Linki kopyala',
@@ -33,15 +33,15 @@ export default {
   'collab.saveFailed': 'Saxlama uğursuz oldu',
   'collab.scanToJoin': 'Qoşulmaq üçün skan edin',
   'collab.schoolDescActive':
-    'Məktəb əməkdaşlığı aktivdir. Həmkarlar: əsas səhifədə Əməkdaşlıq → Məktəb və bu diaqramı seçin — kod lazım deyil.',
+    'Məktəb əməkdaşlığı aktivdir. Həmkarlar: əsas səhifədə Əməkdaşlıq Məktəb və bu diaqramı seçin kod lazım deyil.',
   'collab.schoolStarted':
-    'Məktəb əməkdaşlığı aktivdir — həmkarlar Əməkdaşlıq → Məktəb-dən qoşula bilər.',
+    'Məktəb əməkdaşlığı aktivdir həmkarlar Əməkdaşlıq Məktəb-dən qoşula bilər.',
   'collab.sectionNetwork': 'Ümumi əməkdaşlıq (kod)',
   'collab.sectionSchool': 'Məktəb daxilində əməkdaşlıq',
   'collab.sessionDuration': 'Sessiya müddəti',
   'collab.sessionRemaining': 'Sessiyanın bitməsinə qalan',
   'collab.shareDescNetwork':
-    'Kodu və ya linki paylaşın — digərləri Əməkdaşlıq → Ümumi altında daxil edə bilər.',
+    'Kodu və ya linki paylaşın digərləri Əməkdaşlıq Ümumi altında daxil edə bilər.',
   'collab.start': 'Başlat',
   'collab.startFailed': 'Başlatmaq alınmadı: {msg}',
   'collab.title': 'Onlayn əməkdaşlıq',
@@ -59,10 +59,10 @@ export default {
   'workshop.archiveTeachingGroup': 'Tədris qrupunu arxivlə',
   'workshop.archiveTeachingGroupConfirm':
     'Bu tədris qrupu arxivlənsin? Qrup siyahısından silinəcək.',
-  'workshop.backToConversations': '← Söhbətlər',
+  'workshop.backToConversations': 'Söhbətlər',
   'workshop.bold': 'Qalın',
   'workshop.browseChannels': 'Tədris qruplarına bax',
-  'workshop.by': '—',
+  'workshop.by': '…',
   'workshop.channelArchiveFailed': 'Kanalı arxivləmək mümkün olmadı',
   'workshop.channelArchived': 'Kanal arxivləndi',
   'workshop.channelAvatarEmoji': 'İkon (istəyə bağlı)',
@@ -70,7 +70,7 @@ export default {
   'workshop.channelColor': 'Kanal rəngi',
   'workshop.channelInviteReceived':
     'Siz «{name}» qrupuna əlavə olundunuz. Görmək üçün Emalatxananı açın.',
-  'workshop.channelKindGroup': 'Tədris qrupu (üst səviyyə, məs. 教研组)',
+  'workshop.channelKindGroup': 'Tədris qrupu (üst səviyyə, məs. 教研',
   'workshop.channelKindLessonStudy': 'Qrup altında dərs tədqiqatı (课例)',
   'workshop.channelNameLabel': 'Ad',
   'workshop.channelNamePlaceholder': 'məs. STEM tədris qrupu',
@@ -140,7 +140,7 @@ export default {
   'workshop.generalChat': 'Ümumi söhbət',
   'workshop.inbox': 'Gələn qutu',
   'workshop.inboxHintPickChannel':
-    'Oxumaq və cavab yazmaq üçün yan paneldə kanal və ya birbaşa mesaj açın. Baxışlar → Gələn qutudan istənilən vaxt qayıda bilərsiniz.',
+    'Oxumaq və cavab yazmaq üçün yan paneldə kanal və ya birbaşa mesaj açın. Baxışlar Gələn qutudan istənilən vaxt qayıda bilərsiniz.',
   'workshop.inboxSummaryTitle': 'Gələn qutunuz',
   'workshop.inboxUnreadChannels': 'Kanallarda oxunmamış',
   'workshop.inboxUnreadDms': 'Oxunmamış birbaşa mesajlar',
@@ -172,7 +172,7 @@ export default {
   'workshop.markAsRead': 'Oxunmuş işarələ',
   'workshop.markStudyResolved': 'Tədqiqatı həll olunmuş işarələ',
   'workshop.members': 'üzv',
-  'workshop.mentionAmbiguous': 'Naməlum adlar — unikal göstərilən adı olan birini seçin: {0}',
+  'workshop.mentionAmbiguous': 'Naməlum adlar unikal göstərilən adı olan birini seçin: {0}',
   'workshop.mentionUnknown':
     'Naməlum oxşatmalar (yalnız eyni təşkilat istifadəçiləri və heyət): {0}',
   'workshop.mentionedInChannel': 'Sizi #{0} kanalında qeyd etdilər',
@@ -194,7 +194,7 @@ export default {
   'workshop.newConversation': 'Yeni söhbət',
   'workshop.newDM': 'Yeni birbaşa mesaj',
   'workshop.newDirectMessage': 'Yeni birbaşa mesaj',
-  'workshop.newMessage': 'Yeni mesaj…',
+  'workshop.newMessage': 'Yeni mesaj...',
   'workshop.newTopic': 'Yeni söhbət',
   'workshop.noChannelsAvailable': 'Mövcud kanal yoxdur',
   'workshop.noChannelsJoined': 'Heç bir kanala qoşulmayıbsınız',
@@ -245,8 +245,8 @@ export default {
   'workshop.roleAdmin': 'İdarəçi',
   'workshop.roleManager': 'Menecer',
   'workshop.roleOwner': 'Sahibi',
-  'workshop.searchMembers': 'Üzvləri axtar…',
-  'workshop.searchMessages': 'Mesajları axtar…',
+  'workshop.searchMembers': 'Üzvləri axtar...',
+  'workshop.searchMessages': 'Mesajları axtar...',
   'workshop.selectChannelForSettings':
     'Əvvəlcə tədris qrupu və ya dərs tədqiqatı seçin, sonra parametrləri burada açın.',
   'workshop.selectConversation': 'Söhbət seçin',
@@ -283,13 +283,13 @@ export default {
   'workshop.toggleContacts': 'Əlaqələri aç/bağla',
   'workshop.topicCount': 'söhbət',
   'workshop.topicDescription': 'Təsvir',
-  'workshop.topicDescriptionPlaceholder': 'Söhbət mövzusunu təsvir edin…',
+  'workshop.topicDescriptionPlaceholder': 'Söhbət mövzusunu təsvir edin...',
   'workshop.topicSettings': 'Söhbət parametrləri',
   'workshop.topicTitle': 'Başlıq',
   'workshop.topicTitlePlaceholder': 'məs. 3-cü fəsil üçün dizayn düşüncə xəritəsi',
   'workshop.topics': 'Söhbətlər',
   'workshop.typeMessagePlaceholder':
-    'Mesaj yazın… (göndərmək üçün Enter, yeni sətir üçün Shift+Enter)',
+    'Mesaj yazın(göndərmək üçün Enter, yeni sətir üçün Shift+Enter)',
   'workshop.unfollowTopic': 'Söhbəti izləmə',
   'workshop.unknown': 'Naməlum',
   'workshop.unmuteChannel': 'Kanalın səsini aç',
@@ -306,13 +306,13 @@ export default {
   'workshop.viewingSchool': 'Baxılır: {0}',
   'workshop.views': 'Baxışlar',
   'workshop.welcomeChannelsBody':
-    'Burada «kanal» çox vaxt tədris-tədqiqat qrupuna (教研组) və ya PLC-yə uyğun gəlir: komanda başına bir ümumi məkan (məs. riyaziyyat PLC, ingilis PLC). Kimin iştirak etdiyini və məkanın necə qruplaşdığını müəyyən edir.',
+    'Burada «kanal» çox vaxt tədris-tədqiqat qrupuna (教研 və ya PLC-yə uyğun gəlir: komanda başına bir ümumi məkan (məs. riyaziyyat PLC, ingilis PLC). Kimin iştirak etdiyini və məkanın necə qruplaşdığını müəyyən edir.',
   'workshop.welcomeChannelsTitle': 'PLC / fənn qrupları',
   'workshop.welcomeConversationsBody':
-    'Dərs tədqiqatı daxilində başlıqlı söhbətlər açırsınız — məs. tədris dizaynı, əks və ya davamlı tapşırıqlar — ki, mövzular izlənməsi asan olsun.',
+    'Dərs tədqiqatı daxilində başlıqlı söhbətlər açırsınız məs. tədris dizaynı, əks və ya davamlı tapşırıqlar ki, mövzular izlənməsi asan olsun.',
   'workshop.welcomeConversationsTitle': 'Söhbətlər',
   'workshop.welcomeExampleCaption':
-    'Nümunə (xəyali məktəb) — riyaziyyat və ingilis PLC, hər birində dərs tədqiqatları və nümunəvi söhbətlər.',
+    'Nümunə (xəyali məktəb) riyaziyyat və ingilis PLC, hər birində dərs tədqiqatları və nümunəvi söhbətlər.',
   'workshop.welcomeExampleConvLabel': 'Söhbətlər',
   'workshop.welcomeExampleGroupEnglish': 'İngilis PLC',
   'workshop.welcomeExampleGroupMath': 'Riyaziyyat PLC',
@@ -320,13 +320,13 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'Bələdçi vərəqi və vərəq dizaynı',
   'workshop.welcomeExampleLSEng1C2': 'Oxumadan sonra tapşırıqlar və köçürmə',
   'workshop.welcomeExampleLSEng1C3': 'Müşahidə rəyi və əks',
-  'workshop.welcomeExampleLSEng2': 'Dərs tədqiqatı: Yazı — eyni dərs, müxtəlif müəllimlər',
+  'workshop.welcomeExampleLSEng2': 'Dərs tədqiqatı: Yazı eyni dərs, müxtəlif müəllimlər',
   'workshop.welcomeExampleLSEng2C1': 'Rubrika pilotu və yenidən işləmə',
   'workshop.welcomeExampleLSMath1': 'Dərs tədqiqatı: «Funksiya anlayışı» cilalama həftəsi',
   'workshop.welcomeExampleLSMath1C1': 'Məqsədlər və fəaliyyət dizaynı',
   'workshop.welcomeExampleLSMath1C2': 'Sual vermə və lövhə işi',
   'workshop.welcomeExampleLSMath1C3': 'Dərstdən sonra əks və növbəti addımlar',
-  'workshop.welcomeExampleLSMath2': 'Dərs tədqiqatı: Buraxılış sinfi — törəmələr',
+  'workshop.welcomeExampleLSMath2': 'Dərs tədqiqatı: Buraxılış sinfi törəmələr',
   'workshop.welcomeExampleLSMath2C1': 'Qatlı tapşırıqlar və qiymətləndirmə',
   'workshop.welcomeExampleMsgLabel': 'Mesajlar hər söhbətin içindədir',
   'workshop.welcomeExampleOrg': 'Çenci orta məktəbi',
@@ -334,7 +334,7 @@ export default {
   'workshop.welcomeIntro':
     'Emalatxana məktəbinizin strukturlu müzakirə məkanıdır: elanlar paylaşın, dərs tədqiqatları aparın və tədris işinizlə yanaşı söhbətləri səliqəli saxlayın.',
   'workshop.welcomeLessonStudyBody':
-    'Dərs tədqiqatı kanalları adətən həmin qrupun altındadır. Hər biri bir dərs dövrü — planlaşdırma, müşahidə və əks — üçün məkandır və diaqramlara və ya statuslara keçid verə bilər.',
+    'Dərs tədqiqatı kanalları adətən həmin qrupun altındadır. Hər biri bir dərs dövrü planlaşdırma, müşahidə və əks üçün məkandır və diaqramlara və ya statuslara keçid verə bilər.',
   'workshop.welcomeLessonStudyTitle': 'Dərs tədqiqatları',
   'workshop.welcomeMessagesBody':
     'Mesajlar əsas kanal axınında və ya söhbət daxilində ayrıca yazılardır. Cavablar, qeydlər və fayllar mesajlar üzərindədir.',
@@ -350,7 +350,16 @@ export default {
   'workshopCanvas.errorGeneric': 'Əməkdaşlıq xətası',
   'workshopCanvas.reconnectFailed': 'Yenidən qoşulmaq alınmadı, səhifəni yeniləyin',
   'workshopCanvas.returnedHomeIdle': 'Diaqram redaktəsi olmadığı üçün ana səhifəyə qayıdıldı.',
-  'workshopCanvas.userJoined': 'İstifadəçi {userId} qoşuldu',
-  'workshopCanvas.userLeft': 'İstifadəçi {userId} ayrıldı',
+  'workshopCanvas.userJoined': 'İstifadəçi {username} qoşuldu',
+  'workshopCanvas.usersJoined': '{count} users joined',
+  'workshopCanvas.userLeft': 'İstifadəçi {username} ayrıldı',
+  'workshopCanvas.usersLeft': '{count} users left',
   'workshopCanvas.wsError': 'Əməkdaşlıq bağlantısı xətası, şəbəkəni yoxlayın',
+  'workshopCanvas.returnedHomeRoomIdle':
+    'Collaboration ended: no diagram edits in this session for a while.',
+  'workshopCanvas.roomIdleWarningToast':
+    'No diagram edits lately collaboration ends when the countdown hits zero unless someone edits.',
+  'workshopCanvas.otherTabCollaborationActive':
+    'Collaboration continues in another tab or window for this account.',
+  'workshopCanvas.joinQrAlt': 'Join collaboration QR code',
 }

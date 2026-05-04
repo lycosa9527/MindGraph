@@ -217,6 +217,7 @@ class DiagramListItem(BaseModel):
     thumbnail: Optional[str] = Field(None, description="Base64 encoded thumbnail")
     updated_at: datetime = Field(..., description="Last update timestamp")
     is_pinned: bool = Field(False, description="Whether diagram is pinned to top")
+    workshop_active: bool = Field(False, description="Whether diagram has a live collab session")
 
     class Config:
         """Configuration for DiagramListItem JSON schema"""

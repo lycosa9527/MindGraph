@@ -17,7 +17,7 @@ import json
 import logging
 import secrets
 from datetime import UTC, datetime
-from typing import Any, Optional, Tuple
+from typing import Any, Awaitable, Optional, Tuple, cast
 
 from redis.exceptions import RedisError
 
@@ -155,7 +155,10 @@ async def workshop_reserve_or_fail(
     tkey = _key(token)
     ukey = workshop_usage_key(token)
     try:
-        result = await redis.eval(_LUA_RESERVE_WORKSHOP, 2, tkey, ukey, str(int(max_uses)))
+        result = await cast(
+            Awaitable[Any],
+            redis.eval(_LUA_RESERVE_WORKSHOP, 2, tkey, ukey, str(int(max_uses))),
+        )
         if not result or len(result) < 2:
             return "redis_error", 0
         a = int(result[0])
@@ -181,7 +184,10 @@ async def workshop_release_reservation(
     redis = get_async_redis()
     ukey = workshop_usage_key(token)
     try:
-        await redis.eval(_LUA_DECR_CLEANUP, 1, ukey)
+        await cast(
+            Awaitable[Any],
+            redis.eval(_LUA_DECR_CLEANUP, 1, ukey),
+        )
     except RedisError as exc:
         logger.debug("[QuickReg] workshop release decr: %s", exc)
 
@@ -264,7 +270,10 @@ async def clear_minter_index_if_token_matches(user_id: int, token: str) -> None:
     redis = get_async_redis()
     key = _minter_key(user_id)
     try:
-        await redis.eval(_LUA_CAS_DEL, 1, key, token)
+        await cast(
+            Awaitable[Any],
+            redis.eval(_LUA_CAS_DEL, 1, key, token),
+        )
     except RedisError as exc:
         logger.debug("[QuickReg] clear minter index non-fatal: %s", exc)
 
@@ -411,7 +420,12 @@ async def _incr_with_ttl(key: str, ttl_sec: int) -> int:
     the Redis server so INCR and the conditional EXPIRE can never be split.
     """
     redis = get_async_redis()
-    return int(await redis.eval(_LUA_INCR_WITH_TTL, 1, key, str(ttl_sec)))
+    return int(
+        await cast(
+            Awaitable[Any],
+            redis.eval(_LUA_INCR_WITH_TTL, 1, key, str(ttl_sec)),
+        ),
+    )
 
 
 async def is_room_code_guess_blocked(client_ip: str, token: str) -> bool:

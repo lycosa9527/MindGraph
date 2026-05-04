@@ -20,8 +20,7 @@ export default {
   'collab.ended': 'Collaboration ended',
   'collab.galleryFull': 'Gallery is full. Please delete a diagram first',
   'collab.hintNetworkInactive': 'Generate a code so others can join and edit with you.',
-  'collab.hintSchoolInactive':
-    'After starting, same-school colleagues can join from the home page.',
+  'collab.hintSchoolInactive': 'Colleagues join from Collaborate → School on the home page.',
   'collab.invalidDiagramData': 'Invalid diagram data',
   'collab.linkCopied': 'Link copied',
   'collab.networkError': 'Network error',
@@ -30,6 +29,7 @@ export default {
   'collab.noDiagramToSave': 'No diagram to save',
   'collab.nodeLocked': 'Someone else is editing this node',
   'collab.participants': '{n} participants',
+  'collab.previousSessionsStopped': 'Ended {n} previous collaboration session(s) on your other diagrams.',
   'collab.saveFailed': 'Failed to save diagram',
   'collab.scanToJoin': 'Scan to join',
   'collab.schoolDescActive':
@@ -340,13 +340,32 @@ export default {
   'workshop.you': '(you)',
   'workshop.youAnd': 'You and',
   'workshopCanvas.connectFailed': 'Failed to connect to collaboration',
+  'workshopCanvas.sessionExpiredReconnect': 'Your session has expired. Please refresh the page to re-join the collaboration.',
   'workshopCanvas.connectionClosed': 'Connection closed',
+  'workshopCanvas.connectionClosedSlow':
+    'Connection closed: your connection was too slow to keep up with the collaboration session.',
+  'workshopCanvas.sessionEndedByHost': 'The host has ended the collaboration session.',
+  'workshopCanvas.editingNodeLabel': '{username} is editing…',
   'workshopCanvas.connectionClosedReason': 'Collaboration connection closed: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} is editing this node',
   'workshopCanvas.errorGeneric': 'Collaboration error',
+  'workshopCanvas.updatePartialFiltered':
+    'Some edits were skipped ({count} node(s)) because another collaborator is editing those nodes.',
   'workshopCanvas.reconnectFailed': 'Failed to reconnect to collaboration, please refresh the page',
-  'workshopCanvas.returnedHomeIdle': 'Returned home — no diagram edits for 30 minutes.',
-  'workshopCanvas.userJoined': 'User {userId} joined',
-  'workshopCanvas.userLeft': 'User {userId} left',
+  'workshopCanvas.resyncWaiting':
+    'Live diagram sync is taking longer than expected. Retrying; you can refresh if editing feels stuck.',
+  'workshopCanvas.returnedHomeIdle':
+    'Returned home — you were disconnected after a long idle period.',
+  'workshopCanvas.userJoined': 'User {username} joined',
+  'workshopCanvas.usersJoined': '{count} users joined',
+  'workshopCanvas.userLeft': 'User {username} left',
+  'workshopCanvas.usersLeft': '{count} users left',
   'workshopCanvas.wsError': 'Collaboration connection error, please check your network',
+  'workshopCanvas.returnedHomeRoomIdle':
+    'Collaboration ended: no diagram edits in this session for a while.',
+  'workshopCanvas.roomIdleWarningToast':
+    'No diagram edits lately — collaboration ends when the countdown hits zero unless someone edits.',
+  'workshopCanvas.otherTabCollaborationActive':
+    'Collaboration continues in another tab or window for this account.',
+  'workshopCanvas.joinQrAlt': 'Join collaboration QR code',
 }

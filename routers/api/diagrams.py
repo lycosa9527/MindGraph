@@ -29,11 +29,11 @@ from fastapi.responses import Response
 import qrcode
 from qrcode import constants as qrcode_constants
 from PIL import Image
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import or_, select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_async_db
+from config.database import AsyncSessionLocal, get_async_db
 from models.domain.auth import User
 from models.domain.diagram_snapshots import DiagramSnapshot
 from models.domain.diagrams import Diagram
@@ -53,8 +53,11 @@ from models.responses import (
     SnapshotRecallResponse,
 )
 from services.redis.cache._redis_diagram_cache_helpers import MAX_SPEC_SIZE_KB
+from services.online_collab.core.online_collab_manager import (
+    get_online_collab_manager,
+)
+from services.online_collab.lifecycle.online_collab_expiry import is_online_collab_expired
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
-from services.workshop import workshop_service
 from utils.auth import get_current_user
 
 from .helpers import (
@@ -66,6 +69,112 @@ from .helpers import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["diagrams"])
+
+
+async def _get_diagram_as_org_workshop_participant(
+    diagram_id: str,
+    requesting_org_id: Optional[int],
+) -> Optional[dict]:
+    """
+    Return raw diagram data dict for a participant accessing via an active org
+    workshop session.  Returns ``None`` if no matching active org session exists
+    or the requester's org does not match the diagram owner's org.
+
+    This supplements ``cache.get_diagram(user_id, diagram_id)`` which only
+    returns diagrams owned by the requesting user.  Org participants need read
+    access to diagrams they don't own so their CanvasPage can bootstrap before
+    the WS snapshot arrives.
+    """
+    if not requesting_org_id:
+        return None
+    try:
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(Diagram, User)
+                .join(User, User.id == Diagram.user_id)
+                .where(
+                    Diagram.id == diagram_id,
+                    ~Diagram.is_deleted,
+                    Diagram.workshop_code.isnot(None),
+                    or_(
+                        Diagram.workshop_expires_at.is_(None),
+                        Diagram.workshop_expires_at > datetime.now(UTC),
+                    ),
+                    or_(
+                        Diagram.workshop_visibility.is_(None),
+                        Diagram.workshop_visibility == "organization",
+                    ),
+                    User.organization_id == requesting_org_id,
+                )
+            )
+            row = result.first()
+            if row is None:
+                return None
+            d, _ = row
+            if is_online_collab_expired(d.workshop_expires_at):
+                return None
+            raw_spec = getattr(d, "spec", None)
+            if isinstance(raw_spec, dict):
+                spec: dict = raw_spec
+            elif isinstance(raw_spec, str):
+                try:
+                    spec = json.loads(raw_spec)
+                except (ValueError, TypeError):
+                    spec = {}
+            else:
+                spec = {}
+            created_at_val = getattr(d, "created_at", None)
+            updated_at_val = getattr(d, "updated_at", None)
+            return {
+                "id": d.id,
+                "user_id": d.user_id,
+                "title": d.title,
+                "diagram_type": d.diagram_type,
+                "spec": spec,
+                "language": getattr(d, "language", "zh"),
+                "thumbnail": getattr(d, "thumbnail", None),
+                "created_at": created_at_val.isoformat() if created_at_val else None,
+                "updated_at": updated_at_val.isoformat() if updated_at_val else None,
+                "is_deleted": False,
+            }
+    except SQLAlchemyError as exc:
+        logger.warning(
+            "[Diagrams] org-participant fallback query failed diagram_id=%s: %s",
+            diagram_id, exc,
+        )
+        return None
+
+
+async def _diagram_spec_with_live_collab_overlay(
+    diagram_id: str,
+    spec: dict,
+) -> dict:
+    """When a workshop is active, prefer authoritative Redis live_spec for responses."""
+    active_code = await get_online_collab_manager().get_active_online_collab_code_for_diagram(
+        diagram_id,
+    )
+    if not active_code:
+        return spec
+    from services.redis.redis_async_client import get_async_redis  # pylint: disable=import-outside-toplevel
+    from services.online_collab.spec.online_collab_live_spec import (  # pylint: disable=import-outside-toplevel
+        read_live_spec,
+        spec_for_snapshot,
+    )
+
+    redis_client = get_async_redis()
+    if not redis_client:
+        return spec
+    try:
+        live_doc = await read_live_spec(redis_client, active_code)
+        if live_doc:
+            return spec_for_snapshot(live_doc)
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.warning(
+            "[Diagrams] live spec overlay failed diagram_id=%s: %s",
+            diagram_id,
+            exc,
+        )
+    return spec
 
 
 @router.post("/diagrams", response_model=DiagramResponse)
@@ -144,6 +253,17 @@ async def list_diagrams(
     # Convert to response models
     items = []
     for d in result["diagrams"]:
+        ws_code = d.get("workshop_code")
+        ws_expires_raw = d.get("workshop_expires_at")
+        ws_expires = None
+        if ws_expires_raw:
+            try:
+                ws_expires = datetime.fromisoformat(ws_expires_raw)
+            except (ValueError, TypeError):
+                ws_expires = None
+        workshop_active = bool(ws_code) and not (
+            ws_expires and is_online_collab_expired(ws_expires)
+        )
         items.append(
             DiagramListItem(
                 id=d["id"],
@@ -152,6 +272,7 @@ async def list_diagrams(
                 thumbnail=d.get("thumbnail"),
                 updated_at=datetime.fromisoformat(d["updated_at"]) if d.get("updated_at") else datetime.now(UTC),
                 is_pinned=d.get("is_pinned", False),
+                workshop_active=workshop_active,
             )
         )
 
@@ -175,8 +296,9 @@ async def get_diagram(
     Get a specific diagram by ID.
 
     Rate limited: 100 requests per minute per user.
+    During an active collab session the live Redis spec is returned so the
+    caller always sees the current collaborative state.
     """
-    # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
 
@@ -184,13 +306,27 @@ async def get_diagram(
     diagram = await cache.get_diagram(current_user.id, diagram_id)
 
     if not diagram:
+        # Ownership check failed.  Allow read access when the diagram is locked
+        # inside an active org workshop and the requester belongs to the same org
+        # as the diagram owner.  This covers participants who navigate to the
+        # canvas URL directly (e.g. after a page reload) before the WebSocket
+        # snapshot arrives.
+        diagram = await _get_diagram_as_org_workshop_participant(
+            diagram_id,
+            getattr(current_user, "organization_id", None),
+        )
+
+    if not diagram:
         raise HTTPException(status_code=404, detail="Diagram not found")
+
+    spec = diagram["spec"]
+    spec = await _diagram_spec_with_live_collab_overlay(diagram_id, spec)
 
     return DiagramResponse(
         id=diagram["id"],
         title=diagram["title"],
         diagram_type=diagram["diagram_type"],
-        spec=diagram["spec"],
+        spec=spec,
         language=diagram.get("language", "zh"),
         thumbnail=diagram.get("thumbnail"),
         created_at=datetime.fromisoformat(diagram["created_at"]) if diagram.get("created_at") else datetime.now(UTC),
@@ -210,9 +346,22 @@ async def update_diagram(
     Update an existing diagram.
 
     Rate limited: 100 requests per minute per user.
+    Spec updates are blocked while a live collab session is active to prevent
+    silent overwrites of collaborative changes in Redis.
     """
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
+
+    active_code = await get_online_collab_manager().get_active_online_collab_code_for_diagram(diagram_id)
+    if req.spec is not None:
+        if active_code:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "Diagram is in a live collaboration session — "
+                    "changes must be made through the collaboration interface."
+                ),
+            )
 
     cache = get_diagram_cache()
 
@@ -221,21 +370,31 @@ async def update_diagram(
         raise HTTPException(status_code=404, detail="Diagram not found")
 
     title = req.title if req.title is not None else existing["title"]
-    spec = req.spec if req.spec is not None else existing["spec"]
     thumbnail = req.thumbnail if req.thumbnail is not None else existing.get("thumbnail")
 
-    success, _, error = await cache.save_diagram(
-        user_id=current_user.id,
-        diagram_id=diagram_id,
-        title=title,
-        diagram_type=existing["diagram_type"],
-        spec=spec,
-        language=existing.get("language", "zh"),
-        thumbnail=thumbnail,
-    )
+    if active_code and req.spec is None:
+        success, error = await cache.update_diagram_meta_only(
+            user_id=current_user.id,
+            diagram_id=diagram_id,
+            title=title,
+            thumbnail=thumbnail,
+        )
+        if not success:
+            raise HTTPException(status_code=400, detail=error or "Failed to update diagram")
+    else:
+        spec = req.spec if req.spec is not None else existing["spec"]
+        success, _, error = await cache.save_diagram(
+            user_id=current_user.id,
+            diagram_id=diagram_id,
+            title=title,
+            diagram_type=existing["diagram_type"],
+            spec=spec,
+            language=existing.get("language", "zh"),
+            thumbnail=thumbnail,
+        )
 
-    if not success:
-        raise HTTPException(status_code=400, detail=error or "Failed to update diagram")
+        if not success:
+            raise HTTPException(status_code=400, detail=error or "Failed to update diagram")
 
     diagram = await cache.get_diagram(current_user.id, diagram_id)
     if not diagram:
@@ -246,11 +405,15 @@ async def update_diagram(
     edit_count = getattr(req, "edit_count", None)
     await log_diagram_edit(current_user, db, count=edit_count if edit_count else 1)
 
+    overlay_spec = await _diagram_spec_with_live_collab_overlay(
+        diagram_id, diagram["spec"],
+    )
+
     return DiagramResponse(
         id=diagram["id"],
         title=diagram["title"],
         diagram_type=diagram["diagram_type"],
-        spec=diagram["spec"],
+        spec=overlay_spec,
         language=diagram.get("language", "zh"),
         thumbnail=diagram.get("thumbnail"),
         created_at=datetime.fromisoformat(diagram["created_at"]) if diagram.get("created_at") else datetime.now(UTC),
@@ -268,10 +431,21 @@ async def delete_diagram(
     Soft delete a diagram.
 
     Rate limited: 100 requests per minute per user.
+    Deletion is blocked while a live collab session is active; the caller must
+    stop the workshop first to avoid orphaning Redis state and confusing peers.
     """
-    # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
+
+    active_code = await get_online_collab_manager().get_active_online_collab_code_for_diagram(diagram_id)
+    if active_code:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Diagram is in a live collaboration session — "
+                "stop the workshop before deleting."
+            ),
+        )
 
     cache = get_diagram_cache()
     success, error = await cache.delete_diagram(current_user.id, diagram_id)
@@ -392,8 +566,12 @@ async def start_workshop(
 
     visibility = body.visibility if body else "organization"
     duration = body.duration if body else "today"
-    code, error_msg, expires_at = await workshop_service.start_workshop(
-        diagram_id, current_user.id, visibility, duration
+    target_org_id = body.org_id if body else None
+    code, error_msg, expires_at, stopped_previous_sessions = (
+        await get_online_collab_manager().start_online_collab(
+            diagram_id, current_user.id, visibility, duration,
+            target_org_id=target_org_id,
+        )
     )
 
     if not code:
@@ -411,6 +589,7 @@ async def start_workshop(
         "code": code,
         "message": "Presentation mode started",
         "duration": duration,
+        "stopped_previous_sessions": stopped_previous_sessions,
     }
     if expires_at is not None:
         payload["expires_at"] = expires_at.isoformat() + "Z"
@@ -426,14 +605,15 @@ async def stop_workshop(
     """
     Stop presentation mode for a diagram.
 
-    Only the diagram owner can stop the session.
+    Only the diagram owner can stop the session. Succeeds with no workshop
+    code on the row as well (idempotent after idle or zombie teardown).
 
     Rate limited: 10 requests per minute per user.
     """
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("workshop", identifier, max_requests=10, window_seconds=60)
 
-    success = await workshop_service.stop_workshop(diagram_id, current_user.id)
+    success = await get_online_collab_manager().stop_online_collab(diagram_id, current_user.id)
 
     if not success:
         raise HTTPException(status_code=404, detail="Presentation mode not found or not authorized")
@@ -464,7 +644,7 @@ async def get_workshop_status(
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("workshop", identifier, max_requests=30, window_seconds=60)
 
-    status, err = await workshop_service.get_workshop_status(diagram_id, current_user.id)
+    status, err = await get_online_collab_manager().get_online_collab_status(diagram_id, current_user.id)
 
     if err == "not_found" or status is None:
         raise HTTPException(status_code=404, detail="Diagram not found")
@@ -488,7 +668,7 @@ async def join_workshop(
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("workshop", identifier, max_requests=20, window_seconds=60)
 
-    workshop_info = await workshop_service.join_workshop(code, current_user.id)
+    workshop_info = await get_online_collab_manager().join_online_collab(code, current_user.id)
 
     if not workshop_info:
         raise HTTPException(
@@ -520,7 +700,7 @@ async def list_organization_workshop_sessions(
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("workshop", identifier, max_requests=30, window_seconds=60)
 
-    sessions = await workshop_service.list_org_workshop_sessions(current_user.id)
+    sessions = await get_online_collab_manager().list_org_online_collab_sessions(current_user.id)
     return {"success": True, "sessions": sessions}
 
 
@@ -536,7 +716,7 @@ async def join_workshop_organization(
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("workshop", identifier, max_requests=20, window_seconds=60)
 
-    workshop_info = await workshop_service.join_workshop_by_diagram(body.diagram_id, current_user.id)
+    workshop_info = await get_online_collab_manager().join_online_collab_by_diagram(body.diagram_id, current_user.id)
 
     if not workshop_info:
         raise HTTPException(

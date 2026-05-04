@@ -38,11 +38,33 @@ function mapPromptLanguageToSource(lang: string): string {
   }
   const base = lower.split('-')[0]?.toLowerCase() || 'en'
   const map: Record<string, string> = {
-    zh: 'zh', yue: 'yue', en: 'en', ja: 'ja', ko: 'ko', de: 'de',
-    fr: 'fr', es: 'es', ru: 'ru', ar: 'ar', pt: 'pt', it: 'it',
-    hi: 'hi', id: 'id', th: 'th', tr: 'tr', uk: 'uk', vi: 'vi',
-    cs: 'cs', da: 'da', fil: 'fil', fi: 'fi', is: 'is', ms: 'ms',
-    no: 'no', pl: 'pl', sv: 'sv',
+    zh: 'zh',
+    yue: 'yue',
+    en: 'en',
+    ja: 'ja',
+    ko: 'ko',
+    de: 'de',
+    fr: 'fr',
+    es: 'es',
+    ru: 'ru',
+    ar: 'ar',
+    pt: 'pt',
+    it: 'it',
+    hi: 'hi',
+    id: 'id',
+    th: 'th',
+    tr: 'tr',
+    uk: 'uk',
+    vi: 'vi',
+    cs: 'cs',
+    da: 'da',
+    fil: 'fil',
+    fi: 'fi',
+    is: 'is',
+    ms: 'ms',
+    no: 'no',
+    pl: 'pl',
+    sv: 'sv',
   }
   return map[base] ?? 'en'
 }
@@ -145,12 +167,20 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
 
   function stopMicrophoneGraph(): void {
     if (processorRef.value) {
-      try { processorRef.value.disconnect() } catch { /* ignore */ }
+      try {
+        processorRef.value.disconnect()
+      } catch {
+        /* ignore */
+      }
       processorRef.value.onaudioprocess = null
       processorRef.value = null
     }
     if (mediaSourceRef.value) {
-      try { mediaSourceRef.value.disconnect() } catch { /* ignore */ }
+      try {
+        mediaSourceRef.value.disconnect()
+      } catch {
+        /* ignore */
+      }
       mediaSourceRef.value = null
     }
     if (micStreamRef.value) {
@@ -168,7 +198,11 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
     const sock = wsRef.value
     wsRef.value = null
     if (!sock) return
-    try { sock.close() } catch { /* ignore */ }
+    try {
+      sock.close()
+    } catch {
+      /* ignore */
+    }
   }
 
   function unregisterVisibilityListener(): void {
@@ -211,9 +245,8 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
       const line = String(data.text ?? '').trim()
       if (line.length > 0) {
         const next = [...committedLines.value, line]
-        committedLines.value = next.length > MAX_COMMITTED_LINES
-          ? next.slice(-MAX_COMMITTED_LINES)
-          : next
+        committedLines.value =
+          next.length > MAX_COMMITTED_LINES ? next.slice(-MAX_COMMITTED_LINES) : next
       }
       interimText.value = ''
       return
@@ -224,9 +257,8 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
       const line = String(data.transcript ?? '').trim()
       if (line.length > 0) {
         const next = [...committedLines.value, line]
-        committedLines.value = next.length > MAX_COMMITTED_LINES
-          ? next.slice(-MAX_COMMITTED_LINES)
-          : next
+        committedLines.value =
+          next.length > MAX_COMMITTED_LINES ? next.slice(-MAX_COMMITTED_LINES) : next
       }
       interimText.value = ''
       return
@@ -237,7 +269,7 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
       const msg = String(
         nested?.message ??
           (data as { message?: string }).message ??
-          translate('canvas.translation.genericError'),
+          translate('canvas.translation.genericError')
       )
       notify.warning(msg)
     }
@@ -250,7 +282,12 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
     if (!AudioCtx) throw new Error('AudioContext not supported')
 
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, sampleRate: TARGET_SAMPLE_RATE },
+      audio: {
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+        sampleRate: TARGET_SAMPLE_RATE,
+      },
     })
 
     if (!enabled.value) {
@@ -297,9 +334,11 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
             event_id: nextEventId(),
             type: 'input_audio_buffer.append',
             audio: audioB64,
-          }),
+          })
         )
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
 
     if (!enabled.value || (ctx.state as string) === 'closed') {
@@ -326,9 +365,8 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
 
     const sessionStamp = ++currentSessionStamp
     const sourceLang = mapPromptLanguageToSource(String(uiStore.promptLanguage))
-    const targetLang = targetLanguage.value === 'auto'
-      ? deriveTargetLanguage(sourceLang)
-      : targetLanguage.value
+    const targetLang =
+      targetLanguage.value === 'auto' ? deriveTargetLanguage(sourceLang) : targetLanguage.value
 
     const socket = new WebSocket(buildTranslateWebSocketUrl())
     wsRef.value = socket
@@ -342,7 +380,7 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
             type: 'start',
             source_language: sourceLang,
             target_language: targetLang,
-          }),
+          })
         )
       } catch {
         notify.warning(translate('canvas.translation.wsError'))
@@ -364,7 +402,9 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
       try {
         const data = JSON.parse(event.data as string) as Record<string, unknown>
         handleServerPayload(data)
-      } catch { /* ignore non-JSON */ }
+      } catch {
+        /* ignore non-JSON */
+      }
     }
 
     socket.onerror = () => {

@@ -1,10 +1,10 @@
 /**
- * ru UI — workshop
+ * ru UI workshop
  */
 
 export default {
   'collab.codeCopied': 'Код скопирован',
-  'collab.codeGenerated': 'Код совместной работы создан — поделитесь, чтобы редактировать вместе.',
+  'collab.codeGenerated': 'Код совместной работы создан поделитесь, чтобы редактировать вместе.',
   'collab.copy': 'Копировать',
   'collab.copyFailed': 'Не удалось скопировать',
   'collab.copyLink': 'Копировать ссылку',
@@ -33,15 +33,15 @@ export default {
   'collab.saveFailed': 'Не удалось сохранить диаграмму',
   'collab.scanToJoin': 'Сканируйте, чтобы присоединиться',
   'collab.schoolDescActive':
-    'Школьная совместная работа включена. Коллеги: на главной — Совместная работа → Школа и выберите эту диаграмму — код не нужен.',
+    'Школьная совместная работа включена. Коллеги: на главной Совместная работа Школа и выберите эту диаграмму код не нужен.',
   'collab.schoolStarted':
-    'Школьная совместная работа включена — коллеги могут войти через Совместная работа → Школа.',
+    'Школьная совместная работа включена коллеги могут войти через Совместная работа Школа.',
   'collab.sectionNetwork': 'Общая совместная работа (код)',
   'collab.sectionSchool': 'Школьная совместная работа',
   'collab.sessionDuration': 'Длительность сессии',
   'collab.sessionRemaining': 'Сессия заканчивается через',
   'collab.shareDescNetwork':
-    'Поделитесь кодом или ссылкой — другие вводят их в Совместная работа → Общая.',
+    'Поделитесь кодом или ссылкой другие вводят их в Совместная работа Общая.',
   'collab.start': 'Начать',
   'collab.startFailed': 'Не удалось начать: {msg}',
   'collab.title': 'Онлайн-совместная работа',
@@ -59,7 +59,7 @@ export default {
     'Архивировать этот разбор? Участники больше не увидят его в списке.',
   'workshop.archiveTeachingGroup': 'Архивировать методическое объединение',
   'workshop.archiveTeachingGroupConfirm': 'Архивировать это МО? Оно исчезнет из списка групп.',
-  'workshop.backToConversations': '← Обсуждения',
+  'workshop.backToConversations': 'Обсуждения',
   'workshop.bold': 'Жирный',
   'workshop.browseChannels': 'Обзор методических объединений',
   'workshop.by': 'от',
@@ -69,7 +69,7 @@ export default {
   'workshop.channelAvatarPlaceholder': 'Эмодзи или короткая метка',
   'workshop.channelColor': 'Цвет канала',
   'workshop.channelInviteReceived': 'Вас добавили в «{name}». Откройте Workshop, чтобы посмотреть.',
-  'workshop.channelKindGroup': 'Методическое объединение (верхний уровень, напр. 教研组)',
+  'workshop.channelKindGroup': 'Методическое объединение (верхний уровень, напр. 教研',
   'workshop.channelKindLessonStudy': 'Разбор урока в составе группы (课例)',
   'workshop.channelNameLabel': 'Название',
   'workshop.channelNamePlaceholder': 'напр. МО по STEM',
@@ -138,7 +138,7 @@ export default {
   'workshop.generalChat': 'Общий чат',
   'workshop.inbox': 'Входящие',
   'workshop.inboxHintPickChannel':
-    'Откройте канал или личное сообщение в боковой панели. Сюда можно вернуться из Виды → Входящие.',
+    'Откройте канал или личное сообщение в боковой панели. Сюда можно вернуться из Виды Входящие.',
   'workshop.inboxSummaryTitle': 'Ваши входящие',
   'workshop.inboxUnreadChannels': 'Непрочитанное в каналах',
   'workshop.inboxUnreadDms': 'Непрочитанные личные сообщения',
@@ -164,14 +164,14 @@ export default {
   'workshop.mainChannelStream': 'Основной канал',
   'workshop.manageTeachingGroups': 'Управление МО',
   'workshop.manageTeachingGroupsBlurb':
-    'Добавляйте и удаляйте группы, задавайте доступ, редактируйте названия и описания, меняйте порядок, дублируйте как шаблон, приглашайте коллег. В «Дополнительно» — правила публикации и уведомления. Архивация убирает группу для всех.',
+    'Добавляйте и удаляйте группы, задавайте доступ, редактируйте названия и описания, меняйте порядок, дублируйте как шаблон, приглашайте коллег. В «Дополнительно» правила публикации и уведомления. Архивация убирает группу для всех.',
   'workshop.manageUser': 'Управление пользователем',
   'workshop.markAllReadChannel': 'Отметить все прочитанными',
   'workshop.markAsRead': 'Прочитано',
   'workshop.markStudyResolved': 'Отметить разбор завершённым',
   'workshop.members': 'участников',
   'workshop.mentionAmbiguous':
-    'Неоднозначные имена — выберите пользователя с уникальным отображаемым именем: {0}',
+    'Неоднозначные имена выберите пользователя с уникальным отображаемым именем: {0}',
   'workshop.mentionUnknown':
     'Неизвестные упоминания (только сотрудники и пользователи организации): {0}',
   'workshop.mentionedInChannel': 'Вас упомянули в #{0}',
@@ -193,7 +193,7 @@ export default {
   'workshop.newConversation': 'Новое обсуждение',
   'workshop.newDM': 'Новое личное сообщение',
   'workshop.newDirectMessage': 'Новое личное сообщение',
-  'workshop.newMessage': 'Новое сообщение…',
+  'workshop.newMessage': 'Новое сообщение...',
   'workshop.newTopic': 'Новое обсуждение',
   'workshop.noChannelsAvailable': 'Нет доступных каналов',
   'workshop.noChannelsJoined': 'Вы ни к одному каналу не присоединены',
@@ -244,8 +244,8 @@ export default {
   'workshop.roleAdmin': 'Админ',
   'workshop.roleManager': 'Руководитель',
   'workshop.roleOwner': 'Владелец',
-  'workshop.searchMembers': 'Поиск участников…',
-  'workshop.searchMessages': 'Поиск сообщений…',
+  'workshop.searchMembers': 'Поиск участников...',
+  'workshop.searchMessages': 'Поиск сообщений...',
   'workshop.selectChannelForSettings':
     'Сначала выберите МО или разбор урока, затем откройте настройки.',
   'workshop.selectConversation': 'Выберите обсуждение',
@@ -282,13 +282,12 @@ export default {
   'workshop.toggleContacts': 'Показать/скрыть контакты',
   'workshop.topicCount': 'обсуждений',
   'workshop.topicDescription': 'Описание',
-  'workshop.topicDescriptionPlaceholder': 'Опишите тему обсуждения…',
+  'workshop.topicDescriptionPlaceholder': 'Опишите тему обсуждения...',
   'workshop.topicSettings': 'Настройки обсуждения',
   'workshop.topicTitle': 'Заголовок',
   'workshop.topicTitlePlaceholder': 'напр. Карта дизайн-мышления к главе 3',
   'workshop.topics': 'Обсуждения',
-  'workshop.typeMessagePlaceholder':
-    'Введите сообщение… (Enter — отправить, Shift+Enter — новая строка)',
+  'workshop.typeMessagePlaceholder': 'Введите сообщение(Enter отправить, Shift+Enter новая строка)',
   'workshop.unfollowTopic': 'Не следить',
   'workshop.unknown': 'Неизвестно',
   'workshop.unmuteChannel': 'Включить уведомления канала',
@@ -305,13 +304,13 @@ export default {
   'workshop.viewingSchool': 'Просмотр: {0}',
   'workshop.views': 'Виды',
   'workshop.welcomeChannelsBody':
-    '«Канал» здесь часто соответствует методическому объединению (教研组) или PLC: одно общее пространство на команду (напр. математический PLC, английский PLC). Определяет состав и группировку.',
+    '«Канал» здесь часто соответствует методическому объединению (教研 или PLC: одно общее пространство на команду (напр. математический PLC, английский PLC). Определяет состав и группировку.',
   'workshop.welcomeChannelsTitle': 'PLC / предметные группы',
   'workshop.welcomeConversationsBody':
-    'Внутри разбора урока открываются тематические обсуждения — проектирование, рефлексия, последующие задачи — чтобы ветки оставались понятными.',
+    'Внутри разбора урока открываются тематические обсуждения проектирование, рефлексия, последующие задачи чтобы ветки оставались понятными.',
   'workshop.welcomeConversationsTitle': 'Обсуждения',
   'workshop.welcomeExampleCaption':
-    'Иллюстративный пример (вымышленная школа) — математический и английский PLC с разборами и примерами обсуждений.',
+    'Иллюстративный пример (вымышленная школа) математический и английский PLC с разборами и примерами обсуждений.',
   'workshop.welcomeExampleConvLabel': 'Обсуждения',
   'workshop.welcomeExampleGroupEnglish': 'Английский PLC',
   'workshop.welcomeExampleGroupMath': 'Математический PLC',
@@ -319,24 +318,24 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'Лист-навигатор и рабочий лист',
   'workshop.welcomeExampleLSEng1C2': 'Задания после чтения и перенос',
   'workshop.welcomeExampleLSEng1C3': 'Обратная связь по наблюдению и рефлексия',
-  'workshop.welcomeExampleLSEng2': 'Разбор: письмо — один урок, разные учителя',
+  'workshop.welcomeExampleLSEng2': 'Разбор: письмо один урок, разные учителя',
   'workshop.welcomeExampleLSEng2C1': 'Пилот рубрики и доработка',
   'workshop.welcomeExampleLSMath1': 'Разбор: неделя полировки «Понятие функции»',
   'workshop.welcomeExampleLSMath1C1': 'Цели и проектирование активности',
   'workshop.welcomeExampleLSMath1C2': 'Вопросы и работа у доски',
   'workshop.welcomeExampleLSMath1C3': 'Рефлексия после урока и дальнейшие шаги',
-  'workshop.welcomeExampleLSMath2': 'Разбор: старшие классы — производные',
+  'workshop.welcomeExampleLSMath2': 'Разбор: старшие классы производные',
   'workshop.welcomeExampleLSMath2C1': 'Дифференцированные задания и оценивание',
   'workshop.welcomeExampleMsgLabel': 'Сообщения внутри каждого обсуждения',
   'workshop.welcomeExampleOrg': 'Средняя школа Чэньси',
   'workshop.welcomeHowTitle': 'Как это связано',
   'workshop.welcomeIntro':
-    'Workshop — пространство школы для структурированных дискуссий: объявления, разборы уроков и организованные обсуждения рядом с вашей работой.',
+    'Workshop пространство школы для структурированных дискуссий: объявления, разборы уроков и организованные обсуждения рядом с вашей работой.',
   'workshop.welcomeLessonStudyBody':
-    'Каналы разборов обычно внутри группы. Каждый — площадка одного цикла урока: планирование, наблюдение, рефлексия; могут быть связаны с диаграммами и статусами.',
+    'Каналы разборов обычно внутри группы. Каждый площадка одного цикла урока: планирование, наблюдение, рефлексия; могут быть связаны с диаграммами и статусами.',
   'workshop.welcomeLessonStudyTitle': 'Разборы уроков',
   'workshop.welcomeMessagesBody':
-    'Сообщения — отдельные записи в основном канале или внутри обсуждения. Ответы, упоминания и файлы относятся к сообщениям.',
+    'Сообщения отдельные записи в основном канале или внутри обсуждения. Ответы, упоминания и файлы относятся к сообщениям.',
   'workshop.welcomeMessagesTitle': 'Сообщения',
   'workshop.welcomeSubtitle': 'Совместная работа школы в MindGraph',
   'workshop.welcomeTitle': 'Добро пожаловать в Workshop',
@@ -348,8 +347,17 @@ export default {
   'workshopCanvas.editingNode': '{username} {emoji} редактирует этот узел',
   'workshopCanvas.errorGeneric': 'Ошибка совместной работы',
   'workshopCanvas.reconnectFailed': 'Переподключение не удалось, обновите страницу',
-  'workshopCanvas.returnedHomeIdle': 'Возврат на главную — нет правок диаграммы 30 минут.',
-  'workshopCanvas.userJoined': 'Пользователь {userId} присоединился',
-  'workshopCanvas.userLeft': 'Пользователь {userId} вышел',
+  'workshopCanvas.returnedHomeIdle': 'Возврат на главную нет правок диаграммы 30 минут.',
+  'workshopCanvas.userJoined': 'Пользователь {username} присоединился',
+  'workshopCanvas.usersJoined': '{count} users joined',
+  'workshopCanvas.userLeft': 'Пользователь {username} вышел',
+  'workshopCanvas.usersLeft': '{count} users left',
   'workshopCanvas.wsError': 'Ошибка соединения совместной работы, проверьте сеть',
+  'workshopCanvas.returnedHomeRoomIdle':
+    'Collaboration ended: no diagram edits in this session for a while.',
+  'workshopCanvas.roomIdleWarningToast':
+    'No diagram edits lately collaboration ends when the countdown hits zero unless someone edits.',
+  'workshopCanvas.otherTabCollaborationActive':
+    'Collaboration continues in another tab or window for this account.',
+  'workshopCanvas.joinQrAlt': 'Join collaboration QR code',
 }

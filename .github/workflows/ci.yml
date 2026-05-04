@@ -1,0 +1,57 @@
+# MindGraph CI — lint + targeted tests (expand as the repo grows).
+name: ci
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: App import smoke
+        run: python -c "from main import app; assert app.title"
+      - name: Pylint (collab / WS paths)
+        run: |
+          pylint services/online_collab/spec/online_collab_live_spec_shutdown.py \
+            services/online_collab/spec/online_collab_live_flush.py \
+            utils/ws_limits.py routers/core/health.py routers/api/workshop_ws_handlers.py \
+            services/infrastructure/lifecycle/lifespan.py \
+            services/infrastructure/lifecycle/lifespan_shutdown.py \
+            services/infrastructure/lifecycle/lifespan_redis_integration.py \
+            services/infrastructure/lifecycle/lifespan_db_integration.py \
+            services/infrastructure/lifecycle/lifespan_collab_integration.py \
+            services/infrastructure/process/server_launcher.py \
+            services/features/ws_redis_fanout_publish.py services/features/workshop_ws_fanout_delivery.py \
+            routers/api/workshop_ws_auth.py routers/api/workshop_ws_connect.py \
+            services/online_collab/participant/workshop_join_resume_tokens.py \
+            scripts/collab_synthetic_probe.py
+      - name: Pytest (focused + collab)
+        run: |
+          pytest -q tests/test_collab_ws_json_limits.py tests/test_workshop_update_flush_gate.py \
+            tests/test_workshop_ws_integration.py tests/test_online_collab_phase8.py \
+            tests/test_workshop_collab_backend.py tests/test_collab_palette_sync.py \
+            tests/test_workshop_editor_redis_merge.py tests/test_ws_fanout.py \
+            tests/test_collab_synthetic_probe.py tests/test_workshop_join_resume_tokens.py
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Vitest (workshop reconnect)
+        run: npx vitest run tests/useWorkshopReconnect.spec.ts

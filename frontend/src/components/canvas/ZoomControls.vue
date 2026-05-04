@@ -5,9 +5,16 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { ElButton, ElOption, ElSelect, ElTooltip } from 'element-plus'
+import {
+  ElButton,
+  ElDropdown,
+  ElDropdownItem,
+  ElDropdownMenu,
+  ElOption,
+  ElSelect,
+} from 'element-plus'
 
-import { Hand, Maximize2, Minus, Play, Plus, Square } from 'lucide-vue-next'
+import { Hand, Maximize2, Minus, Play, Plus, Square, Users } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables'
 import { ZOOM } from '@/config/uiConfig'
@@ -27,8 +34,12 @@ const props = withDefaults(
     zoom?: number | null
     /** When true, presentation tools rail is open (Play shows active) */
     presentationRailOpen?: boolean
+    /** Active workshop session code; presence shows the 'turn off' menu item */
+    workshopCode?: string | null
+    /** When true the user is a collab guest — hide the host-only collab button */
+    isCollabGuest?: boolean
   }>(),
-  { zoom: null, presentationRailOpen: false }
+  { zoom: null, presentationRailOpen: false, workshopCode: null, isCollabGuest: false }
 )
 
 const zoomLevel = ref(100)
@@ -101,6 +112,7 @@ const emit = defineEmits<{
   (e: 'fitToScreen'): void
   (e: 'handToolToggle', active: boolean): void
   (e: 'startPresentation'): void
+  (e: 'openCollab', mode: 'organization' | 'network' | 'stop'): void
 }>()
 
 defineExpose({
@@ -218,6 +230,49 @@ defineExpose({
           />
         </ElButton>
       </ElTooltip>
+
+      <template v-if="!props.isCollabGuest">
+        <div class="divider" />
+
+        <!-- Online collaboration trigger (host only) -->
+        <ElDropdown
+          trigger="click"
+          popper-class="canvas-collab-dropdown-popper"
+          @command="(cmd: string) => emit('openCollab', cmd as 'organization' | 'network' | 'stop')"
+        >
+          <!-- Wrapper carries the traveling-ring animation when a session is live -->
+          <div
+            :class="['collab-btn-wrap', { 'collab-active': props.workshopCode }]"
+            :title="t('canvas.zoomControls.collaborate')"
+          >
+            <ElButton
+              text
+              size="small"
+              class="zoom-btn collab"
+              :aria-label="t('canvas.zoomControls.collaborate')"
+            >
+              <Users class="w-4 h-4" />
+            </ElButton>
+          </div>
+          <template #dropdown>
+            <ElDropdownMenu>
+              <ElDropdownItem command="organization">
+                {{ t('canvas.zoomControls.collabWithinOrg') }}
+              </ElDropdownItem>
+              <ElDropdownItem command="network">
+                {{ t('canvas.zoomControls.collabCrossOrg') }}
+              </ElDropdownItem>
+              <ElDropdownItem
+                v-if="props.workshopCode"
+                divided
+                command="stop"
+              >
+                {{ t('canvas.zoomControls.collabTurnOff') }}
+              </ElDropdownItem>
+            </ElDropdownMenu>
+          </template>
+        </ElDropdown>
+      </template>
     </div>
   </div>
 </template>
@@ -297,6 +352,16 @@ defineExpose({
   color: #047857 !important;
 }
 
+/* Collab buddy button - indigo accent */
+:deep(.zoom-btn.collab) {
+  color: #4f46e5 !important;
+}
+
+:deep(.zoom-btn.collab:hover) {
+  background-color: #ede9fe !important;
+  color: #4338ca !important;
+}
+
 /* Dark mode */
 :deep(.dark) .divider {
   background-color: #4b5563;
@@ -341,5 +406,117 @@ defineExpose({
 :deep(.dark .zoom-btn.presentation.active) {
   background-color: #064e3b !important;
   color: #6ee7b7 !important;
+}
+
+:deep(.dark .zoom-btn.collab) {
+  color: #818cf8 !important;
+}
+
+:deep(.dark .zoom-btn.collab:hover) {
+  background-color: #1e1b4b !important;
+  color: #a5b4fc !important;
+}
+
+/* ── Collab active: traveling conic ring ─────────────────────────────────────── */
+
+.collab-btn-wrap {
+  position: relative;
+  border-radius: 8px;
+  display: inline-flex;
+}
+
+/* Traveling ring only while a session is live */
+.collab-btn-wrap.collab-active::before {
+  content: '';
+  position: absolute;
+  /* Extend 2 px outside the button on every side */
+  inset: -2px;
+  border-radius: 9px;
+  padding: 2px;
+  --collab-angle: 0deg;
+  background: conic-gradient(
+    from var(--collab-angle) at 50% 50%,
+    #059669 0deg,
+    #10b981 60deg,
+    #34d399 120deg,
+    #6ee7b7 180deg,
+    #34d399 240deg,
+    #10b981 300deg,
+    #059669 360deg
+  );
+  /* Mask: keep only the padding band (the ring), hide the centre */
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  animation: collab-ring-travel 2s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes collab-ring-travel {
+  to {
+    --collab-angle: 360deg;
+  }
+}
+</style>
+
+<style>
+/* ── Swiss design for the canvas collab dropdown (teleported, must be global) ── */
+.canvas-collab-dropdown-popper.el-popper {
+  padding: 4px !important;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 10px !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.07),
+    0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
+  overflow: hidden;
+}
+
+.canvas-collab-dropdown-popper .el-dropdown-menu {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.canvas-collab-dropdown-popper .el-dropdown-menu__item {
+  display: flex;
+  align-items: center;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #44403c;
+  border-radius: 6px;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.canvas-collab-dropdown-popper .el-dropdown-menu__item:hover,
+.canvas-collab-dropdown-popper .el-dropdown-menu__item:focus {
+  background: #f5f5f4;
+  color: #1c1917;
+}
+
+.canvas-collab-dropdown-popper .el-dropdown-menu__item:active {
+  background: #e7e5e4;
+}
+
+/* Stop session item — subtle red tint */
+.canvas-collab-dropdown-popper .el-dropdown-menu__item.is-divided {
+  color: #dc2626;
+  border-top: 1px solid #f3f4f6;
+  margin-top: 2px;
+  padding-top: 10px;
+}
+
+.canvas-collab-dropdown-popper .el-dropdown-menu__item.is-divided:hover {
+  background: #fef2f2;
+  color: #b91c1c;
 }
 </style>

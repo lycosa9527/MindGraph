@@ -534,5 +534,15 @@ export default {
   'mindgraphLanding.schoolCollab': 'Kerjasama sekolah',
   'mindgraphLanding.sharedCodeHint': 'Masukkan kod jemputan (xxx-xxx) untuk menyertai sesi mereka.',
   'mindgraphLanding.sharedCollab': 'Kerjasama dikongsi',
+  'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome': 'Helo {username}, saya asisten berpikir visual AI Anda',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
+  'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
+  'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
+  'canvasPage.collabRetryConnection': 'Retry',
+  'canvasPage.collabParticipantsAria': 'Collaboration participants',
+  'canvasPage.collabConnected': 'Connected',
+  'canvas.topBar.viewOnly': 'View only',
+  'canvasPage.collabParticipantsMore': 'more',
 }

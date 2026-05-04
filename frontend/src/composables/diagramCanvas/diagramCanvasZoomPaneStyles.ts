@@ -94,9 +94,6 @@ export function getDropTargetStyle(
     top: node.position.y - offsetY + 'px',
     width: previewW + 'px',
     height: previewH + 'px',
-    border: '2px dashed #3b82f6',
-    borderRadius: '9999px',
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
     pointerEvents: 'none',
   }
 }

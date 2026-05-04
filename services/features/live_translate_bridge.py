@@ -21,7 +21,7 @@ from typing import Any, Dict, Optional
 import websockets
 from fastapi import WebSocket
 from starlette.websockets import WebSocketDisconnect
-from websockets.client import ClientConnection
+from websockets.asyncio.client import ClientConnection
 from websockets.exceptions import ConnectionClosed, ConnectionClosedError, ConnectionClosedOK
 
 from config.settings import config
@@ -184,7 +184,7 @@ async def run_translate_relay(
             )
         )
 
-        session_ready_task: asyncio.Task[None] = asyncio.create_task(session_ready.wait())
+        session_ready_task: asyncio.Task[bool] = asyncio.create_task(session_ready.wait())
         try:
             await asyncio.wait(
                 {session_ready_task, pump_task},

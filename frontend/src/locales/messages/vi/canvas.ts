@@ -519,5 +519,15 @@ export default {
   'mindgraphLanding.schoolCollab': 'Cộng tác trường',
   'mindgraphLanding.sharedCodeHint': 'Nhập mã mời (xxx-xxx) để vào phiên của họ.',
   'mindgraphLanding.sharedCollab': 'Cộng tác chia sẻ',
+  'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome': 'Xin chào {username}, tôi là trợ lý AI tư duy trực quan của bạn',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
+  'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
+  'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
+  'canvasPage.collabRetryConnection': 'Retry',
+  'canvasPage.collabParticipantsAria': 'Collaboration participants',
+  'canvasPage.collabConnected': 'Connected',
+  'canvas.topBar.viewOnly': 'View only',
+  'canvasPage.collabParticipantsMore': 'more',
 }

@@ -6,36 +6,34 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { storeToRefs } from 'pinia'
+
 import {
   ElAvatar,
   ElButton,
-  ElDialog,
+  ElDivider,
   ElDropdown,
   ElDropdownItem,
   ElDropdownMenu,
-  ElTooltip,
 } from 'element-plus'
 
-import { Upload, User } from '@element-plus/icons-vue'
+import { Upload } from '@element-plus/icons-vue'
 
 import { Check, Globe, PanelLeftOpen } from 'lucide-vue-next'
 
-import { TRANSLATE_LANGUAGES } from '@/utils/translateLanguages'
-
-import { storeToRefs } from 'pinia'
-
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
-import { useLanguage, useNotifications } from '@/composables'
+import { useLanguage } from '@/composables'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useAuthStore, useUIStore } from '@/stores'
 import { useLiveTranslationStore } from '@/stores/liveTranslation'
-import { authFetch } from '@/utils/api'
+import { TRANSLATE_LANGUAGES } from '@/utils/translateLanguages'
 
 import DiagramTemplateInput from './DiagramTemplateInput.vue'
 import DiagramTypeGrid from './DiagramTypeGrid.vue'
 import DiscoveryGallery from './DiscoveryGallery.vue'
-import MindGraphLanguageSwitcher from './MindGraphLanguageSwitcher.vue'
 import InternationalLanding from './InternationalLanding.vue'
+import MindGraphCollabPanel from './MindGraphCollabPanel.vue'
+import MindGraphLanguageSwitcher from './MindGraphLanguageSwitcher.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -43,7 +41,6 @@ const { t } = useLanguage()
 const { triggerImport } = useDiagramImport()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
-const notify = useNotifications()
 const liveTranslationStore = useLiveTranslationStore()
 const {
   enabled: translationOn,
@@ -61,187 +58,16 @@ function handleTranslateCommand(command: string): void {
 
 const username = computed(() => authStore.user?.username || '')
 
-// Collaboration: 校内 list + 共同 code
-const showOrgSessionsDialog = ref(false)
-const showSharedCodeDialog = ref(false)
-const orgSessionsLoading = ref(false)
-const orgSessions = ref<
-  Array<{
-    diagram_id: string
-    title: string
-    owner_username: string
-    participant_count: number
-  }>
->([])
-
-const joinCode = ref(['', '', '', '', '', ''])
-const isJoining = ref(false)
-const codeInputRefs = ref<(HTMLInputElement | null)[]>([])
-
-// Handle digit input
-function handleDigitInput(index: number, event: Event) {
-  const target = event.target as HTMLInputElement
-  const value = target.value.replace(/\D/g, '') // Only digits
-
-  if (value.length > 0) {
-    joinCode.value[index] = value[value.length - 1] // Take last digit if multiple entered
-
-    // Move to next input
-    if (index < 5 && codeInputRefs.value[index + 1]) {
-      codeInputRefs.value[index + 1]?.focus()
-    }
-  } else {
-    joinCode.value[index] = ''
-  }
-}
-
-// Handle backspace
-function handleKeyDown(index: number, event: KeyboardEvent) {
-  if (event.key === 'Backspace' && !joinCode.value[index] && index > 0) {
-    // Move to previous input if current is empty
-    codeInputRefs.value[index - 1]?.focus()
-  }
-}
-
-// Handle paste
-function handlePaste(event: ClipboardEvent) {
-  event.preventDefault()
-  const pastedData = event.clipboardData?.getData('text') || ''
-  const digits = pastedData.replace(/\D/g, '').slice(0, 6)
-
-  digits.split('').forEach((digit, index) => {
-    if (index < 6) {
-      joinCode.value[index] = digit
-    }
-  })
-
-  // Focus last filled input or next empty
-  const nextEmptyIndex = digits.length < 6 ? digits.length : 5
-  codeInputRefs.value[nextEmptyIndex]?.focus()
-}
-
-// Get formatted code string
-function getFormattedCode(): string {
-  const code = joinCode.value.join('')
-  if (code.length === 6) {
-    return `${code.slice(0, 3)}-${code.slice(3, 6)}`
-  }
-  return code
-}
-
-async function joinWorkshop() {
-  const code = getFormattedCode()
-
-  if (code.length !== 7) {
-    // xxx-xxx = 7 characters
-    notify.warning(t('mindgraphLanding.codeIncomplete'))
-    return
-  }
-
-  // Validate format (xxx-xxx)
-  if (!/^\d{3}-\d{3}$/.test(code)) {
-    notify.warning(t('mindgraphLanding.codeFormatInvalid'))
-    return
-  }
-
-  isJoining.value = true
-  try {
-    const response = await authFetch(`/api/workshop/join?code=${code}`, {
-      method: 'POST',
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      notify.success(t('mindgraphLanding.joinedPresentation', { title: data.workshop.title }))
-      // Navigate to the diagram; carry code so canvas can connect WS without re-entry
-      const enc = encodeURIComponent(code)
-      window.location.href = `/canvas?diagramId=${encodeURIComponent(data.workshop.diagram_id)}&join_workshop=${enc}`
-    } else {
-      const error = await response.json().catch(() => ({}))
-      notify.error(error.detail || t('mindgraphLanding.joinPresentationFailed'))
-    }
-  } catch (error) {
-    console.error('Failed to join presentation mode:', error)
-    notify.error(t('mindgraphLanding.networkErrorJoin'))
-  } finally {
-    isJoining.value = false
-  }
-}
-
-async function openOrgSessionsDialog() {
-  showOrgSessionsDialog.value = true
-  orgSessionsLoading.value = true
-  orgSessions.value = []
-  try {
-    const response = await authFetch('/api/workshop/organization/sessions', { method: 'GET' })
-    if (response.ok) {
-      const data = await response.json()
-      orgSessions.value = data.sessions || []
-    } else {
-      notify.error(t('mindgraphLanding.loadOrgSessionsFailed'))
-    }
-  } catch (error) {
-    console.error(error)
-    notify.error(t('mindgraphLanding.networkError'))
-  } finally {
-    orgSessionsLoading.value = false
-  }
-}
-
-async function joinOrgSession(session: { diagram_id: string }) {
-  isJoining.value = true
-  try {
-    const response = await authFetch('/api/workshop/join-organization', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ diagram_id: session.diagram_id }),
-    })
-    if (response.ok) {
-      const data = await response.json()
-      const code = data.workshop.code as string
-      const enc = encodeURIComponent(code)
-      notify.success(t('mindgraphLanding.joinedCollab', { title: data.workshop.title }))
-      showOrgSessionsDialog.value = false
-      window.location.href = `/canvas?diagramId=${encodeURIComponent(data.workshop.diagram_id)}&join_workshop=${enc}`
-    } else {
-      const error = await response.json().catch(() => ({}))
-      notify.error(error.detail || t('mindgraphLanding.joinFailed'))
-    }
-  } catch (error) {
-    console.error(error)
-    notify.error(t('mindgraphLanding.networkError'))
-  } finally {
-    isJoining.value = false
-  }
-}
-
-function handleCollabCommand(cmd: string) {
-  if (cmd === 'organization') {
-    void openOrgSessionsDialog()
-  } else if (cmd === 'network') {
-    showSharedCodeDialog.value = true
-  }
-}
+const collabPanelRef = ref<InstanceType<typeof MindGraphCollabPanel> | null>(null)
 
 // Handle join_workshop query parameter (from QR code scan)
 onMounted(() => {
   const joinWorkshopCode = route.query.join_workshop as string | undefined
   if (joinWorkshopCode) {
-    // Pre-fill the code
-    const digits = joinWorkshopCode.replace(/\D/g, '').slice(0, 6)
-    digits.split('').forEach((digit, index) => {
-      if (index < 6) {
-        joinCode.value[index] = digit
-      }
-    })
-    // Remove query parameter from URL
     const newQuery = { ...route.query }
     delete newQuery.join_workshop
     router.replace({ query: newQuery })
-    // Auto-join after a short delay
-    setTimeout(() => {
-      joinWorkshop()
-    }, 500)
+    collabPanelRef.value?.prefillAndAutoJoin(joinWorkshopCode)
   }
 })
 </script>
@@ -278,28 +104,8 @@ onMounted(() => {
         >
           {{ t('mindgraphLanding.import') }}
         </ElButton>
-        <ElDropdown
-          trigger="click"
-          @command="handleCollabCommand"
-        >
-          <ElButton
-            class="join-workshop-btn"
-            size="small"
-            :icon="User"
-          >
-            {{ t('mindgraphLanding.collaborate') }}
-          </ElButton>
-          <template #dropdown>
-            <ElDropdownMenu>
-              <ElDropdownItem command="organization">
-                {{ t('mindgraphLanding.schoolCollab') }}
-              </ElDropdownItem>
-              <ElDropdownItem command="network">
-                {{ t('mindgraphLanding.sharedCollab') }}
-              </ElDropdownItem>
-            </ElDropdownMenu>
-          </template>
-        </ElDropdown>
+        <!-- Buddy icon: opens inline collab panel (within-org or cross-org) -->
+        <MindGraphCollabPanel ref="collabPanelRef" />
         <MindGraphLanguageSwitcher variant="header" />
         <ElDropdown
           v-if="authStore.isAdmin"
@@ -324,18 +130,24 @@ onMounted(() => {
               <ElDropdownItem command="__toggle__">
                 <span class="translate-lang-row">
                   <span class="translate-lang-label">
-                    {{ translationOn ? t('canvas.translation.stop') : t('canvas.translation.start') }}
+                    {{
+                      translationOn ? t('canvas.translation.stop') : t('canvas.translation.start')
+                    }}
                   </span>
                 </span>
               </ElDropdownItem>
-              <ElDivider style="margin: 4px 0;" />
+              <ElDivider style="margin: 4px 0" />
               <ElDropdownItem
                 v-for="lang in TRANSLATE_LANGUAGES"
                 :key="lang.code"
                 :command="lang.code"
               >
                 <span class="translate-lang-row">
-                  <span class="translate-lang-label" dir="auto">{{ lang.label }}</span>
+                  <span
+                    class="translate-lang-label"
+                    dir="auto"
+                    >{{ lang.label }}</span
+                  >
                   <Check
                     v-if="translationTargetLang === lang.code"
                     class="translate-lang-check w-4 h-4 shrink-0 opacity-70"
@@ -348,123 +160,6 @@ onMounted(() => {
         </ElDropdown>
       </div>
     </header>
-
-    <!-- 校内：同校可加入的会话列表 -->
-    <ElDialog
-      v-model="showOrgSessionsDialog"
-      :title="t('mindgraphLanding.dialogSchoolTitle')"
-      width="480px"
-    >
-      <div
-        v-loading="orgSessionsLoading"
-        class="min-h-[120px]"
-      >
-        <p
-          v-if="!orgSessionsLoading && orgSessions.length === 0"
-          class="text-gray-500 text-sm"
-        >
-          {{ t('mindgraphLanding.orgSessionsEmpty') }}
-        </p>
-        <ul
-          v-else
-          class="space-y-2 max-h-[360px] overflow-y-auto"
-        >
-          <li
-            v-for="s in orgSessions"
-            :key="s.diagram_id"
-            class="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50/80"
-          >
-            <div class="min-w-0 flex-1">
-              <div class="font-medium text-gray-900 truncate">{{ s.title }}</div>
-              <div class="text-xs text-gray-500">
-                {{ s.owner_username }} ·
-                {{ t('mindgraphLanding.participantsOnline', { n: s.participant_count }) }}
-              </div>
-            </div>
-            <ElButton
-              type="primary"
-              size="small"
-              :loading="isJoining"
-              @click="joinOrgSession(s)"
-            >
-              {{ t('mindgraphLanding.join') }}
-            </ElButton>
-          </li>
-        </ul>
-      </div>
-    </ElDialog>
-
-    <!-- 共同：输入邀请码 -->
-    <ElDialog
-      v-model="showSharedCodeDialog"
-      :title="t('mindgraphLanding.dialogSharedTitle')"
-      width="400px"
-    >
-      <div class="join-workshop-dialog">
-        <fieldset class="code-input-fieldset border-0 p-0 m-0 min-w-0">
-          <legend class="mb-4 text-gray-600 px-0">
-            {{ t('mindgraphLanding.sharedCodeHint') }}
-          </legend>
-          <div class="code-input-container">
-            <div class="code-input-boxes">
-              <input
-                v-for="(digit, index) in joinCode.slice(0, 3)"
-                :id="`join-workshop-code-${index}`"
-                :key="index"
-                :ref="
-                  (el) => {
-                    codeInputRefs[index] = el as HTMLInputElement | null
-                  }
-                "
-                v-model="joinCode[index]"
-                type="text"
-                :name="`join-workshop-code-${index}`"
-                :aria-label="`${index + 1} / 6`"
-                inputmode="numeric"
-                maxlength="1"
-                class="code-input-box"
-                @input="handleDigitInput(index, $event)"
-                @keydown="handleKeyDown(index, $event)"
-                @paste="handlePaste"
-              />
-              <span class="code-dash">-</span>
-              <input
-                v-for="(digit, index) in joinCode.slice(3, 6)"
-                :id="`join-workshop-code-${index + 3}`"
-                :key="index + 3"
-                :ref="
-                  (el) => {
-                    codeInputRefs[index + 3] = el as HTMLInputElement | null
-                  }
-                "
-                v-model="joinCode[index + 3]"
-                type="text"
-                :name="`join-workshop-code-${index + 3}`"
-                :aria-label="`${index + 4} / 6`"
-                inputmode="numeric"
-                maxlength="1"
-                class="code-input-box"
-                @input="handleDigitInput(index + 3, $event)"
-                @keydown="handleKeyDown(index + 3, $event)"
-                @paste="handlePaste"
-              />
-            </div>
-          </div>
-        </fieldset>
-        <div class="mt-4 flex justify-end gap-2">
-          <ElButton @click="showSharedCodeDialog = false">
-            {{ t('mindgraphLanding.cancel') }}
-          </ElButton>
-          <ElButton
-            type="primary"
-            :loading="isJoining"
-            @click="joinWorkshop"
-          >
-            {{ t('mindgraphLanding.join') }}
-          </ElButton>
-        </div>
-      </div>
-    </ElDialog>
 
     <!-- Scrollable content area -->
     <div class="flex-1 min-h-0 overflow-y-auto">
@@ -634,89 +329,62 @@ onMounted(() => {
   left: 16px;
   z-index: 20;
 }
-
-/* Join presentation button - Swiss Design style (matching MindMate) */
-.join-workshop-btn {
-  --el-button-bg-color: #e7e5e4;
-  --el-button-border-color: #d6d3d1;
-  --el-button-hover-bg-color: #d6d3d1;
-  --el-button-hover-border-color: #a8a29e;
-  --el-button-active-bg-color: #a8a29e;
-  --el-button-active-border-color: #78716c;
-  --el-button-text-color: #1c1917;
-  font-weight: 500;
-  border-radius: 9999px;
-}
-
-/* Code input boxes - Modern square boxes */
-.code-input-container {
-  display: flex;
-  justify-content: center;
-  margin: 20px 0;
-}
-
-.code-input-boxes {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.code-input-box {
-  width: 48px;
-  height: 48px;
-  text-align: center;
-  font-size: 24px;
-  font-weight: 600;
-  border: 2px solid #d1d5db;
-  border-radius: 8px;
-  background: #fff;
-  color: #1f2937;
-  transition: all 0.2s ease;
-  outline: none;
-}
-
-.code-input-box:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  background: #f9fafb;
-}
-
-.code-dash {
-  font-size: 24px;
-  font-weight: 600;
-  color: #6b7280;
-  margin: 0 4px;
-  user-select: none;
-}
-
-.dark .code-input-box {
-  background: #1f2937;
-  border-color: #4b5563;
-  color: #f9fafb;
-}
-
-.dark .code-input-box:focus {
-  border-color: #3b82f6;
-  background: #111827;
-}
-
-.dark .code-dash {
-  color: #9ca3af;
-}
 </style>
 
 <!-- Teleported translate dropdown — width lives on popper, not scoped subtree -->
 <style>
 .mindgraph-translate-popper.el-popper {
-  max-width: min(210px, calc(100vw - 24px));
+  width: min(180px, calc(100vw - 24px)) !important;
+  max-width: min(180px, calc(100vw - 24px)) !important;
+  box-sizing: border-box !important;
+  padding: 4px !important;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 10px !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.07),
+    0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
+  overflow: hidden !important;
 }
 
 .mindgraph-translate-popper .el-dropdown-menu {
-  width: min(210px, calc(100vw - 24px));
-  padding: 4px 0;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  overflow-x: hidden !important;
+  scrollbar-gutter: stable;
 }
 
 .mindgraph-translate-popper .el-dropdown-menu__item {
-  padding: 6px 8px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 7px 14px !important;
+  font-size: 13px;
+  font-weight: 500;
+  color: #44403c;
+  letter-spacing: 0.01em;
+  border-radius: 6px;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.mindgraph-translate-popper .el-dropdown-menu__item:hover,
+.mindgraph-translate-popper .el-dropdown-menu__item:focus {
+  background: #f5f5f4 !important;
+  color: #1c1917;
+}
+
+.mindgraph-translate-popper .el-dropdown-menu__item:active {
+  background: #e7e5e4 !important;
+}
+
+/* Centered label + gutter checkmark — padding comes from the item */
+.mindgraph-translate-popper .translate-lang-row {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
 }
 </style>

@@ -412,6 +412,7 @@ function saveEdit(): void {
   if (trimmedText.length < props.minLength) {
     editText.value = originalText.value
     localIsEditing.value = false
+    eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
     emit('cancel')
     return
   }
@@ -557,10 +558,10 @@ const unsubEditRequested = eventBus.on('node:edit_requested', handleEditRequeste
 // When user selects an inline recommendation (number key), apply text and exit edit mode
 // so we don't overwrite with stale editText on blur
 function handleRecommendationApplied(payload: {
-    nodeId?: string
-    text?: string
-    appliedToConnectionId?: string
-  }): void {
+  nodeId?: string
+  text?: string
+  appliedToConnectionId?: string
+}): void {
   if (payload?.appliedToConnectionId) {
     if (payload.nodeId !== props.nodeId || !localIsEditing.value) return
     localIsEditing.value = false
@@ -644,11 +645,20 @@ function handleNodeEditorInsertText(payload: { nodeId?: string; snippet?: string
 
 const unsubInsertText = eventBus.on('node_editor:insert_text', handleNodeEditorInsertText)
 
+function handleNodeEditDenied(payload: { nodeId: string; heldByUsername: string }): void {
+  if (payload.nodeId !== props.nodeId || !localIsEditing.value) return
+  cancelEdit()
+  notifyCollab.warning(t('collab.nodeLocked'))
+}
+
+const unsubNodeEditDenied = eventBus.on('workshop:node-edit-denied', handleNodeEditDenied)
+
 // Cleanup on unmount
 onUnmounted(() => {
   unsubEditRequested()
   unsubRecommendationApplied()
   unsubInsertText()
+  unsubNodeEditDenied()
 })
 </script>
 

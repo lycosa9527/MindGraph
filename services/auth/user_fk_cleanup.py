@@ -194,6 +194,15 @@ async def delete_user_fk_dependent_rows(db: AsyncSession, user_id: int) -> None:
     """
     Delete child rows and null FKs that would block ``DELETE FROM users`` for this id.
     """
+    try:
+        from services.online_collab.core.purge_user_collab import (  # pylint: disable=import-outside-toplevel
+            purge_user_from_active_collab,
+        )
+
+        purge_user_from_active_collab(user_id)
+    except Exception:
+        pass
+
     await _null_token_usage_user_id(db, user_id)
     await _null_mindbot_linked_user(db, user_id)
 

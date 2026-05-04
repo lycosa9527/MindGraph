@@ -7,7 +7,12 @@ import { onMounted, onUnmounted } from 'vue'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
-import { useAuthStore, useDiagramStore, useInlineRecommendationsStore, useLLMResultsStore } from '@/stores'
+import {
+  useAuthStore,
+  useDiagramStore,
+  useInlineRecommendationsStore,
+  useLLMResultsStore,
+} from '@/stores'
 import { conceptMapUsesRelationshipInlineRec } from '@/utils/conceptMapInlineRec'
 
 function isTypingUiTarget(el: EventTarget | null): boolean {
@@ -53,14 +58,20 @@ export function useConceptMapRelationshipTabFromSelection(options: {
 
     const nodes = diagramStore.data?.nodes ?? []
     const node = nodes.find((n: { id?: string }) => n.id === nodeId)
-    if (!node || !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections))
+    if (
+      !node ||
+      !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
+    )
       return
 
     if (!inlineRecStore.isReady) return
 
     if (!llmResultsStore.selectedModel) {
       notify.warning(
-        t('notification.conceptMapTabNeedsAi', 'Please enable 「启动 AI」 in the bar before Tab recommendations')
+        t(
+          'notification.conceptMapTabNeedsAi',
+          'Please enable 「启动 AI」 in the bar before Tab recommendations'
+        )
       )
       e.preventDefault()
       e.stopPropagation()

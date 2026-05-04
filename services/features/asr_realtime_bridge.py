@@ -16,7 +16,7 @@ from typing import Any, Dict, Optional
 import websockets
 from fastapi import WebSocket
 from starlette.websockets import WebSocketDisconnect
-from websockets.client import ClientConnection
+from websockets.asyncio.client import ClientConnection
 from websockets.exceptions import ConnectionClosed, ConnectionClosedError, ConnectionClosedOK
 
 from config.settings import config
@@ -200,7 +200,7 @@ async def run_asr_relay(
         # If pump_task ends before session_ready is set (e.g. DashScope rejects the
         # key or closes early), we must not stall the full timeout — the client has
         # already received the forwarded error event.
-        session_ready_task: asyncio.Task[None] = asyncio.create_task(session_ready.wait())
+        session_ready_task = asyncio.create_task(session_ready.wait())
         try:
             await asyncio.wait(
                 {session_ready_task, pump_task},

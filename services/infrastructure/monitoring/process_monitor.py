@@ -26,7 +26,7 @@ import time
 import urllib.request
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Optional, Any
+from typing import Any, Awaitable, Dict, Optional, cast
 
 try:
     from services.redis.redis_client import is_redis_available
@@ -274,7 +274,10 @@ class ProcessMonitor:
             if redis_client is None:
                 return ServiceStatus.UNHEALTHY
 
-            ping_result = await asyncio.wait_for(redis_client.ping(), timeout=2.0)
+            ping_result = await asyncio.wait_for(
+                cast(Awaitable[bool], redis_client.ping()),
+                timeout=2.0,
+            )
 
             if ping_result:
                 return ServiceStatus.HEALTHY

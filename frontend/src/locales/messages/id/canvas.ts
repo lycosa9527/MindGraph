@@ -536,5 +536,15 @@ export default {
   'mindgraphLanding.sharedCodeHint':
     'Masukkan kode undangan (xxx-xxx) untuk bergabung ke sesi mereka.',
   'mindgraphLanding.sharedCollab': 'Kolaborasi bersama',
+  'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome': 'Halo {username}, saya asisten berpikir visual AI Anda',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
+  'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
+  'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
+  'canvasPage.collabRetryConnection': 'Retry',
+  'canvasPage.collabParticipantsAria': 'Collaboration participants',
+  'canvasPage.collabConnected': 'Connected',
+  'canvas.topBar.viewOnly': 'View only',
+  'canvasPage.collabParticipantsMore': 'more',
 }

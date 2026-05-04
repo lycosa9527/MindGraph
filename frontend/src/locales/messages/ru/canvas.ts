@@ -536,5 +536,15 @@ export default {
   'mindgraphLanding.sharedCodeHint':
     'Введите код приглашения (xxx-xxx), чтобы присоединиться к сеансу.',
   'mindgraphLanding.sharedCollab': 'Общая совместная работа',
+  'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome': 'Здравствуйте, {username}, я ваш ИИ‑помощник по визуальному мышлению',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
+  'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
+  'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
+  'canvasPage.collabRetryConnection': 'Retry',
+  'canvasPage.collabParticipantsAria': 'Collaboration participants',
+  'canvasPage.collabConnected': 'Connected',
+  'canvas.topBar.viewOnly': 'View only',
+  'canvasPage.collabParticipantsMore': 'more',
 }

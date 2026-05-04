@@ -385,10 +385,10 @@ class SMSMiddleware:
         """Get maximum concurrent SMS requests."""
         return self.max_concurrent_requests
 
-    def get_rate_limiter_stats(self) -> Optional[Dict[str, Any]]:
+    async def get_rate_limiter_stats(self) -> Optional[Dict[str, Any]]:
         """Get rate limiter statistics if available."""
         if self.rate_limiter:
-            return self.rate_limiter.get_stats()
+            return await self.rate_limiter.get_stats()
         return None
 
     async def close(self):

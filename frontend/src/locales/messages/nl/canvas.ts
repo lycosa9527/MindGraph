@@ -539,5 +539,15 @@ export default {
   'mindgraphLanding.sharedCodeHint':
     'Voer de uitnodigingscode (xxx-xxx) in om aan hun sessie deel te nemen.',
   'mindgraphLanding.sharedCollab': 'Gedeelde samenwerking',
+  'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome': 'Hallo {username}, ik ben uw AI-assistent voor visueel denken',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
+  'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
+  'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
+  'canvasPage.collabRetryConnection': 'Retry',
+  'canvasPage.collabParticipantsAria': 'Collaboration participants',
+  'canvasPage.collabConnected': 'Connected',
+  'canvas.topBar.viewOnly': 'View only',
+  'canvasPage.collabParticipantsMore': 'more',
 }

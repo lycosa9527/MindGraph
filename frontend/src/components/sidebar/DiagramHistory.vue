@@ -17,9 +17,11 @@ import {
 
 import { Loading } from '@element-plus/icons-vue'
 
-import { Edit3, FileImage, Lock, MoreHorizontal, Pin, Trash2 } from 'lucide-vue-next'
+import { Edit3, FileImage, Lock, MoreHorizontal, Pin, Power, Trash2, Users } from 'lucide-vue-next'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { eventBus } from '@/composables/core/useEventBus'
+
 import { useAuthStore } from '@/stores'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
@@ -119,6 +121,13 @@ function getDiagramTypeLabel(type: string): string {
   return type
 }
 
+/** Popper width: compact for pin/rename/delete only; wider when collab stop is shown. */
+function diagramMoreMenuPopperClass(diagram: SavedDiagram): string {
+  return diagram.workshop_active
+    ? 'diagram-history-more-popper diagram-history-more-popper--wide'
+    : 'diagram-history-more-popper diagram-history-more-popper--narrow'
+}
+
 // Fetch diagrams on mount if authenticated
 onMounted(() => {
   if (authStore.isAuthenticated && !props.isBlurred) {
@@ -202,6 +211,19 @@ async function handlePinDiagram(diagramId: string): Promise<void> {
 function toggleShowAll(): void {
   showAll.value = !showAll.value
 }
+
+/** End workshop for this diagram (host only; clears canvas session if this diagram is open). */
+async function handleTurnOffOnlineCollab(diagramId: string): Promise<void> {
+  const ok = await savedDiagramsStore.stopDiagramOnlineCollab(diagramId)
+  if (ok) {
+    if (diagramId === savedDiagramsStore.activeDiagramId) {
+      eventBus.emit('workshop:code-changed', { code: null, visibility: null })
+    }
+    notify.success(t('collab.ended'))
+  } else {
+    notify.error(t('collab.endFailed'))
+  }
+}
 </script>
 
 <template>
@@ -267,6 +289,13 @@ function toggleShowAll(): void {
                 <span class="diagram-name">
                   <Pin class="w-3 h-3 inline-block mr-1 text-amber-500" />
                   {{ diagram.title || t('mindmate.untitled') }}
+                  <span
+                    v-if="diagram.workshop_active"
+                    class="collab-live-badge"
+                    :title="t('sidebar.diagramHistory.collabLive')"
+                  >
+                    <Users class="w-2.5 h-2.5" />
+                  </span>
                 </span>
                 <span class="diagram-type">
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
@@ -281,6 +310,8 @@ function toggleShowAll(): void {
               </button>
               <ElDropdown
                 trigger="click"
+                placement="bottom-end"
+                :popper-class="diagramMoreMenuPopperClass(diagram)"
                 class="more-dropdown"
                 @click.stop
               >
@@ -291,21 +322,34 @@ function toggleShowAll(): void {
                   <MoreHorizontal class="w-4 h-4" />
                 </button>
                 <template #dropdown>
-                  <ElDropdownMenu>
+                  <ElDropdownMenu class="diagram-history-more__menu">
                     <ElDropdownItem @click="handlePinDiagram(diagram.id)">
-                      <Pin class="w-4 h-4 mr-2 text-amber-500 rotate-45" />
-                      {{ t('sidebar.actions.unpin') }}
+                      <span class="diagram-history-more__row">
+                        <Pin class="w-4 h-4 shrink-0 text-amber-500 rotate-45" />
+                        {{ t('sidebar.actions.unpin') }}
+                      </span>
                     </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
-                      <Edit3 class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.rename') }}
+                      <span class="diagram-history-more__row">
+                        <Edit3 class="w-4 h-4 shrink-0 text-stone-600" />
+                        {{ t('sidebar.actions.rename') }}
+                      </span>
+                    </ElDropdownItem>
+                    <ElDropdownItem
+                      v-if="diagram.workshop_active"
+                      @click="handleTurnOffOnlineCollab(diagram.id)"
+                    >
+                      <span class="diagram-history-more__row">
+                        <Power class="w-4 h-4 shrink-0 text-stone-600" />
+                        {{ t('sidebar.actions.turnOffOnlineCollab') }}
+                      </span>
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
                       @click="handleDeleteDiagram(diagram.id)"
                     >
-                      <span class="delete-option">
-                        <Trash2 class="w-4 h-4 mr-2" />
+                      <span class="diagram-history-more__row diagram-history-more__row--danger">
+                        <Trash2 class="w-4 h-4 shrink-0" />
                         {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
@@ -331,6 +375,13 @@ function toggleShowAll(): void {
               <div class="diagram-info">
                 <span class="diagram-name">
                   {{ diagram.title || t('mindmate.untitled') }}
+                  <span
+                    v-if="diagram.workshop_active"
+                    class="collab-live-badge"
+                    :title="t('sidebar.diagramHistory.collabLive')"
+                  >
+                    <Users class="w-2.5 h-2.5" />
+                  </span>
                 </span>
                 <span class="diagram-type">
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
@@ -345,6 +396,8 @@ function toggleShowAll(): void {
               </button>
               <ElDropdown
                 trigger="click"
+                placement="bottom-end"
+                :popper-class="diagramMoreMenuPopperClass(diagram)"
                 class="more-dropdown"
                 @click.stop
               >
@@ -355,21 +408,34 @@ function toggleShowAll(): void {
                   <MoreHorizontal class="w-4 h-4" />
                 </button>
                 <template #dropdown>
-                  <ElDropdownMenu>
+                  <ElDropdownMenu class="diagram-history-more__menu">
                     <ElDropdownItem @click="handlePinDiagram(diagram.id)">
-                      <Pin class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.pinToTop') }}
+                      <span class="diagram-history-more__row">
+                        <Pin class="w-4 h-4 shrink-0 text-amber-500" />
+                        {{ t('sidebar.actions.pinToTop') }}
+                      </span>
                     </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
-                      <Edit3 class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.rename') }}
+                      <span class="diagram-history-more__row">
+                        <Edit3 class="w-4 h-4 shrink-0 text-stone-600" />
+                        {{ t('sidebar.actions.rename') }}
+                      </span>
+                    </ElDropdownItem>
+                    <ElDropdownItem
+                      v-if="diagram.workshop_active"
+                      @click="handleTurnOffOnlineCollab(diagram.id)"
+                    >
+                      <span class="diagram-history-more__row">
+                        <Power class="w-4 h-4 shrink-0 text-stone-600" />
+                        {{ t('sidebar.actions.turnOffOnlineCollab') }}
+                      </span>
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
                       @click="handleDeleteDiagram(diagram.id)"
                     >
-                      <span class="delete-option">
-                        <Trash2 class="w-4 h-4 mr-2" />
+                      <span class="diagram-history-more__row diagram-history-more__row--danger">
+                        <Trash2 class="w-4 h-4 shrink-0" />
                         {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
@@ -395,6 +461,13 @@ function toggleShowAll(): void {
               <div class="diagram-info">
                 <span class="diagram-name">
                   {{ diagram.title || t('mindmate.untitled') }}
+                  <span
+                    v-if="diagram.workshop_active"
+                    class="collab-live-badge"
+                    :title="t('sidebar.diagramHistory.collabLive')"
+                  >
+                    <Users class="w-2.5 h-2.5" />
+                  </span>
                 </span>
                 <span class="diagram-type">
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
@@ -409,6 +482,8 @@ function toggleShowAll(): void {
               </button>
               <ElDropdown
                 trigger="click"
+                placement="bottom-end"
+                :popper-class="diagramMoreMenuPopperClass(diagram)"
                 class="more-dropdown"
                 @click.stop
               >
@@ -419,21 +494,34 @@ function toggleShowAll(): void {
                   <MoreHorizontal class="w-4 h-4" />
                 </button>
                 <template #dropdown>
-                  <ElDropdownMenu>
+                  <ElDropdownMenu class="diagram-history-more__menu">
                     <ElDropdownItem @click="handlePinDiagram(diagram.id)">
-                      <Pin class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.pinToTop') }}
+                      <span class="diagram-history-more__row">
+                        <Pin class="w-4 h-4 shrink-0 text-amber-500" />
+                        {{ t('sidebar.actions.pinToTop') }}
+                      </span>
                     </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
-                      <Edit3 class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.rename') }}
+                      <span class="diagram-history-more__row">
+                        <Edit3 class="w-4 h-4 shrink-0 text-stone-600" />
+                        {{ t('sidebar.actions.rename') }}
+                      </span>
+                    </ElDropdownItem>
+                    <ElDropdownItem
+                      v-if="diagram.workshop_active"
+                      @click="handleTurnOffOnlineCollab(diagram.id)"
+                    >
+                      <span class="diagram-history-more__row">
+                        <Power class="w-4 h-4 shrink-0 text-stone-600" />
+                        {{ t('sidebar.actions.turnOffOnlineCollab') }}
+                      </span>
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
                       @click="handleDeleteDiagram(diagram.id)"
                     >
-                      <span class="delete-option">
-                        <Trash2 class="w-4 h-4 mr-2" />
+                      <span class="diagram-history-more__row diagram-history-more__row--danger">
+                        <Trash2 class="w-4 h-4 shrink-0" />
                         {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
@@ -459,6 +547,13 @@ function toggleShowAll(): void {
               <div class="diagram-info">
                 <span class="diagram-name">
                   {{ diagram.title || t('mindmate.untitled') }}
+                  <span
+                    v-if="diagram.workshop_active"
+                    class="collab-live-badge"
+                    :title="t('sidebar.diagramHistory.collabLive')"
+                  >
+                    <Users class="w-2.5 h-2.5" />
+                  </span>
                 </span>
                 <span class="diagram-type">
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
@@ -473,6 +568,8 @@ function toggleShowAll(): void {
               </button>
               <ElDropdown
                 trigger="click"
+                placement="bottom-end"
+                :popper-class="diagramMoreMenuPopperClass(diagram)"
                 class="more-dropdown"
                 @click.stop
               >
@@ -483,21 +580,34 @@ function toggleShowAll(): void {
                   <MoreHorizontal class="w-4 h-4" />
                 </button>
                 <template #dropdown>
-                  <ElDropdownMenu>
+                  <ElDropdownMenu class="diagram-history-more__menu">
                     <ElDropdownItem @click="handlePinDiagram(diagram.id)">
-                      <Pin class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.pinToTop') }}
+                      <span class="diagram-history-more__row">
+                        <Pin class="w-4 h-4 shrink-0 text-amber-500" />
+                        {{ t('sidebar.actions.pinToTop') }}
+                      </span>
                     </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
-                      <Edit3 class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.rename') }}
+                      <span class="diagram-history-more__row">
+                        <Edit3 class="w-4 h-4 shrink-0 text-stone-600" />
+                        {{ t('sidebar.actions.rename') }}
+                      </span>
+                    </ElDropdownItem>
+                    <ElDropdownItem
+                      v-if="diagram.workshop_active"
+                      @click="handleTurnOffOnlineCollab(diagram.id)"
+                    >
+                      <span class="diagram-history-more__row">
+                        <Power class="w-4 h-4 shrink-0 text-stone-600" />
+                        {{ t('sidebar.actions.turnOffOnlineCollab') }}
+                      </span>
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
                       @click="handleDeleteDiagram(diagram.id)"
                     >
-                      <span class="delete-option">
-                        <Trash2 class="w-4 h-4 mr-2" />
+                      <span class="diagram-history-more__row diagram-history-more__row--danger">
+                        <Trash2 class="w-4 h-4 shrink-0" />
                         {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
@@ -523,6 +633,13 @@ function toggleShowAll(): void {
               <div class="diagram-info">
                 <span class="diagram-name">
                   {{ diagram.title || t('mindmate.untitled') }}
+                  <span
+                    v-if="diagram.workshop_active"
+                    class="collab-live-badge"
+                    :title="t('sidebar.diagramHistory.collabLive')"
+                  >
+                    <Users class="w-2.5 h-2.5" />
+                  </span>
                 </span>
                 <span class="diagram-type">
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
@@ -537,6 +654,8 @@ function toggleShowAll(): void {
               </button>
               <ElDropdown
                 trigger="click"
+                placement="bottom-end"
+                :popper-class="diagramMoreMenuPopperClass(diagram)"
                 class="more-dropdown"
                 @click.stop
               >
@@ -547,21 +666,34 @@ function toggleShowAll(): void {
                   <MoreHorizontal class="w-4 h-4" />
                 </button>
                 <template #dropdown>
-                  <ElDropdownMenu>
+                  <ElDropdownMenu class="diagram-history-more__menu">
                     <ElDropdownItem @click="handlePinDiagram(diagram.id)">
-                      <Pin class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.pinToTop') }}
+                      <span class="diagram-history-more__row">
+                        <Pin class="w-4 h-4 shrink-0 text-amber-500" />
+                        {{ t('sidebar.actions.pinToTop') }}
+                      </span>
                     </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
-                      <Edit3 class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.rename') }}
+                      <span class="diagram-history-more__row">
+                        <Edit3 class="w-4 h-4 shrink-0 text-stone-600" />
+                        {{ t('sidebar.actions.rename') }}
+                      </span>
+                    </ElDropdownItem>
+                    <ElDropdownItem
+                      v-if="diagram.workshop_active"
+                      @click="handleTurnOffOnlineCollab(diagram.id)"
+                    >
+                      <span class="diagram-history-more__row">
+                        <Power class="w-4 h-4 shrink-0 text-stone-600" />
+                        {{ t('sidebar.actions.turnOffOnlineCollab') }}
+                      </span>
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
                       @click="handleDeleteDiagram(diagram.id)"
                     >
-                      <span class="delete-option">
-                        <Trash2 class="w-4 h-4 mr-2" />
+                      <span class="diagram-history-more__row diagram-history-more__row--danger">
+                        <Trash2 class="w-4 h-4 shrink-0" />
                         {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
@@ -728,39 +860,6 @@ function toggleShowAll(): void {
   color: #1c1917;
 }
 
-/* Dropdown menu styling */
-.more-dropdown :deep(.el-dropdown-menu) {
-  padding: 4px;
-  border-radius: 8px;
-  min-width: 140px;
-}
-
-.more-dropdown :deep(.el-dropdown-menu__item) {
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  font-size: 13px;
-  border-radius: 4px;
-  color: #57534e;
-}
-
-.more-dropdown :deep(.el-dropdown-menu__item:hover) {
-  background-color: #f5f5f4;
-  color: #1c1917;
-}
-
-.more-dropdown :deep(.el-dropdown-menu__item.is-divided) {
-  margin-top: 4px;
-  border-top: 1px solid #e7e5e4;
-  padding-top: 8px;
-}
-
-.delete-option {
-  display: flex;
-  align-items: center;
-  color: #dc2626;
-}
-
 .show-more-btn {
   display: block;
   width: 100%;
@@ -780,5 +879,145 @@ function toggleShowAll(): void {
   background-color: #fafaf9;
   border-color: #a8a29e;
   color: #57534e;
+}
+
+/* Live collab indicator */
+.collab-live-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: #22c55e;
+  color: #fff;
+  margin-left: 4px;
+  vertical-align: middle;
+  flex-shrink: 0;
+  animation: collab-pulse 2s ease-in-out infinite;
+}
+
+@keyframes collab-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0);
+  }
+}
+</style>
+
+<!-- Teleported dropdown — Swiss popper; width via --narrow / --wide (collab extras) -->
+<style>
+.diagram-history-more-popper.el-popper {
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  padding: 3px !important;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 10px !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.07),
+    0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
+  overflow: hidden !important;
+}
+
+/* Pin / rename / delete only — hugs content; cap for long translations */
+.diagram-history-more-popper.diagram-history-more-popper--narrow.el-popper {
+  width: max-content !important;
+  max-width: min(calc(100vw - 24px), 260px) !important;
+}
+
+.diagram-history-more-popper.diagram-history-more-popper--narrow .diagram-history-more__row {
+  white-space: nowrap;
+  word-break: normal;
+  align-items: center;
+}
+
+/* Includes long collab line — hug content up to max (no fixed empty rail) */
+.diagram-history-more-popper.diagram-history-more-popper--wide.el-popper {
+  width: max-content !important;
+  max-width: min(calc(100vw - 24px), 172px) !important;
+}
+
+.diagram-history-more-popper.diagram-history-more-popper--wide .diagram-history-more__row {
+  align-items: flex-start;
+}
+
+.diagram-history-more-popper .diagram-history-more__menu.el-dropdown-menu {
+  min-width: 0 !important;
+  width: max-content !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  overflow-x: hidden !important;
+  scrollbar-gutter: auto;
+}
+
+.diagram-history-more-popper .el-dropdown-menu__item {
+  display: flex !important;
+  min-width: 0 !important;
+  box-sizing: border-box;
+  width: auto !important;
+  max-width: 100%;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 6px;
+  justify-content: flex-start !important;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.diagram-history-more-popper .el-dropdown-menu__item:hover,
+.diagram-history-more-popper .el-dropdown-menu__item:focus {
+  background: #f5f5f4 !important;
+  color: #1c1917;
+}
+
+.diagram-history-more-popper .el-dropdown-menu__item:active {
+  background: #e7e5e4 !important;
+}
+
+.diagram-history-more-popper .el-dropdown-menu__item.is-divided {
+  margin-top: 4px !important;
+  border-top: 1px solid #e7e5e4 !important;
+  padding-top: 0 !important;
+}
+
+.diagram-history-more-popper .diagram-history-more__row {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+  box-sizing: border-box;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  padding: 6px 5px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: #44403c;
+  letter-spacing: 0.01em;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.diagram-history-more-popper.diagram-history-more-popper--wide .diagram-history-more__row svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.diagram-history-more-popper .el-dropdown-menu__item:hover .diagram-history-more__row,
+.diagram-history-more-popper .el-dropdown-menu__item:focus .diagram-history-more__row {
+  color: #1c1917;
+}
+
+.diagram-history-more-popper .diagram-history-more__row--danger,
+.diagram-history-more-popper .el-dropdown-menu__item:hover .diagram-history-more__row--danger,
+.diagram-history-more-popper .el-dropdown-menu__item:focus .diagram-history-more__row--danger {
+  color: #dc2626;
 }
 </style>

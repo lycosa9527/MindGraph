@@ -6,13 +6,13 @@
 import { nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { ElAvatar, ElButton, ElIcon, ElTooltip } from 'element-plus'
+import { storeToRefs } from 'pinia'
+
+import { ElAvatar, ElButton, ElIcon } from 'element-plus'
 
 import { Loading } from '@element-plus/icons-vue'
 
 import { Check, Globe, PanelLeftOpen } from 'lucide-vue-next'
-
-import { storeToRefs } from 'pinia'
 
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
 import { useLanguage, useNotifications } from '@/composables'
@@ -25,6 +25,7 @@ import { TRANSLATE_LANGUAGES } from '@/utils/translateLanguages'
 
 import DiagramPreviewSvg from './DiagramPreviewSvg.vue'
 import IntlDiagramDropdown from './IntlDiagramDropdown.vue'
+import MindGraphCollabPanel from './MindGraphCollabPanel.vue'
 import MindGraphLanguageSwitcher from './MindGraphLanguageSwitcher.vue'
 
 const MAX_PROMPT_LENGTH = 10000
@@ -249,59 +250,17 @@ function handleCardClick(item: { type: DiagramType }) {
   router.push({ path: '/canvas', query: { type: item.type } })
 }
 
-// ── Auto-join workshop from QR query ──
-
-const joinCode = ref(['', '', '', '', '', ''])
-const isJoining = ref(false)
-
-function getFormattedCode(): string {
-  const code = joinCode.value.join('')
-  return code.length === 6 ? `${code.slice(0, 3)}-${code.slice(3, 6)}` : code
-}
-
-async function joinWorkshop() {
-  const code = getFormattedCode()
-  if (code.length !== 7) {
-    notify.warning(t('mindgraphLanding.codeIncomplete'))
-    return
-  }
-  if (!/^\d{3}-\d{3}$/.test(code)) {
-    notify.warning(t('mindgraphLanding.codeFormatInvalid'))
-    return
-  }
-  isJoining.value = true
-  try {
-    const response = await authFetch(`/api/workshop/join?code=${code}`, { method: 'POST' })
-    if (response.ok) {
-      const data = await response.json()
-      notify.success(t('mindgraphLanding.joinedPresentation', { title: data.workshop.title }))
-      const enc = encodeURIComponent(code)
-      window.location.href = `/canvas?diagramId=${encodeURIComponent(data.workshop.diagram_id)}&join_workshop=${enc}`
-    } else {
-      const error = await response.json().catch(() => ({}))
-      notify.error(error.detail || t('mindgraphLanding.joinPresentationFailed'))
-    }
-  } catch {
-    notify.error(t('mindgraphLanding.networkErrorJoin'))
-  } finally {
-    isJoining.value = false
-  }
-}
+/** Inline collab panel; same QR behaviour as MindGraph container landing. */
+const collabPanelRef = ref<InstanceType<typeof MindGraphCollabPanel> | null>(null)
 
 onMounted(() => {
   document.addEventListener('mousedown', handleClickOutside)
   const joinWorkshopCode = route.query.join_workshop as string | undefined
   if (joinWorkshopCode) {
-    const digits = joinWorkshopCode.replace(/\D/g, '').slice(0, 6)
-    digits.split('').forEach((digit, i) => {
-      if (i < 6) joinCode.value[i] = digit
-    })
     const newQuery = { ...route.query }
     delete newQuery.join_workshop
     router.replace({ query: newQuery })
-    setTimeout(() => {
-      joinWorkshop()
-    }, 500)
+    collabPanelRef.value?.prefillAndAutoJoin(joinWorkshopCode)
   }
 })
 </script>
@@ -321,6 +280,7 @@ onMounted(() => {
       <PanelLeftOpen class="w-[18px] h-[18px]" />
     </el-button>
     <div class="intl-landing-chrome">
+      <MindGraphCollabPanel ref="collabPanelRef" />
       <MindGraphLanguageSwitcher variant="floating" />
       <ElDropdown
         v-if="authStore.isAdmin"
@@ -350,14 +310,18 @@ onMounted(() => {
                 </span>
               </span>
             </ElDropdownItem>
-            <ElDivider style="margin: 4px 0;" />
+            <ElDivider style="margin: 4px 0" />
             <ElDropdownItem
               v-for="lang in TRANSLATE_LANGUAGES"
               :key="lang.code"
               :command="lang.code"
             >
               <span class="translate-lang-row">
-                <span class="translate-lang-label" dir="auto">{{ lang.label }}</span>
+                <span
+                  class="translate-lang-label"
+                  dir="auto"
+                  >{{ lang.label }}</span
+                >
                 <Check
                   v-if="translationTargetLang === lang.code"
                   class="translate-lang-check w-4 h-4 shrink-0 opacity-70"
@@ -518,6 +482,15 @@ onMounted(() => {
   position: static;
   top: auto;
   right: auto;
+}
+
+.intl-landing-chrome :deep(.join-workshop-btn) {
+  --el-button-bg-color: #ffffff;
+  --el-button-border-color: #e7e5e4;
+  --el-button-hover-bg-color: #f5f5f4;
+  --el-button-hover-border-color: #d6d3d1;
+  --el-button-text-color: #44403c;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 /* Translate button — white floating style when inactive */
@@ -1101,18 +1074,4 @@ onMounted(() => {
 }
 </style>
 
-<!-- Teleported translate dropdown — width lives on popper, not scoped subtree -->
-<style>
-.mindgraph-translate-popper.el-popper {
-  max-width: min(210px, calc(100vw - 24px));
-}
-
-.mindgraph-translate-popper .el-dropdown-menu {
-  width: min(210px, calc(100vw - 24px));
-  padding: 4px 0;
-}
-
-.mindgraph-translate-popper .el-dropdown-menu__item {
-  padding: 6px 8px;
-}
-</style>
+<!-- mindgraph-translate-popper global styles live in MindGraphContainer.vue -->

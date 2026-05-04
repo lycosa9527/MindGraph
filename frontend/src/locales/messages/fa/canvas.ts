@@ -528,5 +528,15 @@ export default {
   'mindgraphLanding.schoolCollab': 'همکاری مدرسه',
   'mindgraphLanding.sharedCodeHint': 'کد دعوت (xxx-xxx) را برای پیوستن به جلسه آن‌ها وارد کنید.',
   'mindgraphLanding.sharedCollab': 'همکاری اشتراکی',
+  'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome': 'سلام {username}، من دستیار تفکر بصری هوش مصنوعی شما هستم',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
+  'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
+  'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
+  'canvasPage.collabRetryConnection': 'Retry',
+  'canvasPage.collabParticipantsAria': 'Collaboration participants',
+  'canvasPage.collabConnected': 'Connected',
+  'canvas.topBar.viewOnly': 'View only',
+  'canvasPage.collabParticipantsMore': 'more',
 }

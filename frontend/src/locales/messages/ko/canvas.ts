@@ -523,5 +523,15 @@ export default {
   'mindgraphLanding.schoolCollab': '학교 협업',
   'mindgraphLanding.sharedCodeHint': '초대 코드(xxx-xxx)를 입력하여 세션에 참여하세요.',
   'mindgraphLanding.sharedCollab': '공유 협업',
+  'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome': '안녕하세요 {username}님, 저는 여러분의 AI 시각적 사고 도우미입니다',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
+  'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
+  'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
+  'canvasPage.collabRetryConnection': 'Retry',
+  'canvasPage.collabParticipantsAria': 'Collaboration participants',
+  'canvasPage.collabConnected': 'Connected',
+  'canvas.topBar.viewOnly': 'View only',
+  'canvasPage.collabParticipantsMore': 'more',
 }

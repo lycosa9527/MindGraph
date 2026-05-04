@@ -136,6 +136,10 @@ export function useCanvasToolbarApps() {
   }
 
   function handleConceptGeneration() {
+    if (aiBlockedByCollab.value) {
+      notify.warning(t('canvas.toolbar.collabAiBlocked'))
+      return
+    }
     if (!diagramStore.data?.nodes?.length) {
       notify.warning(t('canvas.toolbar.createDiagramFirst'))
       return
@@ -167,6 +171,13 @@ export function useCanvasToolbarApps() {
   }
 
   async function handleMoreApp(app: MoreAppItem) {
+    if (
+      aiBlockedByCollab.value &&
+      (app.appKey === 'waterfall' || app.appKey === 'learning_sheet' || app.appKey === 'snapshot')
+    ) {
+      notify.warning(t('canvas.toolbar.collabGuestFeatureBlocked'))
+      return
+    }
     if (app.appKey === 'waterfall') {
       if (!diagramStore.data?.nodes?.length) {
         notify.warning(t('canvas.toolbar.createDiagramFirst'))

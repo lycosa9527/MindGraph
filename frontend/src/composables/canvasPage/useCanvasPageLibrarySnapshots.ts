@@ -1,3 +1,5 @@
+import { type ComputedRef } from 'vue'
+
 import {
   diagramSpecLikelyNeedsMarkdownPipeline,
   loadDiagramMarkdownPipeline,
@@ -18,12 +20,13 @@ type SnapshotHistoryApi = ReturnType<typeof useSnapshotHistory>
 export function useCanvasPageLibrarySnapshots(options: {
   diagramAutoSave: ReturnType<typeof useDiagramAutoSave>
   snapshotHistory: SnapshotHistoryApi
+  isDiagramOwner?: ComputedRef<boolean>
 }): {
   loadDiagramFromLibrary: (diagramId: string) => Promise<void>
   handleSnapshotRecall: (versionNumber: number) => Promise<void>
   handleSnapshotDelete: (versionNumber: number) => Promise<void>
 } {
-  const { diagramAutoSave, snapshotHistory } = options
+  const { diagramAutoSave, snapshotHistory, isDiagramOwner } = options
   const diagramStore = useDiagramStore()
   const savedDiagramsStore = useSavedDiagramsStore()
   const llmResultsStore = useLLMResultsStore()
@@ -74,6 +77,7 @@ export function useCanvasPageLibrarySnapshots(options: {
   }
 
   async function handleSnapshotRecall(versionNumber: number): Promise<void> {
+    if (diagramStore.collabSessionActive && isDiagramOwner?.value === false) return
     const diagramId = savedDiagramsStore.activeDiagramId
     const diagramType = diagramStore.type
     if (!diagramId || !diagramType) return
@@ -98,6 +102,7 @@ export function useCanvasPageLibrarySnapshots(options: {
   }
 
   async function handleSnapshotDelete(versionNumber: number): Promise<void> {
+    if (diagramStore.collabSessionActive && isDiagramOwner?.value === false) return
     const diagramId = savedDiagramsStore.activeDiagramId
     if (!diagramId) return
 

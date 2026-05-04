@@ -12,10 +12,10 @@ Provides endpoints to check the health status of various system components:
 import time
 import asyncio
 import logging
-from typing import Dict, Any
+from typing import Any, Awaitable, Dict, cast
 
 import psutil
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
@@ -23,7 +23,13 @@ from config.settings import config
 from config.database import async_engine, check_integrity_async, DATABASE_URL, engine
 from models.domain.auth import User
 from models.responses import DatabaseHealthResponse
-from services.infrastructure.monitoring.ws_metrics import get_ws_metrics_snapshot
+from services.infrastructure.monitoring.ws_metrics import (
+    collab_ws_metrics_alerts,
+    get_ws_metrics_snapshot,
+)
+from services.online_collab.spec.online_collab_live_spec_shutdown import (
+    collab_live_spec_durability_alerts,
+)
 from services.infrastructure.recovery.database_check_state import (
     get_database_check_state_manager,
 )
@@ -148,7 +154,10 @@ async def _check_redis_health() -> Dict[str, Any]:
         if redis_client is None:
             return {"status": "unavailable", "message": "Async Redis client not initialized"}
 
-        ping_result = await asyncio.wait_for(redis_client.ping(), timeout=2.0)
+        ping_result = await asyncio.wait_for(
+            cast(Awaitable[bool], redis_client.ping()),
+            timeout=2.0,
+        )
 
         if ping_result:
             info = await asyncio.wait_for(_cached_redis_info(redis_client, "server"), timeout=2.0)
@@ -365,13 +374,42 @@ async def health_check():
     return {"status": "ok", "version": config.version}
 
 
+@router.get("/health/ready")
+async def readiness_probe(request: Request):
+    """
+    Readiness for load balancers and rolling deploys.
+
+    Returns 503 while this worker is in the lifespan shutdown path so ingress
+    can stop sending **new** HTTP traffic; existing WebSockets still drain per
+    shutdown order in ``lifespan``.
+    """
+    if getattr(request.app.state, "is_shutting_down", False):
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "draining",
+                "detail": "Worker is shutting down",
+            },
+        )
+    return {"status": "ready", "version": config.version}
+
+
 @router.get("/health/websocket")
 async def websocket_metrics_check(_current_user: User = Depends(get_current_user)):
     """
     WebSocket counters (per process) and optional Redis aggregate active count.
     Requires authentication.
     """
-    return await get_ws_metrics_snapshot()
+    snap = await get_ws_metrics_snapshot()
+    alerts = collab_ws_metrics_alerts(snap)
+    try:
+        alerts.extend(await collab_live_spec_durability_alerts())
+    except (RuntimeError, OSError, ValueError, TypeError) as exc:
+        logger.debug("[WSMetrics] live-spec durability alerts skipped: %s", exc)
+    for token in alerts:
+        logger.warning("[WSMetrics][collab_alert] %s", token)
+    snap["collab_alerts"] = alerts
+    return snap
 
 
 @router.get("/health/redis")
@@ -391,7 +429,10 @@ async def redis_health_check(_current_user: User = Depends(get_current_user)):
         return {"status": "unavailable", "message": "Async Redis client not initialized"}
 
     try:
-        ping_ok = await asyncio.wait_for(redis_client.ping(), timeout=2.0)
+        ping_ok = await asyncio.wait_for(
+            cast(Awaitable[bool], redis_client.ping()),
+            timeout=2.0,
+        )
         if not ping_ok:
             return {"status": "unhealthy", "message": "Ping failed"}
 

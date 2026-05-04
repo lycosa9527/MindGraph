@@ -8,7 +8,7 @@
  * For double_bubble_map: shows tabs (相似点/Similarities | 差异点/Differences).
  * Differences tab displays paired attributes for both Topic A and Topic B.
  */
-import { computed, nextTick, onMounted } from 'vue'
+import { type ComputedRef, computed, inject, nextTick, onMounted } from 'vue'
 
 import { ElButton, ElTooltip } from 'element-plus'
 
@@ -17,7 +17,7 @@ import { Check, Loader2, RefreshCw, X } from 'lucide-vue-next'
 import { useLanguage, useNotifications } from '@/composables'
 import { getNodePalette } from '@/composables/nodePalette/useNodePalette'
 import { getLLMColor } from '@/config/llmModelColors'
-import { usePanelsStore, useUIStore } from '@/stores'
+import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
 import type { NodeSuggestion } from '@/types/panels'
 
 const emit = defineEmits<{
@@ -28,6 +28,17 @@ const { t } = useLanguage()
 const notify = useNotifications()
 const uiStore = useUIStore()
 const panelsStore = usePanelsStore()
+const diagramStore = useDiagramStore()
+
+const collabCanvas = inject<{ isDiagramOwner?: ComputedRef<boolean> } | undefined>(
+  'collabCanvas',
+  undefined
+)
+const isGuestCollab = computed(() => {
+  if (!diagramStore.collabSessionActive) return false
+  const own = collabCanvas?.isDiagramOwner
+  return own ? !own.value : false
+})
 
 const {
   isLoading,
@@ -425,7 +436,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
               circle
               size="small"
               class="shrink-0"
-              :disabled="isLoading"
+              :disabled="isLoading || isGuestCollab"
               @click="handleRefresh"
             >
               <RefreshCw :class="['w-4 h-4', isLoading ? 'animate-spin' : '']" />
@@ -483,13 +494,13 @@ function getDisplayText(suggestion: NodeSuggestion): string {
             :key="suggestion.id"
             class="node-card p-3 rounded-lg border-2 transition-all"
             :class="[
-              'cursor-pointer',
+              isGuestCollab ? 'cursor-default opacity-70' : 'cursor-pointer',
               !suggestion.source_llm && !selectedIds.includes(suggestion.id)
                 ? 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700'
                 : '',
             ]"
             :style="getNodeCardStyle(suggestion, selectedIds.includes(suggestion.id))"
-            @click="toggleSelection(suggestion.id)"
+            @click="isGuestCollab ? undefined : toggleSelection(suggestion.id)"
           >
             <div class="flex items-start gap-2">
               <div
@@ -580,7 +591,9 @@ function getDisplayText(suggestion: NodeSuggestion): string {
       <el-button
         type="primary"
         size="default"
-        :disabled="isDimensionsStage ? selectedIds.length !== 1 : selectedIds.length === 0"
+        :disabled="
+          isGuestCollab || (isDimensionsStage ? selectedIds.length !== 1 : selectedIds.length === 0)
+        "
         @click="handleFinish"
       >
         {{ showNextButton ? t('nodePalette.next') : t('nodePalette.finish') }}

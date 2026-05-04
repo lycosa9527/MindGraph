@@ -15,7 +15,7 @@
  *   // Composable sets up internal watch; no CanvasPage integration needed
  *   // On unmount: autoSave.teardown()
  */
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { type ComputedRef, computed, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { eventBus, getDefaultDiagramName } from '@/composables'
@@ -112,6 +112,15 @@ export interface SaveFlushResult {
 export interface UseDiagramAutoSaveOptions {
   getDiagramTitle?: () => string
   onSaved?: (result: { action: string; diagramId?: string }) => void
+  isCollabGuest?: ComputedRef<boolean>
+  /**
+   * True while the diagram is locked inside an active workshop/collab session.
+   * Blocks the host's autosave REST PUT (which the server rejects with 409
+   * while the session is live). Changes are persisted through the WebSocket
+   * collab pipeline instead; autosave re-enables automatically when the session
+   * ends and the flag returns to false.
+   */
+  isCollabActive?: ComputedRef<boolean>
 }
 
 export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
@@ -153,6 +162,8 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
       authStore.isAuthenticated &&
       !llmResultsStore.isGenerating &&
       !isSuppressed.value &&
+      !options.isCollabGuest?.value &&
+      !options.isCollabActive?.value &&
       !!diagramStore.type &&
       !!diagramStore.data
   )

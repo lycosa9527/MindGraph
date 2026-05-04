@@ -186,6 +186,10 @@ export function diagramNodeToVueFlowNode(
     width: nodeWidth,
     height: nodeHeight,
     data: {
+      // Spread customData first so that node.text always wins as the label.
+      // Previously customData was spread last, allowing a stale data.label to
+      // shadow node.text — breaking remote collab updates that only update text.
+      ...customData,
       label: node.text,
       nodeType: dataNodeType,
       diagramType,
@@ -194,8 +198,6 @@ export function diagramNodeToVueFlowNode(
       isDraggable,
       isSelectable,
       originalNode: node,
-      // Preserve custom fields from node.data (e.g., pairIndex, position for bridge maps)
-      ...customData,
     },
     draggable: isDraggable,
     selectable: isSelectable,

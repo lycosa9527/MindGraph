@@ -537,6 +537,16 @@ export default {
   'mindgraphLanding.sharedCodeHint':
     'Ilagay ang invitation code (xxx-xxx) para makasali sa sesyon.',
   'mindgraphLanding.sharedCollab': 'Ibinahaging kolaborasyon',
+  'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome':
     'Hello {username}, ako ang iyong AI na katulong sa biswal na pag-iisip',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
+  'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
+  'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
+  'canvasPage.collabRetryConnection': 'Retry',
+  'canvasPage.collabParticipantsAria': 'Collaboration participants',
+  'canvasPage.collabConnected': 'Connected',
+  'canvas.topBar.viewOnly': 'View only',
+  'canvasPage.collabParticipantsMore': 'more',
 }

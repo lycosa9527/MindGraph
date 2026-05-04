@@ -14,24 +14,27 @@ Proprietary License
 
 from datetime import UTC, datetime
 import uuid
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
-    Column,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
     Integer,
     String,
     Text,
-    DateTime,
-    ForeignKey,
-    Boolean,
-    Index,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.domain.auth import Base
 
+if TYPE_CHECKING:
+    from models.domain.auth import User
 
-def generate_uuid():
+
+def generate_uuid() -> str:
     """Generate a UUID string for debate session IDs."""
     return str(uuid.uuid4())
 
@@ -45,49 +48,41 @@ class DebateSession(Base):
 
     __tablename__ = "debate_sessions"
 
-    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
-    # Debate metadata
-    topic = Column(String(500), nullable=False)
-    format = Column(String(50), default="us_parliamentary")  # Debate format
+    topic: Mapped[str] = mapped_column(String(500), nullable=False)
+    format: Mapped[str] = mapped_column(String(50), default="us_parliamentary")
 
-    # Stage management
-    current_stage = Column(String(50), default="setup", index=True)
-    # Stages: setup, coin_toss, opening, rebuttal, cross_exam, closing, judgment, completed
+    current_stage: Mapped[str] = mapped_column(String(50), default="setup", index=True)
 
-    # Status
-    status = Column(String(50), default="pending", index=True)
-    # Status: pending, active, completed, cancelled
+    status: Mapped[str] = mapped_column(String(50), default="pending", index=True)
 
-    # Coin toss result (if completed)
-    coin_toss_result = Column(String(50), nullable=True)  # 'affirmative_first' or 'negative_first'
+    coin_toss_result: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
-    # Timestamps
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
-    updated_at = Column(
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC),
     )
-    started_at = Column(DateTime, nullable=True)
-    completed_at = Column(DateTime, nullable=True)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
-    # Relationships
-    user = relationship("User", backref="debate_sessions", lazy="selectin")
-    participants = relationship(
+    user: Mapped["User"] = relationship("User", backref="debate_sessions", lazy="selectin")
+    participants: Mapped[list["DebateParticipant"]] = relationship(
         "DebateParticipant",
         back_populates="session",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    messages = relationship(
+    messages: Mapped[list["DebateMessage"]] = relationship(
         "DebateMessage",
         back_populates="session",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    judgment = relationship(
+    judgment: Mapped[Optional["DebateJudgment"]] = relationship(
         "DebateJudgment",
         back_populates="session",
         uselist=False,
@@ -95,13 +90,12 @@ class DebateSession(Base):
         lazy="selectin",
     )
 
-    # Composite index for efficient queries
     __table_args__ = (
         Index("ix_debate_sessions_user_updated", "user_id", "updated_at", "status"),
         Index("ix_debate_sessions_stage_status", "current_stage", "status"),
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<DebateSession {self.id}: {self.topic[:30]}... ({self.current_stage})>"
 
 
@@ -114,46 +108,38 @@ class DebateParticipant(Base):
 
     __tablename__ = "debate_participants"
 
-    id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(String(36), ForeignKey("debate_sessions.id"), nullable=False, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    session_id: Mapped[str] = mapped_column(String(36), ForeignKey("debate_sessions.id"), nullable=False, index=True)
 
-    # Participant identification
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # Null for AI participants
-    is_ai = Column(Boolean, default=False, index=True)
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    is_ai: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
 
-    # Role information
-    role = Column(String(50), nullable=False, index=True)
-    # Roles: affirmative_1, affirmative_2, negative_1, negative_2, judge, viewer
+    role: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
 
-    side = Column(String(20), nullable=True)  # 'affirmative', 'negative', or None for judge/viewer
+    side: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
 
-    # AI-specific fields
-    model_id = Column(String(50), nullable=True)  # 'qwen', 'doubao', 'deepseek', 'kimi' for AI
+    model_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
-    # Display name
-    name = Column(String(100), nullable=False)  # User name or AI model display name
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
 
-    # Timestamps
-    joined_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    joined_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
-    # Relationships
-    session = relationship(
+    session: Mapped["DebateSession"] = relationship(
         "DebateSession",
         back_populates="participants",
         lazy="selectin",
     )
-    user = relationship("User", backref="debate_participations", lazy="selectin")
-    messages = relationship(
+    user: Mapped[Optional["User"]] = relationship("User", backref="debate_participations", lazy="selectin")
+    messages: Mapped[list["DebateMessage"]] = relationship(
         "DebateMessage",
         back_populates="participant",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
 
-    # Composite index
     __table_args__ = (Index("ix_debate_participants_session_role", "session_id", "role"),)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<DebateParticipant {self.id}: {self.name} ({self.role})>"
 
 
@@ -166,54 +152,49 @@ class DebateMessage(Base):
 
     __tablename__ = "debate_messages"
 
-    id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(String(36), ForeignKey("debate_sessions.id"), nullable=False, index=True)
-    participant_id = Column(Integer, ForeignKey("debate_participants.id"), nullable=False, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    session_id: Mapped[str] = mapped_column(String(36), ForeignKey("debate_sessions.id"), nullable=False, index=True)
+    participant_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("debate_participants.id"),
+        nullable=False,
+        index=True,
+    )
 
-    # Message content
-    content = Column(Text, nullable=False)
-    thinking = Column(Text, nullable=True)  # Thinking/reasoning content for supported models
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    thinking: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    # Stage and round information
-    stage = Column(String(50), nullable=False, index=True)
-    # Stages: coin_toss, opening, rebuttal, cross_exam, closing, judgment
+    stage: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
 
-    round_number = Column(Integer, default=1, index=True)  # Round within stage
+    round_number: Mapped[int] = mapped_column(Integer, default=1, index=True)
 
-    message_type = Column(String(50), nullable=False, index=True)
-    # Types: coin_toss, opening, rebuttal, cross_question, cross_answer, closing, judgment
+    message_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
 
-    # Cross-examination linking
-    parent_message_id = Column(Integer, ForeignKey("debate_messages.id"), nullable=True)
-    # For cross-exam: links question to answer
+    parent_message_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("debate_messages.id"), nullable=True)
 
-    # TTS audio
-    audio_url = Column(String(500), nullable=True)  # URL to generated TTS audio
+    audio_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
-    # Timestamps
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), index=True)
 
-    # Relationships
-    session = relationship("DebateSession", back_populates="messages", lazy="selectin")
-    participant = relationship(
+    session: Mapped["DebateSession"] = relationship("DebateSession", back_populates="messages", lazy="selectin")
+    participant: Mapped["DebateParticipant"] = relationship(
         "DebateParticipant",
         back_populates="messages",
         lazy="selectin",
     )
-    parent_message = relationship(
+    parent_message: Mapped[Optional["DebateMessage"]] = relationship(
         "DebateMessage",
         remote_side=[id],
         backref="child_messages",
         lazy="selectin",
     )
 
-    # Composite indexes
     __table_args__ = (
         Index("ix_debate_messages_session_stage", "session_id", "stage", "round_number"),
         Index("ix_debate_messages_session_created", "session_id", "created_at"),
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<DebateMessage {self.id}: {self.message_type} ({self.stage})>"
 
 
@@ -226,52 +207,42 @@ class DebateJudgment(Base):
 
     __tablename__ = "debate_judgments"
 
-    id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    session_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("debate_sessions.id"),
         nullable=False,
         unique=True,
         index=True,
     )
-    judge_participant_id = Column(Integer, ForeignKey("debate_participants.id"), nullable=False, index=True)
+    judge_participant_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("debate_participants.id"),
+        nullable=False,
+        index=True,
+    )
 
-    # Verdict
-    winner_side = Column(String(20), nullable=True)  # 'affirmative', 'negative', or None for tie
-    best_debater_id = Column(Integer, ForeignKey("debate_participants.id"), nullable=True)
+    winner_side: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    best_debater_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("debate_participants.id"), nullable=True)
 
-    # Scores (stored as JSON for flexibility)
-    scores = Column(JSONB, nullable=True)
-    # Format: {
-    #   "affirmative": {
-    #     "logic": 8.5,
-    #     "evidence": 7.0,
-    #     "rebuttal": 9.0,
-    #     "persuasiveness": 8.0,
-    #     "total": 32.5
-    #   },
-    #   "negative": {...}
-    # }
+    scores: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
 
-    # Detailed analysis
-    detailed_analysis = Column(Text, nullable=True)
+    detailed_analysis: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    # Timestamps
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
-    # Relationships
-    session = relationship("DebateSession", back_populates="judgment", lazy="selectin")
-    judge = relationship(
+    session: Mapped["DebateSession"] = relationship("DebateSession", back_populates="judgment", lazy="selectin")
+    judge: Mapped["DebateParticipant"] = relationship(
         "DebateParticipant",
         foreign_keys=[judge_participant_id],
         backref="judgments_made",
         lazy="selectin",
     )
-    best_debater = relationship(
+    best_debater: Mapped[Optional["DebateParticipant"]] = relationship(
         "DebateParticipant",
         foreign_keys=[best_debater_id],
         lazy="selectin",
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<DebateJudgment {self.id}: Winner={self.winner_side}>"

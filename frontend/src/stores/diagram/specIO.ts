@@ -312,32 +312,62 @@ export function useSpecIOSlice(ctx: DiagramContext) {
 
   function mergeGranularUpdate(
     updatedNodes?: Array<Record<string, unknown>>,
-    updatedConnections?: Array<Record<string, unknown>>
+    updatedConnections?: Array<Record<string, unknown>>,
+    deletedNodeIds?: string[],
+    deletedConnectionIds?: string[]
   ): boolean {
     if (!ctx.data.value) return false
+
+    const deletedThisBatch = new Set(
+      deletedNodeIds ? deletedNodeIds.filter(Boolean) : [],
+    )
+
+    if (deletedNodeIds && deletedNodeIds.length > 0) {
+      const toDelete = new Set(deletedNodeIds.filter(Boolean))
+      ctx.data.value.nodes = ctx.data.value.nodes.filter((n) => !toDelete.has(n.id))
+    }
+
+    if (deletedConnectionIds && deletedConnectionIds.length > 0) {
+      const toDelete = new Set(deletedConnectionIds.filter(Boolean))
+      if (ctx.data.value.connections) {
+        ctx.data.value.connections = ctx.data.value.connections.filter(
+          (c) => !toDelete.has((c as unknown as Record<string, unknown>).id as string)
+        )
+      }
+    }
 
     if (updatedNodes && updatedNodes.length > 0) {
       for (const updatedNode of updatedNodes) {
         const nodeId = updatedNode.id as string
-        if (!nodeId) continue
+        if (!nodeId || deletedThisBatch.has(nodeId)) continue
 
         const existingIndex = ctx.data.value.nodes.findIndex((n) => n.id === nodeId)
         if (existingIndex >= 0) {
-          ctx.data.value.nodes[existingIndex] = {
+          const merged = {
             ...ctx.data.value.nodes[existingIndex],
             ...updatedNode,
           } as DiagramNode
+          // Keep data.label in sync with text so vue-flow nodes always render
+          // the latest label regardless of spread order in diagramNodeToVueFlowNode.
+          if (typeof merged.text === 'string' && merged.data != null) {
+            ;(merged.data as Record<string, unknown>).label = merged.text
+          }
+          ctx.data.value.nodes[existingIndex] = merged
         } else {
-          ctx.data.value.nodes.push(updatedNode as unknown as DiagramNode)
+          const newNode = { ...updatedNode } as unknown as DiagramNode
+          if (typeof newNode.text === 'string' && newNode.data != null) {
+            ;(newNode.data as Record<string, unknown>).label = newNode.text
+          }
+          ctx.data.value.nodes.push(newNode)
         }
       }
     }
 
     if (updatedConnections && updatedConnections.length > 0) {
       for (const updatedConn of updatedConnections) {
+        const connId = updatedConn.id as string | undefined
         const source = updatedConn.source as string
         const target = updatedConn.target as string
-        if (!source || !target) continue
 
         let conns: Connection[]
         if (ctx.data.value.connections) {
@@ -346,7 +376,14 @@ export function useSpecIOSlice(ctx: DiagramContext) {
           conns = []
           ctx.data.value.connections = conns
         }
-        const existingIndex = conns.findIndex((c) => c.source === source && c.target === target)
+
+        const existingIndex = connId
+          ? conns.findIndex((c) => (c as unknown as Record<string, unknown>).id === connId)
+          : source && target
+            ? conns.findIndex((c) => c.source === source && c.target === target)
+            : -1
+
+        if (!source && !target && !connId) continue
 
         if (existingIndex >= 0) {
           const existing = conns[existingIndex]
@@ -362,6 +399,13 @@ export function useSpecIOSlice(ctx: DiagramContext) {
 
     if (ctx.type.value === 'concept_map' && ctx.data.value?.connections && ctx.data.value.nodes) {
       normalizeAllConceptMapTopicRootLabels(ctx.data.value.connections, ctx.data.value.nodes)
+    }
+
+    const nodeIdSet = new Set(ctx.data.value.nodes.map((n) => n.id))
+    if (ctx.data.value.connections?.length) {
+      ctx.data.value.connections = ctx.data.value.connections.filter(
+        (c) => nodeIdSet.has(c.source) && nodeIdSet.has(c.target),
+      )
     }
 
     return true

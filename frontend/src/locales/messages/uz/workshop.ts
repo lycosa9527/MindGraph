@@ -1,9 +1,8 @@
-/** uz UI — workshop */
+/** uz UI workshop */
 
 export default {
   'collab.codeCopied': 'Kod nusxalandi',
-  'collab.codeGenerated':
-    'Hamkorlik uchun kod yaratildi — birgalikda tahrir qilish uchun ulashing.',
+  'collab.codeGenerated': 'Hamkorlik uchun kod yaratildi birgalikda tahrir qilish uchun ulashing.',
   'collab.copy': 'Nusxalash',
   'collab.copyFailed': 'Nusxa olinmadi',
   'collab.copyLink': 'Havolani nusxalash',
@@ -33,15 +32,14 @@ export default {
   'collab.saveFailed': 'Diagramma saqlanmadi',
   'collab.scanToJoin': "Qo'shilish uchun skanerlang",
   'collab.schoolDescActive':
-    'Maktab hamkorligi yoqildi. Hamkorlar: bosh sahifada Hamkorlik → Maktab qilib diagrammani tanlang — kod kerak emas.',
-  'collab.schoolStarted':
-    "Maktab hamkorligi yoqildi — hamkorlar Hamkorlik → Maktabdan qo'shilishadi.",
+    'Maktab hamkorligi yoqildi. Hamkorlar: bosh sahifada Hamkorlik Maktab qilib diagrammani tanlang kod kerak emas.',
+  'collab.schoolStarted': "Maktab hamkorligi yoqildi hamkorlar Hamkorlik Maktabdan qo'shilishadi.",
   'collab.sectionNetwork': 'Ulashilgan hamkorlik (kod)',
   'collab.sectionSchool': 'Maktab hamkorligi',
   'collab.sessionDuration': 'Sessiya davomiyligi',
   'collab.sessionRemaining': 'Sessiya tugashiga',
   'collab.shareDescNetwork':
-    'Kod yoki havolani ulashing — boshqa Hamkorlik → Umumiy orqali kiritishi mumkin.',
+    'Kod yoki havolani ulashing boshqa Hamkorlik Umumiy orqali kiritishi mumkin.',
   'collab.start': 'Boshlash',
   'collab.startFailed': 'Boshlanmadi: {msg}',
   'collab.title': 'Onlayn hamkorlik',
@@ -58,7 +56,7 @@ export default {
     'Bu dars tadqiqoti arxivlansinmi? A’zolar ro‘yxatda ko‘rinmaydi.',
   'workshop.archiveTeachingGroup': 'O‘qitish guruhi arxivlash',
   'workshop.archiveTeachingGroupConfirm': 'Bu o‘qitish guruhi arxivlansinmi? Ro‘yxatdan yo‘qoladi.',
-  'workshop.backToConversations': '← Suhbatlar',
+  'workshop.backToConversations': 'Suhbatlar',
   'workshop.bold': 'Qalin',
   'workshop.browseChannels': 'O‘qitish guruhlarini ko‘rish',
   'workshop.by': 'kimdan',
@@ -69,7 +67,7 @@ export default {
   'workshop.channelColor': 'Kanal rangi',
   'workshop.channelInviteReceived':
     'Siz «{name}» guruhiga qo‘sildingiz. Ko‘rish uchun Workshop ni oching.',
-  'workshop.channelKindGroup': 'O‘qitish guruhi (yuqori daraja, mas. 教研组)',
+  'workshop.channelKindGroup': 'O‘qitish guruhi (yuqori daraja, mas. 教研',
   'workshop.channelKindLessonStudy': 'Guruhdagi dars tadqiqoti (课例)',
   'workshop.channelNameLabel': 'Nomi',
   'workshop.channelNamePlaceholder': 'mas. STEM guruhi',
@@ -139,7 +137,7 @@ export default {
   'workshop.generalChat': 'Umumiy chat',
   'workshop.inbox': 'Kirish qutisi',
   'workshop.inboxHintPickChannel':
-    'O‘qish va javob berish uchun yon paneldan kanal yoki DM oching. Ko‘rinishlar → Kirish qutisidan qaytishingiz mumkin.',
+    'O‘qish va javob berish uchun yon paneldan kanal yoki DM oching. Ko‘rinishlar Kirish qutisidan qaytishingiz mumkin.',
   'workshop.inboxSummaryTitle': 'Kirish qutingiz',
   'workshop.inboxUnreadChannels': 'Kanallarda o‘qilmagan',
   'workshop.inboxUnreadDms': 'O‘qilmagan shaxsiy xabarlar',
@@ -171,7 +169,7 @@ export default {
   'workshop.markAsRead': 'O‘qilgan deb belgilash',
   'workshop.markStudyResolved': 'Tadqiqotni yakunlandi deb qilish',
   'workshop.members': 'aʼzolar',
-  'workshop.mentionAmbiguous': 'Ikki mazmunli nom — noyoz ko‘rinadigan ism bilan tanlang: {0}',
+  'workshop.mentionAmbiguous': 'Ikki mazmunli nom noyoz ko‘rinadigan ism bilan tanlang: {0}',
   'workshop.mentionUnknown':
     "Noma'lum taklifnomalar (faqat tuzilma ichidagi foydalanuvchi va xodimlar): {0}",
   'workshop.mentionedInChannel': '#{0} kanalida siz eslatilgan edingiz',
@@ -193,7 +191,7 @@ export default {
   'workshop.newConversation': 'Yangi suhbat',
   'workshop.newDM': 'Yangi shaxsiy xabar',
   'workshop.newDirectMessage': 'Yangi shaxsiy xabar',
-  'workshop.newMessage': 'Yangi xabar…',
+  'workshop.newMessage': 'Yangi xabar...',
   'workshop.newTopic': 'Yangi suhbat',
   'workshop.noChannelsAvailable': 'Mavjud kanallar yo‘q',
   'workshop.noChannelsJoined': 'Kanallarga qoʻshilmagan',
@@ -244,8 +242,8 @@ export default {
   'workshop.roleAdmin': 'Administrator',
   'workshop.roleManager': 'Menejer',
   'workshop.roleOwner': 'Egasi',
-  'workshop.searchMembers': 'A’zolarni qidirish…',
-  'workshop.searchMessages': 'Xabarlarni qidirish…',
+  'workshop.searchMembers': 'A’zolarni qidirish...',
+  'workshop.searchMessages': 'Xabarlarni qidirish...',
   'workshop.selectChannelForSettings':
     'Avval o‘qitish guruhi yoki dars tadqiqotini tanlang, keyin sozlamalarni oching.',
   'workshop.selectConversation': 'Suhbat tanlang',
@@ -282,12 +280,12 @@ export default {
   'workshop.toggleContacts': 'Kontaktlarni almashtirish',
   'workshop.topicCount': 'suhbatlar',
   'workshop.topicDescription': 'Tavsif',
-  'workshop.topicDescriptionPlaceholder': 'Suhbat mavzusini tasvirlash…',
+  'workshop.topicDescriptionPlaceholder': 'Suhbat mavzusini tasvirlash...',
   'workshop.topicSettings': 'Suhbat sozlamalari',
   'workshop.topicTitle': 'Sarlavha',
   'workshop.topicTitlePlaceholder': 'mas. 3-bob uchun dizayn-tahlil xaritasi',
   'workshop.topics': 'Suhbatlar',
-  'workshop.typeMessagePlaceholder': 'Xabar yozing… (jo‘natish Enter, yangi satr Shift+Enter)',
+  'workshop.typeMessagePlaceholder': 'Xabar yozing(jo‘natish Enter, yangi satr Shift+Enter)',
   'workshop.unfollowTopic': 'Kuzatishni toʻxtatish',
   'workshop.unknown': "Noma'lum",
   'workshop.unmuteChannel': 'Kanaldagi ovozni yoqish',
@@ -307,10 +305,10 @@ export default {
     'Kanal bu yerda koʻpincha taʼlim-tadqiqot guruhi (PLC) uchun: jamoada bitta umumiy maydon (mas. Matematika PLC, Ingliz tili PLC). Kim qatnashishi va joylar qanday guruhlanganini belgilaydi.',
   'workshop.welcomeChannelsTitle': 'PLC / fan guruhlari',
   'workshop.welcomeConversationsBody':
-    'Dars tadqiqoti ichida sarlavhali ochiq suhbatlar ochiladi — masalan dars loyihasi, taʼsir, yakun boʻyicha vazifalar — yoʻnalish aniql boʻladi.',
+    'Dars tadqiqoti ichida sarlavhali ochiq suhbatlar ochiladi masalan dars loyihasi, taʼsir, yakun boʻyicha vazifalar yoʻnalish aniql boʻladi.',
   'workshop.welcomeConversationsTitle': 'Suhbatlar',
   'workshop.welcomeExampleCaption':
-    'Namunali misol — Matematika va Ingliz tili PLC, har birida dars tadqiqoti va namuna suhbatlar.',
+    'Namunali misol Matematika va Ingliz tili PLC, har birida dars tadqiqoti va namuna suhbatlar.',
   'workshop.welcomeExampleConvLabel': 'Suhbatlar',
   'workshop.welcomeExampleGroupEnglish': 'Ingliz tili PLC',
   'workshop.welcomeExampleGroupMath': 'Matematika PLC',
@@ -319,21 +317,21 @@ export default {
   'workshop.welcomeExampleLSEng1C2': 'Oʻqiyotganidan keyin vazifa va oʻzlashtirish',
   'workshop.welcomeExampleLSEng1C3': 'Kuzatish taʼsiri va refleksiya',
   'workshop.welcomeExampleLSEng2':
-    'Dars tadqiqoti: Yozuv — bir oʻquv mashgʻuloti turli ustozlar bilan',
+    'Dars tadqiqoti: Yozuv bir oʻquv mashgʻuloti turli ustozlar bilan',
   'workshop.welcomeExampleLSEng2C1': 'Rubrika sinovi va qayta koʻrish',
   'workshop.welcomeExampleLSMath1': 'Dars tadqiqoti: «Funksiya tushunchasi» haftasi',
   'workshop.welcomeExampleLSMath1C1': 'Maqsadlar va faoliyat',
   'workshop.welcomeExampleLSMath1C2': 'Savol va doska ishi',
   'workshop.welcomeExampleLSMath1C3': 'Darsdan keyin refleksiya va keyingi qadamlar',
-  'workshop.welcomeExampleLSMath2': 'Dars tadqiqoti: Yuqori sinf — hosilalar',
+  'workshop.welcomeExampleLSMath2': 'Dars tadqiqoti: Yuqori sinf hosilalar',
   'workshop.welcomeExampleLSMath2C1': 'Bosqichli vazifalar va baholash',
   'workshop.welcomeExampleMsgLabel': 'Xabarlar har bir suhbat ichida',
   'workshop.welcomeExampleOrg': 'Chenxi oʻrta maktabi',
   'workshop.welcomeHowTitle': 'Qanday bogʻlangan',
   'workshop.welcomeIntro':
-    'Workshop — maktabingizda tuzilgan muhokama joyi: e’lonlar, dars tadqiqotlari va oʻqitish bilan bir qatorda tartibli suhbatlar.',
+    'Workshop maktabingizda tuzilgan muhokama joyi: e’lonlar, dars tadqiqotlari va oʻqitish bilan bir qatorda tartibli suhbatlar.',
   'workshop.welcomeLessonStudyBody':
-    'Dars tadqiqoti kanallari odatda shu guruh ostida. Har biri bitta dars sikli — reja, kuzatish, refleksiya — va diagramma yoki holat bilan bogʻlanishi mumkin.',
+    'Dars tadqiqoti kanallari odatda shu guruh ostida. Har biri bitta dars sikli reja, kuzatish, refleksiya va diagramma yoki holat bilan bogʻlanishi mumkin.',
   'workshop.welcomeLessonStudyTitle': 'Dars tadqiqotlari',
   'workshop.welcomeMessagesBody':
     'Xabarlar asosiy kanal oqimida yoki suhbat ichidagi alohida yozuvlar. Javoblar, eslatmalar va fayllar xabarga bogʻlangan.',
@@ -348,8 +346,13 @@ export default {
   'workshopCanvas.editingNode': '{username} {emoji} bu tugmani tahrir qiladi',
   'workshopCanvas.errorGeneric': 'Hamkorlik xatosi',
   'workshopCanvas.reconnectFailed': 'Qaytadan ulanilmadi sahifani yangilang',
-  'workshopCanvas.returnedHomeIdle': 'Bosh sahifa — 30 daqiqa diagram tahriri yoʻq.',
-  'workshopCanvas.userJoined': 'Foydalanuvchi {userId} qo‘shildi',
-  'workshopCanvas.userLeft': 'Foydalanuvchi {userId} ketdi',
+  'workshopCanvas.returnedHomeIdle': 'Bosh sahifa 30 daqiqa diagram tahriri yoʻq.',
+  'workshopCanvas.userJoined': 'Foydalanuvchi {username} qo‘shildi',
+  'workshopCanvas.usersJoined': '{count} users joined',
+  'workshopCanvas.userLeft': 'Foydalanuvchi {username} ketdi',
+  'workshopCanvas.usersLeft': '{count} users left',
   'workshopCanvas.wsError': 'Hamkorlik ulanishi xato, tarmoqni tekshiring',
+  'workshopCanvas.otherTabCollaborationActive':
+    'Collaboration continues in another tab or window for this account.',
+  'workshopCanvas.joinQrAlt': 'Join collaboration QR code',
 } as const

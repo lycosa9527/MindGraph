@@ -99,3 +99,6 @@ export function useLanguage() {
     getNotification,
   }
 }
+
+/** `t` from `useLanguage()` (strict keys + string fallbacks), for deps typing */
+export type UseLanguageTranslate = ReturnType<typeof useLanguage>['t']

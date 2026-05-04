@@ -53,7 +53,17 @@ from utils.env_helpers import env_int
 logger = logging.getLogger(__name__)
 
 
-_DEFAULT_MAX_CONNECTIONS = 150
+# Pool size arithmetic for online collab at 500 editors / 4 workers:
+#   Each active editor during a hot update path issues roughly:
+#     1 pipeline (live_spec merge + INCR seq + ck_key ops)   ~3 cmds in 1 RTT
+#     1 editors HSET/HEXPIRE per node_editing              ~2 cmds in 1 RTT
+#     1 ZADD idle score touch                               ~1 cmd in 1 RTT
+#   = ~6 RTTs/update × 500 editors × 5 updates/s / 4 workers
+#   ≈ 1875 concurrent ops/s/worker → at 5 ms/cmd → ~10 connections steady-state
+#   Burst/join-storm headroom at 200 ms tail latency: ~40 connections.
+#   Add pub/sub connection, idle monitor, flush tasks and HTTP handlers:
+#   256 is the recommended minimum for 500-editor rooms; 512 for peak safety.
+_DEFAULT_MAX_CONNECTIONS = 256
 _DEFAULT_HEALTH_CHECK_INTERVAL = 30  # seconds
 _DEFAULT_SOCKET_TIMEOUT = 5.0
 _DEFAULT_SOCKET_CONNECT_TIMEOUT = 5.0

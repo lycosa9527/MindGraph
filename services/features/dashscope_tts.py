@@ -116,6 +116,10 @@ class DashscopeTtsService:
             logger.warning("[TTS] Service not available, skipping synthesis")
             return None
 
+        api_key = self.api_key
+        if api_key is None:
+            return None
+
         if not text or not text.strip():
             logger.warning("[TTS] Empty text provided")
             return None
@@ -139,7 +143,7 @@ class DashscopeTtsService:
 
             # Create TTS client
             client = TTSRealtimeClient(
-                api_key=self.api_key,
+                api_key=api_key,
                 model=TTS_MODEL,
                 voice=voice,
                 mode=SessionMode.SERVER_COMMIT,
@@ -201,6 +205,10 @@ class DashscopeTtsService:
             logger.warning("[TTS] Service not available, skipping synthesis")
             return
 
+        api_key = self.api_key
+        if api_key is None:
+            return
+
         # Determine voice
         if not voice:
             voice = self.get_voice_for_model(model_id)
@@ -212,7 +220,7 @@ class DashscopeTtsService:
         try:
             # Create TTS client with streaming
             client = TTSRealtimeClient(
-                api_key=self.api_key,
+                api_key=api_key,
                 model=TTS_MODEL,
                 voice=voice,
                 mode=SessionMode.SERVER_COMMIT,

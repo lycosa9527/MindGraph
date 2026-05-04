@@ -15,7 +15,9 @@ import {
   useLanguage,
   useNotifications,
 } from '@/composables'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramStore } from '@/stores'
+import { useAuthStore } from '@/stores/auth'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { useUIStore } from '@/stores/ui'
 import { authFetch } from '@/utils/api'
@@ -28,13 +30,23 @@ function generateQRCodeUrl(text: string): string {
 interface Props {
   visible: boolean
   diagramId: string | null
+  /**
+   * Authoritative session diagram ID provided by the WebSocket layer.
+   * When set, stop/status calls use this ID instead of `diagramId` or
+   * `resolvedDiagramId` so the correct session is addressed even if the
+   * host has navigated to a different diagram mid-session.
+   */
+  sessionDiagramId?: string | null
   /** organization = 校内, network = 共同 (VooV-style code share) */
   mode: 'organization' | 'network'
 }
 
 interface Emits {
   (e: 'update:visible', value: boolean): void
-  (e: 'collabCodeChanged', code: string | null): void
+  (
+    e: 'collabSession',
+    payload: { code: string | null; visibility: 'organization' | 'network' | null }
+  ): void
 }
 
 const props = defineProps<Props>()
@@ -45,8 +57,11 @@ const notify = useNotifications()
 const diagramStore = useDiagramStore()
 const savedDiagramsStore = useSavedDiagramsStore()
 const uiStore = useUIStore()
+const authStore = useAuthStore()
 
 const workshopCode = ref<string | null>(null)
+/** Matches server ``diagram.workshop_visibility``; drives canvas banner UX. */
+const sessionVisibility = ref<'organization' | 'network' | null>(null)
 const resolvedDiagramId = ref<string | null>(null)
 const isActive = ref(false)
 const participantCount = ref(0)
@@ -126,6 +141,24 @@ const showDialog = computed({
   set: (value) => emit('update:visible', value),
 })
 
+function parseApiVisibility(raw: unknown): 'organization' | 'network' | null {
+  if (raw === 'network') return 'network'
+  if (raw === 'organization') return 'organization'
+  return null
+}
+
+function emitCollabSessionFromModal() {
+  if (!workshopCode.value) {
+    return
+  }
+  const vis = sessionVisibility.value ?? (props.mode === 'network' ? 'network' : 'organization')
+  emit('collabSession', { code: workshopCode.value, visibility: vis })
+}
+
+function emitClearCollabSession() {
+  emit('collabSession', { code: null, visibility: null })
+}
+
 const getDiagramSpec = useDiagramSpecForSave()
 
 function getDiagramTitle(): string {
@@ -199,11 +232,12 @@ watch(
           await startWorkshopWithId(diagramId)
         }
         if (workshopCode.value) {
-          emit('collabCodeChanged', workshopCode.value)
+          emitCollabSessionFromModal()
         }
       }
     } else {
       workshopCode.value = null
+      sessionVisibility.value = null
       isActive.value = false
       participantCount.value = 0
       remainingSeconds.value = null
@@ -231,6 +265,12 @@ async function checkWorkshopStatusWithId(diagramId: string) {
       isActive.value = data.active || false
       workshopCode.value = data.code || null
       participantCount.value = data.participant_count || 0
+      if (data.active && data.code) {
+        const visParsed = parseApiVisibility(data.workshop_visibility)
+        sessionVisibility.value = visParsed ?? 'organization'
+      } else {
+        sessionVisibility.value = null
+      }
       if (typeof data.remaining_seconds === 'number') {
         remainingSeconds.value = data.remaining_seconds
         if (data.active && workshopCode.value) {
@@ -239,12 +279,11 @@ async function checkWorkshopStatusWithId(diagramId: string) {
       } else {
         remainingSeconds.value = null
       }
-    } else {
-      const err = await response.json().catch(() => ({}))
-      console.warn('Workshop status:', err.detail || response.status)
+    } else if (response.status !== 404) {
+      notify.warning(t('collab.networkError'))
     }
-  } catch (error) {
-    console.warn('Workshop status check failed:', error)
+  } catch {
+    notify.warning(t('collab.networkError'))
   }
 }
 
@@ -258,19 +297,36 @@ async function startWorkshopWithId(diagramId: string) {
     isNetworkMode.value && sessionDurationPreset.value === '1h'
       ? 'today'
       : sessionDurationPreset.value
+  const rawSchoolId = authStore.user?.schoolId
+  const orgId = rawSchoolId ? parseInt(rawSchoolId, 10) || null : null
   isLoading.value = true
   try {
+    const body: Record<string, unknown> = { visibility, duration }
+    if (orgId !== null) {
+      body.org_id = orgId
+    }
     const response = await authFetch(`/api/diagrams/${diagramId}/workshop/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ visibility, duration }),
+      body: JSON.stringify(body),
     })
-    if (response.ok) {
+      if (response.ok) {
       const data = await response.json()
       workshopCode.value = data.code
+      sessionVisibility.value = visibility
       isActive.value = true
       participantCount.value = 1
+      const stopped =
+        typeof data.stopped_previous_sessions === 'number'
+          ? data.stopped_previous_sessions
+          : 0
+      // Signal that this user is the host so role detection is immediate,
+      // before the WebSocket `joined` message arrives.
+      eventBus.emit('workshop:host-started', {})
       await checkWorkshopStatusWithId(diagramId)
+      if (stopped > 0) {
+        notify.info(t('collab.previousSessionsStopped', { n: stopped }))
+      }
       if (isNetworkMode.value) {
         notify.success(t('collab.codeGenerated'))
       } else {
@@ -291,13 +347,40 @@ async function startWorkshopWithId(diagramId: string) {
 
 async function handleGenerateCode() {
   const diagramId = await ensureDiagramSaved()
-  if (diagramId) {
+  if (!diagramId) return
+  // Check for an existing session first — the user may have navigated away
+  // and back without explicitly stopping the session.  Starting a new one
+  // without this check creates a zombie session for every re-entry.
+  await checkWorkshopStatusWithId(diagramId)
+  if (!workshopCode.value) {
     await startWorkshopWithId(diagramId)
-    if (workshopCode.value) {
-      emit('collabCodeChanged', workshopCode.value)
-    }
+  }
+  if (workshopCode.value) {
+    emitCollabSessionFromModal()
   }
 }
+
+/**
+ * Start the collab session immediately without showing the dialog.
+ * Called programmatically by CanvasCollabOverlay when the user picks a mode
+ * from the zoom-controls dropdown while no session is active.
+ */
+async function startNow() {
+  await handleGenerateCode()
+}
+
+/** Called by the toolbar dropdown "stop" action — skips the modal entirely. */
+async function stopNow() {
+  // Prefer the authoritative WS session diagram ID, then fall back to the
+  // resolved ID from the save flow.  This handles the case where the host
+  // navigated to a different diagram after starting a session.
+  const diagramId = props.sessionDiagramId ?? props.diagramId ?? resolvedDiagramId.value
+  if (!diagramId) return
+  resolvedDiagramId.value = diagramId
+  await endCollaboration()
+}
+
+defineExpose({ startNow, stopNow })
 
 async function copyCode() {
   if (!workshopCode.value) return
@@ -331,13 +414,26 @@ async function endCollaboration() {
     })
     if (response.ok) {
       workshopCode.value = null
+      sessionVisibility.value = null
       isActive.value = false
       participantCount.value = 0
-      emit('collabCodeChanged', null)
+      emitClearCollabSession()
       showDialog.value = false
       notify.success(t('collab.ended'))
     } else {
       const error = await response.json().catch(() => ({}))
+      if (response.status === 404) {
+        // Server says the session does not exist (already ended, partial stop,
+        // or the closing flag was set but the DB clear failed). Treat this as
+        // "session is gone" and force a local disconnect so the host is not
+        // left with an open WS that keeps being rejected with "shutting down".
+        workshopCode.value = null
+        sessionVisibility.value = null
+        isActive.value = false
+        participantCount.value = 0
+        emitClearCollabSession()
+        showDialog.value = false
+      }
       notify.error(error.detail || t('collab.endFailed'))
     }
   } catch (error) {
@@ -361,12 +457,15 @@ async function endCollaboration() {
         v-if="resolvedDiagramId"
         class="collab-section"
       >
-        <h3 class="section-title">
+        <h3
+          v-if="!(workshopCode && !isNetworkMode)"
+          class="section-title"
+        >
           {{ isNetworkMode ? t('collab.sectionNetwork') : t('collab.sectionSchool') }}
         </h3>
 
         <p
-          v-if="workshopCode && remainingSeconds !== null && remainingSeconds >= 0"
+          v-if="isNetworkMode && workshopCode && remainingSeconds !== null && remainingSeconds >= 0"
           class="session-remaining text-sm text-gray-500 mb-3"
         >
           {{ t('collab.sessionRemaining') }}: {{ formatRemaining() }}
@@ -382,7 +481,7 @@ async function endCollaboration() {
                 <img
                   v-if="qrCodeUrl"
                   :src="qrCodeUrl"
-                  alt="Join QR"
+                  :alt="t('workshopCanvas.joinQrAlt')"
                   class="qr-code-image"
                 />
               </div>
@@ -440,9 +539,6 @@ async function endCollaboration() {
         </div>
 
         <div v-else-if="workshopCode && !isNetworkMode">
-          <p class="description mb-4">
-            {{ t('collab.schoolDescActive') }}
-          </p>
           <div
             v-if="participantCount > 0"
             class="participants-info"

@@ -534,6 +534,16 @@ export default {
   'mindgraphLanding.sharedCodeHint':
     '招待コード（xxx-xxx）を入力して相手のセッションに参加します。',
   'mindgraphLanding.sharedCollab': '共有の共同編集',
+  'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome':
     'こんにちは、{username}さん。私はあなたのAIビジュアル思考アシスタントです',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
+  'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
+  'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
+  'canvasPage.collabRetryConnection': 'Retry',
+  'canvasPage.collabParticipantsAria': 'Collaboration participants',
+  'canvasPage.collabConnected': 'Connected',
+  'canvas.topBar.viewOnly': 'View only',
+  'canvasPage.collabParticipantsMore': 'more',
 }

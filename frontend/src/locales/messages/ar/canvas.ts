@@ -526,5 +526,15 @@ export default {
   'mindgraphLanding.schoolCollab': 'تعاون مدرسي',
   'mindgraphLanding.sharedCodeHint': 'أدخل رمز الدعوة (xxx-xxx) للانضمام إلى جلستهم.',
   'mindgraphLanding.sharedCollab': 'تعاون مشترك',
+  'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome': 'مرحبًا {username}، أنا مساعدك للتفكير البصري بالذكاء الاصطناعي',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
+  'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
+  'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
+  'canvasPage.collabRetryConnection': 'Retry',
+  'canvasPage.collabParticipantsAria': 'Collaboration participants',
+  'canvasPage.collabConnected': 'Connected',
+  'canvas.topBar.viewOnly': 'View only',
+  'canvasPage.collabParticipantsMore': 'more',
 }

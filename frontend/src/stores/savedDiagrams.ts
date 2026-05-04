@@ -107,6 +107,7 @@ export interface SavedDiagram {
   thumbnail: string | null
   updated_at: string // ISO date string
   is_pinned: boolean
+  workshop_active?: boolean
 }
 
 export interface SavedDiagramFull extends SavedDiagram {
@@ -186,6 +187,32 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       return false
     } finally {
       isLoading.value = false
+    }
+  }
+
+  /**
+   * End the online workshop for a saved diagram (host only). Updates local
+   * `workshop_active` when the server accepts the stop.
+   */
+  async function stopDiagramOnlineCollab(diagramId: string): Promise<boolean> {
+    if (!authStore.isAuthenticated) {
+      return false
+    }
+    try {
+      const response = await authFetch(`/api/diagrams/${diagramId}/workshop/stop`, {
+        method: 'POST',
+      })
+      if (!response.ok) {
+        return false
+      }
+      const entry = diagrams.value.find((d) => d.id === diagramId)
+      if (entry) {
+        entry.workshop_active = false
+      }
+      return true
+    } catch (e) {
+      console.error('[SavedDiagrams] Stop workshop error:', e)
+      return false
     }
   }
 
@@ -741,6 +768,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
 
     // Actions
     fetchDiagrams,
+    stopDiagramOnlineCollab,
     getDiagram,
     saveDiagram,
     updateDiagram,

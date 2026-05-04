@@ -1,10 +1,10 @@
 /**
- * tg UI — workshop
+ * tg UI workshop
  */
 
 export default {
   'collab.codeCopied': 'Code copied',
-  'collab.codeGenerated': 'Collaboration code generated — share to edit together.',
+  'collab.codeGenerated': 'Collaboration code generated share to edit together.',
   'collab.copy': 'Copy',
   'collab.copyFailed': 'Failed to copy',
   'collab.copyLink': 'Copy link',
@@ -33,14 +33,13 @@ export default {
   'collab.saveFailed': 'Failed to save diagram',
   'collab.scanToJoin': 'Scan to join',
   'collab.schoolDescActive':
-    'School collaboration is on. Colleagues: use Collaborate → School on the home page and pick this diagram — no code required.',
-  'collab.schoolStarted':
-    'School collaboration is on — colleagues can join from Collaborate → School.',
+    'School collaboration is on. Colleagues: use Collaborate School on the home page and pick this diagram no code required.',
+  'collab.schoolStarted': 'School collaboration is on colleagues can join from Collaborate School.',
   'collab.sectionNetwork': 'Shared collaboration (code)',
   'collab.sectionSchool': 'School collaboration',
   'collab.sessionDuration': 'Session duration',
   'collab.sessionRemaining': 'Session ends in',
-  'collab.shareDescNetwork': 'Share the code or link — others enter it under Collaborate → Shared.',
+  'collab.shareDescNetwork': 'Share the code or link others enter it under Collaborate Shared.',
   'collab.start': 'Start',
   'collab.startFailed': 'Failed to start: {msg}',
   'collab.title': 'Online collaboration',
@@ -58,7 +57,7 @@ export default {
   'workshop.archiveTeachingGroup': 'Archive teaching group',
   'workshop.archiveTeachingGroupConfirm':
     'Archive this teaching group? It will disappear from the teaching group list.',
-  'workshop.backToConversations': '← Conversations',
+  'workshop.backToConversations': 'Conversations',
   'workshop.bold': 'Bold',
   'workshop.browseChannels': 'Browse teaching groups',
   'workshop.by': 'by',
@@ -67,8 +66,8 @@ export default {
   'workshop.channelAvatarEmoji': 'Icon (optional)',
   'workshop.channelAvatarPlaceholder': 'Emoji or short label',
   'workshop.channelColor': 'Channel color',
-  'workshop.channelInviteReceived': 'You were added to “{name}”. Open Workshop to view it.',
-  'workshop.channelKindGroup': 'Teaching group (top-level, e.g. 教研组)',
+  'workshop.channelInviteReceived': 'You were added to “{name} Open Workshop to view it.',
+  'workshop.channelKindGroup': 'Teaching group (top-level, e.g. 教研',
   'workshop.channelKindLessonStudy': 'Lesson study under a group (课例)',
   'workshop.channelNameLabel': 'Name',
   'workshop.channelNamePlaceholder': 'e.g. STEM teaching group',
@@ -138,7 +137,7 @@ export default {
   'workshop.generalChat': 'General Chat',
   'workshop.inbox': 'Inbox',
   'workshop.inboxHintPickChannel':
-    'Open a channel or a direct message in the sidebar to read and reply. You can return here anytime from Views → Inbox.',
+    'Open a channel or a direct message in the sidebar to read and reply. You can return here anytime from Views Inbox.',
   'workshop.inboxSummaryTitle': 'Your inbox',
   'workshop.inboxUnreadChannels': 'Unread in channels',
   'workshop.inboxUnreadDms': 'Unread direct messages',
@@ -170,7 +169,7 @@ export default {
   'workshop.markAsRead': 'Mark as read',
   'workshop.markStudyResolved': 'Mark study resolved',
   'workshop.members': 'members',
-  'workshop.mentionAmbiguous': 'Ambiguous names — pick someone with a unique display name: {0}',
+  'workshop.mentionAmbiguous': 'Ambiguous names pick someone with a unique display name: {0}',
   'workshop.mentionUnknown': 'Unknown mentions (same-organization users and staff only): {0}',
   'workshop.mentionedInChannel': 'You were mentioned in #{0}',
   'workshop.mentionedInTopic': 'You were mentioned in {0}',
@@ -302,13 +301,13 @@ export default {
   'workshop.viewingSchool': 'Viewing: {0}',
   'workshop.views': 'Views',
   'workshop.welcomeChannelsBody':
-    'A “channel” here often corresponds to a teaching research group (教研组) or PLC: one shared space per team (e.g. Math PLC, English PLC). It defines who takes part and how space is grouped.',
+    'A “channelhere often corresponds to a teaching research group (教研 or PLC: one shared space per team (e.g. Math PLC, English PLC). It defines who takes part and how space is grouped.',
   'workshop.welcomeChannelsTitle': 'PLC / subject groups',
   'workshop.welcomeConversationsBody':
     'Inside a lesson study you open titled conversations—for example instructional design, reflection, or follow-up tasks—so threads stay easy to follow.',
   'workshop.welcomeConversationsTitle': 'Conversations',
   'workshop.welcomeExampleCaption':
-    'Illustrative example (fictional school) — Math PLC and English PLC, each with lesson studies and sample conversations.',
+    'Illustrative example (fictional school) Math PLC and English PLC, each with lesson studies and sample conversations.',
   'workshop.welcomeExampleConvLabel': 'Conversations',
   'workshop.welcomeExampleGroupEnglish': 'English PLC',
   'workshop.welcomeExampleGroupMath': 'Math PLC',
@@ -316,13 +315,13 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'Guide sheet & worksheet design',
   'workshop.welcomeExampleLSEng1C2': 'Post-reading tasks & transfer',
   'workshop.welcomeExampleLSEng1C3': 'Observation feedback & reflection',
-  'workshop.welcomeExampleLSEng2': 'Lesson study: Writing — same lesson, different teachers',
+  'workshop.welcomeExampleLSEng2': 'Lesson study: Writing same lesson, different teachers',
   'workshop.welcomeExampleLSEng2C1': 'Rubric pilot & revision',
-  'workshop.welcomeExampleLSMath1': 'Lesson study: “Concept of functions” polishing week',
+  'workshop.welcomeExampleLSMath1': 'Lesson study: “Concept of functionspolishing week',
   'workshop.welcomeExampleLSMath1C1': 'Goals & activity design',
   'workshop.welcomeExampleLSMath1C2': 'Questioning & board work',
   'workshop.welcomeExampleLSMath1C3': 'Post-lesson reflection & next steps',
-  'workshop.welcomeExampleLSMath2': 'Lesson study: Senior review — derivatives',
+  'workshop.welcomeExampleLSMath2': 'Lesson study: Senior review derivatives',
   'workshop.welcomeExampleLSMath2C1': 'Tiered tasks & assessment',
   'workshop.welcomeExampleMsgLabel': 'Messages live inside each conversation',
   'workshop.welcomeExampleOrg': 'Chenxi Middle School',
@@ -345,8 +344,17 @@ export default {
   'workshopCanvas.editingNode': '{username} {emoji} is editing this node',
   'workshopCanvas.errorGeneric': 'Collaboration error',
   'workshopCanvas.reconnectFailed': 'Failed to reconnect to collaboration, please refresh the page',
-  'workshopCanvas.returnedHomeIdle': 'Returned home — no diagram edits for 30 minutes.',
-  'workshopCanvas.userJoined': 'User {userId} joined',
-  'workshopCanvas.userLeft': 'User {userId} left',
+  'workshopCanvas.returnedHomeIdle': 'Returned home no diagram edits for 30 minutes.',
+  'workshopCanvas.userJoined': 'User {username} joined',
+  'workshopCanvas.usersJoined': '{count} users joined',
+  'workshopCanvas.userLeft': 'User {username} left',
+  'workshopCanvas.usersLeft': '{count} users left',
   'workshopCanvas.wsError': 'Collaboration connection error, please check your network',
+  'workshopCanvas.returnedHomeRoomIdle':
+    'Collaboration ended: no diagram edits in this session for a while.',
+  'workshopCanvas.roomIdleWarningToast':
+    'No diagram edits lately collaboration ends when the countdown hits zero unless someone edits.',
+  'workshopCanvas.otherTabCollaborationActive':
+    'Collaboration continues in another tab or window for this account.',
+  'workshopCanvas.joinQrAlt': 'Join collaboration QR code',
 }

@@ -1,8 +1,8 @@
-/** pt UI — workshop */
+/** pt UI workshop */
 
 export default {
   'collab.codeCopied': 'Código copiado',
-  'collab.codeGenerated': 'Código de colaboração gerado — compartilhe para editarem juntos.',
+  'collab.codeGenerated': 'Código de colaboração gerado compartilhe para editarem juntos.',
   'collab.copy': 'Copiar',
   'collab.copyFailed': 'Falha ao copiar',
   'collab.copyLink': 'Copiar link',
@@ -31,14 +31,14 @@ export default {
   'collab.saveFailed': 'Falha ao salvar o diagrama',
   'collab.scanToJoin': 'Escaneie para entrar',
   'collab.schoolDescActive':
-    'Colaboração escolar ativa. Colegas: use Colaborar → Escola na página inicial e escolha este diagrama — sem código.',
-  'collab.schoolStarted': 'Colaboração escolar ativa — colegas podem entrar em Colaborar → Escola.',
+    'Colaboração escolar ativa. Colegas: use Colaborar Escola na página inicial e escolha este diagrama sem código.',
+  'collab.schoolStarted': 'Colaboração escolar ativa colegas podem entrar em Colaborar Escola.',
   'collab.sectionNetwork': 'Colaboração compartilhada (código)',
   'collab.sectionSchool': 'Colaboração escolar',
   'collab.sessionDuration': 'Duração da sessão',
   'collab.sessionRemaining': 'A sessão termina em',
   'collab.shareDescNetwork':
-    'Compartilhe o código ou o link — outras pessoas entram em Colaborar → Compartilhado.',
+    'Compartilhe o código ou o link outras pessoas entram em Colaborar Compartilhado.',
   'collab.start': 'Iniciar',
   'collab.startFailed': 'Falha ao iniciar: {msg}',
   'collab.title': 'Colaboração online',
@@ -57,7 +57,7 @@ export default {
   'workshop.archiveTeachingGroup': 'Arquivar grupo de ensino',
   'workshop.archiveTeachingGroupConfirm':
     'Arquivar este grupo de ensino? Ele desaparecerá da lista de grupos.',
-  'workshop.backToConversations': '← Conversas',
+  'workshop.backToConversations': 'Conversas',
   'workshop.bold': 'Negrito',
   'workshop.browseChannels': 'Explorar grupos de ensino',
   'workshop.by': 'por',
@@ -66,8 +66,8 @@ export default {
   'workshop.channelAvatarEmoji': 'Ícone (opcional)',
   'workshop.channelAvatarPlaceholder': 'Emoji ou rótulo curto',
   'workshop.channelColor': 'Cor do canal',
-  'workshop.channelInviteReceived': 'Você foi adicionado a “{name}”. Abra o Workshop para ver.',
-  'workshop.channelKindGroup': 'Grupo de ensino (nível superior, ex.: 教研组)',
+  'workshop.channelInviteReceived': 'Você foi adicionado a “{name} Abra o Workshop para ver.',
+  'workshop.channelKindGroup': 'Grupo de ensino (nível superior, ex.: 教研',
   'workshop.channelKindLessonStudy': 'Estudo de aula sob um grupo (课例)',
   'workshop.channelNameLabel': 'Nome',
   'workshop.channelNamePlaceholder': 'ex.: Grupo STEM',
@@ -137,7 +137,7 @@ export default {
   'workshop.generalChat': 'Chat geral',
   'workshop.inbox': 'Caixa de entrada',
   'workshop.inboxHintPickChannel':
-    'Abra um canal ou uma mensagem direta na barra lateral para ler e responder. Você pode voltar aqui a qualquer momento em Exibições → Caixa de entrada.',
+    'Abra um canal ou uma mensagem direta na barra lateral para ler e responder. Você pode voltar aqui a qualquer momento em Exibições Caixa de entrada.',
   'workshop.inboxSummaryTitle': 'Sua caixa de entrada',
   'workshop.inboxUnreadChannels': 'Não lidas nos canais',
   'workshop.inboxUnreadDms': 'Mensagens diretas não lidas',
@@ -169,7 +169,7 @@ export default {
   'workshop.markAsRead': 'Marcar como lida',
   'workshop.markStudyResolved': 'Marcar estudo como resolvido',
   'workshop.members': 'membros',
-  'workshop.mentionAmbiguous': 'Nomes ambíguos — escolha alguém com nome de exibição único: {0}',
+  'workshop.mentionAmbiguous': 'Nomes ambíguos escolha alguém com nome de exibição único: {0}',
   'workshop.mentionUnknown':
     'Menções desconhecidas (apenas usuários da mesma organização e equipe): {0}',
   'workshop.mentionedInChannel': 'Você foi mencionado em #{0}',
@@ -302,13 +302,13 @@ export default {
   'workshop.viewingSchool': 'Visualizando: {0}',
   'workshop.views': 'Exibições',
   'workshop.welcomeChannelsBody':
-    'Um “canal” aqui costuma corresponder a um grupo de pesquisa docente (教研组) ou PLC: um espaço compartilhado por equipe (ex.: PLC de Matemática, PLC de Inglês). Define quem participa e como o espaço é agrupado.',
+    'Um “canalaqui costuma corresponder a um grupo de pesquisa docente (教研 ou PLC: um espaço compartilhado por equipe (ex.: PLC de Matemática, PLC de Inglês). Define quem participa e como o espaço é agrupado.',
   'workshop.welcomeChannelsTitle': 'PLC / grupos por disciplina',
   'workshop.welcomeConversationsBody':
-    'Dentro de um estudo de aula você abre conversas com título — por exemplo planejamento instrucional, reflexão ou tarefas de acompanhamento — para manter os fios fáceis de seguir.',
+    'Dentro de um estudo de aula você abre conversas com título por exemplo planejamento instrucional, reflexão ou tarefas de acompanhamento para manter os fios fáceis de seguir.',
   'workshop.welcomeConversationsTitle': 'Conversas',
   'workshop.welcomeExampleCaption':
-    'Exemplo ilustrativo (escola fictícia) — PLC de Matemática e PLC de Inglês, cada um com estudos de aula e conversas de exemplo.',
+    'Exemplo ilustrativo (escola fictícia) PLC de Matemática e PLC de Inglês, cada um com estudos de aula e conversas de exemplo.',
   'workshop.welcomeExampleConvLabel': 'Conversas',
   'workshop.welcomeExampleGroupEnglish': 'PLC de Inglês',
   'workshop.welcomeExampleGroupMath': 'PLC de Matemática',
@@ -317,13 +317,13 @@ export default {
   'workshop.welcomeExampleLSEng1C2': 'Tarefas pós-leitura & transferência',
   'workshop.welcomeExampleLSEng1C3': 'Feedback da observação & reflexão',
   'workshop.welcomeExampleLSEng2':
-    'Estudo de aula: Produção textual — mesma aula, professores diferentes',
+    'Estudo de aula: Produção textual mesma aula, professores diferentes',
   'workshop.welcomeExampleLSEng2C1': 'Piloto de rubrica & revisão',
-  'workshop.welcomeExampleLSMath1': 'Estudo de aula: semana do polimento de “Conceito de funções”',
+  'workshop.welcomeExampleLSMath1': 'Estudo de aula: semana do polimento de “Conceito de funções…',
   'workshop.welcomeExampleLSMath1C1': 'Objetivos & design de atividades',
   'workshop.welcomeExampleLSMath1C2': 'Questionamento & quadro',
   'workshop.welcomeExampleLSMath1C3': 'Reflexão pós-aula & próximos passos',
-  'workshop.welcomeExampleLSMath2': 'Estudo de aula: revisão do ensino médio — derivadas',
+  'workshop.welcomeExampleLSMath2': 'Estudo de aula: revisão do ensino médio derivadas',
   'workshop.welcomeExampleLSMath2C1': 'Tarefas em níveis & avaliação',
   'workshop.welcomeExampleMsgLabel': 'Mensagens ficam dentro de cada conversa',
   'workshop.welcomeExampleOrg': 'Escola Média Chenxi',
@@ -331,7 +331,7 @@ export default {
   'workshop.welcomeIntro':
     'Workshop é o espaço da sua escola para discussões estruturadas: compartilhe anúncios, conduza estudos de aula e mantenha conversas organizadas ao lado do trabalho docente.',
   'workshop.welcomeLessonStudyBody':
-    'Canais de estudo de aula costumam ficar sob esse grupo. Cada um é um espaço para um ciclo de aula — planejamento, observação e reflexão — e pode vincular diagramas ou status.',
+    'Canais de estudo de aula costumam ficar sob esse grupo. Cada um é um espaço para um ciclo de aula planejamento, observação e reflexão e pode vincular diagramas ou status.',
   'workshop.welcomeLessonStudyTitle': 'Estudos de aula',
   'workshop.welcomeMessagesBody':
     'Mensagens são as postagens individuais no fluxo do canal principal ou dentro de uma conversa. Respostas, menções e arquivos estão todas nas mensagens.',
@@ -347,8 +347,17 @@ export default {
   'workshopCanvas.errorGeneric': 'Erro de colaboração',
   'workshopCanvas.reconnectFailed': 'Falha ao reconectar à colaboração; atualize a página',
   'workshopCanvas.returnedHomeIdle':
-    'Voltou à página inicial — sem edições no diagrama por 30 minutos.',
-  'workshopCanvas.userJoined': 'Usuário {userId} entrou',
-  'workshopCanvas.userLeft': 'Usuário {userId} saiu',
+    'Voltou à página inicial sem edições no diagrama por 30 minutos.',
+  'workshopCanvas.userJoined': 'Usuário {username} entrou',
+  'workshopCanvas.usersJoined': '{count} users joined',
+  'workshopCanvas.userLeft': 'Usuário {username} saiu',
+  'workshopCanvas.usersLeft': '{count} users left',
   'workshopCanvas.wsError': 'Erro na conexão de colaboração; verifique a rede',
+  'workshopCanvas.returnedHomeRoomIdle':
+    'Collaboration ended: no diagram edits in this session for a while.',
+  'workshopCanvas.roomIdleWarningToast':
+    'No diagram edits lately collaboration ends when the countdown hits zero unless someone edits.',
+  'workshopCanvas.otherTabCollaborationActive':
+    'Collaboration continues in another tab or window for this account.',
+  'workshopCanvas.joinQrAlt': 'Join collaboration QR code',
 }

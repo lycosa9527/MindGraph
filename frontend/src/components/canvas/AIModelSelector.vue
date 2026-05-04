@@ -19,8 +19,8 @@ import { Sparkles, X } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
-import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { LLM_MODEL_COLORS } from '@/config/llmModelColors'
 import {
   useConceptMapFocusReviewStore,
@@ -129,10 +129,7 @@ const conceptMapInlineRecContentStreamingPhase = computed(() => {
   if (phase === 'idle') return false
   const activeId = inlineRecStore.activeNodeId
   if (!activeId) return false
-  return !conceptMapUsesRelationshipInlineRec(
-    activeId,
-    diagramStore.data?.connections ?? []
-  )
+  return !conceptMapUsesRelationshipInlineRec(activeId, diagramStore.data?.connections ?? [])
 })
 
 const conceptMapInlineRecRelationshipStreamingPhase = computed(() => {
@@ -145,9 +142,7 @@ const conceptMapInlineRecRelationshipStreamingPhase = computed(() => {
 
 const showConceptMapContentTabBadge = computed(() => {
   if (!conceptMapAiTabBadgesAllowed.value) return false
-  return (
-    conceptMapTabContentHighlightIdle.value || conceptMapInlineRecContentStreamingPhase.value
-  )
+  return conceptMapTabContentHighlightIdle.value || conceptMapInlineRecContentStreamingPhase.value
 })
 
 const showConceptMapRelationshipTabBadge = computed(() => {
@@ -160,10 +155,7 @@ const showConceptMapRelationshipTabBadge = computed(() => {
 
 /** Select or edit topic node (`topic`) — focus-question Tab (sign-in + valid length enforced at run). */
 const conceptMapFocusTopicBadgeBaseAllowed = computed(
-  () =>
-    isConceptMap.value &&
-    !props.conceptMapTopToolbar &&
-    !props.hideTabFocusBadge
+  () => isConceptMap.value && !props.conceptMapTopToolbar && !props.hideTabFocusBadge
 )
 
 const conceptMapFocusTopicInteraction = computed(() => {
@@ -606,7 +598,6 @@ function getButtonStyle(modelKey: string) {
     rgba(52, 211, 153, 0.12) 360deg
   );
 }
-
 
 .tab-rec-badge-inner.concept-map-tab-badge-muted {
   opacity: 0.48;

@@ -1,10 +1,10 @@
 /**
- * nl UI — workshop
+ * nl UI workshop
  */
 
 export default {
   'collab.codeCopied': 'Code gekopieerd',
-  'collab.codeGenerated': 'Samenwerkings­code gegenereerd — deel om samen te bewerken.',
+  'collab.codeGenerated': 'Samenwerkings­code gegenereerd deel om samen te bewerken.',
   'collab.copy': 'Kopiëren',
   'collab.copyFailed': 'Kopiëren mislukt',
   'collab.copyLink': 'Link kopiëren',
@@ -32,15 +32,15 @@ export default {
   'collab.saveFailed': 'Kan diagram niet opslaan',
   'collab.scanToJoin': 'Scan om deel te nemen',
   'collab.schoolDescActive':
-    'School­samenwerking staat aan. Collega’s: gebruik Samenwerken → School op de startpagina en kies dit diagram — geen code nodig.',
+    'School­samenwerking staat aan. Collega’s: gebruik Samenwerken School op de startpagina en kies dit diagram geen code nodig.',
   'collab.schoolStarted':
-    'School­samenwerking staat aan — collega’s melden zich via Samenwerken → School.',
+    'School­samenwerking staat aan collega’s melden zich via Samenwerken School.',
   'collab.sectionNetwork': 'Gedeelde samenwerking (code)',
   'collab.sectionSchool': 'School­samenwerking',
   'collab.sessionDuration': 'Sessieduur',
   'collab.sessionRemaining': 'Sessie eindigt over',
   'collab.shareDescNetwork':
-    'Deel de code of link — anderen vullen deze in onder Samenwerken → Gedeeld.',
+    'Deel de code of link anderen vullen deze in onder Samenwerken Gedeeld.',
   'collab.start': 'Begin',
   'collab.startFailed': 'Start mislukt: {msg}',
   'collab.title': 'Online samenwerking',
@@ -59,7 +59,7 @@ export default {
   'workshop.archiveTeachingGroup': 'Docentengroep archiveren',
   'workshop.archiveTeachingGroupConfirm':
     'Deze docentengroep archiveren? Ze verdwijnt uit de lijst met docentengroepen.',
-  'workshop.backToConversations': '← Gesprekken',
+  'workshop.backToConversations': 'Gesprekken',
   'workshop.bold': 'Vet',
   'workshop.browseChannels': 'Docentengroepen doorbladeren',
   'workshop.by': 'door',
@@ -69,8 +69,8 @@ export default {
   'workshop.channelAvatarPlaceholder': 'Emoji of kort label',
   'workshop.channelColor': 'Kanaalkleur',
   'workshop.channelInviteReceived':
-    'U bent toegevoegd aan „{name}”. Open Docentenatelier om het te bekijken.',
-  'workshop.channelKindGroup': 'Docentengroep (bovenste niveau, bijv. 教研组)',
+    'U bent toegevoegd aan „{name} Open Docentenatelier om het te bekijken.',
+  'workshop.channelKindGroup': 'Docentengroep (bovenste niveau, bijv. 教研',
   'workshop.channelKindLessonStudy': 'Lesstudie onder een groep (课例)',
   'workshop.channelNameLabel': 'Naam',
   'workshop.channelNamePlaceholder': 'bijv. STEM-docentengroep',
@@ -140,7 +140,7 @@ export default {
   'workshop.generalChat': 'Algemene chat',
   'workshop.inbox': 'Postvak IN',
   'workshop.inboxHintPickChannel':
-    'Open een kanaal of privébericht in de zijbalk om te lezen en te antwoorden. U kunt hier altijd terug via Weergaven → Postvak IN.',
+    'Open een kanaal of privébericht in de zijbalk om te lezen en te antwoorden. U kunt hier altijd terug via Weergaven Postvak IN.',
   'workshop.inboxSummaryTitle': 'Uw postvak IN',
   'workshop.inboxUnreadChannels': 'Ongelezen in kanalen',
   'workshop.inboxUnreadDms': 'Ongelezen privéberichten',
@@ -172,7 +172,7 @@ export default {
   'workshop.markAsRead': 'Als gelezen markeren',
   'workshop.markStudyResolved': 'Studie als afgerond markeren',
   'workshop.members': 'leden',
-  'workshop.mentionAmbiguous': 'Dubbelzinnige namen — kies iemand met een unieke weergavenaam: {0}',
+  'workshop.mentionAmbiguous': 'Dubbelzinnige namen kies iemand met een unieke weergavenaam: {0}',
   'workshop.mentionUnknown':
     'Onbekende vermeldingen (alleen gebruikers zelfde organisatie en personeel): {0}',
   'workshop.mentionedInChannel': 'U bent vermeld in #{0}',
@@ -306,13 +306,13 @@ export default {
   'workshop.viewingSchool': 'Weergave: {0}',
   'workshop.views': 'Weergaven',
   'workshop.welcomeChannelsBody':
-    'Een „kanaal” komt hier vaak overeen met een onderzoeksgroep (教研组) of PLC: één gedeelde ruimte per team (bijv. wiskunde-PLC, Engels-PLC). Het bepaalt wie meedoet en hoe de ruimte is ingedeeld.',
+    'Een „kanaalkomt hier vaak overeen met een onderzoeksgroep (教研 of PLC: één gedeelde ruimte per team (bijv. wiskunde-PLC, Engels-PLC). Het bepaalt wie meedoet en hoe de ruimte is ingedeeld.',
   'workshop.welcomeChannelsTitle': 'PLC / vakgroepen',
   'workshop.welcomeConversationsBody':
-    'In een lesstudie opent u getitelde gesprekken — bijvoorbeeld lesontwerp, reflectie of vervolgtaken — zodat threads overzichtelijk blijven.',
+    'In een lesstudie opent u getitelde gesprekken bijvoorbeeld lesontwerp, reflectie of vervolgtaken zodat threads overzichtelijk blijven.',
   'workshop.welcomeConversationsTitle': 'Gesprekken',
   'workshop.welcomeExampleCaption':
-    'Voorbeeldillustratie (fictieve school) — wiskunde-PLC en Engels-PLC, elk met lesstudies en voorbeeldgesprekken.',
+    'Voorbeeldillustratie (fictieve school) wiskunde-PLC en Engels-PLC, elk met lesstudies en voorbeeldgesprekken.',
   'workshop.welcomeExampleConvLabel': 'Gesprekken',
   'workshop.welcomeExampleGroupEnglish': 'Engels-PLC',
   'workshop.welcomeExampleGroupMath': 'Wiskunde-PLC',
@@ -320,13 +320,13 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'Werkblad & opdrachtontwerp',
   'workshop.welcomeExampleLSEng1C2': 'Opdrachten na het lezen & transfer',
   'workshop.welcomeExampleLSEng1C3': 'Feedback observatie & reflectie',
-  'workshop.welcomeExampleLSEng2': 'Lesstudie: schrijven — dezelfde les, verschillende docenten',
+  'workshop.welcomeExampleLSEng2': 'Lesstudie: schrijven dezelfde les, verschillende docenten',
   'workshop.welcomeExampleLSEng2C1': 'Rubriek proef & herziening',
-  'workshop.welcomeExampleLSMath1': 'Lesstudie: week „functiebegrip” verfijnen',
+  'workshop.welcomeExampleLSMath1': 'Lesstudie: week „functiebegripverfijnen',
   'workshop.welcomeExampleLSMath1C1': 'Doelen & activiteitsontwerp',
   'workshop.welcomeExampleLSMath1C2': 'Vragen & bordwerk',
   'workshop.welcomeExampleLSMath1C3': 'Reflectie na de les & vervolgstappen',
-  'workshop.welcomeExampleLSMath2': 'Lesstudie: eindexamenherhaling — afgeleiden',
+  'workshop.welcomeExampleLSMath2': 'Lesstudie: eindexamenherhaling afgeleiden',
   'workshop.welcomeExampleLSMath2C1': 'Gelaagde opdrachten & toetsing',
   'workshop.welcomeExampleMsgLabel': 'Berichten staan in elk gesprek',
   'workshop.welcomeExampleOrg': 'Middelbare school Chenxi',
@@ -334,7 +334,7 @@ export default {
   'workshop.welcomeIntro':
     'Het Docentenatelier is de gestructureerde discussieruimte van uw school: aankondigingen delen, lesstudies doen en gesprekken georganiseerd naast uw dagelijkse lespraktijk.',
   'workshop.welcomeLessonStudyBody':
-    'Kanalen voor lesstudies staan meestal onder die groep. Elk is een plek voor één lescyclus — planning, observatie en reflectie — en kan gekoppeld zijn aan diagrammen of statussen.',
+    'Kanalen voor lesstudies staan meestal onder die groep. Elk is een plek voor één lescyclus planning, observatie en reflectie en kan gekoppeld zijn aan diagrammen of statussen.',
   'workshop.welcomeLessonStudyTitle': 'Lesstudies',
   'workshop.welcomeMessagesBody':
     'Berichten zijn de afzonderlijke bijdragen in de hoofdstream of in een gesprek. Antwoorden, vermeldingen en bestanden horen bij berichten.',
@@ -349,8 +349,17 @@ export default {
   'workshopCanvas.editingNode': '{username} {emoji} bewerkt deze knoop',
   'workshopCanvas.errorGeneric': 'Samenwerkingsfout',
   'workshopCanvas.reconnectFailed': 'Opnieuw verbinden mislukt, ververs de pagina',
-  'workshopCanvas.returnedHomeIdle': 'Terug naar start — 30 minuten geen diagrambewerking.',
-  'workshopCanvas.userJoined': 'Gebruiker {userId} neemt deel',
-  'workshopCanvas.userLeft': 'Gebruiker {userId} heeft verlaten',
+  'workshopCanvas.returnedHomeIdle': 'Terug naar start 30 minuten geen diagrambewerking.',
+  'workshopCanvas.userJoined': 'Gebruiker {username} neemt deel',
+  'workshopCanvas.usersJoined': '{count} users joined',
+  'workshopCanvas.userLeft': 'Gebruiker {username} heeft verlaten',
+  'workshopCanvas.usersLeft': '{count} users left',
   'workshopCanvas.wsError': 'Fout bij samenwerkingsverbinding, controleer uw netwerk',
+  'workshopCanvas.returnedHomeRoomIdle':
+    'Collaboration ended: no diagram edits in this session for a while.',
+  'workshopCanvas.roomIdleWarningToast':
+    'No diagram edits lately collaboration ends when the countdown hits zero unless someone edits.',
+  'workshopCanvas.otherTabCollaborationActive':
+    'Collaboration continues in another tab or window for this account.',
+  'workshopCanvas.joinQrAlt': 'Join collaboration QR code',
 }

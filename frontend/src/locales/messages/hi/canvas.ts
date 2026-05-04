@@ -531,5 +531,15 @@ export default {
   'mindgraphLanding.sharedCodeHint':
     'उनके सत्र में शामिल होने के लिए आमंत्रण कोड (xxx-xxx) दर्ज करें।',
   'mindgraphLanding.sharedCollab': 'साझा सहयोग',
+  'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome': 'नमस्ते {username}, मैं आपका AI दृश्य सोच सहायक हूँ',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
+  'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
+  'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
+  'canvasPage.collabRetryConnection': 'Retry',
+  'canvasPage.collabParticipantsAria': 'Collaboration participants',
+  'canvasPage.collabConnected': 'Connected',
+  'canvas.topBar.viewOnly': 'View only',
+  'canvasPage.collabParticipantsMore': 'more',
 }

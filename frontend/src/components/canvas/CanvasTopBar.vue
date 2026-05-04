@@ -41,7 +41,6 @@ import {
   getDefaultDiagramName,
   useDiagramSpecForSave,
   useNotifications,
-  useWorkshop,
 } from '@/composables'
 import type { SnapshotMetadata } from '@/composables'
 import { useLanguage } from '@/composables'
@@ -76,6 +75,14 @@ const props = defineProps<{
   snapshots?: SnapshotMetadata[]
   /** Currently active (recalled) snapshot version */
   activeSnapshotVersion?: number | null
+  /** Active workshop session code (passed from CanvasPage) */
+  workshopCode?: string | null
+  /** True when the current user is a collab guest (not the diagram owner) */
+  isCollabGuest?: boolean
+  /** True when the current user is a viewer (read-only role in the workshop) */
+  isViewer?: boolean
+  /** Workshop role: "host" | "editor" | "viewer" */
+  workshopRole?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -137,86 +144,14 @@ const fileName = computed({
 
 const showSlotFullModal = ref(false)
 
-const currentDiagramId = computed(() => {
-  // Priority 1: Use activeDiagramId from store (set when diagram is saved)
-  if (savedDiagramsStore.activeDiagramId) {
-    return savedDiagramsStore.activeDiagramId
-  }
-  // Priority 2: Route query (diagramId or legacy diagram_id)
-  const raw = route.query.diagramId ?? route.query.diagram_id
-  if (raw && typeof raw === 'string') {
-    return raw
-  }
-  return null
-})
-const workshopCode = ref<string | null>(null)
-
-// Presentation-mode composable for participant tracking
-const { participantsWithNames, disconnect, watchCode } = useWorkshop(workshopCode, currentDiagramId)
-
-// User colors and emojis (must match backend)
-const USER_COLORS = [
-  '#FF6B6B', // Red
-  '#4ECDC4', // Teal
-  '#45B7D1', // Blue
-  '#FFA07A', // Light Salmon
-  '#98D8C8', // Mint
-  '#F7DC6F', // Yellow
-  '#BB8FCE', // Purple
-  '#85C1E2', // Sky Blue
-]
-
-const USER_EMOJIS = ['✏️', '🖊️', '✒️', '🖋️', '📝', '✍️', '🖍️', '🖌️']
-
-// Get user emoji and color
-function getUserEmoji(userId: number): string {
-  return USER_EMOJIS[userId % USER_EMOJIS.length]
-}
-
-function getUserColor(userId: number): string {
-  return USER_COLORS[userId % USER_COLORS.length]
-}
-
-// Computed: visible participants (first 10) and dropdown (rest)
-const visibleParticipants = computed(() => {
-  return participantsWithNames.value.slice(0, 10)
-})
-
-const dropdownParticipants = computed(() => {
-  return participantsWithNames.value.slice(10)
-})
-
-// Watch for presentation code changes
-watch(
-  () => workshopCode.value,
-  (code) => {
-    if (code) {
-      watchCode()
-    } else {
-      disconnect()
-    }
-  },
-  { immediate: false }
-)
-
 // Cleanup watcher on unmount
 onUnmounted(() => {
   topBarResizeObserver?.disconnect()
   topBarResizeObserver = null
-  disconnect()
   eventBus.removeAllListenersForOwner('CanvasTopBar')
 })
 
 onMounted(() => {
-  eventBus.onWithOwner(
-    'workshop:code-changed',
-    (data) => {
-      if (data.code !== undefined) {
-        workshopCode.value = data.code as string | null
-      }
-    },
-    'CanvasTopBar'
-  )
   eventBus.onWithOwner(
     'canvas:show_slot_full_modal',
     () => {
@@ -419,7 +354,7 @@ async function handleReset() {
         </ElTooltip>
 
         <span
-          v-if="props.autoSavedStatus"
+          v-if="props.autoSavedStatus && !props.isViewer"
           class="auto-saved-status text-xs shrink-0 min-w-0 cursor-pointer transition-colors truncate"
           :style="{ maxWidth: CANVAS_TOP_BAR.AUTOSAVE_STATUS_MAX_WIDTH }"
           :title="autoSaveHoverTitle"
@@ -437,9 +372,16 @@ async function handleReset() {
       </div>
     </div>
 
-    <!-- Col 2: editing toolbar — viewport-centered (equal 1fr side columns) -->
+    <!-- Col 2: editing toolbar (hidden for viewers) -->
     <div class="min-w-0 flex justify-center items-center self-center overflow-x-auto px-0.5 z-[5]">
+      <span
+        v-if="props.isViewer"
+        class="inline-flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-full px-2.5 py-1 select-none"
+      >
+        👁 {{ t('canvas.topBar.viewOnly') }}
+      </span>
       <CanvasToolbar
+        v-else
         embedded
         :compact-toolbar="compactCanvasToolbar"
       />
@@ -450,7 +392,7 @@ async function handleReset() {
       class="flex w-full min-w-0 items-center justify-end gap-1.5 sm:gap-2 md:gap-3 z-10 flex-wrap sm:flex-nowrap"
     >
       <div
-        v-if="props.snapshots?.length"
+        v-if="props.snapshots?.length && !props.isViewer"
         class="flex items-center gap-1.5 shrink-0"
       >
         <ElTooltip
@@ -460,82 +402,25 @@ async function handleReset() {
           placement="bottom"
         >
           <span
-            class="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 cursor-pointer transition-colors select-none"
-            :class="
+            class="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 transition-colors select-none"
+            :class="[
+              props.isCollabGuest ? 'cursor-default opacity-50' : 'cursor-pointer',
               snap.version_number === props.activeSnapshotVersion
                 ? 'bg-blue-500 text-white ring-2 ring-blue-300 ring-offset-1'
-                : 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-800/50'
-            "
+                : 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-800/50',
+            ]"
             @click="
-              (e: MouseEvent) =>
-                e.ctrlKey || e.metaKey
-                  ? emit('snapshotDelete', snap.version_number)
-                  : emit('snapshotRecall', snap.version_number)
+              props.isCollabGuest
+                ? undefined
+                : (e: MouseEvent) =>
+                    e.ctrlKey || e.metaKey
+                      ? emit('snapshotDelete', snap.version_number)
+                      : emit('snapshotRecall', snap.version_number)
             "
           >
             {{ snap.version_number }}
           </span>
         </ElTooltip>
-      </div>
-
-      <div
-        v-if="workshopCode && participantsWithNames && participantsWithNames.length > 0"
-        class="flex items-center gap-1 px-2 py-1 max-w-full min-w-0 bg-gray-100 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700"
-      >
-        <template
-          v-for="participant in visibleParticipants"
-          :key="participant.user_id"
-        >
-          <ElTooltip
-            :content="participant.username"
-            placement="bottom"
-          >
-            <div
-              class="flex items-center gap-1 min-w-0"
-              :style="{ maxWidth: `${CANVAS_TOP_BAR.PARTICIPANT_NAME_MAX_WIDTH_PX}px` }"
-            >
-              <div
-                class="participant-emoji shrink-0"
-                :style="{ backgroundColor: getUserColor(participant.user_id) }"
-              >
-                {{ getUserEmoji(participant.user_id) }}
-              </div>
-              <span
-                class="text-xs font-medium text-gray-700 dark:text-gray-200 truncate"
-                :title="participant.username"
-              >
-                {{ participant.username }}
-              </span>
-            </div>
-          </ElTooltip>
-        </template>
-
-        <ElDropdown
-          v-if="dropdownParticipants.length > 0"
-          trigger="hover"
-          placement="bottom-end"
-        >
-          <div class="participant-more">+{{ dropdownParticipants.length }}</div>
-          <template #dropdown>
-            <ElDropdownMenu>
-              <ElDropdownItem
-                v-for="participant in dropdownParticipants"
-                :key="participant.user_id"
-                disabled
-              >
-                <div class="flex items-center gap-2">
-                  <div
-                    class="participant-emoji-small"
-                    :style="{ backgroundColor: getUserColor(participant.user_id) }"
-                  >
-                    {{ getUserEmoji(participant.user_id) }}
-                  </div>
-                  <span>{{ participant.username }}</span>
-                </div>
-              </ElDropdownItem>
-            </ElDropdownMenu>
-          </template>
-        </ElDropdown>
       </div>
 
       <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">

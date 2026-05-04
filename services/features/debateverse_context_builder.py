@@ -10,8 +10,9 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Any, Dict, List, Optional
 import logging
+from collections.abc import Sequence
+from typing import Any, Dict, List, Optional, cast
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,6 +26,10 @@ from prompts.debateverse import (
 )
 
 logger = logging.getLogger(__name__)
+
+_DEBATE_MESSAGES = DebateMessage.__table__
+_DEBATE_SESSIONS = DebateSession.__table__
+_DEBATE_PARTICIPANTS = DebateParticipant.__table__
 
 
 class DebateVerseContextBuilder:
@@ -50,13 +55,20 @@ class DebateVerseContextBuilder:
 
     async def _get_participants_by_id(self) -> Dict[int, DebateParticipant]:
         """Load all participants for this session once (avoids N+1 in message loops)."""
-        if self._participants_by_id_cache is None:
-            result = await self.db.execute(
-                select(DebateParticipant).where(DebateParticipant.session_id == self.session_id)
+        cached = self._participants_by_id_cache
+        if cached is not None:
+            return cached
+        result = await self.db.execute(
+            select(DebateParticipant).where(
+                _DEBATE_PARTICIPANTS.c.session_id == self.session_id,
             )
-            rows = result.scalars().all()
-            self._participants_by_id_cache = {p.id: p for p in rows}
-        return self._participants_by_id_cache
+        )
+        rows = list(result.scalars().all())
+        by_id: Dict[int, DebateParticipant] = {}
+        for row in rows:
+            by_id[cast(int, row.id)] = row
+        self._participants_by_id_cache = by_id
+        return by_id
 
     async def build_debater_messages(
         self,
@@ -83,7 +95,9 @@ class DebateVerseContextBuilder:
             raise ValueError(f"Participant {participant_id} not found")
 
         session = (
-            await self.db.execute(select(DebateSession).where(DebateSession.id == self.session_id))
+            await self.db.execute(
+                select(DebateSession).where(_DEBATE_SESSIONS.c.id == self.session_id),
+            )
         ).scalar_one_or_none()
         if not session:
             raise ValueError(f"Session {self.session_id} not found")
@@ -92,8 +106,8 @@ class DebateVerseContextBuilder:
             (
                 await self.db.execute(
                     select(DebateMessage)
-                    .where(DebateMessage.session_id == self.session_id)
-                    .order_by(DebateMessage.created_at)
+                    .where(_DEBATE_MESSAGES.c.session_id == self.session_id)
+                    .order_by(_DEBATE_MESSAGES.c.created_at)
                 )
             )
             .scalars()
@@ -107,11 +121,14 @@ class DebateVerseContextBuilder:
             use_cache=use_cache,
         )
 
+        side_text = cast(Optional[str], participant.side)
+        topic_text = cast(str, session.topic)
+        role_text = cast(str, participant.role)
         system_prompt = get_debater_system_prompt(
-            role=participant.role,
-            side=participant.side or "",
+            role=role_text,
+            side=side_text or "",
             stage=stage,
-            topic=session.topic,
+            topic=topic_text,
             language=language,
             time_limit=1,
             opponent_arguments=analysis.get("opponent_summary", ""),
@@ -122,34 +139,51 @@ class DebateVerseContextBuilder:
         messages = [{"role": "system", "content": system_prompt}]
 
         for msg in all_messages:
-            msg_participant = participants.get(msg.participant_id)
+            mid = cast(int, msg.id)
+            msg_pid = cast(int, msg.participant_id)
+            msg_content = cast(str, msg.content)
+            msg_participant = participants.get(msg_pid)
             if not msg_participant:
                 continue
 
-            speaker_info = f"[{msg_participant.name} ({msg_participant.side or 'judge'}, {msg_participant.role})]"
-            stage_info = f"[{msg.stage}, Round {msg.round_number}]"
+            mp_name = cast(str, msg_participant.name)
+            mp_side = cast(Optional[str], msg_participant.side)
+            mp_role = cast(str, msg_participant.role)
+            speaker_info = (
+                f"[{mp_name} ({mp_side or 'judge'}, {mp_role})]"
+            )
+            stage_label = cast(str, msg.stage)
+            rnd = cast(int, msg.round_number)
+            stage_info = f"[{stage_label}, Round {rnd}]"
 
-            if msg.participant_id == participant_id:
+            if msg_pid == participant_id:
                 messages.append(
                     {
                         "role": "assistant",
-                        "content": f"{speaker_info} {stage_info}\n{msg.content}",
+                        "content": f"{speaker_info} {stage_info}\n{msg_content}",
                     }
                 )
             else:
                 flaw_note = ""
-                if msg.id in analysis.get("flawed_message_ids", []):
+                if mid in analysis.get("flawed_message_ids", []):
                     flaw = next(
-                        (f for f in analysis.get("flaws", []) if f.get("message_id") == msg.id),
+                        (
+                            f
+                            for f in analysis.get("flaws", [])
+                            if f.get("message_id") == mid
+                        ),
                         None,
                     )
                     if flaw:
-                        flaw_note = f"\n[WEAKNESS: {flaw.get('flaw_type', 'unknown')} - {flaw.get('description', '')}]"
+                        flaw_note = (
+                            f"\n[WEAKNESS: {flaw.get('flaw_type', 'unknown')} - "
+                            f"{flaw.get('description', '')}]"
+                        )
 
                 messages.append(
                     {
                         "role": "user",
-                        "content": f"{speaker_info} {stage_info}\n{msg.content}{flaw_note}",
+                        "content": f"{speaker_info} {stage_info}\n{msg_content}{flaw_note}",
                     }
                 )
 
@@ -183,7 +217,9 @@ class DebateVerseContextBuilder:
             List of message dicts ready for LLM service
         """
         session = (
-            await self.db.execute(select(DebateSession).where(DebateSession.id == self.session_id))
+            await self.db.execute(
+                select(DebateSession).where(_DEBATE_SESSIONS.c.id == self.session_id),
+            )
         ).scalar_one_or_none()
         if not session:
             raise ValueError(f"Session {self.session_id} not found")
@@ -192,32 +228,47 @@ class DebateVerseContextBuilder:
             (
                 await self.db.execute(
                     select(DebateMessage)
-                    .where(DebateMessage.session_id == self.session_id)
-                    .order_by(DebateMessage.created_at)
+                    .where(_DEBATE_MESSAGES.c.session_id == self.session_id)
+                    .order_by(_DEBATE_MESSAGES.c.created_at)
                 )
             )
             .scalars()
             .all()
         )
 
-        system_prompt = get_judge_system_prompt(current_stage=stage, topic=session.topic, language=language)
+        topic_text = cast(str, session.topic)
+        system_prompt = get_judge_system_prompt(
+            current_stage=stage, topic=topic_text, language=language,
+        )
 
         messages = [{"role": "system", "content": system_prompt}]
 
         participants = await self._get_participants_by_id()
 
         for msg in all_messages:
-            msg_participant = participants.get(msg.participant_id)
+            msg_pid = cast(int, msg.participant_id)
+            msg_content = cast(str, msg.content)
+            msg_participant = participants.get(msg_pid)
             if not msg_participant:
                 continue
 
-            speaker_info = f"[{msg_participant.name} ({msg_participant.side or 'judge'}, {msg_participant.role})]"
-            stage_info = f"[{msg.stage}, Round {msg.round_number}]"
+            mp_name = cast(str, msg_participant.name)
+            mp_side = cast(Optional[str], msg_participant.side)
+            mp_role = cast(str, msg_participant.role)
+            judge_row_id = cast(int, msg_participant.id)
+            speaker_info = (
+                f"[{mp_name} ({mp_side or 'judge'}, {mp_role})]"
+            )
+            stage_label = cast(str, msg.stage)
+            rnd = cast(int, msg.round_number)
+            stage_info = f"[{stage_label}, Round {rnd}]"
 
             messages.append(
                 {
-                    "role": "user" if msg_participant.id != judge_participant_id else "assistant",
-                    "content": f"{speaker_info} {stage_info}\n{msg.content}",
+                    "role": (
+                        "user" if judge_row_id != judge_participant_id else "assistant"
+                    ),
+                    "content": f"{speaker_info} {stage_info}\n{msg_content}",
                 }
             )
 
@@ -256,8 +307,9 @@ class DebateVerseContextBuilder:
             (
                 await self.db.execute(
                     select(DebateMessage)
-                    .where(DebateMessage.session_id == self.session_id, DebateMessage.stage == "cross_exam")
-                    .order_by(DebateMessage.created_at)
+                    .where(_DEBATE_MESSAGES.c.session_id == self.session_id)
+                    .where(_DEBATE_MESSAGES.c.stage == "cross_exam")
+                    .order_by(_DEBATE_MESSAGES.c.created_at),
                 )
             )
             .scalars()
@@ -285,14 +337,24 @@ class DebateVerseContextBuilder:
         messages = [{"role": "system", "content": prompt}]
 
         for msg in cross_exam_messages:
-            msg_participant = participants.get(msg.participant_id)
+            msg_type = cast(str, msg.message_type)
+            msg_content = cast(str, msg.content)
+            msg_pid = cast(int, msg.participant_id)
+            msg_participant = participants.get(msg_pid)
             if not msg_participant:
                 continue
 
-            if msg.message_type == "cross_question":
-                messages.append({"role": "user", "content": f"[Question] {msg.content}"})
-            elif msg.message_type == "cross_answer":
-                messages.append({"role": "assistant", "content": f"[Answer] {msg.content}"})
+            if msg_type == "cross_question":
+                messages.append(
+                    {"role": "user", "content": f"[Question] {msg_content}"},
+                )
+            elif msg_type == "cross_answer":
+                messages.append(
+                    {
+                        "role": "assistant",
+                        "content": f"[Answer] {msg_content}",
+                    },
+                )
 
         return messages
 
@@ -300,7 +362,7 @@ class DebateVerseContextBuilder:
         self,
         participant: DebateParticipant,
         stage: str,
-        all_messages: List[DebateMessage],
+        all_messages: Sequence[DebateMessage],
         use_cache: bool = True,
     ) -> Dict[str, Any]:
         """
@@ -317,37 +379,47 @@ class DebateVerseContextBuilder:
         Returns:
             Analysis dict with flaws, attack strategies, etc.
         """
-        cache_key = f"{stage}_{participant.side}"
+        cache_key = f"{stage}_{cast(Optional[str], participant.side)}"
         if use_cache and cache_key in self._analysis_cache:
             return self._analysis_cache[cache_key]
 
-        opponent_side = "negative" if participant.side == "affirmative" else "affirmative"
+        p_side = cast(Optional[str], participant.side)
+        opponent_side = "negative" if p_side == "affirmative" else "affirmative"
+        own_id = cast(int, participant.id)
         opponent_messages = [
             msg
             for msg in all_messages
-            if msg.participant_id != participant.id and self._get_message_side(msg.participant_id) == opponent_side
+            if cast(int, msg.participant_id) != own_id
+            and self._get_message_side(cast(int, msg.participant_id))
+            == opponent_side
         ]
 
-        opponent_summary = "\n".join(
-            [
-                f"- {msg.content[:200]}..." if len(msg.content) > 200 else f"- {msg.content}"
-                for msg in opponent_messages[-5:]
-            ]
-        )
+        lines: List[str] = []
+        for msg in opponent_messages[-5:]:
+            text_body = cast(str, msg.content)
+            item = (
+                f"- {text_body[:200]}..."
+                if len(text_body) > 200
+                else f"- {text_body}"
+            )
+            lines.append(item)
+        opponent_summary = "\n".join(lines)
 
         flaws = []
         flawed_message_ids = []
 
         for msg in opponent_messages:
-            if len(msg.content) < 50:
+            text_body = cast(str, msg.content)
+            mid_msg = cast(int, msg.id)
+            if len(text_body) < 50:
                 flaws.append(
                     {
-                        "message_id": msg.id,
+                        "message_id": mid_msg,
                         "flaw_type": "weak_evidence",
                         "description": "Argument too brief, lacks detail",
                     }
                 )
-                flawed_message_ids.append(msg.id)
+                flawed_message_ids.append(mid_msg)
 
         attack_strategy = self._build_attack_strategy(flaws, opponent_messages)
 
@@ -370,19 +442,24 @@ class DebateVerseContextBuilder:
         """Get side for a participant from pre-loaded cache."""
         if self._participants_by_id_cache is None:
             return None
-        participant = self._participants_by_id_cache.get(participant_id)
-        return participant.side if participant else None
+        row = self._participants_by_id_cache.get(participant_id)
+        if row is None:
+            return None
+        return cast(Optional[str], row.side)
 
     async def _get_participant_arguments(self, participant_id: int) -> str:
         """Get summary of participant's arguments."""
         result = await self.db.execute(
             select(DebateMessage)
-            .where(DebateMessage.session_id == self.session_id, DebateMessage.participant_id == participant_id)
-            .order_by(DebateMessage.created_at)
+            .where(_DEBATE_MESSAGES.c.session_id == self.session_id)
+            .where(_DEBATE_MESSAGES.c.participant_id == participant_id)
+            .order_by(_DEBATE_MESSAGES.c.created_at),
         )
-        messages = result.scalars().all()
-
-        return "\n".join([msg.content[:200] for msg in messages[-3:]])
+        msgs = result.scalars().all()
+        excerpts = [
+            cast(str, m.content)[:200] for m in msgs[-3:]
+        ]
+        return "\n".join(excerpts)
 
     def _identify_flaws(self, _arguments: str) -> str:
         """Identify flaws in arguments (simplified, will use LangChain agent)."""
@@ -405,22 +482,26 @@ class DebateVerseContextBuilder:
 
         return "\n".join(strategies) if strategies else "Focus on your strongest arguments"
 
-    def _get_unaddressed_points(self, participant: DebateParticipant, all_messages: List[DebateMessage]) -> str:
+    def _get_unaddressed_points(self, participant: DebateParticipant, all_messages: Sequence[DebateMessage]) -> str:
         """Get points that haven't been addressed yet."""
+        p_side_own = cast(Optional[str], participant.side)
         my_team_messages = [
-            msg for msg in all_messages if self._get_message_side(msg.participant_id) == participant.side
+            msg
+            for msg in all_messages
+            if self._get_message_side(cast(int, msg.participant_id))
+            == p_side_own
         ]
 
         unaddressed = []
         for msg in my_team_messages[-3:]:
             has_rebuttal = any(
-                m.participant_id != msg.participant_id
-                and m.created_at > msg.created_at
-                and m.stage in ["rebuttal", "cross_exam"]
+                cast(int, m.participant_id) != cast(int, msg.participant_id)
+                and cast(Any, m.created_at) > cast(Any, msg.created_at)
+                and cast(str, m.stage) in ["rebuttal", "cross_exam"]
                 for m in all_messages
             )
             if not has_rebuttal:
-                unaddressed.append(msg.content[:100])
+                unaddressed.append(cast(str, msg.content)[:100])
 
         return "\n".join(unaddressed) if unaddressed else "暂无"
 

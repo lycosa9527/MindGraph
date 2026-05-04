@@ -530,5 +530,15 @@ export default {
   'mindgraphLanding.sharedCodeHint':
     'Dəvət kodunu (xxx-xxx) daxil edin ki, onların sessiyasına qoşulasınız.',
   'mindgraphLanding.sharedCollab': 'Ümumi əməkdaşlıq',
+  'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome': 'Salam {username}, mən sənin AI vizual düşüncə köməkçinəm',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
+  'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
+  'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
+  'canvasPage.collabRetryConnection': 'Retry',
+  'canvasPage.collabParticipantsAria': 'Collaboration participants',
+  'canvasPage.collabConnected': 'Connected',
+  'canvas.topBar.viewOnly': 'View only',
+  'canvasPage.collabParticipantsMore': 'more',
 }

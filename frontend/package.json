@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.112.0",
+  "version": "5.116.0",
   "type": "module",
   "scripts": {
     "sync-version": "npx tsx scripts/sync-version.ts",
@@ -24,7 +24,9 @@
     "i18n:check-prompts": "cd .. && python scripts/check_prompt_output_languages_sync.py",
     "i18n:check": "npm run i18n:check-keys && npm run i18n:check-prompts",
     "i18n:verify-keyboard": "npx tsx scripts/verify-keyboard-layout-map.ts",
-    "fix": "npm run lint:fix && npm run format"
+    "fix": "npm run lint:fix && npm run format",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
@@ -110,6 +112,8 @@
     "unplugin-auto-import": "^21.0.0",
     "unplugin-vue-components": "^32.0.0",
     "vite": "^7.3.2",
+    "vitest": "^3.2.4",
+    "jsdom": "^25.0.1",
     "vue-eslint-parser": "^10.2.0",
     "vue-tsc": "^3.2.2"
   }

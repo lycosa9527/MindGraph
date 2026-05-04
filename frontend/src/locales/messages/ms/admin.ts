@@ -507,8 +507,7 @@ export default {
   'admin.performance.closed': 'Normal',
   'admin.performance.noProcessData': 'Tiada data proses terurus daripada pekerja yang melaporkan.',
   'admin.performance.hostDetail': 'Logical CPUs: {cpus} · PID {pid} · process RSS {rss}',
-  'admin.performance.redisDetail':
-    '{human} (peak {peak}) · Redis {ver} · server uptime {uptime}s',
+  'admin.performance.redisDetail': '{human} (peak {peak}) · Redis {ver} · server uptime {uptime}s',
   'admin.performance.poolDetail':
     'API pool capacity {asize} · overflow {aov} · Jobs/tools pool {ssize} · overflow {sov}',
   'admin.performance.sectionOtherVolumes': 'Jilid tempatan yang lain',

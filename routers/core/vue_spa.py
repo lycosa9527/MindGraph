@@ -248,7 +248,7 @@ async def vue_catch_all(path: str):
     return await _serve_index()
 
 
-async def _serve_index() -> FileResponse:
+async def _serve_index() -> FileResponse | HTMLResponse:
     """Serve Vue SPA index.html."""
     index_path = VUE_DIST_DIR / "index.html"
     logger.debug("Serving Vue SPA index - checking path: %s", index_path)

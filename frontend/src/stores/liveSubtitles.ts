@@ -255,9 +255,8 @@ export const useLiveSubtitlesStore = defineStore('liveSubtitles', () => {
       const line = String(data.transcript ?? '').trim()
       if (line.length > 0) {
         const next = [...committedLines.value, line]
-        committedLines.value = next.length > MAX_COMMITTED_LINES
-          ? next.slice(-MAX_COMMITTED_LINES)
-          : next
+        committedLines.value =
+          next.length > MAX_COMMITTED_LINES ? next.slice(-MAX_COMMITTED_LINES) : next
       }
       interimText.value = ''
       return
@@ -269,16 +268,16 @@ export const useLiveSubtitlesStore = defineStore('liveSubtitles', () => {
     }
     if (typ === 'conversation.item.input_audio_transcription.failed') {
       const nested = data.error as { message?: string } | undefined
-      const msg = String(
-        nested?.message ?? translate('canvas.subtitles.genericError'),
-      )
+      const msg = String(nested?.message ?? translate('canvas.subtitles.genericError'))
       notify.warning(msg)
       return
     }
     if (typ === 'error') {
       const nested = data.error as { message?: string } | undefined
       const msg = String(
-        nested?.message ?? (data as { message?: string }).message ?? translate('canvas.subtitles.genericError'),
+        nested?.message ??
+          (data as { message?: string }).message ??
+          translate('canvas.subtitles.genericError')
       )
       notify.warning(msg)
     }
@@ -349,7 +348,7 @@ export const useLiveSubtitlesStore = defineStore('liveSubtitles', () => {
             event_id: nextRealtimeEventId(),
             type: 'input_audio_buffer.append',
             audio: audioB64,
-          }),
+          })
         )
       } catch {
         /* ignore */

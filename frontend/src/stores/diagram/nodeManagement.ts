@@ -74,6 +74,11 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       ...updates,
     }
 
+    // Keep data.label in sync with text so vue-flow nodes render the latest label.
+    if ('text' in updates && typeof merged.text === 'string' && merged.data != null) {
+      ;(merged.data as Record<string, unknown>).label = merged.text
+    }
+
     if (ctx.type.value === 'tree_map' && nodeId === 'tree-topic' && 'text' in updates) {
       ctx.data.value.nodes = applyTreeMapTopicLayoutToNodes(ctx.data.value.nodes, nodeIndex, merged)
     } else {
@@ -152,10 +157,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       delete ctx.nodeDimensions.value[nodeId]
     }
 
-    if (
-      (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') &&
-      nodeId !== 'topic'
-    ) {
+    if ((ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') && nodeId !== 'topic') {
       const freshWidth = estimateMindMapBranchWidth('')
       const freshHeight = measureMindMapBranchHeight('')
       ctx.data.value.nodes[nodeIndex] = {

@@ -59,6 +59,25 @@ from services.infrastructure.process.uvicorn_signal_diag import (
 logger = logging.getLogger(__name__)
 
 
+def _positive_float_os_env_optional(name: str, default_positive: float) -> float | None:
+    """
+    Parse a positive-float env var suitable for uvicorn websocket ping knobs.
+
+    Blanks defer to ``default_positive``; explicit ``<= 0`` maps to disabling
+    the corresponding Uvicorn option (returns ``None`` so keepalive pings are off).
+    """
+    raw = os.environ.get(name)
+    if raw is None or raw.strip() == '':
+        return default_positive
+    try:
+        parsed = float(raw)
+    except (TypeError, ValueError):
+        return default_positive
+    if parsed <= 0:
+        return None
+    return parsed
+
+
 def _exit_port_in_use(port: int, pid: int | None = None) -> None:
     """Print port conflict help and exit with status 1."""
     lines = lines_http_port_in_use(port, pid)
@@ -305,6 +324,15 @@ def run_server() -> None:
                 timeout_worker_healthcheck=worker_healthcheck,
                 access_log=False,
                 limit_concurrency=1000 if not reload else None,
+                ws_max_size=1024 * 1024,
+                ws_ping_interval=_positive_float_os_env_optional(
+                    "COLLAB_UVICORN_WS_PING_INTERVAL_SEC",
+                    25.0,
+                ),
+                ws_ping_timeout=_positive_float_os_env_optional(
+                    "COLLAB_UVICORN_WS_PING_TIMEOUT_SEC",
+                    40.0,
+                ),
             )
         except OSError as e:
             if (

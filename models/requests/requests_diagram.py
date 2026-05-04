@@ -492,6 +492,14 @@ class WorkshopStartRequest(BaseModel):
         default="today",
         description="Session window: 1h | today | 2d (allowed set depends on visibility)",
     )
+    org_id: Optional[int] = Field(
+        default=None,
+        description=(
+            "Target organization ID for the session registry. "
+            "Required when the host has no organization_id (admin/superuser accounts). "
+            "Ignored if the host already has an organization_id."
+        ),
+    )
 
     @field_validator("visibility")
     @classmethod

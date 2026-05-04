@@ -4,9 +4,11 @@ import json
 import logging
 
 from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, END
+from langgraph.graph.state import CompiledStateGraph
 from langgraph.graph.message import add_messages
 
 from services.llm import llm_service
@@ -247,10 +249,12 @@ class VoiceAgent:
         self.session_id = session_id
         self.memory = MemorySaver()
         self.graph = self._build_graph()
-        self.config = {"configurable": {"thread_id": session_id}}
+        self.config: RunnableConfig = {"configurable": {"thread_id": session_id}}
 
         # Initialize state
         self._state = self._create_initial_state()
+        # Token-tracking context for the in-flight parse (not part of graph state)
+        self._voice_parse_tracking: Optional[Dict[str, Any]] = None
 
         logger.info("VoiceAgent initialized for session %s", session_id)
 
@@ -272,11 +276,11 @@ class VoiceAgent:
             "last_updated": datetime.now().isoformat(),
         }
 
-    def _build_graph(self) -> StateGraph:
+    def _build_graph(self) -> CompiledStateGraph[AgentState, None, AgentState, AgentState]:
         """Build the LangGraph workflow"""
 
         # Create graph with state schema
-        graph = StateGraph(AgentState)
+        graph: StateGraph[AgentState, None, AgentState, AgentState] = StateGraph(AgentState)
 
         # Add nodes
         graph.add_node("parse_command", self._parse_command_node)
@@ -885,8 +889,7 @@ For Multi-Flow Map:
 Return only JSON:"""
 
         try:
-            # Get tracking info from state (set by process_command)
-            tracking_info = state.get("_tracking_info", {})
+            tracking_info = self._voice_parse_tracking or {}
             user_id = tracking_info.get("user_id")
             organization_id = tracking_info.get("organization_id")
             voice_session_id = tracking_info.get("voice_session_id")
@@ -1017,7 +1020,7 @@ Return only JSON:"""
 
         logger.debug("Diagram state updated: %s nodes", len(nodes))
 
-    def update_panel_state(self, active_panel: str, panels: Dict[str, bool] = None):
+    def update_panel_state(self, active_panel: str, panels: Optional[Dict[str, bool]] = None):
         """Update panel states"""
         self._state["active_panel"] = active_panel
         if panels:
@@ -1045,8 +1048,7 @@ Return only JSON:"""
         Returns:
             Action dict with action type, target, node_id, etc.
         """
-        # Store tracking info in state for use in _parse_command_node
-        self._state["_tracking_info"] = {
+        self._voice_parse_tracking = {
             "user_id": user_id,
             "organization_id": organization_id,
             "voice_session_id": voice_session_id,
@@ -1065,18 +1067,13 @@ Return only JSON:"""
             # Store the action in conversation for context
             self._state["messages"].append(AIMessage(content=f"Action: {action.get('action', 'none')}"))
 
-            # Clean up tracking info from state (temporary data, not part of agent state)
-            if "_tracking_info" in self._state:
-                del self._state["_tracking_info"]
-
             return action
 
         except Exception as e:
             logger.error("Process command error: %s", e, exc_info=True)
-            # Clean up tracking info even on error
-            if "_tracking_info" in self._state:
-                del self._state["_tracking_info"]
             return {"action": "none", "confidence": 0.0, "error": str(e)}
+        finally:
+            self._voice_parse_tracking = None
 
     def get_state(self) -> AgentState:
         """Get current agent state"""

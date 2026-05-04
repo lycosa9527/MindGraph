@@ -18,60 +18,46 @@ import os
 import signal
 import time
 from contextlib import asynccontextmanager
-from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI
 
-from clients.llm import close_httpx_clients
 from config.celery import CeleryStartupError, init_celery_worker_check
-from config.database import close_db, init_db
 from config.settings import config
 from services.auth.geoip_country import log_geolite_country_mmdb_startup_status
 
 _log_geolite_country_mmdb_startup_status = log_geolite_country_mmdb_startup_status
-from services.auth.ip_geolocation import get_geolocation_service
-from services.auth.sms_middleware import get_sms_middleware, shutdown_sms_service
-from services.features.ws_redis_fanout_listener import (
-    start_ws_fanout_listener,
-    stop_ws_fanout_listener,
+from services.auth.sms_middleware import get_sms_middleware
+from services.infrastructure.lifecycle.lifespan_collab_integration import (
+    start_online_collab_subsystem_async,
+)
+from services.infrastructure.lifecycle.lifespan_db_integration import (
+    lifespan_startup_database_phase,
+)
+from services.infrastructure.lifecycle.lifespan_redis_integration import lifespan_init_redis_phase
+from services.infrastructure.lifecycle.lifespan_shutdown import (
+    LifespanBackgroundTasks,
+    run_lifespan_shutdown,
 )
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.infrastructure.monitoring.health_monitor import get_health_monitor
 from services.infrastructure.monitoring.process_monitor import get_process_monitor
-from services.infrastructure.recovery.recovery_startup import (
-    check_database_on_startup,
-    cleanup_incomplete_chunk_operations,
-)
 from services.infrastructure.lifecycle.startup import _handle_shutdown_signal
 from services.infrastructure.utils.browser import log_browser_diagnostics
 from services.infrastructure.utils.launch_commands import lines_playwright_startup_critical
 from services.llm import llm_service
 from services.llm.qdrant_startup import QdrantStartupError, init_qdrant_sync
-from services.redis.redis_bayi_whitelist import get_bayi_whitelist
-from services.redis.cache.redis_cache_loader import reload_cache_from_database
-from services.redis.redis_client import (
-    RedisStartupError,
-    close_redis_sync,
-    init_redis_sync,
-)
 from services.redis.redis_distributed_lock import (
     acquire_startup_sms_notification_lock,
     release_startup_sms_notification_lock,
 )
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
-from services.redis.redis_token_buffer import get_token_tracker
 from services.infrastructure.security.abuseipdb_service import (
     apply_blacklist_baseline_from_file_async,
     clear_ip_reputation_sismember_cache,
-    warm_sismember_cache_ttl_snapshot,
 )
 from services.infrastructure.security.fail2ban_integration.startup_gate import (
     enforce_fail2ban_startup_or_exit,
-)
-from services.infrastructure.security.ip_reputation_env_snapshot import (
-    log_ip_reputation_startup_summary,
-    warm_ip_reputation_env_snapshot,
 )
 from services.infrastructure.security.abuseipdb_scheduler import start_abuseipdb_blacklist_scheduler
 from services.infrastructure.security.crowdsec_blocklist_service import (
@@ -81,12 +67,10 @@ from services.infrastructure.security.crowdsec_blocklist_service import (
 )
 from services.utils.backup_scheduler import start_backup_scheduler
 from services.utils.temp_image_cleaner import start_cleanup_scheduler
-from services.workshop import start_workshop_cleanup_scheduler
 
 # PDF auto-import removed - no longer needed for image-based viewing
-from services.utils.update_notifier import update_notifier
 from agents.inline_recommendations import start_inline_rec_cleanup_scheduler
-from utils.auth import AUTH_MODE, display_demo_info
+from utils.auth import AUTH_MODE
 from utils.auth.config import ADMIN_PHONES
 from utils.dependency_checker import DependencyError, check_system_dependencies
 
@@ -172,6 +156,8 @@ async def _send_startup_sms_notification_once() -> None:
         await release_startup_sms_notification_lock(lock_token)
 
 
+
+
 @asynccontextmanager
 async def lifespan(fastapi_app: FastAPI):
     """
@@ -205,38 +191,7 @@ async def lifespan(fastapi_app: FastAPI):
 
     # Initialize Redis (REQUIRED for caching, rate limiting, sessions)
     # Application will exit if Redis is not available
-    if is_main_worker:
-        logger.debug("[LIFESPAN] Initializing Redis...")
-    try:
-        init_redis_sync()
-        warm_ip_reputation_env_snapshot()
-        warm_sismember_cache_ttl_snapshot()
-        if is_main_worker:
-            log_ip_reputation_startup_summary()
-        if is_main_worker:
-            logger.debug("Redis initialized successfully")
-        try:
-            _loop = asyncio.get_running_loop()
-            start_ws_fanout_listener(_loop)
-        except Exception as ws_fan_exc:  # pylint: disable=broad-except
-            if is_main_worker:
-                logger.warning(
-                    "[LIFESPAN] WebSocket Redis fan-out listener: %s",
-                    ws_fan_exc,
-                )
-    except RedisStartupError as e:
-        # Error message already logged by init_redis_sync with instructions
-        # Send critical alert before exiting
-        try:
-            CriticalAlertService.send_startup_failure_alert_sync(
-                component="Redis",
-                error_message=f"Redis startup failed: {str(e)}",
-                details=("Application cannot start without Redis. Check Redis connection and configuration."),
-            )
-        except Exception as alert_error:  # pylint: disable=broad-except
-            logger.error("Failed to send startup failure alert: %s", alert_error)
-        logger.error("Application startup failed. Exiting.")
-        os._exit(1)  # pylint: disable=protected-access
+    await lifespan_init_redis_phase(is_main_worker)
 
     await apply_blacklist_baseline_from_file_async()
     await apply_crowdsec_baseline_from_file_async()
@@ -352,183 +307,7 @@ async def lifespan(fastapi_app: FastAPI):
     # Note: Legacy JavaScript cache removed in v5.0.0 (Vue migration)
     # Frontend assets are now served from frontend/dist/ via Vue SPA handler
 
-    # Initialize Database with corruption detection and recovery
-    if is_main_worker:
-        logger.debug("[LIFESPAN] Initializing database...")
-    # Check PostgreSQL connectivity on startup (uses Redis lock to ensure only one worker checks)
-    # If unreachable, startup is aborted and a critical alert is sent
-    if is_main_worker:
-        logger.debug("[LIFESPAN] Checking database integrity...")
-    if not await check_database_on_startup():
-        if is_main_worker:
-            logger.critical("Database recovery failed or was aborted. Shutting down.")
-        try:
-            CriticalAlertService.send_startup_failure_alert_sync(
-                component="Database",
-                error_message="Database recovery failed or was aborted",
-                details=(
-                    "Database integrity check failed and recovery was not successful. Manual intervention required."
-                ),
-            )
-        except Exception as alert_error:  # pylint: disable=broad-except
-            if is_main_worker:
-                logger.error("Failed to send startup failure alert: %s", alert_error)
-        raise SystemExit(1)
-    if is_main_worker:
-        logger.debug("Database integrity verified")
-
-    # init_db() creates tables and runs migrations — must not be swallowed or the app
-    # will serve traffic against an empty database (e.g. missing organizations table).
-    try:
-        init_db()
-    except Exception as init_exc:
-        logger.critical(
-            "[LIFESPAN] Database schema initialization failed (init_db): %s",
-            init_exc,
-            exc_info=True,
-        )
-        try:
-            CriticalAlertService.send_startup_failure_alert_sync(
-                component="Database",
-                error_message=f"init_db failed: {init_exc}",
-                details=(
-                    "Table creation or migrations failed. Verify the PostgreSQL user can "
-                    "CREATE tables on the database and DATABASE_URL points at the "
-                    "intended database."
-                ),
-            )
-        except Exception as alert_error:  # pylint: disable=broad-except
-            if is_main_worker:
-                logger.error("Failed to send startup failure alert: %s", alert_error)
-        raise SystemExit(1) from init_exc
-
-    logger.debug("[LIFESPAN] Cleaning up incomplete chunk test operations (post-migration)...")
-    cleaned_chunk = await cleanup_incomplete_chunk_operations()
-    if cleaned_chunk > 0 and is_main_worker:
-        logger.info(
-            "[Recovery] Cleaned up %d incomplete chunk operation(s) from kill -9",
-            cleaned_chunk,
-        )
-
-    if is_main_worker:
-        logger.debug("Database initialized successfully")
-        display_demo_info()
-
-    try:
-        # Ensure library storage directories exist on every startup
-        try:
-            _library_dir = Path(os.getenv("LIBRARY_STORAGE_DIR", "./storage/library"))
-            _library_dir.mkdir(parents=True, exist_ok=True)
-            (_library_dir / "covers").mkdir(parents=True, exist_ok=True)
-            if is_main_worker:
-                logger.debug("[LIFESPAN] Library storage ready: %s", _library_dir.resolve())
-        except Exception as lib_dir_exc:  # pylint: disable=broad-except
-            if is_main_worker:
-                logger.warning(
-                    "[LIFESPAN] Could not create library storage directory: %s",
-                    lib_dir_exc,
-                )
-
-        # Load cache from database and IP geolocation database in parallel
-        # Note: Both use Redis lock/distributed coordination to ensure only one worker loads
-        if is_main_worker:
-            logger.debug("[LIFESPAN] Loading cache and IP database...")
-
-        # Check if user auth cache preloading is enabled
-        preload_auth_cache = os.getenv("PRELOAD_USER_AUTH_CACHE", "true").lower() in (
-            "1",
-            "true",
-            "yes",
-        )
-
-        async def load_user_cache():
-            """Load user cache from database."""
-            if not preload_auth_cache:
-                if is_main_worker:
-                    logger.info("[CacheLoader] User auth cache preloading skipped (PRELOAD_USER_AUTH_CACHE disabled)")
-                return True
-
-            try:
-                result = await reload_cache_from_database()
-                return result
-            except Exception as e:  # pylint: disable=broad-except
-                logger.error("Failed to load cache from database: %s", e, exc_info=True)
-                return False
-
-        def load_ip_database():
-            """Initialize IP geolocation database (runs in thread pool)."""
-            try:
-                geolocation_service = get_geolocation_service()
-                if geolocation_service.is_ready():
-                    if is_main_worker:
-                        logger.info("IP Geolocation Service initialized successfully")
-                    return True
-                else:
-                    if is_main_worker:
-                        logger.warning(
-                            "IP Geolocation database not available (database file missing or failed to load)"
-                        )
-                    return False
-            except Exception as e:  # pylint: disable=broad-except
-                if is_main_worker:
-                    logger.warning("Failed to initialize IP Geolocation Service: %s", e)
-                return False
-
-        cache_result, ip_db_result = await asyncio.gather(
-            load_user_cache(),
-            asyncio.to_thread(load_ip_database),
-            return_exceptions=True,
-        )
-
-        # Handle results
-        if isinstance(cache_result, Exception):
-            if is_main_worker:
-                logger.error(
-                    "Failed to load cache from database: %s",
-                    cache_result,
-                    exc_info=True,
-                )
-        elif cache_result:
-            # Cache loading completed (either by this worker or another worker via lock)
-            # The actual loading logs come from reload_cache_from_database() itself
-            if preload_auth_cache and is_main_worker:
-                logger.info("[CacheLoader] User cache loading completed successfully")
-        else:
-            # cache_result is False - cache loading failed
-            if preload_auth_cache:
-                if is_main_worker:
-                    logger.warning("[CacheLoader] Cache loading returned False - cache may not be preloaded")
-                    logger.warning(
-                        "[CacheLoader] WARNING: User authentication data may not be preloaded into Redis cache"
-                    )
-
-        if isinstance(ip_db_result, Exception):
-            if is_main_worker:
-                logger.warning("Failed to initialize IP Geolocation Service: %s", ip_db_result)
-        elif not ip_db_result:
-            # Already logged in load_ip_database
-            pass
-
-        # Load IP whitelist from env var into Redis (uses Redis lock to ensure only one worker loads)
-        # Note: Removed worker_id check - Redis lock handles multi-worker coordination
-        try:
-            if AUTH_MODE == "bayi":
-                whitelist = get_bayi_whitelist()
-                count = await whitelist.load_from_env()
-                # Only log from first worker to avoid duplicate messages
-                if count > 0 and is_main_worker:
-                    logger.info("Loaded %s IP(s) from BAYI_IP_WHITELIST into Redis", count)
-        except Exception as e:  # pylint: disable=broad-except
-            if is_main_worker:
-                logger.warning("Failed to load IP whitelist into Redis: %s", e)
-            # Don't fail startup - system can work with in-memory whitelist
-    except Exception as e:  # pylint: disable=broad-except
-        if is_main_worker:
-            logger.error(
-                "Failed during post-DB startup (library dirs, cache preload, etc.): %s",
-                e,
-                exc_info=True,
-            )
+    await lifespan_startup_database_phase(is_main_worker)
 
     # Initialize LLM Service
     if is_main_worker:
@@ -566,15 +345,10 @@ async def lifespan(fastapi_app: FastAPI):
         if is_main_worker:
             logger.warning("Failed to start cleanup scheduler: %s", e)
 
-    # Start workshop cleanup scheduler (removes expired workshop codes from database)
-    workshop_cleanup_task = None
-    try:
-        workshop_cleanup_task = asyncio.create_task(start_workshop_cleanup_scheduler(interval_hours=6))
-        if is_main_worker:
-            logger.debug("Workshop cleanup scheduler started")
-    except Exception as e:  # pylint: disable=broad-except
-        if is_main_worker:
-            logger.warning("Failed to start workshop cleanup scheduler: %s", e)
+    # Start workshop subsystem: cleanup scheduler + Lua script preload + idle monitor.
+    workshop_cleanup_task, session_manager_task = await start_online_collab_subsystem_async(
+        is_main_worker
+    )
 
     worker_perf_task: Optional[asyncio.Task[None]] = None
     worker_perf_stop: Optional[asyncio.Event] = None
@@ -653,7 +427,7 @@ async def lifespan(fastapi_app: FastAPI):
     _ = health_monitor_task  # Reference to prevent pylint unused variable warning
     # Starts background sync worker for dirty tracking
     try:
-        diagram_cache = get_diagram_cache()
+        get_diagram_cache()
         if is_main_worker:
             logger.debug("Diagram cache initialized")
     except Exception as e:  # pylint: disable=broad-except
@@ -700,246 +474,24 @@ async def lifespan(fastapi_app: FastAPI):
         print("=" * 80)
         print()
 
+    holdings = LifespanBackgroundTasks(
+        cleanup_task=cleanup_task,
+        workshop_cleanup_task=workshop_cleanup_task,
+        session_manager_task=session_manager_task,
+        worker_perf_task=worker_perf_task,
+        worker_perf_stop=worker_perf_stop,
+        backup_scheduler_task=backup_scheduler_task,
+        abuseipdb_scheduler_task=abuseipdb_scheduler_task,
+        process_monitor_task=process_monitor_task,
+        health_monitor_task=health_monitor_task,
+    )
+
     # Yield control to application
     try:
         yield
     finally:
-        # Shutdown - clean up resources gracefully
-        fastapi_app.state.is_shutting_down = True
-
-        # Give ongoing requests a brief moment to complete
-        await asyncio.sleep(0.1)
-
-        try:
-            from services.mindbot.infra.task_registry import drain as mindbot_task_drain
-
-            await mindbot_task_drain(
-                timeout_s=float(os.getenv("MINDBOT_SHUTDOWN_DRAIN_TIMEOUT_S", "35")),
-            )
-            if is_main_worker:
-                logger.info("MindBot pipeline background tasks drained")
-        except Exception as e:  # pylint: disable=broad-except
-            logger.warning("MindBot task drain error: %s", e)
-
-        try:
-            from clients.dify import close_async_dify_shared_sessions
-
-            await close_async_dify_shared_sessions()
-            if is_main_worker:
-                logger.info("Async Dify shared HTTP sessions closed")
-        except Exception as e:  # pylint: disable=broad-except
-            logger.warning("Async Dify session close error: %s", e)
-
-        # Stop cleanup tasks
-        if cleanup_task:
-            cleanup_task.cancel()
-            try:
-                await cleanup_task
-            except asyncio.CancelledError:
-                pass
-            if is_main_worker:
-                logger.debug("Temp image cleanup scheduler stopped")
-
-        # Stop workshop cleanup scheduler
-        if workshop_cleanup_task:
-            workshop_cleanup_task.cancel()
-            try:
-                await workshop_cleanup_task
-            except asyncio.CancelledError:
-                pass
-            if is_main_worker:
-                logger.debug("Workshop cleanup scheduler stopped")
-
-        if worker_perf_stop is not None:
-            worker_perf_stop.set()
-        if worker_perf_task:
-            worker_perf_task.cancel()
-            try:
-                await worker_perf_task
-            except asyncio.CancelledError:
-                pass
-
-        # Stop backup scheduler (runs on all workers, but only lock holder executes)
-        if backup_scheduler_task:
-            backup_scheduler_task.cancel()
-            try:
-                await backup_scheduler_task
-            except asyncio.CancelledError:
-                pass
-            # Only log on worker that was the lock holder (scheduler handles this internally)
-
-        if abuseipdb_scheduler_task:
-            abuseipdb_scheduler_task.cancel()
-            try:
-                await abuseipdb_scheduler_task
-            except asyncio.CancelledError:
-                pass
-
-        # Library auto-import scheduler no longer runs (removed periodic checking)
-
-        # Stop process monitor
-        if process_monitor_task:
-            try:
-                process_monitor = get_process_monitor()
-                await process_monitor.stop()
-            except Exception as e:  # pylint: disable=broad-except
-                if is_main_worker:
-                    logger.warning("Failed to stop process monitor: %s", e)
-            process_monitor_task.cancel()
-            try:
-                await process_monitor_task
-            except asyncio.CancelledError:
-                pass
-            if is_main_worker:
-                logger.info("Process monitor stopped")
-
-        # Stop health monitor
-        if health_monitor_task:
-            try:
-                health_monitor = get_health_monitor()
-                await health_monitor.stop()
-            except Exception as e:  # pylint: disable=broad-except
-                if is_main_worker:
-                    logger.warning("Failed to stop health monitor: %s", e)
-            health_monitor_task.cancel()
-            try:
-                await health_monitor_task
-            except asyncio.CancelledError:
-                pass
-            if is_main_worker:
-                logger.info("Health monitor stopped")
-
-        # Cleanup LLM Service
-        try:
-            llm_service.cleanup()
-            if is_main_worker:
-                logger.info("LLM Service cleaned up")
-        except Exception as e:  # pylint: disable=broad-except
-            if is_main_worker:
-                logger.warning("Failed to cleanup LLM Service: %s", e)
-
-        # Flush update notification dismiss buffer
-        try:
-            update_notifier.shutdown()
-            if is_main_worker:
-                logger.info("Update notifier flushed")
-        except Exception as e:  # pylint: disable=broad-except
-            if is_main_worker:
-                logger.warning("Failed to flush update notifier: %s", e)
-
-        # Flush TokenTracker before closing database
-        try:
-            token_tracker = get_token_tracker()
-            await token_tracker.flush()
-            if is_main_worker:
-                logger.info("TokenTracker flushed")
-        except Exception as e:  # pylint: disable=broad-except
-            if is_main_worker:
-                logger.warning("Failed to flush TokenTracker: %s", e)
-
-        # Flush Diagram Cache before closing database
-        try:
-            diagram_cache = get_diagram_cache()
-            await diagram_cache.flush()
-            if is_main_worker:
-                logger.info("Diagram cache flushed")
-        except Exception as e:  # pylint: disable=broad-except
-            if is_main_worker:
-                logger.warning("Failed to flush diagram cache: %s", e)
-
-        # Shutdown SMS service (close httpx async client)
-        try:
-            await shutdown_sms_service()
-            if is_main_worker:
-                logger.info("SMS service shut down")
-        except Exception as e:  # pylint: disable=broad-except
-            if is_main_worker:
-                logger.warning("Failed to shutdown SMS service: %s", e)
-
-        # Close httpx clients (LLM HTTP/2 connection pools)
-        try:
-            await close_httpx_clients()
-            if is_main_worker:
-                logger.info("LLM httpx clients closed")
-        except Exception as e:  # pylint: disable=broad-except
-            if is_main_worker:
-                logger.warning("Failed to close httpx clients: %s", e)
-
-        # Cleanup Database
-        try:
-            await close_db()
-            if is_main_worker:
-                logger.info("Database connections closed")
-        except Exception as e:  # pylint: disable=broad-except
-            if is_main_worker:
-                logger.warning("Failed to close database: %s", e)
-
-        try:
-            # Gracefully close all active WebSocket sessions on this worker before
-            # stopping the fan-out listener and Redis.  Clients receive a proper
-            # GOING_AWAY close frame instead of a hard TCP reset.
-            from utils.ws_session_registry import _registry as _ws_registry  # pylint: disable=import-outside-toplevel
-            await _ws_registry.close_all(code=1001, reason="Server shutting down")
-            await asyncio.sleep(0.5)  # brief drain window for close frames to flush
-            if is_main_worker:
-                logger.info("WebSocket sessions drained")
-        except Exception as exc:  # pylint: disable=broad-except
-            if is_main_worker:
-                logger.warning("WebSocket graceful drain failed: %s", exc)
-
-        try:
-            stop_ws_fanout_listener()
-        except Exception as e:  # pylint: disable=broad-except
-            if is_main_worker:
-                logger.warning("Failed to stop WebSocket fan-out listener: %s", e)
-
-        # Close Redis connection
-        try:
-            close_redis_sync()
-            if is_main_worker:
-                logger.info("Redis connection closed")
-        except Exception as e:  # pylint: disable=broad-except
-            if is_main_worker:
-                logger.warning("Failed to close Redis: %s", e)
-
-        # Stop DingTalk Stream SDK WebSocket clients
-        try:
-            from services.mindbot.platforms.dingtalk.cards.stream_client import (  # pylint: disable=import-outside-toplevel
-                get_stream_manager,
-            )
-
-            await get_stream_manager().stop_all()
-            if is_main_worker:
-                logger.info("DingTalk Stream SDK clients stopped")
-        except Exception as e:  # pylint: disable=broad-except
-            if is_main_worker:
-                logger.warning("Failed to stop DingTalk Stream SDK clients: %s", e)
-
-        # Close shared aiohttp sessions (MindBot HTTP connection pools)
-        try:
-            from services.mindbot.infra.http_client import (  # pylint: disable=import-outside-toplevel
-                close_mindbot_http_sessions,
-            )
-
-            await close_mindbot_http_sessions()
-            if is_main_worker:
-                logger.info("MindBot HTTP sessions closed")
-        except Exception as e:  # pylint: disable=broad-except
-            if is_main_worker:
-                logger.warning("Failed to close MindBot HTTP sessions: %s", e)
-
-        # Close native async Redis client (MindBot hot-path pool)
-        try:
-            from services.mindbot.infra.redis_async import (  # pylint: disable=import-outside-toplevel
-                close_async_redis,
-            )
-
-            await close_async_redis()
-            if is_main_worker:
-                logger.info("MindBot async Redis client closed")
-        except Exception as e:  # pylint: disable=broad-except
-            if is_main_worker:
-                logger.warning("Failed to close MindBot async Redis client: %s", e)
-
-        # Don't try to cancel tasks - let uvicorn handle the shutdown
-        # This prevents CancelledError exceptions during multiprocess shutdown
+        await run_lifespan_shutdown(
+            fastapi_app=fastapi_app,
+            is_main_worker=is_main_worker,
+            holdings=holdings,
+        )

@@ -100,76 +100,278 @@
   animation: pulseGlow 2s ease-in-out infinite !important;
 }
 
-/* Fallback: Target by ID patterns if :has() not supported (older browsers) */
-.vue-flow__node-flow[id^='cause-'].selected,
-.vue-flow__node-flow[id^='effect-'].selected,
-.vue-flow__node-topic[id='event'].selected {
+/* Fallback: Target by data-id patterns if :has() not supported (older browsers) */
+.vue-flow__node-flow[data-id^='cause-'].selected,
+.vue-flow__node-flow[data-id^='effect-'].selected,
+.vue-flow__node-topic[data-id='event'].selected {
   border: 2px solid var(--primary-color, #3b82f6);
 }
 
-/* Workshop editing indicators */
+/* ── Workshop collab: marching-ants editing indicator ─────────────────────
+ *
+ * Each side of the node is drawn as a thin repeating-gradient stripe whose
+ * background-position is animated one full dash-period per frame, producing
+ * a clockwise "marching ants" illusion identical to drag-and-drop previews.
+ *
+ * Anatomy:
+ *   ::before  — colored emoji badge, top-right corner, pulses gently
+ *   ::after   — pill label below the node ("Alice is editing…")
+ *
+ * Circle nodes (.vue-flow__node-circle) clip the background-image gradients,
+ * so they fall back to an animated dashed outline instead.
+ * ──────────────────────────────────────────────────────────────────────── */
+
 .vue-flow__node.workshop-editing {
-  position: relative;
-  border: 3px solid var(--editor-color, #ff6b6b) !important;
-  box-shadow: 0 0 8px rgba(255, 107, 107, 0.4);
-  animation: workshop-pulse 2s ease-in-out infinite;
+  /* Dash geometry — change once here, everything else references these vars */
+  --_ea-d: 8px;   /* dash length  */
+  --_ea-g: 6px;   /* gap length   */
+  --_ea-p: calc(var(--_ea-d) + var(--_ea-g)); /* period = 14 px */
+  --_ea-w: 2px;   /* stroke width */
+  --_ea-c: var(--editor-color, #ff6b6b);
+
+  border: none !important; /* replaced by background-image stripes below */
+
+  /*
+   * Four gradient layers — one per edge, drawn as a 2 px stripe of repeating
+   * dashes. The transparent gaps let the node's own background show through.
+   *
+   *   Layer 1 (top)    — repeats horizontally, 2 px tall,  flush to top
+   *   Layer 2 (right)  — repeats vertically,   2 px wide,  flush to right
+   *   Layer 3 (bottom) — repeats horizontally, 2 px tall,  flush to bottom
+   *   Layer 4 (left)   — repeats vertically,   2 px wide,  flush to left
+   */
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      var(--_ea-c) 0,
+      var(--_ea-c) var(--_ea-d),
+      transparent var(--_ea-d),
+      transparent var(--_ea-p)
+    ),
+    repeating-linear-gradient(
+      180deg,
+      var(--_ea-c) 0,
+      var(--_ea-c) var(--_ea-d),
+      transparent var(--_ea-d),
+      transparent var(--_ea-p)
+    ),
+    repeating-linear-gradient(
+      270deg,
+      var(--_ea-c) 0,
+      var(--_ea-c) var(--_ea-d),
+      transparent var(--_ea-d),
+      transparent var(--_ea-p)
+    ),
+    repeating-linear-gradient(
+      0deg,
+      var(--_ea-c) 0,
+      var(--_ea-c) var(--_ea-d),
+      transparent var(--_ea-d),
+      transparent var(--_ea-p)
+    );
+  background-size:
+    var(--_ea-p) var(--_ea-w),   /* top    */
+    var(--_ea-w) var(--_ea-p),   /* right  */
+    var(--_ea-p) var(--_ea-w),   /* bottom */
+    var(--_ea-w) var(--_ea-p);   /* left   */
+  background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+  background-repeat: repeat-x, repeat-y, repeat-x, repeat-y;
+  background-origin: border-box;
+
+  animation:
+    workshop-ants 0.55s linear infinite,
+    workshop-glow 2s ease-in-out infinite;
 }
 
+/* Clockwise march: advance each edge's pattern by one full period per cycle */
+@keyframes workshop-ants {
+  from {
+    background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+  }
+  to {
+    background-position:
+      var(--_ea-p) 0,                        /* top:    → right  */
+      100% var(--_ea-p),                     /* right:  ↓ down   */
+      calc(100% - var(--_ea-p)) 100%,        /* bottom: ← left   */
+      0 calc(100% - var(--_ea-p));           /* left:   ↑ up     */
+  }
+}
+
+/* Soft pulsing glow using the per-user editor color */
+@keyframes workshop-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0  8px color-mix(in srgb, var(--editor-color, #ff6b6b) 35%, transparent),
+      0 0  3px color-mix(in srgb, var(--editor-color, #ff6b6b) 20%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 18px color-mix(in srgb, var(--editor-color, #ff6b6b) 55%, transparent),
+      0 0  7px color-mix(in srgb, var(--editor-color, #ff6b6b) 35%, transparent);
+  }
+}
+
+/* ── Emoji badge (top-right) ────────────────────────────────────────────── */
 .vue-flow__node.workshop-editing::before {
   content: attr(data-editor-emoji);
   position: absolute;
-  top: -12px;
-  right: -12px;
-  width: 24px;
-  height: 24px;
+  top: -14px;
+  right: -14px;
+  width: 26px;
+  height: 26px;
   background: var(--editor-color, #ff6b6b);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  z-index: 1000;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  line-height: 1;
+  z-index: 1001;
   border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+  animation: workshop-badge-pop 2.4s ease-in-out infinite;
 }
 
+@keyframes workshop-badge-pop {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.15);
+  }
+  55% {
+    transform: scale(1.15);
+  }
+}
+
+/* ── "Alice is editing…" pill label (below node) ───────────────────────── */
 .vue-flow__node.workshop-editing::after {
-  content: attr(data-editor-username) ' ' attr(data-editor-emoji) ' editing';
+  content: attr(data-editor-label);
   position: absolute;
-  bottom: -22px;
+  bottom: -30px;
   left: 50%;
   transform: translateX(-50%);
-  background: transparent;
-  color: #6b7280;
+
+  /* pill */
+  background: var(--editor-color, #ff6b6b);
+  color: #fff;
   font-size: 11px;
-  line-height: 1.2;
+  font-weight: 500;
+  line-height: 1;
+  padding: 3px 10px 4px;
+  border-radius: 999px;
   white-space: nowrap;
-  z-index: 1000;
+
+  z-index: 1001;
   pointer-events: none;
-  opacity: 1;
-  max-width: 200px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: 0.01em;
+
+  animation: workshop-label-in 0.25s ease-out both;
 }
 
+@keyframes workshop-label-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* ── Circle nodes: background-image clips to circle — use outline instead ─ */
+.vue-flow__node-circle.workshop-editing {
+  background-image: none !important;
+  border: none !important;
+  outline: 2px dashed var(--editor-color, #ff6b6b) !important;
+  outline-offset: 3px;
+  animation:
+    workshop-circle-dash 1.1s ease-in-out infinite,
+    workshop-glow 2s ease-in-out infinite;
+}
+
+@keyframes workshop-circle-dash {
+  0%,
+  100% {
+    outline-offset: 3px;
+    outline-color: var(--editor-color, #ff6b6b);
+  }
+  50% {
+    outline-offset: 5px;
+    outline-color: color-mix(in srgb, var(--editor-color, #ff6b6b) 70%, transparent);
+  }
+}
+
+/* ── Dark mode: keep the pill readable ─────────────────────────────────── */
+:root.dark .vue-flow__node.workshop-editing::before {
+  border-color: #1f2937;
+}
+
+/* ── Remote selection indicator (unchanged) ────────────────────────────── */
 .vue-flow__node.collab-remote-selected {
   outline: 2px dashed #f97316 !important;
   outline-offset: 2px;
 }
 
-@keyframes workshop-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 8px rgba(255, 107, 107, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 16px rgba(255, 107, 107, 0.6);
-  }
+/* ── Branch-move drop-target preview: grey marching ants ───────────────── */
+.branch-move-drop-preview {
+  --_dp-d: 8px;
+  --_dp-g: 6px;
+  --_dp-p: calc(var(--_dp-d) + var(--_dp-g));
+  --_dp-w: 2px;
+  --_dp-c: #9ca3af;
+
+  border-radius: 8px;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      var(--_dp-c) 0,
+      var(--_dp-c) var(--_dp-d),
+      transparent var(--_dp-d),
+      transparent var(--_dp-p)
+    ),
+    repeating-linear-gradient(
+      180deg,
+      var(--_dp-c) 0,
+      var(--_dp-c) var(--_dp-d),
+      transparent var(--_dp-d),
+      transparent var(--_dp-p)
+    ),
+    repeating-linear-gradient(
+      270deg,
+      var(--_dp-c) 0,
+      var(--_dp-c) var(--_dp-d),
+      transparent var(--_dp-d),
+      transparent var(--_dp-p)
+    ),
+    repeating-linear-gradient(
+      0deg,
+      var(--_dp-c) 0,
+      var(--_dp-c) var(--_dp-d),
+      transparent var(--_dp-d),
+      transparent var(--_dp-p)
+    );
+  background-size:
+    var(--_dp-p) var(--_dp-w),
+    var(--_dp-w) var(--_dp-p),
+    var(--_dp-p) var(--_dp-w),
+    var(--_dp-w) var(--_dp-p);
+  background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+  background-repeat: repeat-x, repeat-y, repeat-x, repeat-y;
+  background-origin: border-box;
+  animation: workshop-ants 0.55s linear infinite;
 }
 
-.vue-flow__node-flow[id^='cause-'].selected,
-.vue-flow__node-flow[id^='effect-'].selected,
-.vue-flow__node-topic[id='event'].selected {
+.vue-flow__node-flow[data-id^='cause-'].selected,
+.vue-flow__node-flow[data-id^='effect-'].selected,
+.vue-flow__node-topic[data-id='event'].selected {
   box-shadow: none !important;
   filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.6))
     drop-shadow(0 0 4px rgba(102, 126, 234, 0.4)) !important;

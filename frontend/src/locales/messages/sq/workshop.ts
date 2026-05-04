@@ -1,11 +1,11 @@
 /**
- * sq UI — workshop
+ * sq UI workshop
  */
 
 export default {
   'collab.codeCopied': 'Kodi u kopjua',
   'collab.codeGenerated':
-    'U gjenerua një kod bashkëpunimi — ndajeni që të tjerët të redaktojnë me ju.',
+    'U gjenerua një kod bashkëpunimi ndajeni që të tjerët të redaktojnë me ju.',
   'collab.copy': 'Kopjo',
   'collab.copyFailed': 'Kopjimi dështoi',
   'collab.copyLink': 'Kopjo lidhjen',
@@ -35,15 +35,15 @@ export default {
   'collab.saveFailed': 'Ruajtja e diagramit dështoi',
   'collab.scanToJoin': "Skanoni për t'u bashkuar",
   'collab.schoolDescActive':
-    'Bashkëpunimi i shkollës është aktiv. Kolegë: përdorni Bashkëpunim → Shkollë në faqen kryesore dhe zgjidhni këtë diagram — nuk nevojitet kod.',
+    'Bashkëpunimi i shkollës është aktiv. Kolegë: përdorni Bashkëpunim Shkollë në faqen kryesore dhe zgjidhni këtë diagram nuk nevojitet kod.',
   'collab.schoolStarted':
-    'Bashkëpunimi i shkollës është aktiv — kolegët mund të bashkohen nga Bashkëpunim → Shkollë.',
+    'Bashkëpunimi i shkollës është aktiv kolegët mund të bashkohen nga Bashkëpunim Shkollë.',
   'collab.sectionNetwork': 'Bashkëpunim i përbashkët (me kod)',
   'collab.sectionSchool': 'Bashkëpunim në shkollë',
   'collab.sessionDuration': 'Kohëzgjatja e sesionit',
   'collab.sessionRemaining': 'Sesioni përfundon për',
   'collab.shareDescNetwork':
-    'Ndani kodin ose lidhjen — të tjerët e futin te Bashkëpunim → I përbashkët.',
+    'Ndani kodin ose lidhjen të tjerët e futin te Bashkëpunim I përbashkët.',
   'collab.start': 'Nis',
   'collab.startFailed': 'Nisja dështoi: {msg}',
   'collab.title': 'Bashkëpunim në linjë',
@@ -62,7 +62,7 @@ export default {
   'workshop.archiveTeachingGroup': 'Arkivo grupin mësimdhënës',
   'workshop.archiveTeachingGroupConfirm':
     'Të arkivohet ky grup mësimdhënës? Do të zhduket nga lista e grupeve.',
-  'workshop.backToConversations': '← Bisedat',
+  'workshop.backToConversations': 'Bisedat',
   'workshop.bold': 'Trash',
   'workshop.browseChannels': 'Shfleto grupet mësimdhënëse',
   'workshop.by': 'nga',
@@ -72,7 +72,7 @@ export default {
   'workshop.channelAvatarPlaceholder': 'Emoji ose etiketë e shkurtër',
   'workshop.channelColor': 'Ngjyra e kanalit',
   'workshop.channelInviteReceived': 'U shtuat te «{name}». Hapni Punëtorinë për ta parë.',
-  'workshop.channelKindGroup': 'Grup mësimdhënës (niveli kryesor, p.sh. 教研组)',
+  'workshop.channelKindGroup': 'Grup mësimdhënës (niveli kryesor, p.sh. 教研',
   'workshop.channelKindLessonStudy': 'Studim mësimi nën një grup (课例)',
   'workshop.channelNameLabel': 'Emri',
   'workshop.channelNamePlaceholder': 'p.sh. Grupi STEM i mësimdhënies',
@@ -143,7 +143,7 @@ export default {
   'workshop.generalChat': 'Bisedë e përgjithshme',
   'workshop.inbox': 'Të marrë',
   'workshop.inboxHintPickChannel':
-    'Hapni një kanal ose një mesazh direkt në anështyllë për të lexuar dhe përgjigjur. Mund të ktheheni këtu kur të doni nga Pamjet → Të marrë.',
+    'Hapni një kanal ose një mesazh direkt në anështyllë për të lexuar dhe përgjigjur. Mund të ktheheni këtu kur të doni nga Pamjet Të marrë.',
   'workshop.inboxSummaryTitle': 'Të marrët tuaja',
   'workshop.inboxUnreadChannels': 'Pa lexuar në kanale',
   'workshop.inboxUnreadDms': 'Mesazhe direkte pa lexuar',
@@ -175,7 +175,7 @@ export default {
   'workshop.markAsRead': 'Shëno si të lexuar',
   'workshop.markStudyResolved': 'Shëno studimin si të zgjidhur',
   'workshop.members': 'anëtarë',
-  'workshop.mentionAmbiguous': 'Emra të dykuptimshëm — zgjidhni dikë me emër shfaqës unik: {0}',
+  'workshop.mentionAmbiguous': 'Emra të dykuptimshëm zgjidhni dikë me emër shfaqës unik: {0}',
   'workshop.mentionUnknown':
     'Përmendje të panjohura (vetëm përdoruesit e së njëjtës organizatë dhe stafi): {0}',
   'workshop.mentionedInChannel': 'Jeni përmendur në #{0}',
@@ -309,13 +309,13 @@ export default {
   'workshop.viewingSchool': 'Po shihni: {0}',
   'workshop.views': 'Pamje',
   'workshop.welcomeChannelsBody':
-    'Një «kanal» këtu shpesh përputhet me një grup kërkimore mësimor (教研组) ose PLC: një hapësirë e përbashkët për ekip (p.sh. PLC Matematikë, PLC Anglisht). Përcakton kush merr pjesë dhe si grupohet hapësira.',
+    'Një «kanal» këtu shpesh përputhet me një grup kërkimore mësimor (教研 ose PLC: një hapësirë e përbashkët për ekip (p.sh. PLC Matematikë, PLC Anglisht). Përcakton kush merr pjesë dhe si grupohet hapësira.',
   'workshop.welcomeChannelsTitle': 'PLC / grupe lëndësh',
   'workshop.welcomeConversationsBody':
     'Brenda një studimi mësimi hapni biseda me titull—p.sh. dizajn mësimor, refleksion ose detyra pasuese—që rrjedhat të mbeten të qarta.',
   'workshop.welcomeConversationsTitle': 'Biseda',
   'workshop.welcomeExampleCaption':
-    'Shembull ilustrues (shkollë imagjinare) — PLC Matematikë dhe PLC Anglisht, secili me studime mësimi dhe biseda shembull.',
+    'Shembull ilustrues (shkollë imagjinare) PLC Matematikë dhe PLC Anglisht, secili me studime mësimi dhe biseda shembull.',
   'workshop.welcomeExampleConvLabel': 'Biseda',
   'workshop.welcomeExampleGroupEnglish': 'PLC Anglisht',
   'workshop.welcomeExampleGroupMath': 'PLC Matematikë',
@@ -323,13 +323,13 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'Udhëzues & dizajn fletë pune',
   'workshop.welcomeExampleLSEng1C2': 'Detyra pas leximit & transfer',
   'workshop.welcomeExampleLSEng1C3': 'Komente vëzhgimi & refleksion',
-  'workshop.welcomeExampleLSEng2': 'Studim mësimi: Tregimi — i njëjti mësim, mësues të ndryshëm',
+  'workshop.welcomeExampleLSEng2': 'Studim mësimi: Tregimi i njëjti mësim, mësues të ndryshëm',
   'workshop.welcomeExampleLSEng2C1': 'Pilot rubrike & rishikim',
   'workshop.welcomeExampleLSMath1': 'Studim mësimi: javor përpunimi «Koncepti i funksioneve»',
   'workshop.welcomeExampleLSMath1C1': 'Qëllimet & dizajni i aktivitetit',
   'workshop.welcomeExampleLSMath1C2': 'Pyetje & puna në tabelë',
   'workshop.welcomeExampleLSMath1C3': 'Refleksion pas mësimit & hapat e ardhshëm',
-  'workshop.welcomeExampleLSMath2': 'Studim mësimi: shqyrtim i matures — derivatet',
+  'workshop.welcomeExampleLSMath2': 'Studim mësimi: shqyrtim i matures derivatet',
   'workshop.welcomeExampleLSMath2C1': 'Detyra të nivelizuara & vlerësim',
   'workshop.welcomeExampleMsgLabel': 'Mesazhet janë brenda çdo bisede',
   'workshop.welcomeExampleOrg': 'Shkolla e Mesme Chenxi',
@@ -352,8 +352,17 @@ export default {
   'workshopCanvas.editingNode': '{username} {emoji} po e redakton këtë nyjë',
   'workshopCanvas.errorGeneric': 'Gabim bashkëpunimi',
   'workshopCanvas.reconnectFailed': 'Nuk u rilidh bashkëpunimi; rifreskoni faqen',
-  'workshopCanvas.returnedHomeIdle': 'U kthyët në krye — pa redaktime diagrami për 30 minuta.',
-  'workshopCanvas.userJoined': 'Përdoruesi {userId} u bashkua',
-  'workshopCanvas.userLeft': 'Përdoruesi {userId} doli',
+  'workshopCanvas.returnedHomeIdle': 'U kthyët në krye pa redaktime diagrami për 30 minuta.',
+  'workshopCanvas.userJoined': 'Përdoruesi {username} u bashkua',
+  'workshopCanvas.usersJoined': '{count} users joined',
+  'workshopCanvas.userLeft': 'Përdoruesi {username} doli',
+  'workshopCanvas.usersLeft': '{count} users left',
   'workshopCanvas.wsError': 'Gabim lidhjeje bashkëpunimi; kontrolloni rrjetin',
+  'workshopCanvas.returnedHomeRoomIdle':
+    'Collaboration ended: no diagram edits in this session for a while.',
+  'workshopCanvas.roomIdleWarningToast':
+    'No diagram edits lately collaboration ends when the countdown hits zero unless someone edits.',
+  'workshopCanvas.otherTabCollaborationActive':
+    'Collaboration continues in another tab or window for this account.',
+  'workshopCanvas.joinQrAlt': 'Join collaboration QR code',
 }

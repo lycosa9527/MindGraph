@@ -191,6 +191,41 @@ SessionLocal = SyncSessionLocal  # backward-compat alias (will be removed)
 # ---------------------------------------------------------------------------
 # Async engine & session factory  (native async via psycopg3)
 # ---------------------------------------------------------------------------
+_QUERY_CACHE_SIZE = int(os.getenv("DATABASE_QUERY_CACHE_SIZE", "1200"))
+
+
+def _assert_pool_fits_max_connections() -> None:
+    """
+    Hard startup failure when pool demand exceeds max_connections.
+
+    Enabled with ``DATABASE_POOL_HARD_ASSERT=1``.  The formula requires
+    knowing the number of uvicorn workers, exposed by the ``WEB_CONCURRENCY``
+    (or ``UVICORN_WORKERS``) env var; when absent the check is skipped.
+    """
+    if os.getenv("DATABASE_POOL_HARD_ASSERT", "0") not in ("1", "true", "True"):
+        return
+    raw_workers = (
+        os.getenv("WEB_CONCURRENCY")
+        or os.getenv("UVICORN_WORKERS")
+    )
+    if not raw_workers:
+        return
+    workers = int(raw_workers)
+    demand = workers * (async_pool_size + async_max_overflow)
+    max_conn = int(os.getenv("DATABASE_MAX_CONNECTIONS", "0"))
+    if max_conn <= 0:
+        return
+    if demand > max_conn:
+        raise RuntimeError(
+            f"Connection pool overflow: {workers} workers × "
+            f"({async_pool_size} pool + {async_max_overflow} overflow) = {demand} "
+            f"exceeds DATABASE_MAX_CONNECTIONS={max_conn}. "
+            f"Reduce pool sizes or raise max_connections before deploying."
+        )
+
+
+_assert_pool_fits_max_connections()
+
 async_engine = create_async_engine(
     DATABASE_URL,
     pool_size=async_pool_size,
@@ -201,6 +236,7 @@ async_engine = create_async_engine(
     pool_use_lifo=_POOL_USE_LIFO,
     connect_args=_CONNECT_ARGS,
     echo=False,
+    query_cache_size=_QUERY_CACHE_SIZE,
 )
 
 AsyncSessionLocal = async_sessionmaker(
