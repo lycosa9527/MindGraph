@@ -19,19 +19,43 @@ function isCssColorTransparent(value: string): boolean {
   return false
 }
 
-/** Border / outline of the custom node root, else text or fill color. */
-function sampleWorkshopAntColorFromNodeWrapper(wrapper: HTMLElement): string | null {
-  const inner = wrapper.querySelector<HTMLElement>(':scope > *')
-  if (!inner) {
-    return null
-  }
-  const styles = getComputedStyle(inner)
-  const borderWidth = parseFloat(styles.borderTopWidth) || 0
-  if (borderWidth > 0) {
-    const color = styles.borderTopColor
-    if (!isCssColorTransparent(color)) {
-      return color
+function isElementHiddenForAntSample(element: HTMLElement): boolean {
+  const cs = getComputedStyle(element)
+  return cs.display === 'none' || cs.visibility === 'hidden'
+}
+
+function antSampleElementArea(element: HTMLElement): number {
+  return Math.max(0, element.offsetWidth) * Math.max(0, element.offsetHeight)
+}
+
+function solidBorderPaintFromComputed(
+  styles: CSSStyleDeclaration
+): { width: number; color: string } | null {
+  const sides: Array<[number, string]> = [
+    [parseFloat(styles.borderTopWidth) || 0, styles.borderTopColor],
+    [parseFloat(styles.borderRightWidth) || 0, styles.borderRightColor],
+    [parseFloat(styles.borderBottomWidth) || 0, styles.borderBottomColor],
+    [parseFloat(styles.borderLeftWidth) || 0, styles.borderLeftColor],
+  ]
+  let bestWidth = 0
+  let bestColor: string | null = null
+  for (const [w, c] of sides) {
+    if (w > bestWidth && !isCssColorTransparent(c)) {
+      bestWidth = w
+      bestColor = c
     }
+  }
+  if (bestWidth > 0 && bestColor !== null) {
+    return { width: bestWidth, color: bestColor }
+  }
+  return null
+}
+
+function samplePaintFromElement(element: HTMLElement): string | null {
+  const styles = getComputedStyle(element)
+  const borderPaint = solidBorderPaintFromComputed(styles)
+  if (borderPaint !== null) {
+    return borderPaint.color
   }
   const outlineWidth = parseFloat(styles.outlineWidth) || 0
   if (outlineWidth > 0) {
@@ -48,6 +72,73 @@ function sampleWorkshopAntColorFromNodeWrapper(wrapper: HTMLElement): string | n
   if (!isCssColorTransparent(fromBg)) {
     return fromBg
   }
+  return null
+}
+
+function sampleBoundaryRingStroke(wrapper: HTMLElement): string | null {
+  const circle = wrapper.querySelector('circle')
+  if (!(circle instanceof SVGCircleElement)) {
+    return null
+  }
+  const stroke = getComputedStyle(circle).stroke
+  if (stroke && stroke !== 'none' && !isCssColorTransparent(stroke)) {
+    return stroke
+  }
+  return null
+}
+
+/**
+ * Border of the visible node chrome (not the first DOM child only).
+ * Concept maps wrap the pill plus a link handle: the handle is first in DOM but has no border;
+ * we pick the direct child with real border (or largest area for text-only nodes).
+ */
+function sampleWorkshopAntColorFromNodeWrapper(wrapper: HTMLElement): string | null {
+  const visibleDirect: HTMLElement[] = []
+  for (let i = 0; i < wrapper.children.length; i++) {
+    const el = wrapper.children[i]
+    if (!(el instanceof HTMLElement)) {
+      continue
+    }
+    if (isElementHiddenForAntSample(el)) {
+      continue
+    }
+    visibleDirect.push(el)
+  }
+
+  if (visibleDirect.length === 0) {
+    return sampleBoundaryRingStroke(wrapper)
+  }
+
+  let bestBorderColor: string | null = null
+  let bestBorderScore = -1
+  for (const el of visibleDirect) {
+    const paint = solidBorderPaintFromComputed(getComputedStyle(el))
+    if (paint === null) {
+      continue
+    }
+    const score = paint.width * 1e12 + antSampleElementArea(el)
+    if (score > bestBorderScore) {
+      bestBorderScore = score
+      bestBorderColor = paint.color
+    }
+  }
+  if (bestBorderColor !== null) {
+    return bestBorderColor
+  }
+
+  const fromRing = sampleBoundaryRingStroke(wrapper)
+  if (fromRing !== null) {
+    return fromRing
+  }
+
+  const byArea = [...visibleDirect].sort((a, b) => antSampleElementArea(b) - antSampleElementArea(a))
+  for (const el of byArea) {
+    const sampled = samplePaintFromElement(el)
+    if (sampled !== null) {
+      return sampled
+    }
+  }
+
   return null
 }
 

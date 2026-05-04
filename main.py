@@ -19,6 +19,24 @@ Features:
 Status: Production Ready
 """
 
+import os
+import secrets
+
+from dotenv import load_dotenv
+
+# Load .env before any router imports so module-level os.getenv() calls in fanout
+# modules (workshop_ws_broadcast, ws_redis_fanout_listener, ws_pg_notify_fanout)
+# see the correct values.  The load_dotenv() call inside setup_early_configuration()
+# is harmless — it won't override env vars already in os.environ.
+load_dotenv()
+
+# Auto-generate COLLAB_FANOUT_ORIGIN_SECRET when not explicitly configured.
+# Must happen here (before router imports) because the fanout modules cache the
+# value as a module-level constant at import time.
+# In production set this explicitly so all workers share the same secret.
+if not os.environ.get("COLLAB_FANOUT_ORIGIN_SECRET"):
+    os.environ["COLLAB_FANOUT_ORIGIN_SECRET"] = secrets.token_hex(32)
+
 # Third-party imports
 from fastapi import FastAPI
 

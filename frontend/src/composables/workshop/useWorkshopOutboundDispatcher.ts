@@ -116,6 +116,9 @@ export function useWorkshopOutboundDispatcher(options: UseWorkshopOutboundDispat
       return
     }
     try {
+      if (!options.ws.value) {
+        return
+      }
       options.ws.value.send(
         JSON.stringify({
           type: 'node_selected',
@@ -133,6 +136,9 @@ export function useWorkshopOutboundDispatcher(options: UseWorkshopOutboundDispat
       return
     }
     try {
+      if (!options.ws.value) {
+        return
+      }
       options.ws.value.send(JSON.stringify({ type: 'node_editing', node_id: nodeId, editing }))
     } catch (error) {
       if (import.meta.env.DEV) {
@@ -168,6 +174,9 @@ export function useWorkshopOutboundDispatcher(options: UseWorkshopOutboundDispat
       return
     }
     try {
+      if (!options.ws.value) {
+        return
+      }
       options.ws.value.send(JSON.stringify({ type: 'claim_node_edit', node_id: nodeId }))
     } catch (error) {
       if (import.meta.env.DEV) {

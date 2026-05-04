@@ -34,6 +34,25 @@ from services.redis.redis_async_client import get_async_redis
 logger = logging.getLogger(__name__)
 
 _FAILED_FLUSH_RETRY_TTL_SEC = 15 * 60
+WORKSHOP_STOP_FLUSH_MAX_ATTEMPTS = 5
+_STOP_FLUSH_RETRY_INITIAL_DELAY_SEC = 0.06
+
+
+async def _flush_live_spec_with_retries_for_stop(
+    db: Any,
+    redis: Any,
+    code: str,
+    diagram_id: str,
+) -> bool:
+    """Flush live Redis spec to Postgres; retry when another flush holds the PG lock."""
+    for attempt in range(WORKSHOP_STOP_FLUSH_MAX_ATTEMPTS):
+        ok = await flush_live_spec_to_db_in_session(db, redis, code, diagram_id)
+        if ok:
+            return True
+        if attempt < WORKSHOP_STOP_FLUSH_MAX_ATTEMPTS - 1:
+            delay = _STOP_FLUSH_RETRY_INITIAL_DELAY_SEC * (attempt + 1)
+            await asyncio.sleep(delay)
+    return False
 
 
 async def _extend_room_ttl_after_flush_failure(redis: Any, code: str) -> None:
@@ -103,7 +122,7 @@ async def stop_online_collab_impl(diagram_id: str, user_id: int) -> bool:
             await asyncio.sleep(0.05)
 
             redis = get_async_redis()
-            flush_ok = await flush_live_spec_to_db_in_session(
+            flush_ok = await _flush_live_spec_with_retries_for_stop(
                 db, redis, norm, diagram_id,
             )
             if not flush_ok:
@@ -139,7 +158,7 @@ async def stop_online_collab_impl(diagram_id: str, user_id: int) -> bool:
                 get_online_collab_manager,
             )
             await get_online_collab_manager().destroy_session(
-                code, reason="explicit", diagram_id=diagram_id,
+                norm, reason="explicit", diagram_id=diagram_id,
             )
 
             logger.info(
@@ -202,8 +221,8 @@ async def stop_online_collab_for_room_idle_impl(
 
             ws_code = diagram.workshop_code
             redis = get_async_redis()
-            flush_ok = await flush_live_spec_to_db_in_session(
-                db, redis, ws_code, diagram_id,
+            flush_ok = await _flush_live_spec_with_retries_for_stop(
+                db, redis, norm, diagram_id,
             )
             if not flush_ok:
                 logger.error(
@@ -211,7 +230,7 @@ async def stop_online_collab_for_room_idle_impl(
                     "destroy session code=%s diagram=%s",
                     ws_code, diagram_id,
                 )
-                await _extend_room_ttl_after_flush_failure(redis, ws_code)
+                await _extend_room_ttl_after_flush_failure(redis, norm)
                 await db.rollback()
                 return False
 
@@ -221,7 +240,7 @@ async def stop_online_collab_for_room_idle_impl(
             redis_ok = True
             try:
                 await get_online_collab_manager().destroy_session(
-                    ws_code, reason="idle", diagram_id=diagram_id,
+                    norm, reason="idle", diagram_id=diagram_id,
                 )
             except (RedisError, OSError, RuntimeError, TypeError) as redis_exc:
                 redis_ok = False
@@ -247,7 +266,7 @@ async def stop_online_collab_for_room_idle_impl(
             except SQLAlchemyError:
                 await db.rollback()
                 raise
-            await mark_live_spec_db_flushed(redis, ws_code)
+            await mark_live_spec_db_flushed(redis, norm)
 
             logger.info(
                 "[OnlineCollabMgr] Idle-stop workshop %s for diagram %s",

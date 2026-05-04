@@ -66,7 +66,11 @@ export interface WorkshopMessageDispatchDeps {
   onServerSnapshot?: (spec: Record<string, unknown>, version: number) => void
   clearRoomIdleCountdownUi: () => void
   applyRoomIdleWarningFromServer: (payload: WorkshopUpdate) => void
-  schedulePresenceNotification: (type: 'joined' | 'left', username: string) => void
+  schedulePresenceNotification: (
+    type: 'joined' | 'left',
+    userId: number,
+    displayName: string
+  ) => void
   clearPendingResyncWatchdog: () => void
   schedulePendingResyncWatchdog: (sock: WebSocket) => void
   /** Replays deferred `sendUpdate` ops when WS is open and ready to flush. */
@@ -332,26 +336,38 @@ export function dispatchWorkshopMessage(
       if (joinedId == null) {
         break
       }
+      const myCollabId = Number(deps.auth.getCurrentUserIdString())
+      if (Number.isFinite(myCollabId) && joinedId === myCollabId) {
+        break
+      }
       if (!deps.participants.value.includes(joinedId)) {
         deps.participants.value.push(joinedId)
       }
+      const joinDisplayName = message.username?.trim() || `User ${joinedId}`
       if (!deps.participantsWithNames.value.some((p) => p.user_id === joinedId)) {
         deps.participantsWithNames.value.push({
           user_id: joinedId,
-          username: message.username || `User ${joinedId}`,
+          username: joinDisplayName,
         })
       }
-      deps.schedulePresenceNotification('joined', message.username || String(joinedId))
+      deps.schedulePresenceNotification('joined', joinedId, joinDisplayName)
       break
     }
 
     case 'user_left': {
       const leftId = message.user_id
-      const leftUsername =
+      if (leftId == null) {
+        break
+      }
+      const myLeaveId = Number(deps.auth.getCurrentUserIdString())
+      if (Number.isFinite(myLeaveId) && leftId === myLeaveId) {
+        break
+      }
+      const leftDisplayName =
         deps.participantsWithNames.value.find((p) => p.user_id === leftId)?.username ||
-        message.username ||
-        String(leftId)
-      const pIdx = deps.participants.value.indexOf(leftId as number)
+        message.username?.trim() ||
+        `User ${leftId}`
+      const pIdx = deps.participants.value.indexOf(leftId)
       if (pIdx !== -1) {
         deps.participants.value.splice(pIdx, 1)
       }
@@ -359,11 +375,9 @@ export function dispatchWorkshopMessage(
       if (pnIdx !== -1) {
         deps.participantsWithNames.value.splice(pnIdx, 1)
       }
-      if (leftId != null) {
-        deps.remoteSelectionsByUser.value.delete(leftId)
-        deps.remoteSelectionsByUser.value = new Map(deps.remoteSelectionsByUser.value)
-      }
-      deps.schedulePresenceNotification('left', leftUsername)
+      deps.remoteSelectionsByUser.value.delete(leftId)
+      deps.remoteSelectionsByUser.value = new Map(deps.remoteSelectionsByUser.value)
+      deps.schedulePresenceNotification('left', leftId, leftDisplayName)
       break
     }
 
@@ -450,7 +464,7 @@ export function dispatchWorkshopMessage(
       break
 
     case 'session_closing':
-      deps.notify.info(deps.t('workshopCanvas.sessionEndedByHost'))
+      // Server suppresses merges; guests see session-ended copy via kicked frame.
       break
 
     case 'owner_disconnected':
@@ -463,7 +477,15 @@ export function dispatchWorkshopMessage(
       if (message.reason === 'room_idle') {
         deps.clearRoomIdleCountdownUi()
       } else if (message.reason === 'session_ended') {
-        deps.notify.info(deps.t('workshopCanvas.sessionEndedByHost'))
+        const myKickId = Number(deps.auth.getCurrentUserIdString())
+        const sessionOwnerId = deps.diagramOwnerId.value
+        if (
+          sessionOwnerId != null &&
+          Number.isFinite(myKickId) &&
+          myKickId !== sessionOwnerId
+        ) {
+          deps.notify.info(deps.t('workshopCanvas.sessionEndedByHost'))
+        }
       } else if (message.reason === 'replaced_by_new_session') {
         deps.notify.warning(deps.t('workshopCanvas.connectionClosed'))
       } else if (message.reason) {

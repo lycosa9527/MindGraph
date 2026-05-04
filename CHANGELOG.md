@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.1] - 2026-05-05
+
+### Added
+
+- **`main.py`** — load `.env` before router imports so module-level fanout config (`COLLAB_FANOUT_ORIGIN_SECRET`, etc.) sees the same values as runtime; when `COLLAB_FANOUT_ORIGIN_SECRET` is unset, generate a per-process hex secret at startup (dev/single-worker convenience — **`env.example`** documents setting it explicitly for multi-worker production).
+
+### Changed
+
+- **`routers/api/diagrams_workshop_routes.py`** — `POST .../workshop/stop`: if stopping fails but the authenticated owner still has an active `workshop_code`, return **503** with a retry-oriented message instead of **404**, avoiding a false “not found” when the live-spec flush cannot complete.
+- **`services/online_collab/core/online_collab_stop.py`** — bounded retries with backoff when flushing Redis live spec to Postgres on owner stop and idle stop; `destroy_session` / TTL extension use the **normalized** workshop code consistently (same value as flush).
+- **`services/online_collab/spec/online_collab_live_spec_ops.py`** — `flush_live_spec_to_db_in_session`: treat missing Redis key as a successful no-op; distinguish unreadable JSON vs absent key; probe `EXISTS` when `read_live_spec` returns `None`.
+- **`env.example`** — notes on `ENVIRONMENT=development` vs `COLLAB_STRICT_PROD_GUARDS`, and multi-worker `COLLAB_FANOUT_ORIGIN_SECRET` behavior.
+- **`frontend/src/components/mindgraph/MindGraphCollabPanel.vue`** — responsive collab popper and join-code panel (container queries, grid layout, clamped typography) for narrow viewports.
+- **`frontend/src/composables/canvasPage/useCanvasPageCollabIndicators.ts`** — remote-edit “ant” color sampling walks visible direct children (strongest border wins), fixes **Concept** nodes where the link handle was first in DOM; supports SVG circle stroke sampling.
+- **`frontend/src/components/diagram/nodes/ConceptNode.vue`** — wrapper `border-radius` aligned with inner pill for collab outline shape.
+- **`frontend/src/composables/workshop/useWorkshopMessageHandlers.ts`**, **`useWorkshopPresence.ts`**, **`useWorkshopReconnect.ts`** — presence join/leave notifications keyed by **`userId`** (coalescing avoids display-name mismatches on reconnect); skip self-join/self-leave toasts; **`session_closing`** / **`kicked`** handling so only non-owners see the “session ended by host” info toast for `session_ended`.
+- **`frontend/src/composables/workshop/useWorkshopOutboundDispatcher.ts`** — guard `node_selected` / `node_editing` / `claim_node_edit` sends when the WebSocket ref is null.
+
+### Tests
+
+- **`frontend/tests/useWorkshopReconnect.spec.ts`** — coverage for `netPresenceAfterCancellingPairsByUserId`.
+- **`tests/test_online_collab_hardening.py`** — idle-stop flush failure expects `WORKSHOP_STOP_FLUSH_MAX_ATTEMPTS` flush attempts.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.1).
+
 ## [5.117.0] - 2026-05-05
 
 ### Added

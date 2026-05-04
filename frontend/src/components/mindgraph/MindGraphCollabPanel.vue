@@ -231,7 +231,7 @@ defineExpose({ prefillAndAutoJoin })
     v-model:visible="collabPopoverVisible"
     :trigger="'manual' as 'click'"
     placement="bottom-end"
-    :width="320"
+    width="min(360px, calc(100vw - 48px))"
     popper-class="collab-panel-popper"
     :hide-after="0"
     @click-outside="closeCollabPopover"
@@ -369,7 +369,7 @@ defineExpose({ prefillAndAutoJoin })
     <!-- Panel: cross-org passkey input -->
     <div
       v-else
-      class="sw-panel"
+      class="sw-panel sw-panel--join-code"
     >
       <div class="sw-panel__header">
         <button
@@ -595,6 +595,11 @@ defineExpose({ prefillAndAutoJoin })
   line-height: 1.5;
 }
 
+.sw-panel--join-code {
+  container-type: inline-size;
+  container-name: collab-join-panel;
+}
+
 /* ── Org sessions list ────────────────────────────────────────────────── */
 .sw-sessions {
   list-style: none;
@@ -723,28 +728,40 @@ defineExpose({ prefillAndAutoJoin })
 }
 
 .code-input-container {
-  display: flex;
-  justify-content: center;
-  margin: 20px 0;
+  width: 100%;
+  min-width: 0;
+  margin-block: 16px;
 }
 
 .code-input-boxes {
-  display: flex;
+  display: grid;
+  width: 100%;
+  min-width: 0;
   align-items: center;
-  gap: 8px;
+  justify-items: stretch;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto repeat(3, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .code-input-box {
-  width: 48px;
-  height: 48px;
+  min-width: 0;
+  width: 100%;
+  aspect-ratio: 1;
+  height: auto;
+  padding: 0;
+  box-sizing: border-box;
   text-align: center;
-  font-size: 24px;
   font-weight: 600;
+  line-height: 1;
+  font-size: clamp(13px, 4vmin, 18px);
   border: 2px solid #d1d5db;
   border-radius: 8px;
   background: #fff;
   color: #1f2937;
-  transition: all 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
   outline: none;
 }
 
@@ -755,11 +772,40 @@ defineExpose({ prefillAndAutoJoin })
 }
 
 .code-dash {
-  font-size: 24px;
+  display: flex;
+  align-self: stretch;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  justify-self: center;
+  line-height: 1;
+  font-size: clamp(12px, 3.5vmin, 17px);
   font-weight: 600;
   color: #6b7280;
-  margin: 0 4px;
   user-select: none;
+}
+
+@supports (container-type: inline-size) {
+  .sw-panel--join-code .code-input-container {
+    margin-block: clamp(12px, 4cqi, 22px);
+  }
+
+  .sw-panel--join-code .code-input-boxes {
+    gap: clamp(4px, 2cqi, 10px);
+  }
+
+  .sw-panel--join-code .code-input-box {
+    font-size: clamp(13px, 7cqi, 24px);
+    border-radius: clamp(6px, 2.25cqi, 10px);
+  }
+
+  .sw-panel--join-code .code-input-box:focus {
+    box-shadow: 0 0 0 clamp(2px, 1cqi, 4px) rgba(59, 130, 246, 0.14);
+  }
+
+  .sw-panel--join-code .code-dash {
+    font-size: clamp(12px, 6cqi, 20px);
+  }
 }
 </style>
 
@@ -767,6 +813,8 @@ defineExpose({ prefillAndAutoJoin })
 /* Global: popper wrapper padding (teleported outside component scope) */
 .collab-panel-popper.el-popper {
   padding: 12px !important;
+  box-sizing: border-box;
+  max-width: calc(100vw - 24px);
 }
 
 /* ── Swiss-style trigger dropdown (teleported) ────────────────────────── */

@@ -402,7 +402,30 @@ async def flush_live_spec_to_db_in_session(
     if redis is None:
         return False
     doc = await read_live_spec(redis, code)
-    if not doc:
+    if doc is None:
+        try:
+            key_alive = await redis.exists(live_spec_key(code))
+        except (RedisError, OSError, RuntimeError, TypeError) as exc:
+            logger.debug(
+                "[LiveSpec] flush: live_spec probe failed code=%s diagram=%s: %s",
+                code,
+                diagram_id,
+                exc,
+            )
+            return False
+        if not key_alive:
+            logger.warning(
+                "[LiveSpec] flush: no Redis live_spec key code=%s diagram=%s; "
+                "skipping persist",
+                code,
+                diagram_id,
+            )
+            return True
+        logger.warning(
+            "[LiveSpec] flush: live_spec unreadable code=%s diagram=%s",
+            code,
+            diagram_id,
+        )
         return False
 
     changed_keys = await _read_changed_keys(redis, code)

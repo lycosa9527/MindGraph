@@ -138,6 +138,28 @@ export function netPresenceAfterCancellingPairs(
   }
 }
 
+/** One participant row for join/leave coalescing (stable ``userId`` for pairing). */
+export interface PresenceDeltaRow {
+  userId: number
+  displayName: string
+}
+
+/**
+ * Same as ``netPresenceAfterCancellingPairs`` but keyed by ``userId`` so a
+ * reconnect cannot produce mismatched display strings for the same person.
+ */
+export function netPresenceAfterCancellingPairsByUserId(
+  joined: PresenceDeltaRow[],
+  left: PresenceDeltaRow[]
+): { joined: PresenceDeltaRow[]; left: PresenceDeltaRow[] } {
+  const leftIds = new Set(left.map((r) => r.userId))
+  const joinedIds = new Set(joined.map((r) => r.userId))
+  return {
+    joined: joined.filter((r) => !leftIds.has(r.userId)),
+    left: left.filter((r) => !joinedIds.has(r.userId)),
+  }
+}
+
 /** Timers for pendingResync resend / banner (mirrors useWorkshop). */
 export const WORKSHOP_RESYNC_WATCHDOG = {
   INITIAL_WAIT_MS: 8000,

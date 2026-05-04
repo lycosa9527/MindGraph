@@ -7,8 +7,10 @@ import {
   computeReconnectDelayMs,
   evaluateLiveSpecGap,
   netPresenceAfterCancellingPairs,
+  netPresenceAfterCancellingPairsByUserId,
   nextPendingResyncBackoffMs,
   shouldScheduleReconnect,
+  type PresenceDeltaRow,
 } from '@/composables/workshop/useWorkshopReconnect'
 
 describe('computeReconnectDelayMs', () => {
@@ -140,6 +142,24 @@ describe('netPresenceAfterCancellingPairs', () => {
     const raw = netPresenceAfterCancellingPairs(['alice'], ['bob'])
     expect(raw.joined).toEqual(['alice'])
     expect(raw.left).toEqual(['bob'])
+  })
+})
+
+describe('netPresenceAfterCancellingPairsByUserId', () => {
+  it('drops same user when labels differ (rejoin display mismatch)', () => {
+    const joined: PresenceDeltaRow[] = [{ userId: 7, displayName: '7' }]
+    const left: PresenceDeltaRow[] = [{ userId: 7, displayName: 'Alice' }]
+    const raw = netPresenceAfterCancellingPairsByUserId(joined, left)
+    expect(raw.joined).toEqual([])
+    expect(raw.left).toEqual([])
+  })
+
+  it('keeps asymmetric deltas by user id', () => {
+    const joined: PresenceDeltaRow[] = [{ userId: 1, displayName: 'a' }]
+    const left: PresenceDeltaRow[] = [{ userId: 2, displayName: 'b' }]
+    const raw = netPresenceAfterCancellingPairsByUserId(joined, left)
+    expect(raw.joined).toEqual(joined)
+    expect(raw.left).toEqual(left)
   })
 })
 

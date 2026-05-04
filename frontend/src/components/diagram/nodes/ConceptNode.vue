@@ -349,6 +349,8 @@ onUnmounted(() => {
 <style scoped>
 .concept-node-wrapper {
   transform: translate(0, 0);
+  /* Match inner pill so workshop collab ants (::before on vue-flow > *) inherit the same shape */
+  border-radius: 9999px;
 }
 
 .concept-link-icon {

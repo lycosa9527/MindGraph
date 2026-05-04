@@ -6,38 +6,46 @@ import { ref } from 'vue'
 import { useLanguage, useNotifications } from '@/composables'
 import type { WorkshopUpdate } from '@/composables/workshop/useWorkshopTypes'
 
-import { netPresenceAfterCancellingPairs } from './useWorkshopReconnect'
+import {
+  netPresenceAfterCancellingPairsByUserId,
+  type PresenceDeltaRow,
+} from './useWorkshopReconnect'
 
 export function useWorkshopPresence() {
   const notify = useNotifications()
   const { t } = useLanguage()
 
-  let presenceJoinedBuffer: string[] = []
-  let presenceLeftBuffer: string[] = []
+  let presenceJoinedBuffer: PresenceDeltaRow[] = []
+  let presenceLeftBuffer: PresenceDeltaRow[] = []
   let presenceCoalesceTimer: ReturnType<typeof setTimeout> | null = null
 
   function flushPresenceNotifications(): void {
     presenceCoalesceTimer = null
     const joinedRaw = presenceJoinedBuffer.splice(0)
     const leftRaw = presenceLeftBuffer.splice(0)
-    const { joined, left } = netPresenceAfterCancellingPairs(joinedRaw, leftRaw)
+    const { joined, left } = netPresenceAfterCancellingPairsByUserId(joinedRaw, leftRaw)
     if (joined.length === 1) {
-      notify.info(t('workshopCanvas.userJoined', { username: joined[0] }))
+      notify.info(t('workshopCanvas.userJoined', { username: joined[0].displayName }))
     } else if (joined.length > 1) {
       notify.info(t('workshopCanvas.usersJoined', { count: joined.length }))
     }
     if (left.length === 1) {
-      notify.info(t('workshopCanvas.userLeft', { username: left[0] }))
+      notify.info(t('workshopCanvas.userLeft', { username: left[0].displayName }))
     } else if (left.length > 1) {
       notify.info(t('workshopCanvas.usersLeft', { count: left.length }))
     }
   }
 
-  function schedulePresenceNotification(type: 'joined' | 'left', username: string): void {
+  function schedulePresenceNotification(
+    type: 'joined' | 'left',
+    userId: number,
+    displayName: string
+  ): void {
+    const row: PresenceDeltaRow = { userId, displayName }
     if (type === 'joined') {
-      presenceJoinedBuffer.push(username)
+      presenceJoinedBuffer.push(row)
     } else {
-      presenceLeftBuffer.push(username)
+      presenceLeftBuffer.push(row)
     }
     if (!presenceCoalesceTimer) {
       presenceCoalesceTimer = setTimeout(flushPresenceNotifications, 500)

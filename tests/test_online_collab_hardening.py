@@ -6,7 +6,7 @@ import asyncio
 import json
 from dataclasses import dataclass
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 
@@ -171,7 +171,10 @@ async def test_idle_stop_flush_failure_keeps_session_intact() -> None:
         )
 
     assert stopped is False
-    flush_mock.assert_awaited_once_with(fake_db, fake_redis, "ABC-123", "diagram-1")
+    flush_mock.assert_has_calls(
+        [call(fake_db, fake_redis, "ABC-123", "diagram-1")]
+        * stop_ops.WORKSHOP_STOP_FLUSH_MAX_ATTEMPTS
+    )
     extend_mock.assert_awaited_once_with(fake_redis, "ABC-123")
     manager.destroy_session.assert_not_awaited()
     fake_db.rollback.assert_awaited()

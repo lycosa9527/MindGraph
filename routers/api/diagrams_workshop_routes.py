@@ -4,8 +4,11 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
+from sqlalchemy import select
 
+from config.database import AsyncSessionLocal
 from models.domain.auth import User
+from models.domain.diagrams import Diagram
 from models.requests.requests_diagram import (
     WorkshopJoinOrganizationRequest,
     WorkshopStartRequest,
@@ -18,6 +21,20 @@ from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["diagrams"])
+
+
+async def _owner_has_active_workshop(diagram_id: str, user_id: int) -> bool:
+    """True when this user owns the diagram and it still has a workshop code."""
+    async with AsyncSessionLocal() as db:
+        row = await db.execute(
+            select(Diagram.workshop_code).where(
+                Diagram.id == diagram_id,
+                Diagram.user_id == user_id,
+                ~Diagram.is_deleted,
+            )
+        )
+        code = row.scalar_one_or_none()
+        return bool(code and str(code).strip())
 
 
 @router.post("/diagrams/{diagram_id}/workshop/start")
@@ -90,7 +107,18 @@ async def stop_workshop(
     success = await get_online_collab_manager().stop_online_collab(diagram_id, current_user.id)
 
     if not success:
-        raise HTTPException(status_code=404, detail="Presentation mode not found or not authorized")
+        if await _owner_has_active_workshop(diagram_id, current_user.id):
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Could not save the latest collaborative edits. "
+                    "Please try again in a few seconds."
+                ),
+            )
+        raise HTTPException(
+            status_code=404,
+            detail="Presentation mode not found or not authorized",
+        )
 
     logger.info(
         "[Diagrams] Stopped presentation mode for diagram %s (user %s)",
