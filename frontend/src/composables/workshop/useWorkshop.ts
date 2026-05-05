@@ -495,10 +495,15 @@ export function useWorkshop(
           reconnectTimeout = setTimeout(() => {
             connect()
           }, delay)
-        } else if (reconnectAttempts.value >= maxReconnectAttempts) {
-          notify.error(t('workshopCanvas.reconnectFailed'))
+        } else {
+          if (reconnectAttempts.value >= maxReconnectAttempts) {
+            notify.error(t('workshopCanvas.reconnectFailed'))
+            connectionStatus.value = 'failed'
+          }
           disconnect()
-          connectionStatus.value = 'failed'
+          sessionStorage.removeItem('mg_workshop_code')
+          sessionStorage.removeItem('mg_workshop_diagram_id')
+          eventBus.emit('workshop:code-changed', { code: null, visibility: null })
         }
       }
 

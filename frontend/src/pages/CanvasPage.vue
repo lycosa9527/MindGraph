@@ -443,12 +443,26 @@ onMounted(async () => {
   // on a subsequent refresh the URL carries no trace of the session. sessionStorage
   // survives tab-level refreshes (but not tab close), making it the right scope.
   // If both keys are present, re-join the live session and skip the DB diagram load.
+  // Guard: only restore when the URL does not request a different diagram — prevents
+  // a stale code (e.g. from a session that ended with 1008) from hijacking navigation
+  // to an unrelated diagram.
   {
     const savedCode = sessionStorage.getItem('mg_workshop_code')
     const savedDiagramId = sessionStorage.getItem('mg_workshop_diagram_id')
-    if (savedCode && savedDiagramId) {
+    const routeDiagramId =
+      typeof route.query.diagramId === 'string'
+        ? route.query.diagramId
+        : typeof route.query.diagram_id === 'string'
+          ? route.query.diagram_id
+          : null
+    const sessionMatchesRoute = !routeDiagramId || routeDiagramId === savedDiagramId
+    if (savedCode && savedDiagramId && sessionMatchesRoute) {
       applyWorkshopCodeFromSession(savedCode, savedDiagramId)
       return
+    }
+    if (savedCode && savedDiagramId && !sessionMatchesRoute) {
+      sessionStorage.removeItem('mg_workshop_code')
+      sessionStorage.removeItem('mg_workshop_diagram_id')
     }
   }
 
