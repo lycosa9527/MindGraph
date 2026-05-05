@@ -426,6 +426,28 @@ async def flush_live_spec_to_db_in_session(
             code,
             diagram_id,
         )
+        redis_type = "(unknown)"
+        try:
+            rtype = await redis.execute_command("TYPE", live_spec_key(code))
+            if isinstance(rtype, (bytes, bytearray, memoryview)):
+                redis_type = bytes(rtype).decode("utf-8", errors="replace")
+            else:
+                redis_type = str(rtype)
+        except (RedisError, OSError, RuntimeError, TypeError) as type_exc:
+            logger.debug(
+                "[LiveSpec] flush: Redis TYPE probe failed code=%s: %s",
+                code,
+                type_exc,
+            )
+        logger.debug(
+            "[LiveSpec] flush: live_spec unreadable detail diagram=%s code=%s "
+            "Redis_TYPE=%s (also see DEBUG logger "
+            "services.online_collab.spec.online_collab_live_spec_json for "
+            "JSON.GET previews)",
+            diagram_id,
+            code,
+            redis_type,
+        )
         return False
 
     changed_keys = await _read_changed_keys(redis, code)

@@ -34,24 +34,77 @@ def _record_failure() -> None:
         pass
 
 
+_JSON_GET_PREVIEW_MAX_CHARS = 160
+
+
+def _preview_json_get_raw(raw: Any) -> str:
+    """Short, bounded summary for logs (never dumps full diagram payloads)."""
+    if raw is None:
+        return "(nil)"
+    if isinstance(raw, dict):
+        sk = sorted(str(k) for k in raw.keys())
+        preview_keys = ",".join(sk[:8])
+        extra = ",…" if len(raw) > 8 else ""
+        return f"<dict n={len(raw)} keys={preview_keys}{extra}>"
+    if isinstance(raw, list):
+        return f"<list len={len(raw)}>"
+    if isinstance(raw, (bytes, bytearray, memoryview)):
+        decoded = bytes(raw).decode("utf-8", errors="replace").strip()
+        tail = len(decoded) > _JSON_GET_PREVIEW_MAX_CHARS
+        body = decoded[:_JSON_GET_PREVIEW_MAX_CHARS]
+        return f"{body}… [trunc]" if tail else body
+    if isinstance(raw, str):
+        stripped = raw.strip()
+        tail = len(stripped) > _JSON_GET_PREVIEW_MAX_CHARS
+        body = stripped[:_JSON_GET_PREVIEW_MAX_CHARS]
+        return f"{body}… [trunc]" if tail else body
+    text = repr(raw)
+    tail = len(text) > _JSON_GET_PREVIEW_MAX_CHARS
+    body = text[:_JSON_GET_PREVIEW_MAX_CHARS]
+    return f"{body}… [trunc]" if tail else body
+
+
+_JSON_GET_UNWRAP_MAX = 8
+
+
 def parse_json_get_bulk(raw: Any) -> Optional[Dict[str, Any]]:
     """
     Normalize a ``JSON.GET`` bulk response (path ``$``) to a document dict.
 
-    Returns ``None`` for empty, unparseable, or non-object roots.
+    With RESP3 and ``decode_responses=True``, redis-py may deliver the JSON
+    payload as native ``dict`` / ``list`` aggregates instead of encoded
+    strings. This helper unwraps the historical ``[{...}]`` shape, parses
+    string/bytes payloads, and returns ``None`` for empty or non-object
+    roots.
     """
-    if not raw:
-        return None
-    try:
-        parsed = json.loads(raw if isinstance(raw, str) else raw.decode("utf-8"))
-    except (ValueError, AttributeError, UnicodeDecodeError):
-        return None
-    if isinstance(parsed, list):
-        if not parsed:
+    cursor: Any = raw
+    for _ in range(_JSON_GET_UNWRAP_MAX):
+        if cursor is None:
             return None
-        doc = parsed[0]
-        return doc if isinstance(doc, dict) else None
-    return parsed if isinstance(parsed, dict) else None
+        if isinstance(cursor, dict):
+            return cursor
+        if isinstance(cursor, list):
+            if not cursor:
+                return None
+            cursor = cursor[0]
+            continue
+        if isinstance(cursor, (bytes, bytearray, memoryview)):
+            try:
+                cursor = bytes(cursor).decode("utf-8", errors="replace")
+            except (TypeError, UnicodeDecodeError, ValueError):
+                return None
+            continue
+        if isinstance(cursor, str):
+            stripped = cursor.strip()
+            if not stripped:
+                return None
+            try:
+                cursor = json.loads(stripped)
+            except (json.JSONDecodeError, TypeError, ValueError):
+                return None
+            continue
+        return None
+    return None
 
 
 async def json_get_live_spec(redis: Any, code: str) -> Optional[Dict[str, Any]]:
@@ -62,7 +115,18 @@ async def json_get_live_spec(redis: Any, code: str) -> Optional[Dict[str, Any]]:
         logger.debug("[LiveSpecJSON] JSON.GET error code=%s: %s", code, exc)
         _record_failure()
         return None
-    return parse_json_get_bulk(raw)
+    parsed = parse_json_get_bulk(raw)
+    if parsed is None:
+        key = live_spec_key(code)
+        logger.debug(
+            "[LiveSpecJSON] JSON.GET root unparsed code=%s key=%s raw_type=%s "
+            "raw_preview=%s",
+            code,
+            key,
+            type(raw).__name__,
+            _preview_json_get_raw(raw),
+        )
+    return parsed
 
 
 async def json_set_live_spec(
