@@ -1,21 +1,26 @@
 <script setup lang="ts">
 /**
  * MobileHomePage — Landing page for mobile.
- * Shows MindMate + MindGraph feature cards, then account info at bottom.
+ * MindGraph first (图示), then MindMate, Kitty, account. Flex scroll uses min-h-0 so cards stay reachable.
  */
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { ChevronRight, MessageSquare, UserCog, Workflow } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables'
-import { useAuthStore } from '@/stores'
+import { useAuthStore, useFeatureFlagsStore } from '@/stores'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const featureFlagsStore = useFeatureFlagsStore()
 const { t } = useLanguage()
 
 const displayName = computed(() => authStore.user?.username || '')
+
+onMounted(() => {
+  void featureFlagsStore.fetchFlags()
+})
 
 function goToMindMate() {
   router.push('/m/mindmate')
@@ -25,28 +30,54 @@ function goToMindGraph() {
   router.push('/m/mindgraph')
 }
 
+function goToKitty() {
+  router.push('/m/kitty')
+}
+
 function goToAccount() {
   router.push('/m/account')
 }
 </script>
 
 <template>
-  <div class="mobile-home flex-1 overflow-y-auto">
-    <div class="px-4 pt-6 pb-8 max-w-md mx-auto space-y-4">
+  <div class="mobile-home flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+    <div class="px-4 pt-4 pb-8 max-w-md mx-auto space-y-3">
       <!-- Welcome -->
-      <div class="text-center mb-6">
+      <div class="text-center mb-4">
         <div
-          class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white text-2xl font-bold mb-3"
+          class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 text-white text-xl font-bold mb-2"
         >
           M
         </div>
-        <h2 class="text-xl font-bold text-gray-900">
+        <h2 class="text-lg font-bold text-gray-900">
           {{ t('app.brandName') }}
         </h2>
-        <p class="text-sm text-gray-500 mt-1">
+        <p class="text-xs text-gray-500 mt-1 px-1">
           {{ t('mindmate.welcomeSubtitle', 'AI虚拟教研助手平台，随时随地激发思维') }}
         </p>
       </div>
+
+      <!-- MindGraph first: diagram / 图示 entry -->
+      <button
+        class="feature-card w-full flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-200 active:bg-gray-50 transition-colors text-left"
+        @click="goToMindGraph"
+      >
+        <div
+          class="flex items-center justify-center w-12 h-12 rounded-xl bg-purple-50 text-purple-600 shrink-0"
+        >
+          <Workflow :size="24" />
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-base font-semibold text-gray-900">MindGraph</div>
+          <div class="text-sm text-gray-500 mt-0.5">
+            {{ t('mobile.mindgraphDesc', '思维图示智能体') }}
+          </div>
+        </div>
+        <ChevronRight
+          :size="20"
+          class="text-gray-400 shrink-0"
+        />
+      </button>
 
       <!-- MindMate Card -->
       <button
@@ -70,20 +101,28 @@ function goToAccount() {
         />
       </button>
 
-      <!-- MindGraph Card -->
+      <!-- Kitty -->
       <button
         class="feature-card w-full flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-200 active:bg-gray-50 transition-colors text-left"
-        @click="goToMindGraph"
+        @click="goToKitty"
       >
         <div
-          class="flex items-center justify-center w-12 h-12 rounded-xl bg-purple-50 text-purple-600 shrink-0"
+          class="flex items-center justify-center w-12 h-12 rounded-xl bg-violet-50 shrink-0 text-[1.65rem] leading-none"
+          aria-hidden="true"
         >
-          <Workflow :size="24" />
+          <span class="select-none">😺</span>
         </div>
         <div class="flex-1 min-w-0">
-          <div class="text-base font-semibold text-gray-900">MindGraph</div>
+          <div class="text-base font-semibold text-gray-900">
+            {{ t('mobile.kittyCardTitle', 'Kitty') }}
+          </div>
           <div class="text-sm text-gray-500 mt-0.5">
-            {{ t('mobile.mindgraphDesc', '思维图示智能体') }}
+            {{
+              t(
+                'mobile.kittyCardDesc',
+                '思维教学语音智能体'
+              )
+            }}
           </div>
         </div>
         <ChevronRight

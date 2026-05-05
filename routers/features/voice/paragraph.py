@@ -6,7 +6,9 @@ import re
 
 from fastapi import WebSocket
 
-from services.features.voice_agent import voice_agent_manager
+from prompts.kitty_agent import KITTY_AGENT_PROMPTS
+
+from services.features.voice_agent import kitty_agent_manager
 from services.llm import llm_service
 
 from routers.features.voice.diagram_execute import execute_diagram_update
@@ -20,11 +22,6 @@ from routers.features.voice.session_ops import (
 )
 from routers.features.voice.state import logger, voice_sessions
 from utils.prompt_locale import output_language_instruction
-
-try:
-    from prompts.voice_agent import VOICE_AGENT_PROMPTS
-except ImportError:
-    VOICE_AGENT_PROMPTS = None
 
 
 async def process_paragraph_with_qwen_plus(
@@ -76,30 +73,15 @@ async def process_paragraph_with_qwen_plus(
         # Determine language based on paragraph content
         # (simple heuristic: check for Chinese characters)
         has_chinese = bool(re.search(r"[\u4e00-\u9fff]", paragraph_text))
-        language = "zh" if has_chinese else "en"
-
-        if VOICE_AGENT_PROMPTS:
-            prompt_key = f"paragraph_processing_{language}"
-            fallback_key = "paragraph_processing_en"
-            prompt_template = VOICE_AGENT_PROMPTS.get(prompt_key, VOICE_AGENT_PROMPTS.get(fallback_key))
+        base_lang = str(session_context.get("interaction_language") or "zh").lower()
+        if base_lang.startswith("en") and not has_chinese:
+            language = "en"
         else:
-            logger.warning("Could not import voice_agent prompts, using fallback")
-            # Fallback to English template if import fails
-            prompt_template = (
-                "You are an intelligent diagram assistant. "
-                "A teacher has provided a paragraph of text. "
-                "Your task is to extract content and determine "
-                "the best diagram type.\n\n"
-                "【Paragraph Text】\n"
-                "{paragraph_text}\n\n"
-                "【Current Diagram State】\n"
-                "- Type: {current_diagram_type}\n"
-                "- Current Topic: {current_topic}\n"
-                "- Current Nodes: {current_nodes_count} nodes\n"
-                "- Has Existing Content: {has_existing_content}\n\n"
-                "Return JSON with intent, recommended_diagram_type, "
-                "topic, nodes, summary, and reasoning."
-            )
+            language = "zh"
+
+        prompt_key = f"paragraph_processing_{language}"
+        fallback_key = "paragraph_processing_en"
+        prompt_template = KITTY_AGENT_PROMPTS.get(prompt_key, KITTY_AGENT_PROMPTS.get(fallback_key))
 
         # Ensure prompt_template is not None
         if not prompt_template:
@@ -396,7 +378,7 @@ async def process_paragraph_with_qwen_plus(
 
                     # Update agent state
                     agent_session_id = get_agent_session_id(voice_session_id)
-                    agent = voice_agent_manager.get_or_create(agent_session_id)
+                    agent = kitty_agent_manager.get_or_create(agent_session_id)
                     diagram_data = session_context.get("diagram_data", {})
                     diagram_data["diagram_type"] = voice_sessions[voice_session_id].get("diagram_type")
                     agent.update_diagram_state(diagram_data)
@@ -447,7 +429,7 @@ async def process_paragraph_with_qwen_plus(
                 session_context["diagram_data"]["children"].extend([{"text": n["text"]} for n in nodes_to_add])
 
                 agent_session_id = get_agent_session_id(voice_session_id)
-                agent = voice_agent_manager.get_or_create(agent_session_id)
+                agent = kitty_agent_manager.get_or_create(agent_session_id)
                 diagram_data = session_context.get("diagram_data", {})
                 diagram_data["diagram_type"] = voice_sessions[voice_session_id].get("diagram_type")
                 agent.update_diagram_state(diagram_data)
@@ -501,7 +483,7 @@ async def process_paragraph_with_qwen_plus(
                     session_context["diagram_data"] = {}
 
                 agent_session_id = get_agent_session_id(voice_session_id)
-                agent = voice_agent_manager.get_or_create(agent_session_id)
+                agent = kitty_agent_manager.get_or_create(agent_session_id)
                 diagram_data = session_context.get("diagram_data", {})
                 diagram_data["diagram_type"] = voice_sessions[voice_session_id].get("diagram_type")
                 agent.update_diagram_state(diagram_data)
@@ -552,7 +534,7 @@ async def process_paragraph_with_qwen_plus(
                 session_context["diagram_data"]["children"].extend([{"text": n["text"]} for n in nodes_to_add])
 
                 agent_session_id = get_agent_session_id(voice_session_id)
-                agent = voice_agent_manager.get_or_create(agent_session_id)
+                agent = kitty_agent_manager.get_or_create(agent_session_id)
                 diagram_data = session_context.get("diagram_data", {})
                 diagram_data["diagram_type"] = voice_sessions[voice_session_id].get("diagram_type")
                 agent.update_diagram_state(diagram_data)
@@ -615,7 +597,7 @@ async def process_paragraph_with_qwen_plus(
                     session_context["diagram_data"] = {}
 
                 agent_session_id = get_agent_session_id(voice_session_id)
-                agent = voice_agent_manager.get_or_create(agent_session_id)
+                agent = kitty_agent_manager.get_or_create(agent_session_id)
                 diagram_data = session_context.get("diagram_data", {})
                 diagram_data["diagram_type"] = voice_sessions[voice_session_id].get("diagram_type")
                 agent.update_diagram_state(diagram_data)
@@ -667,7 +649,7 @@ async def process_paragraph_with_qwen_plus(
                 session_context["diagram_data"]["children"].extend([{"text": n["text"]} for n in nodes_to_add])
 
                 agent_session_id = get_agent_session_id(voice_session_id)
-                agent = voice_agent_manager.get_or_create(agent_session_id)
+                agent = kitty_agent_manager.get_or_create(agent_session_id)
                 diagram_data = session_context.get("diagram_data", {})
                 diagram_data["diagram_type"] = voice_sessions[voice_session_id].get("diagram_type")
                 agent.update_diagram_state(diagram_data)

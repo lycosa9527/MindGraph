@@ -93,7 +93,7 @@ class ClientManager:
                 self._clients["doubao"] = self._clients["ark-doubao"]
                 logger.debug("[ClientManager] Volcengine ARK clients initialized (using endpoints)")
 
-                # Initialize Qwen Omni client (for VoiceAgent)
+                # Initialize Qwen Omni client (for Kitty Agent)
                 self._clients["omni"] = OmniClient()
                 logger.debug("[ClientManager] Omni client initialized")
 
@@ -160,7 +160,7 @@ class ClientManager:
 
     @property
     def omni_client(self):
-        """Get Omni client for VoiceAgent"""
+        """Get Omni client for Kitty Agent"""
         return self.get_client("omni")
 
 

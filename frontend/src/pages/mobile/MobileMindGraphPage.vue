@@ -174,8 +174,8 @@ function handleFreeInput() {
       <DiagramHistory @select="handleSelectDiagram" />
     </ElDrawer>
 
-    <!-- Page content -->
-    <div class="flex-1 overflow-y-auto">
+    <!-- Page content: min-h-0 so the grid scrolls inside flex layout (mobile) -->
+    <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
       <div class="px-4 pt-4 pb-8 max-w-md mx-auto">
         <!-- Free text input -->
         <div class="relative mb-5">

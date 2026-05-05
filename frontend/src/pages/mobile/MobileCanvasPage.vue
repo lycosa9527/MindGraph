@@ -7,12 +7,13 @@
  * rec only while active (tap canvas to dismiss, same as desktop coordinator).
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
 
 import {
   Bot,
+  Cat,
   ChevronLeft,
   ChevronRight,
   LayoutGrid,
@@ -45,6 +46,7 @@ import {
   useLanguage,
   useNodeActions,
   useNotifications,
+  getDiagramOperations,
 } from '@/composables'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
@@ -61,6 +63,7 @@ import {
   useConceptMapRelationshipStore,
   useConceptMapRootConceptReviewStore,
   useDiagramStore,
+  useFeatureFlagsStore,
   useInlineRecommendationsStore,
   useLLMResultsStore,
   usePanelsStore,
@@ -79,11 +82,15 @@ const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
 const llmResultsStore = useLLMResultsStore()
 const panelsStore = usePanelsStore()
+getDiagramOperations()
+
 const inlineRecStore = useInlineRecommendationsStore()
 const focusReviewStore = useConceptMapFocusReviewStore()
 const rootConceptReviewStore = useConceptMapRootConceptReviewStore()
 const relationshipStore = useConceptMapRelationshipStore()
 const { activeEntry: relationshipActiveEntry } = storeToRefs(relationshipStore)
+const featureFlagsStore = useFeatureFlagsStore()
+const { flags: featureFlags } = storeToRefs(featureFlagsStore)
 const { t, currentLanguage, promptLanguage } = useLanguage()
 const notify = useNotifications()
 
@@ -104,6 +111,10 @@ const { startRecommendations, selectOptionByGlobalIndex, fetchNextBatch } =
 useConceptMapRelationshipTabFromSelection({ startRecommendations })
 
 const isSaving = ref(false)
+
+function openMobileKittyFromCanvas(): void {
+  router.push('/m/kitty')
+}
 
 async function handleSave() {
   if (isSaving.value) return
@@ -176,6 +187,9 @@ const showNodePalette = ref(false)
 const showModelDrawer = ref(false)
 
 const isConceptMap = computed(() => diagramStore.type === 'concept_map')
+const showMobileKittyShortcut = computed(
+  () => authStore.isAuthenticated && (featureFlags.value?.feature_kitty_agent ?? false)
+)
 const tabReady = computed(() => {
   if (!authStore.isAuthenticated) return false
   if (!inlineRecStore.isReady) return false
@@ -449,9 +463,66 @@ eventBus.onWithOwner(
   'MobileCanvasPage'
 )
 
+eventBus.onWithOwner(
+  'diagram:auto_complete_requested',
+  () => {
+    if (!authStore.isAuthenticated) {
+      notify.warning(t('notification.signInToUse'))
+      return
+    }
+    if (isAIGenerating.value) return
+    if (isConceptMap.value) {
+      handleConceptGeneration()
+      return
+    }
+    void handleAIGenerate()
+  },
+  'MobileCanvasPage'
+)
+
+eventBus.onWithOwner(
+  'kitty:inline_recommendations_requested',
+  (data: { nodeId?: string; nodeIndex?: number }) => {
+    let nid = data.nodeId
+    if (!nid && data.nodeIndex !== undefined) {
+      const nodes = diagramStore.data?.nodes ?? []
+      const n = nodes[data.nodeIndex]
+      if (n) nid = n.id
+    }
+    if (!nid) nid = diagramStore.selectedNodes[0]
+    if (!nid) {
+      notify.warning(t('canvas.toolbar.selectNodesToDelete', '请先选择一个节点'))
+      return
+    }
+    const nodes = diagramStore.data?.nodes ?? []
+    const node = nodes.find((x) => x.id === nid)
+    if (
+      !node ||
+      !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
+    ) {
+      notify.warning(t('notification.nodeNotEligible', '该节点不支持推荐'))
+      return
+    }
+    if (!inlineRecStore.isReady) return
+    if (diagramStore.type === 'concept_map' && !llmResultsStore.selectedModel) {
+      notify.warning(
+        t('notification.conceptMapTabNeedsAi', '请先在顶栏启用「启动 AI」再使用 Tab 推荐')
+      )
+      return
+    }
+    if (!authStore.isAuthenticated) {
+      notify.warning(t('notification.signInToUse'))
+      return
+    }
+    void startRecommendations(nid)
+  },
+  'MobileCanvasPage'
+)
+
 onMounted(async () => {
   await ensureFontsForLanguageCode(uiStore.promptLanguage)
   inlineRecCoordinator.setup()
+  void featureFlagsStore.fetchFlags()
   await savedDiagramsStore.fetchDiagrams()
 
   const diagramIdRaw = route.query.diagramId ?? route.query.diagram_id
@@ -558,6 +629,14 @@ onMounted(async () => {
   }
 })
 
+/** When true, leaving for `/m/kitty` keeps Pinia diagram + active library id for Kitty context. */
+const preserveDiagramForKittyHub = ref(false)
+
+onBeforeRouteLeave((to) => {
+  preserveDiagramForKittyHub.value =
+    to.path === '/m/kitty' || to.name === 'MobileKitty'
+})
+
 async function loadDiagramFromLibrary(diagramId: string): Promise<void> {
   const diagram = await savedDiagramsStore.getDiagram(diagramId)
   if (!diagram) return
@@ -593,8 +672,10 @@ onUnmounted(() => {
   focusReviewStore.clear()
   rootConceptReviewStore.clear()
 
-  diagramStore.reset()
-  savedDiagramsStore.clearActiveDiagram()
+  if (!preserveDiagramForKittyHub.value) {
+    diagramStore.reset()
+    savedDiagramsStore.clearActiveDiagram()
+  }
   useLLMResultsStore().reset()
   usePanelsStore().reset()
   uiStore.setSelectedChartType('选择具体图示')
@@ -604,6 +685,23 @@ onUnmounted(() => {
 
 <template>
   <div class="mobile-canvas flex flex-col flex-1 min-h-0 bg-gray-50 relative overflow-hidden">
+    <div
+      class="mobile-canvas-brand relative flex items-center justify-center shrink-0 bg-white border-b border-gray-200 z-30 min-h-[44px] px-2"
+    >
+      <h1 class="text-center text-base font-semibold text-gray-800 py-2.5 px-3">
+        MindGraph
+      </h1>
+      <button
+        v-if="showMobileKittyShortcut"
+        type="button"
+        class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-10 h-10 rounded-xl text-violet-600 active:bg-violet-50 border border-violet-100"
+        :aria-label="t('mobile.kittyTitle', 'Kitty 智能体')"
+        @click="openMobileKittyFromCanvas"
+      >
+        <Cat :size="22" />
+      </button>
+    </div>
+
     <!-- Top toolbar (fixed, no zoom/pan) -->
     <div
       :class="[
@@ -884,7 +982,7 @@ onUnmounted(() => {
       <div
         v-if="showNodePalette && panelsStore.nodePalettePanel.isOpen"
         class="mobile-node-palette-overlay absolute inset-0 z-[100] flex flex-col touch-manipulation bg-white"
-        style="top: 44px"
+        style="top: var(--mg-mobile-palette-top, 9.5rem)"
       >
         <RootConceptModal
           v-if="isConceptMap"
@@ -920,6 +1018,8 @@ onUnmounted(() => {
 <style scoped>
 .mobile-canvas {
   overflow: hidden;
+  /* Toolbar + MindGraph title chrome for node palette overlay */
+  --mg-mobile-palette-top: 7.5rem;
 }
 
 .mobile-toolbar {

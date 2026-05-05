@@ -182,7 +182,7 @@ async def add_security_headers(request: Request, call_next):
     CSP Policy Notes:
     - 'unsafe-inline' scripts: Required for config bootstrap and admin onclick handlers
     - 'unsafe-eval': Required for D3.js library (data transformations)
-    - ws:/wss:: Required for VoiceAgent WebSocket connections
+    - ws:/wss:: Required for Kitty Agent WebSocket connections
     - data: URIs: Required for canvas-to-image conversions
     - DEBUG mode: Allows Swagger UI CDN (cdn.jsdelivr.net) for /docs endpoint
 
@@ -233,7 +233,7 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
     # Permissions Policy (restrict access to browser features)
-    # Only allow microphone (for VoiceAgent), disable everything else
+    # Only allow microphone (for Kitty Agent), disable everything else
     response.headers["Permissions-Policy"] = "microphone=(self), camera=(), geolocation=(), payment=()"
 
     return response

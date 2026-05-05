@@ -8,16 +8,14 @@ Proprietary License
 
 from __future__ import annotations
 
+import json
 import os
 import time
 from collections import deque
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any
+from typing import Any, Optional
 
-if TYPE_CHECKING:
-    from starlette.websockets import WebSocket
-
-from starlette.websockets import WebSocketDisconnect
+from starlette.websockets import WebSocket, WebSocketDisconnect
 
 
 def _optional_positive_int(name: str) -> int:
@@ -113,6 +111,72 @@ def json_value_nesting_depth(value: Any, current: int = 0) -> int:
 def collab_json_exceeds_depth(value: Any, max_depth: int) -> bool:
     """True if *value* nests deeper than *max_depth*."""
     return json_value_nesting_depth(value) > max_depth
+
+
+def kitty_ws_max_json_depth() -> int:
+    raw = _optional_positive_int("KITTY_WS_MAX_JSON_DEPTH")
+    if raw:
+        return max(8, min(raw, 64))
+    return 32
+
+
+def kitty_ws_idle_timeout_seconds() -> Optional[float]:
+    """
+    Close Kitty / voice WebSocket when no inbound client message is received for this long.
+
+    Returns:
+        Positive seconds (clamped), or None when idle shutdown is disabled
+        (``KITTY_WS_IDLE_TIMEOUT_SECONDS=0`` or similar).
+    """
+    raw = os.environ.get("KITTY_WS_IDLE_TIMEOUT_SECONDS", "300").strip().lower()
+    if raw in ("", "0", "off", "false", "none", "disable", "disabled"):
+        return None
+    try:
+        sec = int(raw, 10)
+    except ValueError:
+        return 300.0
+    sec = max(30, min(sec, 86400))
+    return float(sec)
+
+
+async def receive_websocket_json_object_bounded(
+    websocket: WebSocket,
+    max_utf8_bytes: int,
+    max_nesting_depth: int,
+):
+    """
+    Read one text (or binary UTF-8) frame, enforce UTF-8 byte and JSON nesting limits.
+
+    Returns:
+        Parsed dict from JSON object root.
+
+    Raises:
+        WebSocketDisconnect: Client disconnected.
+        ValueError: Frame too large, not a JSON object, too deeply nested, or invalid JSON.
+    """
+    message = await websocket.receive()
+    if message["type"] == "websocket.disconnect":
+        raw_code = message.get("code", 1000)
+        if raw_code is None:
+            code = 1000
+        else:
+            try:
+                code = int(raw_code)
+            except (TypeError, ValueError):
+                code = 1000
+        raise WebSocketDisconnect(code, message.get("reason"))
+    text = text_payload_from_websocket_receive(message)
+    if inbound_text_exceeds_limit(text, max_utf8_bytes):
+        raise ValueError("websocket_json_frame_too_large")
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError("websocket_json_invalid") from exc
+    if not isinstance(data, dict):
+        raise ValueError("websocket_json_not_object")
+    if collab_json_exceeds_depth(data, max_nesting_depth):
+        raise ValueError("websocket_json_too_deep")
+    return data
 
 
 class WebsocketMessageRateLimiter:

@@ -274,6 +274,10 @@ export default {
   'canvas.toolbar.selectBranchOrChild': 'Please select a branch or child node',
   'canvas.toolbar.selectCategoryOrLeafDelete':
     'Please select category or leaf nodes (topic node cannot be deleted)',
+  'canvas.toolbar.selectCauseOrEffectForAdd':
+    'Select a cause or effect node (not the event), then press Enter to add another in that column',
+  'canvas.toolbar.selectTreeBranchForChild':
+    'Select a category or an item under a category to add a child, or select the topic to add a category',
   'canvas.toolbar.selectNodesFirst': 'Please select node(s) first',
   'canvas.toolbar.selectNodesToDelete': 'Please select node(s) to delete',
   'canvas.toolbar.selectPartForSubpart': 'Please select a part to add subpart to',

@@ -172,7 +172,10 @@ class FeatureFlagSettings(BaseModel):
     __category__ = "Feature Flags"
 
     FEATURE_MINDMATE: bool = Field(default=False, description="Enable MindMate AI Assistant button")
-    FEATURE_VOICE_AGENT: bool = Field(default=False, description="Enable Voice Agent (Qwen Omni Realtime)")
+    FEATURE_KITTY_AGENT: bool = Field(
+        default=False,
+        description="Enable Kitty Agent (Qwen Omni Realtime multimodal)",
+    )
     FEATURE_DRAG_AND_DROP: bool = Field(
         default=False,
         description="Enable drag and drop functionality for diagram nodes",

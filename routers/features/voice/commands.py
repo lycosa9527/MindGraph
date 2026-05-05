@@ -4,17 +4,24 @@ from typing import Any, Dict
 
 from fastapi import WebSocket
 
-from services.features.voice_agent import voice_agent_manager
+from services.features.voice_agent import kitty_agent_manager
 
 try:
     from services.redis.cache.redis_user_cache import user_cache as redis_user_cache
 except ImportError:
     redis_user_cache = None
 
+from services.kitty.kitty_session_redis import (
+    apply_redis_live_to_voice_session,
+    load_kitty_live_context,
+)
 from routers.features.voice.diagram_execute import execute_diagram_update
 from routers.features.voice.diagram_utils import (
     get_diagram_prefix_map,
     is_paragraph_text,
+)
+from routers.features.voice.kitty_library_context_refresh import (
+    throttled_refresh_voice_context_from_library,
 )
 from routers.features.voice.messaging import safe_websocket_send
 from routers.features.voice.paragraph import process_paragraph_with_qwen_plus
@@ -55,6 +62,32 @@ async def process_voice_command(
         - No keyword detection - all parsing is done by LLM
     """
     try:
+        live_session = get_voice_session(voice_session_id)
+        if live_session:
+            ws_diagram_id = live_session.get("diagram_session_id")
+            if isinstance(ws_diagram_id, str) and ws_diagram_id.strip():
+                live_payload = await load_kitty_live_context(ws_diagram_id.strip())
+                if live_payload:
+                    apply_redis_live_to_voice_session(live_session, live_payload)
+            session_context = dict(live_session.get("context") or session_context)
+
+            refresh_uid = None
+            uid_raw = live_session.get("user_id")
+            if uid_raw is not None:
+                try:
+                    refresh_uid = int(uid_raw) if isinstance(uid_raw, str) else int(uid_raw)
+                except (ValueError, TypeError):
+                    refresh_uid = None
+            ws_scope = live_session.get("diagram_session_id")
+            if refresh_uid is not None and isinstance(ws_scope, str) and ws_scope.strip():
+                await throttled_refresh_voice_context_from_library(
+                    user_id=refresh_uid,
+                    voice_session_id=voice_session_id,
+                    diagram_session_id=ws_scope.strip(),
+                    force=True,
+                )
+                session_context = dict(live_session.get("context") or session_context)
+
         # CRITICAL: Check if input is a paragraph (long text for processing)
         # Common case: Teachers paste whole paragraphs expecting diagram generation
         if is_paragraph_text(command_text):
@@ -69,10 +102,10 @@ async def process_voice_command(
         # CRITICAL: Agent is scoped to diagram_session_id, not voice_session_id
         # This ensures the agent is scoped to the diagram session, not the WebSocket connection
         agent_session_id = get_agent_session_id(voice_session_id)
-        agent = voice_agent_manager.get_or_create(agent_session_id)
+        agent = kitty_agent_manager.get_or_create(agent_session_id)
 
         # Get user info from session for token tracking
-        session = get_voice_session(voice_session_id)
+        session = live_session or get_voice_session(voice_session_id)
         user_id = None
         organization_id = None
         if session:
@@ -151,6 +184,7 @@ async def process_voice_command(
             "ask_thinkguide",
             "ask_mindmate",
             "auto_complete",
+            "start_inline_recommendations",
             "help",
         ]
 
@@ -243,6 +277,35 @@ async def process_voice_command(
                 omni_client = get_session_omni_client(voice_session_id)
                 if omni_client:
                     await omni_client.create_response(instructions="好的，我正在帮你自动完成图表。")
+            except (RuntimeError, ConnectionError, AttributeError) as e:
+                logger.debug("Could not send acknowledgment to Omni: %s", e)
+            return True
+
+        elif action == "start_inline_recommendations":
+            logger.info("Kitty: start inline recommendations action")
+            resolved_node_id = command.get("node_id")
+            if node_index is not None and not resolved_node_id:
+                diagram_type = voice_sessions[voice_session_id].get("diagram_type", "circle_map")
+                prefix_map = get_diagram_prefix_map()
+                prefix = prefix_map.get(diagram_type, "node")
+                resolved_node_id = f"{prefix}_{node_index}"
+            params: Dict[str, Any] = {}
+            if resolved_node_id:
+                params["node_id"] = resolved_node_id
+            if node_index is not None:
+                params["node_index"] = node_index
+            await safe_websocket_send(
+                websocket,
+                {
+                    "type": "action",
+                    "action": "start_inline_recommendations",
+                    "params": params,
+                },
+            )
+            try:
+                omni_client = get_session_omni_client(voice_session_id)
+                if omni_client:
+                    await omni_client.create_response(instructions="正在为该节点打开联想建议。")
             except (RuntimeError, ConnectionError, AttributeError) as e:
                 logger.debug("Could not send acknowledgment to Omni: %s", e)
             return True

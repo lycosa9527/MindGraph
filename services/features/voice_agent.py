@@ -1,3 +1,5 @@
+"""Kitty Agent — Persistent LangGraph agent for multimodal canvas commands."""
+
 from datetime import datetime
 from typing import Dict, Any, Optional, List, Annotated, TypedDict
 import json
@@ -13,27 +15,8 @@ from langgraph.graph.message import add_messages
 
 from services.llm import llm_service
 
-"""
-Voice Agent - Persistent LangGraph Agent for Voice Commands
-Uses LangChain 1.x with LangGraph for stateful diagram control
 
-Features:
-- Persistent diagram state (always knows current nodes)
-- Conversation memory (context-aware responses)
-- Tool-based actions (select, add, delete, update nodes)
-- Real-time sync with frontend diagram
-
-@author lycosa9527
-@made_by MindSpring Team
-
-Copyright 2024-2025 北京思源智教科技有限公司
-(Beijing Siyuan Zhijiao Technology Co., Ltd.)
-All Rights Reserved
-Proprietary License
-"""
-
-
-logger = logging.getLogger("VOICE_AGENT")
+logger = logging.getLogger("KITTY_AGENT")
 
 
 # ============================================================================
@@ -223,13 +206,13 @@ def close_panel(panel_name: str) -> Dict[str, Any]:
 
 
 # ============================================================================
-# Voice Agent Class
+# Kitty Agent class
 # ============================================================================
 
 
-class VoiceAgent:
+class KittyAgent:
     """
-    Persistent voice agent with LangGraph state management.
+    Persistent Kitty Agent with LangGraph state management.
     Maintains diagram state and conversation memory.
     """
 
@@ -256,7 +239,7 @@ class VoiceAgent:
         # Token-tracking context for the in-flight parse (not part of graph state)
         self._voice_parse_tracking: Optional[Dict[str, Any]] = None
 
-        logger.info("VoiceAgent initialized for session %s", session_id)
+        logger.info("KittyAgent initialized for session %s", session_id)
 
     def _create_initial_state(self) -> AgentState:
         """Create initial agent state"""
@@ -583,6 +566,7 @@ class VoiceAgent:
 - delete_node: Remove a node
 - update_node: Change a node's text (can update existing node at specific position)
 - auto_complete: AI fill/complete the diagram (trigger AI auto-complete feature)
+- start_inline_recommendations: Open inline (Tab-key style) node suggestions for a node; use node_index or selected node
 - open_mindmate/open_node_palette: Open panels
 - close_mindmate/close_all_panels: Close panels
 - none: Just conversation, no action needed
@@ -612,12 +596,19 @@ CRITICAL: Always use the correct terminology for the current diagram type!
 - For double bubble maps, ALWAYS extract and return both "left" and "right" topics separately
 - Node types vary by diagram: context (circle_map), attribute (bubble_map),
   step (flow_map), part (brace_map), branch (mindmap), etc.
+- Opinion, critique, or reflection questions (e.g. "你觉得这张图怎么样？", "这样合理吗？",
+  "what do you think of this diagram?") are **conversation only**: return action "none"
+  with high confidence so the tutor answers without running diagram mutations.
 
 【Return JSON】
 {{"action": "action_name", "target": "value", "node_index": 0, "confidence": 0.9}}
 For double bubble map update_center, also include "left" and "right" fields.
 
 Examples:
+- "自动完成这张图" → {{"action": "auto_complete", "confidence": 0.95}}
+- "给第一个节点联想一下" → {{"action": "start_inline_recommendations", "node_index": 0, "confidence": 0.9}}
+- "帮这个节点联想" / "inline recommendations" → {{"action": "start_inline_recommendations", "confidence": 0.85}}
+
 【Select Node】
 - "选中ABC" → {{"action": "select_node", "target": "ABC", "confidence": 0.95}}
 - "选第一个" → {{"action": "select_node", "node_index": 0, "confidence": 0.95}}
@@ -885,6 +876,11 @@ For Multi-Flow Map:
 【Conversation Only】
 - "你好" → {{"action": "none", "confidence": 0.95}}
 - "谢谢" → {{"action": "none", "confidence": 0.95}}
+- "你觉得这张图怎么样？" → {{"action": "none", "confidence": 0.95}}
+- "这样画合理吗？" → {{"action": "none", "confidence": 0.9}}
+- "给我一些改进建议"（评价现有图，不是命令改节点）→ {{"action": "none", "confidence": 0.88}}
+- "What do you think of this mind map?" → {{"action": "none", "confidence": 0.95}}
+- "Is this circle map complete?" → {{"action": "none", "confidence": 0.9}}
 
 Return only JSON:"""
 
@@ -908,14 +904,14 @@ Return only JSON:"""
                 request_type="voice_command_parsing",
                 diagram_type=diagram_type,
                 session_id=voice_session_id,
-                endpoint_path="/ws/voice",
+                endpoint_path="/ws/kitty",
             )
 
             # Parse JSON response
             action = self._parse_json_response(response)
 
             logger.info(
-                "Voice agent parsed command: user_text='%s', action=%s",
+                "Kitty parsed command: user_text='%s', action=%s",
                 user_text,
                 action,
             )
@@ -1090,27 +1086,27 @@ Return only JSON:"""
 # ============================================================================
 
 
-class VoiceAgentManager:
+class KittyAgentManager:
     """
-    Manages VoiceAgent instances per session.
-    Each voice session gets its own persistent agent.
+    Manages KittyAgent instances per session.
+    Each diagram/voice session gets its own persistent agent.
     """
 
     def __init__(self):
-        self._agents: Dict[str, VoiceAgent] = {}
+        self._agents: Dict[str, KittyAgent] = {}
 
-    def get_or_create(self, session_id: str) -> VoiceAgent:
+    def get_or_create(self, session_id: str) -> KittyAgent:
         """Get existing agent or create new one for session"""
         if session_id not in self._agents:
-            self._agents[session_id] = VoiceAgent(session_id)
-            logger.info("Created new VoiceAgent for session %s", session_id)
+            self._agents[session_id] = KittyAgent(session_id)
+            logger.info("Created new KittyAgent for session %s", session_id)
         return self._agents[session_id]
 
     def remove(self, session_id: str):
         """Remove agent when session ends"""
         if session_id in self._agents:
             del self._agents[session_id]
-            logger.info("Removed VoiceAgent for session %s", session_id)
+            logger.info("Removed KittyAgent for session %s", session_id)
 
     def update_diagram(self, session_id: str, diagram_data: Dict[str, Any]):
         """Update diagram state for a session's agent"""
@@ -1123,4 +1119,4 @@ class VoiceAgentManager:
 
 
 # Global manager instance
-voice_agent_manager = VoiceAgentManager()
+kitty_agent_manager = KittyAgentManager()

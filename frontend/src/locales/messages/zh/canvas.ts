@@ -262,6 +262,10 @@ export default {
   'canvas.toolbar.redo': '重做',
   'canvas.toolbar.selectBranchOrChild': '请先选择分支或子节点',
   'canvas.toolbar.selectCategoryOrLeafDelete': '请选择分类或子项节点（主题节点不可删除）',
+  'canvas.toolbar.selectCauseOrEffectForAdd':
+    '请先选择原因或结果节点（不要选中间事件），再按 Enter 在同一列添加',
+  'canvas.toolbar.selectTreeBranchForChild':
+    '请选择分类或分类下的条目以添加子项，或选择主题以添加新分类',
   'canvas.toolbar.selectNodesFirst': '请先选择节点',
   'canvas.toolbar.selectNodesToDelete': '请先选择要删除的节点',
   'canvas.toolbar.selectPartForSubpart': '请先选择要添加子部分的节点',

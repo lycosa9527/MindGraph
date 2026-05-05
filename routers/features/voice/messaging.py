@@ -1,10 +1,97 @@
 """WebSocket messaging and Omni instruction strings for voice."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import WebSocket
 
 from routers.features.voice.state import logger
+
+
+def _diagram_extras_for_instructions(
+    diagram_type: str, diagram_data: Dict[str, Any]
+) -> str:
+    """Serialize type-specific fields from diagram_data for Omni (critique / Q&A)."""
+    lines: List[str] = []
+
+    ctx = diagram_data.get("context")
+    if isinstance(ctx, list) and ctx:
+        chunk = [str(x) for x in ctx[:12]]
+        extra = ""
+        if len(ctx) > 12:
+            extra = f", … (+{len(ctx) - 12} more)"
+        lines.append(f"- Context ring: {', '.join(chunk)}{extra}")
+
+    attrs = diagram_data.get("attributes")
+    if isinstance(attrs, list) and attrs:
+        texts: List[str] = []
+        for item in attrs[:18]:
+            if isinstance(item, dict):
+                raw = item.get("text") or item.get("label")
+                if raw is not None:
+                    texts.append(str(raw))
+            elif item is not None:
+                texts.append(str(item))
+        if texts:
+            show = texts[:12]
+            tail = ""
+            if len(texts) > 12:
+                tail = f", … (+{len(texts) - 12} more)"
+            lines.append(f"- Attribute bubbles: {', '.join(show)}{tail}")
+
+    if diagram_type == "double_bubble_map":
+        left = diagram_data.get("left") or ""
+        right = diagram_data.get("right") or ""
+        if left or right:
+            lines.append(f"- Compared topics: left={left!r}, right={right!r}")
+
+    if diagram_type in ("flow_map", "multi_flow_map"):
+        title_key = "title" if diagram_type == "flow_map" else "event"
+        val = diagram_data.get(title_key)
+        if val:
+            readable = title_key.replace("_", " ").title()
+            lines.append(f"- {readable}: {val}")
+
+    analogies = diagram_data.get("analogies")
+    if isinstance(analogies, list) and analogies:
+        for i, entry in enumerate(analogies[:10]):
+            if isinstance(entry, dict):
+                left = entry.get("left", "")
+                right = entry.get("right", "")
+                lines.append(f"- Analogy {i + 1}: {left!r} : {right!r}")
+        if len(analogies) > 10:
+            lines.append(f"- … (+{len(analogies) - 10} more analogy pairs)")
+
+    if diagram_type == "brace_map":
+        dim = diagram_data.get("dimension")
+        if dim:
+            lines.append(f"- Brace dimension label: {dim}")
+
+    if diagram_type == "tree_map":
+        dim = diagram_data.get("dimension")
+        if dim:
+            lines.append(f"- Sorting dimension: {dim}")
+
+    fq = diagram_data.get("focus_question")
+    if isinstance(fq, str) and fq.strip():
+        lines.append(f"- Focus question: {fq.strip()}")
+
+    rc = diagram_data.get("root_concept")
+    if isinstance(rc, str) and rc.strip():
+        lines.append(f"- Root concept: {rc.strip()}")
+
+    rels = diagram_data.get("relationships")
+    if isinstance(rels, list) and rels:
+        lines.append("- Concept relationships:")
+        for i, rel in enumerate(rels[:18]):
+            if isinstance(rel, dict):
+                src = rel.get("from", "")
+                dst = rel.get("to", "")
+                label = rel.get("label", "")
+                lines.append(f'  * {i}: "{src}" —{label}→ "{dst}"')
+        if len(rels) > 18:
+            lines.append(f"  * … (+{len(rels) - 18} more)")
+
+    return "\n".join(lines)
 
 
 async def safe_websocket_send(websocket: WebSocket, message: Dict[str, Any]) -> bool:
@@ -33,6 +120,17 @@ async def safe_websocket_send(websocket: WebSocket, message: Dict[str, Any]) -> 
         raise
 
 
+def resolve_voice_interaction_language(context: Dict[str, Any]) -> str:
+    """Omni instruction language: default Chinese unless client sets English UI."""
+    raw = context.get("interaction_language")
+    if raw is None:
+        return "zh"
+    lang = str(raw).strip().lower()
+    if lang.startswith("en"):
+        return "en"
+    return "zh"
+
+
 def build_voice_instructions(context: Dict[str, Any]) -> str:
     """Build voice instructions from context with full diagram data"""
     diagram_type = context.get("diagram_type", "unknown")
@@ -57,13 +155,25 @@ def build_voice_instructions(context: Dict[str, Any]) -> str:
         center_text = diagram_data.get("event", "")
     elif diagram_type == "brace_map":
         center_text = diagram_data.get("whole", "")
+    elif diagram_type == "tree_map":
+        topic_raw = diagram_data.get("topic", "")
+        center_text = str(topic_raw) if topic_raw else ""
+        if not center_text:
+            ctr = diagram_data.get("center")
+            if isinstance(ctr, dict):
+                center_text = str(ctr.get("text", "") or "")
     elif diagram_type == "bridge_map":
         center_text = diagram_data.get("dimension", "")
     else:
         # Default: most diagrams use center.text
-        center_text = diagram_data.get("center", {}).get("text", "")
+        ctr = diagram_data.get("center")
+        if isinstance(ctr, dict):
+            center_text = str(ctr.get("text", "") or "")
+        elif ctr:
+            center_text = str(ctr)
 
     children = diagram_data.get("children", [])
+    extras = _diagram_extras_for_instructions(diagram_type, diagram_data)
 
     # Format nodes list for Omni to understand (with IDs for precise selection)
     nodes_list = ""
@@ -78,12 +188,26 @@ def build_voice_instructions(context: Dict[str, Any]) -> str:
         if len(children) > 15:
             nodes_list += f"\n  ... and {len(children) - 15} more nodes"
 
-    instructions = f"""You are a helpful K12 classroom AI assistant for MindGraph.
+    detail_block = ""
+    if extras:
+        detail_block = f"\n【Type-specific detail】\n{extras}"
+
+    library_id = context.get("diagram_library_id")
+    display_title = (context.get("diagram_display_title") or "").strip()
+    doc_suffix = ""
+    if library_id:
+        doc_suffix += f"\n- Saved diagram id: {library_id}"
+    if display_title:
+        doc_suffix += f'\n- Display title: "{display_title}"'
+
+    lang = resolve_voice_interaction_language(context)
+    if lang == "en":
+        instructions = f"""You are a helpful K12 classroom AI assistant for MindGraph.
 
 【Current Diagram】
 - Type: {diagram_type}
 - Center topic: {center_text or "Not set"}
-- Nodes ({len(children)} total):{nodes_list if nodes_list else " None"}
+- Nodes ({len(children)} total):{nodes_list if nodes_list else " None"}{detail_block}{doc_suffix}
 
 【Current State】
 - Active panel: {active_panel}
@@ -117,7 +241,44 @@ For example, if user says "select ABC" and ABC is node 3, you understand they wa
 - Encourage critical thinking
 - **When users ask for changes, acknowledge clearly** - the system will execute them automatically
 
-Respond naturally in the same language as the user."""
+**Default to English** for spoken and written replies; if the user clearly uses another language
+(e.g. Chinese), respond in that language naturally."""
+
+    else:
+        instructions = f"""你是 MindGraph 面向 K12 课堂的智能助手。
+
+【当前图示】
+- 类型: {diagram_type}
+- 中心主题: {center_text or "未设置"}
+- 节点（共 {len(children)} 个）:{nodes_list if nodes_list else " 无"}{detail_block}{doc_suffix}
+
+【当前状态】
+- 活动面板: {active_panel}
+- 已选节点数: {len(selected_nodes)}
+
+【你能做的事】
+1. 回答与图示内容相关的问题
+2. 讲解概念（例如「解释第1个节点」或「解释某某」）
+3. 建议可以新增哪些节点
+4. 帮助理解节点之间的关系
+5. **执行修改**：当用户口头要求改图（例如「把第一个节点改成苹果」「把中心改成汽车」
+   「加一个名字叫水果的节点」「删掉某某节点」）时，你要清楚确认；系统会根据对话自动执行。
+
+【关于执行修改】
+当用户用自然口语提出修改时，要用简短话语明确确认，例如：
+- 「把第一个节点改成苹果」→ 可回复：「好的，我会把第一个节点改成「苹果」。」（随后由系统自动执行）
+- 「把中心改成汽车」→ 「好的，我会把中心主题改成「汽车」。」
+- 「加一个水果节点」→ 「好的，我会添加一个叫「水果」的节点。」
+
+用户按名称或序号提到节点时，你要对应到具体节点；例如用户说「选 ABC」而 ABC 是第 3 个节点，你就知道指的是节点 3。
+
+【表达要求】
+- 简明、友好，用词适合中小学生
+- 引用节点时用图示里的实际文字
+- 适当引导思考
+- 用户要求改图时务必先口头确认，系统会自动落地修改
+
+**默认请使用简体中文**进行口语和文字回复；仅当用户**明确**使用其他语言（如英语）时，再用该语言自然回复。"""
 
     return instructions
 

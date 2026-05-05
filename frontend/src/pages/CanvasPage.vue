@@ -39,10 +39,12 @@ import {
 } from '@/components/canvas'
 import CanvasCollabOverlay from '@/components/canvas/CanvasCollabOverlay.vue'
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
+import KittyCanvasAnchor from '@/components/kitty/KittyCanvasAnchor.vue'
 import { MindmatePanel, NodePalettePanel, RootConceptModal } from '@/components/panels'
 import {
   eventBus,
   getDefaultDiagramName,
+  getDiagramOperations,
   getNodePalette,
   getPanelCoordinator,
   useDiagramSpecForSave,
@@ -52,17 +54,20 @@ import {
   useLanguage,
   useNotifications,
   useSnapshotHistory,
+  useCanvasKittyDesktopPairing,
 } from '@/composables'
+import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
+import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import {
   VALID_DIAGRAM_TYPES,
   diagramTypeMap,
   diagramTypeToChineseMap,
 } from '@/composables/canvasPage/diagramTypeMaps'
-import { registerCanvasPageDiagramEventBus } from '@/composables/canvasPage/registerCanvasPageDiagramEventBus'
 import { useCanvasPageEditorShortcuts } from '@/composables/canvasPage/useCanvasPageEditorShortcuts'
 import { useCanvasPageLibrarySnapshots } from '@/composables/canvasPage/useCanvasPageLibrarySnapshots'
 import { useCanvasPageMountedHandlers } from '@/composables/canvasPage/useCanvasPageMountedHandlers'
 import { useCanvasPagePresentation } from '@/composables/canvasPage/useCanvasPagePresentation'
+import { registerCanvasPageDiagramEventBus } from '@/composables/canvasPage/registerCanvasPageDiagramEventBus'
 import { useCanvasPageWorkshopCollab } from '@/composables/canvasPage/useCanvasPageWorkshopCollab'
 import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
 import {
@@ -86,6 +91,7 @@ import {
   useConceptMapRelationshipStore,
   useConceptMapRootConceptReviewStore,
   useDiagramStore,
+  useFeatureFlagsStore,
   useInlineRecommendationsStore,
   useLLMResultsStore,
   usePanelsStore,
@@ -98,6 +104,7 @@ import type { DiagramType } from '@/types'
 const route = useRoute()
 const router = useRouter()
 const diagramStore = useDiagramStore()
+getDiagramOperations()
 const relationshipStore = useConceptMapRelationshipStore()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
@@ -106,6 +113,8 @@ const llmResultsStore = useLLMResultsStore()
 const panelsStore = usePanelsStore()
 const { promptLanguage, t, currentLanguage } = useLanguage()
 const notify = useNotifications()
+const featureFlagsStore = useFeatureFlagsStore()
+const { handleAIGenerate, handleConceptGeneration, isAIGenerating } = useCanvasToolbarApps()
 
 const snapshotHistory = useSnapshotHistory()
 
@@ -227,6 +236,23 @@ const mindMatePanelRight = computed(() => {
 const inlineRecCoordinator = useInlineRecommendationsCoordinator()
 const { startRecommendations } = useInlineRecommendations()
 
+const { showKittyDesktopIndicator } = useCanvasKittyDesktopPairing({
+  currentDiagramId,
+  hasDiagramContent: computed(() => diagramStore.data != null),
+  authIsAuthenticated: computed(() => authStore.isAuthenticated),
+  isViewer: computed(() => isViewer.value),
+  kittyFeatureEnabled: computed(() => featureFlagsStore.getFeatureKittyAgent()),
+  onLibraryScopeSwitchedCleanup: (oldScope: string) => {
+    if (authStore.isAuthenticated && featureFlagsStore.getFeatureKittyAgent()) {
+      fetch(`/api/kitty/cleanup/${encodeURIComponent(oldScope)}`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+      }).catch(() => {})
+    }
+  },
+})
+
 useConceptMapRelationshipTabFromSelection({ startRecommendations })
 
 useCanvasPageMountedHandlers({
@@ -235,6 +261,62 @@ useCanvasPageMountedHandlers({
   startNodePaletteSession,
   isDiagramOwner,
 })
+
+eventBus.onWithOwner(
+  'diagram:auto_complete_requested',
+  () => {
+    if (!authStore.isAuthenticated) {
+      notify.warning(t('notification.signInToUse'))
+      return
+    }
+    if (isAIGenerating.value) return
+    if (diagramStore.type === 'concept_map') {
+      handleConceptGeneration()
+      return
+    }
+    void handleAIGenerate()
+  },
+  'CanvasPage'
+)
+
+eventBus.onWithOwner(
+  'kitty:inline_recommendations_requested',
+  (data: { nodeId?: string; nodeIndex?: number }) => {
+    let nid = data.nodeId
+    if (!nid && data.nodeIndex !== undefined) {
+      const nodes = diagramStore.data?.nodes ?? []
+      const n = nodes[data.nodeIndex]
+      if (n) nid = n.id
+    }
+    if (!nid) nid = diagramStore.selectedNodes[0]
+    if (!nid) {
+      notify.warning(t('canvas.toolbar.selectNodesToDelete', '请先选择一个节点'))
+      return
+    }
+    const nodes = diagramStore.data?.nodes ?? []
+    const node = nodes.find((x) => x.id === nid)
+    if (
+      !node ||
+      !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
+    ) {
+      notify.warning(t('notification.nodeNotEligible', '该节点不支持推荐'))
+      return
+    }
+    if (!inlineRecStore.isReady) return
+    if (diagramStore.type === 'concept_map' && !llmResultsStore.selectedModel) {
+      notify.warning(
+        t('notification.conceptMapTabNeedsAi', '请先在顶栏启用「启动 AI」再使用 Tab 推荐')
+      )
+      return
+    }
+    if (!authStore.isAuthenticated) {
+      notify.warning(t('notification.signInToUse'))
+      return
+    }
+    void startRecommendations(nid)
+  },
+  'CanvasPage'
+)
 
 function handleNodeDoubleClick(_node: { id?: string; type?: string }): void {
   // Double-click only enters edit mode. Inline recommendations are triggered by Tab
@@ -583,7 +665,7 @@ onMounted(async () => {
     }
   }
   // If no type specified, canvas shows empty state
-  // User should navigate back to select a diagram type
+  // User should navigate back and select a diagram type
 })
 
 onUnmounted(() => {
@@ -700,6 +782,13 @@ onUnmounted(() => {
       :is-collab-guest="isCollabGuest"
       @collabSession="handleCollabSession"
       @retryConnection="reconnect"
+    />
+
+    <KittyCanvasAnchor
+      :visible="showKittyDesktopIndicator"
+      state="active"
+      variant="fab"
+      :interactive="false"
     />
 
     <!-- Main canvas area - merged chrome (top bar + toolbar) in CanvasChrome -->

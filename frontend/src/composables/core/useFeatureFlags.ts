@@ -38,6 +38,7 @@ export function useFeatureFlags() {
   const featureWorkshopChat = computed(() => data.value?.feature_workshop_chat ?? false)
   const featureMarkets = computed(() => data.value?.feature_markets ?? false)
   const featureMindbot = computed(() => data.value?.feature_mindbot ?? false)
+  const featureKittyAgent = computed(() => data.value?.feature_kitty_agent ?? false)
   const workshopChatPreviewOrgIds = computed(() => data.value?.workshop_chat_preview_org_ids ?? [])
   const featureOrgAccess = computed(() => data.value?.feature_org_access ?? {})
 
@@ -57,6 +58,7 @@ export function useFeatureFlags() {
     featureWorkshopChat,
     featureMarkets,
     featureMindbot,
+    featureKittyAgent,
     workshopChatPreviewOrgIds,
     featureOrgAccess,
     isLoading,

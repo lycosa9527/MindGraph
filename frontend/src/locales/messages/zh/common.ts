@@ -95,6 +95,14 @@ export default {
   'meta.pageTitle.mindgraph': 'MindGraph',
   'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
+  'meta.pageTitle.kitty': 'Kitty',
+  'canvas.kittyMobileIndicatorHint':
+    '手机 Kitty 已通过麦克风与会话启动并与当前图示关联，请在手机上对话与操作。',
+  'canvas.kittyMobileIndicatorAria':
+    '状态：手机 Kitty 已与当前 MindGraph 画布关联，请在手机上使用 Kitty。',
+  'canvas.kittyMobileIndicatorTitle': '手机 Kitty',
+  'mobile.kittyWelcomeSub':
+    '麦克风相当于在同一套 MindGraph 上语音编辑；请在手机或电脑上打开已保存的图示，便于 Kitty 同步画布内容。',
   'meta.pageTitle.notFound': '页面未找到',
   'meta.pageTitle.publicDashboard': '统计',
   'meta.pageTitle.schoolDashboard': '学校仪表盘',

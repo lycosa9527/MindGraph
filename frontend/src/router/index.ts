@@ -43,6 +43,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, layout: 'mobile', ...pageTitle('mindgraph') },
   },
   {
+    path: '/m/kitty',
+    name: 'MobileKitty',
+    component: () => import('@/pages/mobile/MobileKittyPage.vue'),
+    meta: { requiresAuth: true, layout: 'mobile', ...pageTitle('kitty') },
+  },
+  {
     path: '/m/canvas',
     name: 'MobileCanvas',
     component: () => import('@/pages/mobile/MobileCanvasPage.vue'),

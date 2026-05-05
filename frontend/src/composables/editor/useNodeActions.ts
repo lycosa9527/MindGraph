@@ -116,6 +116,11 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       return
     }
 
+    if (diagramType === 'tree_map' || diagramType === 'multi_flow_map') {
+      handleAddNode()
+      return
+    }
+
     if (diagramType === 'flow_map') {
       const selectedId = diagramStore.selectedNodes[0]
       const selectedNode = selectedId
@@ -298,16 +303,31 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       const selectedId = diagramStore.selectedNodes[0]
       if (!selectedId || selectedId === 'tree-topic') {
         if (diagramStore.addTreeMapCategory(t('canvas.toolbar.newBranch'))) {
-          diagramStore.pushHistory(t('canvas.toolbar.addNodeHistory'))
           notify.success(t('canvas.toolbar.branchAdded'))
         }
       } else {
+        if (selectedId === 'dimension-label') {
+          notify.warning(t('canvas.toolbar.selectTreeBranchForChild'))
+          return
+        }
+        const leafMatch = selectedId.match(/^tree-leaf-(\d+)-\d+$/)
+        const selectedNode = diagramStore.data.nodes.find((n) => n.id === selectedId)
+        const groupIndex = selectedNode?.data?.groupIndex
         const catId = selectedId.startsWith('tree-cat-')
           ? selectedId
-          : selectedId.replace(/^tree-leaf-(\d+)-\d+$/, 'tree-cat-$1')
+          : leafMatch
+            ? `tree-cat-${leafMatch[1]}`
+            : typeof groupIndex === 'number'
+              ? `tree-cat-${groupIndex}`
+              : null
+        if (!catId || !/^tree-cat-\d+$/.test(catId)) {
+          notify.warning(t('canvas.toolbar.selectTreeBranchForChild'))
+          return
+        }
         if (diagramStore.addTreeMapChild(catId, t('canvas.toolbar.newChild'))) {
-          diagramStore.pushHistory(t('canvas.toolbar.addNodeHistory'))
           notify.success(t('canvas.toolbar.childAdded'))
+        } else {
+          notify.warning(t('canvas.toolbar.selectTreeBranchForChild'))
         }
       }
       return
@@ -391,7 +411,11 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       const selectedId = diagramStore.selectedNodes[0]
       const isCause = selectedId?.startsWith('cause-')
       const isEffect = selectedId?.startsWith('effect-')
-      const category = isCause ? 'causes' : isEffect ? 'effects' : 'causes'
+      if (!selectedId || selectedId === 'event' || (!isCause && !isEffect)) {
+        notify.warning(t('canvas.toolbar.selectCauseOrEffectForAdd'))
+        return
+      }
+      const category = isCause ? 'causes' : 'effects'
       const label =
         category === 'causes' ? t('canvas.toolbar.newCause') : t('canvas.toolbar.newEffect')
       diagramStore.addNode({

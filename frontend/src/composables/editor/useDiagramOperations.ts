@@ -12,6 +12,12 @@ import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores/diagram'
 import type { DiagramSpec, DiagramType } from '@/types'
 
+import {
+  applyVoiceDiagramAddNodes,
+  applyVoiceDiagramRemoveNodes,
+  applyVoiceDiagramUpdateCenter,
+  applyVoiceDiagramUpdateNodes,
+} from './diagramVoiceMutations'
 import { eventBus } from '../core/useEventBus'
 
 // ============================================================================
@@ -564,29 +570,13 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
   const unsubAddNodes = eventBus.onWithOwner(
     'diagram:add_nodes',
     (data) => {
-      if (!operations.value) return
+      const store = useDiagramStore()
+      if (!store.data?.nodes) return
 
       const nodes = data.nodes as unknown[]
       if (!Array.isArray(nodes)) return
 
-      const store = useDiagramStore()
-      const spec = store.data as DiagramSpec | null
-
-      if (!spec) return
-
-      let addedCount = 0
-      nodes.forEach((node) => {
-        const nodeType =
-          typeof node === 'object' && node !== null
-            ? ((node as Record<string, unknown>).type as string)
-            : undefined
-        const result = operations.value?.addNode(spec, nodeType)
-        if (result) addedCount++
-      })
-
-      if (addedCount > 0) {
-        store.pushHistory(`Add ${addedCount} node(s) via voice`)
-      }
+      applyVoiceDiagramAddNodes(store, nodes)
     },
     ownerId
   )
@@ -595,33 +585,13 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
   const unsubUpdateNodes = eventBus.onWithOwner(
     'diagram:update_nodes',
     (data) => {
-      if (!operations.value) return
+      const store = useDiagramStore()
+      if (!store.data?.nodes) return
 
       const nodes = data.nodes as unknown[]
       if (!Array.isArray(nodes)) return
 
-      const store = useDiagramStore()
-      const spec = store.data as DiagramSpec | null
-
-      if (!spec) return
-
-      let updatedCount = 0
-      nodes.forEach((nodeData) => {
-        if (typeof nodeData !== 'object' || nodeData === null) return
-
-        const obj = nodeData as Record<string, unknown>
-        const nodeId = (obj.node_id as string) || (obj.id as string)
-        const text = (obj.text as string) || (obj.new_text as string)
-
-        if (nodeId && text !== undefined) {
-          const result = operations.value?.updateNode(spec, nodeId, { text })
-          if (result) updatedCount++
-        }
-      })
-
-      if (updatedCount > 0) {
-        store.pushHistory(`Update ${updatedCount} node(s) via voice`)
-      }
+      applyVoiceDiagramUpdateNodes(store, nodes)
     },
     ownerId
   )
@@ -630,35 +600,13 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
   const unsubRemoveNodes = eventBus.onWithOwner(
     'diagram:remove_nodes',
     (data) => {
-      if (!operations.value) return
+      const store = useDiagramStore()
+      if (!store.data?.nodes) return
 
       const nodeIds = data.nodeIds as unknown[]
       if (!Array.isArray(nodeIds)) return
 
-      const store = useDiagramStore()
-      const spec = store.data as DiagramSpec | null
-
-      if (!spec) return
-
-      const ids = nodeIds
-        .map((item) => {
-          if (typeof item === 'string') return item
-          if (typeof item === 'object' && item !== null) {
-            return (
-              ((item as Record<string, unknown>).node_id as string) ||
-              ((item as Record<string, unknown>).id as string)
-            )
-          }
-          return null
-        })
-        .filter((id): id is string => id !== null)
-
-      if (ids.length > 0) {
-        const result = operations.value?.deleteNodes(spec, ids)
-        if (result && result.deletedIds.length > 0) {
-          store.pushHistory(`Delete ${result.deletedIds.length} node(s) via voice`)
-        }
-      }
+      applyVoiceDiagramRemoveNodes(store, nodeIds)
     },
     ownerId
   )
@@ -667,21 +615,14 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
   const unsubUpdateCenter = eventBus.onWithOwner(
     'diagram:update_center',
     (data) => {
-      if (!operations.value) return
-
       const store = useDiagramStore()
-      const spec = store.data as DiagramSpec | null
+      if (!store.data?.nodes) return
 
-      if (!spec) return
-
-      const newText = (data.new_text as string) || (data.text as string)
-      if (newText !== undefined) {
-        const centerNodeId = 'topic'
-        const result = operations.value?.updateNode(spec, centerNodeId, { text: newText })
-        if (result) {
-          store.pushHistory('Update center via voice')
-        }
-      }
+      const payload =
+        typeof data === 'object' && data !== null
+          ? (data as Record<string, unknown>)
+          : {}
+      applyVoiceDiagramUpdateCenter(store, payload)
     },
     ownerId
   )

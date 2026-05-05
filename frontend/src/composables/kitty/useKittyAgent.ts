@@ -1,15 +1,12 @@
 /**
- * useVoiceAgent - Composable for real-time voice conversation
+ * useKittyAgent — Kitty Agent (Qwen Omni realtime) WebSocket client.
  *
  * Handles:
- * - WebSocket connection to voice backend
+ * - WebSocket connection to `/ws/kitty`
  * - Audio capture (microphone) with AudioWorklet or fallback
- * - Audio playback of AI responses
- * - Text message sending
- * - Voice transcription handling
- * - Diagram update commands from voice
- *
- * Migrated from archive/static/js/managers/voice-agent-manager.js
+ * - Audio playback of model responses
+ * - Text messages and multimodal append_image frames
+ * - Transcription and diagram commands from the server
  */
 import { computed, onUnmounted, ref, shallowRef } from 'vue'
 
@@ -21,22 +18,36 @@ import { type EventTypes, eventBus } from '../core/useEventBus'
 // Types
 // ============================================================================
 
-export interface VoiceAgentOptions {
+export interface KittyAgentOptions {
   ownerId?: string
   sampleRate?: number
+  /**
+   * When set to ``mobile``, the WebSocket ``start`` frame includes ``client_lane`` so
+   * the server can show the desktop pairing indicator only for phone-started Kitty sessions.
+   */
+  kittyClientLane?: 'mobile'
   onTranscription?: (text: string) => void
   onTextChunk?: (text: string) => void
   onError?: (error: string) => void
 }
 
-export interface VoiceContext {
+export interface KittyAgentContext {
   diagram_type: DiagramType | string
   active_panel: string
   selected_nodes: string[]
   diagram_data: Record<string, unknown>
+  /** Saved-diagram id when the canvas is backed by the library (desktop / mobile). */
+  diagram_library_id?: string | null
+  /** User-visible diagram title (e.g. MindGraph file name / topic). */
+  diagram_display_title?: string
+  /**
+   * Preferred voice/text language for Kitty (`zh` default; use `en` when UI is English).
+   * Sent on the Kitty WebSocket so Omni instructions match the classroom language.
+   */
+  interaction_language?: 'zh' | 'en'
 }
 
-export type VoiceAgentState = 'idle' | 'connecting' | 'active' | 'listening' | 'speaking' | 'error'
+export type KittyAgentState = 'idle' | 'connecting' | 'active' | 'listening' | 'speaking' | 'error'
 
 interface AudioChunk {
   buffer: AudioBuffer
@@ -46,10 +57,11 @@ interface AudioChunk {
 // Composable
 // ============================================================================
 
-export function useVoiceAgent(options: VoiceAgentOptions = {}) {
+export function useKittyAgent(options: KittyAgentOptions = {}) {
   const {
-    ownerId = `VoiceAgent_${Date.now()}`,
+    ownerId = `KittyAgent_${Date.now()}`,
     sampleRate = 24000,
+    kittyClientLane,
     onTranscription,
     onTextChunk,
     onError,
@@ -59,7 +71,7 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
   // State
   // =========================================================================
 
-  const state = ref<VoiceAgentState>('idle')
+  const state = ref<KittyAgentState>('idle')
   const sessionId = ref<string | null>(null)
   const diagramSessionId = ref<string | null>(null)
   const isActive = ref(false)
@@ -139,7 +151,7 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
         playNextAudio()
       }
     } catch (error) {
-      console.error('[VoiceAgent] Audio playback error:', error)
+      console.error('[KittyAgent] Audio playback error:', error)
     }
   }
 
@@ -238,7 +250,7 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
       audioSource.value = source
     } catch {
       // Fallback to ScriptProcessor for older browsers
-      console.warn('[VoiceAgent] AudioWorklet not supported, falling back to ScriptProcessor')
+      console.warn('[KittyAgent] AudioWorklet not supported, falling back to ScriptProcessor')
       await startAudioCaptureFallback()
     }
   }
@@ -279,8 +291,49 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
   // WebSocket Message Handler
   // =========================================================================
 
+  function summarizeKittyInboundMessage(data: Record<string, unknown>): string {
+    const typ = String(data.type ?? '?')
+    switch (typ) {
+      case 'connected':
+        return `session ${String(data.session_id ?? '').slice(0, 12)}…`
+      case 'transcription':
+        return String(data.text ?? '').replace(/\s+/g, ' ').trim().slice(0, 72)
+      case 'text_chunk':
+        return String(data.text ?? '').replace(/\s+/g, ' ').trim().slice(0, 56)
+      case 'audio_chunk':
+        return `audio chunk b64×${String(data.audio ?? '').length}`
+      case 'speech_started':
+        return 'speech started'
+      case 'speech_stopped':
+        return 'speech stopped'
+      case 'response_done':
+        return 'response done'
+      case 'action':
+        return String(data.action ?? '')
+      case 'diagram_update':
+        return `diagram ${String(data.action ?? '')}`
+      case 'error':
+        return String(data.error ?? '').slice(0, 80)
+      default: {
+        try {
+          const s = JSON.stringify(data)
+          return s.length > 100 ? `${s.slice(0, 97)}…` : s
+        } catch {
+          return typ
+        }
+      }
+    }
+  }
+
   function handleServerMessage(data: Record<string, unknown>): void {
     if (_destroyed || _cleaningUp) return
+
+    eventBus.emit('voice:debug_rx', {
+      ts: Date.now(),
+      direction: 'in',
+      type: String(data.type ?? 'unknown'),
+      line: summarizeKittyInboundMessage(data),
+    })
 
     switch (data.type) {
       case 'connected':
@@ -360,28 +413,35 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
     switch (action) {
       case 'open_mindmate':
       case 'open_thinkguide':
-        eventBus.emit('panel:open_requested', { panel: 'mindmate', source: 'voice_agent' })
+        eventBus.emit('panel:open_requested', { panel: 'mindmate', source: 'kitty_agent' })
         break
 
       case 'close_mindmate':
       case 'close_thinkguide':
-        eventBus.emit('panel:close_requested', { panel: 'mindmate', source: 'voice_agent' })
+        eventBus.emit('panel:close_requested', { panel: 'mindmate', source: 'kitty_agent' })
         break
 
       case 'open_node_palette':
-        eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'voice_agent' })
+        eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'kitty_agent' })
         break
 
       case 'close_node_palette':
-        eventBus.emit('panel:close_requested', { panel: 'nodePalette', source: 'voice_agent' })
+        eventBus.emit('panel:close_requested', { panel: 'nodePalette', source: 'kitty_agent' })
         break
 
       case 'close_all_panels':
-        eventBus.emit('panel:close_all_requested', { source: 'voice_agent' })
+        eventBus.emit('panel:close_all_requested', { source: 'kitty_agent' })
         break
 
       case 'auto_complete':
-        eventBus.emit('diagram:auto_complete_requested', { source: 'voice_agent' })
+        eventBus.emit('diagram:auto_complete_requested', { source: 'kitty_agent' })
+        break
+
+      case 'start_inline_recommendations':
+        eventBus.emit('kitty:inline_recommendations_requested', {
+          nodeId: params.node_id as string | undefined,
+          nodeIndex: typeof params.node_index === 'number' ? params.node_index : undefined,
+        })
         break
 
       case 'select_node':
@@ -405,38 +465,50 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
           }, 500)
         }
         break
+
+      case 'ask_mindmate':
+      case 'ask_thinkguide': {
+        const messageRaw = params.message ?? params.prompt
+        const message = typeof messageRaw === 'string' ? messageRaw.trim() : ''
+        if (!message) break
+        eventBus.emit('panel:open_requested', { panel: 'mindmate', source: 'kitty_agent' })
+        setTimeout(() => {
+          eventBus.emit('mindmate:send_message', { message })
+        }, 400)
+        break
+      }
     }
   }
 
   function applyDiagramUpdate(action: string, updates: Record<string, unknown>): void {
     switch (action) {
       case 'update_center':
-        eventBus.emit('diagram:update_center', { ...updates, source: 'voice_agent' })
+        eventBus.emit('diagram:update_center', { ...updates, source: 'kitty_agent' })
         break
 
       case 'update_node':
       case 'update_nodes': {
         const nodeUpdates = Array.isArray(updates) ? updates : [updates]
-        eventBus.emit('diagram:update_nodes', { nodes: nodeUpdates, source: 'voice_agent' })
+        eventBus.emit('diagram:update_nodes', { nodes: nodeUpdates, source: 'kitty_agent' })
         break
       }
 
       case 'add_node':
       case 'add_nodes': {
         const nodesToAdd = Array.isArray(updates) ? updates : [updates]
-        eventBus.emit('diagram:add_nodes', { nodes: nodesToAdd, source: 'voice_agent' })
+        eventBus.emit('diagram:add_nodes', { nodes: nodesToAdd, source: 'kitty_agent' })
         break
       }
 
       case 'delete_node':
       case 'remove_nodes': {
         const nodeIds = Array.isArray(updates) ? updates : [updates]
-        eventBus.emit('diagram:remove_nodes', { nodeIds, source: 'voice_agent' })
+        eventBus.emit('diagram:remove_nodes', { nodeIds, source: 'kitty_agent' })
         break
       }
 
       default:
-        eventBus.emit('diagram:update_requested', { action, updates, source: 'voice_agent' })
+        eventBus.emit('diagram:update_requested', { action, updates, source: 'kitty_agent' })
     }
   }
 
@@ -444,9 +516,9 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
   // WebSocket Connection
   // =========================================================================
 
-  async function connect(diagSessionId: string, context?: VoiceContext): Promise<void> {
+  async function connect(diagSessionId: string, context?: KittyAgentContext): Promise<void> {
     if (_destroyed) {
-      throw new Error('Voice agent has been destroyed')
+      throw new Error('Kitty Agent has been destroyed')
     }
 
     if (_cleaningUp) {
@@ -471,9 +543,19 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
     state.value = 'connecting'
 
     return new Promise((resolve, reject) => {
+      let settled = false
+      const settleResolve = (): void => {
+        if (settled) return
+        settled = true
+        resolve()
+      }
+      const settleReject = (err: Error): void => {
+        if (settled) return
+        settled = true
+        reject(err)
+      }
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      // Token is in httpOnly cookie - browser will send it automatically during WebSocket handshake
-      const wsUrl = `${protocol}//${window.location.host}/ws/voice/${diagSessionId}`
+      const wsUrl = `${protocol}//${window.location.host}/ws/kitty/${diagSessionId}`
 
       const socket = new WebSocket(wsUrl)
       ws.value = socket
@@ -481,19 +563,21 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
       socket.onopen = () => {
         if (_cleaningUp || _destroyed) {
           socket.close()
-          reject(new Error('Cleanup started during connection'))
+          settleReject(new Error('Cleanup started during connection'))
           return
         }
 
         // Send start message with context
-        socket.send(
-          JSON.stringify({
-            type: 'start',
-            diagram_type: context?.diagram_type || 'circle_map',
-            active_panel: context?.active_panel || 'none',
-            context: context || {},
-          })
-        )
+        const startPayload: Record<string, unknown> = {
+          type: 'start',
+          diagram_type: context?.diagram_type || 'circle_map',
+          active_panel: context?.active_panel || 'none',
+          context: context || {},
+        }
+        if (kittyClientLane === 'mobile') {
+          startPayload.client_lane = 'mobile'
+        }
+        socket.send(JSON.stringify(startPayload))
       }
 
       socket.onmessage = (event) => {
@@ -503,10 +587,10 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
 
           if (data.type === 'connected') {
             isActive.value = true
-            resolve()
+            settleResolve()
           }
         } catch (error) {
-          console.error('[VoiceAgent] Message parse error:', error)
+          console.error('[KittyAgent] Message parse error:', error)
         }
       }
 
@@ -514,7 +598,7 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
         state.value = 'error'
         lastError.value = 'WebSocket connection failed'
         eventBus.emit('voice:ws_error', { error: lastError.value })
-        reject(new Error(lastError.value))
+        settleReject(new Error(lastError.value))
       }
 
       socket.onclose = (event) => {
@@ -527,6 +611,9 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
           reason: event.reason,
           wasClean: event.wasClean,
         })
+        if (!settled) {
+          settleReject(new Error(event.reason || 'WebSocket closed before connected'))
+        }
       }
     })
   }
@@ -535,9 +622,9 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
   // Public API
   // =========================================================================
 
-  async function startConversation(diagSessionId: string, context?: VoiceContext): Promise<void> {
+  async function startConversation(diagSessionId: string, context?: KittyAgentContext): Promise<void> {
     if (_destroyed) {
-      throw new Error('Voice agent has been destroyed')
+      throw new Error('Kitty Agent has been destroyed')
     }
 
     // Initialize audio context if needed
@@ -627,13 +714,39 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
     state.value = 'speaking'
   }
 
-  function updateContext(context: VoiceContext): void {
+  function updateContext(context: KittyAgentContext): void {
     if (!ws.value || ws.value.readyState !== WebSocket.OPEN) return
 
     ws.value.send(
       JSON.stringify({
         type: 'context_update',
         context,
+      })
+    )
+  }
+
+  function sendMinimalAudioPreamble(): void {
+    if (!ws.value || ws.value.readyState !== WebSocket.OPEN) return
+    const rate = 24000
+    const ms = 100
+    const samples = Math.max(1, Math.floor((rate * ms) / 1000))
+    const pcm = new Int16Array(samples)
+    ws.value.send(
+      JSON.stringify({
+        type: 'audio',
+        data: arrayBufferToBase64(pcm.buffer),
+      })
+    )
+  }
+
+  function sendAppendImage(dataBase64: string, format = 'jpeg'): void {
+    if (!dataBase64 || !ws.value || ws.value.readyState !== WebSocket.OPEN) return
+    sendMinimalAudioPreamble()
+    ws.value.send(
+      JSON.stringify({
+        type: 'append_image',
+        data: dataBase64,
+        format,
       })
     )
   }
@@ -743,8 +856,7 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
       cleanup()
       // Call backend cleanup if needed
       if (data.sessionId && typeof window !== 'undefined') {
-        // Use credentials (token in httpOnly cookie)
-        fetch(`/api/voice/cleanup/${data.sessionId}`, {
+        fetch(`/api/kitty/cleanup/${data.sessionId}`, {
           method: 'POST',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
@@ -785,6 +897,8 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
     stopVoiceInput,
     sendTextMessage,
     updateContext,
+    sendAppendImage,
+    sendMinimalAudioPreamble,
 
     // Cleanup
     cleanup,

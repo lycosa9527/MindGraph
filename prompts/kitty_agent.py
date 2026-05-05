@@ -1,9 +1,5 @@
 """
-Voice Agent Prompts
-
-This module contains prompts used by the voice agent for:
-- Paragraph processing and content extraction
-- Intent detection and diagram type recommendation
+Kitty Agent prompts — paragraph processing and content extraction.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -11,7 +7,8 @@ Proprietary License
 """
 
 # Paragraph processing prompt for Qwen Plus (English)
-PARAGRAPH_PROCESSING_EN = """You are an intelligent diagram assistant. A teacher has provided a paragraph of text. Your task is to:
+PARAGRAPH_PROCESSING_EN = """\
+You are an intelligent diagram assistant. A teacher has provided a paragraph of text. Your task is to:
 
 1. **Understand what the teacher wants**:
    - Do they want to extract content for a diagram?
@@ -138,8 +135,7 @@ PARAGRAPH_PROCESSING_ZH = """你是一个智能图表助手。老师提供了一
 
 仅返回有效的JSON，不要其他文本。"""
 
-# Export prompts dictionary following the pattern used in other prompt files
-VOICE_AGENT_PROMPTS = {
+KITTY_AGENT_PROMPTS = {
     "paragraph_processing_en": PARAGRAPH_PROCESSING_EN,
     "paragraph_processing_zh": PARAGRAPH_PROCESSING_ZH,
 }

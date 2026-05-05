@@ -23,7 +23,7 @@ export {
   DIAGRAM_TEMPLATES,
   getDiagramTemplateBody,
 } from './ui'
-export { useVoiceStore } from './voice'
+export { useVoiceStore, useVoiceStore as useKittyAgentStore } from './voice'
 export { useMindMateStore, type MindMateConversation } from './mindmate'
 export {
   useSavedDiagramsStore,

@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import WebSocket
 
-from services.features.voice_agent import voice_agent_manager
+from services.features.voice_agent import kitty_agent_manager
 
 from routers.features.voice.messaging import (
     build_voice_instructions,
@@ -175,7 +175,7 @@ async def _handle_update_center_action(
     # Update agent state and instructions
     # CRITICAL: Agent is scoped to diagram_session_id, not voice_session_id
     agent_session_id = get_agent_session_id(voice_session_id)
-    agent = voice_agent_manager.get_or_create(agent_session_id)
+    agent = kitty_agent_manager.get_or_create(agent_session_id)
     diagram_data = session_context.get("diagram_data", {})
     diagram_data["diagram_type"] = voice_sessions[voice_session_id].get("diagram_type")
     agent.update_diagram_state(diagram_data)
@@ -307,7 +307,7 @@ async def _handle_update_node_action(
         # Update agent state and instructions
         # CRITICAL: Agent is scoped to diagram_session_id, not voice_session_id
         agent_session_id = get_agent_session_id(voice_session_id)
-        agent = voice_agent_manager.get_or_create(agent_session_id)
+        agent = kitty_agent_manager.get_or_create(agent_session_id)
         diagram_data = session_context.get("diagram_data", {})
         diagram_data["diagram_type"] = voice_sessions[voice_session_id].get("diagram_type")
         agent.update_diagram_state(diagram_data)

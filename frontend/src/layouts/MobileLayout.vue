@@ -19,7 +19,11 @@ const { t } = useLanguage()
 const isHome = computed(() => route.name === 'MobileHome' || route.path === '/m')
 
 const hideHeader = computed(
-  () => isHome.value || route.name === 'MobileMindMate' || route.name === 'MobileMindGraph'
+  () =>
+    isHome.value ||
+    route.name === 'MobileMindMate' ||
+    route.name === 'MobileMindGraph' ||
+    route.name === 'MobileKitty'
 )
 
 const showBackButton = computed(() => route.name === 'MobileCanvas')
@@ -45,6 +49,7 @@ const pageTitle = computed(() => {
     MobileHome: 'MindSpring',
     MobileMindMate: 'MindMate',
     MobileMindGraph: 'MindGraph',
+    MobileKitty: 'Kitty',
     MobileCanvas: 'MindGraph',
     MobileAccount: t('sidebar.account', 'Account'),
   }

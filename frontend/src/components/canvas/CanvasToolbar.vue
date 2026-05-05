@@ -45,8 +45,8 @@ const uiStore = useUIStore()
 
 const { handleAddNode, handleDeleteNode, handleAddCause, handleAddEffect } = useNodeActions({
   addNodePrimaryBehavior: 'toolbarPrimary',
-  includeTreeMapPrimaryAdd: false,
-  includeMultiFlowPrimaryAdd: false,
+  includeTreeMapPrimaryAdd: true,
+  includeMultiFlowPrimaryAdd: true,
 })
 
 const formatting = useCanvasToolbarFormatting()

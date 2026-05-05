@@ -1,31 +1,14 @@
 """Voice session lifecycle and Omni client accessors."""
 
 from datetime import datetime
-from typing import Any, Coroutine, Dict, Optional
+from typing import Any, Dict, Optional
 import asyncio
-import logging
 import uuid
 
 from clients.omni_client import OmniClient
-from services.features.voice_agent import voice_agent_manager
+from services.features.voice_agent import kitty_agent_manager
 
 from routers.features.voice.state import active_websockets, logger, voice_sessions
-
-_bg_tasks: set[asyncio.Task] = set()
-_session_logger = logging.getLogger(__name__)
-
-
-def _fire_and_forget(coro: Coroutine) -> None:
-    """Schedule a coroutine as a tracked background task to prevent silent GC and log exceptions."""
-    task = asyncio.create_task(coro)
-    _bg_tasks.add(task)
-
-    def _on_done(t: asyncio.Task) -> None:
-        _bg_tasks.discard(t)
-        if not t.cancelled() and t.exception() is not None:
-            _session_logger.debug("[bg_task] background task raised: %s", t.exception())
-
-    task.add_done_callback(_on_done)
 
 
 def get_agent_session_id(voice_session_id: str) -> str:
@@ -70,7 +53,7 @@ def create_voice_session(
     multiple concurrent users. Each voice session gets its own OmniClient,
     preventing cross-contamination between users.
 
-    VoiceAgent session lifecycle is controlled by:
+    Kitty Agent session lifecycle is controlled by:
     1. Black cat click (activation)
     2. Black cat click again (deactivation)
     3. Session manager cleanup (when diagram session ends)
@@ -135,60 +118,56 @@ def get_session_omni_client(voice_session_id: str):
     return omni_client
 
 
-def update_panel_context(session_id: str, active_panel: str) -> None:
-    """Update active panel context"""
-    if session_id in voice_sessions:
-        old_panel = voice_sessions[session_id].get("active_panel", "unknown")
-        voice_sessions[session_id]["active_panel"] = active_panel
-        logger.debug("Panel context updated: %s (%s -> %s)", session_id, old_panel, active_panel)
+def update_panel_context(session_id: str, active_panel: Optional[str]) -> None:
+    """Update active panel context; ``None`` leaves the stored panel unchanged."""
+    if session_id not in voice_sessions:
+        return
+    if active_panel is None:
+        return
+    old_panel = voice_sessions[session_id].get("active_panel", "unknown")
+    voice_sessions[session_id]["active_panel"] = active_panel
+    logger.debug("Panel context updated: %s (%s -> %s)", session_id, old_panel, active_panel)
 
 
-def end_voice_session(session_id: str, reason: str = "completed") -> None:
+async def _close_omni_client_for_session(omni_client: Any, session_id: str) -> None:
+    """Await async Omni close; offload sync close to a thread if needed."""
+    try:
+        close_result = omni_client.close()
+        if asyncio.iscoroutine(close_result):
+            await close_result
+        elif callable(close_result):
+            await asyncio.to_thread(close_result)
+    except (RuntimeError, AttributeError, asyncio.CancelledError) as exc:
+        logger.debug(
+            "VOIC | Error closing Omni client for session %s (may already be closed): %s",
+            session_id,
+            exc,
+        )
+
+
+async def end_voice_session_async(session_id: str, reason: str = "completed") -> None:
     """
-    End and cleanup session including persistent agent and OmniClient.
+    End and cleanup session including persistent agent and OmniClient (asyncio-native).
 
-    CRITICAL: This closes the OmniClient WebSocket connection and removes the agent.
-    Called when:
-    - User navigates back to gallery
-    - User switches to a different diagram
-    - WebSocket connection closes
+    Always ``await`` Omni ``close()`` from async contexts — never ``asyncio.run``.
+    Idempotent and safe under concurrent cleanup (e.g. WebSocket teardown vs HTTP).
     """
-    if session_id in voice_sessions:
-        logger.debug("VOIC | Session ended: %s (reason=%s)", session_id, reason)
-        session = voice_sessions[session_id]
+    session = voice_sessions.pop(session_id, None)
+    if session is None:
+        return
 
-        # Get diagram_session_id before deleting the session
-        diagram_session_id = session.get("diagram_session_id")
+    logger.debug("VOIC | Session ended: %s (reason=%s)", session_id, reason)
+    diagram_session_id = session.get("diagram_session_id")
+    omni_client = session.get("omni_client")
 
-        # CRITICAL: Close OmniClient WebSocket connection before deleting session
-        # Each voice session has its own OmniClient instance that must be closed
-        omni_client = session.get("omni_client")
-        if omni_client:
-            try:
-                close_result = omni_client.close()
-                if asyncio.iscoroutine(close_result):
-                    try:
-                        asyncio.get_running_loop()
-                        _fire_and_forget(close_result)
-                    except RuntimeError:
-                        asyncio.run(close_result)
-                logger.debug("VOIC | Closed Omni client for session %s", session_id)
-            except (RuntimeError, AttributeError, asyncio.CancelledError) as e:
-                logger.debug(
-                    "VOIC | Error closing Omni client for session %s (may already be closed): %s",
-                    session_id,
-                    e,
-                )
+    if omni_client:
+        await _close_omni_client_for_session(omni_client, session_id)
+        logger.debug("VOIC | Closed Omni client for session %s", session_id)
 
-        # Delete session from memory
-        del voice_sessions[session_id]
-
-        # Cleanup the persistent LangGraph agent using diagram_session_id
-        # CRITICAL: Agent is scoped to diagram_session_id, not voice_session_id
-        if diagram_session_id:
-            agent_session_id = f"diagram_{diagram_session_id}"
-            voice_agent_manager.remove(agent_session_id)
-            logger.debug("VOIC | Removed agent for diagram session %s", diagram_session_id)
+    if diagram_session_id:
+        agent_session_id = f"diagram_{diagram_session_id}"
+        kitty_agent_manager.remove(agent_session_id)
+        logger.debug("VOIC | Removed agent for diagram session %s", diagram_session_id)
 
 
 async def cleanup_voice_by_diagram_session(diagram_session_id: str) -> bool:
@@ -261,7 +240,7 @@ async def cleanup_voice_by_diagram_session(diagram_session_id: str) -> bool:
                 voice_session_id,
                 diagram_session_id,
             )
-            end_voice_session(voice_session_id, reason="diagram_session_ended")
+            await end_voice_session_async(voice_session_id, reason="diagram_session_ended")
             cleaned_count += 1
         return True
 
@@ -269,3 +248,18 @@ async def cleanup_voice_by_diagram_session(diagram_session_id: str) -> bool:
         return True
 
     return False
+
+
+def _wire_agent_hub_infrastructure() -> None:
+    from services.agent_hub.scope_lifecycle import (
+        configure_kitty_control_state,
+        configure_kitty_voice_cleanup,
+    )
+    from services.kitty.kitty_session_redis import configure_voice_session_getter
+
+    configure_voice_session_getter(get_voice_session)
+    configure_kitty_voice_cleanup(cleanup_voice_by_diagram_session)
+    configure_kitty_control_state(active_websockets, voice_sessions)
+
+
+_wire_agent_hub_infrastructure()

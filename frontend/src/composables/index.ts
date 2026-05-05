@@ -24,7 +24,20 @@ export { useEditorKeyboard, createDefaultEditorHandlers } from './core/useEditor
 export { useSelection } from './editor/useSelection'
 export { useInteraction, createVueFlowHandlers } from './editor/useInteraction'
 export { useDiagramOperations, getDiagramOperations } from './editor/useDiagramOperations'
-export { useVoiceAgent } from './editor/useVoiceAgent'
+export { useKittyAgent } from './kitty/useKittyAgent'
+export type { KittyAgentState, KittyAgentContext, KittyAgentOptions } from './kitty/useKittyAgent'
+export { useKittyMobileLaneArmed } from './kitty/useKittyMobileLaneArmed'
+export { useKittyDesktopFocusHint } from './kitty/useKittyDesktopFocusHint'
+export { useKittyDesktopFocusPublish } from './kitty/useKittyDesktopFocusPublish'
+export { useMobileKittyPairing } from './kitty/useMobileKittyPairing'
+export { useKittyMobileDebugBus } from './kitty/useKittyMobileDebugBus'
+export { useCanvasKittyDesktopPairing } from './kitty/useCanvasKittyDesktopPairing'
+export { KITTY_PAIR_POLL_MS } from './kitty/runKittyIntervalPoll'
+export {
+  buildKittyDiagramContext,
+  buildKittyVoiceContextPreferStore,
+  buildStandaloneKittyLandingContext,
+} from './kitty/buildKittyDiagramContext'
 export { useMindMate, simpleMarkdown } from './mindmate/useMindMate'
 export { useHistory, useHistoryKeyboard } from './editor/useHistory'
 export { useViewManager, createVueFlowViewport } from './editor/useViewManager'

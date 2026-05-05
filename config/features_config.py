@@ -92,9 +92,14 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_MINDMATE", "False").lower() == "true"
 
     @property
-    def FEATURE_VOICE_AGENT(self):
-        """Enable Voice Agent (experimental feature)."""
-        return self._get_cached_value("FEATURE_VOICE_AGENT", "False").lower() == "true"
+    def FEATURE_KITTY_AGENT(self):
+        """Enable Kitty Agent — Qwen-Omni-Realtime multimodal canvas control."""
+        return self._get_cached_value("FEATURE_KITTY_AGENT", "False").lower() == "true"
+
+    @property
+    def FEATURE_KITTY_WS_ENABLED(self):
+        """True when Kitty WebSocket (/ws/kitty) should be served."""
+        return bool(self.FEATURE_KITTY_AGENT)
 
     @property
     def FEATURE_DRAG_AND_DROP(self):

@@ -66,7 +66,7 @@ const SESSION_SCOPED_OWNERS = [
   'AutoCompleteManager',
   'SmallOperationsManager',
   'TextToolbarStateManager',
-  'VoiceAgentManager',
+  'KittyAgentManager',
   'LLMValidationManager',
   'NodePropertyOperationsManager',
   'NodeCounterFeatureModeManager',

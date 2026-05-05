@@ -102,6 +102,26 @@ _local: Dict[str, int | float] = {
     "ws_collab_update_schema_reject_total": 0,
     "ws_collab_partial_filter_notify_total": 0,
     "ws_resync_rl_check_failure_total": 0,
+    "ws_kitty_redis_persist_total": 0,
+    "ws_kitty_command_context_merge_total": 0,
+    "ws_kitty_hydrate_cache_miss_total": 0,
+    "ws_kitty_control_publish_success_total": 0,
+    "ws_kitty_control_publish_failure_total": 0,
+    "ws_kitty_control_received_total": 0,
+    "ws_kitty_control_cleanup_applied_total": 0,
+    "ws_kitty_control_message_ignored_total": 0,
+    "ws_kitty_ws_rate_limit_close_total": 0,
+    "ws_kitty_ws_inbound_reject_total": 0,
+    "ws_kitty_ws_idle_timeout_close_total": 0,
+    "ws_kitty_refcount_attach_total": 0,
+    "ws_kitty_refcount_detach_mismatch_total": 0,
+    "ws_kitty_refcount_teardown_total": 0,
+    "ws_kitty_refcount_meta_drift_total": 0,
+    "ws_kitty_refcount_attach_failed_total": 0,
+    "ws_kitty_refcount_detach_failed_total": 0,
+    "ws_kitty_control_cleanup_not_configured_total": 0,
+    "ws_kitty_control_voice_cleanup_failed_total": 0,
+    "ws_kitty_control_dispatch_exception_total": 0,
 }
 
 # Map registry endpoint labels → metric counter keys
@@ -443,6 +463,89 @@ def record_ws_collab_update_schema_reject() -> None:
 def record_ws_collab_partial_filter_notify() -> None:
     """Notify path hit for partial lock filter (sender gets ``update_partial_filtered``)."""
     _bump("ws_collab_partial_filter_notify_total")
+
+
+def record_kitty_redis_persist() -> None:
+    """Count Kitty live-spec writes to Redis (``persist_kitty_live_for_ws`` / upsert)."""
+    _bump("ws_kitty_redis_persist_total")
+
+
+def record_kitty_command_context_merge() -> None:
+    """Count last-write-wins merges from Redis live_spec into in-memory voice context."""
+    _bump("ws_kitty_command_context_merge_total")
+
+
+def record_kitty_hydrate_cache_miss() -> None:
+    """Count Kitty library hydrations where ``diagram_library_id`` was set but cache row missing."""
+    _bump("ws_kitty_hydrate_cache_miss_total")
+
+
+def record_kitty_control_publish_success() -> None:
+    _bump("ws_kitty_control_publish_success_total")
+
+
+def record_kitty_control_publish_failure() -> None:
+    _bump("ws_kitty_control_publish_failure_total")
+
+
+def record_kitty_control_received() -> None:
+    _bump("ws_kitty_control_received_total")
+
+
+def record_kitty_control_cleanup_applied() -> None:
+    _bump("ws_kitty_control_cleanup_applied_total")
+
+
+def record_kitty_control_message_ignored() -> None:
+    _bump("ws_kitty_control_message_ignored_total")
+
+
+def record_kitty_ws_rate_limit_close() -> None:
+    _bump("ws_kitty_ws_rate_limit_close_total")
+
+
+def record_kitty_ws_inbound_reject() -> None:
+    _bump("ws_kitty_ws_inbound_reject_total")
+
+
+def record_kitty_ws_idle_timeout_close() -> None:
+    _bump("ws_kitty_ws_idle_timeout_close_total")
+
+
+def record_kitty_refcount_attach() -> None:
+    _bump("ws_kitty_refcount_attach_total")
+
+
+def record_kitty_refcount_detach_mismatch() -> None:
+    _bump("ws_kitty_refcount_detach_mismatch_total")
+
+
+def record_kitty_refcount_teardown() -> None:
+    _bump("ws_kitty_refcount_teardown_total")
+
+
+def record_kitty_refcount_meta_drift() -> None:
+    _bump("ws_kitty_refcount_meta_drift_total")
+
+
+def record_kitty_refcount_attach_failed() -> None:
+    _bump("ws_kitty_refcount_attach_failed_total")
+
+
+def record_kitty_refcount_detach_failed() -> None:
+    _bump("ws_kitty_refcount_detach_failed_total")
+
+
+def record_kitty_control_cleanup_not_configured() -> None:
+    _bump("ws_kitty_control_cleanup_not_configured_total")
+
+
+def record_kitty_control_voice_cleanup_failed() -> None:
+    _bump("ws_kitty_control_voice_cleanup_failed_total")
+
+
+def record_kitty_control_dispatch_exception() -> None:
+    _bump("ws_kitty_control_dispatch_exception_total")
 
 
 async def get_ws_metrics_snapshot() -> Dict[str, Any]:

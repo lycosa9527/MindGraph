@@ -1,5 +1,5 @@
 /**
- * Kitty — MindGraph mascot and VoiceAgent character (SVG, legacy `static/js/editor/black-cat.js`).
+ * Kitty — MindGraph mascot (SVG, legacy `static/js/editor/black-cat.js`).
  * Voice integration deferred; retained for reuse.
  *
  * Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
@@ -16,7 +16,7 @@ declare global {
 
 export type KittyState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'celebrating' | 'error'
 
-/** SVG-based mascot; wire to VoiceAgent flows when integrating. */
+/** SVG-based mascot for Kitty Agent flows. */
 export class BlackCat {
   container: HTMLDivElement | null = null
 

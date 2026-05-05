@@ -17,6 +17,11 @@ from services.features.ws_redis_fanout_listener import (
     start_ws_fanout_listener,
     stop_ws_fanout_listener,
 )
+from services.kitty.kitty_control_listener import (
+    await_kitty_control_listener_stopped,
+    start_kitty_control_listener,
+    stop_kitty_control_listener,
+)
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.infrastructure.security.abuseipdb_service import (
     warm_sismember_cache_ttl_snapshot,
@@ -72,14 +77,22 @@ async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
             log_ip_reputation_startup_summary()
         if is_main_worker:
             logger.debug("Redis initialized successfully")
+        loop = asyncio.get_running_loop()
         try:
-            loop = asyncio.get_running_loop()
             start_ws_fanout_listener(loop)
         except Exception as ws_fan_exc:  # pylint: disable=broad-except
             if is_main_worker:
                 logger.warning(
                     "[LIFESPAN] WebSocket Redis fan-out listener: %s",
                     ws_fan_exc,
+                )
+        try:
+            start_kitty_control_listener(loop)
+        except Exception as kitty_fan_exc:  # pylint: disable=broad-except
+            if is_main_worker:
+                logger.warning(
+                    "[LIFESPAN] Kitty control Redis listener: %s",
+                    kitty_fan_exc,
                 )
         if is_main_worker:
             try:
@@ -125,6 +138,12 @@ async def stop_fanout_listeners(is_main_worker: bool) -> None:
     except Exception as exc:  # pylint: disable=broad-except
         if is_main_worker:
             logger.warning("Failed to stop WebSocket fan-out listener: %s", exc)
+    try:
+        stop_kitty_control_listener()
+        await await_kitty_control_listener_stopped(timeout=5.0)
+    except Exception as exc:  # pylint: disable=broad-except
+        if is_main_worker:
+            logger.warning("Failed to stop Kitty control listener: %s", exc)
     try:
         from services.features.ws_pg_notify_fanout import (  # pylint: disable=import-outside-toplevel
             stop_pg_notify_listener,

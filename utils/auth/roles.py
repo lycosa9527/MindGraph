@@ -31,6 +31,7 @@ FEATURE_KEY_TO_CONFIG_ATTR = {
     "feature_workshop_chat": "FEATURE_WORKSHOP_CHAT",
     "feature_markets": "FEATURE_MARKETS",
     "feature_mindbot": "FEATURE_MINDBOT",
+    "feature_kitty_agent": "FEATURE_KITTY_AGENT",
 }
 
 

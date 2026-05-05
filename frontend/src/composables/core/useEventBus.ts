@@ -168,6 +168,13 @@ export type EventTypes = {
   'voice:cleanup_backend_completed': { diagramSessionId?: string }
   'voice:cleanup_backend_failed': { diagramSessionId?: string; error?: string }
   'voice:server_error': { error: string; code?: string }
+  'voice:debug_rx': {
+    ts: number
+    direction: 'in'
+    type: string
+    line: string
+  }
+  'kitty:inline_recommendations_requested': { nodeId?: string; nodeIndex?: number }
 
   // History Events
   'history:undo_requested': Record<string, never>

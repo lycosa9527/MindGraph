@@ -17,7 +17,7 @@ from .thinking_maps import THINKING_MAP_PROMPTS
 from .concept_maps import CONCEPT_MAP_PROMPTS
 from .mind_maps import MIND_MAP_PROMPTS
 from .main_agent import MAIN_AGENT_PROMPTS
-from .voice_agent import VOICE_AGENT_PROMPTS
+from .kitty_agent import KITTY_AGENT_PROMPTS
 from .prompt_to_diagram_agent import PROMPT_TO_DIAGRAM_PROMPTS
 
 
@@ -27,7 +27,7 @@ PROMPT_REGISTRY = {
     **CONCEPT_MAP_PROMPTS,
     **MIND_MAP_PROMPTS,
     **MAIN_AGENT_PROMPTS,
-    **VOICE_AGENT_PROMPTS,
+    **KITTY_AGENT_PROMPTS,
     **PROMPT_TO_DIAGRAM_PROMPTS,
 }
 

@@ -56,6 +56,8 @@ const translationLive = translationInterimText
 
 const elLocale = shallowRef<Language>(en)
 
+const showBrowserLocaleHint = ref(false)
+
 async function syncElementPlusLocale(): Promise<void> {
   elLocale.value = await loadElementPlusLocale(uiStore.language)
 }
@@ -69,14 +71,21 @@ watch(
 )
 
 watch(
+  () => route.meta.layout,
+  (layout) => {
+    if (layout === 'mobile' && showBrowserLocaleHint.value) {
+      showBrowserLocaleHint.value = false
+    }
+  }
+)
+
+watch(
   () => uiStore.promptLanguage,
   async (code) => {
     await ensureFontsForLanguageCode(code)
   },
   { immediate: true }
 )
-
-const showBrowserLocaleHint = ref(false)
 
 const layouts = {
   default: defineAsyncComponent(() => import('@/layouts/DefaultLayout.vue')),
@@ -151,6 +160,10 @@ onMounted(async () => {
         uiStore.uiLanguageExplicit ||
         uiStore.language !== 'zh'
       ) {
+        return
+      }
+      const current = router.currentRoute.value
+      if (current.meta.layout === 'mobile' || current.path.startsWith('/m')) {
         return
       }
       const nav = typeof navigator !== 'undefined' ? navigator.language.toLowerCase() : ''

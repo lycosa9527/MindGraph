@@ -20,11 +20,13 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
           parseInt((a.id ?? '0').replace('tree-cat-', ''), 10) -
           parseInt((b.id ?? '0').replace('tree-cat-', ''), 10)
       )
-    const categories = categoryNodes.map((cat, catIndex) => {
+    const categories = categoryNodes.map((cat) => {
+      const idMatch = (cat.id ?? '').match(/^tree-cat-(\d+)$/)
+      const categoryNum = idMatch ? parseInt(idMatch[1], 10) : -1
       const leaves = nodes
         .filter((n) => {
           const m = (n.id ?? '').match(/^tree-leaf-(\d+)-(\d+)$/)
-          return m && parseInt(m[1], 10) === catIndex
+          return m && parseInt(m[1], 10) === categoryNum
         })
         .sort(
           (a, b) =>

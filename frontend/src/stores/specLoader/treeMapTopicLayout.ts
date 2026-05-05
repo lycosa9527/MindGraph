@@ -1,5 +1,5 @@
 /**
- * Tree map topic: measured box (matches TopicNode pill + InlineEditableText wrap).
+ * Tree map topic: measured box (matches TopicNode pill; single-line layout + display).
  */
 import {
   DEFAULT_CENTER_X,
@@ -17,8 +17,8 @@ import {
   measureTextWidth,
 } from './textMeasurement'
 
-/** Max text width cap for topic (matches TopicNode.vue TOPIC_MAX_TEXT_WIDTH) */
-export const TREE_MAP_TOPIC_TEXT_BASE_MAX_WIDTH = 300
+/** Align with TopicNode.vue TOPIC_MAX_TEXT_WIDTH for tree map topic pill wrap. */
+const TREE_MAP_TOPIC_TEXT_BASE_MAX_WIDTH = 300
 const BALANCE_PADDING = 5
 /** Matches tree_map theme topic font (getNodeStyle topic fallback 18) */
 export const TREE_MAP_TOPIC_FONT_SIZE = 18

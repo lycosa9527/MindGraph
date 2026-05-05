@@ -236,7 +236,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(admin_database)  # Admin database management (merge, export/import)
 
     # Feature routers with API endpoints (must be before vue_spa catch-all)
-    app.include_router(voice)  # VoiceAgent (real-time voice conversation)
+    app.include_router(voice)  # Kitty Agent (realtime WebSocket + REST)
     app.include_router(update_notification)  # Update notification system
     app.include_router(public_dashboard.router, prefix="/api/public", tags=["Public Dashboard"])
     app.include_router(school_zone)  # School Zone (organization-scoped sharing)
