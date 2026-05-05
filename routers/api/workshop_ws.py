@@ -191,7 +191,19 @@ async def canvas_collab_websocket(
     # "session ended" states.
     await websocket.accept()
 
-    resolved = await resolve_canvas_collab_join(websocket, user, norm_code)
+    try:
+        resolved = await resolve_canvas_collab_join(websocket, user, norm_code)
+    except Exception as exc:
+        logger.error(
+            "[CanvasCollabWS] resolve_canvas_collab_join raised unexpectedly "
+            "user_id=%s code=%s: %s",
+            user.id, norm_code, exc, exc_info=True,
+        )
+        try:
+            await websocket.close(code=1011, reason="Internal error")
+        except Exception as close_exc:
+            logger.debug("[CanvasCollabWS] close after join error: %s", close_exc)
+        return
     if not resolved:
         return
     user, code, diagram_id, owner_id = resolved

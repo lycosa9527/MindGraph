@@ -496,6 +496,13 @@ export function useWorkshop(
             connect()
           }, delay)
         } else {
+          // reconnect() deliberately closes the old socket with code 1000 and
+          // reason 'manual_reconnect', then immediately calls connect() to open
+          // a fresh socket.  By the time onclose fires here, ws.value already
+          // holds the new socket.  Skip teardown so we do not kill it.
+          if (event.reason === 'manual_reconnect') {
+            return
+          }
           if (reconnectAttempts.value >= maxReconnectAttempts) {
             notify.error(t('workshopCanvas.reconnectFailed'))
             connectionStatus.value = 'failed'
