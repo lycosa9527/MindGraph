@@ -17,14 +17,9 @@ import { useLanguage, useNotifications, useSnapshotHistory } from '@/composables
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { eventBus } from '@/composables/core/useEventBus'
 import { SAVE } from '@/config'
-import {
-  useAuthStore,
-  useConceptMapRootConceptReviewStore,
-  useDiagramStore,
-  useInlineRecommendationsStore,
-  useLLMResultsStore,
-} from '@/stores'
+import { useAuthStore, useDiagramStore, useInlineRecommendationsStore, useLLMResultsStore } from '@/stores'
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
+import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 

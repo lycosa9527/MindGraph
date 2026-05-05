@@ -61,7 +61,6 @@ import {
   type LLMResult,
   useAuthStore,
   useConceptMapRelationshipStore,
-  useConceptMapRootConceptReviewStore,
   useDiagramStore,
   useFeatureFlagsStore,
   useInlineRecommendationsStore,
@@ -70,6 +69,7 @@ import {
   useUIStore,
 } from '@/stores'
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
+import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
