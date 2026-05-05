@@ -183,6 +183,14 @@ async def canvas_collab_websocket(
         logger.warning("[WorkshopWS] VPN/CN policy closed connection for user_id=%s", user.id)
         return
 
+    # Accept the upgrade now so that any subsequent rejection (e.g. session
+    # invalid / rate-limited) is delivered as a proper WebSocket close frame
+    # (code 1008) instead of an HTTP 403.  Without this, Starlette closes the
+    # unaccepted socket via HTTP 403, the browser sees code 1006 (abnormal
+    # closure), and the frontend reconnect loop fires even for terminal
+    # "session ended" states.
+    await websocket.accept()
+
     resolved = await resolve_canvas_collab_join(websocket, user, norm_code)
     if not resolved:
         return
@@ -217,7 +225,6 @@ async def canvas_collab_websocket(
 
     join_committed = False
     try:
-        await websocket.accept()
 
         await get_online_collab_manager().on_join(code, user.id)
 

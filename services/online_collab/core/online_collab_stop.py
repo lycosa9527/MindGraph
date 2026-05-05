@@ -112,6 +112,7 @@ async def stop_online_collab_impl(diagram_id: str, user_id: int) -> bool:
             norm = str(code).strip().upper()
             from services.online_collab.lifecycle.online_collab_session_closing import (
                 mark_workshop_session_closing,
+                unmark_workshop_session_closing,
             )
             from routers.api.workshop_ws_broadcast import (
                 broadcast_workshop_session_closing,
@@ -132,6 +133,7 @@ async def stop_online_collab_impl(diagram_id: str, user_id: int) -> bool:
                     norm, diagram_id,
                 )
                 await _extend_room_ttl_after_flush_failure(redis, norm)
+                await unmark_workshop_session_closing(norm)
                 await db.rollback()
                 return False
 
@@ -210,6 +212,7 @@ async def stop_online_collab_for_room_idle_impl(
 
             from services.online_collab.lifecycle.online_collab_session_closing import (
                 mark_workshop_session_closing,
+                unmark_workshop_session_closing,
             )
             from routers.api.workshop_ws_broadcast import (
                 broadcast_workshop_session_closing,
@@ -231,6 +234,7 @@ async def stop_online_collab_for_room_idle_impl(
                     ws_code, diagram_id,
                 )
                 await _extend_room_ttl_after_flush_failure(redis, norm)
+                await unmark_workshop_session_closing(norm)
                 await db.rollback()
                 return False
 

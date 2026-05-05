@@ -203,9 +203,7 @@ async def websocket_send_live_spec_snapshot(
             )
             if isinstance(pair, (list, tuple)) and len(pair) >= 2:
                 raw_spec, raw_seq = pair[0], pair[1]
-                blob = _decode_lua_bulk_string(raw_spec)
-                if blob:
-                    doc = parse_json_get_bulk(blob)
+                doc = parse_json_get_bulk(raw_spec)
                 snapshot_seq_val = _parse_seq_from_lua(raw_seq)
         except (RedisError, OSError, RuntimeError, TypeError, ValueError) as exc:
             logger.debug(

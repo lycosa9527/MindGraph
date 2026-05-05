@@ -37,6 +37,20 @@ async def mark_workshop_session_closing(norm_code_upper: str) -> None:
         logger.debug("[OnlineCollab] mark closing failed code=%s: %s", norm_code_upper, exc)
 
 
+async def unmark_workshop_session_closing(norm_code_upper: str) -> None:
+    """Delete the transient closing marker (called when flush/stop fails)."""
+    client = get_async_redis()
+    if not client:
+        return
+    key = session_closing_key(norm_code_upper.strip().upper())
+    try:
+        await client.delete(key)
+    except RedisError as exc:
+        logger.debug(
+            "[OnlineCollab] unmark closing failed code=%s: %s", norm_code_upper, exc,
+        )
+
+
 async def workshop_session_is_closing(norm_code_upper: str) -> bool:
     """True when this room must reject collaborative spec merges."""
     client = get_async_redis()
