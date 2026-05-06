@@ -25,6 +25,7 @@ export interface WorkshopUpdate {
     | 'node_editing_batch'
     | 'node_editing_batch_ws'
     | 'node_selected'
+    | 'host_llm_model'
     | 'resync'
     | 'room_idle_warning'
     | 'session_closing'
@@ -83,6 +84,8 @@ export interface WorkshopUpdate {
   diagram_title?: string
   /** node_edit_claimed: whether the claim was granted (true) or denied (false). */
   granted?: boolean
+  /** host_llm_model: which multi-LLM variant the diagram owner is editing (guest UX). */
+  model?: string | null
   /** node_edit_claimed denied: username of the participant who holds the lock. */
   held_by_username?: string
   /** node_edit_claimed denied: user_id of the participant who holds the lock. */
@@ -102,6 +105,7 @@ const WORKSHOP_UPDATE_TYPES = new Set<WorkshopUpdate['type']>([
   'node_editing_batch',
   'node_editing_batch_ws',
   'node_selected',
+  'host_llm_model',
   'resync',
   'room_idle_warning',
   'session_closing',

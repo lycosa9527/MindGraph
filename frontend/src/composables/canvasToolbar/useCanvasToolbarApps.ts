@@ -110,15 +110,23 @@ export function useCanvasToolbarApps() {
     const withoutWaterfall = isConceptMap.value
       ? apps.filter((a) => a.appKey !== 'waterfall')
       : apps
+    let list: MoreAppItem[]
     if (isConceptMap.value) {
-      return [conceptMapModesRow, ...withoutWaterfall]
+      list = [conceptMapModesRow, ...withoutWaterfall]
+    } else {
+      list = withoutWaterfall
     }
-    return withoutWaterfall
+    if (aiBlockedByCollab.value) {
+      return list.filter(
+        (a) => a.appKey !== 'learning_sheet' && a.appKey !== 'snapshot'
+      )
+    }
+    return list
   })
 
   async function handleAIGenerate() {
-    if (aiBlockedByCollab.value) {
-      notify.warning(t('canvas.toolbar.collabAiBlocked'))
+    if (diagramStore.collabSessionActive) {
+      notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
       return
     }
     const validation = validateForAutoComplete()
@@ -136,10 +144,6 @@ export function useCanvasToolbarApps() {
   }
 
   function handleConceptGeneration() {
-    if (aiBlockedByCollab.value) {
-      notify.warning(t('canvas.toolbar.collabAiBlocked'))
-      return
-    }
     if (!diagramStore.data?.nodes?.length) {
       notify.warning(t('canvas.toolbar.createDiagramFirst'))
       return
@@ -173,7 +177,7 @@ export function useCanvasToolbarApps() {
   async function handleMoreApp(app: MoreAppItem) {
     if (
       aiBlockedByCollab.value &&
-      (app.appKey === 'waterfall' || app.appKey === 'learning_sheet' || app.appKey === 'snapshot')
+      (app.appKey === 'learning_sheet' || app.appKey === 'snapshot')
     ) {
       notify.warning(t('canvas.toolbar.collabGuestFeatureBlocked'))
       return

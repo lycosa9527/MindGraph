@@ -164,6 +164,7 @@ const {
   resetPreviousDiagramTracking,
   participantsWithNames,
   ownerUsername,
+  remoteHostDisplayedLlmModel,
   roomIdleSecondsRemaining,
   connectionStatus,
   reconnect,
@@ -267,6 +268,10 @@ eventBus.onWithOwner(
   () => {
     if (!authStore.isAuthenticated) {
       notify.warning(t('notification.signInToUse'))
+      return
+    }
+    if (diagramStore.collabSessionActive && diagramStore.type !== 'concept_map') {
+      notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
       return
     }
     if (isAIGenerating.value) return
@@ -871,7 +876,11 @@ onUnmounted(() => {
         <div
           class="ai-selector-wrap flex shrink-0 justify-center md:justify-center min-w-0 order-2 md:order-1"
         >
-          <AIModelSelector @model-change="handleModelChange" />
+          <AIModelSelector
+            :host-displayed-llm-model="remoteHostDisplayedLlmModel"
+            :is-collab-guest="isCollabGuest"
+            @model-change="handleModelChange"
+          />
         </div>
         <ConceptMapLabelPicker
           v-if="diagramStore.type === 'concept_map' && relationshipActiveEntry"

@@ -367,6 +367,41 @@ async def _handle_node_editing_batch(
     )
 
 
+_ALLOWED_HOST_LLM_MODELS = frozenset({"qwen", "deepseek", "doubao"})
+
+
+async def _handle_host_llm_model(ctx: Any, message: Dict[str, Any]) -> None:
+    """Diagram owner announces which multi-LLM canvas variant is active (guest UI)."""
+    owner_id = ctx.owner_id
+    if owner_id is None:
+        await _presence_send(ctx, {"type": "error", "message": "Invalid workshop"})
+        return
+    if int(ctx.user.id) != int(owner_id):
+        await _presence_send(
+            ctx,
+            {"type": "error", "message": "Only host can broadcast LLM selection"},
+        )
+        return
+    raw_model = message.get("model")
+    if raw_model is None:
+        normalized: Optional[str] = None
+    elif isinstance(raw_model, str) and raw_model in _ALLOWED_HOST_LLM_MODELS:
+        normalized = raw_model
+    else:
+        await _presence_send(ctx, {"type": "error", "message": "Invalid model"})
+        return
+    await broadcast_to_others(
+        ctx.code,
+        ctx.user.id,
+        {
+            "type": "host_llm_model",
+            "diagram_id": ctx.diagram_id,
+            "user_id": ctx.user.id,
+            "model": normalized,
+        },
+    )
+
+
 async def _handle_node_selected(
     ctx: Any, message: Dict[str, Any],
 ) -> None:

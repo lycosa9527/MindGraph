@@ -470,6 +470,10 @@ eventBus.onWithOwner(
       notify.warning(t('notification.signInToUse'))
       return
     }
+    if (diagramStore.collabSessionActive && !isConceptMap.value) {
+      notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
+      return
+    }
     if (isAIGenerating.value) return
     if (isConceptMap.value) {
       handleConceptGeneration()
@@ -767,6 +771,7 @@ onUnmounted(() => {
       </template>
       <template v-else>
         <button
+          v-if="!diagramStore.collabSessionActive"
           class="toolbar-btn toolbar-btn--primary"
           :class="{
             'toolbar-btn--generating': isAIGenerating,

@@ -88,6 +88,10 @@ export interface WorkshopMessageDispatchDeps {
   collectAcknowledgedNodeIds: (clientOpId: string | null) => string[]
   notify: WorkshopMessageNotifyFns
   t: WorkshopMessageTranslateFn
+  /** Host-only: re-announce active LLM tab after snapshot / when someone joins. */
+  flushHostLlmModelToGuests?: () => void
+  /** Guests: diagram owner's announced multi-LLM variant (qwen | deepseek | doubao | null). */
+  remoteHostDisplayedLlmModel: Ref<string | null>
   /**
    * Collaboration guest only: fired as soon as a terminating ``kicked`` frame
    * arrives so the UI can navigate before the socket ``close`` handshake finishes.
@@ -207,6 +211,7 @@ export function dispatchWorkshopMessage(
         deps.onServerSnapshot(message.spec, message.version ?? 1)
         deps.markServerBaselineReady()
         deps.flushOutboundQueue()
+        deps.flushHostLlmModelToGuests?.()
       } else if (import.meta.env.DEV) {
         console.warn('[WorkshopWS] snapshot missing spec handler or spec payload; baseline not ready')
       }
@@ -351,6 +356,7 @@ export function dispatchWorkshopMessage(
         })
       }
       deps.schedulePresenceNotification('joined', joinedId, joinDisplayName)
+      deps.flushHostLlmModelToGuests?.()
       break
     }
 
@@ -378,6 +384,35 @@ export function dispatchWorkshopMessage(
       deps.remoteSelectionsByUser.value.delete(leftId)
       deps.remoteSelectionsByUser.value = new Map(deps.remoteSelectionsByUser.value)
       deps.schedulePresenceNotification('left', leftId, leftDisplayName)
+      break
+    }
+
+    case 'host_llm_model': {
+      const announcer = message.user_id
+      const ownerId = deps.diagramOwnerId.value
+      const frameDiagramId =
+        typeof message.diagram_id === 'string' && message.diagram_id.trim()
+          ? message.diagram_id.trim()
+          : null
+      const sessionId =
+        deps.mutable.sessionDiagramId ?? deps.diagramId.value?.trim() ?? null
+      if (
+        frameDiagramId != null &&
+        sessionId != null &&
+        frameDiagramId !== sessionId
+      ) {
+        break
+      }
+      if (
+        announcer == null ||
+        ownerId == null ||
+        String(announcer) !== String(ownerId)
+      ) {
+        break
+      }
+      const raw = message.model
+      const allowed = raw === 'qwen' || raw === 'deepseek' || raw === 'doubao'
+      deps.remoteHostDisplayedLlmModel.value = allowed ? raw : null
       break
     }
 

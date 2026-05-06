@@ -2,9 +2,11 @@ import {
   computeDefaultArrowheadForConceptMap,
   getConceptMapNodeCenter,
 } from '@/composables/diagrams/conceptMapHandles'
+import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import type { Connection } from '@/types'
 import { normalizeTopicRootLabelIfNeeded } from '@/utils/conceptMapTopicRootEdge'
 
+import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import type { DiagramContext } from './types'
 
 /**
@@ -86,6 +88,61 @@ export function useConnectionManagementSlice(ctx: DiagramContext) {
     }
   }
 
+  function removeConnection(connectionId: string): boolean {
+    if (!ctx.data.value?.connections || ctx.type.value !== 'concept_map') {
+      return false
+    }
+
+    const conns = ctx.data.value.connections
+    const exists = conns.some((c) => c.id === connectionId)
+    if (!exists) {
+      return false
+    }
+
+    const toRemove = new Set<string>([connectionId])
+    let growing = true
+    while (growing) {
+      growing = false
+      for (const c of conns) {
+        if (toRemove.has(c.id)) {
+          continue
+        }
+        const parentId = c.linkedFromConnectionId
+        if (parentId && toRemove.has(parentId)) {
+          toRemove.add(c.id)
+          growing = true
+        }
+      }
+    }
+
+    const endpointNodeIds = new Set<string>()
+    for (const c of conns) {
+      if (toRemove.has(c.id)) {
+        endpointNodeIds.add(c.source)
+        endpointNodeIds.add(c.target)
+      }
+    }
+
+    if (collabForeignLockBlocksAnyId(ctx, endpointNodeIds)) {
+      emitCollabDeleteBlocked()
+      return false
+    }
+
+    const relStore = useConceptMapRelationshipStore()
+    for (const id of toRemove) {
+      relStore.clearConnection(id)
+    }
+
+    ctx.data.value.connections = conns.filter((c) => !toRemove.has(c.id))
+
+    if (ctx.selectedConnectionId.value && toRemove.has(ctx.selectedConnectionId.value)) {
+      ctx.selectedConnectionId.value = null
+    }
+
+    ctx.pushHistory('Delete relationship')
+    return true
+  }
+
   function toggleConnectionArrowhead(
     connectionId: string,
     segment: 'sourceSegment' | 'targetSegment'
@@ -116,6 +173,7 @@ export function useConnectionManagementSlice(ctx: DiagramContext) {
   return {
     addConnection,
     updateConnectionLabel,
+    removeConnection,
     updateConnectionArrowheadsForNode,
     toggleConnectionArrowhead,
   }

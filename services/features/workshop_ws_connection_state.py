@@ -54,6 +54,7 @@ _BACKPRESSURE_POLICY: Dict[str, str] = {
     "node_editing": "coalesce",
     "node_editing_batch": "block_short",
     "node_selected": "coalesce",
+    "host_llm_model": "block_short",
     "update": "block_short",
     "joined": "block_short",
     "user_joined": "block_short",

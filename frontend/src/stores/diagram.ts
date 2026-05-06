@@ -250,6 +250,7 @@ export const useDiagramStore = defineStore('diagram', () => {
   const {
     addConnection,
     updateConnectionLabel,
+    removeConnection: removeConceptMapConnection,
     updateConnectionArrowheadsForNode,
     toggleConnectionArrowhead,
   } = connectionSlice
@@ -391,6 +392,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     addNode,
     addConnection,
     updateConnectionLabel,
+    removeConceptMapConnection,
     toggleConnectionArrowhead,
     updateConnectionArrowheadsForNode,
     removeNode,

@@ -8,6 +8,8 @@ import { useRouter } from 'vue-router'
 import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useAuthStore } from '@/stores'
+import { useDiagramStore } from '@/stores/diagram'
+import { useLLMResultsStore } from '@/stores/llmResults'
 
 import { collectNodeIdsFromOutboundPayload, useCollabOutboundQueue } from './useCollabOutboundQueue'
 import { useCollabSyncVersion } from './useCollabSyncVersion'
@@ -72,6 +74,7 @@ export function useWorkshop(
   const diagramOwnerId = ref<number | null>(null)
   const workshopRole = ref<WorkshopRole>('editor')
   const serverBaselineReady = ref(false)
+  const remoteHostDisplayedLlmModel = ref<string | null>(null)
 
   let _sessionDiagramIdValue: string | null = null
   const sessionMutable: WorkshopMutableSessionState = {
@@ -153,6 +156,8 @@ export function useWorkshop(
   }
 
   const authStore = useAuthStore()
+  const diagramStore = useDiagramStore()
+  const llmResultsStore = useLLMResultsStore()
   const notify = useNotifications()
   const { t } = useLanguage()
   const router = useRouter()
@@ -246,6 +251,20 @@ export function useWorkshop(
 
   let guestForcedExitHandled = false
 
+  let sendHostLlmModelNotify: (model: string | null) => void = () => {}
+
+  function flushHostLlmSelectionToGuests(): void {
+    if (!isDiagramOwner.value) {
+      return
+    }
+    if (diagramStore.type === 'concept_map') {
+      return
+    }
+    const m = llmResultsStore.selectedModel
+    const normalized = m === 'qwen' || m === 'deepseek' || m === 'doubao' ? m : null
+    sendHostLlmModelNotify(normalized)
+  }
+
   function performGuestForcedExit(reason?: string): void {
     if (guestForcedExitHandled) {
       return
@@ -307,6 +326,8 @@ export function useWorkshop(
       info: (m) => notify.info(m),
     },
     t,
+    flushHostLlmModelToGuests: flushHostLlmSelectionToGuests,
+    remoteHostDisplayedLlmModel,
     onGuestForcedExit: ({ reason }) => performGuestForcedExit(reason),
   }
 
@@ -315,6 +336,7 @@ export function useWorkshop(
     sendNodeSelected,
     notifyNodeEditing,
     sendClaimNodeEdit,
+    sendHostLlmModel,
     clearNodeEditingThrottles,
   } = useWorkshopOutboundDispatcher({
     ws,
@@ -334,6 +356,8 @@ export function useWorkshop(
     clearRoomIdleCountdownUi: presence.clearRoomIdleCountdownUi,
     enqueueUpdatePayload: (payload) => outboundQueue.enqueue(payload),
   })
+
+  sendHostLlmModelNotify = sendHostLlmModel
 
   function connect() {
     if (!workshopCode.value) {
@@ -363,6 +387,7 @@ export function useWorkshop(
 
       socket.onopen = () => {
         guestForcedExitHandled = false
+        remoteHostDisplayedLlmModel.value = null
         isConnected.value = true
         connectionStatus.value = 'connected'
         reconnectAttempts.value = 0
@@ -553,6 +578,7 @@ export function useWorkshop(
     participantsWithNames.value = []
     activeEditors.value.clear()
     remoteSelectionsByUser.value.clear()
+    remoteHostDisplayedLlmModel.value = null
     diagramOwnerId.value = null
     sessionMutable.sessionDiagramId = null
     sessionDiagramIdRef.value = null
@@ -586,6 +612,14 @@ export function useWorkshop(
       { immediate: true }
     )
   }
+
+  watch(
+    () =>
+      [workshopCode.value, isDiagramOwner.value, llmResultsStore.selectedModel] as const,
+    () => {
+      flushHostLlmSelectionToGuests()
+    }
+  )
 
   onUnmounted(() => {
     if (codeWatcher) {
@@ -628,6 +662,7 @@ export function useWorkshop(
     participantsWithNames: computed(() => participantsWithNames.value),
     activeEditors: computed(() => activeEditors.value),
     remoteSelectionsByUser: computed(() => remoteSelectionsByUser.value),
+    remoteHostDisplayedLlmModel,
     diagramOwnerId: computed(() => diagramOwnerId.value),
     lastLiveSpecVersion: version.liveVersion,
     collabSyncVersion: version,

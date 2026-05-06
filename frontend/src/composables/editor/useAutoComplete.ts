@@ -6,6 +6,7 @@
  *
  * Features:
  * - Calls 3 LLMs in parallel (Qwen, DeepSeek, Doubao)
+ * - Disabled while ``collabSessionActive`` for full-diagram multi-LLM generate only (concept-map 「生成概念」 / modal palette stays enabled)
  * - First-result-wins: renders immediately when first LLM completes
  * - Caches results for switching between LLM perspectives
  * - Placeholder text detection and filtering
@@ -20,7 +21,7 @@
  *   // Switch to different model's result
  *   switchToModel('deepseek')
  */
-import { type ComputedRef, computed, inject } from 'vue'
+import { computed } from 'vue'
 
 import { eventBus, useLanguage, useNotifications } from '@/composables'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
@@ -150,11 +151,6 @@ export function useAutoComplete() {
   const savedDiagramsStore = useSavedDiagramsStore()
   const { promptLanguage, t } = useLanguage()
   const notify = useNotifications()
-  const collabCanvas = inject<{ isDiagramOwner?: ComputedRef<boolean> } | undefined>(
-    'collabCanvas',
-    undefined
-  )
-
   // Expose store state
   const isGenerating = computed(() => llmResultsStore.isGenerating)
   const selectedModel = computed(() => llmResultsStore.selectedModel)
@@ -489,13 +485,9 @@ export function useAutoComplete() {
   ): Promise<{ success: boolean; error?: string }> {
     const { modelsToRun = [...LLM_MODELS], onFirstResult, onAllComplete, promptSuffix } = options
 
-    if (
-      diagramStore.collabSessionActive &&
-      collabCanvas?.isDiagramOwner &&
-      !collabCanvas.isDiagramOwner.value
-    ) {
-      notify.warning(t('autoComplete.collabOwnerOnly'))
-      return { success: false, error: 'collab_owner_only' }
+    if (diagramStore.collabSessionActive) {
+      notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
+      return { success: false, error: 'collab_live_ai_disabled' }
     }
 
     // Validate

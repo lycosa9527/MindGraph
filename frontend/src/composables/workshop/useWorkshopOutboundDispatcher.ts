@@ -185,6 +185,30 @@ export function useWorkshopOutboundDispatcher(options: UseWorkshopOutboundDispat
     }
   }
 
+  function sendHostLlmModel(model: string | null): void {
+    if (!options.canSendRealtimeControl()) {
+      return
+    }
+    try {
+      if (!options.ws.value) {
+        return
+      }
+      const normalized =
+        model === 'qwen' || model === 'deepseek' || model === 'doubao' ? model : null
+      options.ws.value.send(
+        JSON.stringify({
+          type: 'host_llm_model',
+          diagram_id: options.getSessionDiagramId() ?? options.diagramId.value ?? undefined,
+          model: normalized,
+        })
+      )
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error('[WorkshopWS] Failed to send host_llm_model:', error)
+      }
+    }
+  }
+
   function clearNodeEditingThrottles(): void {
     nodeEditingThrottleMap.forEach((state) => {
       if (state.timer !== null) {
@@ -200,6 +224,7 @@ export function useWorkshopOutboundDispatcher(options: UseWorkshopOutboundDispat
     sendNodeSelected,
     notifyNodeEditing,
     sendClaimNodeEdit,
+    sendHostLlmModel,
     clearNodeEditingThrottles,
   }
 }

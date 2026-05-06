@@ -392,7 +392,7 @@ async function handleReset() {
       class="flex w-full min-w-0 items-center justify-end gap-1.5 sm:gap-2 md:gap-3 z-10 flex-wrap sm:flex-nowrap"
     >
       <div
-        v-if="props.snapshots?.length && !props.isViewer"
+        v-if="props.snapshots?.length && !props.isViewer && !props.isCollabGuest"
         class="flex items-center gap-1.5 shrink-0"
       >
         <ElTooltip

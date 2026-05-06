@@ -30,6 +30,9 @@ export default {
   'aiModel.tooltip.generating': '{name} generating...',
   'aiModel.tooltip.modelFailed': '{name} generation failed',
   'aiModel.tooltip.showingResult': 'Currently showing {name} result',
+  'aiModel.hostPickBadgeTooltip':
+    'Host is editing this model’s version of the diagram (multi-model view)',
+  'aiModel.hostPickBadgeAria': 'Host is editing using {name}',
   'autoComplete.collabOwnerOnly':
     'Only the diagram owner can use AI generation during collaboration',
   'autoComplete.conceptMapRealtime':

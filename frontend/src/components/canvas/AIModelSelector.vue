@@ -36,8 +36,17 @@ const props = withDefaults(
     hideTabFocusBadge?: boolean
     /** Mobile concept top toolbar: 启用 AI only — hide Tab 内容 / 关系 / 焦点 badges */
     conceptMapTopToolbar?: boolean
+    /** Collab guest: diagram owner's active multi-LLM variant (from WS host_llm_model). */
+    hostDisplayedLlmModel?: string | null
+    /** True when current user is a non-owner collaborator */
+    isCollabGuest?: boolean
   }>(),
-  { hideTabFocusBadge: false, conceptMapTopToolbar: false }
+  {
+    hideTabFocusBadge: false,
+    conceptMapTopToolbar: false,
+    hostDisplayedLlmModel: null,
+    isCollabGuest: false,
+  }
 )
 
 const { t } = useLanguage()
@@ -293,6 +302,25 @@ function getTooltipContent(modelKey: string): string {
   }
 }
 
+function collabGuestHostBadge(modelKey: string): boolean {
+  return Boolean(props.isCollabGuest && props.hostDisplayedLlmModel === modelKey)
+}
+
+function hostBadgeAriaLabel(modelKey: string): string | undefined {
+  if (!collabGuestHostBadge(modelKey)) {
+    return undefined
+  }
+  const name = modelDisplayNames[modelKey] ?? modelKey
+  return String(t('aiModel.hostPickBadgeAria', { name }))
+}
+
+function tooltipForModel(modelKey: string): string {
+  if (collabGuestHostBadge(modelKey)) {
+    return String(t('aiModel.hostPickBadgeTooltip'))
+  }
+  return getTooltipContent(modelKey)
+}
+
 // Model-specific colors (shared with NodePalettePanel)
 const modelColors = LLM_MODEL_COLORS
 
@@ -423,26 +451,37 @@ function getButtonStyle(modelKey: string) {
         <ElTooltip
           v-for="modelKey in llmResultsStore.models"
           :key="modelKey"
-          :content="getTooltipContent(modelKey)"
+          :content="tooltipForModel(modelKey)"
           placement="top"
         >
-          <button
-            :class="getButtonClass(modelKey)"
-            :style="getButtonStyle(modelKey)"
-            :disabled="getModelState(modelKey) === 'loading'"
-            @click="handleModelClick(modelKey)"
+          <span
+            class="model-btn-stack inline-flex flex-col items-center relative shrink-0"
+            :aria-label="hostBadgeAriaLabel(modelKey)"
           >
-            <span class="model-btn-content">
-              <!-- Icon: errors only (loading uses border animation, no spinner) -->
-              <span class="btn-icon">
-                <X
-                  v-if="getModelState(modelKey) === 'error'"
-                  class="w-3.5 h-3.5"
-                />
+            <span
+              v-if="collabGuestHostBadge(modelKey)"
+              class="host-llm-pick-emoji select-none leading-none"
+              aria-hidden="true"
+              >✨</span
+            >
+            <button
+              :class="getButtonClass(modelKey)"
+              :style="getButtonStyle(modelKey)"
+              :disabled="getModelState(modelKey) === 'loading'"
+              @click="handleModelClick(modelKey)"
+            >
+              <span class="model-btn-content">
+                <!-- Icon: errors only (loading uses border animation, no spinner) -->
+                <span class="btn-icon">
+                  <X
+                    v-if="getModelState(modelKey) === 'error'"
+                    class="w-3.5 h-3.5"
+                  />
+                </span>
+                <span class="btn-label">{{ modelDisplayNames[modelKey] }}</span>
               </span>
-              <span class="btn-label">{{ modelDisplayNames[modelKey] }}</span>
-            </span>
-          </button>
+            </button>
+          </span>
         </ElTooltip>
       </div>
 
@@ -499,6 +538,30 @@ function getButtonStyle(modelKey: string) {
 /* Transparent container - no background */
 .glass-container {
   background: transparent;
+}
+
+.model-btn-stack {
+  position: relative;
+  padding-top: 10px;
+}
+
+.host-llm-pick-emoji {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  animation: host-llm-wiggle 2.4s ease-in-out infinite;
+}
+
+@keyframes host-llm-wiggle {
+  0%,
+  100% {
+    transform: translateX(-50%) rotate(-8deg) scale(1);
+  }
+  50% {
+    transform: translateX(-50%) rotate(8deg) scale(1.06);
+  }
 }
 
 .tab-rec-badge-wrap {

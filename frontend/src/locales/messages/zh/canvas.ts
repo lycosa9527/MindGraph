@@ -58,6 +58,7 @@ export default {
   'canvas.toolbar.causeAdded': '已添加原因节点',
   'canvas.toolbar.childAdded': '已添加子项',
   'canvas.toolbar.collabAiBlocked': '协作模式下仅图示所有者可以使用 AI 生成',
+  'canvas.toolbar.collabLiveAiDisabled': '在线协作期间无法使用 AI 生成图示，以保持所有人画布一致',
   'canvas.toolbar.collabGuestFeatureBlocked': '以协同访客身份加入时无法使用此功能。',
   'canvas.toolbar.colorLabel': '颜色',
   'canvas.toolbar.conceptGeneration': '生成概念',

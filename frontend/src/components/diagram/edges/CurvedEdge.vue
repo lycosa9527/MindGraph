@@ -105,9 +105,26 @@ function handleKeydown(event: KeyboardEvent) {
   }
 }
 
-function handleLabelClick() {
+function handleLabelClick(e: MouseEvent) {
   if (!isConceptMap.value) return
   if (isEditing.value) return
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault()
+    e.stopPropagation()
+    diagramStore.removeConceptMapConnection(props.id)
+    return
+  }
+  diagramStore.selectConnection(props.id)
+}
+
+function onConceptMapCurveHitClick(e: MouseEvent) {
+  if (!isConceptMap.value) return
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault()
+    e.stopPropagation()
+    diagramStore.removeConceptMapConnection(props.id)
+    return
+  }
   diagramStore.selectConnection(props.id)
 }
 
@@ -295,11 +312,25 @@ function handleSegmentClick(segment: 'sourceSegment' | 'targetSegment') {
   diagramStore.toggleConnectionArrowhead(props.id, segment)
 }
 
-function handleSegment1Click() {
+function handleSegment1Click(e: MouseEvent) {
+  if (!isConceptMap.value) return
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault()
+    e.stopPropagation()
+    diagramStore.removeConceptMapConnection(props.id)
+    return
+  }
   handleSegmentClick('sourceSegment')
 }
 
-function handleSegment2Click() {
+function handleSegment2Click(e: MouseEvent) {
+  if (!isConceptMap.value) return
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault()
+    e.stopPropagation()
+    diagramStore.removeConceptMapConnection(props.id)
+    return
+  }
   handleSegmentClick('targetSegment')
 }
 
@@ -412,11 +443,21 @@ const targetMarkerEnd = computed(() =>
       </marker>
     </defs>
     <path
+      :id="`${id}-linked-hit`"
+      class="curved-edge-segment-hit"
+      :d="path.edgePath"
+      :style="hitAreaStyle"
+      pointer-events="stroke"
+      cursor="pointer"
+      @click.stop="onConceptMapCurveHitClick"
+    />
+    <path
       :id="id"
       class="vue-flow__edge-path curved-edge"
       :d="path.edgePath"
       :style="edgeStyle"
       :marker-end="`url(#${conceptMapMarkerId})`"
+      pointer-events="none"
     />
   </template>
 

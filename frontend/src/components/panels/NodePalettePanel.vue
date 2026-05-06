@@ -173,7 +173,11 @@ onMounted(async () => {
     }
   }
   await nextTick()
-  if (panelsStore.nodePalettePanel.suggestions.length === 0 && !isLoading.value) {
+  if (
+    panelsStore.nodePalettePanel.suggestions.length === 0 &&
+    !isLoading.value &&
+    !isGuestCollab.value
+  ) {
     startSession()
   }
 })
@@ -201,11 +205,13 @@ function getNodeCardStyle(suggestion: { source_llm?: string }, isSelected: boole
 }
 
 async function handleTabSwitch(mode: 'similarities' | 'differences' | 'causes' | 'effects') {
+  if (isGuestCollab.value) return
   if (mode === currentMode.value) return
   await switchTab(mode)
 }
 
 async function handleStageTabSwitch(parentId: string, parentName: string) {
+  if (isGuestCollab.value) return
   if (panelsStore.nodePalettePanel.mode === parentName) return
   await switchStageTab(parentId, parentName)
 }
@@ -297,7 +303,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
                   ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               "
-              :disabled="isLoading"
+              :disabled="isLoading || isGuestCollab"
               :title="parent.name"
               @click="handleStageTabSwitch(parent.id, parent.name)"
             >
@@ -322,7 +328,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
                   ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               "
-              :disabled="isLoading"
+              :disabled="isLoading || isGuestCollab"
               @click="handleTabSwitch('similarities')"
             >
               {{ t('nodePalette.similarities') }}
@@ -335,7 +341,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
                   ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               "
-              :disabled="isLoading"
+              :disabled="isLoading || isGuestCollab"
               @click="handleTabSwitch('differences')"
             >
               {{ t('nodePalette.differences') }}
@@ -382,7 +388,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
                   ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               "
-              :disabled="isLoading"
+              :disabled="isLoading || isGuestCollab"
               @click="handleTabSwitch('causes')"
             >
               {{ t('nodePalette.causes') }}
@@ -395,7 +401,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
                   ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               "
-              :disabled="isLoading"
+              :disabled="isLoading || isGuestCollab"
               @click="handleTabSwitch('effects')"
             >
               {{ t('nodePalette.effects') }}
@@ -494,7 +500,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
             :key="suggestion.id"
             class="node-card p-3 rounded-lg border-2 transition-all"
             :class="[
-              isGuestCollab ? 'cursor-default opacity-70' : 'cursor-pointer',
+              isGuestCollab ? 'cursor-default' : 'cursor-pointer',
               !suggestion.source_llm && !selectedIds.includes(suggestion.id)
                 ? 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700'
                 : '',
@@ -545,7 +551,13 @@ function getDisplayText(suggestion: NodeSuggestion): string {
 
       <!-- Load more (only when we have an active session) -->
       <div
-        v-if="sessionId && !isLoading && suggestions.length > 0 && !isLoadingMore"
+        v-if="
+          !isGuestCollab &&
+          sessionId &&
+          !isLoading &&
+          suggestions.length > 0 &&
+          !isLoadingMore
+        "
         class="mt-4 flex justify-center"
       >
         <el-button

@@ -14,6 +14,8 @@ interface UseCanvasPageCollabDiffOptions {
   workshopCode: Ref<string | null>
   applyingRemoteCollabPatch: Ref<boolean>
   getDiagramData: () => CanvasDiagramData | null | undefined
+  /** Full diagram document for workshop when granular patch exceeds server caps (see backend validate). */
+  getSpecForWorkshopUpdate?: () => Record<string, unknown> | null
   mergeGranularUpdate: (
     nodes?: Array<Record<string, unknown>>,
     connections?: Array<Record<string, unknown>>,
@@ -33,6 +35,12 @@ interface UseCanvasPageCollabDiffOptions {
 
 const DIFF_DEBOUNCE_MS = 40
 const DIFF_MAX_WAIT_MS = 200
+
+/** Must match ``routers/api/workshop_ws_handlers_update_validate.py`` granular limits. */
+const MAX_GRANULAR_NODES = 100
+const MAX_GRANULAR_CONNECTIONS = 200
+const MAX_DELETED_NODE_IDS = 200
+const MAX_DELETED_CONNECTION_IDS = 200
 
 export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions) {
   let previousNodes: Array<Record<string, unknown>> = []
@@ -103,7 +111,7 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
     diffFlushTimer = null
     diffFirstDirtyAt = 0
     const currentData = options.getDiagramData()
-    if (!currentData || !currentData.nodes || !currentData.connections) {
+    if (!currentData?.nodes) {
       if (import.meta.env.DEV) {
         console.log('[CollabDebug] runDiffAndSend short-circuit reason=no-data')
       }
@@ -136,7 +144,7 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
     }
 
     const currentNodes = currentData.nodes as Array<{ id: string }>
-    const currentConnections = (currentData.connections || []) as Array<{ id: string }>
+    const currentConnections = (currentData.connections ?? []) as Array<{ id: string }>
     const changedNodes = calculateDiff(previousNodes as Array<{ id: string }>, currentNodes)
     const changedConnections = calculateDiff(
       previousConnections as Array<{ id: string }>,
@@ -170,6 +178,35 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
       deletedNodeIds.length > 0 ||
       deletedConnectionIds.length > 0
     ) {
+      const granularExceedsServerCaps =
+        changedNodes.length > MAX_GRANULAR_NODES ||
+        changedConnections.length > MAX_GRANULAR_CONNECTIONS ||
+        deletedNodeIds.length > MAX_DELETED_NODE_IDS ||
+        deletedConnectionIds.length > MAX_DELETED_CONNECTION_IDS
+
+      if (granularExceedsServerCaps && options.getSpecForWorkshopUpdate) {
+        const fullSpec = options.getSpecForWorkshopUpdate()
+        if (fullSpec) {
+          if (import.meta.env.DEV) {
+            console.log('[CollabDebug] runDiffAndSend full-spec fallback (granular over cap)', {
+              changedNodes: changedNodes.length,
+              changedConns: changedConnections.length,
+              deletedNodes: deletedNodeIds.length,
+              deletedConns: deletedConnectionIds.length,
+            })
+          }
+          options.sendUpdate(fullSpec)
+          previousNodes = JSON.parse(JSON.stringify(currentNodes))
+          previousConnections = JSON.parse(JSON.stringify(currentConnections))
+          return
+        }
+        if (import.meta.env.DEV) {
+          console.warn(
+            '[CollabDebug] granular diff over server cap but getSpecForWorkshopUpdate returned null'
+          )
+        }
+      }
+
       if (import.meta.env.DEV) {
         console.log('[CollabDebug] runDiffAndSend calling-sendUpdate')
       }
@@ -214,7 +251,7 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
   watch(
     () => options.getDiagramData(),
     (newData) => {
-      if (!newData || !newData.nodes || !newData.connections) return
+      if (!newData?.nodes) return
 
       if (!options.workshopCode.value) {
         previousNodes = JSON.parse(JSON.stringify(newData.nodes))
@@ -223,7 +260,7 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
       }
 
       const nodes = newData.nodes as Array<{ id: string }>
-      const connections = (newData.connections || []) as Array<{ id: string }>
+      const connections = (newData.connections ?? []) as Array<{ id: string }>
 
       if (options.applyingRemoteCollabPatch.value) {
         previousNodes = JSON.parse(JSON.stringify(nodes))

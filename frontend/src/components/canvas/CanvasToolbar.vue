@@ -88,7 +88,6 @@ function onBackgroundOpacityInput(v: number) {
 }
 
 const {
-  aiBlockedByCollab,
   isAIGenerating,
   isConceptMap,
   moreApps,
@@ -303,10 +302,10 @@ function handleToggleOrientation() {
         />
 
         <CanvasToolbarAiSection
+          v-if="!diagramStore.collabSessionActive || isConceptMap"
           :compact="compactToolbar"
           :is-concept-map="isConceptMap"
           :is-a-i-generating="isAIGenerating"
-          :ai-blocked-by-collab="aiBlockedByCollab"
           :concept-generation-label="t('canvas.toolbar.conceptGeneration')"
           :ai-generate-label="t('canvas.toolbar.aiGenerate')"
           :ai-generating-label="t('canvas.toolbar.aiGenerating')"
@@ -314,7 +313,10 @@ function handleToggleOrientation() {
           @ai-generate="handleAIGenerate"
         />
 
-        <div class="divider" />
+        <div
+          v-if="!diagramStore.collabSessionActive || isConceptMap"
+          class="divider"
+        />
 
         <CanvasToolbarMoreAppsDropdown
           :compact="compactToolbar"

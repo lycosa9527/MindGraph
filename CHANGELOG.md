@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.2] - 2026-05-06
+
+### Added
+
+- **Concept map** — remove a relationship curve with **Ctrl+click** (or **⌘+click** on macOS) on the curve segments, the relationship label, or edges routed from a label; cascades removal of child links with `linkedFromConnectionId`, clears relationship-picker state, respects collab foreign-edit locks, and records undo history (`removeConceptMapConnection` in diagram store, [`CurvedEdge.vue`](frontend/src/components/diagram/edges/CurvedEdge.vue), [`connectionManagement.ts`](frontend/src/stores/diagram/connectionManagement.ts)).
+- **Workshop collab guests** — host’s announced multi-LLM tab (**`host_llm_model`**) is shown on the canvas AI strip via **`remoteHostDisplayedLlmModel`**; host re-flushes the selection after snapshot and when others join ([`useWorkshop.ts`](frontend/src/composables/workshop/useWorkshop.ts), [`useWorkshopMessageHandlers.ts`](frontend/src/composables/workshop/useWorkshopMessageHandlers.ts), [`AIModelSelector.vue`](frontend/src/components/canvas/AIModelSelector.vue), [`CanvasPage.vue`](frontend/src/pages/CanvasPage.vue)).
+
+### Changed
+
+- **`frontend/src/composables/canvasPage/useCanvasPageCollabDiff.ts`** — optional full-spec fallback when granular node/connection/delete deltas exceed server caps (aligned with `workshop_ws_handlers_update_validate`); diagrams without a `connections` array no longer block diff sends.
+- **`frontend/src/composables/workshop/useWorkshopOutboundDispatcher.ts`**, **`useWorkshopTypes.ts`**, **`routers/api/workshop_ws_handlers_core.py`**, **`workshop_ws_handlers_presence.py`**, **`services/features/workshop_ws_connection_state.py`** — wire host LLM announcements and presence plumbing.
+- **`frontend/src/components/canvas/`** (`CanvasToolbar`, `CanvasTopBar`, `CanvasToolbarAiSection`), **`useCanvasToolbarApps.ts`**, **`useAutoComplete.ts`**, **`NodePalettePanel.vue`**, **`RootConceptModal.vue`** — toolbar / inline-rec and palette behavior aligned with collab host model UX.
+- **Locales** (`en`, `zh`, `zh-tw` canvas / mindmate) — strings for new UX.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.2).
+
 ## [5.117.1] - 2026-05-05
 
 ### Added

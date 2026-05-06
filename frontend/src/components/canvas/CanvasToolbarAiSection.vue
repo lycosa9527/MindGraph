@@ -8,7 +8,6 @@ withDefaults(
     compact?: boolean
     isConceptMap: boolean
     isAIGenerating: boolean
-    aiBlockedByCollab: boolean
     conceptGenerationLabel: string
     aiGenerateLabel: string
     aiGeneratingLabel: string
@@ -34,7 +33,6 @@ const emit = defineEmits<{
         type="primary"
         size="small"
         class="ai-btn"
-        :disabled="aiBlockedByCollab"
         @click="emit('conceptGeneration')"
       >
         <Sparkles class="w-4 h-4" />
@@ -54,7 +52,7 @@ const emit = defineEmits<{
         size="small"
         class="ai-btn"
         :class="{ 'ai-btn--generating': isAIGenerating }"
-        :disabled="isAIGenerating || aiBlockedByCollab"
+        :disabled="isAIGenerating"
         @click="emit('aiGenerate')"
       >
         <Wand2

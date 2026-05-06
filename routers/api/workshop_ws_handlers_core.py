@@ -43,6 +43,7 @@ from utils.auth_ws import authenticate_websocket_user
 from routers.api.workshop_ws_handlers_presence import (
     build_participants_with_names,
     _handle_claim_node_edit,
+    _handle_host_llm_model,
     _handle_node_editing,
     _handle_node_editing_batch,
     _handle_node_selected,
@@ -239,6 +240,7 @@ _EDITOR_HANDLERS = {
     "node_editing": _handle_node_editing,
     "node_editing_batch": _handle_node_editing_batch,
     "node_selected": _handle_node_selected,
+    "host_llm_model": _handle_host_llm_model,
     "claim_node_edit": _handle_claim_node_edit,
     "update": _handle_update,
     "role_change": handle_role_change,

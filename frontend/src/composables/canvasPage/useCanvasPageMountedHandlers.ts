@@ -3,8 +3,8 @@
  *
  * Registers the three large ``eventBus.onWithOwner`` blocks that belong to
  * CanvasPage's ``onMounted`` lifecycle:
- *   - snapshot:requested  → snapshot capture flow
- *   - node_editor:tab_pressed → inline rec / focus-review / root-review routing
+ *   - snapshot:requested  → snapshot capture flow (guests skipped during collab)
+ *   - node_editor:tab_pressed → Tab inline rec + concept-map focus/root flows (host + guest)
  *   - nodePalette:opened  → node palette session start
  *
  * All listeners are registered under the ``'CanvasPage'`` owner so they are
@@ -145,7 +145,6 @@ export function useCanvasPageMountedHandlers(options: {
             return
           }
         }
-        if (diagramStore.collabSessionActive && isDiagramOwner?.value === false) return
         void startRecommendations(nodeId)
       },
       'CanvasPage'
