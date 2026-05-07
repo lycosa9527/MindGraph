@@ -867,10 +867,10 @@ onUnmounted(() => {
 
     <!-- Bottom controls: single floating glass card, adaptive width -->
     <div
-      class="canvas-bottom-controls absolute bottom-4 left-0 right-0 z-20 flex justify-center px-2 sm:px-4"
+      class="canvas-bottom-controls absolute bottom-3 left-0 right-0 z-20 flex justify-center px-2 sm:px-4"
     >
       <div
-        class="bottom-controls-card flex flex-col md:flex-row md:items-center gap-2 md:gap-3 rounded-xl shadow-lg p-1.5 md:p-2 border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md w-fit max-w-[95vw] min-w-0"
+        class="bottom-controls-card flex flex-col md:flex-row md:items-center gap-1.5 md:gap-2 rounded-xl shadow-lg p-1 md:p-1.5 border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md w-fit max-w-[95vw] min-w-0"
       >
         <!-- shrink-0: AI block + focus picker width follows content (no flex-1 stretch) -->
         <div

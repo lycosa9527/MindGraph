@@ -123,7 +123,7 @@ defineExpose({
 
 <template>
   <div class="zoom-controls z-20">
-    <div class="rounded-xl p-1.5 flex items-center gap-0.5">
+    <div class="rounded-xl p-1 flex items-center gap-0.5">
       <!-- Hand tool -->
       <ElTooltip
         :content="t('canvas.zoomControls.hand')"
@@ -280,10 +280,10 @@ defineExpose({
 <style scoped>
 /* Divider between button groups */
 .divider {
-  height: 20px;
+  height: 18px;
   width: 1px;
   background-color: #e5e7eb;
-  margin: 0 4px;
+  margin: 0 3px;
 }
 
 /* Zoom level dropdown */
@@ -293,7 +293,7 @@ defineExpose({
 }
 
 :deep(.zoom-select .el-input__wrapper) {
-  padding: 4px 8px;
+  padding: 2px 6px;
   box-shadow: none;
   background-color: transparent;
 }
@@ -308,7 +308,7 @@ defineExpose({
 
 /* Button styling */
 :deep(.zoom-btn) {
-  padding: 6px !important;
+  padding: 4px !important;
   margin: 0 !important;
   min-height: auto !important;
   height: auto !important;

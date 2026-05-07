@@ -364,7 +364,7 @@ function getButtonStyle(modelKey: string) {
 
 <template>
   <div class="ai-model-selector z-20 max-w-full min-w-0">
-    <div class="glass-container px-3 py-1.5 flex items-center gap-3">
+    <div class="glass-container px-2.5 py-1 flex items-center gap-2">
       <!-- Label with icon (hidden for concept map — single AI control only) -->
       <div
         v-if="!isConceptMap"
@@ -377,7 +377,7 @@ function getButtonStyle(modelKey: string) {
       <!-- Concept map: intrinsic width only (picker sits beside us in bottom bar; avoid flex-1 overlap) -->
       <div
         v-if="isConceptMap"
-        class="flex gap-2 shrink-0 justify-center items-center"
+        class="flex gap-1.5 shrink-0 justify-center items-center"
       >
         <ElTooltip
           :content="
@@ -542,12 +542,11 @@ function getButtonStyle(modelKey: string) {
 
 .model-btn-stack {
   position: relative;
-  padding-top: 10px;
 }
 
 .host-llm-pick-emoji {
   position: absolute;
-  top: -4px;
+  top: -10px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 13px;
@@ -701,9 +700,9 @@ function getButtonStyle(modelKey: string) {
 .concept-ai-toggle-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 8px;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 7px;
   font-size: 12px;
   font-weight: 600;
   border: 1px solid rgba(139, 92, 246, 0.35);
@@ -743,7 +742,7 @@ function getButtonStyle(modelKey: string) {
   display: flex;
   align-items: center;
   gap: 3px;
-  padding: 4px 10px;
+  padding: 3px 9px;
   border: 1px solid rgba(229, 231, 235, 0.5);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.6);
@@ -834,7 +833,7 @@ function getButtonStyle(modelKey: string) {
   display: flex;
   align-items: center;
   gap: 3px;
-  padding: 4px 10px;
+  padding: 3px 9px;
   border-radius: 5px;
   position: relative;
   z-index: 1;

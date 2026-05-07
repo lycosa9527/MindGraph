@@ -181,7 +181,6 @@ function onClose(): void {
     :title="t('settings.language.title')"
     width="min(480px, 92vw)"
     destroy-on-close
-    class="language-settings-dialog"
     @close="onClose"
   >
     <div class="space-y-5">
@@ -279,13 +278,49 @@ function onClose(): void {
 </template>
 
 <style scoped>
+/* Dialog checkbox/title/body wrapping is global (`styles/index.css`); overrides here
+ * are limited to searchable language selects used only in this modal. */
+.prompt-lang-select :deep(.el-select__wrapper) {
+  min-width: 0;
+}
+
 .prompt-lang-select :deep(.el-select__selected-item) {
   font-family: v-bind('multiscriptFontFamily');
+  min-width: 0;
+}
+
+/* Filterable single select shows the chosen label in `.el-select__placeholder`; it
+   uses ellipsis/nowrap by default and can overflow for long Indic labels. */
+.prompt-lang-select :deep(.el-select__placeholder) {
+  position: relative;
+  top: auto;
+  transform: none;
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.35;
+}
+
+.prompt-lang-select :deep(.el-select__tags-text) {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.35;
 }
 </style>
 
 <!-- Dropdown is teleported; target via popper-class -->
 <style>
+.prompt-lang-select-popper {
+  max-width: min(92vw, 32rem);
+}
+
 .prompt-lang-select-popper .el-select-dropdown__item {
   height: auto !important;
   min-height: 2.25rem;
@@ -293,6 +328,9 @@ function onClose(): void {
   padding-top: 0.35rem;
   padding-bottom: 0.35rem;
   font-family: v-bind('multiscriptFontFamily');
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .prompt-lang-select-popper .prompt-option-row {
@@ -324,11 +362,15 @@ function onClose(): void {
   min-width: 0;
   font-size: 0.875rem;
   color: var(--el-text-color-primary);
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .prompt-lang-select-popper .prompt-option-en {
   font-size: 0.75rem;
   color: var(--el-text-color-secondary);
   line-height: 1.2;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 </style>

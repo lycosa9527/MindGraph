@@ -401,6 +401,104 @@ body {
   );
 }
 
+/*
+ * Overlay surfaces (Element Plus dialog / drawer / message box): `.el-checkbox` uses
+ * `white-space: nowrap` in EP, so long translations overflow constrained shells.
+ */
+.el-dialog__title {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.35;
+}
+
+.el-dialog__body {
+  overflow-x: hidden;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.el-dialog .el-checkbox {
+  align-items: flex-start;
+  height: auto;
+  min-height: var(--el-checkbox-height);
+  white-space: normal;
+  max-width: 100%;
+}
+
+.el-dialog .el-checkbox__input {
+  align-self: flex-start;
+  margin-top: 0.125rem;
+}
+
+.el-dialog .el-checkbox__label {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.45;
+}
+
+.el-drawer__title {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.35;
+}
+
+.el-drawer__body {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.el-drawer .el-checkbox {
+  align-items: flex-start;
+  height: auto;
+  min-height: var(--el-checkbox-height);
+  white-space: normal;
+  max-width: 100%;
+}
+
+.el-drawer .el-checkbox__input {
+  align-self: flex-start;
+  margin-top: 0.125rem;
+}
+
+.el-drawer .el-checkbox__label {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.45;
+}
+
+.el-message-box__title {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.35;
+}
+
+.el-message-box__message {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.el-message-box .el-checkbox {
+  align-items: flex-start;
+  height: auto;
+  min-height: var(--el-checkbox-height);
+  white-space: normal;
+  max-width: 100%;
+}
+
+.el-message-box .el-checkbox__input {
+  align-self: flex-start;
+  margin-top: 0.125rem;
+}
+
+.el-message-box .el-checkbox__label {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.45;
+}
+
 /* Diagram node labels: compact markdown + KaTeX inside Vue Flow nodes */
 .diagram-node-md {
   font-size: inherit;
