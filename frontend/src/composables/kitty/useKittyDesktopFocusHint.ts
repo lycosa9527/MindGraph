@@ -3,7 +3,7 @@
  * with the library diagram the user has open on desktop MindGraph when local Pinia has no
  * ``activeDiagramId``.
  */
-import { onUnmounted, ref, watch, type Ref } from 'vue'
+import { type Ref, onUnmounted, ref, watch } from 'vue'
 
 import { KITTY_PAIR_POLL_MS } from './runKittyIntervalPoll'
 
@@ -38,11 +38,7 @@ export function useKittyDesktopFocusHint(pollEnabled: Ref<boolean>) {
       const ts = raw.updated_at
       diagramLibraryId.value = typeof lib === 'string' && lib.length > 0 ? lib : null
       updatedAt.value =
-        typeof ts === 'number'
-          ? ts
-          : typeof ts === 'string' && /^\d+$/.test(ts)
-            ? Number(ts)
-            : null
+        typeof ts === 'number' ? ts : typeof ts === 'string' && /^\d+$/.test(ts) ? Number(ts) : null
     } catch {
       diagramLibraryId.value = null
       updatedAt.value = null

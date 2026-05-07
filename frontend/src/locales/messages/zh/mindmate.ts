@@ -125,7 +125,7 @@ export default {
   'nodePalette.refresh': '重新生成',
   'nodePalette.selected': '已选',
   'nodePalette.similarities': '相似点',
-  'panel.mindmate': 'MindMate AI 助手',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': '节点面板',
   'panel.properties': '属性',
   'panels.property.background': '背景色',

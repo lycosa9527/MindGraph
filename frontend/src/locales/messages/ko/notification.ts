@@ -50,4 +50,4 @@ export default {
   'notification.sessionInvalidated': '등록 가능한 디바이스 수를 초과하여 로그아웃되었습니다',
   'notification.signInToUse': '이 기능을 사용하려면 로그인하세요',
   'notification.signInToValidateFocus': '초점 질문을 검증하려면 로그인하세요',
-}
+} as const

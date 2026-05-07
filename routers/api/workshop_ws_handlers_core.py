@@ -68,6 +68,7 @@ def _collab_jwt_revalidate_interval_sec() -> float:
         return 180.0
     return parsed if parsed > 0 else 0.0
 
+
 @dataclass
 class CollabWsContext:
     """Fixed state for one canvas-collab WebSocket session."""
@@ -92,9 +93,7 @@ class CollabWsContext:
         return "editor"
 
 
-async def _ctx_send(
-    ctx: "CollabWsContext", payload: dict, msg_type: str = "error"
-) -> None:
+async def _ctx_send(ctx: "CollabWsContext", payload: dict, msg_type: str = "error") -> None:
     """Route an outbound frame through handle.enqueue or ws.send_json fallback."""
     if ctx.handle is not None:
         await enqueue(ctx.handle, payload, msg_type)
@@ -112,7 +111,8 @@ def _refresh_ctx_handle(ctx: "CollabWsContext") -> None:
 async def _handle_ping(ctx: CollabWsContext, _message: Dict[str, Any]) -> None:
     try:
         await get_online_collab_manager().refresh_participant_ttl(
-            ctx.code, ctx.user.id,
+            ctx.code,
+            ctx.user.id,
         )
     except Exception as exc:
         logger.debug("[CanvasCollabWS] ping participant TTL refresh skipped: %s", exc)
@@ -124,18 +124,17 @@ async def _handle_ping(ctx: CollabWsContext, _message: Dict[str, Any]) -> None:
 
 
 async def _handle_join_repeat(
-    ctx: CollabWsContext, message: Dict[str, Any],
+    ctx: CollabWsContext,
+    message: Dict[str, Any],
 ) -> None:
     join_diagram_id = message.get("diagram_id")
-    if (
-        isinstance(join_diagram_id, str)
-        and join_diagram_id
-        and join_diagram_id != ctx.diagram_id
-    ):
+    if isinstance(join_diagram_id, str) and join_diagram_id and join_diagram_id != ctx.diagram_id:
         logger.warning(
-            "[CanvasCollabWS] join_repeat diagram mismatch user=%s code=%s"
-            " got=%s expected=%s",
-            ctx.user.id, ctx.code, join_diagram_id, ctx.diagram_id,
+            "[CanvasCollabWS] join_repeat diagram mismatch user=%s code=%s got=%s expected=%s",
+            ctx.user.id,
+            ctx.code,
+            join_diagram_id,
+            ctx.diagram_id,
         )
         await _ctx_send(ctx, {"type": "error", "message": "Diagram ID mismatch"})
         return
@@ -152,7 +151,8 @@ async def _handle_join_repeat(
         "participants": participant_ids,
         "participants_with_names": names,
         "workshop_visibility": await online_collab_visibility_for_diagram_id(
-            ctx.diagram_id, code=ctx.code,
+            ctx.diagram_id,
+            code=ctx.code,
         ),
     }
     diag_title = await diagram_title_for_active_workshop(str(ctx.diagram_id))
@@ -172,7 +172,9 @@ async def _handle_join_repeat(
     await _ctx_send(ctx, join_repeat, "joined")
     logger.debug(
         "[CanvasCollabWS] join_repeat_ok user=%s code=%s participants=%d",
-        ctx.user.id, ctx.code, len(participant_ids),
+        ctx.user.id,
+        ctx.code,
+        len(participant_ids),
     )
 
 
@@ -186,13 +188,19 @@ async def _handle_resync(ctx: CollabWsContext, message: Dict[str, Any]) -> None:
     if diag != ctx.diagram_id:
         logger.warning(
             "[CanvasCollabWS] resync diagram mismatch user=%s code=%s got=%s expected=%s",
-            ctx.user.id, ctx.code, diag, ctx.diagram_id,
+            ctx.user.id,
+            ctx.code,
+            diag,
+            ctx.diagram_id,
         )
         await _ctx_send(ctx, {"type": "error", "message": "Diagram ID mismatch"})
         return
     logger.debug(
         "[CanvasCollabWS] resync_start user=%s code=%s diagram=%s role=%s",
-        ctx.user.id, ctx.code, ctx.diagram_id, ctx.role,
+        ctx.user.id,
+        ctx.code,
+        ctx.diagram_id,
+        ctx.role,
     )
     redis_rl = get_async_redis()
     if redis_rl:
@@ -204,7 +212,9 @@ async def _handle_resync(ctx: CollabWsContext, message: Dict[str, Any]) -> None:
             if count > _RESYNC_RATE_LIMIT_PER_MIN:
                 logger.info(
                     "[CanvasCollabWS] resync rate limited user=%s code=%s count=%s",
-                    ctx.user.id, ctx.code, count,
+                    ctx.user.id,
+                    ctx.code,
+                    count,
                 )
                 await _ctx_send(
                     ctx,
@@ -229,10 +239,13 @@ async def _handle_resync(ctx: CollabWsContext, message: Dict[str, Any]) -> None:
             from services.infrastructure.monitoring.ws_metrics import (
                 record_ws_viewer_resync,
             )
+
             record_ws_viewer_resync()
         except Exception:
             pass
     await websocket_send_live_spec_snapshot(ctx.handle, ctx.code, ctx.diagram_id)
+
+
 _EDITOR_HANDLERS = {
     "ping": _handle_ping,
     "join": _handle_join_repeat,
@@ -286,7 +299,8 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
                 )
             except Exception as exc:
                 logger.warning(
-                    "[CanvasCollabWS] authz participant refresh failed: %s", exc,
+                    "[CanvasCollabWS] authz participant refresh failed: %s",
+                    exc,
                 )
                 participants_ok = False
                 participant_ids = []
@@ -299,10 +313,7 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
                     ctx,
                     {
                         "type": "error",
-                        "message": (
-                            "You are no longer in this workshop — "
-                            "please reconnect."
-                        ),
+                        "message": ("You are no longer in this workshop — please reconnect."),
                     },
                 )
                 await ctx.websocket.close(
@@ -340,9 +351,7 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
             continue
 
         if not isinstance(message, dict):
-            await _ctx_send(
-                ctx, {"type": "error", "message": "Message must be a JSON object"}
-            )
+            await _ctx_send(ctx, {"type": "error", "message": "Message must be a JSON object"})
             continue
 
         if collab_json_exceeds_depth(message, MAX_COLLAB_INBOUND_JSON_DEPTH):
@@ -365,9 +374,7 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
             try:
                 await handler(ctx, message)
             except Exception as exc:  # pylint: disable=broad-except
-                logger.exception(
-                    "[CanvasCollabWS] handler %s raised: %s", msg_type, exc
-                )
+                logger.exception("[CanvasCollabWS] handler %s raised: %s", msg_type, exc)
                 await _ctx_send(
                     ctx,
                     {
@@ -390,6 +397,4 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
             )
             return
 
-        await _ctx_send(
-            ctx, {"type": "error", "message": f"Unknown message type: {msg_type}"}
-        )
+        await _ctx_send(ctx, {"type": "error", "message": f"Unknown message type: {msg_type}"})

@@ -1,6 +1,4 @@
-/**
- * zh-tw UI — workshop
- */
+/** zh-tw UI — workshop */
 
 export default {
   'collab.codeCopied': '代碼已複製',
@@ -336,6 +334,8 @@ export default {
   'workshopCanvas.sessionRefreshFailed': '無法重新整理在線協作會話，請儲存目前內容並重新登入。',
   'workshopCanvas.outboundQueueDegraded': '在線協作同步已落後，部分尚未送出的編輯無法保留。',
   'workshopCanvas.connectionClosed': '連接已斷開',
+  'workshopCanvas.connectionClosedSlow':
+    'Connection closed: your connection was too slow to keep up with the collaboration session.',
   'workshopCanvas.sessionEndedByHost': '主持人已結束在線協作。',
   'workshopCanvas.editingNodeLabel': '{username} 正在編輯…',
   'workshopCanvas.collabEditorDisplayNameFallback': '其他協作者',
@@ -357,4 +357,4 @@ export default {
     '圖示長時間未有協作編輯——倒計時結束前若無人編輯圖示，協同將自動結束。',
   'workshopCanvas.otherTabCollaborationActive': '此賬號的另一個分頁或視窗已保持線上協作連線。',
   'workshopCanvas.joinQrAlt': '加入線上協作的 QR 碼',
-}
+} as const

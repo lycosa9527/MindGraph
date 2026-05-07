@@ -154,4 +154,4 @@ export default {
   'auth.accountNameSave': 'Salvar nome',
   'auth.accountNameSaveSuccess': 'Nome atualizado',
   'auth.accountNameSaveError': 'Não foi possível salvar. Tente de novo.',
-}
+} as const

@@ -50,8 +50,7 @@ function getDropPreviewBorderRadius(node: MindGraphNode): string {
   }
 
   const { diagramType, nodeType, originalNode, style } = data
-  const styleRadiusPx =
-    style?.borderRadius != null ? `${style.borderRadius}px` : null
+  const styleRadiusPx = style?.borderRadius != null ? `${style.borderRadius}px` : null
 
   if (vfType === 'concept') {
     return '9999px'
@@ -80,11 +79,7 @@ function getDropPreviewBorderRadius(node: MindGraphNode): string {
   }
 
   if (vfType === 'branch') {
-    if (
-      diagramType === 'mindmap' ||
-      diagramType === 'mind_map' ||
-      diagramType === 'tree_map'
-    ) {
+    if (diagramType === 'mindmap' || diagramType === 'mind_map' || diagramType === 'tree_map') {
       return '9999px'
     }
     return styleRadiusPx ?? '8px'

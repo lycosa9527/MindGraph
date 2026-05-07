@@ -309,9 +309,7 @@ def record_ws_broadcast_latency(latency_ms: float) -> None:
     stored in Redis.
     """
     _bump("ws_broadcast_latency_samples_total")
-    _local["ws_broadcast_latency_sum_ms"] = (
-        _local.get("ws_broadcast_latency_sum_ms", 0) + latency_ms
-    )
+    _local["ws_broadcast_latency_sum_ms"] = _local.get("ws_broadcast_latency_sum_ms", 0) + latency_ms
     if not timeseries_enabled():
         return
     try:
@@ -322,6 +320,7 @@ def record_ws_broadcast_latency(latency_ms: float) -> None:
         from services.online_collab.redis.redis8_features import (  # pylint: disable=import-outside-toplevel
             tdigest_record_latency,
         )
+
         loop.create_task(tdigest_record_latency("broadcast_latency_ms", latency_ms))
 
 
@@ -335,9 +334,7 @@ def record_ws_update_latency(latency_ms: float) -> None:
     cross-worker via the T-Digest stored in Redis.
     """
     _bump("ws_update_latency_samples_total")
-    _local["ws_update_latency_sum_ms"] = (
-        _local.get("ws_update_latency_sum_ms", 0) + latency_ms
-    )
+    _local["ws_update_latency_sum_ms"] = _local.get("ws_update_latency_sum_ms", 0) + latency_ms
     if not timeseries_enabled():
         return
     try:
@@ -348,6 +345,7 @@ def record_ws_update_latency(latency_ms: float) -> None:
         from services.online_collab.redis.redis8_features import (  # pylint: disable=import-outside-toplevel
             tdigest_record_latency,
         )
+
         loop.create_task(tdigest_record_latency("update_latency_ms", latency_ms))
 
 
@@ -357,9 +355,7 @@ def record_ws_update_semaphore_wait_ms(wait_ms: float) -> None:
     semaphore (milliseconds).
     """
     _bump("ws_update_semaphore_wait_samples_total")
-    _local["ws_update_semaphore_wait_sum_ms"] = (
-        _local.get("ws_update_semaphore_wait_sum_ms", 0) + wait_ms
-    )
+    _local["ws_update_semaphore_wait_sum_ms"] = _local.get("ws_update_semaphore_wait_sum_ms", 0) + wait_ms
     if not timeseries_enabled():
         return
     try:
@@ -370,6 +366,7 @@ def record_ws_update_semaphore_wait_ms(wait_ms: float) -> None:
         from services.online_collab.redis.redis8_features import (  # pylint: disable=import-outside-toplevel
             tdigest_record_latency,
         )
+
         loop.create_task(tdigest_record_latency("update_semaphore_wait_ms", wait_ms))
 
 
@@ -386,6 +383,7 @@ def record_ws_load_editors_latency_ms(latency_ms: float) -> None:
         from services.online_collab.redis.redis8_features import (  # pylint: disable=import-outside-toplevel
             tdigest_record_latency,
         )
+
         loop.create_task(tdigest_record_latency("load_editors_ms", latency_ms))
 
 
@@ -402,6 +400,7 @@ def record_ws_read_live_spec_latency_ms(latency_ms: float) -> None:
         from services.online_collab.redis.redis8_features import (  # pylint: disable=import-outside-toplevel
             tdigest_record_latency,
         )
+
         loop.create_task(tdigest_record_latency("read_live_spec_ms", latency_ms))
 
 
@@ -568,13 +567,10 @@ async def get_ws_metrics_snapshot() -> Dict[str, Any]:
         from services.features.workshop_ws_connection_state import (  # pylint: disable=import-outside-toplevel
             ACTIVE_CONNECTIONS,
         )
-        snap["ws_room_sizes"] = {
-            code: len(handles) for code, handles in ACTIVE_CONNECTIONS.items()
-        }
+
+        snap["ws_room_sizes"] = {code: len(handles) for code, handles in ACTIVE_CONNECTIONS.items()}
         snap["ws_rooms_total"] = len(ACTIVE_CONNECTIONS)
-        snap["ws_total_connections_local"] = sum(
-            len(h) for h in ACTIVE_CONNECTIONS.values()
-        )
+        snap["ws_total_connections_local"] = sum(len(h) for h in ACTIVE_CONNECTIONS.values())
     except Exception:  # pylint: disable=broad-except
         pass
 

@@ -59,8 +59,7 @@ async def stop_other_owner_online_collabs(
                     ids_to_stop.append(str(rid))
     except SQLAlchemyError as exc:
         logger.warning(
-            "[OnlineCollabMgr] stop_other_owner_collabs: listing failed "
-            "user=%s except=%s: %s",
+            "[OnlineCollabMgr] stop_other_owner_collabs: listing failed user=%s except=%s: %s",
             owner_user_id,
             except_diagram_id,
             exc,
@@ -73,8 +72,7 @@ async def stop_other_owner_online_collabs(
             finished = await stop_online_collab_impl(other_id, owner_user_id)
         except (SQLAlchemyError, OSError, RuntimeError) as exc:
             logger.warning(
-                "[OnlineCollabMgr] stop_other_collabs: stop failed "
-                "diagram_id=%s user=%s: %s",
+                "[OnlineCollabMgr] stop_other_collabs: stop failed diagram_id=%s user=%s: %s",
                 other_id,
                 owner_user_id,
                 exc,
@@ -84,8 +82,7 @@ async def stop_other_owner_online_collabs(
             stopped_ok += 1
     if ids_to_stop:
         logger.info(
-            "[OnlineCollabMgr] single-owner cleanup user=%s target=%s "
-            "candidates=%d stopped_ok=%d",
+            "[OnlineCollabMgr] single-owner cleanup user=%s target=%s candidates=%d stopped_ok=%d",
             owner_user_id,
             except_diagram_id,
             len(ids_to_stop),

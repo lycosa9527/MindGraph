@@ -7,9 +7,7 @@ from fastapi import WebSocket
 from routers.features.voice.state import logger
 
 
-def _diagram_extras_for_instructions(
-    diagram_type: str, diagram_data: Dict[str, Any]
-) -> str:
+def _diagram_extras_for_instructions(diagram_type: str, diagram_data: Dict[str, Any]) -> str:
     """Serialize type-specific fields from diagram_data for Omni (critique / Q&A)."""
     lines: List[str] = []
 

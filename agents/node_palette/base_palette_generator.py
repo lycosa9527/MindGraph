@@ -590,11 +590,7 @@ class BasePaletteGenerator(ABC):
         self._last_sweep_time = now
 
         ttl = self.SESSION_IDLE_TTL_SECONDS
-        stale = [
-            sid
-            for sid, last_seen in self.session_last_seen.items()
-            if now - last_seen > ttl
-        ]
+        stale = [sid for sid, last_seen in self.session_last_seen.items() if now - last_seen > ttl]
         if not stale:
             return
 

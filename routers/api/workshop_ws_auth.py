@@ -71,11 +71,7 @@ async def _has_verified_resume_for_rate_limit(
         return False
     if not current_raw:
         return False
-    current_diagram_id = (
-        current_raw
-        if isinstance(current_raw, str)
-        else current_raw.decode("utf-8", errors="replace")
-    )
+    current_diagram_id = current_raw if isinstance(current_raw, str) else current_raw.decode("utf-8", errors="replace")
     return current_diagram_id == claimed_diagram_id
 
 
@@ -143,13 +139,14 @@ async def resolve_canvas_collab_join(
         return None
 
     workshop_info = await get_online_collab_manager().join_online_collab(
-        norm_code, user.id,
+        norm_code,
+        user.id,
     )
     if not workshop_info:
         logger.warning(
-            "[CanvasCollabWS] join_online_collab returned falsy user_id=%s code=%s"
-            " — session ended or invalid code",
-            user.id, norm_code,
+            "[CanvasCollabWS] join_online_collab returned falsy user_id=%s code=%s — session ended or invalid code",
+            user.id,
+            norm_code,
         )
         await websocket.close(
             code=1008,
@@ -164,7 +161,8 @@ async def resolve_canvas_collab_join(
     if resume_raw:
         logger.debug(
             "[CanvasCollabWS] consuming resume token user_id=%s code=%s",
-            user.id, norm_code,
+            user.id,
+            norm_code,
         )
         consumed = await try_consume_join_resume_token_async(
             raw_query_token=resume_raw,
@@ -174,8 +172,7 @@ async def resolve_canvas_collab_join(
         )
         if not consumed:
             logger.debug(
-                "[CanvasCollabWS] resume token did not match resolved join "
-                "user_id=%s code=%s diagram=%s",
+                "[CanvasCollabWS] resume token did not match resolved join user_id=%s code=%s diagram=%s",
                 user.id,
                 norm_code,
                 diagram_id,
@@ -193,7 +190,10 @@ async def resolve_canvas_collab_join(
 
     logger.info(
         "[CanvasCollabWS] resolved code=%s diagram_id=%s owner_id=%s user_id=%s",
-        norm_code, diagram_id, owner_id, user.id,
+        norm_code,
+        diagram_id,
+        owner_id,
+        user.id,
     )
 
     return user, norm_code, diagram_id, owner_id

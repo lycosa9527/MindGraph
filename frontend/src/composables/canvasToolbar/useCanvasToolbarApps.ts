@@ -117,9 +117,7 @@ export function useCanvasToolbarApps() {
       list = withoutWaterfall
     }
     if (aiBlockedByCollab.value) {
-      return list.filter(
-        (a) => a.appKey !== 'learning_sheet' && a.appKey !== 'snapshot'
-      )
+      return list.filter((a) => a.appKey !== 'learning_sheet' && a.appKey !== 'snapshot')
     }
     return list
   })
@@ -175,10 +173,7 @@ export function useCanvasToolbarApps() {
   }
 
   async function handleMoreApp(app: MoreAppItem) {
-    if (
-      aiBlockedByCollab.value &&
-      (app.appKey === 'learning_sheet' || app.appKey === 'snapshot')
-    ) {
+    if (aiBlockedByCollab.value && (app.appKey === 'learning_sheet' || app.appKey === 'snapshot')) {
       notify.warning(t('canvas.toolbar.collabGuestFeatureBlocked'))
       return
     }

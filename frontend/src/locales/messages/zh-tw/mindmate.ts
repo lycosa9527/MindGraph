@@ -1,6 +1,4 @@
-/**
- * zh-tw UI — mindmate
- */
+/** zh-tw UI — mindmate */
 
 export default {
   'aiModel.conceptAiOff': '點擊開啟：用 AI 生成關係標籤（後臺多模型）',
@@ -13,13 +11,24 @@ export default {
   'aiModel.relationshipsTooltip': '拖拽概念連線即可生成關係',
   'aiModel.tabFocusBadge': 'Tab焦點',
   'aiModel.tabFocusTooltip': '編輯焦點問題時按 Tab 檢驗；之後在底部用數字鍵與 − / = 備選',
+  'aiModel.tabFocusQuestionBadge': 'Tab — 焦點問題',
+  'aiModel.conceptMapFocusQuestionTabTooltip':
+    '選取或編輯焦點問題時：按 Tab 進行 AI 檢核（請先輸入有具體內容的焦點問題，並須登入）。',
   'aiModel.tabRecBadge': 'Tab推薦',
+  'aiModel.tabContentRecBadge': 'Tab — 內容',
+  'aiModel.tabRelationshipRecBadge': 'Tab — 關係',
+  'aiModel.conceptMapConceptTabTooltip':
+    '編輯模式（單獨概念）：按 Tab 取得替代措辭（須先設定主題）。',
+  'aiModel.conceptMapRelationshipTabTooltip':
+    '編輯模式或選取已連線概念（選取模式）：按 Tab 取得聚焦連線的關係建議。',
   'aiModel.tooltip.clickDeselect': '點擊取消選擇 {name}',
   'aiModel.tooltip.clickSelect': '點擊選擇 {name}',
   'aiModel.tooltip.clickSwitch': '點擊切換到 {name} 結果',
   'aiModel.tooltip.generating': '{name} 生成中...',
   'aiModel.tooltip.modelFailed': '{name} 生成失敗',
   'aiModel.tooltip.showingResult': '當前顯示 {name} 結果',
+  'aiModel.hostPickBadgeTooltip': '主持人正在編輯此模型的圖示版本（多模型檢視）',
+  'aiModel.hostPickBadgeAria': '主持人正在使用 {name} 編輯',
   'autoComplete.collabOwnerOnly': '協作模式下僅圖示所有者可以使用 AI 生成',
   'autoComplete.conceptMapRealtime': '概念圖使用實時關係建議，請通過創建鏈接來生成關係',
   'autoComplete.doubleBubbleNeedBothTopics': '請填寫左右兩個主題後再生成',
@@ -114,7 +123,7 @@ export default {
   'nodePalette.refresh': '重新生成',
   'nodePalette.selected': '已選',
   'nodePalette.similarities': '相似點',
-  'panel.mindmate': 'MindMate AI 助手',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': '節點面板',
   'panel.properties': '屬性',
   'panels.property.background': '背景色',
@@ -150,4 +159,4 @@ export default {
   'rootConceptModal.tabTitleRoot': '根概念：{text}',
   'rootConceptModal.title': '根概念',
   'rootConceptModal.titleConceptList': '概念列表',
-}
+} as const

@@ -209,4 +209,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': 'سند بارگذاری شد، در حال پردازش...',
   'rag.retrievalTest.failed': 'آزمایش بازیابی ناموفق بود',
   'rag.retrievalTest.success': 'آزمایش بازیابی انجام شد',
-}
+} as const

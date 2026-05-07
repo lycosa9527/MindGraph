@@ -51,4 +51,4 @@ export default {
     'Sua sessão foi encerrada por exceder o número máximo de dispositivos',
   'notification.signInToUse': 'Entre para usar',
   'notification.signInToValidateFocus': 'Entre para validar a questão-foco',
-}
+} as const

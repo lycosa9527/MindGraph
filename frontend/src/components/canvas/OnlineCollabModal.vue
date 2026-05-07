@@ -310,16 +310,14 @@ async function startWorkshopWithId(diagramId: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
-      if (response.ok) {
+    if (response.ok) {
       const data = await response.json()
       workshopCode.value = data.code
       sessionVisibility.value = visibility
       isActive.value = true
       participantCount.value = 1
       const stopped =
-        typeof data.stopped_previous_sessions === 'number'
-          ? data.stopped_previous_sessions
-          : 0
+        typeof data.stopped_previous_sessions === 'number' ? data.stopped_previous_sessions : 0
       // Signal that this user is the host so role detection is immediate,
       // before the WebSocket `joined` message arrives.
       eventBus.emit('workshop:host-started', {})

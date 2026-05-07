@@ -150,7 +150,9 @@ async def _writer_loop(handle: AnyHandle) -> None:
                     await ws.send_text(body)
             logger.debug(
                 "[WSFanout] writer_send code=%s user=%s kind=%s size=%d",
-                handle.code, handle.user_id, kind,
+                handle.code,
+                handle.user_id,
+                kind,
                 len(body) if isinstance(body, (bytes, str)) else 0,
             )
         except (
@@ -163,7 +165,10 @@ async def _writer_loop(handle: AnyHandle) -> None:
         ) as send_exc:
             logger.debug(
                 "[WSFanout] writer_loop send error — closing code=%s user=%s kind=%s: %s",
-                handle.code, handle.user_id, kind, send_exc,
+                handle.code,
+                handle.user_id,
+                kind,
+                send_exc,
             )
             return
 
@@ -192,6 +197,7 @@ async def _flush_coalesce_buffer(handle: ConnectionHandle) -> None:
                 from services.infrastructure.monitoring.ws_metrics import (
                     record_ws_batch_frames_emitted,
                 )
+
                 record_ws_batch_frames_emitted()
             except Exception:
                 pass
@@ -202,9 +208,7 @@ async def _flush_coalesce_buffer(handle: ConnectionHandle) -> None:
         try:
             body = json.dumps(frame, ensure_ascii=False)
             handle.send_queue.put_nowait(("text", body))
-            handle.qsize_high_water = max(
-                handle.qsize_high_water, handle.send_queue.qsize()
-            )
+            handle.qsize_high_water = max(handle.qsize_high_water, handle.send_queue.qsize())
         except asyncio.QueueFull:
             asyncio.create_task(
                 _evict_slow_consumer(handle, "coalesce flush queue full"),
@@ -214,7 +218,8 @@ async def _flush_coalesce_buffer(handle: ConnectionHandle) -> None:
         except Exception as exc:
             logger.debug(
                 "[ConnectionHandle] flush_coalesce_buffer error code=%s: %s",
-                handle.code, exc,
+                handle.code,
+                exc,
             )
 
 
@@ -227,14 +232,17 @@ async def _evict_slow_consumer(handle: AnyHandle, reason: str) -> None:
     """
     try:
         from services.infrastructure.monitoring.ws_metrics import record_ws_slow_consumer
+
         record_ws_slow_consumer(reason)
     except Exception:
         pass
-    kicked_body = json.dumps({
-        "type": "kicked",
-        "reason": f"slow consumer: {reason}",
-        "role": handle.role,
-    })
+    kicked_body = json.dumps(
+        {
+            "type": "kicked",
+            "reason": f"slow consumer: {reason}",
+            "role": handle.role,
+        }
+    )
     try:
         await asyncio.wait_for(
             handle.send_queue.put(("text", kicked_body)),
@@ -251,6 +259,7 @@ async def _evict_slow_consumer(handle: AnyHandle, reason: str) -> None:
         from routers.api.workshop_ws_disconnect import (
             finalize_canvas_collab_disconnect,
         )
+
         user_stub = SimpleNamespace(id=handle.user_id)
         owner_id = handle.user_id if handle.role == "host" else None
         await finalize_canvas_collab_disconnect(
@@ -262,7 +271,9 @@ async def _evict_slow_consumer(handle: AnyHandle, reason: str) -> None:
     except Exception as exc:
         logger.warning(
             "[ConnectionHandle] slow-consumer cleanup failed code=%s user=%s: %s",
-            handle.code, handle.user_id, exc,
+            handle.code,
+            handle.user_id,
+            exc,
         )
 
 
@@ -298,6 +309,7 @@ async def enqueue(handle: AnyHandle, payload: dict, msg_type: str) -> None:
             from services.infrastructure.monitoring.ws_metrics import (
                 record_ws_coalesce_hit,
             )
+
             record_ws_coalesce_hit(msg_type)
         except Exception:
             pass
@@ -308,7 +320,8 @@ async def enqueue(handle: AnyHandle, payload: dict, msg_type: str) -> None:
     except (TypeError, ValueError):
         logger.debug(
             "[ConnectionHandle] enqueue: serialize failed msg_type=%s code=%s",
-            msg_type, handle.code,
+            msg_type,
+            handle.code,
         )
         return
     item = ("text", body)
@@ -316,9 +329,7 @@ async def enqueue(handle: AnyHandle, payload: dict, msg_type: str) -> None:
     if policy == "drop":
         try:
             handle.send_queue.put_nowait(item)
-            handle.qsize_high_water = max(
-                handle.qsize_high_water, handle.send_queue.qsize()
-            )
+            handle.qsize_high_water = max(handle.qsize_high_water, handle.send_queue.qsize())
         except asyncio.QueueFull:
             pass
         return
@@ -326,9 +337,7 @@ async def enqueue(handle: AnyHandle, payload: dict, msg_type: str) -> None:
     if policy == "drop_oldest":
         try:
             handle.send_queue.put_nowait(item)
-            handle.qsize_high_water = max(
-                handle.qsize_high_water, handle.send_queue.qsize()
-            )
+            handle.qsize_high_water = max(handle.qsize_high_water, handle.send_queue.qsize())
         except asyncio.QueueFull:
             try:
                 handle.send_queue.get_nowait()
@@ -343,14 +352,14 @@ async def enqueue(handle: AnyHandle, payload: dict, msg_type: str) -> None:
     timeout = 0.1 if policy == "block_short" else 1.0
     try:
         await asyncio.wait_for(handle.send_queue.put(item), timeout=timeout)
-        handle.qsize_high_water = max(
-            handle.qsize_high_water, handle.send_queue.qsize()
-        )
+        handle.qsize_high_water = max(handle.qsize_high_water, handle.send_queue.qsize())
     except (asyncio.TimeoutError, TimeoutError):
         logger.warning(
-            "[ConnectionHandle] enqueue timeout policy=%s msg_type=%s "
-            "code=%s user=%s",
-            policy, msg_type, handle.code, handle.user_id,
+            "[ConnectionHandle] enqueue timeout policy=%s msg_type=%s code=%s user=%s",
+            policy,
+            msg_type,
+            handle.code,
+            handle.user_id,
         )
         asyncio.create_task(
             _evict_slow_consumer(handle, f"enqueue timeout ({msg_type})"),
@@ -386,9 +395,7 @@ def create_connection_handle(
         )
     else:
         queue = asyncio.Queue(maxsize=_QUEUE_MAXSIZE)
-        effective_role: Literal["host", "editor"] = (
-            "host" if role == "host" else "editor"
-        )
+        effective_role: Literal["host", "editor"] = "host" if role == "host" else "editor"
         handle = ConnectionHandle(
             websocket=ws,
             code=code,
@@ -406,12 +413,15 @@ def create_connection_handle(
         if exc is not None:
             logger.warning(
                 "[WriterTask] Unexpected exception code=%s user=%s: %s",
-                code, user_id, exc,
+                code,
+                user_id,
+                exc,
             )
             try:
                 from services.infrastructure.monitoring.ws_metrics import (  # pylint: disable=import-outside-toplevel
                     record_ws_writer_task_failed,
                 )
+
                 record_ws_writer_task_failed()
             except Exception:
                 pass
@@ -434,7 +444,9 @@ async def activate_connection(code: str, user_id: int, handle: AnyHandle) -> Non
         ACTIVE_CONNECTIONS.setdefault(code, {})[user_id] = handle
     logger.debug(
         "[WorkshopWS] activate_connection code=%s user=%s role=%s",
-        code, user_id, handle.role,
+        code,
+        user_id,
+        handle.role,
     )
 
 
@@ -545,6 +557,7 @@ async def unregister_connection(code: str, user_id: int) -> None:
 
     logger.debug(
         "[WorkshopWS] unregister_connection code=%s user=%s",
-        code, user_id,
+        code,
+        user_id,
     )
     await finalize_handle_writer_shutdown(handle)

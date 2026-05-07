@@ -1,11 +1,10 @@
-/**
- * de UI — sidebar
- */
+/** de UI — sidebar */
 
 export default {
   'sidebar.actions.delete': 'Löschen',
   'sidebar.actions.pinToTop': 'Oben anheften',
   'sidebar.actions.rename': 'Umbenennen',
+  'sidebar.actions.turnOffOnlineCollab': 'Turn off online collaboration',
   'sidebar.actions.showLess': 'Weniger anzeigen',
   'sidebar.actions.showMore': 'Mehr anzeigen ({n})',
   'sidebar.actions.unpin': 'Lösen',
@@ -46,6 +45,7 @@ export default {
   'sidebar.debateverse': 'Debatte',
   'sidebar.diagramHistory.capacity': 'Es können bis zu {n} Diagramme gespeichert werden',
   'sidebar.diagramHistory.deleteFailed': 'Diagramm konnte nicht gelöscht werden',
+  'sidebar.diagramHistory.collabLive': 'Online collaboration active',
   'sidebar.diagramHistory.deleted': 'Diagramm gelöscht',
   'sidebar.diagramHistory.empty': 'Keine gespeicherten Diagramme',
   'sidebar.diagramHistory.loginPrompt': 'Melden Sie sich an, um Diagramme zu sehen',
@@ -79,4 +79,4 @@ export default {
   'sidebar.templateResources': 'Vorlagen',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': 'Konto',
-}
+} as const

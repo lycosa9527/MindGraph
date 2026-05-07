@@ -50,4 +50,4 @@ export default {
     'Anda telah dilog keluar kerana melebihi bilangan maksimum peranti',
   'notification.signInToUse': 'Log masuk untuk menggunakan ini',
   'notification.signInToValidateFocus': 'Log masuk untuk mengesahkan soalan fokus',
-}
+} as const

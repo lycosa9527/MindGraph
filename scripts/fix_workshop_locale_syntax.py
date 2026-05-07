@@ -3,6 +3,7 @@
 Restores terminators: U+FFFD + "?" before comma often replaced a lost "'" or "…".
 Fixes merged workshopCanvas lines and normalizes newlines.
 """
+
 from __future__ import annotations
 
 import re
@@ -19,9 +20,7 @@ THREE_DOT_KEYS = {
     "workshop.typeMessagePlaceholder",
 }
 
-BROKEN_TAIL = re.compile(
-    r"^(\s*)('(?:[\w.]+)')\s*:\s*'(.*)\ufffd\?\s*,\s*$"
-)
+BROKEN_TAIL = re.compile(r"^(\s*)('(?:[\w.]+)')\s*:\s*'(.*)\ufffd\?\s*,\s*$")
 
 MERGED_USERLEFT = re.compile(
     r"^(\s*)('workshopCanvas\.usersJoined')\s*:\s*"

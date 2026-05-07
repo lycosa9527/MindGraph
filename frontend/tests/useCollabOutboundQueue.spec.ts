@@ -13,7 +13,7 @@ describe('collectNodeIdsFromOutboundPayload', () => {
         type: 'update',
         nodes: [{ id: 'a' }, { id: 'b' }],
         deleted_node_ids: ['c'],
-      }),
+      })
     ).toEqual(['a', 'b', 'c'])
   })
 })

@@ -1,5 +1,5 @@
 /**
- * az UI workshop
+ * az UI — workshop
  */
 
 export default {
@@ -379,4 +379,4 @@ export default {
   'workshopCanvas.otherTabCollaborationActive':
     'Əməkdaşlıq bu hesab üçün başqa vərəqədə və ya pəncərədə davam edir.',
   'workshopCanvas.joinQrAlt': 'Əməkdaşlığa qoşulmaq üçün QR kodu',
-}
+} as const

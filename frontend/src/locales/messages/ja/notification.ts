@@ -48,4 +48,4 @@ export default {
   'notification.sessionInvalidated': '登録できる端末の上限を超えたためログアウトされました',
   'notification.signInToUse': '利用するにはサインインしてください',
   'notification.signInToValidateFocus': 'フォーカスの質問を検証するにはサインインしてください',
-}
+} as const

@@ -1,7 +1,7 @@
 /**
  * Desktop canvas: Kitty mobile-session indicator, ephemeral WS scope, desktop_focus publish.
  */
-import { computed, onUnmounted, ref, watch, type ComputedRef, type Ref } from 'vue'
+import { type ComputedRef, type Ref, computed, onUnmounted, ref, watch } from 'vue'
 
 import { useKittyDesktopFocusPublish } from '@/composables/kitty/useKittyDesktopFocusPublish'
 import { useKittyMobileLaneArmed } from '@/composables/kitty/useKittyMobileLaneArmed'
@@ -56,18 +56,15 @@ export function useCanvasKittyDesktopPairing(options: {
     enabled: kittyDesktopFocusPublishOn,
   })
 
-  watch(
-    options.currentDiagramId,
-    (nextId, prevId) => {
-      if (nextId === prevId) return
-      const oldScope =
-        typeof prevId === 'string' && prevId.length > 0 ? prevId : kittyEphemeralScope.value
-      if (nextId == null || nextId === '') {
-        kittyEphemeralScope.value = crypto.randomUUID()
-      }
-      options.onLibraryScopeSwitchedCleanup(oldScope)
+  watch(options.currentDiagramId, (nextId, prevId) => {
+    if (nextId === prevId) return
+    const oldScope =
+      typeof prevId === 'string' && prevId.length > 0 ? prevId : kittyEphemeralScope.value
+    if (nextId == null || nextId === '') {
+      kittyEphemeralScope.value = crypto.randomUUID()
     }
-  )
+    options.onLibraryScopeSwitchedCleanup(oldScope)
+  })
 
   onUnmounted(() => {
     const scope = kittyWsSessionScope.value

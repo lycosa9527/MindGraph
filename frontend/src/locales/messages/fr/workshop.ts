@@ -1,6 +1,4 @@
-/**
- * fr UI workshop
- */
+/** fr UI — workshop */
 
 export default {
   'collab.codeCopied': 'Code copié',
@@ -31,6 +29,8 @@ export default {
   'collab.noDiagramToSave': 'Aucun diagramme à enregistrer',
   'collab.nodeLocked': 'Une autre personne modifie ce nœud',
   'collab.participants': '{n} présent(s)',
+  'collab.previousSessionsStopped':
+    'Ended {n} previous collaboration session(s) on your other diagrams.',
   'collab.saveFailed': 'Échec de l’enregistrement du diagramme',
   'collab.scanToJoin': 'Scanner pour rejoindre',
   'collab.schoolDescActive':
@@ -351,16 +351,33 @@ export default {
   'workshop.you': '(vous)',
   'workshop.youAnd': 'Vous et',
   'workshopCanvas.connectFailed': 'Échec de la connexion à la collaboration',
+  'workshopCanvas.sessionExpiredReconnect':
+    'Your session has expired. Please refresh the page to re-join the collaboration.',
+  'workshopCanvas.sessionRefreshFailed':
+    'Could not refresh your collaboration session. Please save your work and sign in again.',
+  'workshopCanvas.outboundQueueDegraded':
+    'Collaboration is falling behind. Some unsent edits could not be kept.',
   'workshopCanvas.connectionClosed': 'Connexion fermée',
+  'workshopCanvas.connectionClosedSlow':
+    'Connection closed: your connection was too slow to keep up with the collaboration session.',
+  'workshopCanvas.sessionEndedByHost': 'The host has ended the collaboration session.',
+  'workshopCanvas.editingNodeLabel': '{username} is editing…',
+  'workshopCanvas.collabEditorDisplayNameFallback': 'Someone',
   'workshopCanvas.connectionClosedReason': 'Connexion à la collaboration fermée : {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} modifie ce nœud',
   'workshopCanvas.errorGeneric': 'Erreur de collaboration',
+  'workshopCanvas.updatePartialFiltered':
+    'Some edits were skipped ({count} node(s)) because another collaborator is editing those nodes.',
   'workshopCanvas.reconnectFailed':
     'Échec de la reconnexion à la collaboration ; veuillez actualiser la page',
+  'workshopCanvas.resyncWaiting':
+    'Live diagram sync is taking longer than expected. Retrying; you can refresh if editing feels stuck.',
   'workshopCanvas.returnedHomeIdle':
     "Retour à l'accueil aucune modification de diagramme pendant 30 minutes.",
   'workshopCanvas.userJoined': "L'utilisateur {username} a rejoint",
+  'workshopCanvas.usersJoined': '{count} users joined',
   'workshopCanvas.userLeft': "L'utilisateur {username} a quitté",
+  'workshopCanvas.usersLeft': '{count} users left',
   'workshopCanvas.wsError':
     'Erreur de connexion à la collaboration ; veuillez vérifier votre réseau',
   'workshopCanvas.returnedHomeRoomIdle':
@@ -370,4 +387,4 @@ export default {
   'workshopCanvas.otherTabCollaborationActive':
     'Collaboration continues in another tab or window for this account.',
   'workshopCanvas.joinQrAlt': 'Join collaboration QR code',
-}
+} as const

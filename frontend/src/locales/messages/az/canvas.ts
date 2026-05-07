@@ -1,6 +1,4 @@
-/**
- * az UI — canvas
- */
+/** az UI — canvas */
 
 export default {
   'braceMap.defaultSubpartFirst': 'Yeni alt hissə 1',
@@ -60,6 +58,8 @@ export default {
   'canvas.toolbar.causeAdded': 'Səbəb düyünü əlavə olundu',
   'canvas.toolbar.childAdded': 'Alt element əlavə olundu',
   'canvas.toolbar.collabAiBlocked': 'Əməkdaşlıqda yalnız diaqram sahibi AI yarada bilər',
+  'canvas.toolbar.collabLiveAiDisabled':
+    'AI generation is unavailable during live collaboration so everyone stays in sync',
   'canvas.toolbar.collabGuestFeatureBlocked':
     'Əməkdaşlıq qonağı kimi qoşulduğunuzda bu funksiya əlçatan deyil.',
   'canvas.toolbar.colorLabel': 'Rəng',
@@ -274,6 +274,10 @@ export default {
   'canvas.toolbar.selectBranchOrChild': 'Budaq və ya alt düyün seçin',
   'canvas.toolbar.selectCategoryOrLeafDelete':
     'Kateqoriya və ya yarpaq düyünlərini seçin (mövzu silinmir)',
+  'canvas.toolbar.selectCauseOrEffectForAdd':
+    'Select a cause or effect node (not the event), then press Enter to add another in that column',
+  'canvas.toolbar.selectTreeBranchForChild':
+    'Select a category or an item under a category to add a child, or select the topic to add a category',
   'canvas.toolbar.selectNodesFirst': 'Əvvəlcə düyün(lər)i seçin',
   'canvas.toolbar.selectNodesToDelete': 'Silmək üçün düyün(lər)i seçin',
   'canvas.toolbar.selectPartForSubpart': 'Alt hissə üçün hissə düyününü seçin',
@@ -324,6 +328,22 @@ export default {
   'canvas.topBar.shareCommunity': 'İcma ilə paylaş',
   'canvas.topBar.sharedCollab': 'Ümumi əməkdaşlıq',
   'canvas.topBar.teachingDesign': 'Tədris dizaynı',
+  'canvas.subtitles.tooltip': 'Live subtitles (microphone)',
+  'canvas.subtitles.aria': 'Toggle live subtitles',
+  'canvas.subtitles.listening': 'Listening…',
+  'canvas.subtitles.micFailed': 'Could not access the microphone.',
+  'canvas.subtitles.micUnavailable': 'Microphone is not available in this browser.',
+  'canvas.subtitles.wsError': 'Subtitle connection failed. Check network and sign-in.',
+  'canvas.subtitles.genericError': 'Subtitle error',
+  'canvas.translation.tooltip': 'Live translation (microphone)',
+  'canvas.translation.aria': 'Toggle live translation',
+  'canvas.translation.listening': 'Listening for translation…',
+  'canvas.translation.micFailed': 'Could not access the microphone.',
+  'canvas.translation.micUnavailable': 'Microphone is not available in this browser.',
+  'canvas.translation.wsError': 'Translation connection failed. Check network and sign-in.',
+  'canvas.translation.genericError': 'Translation error',
+  'canvas.translation.start': 'Start translation',
+  'canvas.translation.stop': 'Stop translation',
   'canvas.topBar.snapshotRecallTooltip': 'Anlıq görüntü {n} bərpa et',
   'canvas.topBar.snapshotRecallTitle': 'Anlıq görüntünü bərpa et',
   'canvas.topBar.snapshotRecallConfirm':
@@ -347,8 +367,7 @@ export default {
   'canvas.zoomControls.collabTurnOff': 'Onlayn əməkdaşlığı söndür',
   'canvasPage.collaborationFooter': 'Əməkdaşlıq',
   'canvasPage.collaborationFooterOwner': '{username} əməkdaşlığı',
-  'canvasPage.collaborationFooterOwnerDiagram':
-    '{username} diaqramı «{diagramTitle}» — əməkdaşlıq',
+  'canvasPage.collaborationFooterOwnerDiagram': '{username} diaqramı «{diagramTitle}» — əməkdaşlıq',
   'canvasPage.collaborationFooterNetworkDiagramTitle': '«{diagramTitle}» birgə diaqramı',
   'canvasPage.collaborationFooterSchool':
     'Məktəb əməkdaşlığı davam edir — məktəb siyahısından qoşulun.',
@@ -356,13 +375,6 @@ export default {
     '«{diagramTitle}» üzrə məktəb əməkdaşlığı — məktəb sessiya siyahısından qoşulun.',
   'canvasPage.collabRoomIdleEnding':
     'Sessiya boşdayanır — təxminən {seconds} saniyə sonra əməkdaşlıq bitəcək (davam etdirmək üçün redaktə edin)',
-  'canvasPage.collabReconnecting': 'Əməkdaşlığa yenidən qoşulunur…',
-  'canvasPage.collabConnectionFailed': 'Əməkdaşlıq əlaqəsi kəsildi.',
-  'canvasPage.collabRetryConnection': 'Yenidən cəhd et',
-  'canvasPage.collabParticipantsAria': 'Əməkdaşlıq iştirakçıları',
-  'canvasPage.collabConnected': 'Qoşuldu',
-  'canvas.topBar.viewOnly': 'Yalnız baxış',
-  'canvasPage.collabParticipantsMore': 'daha çox',
   'conceptMap.focus.noResult': 'Nəticə yoxdur',
   'conceptMap.focus.validationRequestFailed': 'Yoxlama sorğusu uğursuz oldu',
   'diagram.aiGenerating': 'AI...',
@@ -530,6 +542,11 @@ export default {
   'landing.template.slot.subject': 'Mövzu',
   'landing.template.slot.theme': 'Tema',
   'landing.template.slot.topic': 'Mərkəzi mövzu',
+  'discovery.gallery.sectionTitle': 'Discover featured diagrams',
+  'discovery.gallery.item1.title': 'Physical vs chemical change',
+  'discovery.gallery.item2.title': 'Project planning mind map',
+  'discovery.gallery.item3.title': 'Quadratic equation walkthrough',
+  'discovery.gallery.item4.title': 'Force and field relationships',
   'mindgraphLanding.cancel': 'Ləğv et',
   'mindgraphLanding.codeFormatInvalid': 'Kod formatı yanlışdır (xxx-xxx olmalıdır)',
   'mindgraphLanding.codeIncomplete': 'Tam təqdimat kodunu daxil edin',
@@ -537,6 +554,7 @@ export default {
   'mindgraphLanding.dialogSchoolTitle': 'Məktəb daxilində əməkdaşlıq',
   'mindgraphLanding.dialogSharedTitle': 'Ümumi əməkdaşlıq',
   'mindgraphLanding.import': 'İdxal',
+  'mindgraphLanding.languageMenuTitle': 'Language — syncs interface and AI output',
   'mindgraphLanding.inputPlaceholder': 'Diaqramınızı təsvir edin və ya aşağıda şablon seçin...',
   'mindgraphLanding.join': 'Qoşul',
   'mindgraphLanding.joinFailed': 'Qoşulmaq alınmadı',
@@ -555,4 +573,11 @@ export default {
   'mindgraphLanding.sharedCollab': 'Ümumi əməkdaşlıq',
   'mindgraphLanding.joinDiagramEdit': 'Diaqram redaktəsinə qoşul',
   'mindgraphLanding.welcome': 'Salam {username}, mən sənin AI vizual düşüncə köməkçinəm',
-}
+  'canvasPage.collabReconnecting': 'Əməkdaşlığa yenidən qoşulunur…',
+  'canvasPage.collabConnectionFailed': 'Əməkdaşlıq əlaqəsi kəsildi.',
+  'canvasPage.collabRetryConnection': 'Yenidən cəhd et',
+  'canvasPage.collabParticipantsAria': 'Əməkdaşlıq iştirakçıları',
+  'canvasPage.collabConnected': 'Qoşuldu',
+  'canvas.topBar.viewOnly': 'Yalnız baxış',
+  'canvasPage.collabParticipantsMore': 'daha çox',
+} as const

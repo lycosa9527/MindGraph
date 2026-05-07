@@ -195,7 +195,11 @@
     var(--_ea-w) var(--_ea-p),
     var(--_ea-p) var(--_ea-w),
     var(--_ea-w) var(--_ea-p);
-  background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+  background-position:
+    0 0,
+    100% 0,
+    100% 100%,
+    0 100%;
   background-repeat: repeat-x, repeat-y, repeat-x, repeat-y;
   background-origin: border-box;
   animation: workshop-ants 0.55s linear infinite;
@@ -204,7 +208,11 @@
 /* Clockwise march: advance each edge's pattern by one full period per cycle */
 @keyframes workshop-ants {
   from {
-    background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+    background-position:
+      0 0,
+      100% 0,
+      100% 100%,
+      0 100%;
   }
   to {
     background-position:
@@ -327,7 +335,11 @@
     var(--_dp-w) var(--_dp-p),
     var(--_dp-p) var(--_dp-w),
     var(--_dp-w) var(--_dp-p);
-  background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+  background-position:
+    0 0,
+    100% 0,
+    100% 100%,
+    0 100%;
   background-repeat: repeat-x, repeat-y, repeat-x, repeat-y;
   background-origin: border-box;
   animation: workshop-ants 0.55s linear infinite;

@@ -55,10 +55,7 @@ def _validate_collab_production_guards() -> None:
     if not missing:
         return
 
-    message = (
-        "Missing required production collaboration settings: "
-        + ", ".join(missing)
-    )
+    message = "Missing required production collaboration settings: " + ", ".join(missing)
     logger.critical("[LIFESPAN] %s", message)
     if _env_truthy("COLLAB_STRICT_PROD_GUARDS", "1"):
         raise CollabProductionGuardError(message)
@@ -117,11 +114,9 @@ async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
                 component=component,
                 error_message=f"{component} startup failed: {str(exc)}",
                 details=(
-                    "Application cannot start until required production "
-                    "configuration is present."
+                    "Application cannot start until required production configuration is present."
                     if isinstance(exc, CollabProductionGuardError)
-                    else "Application cannot start without Redis. Check Redis "
-                    "connection and configuration."
+                    else "Application cannot start without Redis. Check Redis connection and configuration."
                 ),
             )
         except Exception as alert_error:  # pylint: disable=broad-except

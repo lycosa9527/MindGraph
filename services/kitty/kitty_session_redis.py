@@ -29,21 +29,30 @@ logger = logging.getLogger(__name__)
 _DEBOUNCE_SEC = 0.08
 _coalesce_lock = asyncio.Lock()
 _coalesce_tasks: Dict[str, asyncio.Task] = {}
-_coalesce_pending: Dict[
-    str, Tuple[int, Dict[str, Any], str, str, Optional[str], Optional[str]]
-] = {}
-_voice_session_resolver: Optional[Any] = None
+_coalesce_pending: Dict[str, Tuple[int, Dict[str, Any], str, str, Optional[str], Optional[str]]] = {}
+
+
+class _VoiceSessionGetterSlot:
+    """Holds optional voice-session getter without module-level ``global`` assignments."""
+
+    __slots__ = ("getter",)
+
+    def __init__(self) -> None:
+        self.getter: Optional[Any] = None
+
+
+_VOICE_SESSION_GETTER = _VoiceSessionGetterSlot()
 
 
 def configure_voice_session_getter(getter: Any) -> None:
     """Avoid services→routers import cycles: set ``get_voice_session`` from ``session_ops`` startup."""
-    global _voice_session_resolver
-    _voice_session_resolver = getter
+    _VOICE_SESSION_GETTER.getter = getter
 
 
 def _get_voice_session_coalesce(voice_sid: str) -> Optional[Dict[str, Any]]:
-    if _voice_session_resolver is not None:
-        return _voice_session_resolver(voice_sid)
+    getter = _VOICE_SESSION_GETTER.getter
+    if getter is not None:
+        return getter(voice_sid)
     from routers.features.voice.session_ops import get_voice_session
 
     return get_voice_session(voice_sid)

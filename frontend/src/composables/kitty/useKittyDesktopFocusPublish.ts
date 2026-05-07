@@ -2,7 +2,7 @@
  * Debounced ``PUT /api/kitty/desktop_focus`` from desktop MindGraph so phones can discover
  * which saved diagram is focused (library id).
  */
-import { onUnmounted, watch, type Ref } from 'vue'
+import { type Ref, onUnmounted, watch } from 'vue'
 
 const DEBOUNCE_MS = 480
 
@@ -27,8 +27,7 @@ export function useKittyDesktopFocusPublish(options: {
 
   function flush(): void {
     const idRaw = options.libraryDiagramId.value
-    const id =
-      options.enabled.value && idRaw != null && idRaw !== '' ? String(idRaw) : null
+    const id = options.enabled.value && idRaw != null && idRaw !== '' ? String(idRaw) : null
     void putDesktopFocusDiagram(id)
   }
 

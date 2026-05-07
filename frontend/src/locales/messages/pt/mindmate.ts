@@ -12,13 +12,25 @@ export default {
   'aiModel.tabFocusBadge': 'Foco Tab',
   'aiModel.tabFocusTooltip':
     'Pressione Tab ao editar a questão-foco para validar; depois escolha alternativas na barra (− / =)',
+  'aiModel.tabFocusQuestionBadge': 'Tab — pergunta de foco',
+  'aiModel.conceptMapFocusQuestionTabTooltip':
+    'Com a pergunta de foco selecionada ou em edição: pressione Tab para executar a verificação pela IA (insira primeiro uma pergunta substantiva; sessão iniciada obrigatória).',
   'aiModel.tabRecBadge': 'Rec. Tab',
+  'aiModel.tabContentRecBadge': 'Tab — conteúdo',
+  'aiModel.tabRelationshipRecBadge': 'Tab — relação',
+  'aiModel.conceptMapConceptTabTooltip':
+    'Modo de edição (conceito isolado): Tab para alternativas de texto (o tema precisa estar definido).',
+  'aiModel.conceptMapRelationshipTabTooltip':
+    'Modo de edição ou seleção (conceito ligado): Tab para sugestões de relação na ligação em foco.',
   'aiModel.tooltip.clickDeselect': 'Clique para desmarcar {name}',
   'aiModel.tooltip.clickSelect': 'Clique para selecionar {name}',
   'aiModel.tooltip.clickSwitch': 'Clique para alternar para o resultado de {name}',
   'aiModel.tooltip.generating': '{name} gerando...',
   'aiModel.tooltip.modelFailed': '{name} falhou ao gerar',
   'aiModel.tooltip.showingResult': 'Mostrando o resultado de {name}',
+  'aiModel.hostPickBadgeTooltip':
+    'O moderador está editando a versão deste modelo do diagrama (vista multi-modelo)',
+  'aiModel.hostPickBadgeAria': 'O moderador está editando com {name}',
   'autoComplete.collabOwnerOnly':
     'Somente o dono do diagrama pode usar a geração por IA na colaboração',
   'autoComplete.conceptMapRealtime':
@@ -122,7 +134,7 @@ export default {
   'nodePalette.refresh': 'Atualizar',
   'nodePalette.selected': 'selecionado(s)',
   'nodePalette.similarities': 'Semelhanças',
-  'panel.mindmate': 'MindMate IA',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'Paleta de nós',
   'panel.properties': 'Propriedades',
   'panels.property.background': 'Plano de fundo',
@@ -158,4 +170,4 @@ export default {
   'rootConceptModal.tabTitleRoot': 'Conceito raiz: {text}',
   'rootConceptModal.title': 'Conceito raiz',
   'rootConceptModal.titleConceptList': 'Lista de conceitos',
-}
+} as const

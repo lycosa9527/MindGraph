@@ -48,4 +48,4 @@ export default {
   'notification.sessionInvalidated': 'Bạn đã bị đăng xuất do vượt quá số thiết bị tối đa',
   'notification.signInToUse': 'Đăng nhập để sử dụng',
   'notification.signInToValidateFocus': 'Đăng nhập để xác thực câu hỏi trọng tâm',
-}
+} as const

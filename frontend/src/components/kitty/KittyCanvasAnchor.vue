@@ -135,7 +135,8 @@ const inlineShellClass = computed(() => {
         :class="{
           'kitty-anchor__emoji--pulse': state === 'listening' || state === 'speaking',
         }"
-      >🐈‍⬛</span>
+        >🐈‍⬛</span
+      >
     </button>
 
     <div
@@ -160,7 +161,8 @@ const inlineShellClass = computed(() => {
         :class="{
           'kitty-anchor__emoji--pulse': state === 'listening' || state === 'speaking',
         }"
-      >🐈‍⬛</span>
+        >🐈‍⬛</span
+      >
     </div>
 
     <button
@@ -186,7 +188,8 @@ const inlineShellClass = computed(() => {
         :class="{
           'kitty-anchor__emoji--pulse': state === 'listening' || state === 'speaking',
         }"
-      >🐈‍⬛</span>
+        >🐈‍⬛</span
+      >
       <div class="min-w-0 flex-1">
         <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
           {{ inlineTitle }}
@@ -220,7 +223,8 @@ const inlineShellClass = computed(() => {
         :class="{
           'kitty-anchor__emoji--pulse': state === 'listening' || state === 'speaking',
         }"
-      >🐈‍⬛</span>
+        >🐈‍⬛</span
+      >
       <div class="min-w-0 flex-1">
         <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
           {{ inlineTitle }}

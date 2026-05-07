@@ -1,6 +1,4 @@
-/**
- * ja UI — community
- */
+/** ja UI — community */
 
 export default {
   'community.category.all': 'すべて',
@@ -150,4 +148,4 @@ export default {
   'libraryViewer.bookmarkAdded': 'ブックマークに追加しました',
   'libraryViewer.bookmarkRemoved': 'ブックマークを削除しました',
   'libraryViewer.operationFailed': '問題が発生しました',
-}
+} as const

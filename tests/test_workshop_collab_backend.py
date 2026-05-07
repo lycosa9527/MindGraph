@@ -40,6 +40,7 @@ from services.online_collab.redis.online_collab_redis_keys import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_spec(
     nodes: Optional[List[Dict[str, Any]]] = None,
     connections: Optional[List[Dict[str, Any]]] = None,
@@ -52,15 +53,14 @@ def _no_editors() -> Dict[str, Dict[str, Dict[int, str]]]:
     return {}
 
 
-def _editors_with_lock(
-    code: str, node_id: str, owner_id: int, username: str
-) -> Dict[str, Dict[str, Dict[int, str]]]:
+def _editors_with_lock(code: str, node_id: str, owner_id: int, username: str) -> Dict[str, Dict[str, Dict[int, str]]]:
     return {code: {node_id: {owner_id: username}}}
 
 
 # ---------------------------------------------------------------------------
 # merge_granular_into_spec
 # ---------------------------------------------------------------------------
+
 
 class TestMergeGranularIntoSpec:
     def test_adds_new_node(self) -> None:
@@ -143,6 +143,7 @@ class TestMergeGranularIntoSpec:
 # apply_live_update
 # ---------------------------------------------------------------------------
 
+
 class TestApplyLiveUpdate:
     def test_full_spec_replace_bumps_version(self) -> None:
         current = _make_spec(version=5)
@@ -185,6 +186,7 @@ class TestApplyLiveUpdate:
 # node_locked_by_other_user / filter_granular helpers
 # ---------------------------------------------------------------------------
 
+
 class TestLockHelpers:
     CODE = "abc-123"
     ALICE_ID = 1
@@ -192,89 +194,68 @@ class TestLockHelpers:
     NODE_ID = "n1"
 
     def test_not_locked_when_no_editors(self) -> None:
-        assert not node_locked_by_other_user(
-            self.CODE, self.BOB_ID, self.NODE_ID, _no_editors(), None
-        )
+        assert not node_locked_by_other_user(self.CODE, self.BOB_ID, self.NODE_ID, _no_editors(), None)
 
     def test_locked_by_other_user(self) -> None:
         editors = _editors_with_lock(self.CODE, self.NODE_ID, self.ALICE_ID, "alice")
-        assert node_locked_by_other_user(
-            self.CODE, self.BOB_ID, self.NODE_ID, editors, None
-        )
+        assert node_locked_by_other_user(self.CODE, self.BOB_ID, self.NODE_ID, editors, None)
 
     def test_not_locked_when_same_user(self) -> None:
         editors = _editors_with_lock(self.CODE, self.NODE_ID, self.ALICE_ID, "alice")
-        assert not node_locked_by_other_user(
-            self.CODE, self.ALICE_ID, self.NODE_ID, editors, None
-        )
+        assert not node_locked_by_other_user(self.CODE, self.ALICE_ID, self.NODE_ID, editors, None)
 
     def test_redis_editors_take_precedence(self) -> None:
         """When redis editors are provided, local editors are ignored."""
         local = _editors_with_lock(self.CODE, self.NODE_ID, self.ALICE_ID, "alice")
         # Redis editors show the node as free
         redis_editors: Dict[str, Dict[int, str]] = {}
-        assert not node_locked_by_other_user(
-            self.CODE, self.BOB_ID, self.NODE_ID, local, redis_editors
-        )
+        assert not node_locked_by_other_user(self.CODE, self.BOB_ID, self.NODE_ID, local, redis_editors)
 
     def test_filter_granular_nodes_drops_locked(self) -> None:
         editors = _editors_with_lock(self.CODE, self.NODE_ID, self.ALICE_ID, "alice")
         nodes = [{"id": self.NODE_ID, "text": "bob change"}]
-        result = filter_granular_nodes_for_locks(
-            self.CODE, self.BOB_ID, nodes, editors, None
-        )
+        result = filter_granular_nodes_for_locks(self.CODE, self.BOB_ID, nodes, editors, None)
         assert not result
 
     def test_filter_granular_nodes_allows_unlocked(self) -> None:
         nodes = [{"id": "n2", "text": "free"}]
-        result = filter_granular_nodes_for_locks(
-            self.CODE, self.BOB_ID, nodes, _no_editors(), None
-        )
+        result = filter_granular_nodes_for_locks(self.CODE, self.BOB_ID, nodes, _no_editors(), None)
         assert len(result) == 1
 
     def test_filter_granular_nodes_allows_owner_edit(self) -> None:
         editors = _editors_with_lock(self.CODE, self.NODE_ID, self.ALICE_ID, "alice")
         nodes = [{"id": self.NODE_ID, "text": "my change"}]
-        result = filter_granular_nodes_for_locks(
-            self.CODE, self.ALICE_ID, nodes, editors, None
-        )
+        result = filter_granular_nodes_for_locks(self.CODE, self.ALICE_ID, nodes, editors, None)
         assert len(result) == 1
 
     def test_filter_granular_connections_drops_if_source_locked(self) -> None:
         editors = _editors_with_lock(self.CODE, "n1", self.ALICE_ID, "alice")
         conns = [{"source": "n1", "target": "n2"}]
-        result = filter_granular_connections_for_locks(
-            self.CODE, self.BOB_ID, conns, editors, None
-        )
+        result = filter_granular_connections_for_locks(self.CODE, self.BOB_ID, conns, editors, None)
         assert not result
 
     def test_filter_granular_connections_drops_if_target_locked(self) -> None:
         editors = _editors_with_lock(self.CODE, "n2", self.ALICE_ID, "alice")
         conns = [{"source": "n1", "target": "n2"}]
-        result = filter_granular_connections_for_locks(
-            self.CODE, self.BOB_ID, conns, editors, None
-        )
+        result = filter_granular_connections_for_locks(self.CODE, self.BOB_ID, conns, editors, None)
         assert not result
 
     def test_filter_granular_connections_allows_when_free(self) -> None:
         conns = [{"source": "n3", "target": "n4"}]
-        result = filter_granular_connections_for_locks(
-            self.CODE, self.BOB_ID, conns, _no_editors(), None
-        )
+        result = filter_granular_connections_for_locks(self.CODE, self.BOB_ID, conns, _no_editors(), None)
         assert len(result) == 1
 
     def test_filter_granular_nodes_no_id_passes_through(self) -> None:
         """Nodes without an id field are let through (cannot lock an anonymous node)."""
         nodes = [{"text": "no id"}]
-        result = filter_granular_nodes_for_locks(
-            self.CODE, self.BOB_ID, nodes, _no_editors(), None
-        )
+        result = filter_granular_nodes_for_locks(self.CODE, self.BOB_ID, nodes, _no_editors(), None)
         assert len(result) == 1
 
 
 # ---------------------------------------------------------------------------
 # Lock-before-write contract (unit-level simulation)
 # ---------------------------------------------------------------------------
+
 
 class TestLockBeforeWriteContract:
     """
@@ -301,9 +282,7 @@ class TestLockBeforeWriteContract:
 
         This mirrors the logic added by p0-lock-after-write.
         """
-        filtered = filter_granular_nodes_for_locks(
-            self.CODE, sender_id, nodes, active_editors, None
-        )
+        filtered = filter_granular_nodes_for_locks(self.CODE, sender_id, nodes, active_editors, None)
         # In production, mutate_live_spec_after_ws_update would be called here.
         # We return filtered to assert no locked node is included.
         return filtered
@@ -329,6 +308,7 @@ class TestLockBeforeWriteContract:
 # Redis key format tests (NX locks)
 # ---------------------------------------------------------------------------
 
+
 class TestRedisKeyFormats:
     def test_room_idle_kick_lock_key_format(self) -> None:
         key = room_idle_kick_lock_key("abc-123")
@@ -348,6 +328,7 @@ class TestRedisKeyFormats:
 # ---------------------------------------------------------------------------
 # REST guard: get_active_workshop_code_for_diagram (pure-logic layer)
 # ---------------------------------------------------------------------------
+
 
 class TestRestCollabGuardLogic:
     """
@@ -386,6 +367,7 @@ class TestRestCollabGuardLogic:
 # Multi-worker NX dedup (unit-level simulation)
 # ---------------------------------------------------------------------------
 
+
 class TestMultiWorkerNxDedup:
     """
     Verify that only the first worker that sets the NX key proceeds;
@@ -419,6 +401,7 @@ class TestMultiWorkerNxDedup:
 # Fanout broadcast semantics
 # ---------------------------------------------------------------------------
 
+
 class TestFanoutBroadcastSemantics:
     """
     Verify that Pub/Sub fanout delivers to ALL subscribers, not just one.
@@ -431,6 +414,7 @@ class TestFanoutBroadcastSemantics:
     @pytest.mark.asyncio
     async def test_publish_reaches_all_subscribers(self) -> None:
         import asyncio
+
         received: Dict[str, List[str]] = {}
         queues: Dict[str, asyncio.Queue] = {}
         channel = "workshop:test-room"
@@ -461,9 +445,7 @@ class TestFanoutBroadcastSemantics:
         await asyncio.gather(*tasks)
 
         for name in ("a", "b", "c"):
-            assert received[name] == ["msg1", "msg2"], (
-                f"Subscriber {name!r} did not receive all messages"
-            )
+            assert received[name] == ["msg1", "msg2"], f"Subscriber {name!r} did not receive all messages"
 
     @pytest.mark.asyncio
     async def test_pub_sub_not_load_balanced(self) -> None:
@@ -472,6 +454,7 @@ class TestFanoutBroadcastSemantics:
         load-balances to only one consumer).
         """
         import asyncio
+
         total_received = 0
         queues: List[asyncio.Queue] = [asyncio.Queue() for _ in range(5)]
 
@@ -498,6 +481,7 @@ class TestFanoutBroadcastSemantics:
 # ---------------------------------------------------------------------------
 # HEXPIRE participants (hash-based storage with per-field TTL fallback)
 # ---------------------------------------------------------------------------
+
 
 class TestHexpireParticipants:
     """
@@ -544,8 +528,12 @@ class TestHexpireParticipants:
 
         class FakeRedis:
             """Minimal Redis stub that raises ResponseError on hexpire."""
+
             async def hexpire(
-                self, key: str, ttl: int, field: str  # pylint: disable=unused-argument
+                self,
+                key: str,
+                ttl: int,
+                field: str,  # pylint: disable=unused-argument
             ) -> None:
                 raise ResponseError("ERR unknown command 'hexpire'")
 
@@ -558,6 +546,7 @@ class TestHexpireParticipants:
             from services.online_collab.participant.online_collab_participant_ops import (
                 _hexpire_field,
             )
+
             fake = FakeRedis()
             await _hexpire_field(fake, "participants:test", 300, "user:1")
 
@@ -567,6 +556,7 @@ class TestHexpireParticipants:
         from services.online_collab.redis.online_collab_redis_keys import (
             participants_key,
         )
+
         key = participants_key("room-xyz")
         assert "room-xyz" in key
 
@@ -574,12 +564,14 @@ class TestHexpireParticipants:
         from services.online_collab.redis.online_collab_redis_keys import (
             participants_key,
         )
+
         assert participants_key("a") != participants_key("b")
 
 
 # ---------------------------------------------------------------------------
 # SKIP LOCKED / MERGE cleanup partitioning
 # ---------------------------------------------------------------------------
+
 
 class TestMergeCleanupPartitioning:
     """
@@ -592,11 +584,9 @@ class TestMergeCleanupPartitioning:
 
     def _expired_rows(self) -> List[Dict[str, Any]]:
         from datetime import UTC, datetime, timedelta
+
         now = datetime.now(UTC)
-        return [
-            {"id": i, "workshop_code": f"wc-{i}", "expires_at": now - timedelta(hours=1)}
-            for i in range(1, 6)
-        ]
+        return [{"id": i, "workshop_code": f"wc-{i}", "expires_at": now - timedelta(hours=1)} for i in range(1, 6)]
 
     def test_all_expired_rows_are_returned(self) -> None:
         rows = self._expired_rows()
@@ -610,6 +600,7 @@ class TestMergeCleanupPartitioning:
             participants_key,
             live_spec_key,
         )
+
         code = "wc-test"
         assert code in participants_key(code)
         assert code in live_spec_key(code)

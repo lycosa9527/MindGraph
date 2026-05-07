@@ -429,10 +429,7 @@ async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str
                         # Forward audio to Omni
                         audio_data = message.get("data")
                         if audio_data:
-                            if (
-                                not isinstance(audio_data, str)
-                                or len(audio_data) > _KITTY_WS_MAX_AUDIO_B64_CHARS
-                            ):
+                            if not isinstance(audio_data, str) or len(audio_data) > _KITTY_WS_MAX_AUDIO_B64_CHARS:
                                 await safe_websocket_send(
                                     websocket,
                                     {"type": "error", "error": "Audio frame too large"},
@@ -548,10 +545,7 @@ async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str
                         new_context_in = message.get("context", {}) or {}
                         cur_panel = voice_sessions[voice_session_id].get("active_panel", "none")
                         active_panel = (
-                            message.get("active_panel")
-                            or new_context_in.get("active_panel")
-                            or cur_panel
-                            or "none"
+                            message.get("active_panel") or new_context_in.get("active_panel") or cur_panel or "none"
                         )
                         session_dt = (
                             voice_sessions[voice_session_id].get("diagram_type")
@@ -698,10 +692,7 @@ async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str
                         image_data = message.get("data")  # Base64 encoded image
                         image_format = message.get("format", "jpeg")
                         if image_data:
-                            if (
-                                not isinstance(image_data, str)
-                                or len(image_data) > _KITTY_WS_IMAGE_B64_MAX_CHARS
-                            ):
+                            if not isinstance(image_data, str) or len(image_data) > _KITTY_WS_IMAGE_B64_MAX_CHARS:
                                 await safe_websocket_send(
                                     websocket,
                                     {"type": "error", "error": "Image payload too large"},
@@ -748,9 +739,7 @@ async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str
                                     logger.debug("create_response after image: %s", resp_err)
                                 else:
                                     voice_sessions[voice_session_id]["pending_kitty_image_paragraph"] = True
-                                    voice_sessions[voice_session_id].pop(
-                                        "kitty_image_paragraph_empty_streak", None
-                                    )
+                                    voice_sessions[voice_session_id].pop("kitty_image_paragraph_empty_streak", None)
                                     await safe_websocket_send(
                                         websocket,
                                         {"type": "image_appended", "format": image_format},
@@ -786,9 +775,7 @@ async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str
                         greeting_lang = resolve_voice_interaction_language(
                             sess_ctx if isinstance(sess_ctx, dict) else {}
                         )
-                        greeting = build_greeting_message(
-                            diagram_type, language=greeting_lang
-                        )
+                        greeting = build_greeting_message(diagram_type, language=greeting_lang)
 
                         omni_client = get_session_omni_client(voice_session_id)
                         if omni_client:
@@ -831,9 +818,7 @@ async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str
                             session_mut.pop("kitty_image_paragraph_empty_streak", None)
 
                         # Store in conversation history
-                        session_mut["conversation_history"].append(
-                            {"role": "user", "content": transcription_text}
-                        )
+                        session_mut["conversation_history"].append({"role": "user", "content": transcription_text})
 
                         # Parse voice command using unified command processing
                         # Voice transcriptions use higher confidence threshold (0.7)

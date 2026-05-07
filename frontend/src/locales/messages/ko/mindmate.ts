@@ -1,6 +1,4 @@
-/**
- * ko UI — mindmate
- */
+/** ko UI — mindmate */
 
 export default {
   'aiModel.conceptAiOff': '클릭하여 AI 관계 레이블 사용(다중 모델)',
@@ -13,13 +11,25 @@ export default {
   'aiModel.relationshipsTooltip': '개념을 드래그해 연결하면 AI가 관계를 생성합니다',
   'aiModel.tabFocusBadge': 'Tab 초점',
   'aiModel.tabFocusTooltip': '초점 질문 편집 중 Tab으로 검증하고, 막대에서 대안을 고르세요(− / =)',
+  'aiModel.tabFocusQuestionBadge': 'Tab — 초점 질문',
+  'aiModel.conceptMapFocusQuestionTabTooltip':
+    '초점 질문이 선택되었거나 편집 중일 때: AI 검사를 위해 Tab(먼저 실질적인 질문을 입력하고 로그인 필요).',
   'aiModel.tabRecBadge': 'Tab 추천',
+  'aiModel.tabContentRecBadge': 'Tab — 내용',
+  'aiModel.tabRelationshipRecBadge': 'Tab — 관계',
+  'aiModel.conceptMapConceptTabTooltip':
+    '편집 모드(분리된 개념): 대체 표현을 위해 Tab(주제가 설정되어 있어야 함).',
+  'aiModel.conceptMapRelationshipTabTooltip':
+    '편집 또는 선택 모드(연결된 개념): 초점 링크 관계 제안을 위해 Tab.',
   'aiModel.tooltip.clickDeselect': '클릭하여 {name} 선택 해제',
   'aiModel.tooltip.clickSelect': '클릭하여 {name} 선택',
   'aiModel.tooltip.clickSwitch': '클릭하여 {name} 결과로 전환',
   'aiModel.tooltip.generating': '{name} 생성 중...',
   'aiModel.tooltip.modelFailed': '{name} 생성 실패',
   'aiModel.tooltip.showingResult': '현재 {name} 결과 표시 중',
+  'aiModel.hostPickBadgeTooltip':
+    '호스트가 이 모델의 다이어그램 버전을 편집 중입니다(다중 모델 보기)',
+  'aiModel.hostPickBadgeAria': '호스트가 {name}으로 편집 중입니다',
   'autoComplete.collabOwnerOnly':
     '공동 작업 중에는 다이어그램 소유자만 AI 생성을 사용할 수 있습니다',
   'autoComplete.conceptMapRealtime':
@@ -153,4 +163,4 @@ export default {
   'rootConceptModal.tabTitleRoot': '루트 개념: {text}',
   'rootConceptModal.title': '루트 개념',
   'rootConceptModal.titleConceptList': '개념 목록',
-}
+} as const

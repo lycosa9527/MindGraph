@@ -1,6 +1,4 @@
-/**
- * sq UI — knowledge
- */
+/** sq UI — knowledge */
 
 export default {
   'chunkTest.history.confirmDeleteBody':
@@ -212,4 +210,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': 'Dokumenti u ngarkua, duke përpunuar...',
   'rag.retrievalTest.failed': 'Testi i rikthimit dështoi',
   'rag.retrievalTest.success': 'Testi i rikthimit përfundoi',
-}
+} as const

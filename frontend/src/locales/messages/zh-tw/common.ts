@@ -1,6 +1,4 @@
-/**
- * zh-tw UI — common
- */
+/** zh-tw UI — common */
 
 export default {
   'app.aiDisclaimer': '內容由AI生成，請仔細甄別',
@@ -95,6 +93,14 @@ export default {
   'meta.pageTitle.mindgraph': 'MindGraph',
   'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
+  'meta.pageTitle.kitty': 'Kitty',
+  'canvas.kittyMobileIndicatorHint':
+    'A phone Kitty session (mic started) is linked to this diagram. Use your phone to talk with Kitty.',
+  'canvas.kittyMobileIndicatorAria':
+    'Status: Mobile Kitty is connected to this MindGraph canvas. Interact on your phone.',
+  'canvas.kittyMobileIndicatorTitle': 'Mobile Kitty',
+  'mobile.kittyWelcomeSub':
+    'Your microphone talks to the same MindGraph you edit. Open a saved diagram on your phone or desktop so Kitty stays in sync.',
   'meta.pageTitle.notFound': '頁面未找到',
   'meta.pageTitle.publicDashboard': '統計',
   'meta.pageTitle.schoolDashboard': '學校儀表盤',
@@ -125,4 +131,4 @@ export default {
   'landing.international.shareSiteModalHint': '',
   'landing.international.shareSiteCopy': '複製註冊連結',
   'landing.international.shareSiteCopied': '連結已複製',
-}
+} as const

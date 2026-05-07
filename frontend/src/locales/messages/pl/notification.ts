@@ -50,4 +50,4 @@ export default {
     'Wylogowano z powodu przekroczenia maksymalnej liczby urządzeń',
   'notification.signInToUse': 'Zaloguj się, aby skorzystać',
   'notification.signInToValidateFocus': 'Zaloguj się, aby zwalidować pytanie fokusowe',
-}
+} as const

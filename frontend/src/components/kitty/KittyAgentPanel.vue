@@ -2,8 +2,9 @@
 /**
  * Kitty Agent — floating panel (mobile): transcript, mic, text, camera.
  */
-import { Camera, Loader2, Mic, MicOff, SendHorizontal, WifiOff, X } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
+
+import { Camera, Loader2, Mic, MicOff, SendHorizontal, WifiOff, X } from 'lucide-vue-next'
 
 import type { KittyAgentState } from '@/composables/kitty/useKittyAgent'
 
@@ -25,21 +26,20 @@ const emit = defineEmits<{
   'update:open': [value: boolean]
   connect: []
   disconnect: []
-  'toggle-mic': []
-  'send-text': [text: string]
-  'pick-image': [file: File]
+  toggleMic: []
+  sendText: [text: string]
+  pickImage: [file: File]
   retry: []
 }>()
 
 const draft = ref('')
 
 const busy = computed(
-  () => props.state === 'connecting' || (props.open && props.state === 'idle' && !connectedLike.value)
+  () =>
+    props.state === 'connecting' || (props.open && props.state === 'idle' && !connectedLike.value)
 )
 
-const connectedLike = computed(() =>
-  ['active', 'listening', 'speaking'].includes(props.state)
-)
+const connectedLike = computed(() => ['active', 'listening', 'speaking'].includes(props.state))
 
 watch(
   () => props.open,
@@ -55,7 +55,7 @@ function close(): void {
 function onSubmitText(): void {
   const t = draft.value.trim()
   if (!t) return
-  emit('send-text', t)
+  emit('sendText', t)
   draft.value = ''
 }
 
@@ -64,7 +64,7 @@ function onFileChange(ev: Event): void {
   const input = ev.target as HTMLInputElement
   const f = input.files?.[0]
   if (f) {
-    emit('pick-image', f)
+    emit('pickImage', f)
   }
   input.value = ''
 }
@@ -99,7 +99,9 @@ function onFileChange(ev: Event): void {
           <span v-if="cameraDenied">相机不可用</span>
           <span v-if="state === 'error'">连接异常，可点击重试</span>
         </div>
-        <div class="flex-1 min-h-[120px] max-h-[36vh] overflow-y-auto px-3 py-2 text-sm space-y-1 text-gray-800">
+        <div
+          class="flex-1 min-h-[120px] max-h-[36vh] overflow-y-auto px-3 py-2 text-sm space-y-1 text-gray-800"
+        >
           <p
             v-if="!lines.length"
             class="text-gray-400"
@@ -150,7 +152,7 @@ function onFileChange(ev: Event): void {
                     ? '停止麦克风'
                     : '开始麦克风'
               "
-              @click="emit('toggle-mic')"
+              @click="emit('toggleMic')"
             >
               <MicOff
                 v-if="state === 'listening'"
@@ -178,7 +180,7 @@ function onFileChange(ev: Event): void {
                 class="hidden"
                 :disabled="!connectedLike || cameraDenied"
                 @change="onFileChange"
-              >
+              />
             </label>
             <button
               v-if="connectedLike"
@@ -205,7 +207,7 @@ function onFileChange(ev: Event): void {
               class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm"
               placeholder="输入指令…"
               @keydown.enter.prevent="onSubmitText"
-            >
+            />
             <button
               type="button"
               class="p-3 rounded-xl bg-gray-900 text-white disabled:opacity-40 shrink-0"

@@ -91,8 +91,7 @@ async def get_online_collab_redis_ttl_seconds(
         return _FALLBACK_TTL
     except SQLAlchemyError as exc:
         logger.warning(
-            "[WorkshopTTL] get_online_collab_redis_ttl_seconds DB error "
-            "diagram_id=%s: %s — returning fallback TTL",
+            "[WorkshopTTL] get_online_collab_redis_ttl_seconds DB error diagram_id=%s: %s — returning fallback TTL",
             diagram_id,
             exc,
         )

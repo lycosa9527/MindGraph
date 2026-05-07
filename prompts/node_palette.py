@@ -587,9 +587,7 @@ def get_bridge_pairs_prompt(
 ) -> str:
     """Generate analogy pairs (with or without fixed dimension)."""
     rel_types = (
-        BRIDGE_RELATIONSHIP_TYPES_ZH
-        if is_chinese_prompt_shell_language(language)
-        else BRIDGE_RELATIONSHIP_TYPES_EN
+        BRIDGE_RELATIONSHIP_TYPES_ZH if is_chinese_prompt_shell_language(language) else BRIDGE_RELATIONSHIP_TYPES_EN
     )
     is_specific = dimension and dimension.strip()
     topic_hint = ""
@@ -732,9 +730,7 @@ def get_bridge_dimensions_prompt(
     When existing_pairs is empty, suggest diverse dimension options.
     """
     rel_types = (
-        BRIDGE_RELATIONSHIP_TYPES_ZH
-        if is_chinese_prompt_shell_language(language)
-        else BRIDGE_RELATIONSHIP_TYPES_EN
+        BRIDGE_RELATIONSHIP_TYPES_ZH if is_chinese_prompt_shell_language(language) else BRIDGE_RELATIONSHIP_TYPES_EN
     )
     pairs = existing_pairs or []
 

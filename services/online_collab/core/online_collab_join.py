@@ -59,8 +59,7 @@ async def get_active_online_collab_code_for_diagram_impl(
             return active_code
         except SQLAlchemyError as exc:
             logger.debug(
-                "[OnlineCollabMgr] get_active_online_collab_code_for_diagram "
-                "error diagram_id=%s: %s",
+                "[OnlineCollabMgr] get_active_online_collab_code_for_diagram error diagram_id=%s: %s",
                 diagram_id,
                 exc,
             )
@@ -82,11 +81,7 @@ async def join_online_collab_impl(
             if redis:
                 diagram_id_raw = await redis.get(code_to_diagram_key(code))
                 if diagram_id_raw:
-                    diagram_id = (
-                        diagram_id_raw
-                        if isinstance(diagram_id_raw, str)
-                        else diagram_id_raw.decode("utf-8")
-                    )
+                    diagram_id = diagram_id_raw if isinstance(diagram_id_raw, str) else diagram_id_raw.decode("utf-8")
 
             if not diagram_id:
                 result = await db.execute(
@@ -157,10 +152,7 @@ async def join_online_collab_by_diagram_impl(
         diagram = result.scalars().first()
         if not diagram or not diagram.workshop_code:
             return None
-        if (
-            diagram_online_collab_visibility(diagram)
-            != ONLINE_COLLAB_VISIBILITY_ORGANIZATION
-        ):
+        if diagram_online_collab_visibility(diagram) != ONLINE_COLLAB_VISIBILITY_ORGANIZATION:
             return None
         if not await user_may_join_diagram_online_collab(db, diagram, user_id):
             logger.warning(

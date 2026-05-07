@@ -43,9 +43,7 @@ async def restore_online_collab_redis_from_db_row(
         "diagram_id": diagram_id,
         "owner_id": str(diagram.user_id),
         "created_at": (
-            diagram.workshop_started_at.isoformat()
-            if diagram.workshop_started_at
-            else datetime.now(tz=UTC).isoformat()
+            diagram.workshop_started_at.isoformat() if diagram.workshop_started_at else datetime.now(tz=UTC).isoformat()
         ),
     }
     await redis.setex(
@@ -64,9 +62,7 @@ async def restore_online_collab_redis_from_db_row(
         if owner_id is not None:
             try:
                 async with AsyncSessionLocal() as db:
-                    result = await db.execute(
-                        select(User.organization_id, User.name).where(User.id == owner_id)
-                    )
+                    result = await db.execute(select(User.organization_id, User.name).where(User.id == owner_id))
                     row = result.first()
                     if row:
                         resolved_org_id = row.organization_id
@@ -74,9 +70,10 @@ async def restore_online_collab_redis_from_db_row(
                             resolved_owner_name = row.name or ""
             except (SQLAlchemyError, OSError) as exc:
                 logger.warning(
-                    "[JoinHelpers] restore: could not fetch owner org for "
-                    "code=%s owner_id=%s: %s",
-                    code, owner_id, exc,
+                    "[JoinHelpers] restore: could not fetch owner org for code=%s owner_id=%s: %s",
+                    code,
+                    owner_id,
+                    exc,
                 )
 
     expires_at = getattr(diagram, "workshop_expires_at", None)
@@ -93,6 +90,7 @@ async def restore_online_collab_redis_from_db_row(
         from services.online_collab.core.online_collab_manager import (
             get_online_collab_manager,
         )
+
         await get_online_collab_manager().create_session(
             code=code,
             diagram_id=diagram_id,

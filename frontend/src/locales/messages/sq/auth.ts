@@ -156,4 +156,4 @@ export default {
   'auth.accountNameSave': 'Ruaj emrin',
   'auth.accountNameSaveSuccess': 'Emri u përditësua',
   'auth.accountNameSaveError': 'Nuk u ruajt. Provoni përsëri.',
-}
+} as const

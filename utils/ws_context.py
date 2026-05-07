@@ -79,8 +79,7 @@ async def ws_managed_session(
         current = _registry.count_for_user(user_id, endpoint)
         if current >= max_per_user_endpoint:
             logger.warning(
-                "[WSContext] Connection limit reached user_id=%s endpoint=%s "
-                "current=%d limit=%d",
+                "[WSContext] Connection limit reached user_id=%s endpoint=%s current=%d limit=%d",
                 user_id,
                 endpoint,
                 current,
@@ -88,6 +87,7 @@ async def ws_managed_session(
             )
             if close_error_fn is not None:
                 from utils.ws_limits import safe_websocket_send_text  # local import avoids circularity
+
                 await safe_websocket_send_text(
                     websocket,
                     close_error_fn("connection_limit", "Connection limit reached"),
@@ -99,14 +99,14 @@ async def ws_managed_session(
         current_global = _registry.count_for_user(user_id)
         if current_global >= max_per_user_global:
             logger.warning(
-                "[WSContext] Global connection limit reached user_id=%s "
-                "current=%d limit=%d",
+                "[WSContext] Global connection limit reached user_id=%s current=%d limit=%d",
                 user_id,
                 current_global,
                 max_per_user_global,
             )
             if close_error_fn is not None:
                 from utils.ws_limits import safe_websocket_send_text
+
                 await safe_websocket_send_text(
                     websocket,
                     close_error_fn("connection_limit", "Too many connections"),
@@ -120,6 +120,7 @@ async def ws_managed_session(
             redis_collab_socket_cap_enabled,
             try_acquire_collab_redis_socket_slot,
         )
+
         if redis_collab_socket_cap_enabled():
             if not await try_acquire_collab_redis_socket_slot(user_id):
                 logger.warning(
@@ -128,6 +129,7 @@ async def ws_managed_session(
                 )
                 if close_error_fn is not None:
                     from utils.ws_limits import safe_websocket_send_text
+
                     await safe_websocket_send_text(
                         websocket,
                         close_error_fn("connection_limit", "Too many connections"),
@@ -164,6 +166,7 @@ async def ws_managed_session(
                 redis_collab_socket_cap_enabled,
                 release_collab_redis_socket_slot,
             )
+
             if redis_collab_socket_cap_enabled():
                 await release_collab_redis_socket_slot(user_id)
         duration = time.monotonic() - _started

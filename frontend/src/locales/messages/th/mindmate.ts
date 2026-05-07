@@ -1,6 +1,4 @@
-/**
- * th UI — mindmate
- */
+/** th UI — mindmate */
 
 export default {
   'aiModel.conceptAiOff': 'คลิกเพื่อเปิดใช้งานป้ายความสัมพันธ์ AI (หลายโมเดล)',
@@ -13,13 +11,24 @@ export default {
   'aiModel.relationshipsTooltip': 'ลากเพื่อเชื่อมโยงแนวคิด—AI จะสร้างความสัมพันธ์',
   'aiModel.tabFocusBadge': 'โฟกัส Tab',
   'aiModel.tabFocusTooltip': 'กด Tab ขณะแก้ไขคำถามโฟกัสเพื่อตรวจสอบ แล้วเลือกทางเลือกในแถบ (− / =)',
+  'aiModel.tabFocusQuestionBadge': 'Tab — คำถามโฟกัส',
+  'aiModel.conceptMapFocusQuestionTabTooltip':
+    'เมื่อเลือกหรือกำลังแก้ไขคำถามโฟกัส ให้กด Tab เพื่อตรวจ AI (โปรดใส่คำถามที่มีสาระก่อน ต้องลงชื่อเข้าใช้)',
   'aiModel.tabRecBadge': 'แนะนำ Tab',
+  'aiModel.tabContentRecBadge': 'Tab — เนื้อหา',
+  'aiModel.tabRelationshipRecBadge': 'Tab — ความสัมพันธ์',
+  'aiModel.conceptMapConceptTabTooltip':
+    'โหมดแก้ไข (แนวคิดเดี่ยว): กด Tab เพื่อถ้อยคำทางเลือก (ต้องตั้งหัวข้อแล้ว)',
+  'aiModel.conceptMapRelationshipTabTooltip':
+    'โหมดแก้ไขหรือเลือก (แนวคิดที่เชื่อม): กด Tab เพื่อคำแนะนำความสัมพันธ์บนลิงก์โฟกัส',
   'aiModel.tooltip.clickDeselect': 'คลิกเพื่อยกเลิกการเลือก {name}',
   'aiModel.tooltip.clickSelect': 'คลิกเพื่อเลือก {name}',
   'aiModel.tooltip.clickSwitch': 'คลิกเพื่อเปลี่ยนเป็นผลลัพธ์ {name}',
   'aiModel.tooltip.generating': '{name} กำลังสร้าง...',
   'aiModel.tooltip.modelFailed': '{name} การสร้างล้มเหลว',
   'aiModel.tooltip.showingResult': 'กำลังแสดงผลลัพธ์ {name}',
+  'aiModel.hostPickBadgeTooltip': 'โฮสต์กำลังแก้ไขเวอร์ชันไดอะแกรมของโมเดลนี้ (มุมมองหลายโมเดล)',
+  'aiModel.hostPickBadgeAria': 'โฮสต์กำลังแก้ไขด้วย {name}',
   'autoComplete.collabOwnerOnly':
     'เฉพาะเจ้าของไดอะแกรมเท่านั้นที่สามารถใช้การสร้าง AI ระหว่างการร่วมมือ',
   'autoComplete.conceptMapRealtime':
@@ -119,7 +128,7 @@ export default {
   'nodePalette.refresh': 'รีเฟรช',
   'nodePalette.selected': 'เลือกแล้ว',
   'nodePalette.similarities': 'ความคล้าย',
-  'panel.mindmate': 'ผู้ช่วย AI MindMate',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'พาเลตโหนด',
   'panel.properties': 'คุณสมบัติ',
   'panels.property.background': 'พื้นหลัง',
@@ -155,4 +164,4 @@ export default {
   'rootConceptModal.tabTitleRoot': 'แนวคิดหลัก: {text}',
   'rootConceptModal.title': 'แนวคิดหลัก',
   'rootConceptModal.titleConceptList': 'รายการแนวคิด',
-}
+} as const

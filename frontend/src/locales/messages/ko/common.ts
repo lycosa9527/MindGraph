@@ -1,6 +1,4 @@
-/**
- * ko UI — common
- */
+/** ko UI — common */
 
 export default {
   'app.aiDisclaimer': '내용은 AI가 생성했습니다. 사용 전 확인하세요.',
@@ -95,6 +93,14 @@ export default {
   'meta.pageTitle.mindgraph': 'MindGraph',
   'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
+  'meta.pageTitle.kitty': 'Kitty',
+  'canvas.kittyMobileIndicatorHint':
+    'A phone Kitty session (mic started) is linked to this diagram. Use your phone to talk with Kitty.',
+  'canvas.kittyMobileIndicatorAria':
+    'Status: Mobile Kitty is connected to this MindGraph canvas. Interact on your phone.',
+  'canvas.kittyMobileIndicatorTitle': 'Mobile Kitty',
+  'mobile.kittyWelcomeSub':
+    'Your microphone talks to the same MindGraph you edit. Open a saved diagram on your phone or desktop so Kitty stays in sync.',
   'meta.pageTitle.notFound': '페이지 없음',
   'meta.pageTitle.publicDashboard': '통계',
   'meta.pageTitle.schoolDashboard': '학교 대시보드',
@@ -127,4 +133,4 @@ export default {
     '휴대폰이나 태블릿으로 카메라로 스캔해 학급에서 이 페이지를 엽니다.',
   'landing.international.shareSiteCopy': '링크 복사',
   'landing.international.shareSiteCopied': '링크 복사됨',
-}
+} as const

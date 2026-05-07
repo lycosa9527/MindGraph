@@ -213,4 +213,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': 'दस्तावेज़ अपलोड सफल, प्रसंस्करण...',
   'rag.retrievalTest.failed': 'पुनर्प्राप्ति परीक्षण विफल',
   'rag.retrievalTest.success': 'पुनर्प्राप्ति परीक्षण पूर्ण',
-}
+} as const

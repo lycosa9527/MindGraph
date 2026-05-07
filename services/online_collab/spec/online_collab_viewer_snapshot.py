@@ -15,6 +15,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -82,12 +83,15 @@ async def _refresh_snapshot_once(redis: Any, code: str) -> bool:
             seq = int(str(raw_seq).strip() or "0")
     except (TypeError, ValueError):
         seq = 0
-    payload = json.dumps({
-        "spec": snap,
-        "version": ver,
-        "seq": seq,
-        "ts": time.time(),
-    }, ensure_ascii=False)
+    payload = json.dumps(
+        {
+            "spec": snap,
+            "version": ver,
+            "seq": seq,
+            "ts": time.time(),
+        },
+        ensure_ascii=False,
+    )
     await redis.set(snapshot_key(code), payload, ex=_SNAPSHOT_TTL_SEC)
     return True
 
@@ -105,14 +109,14 @@ async def _snapshot_refresh_loop(code: str) -> None:
     while _has_viewers(code):
         try:
             leader_key = snapshot_leader_key(code)
-            is_leader = await redis.set(
-                leader_key, "1", nx=True, ex=_SNAPSHOT_LEADER_TTL_SEC
-            )
+            is_leader = await redis.set(leader_key, "1", nx=True, ex=_SNAPSHOT_LEADER_TTL_SEC)
             if is_leader:
                 await _refresh_snapshot_once(redis, code)
         except (RedisError, OSError, RuntimeError, ValueError, TypeError) as exc:
             logger.debug(
-                "[ViewerSnapshot] refresh error code=%s: %s", code, exc,
+                "[ViewerSnapshot] refresh error code=%s: %s",
+                code,
+                exc,
             )
         await asyncio.sleep(_SNAPSHOT_REFRESH_INTERVAL_SEC)
     _SNAPSHOT_TASKS.pop(code, None)

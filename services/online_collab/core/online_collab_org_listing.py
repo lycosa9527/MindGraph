@@ -114,10 +114,11 @@ async def list_org_sessions_redis(
     out: List[Dict[str, Any]] = []
     now = int(time.time())
     logger.debug(
-        "[OnlineCollabMgr] list_org_sessions: org_id=%s checking %d code(s) "
-        "(org=%d global=%d): %s",
-        org_id, len(codes),
-        len(_decode_set(org_raw)), len(_decode_set(global_raw)),
+        "[OnlineCollabMgr] list_org_sessions: org_id=%s checking %d code(s) (org=%d global=%d): %s",
+        org_id,
+        len(codes),
+        len(_decode_set(org_raw)),
+        len(_decode_set(global_raw)),
         codes,
     )
     for idx, code in enumerate(codes):
@@ -125,16 +126,15 @@ async def list_org_sessions_redis(
         count = pipeline_results[idx * 2 + 1]
         if not isinstance(meta_raw, dict) or not meta_raw:
             logger.debug(
-                "[OnlineCollabMgr] list_org_sessions: skipping code=%s — "
-                "session_meta empty or expired",
+                "[OnlineCollabMgr] list_org_sessions: skipping code=%s — session_meta empty or expired",
                 code,
             )
             continue
         if not isinstance(count, int) or count == 0:
             logger.debug(
-                "[OnlineCollabMgr] list_org_sessions: skipping code=%s — "
-                "participant count=%s (zero or unavailable)",
-                code, count,
+                "[OnlineCollabMgr] list_org_sessions: skipping code=%s — participant count=%s (zero or unavailable)",
+                code,
+                count,
             )
             continue
         meta = {_s(k): _s(v) for k, v in meta_raw.items()}
@@ -148,22 +148,25 @@ async def list_org_sessions_redis(
                     logger.debug(
                         "[OnlineCollabMgr] list_org_sessions: skipping code=%s — "
                         "session expired (expires_unix=%s now=%s delta=%s)",
-                        code, expires_unix, now, expires_unix - now,
+                        code,
+                        expires_unix,
+                        now,
+                        expires_unix - now,
                     )
                     continue
                 rem = expires_unix - now
-                expires_at_iso = (
-                    datetime.fromtimestamp(expires_unix, UTC).isoformat() + "Z"
-                )
+                expires_at_iso = datetime.fromtimestamp(expires_unix, UTC).isoformat() + "Z"
             except (TypeError, ValueError):
                 pass
         owner_name_val = meta.get("owner_name") or None
-        out.append({
-            "diagram_id": meta.get("diagram_id", ""),
-            "title": meta.get("title", ""),
-            "owner_name": owner_name_val,
-            "participant_count": count,
-            "expires_at": expires_at_iso,
-            "remaining_seconds": rem,
-        })
+        out.append(
+            {
+                "diagram_id": meta.get("diagram_id", ""),
+                "title": meta.get("title", ""),
+                "owner_name": owner_name_val,
+                "participant_count": count,
+                "expires_at": expires_at_iso,
+                "remaining_seconds": rem,
+            }
+        )
     return out

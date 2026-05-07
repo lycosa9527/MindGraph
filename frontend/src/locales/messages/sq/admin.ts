@@ -1,6 +1,4 @@
-/**
- * sq UI — admin
- */
+/** sq UI — admin */
 
 export default {
   'admin.actions': 'Veprime',
@@ -792,4 +790,4 @@ export default {
   'admin.database.pgMergeSuccess': 'Dump-i PG u bashkua me sukses',
   'admin.database.pgMergeError': 'Bashkimi i dump PG dështoi',
   'admin.database.pgMergeComplete': 'Bashkimi PG përfundoi',
-}
+} as const

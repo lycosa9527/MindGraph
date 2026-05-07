@@ -219,6 +219,7 @@ def _redis_py_supports_xadd_idmpauto() -> bool:
         return False
     try:
         from redis import asyncio as redis_async
+
         sig = inspect.signature(redis_async.Redis.xadd)
     except (ImportError, TypeError, ValueError, AttributeError):
         return False
@@ -263,9 +264,7 @@ def _apply_redis_startup_config(redis_client: Any, redis_version: str) -> None:
                 *error_footer_launch_reference(),
             ],
         )
-        raise RedisStartupError(
-            "redis-py does not support XADD idmpauto=; required for Redis 8.6+"
-        ) from None
+        raise RedisStartupError("redis-py does not support XADD idmpauto=; required for Redis 8.6+") from None
     _RedisCapabilities.idmpauto = version_tuple >= (8, 6, 0) and client_idmp
 
     if version_tuple >= (8, 6, 0):

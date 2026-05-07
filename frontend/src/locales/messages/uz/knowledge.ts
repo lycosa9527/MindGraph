@@ -213,4 +213,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': 'Hujjat yuklandi, qayta ishlanyapti...',
   'rag.retrievalTest.failed': 'Qaytarib olish testi muvaffaqiyatsiz',
   'rag.retrievalTest.success': 'Qaytarib olish testi tugallandi',
-}
+} as const

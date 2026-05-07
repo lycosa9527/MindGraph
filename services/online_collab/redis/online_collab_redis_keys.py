@@ -48,6 +48,7 @@ def _tag(value: Any) -> str:
         return "{" + s + "}"
     return s
 
+
 # ---------------------------------------------------------------------------
 # Key templates 鈥?existing
 # ---------------------------------------------------------------------------
@@ -90,6 +91,7 @@ ONLINE_COLLAB_IDLE_SCORES_KEY = "workshop:idle_scores"
 # ---------------------------------------------------------------------------
 # Helpers 鈥?existing
 # ---------------------------------------------------------------------------
+
 
 def session_key(code: str) -> str:
     """Redis key for workshop session metadata (legacy string key)."""
@@ -206,6 +208,7 @@ def live_write_lock_key(code: str) -> str:
 # Helpers 鈥?session manager
 # ---------------------------------------------------------------------------
 
+
 def session_meta_key(code: str) -> str:
     """Redis HASH: full session metadata managed by OnlineCollabManager."""
     return ONLINE_COLLAB_SESSION_META_KEY.format(code=_tag(code))
@@ -241,6 +244,7 @@ def idle_scores_key() -> str:
 # Internal helper
 # ---------------------------------------------------------------------------
 
+
 def _decode_bytes(val: Any) -> str:
     """Safely decode a bytes / memoryview / str value to str."""
     if isinstance(val, (bytes, bytearray)):
@@ -253,6 +257,7 @@ def _decode_bytes(val: Any) -> str:
 # ---------------------------------------------------------------------------
 # Purge helper
 # ---------------------------------------------------------------------------
+
 
 async def purge_online_collab_redis_keys(redis: Any, code: str) -> None:
     """
@@ -274,9 +279,7 @@ async def purge_online_collab_redis_keys(redis: Any, code: str) -> None:
     try:
         meta = await redis.hgetall(session_meta_key(code)) or {}
     except (RedisError, OSError, RuntimeError, TypeError, AttributeError) as exc:
-        logger.debug(
-            "[OnlineCollabRedisKeys] purge: hgetall meta failed code=%s: %s", code, exc
-        )
+        logger.debug("[OnlineCollabRedisKeys] purge: hgetall meta failed code=%s: %s", code, exc)
 
     org_id_str = _decode_bytes(meta.get(b"org_id") or meta.get("org_id"))
     visibility = _decode_bytes(meta.get(b"visibility") or meta.get("visibility"))
@@ -311,7 +314,8 @@ async def purge_online_collab_redis_keys(redis: Any, code: str) -> None:
     except (RedisError, OSError, RuntimeError, TypeError) as exc:
         logger.warning(
             "[OnlineCollabRedisKeys] purge pipeline error code=%s: %s — per-key fallback",
-            code, exc,
+            code,
+            exc,
         )
         await _purge_keys_per_key_fallback(redis, per_code_keys)
 
@@ -332,9 +336,9 @@ async def purge_online_collab_redis_keys(redis: Any, code: str) -> None:
             await _pipelined_unlink(redis, batch)
     except (RedisError, OSError, TypeError, AttributeError, RuntimeError) as exc:
         logger.warning(
-            "[OnlineCollabRedisKeys] purge scan_iter mutation_idle failed "
-            "code=%s: %s",
-            code, exc,
+            "[OnlineCollabRedisKeys] purge scan_iter mutation_idle failed code=%s: %s",
+            code,
+            exc,
         )
 
 
@@ -414,9 +418,7 @@ async def _purge_keys_per_key_fallback(redis: Any, keys: list) -> None:
         try:
             await redis.unlink(key)
         except (RedisError, OSError, RuntimeError, TypeError, AttributeError) as exc:
-            logger.debug(
-                "[OnlineCollabRedisKeys] per-key UNLINK failed key=%s: %s", key, exc
-            )
+            logger.debug("[OnlineCollabRedisKeys] per-key UNLINK failed key=%s: %s", key, exc)
             try:
                 await redis.delete(key)
             except (RedisError, OSError, RuntimeError, TypeError, AttributeError):
@@ -451,5 +453,6 @@ async def _pipelined_unlink(redis: Any, keys: list) -> None:
                 await pipe.execute()
         except (RedisError, OSError, RuntimeError, TypeError, AttributeError) as del_exc:
             logger.debug(
-                "[OnlineCollabRedisKeys] DEL batch fallback failed: %s", del_exc,
+                "[OnlineCollabRedisKeys] DEL batch fallback failed: %s",
+                del_exc,
             )

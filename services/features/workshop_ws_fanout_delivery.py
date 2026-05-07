@@ -44,11 +44,11 @@ from services.infrastructure.monitoring.ws_metrics import (
 
 logger = logging.getLogger(__name__)
 
-_DEDUP_CAP = max(512, int(os.getenv('WORKSHOP_FANOUT_MSG_DEDUP', '8192')))
+_DEDUP_CAP = max(512, int(os.getenv("WORKSHOP_FANOUT_MSG_DEDUP", "8192")))
 _RECENT_FANOUT_IDS: OrderedDict[str, None] = OrderedDict()
 
-ROOM_IDLE_SHUTDOWN_TYPE = 'room_idle_shutdown'
-SESSION_ENDED_SHUTDOWN_TYPE = 'session_ended_shutdown'
+ROOM_IDLE_SHUTDOWN_TYPE = "room_idle_shutdown"
+SESSION_ENDED_SHUTDOWN_TYPE = "session_ended_shutdown"
 
 
 async def _close_one_handle(
@@ -90,7 +90,10 @@ async def _close_one_handle(
     ) as exc:
         logger.warning(
             "[WorkshopWS] %s close failed user=%s workshop=%s: %s",
-            reason, user_id, str(getattr(handle, "code", "")), exc,
+            reason,
+            user_id,
+            str(getattr(handle, "code", "")),
+            exc,
         )
 
 
@@ -108,7 +111,12 @@ async def _force_close_local_room(
         for user_id, handle in room_snapshot:
             tg.create_task(
                 _close_one_handle(
-                    user_id, handle, reason, close_code, close_reason, kicked,
+                    user_id,
+                    handle,
+                    reason,
+                    close_code,
+                    close_reason,
+                    kicked,
                 ),
                 name=f"force_close:{code}:{user_id}",
             )
@@ -138,9 +146,7 @@ async def force_disconnect_local_workshop_room_idle(code: str) -> None:
     )
 
 
-_FANOUT_SHARD_CONCURRENCY = int(
-    __import__("os").getenv("WORKSHOP_FANOUT_SHARD_CONCURRENCY", "50")
-)
+_FANOUT_SHARD_CONCURRENCY = int(__import__("os").getenv("WORKSHOP_FANOUT_SHARD_CONCURRENCY", "50"))
 
 
 async def _push_shard(
@@ -162,19 +168,21 @@ async def _push_shard(
                     handle.last_seen_seq = seq
                 try:
                     handle.send_queue.put_nowait(body_payload)
-                    handle.qsize_high_water = max(
-                        handle.qsize_high_water, handle.send_queue.qsize()
-                    )
+                    handle.qsize_high_water = max(handle.qsize_high_water, handle.send_queue.qsize())
                 except asyncio.QueueFull:
                     await _evict_slow_consumer(handle, "broadcast queue full")
                 except Exception as exc:
                     logger.debug(
                         "[WorkshopWS] _push_shard: put_nowait error user=%s code=%s: %s",
-                        user_id, code, exc,
+                        user_id,
+                        code,
+                        exc,
                     )
     except Exception as exc:
         logger.warning(
-            "[WorkshopWS] _push_shard unhandled error code=%s: %s", code, exc,
+            "[WorkshopWS] _push_shard unhandled error code=%s: %s",
+            code,
+            exc,
         )
 
 
@@ -194,7 +202,7 @@ async def deliver_local_workshop_broadcast(
         )
         return
     if isinstance(message, dict):
-        raw_mid = message.get('msg_id')
+        raw_mid = message.get("msg_id")
         if isinstance(raw_mid, str) and raw_mid.strip():
             mid = raw_mid.strip()
             if mid in _RECENT_FANOUT_IDS:
@@ -250,17 +258,16 @@ async def deliver_local_workshop_broadcast(
         return
 
     logger.debug(
-        "[WSFanout] deliver_start code=%s mode=%s exclude=%s peers=%d"
-        " msg_type=%s seq=%s",
-        code, mode, exclude_user, len(handles),
+        "[WSFanout] deliver_start code=%s mode=%s exclude=%s peers=%d msg_type=%s seq=%s",
+        code,
+        mode,
+        exclude_user,
+        len(handles),
         message.get("type") if isinstance(message, dict) else None,
         seq,
     )
 
-    shards = [
-        handles[i: i + _SHARD_SIZE]
-        for i in range(0, len(handles), _SHARD_SIZE)
-    ]
+    shards = [handles[i : i + _SHARD_SIZE] for i in range(0, len(handles), _SHARD_SIZE)]
     try:
         record_ws_broadcast_shards(len(shards))
     except Exception:
@@ -274,9 +281,7 @@ async def deliver_local_workshop_broadcast(
                 _push_shard(shard, body_payload, mode, exclude_user, code, sem, seq),
                 name=f"fanout_shard:{code}",
             )
-    asyncio.create_task(
-        _record_broadcast_latency((time.perf_counter() - _t0) * 1000.0)
-    )
+    asyncio.create_task(_record_broadcast_latency((time.perf_counter() - _t0) * 1000.0))
 
 
 async def _record_broadcast_latency(latency_ms: float) -> None:

@@ -215,4 +215,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': 'Sənəd yükləndi, emal olunur...',
   'rag.retrievalTest.failed': 'Axtarış testi uğursuz oldu',
   'rag.retrievalTest.success': 'Axtarış testi tamamlandı',
-}
+} as const

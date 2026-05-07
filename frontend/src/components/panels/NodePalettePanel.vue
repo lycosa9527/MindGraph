@@ -551,13 +551,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
 
       <!-- Load more (only when we have an active session) -->
       <div
-        v-if="
-          !isGuestCollab &&
-          sessionId &&
-          !isLoading &&
-          suggestions.length > 0 &&
-          !isLoadingMore
-        "
+        v-if="!isGuestCollab && sessionId && !isLoading && suggestions.length > 0 && !isLoadingMore"
         class="mt-4 flex justify-center"
       >
         <el-button

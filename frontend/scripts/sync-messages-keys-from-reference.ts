@@ -79,10 +79,12 @@ function localeDirsTier27(): string[] {
   return [...TIER_27_EXCEPT_ZH]
 }
 
+const SKIP_LOCALE_DIRS = new Set(['zh', '__test__', 'it_test'])
+
 function localeDirsAll(): string[] {
   return readdirSync(ROOT)
     .filter((name) => {
-      if (name === 'zh') return false
+      if (SKIP_LOCALE_DIRS.has(name)) return false
       try {
         return statSync(join(ROOT, name)).isDirectory()
       } catch {
@@ -112,7 +114,7 @@ async function main(): Promise<void> {
         else out[k] = (enMod[k] ?? zhMod[k]) as string
       }
 
-      const bodyNew = `export default ${formatRecord(zhKeysOrdered, out)}\n`
+      const bodyNew = `export default ${formatRecord(zhKeysOrdered, out)} as const\n`
       const next = `${banner(loc, ns)}\n${bodyNew}`
       const rawPrev = readFileSync(curPath, 'utf8').trim()
       if (next.trim() !== rawPrev) {

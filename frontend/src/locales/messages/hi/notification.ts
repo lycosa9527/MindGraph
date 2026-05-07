@@ -49,4 +49,4 @@ export default {
     'अधिकतम उपकरणों की संख्या पार होने के कारण आपको लॉग आउट कर दिया गया है',
   'notification.signInToUse': 'इसका उपयोग करने के लिए साइन इन करें',
   'notification.signInToValidateFocus': 'ध्यान प्रश्न सत्यापित करने के लिए साइन इन करें',
-}
+} as const

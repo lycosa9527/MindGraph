@@ -51,4 +51,4 @@ export default {
     'Sei stato disconnesso perché hai superato il numero massimo di dispositivi',
   'notification.signInToUse': 'Accedi per usare questa funzione',
   'notification.signInToValidateFocus': 'Accedi per convalidare la domanda focale',
-}
+} as const

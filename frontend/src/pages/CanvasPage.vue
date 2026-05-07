@@ -47,6 +47,7 @@ import {
   getDiagramOperations,
   getNodePalette,
   getPanelCoordinator,
+  useCanvasKittyDesktopPairing,
   useDiagramSpecForSave,
   useEventBus,
   useInlineRecommendations,
@@ -54,20 +55,18 @@ import {
   useLanguage,
   useNotifications,
   useSnapshotHistory,
-  useCanvasKittyDesktopPairing,
 } from '@/composables'
-import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
-import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import {
   VALID_DIAGRAM_TYPES,
   diagramTypeMap,
   diagramTypeToChineseMap,
 } from '@/composables/canvasPage/diagramTypeMaps'
+import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
+import { registerCanvasPageDiagramEventBus } from '@/composables/canvasPage/registerCanvasPageDiagramEventBus'
 import { useCanvasPageEditorShortcuts } from '@/composables/canvasPage/useCanvasPageEditorShortcuts'
 import { useCanvasPageLibrarySnapshots } from '@/composables/canvasPage/useCanvasPageLibrarySnapshots'
 import { useCanvasPageMountedHandlers } from '@/composables/canvasPage/useCanvasPageMountedHandlers'
 import { useCanvasPagePresentation } from '@/composables/canvasPage/useCanvasPagePresentation'
-import { registerCanvasPageDiagramEventBus } from '@/composables/canvasPage/registerCanvasPageDiagramEventBus'
 import { useCanvasPageWorkshopCollab } from '@/composables/canvasPage/useCanvasPageWorkshopCollab'
 import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
 import {
@@ -75,6 +74,7 @@ import {
   ensureCanvasVirtualKeyboardUiVersionSync,
   toggleCanvasVirtualKeyboard,
 } from '@/composables/canvasToolbar'
+import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
 import {
   diagramSpecLikelyNeedsMarkdownPipeline,
   loadDiagramMarkdownPipeline,

@@ -43,9 +43,7 @@ async def _finalize_editors_fanout_disconnect(code: str, user: object) -> None:
             user.id,
         )
         editors_map = await load_editors(code)
-        nodes_cleared = [
-            nid for nid, ed in editors_map.items() if user.id in ed
-        ]
+        nodes_cleared = [nid for nid, ed in editors_map.items() if user.id in ed]
 
     if nodes_cleared:
         events = [
@@ -62,7 +60,9 @@ async def _finalize_editors_fanout_disconnect(code: str, user: object) -> None:
         ]
         logger.debug(
             "[WorkshopWS] editor_purge_fanout code=%s user=%s cleared_nodes=%d",
-            code, user.id, len(nodes_cleared),
+            code,
+            user.id,
+            len(nodes_cleared),
         )
         await broadcast_to_others(
             code,
@@ -109,7 +109,9 @@ async def _finalize_editors_local_disconnect(code: str, user: object) -> None:
     if events:
         logger.debug(
             "[WorkshopWS] editor_purge_local code=%s user=%s cleared_nodes=%d",
-            code, user.id, len(events),
+            code,
+            user.id,
+            len(events),
         )
         await broadcast_to_others(
             code,
@@ -152,9 +154,9 @@ async def _protected_disconnect_cleanup(
 
     if mismatched_owner:
         logger.info(
-            "[CanvasCollabWS] Deferred participant cleanup (socket superseded) "
-            "user=%s code=%s",
-            user.id, code,
+            "[CanvasCollabWS] Deferred participant cleanup (socket superseded) user=%s code=%s",
+            user.id,
+            code,
         )
         return
 
@@ -163,7 +165,8 @@ async def _protected_disconnect_cleanup(
 
     logger.info(
         "[WorkshopWS] disconnect_cleanup user=%s code=%s is_owner=%s",
-        user.id, code,
+        user.id,
+        code,
         workshop_owner_id is not None and int(getattr(user, "id", -1)) == int(workshop_owner_id),
     )
 
@@ -176,13 +179,11 @@ async def _protected_disconnect_cleanup(
         },
     )
 
-    if (
-        workshop_owner_id is not None
-        and int(getattr(user, "id", -1)) == int(workshop_owner_id)
-    ):
+    if workshop_owner_id is not None and int(getattr(user, "id", -1)) == int(workshop_owner_id):
         logger.debug(
             "[WorkshopWS] owner_disconnected broadcast code=%s user=%s",
-            code, user.id,
+            code,
+            user.id,
         )
         await broadcast_to_all(
             code,

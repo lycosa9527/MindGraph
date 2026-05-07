@@ -85,16 +85,14 @@ async def _nodes_minus_tombstones(
     except (RedisError, OSError, TypeError, ValueError) as exc:
         logger.debug(
             "[LiveSpec] tombstone SISMEMBER batch failed code=%s: %s",
-            code, exc,
+            code,
+            exc,
         )
         return nodes
     tombed = {ids_ordered[i] for i, is_member in enumerate(results) if is_member}
     if not tombed:
         return nodes
-    return [
-        p for p in nodes
-        if not (isinstance(p, dict) and str(p.get("id", "")) in tombed)
-    ]
+    return [p for p in nodes if not (isinstance(p, dict) and str(p.get("id", "")) in tombed)]
 
 
 async def ensure_live_spec_seeded(
@@ -211,9 +209,13 @@ async def _mutate_live_spec_json(
     # Granular fast path: single atomic FCALL — no Python read-modify-write loop.
     if is_granular:
         result = await fcall_spec_granular_apply(
-            redis, code, ttl_clamped,
-            nodes_for_merge, conns_list,
-            deleted_node_ids, deleted_connection_ids,
+            redis,
+            code,
+            ttl_clamped,
+            nodes_for_merge,
+            conns_list,
+            deleted_node_ids,
+            deleted_connection_ids,
         )
         if result is not None:
             new_v, new_seq = result
@@ -341,9 +343,7 @@ async def flush_live_spec_to_db(code: str, diagram_id: str) -> bool:
     """
     _t0 = time.perf_counter()
     result = await _flush_live_spec_to_db_impl(code, diagram_id)
-    asyncio.create_task(
-        tdigest_record_latency("flush", (time.perf_counter() - _t0) * 1000.0)
-    )
+    asyncio.create_task(tdigest_record_latency("flush", (time.perf_counter() - _t0) * 1000.0))
     return result
 
 
@@ -361,10 +361,7 @@ async def _read_changed_keys(redis: Any, code: str) -> frozenset:
             pipe.multi()
             pipe.delete(ck_key)
             await pipe.execute()
-        return frozenset(
-            m.decode("utf-8") if isinstance(m, bytes) else str(m)
-            for m in (members or [])
-        )
+        return frozenset(m.decode("utf-8") if isinstance(m, bytes) else str(m) for m in (members or []))
     except (RedisError, OSError, WatchError, TypeError):
         return frozenset()
 
@@ -415,8 +412,7 @@ async def flush_live_spec_to_db_in_session(
             return False
         if not key_alive:
             logger.warning(
-                "[LiveSpec] flush: no Redis live_spec key code=%s diagram=%s; "
-                "skipping persist",
+                "[LiveSpec] flush: no Redis live_spec key code=%s diagram=%s; skipping persist",
                 code,
                 diagram_id,
             )
@@ -453,40 +449,30 @@ async def flush_live_spec_to_db_in_session(
     changed_keys = await _read_changed_keys(redis, code)
 
     partial_keys = frozenset({"nodes", "connections"})
-    use_partial = (
-        bool(changed_keys)
-        and "__full__" not in changed_keys
-        and changed_keys <= partial_keys
-    )
+    use_partial = bool(changed_keys) and "__full__" not in changed_keys and changed_keys <= partial_keys
 
     snapshot = spec_for_snapshot(doc)
     # PG 18: set lock_timeout so UPDATE cannot wait indefinitely for a row
     # lock held by a concurrent request; fail fast and let the next flush try.
     await db.execute(sql_text("SET LOCAL lock_timeout = '3000ms'"))
     lock_key = f"flush:{diagram_id}"
-    lock_row = await db.execute(
-        sql_text("SELECT pg_try_advisory_xact_lock(hashtext(:k))")
-        .bindparams(k=lock_key)
-    )
+    lock_row = await db.execute(sql_text("SELECT pg_try_advisory_xact_lock(hashtext(:k))").bindparams(k=lock_key))
     acquired = bool(lock_row.scalar())
     if not acquired:
         logger.debug(
             "[LiveSpec] skip flush diagram=%s code=%s (advisory lock held)",
-            diagram_id, code,
+            diagram_id,
+            code,
         )
         return False
 
     if use_partial:
-        updated_id = await _partial_jsonb_flush(
-            db, diagram_id, snapshot, changed_keys
-        )
+        updated_id = await _partial_jsonb_flush(db, diagram_id, snapshot, changed_keys)
     else:
         try:
             serialised_spec = await dumps_maybe_offload(snapshot)
         except (TypeError, ValueError):
-            logger.warning(
-                "[LiveSpec] flush: JSON serialize failed diagram=%s", diagram_id
-            )
+            logger.warning("[LiveSpec] flush: JSON serialize failed diagram=%s", diagram_id)
             return False
         upd_result = await db.execute(
             STMT_DIAGRAM_UPDATE_SPEC,
@@ -498,7 +484,9 @@ async def flush_live_spec_to_db_in_session(
         return False
     logger.debug(
         "[LiveSpec] Flushed diagram=%s workshop=%s partial=%s",
-        diagram_id, code, use_partial,
+        diagram_id,
+        code,
+        use_partial,
     )
     return True
 
@@ -511,7 +499,10 @@ async def _flush_live_spec_to_db_impl(code: str, diagram_id: str) -> bool:
     async with AsyncSessionLocal() as db:
         try:
             flushed = await flush_live_spec_to_db_in_session(
-                db, redis, code, diagram_id,
+                db,
+                redis,
+                code,
+                diagram_id,
             )
             if not flushed:
                 await db.rollback()
@@ -554,8 +545,7 @@ async def _partial_jsonb_flush(
             params[param_name] = json_val
             expr = f"jsonb_set({expr}, '{{{key}}}', :{param_name}::jsonb)"
         raw_sql = sql_text(
-            f"UPDATE diagrams SET spec = {expr} "
-            f"WHERE id = :diagram_id AND NOT is_deleted RETURNING id"
+            f"UPDATE diagrams SET spec = {expr} WHERE id = :diagram_id AND NOT is_deleted RETURNING id"
         ).bindparams(**params)
         result = await db.execute(raw_sql)
         return result.scalar_one_or_none()

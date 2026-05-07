@@ -61,6 +61,10 @@ export default {
   'canvas.toolbar.childAdded': 'Child added',
   'canvas.toolbar.collabAiBlocked':
     'Only the diagram owner can use AI generation during collaboration',
+  'canvas.toolbar.collabLiveAiDisabled':
+    'AI generation is unavailable during live collaboration so everyone stays in sync',
+  'canvas.toolbar.collabGuestFeatureBlocked':
+    'This feature is not available while you join as a collaboration guest.',
   'canvas.toolbar.colorLabel': 'Color',
   'canvas.toolbar.conceptGeneration': 'Concept Generation',
   'canvas.toolbar.conceptMapModesDev': 'Concept map modes are in development',
@@ -272,6 +276,10 @@ export default {
   'canvas.toolbar.selectBranchOrChild': 'Please select a branch or child node',
   'canvas.toolbar.selectCategoryOrLeafDelete':
     'Please select category or leaf nodes (topic node cannot be deleted)',
+  'canvas.toolbar.selectCauseOrEffectForAdd':
+    'Select a cause or effect node (not the event), then press Enter to add another in that column',
+  'canvas.toolbar.selectTreeBranchForChild':
+    'Select a category or an item under a category to add a child, or select the topic to add a category',
   'canvas.toolbar.selectNodesFirst': 'Please select node(s) first',
   'canvas.toolbar.selectNodesToDelete': 'Please select node(s) to delete',
   'canvas.toolbar.selectPartForSubpart': 'Please select a part to add subpart to',
@@ -323,6 +331,22 @@ export default {
   'canvas.topBar.shareCommunity': 'Share to Community',
   'canvas.topBar.sharedCollab': 'Shared collaboration',
   'canvas.topBar.teachingDesign': 'Teaching Design',
+  'canvas.subtitles.tooltip': 'Live subtitles (microphone)',
+  'canvas.subtitles.aria': 'Toggle live subtitles',
+  'canvas.subtitles.listening': 'Listening…',
+  'canvas.subtitles.micFailed': 'Could not access the microphone.',
+  'canvas.subtitles.micUnavailable': 'Microphone is not available in this browser.',
+  'canvas.subtitles.wsError': 'Subtitle connection failed. Check network and sign-in.',
+  'canvas.subtitles.genericError': 'Subtitle error',
+  'canvas.translation.tooltip': 'Live translation (microphone)',
+  'canvas.translation.aria': 'Toggle live translation',
+  'canvas.translation.listening': 'Listening for translation…',
+  'canvas.translation.micFailed': 'Could not access the microphone.',
+  'canvas.translation.micUnavailable': 'Microphone is not available in this browser.',
+  'canvas.translation.wsError': 'Translation connection failed. Check network and sign-in.',
+  'canvas.translation.genericError': 'Translation error',
+  'canvas.translation.start': 'Start translation',
+  'canvas.translation.stop': 'Stop translation',
   'canvas.topBar.snapshotRecallTooltip': 'Restore snapshot {n}',
   'canvas.topBar.snapshotRecallTitle': 'Restore Snapshot',
   'canvas.topBar.snapshotRecallConfirm':
@@ -340,7 +364,21 @@ export default {
   'canvas.zoomControls.showPresentationTools': 'Show presentation tools',
   'canvas.zoomControls.hidePresentationTools': 'Hide presentation tools',
   'canvas.zoomControls.hand': 'Hand tool',
+  'canvas.zoomControls.collaborate': 'Collaborate',
+  'canvas.zoomControls.collabWithinOrg': 'Collaborate within school',
+  'canvas.zoomControls.collabCrossOrg': 'Collaborate with shared code',
+  'canvas.zoomControls.collabTurnOff': 'Turn off online collaboration',
   'canvasPage.collaborationFooter': 'Collaboration',
+  'canvasPage.collaborationFooterOwner': "{username}'s collaboration",
+  'canvasPage.collaborationFooterOwnerDiagram':
+    "{username}'s diagram «{diagramTitle}» — collaboration",
+  'canvasPage.collaborationFooterNetworkDiagramTitle': 'Collaborative diagram «{diagramTitle}»',
+  'canvasPage.collaborationFooterSchool':
+    'School collaboration in progress — join from school list.',
+  'canvasPage.collaborationFooterSchoolDiagram':
+    'School collaboration on «{diagramTitle}» — join from the school session list.',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
   'conceptMap.focus.noResult': 'No result',
   'conceptMap.focus.validationRequestFailed': 'Validation request failed',
   'diagram.aiGenerating': 'AI...',
@@ -511,6 +549,11 @@ export default {
   'landing.template.slot.subject': 'Subject',
   'landing.template.slot.theme': 'Theme',
   'landing.template.slot.topic': 'Center topic',
+  'discovery.gallery.sectionTitle': 'Discover featured diagrams',
+  'discovery.gallery.item1.title': 'Physical vs chemical change',
+  'discovery.gallery.item2.title': 'Project planning mind map',
+  'discovery.gallery.item3.title': 'Quadratic equation walkthrough',
+  'discovery.gallery.item4.title': 'Force and field relationships',
   'mindgraphLanding.cancel': 'Cancel',
   'mindgraphLanding.codeFormatInvalid': 'Invalid presentation code format (should be xxx-xxx)',
   'mindgraphLanding.codeIncomplete': 'Please enter the complete presentation code',
@@ -518,6 +561,7 @@ export default {
   'mindgraphLanding.dialogSchoolTitle': 'School collaboration',
   'mindgraphLanding.dialogSharedTitle': 'Shared collaboration',
   'mindgraphLanding.import': 'Import',
+  'mindgraphLanding.languageMenuTitle': 'Language — syncs interface and AI output',
   'mindgraphLanding.inputPlaceholder': 'Describe your diagram, or choose a template below...',
   'mindgraphLanding.join': 'Join',
   'mindgraphLanding.joinFailed': 'Failed to join',
@@ -535,8 +579,6 @@ export default {
   'mindgraphLanding.sharedCollab': 'Shared collaboration',
   'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome': "Hello {username}, I'm your AI visual thinking assistant",
-  'canvasPage.collabRoomIdleEnding':
-    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
   'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
   'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
   'canvasPage.collabRetryConnection': 'Retry',
@@ -544,4 +586,4 @@ export default {
   'canvasPage.collabConnected': 'Connected',
   'canvas.topBar.viewOnly': 'View only',
   'canvasPage.collabParticipantsMore': 'more',
-}
+} as const

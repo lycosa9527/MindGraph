@@ -78,25 +78,27 @@ async def _cleanup_lock_heartbeat(token: str, stop_event: asyncio.Event) -> None
         while not stop_event.is_set():
             try:
                 await asyncio.wait_for(
-                    stop_event.wait(), timeout=_CLEANUP_LOCK_HEARTBEAT_SEC,
+                    stop_event.wait(),
+                    timeout=_CLEANUP_LOCK_HEARTBEAT_SEC,
                 )
                 return
             except asyncio.TimeoutError:
                 pass
             try:
                 extended = await extend_nx_lock(
-                    redis, _CLEANUP_LOCK_KEY, token, _CLEANUP_LOCK_TTL_SEC,
+                    redis,
+                    _CLEANUP_LOCK_KEY,
+                    token,
+                    _CLEANUP_LOCK_TTL_SEC,
                 )
             except (RedisError, OSError, RuntimeError, TypeError) as exc:
                 logger.debug(
-                    "[OnlineCollabCleanup] Lock extend failed: %s", exc,
+                    "[OnlineCollabCleanup] Lock extend failed: %s",
+                    exc,
                 )
                 return
             if not extended:
-                logger.warning(
-                    "[OnlineCollabCleanup] Lost cleanup lock (ownership changed); "
-                    "stopping heartbeat"
-                )
+                logger.warning("[OnlineCollabCleanup] Lost cleanup lock (ownership changed); stopping heartbeat")
                 return
     except asyncio.CancelledError:
         return
@@ -120,7 +122,10 @@ async def cleanup_expired_online_collabs_impl() -> int:
     lock_token: str = ""
     try:
         acquired_token = await acquire_nx_lock(
-            redis, _CLEANUP_LOCK_KEY, _CLEANUP_LOCK_TTL_SEC, new_lock_token(),
+            redis,
+            _CLEANUP_LOCK_KEY,
+            _CLEANUP_LOCK_TTL_SEC,
+            new_lock_token(),
         )
         if acquired_token is not None:
             lock_token = acquired_token
@@ -132,9 +137,7 @@ async def cleanup_expired_online_collabs_impl() -> int:
         return 0
 
     if not lock_token:
-        logger.debug(
-            "[OnlineCollabCleanup] Skipped - another worker holds the cleanup lock"
-        )
+        logger.debug("[OnlineCollabCleanup] Skipped - another worker holds the cleanup lock")
         return 0
 
     stop_heartbeat = asyncio.Event()
@@ -203,8 +206,9 @@ RETURNING t.id, s.workshop_code
                                 await purge_online_collab_redis_keys(redis, c)
                             except (RedisError, OSError, RuntimeError, TypeError) as exc:
                                 logger.warning(
-                                    "[OnlineCollabCleanup] Redis purge failed "
-                                    "code=%s: %s", c, exc,
+                                    "[OnlineCollabCleanup] Redis purge failed code=%s: %s",
+                                    c,
+                                    exc,
                                 )
 
                     await asyncio.gather(
@@ -216,9 +220,8 @@ RETURNING t.id, s.workshop_code
                     from services.online_collab.lifecycle.online_collab_session_fields import (
                         backfill_online_collab_expiry_if_needed,
                     )
-                    legacy_result = await db.execute(
-                        select(Diagram).where(Diagram.id.in_(legacy_ids))
-                    )
+
+                    legacy_result = await db.execute(select(Diagram).where(Diagram.id.in_(legacy_ids)))
                     legacy_diagrams = legacy_result.scalars().all()
                     for diagram in legacy_diagrams:
                         await backfill_online_collab_expiry_if_needed(diagram, db)
@@ -238,12 +241,12 @@ RETURNING t.id, s.workshop_code
                             cleaned_count += 1
                             try:
                                 await purge_online_collab_redis_keys(
-                                    redis, legacy_code,
+                                    redis,
+                                    legacy_code,
                                 )
                             except (RedisError, OSError, RuntimeError, TypeError) as exc:
                                 logger.warning(
-                                    "[OnlineCollabCleanup] Redis purge failed "
-                                    "legacy code=%s: %s",
+                                    "[OnlineCollabCleanup] Redis purge failed legacy code=%s: %s",
                                     legacy_code,
                                     exc,
                                 )
@@ -325,7 +328,11 @@ async def start_online_collab_impl(
             diagram = result.scalars().first()
 
             verr = validation_error(
-                diagram, diagram_id, user_id, visibility, duration,
+                diagram,
+                diagram_id,
+                user_id,
+                visibility,
+                duration,
             )
             if verr:
                 return None, verr, None, 0
@@ -339,15 +346,14 @@ async def start_online_collab_impl(
 
             redis = get_async_redis()
             if not redis:
-                error_msg = (
-                    "Redis client not available. "
-                    "Presentation mode requires Redis."
-                )
+                error_msg = "Redis client not available. Presentation mode requires Redis."
                 logger.error("[OnlineCollabMgr] %s", error_msg)
                 return None, error_msg, None, 0
 
             start_lock_token = await acquire_nx_lock(
-                redis, start_lock_key(diagram_id), 30,
+                redis,
+                start_lock_key(diagram_id),
+                30,
             )
             lock_acquired = start_lock_token is not None
             if not lock_acquired:
@@ -362,8 +368,7 @@ async def start_online_collab_impl(
                 except SQLAlchemyError:
                     pass
                 if diagram.workshop_code and not (
-                    diagram.workshop_expires_at
-                    and is_online_collab_expired(diagram.workshop_expires_at)
+                    diagram.workshop_expires_at and is_online_collab_expired(diagram.workshop_expires_at)
                 ):
                     return (
                         diagram.workshop_code,
@@ -399,8 +404,9 @@ async def start_online_collab_impl(
                     org_id = owner.organization_id
             except SQLAlchemyError as user_exc:
                 logger.warning(
-                    "[OnlineCollabMgr] Could not fetch owner for session "
-                    "registry user_id=%s: %s", user_id, user_exc,
+                    "[OnlineCollabMgr] Could not fetch owner for session registry user_id=%s: %s",
+                    user_id,
+                    user_exc,
                 )
 
             if org_id is None and target_org_id is not None:
@@ -408,26 +414,24 @@ async def start_online_collab_impl(
                 logger.debug(
                     "[OnlineCollabMgr] Using caller-supplied target_org_id=%s "
                     "for session registry (owner user_id=%s has no org)",
-                    org_id, user_id,
+                    org_id,
+                    user_id,
                 )
 
             if diagram.workshop_code and not (
-                diagram.workshop_expires_at
-                and is_online_collab_expired(diagram.workshop_expires_at)
+                diagram.workshop_expires_at and is_online_collab_expired(diagram.workshop_expires_at)
             ):
                 existing_code = diagram.workshop_code
                 redis_alive = False
                 try:
-                    redis_alive = bool(
-                        await redis.exists(session_meta_key(existing_code))
-                    )
+                    redis_alive = bool(await redis.exists(session_meta_key(existing_code)))
                 except (RedisError, OSError, RuntimeError, TypeError):
                     pass
                 if redis_alive:
                     logger.info(
-                        "[OnlineCollabMgr] Diagram %s already has active "
-                        "session %s, returning existing code",
-                        diagram_id, existing_code,
+                        "[OnlineCollabMgr] Diagram %s already has active session %s, returning existing code",
+                        diagram_id,
+                        existing_code,
                     )
                     try:
                         async with redis.pipeline(transaction=False) as reg_pipe:
@@ -438,12 +442,14 @@ async def start_online_collab_impl(
                             await reg_pipe.execute()
                     except (RedisError, OSError, RuntimeError, TypeError) as reg_exc:
                         logger.warning(
-                            "[OnlineCollabMgr] Could not re-register existing "
-                            "session code=%s in org registry: %s",
-                            existing_code, reg_exc,
+                            "[OnlineCollabMgr] Could not re-register existing session code=%s in org registry: %s",
+                            existing_code,
+                            reg_exc,
                         )
                     await release_nx_lock(
-                        redis, start_lock_key(diagram_id), start_lock_token,
+                        redis,
+                        start_lock_key(diagram_id),
+                        start_lock_token,
                     )
                     return (
                         existing_code,
@@ -456,7 +462,8 @@ async def start_online_collab_impl(
                     "[OnlineCollabMgr] Stale DB session detected code=%s "
                     "diagram_id=%s: no Redis session_meta, clearing and "
                     "creating fresh session",
-                    existing_code, diagram_id,
+                    existing_code,
+                    diagram_id,
                 )
                 clear_online_collab_session_fields(diagram)
                 try:
@@ -464,7 +471,9 @@ async def start_online_collab_impl(
                 except SQLAlchemyError:
                     await db.rollback()
                     await release_nx_lock(
-                        redis, start_lock_key(diagram_id), start_lock_token,
+                        redis,
+                        start_lock_key(diagram_id),
+                        start_lock_token,
                     )
                     raise
 
@@ -475,13 +484,12 @@ async def start_online_collab_impl(
             for attempt in range(1, 6):
                 code = await allocate_unique_code(redis)
                 if not code:
-                    error_msg = (
-                        "Failed to generate unique presentation code "
-                        "after multiple attempts"
-                    )
+                    error_msg = "Failed to generate unique presentation code after multiple attempts"
                     logger.error("[OnlineCollabMgr] %s", error_msg)
                     await release_nx_lock(
-                        redis, start_lock_key(diagram_id), start_lock_token,
+                        redis,
+                        start_lock_key(diagram_id),
+                        start_lock_token,
                     )
                     return None, error_msg, None, stopped_prior_sessions
                 code = code.strip().upper()
@@ -489,7 +497,8 @@ async def start_online_collab_impl(
                 expires_at = compute_online_collab_expires_at(started_at, duration)
                 ttl_sec = redis_ttl_seconds_for_expires_at(expires_at)
                 ttl_sec = min(
-                    max(ttl_sec, 1), workshop_session_ttl * 14,
+                    max(ttl_sec, 1),
+                    workshop_session_ttl * 14,
                 )
 
                 if org_id is None and visibility == "organization":
@@ -498,7 +507,8 @@ async def start_online_collab_impl(
                         "user_id=%s who has no organization_id (admin/superuser host). "
                         "Session code=%s will be registered in the global org registry "
                         "and visible to all org members.",
-                        user_id, code,
+                        user_id,
+                        code,
                     )
 
                 diagram.workshop_code = code
@@ -513,9 +523,11 @@ async def start_online_collab_impl(
                     await db.rollback()
                     await db.refresh(diagram)
                     logger.warning(
-                        "[OnlineCollabMgr] workshop_code collision code=%s "
-                        "diagram=%s attempt=%s: %s",
-                        code, diagram_id, attempt, int_exc,
+                        "[OnlineCollabMgr] workshop_code collision code=%s diagram=%s attempt=%s: %s",
+                        code,
+                        diagram_id,
+                        attempt,
+                        int_exc,
                     )
                     if attempt >= 5:
                         raise
@@ -527,7 +539,9 @@ async def start_online_collab_impl(
                 error_msg = "Failed to persist collaboration session code"
                 logger.error("[OnlineCollabMgr] %s", error_msg)
                 await release_nx_lock(
-                    redis, start_lock_key(diagram_id), start_lock_token,
+                    redis,
+                    start_lock_key(diagram_id),
+                    start_lock_token,
                 )
                 return None, error_msg, None, stopped_prior_sessions
 
@@ -547,12 +561,15 @@ async def start_online_collab_impl(
                     session_redis_value(diagram_id, user_id, started_at),
                 )
                 await redis.setex(
-                    code_to_diagram_key(code), ttl_sec, diagram_id,
+                    code_to_diagram_key(code),
+                    ttl_sec,
+                    diagram_id,
                 )
 
                 from services.online_collab.core.online_collab_manager import (
                     get_online_collab_manager,
                 )
+
                 await get_online_collab_manager().create_session(
                     code=code,
                     diagram_id=diagram_id,
@@ -566,23 +583,28 @@ async def start_online_collab_impl(
                 )
             except (RedisError, OSError, RuntimeError, TypeError) as redis_exc:
                 logger.error(
-                    "[OnlineCollabMgr] Redis init failed for workshop %s, "
-                    "rolling back DB session fields: %s",
-                    code, redis_exc, exc_info=True,
+                    "[OnlineCollabMgr] Redis init failed for workshop %s, rolling back DB session fields: %s",
+                    code,
+                    redis_exc,
+                    exc_info=True,
                 )
                 try:
                     async with AsyncSessionLocal() as rollback_db:
                         await clear_online_collab_session_by_id_returning(
-                            rollback_db, diagram_id,
+                            rollback_db,
+                            diagram_id,
                         )
                         await rollback_db.commit()
                 except SQLAlchemyError as rb_exc:
                     logger.error(
-                        "[OnlineCollabMgr] DB rollback after Redis failure "
-                        "also failed diagram_id=%s: %s", diagram_id, rb_exc,
+                        "[OnlineCollabMgr] DB rollback after Redis failure also failed diagram_id=%s: %s",
+                        diagram_id,
+                        rb_exc,
                     )
                 await release_nx_lock(
-                    redis, start_lock_key(diagram_id), start_lock_token,
+                    redis,
+                    start_lock_key(diagram_id),
+                    start_lock_token,
                 )
                 return (
                     None,
@@ -592,25 +614,31 @@ async def start_online_collab_impl(
                 )
 
             logger.info(
-                "[OnlineCollabMgr] Started workshop %s for diagram %s "
-                "(user %s)", code, diagram_id, user_id,
+                "[OnlineCollabMgr] Started workshop %s for diagram %s (user %s)",
+                code,
+                diagram_id,
+                user_id,
             )
             await release_nx_lock(
-                redis, start_lock_key(diagram_id), start_lock_token,
+                redis,
+                start_lock_key(diagram_id),
+                start_lock_token,
             )
             try:
                 await get_diagram_cache().invalidate_user_list(user_id)
             except (AttributeError, TypeError, ValueError, OSError, RuntimeError) as cache_exc:
                 logger.debug(
-                    "[OnlineCollabMgr] List cache invalidation failed "
-                    "(non-fatal): %s", cache_exc,
+                    "[OnlineCollabMgr] List cache invalidation failed (non-fatal): %s",
+                    cache_exc,
                 )
             return code, None, expires_at, stopped_prior_sessions
 
         except (SQLAlchemyError, OSError) as exc:
             error_msg = f"Error starting presentation mode: {str(exc)}"
             logger.error(
-                "[OnlineCollabMgr] %s", error_msg, exc_info=True,
+                "[OnlineCollabMgr] %s",
+                error_msg,
+                exc_info=True,
             )
             try:
                 await db.rollback()
@@ -627,6 +655,7 @@ async def stop_online_collab_impl(diagram_id: str, user_id: int) -> bool:
     from services.online_collab.core.online_collab_stop import (
         stop_online_collab_impl as _impl,
     )
+
     return await _impl(diagram_id, user_id)
 
 
@@ -638,6 +667,7 @@ async def stop_online_collab_for_room_idle_impl(
     from services.online_collab.core.online_collab_stop import (
         stop_online_collab_for_room_idle_impl as _impl,
     )
+
     return await _impl(diagram_id, expected_code)
 
 

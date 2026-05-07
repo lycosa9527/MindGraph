@@ -119,8 +119,7 @@ async def json_get_live_spec(redis: Any, code: str) -> Optional[Dict[str, Any]]:
     if parsed is None:
         key = live_spec_key(code)
         logger.debug(
-            "[LiveSpecJSON] JSON.GET root unparsed code=%s key=%s raw_type=%s "
-            "raw_preview=%s",
+            "[LiveSpecJSON] JSON.GET root unparsed code=%s key=%s raw_type=%s raw_preview=%s",
             code,
             key,
             type(raw).__name__,
@@ -187,7 +186,10 @@ async def json_delete_node(redis: Any, code: str, node_id: str) -> bool:
         return True
     except RedisError as exc:
         logger.debug(
-            "[LiveSpecJSON] JSON.DEL node code=%s id=%s: %s", code, node_id, exc,
+            "[LiveSpecJSON] JSON.DEL node code=%s id=%s: %s",
+            code,
+            node_id,
+            exc,
         )
         _record_failure()
         return False

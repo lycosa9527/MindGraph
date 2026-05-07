@@ -67,10 +67,7 @@ export interface CollabSyncVersion {
    * Returns a result object that the caller uses to decide whether to drop,
    * resync, or apply the update.  Advances internal cursors on acceptance.
    */
-  recordUpdate(
-    version: number | null | undefined,
-    seq?: number | null,
-  ): RecordUpdateResult
+  recordUpdate(version: number | null | undefined, seq?: number | null): RecordUpdateResult
 
   /**
    * Evaluate an ``update_ack`` frame.
@@ -99,17 +96,10 @@ export function useCollabSyncVersion(): CollabSyncVersion {
   const _consecutiveStale = ref(0)
   const _lastFrameAt = ref<number | null>(null)
 
-  const isSynced = computed(
-    () => !_pendingResync.value && _liveVersion.value !== null,
-  )
-  const isStale = computed(
-    () => _pendingResync.value || _consecutiveStale.value > 0,
-  )
+  const isSynced = computed(() => !_pendingResync.value && _liveVersion.value !== null)
+  const isStale = computed(() => _pendingResync.value || _consecutiveStale.value > 0)
 
-  function recordSnapshot(
-    version: number | null | undefined,
-    seq?: number | null,
-  ): void {
+  function recordSnapshot(version: number | null | undefined, seq?: number | null): void {
     _consecutiveStale.value = 0
     const snap = applySnapshotFrame(version)
     _pendingResync.value = snap.pendingResync
@@ -129,12 +119,14 @@ export function useCollabSyncVersion(): CollabSyncVersion {
 
   function recordUpdate(
     version: number | null | undefined,
-    seq?: number | null,
+    seq?: number | null
   ): RecordUpdateResult {
-    const hasSeq = typeof seq === 'number' && Number.isFinite(seq)
-    const gapDecision = hasSeq
-      ? evaluateLiveSpecGap(_liveSeq.value, seq!)
-      : evaluateLiveSpecGap(_liveVersion.value, version)
+    const finiteSeq = typeof seq === 'number' && Number.isFinite(seq) ? seq : null
+    const hasSeq = finiteSeq !== null
+    const gapDecision =
+      finiteSeq !== null
+        ? evaluateLiveSpecGap(_liveSeq.value, finiteSeq)
+        : evaluateLiveSpecGap(_liveVersion.value, version)
 
     if (gapDecision.gap) {
       return { stale: false, gap: true, consecutiveStaleHit: false }
@@ -161,9 +153,9 @@ export function useCollabSyncVersion(): CollabSyncVersion {
       }
     }
     // Always advance seq tracker when seq is present.
-    if (hasSeq && typeof seq === 'number') {
-      if (_liveSeq.value === null || seq > _liveSeq.value) {
-        _liveSeq.value = seq
+    if (finiteSeq !== null) {
+      if (_liveSeq.value === null || finiteSeq > _liveSeq.value) {
+        _liveSeq.value = finiteSeq
       }
     }
     // Always advance version tracker (informational + version-fallback path).
@@ -177,31 +169,28 @@ export function useCollabSyncVersion(): CollabSyncVersion {
     return { stale: false, gap: false, consecutiveStaleHit: false }
   }
 
-  function recordAck(
-    version: number | null | undefined,
-    seq?: number | null,
-  ): RecordAckResult {
-    const hasSeq = typeof seq === 'number' && Number.isFinite(seq)
-    const hasVer = typeof version === 'number' && Number.isFinite(version)
+  function recordAck(version: number | null | undefined, seq?: number | null): RecordAckResult {
+    const finiteSeq = typeof seq === 'number' && Number.isFinite(seq) ? seq : null
+    const finiteVer = typeof version === 'number' && Number.isFinite(version) ? version : null
     let peerGap = false
 
-    if (hasSeq) {
+    if (finiteSeq !== null) {
       const prevSeq = _liveSeq.value
-      if (prevSeq === null || seq! > prevSeq) {
-        peerGap = prevSeq !== null && seq! > prevSeq + 1
-        _liveSeq.value = seq!
+      if (prevSeq === null || finiteSeq > prevSeq) {
+        peerGap = prevSeq !== null && finiteSeq > prevSeq + 1
+        _liveSeq.value = finiteSeq
       }
-    } else if (hasVer) {
+    } else if (finiteVer !== null) {
       const prev = _liveVersion.value
-      if (prev === null || version! > prev) {
-        peerGap = prev !== null && version! > prev + 1
+      if (prev === null || finiteVer > prev) {
+        peerGap = prev !== null && finiteVer > prev + 1
       }
     }
 
     // Advance version cursor for UI display and version-fallback path.
-    if (hasVer) {
-      if (_liveVersion.value === null || version! > _liveVersion.value) {
-        _liveVersion.value = version!
+    if (finiteVer !== null) {
+      if (_liveVersion.value === null || finiteVer > _liveVersion.value) {
+        _liveVersion.value = finiteVer
       }
     }
 

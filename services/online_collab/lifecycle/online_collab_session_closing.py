@@ -47,7 +47,9 @@ async def unmark_workshop_session_closing(norm_code_upper: str) -> None:
         await client.delete(key)
     except RedisError as exc:
         logger.debug(
-            "[OnlineCollab] unmark closing failed code=%s: %s", norm_code_upper, exc,
+            "[OnlineCollab] unmark closing failed code=%s: %s",
+            norm_code_upper,
+            exc,
         )
 
 

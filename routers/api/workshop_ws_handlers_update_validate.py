@@ -65,44 +65,27 @@ def _diagram_update_validation_error(
         if not isinstance(connections, list):
             errors.append("Invalid connections format (must be array)")
         elif len(connections) > _MAX_COLLAB_UPDATE_CONNECTIONS:
-            errors.append(
-                "Too many connections in update "
-                f"(max {_MAX_COLLAB_UPDATE_CONNECTIONS})"
-            )
+            errors.append(f"Too many connections in update (max {_MAX_COLLAB_UPDATE_CONNECTIONS})")
     if deleted_node_ids_raw is not None:
         if not isinstance(deleted_node_ids_raw, list):
             errors.append("Invalid deleted_node_ids format (must be array)")
         elif len(deleted_node_ids_raw) > _MAX_COLLAB_DELETED_NODE_IDS:
-            errors.append(
-                "Too many deleted_node_ids in update "
-                f"(max {_MAX_COLLAB_DELETED_NODE_IDS})"
-            )
+            errors.append(f"Too many deleted_node_ids in update (max {_MAX_COLLAB_DELETED_NODE_IDS})")
         elif any(
-            not isinstance(i, str) or len(i) > _MAX_COLLAB_ID_LENGTH
-            for i in deleted_node_ids_raw
-            if i is not None
+            not isinstance(i, str) or len(i) > _MAX_COLLAB_ID_LENGTH for i in deleted_node_ids_raw if i is not None
         ):
-            errors.append(
-                "Invalid deleted_node_ids entry (must be string, "
-                f"max {_MAX_COLLAB_ID_LENGTH} chars)"
-            )
+            errors.append(f"Invalid deleted_node_ids entry (must be string, max {_MAX_COLLAB_ID_LENGTH} chars)")
     if deleted_connection_ids_raw is not None:
         if not isinstance(deleted_connection_ids_raw, list):
             errors.append("Invalid deleted_connection_ids format (must be array)")
         elif len(deleted_connection_ids_raw) > _MAX_COLLAB_DELETED_CONNECTION_IDS:
-            errors.append(
-                "Too many deleted_connection_ids in update "
-                f"(max {_MAX_COLLAB_DELETED_CONNECTION_IDS})"
-            )
+            errors.append(f"Too many deleted_connection_ids in update (max {_MAX_COLLAB_DELETED_CONNECTION_IDS})")
         elif any(
             not isinstance(i, str) or len(i) > _MAX_COLLAB_ID_LENGTH
             for i in deleted_connection_ids_raw
             if i is not None
         ):
-            errors.append(
-                "Invalid deleted_connection_ids entry (must be string, "
-                f"max {_MAX_COLLAB_ID_LENGTH} chars)"
-            )
+            errors.append(f"Invalid deleted_connection_ids entry (must be string, max {_MAX_COLLAB_ID_LENGTH} chars)")
 
     granular = nodes is not None or connections is not None
     if spec is not None and not granular:
@@ -114,7 +97,5 @@ def _diagram_update_validation_error(
         if not isinstance(cop_raw, str):
             errors.append("client_op_id must be a string")
         elif len(cop_raw) > _MAX_CLIENT_OP_ID_LENGTH:
-            errors.append(
-                f"client_op_id exceeds max length ({_MAX_CLIENT_OP_ID_LENGTH})"
-            )
+            errors.append(f"client_op_id exceeds max length ({_MAX_CLIENT_OP_ID_LENGTH})")
     return errors[0] if errors else None

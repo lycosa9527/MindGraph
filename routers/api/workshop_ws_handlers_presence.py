@@ -114,11 +114,7 @@ async def build_participants_with_names(
         return []
     total = len(participant_ids)
     truncated = total > _PARTICIPANTS_WITH_NAMES_CAP
-    effective_ids = (
-        participant_ids[:_PARTICIPANTS_WITH_NAMES_CAP]
-        if truncated
-        else participant_ids
-    )
+    effective_ids = participant_ids[:_PARTICIPANTS_WITH_NAMES_CAP] if truncated else participant_ids
     results = await asyncio.gather(
         *[_resolve_participant_name(pid) for pid in effective_ids],
         return_exceptions=True,
@@ -132,7 +128,8 @@ async def build_participants_with_names(
     if truncated:
         logger.info(
             "[CanvasCollabWS] participants list truncated total=%s cap=%s",
-            total, _PARTICIPANTS_WITH_NAMES_CAP,
+            total,
+            _PARTICIPANTS_WITH_NAMES_CAP,
         )
         out.append(
             {
@@ -146,7 +143,8 @@ async def build_participants_with_names(
 
 
 async def _handle_node_editing(
-    ctx: Any, message: Dict[str, Any],
+    ctx: Any,
+    message: Dict[str, Any],
 ) -> None:
     node_id = message.get("node_id")
     raw_editing = message.get("editing", False)
@@ -162,13 +160,11 @@ async def _handle_node_editing(
     cached = _node_editing_dedup_cache.get(dedup_key)
     if cached is not None:
         prev_editing, prev_ts = cached
-        if (
-            prev_editing == editing
-            and (now_ts - prev_ts) < _NODE_EDIT_DEDUP_WINDOW_SEC
-        ):
+        if prev_editing == editing and (now_ts - prev_ts) < _NODE_EDIT_DEDUP_WINDOW_SEC:
             logger.debug(
                 "[CanvasCollabWS] node_editing duplicate suppressed user=%s node=%s",
-                ctx.user.id, node_id,
+                ctx.user.id,
+                node_id,
             )
             return
     while len(_node_editing_dedup_cache) >= _NODE_EDIT_DEDUP_MAX_ENTRIES:
@@ -203,7 +199,10 @@ async def _handle_node_editing(
             logger.warning(
                 "[CanvasCollabWS] Redis editor delta failed workshop=%s "
                 "user=%s node=%s editing=%s — broadcast proceeds with in-process lock only",
-                ctx.code, ctx.user.id, node_id, editing,
+                ctx.code,
+                ctx.user.id,
+                node_id,
+                editing,
             )
             # Do not return: broadcast_to_all must still fire so other participants
             # see the editing animation (dashed outline). The Redis editors map is
@@ -224,12 +223,16 @@ async def _handle_node_editing(
     )
     logger.debug(
         "[CollabDebug] node_editing user=%s code=%s node_id=%s editing=%s",
-        ctx.user.id, ctx.code, node_id, editing,
+        ctx.user.id,
+        ctx.code,
+        node_id,
+        editing,
     )
 
 
 async def _handle_node_editing_batch(
-    ctx: Any, message: Dict[str, Any],
+    ctx: Any,
+    message: Dict[str, Any],
 ) -> None:
     """
     Acquire or release an exclusive lock on a whole subtree atomically.
@@ -260,11 +263,7 @@ async def _handle_node_editing_batch(
             return
         redis_client = get_async_redis()
         try:
-            live_doc = (
-                await read_live_spec(redis_client, ctx.code)
-                if redis_client
-                else None
-            )
+            live_doc = await read_live_spec(redis_client, ctx.code) if redis_client else None
         except Exception as exc:
             logger.debug(
                 "[CanvasCollabWS] node_editing_batch: live_spec read failed: %s",
@@ -280,10 +279,7 @@ async def _handle_node_editing_batch(
                 {"type": "error", "message": "Invalid node_ids for node_editing_batch"},
             )
             return
-        node_ids = [
-            nid for nid in raw_ids
-            if isinstance(nid, str) and nid and len(nid) <= 200
-        ][:500]
+        node_ids = [nid for nid in raw_ids if isinstance(nid, str) and nid and len(nid) <= 200][:500]
 
     if not node_ids:
         await _presence_send(
@@ -300,12 +296,8 @@ async def _handle_node_editing_batch(
         )
         return
 
-    color = (
-        ctx.user_colors[ctx.user.id % len(ctx.user_colors)] if editing else None
-    )
-    emoji = (
-        ctx.user_emojis[ctx.user.id % len(ctx.user_emojis)] if editing else None
-    )
+    color = ctx.user_colors[ctx.user.id % len(ctx.user_colors)] if editing else None
+    emoji = ctx.user_emojis[ctx.user.id % len(ctx.user_emojis)] if editing else None
 
     if is_ws_fanout_enabled():
         effective_ids, ok_redis = await apply_node_editor_batch_delta_redis(
@@ -319,7 +311,10 @@ async def _handle_node_editing_batch(
             logger.warning(
                 "[CanvasCollabWS] batch editor delta failed workshop=%s "
                 "user=%s editing=%s size=%d — broadcasting with full node_ids",
-                ctx.code, ctx.user.id, editing, len(node_ids),
+                ctx.code,
+                ctx.user.id,
+                editing,
+                len(node_ids),
             )
             effective_ids = node_ids
     else:
@@ -328,9 +323,7 @@ async def _handle_node_editing_batch(
         for nid in node_ids:
             node_map = room.setdefault(nid, {})
             if editing:
-                locked_by_other = any(
-                    int(u) != int(ctx.user.id) for u in node_map
-                )
+                locked_by_other = any(int(u) != int(ctx.user.id) for u in node_map)
                 if locked_by_other:
                     continue
                 node_map[ctx.user.id] = username
@@ -361,7 +354,10 @@ async def _handle_node_editing_batch(
     )
     logger.debug(
         "[CollabDebug] node_editing_batch user=%s code=%s editing=%s op=%s node_ids=%s%s",
-        ctx.user.id, ctx.code, editing, op,
+        ctx.user.id,
+        ctx.code,
+        editing,
+        op,
         effective_ids[:10],
         " (truncated)" if len(effective_ids) > 10 else "",
     )
@@ -403,7 +399,8 @@ async def _handle_host_llm_model(ctx: Any, message: Dict[str, Any]) -> None:
 
 
 async def _handle_node_selected(
-    ctx: Any, message: Dict[str, Any],
+    ctx: Any,
+    message: Dict[str, Any],
 ) -> None:
     node_sel = message.get("node_id")
     selected = bool(message.get("selected", True))
@@ -426,12 +423,16 @@ async def _handle_node_selected(
     )
     logger.debug(
         "[CollabDebug] node_selected user=%s code=%s node_id=%s selected=%s",
-        ctx.user.id, ctx.code, node_sel, selected,
+        ctx.user.id,
+        ctx.code,
+        node_sel,
+        selected,
     )
 
 
 async def _handle_claim_node_edit(
-    ctx: Any, message: Dict[str, Any],
+    ctx: Any,
+    message: Dict[str, Any],
 ) -> None:
     """Atomically check and grant/deny exclusive edit ownership of a node.
 
@@ -451,7 +452,10 @@ async def _handle_claim_node_edit(
     if is_ws_fanout_enabled():
         # Atomic exclusive claim via Lua: no read-check-write race.
         atomic_result = await claim_node_exclusive_redis(
-            ctx.code, str(node_id), int(ctx.user.id), username,
+            ctx.code,
+            str(node_id),
+            int(ctx.user.id),
+            username,
         )
         if atomic_result is True:
             room = active_editors.setdefault(ctx.code, {})
@@ -473,7 +477,9 @@ async def _handle_claim_node_edit(
             )
             logger.debug(
                 "[CollabDebug] claim_node_edit granted(atomic) user=%s code=%s node=%s",
-                ctx.user.id, ctx.code, node_id,
+                ctx.user.id,
+                ctx.code,
+                node_id,
             )
             await _presence_send(
                 ctx,
@@ -484,7 +490,9 @@ async def _handle_claim_node_edit(
         if atomic_result is False:
             logger.debug(
                 "[CollabDebug] claim_node_edit denied(atomic) user=%s code=%s node=%s",
-                ctx.user.id, ctx.code, node_id,
+                ctx.user.id,
+                ctx.code,
+                node_id,
             )
             await _presence_send(
                 ctx,
@@ -499,17 +507,17 @@ async def _handle_claim_node_edit(
         editors_from_redis = await load_editors(ctx.code)
 
     is_locked = node_locked_by_other_user(
-        ctx.code, int(ctx.user.id), node_id, active_editors, editors_from_redis,
+        ctx.code,
+        int(ctx.user.id),
+        node_id,
+        active_editors,
+        editors_from_redis,
     )
 
     if is_locked:
         held_by_user_id: Optional[int] = None
         held_by_username: Optional[str] = None
-        editors_map = (
-            editors_from_redis
-            if editors_from_redis is not None
-            else active_editors.get(ctx.code, {})
-        )
+        editors_map = editors_from_redis if editors_from_redis is not None else active_editors.get(ctx.code, {})
         node_map = editors_map.get(node_id, {})
         for uid, uname in node_map.items():
             if int(uid) != int(ctx.user.id):
@@ -529,7 +537,10 @@ async def _handle_claim_node_edit(
         )
         logger.debug(
             "[CollabDebug] claim_node_edit denied user=%s code=%s node=%s held_by=%s",
-            ctx.user.id, ctx.code, node_id, held_by_user_id,
+            ctx.user.id,
+            ctx.code,
+            node_id,
+            held_by_user_id,
         )
         return
 
@@ -541,12 +552,18 @@ async def _handle_claim_node_edit(
 
     if is_ws_fanout_enabled():
         ok_redis = await apply_node_editor_delta_redis(
-            ctx.code, str(node_id), int(ctx.user.id), True, str(username),
+            ctx.code,
+            str(node_id),
+            int(ctx.user.id),
+            True,
+            str(username),
         )
         if not ok_redis:
             logger.warning(
                 "[CanvasCollabWS] claim: Redis editor delta failed workshop=%s user=%s node=%s",
-                ctx.code, ctx.user.id, node_id,
+                ctx.code,
+                ctx.user.id,
+                node_id,
             )
 
     await broadcast_to_all(
@@ -563,7 +580,9 @@ async def _handle_claim_node_edit(
     )
     logger.debug(
         "[CollabDebug] claim_node_edit granted user=%s code=%s node=%s",
-        ctx.user.id, ctx.code, node_id,
+        ctx.user.id,
+        ctx.code,
+        node_id,
     )
     await _presence_send(
         ctx,

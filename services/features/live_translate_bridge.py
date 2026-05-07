@@ -175,11 +175,7 @@ async def run_translate_relay(
     pump_task = asyncio.create_task(pump_upstream())
 
     try:
-        await upstream.send(
-            json.dumps(
-                build_translate_session_update(source_language, target_language)
-            )
-        )
+        await upstream.send(json.dumps(build_translate_session_update(source_language, target_language)))
 
         session_ready_task: asyncio.Task[bool] = asyncio.create_task(session_ready.wait())
         try:
@@ -196,9 +192,7 @@ async def run_translate_relay(
         if not session_ready.is_set():
             await safe_websocket_send_text(
                 client_ws,
-                translate_error_json(
-                    "session_timeout", "Translation session did not start in time"
-                ),
+                translate_error_json("session_timeout", "Translation session did not start in time"),
             )
             return
 

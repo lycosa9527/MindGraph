@@ -54,4 +54,4 @@ export default {
     'Sie wurden abgemeldet, weil die maximale Geräteanzahl überschritten wurde',
   'notification.signInToUse': 'Melden Sie sich an, um dies zu nutzen',
   'notification.signInToValidateFocus': 'Melden Sie sich an, um die Fokusfrage zu prüfen',
-}
+} as const

@@ -2,6 +2,7 @@
 
 These codes match ``INTERFACE_LANGUAGE_PICKER_CODES`` in ``frontend/src/i18n/locales.ts``.
 """
+
 from __future__ import annotations
 
 from typing import Final, Optional
@@ -78,12 +79,7 @@ def resolve_request_locale(language_header: Optional[str]) -> Optional[str]:
             return primary
 
     if lowered.startswith("zh"):
-        if (
-            "tw" in lowered
-            or lowered.endswith("-hk")
-            or "hant" in lowered
-            or lowered == "zht"
-        ):
+        if "tw" in lowered or lowered.endswith("-hk") or "hant" in lowered or lowered == "zht":
             return "zh-tw"
         return "zh"
 

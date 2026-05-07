@@ -170,4 +170,4 @@ export default {
   'rootConceptModal.tabTitleRoot': 'Root concept: {text}',
   'rootConceptModal.title': 'Root concept',
   'rootConceptModal.titleConceptList': 'Concept list',
-}
+} as const

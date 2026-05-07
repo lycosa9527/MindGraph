@@ -61,7 +61,6 @@ local ok = pcall(redis.call, 'HEXPIRE', key, ttl, 'FIELDS', 1, member)
 if not ok then redis.call('EXPIRE', key, ttl) end
 return 0
 """,
-
     # Combined sliding-window rate-limiter: checks user bucket and IP bucket in
     # a single round-trip.  Returns a two-element array [user_ok, ip_ok] where
     # each element is 1 (allowed) or 0 (limited).  We always record the attempt
@@ -100,6 +99,7 @@ _SHA: Dict[str, str] = {}
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 async def load_scripts_if_available() -> None:
     """
@@ -174,7 +174,5 @@ async def evalsha_with_reload(
             _SHA[name] = sha
             return await redis.evalsha(sha, numkeys, *args)
         except (RedisError, OSError) as reload_exc:
-            logger.error(
-                "[CollabScripts] Reload failed for %s, using EVAL: %s", name, reload_exc
-            )
+            logger.error("[CollabScripts] Reload failed for %s, using EVAL: %s", name, reload_exc)
             return await _eval_fallback()

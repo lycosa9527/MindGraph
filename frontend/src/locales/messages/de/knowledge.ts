@@ -1,6 +1,4 @@
-/**
- * de UI — knowledge
- */
+/** de UI — knowledge */
 
 export default {
   'chunkTest.history.confirmDeleteBody':
@@ -215,4 +213,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': 'Dokument erfolgreich hochgeladen, wird verarbeitet …',
   'rag.retrievalTest.failed': 'Retrieval-Test fehlgeschlagen',
   'rag.retrievalTest.success': 'Retrieval-Test abgeschlossen',
-}
+} as const

@@ -110,8 +110,7 @@ async def check_online_collab_redis_version(redis: Any) -> None:
             component="Redis",
             error_message=msg,
             details=(
-                "Upgrade the Redis server to 8.0.0 or newer, or set "
-                "COLLAB_DISABLED=1 to start without workshop collab."
+                "Upgrade the Redis server to 8.0.0 or newer, or set COLLAB_DISABLED=1 to start without workshop collab."
             ),
         )
     except (OSError, RuntimeError, TypeError, AttributeError, ValueError) as alert_error:
@@ -191,10 +190,7 @@ async def check_online_collab_redis_durability(redis: Any) -> Dict[str, Any]:
         report["issues"].append(issue)
         logger.warning("[WorkshopRedisHealth] %s", issue)
 
-    if (
-        appendfsync is not None
-        and appendfsync.lower() not in {_RECOMMENDED_APPENDFSYNC, "always"}
-    ):
+    if appendfsync is not None and appendfsync.lower() not in {_RECOMMENDED_APPENDFSYNC, "always"}:
         issue = (
             f"Redis appendfsync={appendfsync!r} (expected "
             f"{_RECOMMENDED_APPENDFSYNC!r} or 'always'). Worst-case edit loss may "
@@ -205,9 +201,7 @@ async def check_online_collab_redis_durability(redis: Any) -> Dict[str, Any]:
 
     if policy is not None:
         policy_lower = policy.lower()
-        safe = any(
-            policy_lower.startswith(prefix) for prefix in _SAFE_EVICTION_PREFIXES
-        )
+        safe = any(policy_lower.startswith(prefix) for prefix in _SAFE_EVICTION_PREFIXES)
         if not safe:
             issue = (
                 f"Redis maxmemory-policy={policy!r} can evict TTL'd keys. "
@@ -220,8 +214,9 @@ async def check_online_collab_redis_durability(redis: Any) -> Dict[str, Any]:
 
     if not report["issues"]:
         logger.info(
-            "[WorkshopRedisHealth] Redis durability OK: appendonly=%s "
-            "appendfsync=%s maxmemory-policy=%s",
-            appendonly, appendfsync, policy,
+            "[WorkshopRedisHealth] Redis durability OK: appendonly=%s appendfsync=%s maxmemory-policy=%s",
+            appendonly,
+            appendfsync,
+            policy,
         )
     return report

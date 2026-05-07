@@ -66,9 +66,7 @@ async def user_may_join_diagram_online_collab(
         return False
     owner_id = diagram.user_id
     ids = {joiner_id, owner_id}
-    result = await db.execute(
-        select(User.id, User.role, User.organization_id).where(User.id.in_(ids))
-    )
+    result = await db.execute(select(User.id, User.role, User.organization_id).where(User.id.in_(ids)))
     rows = result.all()
     joiner_row = None
     owner_row = None

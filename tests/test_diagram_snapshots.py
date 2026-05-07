@@ -1,4 +1,5 @@
 """Unit tests for diagram snapshot model and API contracts."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime

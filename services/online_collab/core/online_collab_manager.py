@@ -102,6 +102,7 @@ logger = logging.getLogger(__name__)
 # Redis durability helper
 # ---------------------------------------------------------------------------
 
+
 def _redis_wait_enabled() -> bool:
     return os.getenv("COLLAB_REDIS_WAIT_DURABILITY", "0") not in ("0", "false", "False", "")
 
@@ -128,6 +129,7 @@ async def _redis_wait(redis: Any) -> None:
 # Decode helper
 # ---------------------------------------------------------------------------
 
+
 def _s(val: Any) -> str:
     """Decode bytes / memoryview to str; return '' for None."""
     if isinstance(val, (bytes, bytearray)):
@@ -140,6 +142,7 @@ def _s(val: Any) -> str:
 # ---------------------------------------------------------------------------
 # OnlineCollabManager
 # ---------------------------------------------------------------------------
+
 
 class OnlineCollabManager:
     """
@@ -182,9 +185,7 @@ class OnlineCollabManager:
         """
         redis = get_async_redis()
         if not redis:
-            logger.warning(
-                "[OnlineCollabMgr] create_session skipped ??Redis unavailable code=%s", code
-            )
+            logger.warning("[OnlineCollabMgr] create_session skipped ??Redis unavailable code=%s", code)
             return
         now = int(time.time())
         meta = {
@@ -223,9 +224,7 @@ class OnlineCollabManager:
                 expires_at_unix,
             )
         except (RedisError, OSError, TypeError, RuntimeError) as exc:
-            logger.warning(
-                "[OnlineCollabMgr] create_session Redis error code=%s: %s", code, exc
-            )
+            logger.warning("[OnlineCollabMgr] create_session Redis error code=%s: %s", code, exc)
 
     async def destroy_session(
         self,
@@ -267,14 +266,16 @@ class OnlineCollabManager:
             lock_token = await acquire_nx_lock(redis, destroy_key, 30)
             if not lock_token:
                 logger.warning(
-                    "[OnlineCollabMgr] destroy_session: cross-worker lock busy "
-                    "code=%s reason=%s",
-                    code, reason,
+                    "[OnlineCollabMgr] destroy_session: cross-worker lock busy code=%s reason=%s",
+                    code,
+                    reason,
                 )
                 return False
             try:
                 return await self._destroy_session_inner(
-                    code, reason=reason, diagram_id=diagram_id,
+                    code,
+                    reason=reason,
+                    diagram_id=diagram_id,
                 )
             finally:
                 await release_nx_lock(redis, destroy_key, lock_token)
@@ -291,9 +292,7 @@ class OnlineCollabManager:
         """Execute the purge body — always called while holding the per-code lock."""
         redis = get_async_redis()
         if not redis:
-            logger.warning(
-                "[OnlineCollabMgr] destroy_session: Redis unavailable code=%s", code
-            )
+            logger.warning("[OnlineCollabMgr] destroy_session: Redis unavailable code=%s", code)
             return False
 
         meta: dict = {}
@@ -310,8 +309,7 @@ class OnlineCollabManager:
 
         if not meta and reason not in ("explicit", "expired"):
             logger.warning(
-                "[OnlineCollabMgr] destroy_session: no meta found code=%s reason=%s "
-                "(may already be destroyed)",
+                "[OnlineCollabMgr] destroy_session: no meta found code=%s reason=%s (may already be destroyed)",
                 code,
                 reason,
             )
@@ -330,9 +328,7 @@ class OnlineCollabManager:
         await _redis_wait(redis)
         invalidate_session_meta(code)
 
-        resolved_diagram_id = diagram_id or _s(
-            meta.get(b"diagram_id") or meta.get("diagram_id")
-        )
+        resolved_diagram_id = diagram_id or _s(meta.get(b"diagram_id") or meta.get("diagram_id"))
         logger.info(
             "[OnlineCollabMgr] session_destroyed code=%s reason=%s diagram_id=%s",
             code,
@@ -348,9 +344,7 @@ class OnlineCollabManager:
     async def on_join(self, code: str, user_id: int) -> None:
         """Called when a user connects via WebSocket. Refreshes idle score."""
         await self.touch_activity(code)
-        logger.info(
-            "[OnlineCollabMgr] participant_joined code=%s user_id=%s", code, user_id
-        )
+        logger.info("[OnlineCollabMgr] participant_joined code=%s user_id=%s", code, user_id)
 
     async def owner_name_for_code(self, code: str) -> Optional[str]:
         """
@@ -430,21 +424,21 @@ class OnlineCollabManager:
                 await pipe.execute()
             try:
                 await redis.execute_command(
-                    "EXPIRE", session_meta_key(code), safety_ttl_sec, "GT",
+                    "EXPIRE",
+                    session_meta_key(code),
+                    safety_ttl_sec,
+                    "GT",
                 )
             except RedisError as exp_exc:
                 logger.debug(
                     "[OnlineCollabMgr] touch_activity EXPIRE GT skipped code=%s: %s",
-                    code, exp_exc,
+                    code,
+                    exp_exc,
                 )
             invalidate_session_meta(code)
-            logger.debug(
-                "[OnlineCollabMgr] activity_touched code=%s ts=%s", code, now
-            )
+            logger.debug("[OnlineCollabMgr] activity_touched code=%s ts=%s", code, now)
         except (RedisError, OSError, TypeError, RuntimeError) as exc:
-            logger.debug(
-                "[OnlineCollabMgr] touch_activity Redis error code=%s: %s", code, exc
-            )
+            logger.debug("[OnlineCollabMgr] touch_activity Redis error code=%s: %s", code, exc)
 
     def _redis_ttl_seconds_for_diagram(self, diagram: Diagram) -> int:
         if diagram.workshop_expires_at:
@@ -462,17 +456,14 @@ class OnlineCollabManager:
     ) -> Optional[Dict[str, Any]]:
         """Authorize join, add participant keys, return workshop info or None."""
         await backfill_online_collab_expiry_if_needed(diagram, db)
-        if diagram.workshop_expires_at and is_online_collab_expired(
-            diagram.workshop_expires_at
-        ):
+        if diagram.workshop_expires_at and is_online_collab_expired(diagram.workshop_expires_at):
             if redis:
                 await clear_expired_online_collab_session(diagram, db, redis)
             return None
 
         vis = diagram_online_collab_visibility(diagram)
-        may_join = (
-            vis == ONLINE_COLLAB_VISIBILITY_NETWORK
-            or await user_may_join_diagram_online_collab(db, diagram, user_id)
+        may_join = vis == ONLINE_COLLAB_VISIBILITY_NETWORK or await user_may_join_diagram_online_collab(
+            db, diagram, user_id
         )
         if not may_join:
             logger.warning(
@@ -571,7 +562,8 @@ class OnlineCollabManager:
         )
 
         return await stop_online_collab_for_room_idle_impl(
-            diagram_id, expected_code,
+            diagram_id,
+            expected_code,
         )
 
     async def get_active_online_collab_code_for_diagram(
@@ -582,6 +574,7 @@ class OnlineCollabManager:
         from services.online_collab.core.online_collab_join import (
             get_active_online_collab_code_for_diagram_impl,
         )
+
         return await get_active_online_collab_code_for_diagram_impl(diagram_id)
 
     async def join_online_collab(
@@ -593,6 +586,7 @@ class OnlineCollabManager:
         from services.online_collab.core.online_collab_join import (
             join_online_collab_impl,
         )
+
         return await join_online_collab_impl(self, code, user_id)
 
     async def join_online_collab_by_diagram(
@@ -604,6 +598,7 @@ class OnlineCollabManager:
         from services.online_collab.core.online_collab_join import (
             join_online_collab_by_diagram_impl,
         )
+
         return await join_online_collab_by_diagram_impl(self, diagram_id, user_id)
 
     async def get_participants(self, code: str) -> List[int]:
@@ -632,7 +627,8 @@ class OnlineCollabManager:
     ) -> Tuple[Optional[Dict[str, Any]], str]:
         """Status payload plus error tag for viewers."""
         return await get_online_collab_status_for_viewer(
-            diagram_id, viewer_user_id,
+            diagram_id,
+            viewer_user_id,
         )
 
     async def _participant_count_for_code(self, code: str) -> int:
@@ -667,6 +663,7 @@ class OnlineCollabManager:
 # ---------------------------------------------------------------------------
 # Singleton accessor and startup helper
 # ---------------------------------------------------------------------------
+
 
 class _OnlineCollabManagerSingleton:
     """Module-private holder so the accessor doesn't need a module-level global."""

@@ -153,4 +153,4 @@ export default {
   'auth.accountNameSave': '儲存姓名',
   'auth.accountNameSaveSuccess': '姓名已更新',
   'auth.accountNameSaveError': '儲存失敗，請重試',
-}
+} as const

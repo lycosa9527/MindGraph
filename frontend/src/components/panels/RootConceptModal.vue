@@ -309,12 +309,7 @@ onMounted(async () => {
       </div>
 
       <div
-        v-if="
-          sessionId &&
-          !isLoading &&
-          suggestions.length > 0 &&
-          !isLoadingMore
-        "
+        v-if="sessionId && !isLoading && suggestions.length > 0 && !isLoadingMore"
         class="mt-4 flex justify-center"
       >
         <el-button

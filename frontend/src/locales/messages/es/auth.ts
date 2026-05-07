@@ -1,6 +1,4 @@
-/**
- * es UI — auth
- */
+/** es UI — auth */
 
 export default {
   'auth.accountInfo': 'Cuenta',
@@ -162,4 +160,4 @@ export default {
   'auth.accountNameSave': 'Guardar nombre',
   'auth.accountNameSaveSuccess': 'Nombre actualizado',
   'auth.accountNameSaveError': 'No se pudo guardar. Por favor inténtalo de nuevo.',
-}
+} as const

@@ -29,20 +29,14 @@ from sqlalchemy import bindparam, select, update as sa_update
 
 from models.domain.diagrams import Diagram
 
-STMT_DIAGRAM_BY_ID = (
-    select(Diagram)
-    .where(
-        Diagram.id == bindparam("p_id"),
-        ~Diagram.is_deleted,
-    )
+STMT_DIAGRAM_BY_ID = select(Diagram).where(
+    Diagram.id == bindparam("p_id"),
+    ~Diagram.is_deleted,
 )
 
-STMT_DIAGRAM_SPEC_BY_ID = (
-    select(Diagram.id, Diagram.spec)
-    .where(
-        Diagram.id == bindparam("p_id"),
-        ~Diagram.is_deleted,
-    )
+STMT_DIAGRAM_SPEC_BY_ID = select(Diagram.id, Diagram.spec).where(
+    Diagram.id == bindparam("p_id"),
+    ~Diagram.is_deleted,
 )
 
 STMT_DIAGRAM_UPDATE_SPEC = (

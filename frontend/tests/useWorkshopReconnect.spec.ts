@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  type PresenceDeltaRow,
   WORKSHOP_RECONNECT,
   WORKSHOP_RESYNC_WATCHDOG,
   applySnapshotFrame,
@@ -10,7 +11,6 @@ import {
   netPresenceAfterCancellingPairsByUserId,
   nextPendingResyncBackoffMs,
   shouldScheduleReconnect,
-  type PresenceDeltaRow,
 } from '@/composables/workshop/useWorkshopReconnect'
 
 describe('computeReconnectDelayMs', () => {

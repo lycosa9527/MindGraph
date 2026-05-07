@@ -44,28 +44,28 @@ async def test_envelope_publish_injects_msg_id(monkeypatch):
     recorded: Dict[str, str] = {}
 
     async def spy_transport(_client: Any, channel: str, body: str) -> None:
-        recorded['channel'] = channel
-        recorded['body'] = body
+        recorded["channel"] = channel
+        recorded["body"] = body
 
-    monkeypatch.setattr(pub, '_publish_with_channel_transport', spy_transport)
-    monkeypatch.setattr(pub, 'get_async_redis', _any_redis_client)
-    monkeypatch.setattr(pub, 'is_ws_fanout_enabled', _truthy)
-    monkeypatch.setattr(pub, 'use_streams_audit', _falsy_audit)
+    monkeypatch.setattr(pub, "_publish_with_channel_transport", spy_transport)
+    monkeypatch.setattr(pub, "get_async_redis", _any_redis_client)
+    monkeypatch.setattr(pub, "is_ws_fanout_enabled", _truthy)
+    monkeypatch.setattr(pub, "use_streams_audit", _falsy_audit)
 
     envelope = {
-        'v': 1,
-        'k': 'ws',
-        'code': 'ABC-XYZ',
-        'mode': 'all',
-        'd': json.dumps({'type': 'presence', 'x': 1}, ensure_ascii=False),
+        "v": 1,
+        "k": "ws",
+        "code": "ABC-XYZ",
+        "mode": "all",
+        "d": json.dumps({"type": "presence", "x": 1}, ensure_ascii=False),
     }
 
     await pub.publish_workshop_fanout_async(envelope)
 
-    outer = json.loads(recorded['body'])
-    inner = json.loads(outer['d'])
-    assert isinstance(inner.get('msg_id'), str)
-    assert inner['msg_id']
+    outer = json.loads(recorded["body"])
+    inner = json.loads(outer["d"])
+    assert isinstance(inner.get("msg_id"), str)
+    assert inner["msg_id"]
 
 
 @pytest.mark.asyncio
@@ -79,28 +79,28 @@ async def test_publish_redis_error_schedules_pg_with_same_payload(monkeypatch):
         captured.append(dict(env))
 
     async def flaky(_cli: Any, _ch: str, _bod: str) -> None:
-        raise RedisError('simulated outage')
+        raise RedisError("simulated outage")
 
-    monkeypatch.setattr(pub, '_publish_with_channel_transport', flaky)
-    monkeypatch.setattr(pub, 'publish_pg_notify_fanout_async', spy_publish_pg)
-    monkeypatch.setattr(pub, 'get_async_redis', _any_redis_client)
-    monkeypatch.setattr(pub, 'is_ws_fanout_enabled', _truthy)
-    monkeypatch.setattr(pub, 'use_streams_audit', _falsy_audit)
+    monkeypatch.setattr(pub, "_publish_with_channel_transport", flaky)
+    monkeypatch.setattr(pub, "publish_pg_notify_fanout_async", spy_publish_pg)
+    monkeypatch.setattr(pub, "get_async_redis", _any_redis_client)
+    monkeypatch.setattr(pub, "is_ws_fanout_enabled", _truthy)
+    monkeypatch.setattr(pub, "use_streams_audit", _falsy_audit)
 
     envelope = {
-        'v': 1,
-        'k': 'ws',
-        'code': 'ROOM-1',
-        'mode': 'others',
-        'ex': 9,
-        'd': json.dumps({'seq': 1, 'hello': True}, ensure_ascii=False),
+        "v": 1,
+        "k": "ws",
+        "code": "ROOM-1",
+        "mode": "others",
+        "ex": 9,
+        "d": json.dumps({"seq": 1, "hello": True}, ensure_ascii=False),
     }
     await pub.publish_workshop_fanout_async(envelope)
     await asyncio.sleep(0)
 
     assert captured
-    inner = json.loads(captured[0]['d'])
-    assert isinstance(inner.get('msg_id'), str)
+    inner = json.loads(captured[0]["d"])
+    assert isinstance(inner.get("msg_id"), str)
 
 
 @pytest.mark.asyncio
@@ -116,25 +116,25 @@ async def test_handle_workshop_raw_dispatches_deliver(monkeypatch):
     def record_received() -> None:
         return None
 
-    monkeypatch.setattr(lst, 'deliver_local_workshop_broadcast', fake_deliver)
-    monkeypatch.setattr(lst, 'record_ws_fanout_workshop_received', record_received)
+    monkeypatch.setattr(lst, "deliver_local_workshop_broadcast", fake_deliver)
+    monkeypatch.setattr(lst, "record_ws_fanout_workshop_received", record_received)
 
     payload_obj = {
-        'v': 1,
-        'k': 'ws',
-        'code': 'ROOM-XYZ',
-        'mode': 'others',
-        'ex': 5,
-        'd': json.dumps({'seq': 2}, ensure_ascii=False),
+        "v": 1,
+        "k": "ws",
+        "code": "ROOM-XYZ",
+        "mode": "others",
+        "ex": 5,
+        "d": json.dumps({"seq": 2}, ensure_ascii=False),
     }
     await lst._handle_workshop_raw(json.dumps(payload_obj))
 
     assert len(calls) == 1
     code, mode, exclude, blob = calls[0]
-    assert code == 'ROOM-XYZ'
-    assert mode == 'others'
+    assert code == "ROOM-XYZ"
+    assert mode == "others"
     assert exclude == 5
-    assert json.loads(blob)['seq'] == 2
+    assert json.loads(blob)["seq"] == 2
 
 
 @pytest.mark.asyncio
@@ -142,18 +142,18 @@ async def test_pg_notify_warns_on_oversized_payload(monkeypatch):
     """Oversized pg_notify payloads are dropped before touching the database."""
     from services.features import ws_pg_notify_fanout as pgn
 
-    monkeypatch.setenv('COLLAB_PG_NOTIFY_FALLBACK', '1')
+    monkeypatch.setenv("COLLAB_PG_NOTIFY_FALLBACK", "1")
     lines: List[str] = []
 
     def capture(msg: str, *_a: object, **_k: object) -> None:
         lines.append(str(msg))
 
-    monkeypatch.setattr(pgn.logger, 'warning', capture)
-    oversized = {'v': 1, 'k': 'ws', 'code': 'c', 'mode': 'all', 'd': 'z' * 9000}
+    monkeypatch.setattr(pgn.logger, "warning", capture)
+    oversized = {"v": 1, "k": "ws", "code": "c", "mode": "all", "d": "z" * 9000}
 
     await pgn.publish_pg_notify_fanout_async(oversized)
 
-    assert lines and any('too large' in entry for entry in lines)
+    assert lines and any("too large" in entry for entry in lines)
 
 
 @pytest.mark.asyncio
@@ -167,25 +167,25 @@ async def test_deliver_local_drop_second_identical_msg_id(monkeypatch):
     async def counting_push_shard(*_args: object, **_kwargs: object) -> None:
         pushes.append(1)
 
-    monkeypatch.setattr(wfd, '_push_shard', counting_push_shard)
+    monkeypatch.setattr(wfd, "_push_shard", counting_push_shard)
 
     def record_shards(_n: int) -> None:
         return None
 
-    monkeypatch.setattr(wfd, 'record_ws_broadcast_shards', record_shards)
+    monkeypatch.setattr(wfd, "record_ws_broadcast_shards", record_shards)
 
     async def noop_record_latency(_ms: float) -> None:
         return None
 
-    monkeypatch.setattr(wfd, '_record_broadcast_latency', noop_record_latency)
+    monkeypatch.setattr(wfd, "_record_broadcast_latency", noop_record_latency)
 
     queue: asyncio.Queue[object] = asyncio.Queue()
     dummy = SimpleNamespace(send_queue=queue, qsize_high_water=0)
 
-    ACTIVE_CONNECTIONS['Z'] = {1: dummy}
-    frame = json.dumps({'type': 'x', 'msg_id': 'dupid', 'v': 1})
+    ACTIVE_CONNECTIONS["Z"] = {1: dummy}
+    frame = json.dumps({"type": "x", "msg_id": "dupid", "v": 1})
 
-    await wfd.deliver_local_workshop_broadcast('Z', 'all', None, frame)
-    await wfd.deliver_local_workshop_broadcast('Z', 'all', None, frame)
+    await wfd.deliver_local_workshop_broadcast("Z", "all", None, frame)
+    await wfd.deliver_local_workshop_broadcast("Z", "all", None, frame)
 
     assert len(pushes) == 1

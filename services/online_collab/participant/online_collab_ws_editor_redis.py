@@ -45,7 +45,7 @@ _EDITORS_WATCH_MAX_BACKOFF_SEC = 0.080
 
 def _editors_backoff_delay(attempt: int) -> float:
     """Capped exponential backoff with jitter for the editor WATCH loop."""
-    base = _EDITORS_WATCH_BASE_BACKOFF_SEC * (2 ** attempt)
+    base = _EDITORS_WATCH_BASE_BACKOFF_SEC * (2**attempt)
     capped = min(base, _EDITORS_WATCH_MAX_BACKOFF_SEC)
     return capped + random.uniform(0, capped)
 
@@ -200,7 +200,11 @@ async def apply_node_editor_delta_redis(
     """
     if editors_use_hash_backend():
         return await hash_apply_node_editor_delta(
-            code, node_id, user_id, editing, username,
+            code,
+            node_id,
+            user_id,
+            editing,
+            username,
         )
     redis = get_async_redis()
     if not redis:
@@ -317,7 +321,11 @@ async def apply_node_editor_batch_delta_redis(
     """
     if editors_use_hash_backend():
         return await hash_apply_node_editor_batch_delta(
-            code, node_ids, user_id, editing, username,
+            code,
+            node_ids,
+            user_id,
+            editing,
+            username,
         )
     redis = get_async_redis()
     if not redis:
@@ -367,7 +375,8 @@ async def apply_node_editor_batch_delta_redis(
             continue
         except (RedisError, OSError) as exc:
             logger.warning(
-                "[OnlineCollabEditorsRedis] batch node delta failed: %s", exc,
+                "[OnlineCollabEditorsRedis] batch node delta failed: %s",
+                exc,
             )
             return [], False
     logger.warning(

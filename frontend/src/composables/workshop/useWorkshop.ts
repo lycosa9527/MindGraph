@@ -348,9 +348,9 @@ export function useWorkshop(
       const sock = ws.value
       return Boolean(
         sock &&
-          sock.readyState === WebSocket.OPEN &&
-          !version.pendingResync.value &&
-          serverBaselineReady.value
+        sock.readyState === WebSocket.OPEN &&
+        !version.pendingResync.value &&
+        serverBaselineReady.value
       )
     },
     clearRoomIdleCountdownUi: presence.clearRoomIdleCountdownUi,
@@ -614,8 +614,7 @@ export function useWorkshop(
   }
 
   watch(
-    () =>
-      [workshopCode.value, isDiagramOwner.value, llmResultsStore.selectedModel] as const,
+    () => [workshopCode.value, isDiagramOwner.value, llmResultsStore.selectedModel] as const,
     () => {
       flushHostLlmSelectionToGuests()
     }

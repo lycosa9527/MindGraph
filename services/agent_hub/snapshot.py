@@ -85,16 +85,10 @@ async def build_desktop_pairing_snapshot(
     refcount = await kitty_scope_refcount_read(scope_norm)
     meta_exists = meta_subset is not None
     rc_val = refcount
-    drift = (meta_exists and (rc_val is None or rc_val <= 0)) or (
-        not meta_exists and rc_val is not None and rc_val > 0
-    )
+    drift = (meta_exists and (rc_val is None or rc_val <= 0)) or (not meta_exists and rc_val is not None and rc_val > 0)
     if drift:
         record_kitty_refcount_meta_drift()
-    aligns = bool(
-        focus_id
-        and isinstance(focus_id, str)
-        and focus_id.strip() == scope_norm
-    )
+    aligns = bool(focus_id and isinstance(focus_id, str) and focus_id.strip() == scope_norm)
     return {
         "desktop_focus": {"diagram_library_id": focus_id, "updated_at": focus_ts},
         "current_voice_scope": scope_norm,

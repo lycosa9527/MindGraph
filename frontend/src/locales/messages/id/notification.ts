@@ -52,4 +52,4 @@ export default {
   'notification.sessionInvalidated': 'Anda telah keluar karena melebihi jumlah perangkat maksimum',
   'notification.signInToUse': 'Masuk untuk menggunakan ini',
   'notification.signInToValidateFocus': 'Masuk untuk memvalidasi pertanyaan fokus',
-}
+} as const

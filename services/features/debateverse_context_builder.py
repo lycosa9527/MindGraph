@@ -149,9 +149,7 @@ class DebateVerseContextBuilder:
             mp_name = cast(str, msg_participant.name)
             mp_side = cast(Optional[str], msg_participant.side)
             mp_role = cast(str, msg_participant.role)
-            speaker_info = (
-                f"[{mp_name} ({mp_side or 'judge'}, {mp_role})]"
-            )
+            speaker_info = f"[{mp_name} ({mp_side or 'judge'}, {mp_role})]"
             stage_label = cast(str, msg.stage)
             rnd = cast(int, msg.round_number)
             stage_info = f"[{stage_label}, Round {rnd}]"
@@ -167,18 +165,11 @@ class DebateVerseContextBuilder:
                 flaw_note = ""
                 if mid in analysis.get("flawed_message_ids", []):
                     flaw = next(
-                        (
-                            f
-                            for f in analysis.get("flaws", [])
-                            if f.get("message_id") == mid
-                        ),
+                        (f for f in analysis.get("flaws", []) if f.get("message_id") == mid),
                         None,
                     )
                     if flaw:
-                        flaw_note = (
-                            f"\n[WEAKNESS: {flaw.get('flaw_type', 'unknown')} - "
-                            f"{flaw.get('description', '')}]"
-                        )
+                        flaw_note = f"\n[WEAKNESS: {flaw.get('flaw_type', 'unknown')} - {flaw.get('description', '')}]"
 
                 messages.append(
                     {
@@ -238,7 +229,9 @@ class DebateVerseContextBuilder:
 
         topic_text = cast(str, session.topic)
         system_prompt = get_judge_system_prompt(
-            current_stage=stage, topic=topic_text, language=language,
+            current_stage=stage,
+            topic=topic_text,
+            language=language,
         )
 
         messages = [{"role": "system", "content": system_prompt}]
@@ -256,18 +249,14 @@ class DebateVerseContextBuilder:
             mp_side = cast(Optional[str], msg_participant.side)
             mp_role = cast(str, msg_participant.role)
             judge_row_id = cast(int, msg_participant.id)
-            speaker_info = (
-                f"[{mp_name} ({mp_side or 'judge'}, {mp_role})]"
-            )
+            speaker_info = f"[{mp_name} ({mp_side or 'judge'}, {mp_role})]"
             stage_label = cast(str, msg.stage)
             rnd = cast(int, msg.round_number)
             stage_info = f"[{stage_label}, Round {rnd}]"
 
             messages.append(
                 {
-                    "role": (
-                        "user" if judge_row_id != judge_participant_id else "assistant"
-                    ),
+                    "role": ("user" if judge_row_id != judge_participant_id else "assistant"),
                     "content": f"{speaker_info} {stage_info}\n{msg_content}",
                 }
             )
@@ -390,18 +379,13 @@ class DebateVerseContextBuilder:
             msg
             for msg in all_messages
             if cast(int, msg.participant_id) != own_id
-            and self._get_message_side(cast(int, msg.participant_id))
-            == opponent_side
+            and self._get_message_side(cast(int, msg.participant_id)) == opponent_side
         ]
 
         lines: List[str] = []
         for msg in opponent_messages[-5:]:
             text_body = cast(str, msg.content)
-            item = (
-                f"- {text_body[:200]}..."
-                if len(text_body) > 200
-                else f"- {text_body}"
-            )
+            item = f"- {text_body[:200]}..." if len(text_body) > 200 else f"- {text_body}"
             lines.append(item)
         opponent_summary = "\n".join(lines)
 
@@ -456,9 +440,7 @@ class DebateVerseContextBuilder:
             .order_by(_DEBATE_MESSAGES.c.created_at),
         )
         msgs = result.scalars().all()
-        excerpts = [
-            cast(str, m.content)[:200] for m in msgs[-3:]
-        ]
+        excerpts = [cast(str, m.content)[:200] for m in msgs[-3:]]
         return "\n".join(excerpts)
 
     def _identify_flaws(self, _arguments: str) -> str:
@@ -486,10 +468,7 @@ class DebateVerseContextBuilder:
         """Get points that haven't been addressed yet."""
         p_side_own = cast(Optional[str], participant.side)
         my_team_messages = [
-            msg
-            for msg in all_messages
-            if self._get_message_side(cast(int, msg.participant_id))
-            == p_side_own
+            msg for msg in all_messages if self._get_message_side(cast(int, msg.participant_id)) == p_side_own
         ]
 
         unaddressed = []

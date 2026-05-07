@@ -1,11 +1,10 @@
-/**
- * sq UI — sidebar
- */
+/** sq UI — sidebar */
 
 export default {
   'sidebar.actions.delete': 'Fshi',
   'sidebar.actions.pinToTop': 'Fikso në krye',
   'sidebar.actions.rename': 'Riemërto',
+  'sidebar.actions.turnOffOnlineCollab': 'Turn off online collaboration',
   'sidebar.actions.showLess': 'Shfaq më pak',
   'sidebar.actions.showMore': 'Shfaq më shumë ({n})',
   'sidebar.actions.unpin': 'Hiq fiksimin',
@@ -43,6 +42,7 @@ export default {
   'sidebar.debateverse': 'DebateVerse',
   'sidebar.diagramHistory.capacity': 'Mund të ruhen deri në {n} diagramë',
   'sidebar.diagramHistory.deleteFailed': 'Fshirja e diagramit dështoi',
+  'sidebar.diagramHistory.collabLive': 'Online collaboration active',
   'sidebar.diagramHistory.deleted': 'Diagrami u fshi',
   'sidebar.diagramHistory.empty': 'Nuk ka diagramë të ruajtur',
   'sidebar.diagramHistory.loginPrompt': 'Hyni për të parë diagramët',
@@ -76,4 +76,4 @@ export default {
   'sidebar.templateResources': 'Shablone',
   'sidebar.userSubtitleDefault': 'MindGraph Pro (abonim)',
   'sidebar.account': 'Llogaria',
-}
+} as const

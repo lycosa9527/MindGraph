@@ -46,6 +46,7 @@ from services.online_collab.redis.online_collab_redis_keys import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_ws() -> MagicMock:
     ws = MagicMock()
     ws.send_bytes = AsyncMock()
@@ -57,6 +58,7 @@ def _make_ws() -> MagicMock:
 # ---------------------------------------------------------------------------
 # TestViewerHandleConstruction
 # ---------------------------------------------------------------------------
+
 
 class TestViewerHandleConstruction:
     """ViewerHandle has smaller queue and no coalesce infrastructure."""
@@ -104,6 +106,7 @@ class TestViewerHandleConstruction:
 # TestViewerEnqueuePolicy
 # ---------------------------------------------------------------------------
 
+
 class TestViewerEnqueuePolicy:
     """Viewers use drop policy for coalesce-type messages (no coalesce buffer)."""
 
@@ -125,6 +128,7 @@ class TestViewerEnqueuePolicy:
 # TestRedisSnapshotKeys
 # ---------------------------------------------------------------------------
 
+
 class TestRedisSnapshotKeys:
     """Snapshot and snapshot_seq key helpers return expected patterns."""
 
@@ -135,11 +139,10 @@ class TestRedisSnapshotKeys:
         assert snapshot_seq_key("ABC123") == "workshop:snapshot_seq:ABC123"
 
     def test_snapshot_key_hash_tag(self) -> None:
-        with patch.dict(
-            "os.environ", {"COLLAB_REDIS_HASH_TAGS": "1"}
-        ):
+        with patch.dict("os.environ", {"COLLAB_REDIS_HASH_TAGS": "1"}):
             from importlib import reload
             import services.online_collab.redis.online_collab_redis_keys as rk
+
             reload(rk)
             try:
                 assert rk.snapshot_key("X1") == "workshop:snapshot:{X1}"
@@ -150,6 +153,7 @@ class TestRedisSnapshotKeys:
 # ---------------------------------------------------------------------------
 # TestViewerSnapshotHit
 # ---------------------------------------------------------------------------
+
 
 class TestViewerSnapshotHit:
     """Viewer snapshot hit metric incremented when cached snapshot served."""
@@ -172,24 +176,20 @@ class TestViewerSnapshotHit:
                 hit_count["n"] += 1
 
             with (
+                patch("services.online_collab.participant.online_collab_snapshots.ensure_snapshot_task"),
                 patch(
-                    "services.online_collab.participant.online_collab_snapshots"
-                    ".ensure_snapshot_task"
-                ),
-                patch(
-                    "services.online_collab.participant.online_collab_snapshots"
-                    ".read_viewer_snapshot",
+                    "services.online_collab.participant.online_collab_snapshots.read_viewer_snapshot",
                     new=AsyncMock(return_value=cached_snap),
                 ),
                 patch(
-                    "services.infrastructure.monitoring.ws_metrics"
-                    ".record_ws_viewer_snapshot_hit",
+                    "services.infrastructure.monitoring.ws_metrics.record_ws_viewer_snapshot_hit",
                     side_effect=_record_hit,
                 ),
             ):
                 from services.online_collab.participant.online_collab_snapshots import (
                     websocket_send_live_spec_snapshot,
                 )
+
                 await websocket_send_live_spec_snapshot(handle, code, "diag1")
 
             assert hit_count["n"] == 1
@@ -208,6 +208,7 @@ class TestViewerSnapshotHit:
 # ---------------------------------------------------------------------------
 # TestInPlacePromotion
 # ---------------------------------------------------------------------------
+
 
 class TestInPlacePromotion:
     """promote_to_editor swaps ViewerHandle → ConnectionHandle, same queue."""
@@ -254,7 +255,10 @@ class TestInPlacePromotion:
         await register_connection(code, 101, ws, role="viewer")
         try:
             result = await promote_to_editor(
-                code, 101, promoted_by=1, diagram_owner_id=101,
+                code,
+                101,
+                promoted_by=1,
+                diagram_owner_id=101,
             )
             assert result is True
             upgraded = ACTIVE_CONNECTIONS.get(code, {}).get(101)
@@ -311,14 +315,8 @@ class TestInPlacePromotion:
             while not handle_promoted.send_queue.empty():  # type: ignore[attr-defined]
                 drained_target.append(handle_promoted.send_queue.get_nowait())
 
-            decoded_self = [
-                json.loads(body)
-                for kind, body in drained_target
-                if kind == "text"
-            ]
-            assert any(
-                f.get("type") == "role_changed" for f in decoded_self
-            )
+            decoded_self = [json.loads(body) for kind, body in drained_target if kind == "text"]
+            assert any(f.get("type") == "role_changed" for f in decoded_self)
         finally:
             await unregister_connection(code, 303)
             await unregister_connection(code, 304)
@@ -327,6 +325,7 @@ class TestInPlacePromotion:
 # ---------------------------------------------------------------------------
 # TestInPlaceDemotion
 # ---------------------------------------------------------------------------
+
 
 class TestInPlaceDemotion:
     """demote_to_viewer swaps ConnectionHandle → ViewerHandle, same queue."""
@@ -363,6 +362,7 @@ class TestInPlaceDemotion:
 # ---------------------------------------------------------------------------
 # TestRoleChangeAuthorisation
 # ---------------------------------------------------------------------------
+
 
 class TestRoleChangeAuthorisation:
     """Only role="host" ConnectionHandle may issue role_change."""
@@ -421,6 +421,7 @@ class TestRoleChangeAuthorisation:
 # TestViewerSnapshotRefreshTask
 # ---------------------------------------------------------------------------
 
+
 class TestViewerSnapshotRefreshTask:
     """ensure_snapshot_task starts only once per room; stops when viewers leave."""
 
@@ -457,6 +458,7 @@ class TestViewerSnapshotRefreshTask:
             loop.close()
             _SNAPSHOT_TASKS.pop(code, None)
 
+
 # ---------------------------------------------------------------------------
 # TestRoomRegistryLock
 # ---------------------------------------------------------------------------
@@ -481,6 +483,7 @@ class TestRoomRegistryLock:
 # ---------------------------------------------------------------------------
 # TestSeqTracking
 # ---------------------------------------------------------------------------
+
 
 class TestSeqTracking:
     """seq field on broadcast update enables viewer gap detection."""

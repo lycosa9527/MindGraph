@@ -210,4 +210,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': '문서가 업로드되었습니다. 처리 중...',
   'rag.retrievalTest.failed': '검색 테스트에 실패했습니다',
   'rag.retrievalTest.success': '검색 테스트가 완료되었습니다',
-}
+} as const

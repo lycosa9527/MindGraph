@@ -157,4 +157,4 @@ export default {
   'auth.accountNameSave': 'Zapisz nazwę',
   'auth.accountNameSaveSuccess': 'Nazwa zaktualizowana',
   'auth.accountNameSaveError': 'Zapis nie powiódł się. Spróbuj ponownie.',
-}
+} as const

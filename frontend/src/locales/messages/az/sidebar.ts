@@ -1,15 +1,13 @@
-/**
- * az UI — sidebar
- */
+/** az UI — sidebar */
 
 export default {
   'sidebar.actions.delete': 'Sil',
   'sidebar.actions.pinToTop': 'Yuxarıya bərkidin',
   'sidebar.actions.rename': 'Adını dəyişdirin',
+  'sidebar.actions.turnOffOnlineCollab': 'Onlayn əməkdaşlığı söndür',
   'sidebar.actions.showLess': 'Daha az göstər',
   'sidebar.actions.showMore': 'Daha çox göstər ({n})',
   'sidebar.actions.unpin': 'Sancağı çıxarın',
-  'sidebar.actions.turnOffOnlineCollab': 'Onlayn əməkdaşlığı söndür',
   'sidebar.askOnceHistory.deleteConfirm':
     'Bu söhbəti silmək istədiyinizə əminsiniz? Bu geri qaytarıla bilməz.',
   'sidebar.askOnceHistory.empty': 'Hələ söhbət yoxdur',
@@ -81,4 +79,4 @@ export default {
   'sidebar.templateResources': 'Şablonlar',
   'sidebar.userSubtitleDefault': 'MindGraph Pro paketi',
   'sidebar.account': 'Hesab',
-}
+} as const

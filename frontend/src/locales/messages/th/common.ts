@@ -1,6 +1,4 @@
-/**
- * th UI — common
- */
+/** th UI — common */
 
 export default {
   'app.aiDisclaimer': 'เนื้อหาสร้างโดย AI กรุณาตรวจสอบอย่างละเอียด',
@@ -96,6 +94,14 @@ export default {
   'meta.pageTitle.mindgraph': 'MindGraph',
   'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
+  'meta.pageTitle.kitty': 'Kitty',
+  'canvas.kittyMobileIndicatorHint':
+    'A phone Kitty session (mic started) is linked to this diagram. Use your phone to talk with Kitty.',
+  'canvas.kittyMobileIndicatorAria':
+    'Status: Mobile Kitty is connected to this MindGraph canvas. Interact on your phone.',
+  'canvas.kittyMobileIndicatorTitle': 'Mobile Kitty',
+  'mobile.kittyWelcomeSub':
+    'Your microphone talks to the same MindGraph you edit. Open a saved diagram on your phone or desktop so Kitty stays in sync.',
   'meta.pageTitle.notFound': 'ไม่พบหน้า',
   'meta.pageTitle.publicDashboard': 'สถิติ',
   'meta.pageTitle.schoolDashboard': 'แดชบอร์ดโรงเรียน',
@@ -128,4 +134,4 @@ export default {
     'Scan with a phone or tablet camera to open this page.',
   'landing.international.shareSiteCopy': 'คัดลอกลิงก์',
   'landing.international.shareSiteCopied': 'คัดลอกลิงก์แล้ว',
-}
+} as const

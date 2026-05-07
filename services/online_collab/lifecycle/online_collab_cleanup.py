@@ -45,9 +45,7 @@ async def start_online_collab_cleanup_scheduler(
 
             logger.info("[OnlineCollabCleanup] Running cleanup of expired workshops...")
             start_time = datetime.now(tz=UTC)
-            cleaned_count = await (
-                get_online_collab_manager().cleanup_expired_online_collabs()
-            )
+            cleaned_count = await get_online_collab_manager().cleanup_expired_online_collabs()
 
             duration = (datetime.now(tz=UTC) - start_time).total_seconds()
 

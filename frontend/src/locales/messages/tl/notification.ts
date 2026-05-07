@@ -50,4 +50,4 @@ export default {
     'Na-log out ka dahil lumampas ka sa pinakamaraming bilang ng device',
   'notification.signInToUse': 'Mag-sign in para gamitin ito',
   'notification.signInToValidateFocus': 'Mag-sign in para i-validate ang focus question',
-}
+} as const

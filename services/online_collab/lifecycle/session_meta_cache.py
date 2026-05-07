@@ -53,7 +53,10 @@ class _TrackingState:
 
 def _client_tracking_enabled() -> bool:
     return os.getenv("COLLAB_REDIS_CLIENT_TRACKING", "0") not in (
-        "0", "false", "False", "",
+        "0",
+        "false",
+        "False",
+        "",
     )
 
 
@@ -75,21 +78,24 @@ async def _register_client_tracking(redis: Any) -> bool:
         return True
     try:
         await redis.execute_command(
-            "CLIENT", "TRACKING", "ON",
+            "CLIENT",
+            "TRACKING",
+            "ON",
             "BCAST",
-            "PREFIX", "workshop:sessionmeta:",
-            "PREFIX", "workshop:registry:",
+            "PREFIX",
+            "workshop:sessionmeta:",
+            "PREFIX",
+            "workshop:registry:",
         )
         _TrackingState.registered = True
         logger.info(
-            "[SessionMetaCache] CLIENT TRACKING BCAST registered for "
-            "workshop:sessionmeta: and workshop:registry:"
+            "[SessionMetaCache] CLIENT TRACKING BCAST registered for workshop:sessionmeta: and workshop:registry:"
         )
         return True
     except RedisError as exc:
         logger.info(
-            "[SessionMetaCache] CLIENT TRACKING unavailable (%s) — "
-            "falling back to TTL-only cache", exc,
+            "[SessionMetaCache] CLIENT TRACKING unavailable (%s) — falling back to TTL-only cache",
+            exc,
         )
         return False
 
@@ -126,7 +132,9 @@ async def get_session_meta_cached(
         )
     except (RedisError, OSError, TypeError, RuntimeError) as exc:
         logger.debug(
-            "[SessionMetaCache] hgetall error code=%s: %s", code, exc,
+            "[SessionMetaCache] hgetall error code=%s: %s",
+            code,
+            exc,
         )
         return entry[0] if entry is not None else None
 

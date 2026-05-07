@@ -1,6 +1,4 @@
-/**
- * zh-tw UI — canvas
- */
+/** zh-tw UI — canvas */
 
 export default {
   'braceMap.defaultSubpartFirst': '新子部分 1',
@@ -59,6 +57,8 @@ export default {
   'canvas.toolbar.childAdded': '已添加子項',
   'canvas.toolbar.collabAiBlocked': '協作模式下僅圖示所有者可以使用 AI 生成',
   'canvas.toolbar.collabLiveAiDisabled': '線上協作期間無法使用 AI 生成圖示，以保持所有人畫布一致',
+  'canvas.toolbar.collabGuestFeatureBlocked':
+    'This feature is not available while you join as a collaboration guest.',
   'canvas.toolbar.colorLabel': '顏色',
   'canvas.toolbar.conceptGeneration': '生成概念',
   'canvas.toolbar.conceptMapModesDev': '概念圖模式功能開發中',
@@ -262,6 +262,10 @@ export default {
   'canvas.toolbar.redo': '重做',
   'canvas.toolbar.selectBranchOrChild': '請先選擇分支或子節點',
   'canvas.toolbar.selectCategoryOrLeafDelete': '請選擇分類或子項節點（主題節點不可刪除）',
+  'canvas.toolbar.selectCauseOrEffectForAdd':
+    'Select a cause or effect node (not the event), then press Enter to add another in that column',
+  'canvas.toolbar.selectTreeBranchForChild':
+    'Select a category or an item under a category to add a child, or select the topic to add a category',
   'canvas.toolbar.selectNodesFirst': '請先選擇節點',
   'canvas.toolbar.selectNodesToDelete': '請先選擇要刪除的節點',
   'canvas.toolbar.selectPartForSubpart': '請先選擇要添加子部分的節點',
@@ -312,6 +316,22 @@ export default {
   'canvas.topBar.shareCommunity': '分享到社區',
   'canvas.topBar.sharedCollab': '共同協同',
   'canvas.topBar.teachingDesign': 'MindMate AI',
+  'canvas.subtitles.tooltip': 'Live subtitles (microphone)',
+  'canvas.subtitles.aria': 'Toggle live subtitles',
+  'canvas.subtitles.listening': 'Listening…',
+  'canvas.subtitles.micFailed': 'Could not access the microphone.',
+  'canvas.subtitles.micUnavailable': 'Microphone is not available in this browser.',
+  'canvas.subtitles.wsError': 'Subtitle connection failed. Check network and sign-in.',
+  'canvas.subtitles.genericError': 'Subtitle error',
+  'canvas.translation.tooltip': 'Live translation (microphone)',
+  'canvas.translation.aria': 'Toggle live translation',
+  'canvas.translation.listening': 'Listening for translation…',
+  'canvas.translation.micFailed': 'Could not access the microphone.',
+  'canvas.translation.micUnavailable': 'Microphone is not available in this browser.',
+  'canvas.translation.wsError': 'Translation connection failed. Check network and sign-in.',
+  'canvas.translation.genericError': 'Translation error',
+  'canvas.translation.start': 'Start translation',
+  'canvas.translation.stop': 'Stop translation',
   'canvas.topBar.snapshotRecallTooltip': '恢復第 {n} 個快照',
   'canvas.topBar.snapshotRecallTitle': '恢復快照',
   'canvas.topBar.snapshotRecallConfirm': '恢復第 {n} 個快照？當前更改將被替換。',
@@ -328,6 +348,10 @@ export default {
   'canvas.zoomControls.showPresentationTools': '顯示演示工具',
   'canvas.zoomControls.hidePresentationTools': '隱藏演示工具',
   'canvas.zoomControls.hand': '抓手工具',
+  'canvas.zoomControls.collaborate': 'Collaborate',
+  'canvas.zoomControls.collabWithinOrg': 'Collaborate within school',
+  'canvas.zoomControls.collabCrossOrg': 'Collaborate with shared code',
+  'canvas.zoomControls.collabTurnOff': 'Turn off online collaboration',
   'canvasPage.collaborationFooter': '在線協作',
   'canvasPage.collaborationFooterOwner': '{username} 的在線協作',
   'canvasPage.collaborationFooterOwnerDiagram': '{username} 的「{diagramTitle}」協同圖示',
@@ -501,6 +525,11 @@ export default {
   'landing.template.slot.subject': '事物',
   'landing.template.slot.theme': '主題',
   'landing.template.slot.topic': '中心詞',
+  'discovery.gallery.sectionTitle': 'Discover featured diagrams',
+  'discovery.gallery.item1.title': 'Physical vs chemical change',
+  'discovery.gallery.item2.title': 'Project planning mind map',
+  'discovery.gallery.item3.title': 'Quadratic equation walkthrough',
+  'discovery.gallery.item4.title': 'Force and field relationships',
   'mindgraphLanding.cancel': '取消',
   'mindgraphLanding.codeFormatInvalid': '演示代碼格式不正確（應為 xxx-xxx）',
   'mindgraphLanding.codeIncomplete': '請輸入完整的演示代碼',
@@ -508,6 +537,7 @@ export default {
   'mindgraphLanding.dialogSchoolTitle': '校內協同',
   'mindgraphLanding.dialogSharedTitle': '共同協同',
   'mindgraphLanding.import': '導入',
+  'mindgraphLanding.languageMenuTitle': 'Language — syncs interface and AI output',
   'mindgraphLanding.inputPlaceholder': '描述你的圖示，或從下方選擇具體圖示模板...',
   'mindgraphLanding.join': '加入',
   'mindgraphLanding.joinFailed': '加入失敗',
@@ -531,4 +561,4 @@ export default {
   'canvasPage.collabConnected': '已連線',
   'canvas.topBar.viewOnly': '僅檢視',
   'canvasPage.collabParticipantsMore': '更多',
-}
+} as const

@@ -18,7 +18,11 @@ export function workshopDeepEqual(a: unknown, b: unknown): boolean {
     return a.getTime() === b.getTime()
   }
   if (Array.isArray(a)) {
-    return Array.isArray(b) && a.length === b.length && a.every((item, i) => workshopDeepEqual(item, b[i]))
+    return (
+      Array.isArray(b) &&
+      a.length === b.length &&
+      a.every((item, i) => workshopDeepEqual(item, b[i]))
+    )
   }
   if (Array.isArray(b)) {
     return false

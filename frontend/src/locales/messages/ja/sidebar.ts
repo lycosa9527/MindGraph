@@ -1,11 +1,10 @@
-/**
- * ja UI — sidebar
- */
+/** ja UI — sidebar */
 
 export default {
   'sidebar.actions.delete': '消去',
   'sidebar.actions.pinToTop': 'トップにピン留めする',
   'sidebar.actions.rename': '名前を変更する',
+  'sidebar.actions.turnOffOnlineCollab': 'Turn off online collaboration',
   'sidebar.actions.showLess': '表示を少なくする',
   'sidebar.actions.showMore': 'もっと見る ({n})',
   'sidebar.actions.unpin': '固定を解除する',
@@ -46,6 +45,7 @@ export default {
   'sidebar.debateverse': 'ディベートバース',
   'sidebar.diagramHistory.capacity': '最大 {n} の図を保存できます',
   'sidebar.diagramHistory.deleteFailed': '図の削除に失敗しました',
+  'sidebar.diagramHistory.collabLive': 'Online collaboration active',
   'sidebar.diagramHistory.deleted': '図が削除されました',
   'sidebar.diagramHistory.empty': '保存された図はありません',
   'sidebar.diagramHistory.loginPrompt': 'ログインして図を表示',
@@ -79,4 +79,4 @@ export default {
   'sidebar.templateResources': 'テンプレート',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': 'アカウント',
-}
+} as const

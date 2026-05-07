@@ -141,7 +141,8 @@ async def _get_diagram_as_org_workshop_participant(
     except SQLAlchemyError as exc:
         logger.warning(
             "[Diagrams] org-participant fallback query failed diagram_id=%s: %s",
-            diagram_id, exc,
+            diagram_id,
+            exc,
         )
         return None
 
@@ -262,9 +263,7 @@ async def list_diagrams(
                 ws_expires = datetime.fromisoformat(ws_expires_raw)
             except (ValueError, TypeError):
                 ws_expires = None
-        workshop_active = bool(ws_code) and not (
-            ws_expires and is_online_collab_expired(ws_expires)
-        )
+        workshop_active = bool(ws_code) and not (ws_expires and is_online_collab_expired(ws_expires))
         items.append(
             DiagramListItem(
                 id=d["id"],
@@ -407,7 +406,8 @@ async def update_diagram(
     await log_diagram_edit(current_user, db, count=edit_count if edit_count else 1)
 
     overlay_spec = await _diagram_spec_with_live_collab_overlay(
-        diagram_id, diagram["spec"],
+        diagram_id,
+        diagram["spec"],
     )
 
     return DiagramResponse(
@@ -442,10 +442,7 @@ async def delete_diagram(
     if active_code:
         raise HTTPException(
             status_code=409,
-            detail=(
-                "Diagram is in a live collaboration session — "
-                "stop the workshop before deleting."
-            ),
+            detail=("Diagram is in a live collaboration session — stop the workshop before deleting."),
         )
 
     cache = get_diagram_cache()
@@ -545,8 +542,6 @@ async def pin_diagram(
         "message": f"Diagram {action.lower()}",
         "is_pinned": pinned,
     }
-
-
 
 
 @router.get("/qrcode")

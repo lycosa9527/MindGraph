@@ -67,7 +67,7 @@ export default {
   'workshop.channelAvatarEmoji': 'අයිකනය (විකල්ප)',
   'workshop.channelAvatarPlaceholder': 'ඉමෝජි හෝ කෙටි ලේබලය',
   'workshop.channelColor': 'නාලිකා වර්ණය',
-  'workshop.channelInviteReceived': 'ඔබ «{name}» වෙත එක් කරන ලදී. බැලීමට Workshop අරින්න.',
+  'workshop.channelInviteReceived': 'ඔබ «{name}» වෙත එක් කරන ලදී. බැලීමට වැඩමුළුව අරින්න.',
   'workshop.channelKindGroup': 'ඉගැන්වීම් කණ්ඩායම (උත්ත මට්ටම, උදා. පර්යේෂණ කණ්ඩායම 教研组)',
   'workshop.channelKindLessonStudy': 'කණ්ඩායම යට පාඩම් අධ්‍යයනය (课例)',
   'workshop.channelNameLabel': 'නාමය',
@@ -225,7 +225,7 @@ export default {
   'workshop.postingPolicy': 'පණිවිඩ ප්‍රතිපත්තිය',
   'workshop.preferences': 'අභිමතයන්',
   'workshop.preferencesSettingsBlurb':
-    'භාෂාව සහ දර්ශන අභිමත යෙදුම පුරා යොදයි. කාලයට සමඟ Workshop චැට් විකල්ප එක්වෙයි.',
+    'භාෂාව සහ දර්ශන අභිමත යෙදුම පුරා යොදයි. කාලයට සමඟ වැඩමුළු චැට් විකල්ප එක්වෙයි.',
   'workshop.presenceActive': 'සක්‍රිය',
   'workshop.presenceIdle': 'නිශ්චල',
   'workshop.presenceOffline': 'මාර්ගගත නොවේ',
@@ -277,7 +277,7 @@ export default {
   'workshop.teachingGroupNoLessons': 'මෙම කණ්ඩායමේ තවම පාඩම් අධ්‍යයන නැත.',
   'workshop.thisChannel': 'මෙම නාලිකාව',
   'workshop.thisConversation': 'මෙම සංවාදය',
-  'workshop.title': 'Workshop',
+  'workshop.title': 'වැඩමුළු',
   'workshop.toggleContacts': 'සම්බන්ධතා විකල්පය',
   'workshop.topicCount': 'සංවාද',
   'workshop.topicDescription': 'විස්තරය',
@@ -329,7 +329,7 @@ export default {
   'workshop.welcomeExampleOrg': 'චෙන්ක්සි මධ්‍ය විද්‍යාලය',
   'workshop.welcomeHowTitle': 'එකට සම්බන්ධ වන ආකාරය',
   'workshop.welcomeIntro':
-    'Workshop යනු ඔබේ පාසලේ ව්‍යුහගත සාකච්ඡාව සඳහා ඉඩකි: නිවේදන බෙදාගන්න, පාඩම් අධ්‍යයන ක්‍රියාත්මක කරන්න, ඉගැන්වීම් වැඩ සමඟ සංවාද සංවිධානය කර තබා ගන්න.',
+    'වැඩමුළුව යනු ඔබේ පාසලේ ව්‍යුහගත සාකච්ඡා සඳහා තැනකි: නිවේදන බෙදාගන්න, පාඩම් අධ්‍යයන ක්‍රියාත්මක කරන්න, ඉගැන්වීමේ වැඩ සමඟ සංවාද සංවිධානය කර තබා ගන්න.',
   'workshop.welcomeLessonStudyBody':
     'පාඩම් අධ්‍යයන නාලිකා සාමාන්‍යයෙන් එම කණ්ඩායම යටතේ ඇත. එක් එක් එක පාඩම් චක්‍රයක ඉඩකි — සැලසුම්, නිරීක්ෂණය, විමර්ශනය — සහ සැකසිල් හෝ තත්ත්ව වලට සබැඳිය හැක.',
   'workshop.welcomeLessonStudyTitle': 'පාඩම් අධ්‍යයන',
@@ -337,7 +337,7 @@ export default {
     'පණිවිඩ යනු ප්‍රධාන නාලිකා ස්ට්‍රීමයේ හෝ සංවාදයක් තුළ ඉදිරිපත් කිරීම්ය. පිළිතුරු, සඳහන්, සහ ගොනු පණිවිඩ මත යෙදේ.',
   'workshop.welcomeMessagesTitle': 'පණිවිඩ',
   'workshop.welcomeSubtitle': 'MindGraph මත ඔබේ පාසල සමඟ හවුල් වන්න',
-  'workshop.welcomeTitle': 'Workshop වෙත සාදරයෙන් පිළිගනිමු',
+  'workshop.welcomeTitle': 'වැඩමුළුවට සාදරයෙන් පිළිගනිමු',
   'workshop.you': '(ඔබ)',
   'workshop.youAnd': 'ඔබ සහ',
   'workshopCanvas.connectFailed': 'හවුලට සම්බන්ධ වීම අසාර්ථකයි',
@@ -372,4 +372,4 @@ export default {
     'මෑතක සැකසිල් සංස්කරණ නැත — කෙනෙක් සංස්කරණය කරන තුරු ගණනය අවසන් වූ විට හවුල අවසන් වේ.',
   'workshopCanvas.otherTabCollaborationActive': 'මෙම ගිණුම සඳහා වෙනත් ටැබයක හෝ කවුළුවක හවුල දිගටම.',
   'workshopCanvas.joinQrAlt': 'හවුලට එක්වීමේ QR කේතය',
-}
+} as const

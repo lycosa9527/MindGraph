@@ -107,7 +107,8 @@ async def _fanout_delivery_worker(
             break
         try:
             kind, payload = await asyncio.wait_for(
-                delivery_queue.get(), timeout=0.25,
+                delivery_queue.get(),
+                timeout=0.25,
             )
         except asyncio.TimeoutError:
             continue
@@ -176,7 +177,8 @@ async def _handle_workshop_raw(payload: str) -> None:
     if env.get("v") != ENVELOPE_VERSION:
         logger.debug(
             "[WSFanout] workshop envelope version mismatch got=%s expected=%s",
-            env.get("v"), ENVELOPE_VERSION,
+            env.get("v"),
+            ENVELOPE_VERSION,
         )
         return
     if env.get("k") != "ws":
@@ -195,7 +197,8 @@ async def _handle_workshop_raw(payload: str) -> None:
     if not isinstance(code, str) or mode not in ("all", "others"):
         logger.debug(
             "[WSFanout] workshop envelope invalid fields code=%s mode=%s",
-            code, mode,
+            code,
+            mode,
         )
         return
     if not isinstance(data_str, str):
@@ -214,8 +217,11 @@ async def _handle_workshop_raw(payload: str) -> None:
         _inner_msg = {}
     logger.debug(
         "[WSFanout] recv_dispatch code=%s mode=%s exclude=%s msg_type=%s seq=%s",
-        code, mode, exclude,
-        _inner_msg.get("type"), _inner_msg.get("seq"),
+        code,
+        mode,
+        exclude,
+        _inner_msg.get("type"),
+        _inner_msg.get("seq"),
     )
     await deliver_local_workshop_broadcast(code, mode, exclude, data_str)
 
@@ -241,8 +247,7 @@ async def _pubsub_subscribe(pubsub: Any, *channels: str) -> None:
             return
         except (RedisError, AttributeError, TypeError) as exc:
             logger.info(
-                "[WSFanout] SSUBSCRIBE failed (%s) — falling back to SUBSCRIBE"
-                " (publisher will also use PUBLISH)",
+                "[WSFanout] SSUBSCRIBE failed (%s) — falling back to SUBSCRIBE (publisher will also use PUBLISH)",
                 exc,
             )
     set_sharded_pubsub_active(False)
@@ -282,7 +287,8 @@ async def _pubsub_listen_loop(
         elif channel == WORKSHOP_FANOUT_CHANNEL:
             logger.debug(
                 "[WSFanout] pubsub_recv channel=%s data_len=%d",
-                channel, len(data),
+                channel,
+                len(data),
             )
             _enqueue_fanout_payload(delivery_queue, _KIND_WS, data)
 
@@ -368,7 +374,8 @@ async def _listener_loop_async(stop_event: asyncio.Event) -> None:
                 break
             logger.error(
                 "[WSFanout] Listener error: %s — reconnecting in %.1fs",
-                loop_error, _RECONNECT_DELAY,
+                loop_error,
+                _RECONNECT_DELAY,
             )
             await asyncio.sleep(_RECONNECT_DELAY)
 

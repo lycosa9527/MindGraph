@@ -49,4 +49,4 @@ export default {
     'Cihazların maksimum sayını keçdiyiniz üçün sistemdən çıxdınız',
   'notification.signInToUse': 'İstifadə üçün daxil olun',
   'notification.signInToValidateFocus': 'Fokus sualını yoxlamaq üçün daxil olun',
-}
+} as const

@@ -1,6 +1,4 @@
-/**
- * fr UI — admin
- */
+/** fr UI — admin */
 
 export default {
   'admin.actions': 'Opérations',
@@ -798,4 +796,4 @@ export default {
   'admin.database.pgMergeSuccess': 'Dump PG fusionné',
   'admin.database.pgMergeError': 'Échec de la fusion du dump PG',
   'admin.database.pgMergeComplete': 'Fusion PG terminée',
-}
+} as const

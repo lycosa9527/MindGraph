@@ -53,4 +53,4 @@ export default {
   'notification.sessionInvalidated': 'Qurilmalar soni chegarasidan oshgani uchun chiqarildingiz',
   'notification.signInToUse': 'Foydalanish uchun tizimga kiring',
   'notification.signInToValidateFocus': 'Fokus savolini tasdiqlash uchun tizimga kiring',
-}
+} as const

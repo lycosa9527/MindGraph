@@ -38,9 +38,7 @@ local seq_raw = redis.call('GET', KEYS[2])
 return {blob, seq_raw}
 """
 
-_SNAPSHOT_UNAVAILABLE_MSG = (
-    "Diagram state temporarily unavailable. Please reconnect or use resync."
-)
+_SNAPSHOT_UNAVAILABLE_MSG = "Diagram state temporarily unavailable. Please reconnect or use resync."
 _SNAPSHOT_OVERSIZE_MSG = (
     "Diagram snapshot is too large to send over this connection. "
     "Try reconnecting; if the problem persists, reduce diagram size or contact support."
@@ -106,6 +104,7 @@ async def _enqueue_snapshot_or_oversize(
             from services.infrastructure.monitoring.ws_metrics import (
                 record_ws_collab_snapshot_oversize,
             )
+
             record_ws_collab_snapshot_oversize()
         except (AttributeError, TypeError, RuntimeError, OSError, ImportError):
             pass
@@ -152,18 +151,18 @@ async def websocket_send_live_spec_snapshot(
                 from services.infrastructure.monitoring.ws_metrics import (
                     record_ws_viewer_snapshot_hit,
                 )
+
                 record_ws_viewer_snapshot_hit()
             except (AttributeError, TypeError, RuntimeError, OSError, ImportError):
                 pass
             raw_seq = cached.get("seq")
-            viewer_seq: Optional[int] = (
-                int(raw_seq)
-                if isinstance(raw_seq, (int, float)) and raw_seq > 0
-                else None
-            )
+            viewer_seq: Optional[int] = int(raw_seq) if isinstance(raw_seq, (int, float)) and raw_seq > 0 else None
             logger.debug(
                 "[CollabSnapshot] viewer_cache_hit code=%s diagram_id=%s seq=%s version=%s",
-                code, diagram_id, viewer_seq, cached.get("version"),
+                code,
+                diagram_id,
+                viewer_seq,
+                cached.get("version"),
             )
             await _enqueue_snapshot_or_oversize(
                 handle,
@@ -175,14 +174,16 @@ async def websocket_send_live_spec_snapshot(
             return
         logger.debug(
             "[CollabSnapshot] viewer_cache_miss code=%s diagram_id=%s — falling back to live spec",
-            code, diagram_id,
+            code,
+            diagram_id,
         )
 
     redis_client = get_async_redis()
     if not redis_client:
         logger.warning(
             "[CollabSnapshot] no Redis client — snapshot unavailable code=%s user=%s",
-            code, getattr(handle, "user_id", "?"),
+            code,
+            getattr(handle, "user_id", "?"),
         )
         await enqueue(
             handle,
@@ -208,7 +209,8 @@ async def websocket_send_live_spec_snapshot(
         except (RedisError, OSError, RuntimeError, TypeError, ValueError) as exc:
             logger.debug(
                 "[CollabSnapshot] atomic spec+seq read failed code=%s: %s",
-                code, exc,
+                code,
+                exc,
             )
         if not doc:
             doc = await ensure_live_spec_seeded(
@@ -225,10 +227,18 @@ async def websocket_send_live_spec_snapshot(
         ver = int(doc.get("v", 1)) if doc else 1
         logger.debug(
             "[CollabSnapshot] snapshot_sent code=%s diagram_id=%s user=%s ver=%s seq=%s",
-            code, diagram_id, getattr(handle, "user_id", "?"), ver, snapshot_seq_val,
+            code,
+            diagram_id,
+            getattr(handle, "user_id", "?"),
+            ver,
+            snapshot_seq_val,
         )
         await _enqueue_snapshot_or_oversize(
-            handle, diagram_id, snap, ver, seq=snapshot_seq_val,
+            handle,
+            diagram_id,
+            snap,
+            ver,
+            seq=snapshot_seq_val,
         )
     except (RedisError, OSError, RuntimeError, TypeError, ValueError) as exc:
         logger.warning("Failed to send live spec snapshot: %s", exc)

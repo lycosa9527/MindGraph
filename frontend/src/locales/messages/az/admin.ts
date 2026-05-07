@@ -1,6 +1,4 @@
-/**
- * az UI — admin
- */
+/** az UI — admin */
 
 export default {
   'admin.actions': 'Fəaliyyətlər',
@@ -787,4 +785,4 @@ export default {
   'admin.database.pgMergeSuccess': 'PG dump uğurla birləşdirildi',
   'admin.database.pgMergeError': 'PG dump birləşməsi uğursuz oldu',
   'admin.database.pgMergeComplete': 'PG Birləşməsi Tamamlandı',
-}
+} as const

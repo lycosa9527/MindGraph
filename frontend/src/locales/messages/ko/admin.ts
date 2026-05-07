@@ -1,6 +1,5 @@
-/**
- * ko UI — admin
- */
+/** ko UI — admin */
+
 export default {
   'admin.actions': '작업',
   'admin.activeToday': '오늘 활동',

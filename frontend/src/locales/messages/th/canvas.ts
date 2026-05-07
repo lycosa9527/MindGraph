@@ -1,6 +1,4 @@
-/**
- * th UI — canvas
- */
+/** th UI — canvas */
 
 export default {
   'braceMap.defaultSubpartFirst': 'ส่วนย่อยใหม่ 1',
@@ -60,6 +58,10 @@ export default {
   'canvas.toolbar.childAdded': 'เพิ่มลูกแล้ว',
   'canvas.toolbar.collabAiBlocked':
     'เฉพาะเจ้าของไดอะแกรมเท่านั้นที่สามารถใช้การสร้าง AI ระหว่างการร่วมมือ',
+  'canvas.toolbar.collabLiveAiDisabled':
+    'AI generation is unavailable during live collaboration so everyone stays in sync',
+  'canvas.toolbar.collabGuestFeatureBlocked':
+    'This feature is not available while you join as a collaboration guest.',
   'canvas.toolbar.colorLabel': 'สี',
   'canvas.toolbar.conceptGeneration': 'การสร้างแนวคิด',
   'canvas.toolbar.conceptMapModesDev': 'โหมดแผนภูมิแนวคิดอยู่ระหว่างพัฒนา',
@@ -269,6 +271,10 @@ export default {
   'canvas.toolbar.selectBranchOrChild': 'กรุณาเลือกกิ่งหรือโหนดลูก',
   'canvas.toolbar.selectCategoryOrLeafDelete':
     'กรุณาเลือกโหนดหมวดหมู่หรือโหนดใบ (ไม่สามารถลบโหนดหัวข้อ)',
+  'canvas.toolbar.selectCauseOrEffectForAdd':
+    'Select a cause or effect node (not the event), then press Enter to add another in that column',
+  'canvas.toolbar.selectTreeBranchForChild':
+    'Select a category or an item under a category to add a child, or select the topic to add a category',
   'canvas.toolbar.selectNodesFirst': 'กรุณาเลือกโหนดก่อน',
   'canvas.toolbar.selectNodesToDelete': 'กรุณาเลือกโหนดเพื่อลบ',
   'canvas.toolbar.selectPartForSubpart': 'กรุณาเลือกส่วนเพื่อเพิ่มส่วนย่อย',
@@ -319,6 +325,22 @@ export default {
   'canvas.topBar.shareCommunity': 'แชร์ไปยังชุมชน',
   'canvas.topBar.sharedCollab': 'ร่วมมือแบบแชร์',
   'canvas.topBar.teachingDesign': 'การออกแบบการสอน',
+  'canvas.subtitles.tooltip': 'Live subtitles (microphone)',
+  'canvas.subtitles.aria': 'Toggle live subtitles',
+  'canvas.subtitles.listening': 'Listening…',
+  'canvas.subtitles.micFailed': 'Could not access the microphone.',
+  'canvas.subtitles.micUnavailable': 'Microphone is not available in this browser.',
+  'canvas.subtitles.wsError': 'Subtitle connection failed. Check network and sign-in.',
+  'canvas.subtitles.genericError': 'Subtitle error',
+  'canvas.translation.tooltip': 'Live translation (microphone)',
+  'canvas.translation.aria': 'Toggle live translation',
+  'canvas.translation.listening': 'Listening for translation…',
+  'canvas.translation.micFailed': 'Could not access the microphone.',
+  'canvas.translation.micUnavailable': 'Microphone is not available in this browser.',
+  'canvas.translation.wsError': 'Translation connection failed. Check network and sign-in.',
+  'canvas.translation.genericError': 'Translation error',
+  'canvas.translation.start': 'Start translation',
+  'canvas.translation.stop': 'Stop translation',
   'canvas.topBar.snapshotRecallTooltip': 'กู้คืนสแนปช็อต {n}',
   'canvas.topBar.snapshotRecallTitle': 'กู้คืนสแนปช็อต',
   'canvas.topBar.snapshotRecallConfirm':
@@ -336,7 +358,21 @@ export default {
   'canvas.zoomControls.showPresentationTools': 'แสดงเครื่องมือการนำเสนอ',
   'canvas.zoomControls.hidePresentationTools': 'ซ่อนเครื่องมือการนำเสนอ',
   'canvas.zoomControls.hand': 'เครื่องมือมือ',
+  'canvas.zoomControls.collaborate': 'Collaborate',
+  'canvas.zoomControls.collabWithinOrg': 'Collaborate within school',
+  'canvas.zoomControls.collabCrossOrg': 'Collaborate with shared code',
+  'canvas.zoomControls.collabTurnOff': 'Turn off online collaboration',
   'canvasPage.collaborationFooter': 'ร่วมมือ',
+  'canvasPage.collaborationFooterOwner': "{username}'s collaboration",
+  'canvasPage.collaborationFooterOwnerDiagram':
+    "{username}'s diagram «{diagramTitle}» — collaboration",
+  'canvasPage.collaborationFooterNetworkDiagramTitle': 'Collaborative diagram «{diagramTitle}»',
+  'canvasPage.collaborationFooterSchool':
+    'School collaboration in progress — join from school list.',
+  'canvasPage.collaborationFooterSchoolDiagram':
+    'School collaboration on «{diagramTitle}» — join from the school session list.',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
   'conceptMap.focus.noResult': 'ไม่มีผลลัพธ์',
   'conceptMap.focus.validationRequestFailed': 'คำร้องขอตรวจสอบล้มเหลว',
   'diagram.aiGenerating': 'กำลังสร้างด้วย AI…',
@@ -504,6 +540,11 @@ export default {
   'landing.template.slot.subject': 'วิชา',
   'landing.template.slot.theme': 'ธีม',
   'landing.template.slot.topic': 'หัวข้อศูนย์กลาง',
+  'discovery.gallery.sectionTitle': 'Discover featured diagrams',
+  'discovery.gallery.item1.title': 'Physical vs chemical change',
+  'discovery.gallery.item2.title': 'Project planning mind map',
+  'discovery.gallery.item3.title': 'Quadratic equation walkthrough',
+  'discovery.gallery.item4.title': 'Force and field relationships',
   'mindgraphLanding.cancel': 'ยกเลิก',
   'mindgraphLanding.codeFormatInvalid': 'รูปแบบรหัสนำเสนอไม่ถูกต้อง (ควรเป็น xxx-xxx)',
   'mindgraphLanding.codeIncomplete': 'กรุณาใส่รหัสนำเสนอให้ครบถ้วน',
@@ -511,6 +552,7 @@ export default {
   'mindgraphLanding.dialogSchoolTitle': 'ร่วมมือกับโรงเรียน',
   'mindgraphLanding.dialogSharedTitle': 'ร่วมมือแบบแชร์',
   'mindgraphLanding.import': 'นำเข้า',
+  'mindgraphLanding.languageMenuTitle': 'Language — syncs interface and AI output',
   'mindgraphLanding.inputPlaceholder': 'อธิบายไดอะแกรมของคุณ หรือเลือกเทมเพลตด้านล่าง...',
   'mindgraphLanding.join': 'เข้าร่วม',
   'mindgraphLanding.joinFailed': 'เข้าร่วมล้มเหลว',
@@ -528,8 +570,6 @@ export default {
   'mindgraphLanding.sharedCollab': 'ร่วมมือแบบแชร์',
   'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome': 'สวัสดี {username} ฉันคือผู้ช่วยการคิดเชิงภาพ AI ของคุณ',
-  'canvasPage.collabRoomIdleEnding':
-    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
   'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
   'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
   'canvasPage.collabRetryConnection': 'Retry',
@@ -537,4 +577,4 @@ export default {
   'canvasPage.collabConnected': 'Connected',
   'canvas.topBar.viewOnly': 'View only',
   'canvasPage.collabParticipantsMore': 'more',
-}
+} as const

@@ -17,20 +17,59 @@ _MAX_UPDATE_NEST_DEPTH = 4
 _MAX_NODE_STRING_UTF8 = 256_000
 _MAX_DATA_OBJECT_KEYS = 64
 
-_ALLOWED_NODE_TOP_KEYS: FrozenSet[str] = frozenset({
-    "id", "text", "type", "position", "style", "childIds", "parentId", "data",
-    "width", "height", "zIndex", "draggable", "selectable", "expandParent",
-    "sourcePosition", "targetPosition", "ariaLabel", "hidden", "connectable",
-    "flowPoint", "focusable", "pointerEvents", "label",
-    "selected", "dragging", "resizing", "computedPosition", "measured",
-    "handleBounds", "internals", "events",
-})
+_ALLOWED_NODE_TOP_KEYS: FrozenSet[str] = frozenset(
+    {
+        "id",
+        "text",
+        "type",
+        "position",
+        "style",
+        "childIds",
+        "parentId",
+        "data",
+        "width",
+        "height",
+        "zIndex",
+        "draggable",
+        "selectable",
+        "expandParent",
+        "sourcePosition",
+        "targetPosition",
+        "ariaLabel",
+        "hidden",
+        "connectable",
+        "flowPoint",
+        "focusable",
+        "pointerEvents",
+        "label",
+        "selected",
+        "dragging",
+        "resizing",
+        "computedPosition",
+        "measured",
+        "handleBounds",
+        "internals",
+        "events",
+    }
+)
 
-_ALLOWED_CONNECTION_TOP_KEYS: FrozenSet[str] = frozenset({
-    "id", "source", "target", "sourceHandle", "targetHandle", "type", "style",
-    "data", "label", "animated", "selected",
-    "zIndex", "interactionWidth",
-})
+_ALLOWED_CONNECTION_TOP_KEYS: FrozenSet[str] = frozenset(
+    {
+        "id",
+        "source",
+        "target",
+        "sourceHandle",
+        "targetHandle",
+        "type",
+        "style",
+        "data",
+        "label",
+        "animated",
+        "selected",
+        "zIndex",
+        "interactionWidth",
+    }
+)
 
 
 def _collab_max_node_text_bytes() -> int:
@@ -114,7 +153,9 @@ class CollabWsUpdateSchemaModel(BaseModel):
                     raise ValueError(err)
         if self.connections is not None:
             err = _check_top_level_keys(
-                self.connections, "connections", set(_ALLOWED_CONNECTION_TOP_KEYS),
+                self.connections,
+                "connections",
+                set(_ALLOWED_CONNECTION_TOP_KEYS),
             )
             if err:
                 raise ValueError(err)

@@ -12,13 +12,13 @@ import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores/diagram'
 import type { DiagramSpec, DiagramType } from '@/types'
 
+import { eventBus } from '../core/useEventBus'
 import {
   applyVoiceDiagramAddNodes,
   applyVoiceDiagramRemoveNodes,
   applyVoiceDiagramUpdateCenter,
   applyVoiceDiagramUpdateNodes,
 } from './diagramVoiceMutations'
-import { eventBus } from '../core/useEventBus'
 
 // ============================================================================
 // Types
@@ -619,9 +619,7 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
       if (!store.data?.nodes) return
 
       const payload =
-        typeof data === 'object' && data !== null
-          ? (data as Record<string, unknown>)
-          : {}
+        typeof data === 'object' && data !== null ? (data as Record<string, unknown>) : {}
       applyVoiceDiagramUpdateCenter(store, payload)
     },
     ownerId

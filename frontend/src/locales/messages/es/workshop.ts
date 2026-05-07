@@ -1,6 +1,4 @@
-/**
- * es UI workshop
- */
+/** es UI — workshop */
 
 export default {
   'collab.codeCopied': 'Código copiado',
@@ -30,6 +28,8 @@ export default {
   'collab.noDiagramToSave': 'No hay diagrama para guardar',
   'collab.nodeLocked': 'Alguien más está editando este nodo.',
   'collab.participants': '{n} participantes',
+  'collab.previousSessionsStopped':
+    'Ended {n} previous collaboration session(s) on your other diagrams.',
   'collab.saveFailed': 'No se pudo guardar el diagrama',
   'collab.scanToJoin': 'Escanear para unirte',
   'collab.schoolDescActive':
@@ -348,12 +348,27 @@ export default {
   'workshop.you': '(tú)',
   'workshop.youAnd': 'tu y',
   'workshopCanvas.connectFailed': 'No se pudo conectar a la colaboración',
+  'workshopCanvas.sessionExpiredReconnect':
+    'Your session has expired. Please refresh the page to re-join the collaboration.',
+  'workshopCanvas.sessionRefreshFailed':
+    'Could not refresh your collaboration session. Please save your work and sign in again.',
+  'workshopCanvas.outboundQueueDegraded':
+    'Collaboration is falling behind. Some unsent edits could not be kept.',
   'workshopCanvas.connectionClosed': 'Conexión cerrada',
+  'workshopCanvas.connectionClosedSlow':
+    'Connection closed: your connection was too slow to keep up with the collaboration session.',
+  'workshopCanvas.sessionEndedByHost': 'The host has ended the collaboration session.',
+  'workshopCanvas.editingNodeLabel': '{username} is editing…',
+  'workshopCanvas.collabEditorDisplayNameFallback': 'Someone',
   'workshopCanvas.connectionClosedReason': 'Conexión de colaboración cerrada: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} está editando este nodo',
   'workshopCanvas.errorGeneric': 'Error de colaboración',
+  'workshopCanvas.updatePartialFiltered':
+    'Some edits were skipped ({count} node(s)) because another collaborator is editing those nodes.',
   'workshopCanvas.reconnectFailed':
     'No se pudo volver a conectar a la colaboración; actualice la página',
+  'workshopCanvas.resyncWaiting':
+    'Live diagram sync is taking longer than expected. Retrying; you can refresh if editing feels stuck.',
   'workshopCanvas.returnedHomeIdle': 'Regresé a casa: no se editaron diagramas durante 30 minutos.',
   'workshopCanvas.userJoined': 'Usuario {username} unido',
   'workshopCanvas.usersJoined': '{count} users joined',
@@ -367,4 +382,4 @@ export default {
   'workshopCanvas.otherTabCollaborationActive':
     'Collaboration continues in another tab or window for this account.',
   'workshopCanvas.joinQrAlt': 'Join collaboration QR code',
-}
+} as const

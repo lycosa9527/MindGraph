@@ -47,4 +47,4 @@ export default {
   'notification.sessionInvalidated': '您已被登出，因為登錄設備數量超過上限',
   'notification.signInToUse': '請登錄後使用',
   'notification.signInToValidateFocus': '請登錄後檢驗焦點問題',
-}
+} as const

@@ -1,6 +1,4 @@
-/**
- * es UI — admin
- */
+/** es UI — admin */
 
 export default {
   'admin.actions': 'Acciones',
@@ -788,4 +786,4 @@ export default {
   'admin.database.pgMergeSuccess': 'Fusión del volcado PG correcta',
   'admin.database.pgMergeError': 'Falló la fusión del volcado PG',
   'admin.database.pgMergeComplete': 'Fusión PG completada',
-}
+} as const

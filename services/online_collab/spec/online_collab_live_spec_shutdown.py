@@ -180,17 +180,13 @@ async def collab_live_spec_durability_alerts() -> list[str]:
             if not collab_raw:
                 continue
             try:
-                collab_ts = float(
-                    collab_raw if isinstance(collab_raw, str) else collab_raw.decode("utf-8")
-                )
+                collab_ts = float(collab_raw if isinstance(collab_raw, str) else collab_raw.decode("utf-8"))
             except (TypeError, ValueError):
                 continue
             flush_ts = 0.0
             if flush_raw is not None:
                 try:
-                    flush_ts = float(
-                        flush_raw if isinstance(flush_raw, str) else flush_raw.decode("utf-8")
-                    )
+                    flush_ts = float(flush_raw if isinstance(flush_raw, str) else flush_raw.decode("utf-8"))
                 except (TypeError, ValueError):
                     flush_ts = 0.0
             if collab_ts > flush_ts and (time.time() - collab_ts) > lag_seconds:

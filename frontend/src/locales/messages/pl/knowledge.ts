@@ -213,4 +213,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': 'Dokument przesłany, przetwarzanie...',
   'rag.retrievalTest.failed': 'Test wyszukiwania nie powiódł się',
   'rag.retrievalTest.success': 'Test wyszukiwania zakończony',
-}
+} as const

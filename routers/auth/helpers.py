@@ -284,9 +284,7 @@ async def commit_user_with_retry(
                     jitter = random.uniform(0, 0.05)  # Random jitter up to 50ms
                     delay = base_delay + jitter
                     phone_prefix = (
-                        attached_user.phone[:3]
-                        if attached_user.phone and len(attached_user.phone) >= 3
-                        else "***"
+                        attached_user.phone[:3] if attached_user.phone and len(attached_user.phone) >= 3 else "***"
                     )
                     logger.warning(
                         "[Auth] Database deadlock on user registration attempt %d/%d, "
@@ -305,9 +303,7 @@ async def commit_user_with_retry(
                     # All retries exhausted
                     await db.rollback()
                     phone_prefix = (
-                        attached_user.phone[:3]
-                        if attached_user.phone and len(attached_user.phone) >= 3
-                        else "***"
+                        attached_user.phone[:3] if attached_user.phone and len(attached_user.phone) >= 3 else "***"
                     )
                     logger.error(
                         "[Auth] Database deadlock persists after %d retries. Phone: %s***",

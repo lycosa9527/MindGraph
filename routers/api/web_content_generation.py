@@ -214,9 +214,7 @@ async def web_content_mindmap_png(
             exc,
             exc_info=True,
         )
-        raise HTTPException(
-            status_code=500, detail=Messages.error("export_failed", lang, str(exc))
-        ) from exc
+        raise HTTPException(status_code=500, detail=Messages.error("export_failed", lang, str(exc))) from exc
 
     screenshot_bytes: bytes = screenshot_result
     save_error_type: Optional[str] = None

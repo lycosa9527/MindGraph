@@ -212,11 +212,7 @@ async def start_node_palette(
             and isinstance(stage_data, dict)
             and bool(stage_data.get("bootstrap_domains"))
         )
-        if (
-            current_user
-            and getattr(current_user, "role", None) == "user"
-            and is_concept_map_bootstrap
-        ):
+        if current_user and getattr(current_user, "role", None) == "user" and is_concept_map_bootstrap:
             try:
                 log_entry = UserActivityLog(
                     user_id=current_user.id,

@@ -151,4 +151,4 @@ export default {
   'libraryViewer.bookmarkAdded': 'Bookmark added',
   'libraryViewer.bookmarkRemoved': 'Bookmark removed',
   'libraryViewer.operationFailed': 'Something went wrong',
-}
+} as const

@@ -372,21 +372,13 @@ export default {
   'canvasPage.collaborationFooterOwner': "{username}'s collaboration",
   'canvasPage.collaborationFooterOwnerDiagram':
     "{username}'s diagram «{diagramTitle}» — collaboration",
-  'canvasPage.collaborationFooterNetworkDiagramTitle':
-    'Collaborative diagram «{diagramTitle}»',
+  'canvasPage.collaborationFooterNetworkDiagramTitle': 'Collaborative diagram «{diagramTitle}»',
   'canvasPage.collaborationFooterSchool':
     'School collaboration in progress — join from school list.',
   'canvasPage.collaborationFooterSchoolDiagram':
     'School collaboration on «{diagramTitle}» — join from the school session list.',
   'canvasPage.collabRoomIdleEnding':
     'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
-  'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
-  'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
-  'canvasPage.collabRetryConnection': 'Retry',
-  'canvasPage.collabParticipantsAria': 'Collaboration participants',
-  'canvasPage.collabConnected': 'Connected',
-  'canvas.topBar.viewOnly': 'View only',
-  'canvasPage.collabParticipantsMore': 'more',
   'conceptMap.focus.noResult': 'No result',
   'conceptMap.focus.validationRequestFailed': 'Validation request failed',
   'diagram.aiGenerating': 'AI...',
@@ -557,6 +549,11 @@ export default {
   'landing.template.slot.subject': 'Subject',
   'landing.template.slot.theme': 'Theme',
   'landing.template.slot.topic': 'Center topic',
+  'discovery.gallery.sectionTitle': 'Discover featured diagrams',
+  'discovery.gallery.item1.title': 'Physical vs chemical change',
+  'discovery.gallery.item2.title': 'Project planning mind map',
+  'discovery.gallery.item3.title': 'Quadratic equation walkthrough',
+  'discovery.gallery.item4.title': 'Force and field relationships',
   'mindgraphLanding.cancel': 'Cancel',
   'mindgraphLanding.codeFormatInvalid': 'Invalid presentation code format (should be xxx-xxx)',
   'mindgraphLanding.codeIncomplete': 'Please enter the complete presentation code',
@@ -582,4 +579,11 @@ export default {
   'mindgraphLanding.sharedCollab': 'Shared collaboration',
   'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome': "Hello {username}, I'm your AI visual thinking assistant",
-}
+  'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
+  'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
+  'canvasPage.collabRetryConnection': 'Retry',
+  'canvasPage.collabParticipantsAria': 'Collaboration participants',
+  'canvasPage.collabConnected': 'Connected',
+  'canvas.topBar.viewOnly': 'View only',
+  'canvasPage.collabParticipantsMore': 'more',
+} as const

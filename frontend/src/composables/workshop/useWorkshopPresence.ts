@@ -7,8 +7,8 @@ import { useLanguage, useNotifications } from '@/composables'
 import type { WorkshopUpdate } from '@/composables/workshop/useWorkshopTypes'
 
 import {
-  netPresenceAfterCancellingPairsByUserId,
   type PresenceDeltaRow,
+  netPresenceAfterCancellingPairsByUserId,
 } from './useWorkshopReconnect'
 
 export function useWorkshopPresence() {

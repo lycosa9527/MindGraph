@@ -55,4 +55,4 @@ export default {
     'Vous avez été déconnecté car vous avez dépassé le nombre maximal d’appareils autorisés',
   'notification.signInToUse': 'Connectez-vous pour utiliser cette fonctionnalité',
   'notification.signInToValidateFocus': 'Connectez-vous pour valider la question cible',
-}
+} as const

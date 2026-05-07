@@ -1,6 +1,4 @@
-/**
- * th UI — admin
- */
+/** th UI — admin */
 
 export default {
   'admin.actions': 'การดำเนินการ',
@@ -769,4 +767,4 @@ export default {
   'admin.database.pgMergeSuccess': 'รวม PG dump สำเร็จ',
   'admin.database.pgMergeError': 'การรวม PG dump ล้มเหลว',
   'admin.database.pgMergeComplete': 'การรวม PG เสร็จสมบูรณ์',
-}
+} as const

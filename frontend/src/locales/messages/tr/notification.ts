@@ -49,4 +49,4 @@ export default {
     'İzin verilen cihaz sayısını aştığınız için oturumunuz kapatıldı',
   'notification.signInToUse': 'Bunu kullanmak için oturum açın',
   'notification.signInToValidateFocus': 'Odak sorusunu doğrulamak için oturum açın',
-}
+} as const

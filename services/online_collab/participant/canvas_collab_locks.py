@@ -132,11 +132,19 @@ def filter_deleted_connection_ids_for_locks(
         src = endpoints.get("source")
         tgt = endpoints.get("target")
         if isinstance(src, str) and node_locked_by_other_user(
-            code, sender_id, src, active_editors_local, editors_from_redis,
+            code,
+            sender_id,
+            src,
+            active_editors_local,
+            editors_from_redis,
         ):
             continue
         if isinstance(tgt, str) and node_locked_by_other_user(
-            code, sender_id, tgt, active_editors_local, editors_from_redis,
+            code,
+            sender_id,
+            tgt,
+            active_editors_local,
+            editors_from_redis,
         ):
             continue
         out.append(cid)
@@ -245,12 +253,7 @@ def compute_subtree_node_ids(
                 continue
             nid = node.get("id")
             parent_id = node.get("parent_id")
-            if (
-                isinstance(nid, str)
-                and isinstance(parent_id, str)
-                and nid
-                and parent_id
-            ):
+            if isinstance(nid, str) and isinstance(parent_id, str) and nid and parent_id:
                 lst = children_by_parent.setdefault(parent_id, [])
                 if nid not in lst:
                     lst.append(nid)
@@ -297,6 +300,10 @@ async def compute_subtree_node_ids_async(
     size_hint = len(nodes) if isinstance(nodes, list) else 0
     if size_hint > _SUBTREE_OFFLOAD_THRESHOLD_NODES:
         return await asyncio.to_thread(
-            compute_subtree_node_ids, live_doc, root_node_id, max_depth, max_size,
+            compute_subtree_node_ids,
+            live_doc,
+            root_node_id,
+            max_depth,
+            max_size,
         )
     return compute_subtree_node_ids(live_doc, root_node_id, max_depth, max_size)

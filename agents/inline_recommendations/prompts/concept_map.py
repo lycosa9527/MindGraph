@@ -48,11 +48,7 @@ def build_concept_map_relationship_labels_prompt(
         if current:
             prompt += f"\n当前这条连线上的标签为：「{current}」。可在此基础上给出更贴切或不同侧重点的备选。"
         if rel_on_map:
-            prompt += (
-                "\n图中其它连线已使用的关系措辞（避免重复措辞）："
-                + "、".join(rel_on_map[:40])
-                + "。"
-            )
+            prompt += "\n图中其它连线已使用的关系措辞（避免重复措辞）：" + "、".join(rel_on_map[:40]) + "。"
         prompt += f"""
 
 规则：
@@ -76,9 +72,7 @@ Thinking: prefer directional relations (cause, part-of, prerequisite, analogy, i
 avoid vague connectives unless they are precise in-context — {thinking}
 """
         if current:
-            prompt += (
-                f'\nCurrent label on this link: "{current}". Improve it or propose distinct alternatives.'
-            )
+            prompt += f'\nCurrent label on this link: "{current}". Improve it or propose distinct alternatives.'
         if rel_on_map:
             joined = ", ".join(rel_on_map[:40])
             prompt += f"\n\nLabels already used on other edges in this map (avoid repeating): {joined}."

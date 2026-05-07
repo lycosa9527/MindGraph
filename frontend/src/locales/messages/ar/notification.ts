@@ -47,4 +47,4 @@ export default {
   'notification.sessionInvalidated': 'تم تسجيل خروجك لأنك تجاوزت الحد الأقصى للأجهزة',
   'notification.signInToUse': 'سجّل الدخول لاستخدام هذا',
   'notification.signInToValidateFocus': 'سجّل الدخول للتحقق من سؤال التركيز',
-}
+} as const

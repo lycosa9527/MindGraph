@@ -1,4 +1,5 @@
 /** ja UI — admin */
+
 export default {
   'admin.actions': '操作',
   'admin.activeToday': '本日アクティブ',
@@ -760,7 +761,6 @@ export default {
   'admin.database.orphanCleanSuccess': '孤立レコードを削除しました',
   'admin.database.orphanCleanError': '孤立削除に失敗しました',
   'admin.database.cleanSqliteOrphans': 'SQLite の孤立を整理',
-
   'admin.database.pgAnalyze': '解析',
   'admin.database.pgAnalyzeError': 'PG ダンプの解析に失敗しました',
   'admin.database.pgAnalysisResult': 'PG ダンプ解析',

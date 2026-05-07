@@ -1,11 +1,10 @@
-/**
- * pt UI — sidebar
- */
+/** pt UI — sidebar */
 
 export default {
   'sidebar.actions.delete': 'Excluir',
   'sidebar.actions.pinToTop': 'Fixar no topo',
   'sidebar.actions.rename': 'Renomear',
+  'sidebar.actions.turnOffOnlineCollab': 'Turn off online collaboration',
   'sidebar.actions.showLess': 'Mostrar menos',
   'sidebar.actions.showMore': 'Mostrar mais ({n})',
   'sidebar.actions.unpin': 'Desafixar',
@@ -46,6 +45,7 @@ export default {
   'sidebar.debateverse': 'Debateverso',
   'sidebar.diagramHistory.capacity': 'É possível salvar até {n} diagramas',
   'sidebar.diagramHistory.deleteFailed': 'Falha ao excluir diagrama',
+  'sidebar.diagramHistory.collabLive': 'Online collaboration active',
   'sidebar.diagramHistory.deleted': 'Diagrama excluído',
   'sidebar.diagramHistory.empty': 'Nenhum diagrama salvo',
   'sidebar.diagramHistory.loginPrompt': 'Entre para ver os diagramas',
@@ -79,4 +79,4 @@ export default {
   'sidebar.templateResources': 'Modelos',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': 'Conta',
-}
+} as const

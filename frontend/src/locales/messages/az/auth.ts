@@ -1,6 +1,4 @@
-/**
- * az UI — auth
- */
+/** az UI — auth */
 
 export default {
   'auth.accountInfo': 'Hesab',
@@ -159,4 +157,4 @@ export default {
   'auth.accountNameSave': 'Adı yadda saxla',
   'auth.accountNameSaveSuccess': 'Ad yeniləndi',
   'auth.accountNameSaveError': 'Saxlamaq mümkün olmadı. Yenidən cəhd edin.',
-}
+} as const

@@ -81,4 +81,4 @@ export default {
   'sidebar.templateResources': 'Templates',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': 'Account',
-}
+} as const

@@ -1,6 +1,4 @@
-/**
- * ko UI workshop
- */
+/** ko UI — workshop */
 
 export default {
   'collab.codeCopied': '코드복사했어…',
@@ -29,6 +27,8 @@ export default {
   'collab.noDiagramToSave': '저장할 다이어그램이 없어…',
   'collab.nodeLocked': '다른 사람노드편집 중이에요',
   'collab.participants': '참가{n}…',
+  'collab.previousSessionsStopped':
+    'Ended {n} previous collaboration session(s) on your other diagrams.',
   'collab.saveFailed': '다이어그램을 저장하지 못했어요',
   'collab.scanToJoin': '스캔하여 참여',
   'collab.schoolDescActive':
@@ -330,11 +330,26 @@ export default {
   'workshop.you': '(',
   'workshop.youAnd': '나와',
   'workshopCanvas.connectFailed': '협업연결하지 못했어요',
+  'workshopCanvas.sessionExpiredReconnect':
+    'Your session has expired. Please refresh the page to re-join the collaboration.',
+  'workshopCanvas.sessionRefreshFailed':
+    'Could not refresh your collaboration session. Please save your work and sign in again.',
+  'workshopCanvas.outboundQueueDegraded':
+    'Collaboration is falling behind. Some unsent edits could not be kept.',
   'workshopCanvas.connectionClosed': '연결끊겼어요',
+  'workshopCanvas.connectionClosedSlow':
+    'Connection closed: your connection was too slow to keep up with the collaboration session.',
+  'workshopCanvas.sessionEndedByHost': 'The host has ended the collaboration session.',
+  'workshopCanvas.editingNodeLabel': '{username} is editing…',
+  'workshopCanvas.collabEditorDisplayNameFallback': 'Someone',
   'workshopCanvas.connectionClosedReason': '협업 연결종료되었어요: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} 님이 노드편집 중이에요',
   'workshopCanvas.errorGeneric': '협업 오류',
+  'workshopCanvas.updatePartialFiltered':
+    'Some edits were skipped ({count} node(s)) because another collaborator is editing those nodes.',
   'workshopCanvas.reconnectFailed': '협업다시 연결하지 못했어요. 페이지새로고침주세…',
+  'workshopCanvas.resyncWaiting':
+    'Live diagram sync is taking longer than expected. Retrying; you can refresh if editing feels stuck.',
   'workshopCanvas.returnedHomeIdle': '홈으돌아왔어요0분간 다이어그램을 수정하지 않았어요.',
   'workshopCanvas.userJoined': '사용{username} 참여',
   'workshopCanvas.usersJoined': '{count} users joined',
@@ -348,4 +363,4 @@ export default {
   'workshopCanvas.otherTabCollaborationActive':
     'Collaboration continues in another tab or window for this account.',
   'workshopCanvas.joinQrAlt': 'Join collaboration QR code',
-}
+} as const

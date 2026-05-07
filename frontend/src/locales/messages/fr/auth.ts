@@ -158,4 +158,4 @@ export default {
   'auth.accountNameSave': 'Enregistrer le nom',
   'auth.accountNameSaveSuccess': 'Nom mis à jour',
   'auth.accountNameSaveError': 'Enregistrement impossible. Veuillez réessayer.',
-}
+} as const

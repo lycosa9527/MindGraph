@@ -1,6 +1,4 @@
-/**
- * ko UI — auth
- */
+/** ko UI — auth */
 
 export default {
   'auth.accountInfo': '계정',
@@ -156,4 +154,4 @@ export default {
   'auth.accountNameSave': '이름 저장',
   'auth.accountNameSaveSuccess': '이름이 업데이트되었습니다',
   'auth.accountNameSaveError': '저장할 수 없습니다. 다시 시도해 주세요.',
-}
+} as const

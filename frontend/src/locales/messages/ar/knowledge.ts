@@ -210,4 +210,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': 'تم رفع المستند بنجاح، جارٍ المعالجة...',
   'rag.retrievalTest.failed': 'فشل اختبار الاسترجاع',
   'rag.retrievalTest.success': 'اكتمل اختبار الاسترجاع',
-}
+} as const

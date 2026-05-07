@@ -73,7 +73,8 @@ def _field(node_id: str) -> str:
 
 def _node_map_to_json(node_map: Dict[int, str]) -> str:
     return json.dumps(
-        {str(uid): name for uid, name in node_map.items()}, ensure_ascii=False,
+        {str(uid): name for uid, name in node_map.items()},
+        ensure_ascii=False,
     )
 
 
@@ -100,7 +101,7 @@ def _json_to_node_map(raw: Any) -> Dict[int, str]:
 
 
 def _hash_backoff_delay(attempt: int) -> float:
-    base = _HASH_WATCH_BASE_BACKOFF_SEC * (2 ** attempt)
+    base = _HASH_WATCH_BASE_BACKOFF_SEC * (2**attempt)
     capped = min(base, _HASH_WATCH_MAX_BACKOFF_SEC)
     return capped + random.uniform(0, capped)
 
@@ -121,15 +122,9 @@ async def _call_hexpire(redis: Any, key: str, seconds: int, field: str) -> None:
         cell[0] = True
     except RedisError as exc:
         msg = str(exc).lower()
-        if (
-            "unknown command" in msg
-            or "err" in msg and "hexpire" in msg
-        ):
+        if "unknown command" in msg or "err" in msg and "hexpire" in msg:
             cell[0] = False
-            logger.info(
-                "[WorkshopEditorsHash] HEXPIRE unsupported — falling back to "
-                "key-level TTL only (Redis < 7.4)"
-            )
+            logger.info("[WorkshopEditorsHash] HEXPIRE unsupported — falling back to key-level TTL only (Redis < 7.4)")
             return
         logger.debug("[WorkshopEditorsHash] HEXPIRE failed (non-fatal): %s", exc)
 
@@ -207,13 +202,24 @@ async def hash_apply_node_editor_delta(
 
     if editing:
         ok = await fcall_node_editing_set(
-            redis, key, field, str(uid), username, _FIELD_TTL_SEC, _KEY_TTL_SEC,
+            redis,
+            key,
+            field,
+            str(uid),
+            username,
+            _FIELD_TTL_SEC,
+            _KEY_TTL_SEC,
         )
         if ok:
             return True
     else:
         ok = await fcall_node_editing_del(
-            redis, key, field, str(uid), _FIELD_TTL_SEC, _KEY_TTL_SEC,
+            redis,
+            key,
+            field,
+            str(uid),
+            _FIELD_TTL_SEC,
+            _KEY_TTL_SEC,
         )
         if ok:
             return True
@@ -245,11 +251,15 @@ async def hash_apply_node_editor_delta(
         except (RedisError, OSError) as exc:
             logger.warning(
                 "[WorkshopEditorsHash] delta failed code=%s field=%s: %s",
-                code, field, exc,
+                code,
+                field,
+                exc,
             )
             return False
     logger.warning(
-        "[WorkshopEditorsHash] delta retries exhausted code=%s field=%s", code, field,
+        "[WorkshopEditorsHash] delta retries exhausted code=%s field=%s",
+        code,
+        field,
     )
     return False
 
@@ -278,7 +288,8 @@ async def hash_apply_node_editor_batch_delta(
                 await pipe.watch(key)
                 effective: List[str] = []
                 raw_values = await cast(
-                    Awaitable[Any], pipe.hmget(key, fields),
+                    Awaitable[Any],
+                    pipe.hmget(key, fields),
                 )
                 node_maps: Dict[str, Dict[int, str]] = {}
                 for field, raw in zip(fields, raw_values):
@@ -308,12 +319,17 @@ async def hash_apply_node_editor_batch_delta(
             if editing and effective:
                 try:
                     await redis.execute_command(
-                        "HEXPIRE", key, _FIELD_TTL_SEC,
-                        "FIELDS", len(effective), *effective,
+                        "HEXPIRE",
+                        key,
+                        _FIELD_TTL_SEC,
+                        "FIELDS",
+                        len(effective),
+                        *effective,
                     )
                 except RedisError as exc:
                     logger.debug(
-                        "[WorkshopEditorsHash] batch HEXPIRE skipped: %s", exc,
+                        "[WorkshopEditorsHash] batch HEXPIRE skipped: %s",
+                        exc,
                     )
             return effective, True
         except WatchError:
@@ -322,17 +338,21 @@ async def hash_apply_node_editor_batch_delta(
             continue
         except (RedisError, OSError) as exc:
             logger.warning(
-                "[WorkshopEditorsHash] batch delta failed code=%s: %s", code, exc,
+                "[WorkshopEditorsHash] batch delta failed code=%s: %s",
+                code,
+                exc,
             )
             return [], False
     logger.warning(
-        "[WorkshopEditorsHash] batch delta retries exhausted code=%s", code,
+        "[WorkshopEditorsHash] batch delta retries exhausted code=%s",
+        code,
     )
     return [], False
 
 
 async def hash_purge_user_from_all_nodes(
-    code: str, user_id: int,
+    code: str,
+    user_id: int,
 ) -> Tuple[List[str], bool]:
     """HASH-backend equivalent of purge_user_from_all_nodes_redis_watched."""
     redis = get_async_redis()
@@ -349,11 +369,7 @@ async def hash_purge_user_from_all_nodes(
                 updates: Dict[str, str] = {}
                 deletes: List[str] = []
                 for nid_raw, val in (raw_map or {}).items():
-                    nid = (
-                        nid_raw.decode("utf-8")
-                        if isinstance(nid_raw, bytes)
-                        else str(nid_raw)
-                    )
+                    nid = nid_raw.decode("utf-8") if isinstance(nid_raw, bytes) else str(nid_raw)
                     node_map = _json_to_node_map(val)
                     if uid not in node_map:
                         continue
@@ -377,10 +393,13 @@ async def hash_purge_user_from_all_nodes(
             continue
         except (RedisError, OSError) as exc:
             logger.warning(
-                "[WorkshopEditorsHash] purge failed code=%s: %s", code, exc,
+                "[WorkshopEditorsHash] purge failed code=%s: %s",
+                code,
+                exc,
             )
             return [], False
     logger.warning(
-        "[WorkshopEditorsHash] purge retries exhausted code=%s", code,
+        "[WorkshopEditorsHash] purge retries exhausted code=%s",
+        code,
     )
     return [], False

@@ -1,6 +1,4 @@
-/**
- * sq UI — mindmate
- */
+/** sq UI — mindmate */
 
 export default {
   'aiModel.conceptAiOff':
@@ -16,13 +14,25 @@ export default {
   'aiModel.tabFocusBadge': 'Fokus Tab',
   'aiModel.tabFocusTooltip':
     'Shtypni Tab gjatë redaktimit të pyetjes së fokusit për validim; pastaj zgjidhni alternativat në shirit (− / =)',
+  'aiModel.tabFocusQuestionBadge': 'Tab — pyetje fokusi',
+  'aiModel.conceptMapFocusQuestionTabTooltip':
+    'Kur pyetja e fokusit është e zgjedhur ose në redaktim: shtypni Tab për kontrollin e IA-së (fillimisht shkruani një pyetje me substancë; kërkohet hyrja në llogari).',
   'aiModel.tabRecBadge': 'Rek Tab',
+  'aiModel.tabContentRecBadge': 'Tab — përmbajtje',
+  'aiModel.tabRelationshipRecBadge': 'Tab — marrëdhënie',
+  'aiModel.conceptMapConceptTabTooltip':
+    'Mënyra e redaktimit (koncept i izoluar): Tab për formulime alternative (tema duhet të jetë caktuar).',
+  'aiModel.conceptMapRelationshipTabTooltip':
+    'Mënyra e redaktimit ose e zgjedhjes (koncept i lidhur): Tab për sugjerime marrëdhënieje mbi lidhjen në fokus.',
   'aiModel.tooltip.clickDeselect': 'Klikoni për të hequr zgjedhjen e {name}',
   'aiModel.tooltip.clickSelect': 'Klikoni për të zgjedhur {name}',
   'aiModel.tooltip.clickSwitch': 'Klikoni për të kaluar te rezultati i {name}',
   'aiModel.tooltip.generating': '{name} po gjeneron...',
   'aiModel.tooltip.modelFailed': 'Gjenerimi i {name} dështoi',
   'aiModel.tooltip.showingResult': 'Po shfaqet rezultati i {name}',
+  'aiModel.hostPickBadgeTooltip':
+    'Pritësi po redakton versionin e këtij modeli të diagramit (pamje shumë-modele)',
+  'aiModel.hostPickBadgeAria': 'Pritësi po redakton duke përdorur {name}',
   'autoComplete.collabOwnerOnly':
     'Vetëm pronari i diagramit mund të përdorë gjenerimin e IA-së gjatë bashkëpunimit',
   'autoComplete.conceptMapRealtime':
@@ -55,7 +65,7 @@ export default {
   'focusQuestion.networkError': 'Gabim rrjeti',
   'focusQuestion.noResult': 'Nuk ka rezultat',
   'focusQuestion.pagingAria': 'Faqosje',
-  'focusQuestion.passLabel': 'OK',
+  'focusQuestion.passLabel': 'Në rregull',
   'focusQuestion.placeholder': 'Shkruani pyetjen tuaj të fokusit…',
   'focusQuestion.skip': 'Anashkalo',
   'focusQuestion.suggestionsEmpty': 'Ende pa sugjerime. Shtypni = për një grup tjetër.',
@@ -138,7 +148,7 @@ export default {
   'panels.property.borderRadius': 'Rrezja e kufirit',
   'panels.property.borderWidth': 'Gjerësia e kufirit',
   'panels.property.fontBold': 'I trashë',
-  'panels.property.fontNormal': 'Normal',
+  'panels.property.fontNormal': 'E zakonshme',
   'panels.property.fontSize': 'Madhësia e shkronjave',
   'panels.property.fontWeight': 'Trashësia e shkronjave',
   'panels.property.multiSelectLine': '{n} nyje të zgjedhura',
@@ -166,4 +176,4 @@ export default {
   'rootConceptModal.tabTitleRoot': 'Koncepti rrënjë: {text}',
   'rootConceptModal.title': 'Koncepti rrënjë',
   'rootConceptModal.titleConceptList': 'Lista e koncepteve',
-}
+} as const

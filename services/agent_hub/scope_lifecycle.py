@@ -397,9 +397,7 @@ class MindGraphAgentHub:
             merged = {**base_ctx, **context_payload}
             base_dd = base_ctx.get("diagram_data") if isinstance(base_ctx.get("diagram_data"), dict) else {}
             delta_dd = (
-                context_payload.get("diagram_data")
-                if isinstance(context_payload.get("diagram_data"), dict)
-                else {}
+                context_payload.get("diagram_data") if isinstance(context_payload.get("diagram_data"), dict) else {}
             )
             merged["diagram_data"] = {**base_dd, **delta_dd}
             context_payload = merged
@@ -561,9 +559,7 @@ class MindGraphAgentHub:
 async def _local_scope_matches_user(scope: str, user_id: int) -> bool:
     if _VOICE_SESSIONS is None or _ACTIVE_WEBSOCKETS is None:
         return False
-    matching_sessions = [
-        s for s in _VOICE_SESSIONS.values() if s.get("diagram_session_id") == scope
-    ]
+    matching_sessions = [s for s in _VOICE_SESSIONS.values() if s.get("diagram_session_id") == scope]
     if matching_sessions:
         return all(str(s.get("user_id")) == str(user_id) for s in matching_sessions)
     if scope in _ACTIVE_WEBSOCKETS:
@@ -589,9 +585,7 @@ async def handle_kitty_control_dispatch(raw: str, local_instance: str) -> None:
             except ValueError:
                 env_uid = None
         raw_scope = envelope.get("scope")
-        env_scope = (
-            normalize_kitty_diagram_session_id(raw_scope) if isinstance(raw_scope, str) else None
-        )
+        env_scope = normalize_kitty_diagram_session_id(raw_scope) if isinstance(raw_scope, str) else None
         logger.warning(
             "[KittyControl] rejected control message (auth verification failed)",
             extra=kitty_extra("control_auth_rejected", scope=env_scope, user_id=env_uid),

@@ -1,6 +1,4 @@
-/**
- * uk UI — mindmate
- */
+/** uk UI — mindmate */
 
 export default {
   'aiModel.conceptAiOff': 'Увімкніть підписи зв’язків ШІ (кілька моделей)',
@@ -14,13 +12,25 @@ export default {
   'aiModel.tabFocusBadge': 'Tab — фокус',
   'aiModel.tabFocusTooltip':
     'Редагуючи фокус-питання, натисніть Tab для перевірки ШІ; далі варіанти в панелі (− / =)',
+  'aiModel.tabFocusQuestionBadge': 'Tab — фокусне питання',
+  'aiModel.conceptMapFocusQuestionTabTooltip':
+    'Коли фокусне питання вибране або редагується: натисніть Tab для перевірки ШІ (спочатку введіть змістовне питання; потрібен вхід).',
   'aiModel.tabRecBadge': 'Tab — рек.',
+  'aiModel.tabContentRecBadge': 'Tab — зміст',
+  'aiModel.tabRelationshipRecBadge': 'Tab — зв’язок',
+  'aiModel.conceptMapConceptTabTooltip':
+    'Режим редагування (окреме поняття): Tab для альтернативних формулювань (тему має бути задано).',
+  'aiModel.conceptMapRelationshipTabTooltip':
+    'Режим редагування або вибору (пов’язане поняття): Tab для підказок щодо зв’язку на фокусному ребрі.',
   'aiModel.tooltip.clickDeselect': 'Натисніть, щоб зняти вибір з {name}',
   'aiModel.tooltip.clickSelect': 'Натисніть, щоб вибрати {name}',
   'aiModel.tooltip.clickSwitch': 'Натисніть, щоб перейти на результат {name}',
   'aiModel.tooltip.generating': '{name} генерує…',
   'aiModel.tooltip.modelFailed': 'Генерація {name} не вдалася',
   'aiModel.tooltip.showingResult': 'Зараз показано результат {name}',
+  'aiModel.hostPickBadgeTooltip':
+    'Ведучий редагує версію діаграми цьої моделі (перегляд кількох моделей)',
+  'aiModel.hostPickBadgeAria': 'Ведучий редагує за допомогою {name}',
   'autoComplete.collabOwnerOnly': 'У спільній роботі лише власник діаграми може використовувати ШІ',
   'autoComplete.conceptMapRealtime':
     'Концепт-карти: підказки зв’язків у реальному часі; створіть зв’язки для генерації',
@@ -119,7 +129,7 @@ export default {
   'nodePalette.refresh': 'Оновити',
   'nodePalette.selected': 'вибрано',
   'nodePalette.similarities': 'Подібності',
-  'panel.mindmate': 'MindMate ШІ',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'Палітра вузлів',
   'panel.properties': 'Властивості',
   'panels.property.background': 'Тло',
@@ -155,4 +165,4 @@ export default {
   'rootConceptModal.tabTitleRoot': 'Кореневий концепт: {text}',
   'rootConceptModal.title': 'Кореневий концепт',
   'rootConceptModal.titleConceptList': 'Список понять',
-}
+} as const

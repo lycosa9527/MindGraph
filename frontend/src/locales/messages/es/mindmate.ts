@@ -1,6 +1,4 @@
-/**
- * es UI — mindmate
- */
+/** es UI — mindmate */
 
 export default {
   'aiModel.conceptAiOff':
@@ -16,13 +14,25 @@ export default {
   'aiModel.tabFocusBadge': 'Enfoque de pestaña',
   'aiModel.tabFocusTooltip':
     'Presione Tab mientras edita la pregunta de enfoque para validar; luego elija alternativas en la barra (− / =)',
+  'aiModel.tabFocusQuestionBadge': 'Tab — pregunta de enfoque',
+  'aiModel.conceptMapFocusQuestionTabTooltip':
+    'Cuando la pregunta de enfoque está seleccionada o en edición: pulse Tab para ejecutar la comprobación con IA (escriba primero una pregunta con contenido sustantivo; inicio de sesión obligatorio).',
   'aiModel.tabRecBadge': 'Grabación de pestañas',
+  'aiModel.tabContentRecBadge': 'Tab — contenido',
+  'aiModel.tabRelationshipRecBadge': 'Tab — relación',
+  'aiModel.conceptMapConceptTabTooltip':
+    'Modo edición (concepto aislado): pulse Tab para redacciones alternativas (debe tener un tema establecido).',
+  'aiModel.conceptMapRelationshipTabTooltip':
+    'Modo edición o selección (concepto enlazado): pulse Tab para sugerencias de relación sobre el enlace en foco.',
   'aiModel.tooltip.clickDeselect': 'Haga clic para anular la selección de {name}',
   'aiModel.tooltip.clickSelect': 'Haga clic para seleccionar {name}',
   'aiModel.tooltip.clickSwitch': 'Haga clic para cambiar al resultado {name}',
   'aiModel.tooltip.generating': '{name} generando...',
   'aiModel.tooltip.modelFailed': 'Error en la generación de {name}',
   'aiModel.tooltip.showingResult': 'Actualmente se muestra el resultado {name}',
+  'aiModel.hostPickBadgeTooltip':
+    'El anfitrión está editando la versión de este modelo del diagrama (vista multimodelo)',
+  'aiModel.hostPickBadgeAria': 'El anfitrión está editando con {name}',
   'autoComplete.collabOwnerOnly':
     'Solo el propietario del diagrama puede utilizar la generación de IA durante la colaboración',
   'autoComplete.conceptMapRealtime':
@@ -144,7 +154,7 @@ export default {
   'panels.property.borderRadius': 'Radio del borde',
   'panels.property.borderWidth': 'Ancho del borde',
   'panels.property.fontBold': 'Atrevido',
-  'panels.property.fontNormal': 'Normal',
+  'panels.property.fontNormal': 'Regular',
   'panels.property.fontSize': 'Tamaño de fuente',
   'panels.property.fontWeight': 'Peso de fuente',
   'panels.property.multiSelectLine': '{n} nodos seleccionados',
@@ -172,4 +182,4 @@ export default {
   'rootConceptModal.tabTitleRoot': 'Concepto raíz: {text}',
   'rootConceptModal.title': 'Concepto raíz',
   'rootConceptModal.titleConceptList': 'Lista de conceptos',
-}
+} as const

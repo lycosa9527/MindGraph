@@ -1,6 +1,4 @@
-/**
- * fr UI — mindmate
- */
+/** fr UI — mindmate */
 
 export default {
   'aiModel.conceptAiOff': 'Cliquez pour activer les étiquettes de relation IA (multi-modèle)',
@@ -17,13 +15,25 @@ export default {
   'aiModel.tabFocusBadge': 'Focus sur Tab',
   'aiModel.tabFocusTooltip':
     'Appuyez sur Tab pendant la modification de la question cible pour valider ; puis sélectionnez des alternatives dans la barre (− / =)',
+  'aiModel.tabFocusQuestionBadge': 'Tab — question cible',
+  'aiModel.conceptMapFocusQuestionTabTooltip':
+    'Lorsque la question cible est sélectionnée ou en cours d’édition : appuyez sur Tab pour lancer la vérification IA (saisissez d’abord une question précise ; connexion requise).',
   'aiModel.tabRecBadge': 'Recommandations Tab',
+  'aiModel.tabContentRecBadge': 'Tab — contenu',
+  'aiModel.tabRelationshipRecBadge': 'Tab — relation',
+  'aiModel.conceptMapConceptTabTooltip':
+    'Mode édition (concept isolé) : Tab pour formuler différemment (le sujet doit être renseigné).',
+  'aiModel.conceptMapRelationshipTabTooltip':
+    'Mode édition ou sélection (concept relié) : Tab pour des suggestions de relation sur la liaison mise au focus.',
   'aiModel.tooltip.clickDeselect': 'Cliquez pour désélectionner {name}',
   'aiModel.tooltip.clickSelect': 'Cliquez pour sélectionner {name}',
   'aiModel.tooltip.clickSwitch': 'Cliquez pour basculer vers le résultat {name}',
   'aiModel.tooltip.generating': '{name} en cours de génération…',
   'aiModel.tooltip.modelFailed': 'Échec de la génération de {name}',
   'aiModel.tooltip.showingResult': 'Résultat {name} actuellement affiché',
+  'aiModel.hostPickBadgeTooltip':
+    'L’hôte modifie la version du diagramme pour ce modèle (vue multi-modèles).',
+  'aiModel.hostPickBadgeAria': 'L’hôte modifie le diagramme avec {name}',
   'autoComplete.collabOwnerOnly':
     'Seul le propriétaire du diagramme peut utiliser la génération IA pendant la collaboration',
   'autoComplete.conceptMapRealtime':
@@ -58,7 +68,7 @@ export default {
   'focusQuestion.networkError': 'Erreur réseau',
   'focusQuestion.noResult': 'Aucun résultat',
   'focusQuestion.pagingAria': 'Pagination',
-  'focusQuestion.passLabel': 'OK',
+  'focusQuestion.passLabel': 'D’accord',
   'focusQuestion.placeholder': 'Saisissez votre question focale…',
   'focusQuestion.skip': 'Ignorer',
   'focusQuestion.suggestionsEmpty':
@@ -111,9 +121,9 @@ export default {
   'mindmate.untitled': 'Sans titre',
   'mindmate.welcome': 'Bonjour {username}, je suis votre partenaire virtuel pour l’enseignement',
   'nodePalette.bridgeAnalogy': 'Analogie',
-  'nodePalette.bridgeSource': 'Source',
+  'nodePalette.bridgeSource': 'Source (gauche)',
   'nodePalette.cancel': 'Annuler',
-  'nodePalette.causes': 'Causes',
+  'nodePalette.causes': 'Causes entrantes',
   'nodePalette.differences': 'Différences',
   'nodePalette.effects': 'Effets',
   'nodePalette.error.couldNotAddBranch': 'Impossible d’ajouter une branche',
@@ -148,7 +158,7 @@ export default {
   'panels.property.borderRadius': 'Rayon de bordure',
   'panels.property.borderWidth': 'Épaisseur de bordure',
   'panels.property.fontBold': 'Gras',
-  'panels.property.fontNormal': 'Normal',
+  'panels.property.fontNormal': 'Normale',
   'panels.property.fontSize': 'Taille de police',
   'panels.property.fontWeight': 'Épaisseur de police',
   'panels.property.multiSelectLine': '{n} nœuds sélectionnés',
@@ -175,5 +185,5 @@ export default {
   'rootConceptModal.splittingLoading': 'Fractionnement des branches et génération des concepts…',
   'rootConceptModal.tabTitleRoot': 'Concept racine : {text}',
   'rootConceptModal.title': 'Concept racine',
-  'rootConceptModal.titleConceptList': 'Concept list',
-}
+  'rootConceptModal.titleConceptList': 'Liste des concepts',
+} as const

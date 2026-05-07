@@ -212,4 +212,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': 'Belge yüklendi, işleniyor...',
   'rag.retrievalTest.failed': 'Geri getirme testi başarısız',
   'rag.retrievalTest.success': 'Geri getirme testi tamamlandı',
-}
+} as const

@@ -12,14 +12,10 @@ import { storeToRefs } from 'pinia'
 import { Camera, ChevronLeft, Keyboard, Loader2, Mic, MicOff } from 'lucide-vue-next'
 
 import KittyBlackCatMascot from '@/components/kitty/KittyBlackCatMascot.vue'
-import {
-  useKittyAgent,
-  useLanguage,
-  useNotifications,
-} from '@/composables'
+import { useKittyAgent, useLanguage, useNotifications } from '@/composables'
+import { compressImageFileForKitty } from '@/composables/kitty/compressImageForKitty'
 import { useKittyMobileDebugBus } from '@/composables/kitty/useKittyMobileDebugBus'
 import { useMobileKittyPairing } from '@/composables/kitty/useMobileKittyPairing'
-import { compressImageFileForKitty } from '@/composables/kitty/compressImageForKitty'
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'
 
 type ChatRole = 'user' | 'assistant'
@@ -63,9 +59,7 @@ function pushKittyDebugLine(prefix: string, detail: string): void {
   const row = `${stamp} ${prefix} ${detail}`.trim()
   const cur = kittyDebugLines.value
   kittyDebugLines.value =
-    cur.length >= KITTY_DEBUG_MAX
-      ? [...cur.slice(-(KITTY_DEBUG_MAX - 1)), row]
-      : [...cur, row]
+    cur.length >= KITTY_DEBUG_MAX ? [...cur.slice(-(KITTY_DEBUG_MAX - 1)), row] : [...cur, row]
 }
 
 const kitty = useKittyAgent({
@@ -85,11 +79,15 @@ const kitty = useKittyAgent({
 })
 const { isVoiceActive: kittyMicPressed } = kitty
 
-const { kittyPairScope, buildMobileKittyContext, scheduleMobileKittyContextSync, ensureMobileKittyBootstrap } =
-  useMobileKittyPairing(kitty, {
-    kittyServerEnabled,
-    onDebugLine: pushKittyDebugLine,
-  })
+const {
+  kittyPairScope,
+  buildMobileKittyContext,
+  scheduleMobileKittyContextSync,
+  ensureMobileKittyBootstrap,
+} = useMobileKittyPairing(kitty, {
+  kittyServerEnabled,
+  onDebugLine: pushKittyDebugLine,
+})
 
 useKittyMobileDebugBus({
   ownerId: 'MobileKittyPage',
@@ -320,9 +318,7 @@ onUnmounted(async () => {
   <div
     class="mobile-kitty flex flex-col flex-1 min-h-0 w-full bg-gradient-to-b from-slate-100 via-white to-violet-50/40"
   >
-    <header
-      class="flex items-center gap-2 h-12 px-2 bg-white/90 backdrop-blur-md shrink-0"
-    >
+    <header class="flex items-center gap-2 h-12 px-2 bg-white/90 backdrop-blur-md shrink-0">
       <button
         type="button"
         class="flex items-center justify-center w-10 h-10 rounded-xl active:bg-gray-100 text-gray-700"
@@ -501,10 +497,8 @@ onUnmounted(async () => {
         <label
           class="shrink-0 w-16 h-16 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center shadow-sm border border-gray-200/80"
           :class="{
-            'pointer-events-none opacity-40':
-              cameraDenied || !kittyServerEnabled || connecting,
-            'active:bg-gray-200 cursor-pointer':
-              !cameraDenied && kittyServerEnabled && !connecting,
+            'pointer-events-none opacity-40': cameraDenied || !kittyServerEnabled || connecting,
+            'active:bg-gray-200 cursor-pointer': !cameraDenied && kittyServerEnabled && !connecting,
           }"
           :aria-label="t('mobile.kittyCameraLabel', '拍照或相册')"
         >
@@ -523,9 +517,7 @@ onUnmounted(async () => {
           type="button"
           class="relative shrink-0 w-16 h-16 rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-transform bg-gradient-to-br from-violet-500 to-indigo-600 border border-violet-400/30 disabled:opacity-45 touch-manipulation select-none"
           :disabled="!kittyServerEnabled || connecting || micDenied"
-          :aria-label="
-            t('mobile.kittyMicHoldLabel', '按住说话（松开结束）')
-          "
+          :aria-label="t('mobile.kittyMicHoldLabel', '按住说话（松开结束）')"
           :aria-pressed="kittyMicPressed"
           @pointerdown="onMicPointerDown"
           @pointerup="onMicPointerEnd"
@@ -549,8 +541,7 @@ onUnmounted(async () => {
           </template>
           <span
             v-if="
-              !connecting &&
-              (kittyVoiceState === 'listening' || kittyVoiceState === 'speaking')
+              !connecting && (kittyVoiceState === 'listening' || kittyVoiceState === 'speaking')
             "
             class="absolute inset-0 rounded-full ring-4 ring-violet-300/50 animate-pulse pointer-events-none"
             aria-hidden="true"
@@ -576,13 +567,7 @@ onUnmounted(async () => {
 
 .kitty-agent-debug-fog {
   font-family:
-    ui-monospace,
-    'Cascadia Code',
-    'Cascadia Mono',
-    'SFMono-Regular',
-    'JetBrains Mono',
-    'Fira Code',
-    Consolas,
-    monospace;
+    ui-monospace, 'Cascadia Code', 'Cascadia Mono', 'SFMono-Regular', 'JetBrains Mono', 'Fira Code',
+    Consolas, monospace;
 }
 </style>

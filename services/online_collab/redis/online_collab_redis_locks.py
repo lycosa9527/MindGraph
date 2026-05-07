@@ -293,7 +293,10 @@ async def ensure_online_collab_functions_loaded(redis: Any) -> bool:
         return False
     try:
         await redis.execute_command(
-            "FUNCTION", "LOAD", "REPLACE", _WORKSHOP_LIB_CODE,
+            "FUNCTION",
+            "LOAD",
+            "REPLACE",
+            _WORKSHOP_LIB_CODE,
         )
         cell[0] = True
         logger.info(
@@ -304,8 +307,7 @@ async def ensure_online_collab_functions_loaded(redis: Any) -> bool:
     except RedisError as exc:
         cell[0] = False
         logger.info(
-            "[WorkshopLocks] Redis FUNCTION LOAD unavailable (%s) — "
-            "falling back to EVAL for CAS helpers",
+            "[WorkshopLocks] Redis FUNCTION LOAD unavailable (%s) — falling back to EVAL for CAS helpers",
             exc,
         )
         return False
@@ -353,27 +355,32 @@ async def release_nx_lock(redis: Any, key: str, token: str) -> bool:
     try:
         if use_fcall:
             result = await redis.execute_command(
-                "FCALL", "mg_cas_delete", 1, key, token,
+                "FCALL",
+                "mg_cas_delete",
+                1,
+                key,
+                token,
             )
         else:
             result = await redis.eval(_CAS_DELETE_LUA, 1, key, token)
     except RedisError as exc:
         msg = str(exc).lower()
-        if use_fcall and (
-            "function not found" in msg or "unknown command" in msg
-        ):
+        if use_fcall and ("function not found" in msg or "unknown command" in msg):
             _FUNCTIONS_LOADED_CELL[0] = False
             try:
                 result = await redis.eval(_CAS_DELETE_LUA, 1, key, token)
             except (RedisError, OSError, RuntimeError, TypeError) as eval_exc:
                 logger.debug(
                     "[WorkshopLocks] CAS-delete fallback failed key=%s: %s",
-                    key, eval_exc,
+                    key,
+                    eval_exc,
                 )
                 return False
         else:
             logger.debug(
-                "[WorkshopLocks] CAS-delete failed key=%s: %s", key, exc,
+                "[WorkshopLocks] CAS-delete failed key=%s: %s",
+                key,
+                exc,
             )
             return False
     except (OSError, RuntimeError, TypeError) as exc:
@@ -398,31 +405,45 @@ async def extend_nx_lock(
     try:
         if use_fcall:
             result = await redis.execute_command(
-                "FCALL", "mg_cas_extend", 1, key, token, int(ttl_sec),
+                "FCALL",
+                "mg_cas_extend",
+                1,
+                key,
+                token,
+                int(ttl_sec),
             )
         else:
             result = await redis.eval(
-                _CAS_EXTEND_LUA, 1, key, token, int(ttl_sec),
+                _CAS_EXTEND_LUA,
+                1,
+                key,
+                token,
+                int(ttl_sec),
             )
     except RedisError as exc:
         msg = str(exc).lower()
-        if use_fcall and (
-            "function not found" in msg or "unknown command" in msg
-        ):
+        if use_fcall and ("function not found" in msg or "unknown command" in msg):
             _FUNCTIONS_LOADED_CELL[0] = False
             try:
                 result = await redis.eval(
-                    _CAS_EXTEND_LUA, 1, key, token, int(ttl_sec),
+                    _CAS_EXTEND_LUA,
+                    1,
+                    key,
+                    token,
+                    int(ttl_sec),
                 )
             except (RedisError, OSError, RuntimeError, TypeError) as eval_exc:
                 logger.debug(
                     "[WorkshopLocks] CAS-extend fallback failed key=%s: %s",
-                    key, eval_exc,
+                    key,
+                    eval_exc,
                 )
                 return False
         else:
             logger.debug(
-                "[WorkshopLocks] CAS-extend failed key=%s: %s", key, exc,
+                "[WorkshopLocks] CAS-extend failed key=%s: %s",
+                key,
+                exc,
             )
             return False
     except (OSError, RuntimeError, TypeError) as exc:
@@ -455,9 +476,15 @@ async def fcall_node_claim_exclusive(
         return None
     try:
         result = await redis.execute_command(
-            "FCALL", "mg_node_claim_exclusive", 1,
-            hash_key, field, user_id_str, username,
-            int(field_ttl_sec), int(key_ttl_sec),
+            "FCALL",
+            "mg_node_claim_exclusive",
+            1,
+            hash_key,
+            field,
+            user_id_str,
+            username,
+            int(field_ttl_sec),
+            int(key_ttl_sec),
         )
         return int(result) == 1
     except RedisError as exc:
@@ -489,9 +516,15 @@ async def fcall_node_editing_set(
         return False
     try:
         await redis.execute_command(
-            "FCALL", "mg_node_editing_set", 1,
-            hash_key, field, user_id_str, username,
-            int(field_ttl_sec), int(key_ttl_sec),
+            "FCALL",
+            "mg_node_editing_set",
+            1,
+            hash_key,
+            field,
+            user_id_str,
+            username,
+            int(field_ttl_sec),
+            int(key_ttl_sec),
         )
         return True
     except RedisError as exc:
@@ -522,9 +555,14 @@ async def fcall_node_editing_del(
         return False
     try:
         await redis.execute_command(
-            "FCALL", "mg_node_editing_del", 1,
-            hash_key, field, user_id_str,
-            int(field_ttl_sec), int(key_ttl_sec),
+            "FCALL",
+            "mg_node_editing_del",
+            1,
+            hash_key,
+            field,
+            user_id_str,
+            int(field_ttl_sec),
+            int(key_ttl_sec),
         )
         return True
     except RedisError as exc:
@@ -568,7 +606,9 @@ async def acquire_room_write_lock(
                 await asyncio.sleep(_WRITE_LOCK_RETRY_SLEEP_SEC)
         except (RedisError, OSError, RuntimeError, TypeError) as exc:
             logger.debug(
-                "[WorkshopLocks] write-lock acquire failed code=%s: %s", code, exc,
+                "[WorkshopLocks] write-lock acquire failed code=%s: %s",
+                code,
+                exc,
             )
             return None
     return None
@@ -610,7 +650,9 @@ async def fcall_spec_granular_apply(
     del_conns_json = json.dumps(deleted_connection_ids or [], ensure_ascii=False)
     try:
         result = await redis.execute_command(
-            "FCALL", "mg_spec_granular_apply", 4,
+            "FCALL",
+            "mg_spec_granular_apply",
+            4,
             live_spec_key(code),
             snapshot_seq_key(code),
             live_changed_keys_key(code),
@@ -626,12 +668,16 @@ async def fcall_spec_granular_apply(
         if "function not found" in msg or "unknown command" in msg:
             _FUNCTIONS_LOADED_CELL[0] = False
         logger.debug(
-            "[WorkshopLocks] mg_spec_granular_apply failed code=%s: %s", code, exc,
+            "[WorkshopLocks] mg_spec_granular_apply failed code=%s: %s",
+            code,
+            exc,
         )
         return None
     except (OSError, RuntimeError, TypeError) as exc:
         logger.debug(
-            "[WorkshopLocks] mg_spec_granular_apply error code=%s: %s", code, exc,
+            "[WorkshopLocks] mg_spec_granular_apply error code=%s: %s",
+            code,
+            exc,
         )
         return None
     if not isinstance(result, (list, tuple)) or len(result) < 2:

@@ -215,4 +215,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': 'Document uploaded successfully, processing...',
   'rag.retrievalTest.failed': 'Retrieval test failed',
   'rag.retrievalTest.success': 'Retrieval test completed',
-}
+} as const

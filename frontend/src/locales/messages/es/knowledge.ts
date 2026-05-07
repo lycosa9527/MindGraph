@@ -216,4 +216,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': 'Documento subido correctamente, procesándose...',
   'rag.retrievalTest.failed': 'La prueba de recuperación falló',
   'rag.retrievalTest.success': 'Prueba de recuperación completada',
-}
+} as const

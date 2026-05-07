@@ -1,6 +1,4 @@
-/**
- * th UI workshop
- */
+/** th UI — workshop */
 
 export default {
   'collab.codeCopied': 'คัดลอกรหัสแล้ว',
@@ -29,6 +27,8 @@ export default {
   'collab.noDiagramToSave': 'ไม่มีไดอะแกรมให้บันทึก',
   'collab.nodeLocked': 'มีคนอื่นกำลังแก้ไขโหนดนี…',
   'collab.participants': '{n} คนเข้าร่ว…',
+  'collab.previousSessionsStopped':
+    'Ended {n} previous collaboration session(s) on your other diagrams.',
   'collab.saveFailed': 'บันทึกไดอะแกรมล้มเหล…',
   'collab.scanToJoin': 'สแกนเพื่อเข้าร่ว…',
   'collab.schoolDescActive':
@@ -338,15 +338,31 @@ export default {
   'workshop.you': '(คุ',
   'workshop.youAnd': 'คุณและ',
   'workshopCanvas.connectFailed': 'เชื่อมต่อความร่วมมือล้มเหล…',
+  'workshopCanvas.sessionExpiredReconnect':
+    'Your session has expired. Please refresh the page to re-join the collaboration.',
+  'workshopCanvas.sessionRefreshFailed':
+    'Could not refresh your collaboration session. Please save your work and sign in again.',
+  'workshopCanvas.outboundQueueDegraded':
+    'Collaboration is falling behind. Some unsent edits could not be kept.',
   'workshopCanvas.connectionClosed': 'การเชื่อมต่อปิ…',
+  'workshopCanvas.connectionClosedSlow':
+    'Connection closed: your connection was too slow to keep up with the collaboration session.',
+  'workshopCanvas.sessionEndedByHost': 'The host has ended the collaboration session.',
+  'workshopCanvas.editingNodeLabel': '{username} is editing…',
+  'workshopCanvas.collabEditorDisplayNameFallback': 'Someone',
   'workshopCanvas.connectionClosedReason': 'การเชื่อมต่อความร่วมมือปิด: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} กำลังแก้ไขโหนดนี…',
   'workshopCanvas.errorGeneric': 'ข้อผิดพลาดความร่วมมื…',
+  'workshopCanvas.updatePartialFiltered':
+    'Some edits were skipped ({count} node(s)) because another collaborator is editing those nodes.',
   'workshopCanvas.reconnectFailed': 'เชื่อมต่อความร่วมมือใหม่ล้มเหลกรุณารีเฟรชหน้…',
+  'workshopCanvas.resyncWaiting':
+    'Live diagram sync is taking longer than expected. Retrying; you can refresh if editing feels stuck.',
   'workshopCanvas.returnedHomeIdle': 'กลับหน้าแรไม่มีการแก้ไขไดอะแกร30 นาที',
   'workshopCanvas.userJoined': 'ผู้ใช้ {username} เข้าร่ว…',
   'workshopCanvas.usersJoined': '{count} users joined',
   'workshopCanvas.userLeft': 'ผู้ใช้ {username} ออ,',
+  'workshopCanvas.usersLeft': '{count} users left',
   'workshopCanvas.wsError': 'ข้อผิดพลาดการเชื่อมต่อความร่วมมืกรุณาตรวจสอบเครือข่าย',
   'workshopCanvas.returnedHomeRoomIdle':
     'Collaboration ended: no diagram edits in this session for a while.',
@@ -355,4 +371,4 @@ export default {
   'workshopCanvas.otherTabCollaborationActive':
     'Collaboration continues in another tab or window for this account.',
   'workshopCanvas.joinQrAlt': 'Join collaboration QR code',
-}
+} as const

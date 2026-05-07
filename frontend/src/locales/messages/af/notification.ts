@@ -50,4 +50,4 @@ export default {
     'U is uitgeteken omdat u die maksimum aantal toestelle oorskry het',
   'notification.signInToUse': 'Teken in om hierdie te gebruik',
   'notification.signInToValidateFocus': 'Teken in om die fokusvraag te valideer',
-}
+} as const

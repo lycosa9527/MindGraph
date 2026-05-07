@@ -1,6 +1,4 @@
-/**
- * th UI — auth
- */
+/** th UI — auth */
 
 export default {
   'auth.accountInfo': 'บัญชี',
@@ -156,4 +154,4 @@ export default {
   'auth.accountNameSave': 'บันทึกชื่อ',
   'auth.accountNameSaveSuccess': 'อัปเดตชื่อแล้ว',
   'auth.accountNameSaveError': 'บันทึกไม่ได้ โปรดลองอีกครั้ง',
-}
+} as const

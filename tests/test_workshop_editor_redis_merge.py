@@ -24,7 +24,7 @@ def test_merge_node_editor_delta_removes_user() -> None:
 def test_merge_node_editor_delta_drops_empty_node() -> None:
     editors = {"n1": {7: "alice"}}
     merge_node_editor_delta_into_document(editors, "n1", 7, False, "")
-    assert editors == {}
+    assert not editors
 
 
 def test_purge_user_from_editor_document_returns_touched() -> None:
@@ -35,5 +35,5 @@ def test_purge_user_from_editor_document_returns_touched() -> None:
 
 
 def test_parse_editors_raw_empty() -> None:
-    assert parse_editors_raw(None) == {}
-    assert parse_editors_raw(b"") == {}
+    assert not parse_editors_raw(None)
+    assert not parse_editors_raw(b"")

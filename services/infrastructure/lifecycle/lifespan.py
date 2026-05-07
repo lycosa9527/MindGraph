@@ -156,8 +156,6 @@ async def _send_startup_sms_notification_once() -> None:
         await release_startup_sms_notification_lock(lock_token)
 
 
-
-
 @asynccontextmanager
 async def lifespan(fastapi_app: FastAPI):
     """
@@ -346,9 +344,7 @@ async def lifespan(fastapi_app: FastAPI):
             logger.warning("Failed to start cleanup scheduler: %s", e)
 
     # Start workshop subsystem: cleanup scheduler + Lua script preload + idle monitor.
-    workshop_cleanup_task, session_manager_task = await start_online_collab_subsystem_async(
-        is_main_worker
-    )
+    workshop_cleanup_task, session_manager_task = await start_online_collab_subsystem_async(is_main_worker)
 
     worker_perf_task: Optional[asyncio.Task[None]] = None
     worker_perf_stop: Optional[asyncio.Event] = None

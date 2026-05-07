@@ -1,6 +1,4 @@
-/**
- * de UI — admin
- */
+/** de UI — admin */
 
 export default {
   'admin.actions': 'Aktionen',
@@ -796,4 +794,4 @@ export default {
   'admin.database.pgMergeSuccess': 'PG-Dump erfolgreich zusammengeführt',
   'admin.database.pgMergeError': 'PG-Dump-Zusammenführung fehlgeschlagen',
   'admin.database.pgMergeComplete': 'PG-Zusammenführung abgeschlossen',
-}
+} as const

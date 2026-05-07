@@ -204,10 +204,7 @@ def _assert_pool_fits_max_connections() -> None:
     """
     if os.getenv("DATABASE_POOL_HARD_ASSERT", "0") not in ("1", "true", "True"):
         return
-    raw_workers = (
-        os.getenv("WEB_CONCURRENCY")
-        or os.getenv("UVICORN_WORKERS")
-    )
+    raw_workers = os.getenv("WEB_CONCURRENCY") or os.getenv("UVICORN_WORKERS")
     if not raw_workers:
         return
     workers = int(raw_workers)

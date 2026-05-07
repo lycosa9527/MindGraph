@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { diagramNodeToVueFlowNode } from '@/types/vueflow'
 import type { DiagramNode } from '@/types/diagram'
+import { diagramNodeToVueFlowNode } from '@/types/vueflow'
 
 // ---------------------------------------------------------------------------
 // Minimal helpers

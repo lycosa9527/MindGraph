@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { WORKSHOP_STALE_RESYNC_THRESHOLD } from '@/composables/workshop/useWorkshopMessageHandlers'
 import { useCollabSyncVersion } from '@/composables/workshop/useCollabSyncVersion'
+import { WORKSHOP_STALE_RESYNC_THRESHOLD } from '@/composables/workshop/useWorkshopMessageHandlers'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -105,9 +105,12 @@ describe('recordUpdate (accepted)', () => {
   it('updates lastFrameAt on acceptance', () => {
     const v = make()
     v.recordSnapshot(1, 1)
-    const before = v.lastFrameAt.value!
+    const beforeSnapshot = v.lastFrameAt.value
+    if (typeof beforeSnapshot !== 'number') {
+      throw new Error('expected lastFrameAt after snapshot')
+    }
     v.recordUpdate(2, 2)
-    expect(v.lastFrameAt.value).toBeGreaterThanOrEqual(before)
+    expect(v.lastFrameAt.value).toBeGreaterThanOrEqual(beforeSnapshot)
   })
 
   it('accepts first frame without snapshot (null start)', () => {

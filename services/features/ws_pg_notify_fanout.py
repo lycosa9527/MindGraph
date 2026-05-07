@@ -89,9 +89,7 @@ async def _listener_loop(stop: asyncio.Event) -> None:
 
             dsn = str(DATABASE_URL).replace("+asyncpg", "").replace("+psycopg", "")
             conn = await psycopg.AsyncConnection.connect(dsn, autocommit=True)
-            await conn.execute(
-                sql.SQL("LISTEN {}").format(sql.Identifier(_SHARED_CHANNEL))
-            )
+            await conn.execute(sql.SQL("LISTEN {}").format(sql.Identifier(_SHARED_CHANNEL)))
             await conn.execute(sql.SQL("LISTEN {}").format(sql.Identifier(_CHANNEL)))
             logger.info(
                 "[PgNotify] Listening on channels %s, %s",
@@ -113,6 +111,7 @@ async def _listener_loop(stop: asyncio.Event) -> None:
                             from services.features.ws_redis_fanout_listener import (  # pylint: disable=import-outside-toplevel
                                 dispatch_chat_fanout_raw,
                             )
+
                             await dispatch_chat_fanout_raw(inner)
                         except Exception as exc:  # pylint: disable=broad-except
                             logger.debug("[PgNotify] chat deliver error: %s", exc)
@@ -191,8 +190,7 @@ async def publish_pg_notify_fanout_async(envelope: Dict[str, Any]) -> None:
         return
     if len(body.encode("utf-8")) > _PG_NOTIFY_MAX_PAYLOAD_BYTES:
         logger.warning(
-            "[PgNotify] Payload too large for pg_notify (%d bytes > %d); "
-            "dropping channel=%s",
+            "[PgNotify] Payload too large for pg_notify (%d bytes > %d); dropping channel=%s",
             len(body.encode("utf-8")),
             _PG_NOTIFY_MAX_PAYLOAD_BYTES,
             _CHANNEL,
@@ -207,9 +205,7 @@ async def publish_pg_notify_fanout_async(envelope: Dict[str, Any]) -> None:
         # We NOTIFY the shared channel so all workers receive the message,
         # not just the local one. The machine-specific channel is kept for
         # directed messaging (future use).
-        notify_query = sql.SQL("SELECT pg_notify({}, %s)").format(
-            sql.Identifier(_SHARED_CHANNEL)
-        )
+        notify_query = sql.SQL("SELECT pg_notify({}, %s)").format(sql.Identifier(_SHARED_CHANNEL))
         async with await psycopg.AsyncConnection.connect(dsn, autocommit=True) as conn:
             await conn.execute(notify_query, (body,))
         logger.debug("[PgNotify] NOTIFY %s sent", _SHARED_CHANNEL)

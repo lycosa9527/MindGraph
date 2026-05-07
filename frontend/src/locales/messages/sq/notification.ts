@@ -51,4 +51,4 @@ export default {
     'U çregjistruat sepse keni tejkaluar numrin maksimal të pajisjeve',
   'notification.signInToUse': 'Hyni për ta përdorur këtë',
   'notification.signInToValidateFocus': 'Hyni për të vleftësuar pyetjen e fokusit',
-}
+} as const

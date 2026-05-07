@@ -44,6 +44,18 @@ def is_ws_fanout_enabled() -> bool:
         return False
 
 
+class _ShardedPubsubRuntime:
+    """Holds mutable sharded pub/sub handshake state without module-level globals."""
+
+    __slots__ = ("active",)
+
+    def __init__(self) -> None:
+        self.active = False
+
+
+_SHARDED_PUBSUB_STATE = _ShardedPubsubRuntime()
+
+
 def use_sharded_pubsub() -> bool:
     """
     Return True when SPUBLISH/SSUBSCRIBE should be used.
@@ -61,22 +73,14 @@ def use_sharded_pubsub() -> bool:
     return os.getenv("COLLAB_REDIS_SPUBLISH", "1") not in ("0", "false", "False", "")
 
 
-# Runtime flag: set to True by the listener after a successful SSUBSCRIBE.
-# Publisher reads this (via is_sharded_pubsub_active) so both sides always
-# use the same transport.  Defaults to False so the publisher falls back to
-# plain PUBLISH until the listener confirms sharded pub/sub is live.
-_sharded_pubsub_active: bool = False
-
-
 def is_sharded_pubsub_active() -> bool:
     """Return True only after the listener confirmed SSUBSCRIBE succeeded."""
-    return _sharded_pubsub_active
+    return _SHARDED_PUBSUB_STATE.active
 
 
 def set_sharded_pubsub_active(value: bool) -> None:
     """Called by the listener to record the actual subscription transport used."""
-    global _sharded_pubsub_active  # pylint: disable=global-statement
-    _sharded_pubsub_active = value
+    _SHARDED_PUBSUB_STATE.active = value
 
 
 def use_streams_audit() -> bool:
@@ -88,5 +92,6 @@ def use_streams_audit() -> bool:
     log for debugging and audit only.
     """
     return os.getenv(
-        "COLLAB_REDIS_STREAMS_AUDIT", "0",
+        "COLLAB_REDIS_STREAMS_AUDIT",
+        "0",
     ) not in ("0", "false", "False", "")

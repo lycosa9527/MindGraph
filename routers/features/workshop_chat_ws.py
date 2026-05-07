@@ -185,18 +185,14 @@ async def chat_websocket(websocket: WebSocket):
             while True:
                 raw = await websocket.receive_text()
                 if inbound_text_exceeds_limit(raw, DEFAULT_MAX_WS_TEXT_BYTES):
-                    await websocket.send_text(
-                        json.dumps({"type": "error", "message": "Message too large"})
-                    )
+                    await websocket.send_text(json.dumps({"type": "error", "message": "Message too large"}))
                     continue
                 if not rate_limiter.allow():
                     try:
                         record_ws_rate_limit_hit()
                     except Exception as exc:
                         logger.debug("Failed to record rate limit metric: %s", exc)
-                    await websocket.send_text(
-                        json.dumps({"type": "error", "message": "Rate limit exceeded"})
-                    )
+                    await websocket.send_text(json.dumps({"type": "error", "message": "Rate limit exceeded"}))
                     continue
                 try:
                     data = json.loads(raw)
@@ -225,9 +221,7 @@ async def chat_websocket(websocket: WebSocket):
             if presence_org is not None:
                 async with AsyncSessionLocal() as db_local:
                     row = (
-                        await db_local.execute(
-                            select(UserModel).where(UserModel.id == user.id)
-                        )
+                        await db_local.execute(select(UserModel).where(UserModel.id == user.id))
                     ).scalar_one_or_none()
                     if row:
                         row.workshop_last_seen_at = datetime.now(UTC)

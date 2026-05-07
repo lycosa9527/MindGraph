@@ -1,4 +1,5 @@
 """API locale resolution and message fallback (tier-27)."""
+
 from __future__ import annotations
 
 import pytest

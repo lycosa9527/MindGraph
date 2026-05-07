@@ -1,6 +1,4 @@
-/**
- * ja UI — canvas
- */
+/** ja UI — canvas */
 
 export default {
   'braceMap.defaultSubpartFirst': '新規サブパート 1',
@@ -60,6 +58,10 @@ export default {
   'canvas.toolbar.causeAdded': '原因ノードを追加しました',
   'canvas.toolbar.childAdded': '子を追加しました',
   'canvas.toolbar.collabAiBlocked': '共同編集中は図の所有者のみがAI生成を利用できます',
+  'canvas.toolbar.collabLiveAiDisabled':
+    'AI generation is unavailable during live collaboration so everyone stays in sync',
+  'canvas.toolbar.collabGuestFeatureBlocked':
+    'This feature is not available while you join as a collaboration guest.',
   'canvas.toolbar.colorLabel': '色',
   'canvas.toolbar.conceptGeneration': '概念の生成',
   'canvas.toolbar.conceptMapModesDev': 'コンセプトマップモードは開発中です',
@@ -271,6 +273,10 @@ export default {
   'canvas.toolbar.selectBranchOrChild': 'ブランチまたは子ノードを選択してください',
   'canvas.toolbar.selectCategoryOrLeafDelete':
     'カテゴリまたは葉ノードを選択してください（トピックは削除できません）',
+  'canvas.toolbar.selectCauseOrEffectForAdd':
+    'Select a cause or effect node (not the event), then press Enter to add another in that column',
+  'canvas.toolbar.selectTreeBranchForChild':
+    'Select a category or an item under a category to add a child, or select the topic to add a category',
   'canvas.toolbar.selectNodesFirst': '先にノードを選択してください',
   'canvas.toolbar.selectNodesToDelete': '削除するノードを選択してください',
   'canvas.toolbar.selectPartForSubpart': 'サブパートを追加する部分を選択してください',
@@ -322,6 +328,22 @@ export default {
   'canvas.topBar.shareCommunity': 'コミュニティに共有',
   'canvas.topBar.sharedCollab': '共有コラボ',
   'canvas.topBar.teachingDesign': '授業デザイン',
+  'canvas.subtitles.tooltip': 'Live subtitles (microphone)',
+  'canvas.subtitles.aria': 'Toggle live subtitles',
+  'canvas.subtitles.listening': 'Listening…',
+  'canvas.subtitles.micFailed': 'Could not access the microphone.',
+  'canvas.subtitles.micUnavailable': 'Microphone is not available in this browser.',
+  'canvas.subtitles.wsError': 'Subtitle connection failed. Check network and sign-in.',
+  'canvas.subtitles.genericError': 'Subtitle error',
+  'canvas.translation.tooltip': 'Live translation (microphone)',
+  'canvas.translation.aria': 'Toggle live translation',
+  'canvas.translation.listening': 'Listening for translation…',
+  'canvas.translation.micFailed': 'Could not access the microphone.',
+  'canvas.translation.micUnavailable': 'Microphone is not available in this browser.',
+  'canvas.translation.wsError': 'Translation connection failed. Check network and sign-in.',
+  'canvas.translation.genericError': 'Translation error',
+  'canvas.translation.start': 'Start translation',
+  'canvas.translation.stop': 'Stop translation',
   'canvas.topBar.snapshotRecallTooltip': 'スナップショット {n} を復元',
   'canvas.topBar.snapshotRecallTitle': 'スナップショットを復元',
   'canvas.topBar.snapshotRecallConfirm':
@@ -342,7 +364,21 @@ export default {
   'canvas.zoomControls.showPresentationTools': 'プレゼンツールを表示',
   'canvas.zoomControls.hidePresentationTools': 'プレゼンツールを隠す',
   'canvas.zoomControls.hand': '手のひらツール',
+  'canvas.zoomControls.collaborate': 'Collaborate',
+  'canvas.zoomControls.collabWithinOrg': 'Collaborate within school',
+  'canvas.zoomControls.collabCrossOrg': 'Collaborate with shared code',
+  'canvas.zoomControls.collabTurnOff': 'Turn off online collaboration',
   'canvasPage.collaborationFooter': '共同編集',
+  'canvasPage.collaborationFooterOwner': "{username}'s collaboration",
+  'canvasPage.collaborationFooterOwnerDiagram':
+    "{username}'s diagram «{diagramTitle}» — collaboration",
+  'canvasPage.collaborationFooterNetworkDiagramTitle': 'Collaborative diagram «{diagramTitle}»',
+  'canvasPage.collaborationFooterSchool':
+    'School collaboration in progress — join from school list.',
+  'canvasPage.collaborationFooterSchoolDiagram':
+    'School collaboration on «{diagramTitle}» — join from the school session list.',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
   'conceptMap.focus.noResult': '結果なし',
   'conceptMap.focus.validationRequestFailed': '検証リクエストに失敗しました',
   'diagram.aiGenerating': 'AI…',
@@ -511,6 +547,11 @@ export default {
   'landing.template.slot.subject': '対象',
   'landing.template.slot.theme': 'テーマ',
   'landing.template.slot.topic': '中心語',
+  'discovery.gallery.sectionTitle': 'Discover featured diagrams',
+  'discovery.gallery.item1.title': 'Physical vs chemical change',
+  'discovery.gallery.item2.title': 'Project planning mind map',
+  'discovery.gallery.item3.title': 'Quadratic equation walkthrough',
+  'discovery.gallery.item4.title': 'Force and field relationships',
   'mindgraphLanding.cancel': 'キャンセル',
   'mindgraphLanding.codeFormatInvalid': 'プレゼンコードの形式が正しくありません（xxx-xxx の形式）',
   'mindgraphLanding.codeIncomplete': 'プレゼンコードをすべて入力してください',
@@ -518,6 +559,7 @@ export default {
   'mindgraphLanding.dialogSchoolTitle': '学校内の共同編集',
   'mindgraphLanding.dialogSharedTitle': '共有の共同編集',
   'mindgraphLanding.import': 'インポート',
+  'mindgraphLanding.languageMenuTitle': 'Language — syncs interface and AI output',
   'mindgraphLanding.inputPlaceholder': '図の内容を説明するか、下のテンプレートを選んでください…',
   'mindgraphLanding.join': '参加',
   'mindgraphLanding.joinFailed': '参加に失敗しました',
@@ -537,8 +579,6 @@ export default {
   'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome':
     'こんにちは、{username}さん。私はあなたのAIビジュアル思考アシスタントです',
-  'canvasPage.collabRoomIdleEnding':
-    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
   'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
   'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
   'canvasPage.collabRetryConnection': 'Retry',
@@ -546,4 +586,4 @@ export default {
   'canvasPage.collabConnected': 'Connected',
   'canvas.topBar.viewOnly': 'View only',
   'canvasPage.collabParticipantsMore': 'more',
-}
+} as const

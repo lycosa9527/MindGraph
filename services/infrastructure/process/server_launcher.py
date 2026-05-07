@@ -67,7 +67,7 @@ def _positive_float_os_env_optional(name: str, default_positive: float) -> float
     the corresponding Uvicorn option (returns ``None`` so keepalive pings are off).
     """
     raw = os.environ.get(name)
-    if raw is None or raw.strip() == '':
+    if raw is None or raw.strip() == "":
         return default_positive
     try:
         parsed = float(raw)

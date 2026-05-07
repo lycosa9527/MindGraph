@@ -213,4 +213,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': 'Dokumen dimuat naik, memproses...',
   'rag.retrievalTest.failed': 'Ujian pencarian semula gagal',
   'rag.retrievalTest.success': 'Ujian pencarian semula selesai',
-}
+} as const

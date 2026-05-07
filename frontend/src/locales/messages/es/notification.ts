@@ -51,4 +51,4 @@ export default {
     'Se cerró su sesión porque superó el número máximo de dispositivos',
   'notification.signInToUse': 'Inicie sesión para usar esta función',
   'notification.signInToValidateFocus': 'Inicie sesión para validar la pregunta focal',
-}
+} as const

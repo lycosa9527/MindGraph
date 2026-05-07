@@ -1,6 +1,4 @@
-/**
- * az UI — community
- */
+/** az UI — community */
 
 export default {
   'community.category.all': 'Hamısı',
@@ -153,4 +151,4 @@ export default {
   'libraryViewer.bookmarkAdded': 'Əlfəcin əlavə olundu',
   'libraryViewer.bookmarkRemoved': 'Əlfəcin silindi',
   'libraryViewer.operationFailed': 'Əməliyyat alınmadı',
-}
+} as const

@@ -193,9 +193,7 @@ async def ai_assistant_stream(
                     token_tracker = get_token_tracker()
                     input_tokens = captured_usage.get("prompt_tokens", 0)
                     output_tokens = captured_usage.get("completion_tokens", 0)
-                    total_tokens = captured_usage.get(
-                        "total_tokens", input_tokens + output_tokens
-                    )
+                    total_tokens = captured_usage.get("total_tokens", input_tokens + output_tokens)
                     response_time = time.time() - start_time
 
                     await token_tracker.track_usage(
@@ -259,15 +257,9 @@ async def ai_assistant_stream(
         finally:
             if streaming_counter_held:
                 await mindmate_streaming_end()
-            if (
-                streaming_counter_held
-                and chunk_count == 0
-                and not no_chunk_response_sent
-                and not cancelled
-            ):
+            if streaming_counter_held and chunk_count == 0 and not no_chunk_response_sent and not cancelled:
                 logger.warning(
-                    "[STREAM] No Dify payload and no fallback SSE (after stream_open) | "
-                    "user=%s",
+                    "[STREAM] No Dify payload and no fallback SSE (after stream_open) | user=%s",
                     req.user_id,
                 )
 

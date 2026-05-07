@@ -50,10 +50,7 @@ async def _redis_participant_counts(codes: List[str]) -> Dict[str, int] | None:
             for code in codes:
                 pipe.hlen(participants_key(code))
             values = await pipe.execute()
-        return {
-            code: int(values[idx])
-            for idx, code in enumerate(codes)
-        }
+        return {code: int(values[idx]) for idx, code in enumerate(codes)}
     except (RedisError, OSError, TypeError, ValueError):
         return None
 
@@ -92,11 +89,7 @@ async def _sql_list_org_sessions_by_org_id(
             )
             rows = result.all()
             out: List[Dict[str, Any]] = []
-            codes = [
-                str(diagram.workshop_code).strip().upper()
-                for diagram, _owner in rows
-                if diagram.workshop_code
-            ]
+            codes = [str(diagram.workshop_code).strip().upper() for diagram, _owner in rows if diagram.workshop_code]
             counts = await _redis_participant_counts(codes)
             for diagram, owner in rows:
                 code = diagram.workshop_code
@@ -114,9 +107,7 @@ async def _sql_list_org_sessions_by_org_id(
                         "owner_name": owner.name or None,
                         "participant_count": count if count is not None else 0,
                         "expires_at": (
-                            diagram.workshop_expires_at.isoformat() + "Z"
-                            if diagram.workshop_expires_at
-                            else None
+                            diagram.workshop_expires_at.isoformat() + "Z" if diagram.workshop_expires_at else None
                         ),
                         "remaining_seconds": rem,
                     }
@@ -163,9 +154,7 @@ async def list_org_online_collab_sessions_for_user(
     async def _db_fallback() -> List[Dict[str, Any]]:
         return await _sql_list_org_sessions_by_org_id(org_id)
 
-    return await get_online_collab_manager().list_org_sessions(
-        org_id, db_fallback_fn=_db_fallback
-    )
+    return await get_online_collab_manager().list_org_sessions(org_id, db_fallback_fn=_db_fallback)
 
 
 async def _redis_visibility_for_code(code: str) -> Optional[str]:
@@ -267,11 +256,7 @@ async def _compute_online_collab_status_for_viewer(
             "participant_count": count,
             "workshop_visibility": vis,
             "is_owner": diagram.user_id == viewer_user_id,
-            "expires_at": (
-                diagram.workshop_expires_at.isoformat() + "Z"
-                if diagram.workshop_expires_at
-                else None
-            ),
+            "expires_at": (diagram.workshop_expires_at.isoformat() + "Z" if diagram.workshop_expires_at else None),
             "remaining_seconds": rem,
             "duration_preset": diagram.workshop_duration_preset,
         }

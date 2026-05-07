@@ -1,6 +1,4 @@
-/**
- * sq UI — community
- */
+/** sq UI — community */
 
 export default {
   'community.category.all': 'Të gjitha',
@@ -152,4 +150,4 @@ export default {
   'libraryViewer.bookmarkAdded': 'Faqeshënuesi u shtua',
   'libraryViewer.bookmarkRemoved': 'Faqeshënuesi u hoq',
   'libraryViewer.operationFailed': 'Diçka shkoi keq',
-}
+} as const

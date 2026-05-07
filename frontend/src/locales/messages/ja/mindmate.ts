@@ -1,6 +1,4 @@
-/**
- * ja UI — mindmate
- */
+/** ja UI — mindmate */
 
 export default {
   'aiModel.conceptAiOff': 'クリックしてAI関係ラベルを有効にする（複数モデル）',
@@ -13,13 +11,24 @@ export default {
   'aiModel.relationshipsTooltip': '概念をドラッグしてリンクすると、AIが関係を生成します',
   'aiModel.tabFocusBadge': 'Tabフォーカス',
   'aiModel.tabFocusTooltip': 'フォーカス問題の編集中にTabキーで検証し、バーで候補を選ぶ（−／＝）',
+  'aiModel.tabFocusQuestionBadge': 'Tab — フォーカス質問',
+  'aiModel.conceptMapFocusQuestionTabTooltip':
+    'フォーカス質問を選択中または編集中は Tab で AI チェック（まず内容のある質問を入力；ログインが必要です）。',
   'aiModel.tabRecBadge': 'Tabおすすめ',
+  'aiModel.tabContentRecBadge': 'Tab — 内容',
+  'aiModel.tabRelationshipRecBadge': 'Tab — 関係',
+  'aiModel.conceptMapConceptTabTooltip':
+    '編集モード（単独の概念）：別の言い回しのために Tab（トピックが設定されている必要があります）。',
+  'aiModel.conceptMapRelationshipTabTooltip':
+    '編集または選択モード（リンクされた概念）：フォーカスリンクの関係候補のために Tab。',
   'aiModel.tooltip.clickDeselect': 'クリックで{name}の選択を解除',
   'aiModel.tooltip.clickSelect': 'クリックで{name}を選択',
   'aiModel.tooltip.clickSwitch': 'クリックで{name}の結果に切り替え',
   'aiModel.tooltip.generating': '{name}を生成中…',
   'aiModel.tooltip.modelFailed': '{name}の生成に失敗しました',
   'aiModel.tooltip.showingResult': '現在{name}の結果を表示中',
+  'aiModel.hostPickBadgeTooltip': 'ホストがこのモデルの図バージョンを編集中です（複数モデル表示）',
+  'aiModel.hostPickBadgeAria': 'ホストが{name}で編集中です',
   'autoComplete.collabOwnerOnly': '共同編集中は図の所有者のみAI生成を利用できます',
   'autoComplete.conceptMapRealtime':
     'コンセプトマップはリアルタイムの関係候補を使います。リンクを作成して生成してください',
@@ -155,4 +164,4 @@ export default {
   'rootConceptModal.tabTitleRoot': 'ルート概念：{text}',
   'rootConceptModal.title': 'ルート概念',
   'rootConceptModal.titleConceptList': '概念リスト',
-}
+} as const

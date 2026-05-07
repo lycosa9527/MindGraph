@@ -1,6 +1,4 @@
-/**
- * fr UI — community
- */
+/** fr UI — community */
 
 export default {
   'community.category.all': 'Tous',
@@ -158,4 +156,4 @@ export default {
   'libraryViewer.bookmarkAdded': 'Marque-page ajouté',
   'libraryViewer.bookmarkRemoved': 'Marque-page supprimé',
   'libraryViewer.operationFailed': 'Une erreur s’est produite',
-}
+} as const

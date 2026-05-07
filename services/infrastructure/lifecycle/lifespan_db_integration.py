@@ -45,8 +45,7 @@ async def lifespan_startup_database_phase(is_main_worker: bool) -> None:
                 component="Database",
                 error_message="Database recovery failed or was aborted",
                 details=(
-                    "Database integrity check failed and recovery was not successful. "
-                    "Manual intervention required."
+                    "Database integrity check failed and recovery was not successful. Manual intervention required."
                 ),
             )
         except Exception as alert_error:  # pylint: disable=broad-except
@@ -118,8 +117,7 @@ async def lifespan_startup_database_phase(is_main_worker: bool) -> None:
             if not preload_auth_cache:
                 if is_main_worker:
                     logger.info(
-                        "[CacheLoader] User auth cache preloading skipped "
-                        "(PRELOAD_USER_AUTH_CACHE disabled)",
+                        "[CacheLoader] User auth cache preloading skipped (PRELOAD_USER_AUTH_CACHE disabled)",
                     )
                 return True
 
@@ -138,9 +136,7 @@ async def lifespan_startup_database_phase(is_main_worker: bool) -> None:
                         logger.info("IP Geolocation Service initialized successfully")
                     return True
                 if is_main_worker:
-                    logger.warning(
-                        "IP Geolocation database not available (database file missing or failed to load)"
-                    )
+                    logger.warning("IP Geolocation database not available (database file missing or failed to load)")
                 return False
             except Exception as exc:  # pylint: disable=broad-except
                 if is_main_worker:
@@ -166,9 +162,7 @@ async def lifespan_startup_database_phase(is_main_worker: bool) -> None:
         elif preload_auth_cache:
             if is_main_worker:
                 logger.warning("[CacheLoader] Cache loading returned False - cache may not be preloaded")
-                logger.warning(
-                    "[CacheLoader] WARNING: User authentication data may not be preloaded into Redis cache"
-                )
+                logger.warning("[CacheLoader] WARNING: User authentication data may not be preloaded into Redis cache")
 
         if isinstance(ip_db_result, Exception):
             if is_main_worker:

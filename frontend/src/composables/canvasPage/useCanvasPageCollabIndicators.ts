@@ -131,7 +131,9 @@ function sampleWorkshopAntColorFromNodeWrapper(wrapper: HTMLElement): string | n
     return fromRing
   }
 
-  const byArea = [...visibleDirect].sort((a, b) => antSampleElementArea(b) - antSampleElementArea(a))
+  const byArea = [...visibleDirect].sort(
+    (a, b) => antSampleElementArea(b) - antSampleElementArea(a)
+  )
   for (const el of byArea) {
     const sampled = samplePaintFromElement(el)
     if (sampled !== null) {

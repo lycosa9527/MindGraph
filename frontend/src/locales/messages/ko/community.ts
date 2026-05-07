@@ -1,6 +1,4 @@
-/**
- * ko UI — community
- */
+/** ko UI — community */
 
 export default {
   'community.category.all': '전체',
@@ -151,4 +149,4 @@ export default {
   'libraryViewer.bookmarkAdded': '북마크에 추가됨',
   'libraryViewer.bookmarkRemoved': '북마크가 제거됨',
   'libraryViewer.operationFailed': '문제가 발생했습니다',
-}
+} as const

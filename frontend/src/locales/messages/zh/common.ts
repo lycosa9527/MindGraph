@@ -1,6 +1,4 @@
-/**
- * zh UI — common
- */
+/** zh UI — common */
 
 export default {
   'app.aiDisclaimer': '内容由AI生成，请仔细甄别',
@@ -133,4 +131,4 @@ export default {
   'landing.international.shareSiteModalHint': '',
   'landing.international.shareSiteCopy': '复制注册链接',
   'landing.international.shareSiteCopied': '链接已复制',
-}
+} as const

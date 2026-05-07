@@ -132,8 +132,7 @@ async def destroy_and_stop_db_for_idle(
         acquired = None
     if not acquired:
         logger.debug(
-            "[OnlineCollabMgr] destroy_and_stop_db: skipped "
-            "(another worker holds destroy lock) code=%s reason=%s",
+            "[OnlineCollabMgr] destroy_and_stop_db: skipped (another worker holds destroy lock) code=%s reason=%s",
             code,
             reason,
         )
@@ -153,9 +152,7 @@ async def destroy_and_stop_db_for_idle(
     await broadcast_workshop_room_idle_shutdown(code)
     await asyncio.sleep(0.08)
 
-    stopped = await manager.stop_online_collab_for_room_idle(
-        diagram_id, code.upper()
-    )
+    stopped = await manager.stop_online_collab_for_room_idle(diagram_id, code.upper())
     if stopped:
         logger.info(
             "[OnlineCollabMgr] session_destroyed code=%s reason=%s diagram_id=%s",
@@ -217,8 +214,7 @@ async def evaluate_stale_code(manager: _IdleKickTarget, code: str, now: int) -> 
 
     if not diagram_id:
         logger.warning(
-            "[OnlineCollabMgr] orphan_session_meta code=%s "
-            "(missing diagram_id) — removing from idle_scores",
+            "[OnlineCollabMgr] orphan_session_meta code=%s (missing diagram_id) — removing from idle_scores",
             code,
         )
         try:
@@ -231,9 +227,7 @@ async def evaluate_stale_code(manager: _IdleKickTarget, code: str, now: int) -> 
     if expires_at_str:
         try:
             if now > int(expires_at_str):
-                await destroy_and_stop_db_for_idle(
-                    manager, code, diagram_id, "expired"
-                )
+                await destroy_and_stop_db_for_idle(manager, code, diagram_id, "expired")
                 return
         except (TypeError, ValueError):
             pass
@@ -267,8 +261,7 @@ async def idle_monitor_loop(manager: _IdleKickTarget) -> None:
     Exponential back-off on repeated Redis failures (max 5 extra sleeps).
     """
     logger.info(
-        "[OnlineCollabMgr] Idle monitor started interval=%ss zombie_grace=%ss "
-        "idle_silence=%ss idle_grace=%ss",
+        "[OnlineCollabMgr] Idle monitor started interval=%ss zombie_grace=%ss idle_silence=%ss idle_grace=%ss",
         MONITOR_INTERVAL,
         ZOMBIE_GRACE_SEC,
         IDLE_SILENCE_SEC,
@@ -281,9 +274,7 @@ async def idle_monitor_loop(manager: _IdleKickTarget) -> None:
 
             redis = get_async_redis()
             if not redis:
-                logger.warning(
-                    "[OnlineCollabMgr] idle monitor: redis_unavailable_fallback"
-                )
+                logger.warning("[OnlineCollabMgr] idle monitor: redis_unavailable_fallback")
                 backoff = min(backoff + 1, 5)
                 await asyncio.sleep(MONITOR_INTERVAL * backoff)
                 continue
@@ -293,24 +284,16 @@ async def idle_monitor_loop(manager: _IdleKickTarget) -> None:
             stale_cutoff = float(now - ZOMBIE_GRACE_SEC)
 
             try:
-                stale_raw = await redis.zrangebyscore(
-                    idle_scores_key(), 0, stale_cutoff
-                )
+                stale_raw = await redis.zrangebyscore(idle_scores_key(), 0, stale_cutoff)
             except (RedisError, OSError, TypeError, RuntimeError) as exc:
-                logger.warning(
-                    "[OnlineCollabMgr] idle monitor: zrangebyscore error: %s", exc
-                )
+                logger.warning("[OnlineCollabMgr] idle monitor: zrangebyscore error: %s", exc)
                 continue
 
             if not stale_raw:
                 continue
 
-            stale_codes = [
-                c.decode("utf-8") if isinstance(c, bytes) else c for c in stale_raw
-            ]
-            logger.debug(
-                "[OnlineCollabMgr] monitor_cycle_start n_stale=%s", len(stale_codes)
-            )
+            stale_codes = [c.decode("utf-8") if isinstance(c, bytes) else c for c in stale_raw]
+            logger.debug("[OnlineCollabMgr] monitor_cycle_start n_stale=%s", len(stale_codes))
             record_ws_idle_monitor_cycle()
 
             sem = asyncio.Semaphore(MONITOR_CONCURRENCY)
@@ -321,8 +304,7 @@ async def idle_monitor_loop(manager: _IdleKickTarget) -> None:
                         await evaluate_stale_code(manager, c, now)
                     except (RedisError, OSError, RuntimeError, TypeError, ValueError, AttributeError) as exc:
                         logger.warning(
-                            "[OnlineCollabMgr] _evaluate_stale_code failed "
-                            "code=%s: %s",
+                            "[OnlineCollabMgr] _evaluate_stale_code failed code=%s: %s",
                             c,
                             exc,
                         )
@@ -335,9 +317,7 @@ async def idle_monitor_loop(manager: _IdleKickTarget) -> None:
                     )
 
         except asyncio.CancelledError:
-            logger.info(
-                "[OnlineCollabMgr] Idle monitor task cancelled, shutting down"
-            )
+            logger.info("[OnlineCollabMgr] Idle monitor task cancelled, shutting down")
             raise
         except (RedisError, OSError, RuntimeError, TypeError, ValueError, AttributeError) as exc:
             logger.error(

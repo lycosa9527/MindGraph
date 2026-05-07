@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.4] - 2026-05-07
+
+### Changed
+
+- **Locales** — wide refresh of [`frontend/src/locales/messages/`](frontend/src/locales/messages/) bundles (key alignment with English reference); [`frontend/scripts/sync-messages-keys-from-reference.ts`](frontend/scripts/sync-messages-keys-from-reference.ts); server message catalog and locale plumbing ([`models/domain/message_catalog/`](models/domain/message_catalog/), [`models/domain/api_locale.py`](models/domain/api_locale.py)).
+- **Online collab / workshop** — coordinated updates across [`services/online_collab/`](services/online_collab/) (Redis locks, scripts, health, live-spec merge/flush, snapshots, WS editor hash/merge/rate limits, join/resume tokens, lifecycle/cleanup); workshop REST and WebSocket layers ([`routers/api/workshop_ws_handlers_update.py`](routers/api/workshop_ws_handlers_update.py), [`workshop_ws_handlers_update_validate.py`](routers/api/workshop_ws_handlers_update_validate.py), [`workshop_ws_update_schema.py`](routers/api/workshop_ws_update_schema.py), [`diagrams_workshop_routes.py`](routers/api/diagrams_workshop_routes.py), [`diagrams.py`](routers/api/diagrams.py)); WebSocket helpers ([`utils/ws_context.py`](utils/ws_context.py), [`ws_session_registry.py`](utils/ws_session_registry.py), [`collab_ws_origin.py`](utils/collab_ws_origin.py)); [`services/features/ws_pg_notify_fanout.py`](services/features/ws_pg_notify_fanout.py), [`services/infrastructure/ws/redis_collab_conn_cap.py`](services/infrastructure/ws/redis_collab_conn_cap.py), lifespan integration; [`config/database.py`](config/database.py); [`loadtests/collab/locustfile.py`](loadtests/collab/locustfile.py) and collab scripts under [`scripts/`](scripts/).
+- **Canvas & mobile** — collab UI ([`CanvasCollabOverlay.vue`](frontend/src/components/canvas/CanvasCollabOverlay.vue), [`OnlineCollabModal.vue`](frontend/src/components/canvas/OnlineCollabModal.vue)), diagram diff/zoom/styles ([`diagramDiff.ts`](frontend/src/composables/canvasPage/diagramDiff.ts), [`diagramCanvasZoomPaneStyles.ts`](frontend/src/composables/diagramCanvas/diagramCanvasZoomPaneStyles.ts), [`diagramCanvas.css`](frontend/src/components/diagram/diagramCanvas.css)), workshop composables ([`useCollabSyncVersion.ts`](frontend/src/composables/workshop/useCollabSyncVersion.ts), [`useWorkshop.ts`](frontend/src/composables/workshop/useWorkshop.ts), [`useWorkshopMessageHandlers.ts`](frontend/src/composables/workshop/useWorkshopMessageHandlers.ts), [`useWorkshopPresence.ts`](frontend/src/composables/workshop/useWorkshopPresence.ts)); canvas pages ([`CanvasPage.vue`](frontend/src/pages/CanvasPage.vue), mobile canvas/home/kitty); panels and gallery ([`NodePalettePanel.vue`](frontend/src/components/panels/NodePalettePanel.vue), [`RootConceptModal.vue`](frontend/src/components/panels/RootConceptModal.vue), [`DiscoveryGallery.vue`](frontend/src/components/mindgraph/DiscoveryGallery.vue), [`DiagramHistory.vue`](frontend/src/components/sidebar/DiagramHistory.vue)); editor/diagram operations, labels, voice mutations, toolbar apps, mounted handlers, collab indicators; [`frontend/src/stores/diagram/specIO.ts`](frontend/src/stores/diagram/specIO.ts).
+- **Kitty** — UI and composables ([`KittyAgentPanel.vue`](frontend/src/components/kitty/KittyAgentPanel.vue), [`KittyCanvasAnchor.vue`](frontend/src/components/kitty/KittyCanvasAnchor.vue), pairing/focus/mobile helpers under [`frontend/src/composables/kitty/`](frontend/src/composables/kitty/)); [`services/kitty/kitty_session_redis.py`](services/kitty/kitty_session_redis.py).
+- **Agents** — inline concept-map recommendations and palette context ([`agents/inline_recommendations/`](agents/inline_recommendations/), [`agents/node_palette/base_palette_generator.py`](agents/node_palette/base_palette_generator.py), [`prompts/node_palette.py`](prompts/node_palette.py)).
+- **Live translation & content** — follow-up in [`routers/api/live_translate_ws.py`](routers/api/live_translate_ws.py), [`services/features/live_translate_bridge.py`](services/features/live_translate_bridge.py), [`routers/api/web_content_generation.py`](routers/api/web_content_generation.py).
+- **Agent hub** — [`services/agent_hub/scope_lifecycle.py`](services/agent_hub/scope_lifecycle.py), [`services/agent_hub/snapshot.py`](services/agent_hub/snapshot.py).
+- **Tooling** — Pylint [`ignore-paths`](pyproject.toml) adds generated [`models/domain/message_catalog/bundled_messages.py`](models/domain/message_catalog/bundled_messages.py); [`services/infrastructure/process/server_launcher.py`](services/infrastructure/process/server_launcher.py) and related lifespan tweaks.
+
+### Tests
+
+- Backend workshop/collab/live-spec/WS fanout tests updated under [`tests/`](tests/) for the above behavior.
+- Frontend Vitest: [`useCollabOutboundQueue.spec.ts`](frontend/tests/useCollabOutboundQueue.spec.ts), [`useCollabSyncVersion.spec.ts`](frontend/tests/useCollabSyncVersion.spec.ts), [`useWorkshopHeartbeat.spec.ts`](frontend/tests/useWorkshopHeartbeat.spec.ts), [`useWorkshopReconnect.spec.ts`](frontend/tests/useWorkshopReconnect.spec.ts), [`diagramNodeToVueFlowNode.spec.ts`](frontend/tests/diagramNodeToVueFlowNode.spec.ts).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.4).
+
 ## [5.117.3] - 2026-05-07
 
 ### Added

@@ -16,7 +16,8 @@ _KEY_TMPL = "mg:ws:collab:user:{uid}:open"
 
 def redis_collab_socket_cap_enabled() -> bool:
     return os.getenv(
-        "COLLAB_WS_REDIS_GLOBAL_SOCKET_CAP", "0",
+        "COLLAB_WS_REDIS_GLOBAL_SOCKET_CAP",
+        "0",
     ) not in ("0", "false", "False", "")
 
 
@@ -48,13 +49,16 @@ async def try_acquire_collab_redis_socket_slot(user_id: int) -> bool:
                 await client.delete(key)
             logger.warning(
                 "[WSCollabCap] Redis cap exceeded user_id=%s ceiling=%s",
-                user_id, ceiling,
+                user_id,
+                ceiling,
             )
             return False
         return True
     except RedisError as exc:
         logger.debug(
-            "[WSCollabCap] incr failed user_id=%s: %s — allowing", user_id, exc,
+            "[WSCollabCap] incr failed user_id=%s: %s — allowing",
+            user_id,
+            exc,
         )
         return True
 

@@ -217,4 +217,4 @@ export default {
     'Dokument is suksesvol opgelaai, besig met verwerking...',
   'rag.retrievalTest.failed': 'Oproep-toets het misluk',
   'rag.retrievalTest.success': 'Oproep-toets is voltooi',
-}
+} as const

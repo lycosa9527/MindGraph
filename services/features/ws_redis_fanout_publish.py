@@ -50,7 +50,7 @@ def _envelope_with_workshop_msg_id(envelope: Dict[str, Any]) -> Dict[str, Any]:
     ``deliver_local_workshop_broadcast`` using that field.
     """
     out = dict(envelope)
-    payload = out.get('d')
+    payload = out.get("d")
     inner: Optional[Dict[str, Any]] = None
     if isinstance(payload, str):
         try:
@@ -60,17 +60,19 @@ def _envelope_with_workshop_msg_id(envelope: Dict[str, Any]) -> Dict[str, Any]:
         if isinstance(parsed, dict):
             inner = parsed
     if isinstance(inner, dict):
-        raw_mid = inner.get('msg_id')
+        raw_mid = inner.get("msg_id")
         mid_ok = isinstance(raw_mid, str) and bool(raw_mid.strip())
         if not mid_ok:
             inner_copy = dict(inner)
-            inner_copy['msg_id'] = secrets.token_hex(12)
-            out['d'] = json.dumps(inner_copy, ensure_ascii=False)
+            inner_copy["msg_id"] = secrets.token_hex(12)
+            out["d"] = json.dumps(inner_copy, ensure_ascii=False)
     return out
 
 
 async def _publish_with_channel_transport(
-    client: Any, channel: str, body: str,
+    client: Any,
+    channel: str,
+    body: str,
 ) -> None:
     """
     Deliver ``body`` via the best available push transport.
@@ -90,8 +92,9 @@ async def _publish_with_channel_transport(
             return
         except RedisError as exc:
             logger.debug(
-                "[WSFanout] SPUBLISH failed channel=%s (%s) — falling back "
-                "to PUBLISH", channel, exc,
+                "[WSFanout] SPUBLISH failed channel=%s (%s) — falling back to PUBLISH",
+                channel,
+                exc,
             )
     try:
         await client.publish(channel, body)
@@ -106,9 +109,12 @@ async def _audit_xadd(client: Any, body: str) -> None:
         await client.execute_command(
             "XADD",
             WORKSHOP_FANOUT_STREAM_KEY,
-            "MAXLEN", "~", str(WORKSHOP_FANOUT_STREAM_MAXLEN),
+            "MAXLEN",
+            "~",
+            str(WORKSHOP_FANOUT_STREAM_MAXLEN),
             "*",
-            "d", body,
+            "d",
+            body,
         )
     except RedisError as exc:
         logger.debug("[WSFanout] audit XADD failed: %s", exc)
@@ -185,12 +191,14 @@ async def publish_workshop_fanout_async(envelope: Dict[str, Any]) -> None:
             if isinstance(_inner, str):
                 _parsed = json.loads(_inner)
                 logger.debug(
-                    "[WSFanout] publish_ok channel=%s code=%s mode=%s"
-                    " msg_type=%s seq=%s version=%s msg_id=%s",
+                    "[WSFanout] publish_ok channel=%s code=%s mode=%s msg_type=%s seq=%s version=%s msg_id=%s",
                     WORKSHOP_FANOUT_CHANNEL,
-                    out.get("code"), out.get("mode"),
-                    _parsed.get("type"), _parsed.get("seq"),
-                    _parsed.get("version"), _parsed.get("msg_id"),
+                    out.get("code"),
+                    out.get("mode"),
+                    _parsed.get("type"),
+                    _parsed.get("seq"),
+                    _parsed.get("version"),
+                    _parsed.get("msg_id"),
                 )
         except Exception:
             pass

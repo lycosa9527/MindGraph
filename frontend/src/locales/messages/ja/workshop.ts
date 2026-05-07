@@ -1,4 +1,4 @@
-/** ja UI workshop */
+/** ja UI — workshop */
 
 export default {
   'collab.codeCopied': 'コードをコピーしまし…',
@@ -27,6 +27,8 @@ export default {
   'collab.noDiagramToSave': '保存する図がありませ…',
   'collab.nodeLocked': '他の人がこのノードを編集中で…',
   'collab.participants': '参加者{n}…',
+  'collab.previousSessionsStopped':
+    'Ended {n} previous collaboration session(s) on your other diagrams.',
   'collab.saveFailed': '図を保存できませんでした',
   'collab.scanToJoin': 'スキャンして参加',
   'collab.schoolDescActive':
@@ -337,15 +339,31 @@ export default {
   'workshop.you': '（あなた…',
   'workshop.youAnd': 'あなたと',
   'workshopCanvas.connectFailed': '共同編集に接続できませんでし…',
+  'workshopCanvas.sessionExpiredReconnect':
+    'Your session has expired. Please refresh the page to re-join the collaboration.',
+  'workshopCanvas.sessionRefreshFailed':
+    'Could not refresh your collaboration session. Please save your work and sign in again.',
+  'workshopCanvas.outboundQueueDegraded':
+    'Collaboration is falling behind. Some unsent edits could not be kept.',
   'workshopCanvas.connectionClosed': '接続が閉じられました',
+  'workshopCanvas.connectionClosedSlow':
+    'Connection closed: your connection was too slow to keep up with the collaboration session.',
+  'workshopCanvas.sessionEndedByHost': 'The host has ended the collaboration session.',
+  'workshopCanvas.editingNodeLabel': '{username} is editing…',
+  'workshopCanvas.collabEditorDisplayNameFallback': 'Someone',
   'workshopCanvas.connectionClosedReason': '共同編集の接続が閉じられました：{reason}',
   'workshopCanvas.editingNode': '{username} {emoji} がこのノードを編集中',
   'workshopCanvas.errorGeneric': '共同編集エラ…',
+  'workshopCanvas.updatePartialFiltered':
+    'Some edits were skipped ({count} node(s)) because another collaborator is editing those nodes.',
   'workshopCanvas.reconnectFailed': '共同編集に再接続できませんでした。ページを更新してくださ…',
+  'workshopCanvas.resyncWaiting':
+    'Live diagram sync is taking longer than expected. Retrying; you can refresh if editing feels stuck.',
   'workshopCanvas.returnedHomeIdle': 'ホームに戻りまし図の編集0分ありませんでした…',
   'workshopCanvas.userJoined': 'ユーザー {username} が参加しまし…',
   'workshopCanvas.usersJoined': '{count} users joined',
   'workshopCanvas.userLeft': 'ユーザー {username} が退出しまし,',
+  'workshopCanvas.usersLeft': '{count} users left',
   'workshopCanvas.wsError': '共同編集の接続エラーです。ネットワークを確認してください',
   'workshopCanvas.returnedHomeRoomIdle':
     'Collaboration ended: no diagram edits in this session for a while.',
@@ -354,4 +372,4 @@ export default {
   'workshopCanvas.otherTabCollaborationActive':
     'Collaboration continues in another tab or window for this account.',
   'workshopCanvas.joinQrAlt': 'Join collaboration QR code',
-}
+} as const

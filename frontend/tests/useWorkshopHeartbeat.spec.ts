@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
+
+import { describe, expect, it, vi } from 'vitest'
 
 import { useWorkshopHeartbeat } from '@/composables/workshop/useWorkshopHeartbeat'
 

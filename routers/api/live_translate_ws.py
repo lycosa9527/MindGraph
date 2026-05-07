@@ -75,9 +75,7 @@ async def canvas_translate_websocket(websocket: WebSocket) -> None:
     except Exception:
         logger.exception("[CanvasTranslate] Unhandled error after accept")
         with contextlib.suppress(Exception):
-            await safe_websocket_send_text(
-                websocket, translate_error_json("internal", "Translation session error")
-            )
+            await safe_websocket_send_text(websocket, translate_error_json("internal", "Translation session error"))
         with contextlib.suppress(Exception):
             await websocket.close(code=1011)
 

@@ -3,13 +3,23 @@
  * DiscoveryGallery - Featured diagrams gallery with Cover Flow style 3D carousel
  * Uses vue3-carousel-3d for Apple iPod Cover Flow effect
  */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { Carousel3d, Slide } from 'vue3-carousel-3d'
 import 'vue3-carousel-3d/dist/index.css'
 
 import { ImagePreviewModal } from '@/components/common'
+import { useLanguage } from '@/composables'
 
-interface GalleryItem {
+const { t } = useLanguage()
+
+interface GallerySpecRow {
+  titleKey: string
+  date: string
+  imageUrl: string
+  thumbnailUrl: string
+}
+
+interface GallerySlideRow {
   title: string
   date: string
   imageUrl: string
@@ -17,37 +27,46 @@ interface GalleryItem {
 }
 
 // Gallery images are stored in frontend/public/gallery/
-const galleryItems: GalleryItem[] = [
+const gallerySpecs: GallerySpecRow[] = [
   {
-    title: '物理变化与化学变化对比',
+    titleKey: 'discovery.gallery.item1.title',
     date: '2025-12-18',
     imageUrl: '/gallery/gallery-1.png',
     thumbnailUrl: '/gallery/gallery-1.png',
   },
   {
-    title: '项目规划思维导图',
+    titleKey: 'discovery.gallery.item2.title',
     date: '2025-12-17',
     imageUrl: '/gallery/gallery-2.png',
     thumbnailUrl: '/gallery/gallery-2.png',
   },
   {
-    title: '一元二次方程解题步骤',
+    titleKey: 'discovery.gallery.item3.title',
     date: '2025-12-16',
     imageUrl: '/gallery/gallery-3.png',
     thumbnailUrl: '/gallery/gallery-3.png',
   },
   {
-    title: '力与场的关系',
+    titleKey: 'discovery.gallery.item4.title',
     date: '2025-12-15',
     imageUrl: '/gallery/gallery-4.png',
     thumbnailUrl: '/gallery/gallery-4.png',
   },
 ]
 
+const galleryItems = computed(() =>
+  gallerySpecs.map((s) => ({
+    title: t(s.titleKey),
+    date: s.date,
+    imageUrl: s.imageUrl,
+    thumbnailUrl: s.thumbnailUrl,
+  }))
+)
+
 const showModal = ref(false)
 const selectedIndex = ref(0)
 
-function handleImageClick(item: GalleryItem, index: number) {
+function handleImageClick(item: GallerySlideRow, index: number) {
   selectedIndex.value = index
   showModal.value = true
 }
@@ -56,17 +75,19 @@ function handleCloseModal() {
   showModal.value = false
 }
 
-const galleryImages = galleryItems.map((item) => ({
-  title: item.title,
-  imageUrl: item.thumbnailUrl,
-}))
+const galleryImages = computed(() =>
+  galleryItems.value.map((item) => ({
+    title: item.title,
+    imageUrl: item.thumbnailUrl,
+  }))
+)
 </script>
 
 <template>
   <div class="discovery-gallery">
     <!-- Section title - Swiss design -->
     <div class="mt-8 text-left text-sm font-semibold text-stone-500 leading-none pb-0 mb-0">
-      发现精彩图示
+      {{ t('discovery.gallery.sectionTitle') }}
     </div>
 
     <!-- Cover Flow style 3D carousel -->
@@ -85,7 +106,7 @@ const galleryImages = galleryItems.map((item) => ({
       >
         <Slide
           v-for="(item, index) in galleryItems"
-          :key="`gallery-${index}`"
+          :key="item.thumbnailUrl"
           :index="index"
         >
           <div

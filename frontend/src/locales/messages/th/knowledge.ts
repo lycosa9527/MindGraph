@@ -213,4 +213,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': 'อัปโหลดเอกสารสำเร็จ กำลังประมวลผล...',
   'rag.retrievalTest.failed': 'การทดสอบการค้นคืนล้มเหลว',
   'rag.retrievalTest.success': 'การทดสอบการค้นคืนเสร็จสมบูรณ์',
-}
+} as const

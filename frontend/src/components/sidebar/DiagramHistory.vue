@@ -21,7 +21,6 @@ import { Edit3, FileImage, Lock, MoreHorizontal, Pin, Power, Trash2, Users } fro
 
 import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
-
 import { useAuthStore } from '@/stores'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 

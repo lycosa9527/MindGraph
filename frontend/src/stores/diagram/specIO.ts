@@ -318,9 +318,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
   ): boolean {
     if (!ctx.data.value) return false
 
-    const deletedThisBatch = new Set(
-      deletedNodeIds ? deletedNodeIds.filter(Boolean) : [],
-    )
+    const deletedThisBatch = new Set(deletedNodeIds ? deletedNodeIds.filter(Boolean) : [])
 
     if (deletedNodeIds && deletedNodeIds.length > 0) {
       const toDelete = new Set(deletedNodeIds.filter(Boolean))
@@ -404,7 +402,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     const nodeIdSet = new Set(ctx.data.value.nodes.map((n) => n.id))
     if (ctx.data.value.connections?.length) {
       ctx.data.value.connections = ctx.data.value.connections.filter(
-        (c) => nodeIdSet.has(c.source) && nodeIdSet.has(c.target),
+        (c) => nodeIdSet.has(c.source) && nodeIdSet.has(c.target)
       )
     }
 

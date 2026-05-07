@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from __future__ import annotations
 
 import json
@@ -89,14 +90,7 @@ async def promote_to_editor(
         if not isinstance(handle, ViewerHandle):
             return False
 
-        new_role = (
-            "host"
-            if (
-                diagram_owner_id is not None
-                and target_user_id == diagram_owner_id
-            )
-            else "editor"
-        )
+        new_role = "host" if (diagram_owner_id is not None and target_user_id == diagram_owner_id) else "editor"
         new_handle = ConnectionHandle(
             websocket=handle.websocket,
             code=code,
@@ -122,7 +116,10 @@ async def promote_to_editor(
         await _broadcast_others_promo(code, target_user_id, role_changed)
     logger.info(
         "[RoleChange] user=%s promoted to %s in room=%s by user=%s",
-        target_user_id, new_role, code, promoted_by,
+        target_user_id,
+        new_role,
+        code,
+        promoted_by,
     )
     return True
 
@@ -181,7 +178,9 @@ async def demote_to_viewer(
         await _broadcast_others_demo(code, target_user_id, role_changed)
     logger.info(
         "[RoleChange] user=%s demoted to viewer in room=%s by user=%s",
-        target_user_id, code, demoted_by,
+        target_user_id,
+        code,
+        demoted_by,
     )
     return True
 
@@ -297,21 +296,14 @@ async def handle_role_change(ctx: Any, message: dict) -> None:
     if not success:
         err_reason = ""
         room_h = ACTIVE_CONNECTIONS.get(ctx.code, {}).get(target_uid)
-        if (
-            to_role == "viewer"
-            and isinstance(room_h, ConnectionHandle)
-            and room_h.role == "host"
-        ):
+        if to_role == "viewer" and isinstance(room_h, ConnectionHandle) and room_h.role == "host":
             err_reason = "; cannot demote the room host"
 
         await enqueue(
             requester_handle,
             {
                 "type": "error",
-                "message": (
-                    f"role_change: user {target_uid} not found "
-                    f"or already {to_role}{err_reason}"
-                ),
+                "message": (f"role_change: user {target_uid} not found or already {to_role}{err_reason}"),
             },
             "error",
         )
@@ -322,6 +314,7 @@ async def handle_role_change(ctx: Any, message: dict) -> None:
             record_ws_role_promotion,
             record_ws_role_demotion,
         )
+
         if to_role == "editor":
             record_ws_role_promotion()
         else:

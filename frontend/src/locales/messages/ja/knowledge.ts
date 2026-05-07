@@ -213,4 +213,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': 'ドキュメントをアップロードしました。処理中です…',
   'rag.retrievalTest.failed': '検索テストに失敗しました',
   'rag.retrievalTest.success': '検索テストが完了しました',
-}
+} as const

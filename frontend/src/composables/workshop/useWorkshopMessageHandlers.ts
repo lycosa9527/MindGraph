@@ -213,7 +213,9 @@ export function dispatchWorkshopMessage(
         deps.flushOutboundQueue()
         deps.flushHostLlmModelToGuests?.()
       } else if (import.meta.env.DEV) {
-        console.warn('[WorkshopWS] snapshot missing spec handler or spec payload; baseline not ready')
+        console.warn(
+          '[WorkshopWS] snapshot missing spec handler or spec payload; baseline not ready'
+        )
       }
       break
     }
@@ -394,20 +396,11 @@ export function dispatchWorkshopMessage(
         typeof message.diagram_id === 'string' && message.diagram_id.trim()
           ? message.diagram_id.trim()
           : null
-      const sessionId =
-        deps.mutable.sessionDiagramId ?? deps.diagramId.value?.trim() ?? null
-      if (
-        frameDiagramId != null &&
-        sessionId != null &&
-        frameDiagramId !== sessionId
-      ) {
+      const sessionId = deps.mutable.sessionDiagramId ?? deps.diagramId.value?.trim() ?? null
+      if (frameDiagramId != null && sessionId != null && frameDiagramId !== sessionId) {
         break
       }
-      if (
-        announcer == null ||
-        ownerId == null ||
-        String(announcer) !== String(ownerId)
-      ) {
+      if (announcer == null || ownerId == null || String(announcer) !== String(ownerId)) {
         break
       }
       const raw = message.model
@@ -514,11 +507,7 @@ export function dispatchWorkshopMessage(
       } else if (message.reason === 'session_ended') {
         const myKickId = Number(deps.auth.getCurrentUserIdString())
         const sessionOwnerId = deps.diagramOwnerId.value
-        if (
-          sessionOwnerId != null &&
-          Number.isFinite(myKickId) &&
-          myKickId !== sessionOwnerId
-        ) {
+        if (sessionOwnerId != null && Number.isFinite(myKickId) && myKickId !== sessionOwnerId) {
           deps.notify.info(deps.t('workshopCanvas.sessionEndedByHost'))
         }
       } else if (message.reason === 'replaced_by_new_session') {

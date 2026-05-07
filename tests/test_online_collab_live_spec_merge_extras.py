@@ -29,4 +29,4 @@ def test_prune_drops_edges_to_deleted_endpoints():
         ],
     }
     merge_granular_into_spec(spec, None, None)
-    assert spec["connections"] == []
+    assert not spec["connections"]

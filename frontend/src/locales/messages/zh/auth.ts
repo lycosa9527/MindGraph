@@ -1,6 +1,4 @@
-/**
- * zh UI — auth
- */
+/** zh UI — auth */
 
 export default {
   'auth.accountInfo': '账户信息',
@@ -154,4 +152,4 @@ export default {
   'auth.accountNameSave': '保存姓名',
   'auth.accountNameSaveSuccess': '姓名已更新',
   'auth.accountNameSaveError': '保存失败，请重试',
-}
+} as const

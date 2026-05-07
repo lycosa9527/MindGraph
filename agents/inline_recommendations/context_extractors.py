@@ -361,11 +361,7 @@ def _primary_concept_incident_connection(
     current_node_id: str, connections: List[Dict[str, Any]]
 ) -> Optional[Dict[str, Any]]:
     """Same ordering as frontend Tab rec: all incident edges, then sort by connection id."""
-    incident = [
-        c
-        for c in connections
-        if current_node_id in ((c.get("source") or ""), (c.get("target") or ""))
-    ]
+    incident = [c for c in connections if current_node_id in ((c.get("source") or ""), (c.get("target") or ""))]
     if not incident:
         return None
     return sorted(incident, key=lambda c: c.get("id") or "")[0]

@@ -103,9 +103,7 @@ __all__ = [
 # Process-wide backstop: prevents a single process from being saturated by
 # too many concurrent merges regardless of room distribution.  Set high enough
 # that per-room caps are the binding constraint in normal operation.
-_UPDATE_SEMAPHORE = asyncio.Semaphore(
-    int(os.environ.get("COLLAB_UPDATE_GLOBAL_SEM_CAP", "500"))
-)
+_UPDATE_SEMAPHORE = asyncio.Semaphore(int(os.environ.get("COLLAB_UPDATE_GLOBAL_SEM_CAP", "500")))
 
 _ROOM_MERGE_MAX_REGISTRY = 1024
 _ROOM_MERGE_SEMAPHORES: "OrderedDict[str, asyncio.Semaphore]" = OrderedDict()
@@ -116,9 +114,7 @@ _ROOM_SEM_LOCK = asyncio.Lock()
 # classrooms of 200-500 participants: at 50 concurrent × ~10 ms/merge the
 # effective throughput exceeds 5,000 merges/s per room — well above any
 # realistic burst.  Read once at module load for stable lifetime value.
-_PER_ROOM_SEM_CAP: int = max(
-    1, int(os.environ.get("COLLAB_ROOM_MERGE_SEM_CAP", "50"))
-)
+_PER_ROOM_SEM_CAP: int = max(1, int(os.environ.get("COLLAB_ROOM_MERGE_SEM_CAP", "50")))
 
 
 def _collab_update_acquire_timeout_sec() -> float:
@@ -151,14 +147,16 @@ async def _send(ctx: Any, payload: dict, msg_type: str = "error") -> None:
         await ctx.websocket.send_json(payload)
 
 
-
 async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
     """Process an `update` message from a collaborator."""
     verr = _diagram_update_validation_error(ctx.diagram_id, message)
     if verr:
         logger.info(
             "[CollabDebug] update validation rejected user=%s diagram=%s code=%s reason=%s",
-            ctx.user.id, ctx.diagram_id, ctx.code, verr,
+            ctx.user.id,
+            ctx.diagram_id,
+            ctx.code,
+            verr,
         )
         await _send(ctx, {"type": "error", "message": verr})
         return
@@ -201,37 +199,34 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
     nodes = raw_nodes if isinstance(raw_nodes, list) else None
     connections = raw_connections if isinstance(raw_connections, list) else None
     deleted_node_ids: List[str] = (
-        [str(i) for i in raw_deleted_node_ids if i]
-        if isinstance(raw_deleted_node_ids, list)
-        else []
+        [str(i) for i in raw_deleted_node_ids if i] if isinstance(raw_deleted_node_ids, list) else []
     )
     deleted_connection_ids: List[str] = (
-        [str(i) for i in raw_deleted_connection_ids if i]
-        if isinstance(raw_deleted_connection_ids, list)
-        else []
+        [str(i) for i in raw_deleted_connection_ids if i] if isinstance(raw_deleted_connection_ids, list) else []
     )
 
     is_granular_early = (
-        nodes is not None
-        or connections is not None
-        or bool(deleted_node_ids)
-        or bool(deleted_connection_ids)
+        nodes is not None or connections is not None or bool(deleted_node_ids) or bool(deleted_connection_ids)
     )
     logger.info(
         "[CollabDebug] handle_update user=%s diagram=%s code=%s"
         " is_granular=%s nodes=%d conns=%d del_nodes=%d del_conns=%d",
-        ctx.user.id, ctx.diagram_id, ctx.code, is_granular_early,
-        len(nodes or []), len(connections or []),
-        len(deleted_node_ids), len(deleted_connection_ids),
+        ctx.user.id,
+        ctx.diagram_id,
+        ctx.code,
+        is_granular_early,
+        len(nodes or []),
+        len(connections or []),
+        len(deleted_node_ids),
+        len(deleted_connection_ids),
     )
     if nodes:
-        node_ids_preview = [
-            str(n.get("id") or n.get("node_id") or "?")
-            for n in nodes[:10]
-        ]
+        node_ids_preview = [str(n.get("id") or n.get("node_id") or "?") for n in nodes[:10]]
         logger.debug(
             "[CollabDebug] update_node_ids user=%s code=%s node_ids=%s%s",
-            ctx.user.id, ctx.code, node_ids_preview,
+            ctx.user.id,
+            ctx.code,
+            node_ids_preview,
             " (truncated)" if len(nodes) > 10 else "",
         )
 
@@ -279,12 +274,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
     else:
         editors_redis = None
 
-    is_granular = (
-        nodes is not None
-        or connections is not None
-        or bool(deleted_node_ids)
-        or bool(deleted_connection_ids)
-    )
+    is_granular = nodes is not None or connections is not None or bool(deleted_node_ids) or bool(deleted_connection_ids)
 
     filtered_nodes: Optional[List[Any]] = None
     filtered_connections: Optional[List[Any]] = None
@@ -297,21 +287,31 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
 
         if nodes is not None:
             filtered_nodes = filter_granular_nodes_for_locks(
-                ctx.code, ctx.user.id, nodes, active_editors, editors_redis,
+                ctx.code,
+                ctx.user.id,
+                nodes,
+                active_editors,
+                editors_redis,
             )
         if connections is not None:
             filtered_connections = filter_granular_connections_for_locks(
-                ctx.code, ctx.user.id, connections, active_editors, editors_redis,
+                ctx.code,
+                ctx.user.id,
+                connections,
+                active_editors,
+                editors_redis,
             )
         if deleted_node_ids:
             deleted_node_ids = filter_deleted_node_ids_for_locks(
-                ctx.code, ctx.user.id, deleted_node_ids, active_editors, editors_redis,
+                ctx.code,
+                ctx.user.id,
+                deleted_node_ids,
+                active_editors,
+                editors_redis,
             )
         if deleted_connection_ids:
             endpoints_map = build_connection_endpoints_map(connections)
-            needs_spec_lookup = any(
-                cid not in endpoints_map for cid in deleted_connection_ids
-            )
+            needs_spec_lookup = any(cid not in endpoints_map for cid in deleted_connection_ids)
             if needs_spec_lookup:
                 live_doc = None
                 _rs_start = time.monotonic()
@@ -333,29 +333,35 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                     spec_conns = live_doc.get("connections")
                     endpoints_map.update(build_connection_endpoints_map(spec_conns))
             deleted_connection_ids = filter_deleted_connection_ids_for_locks(
-                ctx.code, ctx.user.id, deleted_connection_ids,
-                endpoints_map, active_editors, editors_redis,
+                ctx.code,
+                ctx.user.id,
+                deleted_connection_ids,
+                endpoints_map,
+                active_editors,
+                editors_redis,
             )
 
         out_node_ids = [n.get("id") for n in (filtered_nodes or []) if isinstance(n, dict)]
         out_conn_ids = [c.get("id") for c in (filtered_connections or []) if isinstance(c, dict)]
 
         has_payload = (
-            bool(filtered_nodes)
-            or bool(filtered_connections)
-            or bool(deleted_node_ids)
-            or bool(deleted_connection_ids)
+            bool(filtered_nodes) or bool(filtered_connections) or bool(deleted_node_ids) or bool(deleted_connection_ids)
         )
         if not has_payload:
             logger.info(
                 "[CollabDebug] update_rejected (all ops locked) user=%s code=%s"
                 " in_nodes=%s out_nodes=%s in_conns=%s out_conns=%s"
                 " in_del_nodes=%s out_del_nodes=%s in_del_conns=%s out_del_conns=%s",
-                ctx.user.id, ctx.code,
-                in_node_ids, out_node_ids,
-                in_conn_ids, out_conn_ids,
-                in_del_node_ids, deleted_node_ids,
-                in_del_conn_ids, deleted_connection_ids,
+                ctx.user.id,
+                ctx.code,
+                in_node_ids,
+                out_node_ids,
+                in_conn_ids,
+                out_conn_ids,
+                in_del_node_ids,
+                deleted_node_ids,
+                in_del_conn_ids,
+                deleted_connection_ids,
             )
             try:
                 record_ws_collab_granular_lock_reject()
@@ -366,10 +372,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                 {
                     "type": "error",
                     "code": "update_rejected",
-                    "message": (
-                        "Update rejected: another collaborator is editing "
-                        "a conflicting node."
-                    ),
+                    "message": ("Update rejected: another collaborator is editing a conflicting node."),
                 },
             )
             return
@@ -378,13 +381,13 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
         # can proceed.  Notify the sender so the UI can indicate the conflict without
         # silently discarding work.
         out_node_ids_set = set(out_node_ids)
-        dropped_node_ids = [
-            nid for nid in in_node_ids if nid is not None and nid not in out_node_ids_set
-        ]
+        dropped_node_ids = [nid for nid in in_node_ids if nid is not None and nid not in out_node_ids_set]
         if dropped_node_ids:
             logger.debug(
                 "[CollabDebug] update_partial_filtered user=%s code=%s dropped_nodes=%s",
-                ctx.user.id, ctx.code, dropped_node_ids,
+                ctx.user.id,
+                ctx.code,
+                dropped_node_ids,
             )
             try:
                 record_ws_collab_partial_filter_notify()
@@ -395,10 +398,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                 {
                     "type": "error",
                     "code": "update_partial_filtered",
-                    "message": (
-                        "Some node edits were filtered because another "
-                        "collaborator is editing those nodes."
-                    ),
+                    "message": ("Some node edits were filtered because another collaborator is editing those nodes."),
                     "filtered_node_ids": dropped_node_ids,
                 },
             )
@@ -406,12 +406,14 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
         if spec is not None and isinstance(spec, dict):
             spec_nodes = spec.get("nodes")
             locked_by_others = build_locked_by_others_node_ids(
-                ctx.code, ctx.user.id, active_editors, editors_redis,
+                ctx.code,
+                ctx.user.id,
+                active_editors,
+                editors_redis,
             )
             if locked_by_others:
                 logger.info(
-                    "[CollabDebug] full spec rejected due to foreign locks "
-                    "user=%s code=%s locked_node_count=%d",
+                    "[CollabDebug] full spec rejected due to foreign locks user=%s code=%s locked_node_count=%d",
                     ctx.user.id,
                     ctx.code,
                     len(locked_by_others),
@@ -425,10 +427,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                     {
                         "type": "error",
                         "code": "update_rejected",
-                        "message": (
-                            "Full spec update rejected: another collaborator "
-                            "is editing one or more nodes."
-                        ),
+                        "message": ("Full spec update rejected: another collaborator is editing one or more nodes."),
                     },
                 )
                 return
@@ -436,8 +435,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                 locked_ids = {
                     str(n.get("id"))
                     for n in spec_nodes
-                    if isinstance(n, dict) and n.get("id")
-                    and str(n.get("id")) in locked_by_others
+                    if isinstance(n, dict) and n.get("id") and str(n.get("id")) in locked_by_others
                 }
                 if locked_ids:
                     await _send(
@@ -474,9 +472,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
             ctx,
             {
                 "type": "error",
-                "message": (
-                    "Server is busy applying other updates. Retry in a moment."
-                ),
+                "message": ("Server is busy applying other updates. Retry in a moment."),
             },
         )
         return
@@ -495,9 +491,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                 ctx,
                 {
                     "type": "error",
-                    "message": (
-                        "This room has too many concurrent edits. Retry shortly."
-                    ),
+                    "message": ("This room has too many concurrent edits. Retry shortly."),
                 },
             )
             return
@@ -516,7 +510,9 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                     async with asyncio.timeout(DEFAULT_REDIS_HOT_PATH_TIMEOUT_SEC):
                         dedupe_was_new = await redis.set(
                             client_op_dedupe_key(
-                                ctx.code, int(ctx.user.id), client_op_id,
+                                ctx.code,
+                                int(ctx.user.id),
+                                client_op_id,
                             ),
                             "1",
                             nx=True,
@@ -524,11 +520,11 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                         )
                     if not dedupe_was_new:
                         skip_merge_duplicate = True
-                except (asyncio.TimeoutError, OSError, RuntimeError, TypeError,
-                        ValueError) as exc:
+                except (asyncio.TimeoutError, OSError, RuntimeError, TypeError, ValueError) as exc:
                     logger.debug(
                         "[CollabDebug] client_op dedupe SET failed code=%s: %s",
-                        ctx.code, exc,
+                        ctx.code,
+                        exc,
                     )
             if skip_merge_duplicate:
                 try:
@@ -544,17 +540,21 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
             else:
                 async with asyncio.timeout(DEFAULT_DB_HOT_PATH_TIMEOUT_SEC):
                     ttl_sec = await get_online_collab_redis_ttl_seconds(
-                        ctx.diagram_id, code=ctx.code,
+                        ctx.diagram_id,
+                        code=ctx.code,
                     )
                 try:
                     async with asyncio.timeout(DEFAULT_REDIS_HOT_PATH_TIMEOUT_SEC):
                         write_lock_token = await acquire_room_write_lock(
-                            redis, ctx.code, int(ctx.user.id),
+                            redis,
+                            ctx.code,
+                            int(ctx.user.id),
                         )
                 except (asyncio.TimeoutError, Exception) as _wl_exc:
                     logger.debug(
                         "[CollabDebug] write-lock acquire failed code=%s: %s",
-                        ctx.code, _wl_exc,
+                        ctx.code,
+                        _wl_exc,
                     )
                 if write_lock_token:
                     await broadcast_to_others(
@@ -564,7 +564,11 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                     )
                 async with asyncio.timeout(DEFAULT_REDIS_HOT_PATH_TIMEOUT_SEC):
                     merged_doc = await mutate_live_spec_after_ws_update(
-                        redis, ctx.code, ctx.diagram_id, ttl_sec, spec,
+                        redis,
+                        ctx.code,
+                        ctx.diagram_id,
+                        ttl_sec,
+                        spec,
                         filtered_nodes if is_granular else nodes,
                         filtered_connections if is_granular else connections,
                         deleted_node_ids=deleted_node_ids,
@@ -582,7 +586,9 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
         except Exception as exc:
             live_merge_failed = True
             logger.warning(
-                "[LiveSpec] merge or flush schedule failed: %s", exc, exc_info=True,
+                "[LiveSpec] merge or flush schedule failed: %s",
+                exc,
+                exc_info=True,
             )
         finally:
             if write_lock_token:
@@ -591,7 +597,8 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                 except Exception as _rl_exc:
                     logger.debug(
                         "[CollabDebug] write-lock release failed code=%s: %s",
-                        ctx.code, _rl_exc,
+                        ctx.code,
+                        _rl_exc,
                     )
                 await broadcast_to_others(
                     ctx.code,
@@ -614,10 +621,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
             ctx,
             {
                 "type": "error",
-                "message": (
-                    "Live diagram sync unavailable. Reconnect or use resync "
-                    "if the problem persists."
-                ),
+                "message": ("Live diagram sync unavailable. Reconnect or use resync if the problem persists."),
             },
         )
         return
@@ -653,23 +657,27 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
     if not skip_broadcast:
         logger.debug(
             "[CollabDebug] update_broadcast user=%s code=%s seq=%s version=%s ws_msg_id=%s",
-            ctx.user.id, ctx.code,
-            update_message.get("seq"), update_message.get("version"),
+            ctx.user.id,
+            ctx.code,
+            update_message.get("seq"),
+            update_message.get("version"),
             update_message.get("ws_msg_id"),
         )
         broadcast_ok = await broadcast_to_others(ctx.code, ctx.user.id, update_message)
     else:
         logger.debug(
-            "[CollabDebug] update_broadcast_skipped user=%s code=%s reason=duplicate_client_op"
-            " seq=%s version=%s",
-            ctx.user.id, ctx.code,
-            update_message.get("seq"), update_message.get("version"),
+            "[CollabDebug] update_broadcast_skipped user=%s code=%s reason=duplicate_client_op seq=%s version=%s",
+            ctx.user.id,
+            ctx.code,
+            update_message.get("seq"),
+            update_message.get("version"),
         )
 
     if not broadcast_ok:
         logger.warning(
             "[WorkshopWS] broadcast failed for update — sending error to sender user=%s code=%s",
-            ctx.user.id, ctx.code,
+            ctx.user.id,
+            ctx.code,
         )
         await _send(
             ctx,
@@ -706,8 +714,11 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
     logger.info(
         "[CollabDebug] merge_ok user=%s diagram=%s code=%s version=%s seq=%s"
         " broadcast_nodes=%d broadcast_conns=%d broadcast_del_nodes=%d broadcast_del_conns=%d",
-        ctx.user.id, ctx.diagram_id, ctx.code,
-        update_message.get("version"), update_message.get("seq"),
+        ctx.user.id,
+        ctx.diagram_id,
+        ctx.code,
+        update_message.get("version"),
+        update_message.get("seq"),
         len(update_message.get("nodes") or []),
         len(update_message.get("connections") or []),
         len(update_message.get("deleted_node_ids") or []),

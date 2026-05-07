@@ -1,12 +1,12 @@
 /**
  * Mobile Kitty: WebSocket scope, desktop-focus hint, hub preflight bootstrap, and debounced context sync.
  */
-import { computed, onUnmounted, ref, watch, type ComputedRef } from 'vue'
+import { type ComputedRef, computed, onUnmounted, ref, watch } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
-import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
 import { buildKittyVoiceContextPreferStore } from '@/composables/kitty/buildKittyDiagramContext'
+import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import { useKittyDesktopFocusHint } from '@/composables/kitty/useKittyDesktopFocusHint'
 import { useAuthStore, useDiagramStore } from '@/stores'
@@ -43,8 +43,11 @@ export function useMobileKittyPairing(
   const authStore = useAuthStore()
   const diagramStore = useDiagramStore()
   const savedDiagramsStore = useSavedDiagramsStore()
-  const { type: diagramTypeRef, data: diagramDataRef, selectedNodes: selectedNodesRef } =
-    storeToRefs(diagramStore)
+  const {
+    type: diagramTypeRef,
+    data: diagramDataRef,
+    selectedNodes: selectedNodesRef,
+  } = storeToRefs(diagramStore)
   const { activeDiagramId } = storeToRefs(savedDiagramsStore)
 
   const kittyDesktopPollOn = computed(
@@ -110,7 +113,8 @@ export function useMobileKittyPairing(
         }
         success = true
         if (options.onDebugLine) {
-          const sc = data.recommended_scope != null ? String(data.recommended_scope).slice(0, 12) : '—'
+          const sc =
+            data.recommended_scope != null ? String(data.recommended_scope).slice(0, 12) : '—'
           options.onDebugLine('#boot', `${data.source} scope=${sc}`)
         }
       } catch {
@@ -138,7 +142,8 @@ export function useMobileKittyPairing(
         ...base,
         ...serverCtx,
         diagram_data: diagramData,
-        diagram_type: (serverCtx.diagram_type as KittyAgentContext['diagram_type']) ?? base.diagram_type,
+        diagram_type:
+          (serverCtx.diagram_type as KittyAgentContext['diagram_type']) ?? base.diagram_type,
         active_panel: serverCtx.active_panel ?? base.active_panel,
         selected_nodes: Array.isArray(serverCtx.selected_nodes)
           ? serverCtx.selected_nodes
@@ -187,7 +192,8 @@ export function useMobileKittyPairing(
       kitty.updateContext(ctx)
       if (options.onDebugLine) {
         const titleShort = (ctx.diagram_display_title ?? '').slice(0, 28)
-        const lib = ctx.diagram_library_id != null ? String(ctx.diagram_library_id).slice(0, 8) : '—'
+        const lib =
+          ctx.diagram_library_id != null ? String(ctx.diagram_library_id).slice(0, 8) : '—'
         options.onDebugLine('#ctx', `${String(ctx.diagram_type)} lib=${lib} ${titleShort}`)
       }
     }, KITTY_CONTEXT_SYNC_MS)

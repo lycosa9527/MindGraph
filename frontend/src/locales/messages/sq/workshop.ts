@@ -1,6 +1,4 @@
-/**
- * sq UI workshop
- */
+/** sq UI — workshop */
 
 export default {
   'collab.codeCopied': 'Kodi u kopjua',
@@ -32,6 +30,8 @@ export default {
   'collab.noDiagramToSave': "Nuk ka diagram për t'u ruajtur",
   'collab.nodeLocked': 'Dikush tjetër po e redakton këtë nyjë',
   'collab.participants': '{n} pjesëmarrës',
+  'collab.previousSessionsStopped':
+    'Ended {n} previous collaboration session(s) on your other diagrams.',
   'collab.saveFailed': 'Ruajtja e diagramit dështoi',
   'collab.scanToJoin': "Skanoni për t'u bashkuar",
   'collab.schoolDescActive':
@@ -347,11 +347,26 @@ export default {
   'workshop.you': '(ju)',
   'workshop.youAnd': 'Ju dhe',
   'workshopCanvas.connectFailed': 'Nuk u lidh me bashkëpunimin',
+  'workshopCanvas.sessionExpiredReconnect':
+    'Your session has expired. Please refresh the page to re-join the collaboration.',
+  'workshopCanvas.sessionRefreshFailed':
+    'Could not refresh your collaboration session. Please save your work and sign in again.',
+  'workshopCanvas.outboundQueueDegraded':
+    'Collaboration is falling behind. Some unsent edits could not be kept.',
   'workshopCanvas.connectionClosed': 'Lidhja u mbyll',
+  'workshopCanvas.connectionClosedSlow':
+    'Connection closed: your connection was too slow to keep up with the collaboration session.',
+  'workshopCanvas.sessionEndedByHost': 'The host has ended the collaboration session.',
+  'workshopCanvas.editingNodeLabel': '{username} is editing…',
+  'workshopCanvas.collabEditorDisplayNameFallback': 'Someone',
   'workshopCanvas.connectionClosedReason': 'Lidhja e bashkëpunimit u mbyll: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} po e redakton këtë nyjë',
   'workshopCanvas.errorGeneric': 'Gabim bashkëpunimi',
+  'workshopCanvas.updatePartialFiltered':
+    'Some edits were skipped ({count} node(s)) because another collaborator is editing those nodes.',
   'workshopCanvas.reconnectFailed': 'Nuk u rilidh bashkëpunimi; rifreskoni faqen',
+  'workshopCanvas.resyncWaiting':
+    'Live diagram sync is taking longer than expected. Retrying; you can refresh if editing feels stuck.',
   'workshopCanvas.returnedHomeIdle': 'U kthyët në krye pa redaktime diagrami për 30 minuta.',
   'workshopCanvas.userJoined': 'Përdoruesi {username} u bashkua',
   'workshopCanvas.usersJoined': '{count} users joined',
@@ -365,4 +380,4 @@ export default {
   'workshopCanvas.otherTabCollaborationActive':
     'Collaboration continues in another tab or window for this account.',
   'workshopCanvas.joinQrAlt': 'Join collaboration QR code',
-}
+} as const

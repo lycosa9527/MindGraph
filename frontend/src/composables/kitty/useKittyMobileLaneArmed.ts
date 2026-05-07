@@ -2,7 +2,7 @@
  * Polls ``GET /api/kitty/mobile_lane/{id}`` so desktop can show a pairing indicator when
  * the same library scope has an active **mobile-started** Kitty WebSocket (``client_lane: mobile``).
  */
-import { onUnmounted, ref, watch, type Ref } from 'vue'
+import { type Ref, onUnmounted, ref, watch } from 'vue'
 
 import { KITTY_PAIR_POLL_MS } from './runKittyIntervalPoll'
 

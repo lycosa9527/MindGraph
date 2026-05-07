@@ -33,6 +33,8 @@ def _make_fanout_envelope(
     if _FANOUT_ORIGIN_SECRET:
         env["origin"] = _FANOUT_ORIGIN_SECRET
     return env
+
+
 from services.features.ws_redis_fanout_publish import publish_workshop_fanout_async
 from services.features.workshop_ws_connection_state import (
     ACTIVE_CONNECTIONS as active_connections,
@@ -67,19 +69,21 @@ async def _push_shard_local(
             continue
         try:
             handle.send_queue.put_nowait(body_payload)
-            handle.qsize_high_water = max(
-                handle.qsize_high_water, handle.send_queue.qsize()
-            )
+            handle.qsize_high_water = max(handle.qsize_high_water, handle.send_queue.qsize())
             logger.debug(
                 "[CollabDebug] local push code=%s recipient_user=%s qsize=%d",
-                code, user_id, handle.send_queue.qsize(),
+                code,
+                user_id,
+                handle.send_queue.qsize(),
             )
         except asyncio.QueueFull:
             await _evict_slow_consumer(handle, "local broadcast queue full")
         except Exception as exc:
             logger.debug(
                 "[WorkshopWS] local broadcast push error user=%s code=%s: %s",
-                user_id, code, exc,
+                user_id,
+                code,
+                exc,
             )
 
 
@@ -100,7 +104,7 @@ async def _fanout_local_participants(
     if not handles:
         return
 
-    shards = [handles[i: i + _SHARD_SIZE] for i in range(0, len(handles), _SHARD_SIZE)]
+    shards = [handles[i : i + _SHARD_SIZE] for i in range(0, len(handles), _SHARD_SIZE)]
     try:
         record_ws_broadcast_shards(len(shards))
     except Exception:
@@ -117,18 +121,23 @@ async def _fanout_local_participants(
     if elapsed_ms > 100:
         logger.warning(
             "[WorkshopWS] local fanout slow code=%s peers=%d elapsed_ms=%.1f",
-            code, len(handles), elapsed_ms,
+            code,
+            len(handles),
+            elapsed_ms,
         )
 
 
 async def broadcast_to_others(code: str, sender_id: int, message: Dict[str, Any]) -> bool:
     """Broadcast message to all participants except sender. Returns True on success."""
     logger.info(
-        "[CollabDebug] broadcast_to_others mode=%s code=%s sender=%s msg_type=%s"
-        " seq=%s version=%s ws_msg_id=%s",
+        "[CollabDebug] broadcast_to_others mode=%s code=%s sender=%s msg_type=%s seq=%s version=%s ws_msg_id=%s",
         "fanout" if is_ws_fanout_enabled() else "local",
-        code, sender_id, message.get("type"),
-        message.get("seq"), message.get("version"), message.get("ws_msg_id"),
+        code,
+        sender_id,
+        message.get("type"),
+        message.get("seq"),
+        message.get("version"),
+        message.get("ws_msg_id"),
     )
     if is_ws_fanout_enabled():
         try:
@@ -141,9 +150,7 @@ async def broadcast_to_others(code: str, sender_id: int, message: Dict[str, Any]
                 pass
             return False
         try:
-            await publish_workshop_fanout_async(
-                _make_fanout_envelope(code, "others", data_str, sender_id)
-            )
+            await publish_workshop_fanout_async(_make_fanout_envelope(code, "others", data_str, sender_id))
         except Exception as exc:
             logger.warning("[WorkshopWS] broadcast_to_others publish failed: %s", exc)
             try:
@@ -166,11 +173,12 @@ async def broadcast_to_others(code: str, sender_id: int, message: Dict[str, Any]
 async def broadcast_to_all(code: str, message: Dict[str, Any]) -> None:
     """Broadcast message to all participants."""
     logger.info(
-        "[CollabDebug] broadcast_to_all mode=%s code=%s msg_type=%s"
-        " seq=%s version=%s",
+        "[CollabDebug] broadcast_to_all mode=%s code=%s msg_type=%s seq=%s version=%s",
         "fanout" if is_ws_fanout_enabled() else "local",
-        code, message.get("type"),
-        message.get("seq"), message.get("version"),
+        code,
+        message.get("type"),
+        message.get("seq"),
+        message.get("version"),
     )
     if is_ws_fanout_enabled():
         try:
@@ -183,9 +191,7 @@ async def broadcast_to_all(code: str, message: Dict[str, Any]) -> None:
                 pass
             return
         try:
-            await publish_workshop_fanout_async(
-                _make_fanout_envelope(code, "all", data_str)
-            )
+            await publish_workshop_fanout_async(_make_fanout_envelope(code, "all", data_str))
         except Exception as exc:
             logger.warning("[WorkshopWS] broadcast_to_all publish failed: %s", exc)
             try:
@@ -215,12 +221,11 @@ async def broadcast_workshop_session_closing(code: str) -> None:
             logger.warning("[WorkshopWS] session_closing shutdown: serialize failed")
             return
         try:
-            await publish_workshop_fanout_async(
-                _make_fanout_envelope(code, "all", data_str)
-            )
+            await publish_workshop_fanout_async(_make_fanout_envelope(code, "all", data_str))
         except (OSError, RuntimeError, TypeError, ValueError) as exc:
             logger.warning(
-                "[WorkshopWS] broadcast_workshop_session_closing publish: %s", exc,
+                "[WorkshopWS] broadcast_workshop_session_closing publish: %s",
+                exc,
             )
         return
 
@@ -242,13 +247,9 @@ async def broadcast_workshop_session_ended(code: str) -> None:
             logger.warning("[WorkshopWS] session_ended_shutdown: serialize failed")
             return
         try:
-            await publish_workshop_fanout_async(
-                _make_fanout_envelope(code, "all", data_str)
-            )
+            await publish_workshop_fanout_async(_make_fanout_envelope(code, "all", data_str))
         except (OSError, RuntimeError, TypeError, ValueError) as exc:
-            logger.warning(
-                "[WorkshopWS] broadcast_workshop_session_ended publish: %s", exc
-            )
+            logger.warning("[WorkshopWS] broadcast_workshop_session_ended publish: %s", exc)
             try:
                 record_ws_broadcast_send_failure()
                 record_ws_fanout_publish_failure()
@@ -276,9 +277,7 @@ async def broadcast_workshop_room_idle_shutdown(code: str) -> None:
                 pass
             return
         try:
-            await publish_workshop_fanout_async(
-                _make_fanout_envelope(code, "all", data_str)
-            )
+            await publish_workshop_fanout_async(_make_fanout_envelope(code, "all", data_str))
         except (OSError, RuntimeError, TypeError, ValueError) as exc:
             logger.warning(
                 "[WorkshopWS] broadcast_workshop_room_idle_shutdown publish: %s",

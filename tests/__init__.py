@@ -1,0 +1,1 @@
+"""MindGraph automated test suite."""

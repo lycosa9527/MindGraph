@@ -84,9 +84,7 @@ async def schedule_live_spec_db_flush(code: str, diagram_id: str) -> None:
 
     pending_key = live_flush_pending_key(code)
     try:
-        acquired = await redis.set(
-            pending_key, "1", nx=True, ex=int(LIVE_FLUSH_DEBOUNCE_SEC) + 2
-        )
+        acquired = await redis.set(pending_key, "1", nx=True, ex=int(LIVE_FLUSH_DEBOUNCE_SEC) + 2)
     except (RedisError, OSError, RuntimeError, TypeError) as exc:
         logger.warning("[LiveSpec] flush NX key failed code=%s: %s", code, exc)
         acquired = False

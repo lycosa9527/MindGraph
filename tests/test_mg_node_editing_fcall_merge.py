@@ -45,10 +45,22 @@ async def test_mg_node_editing_set_merges_two_users_on_same_node() -> None:
     try:
         await client.delete(key)
         assert await fcall_node_editing_set(
-            client, key, field, "1", "alice", 30, 3600,
+            client,
+            key,
+            field,
+            "1",
+            "alice",
+            30,
+            3600,
         )
         assert await fcall_node_editing_set(
-            client, key, field, "2", "bob", 30, 3600,
+            client,
+            key,
+            field,
+            "2",
+            "bob",
+            30,
+            3600,
         )
         raw = await client.hget(key, field)
         assert raw is not None

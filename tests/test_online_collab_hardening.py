@@ -150,8 +150,7 @@ async def test_idle_stop_flush_failure_keeps_session_intact() -> None:
             AsyncMock(),
         ) as extend_mock,
         patch(
-            "services.online_collab.lifecycle.online_collab_session_closing"
-            ".mark_workshop_session_closing",
+            "services.online_collab.lifecycle.online_collab_session_closing.mark_workshop_session_closing",
             AsyncMock(),
         ),
         patch(
@@ -160,8 +159,7 @@ async def test_idle_stop_flush_failure_keeps_session_intact() -> None:
         ),
         patch.object(stop_ops.asyncio, "sleep", AsyncMock()),
         patch(
-            "services.online_collab.core.online_collab_manager"
-            ".get_online_collab_manager",
+            "services.online_collab.core.online_collab_manager.get_online_collab_manager",
             return_value=manager,
         ),
     ):
@@ -172,8 +170,7 @@ async def test_idle_stop_flush_failure_keeps_session_intact() -> None:
 
     assert stopped is False
     flush_mock.assert_has_calls(
-        [call(fake_db, fake_redis, "ABC-123", "diagram-1")]
-        * stop_ops.WORKSHOP_STOP_FLUSH_MAX_ATTEMPTS
+        [call(fake_db, fake_redis, "ABC-123", "diagram-1")] * stop_ops.WORKSHOP_STOP_FLUSH_MAX_ATTEMPTS
     )
     extend_mock.assert_awaited_once_with(fake_redis, "ABC-123")
     manager.destroy_session.assert_not_awaited()
@@ -199,11 +196,7 @@ class _AtomicRedis:
         if payload is None:
             return 0
         decoded = json.loads(payload)
-        if (
-            str(decoded.get("u")) == args[0]
-            and str(decoded.get("c")) == args[1]
-            and str(decoded.get("d")) == args[2]
-        ):
+        if str(decoded.get("u")) == args[0] and str(decoded.get("c")) == args[1] and str(decoded.get("d")) == args[2]:
             self.data.pop(key, None)
             await asyncio.sleep(0)
             return 1

@@ -2,10 +2,9 @@
  * Apply Kitty / voice WebSocket diagram_update payloads using the same Pinia store
  * primitives as the editor (Vue Flow nodes + diagram slice helpers).
  */
-import type { DiagramNode, DiagramType } from '@/types'
-
 import { useDiagramStore } from '@/stores/diagram'
 import { recalculateCircleMapLayout } from '@/stores/specLoader'
+import type { DiagramNode, DiagramType } from '@/types'
 
 function normalizedDiagramType(storeType: DiagramType | null): string {
   if (!storeType) return ''
@@ -78,12 +77,12 @@ export function resolveVoiceNodeId(
 
 function topLevelMindmapBranchIds(nodes: DiagramNode[]): string[] {
   const sortIdx = (id: string): number => parseInt(id.split('-').pop() ?? '0', 10)
-  const rights = nodes.filter((n) => n.id.startsWith('branch-r-1-')).sort(
-    (a, b) => sortIdx(a.id) - sortIdx(b.id)
-  )
-  const lefts = nodes.filter((n) => n.id.startsWith('branch-l-1-')).sort(
-    (a, b) => sortIdx(a.id) - sortIdx(b.id)
-  )
+  const rights = nodes
+    .filter((n) => n.id.startsWith('branch-r-1-'))
+    .sort((a, b) => sortIdx(a.id) - sortIdx(b.id))
+  const lefts = nodes
+    .filter((n) => n.id.startsWith('branch-l-1-'))
+    .sort((a, b) => sortIdx(a.id) - sortIdx(b.id))
   return [...rights.map((n) => n.id), ...lefts.map((n) => n.id)]
 }
 
@@ -132,29 +131,22 @@ export function applyVoiceDiagramUpdateCenter(
     const title = (data.title as string) || (data.new_text as string) || (data.text as string)
     if (title !== undefined && store.updateNode('flow-topic', { text: title })) ok = true
   } else if (dt === 'multi_flow_map') {
-    const ev =
-      (data.event as string) || (data.new_text as string) || (data.text as string)
+    const ev = (data.event as string) || (data.new_text as string) || (data.text as string)
     if (ev !== undefined && store.updateNode('event', { text: ev })) ok = true
   } else if (dt === 'brace_map') {
-    const whole =
-      (data.whole as string) || (data.new_text as string) || (data.text as string)
+    const whole = (data.whole as string) || (data.new_text as string) || (data.text as string)
     if (whole !== undefined && store.updateNode('brace-whole', { text: whole })) ok = true
   } else if (dt === 'bridge_map') {
     const dimension =
       (data.dimension as string) || (data.new_text as string) || (data.text as string)
-    if (
-      dimension !== undefined &&
-      store.updateNode('dimension-label', { text: dimension })
-    ) {
+    if (dimension !== undefined && store.updateNode('dimension-label', { text: dimension })) {
       ok = true
     }
   } else if (dt === 'tree_map') {
-    const main =
-      (data.new_text as string) || (data.text as string) || (data.topic as string)
+    const main = (data.new_text as string) || (data.text as string) || (data.topic as string)
     if (main !== undefined && store.updateNode('tree-topic', { text: main })) ok = true
   } else if (dt === 'mindmap' || dt === 'mind_map') {
-    const topic =
-      (data.new_text as string) || (data.text as string)
+    const topic = (data.new_text as string) || (data.text as string)
     if (topic !== undefined && store.updateNode('topic', { text: topic })) ok = true
   } else {
     const newText = (data.new_text as string) || (data.text as string)
@@ -180,10 +172,8 @@ export function applyVoiceDiagramAddNodes(
     const text = typeof textRaw === 'string' ? textRaw : ''
 
     if (dt === 'mindmap' || dt === 'mind_map') {
-      const branchIdx =
-        typeof p.branch_index === 'number' ? p.branch_index : undefined
-      const childIdx =
-        typeof p.child_index === 'number' ? p.child_index : undefined
+      const branchIdx = typeof p.branch_index === 'number' ? p.branch_index : undefined
+      const childIdx = typeof p.child_index === 'number' ? p.child_index : undefined
       if (branchIdx !== undefined && childIdx !== undefined && text) {
         const parents = topLevelMindmapBranchIds(store.data.nodes)
         const parentId = parents[branchIdx]
@@ -195,10 +185,8 @@ export function applyVoiceDiagramAddNodes(
     }
 
     if (dt === 'flow_map') {
-      const stepIdx =
-        typeof p.step_index === 'number' ? p.step_index : undefined
-      const subIdx =
-        typeof p.substep_index === 'number' ? p.substep_index : undefined
+      const stepIdx = typeof p.step_index === 'number' ? p.step_index : undefined
+      const subIdx = typeof p.substep_index === 'number' ? p.substep_index : undefined
       if (stepIdx !== undefined && text) {
         const stepNode = store.data.nodes.find((n) => n.id === `flow-step-${stepIdx}`)
         const stepLabel = stepNode?.text?.trim() ?? ''
@@ -212,10 +200,8 @@ export function applyVoiceDiagramAddNodes(
     }
 
     if (dt === 'tree_map') {
-      const catIdx =
-        typeof p.category_index === 'number' ? p.category_index : undefined
-      const itemIdx =
-        typeof p.item_index === 'number' ? p.item_index : undefined
+      const catIdx = typeof p.category_index === 'number' ? p.category_index : undefined
+      const itemIdx = typeof p.item_index === 'number' ? p.item_index : undefined
       if (catIdx !== undefined && text) {
         const catId = `tree-cat-${catIdx}`
         if (itemIdx !== undefined) {
@@ -226,21 +212,17 @@ export function applyVoiceDiagramAddNodes(
     }
 
     if (dt === 'brace_map') {
-      const partIdx =
-        typeof p.part_index === 'number' ? p.part_index : undefined
+      const partIdx = typeof p.part_index === 'number' ? p.part_index : undefined
       const subIdxRaw = p.subpart_index ?? p.substep_index
-      const subIdx =
-        typeof subIdxRaw === 'number' ? subIdxRaw : undefined
-      const braceRoot =
-        store.data.nodes.find((n) => n.type === 'topic')?.id ?? 'brace-whole'
+      const subIdx = typeof subIdxRaw === 'number' ? subIdxRaw : undefined
+      const braceRoot = store.data.nodes.find((n) => n.type === 'topic')?.id ?? 'brace-whole'
       if (partIdx !== undefined && subIdx !== undefined && text) {
         const parentId = `brace-part-${partIdx}`
         if (store.data.nodes.some((n) => n.id === parentId)) {
           if (store.addBraceMapPart(parentId, text)) count++
         }
       } else if (partIdx !== undefined && text) {
-        const parentId =
-          partIdx >= 0 ? `brace-part-${partIdx}` : braceRoot
+        const parentId = partIdx >= 0 ? `brace-part-${partIdx}` : braceRoot
         if (store.addBraceMapPart(parentId, text)) count++
       } else if (text && store.addBraceMapPart(braceRoot, text)) {
         count++
@@ -252,18 +234,10 @@ export function applyVoiceDiagramAddNodes(
       const cat = String(p.category ?? '')
       if (cat === 'similarity' || cat === 'similarities') {
         if (store.addDoubleBubbleMapNode('similarity', text || '…')) count++
-      } else if (
-        cat === 'left_difference' ||
-        cat === 'left_diff' ||
-        cat === 'left'
-      ) {
+      } else if (cat === 'left_difference' || cat === 'left_diff' || cat === 'left') {
         const rightT = typeof p.right === 'string' ? p.right : text
         if (store.addDoubleBubbleMapNode('leftDiff', text || '…', rightT)) count++
-      } else if (
-        cat === 'right_difference' ||
-        cat === 'right_diff' ||
-        cat === 'right'
-      ) {
+      } else if (cat === 'right_difference' || cat === 'right_diff' || cat === 'right') {
         const leftT = typeof p.left === 'string' ? p.left : ''
         if (store.addDoubleBubbleMapNode('rightDiff', leftT || ' ', text || '…')) count++
       } else if (text) {
@@ -286,10 +260,7 @@ export function applyVoiceDiagramAddNodes(
         type: 'bubble',
         position: { x: 0, y: 0 },
       })
-      store.data.nodes = recalculateCircleMapLayout(
-        store.data.nodes,
-        store.nodeDimensions
-      )
+      store.data.nodes = recalculateCircleMapLayout(store.data.nodes, store.nodeDimensions)
       count++
       continue
     }
@@ -454,8 +425,7 @@ export function applyVoiceDiagramRemoveNodes(
           : null
     if (!rawId) continue
 
-    const resolved =
-      resolveVoiceNodeId(dt, rawId, store.data.nodes) ?? rawId
+    const resolved = resolveVoiceNodeId(dt, rawId, store.data.nodes) ?? rawId
 
     if (dt === 'mindmap' || dt === 'mind_map') {
       removed += store.removeMindMapNodes([resolved])
@@ -477,10 +447,7 @@ export function applyVoiceDiagramRemoveNodes(
     if (store.removeNode(resolved)) {
       removed++
       if (dt === 'circle_map') {
-        store.data.nodes = recalculateCircleMapLayout(
-          store.data.nodes,
-          store.nodeDimensions
-        )
+        store.data.nodes = recalculateCircleMapLayout(store.data.nodes, store.nodeDimensions)
       }
     }
   }

@@ -51,4 +51,4 @@ export default {
     'U bent uitgelogd omdat u het maximum aantal apparaten heeft overschreden',
   'notification.signInToUse': 'Log in om dit te gebruiken',
   'notification.signInToValidateFocus': 'Log in om de focusvraag te valideren',
-}
+} as const

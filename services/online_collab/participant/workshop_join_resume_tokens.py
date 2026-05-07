@@ -14,7 +14,7 @@ from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
 
-_REDIS_NS = 'collab:ws:jresume:'
+_REDIS_NS = "collab:ws:jresume:"
 _TOKEN_HEX_BYTES = 16
 _MAX_RESUME_QUERY_LEN = 96
 _DEFAULT_RECONNECT_TTL_SEC = 900
@@ -64,7 +64,7 @@ async def peek_join_resume_claims_async(
         return None
     if isinstance(body, (bytes, bytearray)):
         try:
-            text = body.decode('utf-8')
+            text = body.decode("utf-8")
         except UnicodeDecodeError:
             return None
     else:
@@ -84,20 +84,17 @@ def join_resume_claims_match_user_room(
     claims: Dict[str, Any],
 ) -> bool:
     """Cheap match on user + normalized room token before trusting bypass."""
-    code_val = claims.get('c')
-    raw_uid = claims.get('u')
+    code_val = claims.get("c")
+    raw_uid = claims.get("u")
     try:
         record_uid = int(raw_uid)
     except (TypeError, ValueError):
         return False
-    return (
-        record_uid == int(user_id)
-        and code_val == workshop_code_upper.strip().upper()
-    )
+    return record_uid == int(user_id) and code_val == workshop_code_upper.strip().upper()
 
 
 def _resume_ttl_seconds() -> int:
-    raw = os.getenv('WORKSHOP_JOIN_RESUME_TTL_SEC', str(_DEFAULT_RECONNECT_TTL_SEC))
+    raw = os.getenv("WORKSHOP_JOIN_RESUME_TTL_SEC", str(_DEFAULT_RECONNECT_TTL_SEC))
     try:
         parsed = int(raw)
     except (TypeError, ValueError):
@@ -114,24 +111,24 @@ async def mint_join_resume_token_async(
     """Store proof-of-reconnect credentials in Redis with a short TTL."""
     redis = get_async_redis()
     if not redis:
-        return ''
+        return ""
     digest = secrets.token_hex(_TOKEN_HEX_BYTES)
     key = _REDIS_NS + digest
     payload: Dict[str, Any] = {
-        'u': int(user_id),
-        'c': workshop_code_upper.strip().upper(),
-        'd': diagram_id.strip(),
+        "u": int(user_id),
+        "c": workshop_code_upper.strip().upper(),
+        "d": diagram_id.strip(),
     }
     try:
-        body = json.dumps(payload, separators=(',', ':'))
+        body = json.dumps(payload, separators=(",", ":"))
     except (TypeError, ValueError):
-        return ''
+        return ""
     try:
         ttl = _resume_ttl_seconds()
         await redis.setex(key, ttl, body)
     except (RedisError, OSError, TypeError) as exc:
-        logger.debug('[collab:jresume] mint failed user=%s: %s', user_id, exc)
-        return ''
+        logger.debug("[collab:jresume] mint failed user=%s: %s", user_id, exc)
+        return ""
     return digest
 
 
@@ -164,6 +161,6 @@ async def try_consume_join_resume_token_async(
             diagram_id.strip(),
         )
     except (RedisError, OSError, TypeError) as exc:
-        logger.debug('[collab:jresume] atomic consume failed user=%s: %s', user_id, exc)
+        logger.debug("[collab:jresume] atomic consume failed user=%s: %s", user_id, exc)
         return False
     return bool(consumed)

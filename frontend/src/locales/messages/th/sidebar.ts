@@ -1,11 +1,10 @@
-/**
- * th UI — sidebar
- */
+/** th UI — sidebar */
 
 export default {
   'sidebar.actions.delete': 'ลบ',
   'sidebar.actions.pinToTop': 'ปักหมุดด้านบน',
   'sidebar.actions.rename': 'เปลี่ยนชื่อ',
+  'sidebar.actions.turnOffOnlineCollab': 'Turn off online collaboration',
   'sidebar.actions.showLess': 'แสดงน้อยลง',
   'sidebar.actions.showMore': 'แสดงเพิ่มเติม ({n})',
   'sidebar.actions.unpin': 'เลิกปักหมุด',
@@ -46,6 +45,7 @@ export default {
   'sidebar.debateverse': 'โต้วาที',
   'sidebar.diagramHistory.capacity': 'บันทึกได้สูงสุด {n} ไดอะแกรม',
   'sidebar.diagramHistory.deleteFailed': 'ลบไดอะแกรมล้มเหลว',
+  'sidebar.diagramHistory.collabLive': 'Online collaboration active',
   'sidebar.diagramHistory.deleted': 'ลบไดอะแกรมแล้ว',
   'sidebar.diagramHistory.empty': 'ยังไม่มีไดอะแกรมที่บันทึกไว้',
   'sidebar.diagramHistory.loginPrompt': 'เข้าสู่ระบบเพื่อดูไดอะแกรม',
@@ -79,4 +79,4 @@ export default {
   'sidebar.templateResources': 'เทมเพลต',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': 'บัญชี',
-}
+} as const

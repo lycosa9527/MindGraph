@@ -156,4 +156,4 @@ export default {
   'auth.accountNameSave': 'Lưu tên',
   'auth.accountNameSaveSuccess': 'Đã cập nhật tên',
   'auth.accountNameSaveError': 'Không lưu được. Thử lại.',
-}
+} as const

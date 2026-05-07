@@ -1,6 +1,4 @@
-/**
- * ja UI — auth
- */
+/** ja UI — auth */
 
 export default {
   'auth.accountInfo': 'アカウント',
@@ -159,4 +157,4 @@ export default {
   'auth.accountNameSave': '名前を保存',
   'auth.accountNameSaveSuccess': '名前を更新しました',
   'auth.accountNameSaveError': '保存できませんでした。もう一度お試しください。',
-}
+} as const

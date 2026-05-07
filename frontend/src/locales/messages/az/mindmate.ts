@@ -1,6 +1,4 @@
-/**
- * az UI — mindmate
- */
+/** az UI — mindmate */
 
 export default {
   'aiModel.conceptAiOff': 'AI əlaqə etiketləri üçün toxunun (çoxlu model)',
@@ -14,13 +12,25 @@ export default {
   'aiModel.tabFocusBadge': 'Tab fokus',
   'aiModel.tabFocusTooltip':
     'Fokus sualını redaktə edərkən yoxlama üçün Tab; sonra altda − / = ilə seçin',
+  'aiModel.tabFocusQuestionBadge': 'Tab — fokus sualı',
+  'aiModel.conceptMapFocusQuestionTabTooltip':
+    'Fokus sualı seçilib və ya redaktə edilirken: süni intellekt yoxlaması üçün Tab sıxın (əvvəlcə konkret sual daxil edin; hesaba giriş tələb olunur).',
   'aiModel.tabRecBadge': 'Tab tövs.',
+  'aiModel.tabContentRecBadge': 'Tab — məzmun',
+  'aiModel.tabRelationshipRecBadge': 'Tab — əlaqə',
+  'aiModel.conceptMapConceptTabTooltip':
+    'Redaktə rejimi (izolyasiya olunmuş konsept): alternativ ifadələr üçün Tab (mövzu təyin olunmalıdır).',
+  'aiModel.conceptMapRelationshipTabTooltip':
+    'Redaktə və ya seçim rejimi (bağlı konsept): diqqət mərkəzindəki bağ üçün əlaqə təklifləri üçün Tab.',
   'aiModel.tooltip.clickDeselect': '{name} seçimini ləğv etmək üçün toxunun',
   'aiModel.tooltip.clickSelect': '{name} seçmək üçün toxunun',
   'aiModel.tooltip.clickSwitch': '{name} nəticəsinə keçmək üçün toxunun',
   'aiModel.tooltip.generating': '{name} yaradılır…',
   'aiModel.tooltip.modelFailed': '{name} yaradılması uğursuz oldu',
   'aiModel.tooltip.showingResult': 'Hazırda {name} nəticəsi göstərilir',
+  'aiModel.hostPickBadgeTooltip':
+    'Ev sahibi bu modelin diaqram versiyasını tərtib edir (çox-model görünüşü)',
+  'aiModel.hostPickBadgeAria': 'Ev sahibi {name} ilə düzəliş edir',
   'autoComplete.collabOwnerOnly':
     'Əməkdaşlıqda yalnız diaqram sahibi AI yaradıcısından istifadə edə bilər',
   'autoComplete.conceptMapRealtime':
@@ -53,7 +63,7 @@ export default {
   'focusQuestion.networkError': 'Şəbəkə xətası',
   'focusQuestion.noResult': 'Nəticə yoxdur',
   'focusQuestion.pagingAria': 'Səhifələmə',
-  'focusQuestion.passLabel': 'OK',
+  'focusQuestion.passLabel': 'Uyğundur',
   'focusQuestion.placeholder': 'Əsas sualınızı buraya yazın…',
   'focusQuestion.skip': 'Keç',
   'focusQuestion.suggestionsEmpty': 'Hələ təklif yoxdur. = ilə yenidən çağırın.',
@@ -134,7 +144,7 @@ export default {
   'panels.property.borderRadius': 'Sərhəd radiusu',
   'panels.property.borderWidth': 'Sərhəd eni',
   'panels.property.fontBold': 'Qalın',
-  'panels.property.fontNormal': 'Normal',
+  'panels.property.fontNormal': 'Standart',
   'panels.property.fontSize': 'Şrift Ölçüsü',
   'panels.property.fontWeight': 'Şrift Çəkisi',
   'panels.property.multiSelectLine': '{n} qovşaqları seçildi',
@@ -162,4 +172,4 @@ export default {
   'rootConceptModal.tabTitleRoot': 'Kök anlayış: {text}',
   'rootConceptModal.title': 'Kök anlayış',
   'rootConceptModal.titleConceptList': 'Konsepsiya siyahısı',
-}
+} as const

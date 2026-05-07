@@ -775,4 +775,4 @@ export default {
   'admin.database.pgMergeSuccess': 'PG dump merged successfully',
   'admin.database.pgMergeError': 'PG dump merge failed',
   'admin.database.pgMergeComplete': 'PG Merge Complete',
-}
+} as const

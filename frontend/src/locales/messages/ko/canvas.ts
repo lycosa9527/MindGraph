@@ -1,6 +1,4 @@
-/**
- * ko UI — canvas
- */
+/** ko UI — canvas */
 
 export default {
   'braceMap.defaultSubpartFirst': '새 세부항목 1',
@@ -60,6 +58,10 @@ export default {
   'canvas.toolbar.causeAdded': '원인 노드가 추가되었습니다',
   'canvas.toolbar.childAdded': '자식이 추가되었습니다',
   'canvas.toolbar.collabAiBlocked': '협업 중에는 다이어그램 소유자만 AI 생성을 사용할 수 있습니다',
+  'canvas.toolbar.collabLiveAiDisabled':
+    'AI generation is unavailable during live collaboration so everyone stays in sync',
+  'canvas.toolbar.collabGuestFeatureBlocked':
+    'This feature is not available while you join as a collaboration guest.',
   'canvas.toolbar.colorLabel': '색',
   'canvas.toolbar.conceptGeneration': '개념 생성',
   'canvas.toolbar.conceptMapModesDev': '개념도 모드는 개발 중입니다',
@@ -268,6 +270,10 @@ export default {
   'canvas.toolbar.selectBranchOrChild': '가지 또는 자식 노드를 선택해 주세요',
   'canvas.toolbar.selectCategoryOrLeafDelete':
     '범주 또는 잎 노드를 선택해 주세요(주제 노드는 삭제할 수 없습니다)',
+  'canvas.toolbar.selectCauseOrEffectForAdd':
+    'Select a cause or effect node (not the event), then press Enter to add another in that column',
+  'canvas.toolbar.selectTreeBranchForChild':
+    'Select a category or an item under a category to add a child, or select the topic to add a category',
   'canvas.toolbar.selectNodesFirst': '먼저 노드를 선택해 주세요',
   'canvas.toolbar.selectNodesToDelete': '삭제할 노드를 선택해 주세요',
   'canvas.toolbar.selectPartForSubpart': '세부항목을 추가할 부분을 선택해 주세요',
@@ -318,6 +324,22 @@ export default {
   'canvas.topBar.shareCommunity': '커뮤니티에 공유',
   'canvas.topBar.sharedCollab': '공유 협업',
   'canvas.topBar.teachingDesign': '교수 설계',
+  'canvas.subtitles.tooltip': 'Live subtitles (microphone)',
+  'canvas.subtitles.aria': 'Toggle live subtitles',
+  'canvas.subtitles.listening': 'Listening…',
+  'canvas.subtitles.micFailed': 'Could not access the microphone.',
+  'canvas.subtitles.micUnavailable': 'Microphone is not available in this browser.',
+  'canvas.subtitles.wsError': 'Subtitle connection failed. Check network and sign-in.',
+  'canvas.subtitles.genericError': 'Subtitle error',
+  'canvas.translation.tooltip': 'Live translation (microphone)',
+  'canvas.translation.aria': 'Toggle live translation',
+  'canvas.translation.listening': 'Listening for translation…',
+  'canvas.translation.micFailed': 'Could not access the microphone.',
+  'canvas.translation.micUnavailable': 'Microphone is not available in this browser.',
+  'canvas.translation.wsError': 'Translation connection failed. Check network and sign-in.',
+  'canvas.translation.genericError': 'Translation error',
+  'canvas.translation.start': 'Start translation',
+  'canvas.translation.stop': 'Stop translation',
   'canvas.topBar.snapshotRecallTooltip': '스냅샷 {n} 복원',
   'canvas.topBar.snapshotRecallTitle': '스냅샷 복원',
   'canvas.topBar.snapshotRecallConfirm': '스냅샷 {n}을 복원할까요? 현재 변경 내용이 대체됩니다.',
@@ -334,7 +356,21 @@ export default {
   'canvas.zoomControls.showPresentationTools': '발표 도구 표시',
   'canvas.zoomControls.hidePresentationTools': '발표 도구 숨기기',
   'canvas.zoomControls.hand': '손 도구',
+  'canvas.zoomControls.collaborate': 'Collaborate',
+  'canvas.zoomControls.collabWithinOrg': 'Collaborate within school',
+  'canvas.zoomControls.collabCrossOrg': 'Collaborate with shared code',
+  'canvas.zoomControls.collabTurnOff': 'Turn off online collaboration',
   'canvasPage.collaborationFooter': '협업',
+  'canvasPage.collaborationFooterOwner': "{username}'s collaboration",
+  'canvasPage.collaborationFooterOwnerDiagram':
+    "{username}'s diagram «{diagramTitle}» — collaboration",
+  'canvasPage.collaborationFooterNetworkDiagramTitle': 'Collaborative diagram «{diagramTitle}»',
+  'canvasPage.collaborationFooterSchool':
+    'School collaboration in progress — join from school list.',
+  'canvasPage.collaborationFooterSchoolDiagram':
+    'School collaboration on «{diagramTitle}» — join from the school session list.',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
   'conceptMap.focus.noResult': '결과 없음',
   'conceptMap.focus.validationRequestFailed': '유효성 검사 요청 실패',
   'diagram.aiGenerating': '일체 포함...',
@@ -501,6 +537,11 @@ export default {
   'landing.template.slot.subject': '주제',
   'landing.template.slot.theme': '테마',
   'landing.template.slot.topic': '중심 주제',
+  'discovery.gallery.sectionTitle': 'Discover featured diagrams',
+  'discovery.gallery.item1.title': 'Physical vs chemical change',
+  'discovery.gallery.item2.title': 'Project planning mind map',
+  'discovery.gallery.item3.title': 'Quadratic equation walkthrough',
+  'discovery.gallery.item4.title': 'Force and field relationships',
   'mindgraphLanding.cancel': '취소',
   'mindgraphLanding.codeFormatInvalid': '발표 코드 형식이 올바르지 않습니다(xxx-xxx여야 함)',
   'mindgraphLanding.codeIncomplete': '발표 코드를 모두 입력해 주세요',
@@ -508,6 +549,7 @@ export default {
   'mindgraphLanding.dialogSchoolTitle': '학교 협업',
   'mindgraphLanding.dialogSharedTitle': '공유 협업',
   'mindgraphLanding.import': '가져오기',
+  'mindgraphLanding.languageMenuTitle': 'Language — syncs interface and AI output',
   'mindgraphLanding.inputPlaceholder': '다이어그램을 설명하거나 아래 템플릿을 선택하세요...',
   'mindgraphLanding.join': '참여',
   'mindgraphLanding.joinFailed': '참여하지 못했습니다',
@@ -525,8 +567,6 @@ export default {
   'mindgraphLanding.sharedCollab': '공유 협업',
   'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome': '안녕하세요 {username}님, 저는 여러분의 AI 시각적 사고 도우미입니다',
-  'canvasPage.collabRoomIdleEnding':
-    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
   'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
   'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
   'canvasPage.collabRetryConnection': 'Retry',
@@ -534,4 +574,4 @@ export default {
   'canvasPage.collabConnected': 'Connected',
   'canvas.topBar.viewOnly': 'View only',
   'canvasPage.collabParticipantsMore': 'more',
-}
+} as const

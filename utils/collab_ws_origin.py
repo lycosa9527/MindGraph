@@ -41,8 +41,8 @@ def load_collab_ws_allowed_origins_env() -> FrozenSet[str]:
 
 
 def canvas_collab_websocket_origin_is_allowed(
-        headers: Headers,
-        allowed_normalized: FrozenSet[str],
+    headers: Headers,
+    allowed_normalized: FrozenSet[str],
 ) -> bool:
     """
     Returns whether the upgrade ``Origin`` is permitted.
@@ -55,10 +55,7 @@ def canvas_collab_websocket_origin_is_allowed(
     if not allowed_normalized:
         return True
 
-    missing_ok = (
-        os.environ.get("COLLAB_WS_ALLOW_MISSING_ORIGIN", "0").lower()
-        in ("1", "true", "yes")
-    )
+    missing_ok = os.environ.get("COLLAB_WS_ALLOW_MISSING_ORIGIN", "0").lower() in ("1", "true", "yes")
 
     raw = headers.get("origin")
     if not raw or not raw.strip():

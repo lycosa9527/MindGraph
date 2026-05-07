@@ -35,12 +35,8 @@ def _decode_js_string(literal: str) -> str:
     spurious drift between ``\\uD83D\\uDD8A`` and ``U+1F58A`` even though the
     two lists were identical.
     """
-    raw = literal.encode("latin-1", errors="strict").decode(
-        "raw_unicode_escape"
-    )
-    return raw.encode("utf-16", errors="surrogatepass").decode(
-        "utf-16", errors="strict"
-    )
+    raw = literal.encode("latin-1", errors="strict").decode("raw_unicode_escape")
+    return raw.encode("utf-16", errors="surrogatepass").decode("utf-16", errors="strict")
 
 
 def _extract_list_from_ts(source: str, name: str) -> list[str]:
@@ -51,10 +47,7 @@ def _extract_list_from_ts(source: str, name: str) -> list[str]:
     )
     match = re.search(pattern, source, re.DOTALL)
     if not match:
-        raise AssertionError(
-            f"[palette-sync] cannot locate {name} in {_TS_PATH} - "
-            "did the TS mirror's shape change?"
-        )
+        raise AssertionError(f"[palette-sync] cannot locate {name} in {_TS_PATH} - did the TS mirror's shape change?")
     body = match.group("body")
     items = re.findall(r"'((?:\\[\"'\\/bfnrtv]|\\u[0-9a-fA-F]{4}|[^'\\])*)'", body)
     return [_decode_js_string(item) for item in items]
@@ -65,9 +58,7 @@ def test_user_colors_match_frontend() -> None:
     ts_source = _TS_PATH.read_text(encoding="utf-8")
     ts_colors = _extract_list_from_ts(ts_source, "USER_COLORS")
     assert ts_colors == USER_COLORS, (
-        "Backend/frontend USER_COLORS drift:\n"
-        f"  backend: {USER_COLORS}\n"
-        f"  frontend: {ts_colors}"
+        f"Backend/frontend USER_COLORS drift:\n  backend: {USER_COLORS}\n  frontend: {ts_colors}"
     )
 
 
@@ -76,7 +67,5 @@ def test_user_emojis_match_frontend() -> None:
     ts_source = _TS_PATH.read_text(encoding="utf-8")
     ts_emojis = _extract_list_from_ts(ts_source, "USER_EMOJIS")
     assert ts_emojis == USER_EMOJIS, (
-        "Backend/frontend USER_EMOJIS drift:\n"
-        f"  backend: {USER_EMOJIS}\n"
-        f"  frontend: {ts_emojis}"
+        f"Backend/frontend USER_EMOJIS drift:\n  backend: {USER_EMOJIS}\n  frontend: {ts_emojis}"
     )

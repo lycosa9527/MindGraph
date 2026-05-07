@@ -124,9 +124,7 @@ class TestFullSpecValidation:
 
 class TestDiagramUpdateValidation:
     def test_diagram_id_mismatch(self) -> None:
-        err = _diagram_update_validation_error(
-            "d1", {"diagram_id": "d2", "nodes": [{"id": "n1"}]}
-        )
+        err = _diagram_update_validation_error("d1", {"diagram_id": "d2", "nodes": [{"id": "n1"}]})
         assert err is not None
 
     def test_missing_any_payload(self) -> None:
@@ -134,39 +132,27 @@ class TestDiagramUpdateValidation:
         assert err is not None
 
     def test_nodes_not_list(self) -> None:
-        err = _diagram_update_validation_error(
-            "d1", {"diagram_id": "d1", "nodes": "bad"}
-        )
+        err = _diagram_update_validation_error("d1", {"diagram_id": "d1", "nodes": "bad"})
         assert err is not None
 
     def test_nodes_over_cap(self) -> None:
         big = [{"id": f"n{i}"} for i in range(_MAX_COLLAB_UPDATE_NODES + 1)]
-        err = _diagram_update_validation_error(
-            "d1", {"diagram_id": "d1", "nodes": big}
-        )
+        err = _diagram_update_validation_error("d1", {"diagram_id": "d1", "nodes": big})
         assert err is not None
 
     def test_connections_over_cap(self) -> None:
-        big = [
-            {"id": f"c{i}"} for i in range(_MAX_COLLAB_UPDATE_CONNECTIONS + 1)
-        ]
-        err = _diagram_update_validation_error(
-            "d1", {"diagram_id": "d1", "connections": big}
-        )
+        big = [{"id": f"c{i}"} for i in range(_MAX_COLLAB_UPDATE_CONNECTIONS + 1)]
+        err = _diagram_update_validation_error("d1", {"diagram_id": "d1", "connections": big})
         assert err is not None
 
     def test_deleted_node_ids_over_cap(self) -> None:
         ids = [f"n{i}" for i in range(_MAX_COLLAB_DELETED_NODE_IDS + 1)]
-        err = _diagram_update_validation_error(
-            "d1", {"diagram_id": "d1", "deleted_node_ids": ids}
-        )
+        err = _diagram_update_validation_error("d1", {"diagram_id": "d1", "deleted_node_ids": ids})
         assert err is not None
 
     def test_deleted_connection_ids_over_cap(self) -> None:
         ids = [f"c{i}" for i in range(_MAX_COLLAB_DELETED_CONNECTION_IDS + 1)]
-        err = _diagram_update_validation_error(
-            "d1", {"diagram_id": "d1", "deleted_connection_ids": ids}
-        )
+        err = _diagram_update_validation_error("d1", {"diagram_id": "d1", "deleted_connection_ids": ids})
         assert err is not None
 
     def test_deleted_node_id_too_long(self) -> None:
@@ -231,9 +217,7 @@ class TestBuildParticipantsWithNames:
         assert out == []
 
     @pytest.mark.asyncio
-    async def test_small_room_resolves_names(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_small_room_resolves_names(self, monkeypatch: pytest.MonkeyPatch) -> None:
         users = {1: _StubUser("alice"), 2: _StubUser("bob")}
         monkeypatch.setattr(
             "routers.api.workshop_ws_handlers.redis_user_cache",
@@ -246,9 +230,7 @@ class TestBuildParticipantsWithNames:
         ]
 
     @pytest.mark.asyncio
-    async def test_cached_user_prefers_profile_name_over_username_slug(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_cached_user_prefers_profile_name_over_username_slug(self, monkeypatch: pytest.MonkeyPatch) -> None:
         class _UserWithBoth:
             """ORM-shaped user: promotional ``username`` slug must lose to ``name``."""
 
@@ -267,9 +249,7 @@ class TestBuildParticipantsWithNames:
         assert out == [{"user_id": 77, "username": "Chen Laoshi"}]
 
     @pytest.mark.asyncio
-    async def test_missing_user_falls_back_to_numeric(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_missing_user_falls_back_to_numeric(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
             "routers.api.workshop_ws_handlers.redis_user_cache",
             _StubUserCache({}),
@@ -278,13 +258,8 @@ class TestBuildParticipantsWithNames:
         assert out == [{"user_id": 42, "username": "User 42"}]
 
     @pytest.mark.asyncio
-    async def test_cap_adds_overflow_sentinel(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        users = {
-            i: _StubUser(f"u{i}")
-            for i in range(1, _PARTICIPANTS_WITH_NAMES_CAP + 10 + 1)
-        }
+    async def test_cap_adds_overflow_sentinel(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        users = {i: _StubUser(f"u{i}") for i in range(1, _PARTICIPANTS_WITH_NAMES_CAP + 10 + 1)}
         monkeypatch.setattr(
             "routers.api.workshop_ws_handlers.redis_user_cache",
             _StubUserCache(users),
@@ -329,9 +304,7 @@ class TestHandleNodeEditing:
         assert ws.sent[0]["type"] == "error"
 
     @pytest.mark.asyncio
-    async def test_duplicate_suppressed_within_window(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_duplicate_suppressed_within_window(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from routers.api.workshop_ws_handlers import _handle_node_editing
 
         # Force local (non-fanout) path by turning Redis fanout off.

@@ -47,4 +47,4 @@ export default {
   'notification.sessionInvalidated': 'คุณถูกออกจากระบบเนื่องจากเกินจำนวนอุปกรณ์สูงสุด',
   'notification.signInToUse': 'เข้าสู่ระบบเพื่อใช้งาน',
   'notification.signInToValidateFocus': 'เข้าสู่ระบบเพื่อตรวจสอบคำถามโฟกัส',
-}
+} as const

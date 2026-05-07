@@ -1,4 +1,5 @@
 """Bulk-insert collab i18n keys into locale canvas.ts and workshop.ts files."""
+
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent / "frontend" / "src" / "locales" / "messages"
@@ -50,6 +51,7 @@ def patch_workshop(wsh: Path) -> None:
         return
     inner = text[:idx] + "\n" + WORKSHOP_BLOCK + text[idx + 1 :]
     wsh.write_text(inner, encoding="utf-8")
+
 
 def main() -> None:
     for canvas in sorted(ROOT.glob("*/canvas.ts")):

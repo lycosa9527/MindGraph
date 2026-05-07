@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 # Env flag helpers
 # ---------------------------------------------------------------------------
 
+
 def _flag_on(name: str) -> bool:
     return os.getenv(name, "0") not in ("0", "false", "False", "")
 
@@ -65,6 +66,7 @@ def client_tracking_enabled() -> bool:
 # CLIENT TRACKING: server-assisted client-side caching invalidation
 # ---------------------------------------------------------------------------
 
+
 class _ClientTrackingState:
     """Tracks whether CLIENT TRACKING was successfully enabled on the connection."""
 
@@ -91,8 +93,12 @@ async def enable_client_tracking(redis: Any) -> bool:
         return False
     try:
         await redis.execute_command(
-            "CLIENT", "TRACKING", "on", "BCAST",
-            "PREFIX", "workshop:",
+            "CLIENT",
+            "TRACKING",
+            "on",
+            "BCAST",
+            "PREFIX",
+            "workshop:",
             "NOLOOP",
         )
         _ClientTrackingState.supported = True
@@ -149,8 +155,7 @@ async def _ensure_bloom_codes_reserved(redis: Any) -> bool:
         if "unknown command" in msg or "module" in msg:
             _BloomState.supported = False
             logger.info(
-                "[Redis8] Bloom filter unavailable (BF.RESERVE failed: %s) — "
-                "bloom pre-check disabled",
+                "[Redis8] Bloom filter unavailable (BF.RESERVE failed: %s) — bloom pre-check disabled",
                 exc,
             )
             return False
@@ -200,6 +205,7 @@ async def bloom_add_online_collab_code(code: str) -> None:
 # TimeSeries: cross-worker-aggregated counters for ws_metrics
 # ---------------------------------------------------------------------------
 
+
 class _TSState:
     """Module-private state wrapper for TimeSeries support/key cache."""
 
@@ -232,8 +238,8 @@ async def _ensure_ts_created(redis: Any, key: str, labels: dict[str, str]) -> bo
         if "unknown command" in msg or "module" in msg:
             _TSState.supported = False
             logger.info(
-                "[Redis8] TimeSeries module unavailable (%s) — "
-                "TS counters disabled", exc,
+                "[Redis8] TimeSeries module unavailable (%s) — TS counters disabled",
+                exc,
             )
             return False
         logger.debug("[Redis8] TS.CREATE error key=%s: %s", key, exc)
@@ -278,7 +284,10 @@ async def _ensure_tdigest_created(redis: Any, key: str) -> bool:
         return True
     try:
         await redis.execute_command(
-            "TDIGEST.CREATE", key, "COMPRESSION", _TDIGEST_COMPRESSION,
+            "TDIGEST.CREATE",
+            key,
+            "COMPRESSION",
+            _TDIGEST_COMPRESSION,
         )
         _TDigestState.supported = True
         _TDigestState.created.add(key)
@@ -292,8 +301,8 @@ async def _ensure_tdigest_created(redis: Any, key: str) -> bool:
         if "unknown command" in msg or "module" in msg:
             _TDigestState.supported = False
             logger.info(
-                "[Redis8] TDIGEST module unavailable (%s) — "
-                "latency quantiles disabled", exc,
+                "[Redis8] TDIGEST module unavailable (%s) — latency quantiles disabled",
+                exc,
             )
             return False
         logger.debug("[Redis8] TDIGEST.CREATE error key=%s: %s", key, exc)
@@ -328,11 +337,17 @@ async def tdigest_quantiles(category: str) -> Optional[dict[str, float]]:
         return None
     try:
         result = await redis.execute_command(
-            "TDIGEST.QUANTILE", key, "0.5", "0.95", "0.99",
+            "TDIGEST.QUANTILE",
+            key,
+            "0.5",
+            "0.95",
+            "0.99",
         )
     except RedisError as exc:
         logger.debug(
-            "[Redis8] TDIGEST.QUANTILE failed category=%s: %s", category, exc,
+            "[Redis8] TDIGEST.QUANTILE failed category=%s: %s",
+            category,
+            exc,
         )
         return None
     if result is None:
@@ -370,7 +385,12 @@ async def _ensure_topk_reserved(redis: Any, key: str) -> bool:
         return True
     try:
         await redis.execute_command(
-            "TOPK.RESERVE", key, _TOPK_K, _TOPK_WIDTH, _TOPK_DEPTH, _TOPK_DECAY,
+            "TOPK.RESERVE",
+            key,
+            _TOPK_K,
+            _TOPK_WIDTH,
+            _TOPK_DEPTH,
+            _TOPK_DECAY,
         )
         _TopKState.supported = True
         _TopKState.reserved.add(key)
@@ -418,11 +438,15 @@ async def topk_record_user_activity(user_id: int) -> None:
         return
     try:
         await redis.execute_command(
-            "TOPK.ADD", _TOPK_USERS_KEY, f"user:{int(user_id)}",
+            "TOPK.ADD",
+            _TOPK_USERS_KEY,
+            f"user:{int(user_id)}",
         )
     except RedisError as exc:
         logger.debug(
-            "[Redis8] TOPK.ADD user failed user_id=%s: %s", user_id, exc,
+            "[Redis8] TOPK.ADD user failed user_id=%s: %s",
+            user_id,
+            exc,
         )
 
 

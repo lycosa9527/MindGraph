@@ -136,4 +136,4 @@ export default {
   'landing.international.shareSiteModalHint': '',
   'landing.international.shareSiteCopy': 'Copy link',
   'landing.international.shareSiteCopied': 'Link copied',
-}
+} as const

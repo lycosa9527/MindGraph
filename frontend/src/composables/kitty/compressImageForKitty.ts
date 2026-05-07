@@ -18,7 +18,7 @@ export async function compressImageFileForKitty(file: File): Promise<string> {
     const natH = img.naturalHeight
     let longEdge = Math.min(
       Math.max(natW, natH),
-      Math.min(KITTY_IMAGE_LONG_EDGE_PREF, KITTY_IMAGE_LONG_EDGE_MAX),
+      Math.min(KITTY_IMAGE_LONG_EDGE_PREF, KITTY_IMAGE_LONG_EDGE_MAX)
     )
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
@@ -58,7 +58,11 @@ export async function compressImageFileForKitty(file: File): Promise<string> {
 
       while (quality >= 0.38) {
         const blob = await new Promise<Blob>((resolve, reject) => {
-          canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob'))), 'image/jpeg', quality)
+          canvas.toBlob(
+            (b) => (b ? resolve(b) : reject(new Error('toBlob'))),
+            'image/jpeg',
+            quality
+          )
         })
         if (blob.size <= KITTY_IMAGE_MAX_BYTES) {
           outBase64 = await blobToBase64(blob)

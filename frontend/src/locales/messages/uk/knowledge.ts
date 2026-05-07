@@ -211,4 +211,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': 'Документ завантажено, йде обробка…',
   'rag.retrievalTest.failed': 'Тест пошуку не вдався',
   'rag.retrievalTest.success': 'Тест пошуку завершено',
-}
+} as const

@@ -1,6 +1,4 @@
-/**
- * de UI — mindmate
- */
+/** de UI — mindmate */
 
 export default {
   'aiModel.conceptAiOff':
@@ -16,13 +14,25 @@ export default {
   'aiModel.tabFocusBadge': 'Tab-Fokus',
   'aiModel.tabFocusTooltip':
     'Drücken Sie Tab beim Bearbeiten der Fokusfrage zur Prüfung; wählen Sie Alternativen in der Leiste (− / =)',
+  'aiModel.tabFocusQuestionBadge': 'Tab — Fokusfrage',
+  'aiModel.conceptMapFocusQuestionTabTooltip':
+    'Wenn die Fokusfrage ausgewählt oder bearbeitet wird: Tab drücken für die KI-Prüfung (zuerst eine inhaltliche Frage eingeben; Anmeldung erforderlich).',
   'aiModel.tabRecBadge': 'Tab-Empf.',
+  'aiModel.tabContentRecBadge': 'Tab — Inhalt',
+  'aiModel.tabRelationshipRecBadge': 'Tab — Beziehung',
+  'aiModel.conceptMapConceptTabTooltip':
+    'Bearbeitungsmodus (einzelnes Konzept): Tab drücken für alternative Formulierungen (Thema muss gesetzt sein).',
+  'aiModel.conceptMapRelationshipTabTooltip':
+    'Bearbeitungsmodus oder Auswahlmodus (verknüpftes Konzept): Tab drücken für Beziehungsvorschläge zur Fokusverbindung.',
   'aiModel.tooltip.clickDeselect': 'Klicken Sie, um {name} abzuwählen',
   'aiModel.tooltip.clickSelect': 'Klicken Sie, um {name} auszuwählen',
   'aiModel.tooltip.clickSwitch': 'Klicken Sie, zum Ergebnis von {name} zu wechseln',
   'aiModel.tooltip.generating': '{name} generiert …',
   'aiModel.tooltip.modelFailed': '{name}: Generierung fehlgeschlagen',
   'aiModel.tooltip.showingResult': 'Aktuell: Ergebnis von {name}',
+  'aiModel.hostPickBadgeTooltip':
+    'Der Gastgeber bearbeitet die Diagrammversion dieses Modells (Mehrmodellansicht).',
+  'aiModel.hostPickBadgeAria': 'Der Gastgeber bearbeitet mit {name}',
   'autoComplete.collabOwnerOnly':
     'Nur der Diagrammbesitzer kann bei der Zusammenarbeit die KI-Generierung nutzen',
   'autoComplete.conceptMapRealtime':
@@ -131,7 +141,7 @@ export default {
   'nodePalette.refresh': 'Aktualisieren',
   'nodePalette.selected': 'ausgewählt',
   'nodePalette.similarities': 'Gemeinsamkeiten',
-  'panel.mindmate': 'MindMate KI',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'Knotenpalette',
   'panel.properties': 'Eigenschaften',
   'panels.property.background': 'Hintergrund',
@@ -139,7 +149,7 @@ export default {
   'panels.property.borderRadius': 'Eckenradius',
   'panels.property.borderWidth': 'Rahmenbreite',
   'panels.property.fontBold': 'Fett',
-  'panels.property.fontNormal': 'Normal',
+  'panels.property.fontNormal': 'Standard',
   'panels.property.fontSize': 'Schriftgröße',
   'panels.property.fontWeight': 'Schriftstärke',
   'panels.property.multiSelectLine': '{n} Knoten ausgewählt',
@@ -148,7 +158,7 @@ export default {
   'panels.property.selectNode': 'Wählen Sie einen Knoten, um Eigenschaften zu bearbeiten',
   'panels.property.selectSingle':
     'Wählen Sie einen einzelnen Knoten, um Eigenschaften zu bearbeiten',
-  'panels.property.text': 'Text',
+  'panels.property.text': 'Beschriftung',
   'panels.property.textColor': 'Textfarbe',
   'panels.share.clickToggle': 'Klicken Sie Nachrichten an, um die Auswahl umzuschalten',
   'panels.share.exportFail': 'Export fehlgeschlagen, bitte erneut versuchen',
@@ -168,4 +178,4 @@ export default {
   'rootConceptModal.tabTitleRoot': 'Wurzelkonzept: {text}',
   'rootConceptModal.title': 'Wurzelkonzept',
   'rootConceptModal.titleConceptList': 'Konzeptliste',
-}
+} as const

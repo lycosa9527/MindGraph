@@ -58,11 +58,12 @@ async def start_workshop(
     visibility = body.visibility if body else "organization"
     duration = body.duration if body else "today"
     target_org_id = body.org_id if body else None
-    code, error_msg, expires_at, stopped_previous_sessions = (
-        await get_online_collab_manager().start_online_collab(
-            diagram_id, current_user.id, visibility, duration,
-            target_org_id=target_org_id,
-        )
+    code, error_msg, expires_at, stopped_previous_sessions = await get_online_collab_manager().start_online_collab(
+        diagram_id,
+        current_user.id,
+        visibility,
+        duration,
+        target_org_id=target_org_id,
     )
 
     if not code:
@@ -110,10 +111,7 @@ async def stop_workshop(
         if await _owner_has_active_workshop(diagram_id, current_user.id):
             raise HTTPException(
                 status_code=503,
-                detail=(
-                    "Could not save the latest collaborative edits. "
-                    "Please try again in a few seconds."
-                ),
+                detail=("Could not save the latest collaborative edits. Please try again in a few seconds."),
             )
         raise HTTPException(
             status_code=404,

@@ -33,7 +33,10 @@ logger = logging.getLogger(__name__)
 
 
 async def _recv_type(
-    ws: Any, expected: set[str], timeout: float, max_frames: int = 12,
+    ws: Any,
+    expected: set[str],
+    timeout: float,
+    max_frames: int = 12,
 ) -> dict[str, Any] | None:
     for _ in range(max_frames):
         raw = await asyncio.wait_for(ws.recv(), timeout=timeout)
@@ -88,14 +91,10 @@ async def _one_probe_client(
                 payload = await _recv_type(ws, {"pong"}, timeout)
                 if payload is None:
                     return False
-                target_diagram = diagram_id or str(
-                    joined.get("diagram_id") or snapshot.get("diagram_id") or ""
-                )
+                target_diagram = diagram_id or str(joined.get("diagram_id") or snapshot.get("diagram_id") or "")
                 if not target_diagram:
                     return not require_full_cycle
-                await ws.send(
-                    json.dumps(_probe_update_payload(target_diagram, client_name))
-                )
+                await ws.send(json.dumps(_probe_update_payload(target_diagram, client_name)))
                 ack = await _recv_type(ws, {"update_ack", "error"}, timeout)
                 if ack is None or ack.get("type") == "error":
                     if require_full_cycle:
@@ -145,8 +144,7 @@ def main() -> None:
     parser.add_argument(
         "--require-full-cycle",
         action="store_true",
-        default=os.environ.get("COLLAB_PROBE_REQUIRE_FULL_CYCLE", "1").lower()
-        not in ("0", "false", "no"),
+        default=os.environ.get("COLLAB_PROBE_REQUIRE_FULL_CYCLE", "1").lower() not in ("0", "false", "no"),
         help="Fail unless join, snapshot, update ack, and leave all succeed",
     )
     args = parser.parse_args()

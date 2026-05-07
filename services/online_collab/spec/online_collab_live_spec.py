@@ -51,19 +51,14 @@ def _prune_dangling_connections(spec: Dict[str, Any]) -> None:
     nodes = spec.get("nodes") or []
     if not isinstance(nodes, list):
         return
-    valid = {
-        str(n.get("id"))
-        for n in nodes
-        if isinstance(n, dict) and n.get("id")
-    }
+    valid = {str(n.get("id")) for n in nodes if isinstance(n, dict) and n.get("id")}
     conns = spec.get("connections")
     if not isinstance(conns, list):
         return
     spec["connections"] = [
-        c for c in conns
-        if isinstance(c, dict)
-        and str(c.get("source", "")) in valid
-        and str(c.get("target", "")) in valid
+        c
+        for c in conns
+        if isinstance(c, dict) and str(c.get("source", "")) in valid and str(c.get("target", "")) in valid
     ]
 
 
@@ -123,9 +118,7 @@ def _merge_connection_patches(
                 (
                     i
                     for i, c in enumerate(conns)
-                    if isinstance(c, dict)
-                    and c.get("source") == source
-                    and c.get("target") == target
+                    if isinstance(c, dict) and c.get("source") == source and c.get("target") == target
                 ),
                 -1,
             )
@@ -151,14 +144,14 @@ def merge_granular_into_spec(
     if deleted_node_ids:
         to_delete: Set[str] = {str(nid) for nid in deleted_node_ids if nid}
         spec["nodes"] = [
-            n for n in (spec.get("nodes") or [])
-            if isinstance(n, dict) and str(n.get("id", "")) not in to_delete
+            n for n in (spec.get("nodes") or []) if isinstance(n, dict) and str(n.get("id", "")) not in to_delete
         ]
 
     if deleted_connection_ids:
         to_delete_c: Set[str] = {str(cid) for cid in deleted_connection_ids if cid}
         spec["connections"] = [
-            c for c in (spec.get("connections") or [])
+            c
+            for c in (spec.get("connections") or [])
             if isinstance(c, dict) and str(c.get("id", "")) not in to_delete_c
         ]
 
@@ -171,7 +164,9 @@ def merge_granular_into_spec(
         if not isinstance(existing_nodes, list):
             existing_nodes = []
         spec["nodes"] = _merge_node_patches(
-            existing_nodes, nodes, skip_node_ids=skip_patch_ids,
+            existing_nodes,
+            nodes,
+            skip_node_ids=skip_patch_ids,
         )
 
     if connections:
@@ -232,7 +227,9 @@ def apply_live_update(
         gn = [n for n in nodes if isinstance(n, dict)] if nodes is not None else None
         gc = [c for c in connections if isinstance(c, dict)] if connections is not None else None
         merge_granular_into_spec(
-            out, gn, gc,
+            out,
+            gn,
+            gc,
             deleted_node_ids=deleted_node_ids,
             deleted_connection_ids=deleted_connection_ids,
         )

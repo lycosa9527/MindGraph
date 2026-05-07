@@ -80,10 +80,7 @@ async def get_participants_for_code(code: str) -> List[int]:
         fields = await cast(Awaitable[Any], redis.hkeys(participants_key(code)))
         if not fields:
             return []
-        return [
-            int(f) if isinstance(f, str) else int(f.decode("utf-8"))
-            for f in fields
-        ]
+        return [int(f) if isinstance(f, str) else int(f.decode("utf-8")) for f in fields]
     except (RedisError, OSError) as exc:
         logger.error(
             "[OnlineCollabParticipantOps] Error getting participants: %s",
@@ -142,8 +139,7 @@ async def remove_participant_from_online_collab(code: str, user_id: int) -> None
             await schedule_live_spec_db_flush(code, diagram_id_val)
         await maybe_flush_live_spec_when_room_empty(redis, code)
         logger.debug(
-            "[OnlineCollabParticipantOps] Removed participant %s from workshop %s "
-            "count_after=%s",
+            "[OnlineCollabParticipantOps] Removed participant %s from workshop %s count_after=%s",
             user_id,
             code,
             count_after,
@@ -151,6 +147,7 @@ async def remove_participant_from_online_collab(code: str, user_id: int) -> None
         from services.online_collab.core.online_collab_manager import (
             get_online_collab_manager,
         )
+
         await get_online_collab_manager().touch_leave(code)
     except (RedisError, OSError) as exc:
         logger.error(

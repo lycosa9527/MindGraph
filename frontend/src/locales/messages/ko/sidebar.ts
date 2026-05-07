@@ -1,11 +1,10 @@
-/**
- * ko UI — sidebar
- */
+/** ko UI — sidebar */
 
 export default {
   'sidebar.actions.delete': '삭제',
   'sidebar.actions.pinToTop': '상단에 고정',
   'sidebar.actions.rename': '이름 바꾸기',
+  'sidebar.actions.turnOffOnlineCollab': 'Turn off online collaboration',
   'sidebar.actions.showLess': '간략히 보기',
   'sidebar.actions.showMore': '자세히 보기 ({n})',
   'sidebar.actions.unpin': '고정 해제',
@@ -45,6 +44,7 @@ export default {
   'sidebar.debateverse': '토론',
   'sidebar.diagramHistory.capacity': '최대 {n} 다이어그램을 저장할 수 있습니다.',
   'sidebar.diagramHistory.deleteFailed': '다이어그램을 삭제하지 못했습니다.',
+  'sidebar.diagramHistory.collabLive': 'Online collaboration active',
   'sidebar.diagramHistory.deleted': '다이어그램이 삭제되었습니다.',
   'sidebar.diagramHistory.empty': '저장된 다이어그램이 없습니다.',
   'sidebar.diagramHistory.loginPrompt': '다이어그램을 보려면 로그인하세요.',
@@ -78,4 +78,4 @@ export default {
   'sidebar.templateResources': '템플릿',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': '계정',
-}
+} as const

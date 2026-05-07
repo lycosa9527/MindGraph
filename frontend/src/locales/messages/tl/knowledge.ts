@@ -216,4 +216,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': 'Na-upload ang dokumento, pinoproseso...',
   'rag.retrievalTest.failed': 'Nabigo ang pagsubok sa retrieval',
   'rag.retrievalTest.success': 'Natapos ang pagsubok sa retrieval',
-}
+} as const

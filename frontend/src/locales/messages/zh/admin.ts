@@ -1,6 +1,4 @@
-/**
- * zh UI — admin
- */
+/** zh UI — admin */
 
 export default {
   'admin.actions': '操作',
@@ -749,4 +747,4 @@ export default {
   'admin.database.pgMergeSuccess': 'PG 转储合并成功',
   'admin.database.pgMergeError': 'PG 转储合并失败',
   'admin.database.pgMergeComplete': 'PG 合并完成',
-}
+} as const

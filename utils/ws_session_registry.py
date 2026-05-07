@@ -178,11 +178,7 @@ class WsSessionRegistry:
             return 0
         if endpoint is None:
             return len(session_ids)
-        return sum(
-            1
-            for sid in session_ids
-            if self._sessions.get(sid) and self._sessions[sid].endpoint == endpoint
-        )
+        return sum(1 for sid in session_ids if self._sessions.get(sid) and self._sessions[sid].endpoint == endpoint)
 
     def active_count(self) -> int:
         """Total number of registered sessions on this worker."""
@@ -272,9 +268,7 @@ class WsSessionRegistry:
                 await session.websocket.close(code=code, reason=reason)
 
         await asyncio.gather(*(_close(s) for s in targets), return_exceptions=True)
-        logger.info(
-            "[WSRegistry] graceful close sent to %d session(s)", len(targets)
-        )
+        logger.info("[WSRegistry] graceful close sent to %d session(s)", len(targets))
 
 
 # Module-level singleton — one per worker process.

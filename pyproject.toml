@@ -42,6 +42,8 @@ ignore-paths = [
     "frontend/node_modules",
     # Mostly long prompt strings; line length is enforced elsewhere (editors, ruff where applicable).
     "prompts",
+    # @generated bundled API strings; wrapping would churn large dict literals on regen.
+    "models/domain/message_catalog/bundled_messages.py",
 ]
 
 # Output format

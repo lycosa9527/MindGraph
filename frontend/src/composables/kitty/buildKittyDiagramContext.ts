@@ -1,8 +1,8 @@
 /**
  * Build Voice/Kitty WebSocket context from the diagram store (session_context parity).
  */
-import { buildDiagramData } from '@/composables/nodePalette/diagramDataBuilder'
 import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
+import { buildDiagramData } from '@/composables/nodePalette/diagramDataBuilder'
 import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores/diagram'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -22,10 +22,7 @@ export function kittyInteractionLanguageFromUi(): 'zh' | 'en' {
   return 'zh'
 }
 
-function nodeDisplayText(node: {
-  text?: string
-  data?: Record<string, unknown>
-}): string {
+function nodeDisplayText(node: { text?: string; data?: Record<string, unknown> }): string {
   const raw = (node.text ?? '').trim()
   if (raw.length > 0) {
     return raw

@@ -37,6 +37,7 @@ import { NodePalettePanel, RootConceptModal } from '@/components/panels'
 import {
   eventBus,
   getDefaultDiagramName,
+  getDiagramOperations,
   getNodePalette,
   getPanelCoordinator,
   useCanvasToolbarApps,
@@ -46,7 +47,6 @@ import {
   useLanguage,
   useNodeActions,
   useNotifications,
-  getDiagramOperations,
 } from '@/composables'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
@@ -637,8 +637,7 @@ onMounted(async () => {
 const preserveDiagramForKittyHub = ref(false)
 
 onBeforeRouteLeave((to) => {
-  preserveDiagramForKittyHub.value =
-    to.path === '/m/kitty' || to.name === 'MobileKitty'
+  preserveDiagramForKittyHub.value = to.path === '/m/kitty' || to.name === 'MobileKitty'
 })
 
 async function loadDiagramFromLibrary(diagramId: string): Promise<void> {
@@ -692,9 +691,7 @@ onUnmounted(() => {
     <div
       class="mobile-canvas-brand relative flex items-center justify-center shrink-0 bg-white border-b border-gray-200 z-30 min-h-[44px] px-2"
     >
-      <h1 class="text-center text-base font-semibold text-gray-800 py-2.5 px-3">
-        MindGraph
-      </h1>
+      <h1 class="text-center text-base font-semibold text-gray-800 py-2.5 px-3">MindGraph</h1>
       <button
         v-if="showMobileKittyShortcut"
         type="button"

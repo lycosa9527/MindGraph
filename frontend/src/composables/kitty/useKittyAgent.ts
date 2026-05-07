@@ -297,9 +297,15 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       case 'connected':
         return `session ${String(data.session_id ?? '').slice(0, 12)}…`
       case 'transcription':
-        return String(data.text ?? '').replace(/\s+/g, ' ').trim().slice(0, 72)
+        return String(data.text ?? '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 72)
       case 'text_chunk':
-        return String(data.text ?? '').replace(/\s+/g, ' ').trim().slice(0, 56)
+        return String(data.text ?? '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 56)
       case 'audio_chunk':
         return `audio chunk b64×${String(data.audio ?? '').length}`
       case 'speech_started':
@@ -622,7 +628,10 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
   // Public API
   // =========================================================================
 
-  async function startConversation(diagSessionId: string, context?: KittyAgentContext): Promise<void> {
+  async function startConversation(
+    diagSessionId: string,
+    context?: KittyAgentContext
+  ): Promise<void> {
     if (_destroyed) {
       throw new Error('Kitty Agent has been destroyed')
     }

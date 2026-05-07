@@ -1,6 +1,4 @@
-/**
- * es UI — common
- */
+/** es UI — common */
 
 export default {
   'app.aiDisclaimer': 'El contenido está generado por IA; compruébalo antes de usarlo.',
@@ -97,6 +95,14 @@ export default {
   'meta.pageTitle.mindgraph': 'MindGraph',
   'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
+  'meta.pageTitle.kitty': 'Kitty',
+  'canvas.kittyMobileIndicatorHint':
+    'A phone Kitty session (mic started) is linked to this diagram. Use your phone to talk with Kitty.',
+  'canvas.kittyMobileIndicatorAria':
+    'Status: Mobile Kitty is connected to this MindGraph canvas. Interact on your phone.',
+  'canvas.kittyMobileIndicatorTitle': 'Mobile Kitty',
+  'mobile.kittyWelcomeSub':
+    'Your microphone talks to the same MindGraph you edit. Open a saved diagram on your phone or desktop so Kitty stays in sync.',
   'meta.pageTitle.notFound': 'Página no encontrada',
   'meta.pageTitle.publicDashboard': 'Estadísticas',
   'meta.pageTitle.schoolDashboard': 'Panel escuela',
@@ -128,4 +134,4 @@ export default {
     'Escanea con el móvil para abrir esta página en clase.',
   'landing.international.shareSiteCopy': 'Copiar enlace',
   'landing.international.shareSiteCopied': 'Enlace copiado',
-}
+} as const

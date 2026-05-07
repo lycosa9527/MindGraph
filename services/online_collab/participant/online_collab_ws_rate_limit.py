@@ -39,7 +39,9 @@ _RATE_PREFIX = "rate:"
 # When True, a Redis error during the join rate-limit check allows the join to
 # proceed. The production default is fail-closed.
 _FAIL_OPEN: bool = os.environ.get("COLLAB_JOIN_RL_FAIL_OPEN", "false").lower() in (
-    "1", "true", "yes",
+    "1",
+    "true",
+    "yes",
 )
 
 
@@ -109,7 +111,9 @@ async def check_canvas_collab_join_rate_limits(
             pass
         logger.warning(
             "[CanvasCollabJoinRL] User limit user_id=%s count=%s/%s",
-            user_id, u_cnt, _MAX_USER_ATTEMPTS,
+            user_id,
+            u_cnt,
+            _MAX_USER_ATTEMPTS,
         )
         minutes = (_WINDOW_SECONDS // 60) + 1
         return (
@@ -124,7 +128,10 @@ async def check_canvas_collab_join_rate_limits(
             pass
         logger.warning(
             "[CanvasCollabJoinRL] IP limit ip=%s count=%s/%s user_id=%s",
-            ip, i_cnt, _MAX_IP_ATTEMPTS, user_id,
+            ip,
+            i_cnt,
+            _MAX_IP_ATTEMPTS,
+            user_id,
         )
         minutes = (_WINDOW_SECONDS // 60) + 1
         return (

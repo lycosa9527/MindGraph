@@ -74,9 +74,7 @@ from utils.ws_limits import (
 
 logger = logging.getLogger(__name__)
 
-_COLLAB_WS_GENERIC_ERROR = (
-    "Collaboration session encountered an error. Please reconnect if the problem persists."
-)
+_COLLAB_WS_GENERIC_ERROR = "Collaboration session encountered an error. Please reconnect if the problem persists."
 
 router = APIRouter()
 
@@ -92,12 +90,8 @@ def _parse_positive_int_env(name: str, default: int) -> int:
     return parsed if parsed > 0 else default
 
 
-_COLLAB_WS_MAX_PER_USER_ENDPOINT = _parse_positive_int_env(
-    "COLLAB_WS_MAX_PER_USER_ENDPOINT", 5
-)
-_COLLAB_WS_MAX_PER_USER_GLOBAL = _parse_positive_int_env(
-    "COLLAB_WS_MAX_PER_USER_GLOBAL", 20
-)
+_COLLAB_WS_MAX_PER_USER_ENDPOINT = _parse_positive_int_env("COLLAB_WS_MAX_PER_USER_ENDPOINT", 5)
+_COLLAB_WS_MAX_PER_USER_GLOBAL = _parse_positive_int_env("COLLAB_WS_MAX_PER_USER_GLOBAL", 20)
 
 
 def _collaboration_disabled_by_env() -> bool:
@@ -166,7 +160,8 @@ async def canvas_collab_websocket(
 
     allowed_origins = load_collab_ws_allowed_origins_env()
     if not canvas_collab_websocket_origin_is_allowed(
-            websocket.headers, allowed_origins,
+        websocket.headers,
+        allowed_origins,
     ):
         try:
             record_ws_collab_origin_reject()
@@ -195,9 +190,11 @@ async def canvas_collab_websocket(
         resolved = await resolve_canvas_collab_join(websocket, user, norm_code)
     except Exception as exc:
         logger.error(
-            "[CanvasCollabWS] resolve_canvas_collab_join raised unexpectedly "
-            "user_id=%s code=%s: %s",
-            user.id, norm_code, exc, exc_info=True,
+            "[CanvasCollabWS] resolve_canvas_collab_join raised unexpectedly user_id=%s code=%s: %s",
+            user.id,
+            norm_code,
+            exc,
+            exc_info=True,
         )
         try:
             await websocket.close(code=1011, reason="Internal error")
@@ -219,7 +216,9 @@ async def canvas_collab_websocket(
 
     logger.info(
         "[WorkshopWS] User %s connected to workshop %s (diagram %s)",
-        user.id, code, diagram_id,
+        user.id,
+        code,
+        diagram_id,
     )
 
     collab_ctx = CollabWsContext(
@@ -237,7 +236,6 @@ async def canvas_collab_websocket(
 
     join_committed = False
     try:
-
         await get_online_collab_manager().on_join(code, user.id)
 
         async with ws_managed_session(
@@ -254,9 +252,7 @@ async def canvas_collab_websocket(
             previous_handle: AnyHandle | None = room.get(user.id)
             if previous_handle is not None and previous_handle.websocket is not websocket:
                 try:
-                    await previous_handle.websocket.close(
-                        code=4003, reason="replaced_by_new_session"
-                    )
+                    await previous_handle.websocket.close(code=4003, reason="replaced_by_new_session")
                 except Exception as exc:
                     logger.debug("[WorkshopWS] Close superseded socket failed: %s", exc)
                 await teardown_superseded_connection(code, user.id, previous_handle)
@@ -275,7 +271,9 @@ async def canvas_collab_websocket(
             except Exception as hs_exc:
                 logger.error(
                     "[WorkshopWS] Handshake failed user=%s code=%s: %s",
-                    user.id, code, hs_exc,
+                    user.id,
+                    code,
+                    hs_exc,
                 )
                 try:
                     await websocket.close(code=4011, reason="handshake_failed")
@@ -296,7 +294,8 @@ async def canvas_collab_websocket(
             except WebSocketDisconnect:
                 logger.info(
                     "[WorkshopWS] User %s disconnected from workshop %s",
-                    user.id, code,
+                    user.id,
+                    code,
                 )
             except Exception as exc:
                 logger.error(
@@ -331,7 +330,9 @@ async def canvas_collab_websocket(
             except Exception as cleanup_exc:
                 logger.warning(
                     "[WorkshopWS] remove_participant after failed join user=%s code=%s: %s",
-                    user.id, code, cleanup_exc,
+                    user.id,
+                    code,
+                    cleanup_exc,
                 )
         raise
     finally:

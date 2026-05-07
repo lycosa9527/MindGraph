@@ -14,13 +14,25 @@ export default {
   'aiModel.tabFocusBadge': 'Tab focus',
   'aiModel.tabFocusTooltip':
     'Press Tab while editing the focus question to validate; then pick alternatives in the bar (− / =)',
+  'aiModel.tabFocusQuestionBadge': 'Tab — focus question',
+  'aiModel.conceptMapFocusQuestionTabTooltip':
+    'While the focus question is selected or being edited: press Tab to run AI check (enter a substantive question first; sign-in required).',
   'aiModel.tabRecBadge': 'Tab rec',
+  'aiModel.tabContentRecBadge': 'Tab — content',
+  'aiModel.tabRelationshipRecBadge': 'Tab — relationship',
+  'aiModel.conceptMapConceptTabTooltip':
+    'Edit mode (isolated concept): press Tab for alternative wordings (topic must be set).',
+  'aiModel.conceptMapRelationshipTabTooltip':
+    'Edit mode or selection mode (linked concept): press Tab for focal-link relationship suggestions.',
   'aiModel.tooltip.clickDeselect': 'Click to deselect {name}',
   'aiModel.tooltip.clickSelect': 'Click to select {name}',
   'aiModel.tooltip.clickSwitch': 'Click to switch to {name} result',
   'aiModel.tooltip.generating': '{name} generating...',
   'aiModel.tooltip.modelFailed': '{name} generation failed',
   'aiModel.tooltip.showingResult': 'Currently showing {name} result',
+  'aiModel.hostPickBadgeTooltip':
+    'Host is editing this model’s version of the diagram (multi-model view)',
+  'aiModel.hostPickBadgeAria': 'Host is editing using {name}',
   'autoComplete.collabOwnerOnly':
     'Only the diagram owner can use AI generation during collaboration',
   'autoComplete.conceptMapRealtime':
@@ -158,4 +170,4 @@ export default {
   'rootConceptModal.tabTitleRoot': 'Root concept: {text}',
   'rootConceptModal.title': 'Root concept',
   'rootConceptModal.titleConceptList': 'Concept list',
-}
+} as const

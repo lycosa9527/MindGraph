@@ -40,7 +40,8 @@ from routers.api.workshop_ws_handlers import build_participants_with_names
 def _log_join_parallel_read_failures(exc_group: BaseExceptionGroup) -> None:
     for sub in exc_group.exceptions:
         logger.warning(
-            "[CanvasCollabWS] parallel join read failed: %s", sub,
+            "[CanvasCollabWS] parallel join read failed: %s",
+            sub,
         )
 
 
@@ -113,7 +114,8 @@ async def send_canvas_collab_join_handshake(
     async def _load_visibility() -> None:
         nonlocal visibility
         visibility = await online_collab_visibility_for_diagram_id(
-            diagram_id, code=code,
+            diagram_id,
+            code=code,
         )
 
     async def _load_editors() -> None:
@@ -169,7 +171,9 @@ async def send_canvas_collab_join_handshake(
     except Exception as snap_exc:
         logger.error(
             "[WorkshopWS] snapshot failed code=%s user=%s: %s",
-            code, handle.user_id, snap_exc,
+            code,
+            handle.user_id,
+            snap_exc,
         )
         try:
             await enqueue(
@@ -202,7 +206,9 @@ async def send_canvas_collab_join_handshake(
 
     logger.info(
         "[WorkshopWS] handshake_ok code=%s user=%s role=%s",
-        code, user.id, handle.role,
+        code,
+        user.id,
+        handle.role,
     )
 
     await get_online_collab_manager().touch_activity(code)

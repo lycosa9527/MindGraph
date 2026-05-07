@@ -1,6 +1,4 @@
-/**
- * zh UI — canvas
- */
+/** zh UI — canvas */
 
 export default {
   'braceMap.defaultSubpartFirst': '新子部分 1',
@@ -527,6 +525,11 @@ export default {
   'landing.template.slot.subject': '事物',
   'landing.template.slot.theme': '主题',
   'landing.template.slot.topic': '中心词',
+  'discovery.gallery.sectionTitle': '发现精彩图示',
+  'discovery.gallery.item1.title': '物理变化与化学变化对比',
+  'discovery.gallery.item2.title': '项目规划思维导图',
+  'discovery.gallery.item3.title': '一元二次方程解题步骤',
+  'discovery.gallery.item4.title': '力与场的关系',
   'mindgraphLanding.cancel': '取消',
   'mindgraphLanding.codeFormatInvalid': '演示代码格式不正确（应为 xxx-xxx）',
   'mindgraphLanding.codeIncomplete': '请输入完整的演示代码',
@@ -558,4 +561,4 @@ export default {
   'canvasPage.collabConnected': '已连接',
   'canvas.topBar.viewOnly': '仅查看',
   'canvasPage.collabParticipantsMore': '更多',
-}
+} as const

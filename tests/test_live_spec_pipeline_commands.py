@@ -58,22 +58,25 @@ async def test_mutate_granular_json_merge_pipeline(monkeypatch):
     redis.setex = AsyncMock()
 
     monkeypatch.setattr(
-        "services.online_collab.spec.online_collab_live_spec_ops."
-        "collab_hash_tags_enabled",
+        "services.online_collab.spec.online_collab_live_spec_ops.collab_hash_tags_enabled",
         lambda: False,
     )
-    with patch(
-        "services.online_collab.spec.online_collab_live_spec_ops.json_get_live_spec",
-        new_callable=AsyncMock,
-        return_value=current,
-    ), patch(
-        "services.online_collab.spec.online_collab_live_spec_ops._nodes_minus_tombstones",
-        new_callable=AsyncMock,
-        return_value=[{"id": "n1", "text": "hello"}],
-    ), patch(
-        "services.online_collab.spec.online_collab_live_spec_ops.fcall_spec_granular_apply",
-        new_callable=AsyncMock,
-        return_value=None,
+    with (
+        patch(
+            "services.online_collab.spec.online_collab_live_spec_ops.json_get_live_spec",
+            new_callable=AsyncMock,
+            return_value=current,
+        ),
+        patch(
+            "services.online_collab.spec.online_collab_live_spec_ops._nodes_minus_tombstones",
+            new_callable=AsyncMock,
+            return_value=[{"id": "n1", "text": "hello"}],
+        ),
+        patch(
+            "services.online_collab.spec.online_collab_live_spec_ops.fcall_spec_granular_apply",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
     ):
         out = await mutate_live_spec_after_ws_update(
             redis,
@@ -114,8 +117,7 @@ async def test_mutate_full_replace_json_set_pipeline(monkeypatch):
     redis.setex = AsyncMock()
 
     monkeypatch.setattr(
-        "services.online_collab.spec.online_collab_live_spec_ops."
-        "collab_hash_tags_enabled",
+        "services.online_collab.spec.online_collab_live_spec_ops.collab_hash_tags_enabled",
         lambda: False,
     )
     replacement = {"type": "mindmap", "nodes": []}

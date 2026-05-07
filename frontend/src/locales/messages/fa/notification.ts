@@ -49,4 +49,4 @@ export default {
   'notification.sessionInvalidated': 'به دلیل تجاوز از حداکثر تعداد دستگاه‌ها از حساب خارج شدید',
   'notification.signInToUse': 'برای استفاده وارد شوید',
   'notification.signInToValidateFocus': 'برای اعتبارسنجی پرسش تمرکز وارد شوید',
-}
+} as const

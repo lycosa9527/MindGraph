@@ -1,14 +1,14 @@
 /**
  * useDiagramLabels - Diagram type to display name mapping
- * Used for placeholder text like "新圆圈图" / "New Circle Map" / Azerbaijani when creating new diagrams.
- * zh / zh-tw use Chinese labels; az / fr / af use locale-specific columns; all other UI locales fall back to English (labels.en) until extended.
+ * Used for placeholder text like "新圆圈图" / "New Circle Map" when creating new diagrams.
+ * zh / zh-tw use Chinese; az / fr / af / si use locale columns; others fall back to labels.en until extended.
  */
 import type { LocaleCode } from '@/i18n/locales'
 import type { DiagramType } from '@/types'
 
 const DIAGRAM_TYPE_LABELS: Record<
   string,
-  { zh: string; en: string; az: string; fr: string; af: string }
+  { zh: string; en: string; az: string; fr: string; af: string; si: string }
 > = {
   circle_map: {
     zh: '圆圈图',
@@ -16,6 +16,7 @@ const DIAGRAM_TYPE_LABELS: Record<
     az: 'Dairə xəritəsi',
     fr: 'Carte circulaire',
     af: 'Sirkelkaart',
+    si: 'වෘත්ත සිතියම',
   },
   bubble_map: {
     zh: '气泡图',
@@ -23,6 +24,7 @@ const DIAGRAM_TYPE_LABELS: Record<
     az: 'Baloncuk xəritəsi',
     fr: 'Carte à bulles',
     af: 'Borrelkaart',
+    si: 'බුබුල සිතියම',
   },
   double_bubble_map: {
     zh: '双气泡图',
@@ -30,6 +32,7 @@ const DIAGRAM_TYPE_LABELS: Record<
     az: 'İki baloncuk xəritəsi',
     fr: 'Double carte à bulles',
     af: 'Dubbelborrelkaart',
+    si: 'ද්විත්ව බුබුල සිතියම',
   },
   tree_map: {
     zh: '树形图',
@@ -37,6 +40,7 @@ const DIAGRAM_TYPE_LABELS: Record<
     az: 'Ağac xəritəsi',
     fr: 'Carte arborescente',
     af: 'Boomkaart',
+    si: 'රුක් සිතියම',
   },
   brace_map: {
     zh: '括号图',
@@ -44,6 +48,7 @@ const DIAGRAM_TYPE_LABELS: Record<
     az: 'Mötərizə xəritəsi',
     fr: 'Carte en accolades',
     af: 'Krulhakiekaart',
+    si: 'බ්‍රේස් සිතියම',
   },
   flow_map: {
     zh: '流程图',
@@ -51,6 +56,7 @@ const DIAGRAM_TYPE_LABELS: Record<
     az: 'Axın xəritəsi',
     fr: 'Carte de flux',
     af: 'Vloei-kaart',
+    si: 'ප්‍රවාහ සිතියම',
   },
   multi_flow_map: {
     zh: '复流程图',
@@ -58,6 +64,7 @@ const DIAGRAM_TYPE_LABELS: Record<
     az: 'Çox axın xəritəsi',
     fr: 'Carte multi-flux',
     af: 'Multivloei-kaart',
+    si: 'බහු ප්‍රවාහ සිතියම',
   },
   bridge_map: {
     zh: '桥形图',
@@ -65,6 +72,7 @@ const DIAGRAM_TYPE_LABELS: Record<
     az: 'Körpü xəritəsi',
     fr: 'Carte en pont',
     af: 'Brugkaart',
+    si: 'පාලම සිතියම',
   },
   mindmap: {
     zh: '思维导图',
@@ -72,6 +80,7 @@ const DIAGRAM_TYPE_LABELS: Record<
     az: 'Zehin xəritəsi',
     fr: 'Carte mentale',
     af: 'Denkkaart',
+    si: 'මනෝ සිතියම',
   },
   mind_map: {
     zh: '思维导图',
@@ -79,6 +88,7 @@ const DIAGRAM_TYPE_LABELS: Record<
     az: 'Zehin xəritəsi',
     fr: 'Carte mentale',
     af: 'Denkkaart',
+    si: 'මනෝ සිතියම',
   },
   concept_map: {
     zh: '概念图',
@@ -86,17 +96,19 @@ const DIAGRAM_TYPE_LABELS: Record<
     az: 'Konsept xəritəsi',
     fr: 'Carte conceptuelle',
     af: 'Konsepkaart',
+    si: 'සංකල්ප සිතියම',
   },
 }
 
 function pickLocale(
-  labels: { zh: string; en: string; az: string; fr: string; af: string },
+  labels: { zh: string; en: string; az: string; fr: string; af: string; si: string },
   locale: LocaleCode
 ): string {
   if (locale === 'zh' || locale === 'zh-tw') return labels.zh
   if (locale === 'az') return labels.az
   if (locale === 'fr') return labels.fr
   if (locale === 'af') return labels.af
+  if (locale === 'si') return labels.si
   return labels.en
 }
 
@@ -160,7 +172,7 @@ const NEW_DIAGRAM_FALLBACK: Record<LocaleCode, string> = {
   mn: NEW_EN,
   my: NEW_EN,
   ne: NEW_EN,
-  si: NEW_EN,
+  si: 'නව සිතියම',
   sk: NEW_EN,
   sl: NEW_EN,
   sq: NEW_EN,
@@ -218,6 +230,9 @@ export function getDefaultDiagramName(
   }
   if (locale === 'af') {
     return `Nuwe ${displayName}`
+  }
+  if (locale === 'si') {
+    return `නව ${displayName}`
   }
   return `New ${displayName}`
 }

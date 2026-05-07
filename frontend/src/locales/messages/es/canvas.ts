@@ -1,6 +1,4 @@
-/**
- * es UI — canvas
- */
+/** es UI — canvas */
 
 export default {
   'braceMap.defaultSubpartFirst': 'Nueva subparte 1',
@@ -61,6 +59,10 @@ export default {
   'canvas.toolbar.childAdded': 'Hijo añadido',
   'canvas.toolbar.collabAiBlocked':
     'Solo el propietario del diagrama puede usar la generación con IA durante la colaboración',
+  'canvas.toolbar.collabLiveAiDisabled':
+    'AI generation is unavailable during live collaboration so everyone stays in sync',
+  'canvas.toolbar.collabGuestFeatureBlocked':
+    'This feature is not available while you join as a collaboration guest.',
   'canvas.toolbar.colorLabel': 'Color',
   'canvas.toolbar.conceptGeneration': 'Generación de conceptos',
   'canvas.toolbar.conceptMapModesDev': 'Los modos del mapa conceptual están en desarrollo',
@@ -274,6 +276,10 @@ export default {
   'canvas.toolbar.selectBranchOrChild': 'Seleccione una rama o un nodo hijo',
   'canvas.toolbar.selectCategoryOrLeafDelete':
     'Seleccione nodos de categoría u hoja (el nodo tema no se puede eliminar)',
+  'canvas.toolbar.selectCauseOrEffectForAdd':
+    'Select a cause or effect node (not the event), then press Enter to add another in that column',
+  'canvas.toolbar.selectTreeBranchForChild':
+    'Select a category or an item under a category to add a child, or select the topic to add a category',
   'canvas.toolbar.selectNodesFirst': 'Seleccione primero uno o más nodos',
   'canvas.toolbar.selectNodesToDelete': 'Seleccione nodos para eliminar',
   'canvas.toolbar.selectPartForSubpart': 'Seleccione una parte para añadir una subparte',
@@ -326,6 +332,22 @@ export default {
   'canvas.topBar.shareCommunity': 'Compartir en la comunidad',
   'canvas.topBar.sharedCollab': 'Colaboración compartida',
   'canvas.topBar.teachingDesign': 'Diseño didáctico',
+  'canvas.subtitles.tooltip': 'Live subtitles (microphone)',
+  'canvas.subtitles.aria': 'Toggle live subtitles',
+  'canvas.subtitles.listening': 'Listening…',
+  'canvas.subtitles.micFailed': 'Could not access the microphone.',
+  'canvas.subtitles.micUnavailable': 'Microphone is not available in this browser.',
+  'canvas.subtitles.wsError': 'Subtitle connection failed. Check network and sign-in.',
+  'canvas.subtitles.genericError': 'Subtitle error',
+  'canvas.translation.tooltip': 'Live translation (microphone)',
+  'canvas.translation.aria': 'Toggle live translation',
+  'canvas.translation.listening': 'Listening for translation…',
+  'canvas.translation.micFailed': 'Could not access the microphone.',
+  'canvas.translation.micUnavailable': 'Microphone is not available in this browser.',
+  'canvas.translation.wsError': 'Translation connection failed. Check network and sign-in.',
+  'canvas.translation.genericError': 'Translation error',
+  'canvas.translation.start': 'Start translation',
+  'canvas.translation.stop': 'Stop translation',
   'canvas.topBar.snapshotRecallTooltip': 'Restaurar instantánea {n}',
   'canvas.topBar.snapshotRecallTitle': 'Restaurar instantánea',
   'canvas.topBar.snapshotRecallConfirm':
@@ -344,7 +366,21 @@ export default {
   'canvas.zoomControls.showPresentationTools': 'Mostrar herramientas de presentación',
   'canvas.zoomControls.hidePresentationTools': 'Ocultar herramientas de presentación',
   'canvas.zoomControls.hand': 'Mano (arrastrar)',
+  'canvas.zoomControls.collaborate': 'Collaborate',
+  'canvas.zoomControls.collabWithinOrg': 'Collaborate within school',
+  'canvas.zoomControls.collabCrossOrg': 'Collaborate with shared code',
+  'canvas.zoomControls.collabTurnOff': 'Turn off online collaboration',
   'canvasPage.collaborationFooter': 'Colaboración',
+  'canvasPage.collaborationFooterOwner': "{username}'s collaboration",
+  'canvasPage.collaborationFooterOwnerDiagram':
+    "{username}'s diagram «{diagramTitle}» — collaboration",
+  'canvasPage.collaborationFooterNetworkDiagramTitle': 'Collaborative diagram «{diagramTitle}»',
+  'canvasPage.collaborationFooterSchool':
+    'School collaboration in progress — join from school list.',
+  'canvasPage.collaborationFooterSchoolDiagram':
+    'School collaboration on «{diagramTitle}» — join from the school session list.',
+  'canvasPage.collabRoomIdleEnding':
+    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
   'conceptMap.focus.noResult': 'Sin resultado',
   'conceptMap.focus.validationRequestFailed': 'Falló la solicitud de validación',
   'diagram.aiGenerating': 'IA...',
@@ -515,6 +551,11 @@ export default {
   'landing.template.slot.subject': 'Asunto',
   'landing.template.slot.theme': 'Tema',
   'landing.template.slot.topic': 'Tema central',
+  'discovery.gallery.sectionTitle': 'Discover featured diagrams',
+  'discovery.gallery.item1.title': 'Physical vs chemical change',
+  'discovery.gallery.item2.title': 'Project planning mind map',
+  'discovery.gallery.item3.title': 'Quadratic equation walkthrough',
+  'discovery.gallery.item4.title': 'Force and field relationships',
   'mindgraphLanding.cancel': 'Cancelar',
   'mindgraphLanding.codeFormatInvalid':
     'Formato de código de presentación no válido (debe ser xxx-xxx)',
@@ -523,6 +564,7 @@ export default {
   'mindgraphLanding.dialogSchoolTitle': 'Colaboración escolar',
   'mindgraphLanding.dialogSharedTitle': 'Colaboración compartida',
   'mindgraphLanding.import': 'Importar',
+  'mindgraphLanding.languageMenuTitle': 'Language — syncs interface and AI output',
   'mindgraphLanding.inputPlaceholder': 'Describa su diagrama o elija una plantilla abajo...',
   'mindgraphLanding.join': 'Unirse',
   'mindgraphLanding.joinFailed': 'Error al unirse',
@@ -541,8 +583,6 @@ export default {
   'mindgraphLanding.sharedCollab': 'Colaboración compartida',
   'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
   'mindgraphLanding.welcome': 'Hola {username}, soy tu asistente de pensamiento visual con IA',
-  'canvasPage.collabRoomIdleEnding':
-    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
   'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
   'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
   'canvasPage.collabRetryConnection': 'Retry',
@@ -550,4 +590,4 @@ export default {
   'canvasPage.collabConnected': 'Connected',
   'canvas.topBar.viewOnly': 'View only',
   'canvasPage.collabParticipantsMore': 'more',
-}
+} as const

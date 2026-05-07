@@ -230,7 +230,12 @@ defineExpose({ openCollab, stopNow })
               'bg-red-400': statusChip.tone === 'err',
             }"
           />
-          <span :class="{ 'text-amber-200': statusChip.tone === 'warn', 'text-red-300': statusChip.tone === 'err' }">
+          <span
+            :class="{
+              'text-amber-200': statusChip.tone === 'warn',
+              'text-red-300': statusChip.tone === 'err',
+            }"
+          >
             {{ statusChip.label }}
           </span>
           <span

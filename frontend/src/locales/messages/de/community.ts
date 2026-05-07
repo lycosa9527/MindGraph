@@ -1,6 +1,4 @@
-/**
- * de UI — community
- */
+/** de UI — community */
 
 export default {
   'community.category.all': 'Alle',
@@ -154,4 +152,4 @@ export default {
   'libraryViewer.bookmarkAdded': 'Lesezeichen hinzugefügt',
   'libraryViewer.bookmarkRemoved': 'Lesezeichen entfernt',
   'libraryViewer.operationFailed': 'Etwas ist schiefgelaufen',
-}
+} as const

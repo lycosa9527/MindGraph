@@ -1,6 +1,4 @@
-/**
- * zh UI — sidebar
- */
+/** zh UI — sidebar */
 
 export default {
   'sidebar.actions.delete': '删除',
@@ -78,4 +76,4 @@ export default {
   'sidebar.templateResources': '模板资源',
   'sidebar.userSubtitleDefault': 'MindGraph专业版',
   'sidebar.account': '账号设置',
-}
+} as const

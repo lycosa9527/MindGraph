@@ -101,9 +101,7 @@ async def get_stats_trends_admin(
         # Daily cumulative user count
         try:
             initial_count = (
-                await db.execute(
-                    select(_sql_count(User.id)).where(User.created_at < trends_filter_start_utc)
-                )
+                await db.execute(select(_sql_count(User.id)).where(User.created_at < trends_filter_start_utc))
             ).scalar_one_or_none() or 0
 
             user_counts = (

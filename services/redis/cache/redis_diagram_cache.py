@@ -328,7 +328,11 @@ class RedisDiagramCache:
             return False, "Diagram not found"
         now = datetime.now(UTC)
         ok = await self._update_meta_only_in_database(
-            diagram_id, user_id, title, thumbnail, now,
+            diagram_id,
+            user_id,
+            title,
+            thumbnail,
+            now,
         )
         if not ok:
             return False, "Failed to update diagram metadata"
@@ -345,7 +349,8 @@ class RedisDiagramCache:
                         await pipe.execute()
                 except Exception as exc:
                     logger.warning(
-                        "[DiagramCache] meta-only cache invalidate failed: %s", exc,
+                        "[DiagramCache] meta-only cache invalidate failed: %s",
+                        exc,
                     )
         return True, None
 
@@ -617,9 +622,7 @@ class RedisDiagramCache:
                             "updated_at": (updated_at_val.isoformat() if updated_at_val is not None else None),
                             "is_pinned": getattr(d, "is_pinned", False),
                             "workshop_code": getattr(d, "workshop_code", None) or None,
-                            "workshop_expires_at": (
-                                expires_at_val.isoformat() if expires_at_val is not None else None
-                            ),
+                            "workshop_expires_at": (expires_at_val.isoformat() if expires_at_val is not None else None),
                         }
                     )
                 return items

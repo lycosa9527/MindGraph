@@ -48,4 +48,4 @@ export default {
   'notification.sessionInvalidated': 'Вас вилучено: перевищено максимальну кількість пристроїв',
   'notification.signInToUse': 'Увійдіть, щоб використовувати',
   'notification.signInToValidateFocus': 'Увійдіть, щоб перевірити фокус-питання',
-}
+} as const

@@ -18,9 +18,7 @@ const { t } = useLanguage()
 
 const displayName = computed(() => authStore.user?.username || '')
 
-const showKittyHubCard = computed(
-  () => featureFlagsStore.flags?.feature_kitty_agent ?? false,
-)
+const showKittyHubCard = computed(() => featureFlagsStore.flags?.feature_kitty_agent ?? false)
 
 onMounted(() => {
   void featureFlagsStore.fetchFlags()
@@ -122,12 +120,7 @@ function goToAccount() {
             {{ t('mobile.kittyCardTitle', 'Kitty') }}
           </div>
           <div class="text-sm text-gray-500 mt-0.5">
-            {{
-              t(
-                'mobile.kittyCardDesc',
-                '思维教学语音智能体'
-              )
-            }}
+            {{ t('mobile.kittyCardDesc', '思维教学语音智能体') }}
           </div>
         </div>
         <ChevronRight

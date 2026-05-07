@@ -39,12 +39,12 @@ async def test_run_dual_collab_ws_probe_reports_success(monkeypatch):
 
     fake_mod = mock.MagicMock()
     fake_mod.connect = lambda *_a, **_k: _Ctx()
-    monkeypatch.setattr(probe, 'websockets', fake_mod)
+    monkeypatch.setattr(probe, "websockets", fake_mod)
 
     outcome = await probe.run_dual_collab_ws_probe(
-        'wss://example.invalid/ws?token=jwt',
+        "wss://example.invalid/ws?token=jwt",
         5,
-        diagram_id='diag-1',
+        diagram_id="diag-1",
     )
 
     assert outcome == 0
@@ -70,10 +70,10 @@ async def test_run_dual_reports_failure_when_frame_has_no_type(monkeypatch):
 
     fake_mod = mock.MagicMock()
     fake_mod.connect = lambda *_a, **_k: _Ctx()
-    monkeypatch.setattr(probe, 'websockets', fake_mod)
+    monkeypatch.setattr(probe, "websockets", fake_mod)
 
     outcome = await probe.run_dual_collab_ws_probe(
-        'wss://example.invalid/ws?token=jwt',
+        "wss://example.invalid/ws?token=jwt",
         5,
         require_full_cycle=False,
     )

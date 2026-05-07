@@ -784,4 +784,4 @@ export default {
   'admin.database.pgMergeSuccess': 'Dump PG mesclado com sucesso',
   'admin.database.pgMergeError': 'Mesclagem do dump PG falhou',
   'admin.database.pgMergeComplete': 'Mesclagem PG concluída',
-}
+} as const

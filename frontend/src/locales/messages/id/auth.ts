@@ -157,4 +157,4 @@ export default {
   'auth.accountNameSave': 'Simpan nama',
   'auth.accountNameSaveSuccess': 'Nama diperbarui',
   'auth.accountNameSaveError': 'Tidak dapat menyimpan. Coba lagi.',
-}
+} as const
