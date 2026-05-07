@@ -1,7 +1,7 @@
 /**
  * Maps MindGraph UI locale (`LocaleCode`) to simple-keyboard-layouts preset modules.
  *
- * ## Tier-27 interface picker → virtual keyboard (same order as {@link INTERFACE_LANGUAGE_PICKER_CODES})
+ * ## Interface language picker → virtual keyboard (same order as {@link INTERFACE_LANGUAGE_PICKER_CODES})
  *
  * | UI code | Preset | Notes |
  * |---------|--------|--------|
@@ -24,6 +24,7 @@
  * | nl | english | NL uses US-style QWERTY; no NL pack layout |
  * | it | italian | |
  * | hi | hindi | Devanagari |
+ * | si | english | No Sinhala layout in pack |
  * | id | english | Latin / QWERTY |
  * | tl | english | Latin / QWERTY |
  * | vi | english | No Telex/VNI in pack |
@@ -107,7 +108,7 @@ export type LayoutPresetName = keyof typeof PRESET_LOADERS
 export const ALL_LAYOUT_PRESET_NAMES = Object.keys(PRESET_LOADERS) as LayoutPresetName[]
 
 /**
- * Virtual keyboard preset for each Settings → Interface language entry (27).
+ * Virtual keyboard preset for each Settings → Interface language entry.
  * Key order matches {@link INTERFACE_LANGUAGE_PICKER_CODES}.
  */
 export const PICKER_VIRTUAL_KEYBOARD_PRESET_BY_UI_LOCALE = {
@@ -130,6 +131,7 @@ export const PICKER_VIRTUAL_KEYBOARD_PRESET_BY_UI_LOCALE = {
   nl: 'english',
   it: 'italian',
   hi: 'hindi',
+  si: 'english',
   id: 'english',
   tl: 'english',
   vi: 'english',

@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.3] - 2026-05-07
+
+### Added
+
+- **Concept map — CmapTools `.cmap` import** — client-side ZIP + Java serialization string extraction (`TC_STRING`), IHMC-oriented heuristics for topic / concepts / relationships, optional graphical layout (`_layout_positions_by_label`), dev script `analyze-cmap-folder`; wired through landing import (`.mg,.cmap`), session storage handoff, Vitest coverage ([`frontend/src/utils/cmapImport.ts`](frontend/src/utils/cmapImport.ts), [`cmapLabels.ts`](frontend/src/utils/cmapLabels.ts), [`cmapLayoutExtract.ts`](frontend/src/utils/cmapLayoutExtract.ts), [`javaSerializationParse.ts`](frontend/src/utils/javaSerializationParse.ts), [`useDiagramImport.ts`](frontend/src/composables/editor/useDiagramImport.ts), [`frontend/scripts/analyze-cmap-folder.ts`](frontend/scripts/analyze-cmap-folder.ts), tests under [`frontend/tests/`](frontend/tests)).
+
+### Changed
+
+- **`frontend/src/stores/specLoader/conceptMap.ts`** — honor imported per-label positions; polar fallback ring uses overlap-aware radius; concept-map connections set default `arrowheadDirection` from node centers.
+- **Live translation** — default WebSocket target language **English** on server and client; translation target follows the explicit store selection (removed “auto” source-derived flip); realtime model resolves from **`config.QWEN_LIVE_TRANSLATE_MODEL`** ([`live_translate_ws.py`](routers/api/live_translate_ws.py), [`live_translate_bridge.py`](services/features/live_translate_bridge.py), [`liveTranslation.ts`](frontend/src/stores/liveTranslation.ts)).
+- **Mobile Kitty hub** — home card and **`MobileKitty`** route respect **`FEATURE_KITTY_AGENT`** after flags fetch ([`MobileHomePage.vue`](frontend/src/pages/mobile/MobileHomePage.vue), [`frontend/src/router/index.ts`](frontend/src/router/index.ts)).
+- **Locales** — Sinhala (`si`) bundles refreshed across admin, canvas, common, community, knowledge, mindmate, notification, sidebar, workshop; minor English / Chinese canvas copy ([`frontend/src/locales/messages/si/`](frontend/src/locales/messages/si/), [`zh/canvas.ts`](frontend/src/locales/messages/zh/canvas.ts)).
+- **`frontend/scripts/sync-messages-keys-from-reference.ts`**, **`keyboardLayoutForUiLocale.ts`**, **`locales.ts`**, **`translateLanguages.ts`** — small i18n / keyboard plumbing alignment.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.3).
+
 ## [5.117.2] - 2026-05-06
 
 ### Added

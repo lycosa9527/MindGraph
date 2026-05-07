@@ -1,7 +1,4 @@
-/**
- * si UI — auth
- */
-
+/** si UI — auth (machine-translated from en; review as needed) */
 export default {
   'auth.accountInfo': 'Account',
   'auth.updateLog': 'Release notes',
@@ -157,4 +154,4 @@ export default {
   'auth.accountNameSave': 'Save name',
   'auth.accountNameSaveSuccess': 'Name updated',
   'auth.accountNameSaveError': 'Could not save. Please try again.',
-}
+} as const

@@ -17,7 +17,7 @@ export default {
   'canvas.export.svgSuccess': 'SVG exported successfully',
   'canvas.export.unknownFormat': 'Unknown export format: {format}',
   'canvas.import.invalidFile':
-    'Invalid diagram file. Please select an MG file exported from MindGraph.',
+    'Invalid diagram file. Please select an MG file exported from MindGraph or a CmapTools .cmap file.',
   'canvas.import.parseError': 'Failed to parse diagram file, please try again',
   'canvas.reset.confirmBody':
     'Are you sure? All current content will be lost, including the diagram and node palette. This cannot be undone.',

@@ -1,15 +1,26 @@
 /**
  * Concept Map Loader
  * Converts { topic, concepts, relationships } spec to { nodes, connections }
- * Uses hierarchical layout: topic at top, branches below, children under parents
+ * Uses hierarchical layout: topic at top, branches below, children under parents.
+ * Optional `spec._layout_positions_by_label` (e.g. from `.cmap` import) overrides per-label positions.
  */
 import {
+  computeDefaultArrowheadForConceptMap,
+  getConceptMapNodeCenter,
+} from '@/composables/diagrams/conceptMapHandles'
+import {
+  BUBBLE_NODE_HEIGHT,
   DEFAULT_CENTER_X,
   DEFAULT_CENTER_Y,
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
+  TOPIC_NODE_HEIGHT,
 } from '@/composables/diagrams/layoutConfig'
-import { polarToPosition } from '@/composables/diagrams/useRadialLayout'
+import {
+  minRadiusForNoOverlap,
+  pillHalfExtentForOverlap,
+  polarToPosition,
+} from '@/composables/diagrams/useRadialLayout'
 import type { Connection, DiagramNode } from '@/types'
 
 import type { SpecLoaderResult } from './types'
@@ -98,6 +109,17 @@ function computeHierarchicalPositions(
   return positions
 }
 
+/** Polar fallback ring radius so concepts do not overlap (fixed 150px was too tight for many nodes). */
+function polarFallbackRadius(conceptCount: number, halfWidth: number, halfHeight: number): number {
+  if (conceptCount <= 0) return CONCEPT_RING_RADIUS
+  const pillR = pillHalfExtentForOverlap(halfWidth, halfHeight)
+  if (conceptCount === 1) {
+    return Math.max(CONCEPT_RING_RADIUS, pillR + 32)
+  }
+  const noOverlap = minRadiusForNoOverlap(conceptCount, pillR)
+  return Math.max(CONCEPT_RING_RADIUS, noOverlap)
+}
+
 export function loadConceptMapSpec(spec: Record<string, unknown>): SpecLoaderResult {
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
@@ -109,6 +131,15 @@ export function loadConceptMapSpec(spec: Record<string, unknown>): SpecLoaderRes
   const topicText = (spec.topic as string) || 'Topic'
   const conceptsArr = spec.concepts as string[]
   const relationships = (spec.relationships as ConceptMapRelationship[]) || []
+
+  const layoutByLabel = spec._layout_positions_by_label as
+    | Record<string, { x: number; y: number }>
+    | undefined
+
+  function positionFromLayout(label: string): { x: number; y: number } | undefined {
+    if (!layoutByLabel) return undefined
+    return layoutByLabel[label]
+  }
 
   const nameToId = new Map<string, string>()
   nameToId.set(topicText, 'topic')
@@ -123,25 +154,38 @@ export function loadConceptMapSpec(spec: Record<string, unknown>): SpecLoaderRes
       ? computeHierarchicalPositions(topicText, conceptsArr, relationships, nameToId)
       : null
 
+  const topicLayout = positionFromLayout(topicText)
   nodes.push({
     id: 'topic',
     text: topicText,
     type: 'topic',
-    position: {
-      x: DEFAULT_CENTER_X - DEFAULT_NODE_WIDTH / 2,
-      y: DEFAULT_PADDING + 40,
-    },
+    position: topicLayout
+      ? {
+          x: topicLayout.x - DEFAULT_NODE_WIDTH / 2,
+          y: topicLayout.y - TOPIC_NODE_HEIGHT / 2,
+        }
+      : {
+          x: DEFAULT_CENTER_X - DEFAULT_NODE_WIDTH / 2,
+          y: DEFAULT_PADDING + 40,
+        },
   })
 
   const conceptCount = conceptsArr.length
   const halfWidth = DEFAULT_NODE_WIDTH / 2
   const halfHeight = 25
+  const polarRadius = polarFallbackRadius(conceptCount, halfWidth, halfHeight)
 
   conceptsArr.forEach((text, index) => {
     const id = `concept-${index}`
     let position: { x: number; y: number }
+    const imported = positionFromLayout(text)
     const hierPos = hierarchicalPositions?.get(id)
-    if (hierPos) {
+    if (imported) {
+      position = {
+        x: imported.x - DEFAULT_NODE_WIDTH / 2,
+        y: imported.y - BUBBLE_NODE_HEIGHT / 2,
+      }
+    } else if (hierPos) {
       position = hierPos
     } else {
       position = polarToPosition(
@@ -149,7 +193,7 @@ export function loadConceptMapSpec(spec: Record<string, unknown>): SpecLoaderRes
         conceptCount,
         DEFAULT_CENTER_X,
         DEFAULT_CENTER_Y + 80,
-        CONCEPT_RING_RADIUS,
+        polarRadius,
         halfWidth,
         halfHeight
       )
@@ -166,12 +210,21 @@ export function loadConceptMapSpec(spec: Record<string, unknown>): SpecLoaderRes
     const sourceId = nameToId.get(rel.from)
     const targetId = nameToId.get(rel.to)
     if (sourceId && targetId) {
-      connections.push({
+      const sourceNode = nodes.find((n) => n.id === sourceId)
+      const targetNode = nodes.find((n) => n.id === targetId)
+      const conn: Connection = {
         id: `conn-${index}`,
         source: sourceId,
         target: targetId,
         label: rel.label || '',
-      })
+      }
+      if (sourceNode && targetNode) {
+        conn.arrowheadDirection = computeDefaultArrowheadForConceptMap(
+          getConceptMapNodeCenter(sourceNode),
+          getConceptMapNodeCenter(targetNode)
+        )
+      }
+      connections.push(conn)
     }
   })
 

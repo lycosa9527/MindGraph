@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 _DEFAULT_SOURCE_LANG = "en"
-_DEFAULT_TARGET_LANG = "zh"
+_DEFAULT_TARGET_LANG = "en"
 
 
 def _parse_start_options(start_msg: dict) -> tuple[str, str]:

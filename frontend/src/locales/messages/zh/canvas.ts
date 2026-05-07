@@ -16,7 +16,8 @@ export default {
   'canvas.export.svgError': 'SVG导出失败，请重试',
   'canvas.export.svgSuccess': 'SVG导出成功',
   'canvas.export.unknownFormat': '未知导出格式: {format}',
-  'canvas.import.invalidFile': '无效的图示文件，请选择 MindGraph 导出的 MG 文件',
+  'canvas.import.invalidFile':
+    '无效的图示文件，请选择 MindGraph 导出的 MG 文件或 CmapTools 的 CMAP 文件',
   'canvas.import.parseError': '无法解析图示文件，请重试',
   'canvas.reset.confirmBody': '确定要重置吗？当前图示、节点调色板等所有内容将丢失，且无法恢复。',
   'canvas.reset.confirmButton': '重置',

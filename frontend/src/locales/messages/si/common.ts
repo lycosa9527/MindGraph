@@ -1,7 +1,4 @@
-/**
- * si UI — common
- */
-
+/** si UI — common (machine-translated from en; review as needed) */
 export default {
   'app.aiDisclaimer': 'Content is AI-generated; please verify carefully.',
   'app.brandName': 'Mind Platform',
@@ -95,6 +92,14 @@ export default {
   'meta.pageTitle.mindgraph': 'MindGraph',
   'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
+  'meta.pageTitle.kitty': 'Kitty',
+  'canvas.kittyMobileIndicatorHint':
+    'A phone Kitty session (mic started) is linked to this diagram. Use your phone to talk with Kitty.',
+  'canvas.kittyMobileIndicatorAria':
+    'Status: Mobile Kitty is connected to this MindGraph canvas. Interact on your phone.',
+  'canvas.kittyMobileIndicatorTitle': 'Mobile Kitty',
+  'mobile.kittyWelcomeSub':
+    'Your microphone talks to the same MindGraph you edit. Open a saved diagram on your phone or desktop so Kitty stays in sync.',
   'meta.pageTitle.notFound': 'Page not found',
   'meta.pageTitle.publicDashboard': 'Statistics',
   'meta.pageTitle.schoolDashboard': 'School dashboard',
@@ -125,8 +130,7 @@ export default {
   'landing.international.mindmateCard.desc': 'Your virtual teaching and research partner',
   'landing.international.shareSite': 'Share site',
   'landing.international.shareSiteModalTitle': 'Share site',
-  'landing.international.shareSiteModalHint':
-    'Scan with a phone or tablet camera to open this page for your class.',
+  'landing.international.shareSiteModalHint': '',
   'landing.international.shareSiteCopy': 'Copy link',
   'landing.international.shareSiteCopied': 'Link copied',
-}
+} as const

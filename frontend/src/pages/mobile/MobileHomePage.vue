@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * MobileHomePage — Landing page for mobile.
- * MindGraph first (图示), then MindMate, Kitty, account. Flex scroll uses min-h-0 so cards stay reachable.
+ * MindGraph first (图示), then MindMate, Kitty (when FEATURE_KITTY_AGENT), account. Flex scroll uses min-h-0 so cards stay reachable.
  */
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -17,6 +17,10 @@ const featureFlagsStore = useFeatureFlagsStore()
 const { t } = useLanguage()
 
 const displayName = computed(() => authStore.user?.username || '')
+
+const showKittyHubCard = computed(
+  () => featureFlagsStore.flags?.feature_kitty_agent ?? false,
+)
 
 onMounted(() => {
   void featureFlagsStore.fetchFlags()
@@ -101,8 +105,9 @@ function goToAccount() {
         />
       </button>
 
-      <!-- Kitty -->
+      <!-- Kitty (only when FEATURE_KITTY_AGENT is enabled on the server) -->
       <button
+        v-if="showKittyHubCard"
         class="feature-card w-full flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-200 active:bg-gray-50 transition-colors text-left"
         @click="goToKitty"
       >

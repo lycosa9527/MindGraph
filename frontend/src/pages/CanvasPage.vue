@@ -567,7 +567,7 @@ onMounted(async () => {
     return
   }
 
-  // Priority 1b: Load imported diagram from `.mg` (landing page Import button)
+  // Priority 1b: Load imported diagram from `.mg` / `.cmap` (landing page Import button)
   const importFlag = route.query.import
   if (importFlag === '1') {
     const importJson = sessionStorage.getItem(IMPORT_SPEC_KEY)

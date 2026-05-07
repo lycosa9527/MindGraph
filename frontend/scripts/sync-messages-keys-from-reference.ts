@@ -2,7 +2,7 @@
  * Align every locale × namespace (except zh) with zh slices: add missing from en; drop extras.
  * Run from frontend/: npx tsx scripts/sync-messages-keys-from-reference.ts [--dry-run]
  *
- * Tier-27 only: `--tier27-only` (matches INTERFACE_LANGUAGE_PICKER_CODES minus zh reference).
+ * Interface picker only: `--tier27-only` (matches INTERFACE_LANGUAGE_PICKER_CODES minus zh reference).
  */
 import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -43,6 +43,7 @@ const TIER_27_EXCEPT_ZH = [
   'nl',
   'it',
   'hi',
+  'si',
   'id',
   'tl',
   'vi',

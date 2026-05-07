@@ -69,15 +69,6 @@ function mapPromptLanguageToSource(lang: string): string {
   return map[base] ?? 'en'
 }
 
-/**
- * Derive translation target language from the source.
- * Default rule: zh/yue → en, anything else → zh.
- */
-function deriveTargetLanguage(sourceLang: string): string {
-  if (sourceLang === 'zh' || sourceLang === 'yue') return 'en'
-  return 'zh'
-}
-
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   let binary = ''
   const bytes = new Uint8Array(buffer)
@@ -134,11 +125,8 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
    */
   let currentSessionStamp = 0
 
-  /**
-   * User-selected target language code, or 'auto' to derive from the UI prompt language.
-   * Persists across toggle cycles within the same session.
-   */
-  const targetLanguage = ref<string>('auto')
+  /** User-selected translation target language code (DashScope-supported). Default: English. */
+  const targetLanguage = ref<string>('en')
 
   /**
    * Completed translation sentences, newest last.
@@ -365,8 +353,7 @@ export const useLiveTranslationStore = defineStore('liveTranslation', () => {
 
     const sessionStamp = ++currentSessionStamp
     const sourceLang = mapPromptLanguageToSource(String(uiStore.promptLanguage))
-    const targetLang =
-      targetLanguage.value === 'auto' ? deriveTargetLanguage(sourceLang) : targetLanguage.value
+    const targetLang = targetLanguage.value
 
     const socket = new WebSocket(buildTranslateWebSocketUrl())
     wsRef.value = socket

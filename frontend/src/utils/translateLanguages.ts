@@ -5,7 +5,6 @@ export interface TranslateLanguage {
 
 /** All languages supported by qwen3-livetranslate-flash-realtime as translation targets. */
 export const TRANSLATE_LANGUAGES: TranslateLanguage[] = [
-  { code: 'auto', label: 'Auto (自动)' },
   { code: 'en', label: 'English (英语)' },
   { code: 'zh', label: '中文' },
   { code: 'yue', label: '粤语' },

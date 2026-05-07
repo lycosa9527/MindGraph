@@ -14,7 +14,6 @@ import asyncio
 import contextlib
 import json
 import logging
-import os
 import uuid
 from typing import Any, Dict, Optional
 
@@ -116,9 +115,7 @@ async def run_translate_relay(
         )
         return
 
-    default_model = "qwen3-livetranslate-flash-realtime"
-    env_model = os.getenv("QWEN_LIVE_TRANSLATE_MODEL", "")
-    resolved_model = str(model or env_model).strip() or default_model
+    resolved_model = (str(model).strip() if model else "") or config.QWEN_LIVE_TRANSLATE_MODEL
     base = config.DASHSCOPE_REALTIME_WS_BASE.rstrip("/")
     url = f"{base}?model={resolved_model}"
     extra_headers = {

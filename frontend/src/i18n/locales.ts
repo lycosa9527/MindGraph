@@ -44,6 +44,7 @@ export const INTERFACE_LANGUAGE_PICKER_CODES = [
   'nl',
   'it',
   'hi',
+  'si',
   'id',
   'tl',
   'vi',
@@ -58,7 +59,8 @@ export const INTERFACE_LANGUAGE_PICKER_CODES = [
 export type InterfaceLanguagePickerCode = (typeof INTERFACE_LANGUAGE_PICKER_CODES)[number]
 
 /**
- * Product “27 languages” tier: same list as {@link INTERFACE_LANGUAGE_PICKER_CODES}.
+ * Product interface-language tier: same list as {@link INTERFACE_LANGUAGE_PICKER_CODES}.
+ * Legacy export name retained; count matches Settings → Interface language.
  * Use for coverage scripts, QA scope, and docs — not the same as every enabled `LocaleCode` in the registry.
  */
 export const TIER_27_UI_LOCALE_CODES = INTERFACE_LANGUAGE_PICKER_CODES

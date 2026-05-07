@@ -373,6 +373,13 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
+  if (to.name === 'MobileKitty') {
+    await featureFlagsStore.fetchFlags()
+    if (!featureFlagsStore.getFeatureKittyAgent()) {
+      return next({ path: '/m' })
+    }
+  }
+
   // Check admin access (admin-only, not managers)
   if (to.meta.requiresAdmin && !authStore.isAdmin) {
     return next({ name: 'MindMate' })
