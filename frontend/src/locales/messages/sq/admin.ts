@@ -43,7 +43,7 @@ export default {
   'admin.editSchool': 'Ndrysho shkollën',
   'admin.enabled': 'Aktiv',
   'admin.envAdmins': 'Administratorë nga mjedisi',
-  'admin.envAdminsNote': 'Konfigurohen përmes ADMIN_PHONES në .env (vetëm lexim)',
+  'admin.envAdminsNote': 'Konfigurohen përmes ADMIN_PHONES / ADMIN_USER_IDS në .env (vetëm lexim)',
   'admin.feature.askonce': 'AskOnce (chat me shumë modele LLM)',
   'admin.feature.askonceHint': 'Chat në transmetim me shumë modele.',
   'admin.feature.community': 'Ndarja në komunitet',

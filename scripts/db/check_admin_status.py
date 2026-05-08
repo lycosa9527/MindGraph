@@ -3,8 +3,10 @@
 Check admin status for users.
 
 Verifies which users have admin access based on:
-1. role='admin' in database
-2. phone in ADMIN_PHONES env variable
+1. role='admin' or 'superadmin' in database
+2. ADMIN_USER_IDS env (comma-separated users.id values)
+3. ADMIN_PHONES env (identifiers stored on users.phone, including SSO UUID strings;
+   UUID comparison is case-insensitive.)
 
 Run from project root: python scripts/db/check_admin_status.py
 """
@@ -29,20 +31,19 @@ if env_path.exists():
 
 from config.database import SyncSessionLocal
 from models.domain.auth import User
-from utils.auth.config import ADMIN_PHONES
-
-# Also check AUTH_MODE for demo/bayi admin
-AUTH_MODE = os.getenv("AUTH_MODE", "standard").strip().lower()
+from utils.auth.config import ADMIN_PHONES, ADMIN_USER_IDS
+from utils.auth.roles import is_admin, phone_matches_admin_env_token
 
 
 def main():
     """Check and print admin status for all users."""
     admin_phones = [p.strip() for p in ADMIN_PHONES if p.strip()]
+    ids_sorted = sorted(ADMIN_USER_IDS)
     print("=" * 60)
     print("Admin Status Check")
     print("=" * 60)
-    print(f"AUTH_MODE: {AUTH_MODE}")
     print(f"ADMIN_PHONES from .env: {admin_phones or '(empty)'}")
+    print(f"ADMIN_USER_IDS from .env: {ids_sorted or '(empty)'}")
     print()
 
     db = SyncSessionLocal()
@@ -54,41 +55,36 @@ def main():
 
         print(f"Found {len(users)} user(s):\n")
         for u in users:
-            db_admin = (u.role or "").lower() == "admin"
-            phone_admin = u.phone in admin_phones if admin_phones else False
-            demo_admin = AUTH_MODE == "demo" and u.phone == "demo-admin@system.com"
-            bayi_admin = AUTH_MODE == "bayi" and u.phone == "bayi-admin@system.com"
-            is_admin = db_admin or phone_admin or demo_admin or bayi_admin
+            matched = bool(is_admin(u))
 
             reasons = []
-            if db_admin:
-                reasons.append("role=admin in DB")
-            if phone_admin:
-                reasons.append("phone in ADMIN_PHONES")
-            if demo_admin:
-                reasons.append("demo-admin@system.com in demo mode")
-            if bayi_admin:
-                reasons.append("bayi-admin@system.com in bayi mode")
+            role_val = getattr(u, "role", None)
+            if role_val in ("admin", "superadmin"):
+                reasons.append("role in DB")
+            if u.id in ADMIN_USER_IDS:
+                reasons.append("id in ADMIN_USER_IDS")
+            if admin_phones and any(phone_matches_admin_env_token(u.phone, t) for t in admin_phones):
+                reasons.append("ADMIN_PHONES match")
 
-            status = "ADMIN" if is_admin else "user/manager"
+            status = "ADMIN" if matched else "user/manager"
             reason_str = f" ({', '.join(reasons)})" if reasons else ""
             print(f"  id={u.id}  phone={u.phone}  role={u.role or 'user'}  -> {status}{reason_str}")
 
         print()
-        admin_users = [
-            u
-            for u in users
-            if (u.role or "").lower() == "admin"
-            or (admin_phones and u.phone in admin_phones)
-            or (AUTH_MODE == "demo" and u.phone == "demo-admin@system.com")
-            or (AUTH_MODE == "bayi" and u.phone == "bayi-admin@system.com")
-        ]
+        admin_users = [u for u in users if is_admin(u)]
         if admin_users:
-            print(f"Users with admin access: {[u.phone for u in admin_users]}")
+            labels = []
+            for u in admin_users:
+                ident = u.phone or u.email or f"id={u.id}"
+                labels.append(ident)
+            print(f"Users with admin access ({len(admin_users)}): {labels}")
         else:
             print("WARNING: No users have admin access!")
             print("  - Set role='admin' in DB for a user, OR")
-            print("  - Add phone to ADMIN_PHONES in .env (e.g. ADMIN_PHONES=17801353751)")
+            print(
+                "  - ADMIN_USER_IDS=id,... and/or ADMIN_PHONES=... "
+                "(phones, bayi@system.com, or Bayi SSO UUID in users.phone)."
+            )
     finally:
         db.close()
 

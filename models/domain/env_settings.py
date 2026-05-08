@@ -44,7 +44,6 @@ class AuthMode(str, Enum):
 
     STANDARD = "standard"
     ENTERPRISE = "enterprise"
-    DEMO = "demo"
     BAYI = "bayi"
 
 
@@ -251,11 +250,22 @@ class AuthSettings(BaseModel):
     AUTH_MODE: AuthMode = Field(
         default=AuthMode.STANDARD,
         description=(
-            "Authentication mode (standard/enterprise/demo/bayi). "
+            "Authentication mode (standard/enterprise/bayi). "
             "Use enterprise only on isolated networks (VPN/private LAN): it disables JWT validation."
         ),
     )
-    ADMIN_PHONES: str = Field(default="", description="Admin phone numbers (comma-separated)")
+    ADMIN_PHONES: str = Field(
+        default="",
+        description=(
+            "Comma-separated identifiers matched against users.phone: real phones, "
+            "pseudo logins (e.g. bayi@system.com for Bayi passkey), or SSO user UUID strings "
+            "(UUID compare is case-insensitive)."
+        ),
+    )
+    ADMIN_USER_IDS: str = Field(
+        default="",
+        description="Comma-separated users.id primary keys granting admin (alongside ADMIN_PHONES).",
+    )
     ENTERPRISE_DEFAULT_ORG_CODE: Optional[str] = Field(
         default="DEMO-001",
         description="Default organization code for enterprise mode (isolated network deployments only)",
@@ -264,17 +274,11 @@ class AuthSettings(BaseModel):
         default="enterprise@system.com",
         description="Default user identity for enterprise mode (no JWT; network perimeter must enforce access)",
     )
-    DEMO_PASSKEY: Optional[str] = Field(
+    BAYI_PASSKEY: Optional[str] = Field(
         default="888888",
         min_length=6,
         max_length=6,
-        description="Demo mode passkey (6 digits)",
-    )
-    ADMIN_DEMO_PASSKEY: Optional[str] = Field(
-        default="999999",
-        min_length=6,
-        max_length=6,
-        description="Admin demo mode passkey (6 digits)",
+        description="Bayi mode 6-digit passkey (AUTH_MODE=bayi); admin via ADMIN_PHONES / ADMIN_USER_IDS.",
     )
     BAYI_DECRYPTION_KEY: Optional[str] = Field(
         default="v8IT7XujLPsM7FYuDPRhPtZk",
@@ -283,18 +287,63 @@ class AuthSettings(BaseModel):
     BAYI_DEFAULT_ORG_CODE: Optional[str] = Field(
         default="BAYI-001", description="Default organization code for bayi mode"
     )
+    BAYI_DEFAULT_ORG_ID: Optional[int] = Field(
+        default=None,
+        ge=1,
+        description=(
+            "Optional: bind Bayi SSO users to this organization primary key (row must exist; no auto-create). "
+            "Unset = use BAYI_DEFAULT_ORG_CODE with optional org auto-create."
+        ),
+    )
+    BAYI_SSO_DEFAULT_DISPLAY_NAME: str = Field(
+        default="八一用户",
+        min_length=1,
+        max_length=200,
+        description=(
+            "Default User.name for newly created Bayi SSO users only; repeat logins never overwrite; "
+            "users may change it via profile PATCH."
+        ),
+    )
     INVITATION_CODES: str = Field(
         default="",
         description="Invitation codes (format: ORG:CODE:DATE,ORG2:CODE2:DATE2)",
     )
 
-    @field_validator("DEMO_PASSKEY", "ADMIN_DEMO_PASSKEY")
+    @field_validator("ADMIN_USER_IDS")
     @classmethod
-    def validate_passkey(cls, v):
+    def validate_admin_user_ids_csv(cls, value):
+        """ADMIN_USER_IDS must be empty or comma-separated positive integers."""
+        raw = "" if value is None else str(value).strip()
+        if not raw:
+            return ""
+        for part in raw.split(","):
+            piece = part.strip()
+            if not piece:
+                continue
+            try:
+                parsed = int(piece)
+            except ValueError as exc:
+                msg = "ADMIN_USER_IDS must be comma-separated positive integers"
+                raise ValueError(msg) from exc
+            if parsed <= 0:
+                raise ValueError("ADMIN_USER_IDS entries must be positive integers")
+        return raw
+
+    @field_validator("BAYI_PASSKEY")
+    @classmethod
+    def validate_bayi_passkey(cls, value):
         """Validate passkey is 6 digits"""
-        if v and (not v.isdigit() or len(v) != 6):
+        if value and (not str(value).isdigit() or len(str(value)) != 6):
             raise ValueError("Passkey must be exactly 6 digits")
-        return v
+        return value
+
+    @field_validator("BAYI_DEFAULT_ORG_ID", mode="before")
+    @classmethod
+    def empty_bayi_org_id_to_none(cls, value):
+        """Treat empty string from .env as absent org id."""
+        if value is None or value == "":
+            return None
+        return value
 
 
 # ============================================================================

@@ -2,7 +2,7 @@
  * Auth Types - Type definitions for authentication
  */
 
-export type AuthMode = 'standard' | 'demo' | 'bayi' | 'enterprise'
+export type AuthMode = 'standard' | 'bayi' | 'enterprise'
 
 /**
  * User roles hierarchy:

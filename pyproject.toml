@@ -127,7 +127,6 @@ good-names = [
     "_registration_metrics",
     "_refresh_token_manager",
     "_api_key_cache",
-    "_get_bayi_whitelist",
     "_get_redis",
     "_is_redis_available",
     "_get_async_redis",

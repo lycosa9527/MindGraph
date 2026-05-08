@@ -10,9 +10,10 @@ Proprietary License
 """
 
 import logging
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count as sa_count
 
@@ -20,7 +21,7 @@ from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.messages import Messages, Language
 from services.redis.cache.redis_user_cache import user_cache
-from utils.auth.config import ADMIN_PHONES
+from utils.auth.config import ADMIN_PHONES, ADMIN_USER_IDS
 
 from ..dependencies import get_language_dependency, require_admin
 from ..helpers import utc_to_beijing_iso
@@ -33,6 +34,50 @@ router = APIRouter()
 VALID_ROLES = frozenset({"user", "manager", "admin"})
 
 
+def _admin_env_phone_or_clause(env_tokens: list[str]):
+    """SQL OR for exact phone match or case-insensitive UUID phone match."""
+    clauses = []
+    seen_lower_uuid: set[str] = set()
+    for raw in env_tokens:
+        token = raw.strip()
+        if not token:
+            continue
+        clauses.append(User.phone == token)
+        try:
+            lower_uuid = str(uuid.UUID(token)).lower()
+            if lower_uuid not in seen_lower_uuid:
+                seen_lower_uuid.add(lower_uuid)
+                clauses.append(func.lower(User.phone) == lower_uuid)
+        except ValueError:
+            pass
+    if not clauses:
+        return None
+    return or_(*clauses)
+
+
+def _user_for_admin_env_token(user_pool: dict[int, User], token: str) -> User | None:
+    """Resolve env ADMIN_PHONES token to a user from a pre-fetched pool."""
+    t = token.strip()
+    if not t:
+        return None
+    try:
+        want_u = str(uuid.UUID(t)).lower()
+    except ValueError:
+        want_u = None
+    for u in user_pool.values():
+        if not u.phone:
+            continue
+        if u.phone.strip() == t:
+            return u
+        if want_u:
+            try:
+                if str(uuid.UUID(u.phone.strip())).lower() == want_u:
+                    return u
+            except ValueError:
+                continue
+    return None
+
+
 @router.get("/admin/admins", dependencies=[Depends(require_admin)])
 async def list_admins(
     db: AsyncSession = Depends(get_async_db),
@@ -40,30 +85,53 @@ async def list_admins(
     """
     List all users with admin role in database (ADMIN ONLY).
 
-    Returns users where role='admin', plus env-configured ADMIN_PHONES
-    as read-only reference.
+    Returns users where role='admin', plus env-configured ADMIN_PHONES and
+    ADMIN_USER_IDS as read-only reference.
     """
     admin_stmt = select(User).where(User.role.in_(["admin", "superadmin"])).order_by(User.created_at.asc())
     admin_users = (await db.execute(admin_stmt)).scalars().all()
 
-    admin_phones = {u.phone for u in admin_users}
+    db_admin_ids = {u.id for u in admin_users}
     env_phones = [p.strip() for p in ADMIN_PHONES if p.strip()]
 
     env_admins = []
-    if env_phones:
-        env_stmt = select(User).where(User.phone.in_(env_phones))
-        env_users = (await db.execute(env_stmt)).scalars().all()
-        user_by_phone = {u.phone: u for u in env_users}
-        for phone in env_phones:
-            if phone in admin_phones:
-                continue
-            user = user_by_phone.get(phone)
-            env_admins.append(
-                {
-                    "phone": phone,
-                    "name": user.name if user else None,
-                }
-            )
+    env_user_pool: dict[int, User] = {}
+    phone_clause = _admin_env_phone_or_clause(env_phones)
+    if phone_clause is not None:
+        env_phone_stmt = select(User).where(phone_clause)
+        for u in (await db.execute(env_phone_stmt)).scalars().all():
+            env_user_pool[u.id] = u
+    if ADMIN_USER_IDS:
+        env_id_stmt = select(User).where(User.id.in_(ADMIN_USER_IDS))
+        for u in (await db.execute(env_id_stmt)).scalars().all():
+            env_user_pool[u.id] = u
+
+    for phone in env_phones:
+        user = _user_for_admin_env_token(env_user_pool, phone)
+        if user is not None and user.id in db_admin_ids:
+            continue
+        env_admins.append(
+            {
+                "phone": phone,
+                "user_id": user.id if user else None,
+                "name": user.name if user else None,
+            }
+        )
+
+    for uid in sorted(ADMIN_USER_IDS):
+        if uid in db_admin_ids:
+            continue
+        if any(row.get("user_id") == uid for row in env_admins):
+            continue
+        user = env_user_pool.get(uid)
+        display_phone = user.phone.strip() if user and user.phone else f"user_id:{uid}"
+        env_admins.append(
+            {
+                "phone": display_phone,
+                "user_id": uid,
+                "name": user.name if user else None,
+            }
+        )
 
     result = []
     for user in admin_users:
@@ -84,7 +152,9 @@ async def list_admins(
     return {
         "admins": result,
         "env_admins": env_admins,
-        "env_admins_note": "Configured via ADMIN_PHONES environment variable (read-only)",
+        "env_admins_note": (
+            "Configured via ADMIN_PHONES and ADMIN_USER_IDS environment variables (read-only)"
+        ),
     }
 
 

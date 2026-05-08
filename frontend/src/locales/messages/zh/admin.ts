@@ -42,7 +42,7 @@ export default {
   'admin.editSchool': '编辑学校',
   'admin.enabled': '启用',
   'admin.envAdmins': '环境变量配置的管理员',
-  'admin.envAdminsNote': '通过 .env 中的 ADMIN_PHONES 配置（只读）',
+  'admin.envAdminsNote': '通过 .env 中的 ADMIN_PHONES 或 ADMIN_USER_IDS 配置（只读）',
   'admin.feature.askonce': 'AskOnce（多模型对话）',
   'admin.feature.askonceHint': '多模型流式对话。',
   'admin.feature.community': '社区分享',

@@ -21,7 +21,6 @@ from . import (
     stats_trends,
     performance,
     api_keys,
-    bayi,
     teacher_usage,
     feature_org_access,
     geolite,
@@ -40,7 +39,6 @@ admin_router.include_router(stats.router)
 admin_router.include_router(stats_trends.router)
 admin_router.include_router(performance.router)
 admin_router.include_router(api_keys.router)
-admin_router.include_router(bayi.router)
 admin_router.include_router(teacher_usage.router)
 admin_router.include_router(feature_org_access.router)
 admin_router.include_router(geolite.router)

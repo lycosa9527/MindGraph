@@ -44,7 +44,7 @@ export default {
   'admin.enabled': 'Aktivdir',
   'admin.envAdmins': 'Ətraf mühitə uyğun konfiqurasiya edilmiş Adminlər',
   'admin.envAdminsNote':
-    '.env daxilində ADMIN_PHONES vasitəsilə konfiqurasiya edilib (yalnız oxumaq üçün)',
+    '.env daxilində ADMIN_PHONES / ADMIN_USER_IDS vasitəsilə konfiqurasiya edilib (yalnız oxumaq üçün)',
   'admin.feature.askonce': 'AskOnce (çox LLM söhbət)',
   'admin.feature.askonceHint': 'Çox model axınlı söhbət.',
   'admin.feature.community': 'İcma paylaşımı',

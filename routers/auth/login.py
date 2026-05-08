@@ -5,7 +5,7 @@ Login Endpoints
 User login endpoints:
 - /login - Password-based login with captcha
 - /login_sms - SMS-based login
-- /demo/verify - Demo/bayi passkey verification
+- /bayi/passkey - Bayi 6-digit passkey login (AUTH_MODE=bayi only)
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -25,7 +25,7 @@ from config.database import get_async_db
 from models.domain.messages import Messages, Language
 from models.domain.auth import User, Organization
 from models.requests.requests_auth import (
-    DemoPasskeyRequest,
+    PasskeyVerifyRequest,
     LoginRequest,
     LoginWithEmailRequest,
     LoginWithSMSRequest,
@@ -53,11 +53,10 @@ from services.infrastructure.security.abuseipdb_service import (
 )
 from utils.email_mainland_china import raise_if_mainland_china_email_for_email_login
 from utils.email_validation import validate_email_for_api
+from utils.auth.config import BAYI_DEFAULT_ORG_CODE, BAYI_DEFAULT_ORG_ID, BAYI_PASSKEY
 from utils.auth import (
     AUTH_MODE,
-    BAYI_DEFAULT_ORG_CODE,
     EMAIL_LOGIN_CN_BLOCK_ENABLED,
-    DEMO_PASSKEY,
     LOCKOUT_DURATION_MINUTES,
     MAX_LOGIN_ATTEMPTS,
     PUBLIC_DASHBOARD_PASSKEY,
@@ -70,11 +69,10 @@ from utils.auth import (
     get_user_role,
     hash_password,
     increment_failed_attempts,
-    is_admin_demo_passkey,
     is_https,
     reset_failed_attempts,
     verify_dashboard_passkey,
-    verify_demo_passkey,
+    verify_bayi_passkey,
     verify_password,
     ACCESS_TOKEN_EXPIRY_MINUTES,
 )
@@ -297,8 +295,8 @@ async def login(
         raise HTTPException(status_code=status.HTTP_423_LOCKED, detail=error_msg)
 
     # Email login: block GeoIP CN unless whitelisted (phone login unchanged).
-    # Skipped in demo/bayi for predictable local and showcase environments.
-    if request.email and cached_user and EMAIL_LOGIN_CN_BLOCK_ENABLED and AUTH_MODE not in ("demo", "bayi"):
+    # Skipped in bayi for school deployments.
+    if request.email and cached_user and EMAIL_LOGIN_CN_BLOCK_ENABLED and AUTH_MODE != "bayi":
         whitelisted = getattr(cached_user, "email_login_whitelisted_from_cn", False)
         must_deny, geo_msg_key, stamp_cn = email_cn_geo_blocked(
             get_client_ip(http_request),
@@ -591,7 +589,7 @@ async def login_with_email(
             error_msg = Messages.error("organization_expired", lang, org.name, expired_date)
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
-    if EMAIL_LOGIN_CN_BLOCK_ENABLED and AUTH_MODE not in ("demo", "bayi"):
+    if EMAIL_LOGIN_CN_BLOCK_ENABLED and AUTH_MODE != "bayi":
         must_deny, geo_msg_key, stamp_cn = email_cn_geo_blocked(
             get_client_ip(http_request),
             http_request,
@@ -617,59 +615,66 @@ async def login_with_email(
     )
 
 
-@router.post("/demo/verify")
-async def verify_demo(
-    passkey_request: DemoPasskeyRequest,
+@router.post("/bayi/passkey")
+async def verify_bayi_passkey_login(
+    passkey_request: PasskeyVerifyRequest,
     request: Request,
     response: Response,
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
-    Verify demo/bayi passkey and return JWT token
+    Verify Bayi 6-digit passkey and return JWT cookies (AUTH_MODE=bayi only).
 
-    Demo mode and Bayi mode allow access with a 6-digit passkey.
-    Supports both regular demo access and admin demo access.
-    In bayi mode, creates bayi-specific users.
+    Separate from vendor SSO ``/loginByXz``. Ensures ``bayi@system.com`` exists when first used.
+    Grant admin via ``ADMIN_PHONES`` (include ``bayi@system.com`` for passkey admins).
     """
-    # Enhanced logging for debugging (without revealing actual passkeys)
+    if AUTH_MODE != "bayi":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Bayi passkey login is disabled: set AUTH_MODE=bayi to use this endpoint. "
+                f"(current mode is {AUTH_MODE!r})"
+            ),
+        )
+
     received_length = len(passkey_request.passkey) if passkey_request.passkey else 0
-    expected_length = len(DEMO_PASSKEY)
+    expected_length = len(BAYI_PASSKEY)
     logger.info(
-        "Passkey verification attempt (%s mode) - Received: %s chars, Expected: %s chars",
-        AUTH_MODE,
+        "Bayi passkey attempt - Received: %s chars (reference length=%s)",
         received_length,
         expected_length,
     )
 
-    if not verify_demo_passkey(passkey_request.passkey):
+    if not verify_bayi_passkey(passkey_request.passkey):
         logger.warning(
-            "Passkey verification failed - Check .env file for whitespace in DEMO_PASSKEY or ADMIN_DEMO_PASSKEY"
+            "Bayi passkey verification failed — check .env whitespace for BAYI_PASSKEY",
         )
         error_msg = Messages.error("invalid_passkey", lang)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_msg)
 
-    # Check if this is admin demo access
-    is_admin_access = is_admin_demo_passkey(passkey_request.passkey)
+    user_phone = "bayi@system.com"
+    user_name = "Bayi User"
 
-    # Determine user phone and name based on mode
-    if AUTH_MODE == "bayi":
-        user_phone = "bayi-admin@system.com" if is_admin_access else "bayi@system.com"
-        user_name = "Bayi Admin" if is_admin_access else "Bayi User"
-    else:
-        user_phone = "demo-admin@system.com" if is_admin_access else "demo@system.com"
-        user_name = "Demo Admin" if is_admin_access else "Demo User"
-
-    existing_demo = await db.execute(select(User).where(User.phone == user_phone))
-    auth_user = existing_demo.scalar_one_or_none()
+    existing_row = await db.execute(select(User).where(User.phone == user_phone))
+    auth_user = existing_row.scalar_one_or_none()
 
     if not auth_user:
-        # Get or create organization based on mode
-        if AUTH_MODE == "bayi":
+        org = None
+        if BAYI_DEFAULT_ORG_ID is not None:
+            result = await db.execute(select(Organization).where(Organization.id == BAYI_DEFAULT_ORG_ID))
+            org = result.scalar_one_or_none()
+            if not org:
+                logger.error(
+                    "Bayi passkey signup: organization id %s (BAYI_DEFAULT_ORG_ID) not found",
+                    BAYI_DEFAULT_ORG_ID,
+                )
+                error_msg = Messages.error("no_organizations_available", lang)
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg)
+        else:
             result = await db.execute(select(Organization).where(Organization.code == BAYI_DEFAULT_ORG_CODE))
             org = result.scalar_one_or_none()
             if not org:
-                # Create bayi organization if it doesn't exist
                 org = Organization(
                     code=BAYI_DEFAULT_ORG_CODE,
                     name="Bayi School",
@@ -684,21 +689,12 @@ async def verify_demo(
                     await db.rollback()
                     raise
                 logger.info("Created bayi organization: %s", BAYI_DEFAULT_ORG_CODE)
-                # Cache the newly created org (non-blocking)
                 try:
                     await org_cache.cache_org(org)
-                except Exception as e:
-                    logger.warning("Failed to cache bayi org: %s", e)
-        else:
-            # Demo mode: use first available organization
-            result = await db.execute(select(Organization))
-            org = result.scalars().first()
-            if not org:
-                error_msg = Messages.error("no_organizations_available", "en")
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg)
+                except Exception as cache_org_err:
+                    logger.warning("Failed to cache bayi org: %s", cache_org_err)
 
         try:
-            # Use a short, simple password (bcrypt max is 72 bytes)
             auth_user = User(
                 phone=user_phone,
                 password_hash=hash_password("passkey-no-pwd"),
@@ -713,25 +709,26 @@ async def verify_demo(
             except Exception:
                 await db.rollback()
                 raise
-            logger.info("Created new %s user: %s", AUTH_MODE, user_phone)
+            logger.info("Created Bayi passkey user: %s", user_phone)
 
-            # Cache the newly created user and org (non-blocking)
             try:
                 await user_cache.cache_user(auth_user)
                 if org:
                     await org_cache.cache_org(org)
-            except Exception as e:
-                logger.warning("Failed to cache demo user/org: %s", e)
-        except Exception as e:
-            # If creation fails, try to rollback and check if user was somehow created
+            except Exception as cache_err:
+                logger.warning("Failed to cache Bayi passkey user/org: %s", cache_err)
+        except Exception as exc:
             await db.rollback()
-            logger.error("Failed to create %s user: %s", AUTH_MODE, e)
+            logger.error("Failed to create Bayi passkey user: %s", exc)
 
             retry_row = await db.execute(select(User).where(User.phone == user_phone))
             auth_user = retry_row.scalar_one_or_none()
             if not auth_user:
-                error_msg = Messages.error("user_creation_failed", "en", str(e))
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg) from e
+                error_msg = Messages.error("user_creation_failed", "en", str(exc))
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=error_msg,
+                ) from exc
 
     # Session management: Allow multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS)
     session_manager = get_session_manager()
@@ -779,11 +776,12 @@ async def verify_demo(
 
     await record_vpn_login_geo(auth_user.id, request)
 
+    effective_role = get_user_role(auth_user)
     logger.info(
-        "[TokenAudit] Login success: user=%s, mode=%s, admin=%s, ip=%s, device=%s",
+        "[TokenAudit] Login success: user=%s, mode=%s, effective_role=%s, ip=%s, device=%s",
         auth_user.id,
         AUTH_MODE,
-        is_admin_access,
+        effective_role,
         client_ip,
         device_hash,
     )
@@ -799,7 +797,7 @@ async def verify_demo(
             "id": auth_user.id,
             "phone": auth_user.phone,
             "name": auth_user.name,
-            "role": "admin" if is_admin_access else "user",
+            "role": effective_role,
             "ui_language": getattr(auth_user, "ui_language", None),
             "prompt_language": getattr(auth_user, "prompt_language", None),
             "match_prompt_to_ui": getattr(auth_user, "match_prompt_to_ui", True),
@@ -809,7 +807,7 @@ async def verify_demo(
 
 @router.post("/public-dashboard/verify")
 async def verify_public_dashboard(
-    passkey_request: DemoPasskeyRequest,
+    passkey_request: PasskeyVerifyRequest,
     request: Request,
     response: Response,
     lang: Language = Depends(get_language_dependency),

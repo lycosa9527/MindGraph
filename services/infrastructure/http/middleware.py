@@ -100,7 +100,7 @@ async def csrf_protection(request: Request, call_next):
         skip_paths = [
             "/api/auth/login",
             "/api/auth/register",
-            "/api/auth/demo/verify",
+            "/api/auth/bayi/passkey",
             "/api/frontend_log",
             "/api/frontend_log_batch",
             "/api/gewe/webhook",
@@ -267,7 +267,7 @@ async def add_cache_control_headers(request: Request, call_next):
         "/debug",
         "/auth",
         "/admin",
-        "/demo",
+        "/bayi/passkey",
     ]:
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         response.headers["Pragma"] = "no-cache"

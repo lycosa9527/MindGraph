@@ -43,7 +43,7 @@ export default {
   'admin.editSchool': '学校を編集',
   'admin.enabled': '有効',
   'admin.envAdmins': '環境変数で指定した管理者',
-  'admin.envAdminsNote': '.env の ADMIN_PHONES で設定（読み取り専用）',
+  'admin.envAdminsNote': '.env の ADMIN_PHONES / ADMIN_USER_IDS で設定（読み取り専用）',
   'admin.feature.askonce': '一度だけ質問（マルチ LLM チャット）',
   'admin.feature.askonceHint': '複数モデルのストリーミングチャット。',
   'admin.feature.community': 'コミュニティ共有',

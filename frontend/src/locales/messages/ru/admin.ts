@@ -41,7 +41,7 @@ export default {
   "admin.editSchool": "Изменить школу",
   "admin.enabled": "Включено",
   "admin.envAdmins": "Администраторы из конфигурации среды",
-  "admin.envAdminsNote": "Задаётся через ADMIN_PHONES в .env (только просмотр)",
+  "admin.envAdminsNote": "Задаётся через ADMIN_PHONES / ADMIN_USER_IDS в .env (только просмотр)",
   "admin.feature.askonce": "Один запрос (мульти-LLM чат)",
   "admin.feature.askonceHint": "Потоковый чат с несколькими моделями.",
   "admin.feature.community": "Совместный доступ к диаграммам",

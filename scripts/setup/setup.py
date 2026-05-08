@@ -207,7 +207,6 @@ ESSENTIAL_DIRECTORIES = [
     "logs",
     "data",
     "static",
-    "templates",
     "routers",
     "models",
     "clients",
@@ -2523,7 +2522,10 @@ def print_next_steps() -> None:
             "    - Celery/Redis: install OS Redis (docs/REDIS_SETUP.md); "
             "requirements.txt already lists celery and redis Python packages"
         )
-        print("    - Production deployment: ./scripts/setup_systemd.sh (if present)")
+        print(
+            "    - Production deployment: customize scripts/setup/mindgraph.service.template "
+            "and install under /etc/systemd/system/"
+        )
         print("    - Then use: sudo systemctl start/stop/restart mindgraph")
         print("    - See docs/ and README.md for detailed instructions")
 

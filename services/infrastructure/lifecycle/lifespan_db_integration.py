@@ -21,9 +21,6 @@ from services.infrastructure.recovery.recovery_startup import (
     cleanup_incomplete_chunk_operations,
 )
 from services.redis.cache.redis_cache_loader import reload_cache_from_database
-from services.redis.redis_bayi_whitelist import get_bayi_whitelist
-from utils.auth import AUTH_MODE, display_demo_info
-
 logger = logging.getLogger(__name__)
 
 
@@ -88,7 +85,6 @@ async def lifespan_startup_database_phase(is_main_worker: bool) -> None:
 
     if is_main_worker:
         logger.debug("Database initialized successfully")
-        display_demo_info()
 
     try:
         try:
@@ -168,15 +164,6 @@ async def lifespan_startup_database_phase(is_main_worker: bool) -> None:
             if is_main_worker:
                 logger.warning("Failed to initialize IP Geolocation Service: %s", ip_db_result)
 
-        try:
-            if AUTH_MODE == "bayi":
-                whitelist = get_bayi_whitelist()
-                count = await whitelist.load_from_env()
-                if count > 0 and is_main_worker:
-                    logger.info("Loaded %s IP(s) from BAYI_IP_WHITELIST into Redis", count)
-        except Exception as exc:  # pylint: disable=broad-except
-            if is_main_worker:
-                logger.warning("Failed to load IP whitelist into Redis: %s", exc)
     except Exception as exc:  # pylint: disable=broad-except
         if is_main_worker:
             logger.error(

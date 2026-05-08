@@ -46,7 +46,7 @@ def _email_cn_geo_api_path_matches(request_path: str) -> bool:
 def _email_cn_geo_prereqs_ok(request: Request) -> bool:
     if not EMAIL_LOGIN_CN_BLOCK_ENABLED:
         return False
-    if AUTH_MODE in ("demo", "bayi", "enterprise"):
+    if AUTH_MODE in ("bayi", "enterprise"):
         return False
     if request.headers.get("X-API-Key", "").strip():
         return False

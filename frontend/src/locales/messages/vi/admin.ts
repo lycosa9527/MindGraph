@@ -41,7 +41,7 @@ export default {
   "admin.editSchool": "Sửa trường",
   "admin.enabled": "Bật",
   "admin.envAdmins": "Quản trị viên cấu hình trong môi trường",
-  "admin.envAdminsNote": "Đặt bằng ADMIN_PHONES trong .env (chỉ đọc)",
+  "admin.envAdminsNote": "Đặt bằng ADMIN_PHONES / ADMIN_USER_IDS trong .env (chỉ đọc)",
   "admin.feature.askonce": "AskOnce (chat đa LLM)",
   "admin.feature.askonceHint": "Chat streaming nhiều mô hình.",
   "admin.feature.community": "Chia sẻ cộng đồng",

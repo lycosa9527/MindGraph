@@ -64,7 +64,7 @@ async def register_overseas(
     Register with education email for users outside mainland China (GeoIP not CN).
     No invitation code; organization_id is NULL; Simplified Chinese UI is disabled.
     """
-    if AUTH_MODE in ["demo", "bayi"]:
+    if AUTH_MODE in ["bayi"]:
         error_msg = Messages.error("registration_not_available", lang, AUTH_MODE)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 

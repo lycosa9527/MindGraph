@@ -244,7 +244,7 @@ AsyncSessionLocal = async_sessionmaker(
 
 
 def _seed_organizations_if_empty() -> None:
-    """Insert organizations when the table is empty (INVITATION_CODES or demo defaults)."""
+    """Insert organizations when the table is empty (INVITATION_CODES or built-in defaults)."""
     db = SyncSessionLocal()
     try:
         org_count = db.execute(select(func.count()).select_from(Organization)).scalar_one()
@@ -294,7 +294,7 @@ def _seed_organizations_if_empty() -> None:
                     created_at=datetime.now(UTC),
                 ),
             ]
-            logger.info("Seeding default demo organizations (no INVITATION_CODES in .env)")
+            logger.info("Seeding default organizations (no INVITATION_CODES in .env)")
 
         if seeded_orgs:
             db.add_all(seeded_orgs)

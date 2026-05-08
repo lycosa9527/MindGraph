@@ -41,7 +41,7 @@ export default {
   "admin.editSchool": "පාසල සංස්කරණය",
   "admin.enabled": "සක්‍රිය",
   "admin.envAdmins": "පරිසරයෙන් සකසන ලද පරිපාලකයින්",
-  "admin.envAdminsNote": ".env හි ADMIN_PHONES හරහා සකසන ලදී (කියවීම් පමණි)",
+  "admin.envAdminsNote": ".env හි ADMIN_PHONES / ADMIN_USER_IDS හරහා සකසන ලදී (කියවීම් පමණි)",
   "admin.feature.askonce": "AskOnce (බහු‑LLM සංවාදය)",
   "admin.feature.askonceHint": "බහු ආකෘති නාලිකා සංවාදය.",
   "admin.feature.community": "ප්‍රජා බෙදාහදා ගැනීම",

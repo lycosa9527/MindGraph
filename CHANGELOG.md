@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.5] - 2026-05-08
+
+### Added
+
+- **Bayi passkey** — dedicated route and WebAuthn-oriented helpers ([`frontend/src/pages/BayiPasskeyPage.vue`](frontend/src/pages/BayiPasskeyPage.vue), [`utils/auth/passkey_utils.py`](utils/auth/passkey_utils.py)); router and auth-store wiring ([`frontend/src/router/index.ts`](frontend/src/router/index.ts), [`frontend/src/stores/auth.ts`](frontend/src/stores/auth.ts), [`frontend/src/pages/index.ts`](frontend/src/pages/index.ts)).
+- **Database** — Alembic migrations: widen `users.phone` for Bayi SSO user UUIDs ([`alembic/versions/rev_0029_widen_users_phone_bayi_uuid.py`](alembic/versions/rev_0029_widen_users_phone_bayi_uuid.py)); set Beijing Bayi school org `display_name` for org id 5 ([`alembic/versions/rev_0030_bayi_org_id5_display_name.py`](alembic/versions/rev_0030_bayi_org_id5_display_name.py)).
+- **Bundled tiktoken** — additional encoding artifact under [`resources/tiktoken_encodings/`](resources/tiktoken_encodings/) alongside `cl100k_base.tiktoken` for offline-friendly tokenizer cache layout.
+
+### Removed
+
+- **Demo / legacy access paths** — demo login UI ([`frontend/src/pages/DemoLoginPage.vue`](frontend/src/pages/DemoLoginPage.vue)), demo mode and generic IP-whitelist utilities ([`utils/auth/demo_mode.py`](utils/auth/demo_mode.py), [`utils/auth/ip_whitelist.py`](utils/auth/ip_whitelist.py)), Redis Bayi whitelist service ([`services/redis/redis_bayi_whitelist.py`](services/redis/redis_bayi_whitelist.py)), admin Bayi router module ([`routers/auth/admin/bayi.py`](routers/auth/admin/bayi.py)).
+
+### Changed
+
+- **Auth & roles** — login, registration, SMS/email flows, helpers, overseas registration, password and quick-register touchpoints ([`routers/auth/`](routers/auth/)); admin role APIs ([`routers/auth/admin/roles.py`](routers/auth/admin/roles.py)); authentication and role utilities ([`utils/auth/`](utils/auth/)); session and Redis keys ([`services/redis/session/redis_session_manager.py`](services/redis/session/redis_session_manager.py), [`services/redis/keys.py`](services/redis/keys.py)); middleware and SPA handling ([`services/infrastructure/http/middleware.py`](services/infrastructure/http/middleware.py), [`services/infrastructure/utils/spa_handler.py`](services/infrastructure/utils/spa_handler.py)); geo/VPN and CN email-login enforcement ([`services/auth/vpn_geo_enforcement.py`](services/auth/vpn_geo_enforcement.py), [`services/auth/email_login_cn_api_geo.py`](services/auth/email_login_cn_api_geo.py)); models and request DTOs ([`models/domain/auth.py`](models/domain/auth.py), [`models/domain/env_settings.py`](models/domain/env_settings.py), [`models/requests/requests_auth.py`](models/requests/requests_auth.py), [`models/__init__.py`](models/__init__.py), [`models/requests/__init__.py`](models/requests/__init__.py)).
+- **Core routes** — page registration and Vue SPA integration ([`routers/core/pages.py`](routers/core/pages.py), [`routers/core/vue_spa.py`](routers/core/vue_spa.py)).
+- **Admin UI & i18n** — [`AdminRolesTab.vue`](frontend/src/components/admin/AdminRolesTab.vue); admin and common message bundles across locales ([`frontend/src/locales/messages/`](frontend/src/locales/messages/)); [`frontend/scripts/split-locale-bundles.ts`](frontend/scripts/split-locale-bundles.ts).
+- **Config & ops** — [`env.example`](env.example), [`config/database.py`](config/database.py), [`docs/QDRANT_SETUP.md`](docs/QDRANT_SETUP.md), [`scripts/setup/update_qdrant_server.py`](scripts/setup/update_qdrant_server.py), [`scripts/setup/setup.py`](scripts/setup/setup.py), [`scripts/setup/mindgraph.service.template`](scripts/setup/mindgraph.service.template), [`scripts/db/check_admin_status.py`](scripts/db/check_admin_status.py), [`services/admin/sqlite_merge_service.py`](services/admin/sqlite_merge_service.py), lifespan DB integration trimming ([`services/infrastructure/lifecycle/lifespan_db_integration.py`](services/infrastructure/lifecycle/lifespan_db_integration.py)); [`pyproject.toml`](pyproject.toml) tidy.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.5).
+
 ## [5.117.4] - 2026-05-07
 
 ### Changed

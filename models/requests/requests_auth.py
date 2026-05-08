@@ -130,7 +130,7 @@ class RegisterOverseasRequest(BaseModel):
 class LoginRequest(BaseModel):
     """Request model for user login (phone or email)."""
 
-    phone: Optional[str] = Field(None, max_length=20, description="11-digit Chinese mobile")
+    phone: Optional[str] = Field(None, max_length=64, description="11-digit Chinese mobile")
     email: Optional[str] = Field(None, max_length=254, description="Account email (overseas registration)")
     password: str = Field(..., description="User password")
     captcha: str = Field(..., min_length=4, max_length=4, description="4-character captcha code")
@@ -160,23 +160,23 @@ class LoginRequest(BaseModel):
         }
 
 
-class DemoPasskeyRequest(BaseModel):
-    """Request model for demo mode passkey verification"""
+class PasskeyVerifyRequest(BaseModel):
+    """Request body for 6-digit passkey verification (Bayi passkey login, public dashboard)."""
 
-    passkey: str = Field(..., min_length=6, max_length=6, description="6-digit demo passkey")
+    passkey: str = Field(..., min_length=6, max_length=6, description="6-digit passkey")
 
     @field_validator("passkey")
     @classmethod
-    def validate_passkey(cls, v):
+    def validate_passkey(cls, value):
         """Validate 6-digit passkey"""
-        if not v.isdigit():
+        if not value.isdigit():
             raise ValueError("Passkey must contain only digits")
-        if len(v) != 6:
+        if len(value) != 6:
             raise ValueError("Passkey must be exactly 6 digits")
-        return v
+        return value
 
     class Config:
-        """Configuration for DemoPasskeyRequest model."""
+        """Configuration for PasskeyVerifyRequest model."""
 
         json_schema_extra = {"example": {"passkey": "888888"}}
 

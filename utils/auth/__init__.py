@@ -26,15 +26,15 @@ from .config import (
     EMAIL_LOGIN_CN_BLOCK_ENABLED,
     ENTERPRISE_DEFAULT_ORG_CODE,
     ENTERPRISE_DEFAULT_USER_PHONE,
-    DEMO_PASSKEY,
-    ADMIN_DEMO_PASSKEY,
+    BAYI_PASSKEY,
     PUBLIC_DASHBOARD_PASSKEY,
     BAYI_DECRYPTION_KEY,
     BAYI_DEFAULT_ORG_CODE,
+    BAYI_DEFAULT_ORG_ID,
+    BAYI_SSO_DEFAULT_DISPLAY_NAME,
     BAYI_CLOCK_SKEW_TOLERANCE,
-    BAYI_IP_WHITELIST_STR,
-    BAYI_IP_WHITELIST,
     ADMIN_PHONES,
+    ADMIN_USER_IDS,
     MAX_LOGIN_ATTEMPTS,
     MAX_CAPTCHA_ATTEMPTS,
     LOCKOUT_DURATION_MINUTES,
@@ -76,19 +76,14 @@ from .user_tokens import validate_user_token
 # Enterprise mode exports
 from .enterprise_mode import get_enterprise_user
 
-# Demo mode exports
-from .demo_mode import (
-    display_demo_info,
-    verify_demo_passkey,
-    is_admin_demo_passkey,
+# Passkey helpers (Bayi 6-digit login, public dashboard)
+from .passkey_utils import (
+    verify_bayi_passkey,
     verify_dashboard_passkey,
 )
 
 # Bayi mode exports
 from .bayi_mode import decrypt_bayi_token, validate_bayi_token_body
-
-# IP whitelist exports
-from .ip_whitelist import is_ip_whitelisted
 
 # Invitation exports
 from .invitations import load_invitation_codes, validate_invitation_code
@@ -135,15 +130,15 @@ __all__ = [
     "EMAIL_LOGIN_CN_BLOCK_ENABLED",
     "ENTERPRISE_DEFAULT_ORG_CODE",
     "ENTERPRISE_DEFAULT_USER_PHONE",
-    "DEMO_PASSKEY",
-    "ADMIN_DEMO_PASSKEY",
+    "BAYI_PASSKEY",
     "PUBLIC_DASHBOARD_PASSKEY",
     "BAYI_DECRYPTION_KEY",
     "BAYI_DEFAULT_ORG_CODE",
+    "BAYI_DEFAULT_ORG_ID",
+    "BAYI_SSO_DEFAULT_DISPLAY_NAME",
     "BAYI_CLOCK_SKEW_TOLERANCE",
-    "BAYI_IP_WHITELIST_STR",
-    "BAYI_IP_WHITELIST",
     "ADMIN_PHONES",
+    "ADMIN_USER_IDS",
     "MAX_LOGIN_ATTEMPTS",
     "MAX_CAPTCHA_ATTEMPTS",
     "LOCKOUT_DURATION_MINUTES",
@@ -177,16 +172,12 @@ __all__ = [
     "validate_user_token",
     # Enterprise mode
     "get_enterprise_user",
-    # Demo mode
-    "display_demo_info",
-    "verify_demo_passkey",
-    "is_admin_demo_passkey",
+    # Passkey auth
+    "verify_bayi_passkey",
     "verify_dashboard_passkey",
     # Bayi mode
     "decrypt_bayi_token",
     "validate_bayi_token_body",
-    # IP whitelist
-    "is_ip_whitelisted",
     # Invitations
     "load_invitation_codes",
     "validate_invitation_code",

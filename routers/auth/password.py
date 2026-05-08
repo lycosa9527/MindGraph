@@ -66,7 +66,7 @@ def _geo_guard_reset_password_email(
     cookie stamping; None when the request may proceed. Raises HTTPException
     for non-CN service-unavailable style blocks.
     """
-    if not EMAIL_LOGIN_CN_BLOCK_ENABLED or AUTH_MODE in ("demo", "bayi"):
+    if not EMAIL_LOGIN_CN_BLOCK_ENABLED or AUTH_MODE == "bayi":
         return None
     must_deny, geo_msg_key, stamp_cn = email_cn_geo_blocked(
         get_client_ip(http_request),

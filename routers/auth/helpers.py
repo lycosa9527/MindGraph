@@ -413,7 +413,7 @@ async def create_user_session(
 
 async def issue_access_token_with_vpn_geo(user: User, http_request: Request) -> str:
     """
-    Issue an access JWT and record VPN geo baseline (no-op when enforcement is off or demo modes).
+    Issue an access JWT and record VPN geo baseline (no-op when enforcement is off or in bayi/enterprise).
 
     Use for any path that issues a browser session token outside the main auth routers.
     """

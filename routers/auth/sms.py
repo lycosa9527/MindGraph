@@ -87,8 +87,8 @@ async def send_sms_code(
     - 60 seconds cooldown between requests for same phone/purpose
     - Maximum 5 codes per hour per phone number
     """
-    # Check authentication mode - registration SMS not allowed in demo/bayi modes
-    if request.purpose == "register" and AUTH_MODE in ["demo", "bayi"]:
+    # Check authentication mode - registration SMS not allowed in bayi mode
+    if request.purpose == "register" and AUTH_MODE in ["bayi"]:
         error_msg = Messages.error("registration_not_available", lang, AUTH_MODE)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
@@ -319,8 +319,8 @@ async def _send_sms_code_with_purpose(
 
     Reuses the logic from send_sms_code but with purpose pre-set.
     """
-    # Check authentication mode - registration SMS not allowed in demo/bayi modes
-    if purpose == "register" and AUTH_MODE in ["demo", "bayi"]:
+    # Check authentication mode - registration SMS not allowed in bayi mode
+    if purpose == "register" and AUTH_MODE in ["bayi"]:
         error_msg = Messages.error("registration_not_available", lang, AUTH_MODE)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
@@ -480,6 +480,6 @@ async def send_sms_code_for_register(
 
     Convenience endpoint that sends SMS code with purpose='register'.
     Requires captcha verification.
-    Not available in demo/bayi modes.
+    Not available when AUTH_MODE=bayi.
     """
     return await _send_sms_code_with_purpose(request, http_request, "register", db, lang)

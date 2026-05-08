@@ -41,7 +41,7 @@ export default {
   "admin.editSchool": "Edit Sekolah",
   "admin.enabled": "Didayakan",
   "admin.envAdmins": "Pentadbir yang dikonfigurasikan persekitaran",
-  "admin.envAdminsNote": "Dikonfigurasikan melalui ADMIN_PHONES dalam .env (baca sahaja)",
+  "admin.envAdminsNote": "Dikonfigurasikan melalui ADMIN_PHONES / ADMIN_USER_IDS dalam .env (baca sahaja)",
   "admin.feature.askonce": "AskOnce (sembang berbilang LLM)",
   "admin.feature.askonceHint": "Sembang penstriman berbilang model.",
   "admin.feature.community": "Perkongsian komuniti",

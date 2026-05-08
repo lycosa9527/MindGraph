@@ -41,7 +41,7 @@ export default {
   "admin.editSchool": "Wysig skool",
   "admin.enabled": "Aktief",
   "admin.envAdmins": "Omgewings-gekonfigureerde Admins",
-  "admin.envAdminsNote": "Gekonfigureer via ADMIN_PHONES in .env (slegs-lees)",
+  "admin.envAdminsNote": "Gekonfigureer via ADMIN_PHONES / ADMIN_USER_IDS in .env (slegs-lees)",
   "admin.feature.askonce": "AskOnce (multi-LLM-kyk)",
   "admin.feature.askonceHint": "Multi-model stroomkyk.",
   "admin.feature.community": "Gemeenskapsdeling",

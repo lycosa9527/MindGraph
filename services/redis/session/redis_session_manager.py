@@ -595,7 +595,7 @@ class RedisSessionManager:
             user_id: User ID
             old_token_hash: Hash of old token (if exists) for notification
             ip_address: IP address of new login (for notification)
-            allow_multiple: If True, don't invalidate (for shared accounts like bayi-ip@system.com)
+            allow_multiple: If True, skip invalidating prior sessions (rare kiosk-style setups)
 
         Returns:
             True if invalidated successfully, False otherwise

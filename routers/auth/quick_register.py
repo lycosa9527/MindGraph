@@ -217,7 +217,7 @@ async def quick_register_open(
             detail=Messages.error("quick_reg_rate_limited", lang),
         )
 
-    if AUTH_MODE in ("demo", "bayi"):
+    if AUTH_MODE in ("bayi",):
         error_msg = Messages.error("registration_not_available", lang, AUTH_MODE)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
@@ -329,7 +329,7 @@ async def register_quick(
     lang: Language = Depends(get_language_dependency),
 ):
     """Register with phone, room code, and quick_reg_token (no SMS on this path)."""
-    if AUTH_MODE in ("demo", "bayi"):
+    if AUTH_MODE in ("bayi",):
         error_msg = Messages.error("registration_not_available", lang, AUTH_MODE)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 

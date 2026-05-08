@@ -10,10 +10,9 @@ All Rights Reserved
 Proprietary License
 """
 
-import ipaddress
 import logging
 import os
-from typing import Set
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +45,7 @@ TRUSTED_PROXY_IPS = os.getenv("TRUSTED_PROXY_IPS", "").split(",") if os.getenv("
 # Authentication Mode Configuration
 # ============================================================================
 
-# Authentication Mode: standard, enterprise, demo, bayi
+# Authentication Mode: standard, enterprise, bayi
 # enterprise: disables JWT checks—use only on isolated networks (see utils.auth.enterprise_mode).
 AUTH_MODE = os.getenv("AUTH_MODE", "standard").strip().lower()
 
@@ -59,16 +58,16 @@ def _parse_bool_env(name: str, default: bool) -> bool:
 
 
 # When false, skip MaxMind CN check on email login (emergency off without deploy).
-# In AUTH_MODE demo/bayi, login route skips this check so local/demo flows stay simple.
+# In AUTH_MODE bayi, login route skips this check for predictable school deployments.
 EMAIL_LOGIN_CN_BLOCK_ENABLED = _parse_bool_env("EMAIL_LOGIN_CN_BLOCK_ENABLED", True)
 
 # VPN / CN transition: kick non-mainland-phone users when country flips to CN mid-session.
 VPN_CN_KICKOUT_ENABLED = _parse_bool_env("VPN_CN_KICKOUT_ENABLED", False)
 
 
-def _parse_int_id_allowlist(raw: str) -> Set[int]:
+def _parse_int_id_allowlist(raw: str) -> set[int]:
     """Comma-separated user IDs for VPN CN kick-out bypass (support / testing)."""
-    result: Set[int] = set()
+    result: set[int] = set()
     for part in raw.split(","):
         part = part.strip()
         if not part:
@@ -86,9 +85,9 @@ VPN_CN_KICKOUT_ALLOWLIST_USER_IDS = _parse_int_id_allowlist(os.getenv("VPN_CN_KI
 ENTERPRISE_DEFAULT_ORG_CODE = os.getenv("ENTERPRISE_DEFAULT_ORG_CODE", "DEMO-001").strip()
 ENTERPRISE_DEFAULT_USER_PHONE = os.getenv("ENTERPRISE_DEFAULT_USER_PHONE", "enterprise@system.com").strip()
 
-# Demo Mode Configuration
-DEMO_PASSKEY = os.getenv("DEMO_PASSKEY", "888888").strip()
-ADMIN_DEMO_PASSKEY = os.getenv("ADMIN_DEMO_PASSKEY", "999999").strip()
+# Bayi 6-digit passkey (AUTH_MODE=bayi only; separate from vendor SSO /loginByXz).
+# Elevated access: include the Bayi login identity (default bayi@system.com) in ADMIN_PHONES.
+BAYI_PASSKEY = os.getenv("BAYI_PASSKEY", "888888").strip()
 
 # Public Dashboard Configuration
 PUBLIC_DASHBOARD_PASSKEY = os.getenv("PUBLIC_DASHBOARD_PASSKEY", "123456").strip()
@@ -102,15 +101,57 @@ BAYI_DEFAULT_ORG_CODE = os.getenv("BAYI_DEFAULT_ORG_CODE", "BAYI-001").strip()
 # Allow 10 seconds clock skew tolerance
 BAYI_CLOCK_SKEW_TOLERANCE = int(os.getenv("BAYI_CLOCK_SKEW_TOLERANCE", "10"))
 
-# Bayi IP Whitelist Configuration
-BAYI_IP_WHITELIST_STR = os.getenv("BAYI_IP_WHITELIST", "").strip()
-BAYI_IP_WHITELIST: Set[str] = set()
+
+def _parse_optional_positive_int(env_name: str) -> Optional[int]:
+    """Parse a positive int from env, or None if unset/invalid."""
+    raw = os.getenv(env_name)
+    if raw is None or not str(raw).strip():
+        return None
+    try:
+        value = int(str(raw).strip())
+    except ValueError:
+        logger.warning("Invalid integer for %s: %r", env_name, raw)
+        return None
+    if value <= 0:
+        logger.warning("%s must be a positive integer, got %r", env_name, raw)
+        return None
+    return value
+
+
+BAYI_DEFAULT_ORG_ID = _parse_optional_positive_int("BAYI_DEFAULT_ORG_ID")
+_bayi_sso_display_raw = os.getenv("BAYI_SSO_DEFAULT_DISPLAY_NAME", "八一用户")
+BAYI_SSO_DEFAULT_DISPLAY_NAME = (
+    _bayi_sso_display_raw.strip() if _bayi_sso_display_raw and str(_bayi_sso_display_raw).strip() else "八一用户"
+)
+
+
+def _parse_admin_user_ids(raw: str) -> frozenset[int]:
+    """Comma-separated positive user primary keys for env-based admin access."""
+    result: set[int] = set()
+    for part in raw.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            value = int(part)
+        except ValueError:
+            logger.warning("Invalid user id in ADMIN_USER_IDS: %s", part)
+            continue
+        if value <= 0:
+            logger.warning("ADMIN_USER_IDS entries must be positive integers, got %s", part)
+            continue
+        result.add(value)
+    return frozenset(result)
+
 
 # ============================================================================
 # Admin Configuration
 # ============================================================================
 
 ADMIN_PHONES = os.getenv("ADMIN_PHONES", "").split(",")
+
+# Comma-separated users.id values granting admin (alongside ADMIN_PHONES).
+ADMIN_USER_IDS = _parse_admin_user_ids(os.getenv("ADMIN_USER_IDS", "").strip())
 
 # ============================================================================
 # Security Configuration
@@ -124,39 +165,3 @@ CAPTCHA_SESSION_COOKIE_NAME = "captcha_session"
 
 # bcrypt configuration
 BCRYPT_ROUNDS = 12
-
-
-def init_bayi_ip_whitelist() -> None:
-    """
-    Initialize bayi IP whitelist from environment variable.
-
-    Called during module initialization to parse and validate IP addresses.
-    Only logs if in bayi mode to avoid noise in other modes.
-    """
-    if not BAYI_IP_WHITELIST_STR:
-        return
-
-    for ip_entry in BAYI_IP_WHITELIST_STR.split(","):
-        ip_entry = ip_entry.strip()
-        if not ip_entry:
-            continue
-        try:
-            # Validate and normalize IP address
-            ip_addr_obj = ipaddress.ip_address(ip_entry)
-            BAYI_IP_WHITELIST.add(str(ip_addr_obj))
-            # Only log in bayi mode to avoid noise in other modes
-            if AUTH_MODE == "bayi":
-                logger.info("Added IP to bayi IP whitelist: %s", ip_entry)
-        except ValueError as e:
-            if AUTH_MODE == "bayi":
-                logger.warning("Invalid IP entry in BAYI_IP_WHITELIST: %s - %s", ip_entry, e)
-
-    if AUTH_MODE == "bayi":
-        if BAYI_IP_WHITELIST:
-            logger.info("Bayi IP whitelist loaded: %d IP(s)", len(BAYI_IP_WHITELIST))
-        else:
-            logger.info("Bayi IP whitelist configured but no valid IPs found")
-
-
-# Initialize IP whitelist on module import
-init_bayi_ip_whitelist()

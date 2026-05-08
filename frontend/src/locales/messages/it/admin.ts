@@ -41,7 +41,7 @@ export default {
   "admin.editSchool": "Modifica scuola",
   "admin.enabled": "Attivo",
   "admin.envAdmins": "Amministratori da variabili d’ambiente",
-  "admin.envAdminsNote": "Configurato tramite ADMIN_PHONES nel file .env (sola lettura)",
+  "admin.envAdminsNote": "Configurato tramite ADMIN_PHONES / ADMIN_USER_IDS nel file .env (sola lettura)",
   "admin.feature.askonce": "AskOnce (chat multi-LLM)",
   "admin.feature.askonceHint": "Chat in streaming su più modelli.",
   "admin.feature.community": "Condivisione Community",

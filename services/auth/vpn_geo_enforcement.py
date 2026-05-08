@@ -84,7 +84,7 @@ async def _refresh_geo_keys_ttl(redis: object, user_id: int, ttl: int) -> None:
 async def record_vpn_login_geo(user_id: int, request: Request) -> None:
     if not VPN_CN_KICKOUT_ENABLED:
         return
-    if AUTH_MODE in ("demo", "bayi", "enterprise"):
+    if AUTH_MODE in ("bayi", "enterprise"):
         return
     if not is_redis_available():
         return
@@ -106,7 +106,7 @@ async def record_vpn_login_geo(user_id: int, request: Request) -> None:
 async def record_vpn_refresh_last_ip(user_id: int, request: Request) -> None:
     if not VPN_CN_KICKOUT_ENABLED:
         return
-    if AUTH_MODE in ("demo", "bayi", "enterprise"):
+    if AUTH_MODE in ("bayi", "enterprise"):
         return
     if not is_redis_available():
         return
@@ -127,7 +127,7 @@ async def record_vpn_refresh_last_ip(user_id: int, request: Request) -> None:
 def _vpn_geo_prereqs_ok(request: Request) -> bool:
     if not VPN_CN_KICKOUT_ENABLED:
         return False
-    if AUTH_MODE in ("demo", "bayi", "enterprise"):
+    if AUTH_MODE in ("bayi", "enterprise"):
         return False
     if request.headers.get("X-API-Key", "").strip():
         return False

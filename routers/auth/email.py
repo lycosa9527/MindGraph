@@ -68,7 +68,7 @@ async def send_email_code(
     Security: captcha required. Rate limits mirror SMS (cooldown + hourly cap).
     For purpose=register: GeoIP must not be mainland China (CN); email must not exist.
     """
-    if request.purpose == "register" and AUTH_MODE in ["demo", "bayi"]:
+    if request.purpose == "register" and AUTH_MODE in ["bayi"]:
         error_msg = Messages.error("registration_not_available", lang, AUTH_MODE)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
@@ -102,7 +102,7 @@ async def send_email_code(
                 return json_forbidden_cn_geo(detail, http_request, stamp_cn)
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=detail)
 
-    if request.purpose == "reset_password" and EMAIL_LOGIN_CN_BLOCK_ENABLED and AUTH_MODE not in ("demo", "bayi"):
+    if request.purpose == "reset_password" and EMAIL_LOGIN_CN_BLOCK_ENABLED and AUTH_MODE != "bayi":
         must_deny, geo_msg_key, stamp_cn = email_cn_geo_blocked(
             client_ip,
             http_request,
@@ -145,7 +145,7 @@ async def send_email_code(
         if not cached_user:
             error_msg = Messages.error("email_not_registered_login", lang)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
-        if EMAIL_LOGIN_CN_BLOCK_ENABLED and AUTH_MODE not in ("demo", "bayi"):
+        if EMAIL_LOGIN_CN_BLOCK_ENABLED and AUTH_MODE != "bayi":
             whitelisted = getattr(cached_user, "email_login_whitelisted_from_cn", False)
             must_deny, geo_msg_key, stamp_cn = email_cn_geo_blocked(
                 client_ip,
@@ -262,11 +262,7 @@ async def verify_email_code(
     if (
         request.purpose in ("login", "reset_password")
         and EMAIL_LOGIN_CN_BLOCK_ENABLED
-        and AUTH_MODE
-        not in (
-            "demo",
-            "bayi",
-        )
+        and AUTH_MODE != "bayi"
     ):
         client_ip_geo = get_client_ip(http_request) if http_request else "unknown"
         if request.purpose == "login":

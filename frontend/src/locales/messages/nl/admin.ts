@@ -41,7 +41,7 @@ export default {
   "admin.editSchool": "School bewerken",
   "admin.enabled": "Ingeschakeld",
   "admin.envAdmins": "Via omgeving geconfigureerde admins",
-  "admin.envAdminsNote": "Geconfigureerd via ADMIN_PHONES in .env (alleen-lezen)",
+  "admin.envAdminsNote": "Geconfigureerd via ADMIN_PHONES / ADMIN_USER_IDS in .env (alleen-lezen)",
   "admin.feature.askonce": "AskOnce (multi-LLM-chat)",
   "admin.feature.askonceHint": "Streamingchat met meerdere modellen.",
   "admin.feature.community": "Community-delen",

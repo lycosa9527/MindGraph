@@ -41,7 +41,7 @@ export default {
   "admin.editSchool": "विद्यालय संपादित करें",
   "admin.enabled": "सक्षम",
   "admin.envAdmins": "परिवेश से निर्धारित व्यवस्थापक",
-  "admin.envAdminsNote": ".env में ADMIN_PHONES के ज़रिए (केवल पढ़ने योग्य)",
+  "admin.envAdminsNote": ".env में ADMIN_PHONES / ADMIN_USER_IDS के ज़रिए (केवल पढ़ने योग्य)",
   "admin.feature.askonce": "AskOnce (बहु-LLM चैट)",
   "admin.feature.askonceHint": "बहु-मॉडल स्ट्रीमिंग चैट।",
   "admin.feature.community": "समुदाय साझाकरण",

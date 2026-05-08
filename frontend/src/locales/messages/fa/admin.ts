@@ -41,7 +41,7 @@ export default {
   "admin.editSchool": "ویرایش مدرسه",
   "admin.enabled": "فعال",
   "admin.envAdmins": "مدیران پیکربندی‌شدهٔ محیط",
-  "admin.envAdminsNote": "از طریق ADMIN_PHONES در .env (فقط خواندنی)",
+  "admin.envAdminsNote": "از طریق ADMIN_PHONES / ADMIN_USER_IDS در .env (فقط خواندنی)",
   "admin.feature.askonce": "AskOnce (گفتگوی چند‑LLM)",
   "admin.feature.askonceHint": "گفتگوی پخش زنده با چند مدل.",
   "admin.feature.community": "اشتراک‌گذاری جامعه",

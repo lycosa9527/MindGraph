@@ -171,7 +171,7 @@ VUE_SPA_ROUTES = [
     "/admin",
     "/login",
     "/auth",
-    "/demo",
+    "/bayi/passkey",
     "/dashboard",
     "/dashboard/login",
 ]

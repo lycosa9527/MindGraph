@@ -43,7 +43,7 @@ export default {
   'admin.editSchool': 'แก้ไขโรงเรียน',
   'admin.enabled': 'เปิดใช้งาน',
   'admin.envAdmins': 'ผู้ดูแลที่กำหนดจากสภาพแวดล้อม',
-  'admin.envAdminsNote': 'กำหนดผ่าน ADMIN_PHONES ใน .env (อ่านอย่างเดียว)',
+  'admin.envAdminsNote': 'กำหนดผ่าน ADMIN_PHONES / ADMIN_USER_IDS ใน .env (อ่านอย่างเดียว)',
   'admin.feature.askonce': 'AskOnce (แชทหลายโมเดล)',
   'admin.feature.askonceHint': 'แชทสตรีมมิงหลายโมเดล',
   'admin.feature.community': 'การแชร์ชุมชน',

@@ -187,10 +187,10 @@ async def register(
     Each invitation code is unique and belongs to one school.
 
     Registration is only available in standard and enterprise modes.
-    Demo and bayi modes use passkey authentication instead.
+    Bayi mode uses vendor SSO and/or 6-digit passkey instead of self-service registration.
     """
-    # Check authentication mode - registration not allowed in demo/bayi modes
-    if AUTH_MODE in ["demo", "bayi"]:
+    # Check authentication mode - registration not allowed in bayi mode
+    if AUTH_MODE in ["bayi"]:
         error_msg = Messages.error("registration_not_available", lang, AUTH_MODE)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
@@ -429,10 +429,10 @@ async def register_with_sms(
     - SMS verification code (consumed last to avoid wasting codes)
 
     Registration is only available in standard and enterprise modes.
-    Demo and bayi modes use passkey authentication instead.
+    Bayi mode uses vendor SSO and/or 6-digit passkey instead of self-service registration.
     """
-    # Check authentication mode - registration not allowed in demo/bayi modes
-    if AUTH_MODE in ["demo", "bayi"]:
+    # Check authentication mode - registration not allowed in bayi mode
+    if AUTH_MODE in ["bayi"]:
         error_msg = Messages.error("registration_not_available", lang, AUTH_MODE)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 

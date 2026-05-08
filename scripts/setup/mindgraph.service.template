@@ -1,6 +1,6 @@
 [Unit]
 Description=MindGraph AI Education Platform
-Documentation=https://github.com/your-repo/MindGraph
+Documentation=https://github.com/lycosa9527/MindGraph
 After=network.target
 
 [Service]

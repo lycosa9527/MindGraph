@@ -23,7 +23,7 @@ function bundleForKey(key: string): string {
     case 'common':
     case 'app':
     case 'settings':
-    case 'demo':
+    case 'bayiPasskey':
     case 'publicDashboard':
     case 'askOnce':
     case 'askonce':

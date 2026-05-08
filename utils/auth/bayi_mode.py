@@ -21,19 +21,6 @@ from .config import BAYI_CLOCK_SKEW_TOLERANCE
 
 logger = logging.getLogger(__name__)
 
-# Optional crypto imports
-AES = None
-unpad = None
-
-try:
-    from Crypto.Cipher import AES as CryptoAES
-    from Crypto.Util.Padding import unpad as crypto_unpad
-
-    AES = CryptoAES
-    unpad = crypto_unpad
-except ImportError:
-    pass
-
 
 def decrypt_bayi_token(encrypted_token: str, key: str) -> dict:
     """
@@ -49,8 +36,13 @@ def decrypt_bayi_token(encrypted_token: str, key: str) -> dict:
     Raises:
         ValueError: If decryption fails or token is invalid
     """
-    if AES is None or unpad is None:
-        raise ValueError("pycryptodome is required for bayi token decryption. Install with: pip install pycryptodome")
+    try:
+        from Crypto.Cipher import AES
+        from Crypto.Util.Padding import unpad
+    except ImportError as exc:
+        raise ValueError(
+            "pycryptodome is required for bayi token decryption. Install with: pip install pycryptodome",
+        ) from exc
 
     try:
         # Decode URL encoding
@@ -111,6 +103,7 @@ def validate_bayi_token_body(body: dict) -> bool:
     Checks:
     - body.from === 'bayi'
     - timestamp is within last 5 minutes (with clock skew tolerance)
+    - userId is present and non-empty (SSO subject / stable user key)
 
     Args:
         body: Decrypted token body
@@ -197,6 +190,24 @@ def validate_bayi_token_body(body: dict) -> bool:
                 now,
                 token_time_utc,
             )
+            return False
+
+        raw_uid = body.get("userId")
+        if raw_uid is None:
+            logger.warning("Bayi token validation failed: missing userId")
+            return False
+        if isinstance(raw_uid, (int, float)):
+            user_id_str = str(raw_uid).strip()
+        elif isinstance(raw_uid, str):
+            user_id_str = raw_uid.strip()
+        else:
+            logger.warning(
+                "Bayi token validation failed: invalid userId type: %s",
+                type(raw_uid),
+            )
+            return False
+        if not user_id_str:
+            logger.warning("Bayi token validation failed: empty userId")
             return False
 
         logger.debug("Timestamp validation passed - diff: %ds", time_diff)

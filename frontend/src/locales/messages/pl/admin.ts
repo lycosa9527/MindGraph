@@ -41,7 +41,7 @@ export default {
   "admin.editSchool": "Edytuj szkołę",
   "admin.enabled": "Włączone",
   "admin.envAdmins": "Administratorzy z konfiguracji środowiska",
-  "admin.envAdminsNote": "Skonfigurowane przez ADMIN_PHONES w .env (tylko odczyt)",
+  "admin.envAdminsNote": "Skonfigurowane przez ADMIN_PHONES / ADMIN_USER_IDS w .env (tylko odczyt)",
   "admin.feature.askonce": "AskOnce (czat wielomodelowy)",
   "admin.feature.askonceHint": "Streaming czatu w wielu modelach.",
   "admin.feature.community": "Udostępnianie w społeczności",

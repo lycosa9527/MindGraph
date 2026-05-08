@@ -35,6 +35,7 @@ interface CandidateUser {
 
 interface EnvAdmin {
   phone: string
+  user_id?: number | null
   name: string | null
 }
 

@@ -40,14 +40,18 @@ from utils.auth import (
     is_https,
     BAYI_DECRYPTION_KEY,
     BAYI_DEFAULT_ORG_CODE,
+    BAYI_DEFAULT_ORG_ID,
+    BAYI_SSO_DEFAULT_DISPLAY_NAME,
     decrypt_bayi_token,
     validate_bayi_token_body,
-    is_ip_whitelisted,
     hash_password,
     compute_device_hash,
 )
 
 logger = logging.getLogger(__name__)
+
+# Where to send users when Bayi SSO cannot complete (stale/replay/decrypt/org errors)
+_BAYI_SSO_FALLBACK_REDIRECT = "/auth"
 
 # Initialize router
 router = APIRouter(tags=["Authentication"])
@@ -61,25 +65,14 @@ router = APIRouter(tags=["Authentication"])
 @router.get("/loginByXz")
 async def login_by_xz(request: Request, token: Optional[str] = None):
     """
-    Bayi mode authentication endpoint
+    Bayi mode: passwordless SSO via encrypted vendor token.
 
-    Authentication methods (in priority order):
-    1. IP Whitelist: If client IP is whitelisted, grant immediate access
-       - No token required
-       - No session limits
-       - Simple IP check ??grant access
-    2. Token Authentication: If IP not whitelisted, require encrypted token
-       - Token must be valid and within 5 minutes
-       - Full decryption and validation required
+    The client must pass ``?token=`` (AES payload from 小致). After decrypt and
+    validation (``from``, freshness, ``userId``), the user is found or created
+    under the configured Bayi org (``BAYI_DEFAULT_ORG_ID`` row if set, otherwise
+    ``BAYI_DEFAULT_ORG_CODE`` with optional auto-create) and receives a JWT cookie.
 
-    URL formats:
-    - IP Whitelist: /loginByXz (no token parameter)
-    - Token Auth: /loginByXz?token=...
-
-    Behavior:
-    - If IP whitelisted: Grant access immediately (no token needed)
-    - If token valid: Redirects to /editor with JWT token set as cookie
-    - If both fail: Redirects to /demo (demo passkey page)
+    On failure (missing or invalid token, org locked, etc.): redirects to ``/auth``.
 
     Note: Uses manual session management to release DB connections immediately
     after authentication, before returning the redirect response.
@@ -88,188 +81,23 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
         # Verify AUTH_MODE is set to bayi
         if AUTH_MODE != "bayi":
             logger.warning(
-                "/loginByXz accessed but AUTH_MODE is '%s', not 'bayi' - redirecting to /demo",
+                "/loginByXz accessed but AUTH_MODE is '%s', not 'bayi' - redirecting to %s",
                 AUTH_MODE,
+                _BAYI_SSO_FALLBACK_REDIRECT,
             )
-            return RedirectResponse(url="/demo", status_code=303)
+            return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
 
         # Extract client IP
         client_ip = get_client_ip(request)
         logger.info("Bayi authentication attempt from IP: %s", client_ip)
 
-        # Priority 1: Check IP whitelist (skip token if whitelisted)
-        if await is_ip_whitelisted(client_ip):
-            # IP is whitelisted - grant immediate access, no token needed
-            logger.info(
-                "IP %s is whitelisted, granting immediate access (skipping token verification)",
-                client_ip,
-            )
-
-            async with AsyncSessionLocal() as db:
-                # Get or create organization (same as token flow)
-                result = await db.execute(select(Organization).where(Organization.code == BAYI_DEFAULT_ORG_CODE))
-                org = result.scalar_one_or_none()
-
-                if not org:
-                    try:
-                        org = Organization(
-                            code=BAYI_DEFAULT_ORG_CODE,
-                            name="Bayi School",
-                            invitation_code="BAYI2024",
-                            created_at=datetime.now(UTC),
-                        )
-                        db.add(org)
-                        await db.commit()
-                        await db.refresh(org)
-                        logger.info("Created bayi organization: %s", BAYI_DEFAULT_ORG_CODE)
-                        try:
-                            await org_cache.cache_org(org)
-                        except Exception as cache_err:
-                            logger.warning("Failed to cache bayi org: %s", cache_err)
-                    except IntegrityError as integrity_err:
-                        await db.rollback()
-                        logger.debug(
-                            "Organization creation race condition (expected): %s",
-                            integrity_err,
-                        )
-                        result = await db.execute(
-                            select(Organization).where(Organization.code == BAYI_DEFAULT_ORG_CODE)
-                        )
-                        org = result.scalar_one_or_none()
-                        if not org:
-                            logger.error("Failed to create or retrieve bayi organization")
-                            return RedirectResponse(url="/demo", status_code=303)
-                        try:
-                            await org_cache.cache_org(org)
-                        except Exception as cache_err:
-                            logger.debug(
-                                "Failed to cache org after race condition: %s",
-                                cache_err,
-                            )
-                    except Exception as org_err:
-                        await db.rollback()
-                        logger.error("Failed to create bayi organization: %s", org_err)
-                        return RedirectResponse(url="/demo", status_code=303)
-
-                # Check organization status (locked or expired) - CRITICAL SECURITY CHECK
-                if org:
-                    is_active = cast(bool, getattr(org, "is_active", True))
-                    if not is_active:
-                        logger.warning("IP whitelist blocked: Organization %s is locked", org.code)
-                        return RedirectResponse(url="/demo", status_code=303)
-
-                    expires_at = cast(
-                        Optional[datetime],
-                        getattr(org, "expires_at", None),
-                    )
-                    if expires_at is not None and expires_at < datetime.now(UTC):
-                        logger.warning(
-                            "IP whitelist blocked: Organization %s expired on %s",
-                            org.code,
-                            expires_at,
-                        )
-                        return RedirectResponse(url="/demo", status_code=303)
-
-                user_phone = "bayi-ip@system.com"
-                user_name = "Bayi IP User"
-
-                result = await db.execute(select(User).where(User.phone == user_phone))
-                bayi_user = result.scalar_one_or_none()
-
-                if not bayi_user:
-                    try:
-                        bayi_user = User(
-                            phone=user_phone,
-                            password_hash=hash_password("bayi-no-pwd"),
-                            name=user_name,
-                            organization_id=org.id,
-                            created_at=datetime.now(UTC),
-                        )
-                        db.add(bayi_user)
-                        try:
-                            await db.commit()
-                            await db.refresh(bayi_user)
-                        except Exception as user_err:
-                            await db.rollback()
-                            logger.error("Failed to create bayi IP user: %s", user_err)
-                            return RedirectResponse(url="/demo", status_code=303)
-                        logger.info("Created shared bayi IP user: %s", user_phone)
-                        try:
-                            await user_cache.cache_user(bayi_user)
-                        except Exception as cache_err:
-                            logger.warning("Failed to cache bayi user: %s", cache_err)
-                    except IntegrityError as integrity_err:
-                        await db.rollback()
-                        logger.debug("User creation race condition (expected): %s", integrity_err)
-                        result = await db.execute(select(User).where(User.phone == user_phone))
-                        bayi_user = result.scalar_one_or_none()
-                        if not bayi_user:
-                            logger.error("Failed to create or retrieve bayi IP user after race condition")
-                            return RedirectResponse(url="/demo", status_code=303)
-                        try:
-                            await user_cache.cache_user(bayi_user)
-                        except Exception as cache_err:
-                            logger.debug(
-                                "Failed to cache user after race condition: %s",
-                                cache_err,
-                            )
-                    except Exception as user_err:
-                        await db.rollback()
-                        logger.error("Failed to create bayi IP user: %s", user_err)
-                        result = await db.execute(select(User).where(User.phone == user_phone))
-                        bayi_user = result.scalar_one_or_none()
-                        if not bayi_user:
-                            return RedirectResponse(url="/demo", status_code=303)
-                        if bayi_user:
-                            try:
-                                await user_cache.cache_user(bayi_user)
-                            except Exception as cache_err:
-                                logger.debug(
-                                    "Failed to cache user after error recovery: %s",
-                                    cache_err,
-                                )
-
-                session_manager = get_session_manager()
-                jwt_token = await _issue_bayi_access_token(bayi_user, request)
-                device_hash = compute_device_hash(request)
-
-                await session_manager.store_session(
-                    bayi_user.id,
-                    jwt_token,
-                    device_hash=device_hash,
-                    allow_multiple=True,
-                )
-
-                logger.info("Bayi IP whitelist authentication successful: %s", client_ip)
-
-            # Redirect to editor with cookie
-            redirect_response = RedirectResponse(url="/editor", status_code=303)
-            redirect_response.set_cookie(
-                key="access_token",
-                value=jwt_token,
-                httponly=True,
-                secure=is_https(request),  # SECURITY: Auto-detect HTTPS
-                samesite="lax",
-                max_age=7 * 24 * 60 * 60,  # 7 days
-            )
-            # Set flag cookie to indicate new login session (for AI disclaimer notification)
-            redirect_response.set_cookie(
-                key="show_ai_disclaimer",
-                value="true",
-                httponly=False,  # Allow JavaScript to read it
-                secure=is_https(request),
-                samesite="lax",
-                max_age=60 * 60,  # 1 hour (should be cleared after showing notification)
-            )
-            return redirect_response
-
-        # Priority 2: Token authentication (existing flow)
         if not token:
             logger.warning(
-                "IP %s not whitelisted and no token provided - redirecting to /demo",
+                "Bayi SSO: no token provided from IP %s - redirecting to %s",
                 client_ip,
+                _BAYI_SSO_FALLBACK_REDIRECT,
             )
-            return RedirectResponse(url="/demo", status_code=303)
+            return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
 
         # Log token receipt (without exposing full token in logs)
         token_preview = token[:20] + "..." if len(token) > 20 else token
@@ -290,7 +118,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                     client_ip,
                     attempt_count,
                 )
-                return RedirectResponse(url="/demo", status_code=303)
+                return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
         except Exception as e:
             logger.warning("Rate limit check failed (allowing request): %s", e)
             # Fail-open: if rate limiting fails, allow request (backward compatibility)
@@ -303,7 +131,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                     "Bayi token replay attack detected for IP %s - token already used",
                     client_ip,
                 )
-                return RedirectResponse(url="/demo", status_code=303)
+                return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
         except Exception as e:
             logger.debug("Token usage check failed (allowing request): %s", e)
             # Fail-open: if check fails, allow request (backward compatibility)
@@ -316,39 +144,43 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
             )
             body = decrypt_bayi_token(token, BAYI_DECRYPTION_KEY)
             logger.info(
-                "Bayi token decrypted successfully - body keys: %s, body content: %s",
+                "Bayi token decrypted successfully - body keys: %s",
                 list(body.keys()),
-                body,
             )
+            logger.debug("Bayi token decrypted payload: %s", body)
         except ValueError as e:
             logger.error(
-                "Bayi token decryption failed: %s - redirecting to /demo",
+                "Bayi token decryption failed: %s - redirecting to %s",
                 e,
+                _BAYI_SSO_FALLBACK_REDIRECT,
                 exc_info=True,
             )
-            # Invalid token: redirect to demo passkey page
-            return RedirectResponse(url="/demo", status_code=303)
+            # Invalid token: fallback to standard auth UI
+            return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
         except Exception as e:
             logger.error(
-                "Unexpected error during token decryption: %s - redirecting to /demo",
+                "Unexpected error during token decryption: %s - redirecting to %s",
                 e,
+                _BAYI_SSO_FALLBACK_REDIRECT,
                 exc_info=True,
             )
-            return RedirectResponse(url="/demo", status_code=303)
+            return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
 
         # Validate token body (no DB needed for this)
         logger.info(
-            "Validating token body - from: %s, timestamp: %s",
+            "Validating token body - from: %s, timestamp: %s, userId present: %s",
             body.get("from"),
             body.get("timestamp"),
+            body.get("userId") is not None,
         )
         validation_result = validate_bayi_token_body(body)
         if not validation_result:
             logger.error(
-                "Bayi token validation failed - body: %s, from field: '%s', timestamp: %s - redirecting to /demo",
+                "Bayi token validation failed - body: %s, from field: '%s', timestamp: %s - redirecting to %s",
                 body,
                 body.get("from"),
                 body.get("timestamp"),
+                _BAYI_SSO_FALLBACK_REDIRECT,
             )
             # Cache invalid result (performance optimization)
             try:
@@ -356,8 +188,8 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                 await token_tracker.cache_token_validation(token, False)
             except Exception as e:
                 logger.debug("Failed to cache invalid token: %s", e)
-            # Invalid or expired token: redirect to demo passkey page
-            return RedirectResponse(url="/demo", status_code=303)
+            # Invalid or expired token: fallback to standard auth UI
+            return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
 
         logger.info("Token validation passed - proceeding with user creation/retrieval")
 
@@ -371,33 +203,77 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
             logger.debug("Failed to mark token as used/cache result: %s", e)
             # Non-critical - continue with authentication
 
+        user_phone = str(body["userId"]).strip()
+
         async with AsyncSessionLocal() as db:
-            # Get or create organization
-            result = await db.execute(select(Organization).where(Organization.code == BAYI_DEFAULT_ORG_CODE))
-            org = result.scalar_one_or_none()
+            org: Optional[Organization] = None
 
-            if not org:
-                org = Organization(
-                    code=BAYI_DEFAULT_ORG_CODE,
-                    name="Bayi School",
-                    invitation_code="BAYI2024",
-                    created_at=datetime.now(UTC),
+            if BAYI_DEFAULT_ORG_ID is not None:
+                result = await db.execute(select(Organization).where(Organization.id == BAYI_DEFAULT_ORG_ID))
+                org = result.scalar_one_or_none()
+                if not org:
+                    logger.error(
+                        "Bayi SSO: organization id %s (BAYI_DEFAULT_ORG_ID) not found",
+                        BAYI_DEFAULT_ORG_ID,
+                    )
+                    return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
+            else:
+                result = await db.execute(select(Organization).where(Organization.code == BAYI_DEFAULT_ORG_CODE))
+                org = result.scalar_one_or_none()
+
+                if not org:
+                    try:
+                        org = Organization(
+                            code=BAYI_DEFAULT_ORG_CODE,
+                            name="Bayi School",
+                            invitation_code="BAYI2024",
+                            created_at=datetime.now(UTC),
+                        )
+                        db.add(org)
+                        await db.commit()
+                        await db.refresh(org)
+                        logger.info("Created bayi organization: %s", BAYI_DEFAULT_ORG_CODE)
+                        try:
+                            await org_cache.cache_org(org)
+                        except Exception as e:
+                            logger.warning("Failed to cache bayi org: %s", e)
+                    except IntegrityError:
+                        await db.rollback()
+                        result = await db.execute(
+                            select(Organization).where(Organization.code == BAYI_DEFAULT_ORG_CODE)
+                        )
+                        org = result.scalar_one_or_none()
+                        if not org:
+                            logger.error("Failed to create or retrieve bayi organization after race")
+                            return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
+                        try:
+                            await org_cache.cache_org(org)
+                        except Exception as cache_err:
+                            logger.debug("Failed to cache org after race: %s", cache_err)
+                    except Exception:
+                        await db.rollback()
+                        raise
+
+            if org is None:
+                logger.error("Bayi SSO: organization resolution failed unexpectedly")
+                return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
+
+            is_active = cast(bool, getattr(org, "is_active", True))
+            if not is_active:
+                logger.warning("Bayi SSO blocked: Organization %s is locked", org.code)
+                return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
+
+            expires_at = cast(
+                Optional[datetime],
+                getattr(org, "expires_at", None),
+            )
+            if expires_at is not None and expires_at < datetime.now(UTC):
+                logger.warning(
+                    "Bayi SSO blocked: Organization %s expired on %s",
+                    org.code,
+                    expires_at,
                 )
-                db.add(org)
-                try:
-                    await db.commit()
-                    await db.refresh(org)
-                except Exception:
-                    await db.rollback()
-                    raise
-                logger.info("Created bayi organization: %s", BAYI_DEFAULT_ORG_CODE)
-                try:
-                    await org_cache.cache_org(org)
-                except Exception as e:
-                    logger.warning("Failed to cache bayi org: %s", e)
-
-            user_phone = body.get("phone") or body.get("user") or "bayi@system.com"
-            user_name = body.get("name") or "Bayi User"
+                return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
 
             result = await db.execute(select(User).where(User.phone == user_phone))
             bayi_user = result.scalar_one_or_none()
@@ -407,7 +283,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                     bayi_user = User(
                         phone=user_phone,
                         password_hash=hash_password("bayi-no-pwd"),
-                        name=user_name,
+                        name=BAYI_SSO_DEFAULT_DISPLAY_NAME,
                         organization_id=org.id,
                         created_at=datetime.now(UTC),
                     )
@@ -426,7 +302,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                     bayi_user = result.scalar_one_or_none()
                     if not bayi_user:
                         logger.error("Failed to create bayi user after retry: %s", e)
-                        return RedirectResponse(url="/demo", status_code=303)
+                        return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
                     try:
                         await user_cache.cache_user(bayi_user)
                     except Exception as cache_err:
@@ -471,9 +347,14 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
         return redirect_response
 
     except Exception as e:
-        # Any other error: redirect to demo passkey page
-        logger.error("Bayi authentication error: %s - redirecting to /demo", e, exc_info=True)
-        return RedirectResponse(url="/demo", status_code=303)
+        # Any other error: redirect to fallback auth route
+        logger.error(
+            "Bayi authentication error: %s - redirecting to %s",
+            e,
+            _BAYI_SSO_FALLBACK_REDIRECT,
+            exc_info=True,
+        )
+        return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
 
 
 # ============================================================================

@@ -136,14 +136,11 @@ EMAIL_VERIFY = "email:verify:{purpose}:{email}"
 TTL_EMAIL = 600
 
 # ---------------------------------------------------------------------------
-# Bayi tokens / whitelist  (redis_bayi_token.py / redis_bayi_whitelist.py)
+# Bayi SSO tokens  (redis_bayi_token.py)
 # ---------------------------------------------------------------------------
 BAYI_TOKEN_USED = "bayi:token:used:{sha256}"
 BAYI_TOKEN_VALID = "bayi:token:valid:{sha256}"
-BAYI_IP_WHITELIST = "bayi:ip_whitelist"  # no TTL — managed explicitly
-BAYI_WHITELIST_LOCK = "bayi:whitelist:load:lock"
 TTL_BAYI_TOKEN = 300
-TTL_BAYI_WHITELIST_LOCK = 300
 
 # ---------------------------------------------------------------------------
 # Admin performance — MindBot Dify SSE streaming high-water (24h, UTC hours)

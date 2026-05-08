@@ -14,7 +14,7 @@ sudo python3 scripts/setup/setup.py
 
 **Conda users**: Use `sudo $(which python3) scripts/setup/setup.py` so sudo resolves your conda interpreter.
 
-**Non-Linux**: Run setup for other steps; Qdrant server auto-install targets Linux. On Windows or macOS use Docker, WSL, or a manual/binary install (sections below).
+**Non-Linux**: Run setup for other steps; Qdrant server auto-install targets Linux with systemd. On Windows or macOS use Docker, **WSL2 Ubuntu** (same steps as Ubuntu server once systemd is enabled), or a manual/binary install (sections below).
 
 When `setup.py` asks, you can skip installing the Qdrant server if you use your own instance.
 
@@ -61,6 +61,23 @@ Bump `QDRANT_GITHUB_VERSION` in `scripts/setup/setup.py` if needed, then re-run 
 
 ```bash
 sudo python3 scripts/setup/setup.py
+```
+
+**Standalone Qdrant** — run from repo root; the script asks interactively:
+
+1. **Full install** — GitHub binary, MindGraph `config.yaml` + `qdrant.service` if needed, verify API.
+2. **Update only** — replace `/usr/local/bin/qdrant` and restart the service (keeps existing config); requires `qdrant.service` already present.
+
+If `/etc/qdrant/config.yaml` already exists during full install, you are asked whether to replace it with the MindGraph template.
+
+Non-interactive (CI / pipes): set **`MINDGRAPH_NON_INTERACTIVE=1`** — always performs **full install** (same convention as `scripts/setup/setup.py`).
+
+Optional: **`--dry-run`** prints tarball URLs without installing; **`--version`** pins the GitHub release tag.
+
+Requires **systemd** (`systemctl` on PATH). On WSL2, enable systemd in `/etc/wsl.conf`, then `wsl --shutdown` from Windows.
+
+```bash
+sudo python3 scripts/setup/update_qdrant_server.py
 ```
 
 ---

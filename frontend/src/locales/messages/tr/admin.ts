@@ -41,7 +41,7 @@ export default {
   "admin.editSchool": "Okulu Düzenle",
   "admin.enabled": "Etkinleştirilmiş",
   "admin.envAdmins": "Ortamda yapılandırılmış Yöneticiler",
-  "admin.envAdminsNote": ".env'de ADMIN_PHONES aracılığıyla yapılandırıldı (salt okunur)",
+  "admin.envAdminsNote": ".env'de ADMIN_PHONES / ADMIN_USER_IDS aracılığıyla yapılandırıldı (salt okunur)",
   "admin.feature.askonce": "AskOnce (çoklu LLM sohbeti)",
   "admin.feature.askonceHint": "Çok modelli sohbet akışı.",
   "admin.feature.community": "Topluluk paylaşımı",

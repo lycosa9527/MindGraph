@@ -43,7 +43,7 @@ export default {
   'admin.editSchool': '학교 편집',
   'admin.enabled': '사용',
   'admin.envAdmins': '환경변수 지정 관리자',
-  'admin.envAdminsNote': '.env 의 ADMIN_PHONES 로 설정됨 (읽기 전용)',
+  'admin.envAdminsNote': '.env 의 ADMIN_PHONES / ADMIN_USER_IDS 로 설정됨 (읽기 전용)',
   'admin.feature.askonce': 'AskOnce (다중 LLM 채팅)',
   'admin.feature.askonceHint': '여러 모델 스트리밍 채팅.',
   'admin.feature.community': '커뮤니티 공유',

@@ -376,9 +376,50 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function logout(): Promise<void> {
-    const currentMode = mode.value
+  async function loginWithBayiPasskey(passkey: string): Promise<LoginResponse> {
+    loading.value = true
+    try {
+      const response = await fetch(`${API_BASE}/bayi/passkey`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ passkey }),
+        credentials: 'same-origin',
+      })
 
+      let data: Record<string, unknown> = {}
+      try {
+        data = (await response.json()) as Record<string, unknown>
+      } catch {
+        /* non-JSON body */
+      }
+
+      const userPayload = data.user as Parameters<typeof normalizeUser>[0] | undefined
+      if (response.ok && userPayload) {
+        const normalizedUser = normalizeUser(userPayload)
+        setUser(normalizedUser)
+        hasVerifiedAuthThisSession.value = true
+        const accessToken = data.access_token as string | undefined
+        if (accessToken) {
+          setToken(accessToken)
+        }
+        startSessionMonitoring()
+        return { success: true, user: normalizedUser, token: accessToken }
+      }
+
+      const detail = data.detail as string | undefined
+      const message = data.message as string | undefined
+      return {
+        success: false,
+        message: detail || message || 'Login failed',
+      }
+    } catch {
+      return { success: false, message: 'Network error' }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function logout(): Promise<void> {
     // Call logout endpoint - token is in httpOnly cookie
     try {
       await fetch(`${API_BASE}/logout`, {
@@ -397,12 +438,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     clearAuth()
 
-    // Redirect to main page after logout
-    if (currentMode === 'demo') {
-      window.location.href = '/demo'
-    } else {
-      window.location.href = '/'
-    }
+    window.location.href = '/'
   }
 
   async function checkAuth(forceRefresh: boolean = false): Promise<boolean> {
@@ -734,13 +770,10 @@ export const useAuthStore = defineStore('auth', () => {
     if (!authenticated) {
       if (!redirectUrl) {
         const currentMode = await detectMode()
-        if (currentMode === 'demo') {
-          redirectUrl = '/demo'
-        } else if (currentMode === 'bayi') {
+        if (currentMode === 'bayi') {
           return false
-        } else {
-          redirectUrl = '/auth'
         }
+        redirectUrl = '/auth'
       }
       if (redirectUrl) {
         window.location.href = redirectUrl
@@ -778,6 +811,7 @@ export const useAuthStore = defineStore('auth', () => {
     setMode,
     clearAuth,
     login,
+    loginWithBayiPasskey,
     logout,
     checkAuth,
     detectMode,

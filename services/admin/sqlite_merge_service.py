@@ -77,7 +77,7 @@ _API_KEY_DEFAULT_COLUMNS: Dict[str, Any] = {
 }
 
 _USER_COLUMN_LIMITS: Dict[str, int] = {
-    "phone": 20,
+    "phone": 64,
     "name": 100,
     "avatar": 50,
     "role": 20,

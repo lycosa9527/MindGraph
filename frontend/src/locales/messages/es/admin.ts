@@ -43,7 +43,7 @@ export default {
   'admin.editSchool': 'Editar escuela',
   'admin.enabled': 'Activado',
   'admin.envAdmins': 'Administradores configurados por entorno',
-  'admin.envAdminsNote': 'Definidos con ADMIN_PHONES en .env (solo lectura)',
+  'admin.envAdminsNote': 'Definidos con ADMIN_PHONES / ADMIN_USER_IDS en .env (solo lectura)',
   'admin.feature.askonce': 'AskOnce (chat multi-LLM)',
   'admin.feature.askonceHint': 'Chat en streaming entre varios modelos.',
   'admin.feature.community': 'Compartir en la comunidad',

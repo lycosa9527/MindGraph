@@ -10,10 +10,12 @@ All Rights Reserved
 Proprietary License
 """
 
+import uuid
+
 from config.settings import config
 from services.redis.cache.redis_feature_org_access_cache import get_cached_map as _get_feature_access_map_cached
 
-from .config import AUTH_MODE, ADMIN_PHONES
+from .config import ADMIN_PHONES, ADMIN_USER_IDS
 
 FEATURE_KEY_TO_CONFIG_ATTR = {
     "feature_rag_chunk_test": "FEATURE_RAG_CHUNK_TEST",
@@ -35,18 +37,32 @@ FEATURE_KEY_TO_CONFIG_ATTR = {
 }
 
 
+def phone_matches_admin_env_token(user_phone: str | None, token: str) -> bool:
+    """Match env token to user phone by string equality or UUID equality (case-insensitive)."""
+    if user_phone is None:
+        return False
+    u_raw = user_phone.strip()
+    t_raw = token.strip()
+    if not u_raw or not t_raw:
+        return False
+    if u_raw == t_raw:
+        return True
+    try:
+        return uuid.UUID(u_raw) == uuid.UUID(t_raw)
+    except ValueError:
+        return False
+
+
 def is_admin(current_user) -> bool:
     """
     Check if user is admin (full access to all data)
 
     Admin access granted if:
-    1. User has role='admin' in database
-    2. User phone in ADMIN_PHONES env variable (production admins)
-    3. User is demo-admin@system.com AND server is in demo mode (demo admin)
-    4. User is bayi-admin@system.com AND server is in bayi mode (bayi admin)
-
-    This ensures demo/bayi admin passkey only works in their respective modes
-    for security.
+    1. User has role='admin' or 'superadmin' in database
+    2. ``users.id`` is listed in ADMIN_USER_IDS (comma-separated env)
+    3. ``users.phone`` matches a token in ADMIN_PHONES (comma-separated), including
+       case-insensitive UUID strings (e.g. Bayi SSO ``userId``) and values like
+       ``bayi@system.com`` for Bayi passkey.
 
     Args:
         current_user: User model object
@@ -58,18 +74,15 @@ def is_admin(current_user) -> bool:
     if hasattr(current_user, "role") and current_user.role in ("admin", "superadmin"):
         return True
 
-    # Check ADMIN_PHONES list (production admins)
-    admin_phones = [p.strip() for p in ADMIN_PHONES if p.strip()]
-    if current_user.phone in admin_phones:
+    user_id = getattr(current_user, "id", None)
+    if user_id is not None and user_id in ADMIN_USER_IDS:
         return True
 
-    # Check demo admin (only in demo mode for security)
-    if AUTH_MODE == "demo" and current_user.phone == "demo-admin@system.com":
-        return True
-
-    # Check bayi admin (only in bayi mode for security)
-    if AUTH_MODE == "bayi" and current_user.phone == "bayi-admin@system.com":
-        return True
+    admin_tokens = [p.strip() for p in ADMIN_PHONES if p.strip()]
+    user_phone = getattr(current_user, "phone", None)
+    for tok in admin_tokens:
+        if phone_matches_admin_env_token(user_phone, tok):
+            return True
 
     return False
 

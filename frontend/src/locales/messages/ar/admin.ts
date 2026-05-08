@@ -41,7 +41,7 @@ export default {
   "admin.editSchool": "تعديل المدرسة",
   "admin.enabled": "مفعّل",
   "admin.envAdmins": "مسؤولون مُعرَّفون من البيئة",
-  "admin.envAdminsNote": "يُعرَّف عبر ADMIN_PHONES في ‎.env‎ (للقراءة فقط)",
+  "admin.envAdminsNote": "يُعرَّف عبر ADMIN_PHONES / ADMIN_USER_IDS في ‎.env‎ (للقراءة فقط)",
   "admin.feature.askonce": "AskOnce (دردشة متعددة النماذج)",
   "admin.feature.askonceHint": "دردشة متعددة النماذج بالبث.",
   "admin.feature.community": "مشاركة في المجتمع",

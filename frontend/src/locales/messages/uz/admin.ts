@@ -41,7 +41,7 @@ export default {
   "admin.editSchool": "Maktabni tahrirlash",
   "admin.enabled": "Yoniq",
   "admin.envAdmins": "Muhit orqali sozlangan administratorlar",
-  "admin.envAdminsNote": "ADMIN_PHONES orqali .env da sozlangan (faqat ko'rish)",
+  "admin.envAdminsNote": "ADMIN_PHONES / ADMIN_USER_IDS orqali .env da sozlangan (faqat ko'rish)",
   "admin.feature.askonce": "AskOnce (ko'p LLM chat)",
   "admin.feature.askonceHint": "Ko'p model uchun oqimli chat.",
   "admin.feature.community": "Hamjamiyat bilan ulashish",

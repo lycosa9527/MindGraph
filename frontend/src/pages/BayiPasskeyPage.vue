@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Demo Login Page - Simplified demo access
+ * Bayi 6-digit passkey login (AUTH_MODE=bayi on server).
  */
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -13,32 +13,31 @@ const authStore = useAuthStore()
 const { t } = useLanguage()
 const notify = useNotifications()
 
-const demoCode = ref('')
+const passkey = ref('')
 const isLoading = ref(false)
 
-async function handleDemoLogin() {
-  if (!demoCode.value.trim()) {
-    notify.warning(t('demo.enterCode'))
+async function handleSubmit() {
+  if (!passkey.value.trim()) {
+    notify.warning(t('bayiPasskey.enterCode'))
     return
   }
 
   isLoading.value = true
 
   try {
-    // Demo login uses code as password
-    const result = await authStore.login({ username: 'demo', password: demoCode.value })
-    const success = result.success
-
-    if (success) {
+    const result = await authStore.loginWithBayiPasskey(passkey.value.trim())
+    if (result.success) {
       const userName = result.user?.username || ''
-      notify.success(userName ? t('demo.loginSuccessNamed', { name: userName }) : t('demo.loginOk'))
+      notify.success(
+        userName ? t('bayiPasskey.loginSuccessNamed', { name: userName }) : t('bayiPasskey.loginOk'),
+      )
       router.push('/mindmate')
     } else {
-      notify.error(result.message || t('demo.invalidCode'))
+      notify.error(result.message || t('bayiPasskey.invalidCode'))
     }
   } catch (error) {
-    console.error('Demo login error:', error)
-    notify.error(t('demo.networkError'))
+    console.error('Bayi passkey login error:', error)
+    notify.error(t('bayiPasskey.networkError'))
   } finally {
     isLoading.value = false
   }
@@ -50,27 +49,27 @@ function goToLogin() {
 </script>
 
 <template>
-  <div class="demo-login-page">
-    <!-- Logo -->
+  <div class="bayi-passkey-page">
     <div class="text-center mb-8">
       <div
         class="w-16 h-16 bg-linear-to-br from-indigo-500 to-purple-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg"
       >
         <span class="text-white font-bold text-2xl">MG</span>
       </div>
-      <h1 class="text-2xl font-bold text-white mb-2">Demo Access</h1>
-      <p class="text-white/60">Enter your demo code to get started</p>
+      <h1 class="text-2xl font-bold text-white mb-2">{{ t('bayiPasskey.title') }}</h1>
+      <p class="text-white/60">{{ t('bayiPasskey.subtitle') }}</p>
     </div>
 
-    <!-- Demo Form -->
-    <el-form @submit.prevent="handleDemoLogin">
+    <el-form @submit.prevent="handleSubmit">
       <el-form-item>
         <el-input
-          v-model="demoCode"
+          v-model="passkey"
           size="large"
-          placeholder="Enter demo code"
+          maxlength="6"
+          :placeholder="t('bayiPasskey.enterCode')"
           prefix-icon="Key"
-          autocomplete="off"
+          autocomplete="one-time-code"
+          inputmode="numeric"
         />
       </el-form-item>
 
@@ -82,26 +81,25 @@ function goToLogin() {
           class="w-full"
           native-type="submit"
         >
-          Start Demo
+          {{ t('bayiPasskey.submit') }}
         </el-button>
       </el-form-item>
     </el-form>
 
-    <!-- Back to Login -->
     <div class="text-center mt-6">
       <el-button
         link
         class="text-white/60! hover:text-white!"
         @click="goToLogin"
       >
-        Back to Login
+        {{ t('bayiPasskey.back') }}
       </el-button>
     </div>
   </div>
 </template>
 
 <style scoped>
-.demo-login-page {
+.bayi-passkey-page {
   width: 100%;
 }
 </style>

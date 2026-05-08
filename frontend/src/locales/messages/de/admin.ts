@@ -44,7 +44,7 @@ export default {
   'admin.editSchool': 'Schule bearbeiten',
   'admin.enabled': 'Aktiviert',
   'admin.envAdmins': 'Über Umgebung konfigurierte Admins',
-  'admin.envAdminsNote': 'Konfiguriert über ADMIN_PHONES in .env (nur lesen)',
+  'admin.envAdminsNote': 'Konfiguriert über ADMIN_PHONES / ADMIN_USER_IDS in .env (nur lesen)',
   'admin.feature.askonce': 'AskOnce (Multi-LLM-Chat)',
   'admin.feature.askonceHint': 'Streaming-Chat mit mehreren Modellen.',
   'admin.feature.community': 'Community-Freigabe',

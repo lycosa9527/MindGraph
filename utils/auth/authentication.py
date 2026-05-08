@@ -63,13 +63,12 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
     """
     Get current authenticated user from JWT token (Authorization header or cookie)
 
-    Supports four authentication modes:
+    Supports three authentication modes:
     1. standard: Regular JWT authentication (phone/password login)
     2. enterprise: Skip JWT validation (for VPN/SSO deployments)
-    3. demo: Regular JWT authentication (passkey login)
-    4. bayi: Regular JWT authentication (token-based login via /loginByXz)
+    3. bayi: Regular JWT authentication (vendor SSO and/or 6-digit passkey)
 
-    IMPORTANT: Demo and bayi modes still require valid JWT tokens!
+    IMPORTANT: Bayi mode still requires valid JWT tokens for API access.
     Only enterprise mode bypasses authentication entirely.
 
     Authentication methods (in order of priority):
@@ -95,7 +94,7 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
         await raise_if_org_locked_or_expired_async(cached)
         return cached
 
-    # Standard, Demo, and Bayi Mode: Validate JWT token
+    # Standard and Bayi Mode: Validate JWT token
     token = None
 
     # Priority 1: Check Authorization header

@@ -41,7 +41,7 @@ export default {
   "admin.editSchool": "I-edit ang paaralan",
   "admin.enabled": "Naka-on",
   "admin.envAdmins": "Mga admin mula sa environment",
-  "admin.envAdminsNote": "Naka-set sa ADMIN_PHONES sa .env (read-only)",
+  "admin.envAdminsNote": "Naka-set sa ADMIN_PHONES / ADMIN_USER_IDS sa .env (read-only)",
   "admin.feature.askonce": "AskOnce (chat na maraming LLM)",
   "admin.feature.askonceHint": "Chat na multi-model at streaming.",
   "admin.feature.community": "Pagbabahagi sa komunidad",

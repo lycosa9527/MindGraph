@@ -11,7 +11,7 @@ import logging
 import os
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
 from services.infrastructure.utils.spa_handler import VUE_DIST_DIR
 
@@ -85,12 +85,16 @@ async def vue_auth():
     return await _serve_index()
 
 
-@router.get("/demo", response_class=HTMLResponse)
-async def vue_demo():
-    """Serve Vue SPA for demo route."""
+@router.get("/bayi/passkey", response_class=HTMLResponse)
+async def vue_bayi_passkey():
+    """Serve Vue SPA for Bayi passkey login route."""
     return await _serve_index()
 
 
+@router.get("/demo", response_class=HTMLResponse)
+async def vue_demo_redirect():
+    """Legacy URL: send users to Bayi passkey page."""
+    return RedirectResponse(url="/bayi/passkey", status_code=301)
 @router.get("/dashboard", response_class=HTMLResponse)
 async def vue_dashboard():
     """Serve Vue SPA for dashboard route."""

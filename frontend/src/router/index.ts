@@ -18,7 +18,7 @@ function pageTitle(segment: string): { titleKey: string } {
 /**
  * Route auth (see `beforeEach`):
  * - `requiresAuth`: guests are sent to `/auth?redirect=…`; expired sessions use the login modal.
- * - `guestOnly`: `/auth`, `/demo` — signed-in users are sent to MindMate landing.
+ * - `guestOnly`: `/auth`, `/bayi/passkey` — signed-in users are sent to MindMate landing.
  * - Public main-layout: `/mindmate`, `/template`, `/course`, `/askonce`, `/debateverse`, `/library`, …
  */
 
@@ -131,9 +131,13 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/demo',
-    name: 'DemoLogin',
-    component: () => import('@/pages/DemoLoginPage.vue'),
-    meta: { layout: 'auth', guestOnly: true, ...pageTitle('demoLogin') },
+    redirect: '/bayi/passkey',
+  },
+  {
+    path: '/bayi/passkey',
+    name: 'BayiPasskeyLogin',
+    component: () => import('@/pages/BayiPasskeyPage.vue'),
+    meta: { layout: 'auth', guestOnly: true, ...pageTitle('bayiPasskeyLogin') },
   },
   {
     path: '/template',
@@ -332,7 +336,7 @@ router.beforeEach(async (to, from, next) => {
     isMobileRoute ||
     to.path.startsWith('/login') ||
     to.path.startsWith('/auth') ||
-    to.path.startsWith('/demo') ||
+    to.path.startsWith('/bayi/passkey') ||
     to.path.startsWith('/export-render') ||
     to.path.startsWith('/dashboard') ||
     to.path.startsWith('/admin/mindbot')
@@ -473,7 +477,7 @@ router.beforeEach(async (to, from, next) => {
       return next({ name: 'MindMate' })
     }
   }
-  // Guest-only routes (/auth, /demo; /login redirects to /auth): confirm session, then app home
+  // Guest-only routes (/auth, /bayi/passkey; /login redirects to /auth): confirm session, then app home
   if (to.meta.guestOnly) {
     const isAuthenticated = await authStore.checkAuth()
     if (isAuthenticated) {
