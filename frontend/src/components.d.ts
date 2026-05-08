@@ -174,6 +174,7 @@ declare module 'vue' {
     KittyAgentPanel: typeof import('./components/kitty/KittyAgentPanel.vue')['default']
     KittyBlackCatMascot: typeof import('./components/kitty/KittyBlackCatMascot.vue')['default']
     KittyCanvasAnchor: typeof import('./components/kitty/KittyCanvasAnchor.vue')['default']
+    KittyMobileDiagramContextCard: typeof import('./components/kitty/KittyMobileDiagramContextCard.vue')['default']
     KnowledgeSpaceHeader: typeof import('./components/knowledge-space/KnowledgeSpaceHeader.vue')['default']
     KnowledgeSpaceHistory: typeof import('./components/sidebar/KnowledgeSpaceHistory.vue')['default']
     KnowledgeSpaceSettings: typeof import('./components/knowledge-space/KnowledgeSpaceSettings.vue')['default']

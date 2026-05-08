@@ -105,6 +105,16 @@ export default {
   'canvas.kittyMobileIndicatorTitle': '手机 Kitty',
   'mobile.kittyWelcomeSub':
     '麦克风相当于在同一套 MindGraph 上语音编辑；请在手机或电脑上打开已保存的图示，便于 Kitty 同步画布内容。',
+  'mobile.kittyCurrentDiagramLabel': '当前图示',
+  'mobile.kittyDiagramTitleEmpty': '无标题',
+  'mobile.kittyDiagramMetaLine': '{type} · {id}',
+  'mobile.kittyHubSourceLive': 'Hub：实时',
+  'mobile.kittyHubSourceLibrary': 'Hub：库',
+  'mobile.kittyHubSourceEmpty': 'Hub：空',
+  'mobile.kittyPushToTalkSpaceTitle':
+    '仅按住对讲：按住麦克风或空格键（输入框外）· 松开即停 · 非点按开关',
+  'mobile.kittyPushToTalkSpaceAria':
+    '按住对讲模式：按住麦克风或空格说话，松开即停；并非静音切换开关。',
   'meta.pageTitle.notFound': '页面未找到',
   'meta.pageTitle.publicDashboard': '统计',
   'meta.pageTitle.schoolDashboard': '学校仪表盘',

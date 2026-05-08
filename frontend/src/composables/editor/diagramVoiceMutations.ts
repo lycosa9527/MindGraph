@@ -2,6 +2,13 @@
  * Apply Kitty / voice WebSocket diagram_update payloads using the same Pinia store
  * primitives as the editor (Vue Flow nodes + diagram slice helpers).
  */
+import {
+  BRANCH_NODE_HEIGHT,
+  DEFAULT_CENTER_Y,
+  DEFAULT_NODE_WIDTH,
+  DEFAULT_PADDING,
+} from '@/composables/diagrams/layoutConfig'
+import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores/diagram'
 import { recalculateCircleMapLayout } from '@/stores/specLoader'
 import type { DiagramNode, DiagramType } from '@/types'
@@ -112,6 +119,120 @@ function conceptNodeIdByText(
   return hit?.id ?? null
 }
 
+function braceMapBraceRootId(nodes: DiagramNode[], connections: Connection[]): string {
+  const targetIds = new Set(connections.map((c) => c.target))
+  const root =
+    nodes.find((n) => n.type === 'topic')?.id ??
+    nodes.find((n) => n.id === 'brace-whole')?.id ??
+    nodes.find((n) => n.id !== undefined && !targetIds.has(n.id))?.id
+  return root ?? 'brace-whole'
+}
+
+function braceMapOrderedPartIds(nodes: DiagramNode[], connections: Connection[]): string[] {
+  const rootId = braceMapBraceRootId(nodes, connections)
+  return connections
+    .filter((c) => c.source === rootId)
+    .map((c) => c.target)
+    .filter((id) => id !== 'dimension-label')
+}
+
+function braceMapResolvePartParentId(
+  nodes: DiagramNode[],
+  orderedParts: string[],
+  partIdx: number
+): string | null {
+  const ordered = orderedParts[partIdx]
+  if (ordered && nodes.some((n) => n.id === ordered)) return ordered
+  const legacyId = `brace-part-${partIdx}`
+  if (nodes.some((n) => n.id === legacyId)) return legacyId
+  return ordered ?? null
+}
+
+function braceMapResolveChildIdByIndex(
+  nodes: DiagramNode[],
+  connections: Connection[],
+  orderedParts: string[],
+  partIdx: number,
+  childIdx: number
+): string | null {
+  const parentId = braceMapResolvePartParentId(nodes, orderedParts, partIdx)
+  if (!parentId) return null
+  const childrenIds = connections.filter((c) => c.source === parentId).map((c) => c.target)
+  const byOrder = childrenIds[childIdx]
+  if (byOrder && nodes.some((n) => n.id === byOrder)) return byOrder
+  const legacyId = `brace-subpart-${partIdx}-${childIdx}`
+  if (nodes.some((n) => n.id === legacyId)) return legacyId
+  return null
+}
+
+function voiceFlowMapDefaultSubsteps(store: ReturnType<typeof useDiagramStore>): [string, string] {
+  const t = i18n.global.t
+  const stepCount = store.data?.nodes?.filter((n) => n.type === 'flow').length ?? 0
+  const stepNum = stepCount + 1
+  return [
+    t('canvas.toolbar.substepDefault1', { n: stepNum }),
+    t('canvas.toolbar.substepDefault2', { n: stepNum }),
+  ]
+}
+
+function nextConceptMapFreeNumericId(nodes: DiagramNode[]): number {
+  let max = -1
+  for (const n of nodes) {
+    const m = /^concept-(\d+)$/.exec(n.id)
+    if (m) max = Math.max(max, parseInt(m[1], 10))
+  }
+  return max + 1
+}
+
+function voiceAddBridgeMapAnalogyPair(
+  store: ReturnType<typeof useDiagramStore>,
+  leftText: string,
+  rightText: string
+): boolean {
+  const nodes = store.data?.nodes
+  if (!nodes) return false
+  const pairNodes = nodes.filter(
+    (n) =>
+      n.data?.diagramType === 'bridge_map' &&
+      n.data?.pairIndex !== undefined &&
+      !n.data?.isDimensionLabel
+  )
+  let maxPairIndex = -1
+  for (const node of pairNodes) {
+    const pi = node.data?.pairIndex
+    if (typeof pi === 'number' && pi > maxPairIndex) maxPairIndex = pi
+  }
+  const newPairIndex = maxPairIndex + 1
+  const centerY = DEFAULT_CENTER_Y
+  const verticalGap = 5
+  const nodeWidth = DEFAULT_NODE_WIDTH
+  const nodeHeight = BRANCH_NODE_HEIGHT
+  const startX = DEFAULT_PADDING + 100 + 10
+
+  let nextX = startX
+  if (pairNodes.length > 0) {
+    const rightmostX = pairNodes.reduce((mx, n) => Math.max(mx, n.position?.x ?? 0), 0)
+    nextX = rightmostX + nodeWidth + 50
+  }
+
+  store.addNode({
+    id: `pair-${newPairIndex}-left`,
+    text: leftText,
+    type: 'branch',
+    position: { x: nextX, y: centerY - verticalGap - nodeHeight },
+    data: { pairIndex: newPairIndex, position: 'left', diagramType: 'bridge_map' },
+  })
+  store.addNode({
+    id: `pair-${newPairIndex}-right`,
+    text: rightText,
+    type: 'branch',
+    position: { x: nextX, y: centerY + verticalGap },
+    data: { pairIndex: newPairIndex, position: 'right', diagramType: 'bridge_map' },
+  })
+  store.pushHistory(i18n.global.t('canvas.toolbar.addAnalogyPairHistory'))
+  return true
+}
+
 export function applyVoiceDiagramUpdateCenter(
   store: ReturnType<typeof useDiagramStore>,
   data: Record<string, unknown>
@@ -187,13 +308,16 @@ export function applyVoiceDiagramAddNodes(
     if (dt === 'flow_map') {
       const stepIdx = typeof p.step_index === 'number' ? p.step_index : undefined
       const subIdx = typeof p.substep_index === 'number' ? p.substep_index : undefined
+      const suffix = voiceFlowMapDefaultSubsteps(store)
       if (stepIdx !== undefined && text) {
         const stepNode = store.data.nodes.find((n) => n.id === `flow-step-${stepIdx}`)
         const stepLabel = stepNode?.text?.trim() ?? ''
         if (subIdx !== undefined) {
           if (stepLabel && store.addFlowMapSubstep(stepLabel, text)) count++
-        } else if (store.addFlowMapStep(text)) count++
-      } else if (text && store.addFlowMapStep(text)) {
+        } else if (store.addFlowMapStep(text, suffix)) {
+          count++
+        }
+      } else if (text && store.addFlowMapStep(text, suffix)) {
         count++
       }
       continue
@@ -215,15 +339,19 @@ export function applyVoiceDiagramAddNodes(
       const partIdx = typeof p.part_index === 'number' ? p.part_index : undefined
       const subIdxRaw = p.subpart_index ?? p.substep_index
       const subIdx = typeof subIdxRaw === 'number' ? subIdxRaw : undefined
-      const braceRoot = store.data.nodes.find((n) => n.type === 'topic')?.id ?? 'brace-whole'
+      const conns = store.data.connections ?? []
+      const braceRoot = braceMapBraceRootId(store.data.nodes, conns)
+      const orderedParts = braceMapOrderedPartIds(store.data.nodes, conns)
       if (partIdx !== undefined && subIdx !== undefined && text) {
-        const parentId = `brace-part-${partIdx}`
-        if (store.data.nodes.some((n) => n.id === parentId)) {
-          if (store.addBraceMapPart(parentId, text)) count++
-        }
+        const parentId = braceMapResolvePartParentId(store.data.nodes, orderedParts, partIdx)
+        if (parentId && store.addBraceMapPart(parentId, text)) count++
       } else if (partIdx !== undefined && text) {
-        const parentId = partIdx >= 0 ? `brace-part-${partIdx}` : braceRoot
-        if (store.addBraceMapPart(parentId, text)) count++
+        let parentId: string | null = null
+        if (partIdx >= 0) {
+          parentId = braceMapResolvePartParentId(store.data.nodes, orderedParts, partIdx)
+        }
+        const attachTo = parentId ?? braceRoot
+        if (store.addBraceMapPart(attachTo, text)) count++
       } else if (text && store.addBraceMapPart(braceRoot, text)) {
         count++
       }
@@ -232,16 +360,29 @@ export function applyVoiceDiagramAddNodes(
 
     if (dt === 'double_bubble_map') {
       const cat = String(p.category ?? '')
+      const hist = i18n.global.t('canvas.toolbar.addNodeHistory')
       if (cat === 'similarity' || cat === 'similarities') {
-        if (store.addDoubleBubbleMapNode('similarity', text || '…')) count++
+        if (store.addDoubleBubbleMapNode('similarity', text || '…')) {
+          count++
+          store.pushHistory(hist)
+        }
       } else if (cat === 'left_difference' || cat === 'left_diff' || cat === 'left') {
         const rightT = typeof p.right === 'string' ? p.right : text
-        if (store.addDoubleBubbleMapNode('leftDiff', text || '…', rightT)) count++
+        if (store.addDoubleBubbleMapNode('leftDiff', text || '…', rightT)) {
+          count++
+          store.pushHistory(hist)
+        }
       } else if (cat === 'right_difference' || cat === 'right_diff' || cat === 'right') {
         const leftT = typeof p.left === 'string' ? p.left : ''
-        if (store.addDoubleBubbleMapNode('rightDiff', leftT || ' ', text || '…')) count++
+        if (store.addDoubleBubbleMapNode('rightDiff', leftT || ' ', text || '…')) {
+          count++
+          store.pushHistory(hist)
+        }
       } else if (text) {
-        if (store.addDoubleBubbleMapNode('similarity', text)) count++
+        if (store.addDoubleBubbleMapNode('similarity', text)) {
+          count++
+          store.pushHistory(hist)
+        }
       }
       continue
     }
@@ -262,6 +403,7 @@ export function applyVoiceDiagramAddNodes(
       })
       store.data.nodes = recalculateCircleMapLayout(store.data.nodes, store.nodeDimensions)
       count++
+      store.pushHistory(i18n.global.t('canvas.toolbar.addNodeHistory'))
       continue
     }
 
@@ -277,11 +419,16 @@ export function applyVoiceDiagramAddNodes(
       store.addNode({
         id: `${idPrefix}-${nextNum}`,
         text,
-        type: 'branch',
+        type: 'flow',
         position: { x: 0, y: 0 },
         ...(isEffect ? { category: 'effects' } : { category: 'causes' }),
       } as DiagramNode & { category?: string })
       count++
+      store.pushHistory(
+        isEffect
+          ? i18n.global.t('canvas.toolbar.addEffectHistory')
+          : i18n.global.t('canvas.toolbar.addCauseHistory')
+      )
       continue
     }
 
@@ -289,45 +436,60 @@ export function applyVoiceDiagramAddNodes(
       const fromL = typeof p.from === 'string' ? p.from : ''
       const toL = typeof p.to === 'string' ? p.to : ''
       const edgeLabel = typeof p.label === 'string' ? p.label : ''
-      if (fromL && toL) {
+      const nameRaw = typeof p.name === 'string' ? p.name : ''
+      const conceptLabel = (text.trim() || nameRaw.trim()).trim()
+      if (fromL.trim() && toL.trim()) {
         const exclude = new Set<string>()
         const sourceId = conceptNodeIdByText(store.data.nodes, fromL, exclude)
         if (sourceId) exclude.add(sourceId)
         const targetId = conceptNodeIdByText(store.data.nodes, toL, exclude)
         if (sourceId && targetId && store.addConnection(sourceId, targetId, edgeLabel)) {
           count++
+          store.pushHistory('Add relationship')
         }
-      }
-      continue
-    }
-
-    if (text && (dt === 'bubble_map' || dt === 'bridge_map')) {
-      if (dt === 'bubble_map') {
-        const bubbles = store.data.nodes.filter(
-          (n) => n.id.startsWith('bubble-') && (n.type === 'bubble' || n.type === 'child')
-        )
-        const next = bubbles.length.toString()
+      } else if (conceptLabel) {
+        const n = nextConceptMapFreeNumericId(store.data.nodes)
         store.addNode({
-          id: `bubble-${next}`,
-          text,
-          type: 'bubble',
-          position: { x: 0, y: 0 },
-        })
-        count++
-      } else {
-        store.addNode({
-          id: `bridge-pair-${Date.now()}`,
-          text,
+          id: `concept-${n}`,
+          text: conceptLabel,
           type: 'branch',
           position: { x: 0, y: 0 },
         })
         count++
+        store.pushHistory('Add concept')
       }
+      continue
+    }
+
+    if (dt === 'bubble_map' && text) {
+      const bubbles = store.data.nodes.filter(
+        (n) => n.id.startsWith('bubble-') && (n.type === 'bubble' || n.type === 'child')
+      )
+      const next = bubbles.length.toString()
+      store.addNode({
+        id: `bubble-${next}`,
+        text,
+        type: 'bubble',
+        position: { x: 0, y: 0 },
+      })
+      count++
+      store.pushHistory(i18n.global.t('canvas.toolbar.addAttributeHistory'))
+      continue
+    }
+
+    if (dt === 'bridge_map') {
+      const labelL = (typeof p.left === 'string' ? p.left : '').trim()
+      const labelR = (typeof p.right === 'string' ? p.right : '').trim()
+      const body = text.trim()
+      if (!labelL && !labelR && !body) continue
+      const fallback = i18n.global.t('canvas.toolbar.newItemB')
+      const pairLeft = labelL || body || labelR
+      const pairRight = labelR || labelL || body || fallback
+      if (voiceAddBridgeMapAnalogyPair(store, pairLeft, pairRight)) count++
       continue
     }
   }
 
-  if (count > 0) store.pushHistory(`Add ${count} node(s) via voice`)
   return count
 }
 
@@ -363,6 +525,7 @@ export function applyVoiceDiagramRemoveNodes(
   if (!store.data?.nodes) return 0
 
   let removed = 0
+  let removedNeedHistory = 0
 
   for (const raw of payload) {
     if (typeof raw === 'number') continue
@@ -376,6 +539,7 @@ export function applyVoiceDiagramRemoveNodes(
         if (conns && idx >= 0 && idx < conns.length) {
           conns.splice(idx, 1)
           removed++
+          removedNeedHistory++
         }
         continue
       }
@@ -391,13 +555,22 @@ export function applyVoiceDiagramRemoveNodes(
       }
 
       if (dt === 'brace_map' && typeof o.part_index === 'number') {
+        const conns = store.data.connections ?? []
+        const orderedParts = braceMapOrderedPartIds(store.data.nodes, conns)
         const pi = o.part_index
         const si = typeof o.subpart_index === 'number' ? o.subpart_index : null
+        let removeId: string | null = null
         if (si !== null) {
-          removed += store.removeBraceMapNodes([`brace-subpart-${pi}-${si}`])
+          removeId = braceMapResolveChildIdByIndex(store.data.nodes, conns, orderedParts, pi, si)
         } else {
-          removed += store.removeBraceMapNodes([`brace-part-${pi}`])
+          removeId = braceMapResolvePartParentId(store.data.nodes, orderedParts, pi)
         }
+        if (!removeId) {
+          removeId = si !== null ? `brace-subpart-${pi}-${si}` : `brace-part-${pi}`
+        }
+        const nRemoved = store.removeBraceMapNodes([removeId])
+        removed += nRemoved
+        removedNeedHistory += nRemoved
         continue
       }
 
@@ -436,22 +609,29 @@ export function applyVoiceDiagramRemoveNodes(
       continue
     }
     if (dt === 'brace_map') {
-      removed += store.removeBraceMapNodes([resolved])
+      const nRemoved = store.removeBraceMapNodes([resolved])
+      removed += nRemoved
+      removedNeedHistory += nRemoved
       continue
     }
     if (dt === 'double_bubble_map') {
-      removed += store.removeDoubleBubbleMapNodes([resolved])
+      const nRemoved = store.removeDoubleBubbleMapNodes([resolved])
+      removed += nRemoved
+      removedNeedHistory += nRemoved
       continue
     }
 
     if (store.removeNode(resolved)) {
       removed++
+      removedNeedHistory++
       if (dt === 'circle_map') {
         store.data.nodes = recalculateCircleMapLayout(store.data.nodes, store.nodeDimensions)
       }
     }
   }
 
-  if (removed > 0) store.pushHistory(`Voice delete (${removed})`)
+  if (removedNeedHistory > 0) {
+    store.pushHistory(`Voice delete (${removedNeedHistory})`)
+  }
   return removed
 }

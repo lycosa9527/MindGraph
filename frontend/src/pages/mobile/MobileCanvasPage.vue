@@ -44,6 +44,7 @@ import {
   useDiagramSpecForSave,
   useInlineRecommendations,
   useInlineRecommendationsCoordinator,
+  useKittyDiagramReviewAnnotationBus,
   useLanguage,
   useNodeActions,
   useNotifications,
@@ -109,6 +110,8 @@ const { startRecommendations, selectOptionByGlobalIndex, fetchNextBatch } =
   useInlineRecommendations()
 
 useConceptMapRelationshipTabFromSelection({ startRecommendations })
+
+useKittyDiagramReviewAnnotationBus('MobileCanvasPage')
 
 const isSaving = ref(false)
 

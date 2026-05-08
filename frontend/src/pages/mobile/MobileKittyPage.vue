@@ -4,7 +4,7 @@
  * Uses Pinia diagram context when the user arrived from the mobile canvas (or any route
  * that left the diagram store populated); otherwise a minimal landing stub.
  */
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
@@ -12,18 +12,12 @@ import { storeToRefs } from 'pinia'
 import { Camera, ChevronLeft, Keyboard, Loader2, Mic, MicOff } from 'lucide-vue-next'
 
 import KittyBlackCatMascot from '@/components/kitty/KittyBlackCatMascot.vue'
-import { useKittyAgent, useLanguage, useNotifications } from '@/composables'
+import KittyMobileDiagramContextCard from '@/components/kitty/KittyMobileDiagramContextCard.vue'
+import { useKittyAgent, useKittyDiagramReviewAnnotationBus, useLanguage, useNotifications } from '@/composables'
 import { compressImageFileForKitty } from '@/composables/kitty/compressImageForKitty'
 import { useKittyMobileDebugBus } from '@/composables/kitty/useKittyMobileDebugBus'
 import { useMobileKittyPairing } from '@/composables/kitty/useMobileKittyPairing'
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'
-
-type ChatRole = 'user' | 'assistant'
-
-interface ChatLine {
-  role: ChatRole
-  text: string
-}
 
 const router = useRouter()
 const { t } = useLanguage()
@@ -33,21 +27,11 @@ const featureFlagsStore = useFeatureFlagsStore()
 const { flags } = storeToRefs(featureFlagsStore)
 const kittyServerEnabled = computed(() => flags.value?.feature_kitty_agent ?? false)
 
-const chatLines = ref<ChatLine[]>([])
 const showKeyboard = ref(false)
 const draft = ref('')
 const micDenied = ref(false)
 const cameraDenied = ref(false)
 const scrollRoot = ref<HTMLElement | null>(null)
-
-let assistantBuffer = ''
-
-function flushAssistantBuffer(): void {
-  const text = assistantBuffer.trim()
-  assistantBuffer = ''
-  if (text.length === 0) return
-  chatLines.value.push({ role: 'assistant', text })
-}
 
 const KITTY_DEBUG_MAX = 42
 const kittyDebugLines = ref<string[]>([])
@@ -65,22 +49,14 @@ function pushKittyDebugLine(prefix: string, detail: string): void {
 const kitty = useKittyAgent({
   ownerId: 'MobileKittyPage',
   kittyClientLane: 'mobile',
-  onTranscription: (text: string) => {
-    const t0 = text.trim()
-    if (!t0) return
-    chatLines.value.push({ role: 'user', text: t0 })
-  },
-  onTextChunk: (chunk: string) => {
-    assistantBuffer += chunk
-  },
   onError: (err: string) => {
     notify.warning(err)
   },
 })
-const { isVoiceActive: kittyMicPressed } = kitty
 
 const {
   kittyPairScope,
+  mobileKittyContextPreview,
   buildMobileKittyContext,
   scheduleMobileKittyContextSync,
   ensureMobileKittyBootstrap,
@@ -93,15 +69,49 @@ useKittyMobileDebugBus({
   ownerId: 'MobileKittyPage',
   pushLine: pushKittyDebugLine,
   scheduleContextSync: scheduleMobileKittyContextSync,
-  onResponseDone: flushAssistantBuffer,
-  onSpeechStarted: () => {
-    assistantBuffer = ''
-  },
 })
+
+useKittyDiagramReviewAnnotationBus('MobileKittyPageKittyReviewBus')
 
 const connected = computed(() => kitty.isConnected.value)
 const connecting = computed(() => kitty.state.value === 'connecting')
 const kittyVoiceState = computed(() => kitty.state.value)
+
+const kittyDiagramCardPrimary = computed(() => {
+  const p = mobileKittyContextPreview.value
+  const title = p.diagramDisplayTitle !== '' ? p.diagramDisplayTitle : t('mobile.kittyDiagramTitleEmpty')
+  return `${t('mobile.kittyCurrentDiagramLabel')}: ${title}`
+})
+
+const kittyDiagramCardMeta = computed(() => {
+  const p = mobileKittyContextPreview.value
+  const typ = p.diagramType !== '' ? p.diagramType : '—'
+  return t('mobile.kittyDiagramMetaLine', { type: typ, id: p.scopeHintShort })
+})
+
+const kittyDiagramCardBadge = computed(() => {
+  const src = mobileKittyContextPreview.value.hubSource
+  if (!src) {
+    return null
+  }
+  if (src === 'live') {
+    return t('mobile.kittyHubSourceLive')
+  }
+  if (src === 'library') {
+    return t('mobile.kittyHubSourceLibrary')
+  }
+  return t('mobile.kittyHubSourceEmpty')
+})
+
+const kittyDiagramCardAriaLabel = computed(() => {
+  const meta = kittyDiagramCardMeta.value
+  const badge = kittyDiagramCardBadge.value
+  const bits = [kittyDiagramCardPrimary.value, meta]
+  if (badge) {
+    bits.push(badge)
+  }
+  return bits.filter(Boolean).join('. ')
+})
 
 let connectInFlight: Promise<boolean> | null = null
 
@@ -161,19 +171,6 @@ watch(
   { flush: 'post' }
 )
 
-async function scrollToBottom(): Promise<void> {
-  await nextTick()
-  const el = scrollRoot.value
-  if (el) el.scrollTop = el.scrollHeight
-}
-
-watch(
-  () => chatLines.value.length,
-  () => {
-    void scrollToBottom()
-  }
-)
-
 async function goHome(): Promise<void> {
   await kitty.stopConversation()
   router.push('/m')
@@ -181,8 +178,65 @@ async function goHome(): Promise<void> {
 
 async function handleDisconnect(): Promise<void> {
   await kitty.stopConversation()
-  assistantBuffer = ''
 }
+
+/** True when typing in the draft field — Space must stay a space character. */
+function isKittyTextInputTarget(): boolean {
+  if (!showKeyboard.value || !connected.value) {
+    return false
+  }
+  const el = document.activeElement
+  if (!el) {
+    return false
+  }
+  if (el.tagName === 'TEXTAREA') {
+    return true
+  }
+  if (el.tagName !== 'INPUT') {
+    return false
+  }
+  const input = el as HTMLInputElement
+  const typ = (input.type ?? 'text').toLowerCase()
+  if (typ === 'checkbox' || typ === 'radio' || typ === 'file' || typ === 'button') {
+    return false
+  }
+  return true
+}
+
+function isTypingOrContentEditableTarget(ev: Event): boolean {
+  const t = ev.target
+  if (!(t instanceof Node)) {
+    return false
+  }
+  if (!(t instanceof Element)) {
+    return false
+  }
+  const el = t
+  if (el.isContentEditable || el.closest('[contenteditable="true"]')) {
+    return true
+  }
+  const tag = el.tagName
+  if (tag === 'TEXTAREA') {
+    return true
+  }
+  if (tag === 'SELECT') {
+    return true
+  }
+  if (tag === 'BUTTON') {
+    return true
+  }
+  if (tag === 'INPUT') {
+    return true
+  }
+  return false
+}
+
+/**
+ * Kitty mic on this page is **push-to-talk only**:
+ * – Hold the circular mic button (pointer down/up, with capture).
+ * – Hold Space (keydown/keyup), except while focus is in a typing control.
+ * There is **no toggle / click-to-arm** UX; a tap ends as soon as the pointer or key lifts.
+ */
 
 /** Primary-button push-to-talk (pointer down = open mic, up/cancel = close). Works with mouse + touch. */
 const micHoldPointerId = ref<number | null>(null)
@@ -253,13 +307,115 @@ function onMicPointerEnd(ev: PointerEvent): void {
   releaseMicPointer(el, ev.pointerId)
 }
 
+const spaceDrivingMic = ref(false)
+const spacePhysicalDown = ref(false)
+
+async function onKittySpacePushKeyDown(ev: KeyboardEvent): Promise<void> {
+  if (ev.code !== 'Space' && ev.key !== ' ') {
+    return
+  }
+  if (ev.repeat || isKittyTextInputTarget()) {
+    return
+  }
+  if (isTypingOrContentEditableTarget(ev)) {
+    return
+  }
+  if (!kittyServerEnabled.value || connecting.value || micDenied.value) {
+    return
+  }
+  if (micHoldPointerId.value !== null || spaceDrivingMic.value || spacePhysicalDown.value) {
+    return
+  }
+  ev.preventDefault()
+  spacePhysicalDown.value = true
+  try {
+    const ok = await ensureConnected()
+    if (!spacePhysicalDown.value || micHoldPointerId.value !== null) {
+      return
+    }
+    if (!ok) {
+      return
+    }
+    await kitty.startVoiceInput()
+    micDenied.value = false
+    if (!spacePhysicalDown.value) {
+      kitty.stopVoiceInput()
+      return
+    }
+    spaceDrivingMic.value = true
+  } catch {
+    micDenied.value = true
+  }
+}
+
+function onKittySpacePushKeyUp(ev: KeyboardEvent): void {
+  if (ev.code !== 'Space' && ev.key !== ' ') {
+    return
+  }
+  spacePhysicalDown.value = false
+  if (micHoldPointerId.value !== null) {
+    return
+  }
+  if (!spaceDrivingMic.value) {
+    return
+  }
+  ev.preventDefault()
+  spaceDrivingMic.value = false
+  if (kitty.isVoiceActive.value) {
+    kitty.stopVoiceInput()
+  }
+}
+
+/**
+ * Tab / app background: torn down PT. Do not use ``window.blur`` — it also fires while the
+ * browser shows the mic permission prompt, which would clear ``spacePhysicalDown`` and mute
+ * immediately after ``startVoiceInput()``.
+ */
+function handleKittyVisibilityForSpaceMic(): void {
+  if (!document.hidden) {
+    return
+  }
+  spacePhysicalDown.value = false
+  if (micHoldPointerId.value !== null) {
+    return
+  }
+  if (!spaceDrivingMic.value) {
+    return
+  }
+  spaceDrivingMic.value = false
+  if (kitty.isVoiceActive.value) {
+    kitty.stopVoiceInput()
+  }
+}
+
+let kittyMicKbBound = false
+
+function bindKittyMicKeyboard(): void {
+  if (kittyMicKbBound || typeof window === 'undefined') {
+    return
+  }
+  kittyMicKbBound = true
+  window.addEventListener('keydown', onKittySpacePushKeyDown, true)
+  window.addEventListener('keyup', onKittySpacePushKeyUp, true)
+  document.addEventListener('visibilitychange', handleKittyVisibilityForSpaceMic)
+}
+
+function unbindKittyMicKeyboard(): void {
+  if (!kittyMicKbBound || typeof window === 'undefined') {
+    return
+  }
+  kittyMicKbBound = false
+  window.removeEventListener('keydown', onKittySpacePushKeyDown, true)
+  window.removeEventListener('keyup', onKittySpacePushKeyUp, true)
+  document.removeEventListener('visibilitychange', handleKittyVisibilityForSpaceMic)
+}
+
 async function sendDraft(): Promise<void> {
   const text = draft.value.trim()
   if (!text) return
   const ok = await ensureConnected()
   if (!ok) return
   kitty.sendTextMessage(text)
-  chatLines.value.push({ role: 'user', text })
   draft.value = ''
   showKeyboard.value = false
 }
@@ -274,18 +430,11 @@ async function onPickImage(ev: Event): Promise<void> {
   try {
     const b64 = await compressImageFileForKitty(file)
     kitty.sendAppendImage(b64, 'jpeg')
-    chatLines.value.push({
-      role: 'user',
-      text: t('mobile.kittyImageSent', '[图片已发送]'),
-    })
     cameraDenied.value = false
   } catch {
     cameraDenied.value = true
   }
 }
-
-/** Hero (SVG + copy) stays through “连接中”; hides once connected or there is chat. */
-const showEmptyHero = computed(() => !connected.value && chatLines.value.length === 0)
 
 onMounted(async () => {
   await featureFlagsStore.fetchFlags()
@@ -294,9 +443,18 @@ onMounted(async () => {
     return
   }
   pushKittyDebugLine('#', 'debug log ready')
+  bindKittyMicKeyboard()
 })
 
 onUnmounted(async () => {
+  unbindKittyMicKeyboard()
+  spacePhysicalDown.value = false
+  if (spaceDrivingMic.value) {
+    spaceDrivingMic.value = false
+    if (micHoldPointerId.value === null && kitty.isVoiceActive.value) {
+      kitty.stopVoiceInput()
+    }
+  }
   if (micHoldPointerId.value !== null) {
     micHoldPointerId.value = null
     if (kitty.isVoiceActive.value) {
@@ -387,7 +545,6 @@ onUnmounted(async () => {
       class="flex-1 min-h-0 overflow-y-auto flex flex-col"
     >
       <div
-        v-if="showEmptyHero"
         class="relative z-[2] flex flex-1 flex-col items-center justify-center text-center px-4 py-8 min-h-0"
       >
         <div
@@ -427,46 +584,6 @@ onUnmounted(async () => {
           {{ t('mobile.kittyConnecting', '正在连接…') }}
         </div>
       </div>
-      <div
-        v-else
-        class="relative z-[2] flex min-h-full flex-1 flex-col"
-      >
-        <div
-          class="pointer-events-none absolute inset-0 z-0 flex justify-start overflow-hidden px-3 pt-3 sm:pl-4"
-          aria-hidden="true"
-        >
-          <div
-            class="kitty-agent-debug-fog w-full max-w-[min(20rem,80vw)] self-start text-left text-[8px] sm:text-[10px] leading-[1.4] text-slate-700/15 antialiased"
-          >
-            <div
-              v-for="(row, idx) in kittyDebugLines"
-              :key="`chat-${idx}`"
-              class="block w-full overflow-hidden text-ellipsis whitespace-nowrap text-left"
-            >
-              {{ row }}
-            </div>
-          </div>
-        </div>
-        <div class="relative z-[1] px-4 py-4 space-y-3">
-          <template
-            v-for="(msg, idx) in chatLines"
-            :key="idx"
-          >
-            <div :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
-              <div
-                :class="[
-                  'max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm',
-                  msg.role === 'user'
-                    ? 'bg-violet-600 text-white rounded-br-md'
-                    : 'bg-white text-gray-800 border border-gray-100 rounded-bl-md',
-                ]"
-              >
-                {{ msg.text }}
-              </div>
-            </div>
-          </template>
-        </div>
-      </div>
     </div>
 
     <div class="shrink-0 bg-white/90 backdrop-blur-md safe-pb">
@@ -492,7 +609,7 @@ onUnmounted(async () => {
       </div>
 
       <div
-        class="flex items-center justify-between gap-8 px-12 sm:px-16 py-4 max-w-md mx-auto w-full"
+        class="flex items-center gap-2 px-3 sm:px-4 py-4 max-w-md mx-auto w-full"
       >
         <label
           class="shrink-0 w-16 h-16 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center shadow-sm border border-gray-200/80"
@@ -513,12 +630,20 @@ onUnmounted(async () => {
           />
         </label>
 
+        <KittyMobileDiagramContextCard
+          class="flex-1 min-w-0 self-center"
+          :primary-line="kittyDiagramCardPrimary"
+          :meta-line="kittyDiagramCardMeta"
+          :source-badge="kittyDiagramCardBadge"
+          :aria-label="kittyDiagramCardAriaLabel"
+        />
+
         <button
           type="button"
           class="relative shrink-0 w-16 h-16 rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-transform bg-gradient-to-br from-violet-500 to-indigo-600 border border-violet-400/30 disabled:opacity-45 touch-manipulation select-none"
           :disabled="!kittyServerEnabled || connecting || micDenied"
-          :aria-label="t('mobile.kittyMicHoldLabel', '按住说话（松开结束）')"
-          :aria-pressed="kittyMicPressed"
+          :aria-label="t('mobile.kittyPushToTalkSpaceAria')"
+          :title="t('mobile.kittyPushToTalkSpaceTitle')"
           @pointerdown="onMicPointerDown"
           @pointerup="onMicPointerEnd"
           @pointercancel="onMicPointerEnd"

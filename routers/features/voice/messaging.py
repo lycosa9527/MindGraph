@@ -1,10 +1,181 @@
 """WebSocket messaging and Omni instruction strings for voice."""
 
+import json
 from typing import Any, Dict, List, Optional
 
 from fastapi import WebSocket
 
 from routers.features.voice.state import logger
+
+_DIAGRAM_HINT_ZH: tuple[str, ...] = (
+    "图",
+    "导图",
+    "圆圈",
+    "气泡",
+    "流程",
+    "括号",
+    "桥形",
+    "树形",
+    "双气泡",
+    "类比",
+)
+_REVIEW_TERM_ZH: tuple[str, ...] = (
+    "评价",
+    "评估",
+    "评析",
+    "点评",
+    "批改",
+)
+_IMPROVE_TERM_ZH: tuple[str, ...] = (
+    "改进",
+    "优化",
+    "完善",
+    "查漏补缺",
+    "修整",
+)
+_EDU_FACT_ZH: tuple[str, ...] = (
+    "教学",
+    "教案",
+    "课堂",
+    "学生",
+    "事实",
+    "科学",
+    "对不对",
+    "正确吗",
+    "严谨",
+    "错误",
+)
+
+_ENGLISH_REVIEW_SUBSTRINGS: tuple[str, ...] = (
+    "evaluate this diagram",
+    "evaluate my diagram",
+    "evaluate the diagram",
+    "assess this diagram",
+    "assess my diagram",
+    "diagram evaluation",
+    "diagram review",
+    "review this diagram",
+    "review my diagram",
+    "review my mind map",
+    "review this mind map",
+    "review my map",
+    "critique this diagram",
+    "critique my diagram",
+    "pedagogical",
+    "curriculum fit",
+    "educationally appropriate",
+    "factually correct",
+    "fact check",
+    "improve this diagram",
+    "improve my diagram",
+    "improve my map",
+)
+
+
+def user_requests_diagram_pedagogical_review(text: str) -> bool:
+    """
+    Detect questions asking Kitty to critique, evaluate, improve, or fact-check the diagram.
+
+    When True the realtime Omni session receives the full serialized diagram specification
+    inside system instructions before the conversational reply.
+    """
+    if not isinstance(text, str):
+        return False
+    trimmed = text.strip()
+    if len(trimmed) < 4:
+        return False
+
+    lower = trimmed.lower()
+
+    if any(pat in lower for pat in _ENGLISH_REVIEW_SUBSTRINGS):
+        return True
+
+    zh_diagram_focus = (
+        ("这张" in trimmed or "这幅" in trimmed or "这个" in trimmed)
+        and "图" in trimmed
+    ) or any(h in trimmed for h in _DIAGRAM_HINT_ZH)
+
+    if not zh_diagram_focus:
+        return False
+
+    if any(t in trimmed for t in _REVIEW_TERM_ZH):
+        return True
+    if any(t in trimmed for t in _IMPROVE_TERM_ZH):
+        return True
+    if any(t in trimmed for t in _EDU_FACT_ZH):
+        return True
+
+    return False
+
+
+def _diagram_spec_bundle_for_voice_llm(diagram_type: str, diagram_data: Any) -> Dict[str, Any]:
+    bundle: Dict[str, Any] = {"diagram_type": diagram_type}
+    if isinstance(diagram_data, dict):
+        for key, val in diagram_data.items():
+            bundle[key] = val
+    return bundle
+
+
+def _serialize_diagram_spec_for_prompt(bundle: Dict[str, Any], max_chars: int) -> str:
+    raw = json.dumps(bundle, ensure_ascii=False, separators=(",", ":"), default=str)
+    if len(raw) <= max_chars:
+        return raw
+    return f"{raw[: max_chars - 24]}\n…[truncated for length]…"
+
+
+def _diagram_review_instruction_addon(lang: str, spec_text: str) -> str:
+    if lang == "en":
+        return f"""
+
+【Complete diagram specification (JSON) — authoritative】
+This block is the full diagram payload from the editor (types, topics, nodes, relationships, etc.).
+Use it as ground truth when evaluating structure, labels, and links.
+
+```json
+{spec_text}
+```
+
+【Pedagogical / factual review mode】
+When the user asks to evaluate, improve, fact-check, or judge whether the diagram is suitable for
+teaching (K12), respond with **clear, structured feedback** (brief summary first, then bullet points).
+Check: alignment with the graphic organizer type; clarity for learners; coherence of links;
+obvious misconceptions or factual risks. If unsure, explicitly say **you are not certain**.
+You may exceed the usual ultra-short reply style for these requests only."""
+
+    return f"""
+
+【完整图示规范（JSON，权威数据源）】
+以下为画布导出的图示结构数据（包含类型、主题、节点、连线/关系字段等）。
+评价结构、用词、关系时请以此为准。
+
+```json
+{spec_text}
+```
+
+【教学评析 / 事实核查模式】
+当用户希望你**评析、打分、给出改进意见、判断是否适合课堂教学、核对事实是否合理**等时，
+可作**结构化、适度展开**的口语回复（先总评再分条），不必强行一两句带过。
+关注点：是否符合该图示类型的教学用法；低年级可读性；概念联系是否贴切；是否存在明显史实/科学硬伤。
+如对事实不确定请**明说拿不准**。这类请求下可放宽「极简回复」限制。"""
+
+
+async def hydrate_omni_for_diagram_pedagogical_review(
+    voice_session_id: str,
+    context: Dict[str, Any],
+) -> None:
+    """Push Omni session instructions including the serialized full diagram specification."""
+    from routers.features.voice.session_ops import get_session_omni_client
+
+    client = get_session_omni_client(voice_session_id)
+    if not client:
+        return
+    refreshed = build_voice_instructions(context, diagram_review_deep=True)
+    await client.update_instructions(refreshed)
+    logger.debug(
+        "[Kitty] Hydrated Omni for diagram pedagogical review (voice_session_id=%s, chars=%d)",
+        voice_session_id[:16] if voice_session_id else "",
+        len(refreshed),
+    )
 
 
 def _diagram_extras_for_instructions(diagram_type: str, diagram_data: Dict[str, Any]) -> str:
@@ -129,8 +300,12 @@ def resolve_voice_interaction_language(context: Dict[str, Any]) -> str:
     return "zh"
 
 
-def build_voice_instructions(context: Dict[str, Any]) -> str:
-    """Build voice instructions from context with full diagram data"""
+def build_voice_instructions(
+    context: Dict[str, Any],
+    *,
+    diagram_review_deep: bool = False,
+) -> str:
+    """Build voice instructions from context with full diagram data."""
     diagram_type = context.get("diagram_type", "unknown")
     active_panel = context.get("active_panel", "mindmate")
     selected_nodes = context.get("selected_nodes", [])
@@ -171,24 +346,33 @@ def build_voice_instructions(context: Dict[str, Any]) -> str:
             center_text = str(ctr)
 
     children = diagram_data.get("children", [])
-    extras = _diagram_extras_for_instructions(diagram_type, diagram_data)
+    if diagram_review_deep:
+        extras = ""
+        detail_block = ""
+        if children:
+            nodes_list = (
+                f"\n  ({len(children)} nodes; exact content is in the Complete JSON specification below.)"
+            )
+        else:
+            nodes_list = "\n  (No children array; see JSON for other fields.)"
+    else:
+        extras = _diagram_extras_for_instructions(diagram_type, diagram_data)
+        # Format nodes list for Omni to understand (with IDs for precise selection)
+        nodes_list = ""
+        if children:
+            for i, node in enumerate(children[:15]):  # Limit to 15 nodes
+                if isinstance(node, str):
+                    nodes_list += f'\n  {i + 1}. "{node}"'
+                elif isinstance(node, dict):
+                    node_id = node.get("id", f"node_{i}")
+                    text = node.get("text") or node.get("label") or str(node)
+                    nodes_list += f'\n  {i + 1}. "{text}" (id: {node_id})'
+            if len(children) > 15:
+                nodes_list += f"\n  ... and {len(children) - 15} more nodes"
 
-    # Format nodes list for Omni to understand (with IDs for precise selection)
-    nodes_list = ""
-    if children:
-        for i, node in enumerate(children[:15]):  # Limit to 15 nodes
-            if isinstance(node, str):
-                nodes_list += f'\n  {i + 1}. "{node}"'
-            elif isinstance(node, dict):
-                node_id = node.get("id", f"node_{i}")
-                text = node.get("text") or node.get("label") or str(node)
-                nodes_list += f'\n  {i + 1}. "{text}" (id: {node_id})'
-        if len(children) > 15:
-            nodes_list += f"\n  ... and {len(children) - 15} more nodes"
-
-    detail_block = ""
-    if extras:
-        detail_block = f"\n【Type-specific detail】\n{extras}"
+        detail_block = ""
+        if extras:
+            detail_block = f"\n【Type-specific detail】\n{extras}"
 
     library_id = context.get("diagram_library_id")
     display_title = (context.get("diagram_display_title") or "").strip()
@@ -217,27 +401,21 @@ You can help with:
 2. Explaining concepts (e.g., "explain node 1" or "explain ABC")
 3. Suggesting new nodes to add
 4. Understanding relationships between nodes
-5. **EXECUTING CHANGES**: When users ask you to make changes (e.g., "change the first node to X",
-   "update the center to Y", "add a node called Z", "delete node ABC"), you should acknowledge
-   and confirm the change. The system will automatically execute these changes based on your
-   conversation.
+5. **EXECUTING CHANGES**: Short spoken confirmation only; the system applies edits from the conversation.
 
 【Important: Executing Changes】
-When users request changes conversationally (e.g., "can you change...", "please update...",
-"I want to change..."), acknowledge the request clearly. Examples:
-- "Change the first node to apples" → Acknowledge: "好的，我会把第一个节点改成'苹果'。" (The system will execute this automatically)
-- "Update center to cars" → Acknowledge: "好的，我会把中心主题改成'汽车'。" (The system will execute this automatically)
-- "Add a node called fruits" → Acknowledge: "好的，我会添加一个叫'水果'的节点。" (The system will execute this automatically)
-
-When user mentions a node by name or number, you know exactly which one they mean.
-For example, if user says "select ABC" and ABC is node 3, you understand they want node 3.
+When the user asks to change the diagram, give a **one short sentence** acknowledgment
+(e.g. "Done, updating node 1."). The system applies the change; **do not lecture or repeat long examples**.
 
 【Guidelines】
-- Be concise and helpful
-- Use simple vocabulary for K12 students
-- Reference specific nodes by their content
-- Encourage critical thinking
-- **When users ask for changes, acknowledge clearly** - the system will execute them automatically
+- Simple vocabulary for K12; reference nodes by the text shown in the diagram.
+
+【Voice reply style — like a calm professional voice assistant (Doubao-like)】
+- **Default: very short.** Most turns: **one or two sentences**, under ~25 words unless the user asks
+  for a longer explanation.
+- **Spoken, not essay:** no long intros, fillers ("Let me think"), or repeating the whole question.
+- **Direct:** answer first, then optionally one follow-up if helpful.
+- Prefer a **neutral, professional** tone; skip enthusiasm padding and emojis.
 
 **Default to English** for spoken and written replies; if the user clearly uses another language
 (e.g. Chinese), respond in that language naturally."""
@@ -259,26 +437,43 @@ For example, if user says "select ABC" and ABC is node 3, you understand they wa
 2. 讲解概念（例如「解释第1个节点」或「解释某某」）
 3. 建议可以新增哪些节点
 4. 帮助理解节点之间的关系
-5. **执行修改**：当用户口头要求改图（例如「把第一个节点改成苹果」「把中心改成汽车」
-   「加一个名字叫水果的节点」「删掉某某节点」）时，你要清楚确认；系统会根据对话自动执行。
+5. **执行修改**：用户口头改图时用**一句话**确认即可，系统会根据对话自动执行。
 
 【关于执行修改】
-当用户用自然口语提出修改时，要用简短话语明确确认，例如：
-- 「把第一个节点改成苹果」→ 可回复：「好的，我会把第一个节点改成「苹果」。」（随后由系统自动执行）
-- 「把中心改成汽车」→ 「好的，我会把中心主题改成「汽车」。」
-- 「加一个水果节点」→ 「好的，我会添加一个叫「水果」的节点。」
+用户口头改图时：**用一句话确认即可**（例如「好，改第一个节点。」），系统会自动落地；**勿长篇举例、勿反复铺陈**。
+按名称或序号对应到具体节点。
 
-用户按名称或序号提到节点时，你要对应到具体节点；例如用户说「选 ABC」而 ABC 是第 3 个节点，你就知道指的是节点 3。
-
-【表达要求】
-- 简明、友好，用词适合中小学生
-- 引用节点时用图示里的实际文字
-- 适当引导思考
-- 用户要求改图时务必先口头确认，系统会自动落地修改
+【语音回复风格——类似豆包：短、干净、专业】
+- **默认极简**：绝大多数回复 **一至两句**，口语控制在约 **40 字以内**；用户明确要求展开时再加长。
+- **勿冗长寒暄**：少说「我是你的助手」「让我想想看」；**不重复复述**用户整句话。
+- **先答要点**：开门见山；需要时可再补一句点拨。
+- 语气稳重、克制，少用堆砌形容词和表情包式语气。
 
 **默认请使用简体中文**进行口语和文字回复；仅当用户**明确**使用其他语言（如英语）时，再用该语言自然回复。"""
 
-    return instructions
+    review_addon = ""
+    if diagram_review_deep:
+        bundle = _diagram_spec_bundle_for_voice_llm(diagram_type, diagram_data)
+        spec_text = _serialize_diagram_spec_for_prompt(bundle, 48000)
+        review_addon = _diagram_review_instruction_addon(lang, spec_text)
+
+    return (
+        instructions
+        + review_addon
+        + (
+            "\n\n【跨设备·桌面画布】若用户要在**电脑/桌面浏览器**新建或打开某种**空白画布**，口头简短确认即可；"
+            "类型使用语义 slug（circle_map、bubble_map、double_bubble_map、tree_map、brace_map、"
+            "flow_map、multi_flow_map、bridge_map、mindmap、mind_map、concept_map）。"
+            "已登录的配对桌面标签页会自行打开对应画布；**手机界面仍停在 Kitty**。"
+        )
+        if lang != "en"
+        else (
+            "\n\n【Cross-device desktop canvas】If the user asks to open a **blank** diagram on the **desktop browser**, "
+            "confirm briefly; diagram kinds use semantic slugs (circle_map, bubble_map, double_bubble_map, tree_map, "
+            "brace_map, flow_map, multi_flow_map, bridge_map, mindmap, mind_map, concept_map). "
+            "A signed-in paired desktop tab opens that canvas; **the phone stays on Kitty**."
+        )
+    )
 
 
 def parse_double_bubble_target(target: str) -> Optional[Dict[str, str]]:
@@ -347,40 +542,32 @@ def build_greeting_message(diagram_type: str = "unknown", language: str = "zh") 
     """
     # Chinese greetings
     greetings_zh = {
-        "circle_map": "你好！我是你的思维助手。我可以帮你完善圆圈图，探索更多观察和想法。有什么我可以帮你的吗？",
-        "bubble_map": "嗨！我来帮你描述事物的特征。告诉我你想添加什么形容词或特点吧！",
-        "tree_map": "你好！我可以帮你整理分类。让我们一起把想法分门别类吧！",
-        "flow_map": "嗨！我来帮你梳理流程。告诉我每一步的顺序，我会协助你理清思路！",
-        "brace_map": "你好！我可以帮你分析整体与部分的关系。让我们一起探索吧！",
-        "bridge_map": "嗨！我来帮你找出事物之间的类比关系。准备好了吗？",
-        "double_bubble_map": "你好！我可以帮你比较两个事物。告诉我它们的相同点和不同点吧！",
-        "multi_flow_map": "嗨！我来帮你分析因果关系。让我们一起找出原因和结果！",
-        "mind_map": "你好！我是你的思维导图助手。告诉我你的主题，我会帮你展开更多想法！",
-        "concept_map": "嗨！我来帮你理清概念之间的关系。让我们一起建立知识网络吧！",
-        "default": "你好！我是你的AI助手，很高兴为你服务。你可以问我任何关于思维图的问题，或者让我帮你更新图表内容。",
+        "circle_map": "你好，我可以帮你补全圆圈图。需要改哪里？",
+        "bubble_map": "你好，想加哪些描述？",
+        "tree_map": "你好，要怎样分类？",
+        "flow_map": "你好，流程上需要我帮什么？",
+        "brace_map": "你好，整体与部分需要怎么拆？",
+        "bridge_map": "你好，要做哪组类比？",
+        "double_bubble_map": "你好，要比较哪两点？",
+        "multi_flow_map": "你好，因果上需要理哪一段？",
+        "mind_map": "你好，主题是什么？",
+        "concept_map": "你好，概念关系哪里不清楚？",
+        "default": "你好，我是 Kitty。直接说问题或要改的内容即可。",
     }
 
     # English greetings
     greetings_en = {
-        "circle_map": (
-            "Hi! I'm your thinking assistant. I can help you enhance your Circle Map "
-            "with more observations and ideas. How can I help?"
-        ),
-        "bubble_map": (
-            "Hello! I'm here to help you describe things. Tell me what adjectives or characteristics you want to add!"
-        ),
-        "tree_map": ("Hi! I can help you organize by categories. Let's classify your ideas together!"),
-        "flow_map": ("Hello! I'm here to help you map processes. Tell me the sequence, and I'll help you clarify!"),
-        "brace_map": ("Hi! I can help you analyze whole-part relationships. Let's explore together!"),
-        "bridge_map": ("Hello! I'm here to help you find analogies. Ready to compare?"),
-        "double_bubble_map": ("Hi! I can help you compare two things. Tell me their similarities and differences!"),
-        "multi_flow_map": ("Hello! I'm here to help you analyze cause and effect. Let's find the reasons and results!"),
-        "mind_map": ("Hi! I'm your mind map assistant. Tell me your topic, and I'll help you brainstorm ideas!"),
-        "concept_map": ("Hello! I'm here to help you connect concepts. Let's build a knowledge network together!"),
-        "default": (
-            "Hello! I'm your AI assistant, happy to help. Ask me anything about your diagram, "
-            "or let me help you update it."
-        ),
+        "circle_map": "Hi. What should we add to your circle map?",
+        "bubble_map": "Hi. Which traits should we describe?",
+        "tree_map": "Hi. How do you want to sort this?",
+        "flow_map": "Hi. What step needs help?",
+        "brace_map": "Hi. Which part-whole split should we work on?",
+        "bridge_map": "Hi. Which analogy should we map?",
+        "double_bubble_map": "Hi. What two things are we comparing?",
+        "multi_flow_map": "Hi. Which cause or effect should we clarify?",
+        "mind_map": "Hi. What is the topic?",
+        "concept_map": "Hi. Which link should we explain?",
+        "default": "Hi, I'm Kitty. Say what you need or what to change.",
     }
 
     greetings = greetings_zh if language == "zh" else greetings_en

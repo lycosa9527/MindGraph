@@ -57,10 +57,9 @@ import {
   useSnapshotHistory,
 } from '@/composables'
 import {
-  VALID_DIAGRAM_TYPES,
-  diagramTypeMap,
-  diagramTypeToChineseMap,
-} from '@/composables/canvasPage/diagramTypeMaps'
+  applyCanvasKittySeedFromRoute,
+  canvasKittySeedQueryKeysPresent,
+} from '@/composables/canvasPage/applyCanvasKittySeedFromRoute'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { registerCanvasPageDiagramEventBus } from '@/composables/canvasPage/registerCanvasPageDiagramEventBus'
 import { useCanvasPageEditorShortcuts } from '@/composables/canvasPage/useCanvasPageEditorShortcuts'
@@ -69,6 +68,7 @@ import { useCanvasPageMountedHandlers } from '@/composables/canvasPage/useCanvas
 import { useCanvasPagePresentation } from '@/composables/canvasPage/useCanvasPagePresentation'
 import { useCanvasPageWorkshopCollab } from '@/composables/canvasPage/useCanvasPageWorkshopCollab'
 import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
+import { useKittyDiagramReviewAnnotationBus } from '@/composables/kitty/useKittyDiagramReviewAnnotationBus'
 import {
   canvasVirtualKeyboardOpen,
   ensureCanvasVirtualKeyboardUiVersionSync,
@@ -262,6 +262,8 @@ useCanvasPageMountedHandlers({
   startNodePaletteSession,
   isDiagramOwner,
 })
+
+useKittyDiagramReviewAnnotationBus('CanvasPage')
 
 eventBus.onWithOwner(
   'diagram:auto_complete_requested',
@@ -656,6 +658,14 @@ onMounted(async () => {
     diagramStore.setDiagramType(typeFromUrl)
     if (!diagramStore.data) {
       diagramStore.loadDefaultTemplate(typeFromUrl)
+    }
+    applyCanvasKittySeedFromRoute(typeFromUrl, route.query, diagramStore)
+    if (canvasKittySeedQueryKeysPresent(route.query)) {
+      const restQuery = { ...route.query }
+      delete restQuery.kitty_topic
+      delete restQuery.kitty_left
+      delete restQuery.kitty_right
+      await router.replace({ path: route.path, query: restQuery })
     }
     return
   }

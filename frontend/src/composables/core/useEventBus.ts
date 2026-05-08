@@ -175,6 +175,10 @@ export type EventTypes = {
     line: string
   }
   'kitty:inline_recommendations_requested': { nodeId?: string; nodeIndex?: number }
+  'kitty:diagram_review_annotation': {
+    summary: string
+    items: Array<{ node_id: string; reason: string; suggestion?: string }>
+  }
 
   // History Events
   'history:undo_requested': Record<string, never>

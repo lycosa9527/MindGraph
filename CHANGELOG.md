@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.6] - 2026-05-08
+
+### Added
+
+- **Kitty — mobile ↔ desktop canvas** — Redis FIFO queue for **`open_canvas`** actions from mobile Kitty to the desktop SPA ([`services/kitty/kitty_desktop_action_queue.py`](services/kitty/kitty_desktop_action_queue.py), [`services/kitty/kitty_redis_keys.py`](services/kitty/kitty_redis_keys.py)); long-poll client composable ([`frontend/src/composables/kitty/useKittyDesktopActionPoll.ts`](frontend/src/composables/kitty/useKittyDesktopActionPoll.ts)); route seed handoff for canvas loads ([`frontend/src/composables/canvasPage/applyCanvasKittySeedFromRoute.ts`](frontend/src/composables/canvasPage/applyCanvasKittySeedFromRoute.ts)); wiring in [`App.vue`](frontend/src/App.vue), [`CanvasPage.vue`](frontend/src/pages/CanvasPage.vue), [`MobileCanvasPage.vue`](frontend/src/pages/mobile/MobileCanvasPage.vue), [`MobileKittyPage.vue`](frontend/src/pages/mobile/MobileKittyPage.vue), [`useMobileKittyPairing.ts`](frontend/src/composables/kitty/useMobileKittyPairing.ts).
+- **Kitty — diagram vocabulary (voice)** — canonical diagram slugs and EN/ZH aliases aligned with the SPA ([`services/kitty/kitty_diagram_vocabulary.py`](services/kitty/kitty_diagram_vocabulary.py)); used when coercing desktop-open payloads.
+- **Kitty — diagram review annotations** — LLM-assisted pass to flag nodes that need edits with reasons, resolved to Vue Flow node ids ([`services/features/kitty_diagram_review_annotate.py`](services/features/kitty_diagram_review_annotate.py)); client event bridge and mobile context card ([`frontend/src/composables/kitty/useKittyDiagramReviewAnnotationBus.ts`](frontend/src/composables/kitty/useKittyDiagramReviewAnnotationBus.ts), [`frontend/src/components/kitty/KittyMobileDiagramContextCard.vue`](frontend/src/components/kitty/KittyMobileDiagramContextCard.vue)).
+
+### Changed
+
+- **Voice / Kitty messaging** — command handling, websocket messaging, Kitty routes, and voice agent orchestration updates ([`routers/features/voice/commands.py`](routers/features/voice/commands.py), [`routers/features/voice/messaging.py`](routers/features/voice/messaging.py), [`routers/features/voice/kitty_routes.py`](routers/features/voice/kitty_routes.py), [`services/features/voice_agent.py`](services/features/voice_agent.py)).
+- **Canvas & diagram store** — voice-driven diagram mutations expanded ([`frontend/src/composables/editor/diagramVoiceMutations.ts`](frontend/src/composables/editor/diagramVoiceMutations.ts)); diagram store/spec/types for Kitty-driven seeding and context ([`frontend/src/stores/diagram.ts`](frontend/src/stores/diagram.ts), [`specIO.ts`](frontend/src/stores/diagram/specIO.ts), [`types.ts`](frontend/src/stores/diagram/types.ts)).
+- **Event bus & composables** — [`frontend/src/composables/core/useEventBus.ts`](frontend/src/composables/core/useEventBus.ts), [`useKittyAgent.ts`](frontend/src/composables/kitty/useKittyAgent.ts), [`useKittyMobileDebugBus.ts`](frontend/src/composables/kitty/useKittyMobileDebugBus.ts), [`frontend/src/composables/index.ts`](frontend/src/composables/index.ts).
+- **UI & styling** — diagram canvas overlay styles ([`frontend/src/components/diagram/diagramCanvas.css`](frontend/src/components/diagram/diagramCanvas.css)); mascot tweaks ([`KittyBlackCatMascot.vue`](frontend/src/components/kitty/KittyBlackCatMascot.vue), [`frontend/src/utils/mascot/blackCat.ts`](frontend/src/utils/mascot/blackCat.ts)); [`frontend/src/components.d.ts`](frontend/src/components.d.ts).
+
+### Frontend i18n
+
+- **Locales** — new common strings (`en`, `zh`) ([`frontend/src/locales/messages/en/common.ts`](frontend/src/locales/messages/en/common.ts), [`zh/common.ts`](frontend/src/locales/messages/zh/common.ts)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.6).
+
 ## [5.117.5] - 2026-05-08
 
 ### Added

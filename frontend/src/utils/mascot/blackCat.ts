@@ -47,7 +47,7 @@ export class BlackCat {
 
   private getSvgMarkup(): string {
     return `
-        <svg class="kitty-svg" width="100%" height="100%" viewBox="0 0 200 300" preserveAspectRatio="xMidYMax meet" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg class="kitty-svg" width="100%" height="100%" viewBox="-24 -14 272 344" preserveAspectRatio="xMidYMax meet" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <style>
               .fur-dark { fill: #1f1f24; }

@@ -318,6 +318,11 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
         return String(data.action ?? '')
       case 'diagram_update':
         return `diagram ${String(data.action ?? '')}`
+      case 'diagram_review_annotation': {
+        const raw = data.items
+        const n = Array.isArray(raw) ? raw.length : 0
+        return `diagram review (${n} node${n === 1 ? '' : 's'})`
+      }
       case 'error':
         return String(data.error ?? '').slice(0, 80)
       default: {
@@ -371,7 +376,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
         eventBus.emit('voice:speech_started', {
           audioStartMs: typeof data.audio_start_ms === 'number' ? data.audio_start_ms : undefined,
         })
-        audioQueue.length = 0 // Interrupt playback
+        stopAudioPlayback()
         break
 
       case 'speech_stopped':
@@ -395,6 +400,22 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
           (data.updates as Record<string, unknown>) ?? {}
         )
         break
+
+      case 'diagram_review_annotation': {
+        const rawItems = data.items
+        const rows = Array.isArray(rawItems)
+          ? (rawItems as Array<Record<string, unknown>>).map((row) => ({
+              node_id: String(row.node_id ?? ''),
+              reason: typeof row.reason === 'string' ? row.reason : String(row.reason ?? ''),
+              suggestion: typeof row.suggestion === 'string' ? row.suggestion : undefined,
+            }))
+          : []
+        eventBus.emit('kitty:diagram_review_annotation', {
+          summary: String(data.summary ?? ''),
+          items: rows,
+        })
+        break
+      }
 
       case 'error':
         lastError.value = String(data.error ?? '')
@@ -663,6 +684,18 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     // Ensure conversation is active
     if (!isActive.value) {
       throw new Error('Conversation not active')
+    }
+
+    stopAudioPlayback()
+    if (!isVoiceActive.value && isActive.value) {
+      state.value = 'active'
+    }
+    try {
+      if (ws.value && ws.value.readyState === WebSocket.OPEN) {
+        ws.value.send(JSON.stringify({ type: 'cancel_response' }))
+      }
+    } catch {
+      // Ignore send failures — local playback already stopped.
     }
 
     micStream.value = await navigator.mediaDevices.getUserMedia({

@@ -55,6 +55,32 @@
       drop-shadow(0 0 8px rgba(102, 126, 234, 0.7));
   }
 }
+
+/* Kitty pedagogical review: amber ring distinct from default blue selection pulse */
+@keyframes kittyReviewGlow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 6px rgba(234, 179, 8, 0.75))
+      drop-shadow(0 0 2px rgba(245, 158, 11, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 14px rgba(234, 179, 8, 0.95))
+      drop-shadow(0 0 6px rgba(245, 158, 11, 0.75));
+  }
+}
+
+.vue-flow__node.kitty-diagram-review-issue:not(.selected) {
+  animation: kittyReviewGlow 1.8s ease-in-out infinite;
+}
+
+.vue-flow__node.selected.kitty-diagram-review-issue {
+  outline: 2px solid rgba(234, 179, 8, 0.92);
+  outline-offset: 3px;
+}
+.vue-flow__node-circle.selected.kitty-diagram-review-issue {
+  outline: 2px solid rgba(234, 179, 8, 0.92);
+  outline-offset: 3px;
+}
 .vue-flow__node-circle.selected {
   box-shadow: none !important;
   animation: pulseGlow 2s ease-in-out infinite;

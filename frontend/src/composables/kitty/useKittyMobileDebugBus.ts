@@ -9,14 +9,8 @@ export function useKittyMobileDebugBus(options: {
   ownerId: string
   pushLine: (prefix: string, detail: string) => void
   scheduleContextSync: () => void
-  onResponseDone: () => void
-  onSpeechStarted: () => void
 }): void {
-  const { ownerId, pushLine, scheduleContextSync, onResponseDone, onSpeechStarted } = options
-
-  eventBus.onWithOwner('voice:response_done', onResponseDone, ownerId)
-
-  eventBus.onWithOwner('voice:speech_started', onSpeechStarted, ownerId)
+  const { ownerId, pushLine, scheduleContextSync } = options
 
   eventBus.onWithOwner(
     'voice:debug_rx',

@@ -4,6 +4,7 @@ from typing import Any, Dict
 
 from fastapi import WebSocket
 
+from services.features.kitty_diagram_review_annotate import compute_kitty_diagram_review_annotations
 from services.features.voice_agent import kitty_agent_manager
 
 try:
@@ -11,6 +12,8 @@ try:
 except ImportError:
     redis_user_cache = None
 
+from services.kitty.kitty_desktop_action_queue import enqueue_kitty_desktop_action
+from services.kitty.kitty_diagram_vocabulary import normalize_voice_desktop_canvas_diagram_type
 from services.kitty.kitty_session_redis import (
     apply_redis_live_to_voice_session,
     load_kitty_live_context,
@@ -23,7 +26,11 @@ from routers.features.voice.diagram_utils import (
 from routers.features.voice.kitty_library_context_refresh import (
     throttled_refresh_voice_context_from_library,
 )
-from routers.features.voice.messaging import safe_websocket_send
+from routers.features.voice.messaging import (
+    hydrate_omni_for_diagram_pedagogical_review,
+    safe_websocket_send,
+    user_requests_diagram_pedagogical_review,
+)
 from routers.features.voice.paragraph import process_paragraph_with_qwen_plus
 from routers.features.voice.session_ops import (
     get_agent_session_id,
@@ -88,6 +95,15 @@ async def process_voice_command(
                 )
                 session_context = dict(live_session.get("context") or session_context)
 
+        if user_requests_diagram_pedagogical_review(command_text):
+            try:
+                await hydrate_omni_for_diagram_pedagogical_review(
+                    voice_session_id,
+                    session_context,
+                )
+            except (RuntimeError, ConnectionError, AttributeError, ValueError) as hydrate_exc:
+                logger.debug("[Kitty] diagram review instruction hydrate skipped: %s", hydrate_exc)
+
         # CRITICAL: Check if input is a paragraph (long text for processing)
         # Common case: Teachers paste whole paragraphs expecting diagram generation
         if is_paragraph_text(command_text):
@@ -145,6 +161,28 @@ async def process_voice_command(
 
         logger.debug("VOIC | Using diagram_type=%s for voice command processing", diagram_type)
 
+        if user_requests_diagram_pedagogical_review(command_text):
+            try:
+                annotations = await compute_kitty_diagram_review_annotations(
+                    command_text,
+                    diagram_type=str(diagram_type),
+                    diagram_data=dict(session_context.get("diagram_data") or {}),
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    voice_session_id=voice_session_id,
+                )
+                if annotations.get("items") or str(annotations.get("summary") or "").strip():
+                    await safe_websocket_send(
+                        websocket,
+                        {
+                            "type": "diagram_review_annotation",
+                            "summary": annotations.get("summary", ""),
+                            "items": annotations.get("items", []),
+                        },
+                    )
+            except (RuntimeError, ConnectionError, AttributeError, ValueError, TypeError) as ann_exc:
+                logger.debug("[Kitty] diagram review annotations skipped: %s", ann_exc)
+
         # Process command through LLM (Qwen Turbo) for intention checking
         # LLM parses the command and returns structured action JSON (no keyword detection)
         # Pass user tracking info for token tracking
@@ -186,6 +224,7 @@ async def process_voice_command(
             "auto_complete",
             "start_inline_recommendations",
             "help",
+            "open_desktop_canvas",
         ]
 
         # For text messages, use lower confidence threshold (0.5) since they're more explicit
@@ -276,7 +315,7 @@ async def process_voice_command(
                 # Create a response acknowledging the action
                 omni_client = get_session_omni_client(voice_session_id)
                 if omni_client:
-                    await omni_client.create_response(instructions="好的，我正在帮你自动完成图表。")
+                    await omni_client.create_response(instructions="收到，正在自动补全。")
             except (RuntimeError, ConnectionError, AttributeError) as e:
                 logger.debug("Could not send acknowledgment to Omni: %s", e)
             return True
@@ -305,7 +344,7 @@ async def process_voice_command(
             try:
                 omni_client = get_session_omni_client(voice_session_id)
                 if omni_client:
-                    await omni_client.create_response(instructions="正在为该节点打开联想建议。")
+                    await omni_client.create_response(instructions="好，打开联想建议。")
             except (RuntimeError, ConnectionError, AttributeError) as e:
                 logger.debug("Could not send acknowledgment to Omni: %s", e)
             return True
@@ -388,6 +427,42 @@ async def process_voice_command(
                             },
                         },
                     )
+            return True
+
+        elif action == "open_desktop_canvas":
+            if user_id is None:
+                logger.warning("Kitty open_desktop_canvas: missing user_id")
+                return False
+            raw_slug = command.get("diagram_type")
+            slug = normalize_voice_desktop_canvas_diagram_type(
+                raw_slug if isinstance(raw_slug, str) else None
+            )
+            if slug is None:
+                logger.info("Kitty open_desktop_canvas: rejected diagram_type=%s", raw_slug)
+                return False
+
+            payload: Dict[str, Any] = {
+                "kind": "open_canvas",
+                "diagram_type": slug,
+            }
+            targ = command.get("target")
+            if isinstance(targ, str) and targ.strip():
+                payload["topic"] = targ.strip()
+            left_val = command.get("left")
+            if isinstance(left_val, str) and left_val.strip():
+                payload["left"] = left_val.strip()
+            right_val = command.get("right")
+            if isinstance(right_val, str) and right_val.strip():
+                payload["right"] = right_val.strip()
+
+            ok = await enqueue_kitty_desktop_action(user_id, payload)
+            try:
+                omni_client = get_session_omni_client(voice_session_id)
+                if omni_client:
+                    ack = "好，已在电脑端打开画布。" if ok else "电脑端暂时打不开画布，请稍后重试。"
+                    await omni_client.create_response(instructions=ack)
+            except (RuntimeError, ConnectionError, AttributeError) as e:
+                logger.debug("open_desktop_canvas Omni ack skipped: %s", e)
             return True
 
         elif action == "help":

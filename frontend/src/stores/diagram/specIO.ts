@@ -26,6 +26,10 @@ export function useSpecIOSlice(ctx: DiagramContext) {
   ): boolean {
     if (!spec || !diagramTypeValue) return false
 
+    if (options?.emitLoaded !== false) {
+      ctx.kittyReviewByNodeId.value = {}
+    }
+
     ctx.resetSessionEditCount()
 
     // Preserve dimensions of nodes that will be reused (same type reload, e.g. add/delete step).

@@ -14,6 +14,7 @@ from langgraph.graph.state import CompiledStateGraph
 from langgraph.graph.message import add_messages
 
 from services.llm import llm_service
+from services.kitty.kitty_diagram_vocabulary import KITTY_VOICE_DIAGRAM_CATALOG_PROMPT
 
 
 logger = logging.getLogger("KITTY_AGENT")
@@ -547,7 +548,11 @@ class KittyAgent:
   * "delete relationship 1" → {"action": "delete_node", "relationship_index": 1, "confidence": 0.95}
 """
 
-        prompt = f"""You are a diagram control assistant. Parse the user's command and return a JSON action.
+        prompt = (
+            KITTY_VOICE_DIAGRAM_CATALOG_PROMPT
+            + f"""
+
+You are a diagram control assistant. Parse the user's command and return a JSON action.
 
 【Current Diagram】
 - Type: {diagram_type}
@@ -569,6 +574,9 @@ class KittyAgent:
 - start_inline_recommendations: Open inline (Tab-key style) node suggestions for a node; use node_index or selected node
 - open_mindmate/open_node_palette: Open panels
 - close_mindmate/close_all_panels: Close panels
+- open_desktop_canvas: User's **desktop browser** MindGraph opens ``/canvas`` as a NEW blank diagram;
+  REQUIRED: ``diagram_type`` slug from catalog; OPTIONAL: ``target`` (single title), ``left``/``right``
+  for double_bubble_map; ignored on mobile — phone stays on Kitty
 - none: Just conversation, no action needed
 
 【Structured Input Pattern】
@@ -596,9 +604,11 @@ CRITICAL: Always use the correct terminology for the current diagram type!
 - For double bubble maps, ALWAYS extract and return both "left" and "right" topics separately
 - Node types vary by diagram: context (circle_map), attribute (bubble_map),
   step (flow_map), part (brace_map), branch (mindmap), etc.
-- Opinion, critique, or reflection questions (e.g. "你觉得这张图怎么样？", "这样合理吗？",
-  "what do you think of this diagram?") are **conversation only**: return action "none"
-  with high confidence so the tutor answers without running diagram mutations.
+- Opinion, critique, evaluation, pedagogical-review, improvement, or fact-check questions about
+  the diagram ( e.g. "你觉得这张图怎么样？", "这样合理吗？", "fact check my diagram?",
+  "is this pedagogically sound?") MUST still return JSON action `"none"` — the realtime voice
+  assistant receives the **complete diagram specification** as JSON in separate instructions when
+  the user asks; your job here is ONLY to classify: no mutations.
 
 【Return JSON】
 {{"action": "action_name", "target": "value", "node_index": 0, "confidence": 0.9}}
@@ -879,10 +889,11 @@ For Multi-Flow Map:
 - "你觉得这张图怎么样？" → {{"action": "none", "confidence": 0.95}}
 - "这样画合理吗？" → {{"action": "none", "confidence": 0.9}}
 - "给我一些改进建议"（评价现有图，不是命令改节点）→ {{"action": "none", "confidence": 0.88}}
-- "What do you think of this mind map?" → {{"action": "none", "confidence": 0.95}}
+- "What do you think of this diagram?" → {{"action": "none", "confidence": 0.95}}
+- "Evaluate this diagram for my lesson." → {{"action": "none", "confidence": 0.95}}
 - "Is this circle map complete?" → {{"action": "none", "confidence": 0.9}}
 
-Return only JSON:"""
+Return only JSON:""")
 
         try:
             tracking_info = self._voice_parse_tracking or {}

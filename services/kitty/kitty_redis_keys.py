@@ -44,3 +44,8 @@ def kitty_ws_refcount_key(ws_session_id: str) -> str:
 def kitty_desktop_focus_key(user_id: int) -> str:
     """Per-user hint: library diagram id last open on desktop MindGraph (mobile pairs via GET)."""
     return f"kitty:desktop_focus:{user_id}"
+
+
+def kitty_desktop_action_queue_key(user_id: int) -> str:
+    """FIFO queue for cross-device Kitty actions consumed by authenticated desktop SPA."""
+    return f"kitty:desktop_actions:{user_id}"

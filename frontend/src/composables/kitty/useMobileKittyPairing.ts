@@ -14,6 +14,24 @@ import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 export type MobileKittyAgentApi = ReturnType<typeof useKittyAgent>
 
+/** Shortened UX summary mirroring ``buildMobileKittyContext()`` for mobile diagram card. */
+export interface MobileKittyContextPreview {
+  diagramDisplayTitle: string
+  diagramLibraryId: string | null
+  diagramType: string
+  pairScopeShort: string
+  scopeHintShort: string
+  hubSource: MobileKittyBootstrapPayload['source'] | null
+}
+
+function shortenDiagramScopeHint(raw: string, headChars = 8): string {
+  const s = String(raw).trim()
+  if (s.length <= headChars) {
+    return s
+  }
+  return `${s.slice(0, headChars)}…`
+}
+
 /** JSON shape from ``GET /api/kitty/mobile_open_bootstrap`` (snake_case keys). */
 export interface MobileKittyBootstrapPayload {
   recommended_scope: string | null
@@ -179,6 +197,29 @@ export function useMobileKittyPairing(
     return ctx
   }
 
+  const mobileKittyContextPreview = computed<MobileKittyContextPreview>(() => {
+    const ctx = buildMobileKittyContext()
+    const title = String(ctx.diagram_display_title ?? '').trim()
+    const libRaw = ctx.diagram_library_id
+    const lib =
+      typeof libRaw === 'string' && libRaw.trim() !== '' ? libRaw.trim() : null
+    const scope = kittyPairScope.value
+    const scopeForHint = lib ?? scope
+    const boot = bootstrapPayload.value
+    const hubSrc = boot?.source
+    const hubSource: MobileKittyBootstrapPayload['source'] | null =
+      hubSrc === 'live' || hubSrc === 'library' || hubSrc === 'empty' ? hubSrc : null
+
+    return {
+      diagramDisplayTitle: title,
+      diagramLibraryId: lib,
+      diagramType: String(ctx.diagram_type ?? ''),
+      pairScopeShort: shortenDiagramScopeHint(String(scope)),
+      scopeHintShort: shortenDiagramScopeHint(String(scopeForHint)),
+      hubSource,
+    }
+  })
+
   function scheduleMobileKittyContextSync(): void {
     if (contextSyncTimer != null) {
       clearTimeout(contextSyncTimer)
@@ -226,6 +267,7 @@ export function useMobileKittyPairing(
     kittyPairScope,
     kittyDesktopLibraryId,
     bootstrapPayload,
+    mobileKittyContextPreview,
     ensureMobileKittyBootstrap,
     buildMobileKittyContext,
     scheduleMobileKittyContextSync,

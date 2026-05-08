@@ -18,7 +18,7 @@ import ChatMessageToast from '@/components/common/ChatMessageToast.vue'
 import GeoLiteNotification from '@/components/common/GeoLiteNotification.vue'
 import VersionNotification from '@/components/common/VersionNotification.vue'
 import BrowserLocaleHintDialog from '@/components/settings/BrowserLocaleHintDialog.vue'
-import { useLanguage, useNotifications } from '@/composables'
+import { useKittyDesktopActionPoll, useLanguage, useNotifications } from '@/composables'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { loadElementPlusLocale } from '@/i18n/elementPlusLocale'
 import { isRtlUiLocale } from '@/i18n/locales'
@@ -27,6 +27,8 @@ import { useLiveTranslationStore } from '@/stores/liveTranslation'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
 const notify = useNotifications()
+
+useKittyDesktopActionPoll()
 
 const route = useRoute()
 const router = useRouter()

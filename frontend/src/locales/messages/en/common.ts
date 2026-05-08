@@ -107,6 +107,16 @@ export default {
   'canvas.kittyMobileIndicatorTitle': 'Mobile Kitty',
   'mobile.kittyWelcomeSub':
     'Your microphone talks to the same MindGraph you edit. Open a saved diagram on your phone or desktop so Kitty stays in sync.',
+  'mobile.kittyCurrentDiagramLabel': 'Current diagram',
+  'mobile.kittyDiagramTitleEmpty': 'No title',
+  'mobile.kittyDiagramMetaLine': '{type} · {id}',
+  'mobile.kittyHubSourceLive': 'Hub: live',
+  'mobile.kittyHubSourceLibrary': 'Hub: library',
+  'mobile.kittyHubSourceEmpty': 'Hub: empty',
+  'mobile.kittyPushToTalkSpaceTitle':
+    'Push-to-talk only — hold mic or Space (when not typing); release to stop (not toggle)',
+  'mobile.kittyPushToTalkSpaceAria':
+    'Push-to-talk only — hold microphone or Space bar to speak, release to stop. Not mute toggle.',
   'meta.pageTitle.notFound': 'Page not found',
   'meta.pageTitle.publicDashboard': 'Statistics',
   'meta.pageTitle.schoolDashboard': 'School dashboard',

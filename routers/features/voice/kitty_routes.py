@@ -42,6 +42,7 @@ from services.agent_hub import (
 )
 from services.kitty.kitty_control_fanout import KITTY_CONTROL_REASON_HTTP_CLEANUP
 from services.kitty.kitty_context_hydrate import merge_voice_context_with_library
+from services.kitty.kitty_desktop_action_queue import pop_kitty_desktop_action
 from services.kitty.kitty_desktop_focus import (
     get_kitty_desktop_focus_diagram,
     set_kitty_desktop_focus_diagram,
@@ -731,8 +732,7 @@ async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str
                                 try:
                                     await omni_client.create_response(
                                         instructions=(
-                                            "请根据用户上传的图片，用简短中文概括其中的文字或可视要点，"
-                                            "便于更新思维导图；若无法识别请说明。"
+                                            "请用两到三句话概括图片里的文字或可入图的要点；看不清就说看不清。"
                                         ),
                                     )
                                 except (RuntimeError, ConnectionError, AttributeError) as resp_err:
@@ -1154,6 +1154,19 @@ async def kitty_mobile_open_bootstrap(
         client_lane="mobile",
         client_suggested_scope=suggested_scope,
     )
+
+
+@router.get("/api/kitty/desktop_action/pop")
+async def kitty_desktop_action_pop(current_user: User = Depends(get_current_user)):
+    """
+    Pop one Kitty-queued desktop UX action for the signed-in user (FIFO).
+
+    The desktop SPA polls this while Kitty on mobile may enqueue ``open_canvas`` payloads.
+    """
+    if not config.FEATURE_KITTY_WS_ENABLED:
+        return {"action": None}
+    data = await pop_kitty_desktop_action(int(current_user.id))
+    return {"action": data}
 
 
 @router.get("/api/kitty/desktop_focus")

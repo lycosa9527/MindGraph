@@ -62,7 +62,7 @@ onUnmounted(() => {
 <template>
   <div
     ref="hostRef"
-    class="kitty-black-cat-mascot flex items-end justify-center mx-auto w-[min(200px,55vw)] aspect-[200/300] max-h-[min(240px,38vh)]"
+    class="kitty-black-cat-mascot flex items-end justify-center mx-auto w-[min(236px,62vw)] aspect-[272/344] max-h-[min(280px,46vh)]"
     aria-hidden="true"
   />
 </template>
@@ -79,5 +79,6 @@ onUnmounted(() => {
 .kitty-black-cat-mascot :deep(.black-cat-container .kitty-svg) {
   max-height: 100%;
   width: auto;
+  overflow: visible;
 }
 </style>
