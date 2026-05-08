@@ -208,7 +208,7 @@ function isTypingOrContentEditableTarget(ev: Event): boolean {
   if (!(t instanceof Node)) {
     return false
   }
-  if (!(t instanceof Element)) {
+  if (!(t instanceof HTMLElement)) {
     return false
   }
   const el = t
@@ -635,7 +635,7 @@ onUnmounted(async () => {
           :primary-line="kittyDiagramCardPrimary"
           :meta-line="kittyDiagramCardMeta"
           :source-badge="kittyDiagramCardBadge"
-          :aria-label="kittyDiagramCardAriaLabel"
+          :ariaLabel="kittyDiagramCardAriaLabel"
         />
 
         <button

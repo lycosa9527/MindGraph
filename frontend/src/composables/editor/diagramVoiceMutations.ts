@@ -11,7 +11,7 @@ import {
 import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores/diagram'
 import { recalculateCircleMapLayout } from '@/stores/specLoader'
-import type { DiagramNode, DiagramType } from '@/types'
+import type { Connection, DiagramNode, DiagramType } from '@/types'
 
 function normalizedDiagramType(storeType: DiagramType | null): string {
   if (!storeType) return ''
