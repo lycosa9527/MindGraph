@@ -275,6 +275,15 @@ class OmniRealtimeClient:
         self._current_response_id = None
         self._current_item_id = None
 
+    async def interrupt_assistant_for_user_speech(self) -> None:
+        """
+        Stop assistant audio/text generation when the user speaks.
+
+        Called when client microphone audio is forwarded so barge-in happens
+        before server VAD may emit speech_started.
+        """
+        await self._handle_interruption()
+
     async def _handle_messages(self) -> None:
         """Handle incoming messages from Omni API."""
         if not self.ws:
@@ -731,6 +740,7 @@ class OmniClient:
             return
 
         try:
+            await self._native_client.interrupt_assistant_for_user_speech()
             await self._native_client.append_audio(audio_base64)
         except Exception as e:  # pylint: disable=broad-except
             logger.error("Failed to send audio: %s", e)

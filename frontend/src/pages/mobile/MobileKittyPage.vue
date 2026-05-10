@@ -76,6 +76,7 @@ useKittyDiagramReviewAnnotationBus('MobileKittyPageKittyReviewBus')
 const connected = computed(() => kitty.isConnected.value)
 const connecting = computed(() => kitty.state.value === 'connecting')
 const kittyVoiceState = computed(() => kitty.state.value)
+const kittyVoiceInputActive = computed(() => kitty.isVoiceActive.value)
 
 const kittyDiagramCardPrimary = computed(() => {
   const p = mobileKittyContextPreview.value
@@ -203,186 +204,108 @@ function isKittyTextInputTarget(): boolean {
   return true
 }
 
-function isTypingOrContentEditableTarget(ev: Event): boolean {
+/** When true, Space should keep its normal meaning (typing, checkbox, other buttons, etc.). */
+function shouldReserveSpaceForTarget(ev: Event): boolean {
   const t = ev.target
-  if (!(t instanceof Node)) {
-    return false
-  }
   if (!(t instanceof HTMLElement)) {
     return false
   }
-  const el = t
-  if (el.isContentEditable || el.closest('[contenteditable="true"]')) {
+  if (t.isContentEditable || t.closest('[contenteditable="true"]')) {
     return true
   }
-  const tag = el.tagName
-  if (tag === 'TEXTAREA') {
-    return true
+  if (t.closest('[data-kitty-mic-toggle]')) {
+    return false
   }
-  if (tag === 'SELECT') {
+  const tag = t.tagName
+  if (tag === 'TEXTAREA' || tag === 'SELECT') {
     return true
   }
   if (tag === 'BUTTON') {
     return true
   }
   if (tag === 'INPUT') {
+    const input = t as HTMLInputElement
+    const typ = (input.type ?? 'text').toLowerCase()
+    if (typ === 'checkbox' || typ === 'radio') {
+      return true
+    }
+    if (typ === 'file' || typ === 'hidden') {
+      return false
+    }
     return true
   }
   return false
 }
 
 /**
- * Kitty mic on this page is **push-to-talk only**:
- * – Hold the circular mic button (pointer down/up, with capture).
- * – Hold Space (keydown/keyup), except while focus is in a typing control.
- * There is **no toggle / click-to-arm** UX; a tap ends as soon as the pointer or key lifts.
+ * Kitty mic on this page is **tap-to-toggle**:
+ * – Tap the circular mic to start streaming; tap again to stop.
+ * – Space toggles the mic when focus is not in a field or control that needs Space
+ *   (non-repeat); the mic button is excluded so Space still toggles when it is focused.
+ * – A second tap while the first tap is still connecting / requesting the mic cancels
+ *   the pending start so a slow getUserMedia prompt does not leave the user stuck arming.
  */
 
-/** Primary-button push-to-talk (pointer down = open mic, up/cancel = close). Works with mouse + touch. */
-const micHoldPointerId = ref<number | null>(null)
+const voiceStartInFlight = ref(false)
+const cancelVoiceStartRequested = ref(false)
 
-function releaseMicPointer(el: HTMLButtonElement | null, pointerId: number): void {
-  if (micHoldPointerId.value !== pointerId) {
-    return
-  }
-  micHoldPointerId.value = null
-  if (el) {
-    try {
-      el.releasePointerCapture(pointerId)
-    } catch {
-      /* capture already released */
-    }
-  }
-  if (kitty.isVoiceActive.value) {
-    kitty.stopVoiceInput()
-  }
-}
-
-async function onMicPointerDown(ev: PointerEvent): Promise<void> {
+async function toggleKittyMicFromUser(): Promise<void> {
   if (!kittyServerEnabled.value || connecting.value || micDenied.value) {
     return
   }
-  if (ev.button !== 0) {
+  if (kitty.isVoiceActive.value) {
+    cancelVoiceStartRequested.value = false
+    kitty.stopVoiceInput()
     return
   }
-  if (micHoldPointerId.value !== null) {
+  if (voiceStartInFlight.value) {
+    cancelVoiceStartRequested.value = true
     return
   }
-  const el = ev.currentTarget
-  if (!(el instanceof HTMLButtonElement) || el.disabled) {
-    return
-  }
-
-  const pid = ev.pointerId
-  micHoldPointerId.value = pid
+  voiceStartInFlight.value = true
+  cancelVoiceStartRequested.value = false
   try {
-    el.setPointerCapture(pid)
-  } catch {
-    /* capture optional */
-  }
-
-  const ok = await ensureConnected()
-  if (micHoldPointerId.value !== pid) {
-    return
-  }
-  if (!ok) {
-    releaseMicPointer(el, pid)
-    return
-  }
-  try {
+    const ok = await ensureConnected()
+    if (!ok || cancelVoiceStartRequested.value) {
+      return
+    }
     await kitty.startVoiceInput()
-    micDenied.value = false
+    if (cancelVoiceStartRequested.value) {
+      kitty.stopVoiceInput()
+    } else {
+      micDenied.value = false
+    }
   } catch {
     micDenied.value = true
-    releaseMicPointer(el, pid)
-    return
-  }
-  if (micHoldPointerId.value !== pid) {
-    kitty.stopVoiceInput()
+  } finally {
+    voiceStartInFlight.value = false
+    cancelVoiceStartRequested.value = false
   }
 }
 
-function onMicPointerEnd(ev: PointerEvent): void {
-  const el = ev.currentTarget instanceof HTMLButtonElement ? ev.currentTarget : null
-  releaseMicPointer(el, ev.pointerId)
-}
-
-const spaceDrivingMic = ref(false)
-const spacePhysicalDown = ref(false)
-
-async function onKittySpacePushKeyDown(ev: KeyboardEvent): Promise<void> {
+function onKittySpaceToggleKeyDown(ev: KeyboardEvent): void {
   if (ev.code !== 'Space' && ev.key !== ' ') {
     return
   }
   if (ev.repeat || isKittyTextInputTarget()) {
     return
   }
-  if (isTypingOrContentEditableTarget(ev)) {
+  if (shouldReserveSpaceForTarget(ev)) {
     return
   }
   if (!kittyServerEnabled.value || connecting.value || micDenied.value) {
     return
   }
-  if (micHoldPointerId.value !== null || spaceDrivingMic.value || spacePhysicalDown.value) {
-    return
-  }
   ev.preventDefault()
-  spacePhysicalDown.value = true
-  try {
-    const ok = await ensureConnected()
-    if (!spacePhysicalDown.value || micHoldPointerId.value !== null) {
-      return
-    }
-    if (!ok) {
-      return
-    }
-    await kitty.startVoiceInput()
-    micDenied.value = false
-    if (!spacePhysicalDown.value) {
-      kitty.stopVoiceInput()
-      return
-    }
-    spaceDrivingMic.value = true
-  } catch {
-    micDenied.value = true
-  }
+  void toggleKittyMicFromUser()
 }
 
-function onKittySpacePushKeyUp(ev: KeyboardEvent): void {
-  if (ev.code !== 'Space' && ev.key !== ' ') {
-    return
-  }
-  spacePhysicalDown.value = false
-  if (micHoldPointerId.value !== null) {
-    return
-  }
-  if (!spaceDrivingMic.value) {
-    return
-  }
-  ev.preventDefault()
-  spaceDrivingMic.value = false
-  if (kitty.isVoiceActive.value) {
-    kitty.stopVoiceInput()
-  }
-}
-
-/**
- * Tab / app background: torn down PT. Do not use ``window.blur`` — it also fires while the
- * browser shows the mic permission prompt, which would clear ``spacePhysicalDown`` and mute
- * immediately after ``startVoiceInput()``.
- */
-function handleKittyVisibilityForSpaceMic(): void {
+/** Tab / app background: stop an open mic and cancel any in-flight start. */
+function handleKittyVisibilityForMic(): void {
   if (!document.hidden) {
     return
   }
-  spacePhysicalDown.value = false
-  if (micHoldPointerId.value !== null) {
-    return
-  }
-  if (!spaceDrivingMic.value) {
-    return
-  }
-  spaceDrivingMic.value = false
+  cancelVoiceStartRequested.value = true
   if (kitty.isVoiceActive.value) {
     kitty.stopVoiceInput()
   }
@@ -395,9 +318,8 @@ function bindKittyMicKeyboard(): void {
     return
   }
   kittyMicKbBound = true
-  window.addEventListener('keydown', onKittySpacePushKeyDown, true)
-  window.addEventListener('keyup', onKittySpacePushKeyUp, true)
-  document.addEventListener('visibilitychange', handleKittyVisibilityForSpaceMic)
+  window.addEventListener('keydown', onKittySpaceToggleKeyDown, true)
+  document.addEventListener('visibilitychange', handleKittyVisibilityForMic)
 }
 
 function unbindKittyMicKeyboard(): void {
@@ -405,9 +327,8 @@ function unbindKittyMicKeyboard(): void {
     return
   }
   kittyMicKbBound = false
-  window.removeEventListener('keydown', onKittySpacePushKeyDown, true)
-  window.removeEventListener('keyup', onKittySpacePushKeyUp, true)
-  document.removeEventListener('visibilitychange', handleKittyVisibilityForSpaceMic)
+  window.removeEventListener('keydown', onKittySpaceToggleKeyDown, true)
+  document.removeEventListener('visibilitychange', handleKittyVisibilityForMic)
 }
 
 async function sendDraft(): Promise<void> {
@@ -448,18 +369,10 @@ onMounted(async () => {
 
 onUnmounted(async () => {
   unbindKittyMicKeyboard()
-  spacePhysicalDown.value = false
-  if (spaceDrivingMic.value) {
-    spaceDrivingMic.value = false
-    if (micHoldPointerId.value === null && kitty.isVoiceActive.value) {
-      kitty.stopVoiceInput()
-    }
-  }
-  if (micHoldPointerId.value !== null) {
-    micHoldPointerId.value = null
-    if (kitty.isVoiceActive.value) {
-      kitty.stopVoiceInput()
-    }
+  cancelVoiceStartRequested.value = true
+  voiceStartInFlight.value = false
+  if (kitty.isVoiceActive.value) {
+    kitty.stopVoiceInput()
   }
   await kitty.stopConversation()
   if (authStore.isAuthenticated && featureFlagsStore.getFeatureKittyAgent()) {
@@ -640,14 +553,13 @@ onUnmounted(async () => {
 
         <button
           type="button"
+          data-kitty-mic-toggle
           class="relative shrink-0 w-16 h-16 rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-transform bg-gradient-to-br from-violet-500 to-indigo-600 border border-violet-400/30 disabled:opacity-45 touch-manipulation select-none"
           :disabled="!kittyServerEnabled || connecting || micDenied"
-          :aria-label="t('mobile.kittyPushToTalkSpaceAria')"
-          :title="t('mobile.kittyPushToTalkSpaceTitle')"
-          @pointerdown="onMicPointerDown"
-          @pointerup="onMicPointerEnd"
-          @pointercancel="onMicPointerEnd"
-          @click.prevent
+          :aria-pressed="kittyVoiceInputActive"
+          :aria-label="t('mobile.kittyMicToggleAria')"
+          :title="t('mobile.kittyMicToggleTitle')"
+          @click="toggleKittyMicFromUser"
         >
           <Loader2
             v-if="connecting"
@@ -656,7 +568,7 @@ onUnmounted(async () => {
           />
           <template v-else>
             <MicOff
-              v-if="kitty.isVoiceActive"
+              v-if="kittyVoiceInputActive"
               :size="30"
             />
             <Mic

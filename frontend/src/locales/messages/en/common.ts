@@ -113,10 +113,10 @@ export default {
   'mobile.kittyHubSourceLive': 'Hub: live',
   'mobile.kittyHubSourceLibrary': 'Hub: library',
   'mobile.kittyHubSourceEmpty': 'Hub: empty',
-  'mobile.kittyPushToTalkSpaceTitle':
-    'Push-to-talk only — hold mic or Space (when not typing); release to stop (not toggle)',
-  'mobile.kittyPushToTalkSpaceAria':
-    'Push-to-talk only — hold microphone or Space bar to speak, release to stop. Not mute toggle.',
+  'mobile.kittyMicToggleTitle':
+    'Tap to toggle the mic: tap once to speak, tap again when done. Press Space to toggle when not typing in a field.',
+  'mobile.kittyMicToggleAria':
+    'Toggle microphone: tap once to start voice, tap again to stop. Press Space to toggle when not typing in the message field.',
   'meta.pageTitle.notFound': 'Page not found',
   'meta.pageTitle.publicDashboard': 'Statistics',
   'meta.pageTitle.schoolDashboard': 'School dashboard',

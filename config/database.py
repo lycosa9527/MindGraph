@@ -23,6 +23,7 @@ import time
 import warnings
 
 from sqlalchemy import create_engine, func, select, text
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -551,28 +552,26 @@ def _check_pool_vs_max_connections() -> None:
 
 
 def _ensure_pg_extensions() -> None:
-    """Create observability extensions if they are missing.
+    """Best-effort optional PostgreSQL extensions (same set as Alembic revision 0031).
 
-    ``pg_stat_statements`` and ``auto_explain`` are loaded via
-    ``shared_preload_libraries`` in the managed ``postgresql.conf`` template,
-    but the extension itself still needs to be registered in each database
-    so its views become queryable. This is idempotent and silent on
-    permission errors (Aurora / managed Postgres often pre-installs them).
+    Runs after migrations so the schema is current; ``IF NOT EXISTS`` keeps this
+    cheap when Alembic already created the extensions. Privilege errors are logged
+    and ignored so application roles without ``CREATE EXTENSION`` can still start.
     """
-    statements = (
+    extension_sql = (
         "CREATE EXTENSION IF NOT EXISTS pg_stat_statements",
         "CREATE EXTENSION IF NOT EXISTS pg_trgm",
     )
-    for sql in statements:
-        try:
-            with engine.begin() as conn:
-                conn.execute(text(sql))
-        except Exception as exc:
-            logger.debug(
-                "[Database] Could not run %r (separate transaction; continuing): %s",
-                sql,
-                exc,
-            )
+    try:
+        with engine.connect() as conn:
+            for sql in extension_sql:
+                try:
+                    with conn.begin_nested():
+                        conn.execute(text(sql))
+                except ProgrammingError as exc:
+                    logger.warning("[Database] Could not run %r (continuing): %s", sql, exc)
+    except Exception as exc:
+        logger.debug("[Database] Could not ensure PostgreSQL extensions: %s", exc)
 
 
 def init_db(seed_organizations: bool = True):

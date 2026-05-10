@@ -132,6 +132,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
 
   async function playAudioChunk(audioBase64: string): Promise<void> {
     if (!audioContext.value || _destroyed || _cleaningUp) return
+    if (isVoiceActive.value) return
 
     try {
       const audioData = base64ToArrayBuffer(audioBase64)
@@ -167,6 +168,14 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       isPlaying.value = false
       currentAudioSource.value = null
       state.value = isVoiceActive.value ? 'listening' : 'active'
+      return
+    }
+
+    if (isVoiceActive.value) {
+      audioQueue.length = 0
+      isPlaying.value = false
+      currentAudioSource.value = null
+      state.value = 'listening'
       return
     }
 
@@ -357,16 +366,17 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
         lastTranscription.value = String(data.text ?? '')
         eventBus.emit('voice:transcription', { text: String(data.text ?? '') })
         onTranscription?.(String(data.text ?? ''))
-        state.value = 'speaking'
+        state.value = isVoiceActive.value ? 'listening' : 'active'
         break
 
       case 'text_chunk':
+        if (isVoiceActive.value) break
         eventBus.emit('voice:text_chunk', { text: String(data.text ?? '') })
         onTextChunk?.(String(data.text ?? ''))
         break
 
       case 'audio_chunk':
-        if (!_destroyed && !_cleaningUp) {
+        if (!_destroyed && !_cleaningUp && !isVoiceActive.value) {
           playAudioChunk(String(data.audio ?? ''))
           state.value = 'speaking'
         }
@@ -377,6 +387,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
           audioStartMs: typeof data.audio_start_ms === 'number' ? data.audio_start_ms : undefined,
         })
         stopAudioPlayback()
+        state.value = isVoiceActive.value ? 'listening' : 'active'
         break
 
       case 'speech_stopped':

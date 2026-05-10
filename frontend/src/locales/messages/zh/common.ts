@@ -111,10 +111,10 @@ export default {
   'mobile.kittyHubSourceLive': 'Hub：实时',
   'mobile.kittyHubSourceLibrary': 'Hub：库',
   'mobile.kittyHubSourceEmpty': 'Hub：空',
-  'mobile.kittyPushToTalkSpaceTitle':
-    '仅按住对讲：按住麦克风或空格键（输入框外）· 松开即停 · 非点按开关',
-  'mobile.kittyPushToTalkSpaceAria':
-    '按住对讲模式：按住麦克风或空格说话，松开即停；并非静音切换开关。',
+  'mobile.kittyMicToggleTitle':
+    '点按开关麦克风：点一次开始说话，再点一次结束；输入框外按空格键同样切换。',
+  'mobile.kittyMicToggleAria':
+    '切换麦克风：点按开始采集语音，再次点按停止。输入框外可按空格键同样切换；文字输入打开且聚焦输入框时空格仍为输入空格。',
   'meta.pageTitle.notFound': '页面未找到',
   'meta.pageTitle.publicDashboard': '统计',
   'meta.pageTitle.schoolDashboard': '学校仪表盘',

@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.7] - 2026-05-10
+
+### Added
+
+- **Database — PostgreSQL extensions (Alembic)** — Migration [`alembic/versions/rev_0031_postgresql_extensions.py`](alembic/versions/rev_0031_postgresql_extensions.py): idempotent `CREATE EXTENSION IF NOT EXISTS` for `pg_stat_statements` and `pg_trgm`, each in a savepoint so privilege failures do not abort the migration.
+
+### Changed
+
+- **Voice / Omni realtime — barge-in** — When forwarding user microphone audio, interrupt the assistant before appending PCM ([`clients/omni_client.py`](clients/omni_client.py): `interrupt_assistant_for_user_speech` on `OmniRealtimeClient`).
+- **Database — startup extension bootstrap** — [`config/database.py`](config/database.py) `_ensure_pg_extensions` matches revision 0031: one connection with nested transactions; `ProgrammingError` is warned and skipped.
+- **Kitty mobile — mic UX** — Tap-to-toggle microphone and Space to toggle when the focused target does not reserve Space; cancel an in-flight start if the user taps again during a slow permission prompt ([`frontend/src/pages/mobile/MobileKittyPage.vue`](frontend/src/pages/mobile/MobileKittyPage.vue)).
+- **Kitty agent — duplex audio** — While user voice capture is active, suppress assistant `text_chunk` / `audio_chunk`, clear queued playback, and keep state in **`listening`** where appropriate ([`frontend/src/composables/kitty/useKittyAgent.ts`](frontend/src/composables/kitty/useKittyAgent.ts)).
+
+### Frontend i18n
+
+- **Locales** — Mic accessibility strings renamed to toggle semantics (`mobile.kittyMicToggleTitle`, `mobile.kittyMicToggleAria`) ([`frontend/src/locales/messages/en/common.ts`](frontend/src/locales/messages/en/common.ts), [`zh/common.ts`](frontend/src/locales/messages/zh/common.ts)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.7).
+
 ## [5.117.6] - 2026-05-08
 
 ### Added
