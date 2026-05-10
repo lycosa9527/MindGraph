@@ -6,6 +6,9 @@ User registration endpoints:
 - /register - Captcha-based registration
 - /register_sms - SMS-based registration
 
+``REGISTRATION_ENABLED`` gate: each handler calls ``http_forbid_if_registration_disabled`` first;
+disabled returns HTTP 403.
+
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
@@ -25,7 +28,6 @@ from models.domain.messages import Messages, Language
 from models.domain.auth import User, Organization
 from models.requests.requests_auth import RegisterRequest, RegisterWithSMSRequest
 from utils.auth import (
-    AUTH_MODE,
     hash_password,
     get_client_ip,
     create_access_token,
@@ -44,6 +46,7 @@ from services.redis.session.redis_session_manager import (
 from services.auth.vpn_geo_enforcement import record_vpn_login_geo
 from services.monitoring.registration_metrics import registration_metrics
 from services.auth.phone_uniqueness import any_user_id_with_phone
+from utils.auth.registration_gate import http_forbid_if_registration_disabled
 
 from .dependencies import get_language_dependency
 from .helpers import commit_user_with_retry, set_auth_cookies, track_user_activity
@@ -186,13 +189,10 @@ async def register(
     Note: Organization is automatically determined from invitation code.
     Each invitation code is unique and belongs to one school.
 
-    Registration is only available in standard and enterprise modes.
-    Bayi mode uses vendor SSO and/or 6-digit passkey instead of self-service registration.
+    In bayi mode, invite-code registration remains available for org-bound sign-up;
+    open overseas/email registration is disabled in other endpoints.
     """
-    # Check authentication mode - registration not allowed in bayi mode
-    if AUTH_MODE in ["bayi"]:
-        error_msg = Messages.error("registration_not_available", lang, AUTH_MODE)
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    http_forbid_if_registration_disabled(lang)
 
     # Track registration attempt
     registration_metrics.record_attempt()
@@ -428,13 +428,10 @@ async def register_with_sms(
     - Valid invitation code
     - SMS verification code (consumed last to avoid wasting codes)
 
-    Registration is only available in standard and enterprise modes.
-    Bayi mode uses vendor SSO and/or 6-digit passkey instead of self-service registration.
+    In bayi mode, invite-code registration remains available for org-bound sign-up;
+    open overseas/email registration is disabled in other endpoints.
     """
-    # Check authentication mode - registration not allowed in bayi mode
-    if AUTH_MODE in ["bayi"]:
-        error_msg = Messages.error("registration_not_available", lang, AUTH_MODE)
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    http_forbid_if_registration_disabled(lang)
 
     # Track registration attempt
     registration_metrics.record_attempt()

@@ -67,6 +67,8 @@ export const useAuthStore = defineStore('auth', () => {
   // This ref is kept for backward compatibility but should not be relied upon
   const token = ref<string | null>(null)
   const mode = ref<AuthMode>('standard')
+  /** From GET /api/auth/mode; signup UI gated when false. Defaults true until the server responds. */
+  const registrationEnabled = ref(true)
   const loading = ref(false)
   const sessionMonitorInterval = ref<number | null>(null)
   const showSessionExpiredModal = ref(false)
@@ -565,8 +567,13 @@ export const useAuthStore = defineStore('auth', () => {
   async function detectMode(): Promise<AuthMode> {
     try {
       const response = await fetch(`${API_BASE}/mode`)
-      const data = await response.json()
+      const data = (await response.json()) as {
+        mode?: string
+        registration_enabled?: boolean
+      }
       const detectedMode = (data.mode || 'standard') as AuthMode
+      registrationEnabled.value =
+        typeof data.registration_enabled === 'boolean' ? data.registration_enabled : true
       setMode(detectedMode)
       return detectedMode
     } catch {
@@ -730,15 +737,29 @@ export const useAuthStore = defineStore('auth', () => {
       queryClient.clear()
     }
 
-    // Store redirect path if provided
-    if (redirectPath) {
-      setPendingRedirect(redirectPath)
-    }
-
-    notify.warning(message || getTranslatedMessage('auth.sessionExpired'), 4000)
-
-    // Show login modal
-    showSessionExpiredModal.value = true
+    void (async (): Promise<void> => {
+      let effectiveMode = mode.value
+      try {
+        effectiveMode = await detectMode()
+      } catch {
+        effectiveMode = mode.value
+      }
+      if (effectiveMode === 'bayi') {
+        const qp =
+          redirectPath !== undefined &&
+          redirectPath !== null &&
+          redirectPath !== ''
+            ? `?redirect=${encodeURIComponent(redirectPath)}`
+            : ''
+        window.location.assign(`/auth${qp}`)
+        return
+      }
+      if (redirectPath) {
+        setPendingRedirect(redirectPath)
+      }
+      notify.warning(message || getTranslatedMessage('auth.sessionExpired'), 4000)
+      showSessionExpiredModal.value = true
+    })()
   }
 
   /**
@@ -768,16 +789,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function requireAuth(redirectUrl?: string): Promise<boolean> {
     const authenticated = await checkAuth()
     if (!authenticated) {
-      if (!redirectUrl) {
-        const currentMode = await detectMode()
-        if (currentMode === 'bayi') {
-          return false
-        }
-        redirectUrl = '/auth'
-      }
-      if (redirectUrl) {
-        window.location.href = redirectUrl
-      }
+      window.location.href = redirectUrl || '/auth'
       return false
     }
     return true
@@ -791,6 +803,7 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     token,
     mode,
+    registrationEnabled,
     loading,
     showSessionExpiredModal,
     sessionExpiredMessage,

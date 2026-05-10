@@ -81,6 +81,9 @@ def _parse_int_id_allowlist(raw: str) -> set[int]:
 
 VPN_CN_KICKOUT_ALLOWLIST_USER_IDS = _parse_int_id_allowlist(os.getenv("VPN_CN_KICKOUT_ALLOWLIST_USER_IDS", "").strip())
 
+# Invite, SMS/email registration, overseas email signup, quick-register workshop links
+REGISTRATION_ENABLED = _parse_bool_env("REGISTRATION_ENABLED", True)
+
 # Enterprise Mode Configuration
 ENTERPRISE_DEFAULT_ORG_CODE = os.getenv("ENTERPRISE_DEFAULT_ORG_CODE", "DEMO-001").strip()
 ENTERPRISE_DEFAULT_USER_PHONE = os.getenv("ENTERPRISE_DEFAULT_USER_PHONE", "enterprise@system.com").strip()

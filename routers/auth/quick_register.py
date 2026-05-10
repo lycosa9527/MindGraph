@@ -59,7 +59,8 @@ from services.auth.quick_register_room_code import (
 from services.auth.phone_uniqueness import any_user_id_with_phone
 from services.redis.redis_distributed_lock import phone_registration_lock
 from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
-from utils.auth import AUTH_MODE, get_client_ip, hash_password, is_admin, is_manager
+from utils.auth import get_client_ip, hash_password, is_admin, is_manager
+from utils.auth.registration_gate import http_forbid_if_registration_disabled
 from services.monitoring.registration_metrics import registration_metrics
 
 from .dependencies import get_language_dependency, require_admin_or_manager
@@ -145,6 +146,8 @@ async def quick_register_room_code(
     lang: Language = Depends(get_language_dependency),
 ):
     """Public: current 6-digit room code and server time (for modal sync)."""
+    http_forbid_if_registration_disabled(lang)
+
     channel_key = (channel_token or legacy_token or "").strip()
     if not channel_key:
         raise HTTPException(
@@ -207,6 +210,8 @@ async def quick_register_open(
     lang: Language = Depends(get_language_dependency),
 ):
     """Mint a short-lived token bound to an organization (managers: own org; admins: body org_id)."""
+    http_forbid_if_registration_disabled(lang)
+
     rate = get_rate_limiter()
     allowed, _count, _ = await rate.check_and_record(
         "quick_reg_mint", str(current_user.id), _QUICK_REG_MINT_MAX, _QUICK_REG_MINT_WINDOW
@@ -216,10 +221,6 @@ async def quick_register_open(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=Messages.error("quick_reg_rate_limited", lang),
         )
-
-    if AUTH_MODE in ("bayi",):
-        error_msg = Messages.error("registration_not_available", lang, AUTH_MODE)
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
     if is_manager(current_user) and not is_admin(current_user):
         if not current_user.organization_id:
@@ -329,9 +330,7 @@ async def register_quick(
     lang: Language = Depends(get_language_dependency),
 ):
     """Register with phone, room code, and quick_reg_token (no SMS on this path)."""
-    if AUTH_MODE in ("bayi",):
-        error_msg = Messages.error("registration_not_available", lang, AUTH_MODE)
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    http_forbid_if_registration_disabled(lang)
 
     registration_metrics.record_attempt()
     start_time = time.time()

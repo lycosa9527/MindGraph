@@ -370,7 +370,7 @@ router.beforeEach(async (to, from, next) => {
     const isAuthenticated = await authStore.checkAuth()
     if (!isAuthenticated) {
       if (hadUserBeforeCheck && to.name !== 'Auth') {
-        authStore.handleTokenExpired(undefined, undefined)
+        authStore.handleTokenExpired(undefined, to.fullPath)
         return next(false)
       }
       return next({ path: '/auth', query: { redirect: to.fullPath } })

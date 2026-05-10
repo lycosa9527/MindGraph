@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.8] - 2026-05-11
+
+### Added
+
+- **Auth — registration kill switch** — `REGISTRATION_ENABLED` (default `true`) in [`utils/auth/config.py`](utils/auth/config.py), [`models/domain/env_settings.py`](models/domain/env_settings.py), documented in [`env.example`](env.example). Shared guard [`utils/auth/registration_gate.py`](utils/auth/registration_gate.py) returns HTTP 403 with localized `registration_disabled` when signup is off.
+- **Public API** — `GET /api/auth/mode` includes `registration_enabled` ([`routers/auth/public.py`](routers/auth/public.py)).
+
+### Changed
+
+- **Registration & OTP** — Captcha invite, SMS, overseas email, quick-register, and email/SMS flows with `purpose=register` (including peek `/sms/verify` and `/email/verify`) honor the gate ([`routers/auth/registration.py`](routers/auth/registration.py), [`sms.py`](routers/auth/sms.py), [`email.py`](routers/auth/email.py), [`registration_overseas.py`](routers/auth/registration_overseas.py), [`quick_register.py`](routers/auth/quick_register.py)). Per-mode Bayi blocks on those paths are replaced by the unified flag while the env allows turning signup off everywhere.
+- **Session** — `/me` includes organization `display_name` only when `AUTH_MODE=bayi` ([`routers/auth/session.py`](routers/auth/session.py)).
+- **Frontend** — `registrationEnabled` from the mode endpoint ([`frontend/src/stores/auth.ts`](frontend/src/stores/auth.ts)); login modal hides the register tab when signup is disabled ([`LoginModal.vue`](frontend/src/components/auth/LoginModal.vue), [`useLoginModal.ts`](frontend/src/composables/auth/useLoginModal.ts)); auth page drops quick-register tokens from the URL when disabled ([`AuthPage.vue`](frontend/src/pages/AuthPage.vue)); Bayi session expiry sends users to `/auth` with `redirect` ([`auth.ts`](frontend/src/stores/auth.ts)); navigation guard passes the attempted path into the expired handler ([`frontend/src/router/index.ts`](frontend/src/router/index.ts)); `requireAuth` redirects to the given URL or `/auth`.
+- **i18n** — Bundled catalog updates including `registration_disabled` ([`models/domain/message_catalog/bundled_messages.py`](models/domain/message_catalog/bundled_messages.py)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.8).
+
 ## [5.117.7] - 2026-05-10
 
 ### Added

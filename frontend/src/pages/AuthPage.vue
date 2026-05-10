@@ -8,12 +8,13 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { AuthQuickRegisterModal, LoginModal } from '@/components/auth'
 import { useLanguage } from '@/composables'
-import { useUIStore } from '@/stores'
+import { useAuthStore, useUIStore } from '@/stores'
 import { getSafePostAuthPath } from '@/utils/authRedirect'
 
 const router = useRouter()
 const route = useRoute()
 const uiStore = useUIStore()
+const authStore = useAuthStore()
 const { t } = useLanguage()
 
 const showLoginModal = ref(true)
@@ -79,16 +80,31 @@ function buildSanitizedQuery(r: RouteLocationNormalizedLoaded) {
 
 const useQuickRegPanel = computed(() => quickRegToken.value.length > 0)
 
-onMounted(() => {
-  document.documentElement.classList.remove('dark')
-  uiStore.syncGuestLocaleFromBrowser()
-  const t0 = extractQuickRegFromRoute(route)
+async function hydrateAuthModeAndResolveQuickReg(): Promise<void> {
+  await authStore.detectMode()
+
+  let t0 = extractQuickRegFromRoute(route)
+  if (t0 && !authStore.registrationEnabled) {
+    const hadQuickInQuery =
+      Boolean(route.query.quick_reg) ||
+      (typeof route.query.redirect === 'string' && route.query.redirect.includes('quick_reg'))
+    if (hadQuickInQuery) {
+      void router.replace({ path: route.path, query: buildSanitizedQuery(route) })
+    }
+    t0 = ''
+  }
   if (t0) {
     quickRegToken.value = t0
     if (route.query.quick_reg) {
       void router.replace({ path: route.path, query: buildSanitizedQuery(route) })
     }
   }
+}
+
+onMounted(() => {
+  document.documentElement.classList.remove('dark')
+  uiStore.syncGuestLocaleFromBrowser()
+  void hydrateAuthModeAndResolveQuickReg()
 })
 
 watch(
@@ -97,13 +113,7 @@ watch(
     if (quickRegToken.value) {
       return
     }
-    const t0 = extractQuickRegFromRoute(route)
-    if (t0) {
-      quickRegToken.value = t0
-      if (route.query.quick_reg) {
-        void router.replace({ path: route.path, query: buildSanitizedQuery(route) })
-      }
-    }
+    void hydrateAuthModeAndResolveQuickReg()
   },
   { deep: true }
 )

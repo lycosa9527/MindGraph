@@ -32,39 +32,114 @@ ERRORS = {
         "az": "Etibarsız dil. Dəstəklənən generasiya dil kodundan istifadə edin.",
     },
     "generate_png_unclear_intent": {
-        "zh": "无法理解您的意图，请更具体地说明图表类型和主题，或点击下方的图表卡片。",
-        "en": "Unable to process your request. Please be more specific about the diagram type and topic, or use the diagram cards below.",
-        "az": "Sorğunuzu emal etmək mümkün olmadı. Diaqram növü və mövzu haqqında daha dəqiq yazın və ya aşağıdakı diaqram kartlarından istifadə edin.",
+        "zh": (
+            "无法理解您的意图，请更具体地说明图表类型和主题，"
+            "或点击下方的图表卡片。"
+        ),
+        "en": (
+            "Unable to process your request. Please be more specific "
+            "about the diagram type and topic, or use the diagram cards "
+            "below."
+        ),
+        "az": (
+            "Sorğunuzu emal etmək mümkün olmadı. Diaqram növü və mövzu "
+            "haqqında daha dəqiq yazın və ya aşağıdakı diaqram "
+            "kartlarından istifadə edin."
+        ),
     },
     "captcha_generate_failed": {
-        "zh": "验证码生成失败，系统暂时繁忙。请等待几秒后刷新页面重试。如果问题持续，系统可能正在处理高负载请求。",
-        "en": "Failed to generate captcha due to a temporary system issue. Please wait a few seconds and refresh the page to try again. If the problem persists, the system may be experiencing high load.",
-        "az": "Captcha yaratmaq mümkün olmadı, sistem müvəqqəti məşğuldur. Bir neçə saniyə gözləyin və səhifəni yeniləyin. Problem davam edərsə, sistem yüksək yüklə işləyir.",
+        "zh": (
+            "验证码生成失败，系统暂时繁忙。请等待几秒后刷新页面重试。"
+            "如果问题持续，系统可能正在处理高负载请求。"
+        ),
+        "en": (
+            "Failed to generate captcha due to a temporary system issue. "
+            "Please wait a few seconds and refresh the page to try again. "
+            "If the problem persists, the system may be experiencing high "
+            "load."
+        ),
+        "az": (
+            "Captcha yaratmaq mümkün olmadı, sistem müvəqqəti məşğuldur. "
+            "Bir neçə saniyə gözləyin və səhifəni yeniləyin. Problem "
+            "davam edərsə, sistem yüksək yüklə işləyir."
+        ),
     },
     "captcha_expired": {
-        "zh": "验证码已过期（有效期为5分钟）。请点击刷新按钮获取新的验证码图片后重试。",
-        "en": "Captcha code has expired (valid for 5 minutes). Please click the refresh button to get a new captcha image and try again.",
-        "az": "Captcha kodu müddəti bitib (5 dəqiqə etibarlıdır). Yeniləmə düyməsini klikləyin və yeni captcha şəkli alın.",
+        "zh": (
+            "验证码已过期（有效期为5分钟）。请点击刷新按钮获取新的验证码图片后重试。"
+        ),
+        "en": (
+            "Captcha code has expired (valid for 5 minutes). Please "
+            "click the refresh button to get a new captcha image and try "
+            "again."
+        ),
+        "az": (
+            "Captcha kodu müddəti bitib (5 dəqiqə etibarlıdır). "
+            "Yeniləmə düyməsini klikləyin və yeni captcha şəkli alın."
+        ),
     },
     "captcha_not_found": {
-        "zh": "验证码会话未找到。这通常发生在页面打开时间过长时。请刷新验证码图片后重试。",
-        "en": "Captcha session not found. This usually happens if the page was open for too long. Please refresh the captcha image and try again.",
-        "az": "Captcha sessiyası tapılmadı. Bu adətən səhifə çox uzun müddət açıq qaldıqda baş verir. Captcha şəklini yeniləyin.",
+        "zh": (
+            "验证码会话未找到。这通常发生在页面打开时间过长时。"
+            "请刷新验证码图片后重试。"
+        ),
+        "en": (
+            "Captcha session not found. This usually happens if the page "
+            "was open for too long. Please refresh the captcha image and "
+            "try again."
+        ),
+        "az": (
+            "Captcha sessiyası tapılmadı. Bu adətən səhifə çox uzun müddət "
+            "açıq qaldıqda baş verir. Captcha şəklini yeniləyin."
+        ),
     },
     "captcha_incorrect": {
-        "zh": "验证码不正确。请仔细检查验证码（不区分大小写）或点击刷新获取新的验证码图片后重试。",
-        "en": "Captcha code is incorrect. Please double-check the code (case-insensitive) or click refresh to get a new captcha image and try again.",
-        "az": "Captcha kodu yanlışdır. Kodu yenidən yoxlayın (böyük/kiçik hərf fərqi yoxdur) və ya yeniləyin.",
+        "zh": (
+            "验证码不正确。请仔细检查验证码（不区分大小写）或点击刷新获取新的验证码图片后重试。"
+        ),
+        "en": (
+            "Captcha code is incorrect. Please double-check the code "
+            "(case-insensitive) or click refresh to get a new captcha "
+            "image and try again."
+        ),
+        "az": (
+            "Captcha kodu yanlışdır. Kodu yenidən yoxlayın "
+            "(böyük/kiçik hərf fərqi yoxdur) və ya yeniləyin."
+        ),
     },
     "captcha_verify_failed": {
-        "zh": "验证码验证失败，系统暂时繁忙。请稍等片刻，刷新验证码图片后重试。如果问题持续，请尝试刷新整个页面。",
-        "en": "Captcha verification failed due to a temporary system issue. Please wait a moment, refresh the captcha image, and try again. If the problem persists, try refreshing the entire page.",
-        "az": "Captcha yoxlanışı müvəqqəti sistem problemi səbəbindən uğursuz oldu. Bir az gözləyin, captcha şəklini yeniləyin və yenidən cəhd edin.",
+        "zh": (
+            "验证码验证失败，系统暂时繁忙。请稍等片刻，刷新验证码图片后重试。"
+            "如果问题持续，请尝试刷新整个页面。"
+        ),
+        "en": (
+            "Captcha verification failed due to a temporary system issue. "
+            "Please wait a moment, refresh the captcha image, and try "
+            "again. If the problem persists, try refreshing the entire "
+            "page."
+        ),
+        "az": (
+            "Captcha yoxlanışı müvəqqəti sistem problemi səbəbindən "
+            "uğursuz oldu. Bir az gözləyin, captcha şəklini yeniləyin və "
+            "yenidən cəhd edin."
+        ),
     },
     "captcha_database_unavailable": {
-        "zh": "数据库暂时繁忙，验证码验证失败。系统正在自动重试，请稍等片刻后重试。如果问题持续，请刷新页面获取新的验证码。",
-        "en": "Database is temporarily busy, captcha verification failed. The system is automatically retrying. Please wait a moment and try again. If the problem persists, please refresh the page to get a new captcha.",
-        "az": "Verilənlər bazası müvəqqəti olaraq məşğuldur, captcha yoxlanışı uğursuz oldu. Sistem avtomatik olaraq yenidən cəhd edir. Bir az gözləyin və yenidən cəhd edin.",
+        "zh": (
+            "数据库暂时繁忙，验证码验证失败。系统正在自动重试，请稍等片刻后重试。"
+            "如果问题持续，请刷新页面获取新的验证码。"
+        ),
+        "en": (
+            "Database is temporarily busy, captcha verification failed. The "
+            "system is automatically retrying. Please wait a moment and "
+            "try again. If the problem persists, please refresh the page "
+            "to get a new captcha."
+        ),
+        "az": (
+            "Verilənlər bazası müvəqqəti olaraq məşğuldur, captcha "
+            "yoxlanışı uğursuz oldu. Sistem avtomatik olaraq yenidən cəhd "
+            "edir. Bir az gözləyin və yenidən cəhd edin."
+        ),
     },
     "database_temporarily_unavailable": {
         "zh": "数据库暂时繁忙，请稍后重试。",
@@ -92,14 +167,34 @@ ERRORS = {
         "az": "Dəvət kodu tələb olunur. Məktəb administratoru tərəfindən təmin edilən dəvət kodunu daxil edin.",
     },
     "invitation_code_invalid_format": {
-        "zh": "邀请码格式无效。期望格式：AAAA-XXXXX（4个字母，短横线，5个字母数字字符）。您输入的是：{}",
-        "en": "Invalid invitation code format. Expected format: AAAA-XXXXX (4 letters, dash, 5 alphanumeric characters). You entered: {}",
-        "az": "Etibarsız dəvət kodu formatı. Gözlənilən format: AAAA-XXXXX (4 hərf, tire, 5 hərf-rəqəm simvolu). Siz daxil etdiniz: {}",
+        "zh": (
+            "邀请码格式无效。期望格式：AAAA-XXXXX（4个字母，短横线，"
+            "5个字母数字字符）。您输入的是：{}"
+        ),
+        "en": (
+            "Invalid invitation code format. Expected format: AAAA-XXXXX "
+            "(4 letters, dash, 5 alphanumeric characters). You entered: {}"
+        ),
+        "az": (
+            "Etibarsız dəvət kodu formatı. Gözlənilən format: AAAA-XXXXX "
+            "(4 hərf, tire, 5 hərf-rəqəm simvolu). Siz daxil etdiniz: {}"
+        ),
     },
     "invitation_code_not_found": {
-        "zh": "邀请码 '{}' 无效或不存在。请检查学校管理员提供的邀请码，或如果您认为这是错误，请联系支持。",
-        "en": "Invitation code '{}' is not valid or does not exist. Please check the code provided by your school administrator, or contact support if you believe this is an error.",
-        "az": "Dəvət kodu '{}' etibarsızdır və ya mövcud deyil. Məktəb administratoru tərəfindən təmin edilən kodu yoxlayın və ya səhv olduğunu düşünürsünüzsə, dəstəklə əlaqə saxlayın.",
+        "zh": (
+            "邀请码 '{}' 无效或不存在。请检查学校管理员提供的邀请码，"
+            "或如果您认为这是错误，请联系支持。"
+        ),
+        "en": (
+            "Invitation code '{}' is not valid or does not exist. Please "
+            "check the code provided by your school administrator, or "
+            "contact support if you believe this is an error."
+        ),
+        "az": (
+            "Dəvət kodu '{}' etibarsızdır və ya mövcud deyil. Məktəb "
+            "administratoru tərəfindən təmin edilən kodu yoxlayın və ya "
+            "səhv olduğunu düşünürsünüzsə, dəstəklə əlaqə saxlayın."
+        ),
     },
     "quick_reg_channel_invalid": {
         "zh": "快速注册链接无效或已过期。请向管理员重新获取。",
@@ -132,9 +227,18 @@ ERRORS = {
         "az": "Bu sürətli qeydiyyat keçidini bağlamağa icazə yoxdur.",
     },
     "quick_reg_room_code_invalid": {
-        "zh": "房间码不正确或已过期。请对照老师屏幕上的 6 位数字，在码刷新后重试。",
-        "en": "The room code is wrong or expired. Match the 6 digits on the facilitator’s screen and try after it updates.",
-        "az": "Otaq kodu səhvdir və ya müddəti bitib. Ekrandakı 6 rəqəmi daxil edin və ya yenilənmədən sonra cəhd edin.",
+        "zh": (
+            "房间码不正确或已过期。请对照老师屏幕上的 6 位数字，"
+            "在码刷新后重试。"
+        ),
+        "en": (
+            "The room code is wrong or expired. Match the 6 digits on the "
+            "facilitator’s screen and try after it updates."
+        ),
+        "az": (
+            "Otaq kodu səhvdir və ya müddəti bitib. Ekrandakı 6 rəqəmi "
+            "daxil edin və ya yenilənmədən sonra cəhd edin."
+        ),
     },
     "quick_reg_room_too_many_guesses": {
         "zh": "房间码尝试次数过多，请稍后再试。",
@@ -166,40 +270,126 @@ ERRORS = {
         "en": "Registration is not available in {} mode. Please use passkey authentication instead.",
         "az": "{} rejimində qeydiyyat mövcud deyil. Bunun əvəzinə passkey autentifikasiyasından istifadə edin.",
     },
+    "registration_disabled": {
+        "zh": (
+            "注册功能已由管理员关闭。请使用已有账号登录，或联系学校管理员。"
+        ),
+        "en": (
+            "Registration is disabled on this server. Sign in if you "
+            "already have an account or contact your administrator."
+        ),
+        "az": (
+            "Bu serverdə qeydiyyat söndürülüb. Artıq hesabınız varsa daxil "
+            "olun və ya administratorla əlaqə saxlayın."
+        ),
+    },
     "registration_email_not_available_in_region": {
-        "zh": "当前网络环境无法使用教育邮箱注册。中国大陆用户请使用手机号与邀请码注册，或联系销售获取访问权限。",
-        "en": "Education email registration is not available from your network location. If you are in mainland China, register with your phone number and invitation code, or contact sales for access.",
-        "az": "Təhsil e-poçtu ilə qeydiyyat bu şəbəkə məkanından mövcud deyil. Çin materikindəsinizsə, telefon və dəvət kodu ilə qeydiyyatdan keçin və ya satışla əlaqə saxlayın.",
+        "zh": (
+            "当前网络环境无法使用教育邮箱注册。中国大陆用户请使用手机号与邀请码注册，"
+            "或联系销售获取访问权限。"
+        ),
+        "en": (
+            "Education email registration is not available from your "
+            "network location. If you are in mainland China, register "
+            "with your phone number and invitation code, or contact sales "
+            "for access."
+        ),
+        "az": (
+            "Təhsil e-poçtu ilə qeydiyyat bu şəbəkə məkanından mövcud deyil. "
+            "Çin materikindəsinizsə, telefon və dəvət kodu ilə "
+            "qeydiyyatdan keçin və ya satışla əlaqə saxlayın."
+        ),
     },
     "registration_geoip_unavailable": {
-        "zh": "无法验证您的网络位置，暂时无法完成教育邮箱注册。请稍后再试或联系支持。",
-        "en": "Your location could not be verified. Education email registration is temporarily unavailable. Try again later or contact support.",
-        "az": "Məkanınız təsdiqlənmədi. Təhsil e-poçtu qeydiyyatı müvəqqəti olaraq əlçatan deyil. Daha sonra cəhd edin və ya dəstəklə əlaqə saxlayın.",
+        "zh": (
+            "无法验证您的网络位置，暂时无法完成教育邮箱注册。"
+            "请稍后再试或联系支持。"
+        ),
+        "en": (
+            "Your location could not be verified. Education email "
+            "registration is temporarily unavailable. Try again later or "
+            "contact support."
+        ),
+        "az": (
+            "Məkanınız təsdiqlənmədi. Təhsil e-poçtu qeydiyyatı müvəqqəti "
+            "olaraq əlçatan deyil. Daha sonra cəhd edin və ya dəstəklə "
+            "əlaqə saxlayın."
+        ),
     },
     "registration_email_mainland_china_domain": {
-        "zh": "该邮箱域名属于中国大陆常用或 .cn 域名，不能使用教育邮箱海外注册。请改用手机号与邀请码注册，或使用非中国大陆院校邮箱。",
-        "en": "This email domain is associated with mainland China. Use phone number and invitation code to register, or a non–mainland China school email.",
-        "az": "Bu e-poçt domeni Çin materiki ilə əlaqəlidir. Telefon və dəvət kodu ilə qeydiyyatdan keçin və ya materikdən kənar məktəb e-poçtundan istifadə edin.",
+        "zh": (
+            "该邮箱域名属于中国大陆常用或 .cn 域名，不能使用教育邮箱海外注册。"
+            "请改用手机号与邀请码注册，或使用非中国大陆院校邮箱。"
+        ),
+        "en": (
+            "This email domain is associated with mainland China. Use phone "
+            "number and invitation code to register, or a non–mainland "
+            "China school email."
+        ),
+        "az": (
+            "Bu e-poçt domeni Çin materiki ilə əlaqəlidir. Telefon və dəvət "
+            "kodu ilə qeydiyyatdan keçin və ya materikdən kənar məktəb "
+            "e-poçtundan istifadə edin."
+        ),
     },
     "email_login_mainland_china_domain": {
-        "zh": "该邮箱域名属于中国大陆常用或 .cn 域名，不能使用邮箱登录。请改用手机号登录，或联系销售。",
-        "en": "This email domain is associated with mainland China. Sign in with your phone number, or contact sales.",
-        "az": "Bu e-poçt domeni Çin materiki ilə əlaqəlidir. Telefon nömrəsi ilə daxil olun və ya satışla əlaqə saxlayın.",
+        "zh": (
+            "该邮箱域名属于中国大陆常用或 .cn 域名，不能使用邮箱登录。"
+            "请改用手机号登录，或联系销售。"
+        ),
+        "en": (
+            "This email domain is associated with mainland China. Sign in "
+            "with your phone number, or contact sales."
+        ),
+        "az": (
+            "Bu e-poçt domeni Çin materiki ilə əlaqəlidir. Telefon nömrəsi "
+            "ilə daxil olun və ya satışla əlaqə saxlayın."
+        ),
     },
     "email_login_blocked_in_mainland_china": {
-        "zh": "当前网络环境下无法使用邮箱密码登录。中国大陆用户请使用手机号登录，或联系销售为您的账户开通邮箱登录权限。",
-        "en": "Email sign-in is not available from your network location. If you are in mainland China, sign in with your phone number, or contact sales to enable email sign-in for your account.",
-        "az": "E-poçt ilə giriş bu şəbəkə məkanından mövcud deyil. Çin materikindəsinizsə, telefon nömrəsi ilə daxil olun və ya satışla əlaqə saxlayın.",
+        "zh": (
+            "当前网络环境下无法使用邮箱密码登录。中国大陆用户请使用手机号登录，"
+            "或联系销售为您的账户开通邮箱登录权限。"
+        ),
+        "en": (
+            "Email sign-in is not available from your network location. If "
+            "you are in mainland China, sign in with your phone number, or "
+            "contact sales to enable email sign-in for your account."
+        ),
+        "az": (
+            "E-poçt ilə giriş bu şəbəkə məkanından mövcud deyil. Çin "
+            "materikindəsinizsə, telefon nömrəsi ilə daxil olun və ya "
+            "satışla əlaqə saxlayın."
+        ),
     },
     "login_email_geoip_unavailable": {
-        "zh": "无法验证您的网络位置，暂时无法完成邮箱登录。请稍后再试或联系支持。",
-        "en": "Your location could not be verified. Email sign-in is temporarily unavailable. Try again later or contact support.",
-        "az": "Məkanınız təsdiqlənmədi. E-poçt ilə giriş müvəqqəti olaraq əlçatan deyil. Daha sonra cəhd edin və ya dəstəklə əlaqə saxlayın.",
+        "zh": (
+            "无法验证您的网络位置，暂时无法完成邮箱登录。"
+            "请稍后再试或联系支持。"
+        ),
+        "en": (
+            "Your location could not be verified. Email sign-in is "
+            "temporarily unavailable. Try again later or contact support."
+        ),
+        "az": (
+            "Məkanınız təsdiqlənmədi. E-poçt ilə giriş müvəqqəti olaraq "
+            "əlçatan deyil. Daha sonra cəhd edin və ya dəstəklə əlaqə "
+            "saxlayın."
+        ),
     },
     "vpn_cn_session_terminated": {
-        "zh": "检测到网络位置与登录时不一致，出于安全考虑已终止当前会话。请重新登录。",
-        "en": "Your session was ended because your network location no longer matches where you signed in. Please sign in again.",
-        "az": "Şəbəkə məkanınız daxil olduğunuz məkandan fərqləndiyi üçün sessiya sonlandırıldı. Yenidən daxil olun.",
+        "zh": (
+            "检测到网络位置与登录时不一致，出于安全考虑已终止当前会话。"
+            "请重新登录。"
+        ),
+        "en": (
+            "Your session was ended because your network location no longer "
+            "matches where you signed in. Please sign in again."
+        ),
+        "az": (
+            "Şəbəkə məkanınız daxil olduğunuz məkandan fərqləndiyi üçün "
+            "sessiya sonlandırıldı. Yenidən daxil olun."
+        ),
     },
     "email_already_registered": {
         "zh": "该邮箱已被注册，请直接登录或使用其他邮箱。",
@@ -217,9 +407,19 @@ ERRORS = {
         "az": "Hesabınız üçün sadə çin dilində interfeysə icazə verilmir. Başqa dil seçin.",
     },
     "prompt_language_zh_not_allowed": {
-        "zh": "您的账户不支持简体中文作为生成语言。请选择其他语言（例如繁体中文或英语）。",
-        "en": "Simplified Chinese is not available as the generation language for your account. Please choose another language (e.g. Traditional Chinese or English).",
-        "az": "Hesabınız üçün sadə çin dili nəsrlər üçün mövcud deyil. Başqa dil seçin (məsələn, ənənəvi çin və ya ingilis).",
+        "zh": (
+            "您的账户不支持简体中文作为生成语言。"
+            "请选择其他语言（例如繁体中文或英语）。"
+        ),
+        "en": (
+            "Simplified Chinese is not available as the generation language "
+            "for your account. Please choose another language (e.g. "
+            "Traditional Chinese or English)."
+        ),
+        "az": (
+            "Hesabınız üçün sadə çin dili nəsrlər üçün mövcud deyil. Başqa "
+            "dil seçin (məsələn, ənənəvi çin və ya ingilis)."
+        ),
     },
     "register_overseas_acknowledgment_required": {
         "zh": "请确认您了解海外教育邮箱注册的相关条款。",
@@ -237,34 +437,76 @@ ERRORS = {
         "az": "Çox sayda uğursuz giriş cəhdi. {} dəqiqədən sonra yenidən cəhd edin.",
     },
     "invalid_password": {
-        "zh": "密码无效。请检查您的密码后重试。账户锁定前还有 {} 次尝试机会。",
-        "en": "Invalid password. Please check your password and try again. {} attempt(s) remaining before account lockout.",
-        "az": "Etibarsız parol. Parolunuzu yoxlayın və yenidən cəhd edin. Hesab kilidlənməsindən əvvəl {} cəhd qalıb.",
+        "zh": (
+            "密码无效。请检查您的密码后重试。"
+            "账户锁定前还有 {} 次尝试机会。"
+        ),
+        "en": (
+            "Invalid password. Please check your password and try again. "
+            "{} attempt(s) remaining before account lockout."
+        ),
+        "az": (
+            "Etibarsız parol. Parolunuzu yoxlayın və yenidən cəhd edin. "
+            "Hesab kilidlənməsindən əvvəl {} cəhd qalıb."
+        ),
     },
     "account_locked": {
         "zh": "账户因 {} 次失败登录尝试而暂时锁定。请在 {} 分钟后重试。",
         "en": "Account temporarily locked due to {} failed login attempts. Please try again in {} minutes.",
-        "az": "Hesab {} uğursuz giriş cəhdi səbəbindən müvəqqəti olaraq kilidlənib. {} dəqiqədən sonra yenidən cəhd edin.",
+        "az": (
+            "Hesab {} uğursuz giriş cəhdi səbəbindən müvəqqəti olaraq "
+            "kilidlənib. {} dəqiqədən sonra yenidən cəhd edin."
+        ),
     },
     "organization_locked": {
-        "zh": "您的学校账户（{}）已被管理员锁定。请联系学校管理员或支持获取帮助。",
-        "en": "Your school account ({}) has been locked by the administrator. Please contact your school administrator or support for assistance.",
-        "az": "Məktəb hesabınız ({}) administrator tərəfindən kilidlənib. Yardım üçün məktəb administratoru və ya dəstəklə əlaqə saxlayın.",
+        "zh": (
+            "您的学校账户（{}）已被管理员锁定。"
+            "请联系学校管理员或支持获取帮助。"
+        ),
+        "en": (
+            "Your school account ({}) has been locked by the administrator. "
+            "Please contact your school administrator or support for "
+            "assistance."
+        ),
+        "az": (
+            "Məktəb hesabınız ({}) administrator tərəfindən kilidlənib. "
+            "Yardım üçün məktəb administratoru və ya dəstəklə əlaqə "
+            "saxlayın."
+        ),
     },
     "organization_expired": {
         "zh": "您的学校订阅（{}）已于 {} 过期。请联系学校管理员续订订阅。",
-        "en": "Your school subscription ({}) expired on {}. Please contact your school administrator to renew the subscription.",
-        "az": "Məktəb abunəliyiniz ({}) {} tarixində bitib. Abunəliyi yeniləmək üçün məktəb administratoru ilə əlaqə saxlayın.",
+        "en": (
+            "Your school subscription ({}) expired on {}. Please contact "
+            "your school administrator to renew the subscription."
+        ),
+        "az": (
+            "Məktəb abunəliyiniz ({}) {} tarixində bitib. Abunəliyi "
+            "yeniləmək üçün məktəb administratoru ilə əlaqə saxlayın."
+        ),
     },
     "sms_service_not_configured": {
         "zh": "短信服务未配置。请联系支持或使用基于密码的认证。",
-        "en": "SMS service is not configured. Please contact support or use password-based authentication instead.",
-        "az": "SMS xidməti konfiqurasiya edilməyib. Dəstəklə əlaqə saxlayın və ya bunun əvəzinə parol əsaslı autentifikasiyadan istifadə edin.",
+        "en": (
+            "SMS service is not configured. Please contact support or use "
+            "password-based authentication instead."
+        ),
+        "az": (
+            "SMS xidməti konfiqurasiya edilməyib. Dəstəklə əlaqə saxlayın "
+            "və ya bunun əvəzinə parol əsaslı autentifikasiyadan istifadə "
+            "edin."
+        ),
     },
     "phone_not_registered_login": {
         "zh": "该手机号未注册。请检查您的手机号或注册新账户。",
-        "en": "This phone number is not registered. Please check your phone number or register a new account.",
-        "az": "Bu telefon nömrəsi qeydiyyatdan keçməyib. Telefon nömrənizi yoxlayın və ya yeni hesab qeydiyyatdan keçirin.",
+        "en": (
+            "This phone number is not registered. Please check your phone "
+            "number or register a new account."
+        ),
+        "az": (
+            "Bu telefon nömrəsi qeydiyyatdan keçməyib. Telefon nömrənizi "
+            "yoxlayın və ya yeni hesab qeydiyyatdan keçirin."
+        ),
     },
     "phone_not_registered_reset": {
         "zh": "该手机号未注册。请检查您的手机号或联系支持。",
@@ -307,14 +549,31 @@ ERRORS = {
         "az": "Etibarsız SMS təsdiq kodu. Kodu yoxlayın və yenidən cəhd edin və ya yeni kod tələb edin.",
     },
     "sms_code_already_used": {
-        "zh": "该短信验证码已被使用。每个验证码只能使用一次。请申请新的验证码。",
-        "en": "This SMS verification code has already been used. Each code can only be used once. Please request a new code.",
-        "az": "Bu SMS təsdiq kodu artıq istifadə olunub. Hər kod yalnız bir dəfə istifadə edilə bilər. Yeni kod tələb edin.",
+        "zh": (
+            "该短信验证码已被使用。每个验证码只能使用一次。"
+            "请申请新的验证码。"
+        ),
+        "en": (
+            "This SMS verification code has already been used. Each code "
+            "can only be used once. Please request a new code."
+        ),
+        "az": (
+            "Bu SMS təsdiq kodu artıq istifadə olunub. Hər kod yalnız bir "
+            "dəfə istifadə edilə bilər. Yeni kod tələb edin."
+        ),
     },
     "sms_service_temporarily_unavailable": {
-        "zh": "短信服务暂时不可用。请稍后重试，如果问题持续存在，请联系支持。",
-        "en": "SMS service is temporarily unavailable. Please try again later or contact support if the problem persists.",
-        "az": "SMS xidməti müvəqqəti olaraq mövcud deyil. Daha sonra yenidən cəhd edin və ya problem davam edərsə dəstəklə əlaqə saxlayın.",
+        "zh": (
+            "短信服务暂时不可用。请稍后重试，如果问题持续存在，请联系支持。"
+        ),
+        "en": (
+            "SMS service is temporarily unavailable. Please try again "
+            "later or contact support if the problem persists."
+        ),
+        "az": (
+            "SMS xidməti müvəqqəti olaraq mövcud deyil. Daha sonra yenidən "
+            "cəhd edin və ya problem davam edərsə dəstəklə əlaqə saxlayın."
+        ),
     },
     "email_service_not_configured": {
         "zh": "邮件验证服务未配置。请联系支持。",
@@ -363,8 +622,14 @@ ERRORS = {
     },
     "too_many_email_send_attempts_ip": {
         "zh": "邮件发送请求过多（当前 IP 在 {} 分钟内）。请稍后再试。",
-        "en": "Too many email verification requests from this network in the last {} minute(s). Please try again later.",
-        "az": "Son {} dəqiqə ərzində bu şəbəkədən çox sayda e-poçt sorğusu. Daha sonra yenidən cəhd edin.",
+        "en": (
+            "Too many email verification requests from this network in the "
+            "last {} minute(s). Please try again later."
+        ),
+        "az": (
+            "Son {} dəqiqə ərzində bu şəbəkədən çox sayda e-poçt sorğusu. "
+            "Daha sonra yenidən cəhd edin."
+        ),
     },
     "too_many_sms_send_attempts_ip": {
         "zh": "短信发送请求过多（当前 IP 在 {} 分钟内）。请稍后再试。",
@@ -382,9 +647,18 @@ ERRORS = {
         "az": "Etibarsız e-poçt təsdiq kodu. Kodu yoxlayın və yenidən cəhd edin və ya yeni kod tələb edin.",
     },
     "email_service_temporarily_unavailable": {
-        "zh": "邮件服务暂时不可用。请稍后重试，如果问题持续存在，请联系支持。",
-        "en": "Email service is temporarily unavailable. Please try again later or contact support if the problem persists.",
-        "az": "E-poçt xidməti müvəqqəti olaraq mövcud deyil. Daha sonra yenidən cəhd edin və ya problem davam edərsə dəstəklə əlaqə saxlayın.",
+        "zh": (
+            "邮件服务暂时不可用。请稍后重试，如果问题持续存在，请联系支持。"
+        ),
+        "en": (
+            "Email service is temporarily unavailable. Please try again "
+            "later or contact support if the problem persists."
+        ),
+        "az": (
+            "E-poçt xidməti müvəqqəti olaraq mövcud deyil. Daha sonra "
+            "yenidən cəhd edin və ya problem davam edərsə dəstəklə əlaqə "
+            "saxlayın."
+        ),
     },
     "email_error_frequency_limit": {
         "zh": "邮件发送过于频繁，请稍后再试。",
@@ -692,9 +966,17 @@ ERRORS = {
         "az": "Bu bölgəyə SMS göndərmə dəstəklənmir. Dəstəklə əlaqə saxlayın.",
     },
     "sms_error_generic": {
-        "zh": "短信发送失败：{}。请稍后重试，如果问题持续存在，请联系技术支持。",
-        "en": "SMS sending failed due to: {}. Please try again later or contact support if the problem persists.",
-        "az": "SMS göndərmə uğursuz oldu: {}. Daha sonra yenidən cəhd edin və ya problem davam edərsə dəstəklə əlaqə saxlayın.",
+        "zh": (
+            "短信发送失败：{}。请稍后重试，如果问题持续存在，请联系技术支持。"
+        ),
+        "en": (
+            "SMS sending failed due to: {}. Please try again later or "
+            "contact support if the problem persists."
+        ),
+        "az": (
+            "SMS göndərmə uğursuz oldu: {}. Daha sonra yenidən cəhd edin "
+            "və ya problem davam edərsə dəstəklə əlaqə saxlayın."
+        ),
     },
     "invalid_passkey": {"zh": "无效的密钥", "en": "Invalid passkey", "az": "Etibarsız passkey"},
     "admin_access_required": {

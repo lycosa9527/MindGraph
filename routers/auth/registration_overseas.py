@@ -31,7 +31,6 @@ from services.redis.session.redis_session_manager import (
 )
 from services.redis.redis_email_storage import normalize_verification_email
 from utils.auth import (
-    AUTH_MODE,
     ACCESS_TOKEN_EXPIRY_MINUTES,
     compute_device_hash,
     create_access_token,
@@ -39,6 +38,7 @@ from utils.auth import (
     get_client_ip,
     hash_password,
 )
+from utils.auth.registration_gate import http_forbid_if_registration_disabled
 from utils.email_mainland_china import raise_if_mainland_china_email_for_overseas_registration
 from utils.email_validation import validate_email_for_api
 
@@ -64,9 +64,7 @@ async def register_overseas(
     Register with education email for users outside mainland China (GeoIP not CN).
     No invitation code; organization_id is NULL; Simplified Chinese UI is disabled.
     """
-    if AUTH_MODE in ["bayi"]:
-        error_msg = Messages.error("registration_not_available", lang, AUTH_MODE)
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    http_forbid_if_registration_disabled(lang)
 
     if not request.outside_mainland_acknowledged:
         error_msg = Messages.error("register_overseas_acknowledgment_required", lang)

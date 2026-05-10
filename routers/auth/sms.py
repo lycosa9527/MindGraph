@@ -5,8 +5,8 @@ SMS Verification Endpoints
 SMS channel: 6-digit SMS code to the registered phone. (Email OTP lives under routers/auth/email.py.)
 
 SMS verification endpoints:
-- /sms/send - Send SMS verification code
-- /sms/verify - Verify SMS code (standalone)
+- /sms/send - Send SMS verification code (register purpose honors REGISTRATION_ENABLED)
+- /sms/verify - Verify SMS code (standalone peek; register purpose honors REGISTRATION_ENABLED)
 - _verify_and_consume_sms_code() - Helper function for consuming SMS codes
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
@@ -37,7 +37,8 @@ from services.auth.sms_service import (
 from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
 from services.redis.redis_sms_storage import get_sms_storage
 from services.auth.phone_uniqueness import any_user_id_with_phone
-from utils.auth import AUTH_MODE, get_client_ip
+from utils.auth.registration_gate import http_forbid_if_registration_disabled
+from utils.auth import get_client_ip
 
 from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
@@ -87,10 +88,8 @@ async def send_sms_code(
     - 60 seconds cooldown between requests for same phone/purpose
     - Maximum 5 codes per hour per phone number
     """
-    # Check authentication mode - registration SMS not allowed in bayi mode
-    if request.purpose == "register" and AUTH_MODE in ["bayi"]:
-        error_msg = Messages.error("registration_not_available", lang, AUTH_MODE)
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    if request.purpose == "register":
+        http_forbid_if_registration_disabled(lang)
 
     # Verify captcha first (anti-bot protection)
     captcha_valid, captcha_error = await verify_captcha_with_retry(request.captcha_id, request.captcha)
@@ -228,6 +227,9 @@ async def verify_sms_code(
     code = request.code
     purpose = request.purpose
 
+    if purpose == "register":
+        http_forbid_if_registration_disabled(lang)
+
     window_seconds = config.SMS_VERIFY_WINDOW_MINUTES * 60
     combo_id = f"{phone}:{purpose}"
     rate_limiter = get_rate_limiter()
@@ -319,10 +321,8 @@ async def _send_sms_code_with_purpose(
 
     Reuses the logic from send_sms_code but with purpose pre-set.
     """
-    # Check authentication mode - registration SMS not allowed in bayi mode
-    if purpose == "register" and AUTH_MODE in ["bayi"]:
-        error_msg = Messages.error("registration_not_available", lang, AUTH_MODE)
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    if purpose == "register":
+        http_forbid_if_registration_disabled(lang)
 
     # Verify captcha first (anti-bot protection)
     captcha_valid, captcha_error = await verify_captcha_with_retry(request.captcha_id, request.captcha)
@@ -480,6 +480,5 @@ async def send_sms_code_for_register(
 
     Convenience endpoint that sends SMS code with purpose='register'.
     Requires captcha verification.
-    Not available when AUTH_MODE=bayi.
     """
     return await _send_sms_code_with_purpose(request, http_request, "register", db, lang)

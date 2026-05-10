@@ -308,6 +308,15 @@ class AuthSettings(BaseModel):
         default="",
         description="Invitation codes (format: ORG:CODE:DATE,ORG2:CODE2:DATE2)",
     )
+    REGISTRATION_ENABLED: bool = Field(
+        default=True,
+        description=(
+            "When false, all self-service signup is disabled (/register, /register_sms, "
+            "/register-overseas, quick-registration mint & signup, SMS/email "
+            "purpose=register including standalone /sms/verify and /email/verify). "
+            "Users must use existing SSO, passkeys, or admin-created accounts."
+        ),
+    )
 
     @field_validator("ADMIN_USER_IDS")
     @classmethod

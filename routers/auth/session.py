@@ -40,6 +40,7 @@ from services.redis.session.redis_session_manager import (
 )
 from services.redis.cache.redis_user_cache import user_cache
 from utils.auth import (
+    AUTH_MODE,
     get_current_user,
     get_user_role,
     is_https,
@@ -321,7 +322,11 @@ async def get_me(current_user: User = Depends(get_current_user)):
                 "id": org.id if org else None,
                 "code": org.code if org else None,
                 "name": org.name if org else None,
-                "display_name": getattr(org, "display_name", None) if org else None,
+                "display_name": (
+                    getattr(org, "display_name", None)
+                    if org and AUTH_MODE == "bayi"
+                    else None
+                ),
             },
             "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
             "last_login": (current_user.last_login.isoformat() if current_user.last_login else None),

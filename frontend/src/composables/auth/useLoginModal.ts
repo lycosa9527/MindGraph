@@ -216,6 +216,9 @@ export function useLoginModal(
   )
 
   function switchLoginRegisterTab(tab: 'login' | 'register') {
+    if (tab === 'register' && !authStore.registrationEnabled) {
+      return
+    }
     activeTab.value = tab
     currentView.value = tab
     void refreshCaptcha()
@@ -798,6 +801,31 @@ export function useLoginModal(
     closeModal()
   }
 
+  const registrationEnabledUi = computed(() => authStore.registrationEnabled)
+
+  watch(
+    () => props.visible,
+    (visible) => {
+      if (visible) {
+        void authStore.detectMode()
+      }
+    }
+  )
+
+  watch(
+    () => [authStore.registrationEnabled, props.visible] as const,
+    ([allowed, visible]) => {
+      if (!visible) {
+        return
+      }
+      if (!allowed && currentView.value === 'register') {
+        activeTab.value = 'login'
+        currentView.value = 'login'
+        void refreshCaptcha()
+      }
+    }
+  )
+
   return {
     authStore,
     t,
@@ -833,6 +861,7 @@ export function useLoginModal(
     pageHeaderTitle,
     closeModal,
     switchLoginRegisterTab,
+    registrationEnabledUi,
     showSmsLogin,
     showForgotPassword,
     backToLogin,

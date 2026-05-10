@@ -22,6 +22,7 @@ from services.auth.geo_cn_mainland_cookie import set_geo_cn_mainland_cookie
 _stamp_geo_cn_mainland_cookie = set_geo_cn_mainland_cookie
 from services.auth.geoip_country import resolve_country_iso_from_request
 from utils.auth import AUTH_MODE, is_https
+from utils.auth.config import REGISTRATION_ENABLED
 
 router = APIRouter()
 
@@ -76,8 +77,10 @@ async def get_auth_mode():
     Get current authentication mode
 
     Allows frontend to detect and adapt to different auth modes.
+    Includes ``registration_enabled`` (env ``REGISTRATION_ENABLED``, default True).
     """
-    return {"mode": AUTH_MODE}
+    signup_open = REGISTRATION_ENABLED
+    return {"mode": AUTH_MODE, "registration_enabled": signup_open}
 
 
 @router.get("/organizations")

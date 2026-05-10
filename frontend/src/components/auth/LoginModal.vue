@@ -60,6 +60,7 @@ const {
   pageHeaderTitle,
   closeModal,
   switchLoginRegisterTab,
+  registrationEnabledUi,
   showSmsLogin,
   showForgotPassword,
   backToLogin,
@@ -191,9 +192,11 @@ function focusSesLogin() {
                 </p>
               </div>
 
-              <!-- Login / Register switch (custom; Element Plus tabs use scroll/transform and mis-align in narrow modals) -->
+              <!-- Login / Register switch (hidden register tab when server disables signup) -->
               <div
-                v-if="currentView === 'login' || currentView === 'register'"
+                v-if="
+                  registrationEnabledUi && (currentView === 'login' || currentView === 'register')
+                "
                 class="auth-tab-switch"
                 role="tablist"
                 :aria-label="t('auth.loginRegister')"
@@ -217,6 +220,21 @@ function focusSesLogin() {
                   @click="switchLoginRegisterTab('register')"
                 >
                   {{ t('auth.register') }}
+                </button>
+              </div>
+              <div
+                v-else-if="currentView === 'login' || currentView === 'register'"
+                class="auth-tab-switch"
+                role="tablist"
+                :aria-label="t('auth.login')"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  :aria-selected="true"
+                  class="auth-tab-switch__btn auth-tab-switch__btn--active"
+                >
+                  {{ t('auth.login') }}
                 </button>
               </div>
 
