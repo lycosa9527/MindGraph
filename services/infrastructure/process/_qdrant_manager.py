@@ -15,6 +15,7 @@ import urllib.request
 from typing import Optional
 
 from services.infrastructure.process._port_utils import check_port_in_use
+from services.llm.qdrant_startup import parse_qdrant_host_port
 
 logger = logging.getLogger(__name__)
 
@@ -92,9 +93,16 @@ def start_qdrant_server(server_state) -> Optional[subprocess.Popen[bytes]]:
     Returns:
         Optional[subprocess.Popen[bytes]]: Qdrant process or None if using existing
     """
-    qdrant_host = os.getenv("QDRANT_HOST", "localhost")
-    qdrant_port_str = os.getenv("QDRANT_PORT", "6333")
-    qdrant_port = int(qdrant_port_str)
+    raw_qdrant_host = os.getenv("QDRANT_HOST", "").strip()
+    port_env = os.getenv("QDRANT_PORT", "").strip()
+    if not raw_qdrant_host:
+        qdrant_host = "localhost"
+        qdrant_port = int(port_env) if port_env else 6333
+    elif ":" in raw_qdrant_host:
+        qdrant_host, qdrant_port = parse_qdrant_host_port(raw_qdrant_host)
+    else:
+        qdrant_host = raw_qdrant_host
+        qdrant_port = int(port_env) if port_env else 6333
 
     port_in_use, pid = check_port_in_use(qdrant_host, qdrant_port)
     if port_in_use:

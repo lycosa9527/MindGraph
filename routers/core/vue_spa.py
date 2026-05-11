@@ -25,12 +25,18 @@ router = APIRouter(tags=["Vue SPA"])
 async def diagnostic_static_files():
     """Diagnostic endpoint to check static file serving configuration."""
     index_path = VUE_DIST_DIR / "index.html"
+    assets_dir = VUE_DIST_DIR / "assets"
+    asset_count = 0
+    if assets_dir.is_dir():
+        asset_count = sum(1 for _ in assets_dir.iterdir())
 
     return {
         "vue_dist_dir": str(VUE_DIST_DIR),
         "vue_dist_dir_exists": VUE_DIST_DIR.exists(),
         "vue_dist_dir_absolute": str(VUE_DIST_DIR.resolve()),
         "index_html_exists": index_path.exists(),
+        "assets_dir_exists": assets_dir.is_dir(),
+        "assets_file_count": asset_count,
         "current_working_directory": os.getcwd(),
     }
 

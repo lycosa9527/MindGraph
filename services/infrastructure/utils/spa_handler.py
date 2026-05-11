@@ -131,9 +131,23 @@ def setup_vue_spa(app: FastAPI) -> bool:
 
     logger.info("Configuring Vue SPA from: %s", VUE_DIST_DIR)
 
-    # Mount Vue static assets
+    # Mount Vue static assets (must match script/link tags in dist/index.html)
     assets_dir = VUE_DIST_DIR / "assets"
-    if assets_dir.exists():
+    if not assets_dir.is_dir():
+        logger.critical(
+            "Vue SPA enabled but %s is missing — /assets/* will 404 as JSON; "
+            "deploy the full frontend build (entire frontend/dist, including assets/).",
+            assets_dir,
+        )
+    else:
+        asset_files = list(assets_dir.iterdir())
+        if not asset_files:
+            logger.critical(
+                "Vue SPA enabled but %s is empty — redeploy after `npm run build`.",
+                assets_dir,
+            )
+        else:
+            logger.info("Mounted /assets with %s files from %s", len(asset_files), assets_dir)
         app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="vue-assets")
 
     # Mount gallery folder for featured diagrams
