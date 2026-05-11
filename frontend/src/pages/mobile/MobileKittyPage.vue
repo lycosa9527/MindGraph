@@ -544,11 +544,17 @@ onUnmounted(async () => {
         </label>
 
         <KittyMobileDiagramContextCard
+          v-if="kittyServerEnabled"
           class="flex-1 min-w-0 self-center"
           :primary-line="kittyDiagramCardPrimary"
           :meta-line="kittyDiagramCardMeta"
           :source-badge="kittyDiagramCardBadge"
           :ariaLabel="kittyDiagramCardAriaLabel"
+        />
+        <div
+          v-else
+          class="flex-1 min-w-0 min-h-[4rem]"
+          aria-hidden="true"
         />
 
         <button

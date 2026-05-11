@@ -13,7 +13,6 @@ import { storeToRefs } from 'pinia'
 
 import {
   Bot,
-  Cat,
   ChevronLeft,
   ChevronRight,
   LayoutGrid,
@@ -91,7 +90,6 @@ const rootConceptReviewStore = useConceptMapRootConceptReviewStore()
 const relationshipStore = useConceptMapRelationshipStore()
 const { activeEntry: relationshipActiveEntry } = storeToRefs(relationshipStore)
 const featureFlagsStore = useFeatureFlagsStore()
-const { flags: featureFlags } = storeToRefs(featureFlagsStore)
 const { t, currentLanguage, promptLanguage } = useLanguage()
 const notify = useNotifications()
 
@@ -114,10 +112,6 @@ useConceptMapRelationshipTabFromSelection({ startRecommendations })
 useKittyDiagramReviewAnnotationBus('MobileCanvasPage')
 
 const isSaving = ref(false)
-
-function openMobileKittyFromCanvas(): void {
-  router.push('/m/kitty')
-}
 
 async function handleSave() {
   if (isSaving.value) return
@@ -190,9 +184,6 @@ const showNodePalette = ref(false)
 const showModelDrawer = ref(false)
 
 const isConceptMap = computed(() => diagramStore.type === 'concept_map')
-const showMobileKittyShortcut = computed(
-  () => authStore.isAuthenticated && (featureFlags.value?.feature_kitty_agent ?? false)
-)
 const tabReady = computed(() => {
   if (!authStore.isAuthenticated) return false
   if (!inlineRecStore.isReady) return false
@@ -691,21 +682,6 @@ onUnmounted(() => {
 
 <template>
   <div class="mobile-canvas flex flex-col flex-1 min-h-0 bg-gray-50 relative overflow-hidden">
-    <div
-      class="mobile-canvas-brand relative flex items-center justify-center shrink-0 bg-white border-b border-gray-200 z-30 min-h-[44px] px-2"
-    >
-      <h1 class="text-center text-base font-semibold text-gray-800 py-2.5 px-3">MindGraph</h1>
-      <button
-        v-if="showMobileKittyShortcut"
-        type="button"
-        class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-10 h-10 rounded-xl text-violet-600 active:bg-violet-50 border border-violet-100"
-        :aria-label="t('mobile.kittyTitle', 'Kitty 智能体')"
-        @click="openMobileKittyFromCanvas"
-      >
-        <Cat :size="22" />
-      </button>
-    </div>
-
     <!-- Top toolbar (fixed, no zoom/pan) -->
     <div
       :class="[
@@ -1023,8 +999,8 @@ onUnmounted(() => {
 <style scoped>
 .mobile-canvas {
   overflow: hidden;
-  /* Toolbar + MindGraph title chrome for node palette overlay */
-  --mg-mobile-palette-top: 7.5rem;
+  /* Layout header + toolbar chrome for node palette overlay */
+  --mg-mobile-palette-top: 4.75rem;
 }
 
 .mobile-toolbar {

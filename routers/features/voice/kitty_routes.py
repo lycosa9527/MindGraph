@@ -18,7 +18,7 @@ from services.features.websocket_llm_middleware import omni_middleware
 from services.auth.vpn_geo_enforcement import maybe_close_websocket_for_vpn_cn_geo
 
 _close_ws_if_vpn_cn_geo = maybe_close_websocket_for_vpn_cn_geo
-from utils.auth import get_current_user
+from utils.auth import get_current_user, user_has_feature_access
 from utils.auth_ws import authenticate_websocket_user
 from utils.ws_limits import (
     DEFAULT_MAX_WS_MESSAGES_PER_SECOND,
@@ -92,6 +92,26 @@ _KITTY_WS_MAX_AUDIO_B64_CHARS = max(4096, int(os.getenv("KITTY_WS_MAX_AUDIO_B64_
 _KITTY_WS_IMAGE_B64_MAX_CHARS = max(50_000, int(os.getenv("KITTY_WS_IMAGE_B64_MAX_CHARS", "900000")))
 _KITTY_WS_IMAGE_RAW_MAX_BYTES = max(50_000, int(os.getenv("KITTY_WS_IMAGE_RAW_MAX_BYTES", "524288")))
 
+_KITTY_MOBILE_BOOTSTRAP_DISABLED_BODY: dict[str, object] = {
+    "recommended_scope": None,
+    "desktop_focus": {"diagram_library_id": None, "updated_at": None},
+    "context": {
+        "diagram_data": {},
+        "selected_nodes": [],
+        "diagram_type": "circle_map",
+    },
+    "diagram_type": "circle_map",
+    "active_panel": "none",
+    "source": "empty",
+}
+
+
+async def _kitty_http_allowed(current_user: User) -> bool:
+    """Respects ``FEATURE_KITTY_AGENT`` (.env) and optional ``feature_kitty_agent`` org grants."""
+    if not config.FEATURE_KITTY_WS_ENABLED:
+        return False
+    return await user_has_feature_access(current_user, "feature_kitty_agent")
+
 
 def _pcm16_silence_base64(duration_ms: int = 200, sample_rate: int = 24000) -> str:
     """Short silence chunk so image append satisfies prior-audio requirement (Omni realtime)."""
@@ -131,6 +151,14 @@ async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str
     if auth_error or current_user is None:
         logger.warning("WebSocket auth failed: %s", auth_error)
         await websocket.close(code=4001, reason=auth_error or "Authentication failed")
+        return
+
+    if not await user_has_feature_access(current_user, "feature_kitty_agent"):
+        logger.warning(
+            "Kitty Agent WebSocket connection rejected: access denied user_id=%s",
+            getattr(current_user, "id", None),
+        )
+        await websocket.close(code=4003, reason="Kitty Agent access denied")
         return
 
     if await _close_ws_if_vpn_cn_geo(websocket):
@@ -1135,18 +1163,9 @@ async def kitty_mobile_open_bootstrap(
     scope and empty context on first connect.
     """
     if not config.FEATURE_KITTY_WS_ENABLED:
-        return {
-            "recommended_scope": None,
-            "desktop_focus": {"diagram_library_id": None, "updated_at": None},
-            "context": {
-                "diagram_data": {},
-                "selected_nodes": [],
-                "diagram_type": "circle_map",
-            },
-            "diagram_type": "circle_map",
-            "active_panel": "none",
-            "source": "empty",
-        }
+        return _KITTY_MOBILE_BOOTSTRAP_DISABLED_BODY
+    if not await _kitty_http_allowed(current_user):
+        return _KITTY_MOBILE_BOOTSTRAP_DISABLED_BODY
     hub_bootstrap = get_mind_graph_agent_hub()
     return await hub_bootstrap.get_diagram_context(
         user_id=int(current_user.id),
@@ -1165,6 +1184,8 @@ async def kitty_desktop_action_pop(current_user: User = Depends(get_current_user
     """
     if not config.FEATURE_KITTY_WS_ENABLED:
         return {"action": None}
+    if not await _kitty_http_allowed(current_user):
+        return {"action": None}
     data = await pop_kitty_desktop_action(int(current_user.id))
     return {"action": data}
 
@@ -1179,6 +1200,8 @@ async def kitty_desktop_focus_get(current_user: User = Depends(get_current_user)
     """
     if not config.FEATURE_KITTY_WS_ENABLED:
         return {"diagram_library_id": None, "updated_at": None}
+    if not await _kitty_http_allowed(current_user):
+        return {"diagram_library_id": None, "updated_at": None}
     lib_id, updated_at = await get_kitty_desktop_focus_diagram(int(current_user.id))
     return {"diagram_library_id": lib_id, "updated_at": updated_at}
 
@@ -1190,6 +1213,8 @@ async def kitty_desktop_focus_put(
 ):
     """Publish or clear desktop MindGraph library focus for the authenticated user."""
     if not config.FEATURE_KITTY_WS_ENABLED:
+        return {"ok": True, "diagram_library_id": None, "updated_at": None}
+    if not await _kitty_http_allowed(current_user):
         return {"ok": True, "diagram_library_id": None, "updated_at": None}
     await set_kitty_desktop_focus_diagram(int(current_user.id), diagram_library_id)
     lib_id, updated_at = await get_kitty_desktop_focus_diagram(int(current_user.id))
@@ -1204,6 +1229,8 @@ async def kitty_mobile_lane_hint(diagram_session_id: str, current_user: User = D
     show the pairing indicator without opening a WebSocket.
     """
     if not config.FEATURE_KITTY_WS_ENABLED:
+        return {"armed": False}
+    if not await _kitty_http_allowed(current_user):
         return {"armed": False}
     scope = normalize_kitty_diagram_session_id(diagram_session_id)
     if scope is None:
@@ -1225,6 +1252,9 @@ async def cleanup_kitty_session(diagram_session_id: str, current_user: User = De
     if not config.FEATURE_KITTY_WS_ENABLED:
         logger.debug("Kitty Agent cleanup skipped: feature disabled")
         return {"success": True, "message": "Kitty Agent feature is disabled"}
+    if not await _kitty_http_allowed(current_user):
+        logger.debug("Kitty Agent cleanup skipped: access denied")
+        return {"success": True, "message": "Kitty Agent access denied"}
 
     scope = normalize_kitty_diagram_session_id(diagram_session_id)
     if scope is None:

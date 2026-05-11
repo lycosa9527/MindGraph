@@ -17,6 +17,7 @@ from models.domain.feature_org_access import FeatureOrgAccessEntry
 from routers.api.helpers import normalize_external_base_url
 from routers.auth.dependencies import get_current_user_optional
 from services.feature_access.repository import load_feature_org_access_map
+from utils.auth import user_has_feature_access
 from utils.auth.roles import is_admin
 
 router = APIRouter(prefix="/config", tags=["config"])
@@ -46,6 +47,15 @@ def _sanitize_feature_org_access_map(
             user_ids=user_ids,
         )
     return out
+
+
+async def _effective_feature_kitty_agent(current_user: Optional[User]) -> bool:
+    """Match ``FEATURE_KITTY_AGENT`` in .env plus org/user grants when the caller is signed in."""
+    if not config.FEATURE_KITTY_AGENT:
+        return False
+    if current_user is None:
+        return True
+    return await user_has_feature_access(current_user, "feature_kitty_agent")
 
 
 class FeatureFlagsResponse(BaseModel):
@@ -104,7 +114,7 @@ async def get_feature_flags(
         feature_workshop_chat=config.FEATURE_WORKSHOP_CHAT,
         feature_markets=config.FEATURE_MARKETS,
         feature_mindbot=config.FEATURE_MINDBOT,
-        feature_kitty_agent=config.FEATURE_KITTY_WS_ENABLED,
+        feature_kitty_agent=await _effective_feature_kitty_agent(current_user),
         workshop_chat_preview_org_ids=sorted(config.WORKSHOP_CHAT_PREVIEW_ORG_IDS),
         feature_org_access=access_map,
     )

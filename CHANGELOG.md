@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.10] - 2026-05-11
+
+### Added
+
+- **Kitty Agent — access control** — WebSocket connections require `feature_kitty_agent` org/user access; denied clients close with code **4003** ([`routers/features/voice/kitty_routes.py`](routers/features/voice/kitty_routes.py)).
+
+### Changed
+
+- **API — feature flags** — `GET /config/feature-flags` field **`feature_kitty_agent`** follows **`FEATURE_KITTY_AGENT`** and `user_has_feature_access` for signed-in users (anonymous callers see the env flag only) ([`routers/api/config.py`](routers/api/config.py)).
+- **Kitty HTTP helpers** — Bootstrap, desktop action pop, desktop focus get/put, mobile lane hint, and session cleanup return empty or no-op payloads when the user lacks Kitty access or the WS feature is off ([`routers/features/voice/kitty_routes.py`](routers/features/voice/kitty_routes.py)).
+- **Mobile canvas** — Removed the extra **MindGraph** title bar and Kitty shortcut; adjusted node palette top offset for the slimmer chrome ([`frontend/src/pages/mobile/MobileCanvasPage.vue`](frontend/src/pages/mobile/MobileCanvasPage.vue)).
+- **Mobile Kitty** — Diagram context card renders only when the Kitty server/feature path is enabled ([`frontend/src/pages/mobile/MobileKittyPage.vue`](frontend/src/pages/mobile/MobileKittyPage.vue)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.10).
+
 ## [5.117.9] - 2026-05-11
 
 ### Added
