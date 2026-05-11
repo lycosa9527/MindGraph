@@ -325,8 +325,8 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
 
             logger.info("Bayi mode authentication successful: %s", user_phone)
 
-        # Valid token: redirect to editor with cookie set on redirect response
-        redirect_response = RedirectResponse(url="/editor", status_code=303)
+        # Valid token: redirect to app home with cookie set on redirect response
+        redirect_response = RedirectResponse(url="/", status_code=303)
         redirect_response.set_cookie(
             key="access_token",
             value=jwt_token,
