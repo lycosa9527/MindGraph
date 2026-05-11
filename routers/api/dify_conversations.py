@@ -27,6 +27,7 @@ from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.pinned_conversations import PinnedConversation
 from utils.auth import get_current_user
+from utils.dify_mindmate_user_id import mindmate_dify_user_id
 
 
 logger = logging.getLogger(__name__)
@@ -35,8 +36,8 @@ router = APIRouter(tags=["api"])
 
 
 def get_dify_user_id(user: User) -> str:
-    """Generate consistent Dify user ID from MindGraph user"""
-    return f"mg_user_{user.id}"
+    """Generate consistent Dify user ID from MindGraph user."""
+    return mindmate_dify_user_id(user)
 
 
 def get_dify_client() -> AsyncDifyClient:

@@ -19,6 +19,8 @@ import { useQueryClient } from '@tanstack/vue-query'
 
 import { useAuthStore, useMindMateStore } from '@/stores'
 
+import { mindmateDifyUserIdFromSession } from '@/utils/mindmateDifyUserId'
+
 import { eventBus } from '../core/useEventBus'
 import { difyKeys, useAppParameters, useGenerateTitle } from '../queries'
 
@@ -168,11 +170,9 @@ export function useMindMate(options: MindMateOptions = {}) {
   // =========================================================================
 
   function getDifyUserId(): string {
-    // Use authenticated MindGraph user ID for consistent conversation history
     if (authStore.user?.id) {
-      return `mg_user_${authStore.user.id}`
+      return mindmateDifyUserIdFromSession(authStore.mode, authStore.user.id, authStore.user.phone)
     }
-    // Fallback for unauthenticated users (should not happen in practice)
     let id = localStorage.getItem('mindgraph_guest_id')
     if (!id) {
       id = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
@@ -183,7 +183,7 @@ export function useMindMate(options: MindMateOptions = {}) {
 
   // Watch for auth changes and update userId
   watch(
-    () => authStore.user?.id,
+    () => [authStore.user?.id, authStore.mode, authStore.user?.phone] as const,
     () => {
       userId.value = getDifyUserId()
     }

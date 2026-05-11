@@ -28,6 +28,7 @@ from services.infrastructure.monitoring.mindmate_streaming import (
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.redis_token_buffer import get_token_tracker
 from utils.auth import get_current_user_or_api_key
+from utils.dify_mindmate_user_id import mindmate_dify_user_id
 
 
 logger = logging.getLogger(__name__)
@@ -106,6 +107,12 @@ async def ai_assistant_stream(
         user_id_for_tracking = current_user.id
         organization_id_for_tracking = getattr(current_user, "organization_id", None)
 
+    dify_user_id = (
+        mindmate_dify_user_id(current_user)
+        if current_user and hasattr(current_user, "id")
+        else req.user_id
+    )
+
     async def generate():
         """Async generator function for SSE streaming."""
         logger.debug("[GENERATOR] Async generator function called - starting execution")
@@ -162,7 +169,7 @@ async def ai_assistant_stream(
             logger.debug("[STREAM] Starting async stream_chat for message: %s", message_preview)
             async for chunk in client.stream_chat(
                 message=message,
-                user_id=req.user_id,
+                user_id=dify_user_id,
                 conversation_id=req.conversation_id,
                 files=dify_files,
                 inputs=req.inputs,

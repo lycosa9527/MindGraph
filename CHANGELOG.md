@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.9] - 2026-05-11
+
+### Added
+
+- **MindMate / Bayi — Dify `user` from SSO UUID** — When `AUTH_MODE=bayi` and `users.phone` holds a Bayi vendor `userId` that parses as a UUID (from `/loginByXz` token payload), MindMate uses that canonical UUID string as the Dify API `user` instead of `mg_user_<pk>`. Bayi passkey accounts (`phone` not a UUID) keep `mg_user_<pk>`. Shared helper [`utils/dify_mindmate_user_id.py`](utils/dify_mindmate_user_id.py); frontend mirror [`frontend/src/utils/mindmateDifyUserId.ts`](frontend/src/utils/mindmateDifyUserId.ts); tests [`tests/utils/test_dify_mindmate_user_id.py`](tests/utils/test_dify_mindmate_user_id.py).
+
+### Changed
+
+- **API** — [`routers/api/dify_conversations.py`](routers/api/dify_conversations.py) uses `mindmate_dify_user_id`. [`routers/api/sse_streaming.py`](routers/api/sse_streaming.py) passes the server-computed Dify `user` when the caller is authenticated (aligned with the REST helpers and avoids trusting the client `user_id` alone).
+- **Frontend** — [`frontend/src/composables/mindmate/useMindMate.ts`](frontend/src/composables/mindmate/useMindMate.ts) derives MindMate `userId` with the same Bayi UUID rule and watches `mode` / `phone`.
+- **Configuration** — [`env.example`](env.example): brief note under MindMate Dify settings.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.9).
+
 ## [5.117.8] - 2026-05-11
 
 ### Added
