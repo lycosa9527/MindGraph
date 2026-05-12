@@ -21,7 +21,7 @@ export function useDoubleBubbleMapOpsSlice(ctx: DiagramContext) {
       spec.rightDifferences = [...rightDifferences, pairText ?? defaultText]
     }
 
-    return ctx.loadFromSpec(spec, 'double_bubble_map')
+    return ctx.loadFromSpec(spec, 'double_bubble_map', { mergePreviousNodeStyles: true })
   }
 
   function removeDoubleBubbleMapNodes(nodeIds: string[]): number {
@@ -63,7 +63,7 @@ export function useDoubleBubbleMapOpsSlice(ctx: DiagramContext) {
     spec.leftDifferences = leftDifferences
     spec.rightDifferences = rightDifferences
 
-    ctx.loadFromSpec(spec, 'double_bubble_map')
+    ctx.loadFromSpec(spec, 'double_bubble_map', { mergePreviousNodeStyles: true })
     return simIndices.size + leftDiffIndices.size + rightDiffIndices.size
   }
 

@@ -236,7 +236,7 @@ const nodeStyle = computed(() => {
       defaultStyle.value.textColor ||
       (isTopicNode.value ? '#ffffff' : '#333333'),
     fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
-    fontSize: `${props.data.style?.fontSize ?? ((diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map') && isTopicNode.value ? TOPIC_FONT_SIZE : (defaultStyle.value.fontSize ?? (isTopicNode.value ? 20 : 14)))}px`,
+    fontSize: `${props.data.style?.fontSize ?? ((diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map' || diagramStore.type === 'double_bubble_map') && isTopicNode.value ? TOPIC_FONT_SIZE : (defaultStyle.value.fontSize ?? (isTopicNode.value ? 20 : 14)))}px`,
     fontWeight:
       props.data.style?.fontWeight ||
       defaultStyle.value.fontWeight ||

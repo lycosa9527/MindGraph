@@ -1,13 +1,18 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { GraphNode } from '@vue-flow/core'
 
 import { getBranchMoveCircleStyle, getDropTargetStyle } from '@/composables/diagramCanvas'
+import {
+  getDropTargetShapeClass,
+} from '@/composables/diagramCanvas/diagramCanvasZoomPaneStyles'
 import type { DropTarget } from '@/composables/editor/useBranchMoveDrag'
 import type { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
+import type { MindGraphNode } from '@/types/vueflow'
 
 type BranchMove = ReturnType<typeof useBranchMoveDrag>
 
-defineProps<{
+const props = defineProps<{
   branchMove: BranchMove
   /** Returns current Vue Flow nodes (for branch-move drop target sizing). */
   getVueFlowNodes: () => GraphNode[]
@@ -17,6 +22,15 @@ defineProps<{
   showConceptLinkPreview: boolean
   linkPreviewShowArrow: boolean
 }>()
+
+const dropTargetShapeClass = computed((): string => {
+  const target = props.branchMove.state.value.dropTarget
+  if (!target) return ''
+  const node = props.getVueFlowNodes().find((n) => n.id === target.nodeId) as
+    | MindGraphNode
+    | undefined
+  return node ? getDropTargetShapeClass(node) : ''
+})
 </script>
 
 <template>
@@ -32,6 +46,7 @@ defineProps<{
     <div
       v-if="branchMove.state.value.dropTarget"
       class="branch-move-drop-preview"
+      :class="dropTargetShapeClass"
       :style="getDropTargetStyle(getVueFlowNodes, branchMove.state.value.dropTarget as DropTarget)"
     />
   </div>

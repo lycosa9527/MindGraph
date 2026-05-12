@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.11] - 2026-05-12
+
+### Changed
+
+- **Diagram canvas — typography-aware layout** — Bubble, multi-flow, tree, brace, and flow maps use each node’s `style` (font size, weight, family) in layout measurements instead of only fixed theme defaults. Bubble map topic and attribute radii derive from text and typography rather than stale DOM boxes, avoiding circles that fail to grow with larger fonts.
+- **Diagram store** — `loadFromSpec` can merge prior node styles on structural reloads (`mergePreviousNodeStyles`). `updateNode` deep-merges `style` and, for typography-only toolbar edits, clears cached dimensions and bumps the appropriate layout triggers (including multi-flow recalc, bubble/circle/tree, brace, flow, and double-bubble relayout).
+- **Double bubble map** — Measurement hints and relayout requests keep capsule sizes aligned with label typography after font changes.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.11).
+
 ## [5.117.10] - 2026-05-11
 
 ### Added

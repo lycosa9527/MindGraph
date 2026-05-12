@@ -48,16 +48,37 @@ function getBraceFontSize(depth: number): number {
   return BRACE_SUBPART_FONT_SIZE
 }
 
-function estimateBraceNodeWidth(text: string, depth: number): number {
+interface BraceTypography {
+  fontSize: number
+  fontWeight: string
+  fontFamily?: string
+}
+
+function braceTypographyFromNode(
+  diagramNode: DiagramNode | undefined,
+  depth: number
+): BraceTypography {
+  const baseSize = getBraceFontSize(depth)
+  const fs =
+    typeof diagramNode?.style?.fontSize === 'number' ? diagramNode.style.fontSize : baseSize
+  const defaultWeight = depth === 0 ? 'bold' : 'normal'
+  const fontWeight =
+    (diagramNode?.style?.fontWeight as string | undefined) ?? defaultWeight
+  const fontFamily = diagramNode?.style?.fontFamily
+  return { fontSize: fs, fontWeight, fontFamily }
+}
+
+function estimateBraceNodeWidth(text: string, depth: number, typo?: BraceTypography): number {
   const trimmed = (text || '').trim()
-  const fontSize = getBraceFontSize(depth)
+  const fontSize = typo?.fontSize ?? getBraceFontSize(depth)
+  const fontWeight = typo?.fontWeight ?? (depth === 0 ? 'bold' : 'normal')
+  const fontFamily = typo?.fontFamily
   const paddingX = depth === 0 ? BRACE_TOPIC_PADDING_X : BRACE_PILL_PADDING_X
   const maxTextW = depth === 0 ? BRACE_TOPIC_BASE_MAX_TEXT_WIDTH : BRACE_NODE_BASE_MAX_TEXT_WIDTH
 
   let textWidth = 0
   if (typeof document !== 'undefined') {
-    const fontWeight = depth === 0 ? 'bold' : 'normal'
-    textWidth = measureTextWidth(trimmed || ' ', fontSize, { fontWeight })
+    textWidth = measureTextWidth(trimmed || ' ', fontSize, { fontWeight, fontFamily })
   }
 
   // Approximate CSS text-wrap: balance — when text wraps, lines are
@@ -82,23 +103,26 @@ function estimateBraceNodeWidth(text: string, depth: number): number {
  * For KaTeX labels the rendered DOM height is measured directly so the
  * layout doesn't rely on inaccurate plain-text heuristics.
  */
-function estimateBraceNodeHeight(text: string, depth: number): number {
+function estimateBraceNodeHeight(text: string, depth: number, typo?: BraceTypography): number {
   const trimmed = (text || '').trim()
   if (!trimmed || typeof document === 'undefined') return DEFAULT_NODE_HEIGHT
 
-  const fontSize = getBraceFontSize(depth)
+  const fontSize = typo?.fontSize ?? getBraceFontSize(depth)
+  const fontWeight = typo?.fontWeight ?? (depth === 0 ? 'bold' : 'normal')
+  const fontFamily = typo?.fontFamily
   const maxTextWidth =
     depth === 0 ? BRACE_TOPIC_BASE_MAX_TEXT_WIDTH : BRACE_NODE_BASE_MAX_TEXT_WIDTH
   const paddingY = depth === 0 ? 32 : 16
 
   if (diagramLabelLikelyNeedsRenderedMeasure(trimmed)) {
     const contentH = measureRenderedDiagramLabelHeight(trimmed, fontSize, maxTextWidth, {
-      fontWeight: depth === 0 ? 'bold' : 'normal',
+      fontWeight,
+      fontFamily,
     })
     return Math.max(DEFAULT_NODE_HEIGHT, Math.ceil(contentH + paddingY))
   }
 
-  const textWidth = measureTextWidth(trimmed, fontSize)
+  const textWidth = measureTextWidth(trimmed, fontSize, { fontWeight, fontFamily })
   if (textWidth <= maxTextWidth) {
     return DEFAULT_NODE_HEIGHT
   }
@@ -118,6 +142,17 @@ interface FlatNode {
   depth: number
   width: number
   height: number
+}
+
+function refreshBraceFlatNodesFromDiagram(
+  flatNodes: FlatNode[],
+  diagramById: Map<string, DiagramNode>
+): void {
+  for (const fn of flatNodes) {
+    const typo = braceTypographyFromNode(diagramById.get(fn.id), fn.depth)
+    fn.width = estimateBraceNodeWidth(fn.text, fn.depth, typo)
+    fn.height = estimateBraceNodeHeight(fn.text, fn.depth, typo)
+  }
 }
 
 function flattenTree(
@@ -464,6 +499,12 @@ export function recalculateBraceMapLayout(
   const flatNodes: FlatNode[] = []
   const edges: { source: string; target: string }[] = []
   flattenTree(wholeNode, 0, null, flatNodes, edges, { value: 0 })
+
+  const diagramById = new Map<string, DiagramNode>()
+  for (const n of treeNodes) {
+    if (n.id) diagramById.set(n.id, n)
+  }
+  refreshBraceFlatNodesFromDiagram(flatNodes, diagramById)
 
   const layout = computeColumnLayout(flatNodes, edges, nodeDimensions)
   const groupIndexMap = computeGroupIndices(flatNodes, edges)

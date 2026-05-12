@@ -2,6 +2,7 @@
  * Double Bubble Map Loader
  * Text-adaptive radii, capsule dimensions, layout aligned with useDoubleBubbleMap.
  * Supports _doubleBubbleMapNodeSizes for empty-node saved radii.
+ * _doubleBubbleMeasureHints (fontSize/fontWeight per node id) drives radii when users customize typography.
  * Similarities stay default blue; difference pairs use mindmap color palette (same color for left-diff and right-diff).
  */
 import {
@@ -96,6 +97,11 @@ export interface DoubleBubbleNodeSizes {
   rightDiffRadii?: number[]
 }
 
+export interface DoubleBubbleMeasureHint {
+  fontSize?: number
+  fontWeight?: string
+}
+
 /**
  * Load double bubble map spec into diagram nodes and connections.
  * Uses text-adaptive radii, capsule dimensions, and _doubleBubbleMapNodeSizes for empty nodes.
@@ -116,33 +122,57 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
     []
 
   const sizes = (spec._doubleBubbleMapNodeSizes as DoubleBubbleNodeSizes | undefined) || {}
+  const hints =
+    (spec._doubleBubbleMeasureHints as Record<string, DoubleBubbleMeasureHint> | undefined) || {}
 
   const padding = DEFAULT_PADDING
+
+  const leftHint = hints['left-topic']
+  const rightHint = hints['right-topic']
 
   // Topic radii (text-adaptive; empty uses saved)
   const leftTopicR = doubleBubbleRequiredRadius(left, {
     isTopic: true,
     savedRadius: sizes.leftTopicR,
+    fontSize: leftHint?.fontSize,
+    fontWeight: leftHint?.fontWeight,
   })
   const rightTopicR = doubleBubbleRequiredRadius(right, {
     isTopic: true,
     savedRadius: sizes.rightTopicR,
+    fontSize: rightHint?.fontSize,
+    fontWeight: rightHint?.fontWeight,
   })
   const topicR = Math.max(leftTopicR, rightTopicR)
 
   // Similarity radii → unified simR
-  const simRadii = similarities.map((t, i) =>
-    doubleBubbleRequiredRadius(t, { isTopic: false, savedRadius: sizes.simRadii?.[i] })
-  )
+  const simRadii = similarities.map((t, i) => {
+    const id = `similarity-${i}`
+    const h = hints[id]
+    return doubleBubbleRequiredRadius(t, {
+      isTopic: false,
+      savedRadius: sizes.simRadii?.[i],
+      fontSize: h?.fontSize,
+      fontWeight: h?.fontWeight,
+    })
+  })
   const simR = simRadii.length > 0 ? Math.max(...simRadii) : 30
 
   // Difference radii → unified diffR (both sides)
-  const leftDiffRadii = leftDifferences.map((t, i) =>
-    doubleBubbleDiffRequiredRadius(t, sizes.leftDiffRadii?.[i])
-  )
-  const rightDiffRadii = rightDifferences.map((t, i) =>
-    doubleBubbleDiffRequiredRadius(t, sizes.rightDiffRadii?.[i])
-  )
+  const leftDiffRadii = leftDifferences.map((t, i) => {
+    const h = hints[`left-diff-${i}`]
+    return doubleBubbleDiffRequiredRadius(t, sizes.leftDiffRadii?.[i], {
+      fontSize: h?.fontSize,
+      fontWeight: h?.fontWeight,
+    })
+  })
+  const rightDiffRadii = rightDifferences.map((t, i) => {
+    const h = hints[`right-diff-${i}`]
+    return doubleBubbleDiffRequiredRadius(t, sizes.rightDiffRadii?.[i], {
+      fontSize: h?.fontSize,
+      fontWeight: h?.fontWeight,
+    })
+  })
   const leftDiffR = leftDiffRadii.length > 0 ? Math.max(...leftDiffRadii) : 30
   const rightDiffR = rightDiffRadii.length > 0 ? Math.max(...rightDiffRadii) : 30
   const diffR = Math.max(leftDiffR, rightDiffR)

@@ -28,26 +28,41 @@ export const TREE_MAP_TOPIC_PADDING_Y = 16
 /** Matches theme topicStrokeWidth */
 export const TREE_MAP_TOPIC_BORDER_WIDTH = 3
 
-function computeBalancedMaxWidth(text: string): number {
+function computeBalancedMaxWidth(
+  text: string,
+  fontSize: number,
+  fontWeight: string,
+  fontFamily?: string
+): number {
   const cap = TREE_MAP_TOPIC_TEXT_BASE_MAX_WIDTH
   if (typeof document === 'undefined') return cap
-  const tw = measureTextWidth(text, TREE_MAP_TOPIC_FONT_SIZE, { fontWeight: 'bold' })
+  const tw = measureTextWidth(text, fontSize, { fontWeight, fontFamily })
   if (tw <= cap) return cap
   const numLines = Math.ceil(tw / cap)
   return Math.min(Math.ceil(tw / numLines) + BALANCE_PADDING, cap)
 }
 
-export function measureTreeMapTopicDimensions(text: string): { width: number; height: number } {
+export function measureTreeMapTopicDimensions(
+  text: string,
+  style?: DiagramNode['style']
+): { width: number; height: number } {
   const t = (text || '').trim() || ' '
   const b = TREE_MAP_TOPIC_BORDER_WIDTH
-  const measureOpts = { fontWeight: 'bold' as const }
-  const adaptiveMaxW = computeBalancedMaxWidth(t)
+  const fs =
+    typeof style?.fontSize === 'number' ? style.fontSize : TREE_MAP_TOPIC_FONT_SIZE
+  const fontWeight = (style?.fontWeight as string | undefined) ?? 'bold'
+  const fontFamily = style?.fontFamily
+  const measureOpts = {
+    fontWeight: (fontWeight === 'bold' ? 'bold' : 'normal') as 'bold' | 'normal',
+    fontFamily,
+  }
+  const adaptiveMaxW = computeBalancedMaxWidth(t, fs, fontWeight, fontFamily)
 
   if (diagramLabelLikelyNeedsRenderedMeasure(t)) {
-    const contentW = measureRenderedDiagramLabelWidth(t, TREE_MAP_TOPIC_FONT_SIZE, measureOpts)
+    const contentW = measureRenderedDiagramLabelWidth(t, fs, measureOpts)
     const contentH = measureRenderedDiagramLabelHeight(
       t,
-      TREE_MAP_TOPIC_FONT_SIZE,
+      fs,
       adaptiveMaxW,
       measureOpts
     )
@@ -63,11 +78,12 @@ export function measureTreeMapTopicDimensions(text: string): { width: number; he
     }
   }
 
-  const dims = measureTextDimensions(t, TREE_MAP_TOPIC_FONT_SIZE, {
-    fontWeight: 'bold',
+  const dims = measureTextDimensions(t, fs, {
+    fontWeight,
     paddingX: TREE_MAP_TOPIC_PADDING_X,
     paddingY: TREE_MAP_TOPIC_PADDING_Y,
     maxWidth: adaptiveMaxW,
+    fontFamily,
   })
   return {
     width: Math.max(dims.width + 2 * b, NODE_MIN_DIMENSIONS.topic.minWidth),
@@ -94,7 +110,7 @@ export function applyTreeMapTopicLayoutToNodes(
   mergedTopic: DiagramNode
 ): DiagramNode[] {
   const oldNode = nodes[topicIndex]
-  const dims = measureTreeMapTopicDimensions(mergedTopic.text)
+  const dims = measureTreeMapTopicDimensions(mergedTopic.text, mergedTopic.style)
   const oldH = oldNode.style?.height ?? DEFAULT_NODE_HEIGHT
   const deltaY = dims.height - oldH
   const topicY = oldNode.position?.y ?? DEFAULT_PADDING

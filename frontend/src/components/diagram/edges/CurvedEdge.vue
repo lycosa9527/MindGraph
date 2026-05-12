@@ -471,6 +471,22 @@ const targetMarkerEnd = computed(() =>
     :marker-end="markerEnd"
   />
 
+  <!--
+    Tab rec direction overlay (concept map only).
+    A single unsplit bezier spanning source → target so the marching-ant animation
+    flows cleanly from A to B without the discontinuity that comes from animating
+    the two independently-phased segment paths.
+    Invisible by default; the green ant line is applied only via the
+    .vue-flow__edge.tab-rec-active CSS rule in diagramCanvas.css.
+  -->
+  <path
+    v-if="isConceptMap"
+    class="curved-edge-tab-rec-overlay"
+    :d="path.edgePath"
+    fill="none"
+    pointer-events="none"
+  />
+
   <!-- Edge label: concept map = editable, others = static box.
        Edges linked from a relationship label carry no label of their own. -->
   <EdgeLabelRenderer v-if="data?.label !== undefined && !isLinkedFromRelationship">

@@ -1,3 +1,4 @@
+import { eventBus } from '@/composables/core/useEventBus'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { i18n } from '@/i18n'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
@@ -69,9 +70,15 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
     if (nodeIndex === -1) return false
 
     const oldNode = ctx.data.value.nodes[nodeIndex]
-    const merged: DiagramNode = {
+    let merged: DiagramNode = {
       ...oldNode,
       ...updates,
+    }
+    if (updates.style !== undefined) {
+      merged = {
+        ...merged,
+        style: { ...(oldNode.style || {}), ...updates.style },
+      }
     }
 
     // Keep data.label in sync with text so vue-flow nodes render the latest label.
@@ -79,8 +86,19 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       ;(merged.data as Record<string, unknown>).label = merged.text
     }
 
-    if (ctx.type.value === 'tree_map' && nodeId === 'tree-topic' && 'text' in updates) {
+    const treeTopicLayoutBump =
+      ctx.type.value === 'tree_map' &&
+      nodeId === 'tree-topic' &&
+      (('text' in updates && updates.text !== undefined) ||
+        (updates.style &&
+          (updates.style.fontSize !== undefined ||
+            updates.style.fontWeight !== undefined ||
+            updates.style.fontFamily !== undefined)))
+
+    if (treeTopicLayoutBump) {
+      delete ctx.nodeDimensions.value['tree-topic']
       ctx.data.value.nodes = applyTreeMapTopicLayoutToNodes(ctx.data.value.nodes, nodeIndex, merged)
+      ctx.layoutRecalcTrigger.value++
     } else {
       ctx.data.value.nodes[nodeIndex] = merged
     }
@@ -132,6 +150,69 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
           estimatedHeight: freshHeight,
         },
       }
+    }
+
+    if (
+      ctx.type.value === 'multi_flow_map' &&
+      updates.style &&
+      (updates.style.fontSize !== undefined ||
+        updates.style.fontWeight !== undefined ||
+        updates.style.fontFamily !== undefined)
+    ) {
+      delete ctx.nodeDimensions.value[nodeId]
+      ctx.multiFlowMapRecalcTrigger.value++
+    }
+
+    if (
+      ctx.type.value === 'bubble_map' &&
+      updates.style &&
+      (updates.style.fontSize !== undefined ||
+        updates.style.fontWeight !== undefined ||
+        updates.style.fontFamily !== undefined) &&
+      (nodeId === 'topic' || nodeId.startsWith('bubble-'))
+    ) {
+      delete ctx.nodeDimensions.value[nodeId]
+      ctx.layoutRecalcTrigger.value++
+    }
+
+    if (
+      ctx.type.value === 'flow_map' &&
+      updates.style &&
+      (updates.style.fontSize !== undefined ||
+        updates.style.fontWeight !== undefined ||
+        updates.style.fontFamily !== undefined) &&
+      (nodeId === 'flow-topic' ||
+        nodeId.startsWith('flow-step-') ||
+        nodeId.startsWith('flow-substep-'))
+    ) {
+      delete ctx.nodeDimensions.value[nodeId]
+      ctx.layoutRecalcTrigger.value++
+    }
+
+    if (
+      ctx.type.value === 'brace_map' &&
+      updates.style &&
+      (updates.style.fontSize !== undefined ||
+        updates.style.fontWeight !== undefined ||
+        updates.style.fontFamily !== undefined) &&
+      (nodeId === 'brace-whole' ||
+        nodeId.startsWith('brace-part-') ||
+        nodeId.startsWith('brace-subpart-') ||
+        nodeId === 'dimension-label')
+    ) {
+      delete ctx.nodeDimensions.value[nodeId]
+      ctx.layoutRecalcTrigger.value++
+    }
+
+    if (
+      ctx.type.value === 'double_bubble_map' &&
+      updates.style &&
+      (updates.style.fontSize !== undefined ||
+        updates.style.fontWeight !== undefined ||
+        updates.style.fontFamily !== undefined)
+    ) {
+      delete ctx.nodeDimensions.value[nodeId]
+      eventBus.emit('diagram:double_bubble_relayout_requested', {})
     }
 
     emitEvent('diagram:node_updated', { nodeId, updates })
@@ -396,7 +477,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       })
       const spec = ctx.buildFlowMapSpecFromNodes()
       if (spec) {
-        ctx.loadFromSpec(spec, 'flow_map')
+        ctx.loadFromSpec(spec, 'flow_map', { mergePreviousNodeStyles: true })
       }
       emitEvent('diagram:nodes_deleted', { nodeIds: [...idsToRemove] })
       return true

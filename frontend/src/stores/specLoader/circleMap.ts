@@ -85,7 +85,7 @@ export function recalculateCircleMapLayout(
     const topicStyle = {
       ...(topicNode.style || {}),
       size: topicSize,
-      fontSize: TOPIC_FONT_SIZE,
+      fontSize: topicNode.style?.fontSize ?? TOPIC_FONT_SIZE,
     }
     result.push({
       id: 'topic',
@@ -115,7 +115,7 @@ export function recalculateCircleMapLayout(
       const contextStyle = {
         ...(node.style || {}),
         size: uniformContextDiameter,
-        fontSize: CONTEXT_FONT_SIZE,
+        fontSize: node.style?.fontSize ?? CONTEXT_FONT_SIZE,
         backgroundColor: color.fill,
         borderColor: color.border,
       }

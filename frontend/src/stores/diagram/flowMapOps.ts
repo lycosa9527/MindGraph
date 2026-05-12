@@ -47,7 +47,7 @@ export function useFlowMapOpsSlice(ctx: DiagramContext) {
       orientation: newOrientation,
     }
 
-    ctx.loadFromSpec(newSpec, 'flow_map')
+    ctx.loadFromSpec(newSpec, 'flow_map', { mergePreviousNodeStyles: true })
     ctx.pushHistory(`Toggle orientation to ${newOrientation}`)
     emitEvent('diagram:orientation_changed', { orientation: newOrientation })
   }
@@ -62,7 +62,9 @@ export function useFlowMapOpsSlice(ctx: DiagramContext) {
       substeps.push({ step: text, substeps: [defaultSubsteps[0], defaultSubsteps[1]] })
     }
     const orientation = (data.value as Record<string, unknown>)?.orientation ?? spec.orientation
-    ctx.loadFromSpec({ ...spec, steps, substeps, orientation }, 'flow_map')
+    ctx.loadFromSpec({ ...spec, steps, substeps, orientation }, 'flow_map', {
+      mergePreviousNodeStyles: true,
+    })
     ctx.pushHistory('Add flow step')
     emitEvent('diagram:node_added', { node: null })
     return true
@@ -79,7 +81,9 @@ export function useFlowMapOpsSlice(ctx: DiagramContext) {
       substeps.push({ step: stepText, substeps: [substepText] })
     }
     const orientation = (data.value as Record<string, unknown>)?.orientation ?? spec.orientation
-    ctx.loadFromSpec({ ...spec, substeps, orientation }, 'flow_map')
+    ctx.loadFromSpec({ ...spec, substeps, orientation }, 'flow_map', {
+      mergePreviousNodeStyles: true,
+    })
     ctx.pushHistory('Add flow substep')
     emitEvent('diagram:node_added', { node: null })
     return true

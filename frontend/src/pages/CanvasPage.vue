@@ -72,6 +72,7 @@ import { useCanvasPageLibrarySnapshots } from '@/composables/canvasPage/useCanva
 import { useCanvasPageMountedHandlers } from '@/composables/canvasPage/useCanvasPageMountedHandlers'
 import { useCanvasPagePresentation } from '@/composables/canvasPage/useCanvasPagePresentation'
 import { useCanvasPageWorkshopCollab } from '@/composables/canvasPage/useCanvasPageWorkshopCollab'
+import { useCanvasPageTabRecIndicator } from '@/composables/canvasPage/useCanvasPageTabRecIndicator'
 import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
 import { useKittyDiagramReviewAnnotationBus } from '@/composables/kitty/useKittyDiagramReviewAnnotationBus'
 import {
@@ -179,6 +180,8 @@ const {
   sessionDiagramId,
   sessionDiagramTitle,
 } = useCanvasPageWorkshopCollab()
+
+useCanvasPageTabRecIndicator()
 
 const isCollabGuest = computed(() => workshopCode.value != null && !isDiagramOwner.value)
 

@@ -264,7 +264,7 @@ export function recalculateTreeMapLayout(
   const topicText = topicNode.text ?? ''
 
   const topicDims = resolveTreeMapBox('tree-topic', nodeDimensions, () =>
-    measureTreeMapTopicDimensions(topicText)
+    measureTreeMapTopicDimensions(topicText, topicNode.style)
   )
 
   const topicY = topicNode.position?.y ?? DEFAULT_PADDING
@@ -287,9 +287,16 @@ export function recalculateTreeMapLayout(
     const catText = catNode?.text ?? ''
 
     const catBox = resolveTreeMapBox(catId, nodeDimensions, () => {
-      const catDims = measureTextDimensions(catText, TREE_MAP_BRANCH_FONT_SIZE, {
+      const fs =
+        typeof catNode?.style?.fontSize === 'number'
+          ? catNode.style.fontSize
+          : TREE_MAP_BRANCH_FONT_SIZE
+      const fw = (catNode?.style?.fontWeight as string | undefined) ?? 'normal'
+      const catDims = measureTextDimensions(catText, fs, {
         paddingX: TREE_MAP_NODE_PADDING_X / 2,
         paddingY: TREE_MAP_NODE_PADDING_Y,
+        fontWeight: fw,
+        fontFamily: catNode?.style?.fontFamily,
       })
       const catWidth = Math.max(
         catDims.width + 2 * TREE_MAP_CATEGORY_BORDER,
@@ -319,9 +326,16 @@ export function recalculateTreeMapLayout(
       const leafId = leaf.id ?? ''
       const leafText = leaf.text ?? ''
       const leafBox = resolveTreeMapBox(leafId, nodeDimensions, () => {
-        const leafDims = measureTextDimensions(leafText, TREE_MAP_BRANCH_FONT_SIZE, {
+        const fs =
+          typeof leaf.style?.fontSize === 'number'
+            ? leaf.style.fontSize
+            : TREE_MAP_BRANCH_FONT_SIZE
+        const fw = (leaf.style?.fontWeight as string | undefined) ?? 'normal'
+        const leafDims = measureTextDimensions(leafText, fs, {
           paddingX: TREE_MAP_NODE_PADDING_X / 2,
           paddingY: TREE_MAP_NODE_PADDING_Y,
+          fontWeight: fw,
+          fontFamily: leaf.style?.fontFamily,
         })
         const leafW = Math.max(
           leafDims.width + 2 * TREE_MAP_LEAF_BORDER,

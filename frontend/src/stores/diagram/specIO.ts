@@ -38,6 +38,13 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     const prevDimensions: Record<string, { width: number; height: number }> =
       ctx.type.value === diagramTypeValue ? { ...ctx.nodeDimensions.value } : {}
 
+    const prevNodesForStyleMerge =
+      options?.mergePreviousNodeStyles === true &&
+      ctx.type.value === diagramTypeValue &&
+      ctx.data.value?.nodes
+        ? ctx.data.value.nodes
+        : undefined
+
     ctx.nodeDimensions.value = {}
     ctx.layoutRecalcTrigger.value = 0
     useConceptMapRelationshipStore().clearAll()
@@ -49,6 +56,18 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     let nodesToStore = result.nodes
     if (diagramTypeValue === 'bubble_map' && result.nodes.length > 0) {
       nodesToStore = recalculateBubbleMapLayout(result.nodes)
+    }
+
+    if (prevNodesForStyleMerge && prevNodesForStyleMerge.length > 0) {
+      const styleById = new Map(prevNodesForStyleMerge.map((n) => [n.id, n.style] as const))
+      nodesToStore = nodesToStore.map((node) => {
+        const prevSt = styleById.get(node.id)
+        if (!prevSt) return node
+        return {
+          ...node,
+          style: { ...prevSt, ...node.style },
+        }
+      })
     }
 
     if (diagramTypeValue === 'mindmap' || diagramTypeValue === 'mind_map') {
@@ -116,6 +135,8 @@ export function useSpecIOSlice(ctx: DiagramContext) {
               'leftBranches',
               'rightBranches',
               'analogies',
+              '_doubleBubbleMapNodeSizes',
+              '_doubleBubbleMeasureHints',
             ].includes(key)
         )
       ),
@@ -192,6 +213,31 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       return n != null ? getRadius(n) : undefined
     }
 
+    const _doubleBubbleMeasureHints: Record<string, { fontSize?: number; fontWeight?: string }> = {}
+
+    function addMeasureHint(nodeId: string, n: (typeof nodes)[0] | undefined): void {
+      if (!n?.style) return
+      const fontSize = n.style.fontSize
+      const fontWeight = n.style.fontWeight
+      if (fontSize == null && fontWeight == null) return
+      const hint: { fontSize?: number; fontWeight?: string } = {}
+      if (fontSize != null) hint.fontSize = fontSize
+      if (fontWeight != null) hint.fontWeight = fontWeight
+      _doubleBubbleMeasureHints[nodeId] = hint
+    }
+
+    addMeasureHint('left-topic', leftNode)
+    addMeasureHint('right-topic', rightNode)
+    simIndices.forEach((i) => {
+      addMeasureHint(`similarity-${i}`, nodes.find((n) => n.id === `similarity-${i}`))
+    })
+    leftDiffIndices.forEach((i) => {
+      addMeasureHint(`left-diff-${i}`, nodes.find((n) => n.id === `left-diff-${i}`))
+    })
+    rightDiffIndices.forEach((i) => {
+      addMeasureHint(`right-diff-${i}`, nodes.find((n) => n.id === `right-diff-${i}`))
+    })
+
     const _doubleBubbleMapNodeSizes: Record<string, unknown> = {}
     if (leftNode) {
       const r = mergedRadius('left-topic', leftNode)
@@ -229,6 +275,9 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       leftDifferences,
       rightDifferences,
       ...(Object.keys(_doubleBubbleMapNodeSizes).length > 0 ? { _doubleBubbleMapNodeSizes } : {}),
+      ...(Object.keys(_doubleBubbleMeasureHints).length > 0
+        ? { _doubleBubbleMeasureHints }
+        : {}),
     }
   }
 

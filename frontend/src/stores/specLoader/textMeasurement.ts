@@ -394,7 +394,7 @@ export function measureTextDimensions(
 
 function measureTextWidthNoWrap(
   text: string,
-  options: { isTopic: boolean; fontSize: number; fontFamily?: string }
+  options: { isTopic: boolean; fontSize: number; fontFamily?: string; fontWeight?: string }
 ): number {
   if (typeof document === 'undefined') return 0
   const t = (text || '').trim() || ' '
@@ -403,7 +403,10 @@ function measureTextWidthNoWrap(
   el.style.whiteSpace = 'nowrap'
   el.style.padding = options.isTopic ? '8px 12px' : '4px 8px'
   el.style.fontSize = `${options.fontSize}px`
-  el.style.fontWeight = options.isTopic ? 'bold' : 'normal'
+  const fw =
+    options.fontWeight ??
+    (options.isTopic ? 'bold' : 'normal')
+  el.style.fontWeight = fw
   el.textContent = t
   return el.offsetWidth
 }
@@ -415,13 +418,19 @@ function measureTextWidthNoWrap(
 export function computeMinDiameterForNoWrap(
   text: string,
   fontSize: number,
-  isTopic: boolean
+  isTopic: boolean,
+  options?: { fontWeight?: string; fontFamily?: string }
 ): number {
   if (typeof document === 'undefined') {
     return fallbackMinDiameterForNoWrap(text, fontSize, isTopic)
   }
   const border = isTopic ? BORDER_TOPIC : BORDER_CONTEXT
-  const w = measureTextWidthNoWrap(text, { isTopic, fontSize })
+  const w = measureTextWidthNoWrap(text, {
+    isTopic,
+    fontSize,
+    fontFamily: options?.fontFamily,
+    fontWeight: options?.fontWeight,
+  })
   return Math.ceil(w + MAX_WIDTH_OFFSET + 2 * border)
 }
 
@@ -580,15 +589,24 @@ export function calculateBubbleMapRadius(
   fontSize: number = CONTEXT_DEFAULT_FONT_SIZE,
   padding: number = 10,
   minRadius: number = 30,
-  isTopic: boolean = false
+  isTopic: boolean = false,
+  measureBoldOverride?: boolean,
+  fontFamily?: string
 ): number {
   if (!text || !text.trim()) {
     return minRadius
   }
 
-  const { width, height } = measureTextWithSVG(text.trim(), fontSize, isTopic)
+  const measureBold = measureBoldOverride !== undefined ? measureBoldOverride : isTopic
+  const { width, height } = measureTextWithSVG(
+    text.trim(),
+    fontSize,
+    measureBold,
+    fontFamily
+  )
 
-  const measuredWidth = width || estimateTextWidthFallbackPx(text, fontSize, { isTopic })
+  const measuredWidth =
+    width || estimateTextWidthFallbackPx(text, fontSize, { isTopic: measureBold })
   const measuredHeight = height || fontSize * 1.4
 
   const diagonal = Math.sqrt(measuredWidth * measuredWidth + measuredHeight * measuredHeight)
@@ -609,47 +627,80 @@ export function doubleBubbleRequiredRadius(
   options: {
     isTopic: boolean
     savedRadius?: number
+    fontSize?: number
+    fontWeight?: string
   }
 ): number {
-  const { isTopic, savedRadius } = options
+  const { isTopic, savedRadius, fontSize: fontSizeOpt, fontWeight } = options
   const trimmed = (text || '').trim()
   if (!trimmed) {
     if (savedRadius != null && savedRadius > 0) return savedRadius
     return isTopic ? DOUBLE_BUBBLE_MIN_TOPIC_RADIUS : DOUBLE_BUBBLE_MIN_SIM_RADIUS
   }
-  const fontSize = isTopic ? TOPIC_FONT_SIZE : CONTEXT_FONT_SIZE
+  const fontSize = fontSizeOpt ?? (isTopic ? TOPIC_FONT_SIZE : CONTEXT_FONT_SIZE)
   const padding = isTopic ? DOUBLE_BUBBLE_TOPIC_PADDING : DOUBLE_BUBBLE_SIM_PADDING
   const minR = isTopic ? DOUBLE_BUBBLE_MIN_TOPIC_RADIUS : DOUBLE_BUBBLE_MIN_SIM_RADIUS
-  return calculateBubbleMapRadius(trimmed, fontSize, padding, minR, isTopic)
+  let measureBold = isTopic
+  if (fontWeight === 'bold') {
+    measureBold = true
+  } else if (fontWeight === 'normal') {
+    measureBold = false
+  }
+  return calculateBubbleMapRadius(trimmed, fontSize, padding, minR, isTopic, measureBold)
 }
 
-export function doubleBubbleDiffRequiredRadius(text: string, savedRadius?: number): number {
+export function doubleBubbleDiffRequiredRadius(
+  text: string,
+  savedRadius?: number,
+  measure?: { fontSize?: number; fontWeight?: string }
+): number {
   const trimmed = (text || '').trim()
   if (!trimmed) {
     if (savedRadius != null && savedRadius > 0) return savedRadius
     return DOUBLE_BUBBLE_MIN_DIFF_RADIUS
   }
+  const fontSize = measure?.fontSize ?? CONTEXT_FONT_SIZE
+  let measureBold = false
+  if (measure?.fontWeight === 'bold') {
+    measureBold = true
+  } else if (measure?.fontWeight === 'normal') {
+    measureBold = false
+  }
   return calculateBubbleMapRadius(
     trimmed,
-    CONTEXT_FONT_SIZE,
+    fontSize,
     DOUBLE_BUBBLE_DIFF_PADDING,
     DOUBLE_BUBBLE_MIN_DIFF_RADIUS,
-    false
+    false,
+    measureBold
   )
 }
 
-export function computeTopicRadiusForCircleMap(text: string): number {
+export interface TopicCircleMeasureOptions {
+  fontSize?: number
+  fontWeight?: string
+  fontFamily?: string
+}
+
+export function computeTopicRadiusForCircleMap(
+  text: string,
+  measure?: TopicCircleMeasureOptions
+): number {
   const t = (text || '').trim() || ' '
+  const fs = measure?.fontSize ?? TOPIC_FONT_SIZE
+  const measureBold =
+    measure?.fontWeight === 'normal' ? false : measure?.fontWeight === 'bold' ? true : true
+  const fontFamily = measure?.fontFamily
   if (typeof document === 'undefined') {
-    const approxW = estimateTextWidthFallbackPx(t, TOPIC_FONT_SIZE, { isTopic: true })
-    const approxH = TOPIC_FONT_SIZE * 1.4
+    const approxW = estimateTextWidthFallbackPx(t, fs, { isTopic: measureBold })
+    const approxH = fs * 1.4
     const diagonal = Math.sqrt(approxW * approxW + approxH * approxH)
     const contentR = Math.ceil(diagonal / 2 + TOPIC_CIRCLE_INNER_PADDING)
     return Math.max(MIN_TOPIC_RADIUS_CIRCLE_MAP, contentR + BORDER_TOPIC)
   }
-  const { width, height } = measureTextWithSVG(t, TOPIC_FONT_SIZE, true)
-  const w = width || estimateTextWidthFallbackPx(t, TOPIC_FONT_SIZE, { isTopic: true })
-  const h = height || TOPIC_FONT_SIZE * 1.4
+  const { width, height } = measureTextWithSVG(t, fs, measureBold, fontFamily)
+  const w = width || estimateTextWidthFallbackPx(t, fs, { isTopic: measureBold })
+  const h = height || fs * 1.4
   const diagonal = Math.sqrt(w * w + h * h)
   const contentR = Math.ceil(diagonal / 2 + TOPIC_CIRCLE_INNER_PADDING)
   const radius = contentR + BORDER_TOPIC

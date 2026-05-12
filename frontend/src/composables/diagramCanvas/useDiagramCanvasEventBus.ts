@@ -50,7 +50,10 @@ export function useDiagramCanvasEventBus(): {
       doubleBubbleRebuildTimer = null
       const spec = diagramStore.getDoubleBubbleSpecFromData()
       if (spec) {
-        diagramStore.loadFromSpec(spec, 'double_bubble_map', { emitLoaded: false })
+        diagramStore.loadFromSpec(spec, 'double_bubble_map', {
+          emitLoaded: false,
+          mergePreviousNodeStyles: true,
+        })
       }
     }, DOUBLE_BUBBLE_REBUILD_DEBOUNCE_MS)
   }
@@ -84,6 +87,14 @@ export function useDiagramCanvasEventBus(): {
         const node = getNodes().find((n) => n.id === nodeId)
         if (node) {
           emit('nodeDoubleClick', node as unknown as MindGraphNode)
+        }
+      })
+    )
+
+    unsubscribers.push(
+      eventBus.on('diagram:double_bubble_relayout_requested', () => {
+        if (diagramStore.type === 'double_bubble_map') {
+          scheduleDoubleBubbleRebuild(diagramStore)
         }
       })
     )
@@ -185,7 +196,9 @@ export function useDiagramCanvasEventBus(): {
           if (diagramStore.type === 'flow_map') {
             const spec = diagramStore.buildFlowMapSpecFromNodes()
             if (spec) {
-              diagramStore.loadFromSpec(spec as Record<string, unknown>, 'flow_map' as DiagramType)
+              diagramStore.loadFromSpec(spec as Record<string, unknown>, 'flow_map' as DiagramType, {
+                mergePreviousNodeStyles: true,
+              })
             }
           }
         }

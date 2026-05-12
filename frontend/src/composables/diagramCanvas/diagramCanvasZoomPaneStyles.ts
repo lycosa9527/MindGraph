@@ -118,6 +118,24 @@ function getDropPreviewBorderRadius(node: MindGraphNode): string {
   return styleRadiusPx ?? '8px'
 }
 
+/**
+ * Returns a CSS class that signals the shape of a drop-target node to the
+ * `branch-move-drop-preview` overlay so CSS can apply the correct ant-line style.
+ * Mirrors the logic in `getDropPreviewBorderRadius`.
+ */
+export function getDropTargetShapeClass(node: MindGraphNode): 'is-circle' | 'is-pill' | '' {
+  const vfType = node.type ?? ''
+  const data = node.data
+  if (vfType === 'bubble') return 'is-circle'
+  if (vfType === 'circle') {
+    if (data?.diagramType === 'double_bubble_map' && data?.nodeType !== 'topic') return 'is-pill'
+    return 'is-circle'
+  }
+  const br = getDropPreviewBorderRadius(node)
+  if (br === '9999px') return 'is-pill'
+  return ''
+}
+
 export function getBranchMoveCircleStyle(state: {
   cursorPos: { x: number; y: number } | null
   nodeStartPos: { x: number; y: number; width: number; height: number } | null

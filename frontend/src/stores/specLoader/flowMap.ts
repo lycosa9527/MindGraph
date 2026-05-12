@@ -44,17 +44,36 @@ interface FlowSubstepEntry {
  */
 const FLOW_TOPIC_NODE_ID = 'flow-topic'
 
+type FlowTypographyRole = 'topic' | 'step' | 'substep'
+
+function flowNodeTypography(
+  node: DiagramNode | undefined,
+  role: FlowTypographyRole
+): { fontSize: number; fontWeight: string; fontFamily?: string } {
+  const defaults: Record<FlowTypographyRole, { fontSize: number; fontWeight: string }> = {
+    topic: { fontSize: FLOW_TOPIC_FONT_SIZE, fontWeight: 'bold' },
+    step: { fontSize: FLOW_STEP_FONT_SIZE, fontWeight: 'normal' },
+    substep: { fontSize: FLOW_SUBSTEP_FONT_SIZE, fontWeight: 'normal' },
+  }
+  const base = defaults[role]
+  const fs = typeof node?.style?.fontSize === 'number' ? node.style.fontSize : base.fontSize
+  const fw = (node?.style?.fontWeight as string | undefined) ?? base.fontWeight
+  const fontFamily = node?.style?.fontFamily
+  return { fontSize: fs, fontWeight: fw, fontFamily }
+}
+
 function estimateFlowRenderedWidth(
   text: string,
   fontSize: number,
   maxTextWidth: number,
   paddingX: number,
-  fontWeight: string = 'normal'
+  fontWeight: string = 'normal',
+  fontFamily?: string
 ): number {
   const trimmed = (text || '').trim()
   if (!trimmed || typeof document === 'undefined') return FLOW_MAP_PILL_WIDTH
 
-  const singleLineWidth = measureTextWidth(trimmed, fontSize, { fontWeight })
+  const singleLineWidth = measureTextWidth(trimmed, fontSize, { fontWeight, fontFamily })
 
   let effectiveTextWidth: number
   if (singleLineWidth <= maxTextWidth) {
@@ -75,10 +94,18 @@ function getEffectiveFlowWidth(
   maxTextWidth: number,
   paddingX: number,
   nodeDimensions: Record<string, { width: number; height: number }>,
-  fontWeight: string = 'normal'
+  fontWeight: string = 'normal',
+  fontFamily?: string
 ): number {
   const measured = nodeDimensions[nodeId]?.width
-  const estimated = estimateFlowRenderedWidth(text, fontSize, maxTextWidth, paddingX, fontWeight)
+  const estimated = estimateFlowRenderedWidth(
+    text,
+    fontSize,
+    maxTextWidth,
+    paddingX,
+    fontWeight,
+    fontFamily
+  )
   return measured !== undefined ? Math.max(measured, estimated) : estimated
 }
 
@@ -88,12 +115,14 @@ function getEffectiveFlowWidth(
  */
 export function getFlowTopicCenteredPosition(
   text: string,
-  currentY: number
+  currentY: number,
+  style?: DiagramNode['style']
 ): { x: number; y: number } {
   const stepCenterX = DEFAULT_CENTER_X
-  const measuredTextWidth = measureTextWidth(text, FLOW_TOPIC_FONT_SIZE, {
-    fontWeight: 'bold',
-  })
+  const fs = typeof style?.fontSize === 'number' ? style.fontSize : FLOW_TOPIC_FONT_SIZE
+  const fw = (style?.fontWeight as string | undefined) ?? 'bold'
+  const fontFamily = style?.fontFamily
+  const measuredTextWidth = measureTextWidth(text, fs, { fontWeight: fw, fontFamily })
   const topicEstWidth = Math.max(FLOW_MAP_PILL_WIDTH, measuredTextWidth + FLOW_TOPIC_PADDING_X)
   const x = Math.round(stepCenterX - topicEstWidth / 2)
   return { x, y: currentY }
@@ -145,25 +174,31 @@ export function recalculateFlowMapLayout(
 
     const groupInfos = orderedSteps.map((stepNode) => {
       const groupIdx = ((stepNode.data as Record<string, unknown>)?.groupIndex as number) ?? 0
+      const stepTyp = flowNodeTypography(stepNode, 'step')
       const stepW = getEffectiveFlowWidth(
         stepNode.id,
         stepNode.text ?? '',
-        FLOW_STEP_FONT_SIZE,
+        stepTyp.fontSize,
         FLOW_MAX_TEXT_WIDTH,
         FLOW_NODE_PADDING_X,
-        nodeDimensions
+        nodeDimensions,
+        stepTyp.fontWeight,
+        stepTyp.fontFamily
       )
       const groupSubsteps = substepNodesH.filter((n) =>
         n.id.startsWith(`flow-substep-${groupIdx}-`)
       )
       const maxSubW = groupSubsteps.reduce((maxW, sub) => {
+        const subTyp = flowNodeTypography(sub, 'substep')
         const subW = getEffectiveFlowWidth(
           sub.id,
           sub.text ?? '',
-          FLOW_SUBSTEP_FONT_SIZE,
+          subTyp.fontSize,
           FLOW_SUBSTEP_MAX_TEXT_WIDTH,
           FLOW_NODE_PADDING_X,
-          nodeDimensions
+          nodeDimensions,
+          subTyp.fontWeight,
+          subTyp.fontFamily
         )
         return Math.max(maxW, subW)
       }, 0)
@@ -171,12 +206,14 @@ export function recalculateFlowMapLayout(
       return { stepNode, stepW, groupSubsteps, footprintWidth: Math.max(stepW, maxSubW) }
     })
 
+    const topicTyp = flowNodeTypography(topicNode, 'topic')
     const topicEstW = estimateFlowRenderedWidth(
       topicNode.text ?? '',
-      FLOW_TOPIC_FONT_SIZE,
+      topicTyp.fontSize,
       FLOW_TOPIC_MAX_TEXT_WIDTH,
       FLOW_TOPIC_PADDING_X,
-      'bold'
+      topicTyp.fontWeight,
+      topicTyp.fontFamily
     )
     const effectiveTopicW = Math.max(topicDims.width, topicEstW)
 
@@ -200,13 +237,16 @@ export function recalculateFlowMapLayout(
       })
       let subY = stepY + stepH + FLOW_SUBSTEP_OFFSET_X
       sortedSubsteps.forEach((sub) => {
+        const subTyp = flowNodeTypography(sub, 'substep')
         const subW = getEffectiveFlowWidth(
           sub.id,
           sub.text ?? '',
-          FLOW_SUBSTEP_FONT_SIZE,
+          subTyp.fontSize,
           FLOW_SUBSTEP_MAX_TEXT_WIDTH,
           FLOW_NODE_PADDING_X,
-          nodeDimensions
+          nodeDimensions,
+          subTyp.fontWeight,
+          subTyp.fontFamily
         )
         const subX = Math.round(centerX - subW / 2)
         const subH = nodeDimensions[sub.id]?.height ?? FLOW_MAP_PILL_HEIGHT
@@ -298,13 +338,16 @@ export function recalculateFlowMapLayout(
     orderedSteps.forEach((stepNode, stepOrder) => {
       const stepResultNode = result.find((n) => n.id === stepNode.id)
       if (!stepResultNode) return
+      const stepTyp = flowNodeTypography(stepNode, 'step')
       const stepW = getEffectiveFlowWidth(
         stepNode.id,
         stepNode.text ?? '',
-        FLOW_STEP_FONT_SIZE,
+        stepTyp.fontSize,
         FLOW_MAX_TEXT_WIDTH,
         FLOW_NODE_PADDING_X,
-        nodeDimensions
+        nodeDimensions,
+        stepTyp.fontWeight,
+        stepTyp.fontFamily
       )
       const substepBaseX = (stepResultNode.position?.x ?? 0) + stepW + FLOW_SUBSTEP_OFFSET_X
 

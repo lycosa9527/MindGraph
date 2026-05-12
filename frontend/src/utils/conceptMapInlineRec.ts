@@ -31,3 +31,20 @@ export function conceptMapUsesRelationshipInlineRec(
 ): boolean {
   return getConceptMapPrimaryIncidentConnection(nodeId, connections) !== null
 }
+
+/**
+ * Returns true when the node sits in the middle of a directed chain — it is both
+ * a source of at least one edge AND a target of at least one edge.
+ *
+ * Example: A → B → C.  Selecting B is ambiguous: is the user labelling A→B or B→C?
+ * In that case inline rec for relationship labels should be disabled.
+ */
+export function conceptMapNodeIsAmbiguousForRec(
+  nodeId: string,
+  connections: Connection[] | null | undefined
+): boolean {
+  if (!nodeId || !connections?.length) return false
+  const hasOutgoing = connections.some((c) => c.source === nodeId)
+  const hasIncoming = connections.some((c) => c.target === nodeId)
+  return hasOutgoing && hasIncoming
+}

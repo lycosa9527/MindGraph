@@ -29,21 +29,27 @@ const FLOW_NODE_FONT_SIZE = 13
 const FLOW_NODE_PADDING_X = 40
 
 /**
- * Compute adaptive width for a cause/effect node from its text.
+ * Compute adaptive width for a cause/effect node from its text and typography.
  * Used when nodeWidths has no stored width (e.g. newly added from palette).
  */
-function computeFlowNodeWidth(text: string): number {
-  const trimmed = (text || '').trim() || ' '
+function computeFlowNodeWidth(node: DiagramNode): number {
+  const trimmed = (node.text ?? '').trim() || ' '
+  const fs =
+    typeof node.style?.fontSize === 'number' ? node.style.fontSize : FLOW_NODE_FONT_SIZE
+  const fontWeight = node.style?.fontWeight
+  const fontFamily = node.style?.fontFamily ?? DIAGRAM_NODE_FONT_STACK
   const textW =
     typeof document !== 'undefined'
       ? diagramLabelLikelyNeedsRenderedMeasure(trimmed)
-        ? measureRenderedDiagramLabelWidth(trimmed, FLOW_NODE_FONT_SIZE, {
-            fontFamily: DIAGRAM_NODE_FONT_STACK,
+        ? measureRenderedDiagramLabelWidth(trimmed, fs, {
+            fontFamily,
+            fontWeight: fontWeight === 'bold' ? 'bold' : 'normal',
           })
-        : measureTextWidth(trimmed, FLOW_NODE_FONT_SIZE, {
-            fontFamily: DIAGRAM_NODE_FONT_STACK,
+        : measureTextWidth(trimmed, fs, {
+            fontFamily,
+            fontWeight: fontWeight === 'bold' ? 'bold' : 'normal',
           })
-      : estimateTextWidthFallbackPx(trimmed, FLOW_NODE_FONT_SIZE)
+      : estimateTextWidthFallbackPx(trimmed, fs, { isTopic: fontWeight === 'bold' })
   return Math.max(DEFAULT_NODE_WIDTH, Math.ceil(textW + FLOW_NODE_PADDING_X))
 }
 
@@ -110,11 +116,11 @@ export function recalculateMultiFlowMapLayout(
   let maxEffectWidth = nodeWidth
 
   causeNodes.forEach((node) => {
-    maxCauseWidth = Math.max(maxCauseWidth, computeFlowNodeWidth(node.text ?? ''))
+    maxCauseWidth = Math.max(maxCauseWidth, computeFlowNodeWidth(node))
   })
 
   effectNodes.forEach((node) => {
-    maxEffectWidth = Math.max(maxEffectWidth, computeFlowNodeWidth(node.text ?? ''))
+    maxEffectWidth = Math.max(maxEffectWidth, computeFlowNodeWidth(node))
   })
 
   // Use the maximum of both columns for visual balance

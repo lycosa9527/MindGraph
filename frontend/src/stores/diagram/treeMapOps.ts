@@ -116,7 +116,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
       ...spec,
       root: { ...root, id: undefined, children: newCategories },
     }
-    ctx.loadFromSpec(newSpec, 'tree_map')
+    ctx.loadFromSpec(newSpec, 'tree_map', { mergePreviousNodeStyles: true })
 
     const deletedIds = [
       ...nodeIds,
@@ -270,7 +270,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
       children: (cat.children ?? []).map((leaf) => ({ text: leaf.text })),
     }))
     const newSpec = { ...spec, root: { ...root, id: undefined, children: cleanCategories } }
-    ctx.loadFromSpec(newSpec, 'tree_map')
+    ctx.loadFromSpec(newSpec, 'tree_map', { mergePreviousNodeStyles: true })
     if (data.value?._customPositions) data.value._customPositions = {}
     if (data.value?._node_styles) data.value._node_styles = {}
     selectedNodes.value = []
@@ -292,7 +292,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
       root.children = []
     }
     root.children.push({ text, children: [] })
-    ctx.loadFromSpec(spec, 'tree_map')
+    ctx.loadFromSpec(spec, 'tree_map', { mergePreviousNodeStyles: true })
     ctx.pushHistory('Add tree category')
     emitEvent('diagram:node_added', { node: null })
     return true
@@ -311,7 +311,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
       category.children = []
     }
     category.children.push({ text })
-    ctx.loadFromSpec(spec, 'tree_map')
+    ctx.loadFromSpec(spec, 'tree_map', { mergePreviousNodeStyles: true })
     ctx.pushHistory('Add tree child')
     emitEvent('diagram:node_added', { node: null })
     return true

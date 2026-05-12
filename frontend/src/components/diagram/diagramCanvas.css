@@ -249,9 +249,26 @@
   }
 }
 
+/* Rotating dashed ring — used only for true-circle nodes (aspect-ratio: 1, border-radius: 50%).
+ * Bubble nodes are pill/oval-shaped (no fixed aspect-ratio) and use gradient ants instead. */
+@keyframes circle-ants {
+  to { transform: rotate(360deg); }
+}
+
+/* Fix Bug 1: gradient ant stubs look wrong on true-circle nodes — replace with rotating dashed ring at a
+ * speed tuned to match workshop-ants' perceived pace (4s ≈ ~100px/s on typical 120px-diameter nodes).
+ * Only .vue-flow__node-circle non-capsule nodes qualify; bubble nodes are pill-shaped and stay on gradient. */
+.vue-flow__node-circle.workshop-editing:not(:has(.circle-node--capsule)) > *::before {
+  background-image: none !important;
+  border: var(--_ea-w) dashed var(--_ea-c);
+  border-radius: 50% !important;
+  animation: circle-ants 4s linear infinite;
+}
+
 /* ── Peer editing: sticker straddles top border (centered on upper edge) ───── */
 .vue-flow__node.workshop-editing::after {
-  content: attr(data-editor-emoji) '\00a0\00a0' attr(data-editor-label);
+  /* Values come from node.style CSS vars set by useDiagramCanvasNodesEdges — no DOM setAttribute needed. */
+  content: var(--editor-emoji) '\00a0\00a0' var(--editor-label);
   position: absolute;
   top: 0;
   left: 50%;
@@ -302,15 +319,36 @@
     0 4px 16px rgba(0, 0, 0, 0.45);
 }
 
-/* ── Remote selection indicator (unchanged) ────────────────────────────── */
-.vue-flow__node.collab-remote-selected {
-  outline: 2px dashed #f97316 !important;
-  outline-offset: 2px;
+/* ── Remote selection indicator ────────────────────────────────────────────
+ * Uses > *::after so border-radius: inherit picks up the actual node shape
+ * (Fix Bug 3: old `outline` was shape-blind — always rectangular except on circle wrappers).
+ * ──────────────────────────────────────────────────────────────────────── */
+.vue-flow__node.collab-remote-selected > * {
+  position: relative;
+  isolation: isolate;
 }
 
-/* Editing + remote selection: ants on the node only (no second orange frame). */
-.vue-flow__node.workshop-editing.collab-remote-selected {
-  outline: none !important;
+.vue-flow__node.collab-remote-selected:not(.vue-flow__node-boundary) > *::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 2px dashed #f97316;
+  border-radius: inherit;
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* True-circle nodes: rotating dashed ring instead of static dashed border.
+ * Bubble nodes stay on the inherited shape (border-radius: inherit from pill wrapper). */
+.vue-flow__node-circle.collab-remote-selected:not(:has(.circle-node--capsule)) > *::after {
+  border-radius: 50% !important;
+  animation: circle-ants 4s linear infinite;
+}
+
+/* Editing + remote selection: workshop ants take precedence — hide the orange frame */
+.vue-flow__node.workshop-editing.collab-remote-selected > *::after {
+  display: none !important;
 }
 
 /* ── Branch-move drop-target preview: primary blue, thick marching ants ────
@@ -373,6 +411,138 @@
 
 :root.dark .branch-move-drop-preview {
   --_dp-c: #60a5fa;
+}
+
+/* Fix Bug 1 (drop-preview): rotating ring for circle drop targets */
+.branch-move-drop-preview.is-circle {
+  background-image: none !important;
+  border: var(--_dp-w) dashed var(--_dp-c);
+  border-radius: 50% !important;
+  animation: circle-ants 4s linear infinite;
+}
+
+:root.dark .branch-move-drop-preview.is-circle {
+  border-color: #60a5fa;
+}
+
+/* ── AI tab-rec active: green ant line (gradient for pills/rects, rotating ring for circles) ──
+ * Applied when the AI inline-recommendation picker is open for this node.
+ * ──────────────────────────────────────────────────────────────────────── */
+.vue-flow__node.tab-rec-active {
+  --_ta-d: 10px;
+  --_ta-g: 8px;
+  --_ta-p: calc(var(--_ta-d) + var(--_ta-g));
+  --_ta-w: 4px;
+  --_ta-c: #22c55e;
+  /* reuse workshop-ants keyframes */
+  --_ea-p: var(--_ta-p);
+}
+
+:root.dark .vue-flow__node.tab-rec-active {
+  --_ta-c: #4ade80;
+}
+
+.vue-flow__node.tab-rec-active:not(.vue-flow__node-boundary) > * {
+  position: relative;
+  isolation: isolate;
+  border-color: transparent !important;
+}
+
+.vue-flow__node.tab-rec-active:not(.vue-flow__node-boundary) > *::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-sizing: border-box;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      var(--_ta-c) 0,
+      var(--_ta-c) var(--_ta-d),
+      transparent var(--_ta-d),
+      transparent var(--_ta-p)
+    ),
+    repeating-linear-gradient(
+      180deg,
+      var(--_ta-c) 0,
+      var(--_ta-c) var(--_ta-d),
+      transparent var(--_ta-d),
+      transparent var(--_ta-p)
+    ),
+    repeating-linear-gradient(
+      270deg,
+      var(--_ta-c) 0,
+      var(--_ta-c) var(--_ta-d),
+      transparent var(--_ta-d),
+      transparent var(--_ta-p)
+    ),
+    repeating-linear-gradient(
+      0deg,
+      var(--_ta-c) 0,
+      var(--_ta-c) var(--_ta-d),
+      transparent var(--_ta-d),
+      transparent var(--_ta-p)
+    );
+  background-size:
+    var(--_ta-p) var(--_ta-w),
+    var(--_ta-w) var(--_ta-p),
+    var(--_ta-p) var(--_ta-w),
+    var(--_ta-w) var(--_ta-p);
+  background-position:
+    0 0,
+    100% 0,
+    100% 100%,
+    0 100%;
+  background-repeat: repeat-x, repeat-y, repeat-x, repeat-y;
+  background-origin: border-box;
+  animation: workshop-ants 0.55s linear infinite;
+}
+
+/* True-circle nodes: rotating green ring.
+ * Bubble nodes stay on gradient ants (pill/oval shape, no fixed aspect-ratio). */
+.vue-flow__node-circle.tab-rec-active:not(:has(.circle-node--capsule)) > *::before {
+  background-image: none !important;
+  border: var(--_ta-w) dashed var(--_ta-c);
+  border-radius: 50% !important;
+  animation: circle-ants 4s linear infinite;
+}
+
+/* workshop-editing ants take precedence over tab-rec */
+.vue-flow__node.workshop-editing.tab-rec-active > *::before {
+  display: none !important;
+}
+
+/* ── AI tab-rec edge ant line: concept map relationship-label mode ──────────
+ * A full-bezier overlay path (class curved-edge-tab-rec-overlay) is injected
+ * by CurvedEdge.vue for every concept map edge.  The overlay spans A → B
+ * as a single unsplit bezier, so the marching ants animate in one seamless
+ * sweep from source to target (A → B) rather than from two independently-
+ * phased half-segments.
+ *
+ * Direction: stroke-dashoffset 0 → -18 moves each dash one period (18px)
+ * forward along the SVG path direction (source → target = A → B). ✓
+ * ──────────────────────────────────────────────────────────────────────────── */
+@keyframes edge-ants {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -18;
+  }
+}
+
+/* Overlay has no inline :style binding, so no !important needed. */
+.vue-flow__edge.tab-rec-active .curved-edge-tab-rec-overlay {
+  stroke: #22c55e;
+  stroke-width: 3;
+  stroke-dasharray: 10 8;
+  stroke-dashoffset: 0;
+  animation: edge-ants 1.4s linear infinite;
+}
+
+:root.dark .vue-flow__edge.tab-rec-active .curved-edge-tab-rec-overlay {
+  stroke: #4ade80;
 }
 
 .vue-flow__node-flow[data-id^='cause-'].selected,

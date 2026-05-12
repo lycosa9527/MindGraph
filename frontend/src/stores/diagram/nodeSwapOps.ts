@@ -109,7 +109,9 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
     const tmp = contextTexts[srcIdx]
     contextTexts[srcIdx] = contextTexts[tgtIdx]
     contextTexts[tgtIdx] = tmp
-    return ctx.loadFromSpec({ topic, context: contextTexts }, 'circle_map')
+    return ctx.loadFromSpec({ topic, context: contextTexts }, 'circle_map', {
+      mergePreviousNodeStyles: true,
+    })
   }
 
   function swapDoubleBubbleMapNodes(sourceId: string, targetId: string): boolean {
@@ -130,7 +132,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
         const tmp = similarities[si]
         similarities[si] = similarities[ti]
         similarities[ti] = tmp
-        return ctx.loadFromSpec(spec, 'double_bubble_map')
+        return ctx.loadFromSpec(spec, 'double_bubble_map', { mergePreviousNodeStyles: true })
       }
       return false
     }
@@ -151,7 +153,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
       const tmpR = rightDiffs[srcDiffIdx]
       rightDiffs[srcDiffIdx] = rightDiffs[tgtDiffIdx]
       rightDiffs[tgtDiffIdx] = tmpR
-      return ctx.loadFromSpec(spec, 'double_bubble_map')
+      return ctx.loadFromSpec(spec, 'double_bubble_map', { mergePreviousNodeStyles: true })
     }
     return false
   }
@@ -176,7 +178,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
         steps[ti] = srcText
         if (srcSubs) srcSubs.step = srcText
         if (tgtSubs) tgtSubs.step = tgtText
-        return ctx.loadFromSpec(spec, 'flow_map')
+        return ctx.loadFromSpec(spec, 'flow_map', { mergePreviousNodeStyles: true })
       }
       return false
     }
@@ -202,7 +204,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
           const tmp = srcEntry.substeps[srcSub]
           srcEntry.substeps[srcSub] = tgtEntry.substeps[tgtSub]
           tgtEntry.substeps[tgtSub] = tmp
-          return ctx.loadFromSpec(spec, 'flow_map')
+          return ctx.loadFromSpec(spec, 'flow_map', { mergePreviousNodeStyles: true })
         }
       }
       return false
@@ -243,7 +245,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
         substepsList.push({ step: tgtStepText, substeps: [movedText] })
       }
 
-      success = ctx.loadFromSpec(spec, 'flow_map')
+      success = ctx.loadFromSpec(spec, 'flow_map', { mergePreviousNodeStyles: true })
     } else {
       success = swapFlowMapNodes(sourceId, targetId)
     }
@@ -288,7 +290,9 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
         const tmp = causes[si]
         causes[si] = causes[ti]
         causes[ti] = tmp
-        return ctx.loadFromSpec({ event: eventNode?.text ?? '', causes, effects }, 'multi_flow_map')
+        return ctx.loadFromSpec({ event: eventNode?.text ?? '', causes, effects }, 'multi_flow_map', {
+          mergePreviousNodeStyles: true,
+        })
       }
       return false
     }
@@ -302,7 +306,9 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
         const tmp = effects[si]
         effects[si] = effects[ti]
         effects[ti] = tmp
-        return ctx.loadFromSpec({ event: eventNode?.text ?? '', causes, effects }, 'multi_flow_map')
+        return ctx.loadFromSpec({ event: eventNode?.text ?? '', causes, effects }, 'multi_flow_map', {
+          mergePreviousNodeStyles: true,
+        })
       }
       return false
     }
@@ -481,7 +487,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
       analogies,
     }
     if (altDims) spec.alternative_dimensions = altDims
-    return ctx.loadFromSpec(spec, 'bridge_map')
+    return ctx.loadFromSpec(spec, 'bridge_map', { mergePreviousNodeStyles: true })
   }
 
   function moveNodeBySwap(sourceId: string, targetId: string): boolean {

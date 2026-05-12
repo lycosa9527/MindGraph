@@ -14,22 +14,69 @@ import {
 import { bubbleMapChildrenRadius, polarToPosition } from '@/composables/diagrams/useRadialLayout'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
+import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
 import {
   CONTEXT_FONT_SIZE,
   TOPIC_FONT_SIZE,
-  computeMinDiameterForNoWrap,
+  calculateBubbleMapRadius,
   computeTopicRadiusForCircleMap,
+  diagramLabelLikelyNeedsRenderedMeasure,
+  measureRenderedDiagramLabelHeight,
+  measureRenderedDiagramLabelWidth,
 } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 
+function defaultContextBubbleRadiusFromText(text: string): number {
+  const trimmed = (text || '').trim() || ' '
+  return Math.max(
+    DEFAULT_CONTEXT_RADIUS,
+    calculateBubbleMapRadius(
+      trimmed,
+      CONTEXT_FONT_SIZE,
+      10,
+      DEFAULT_CONTEXT_RADIUS,
+      false,
+      false,
+      DIAGRAM_NODE_FONT_STACK
+    )
+  )
+}
+
 /**
- * Compute radius for each attribute from text (min diameter for no-wrap fit).
- * Matches old D3 bubble-map-renderer: circles grow to fit text.
+ * Context bubble radius from node text and typography (not DOM box), so font-only edits resize circles.
  */
-function radiusFromText(text: string): number {
-  const diameter = computeMinDiameterForNoWrap(text || ' ', CONTEXT_FONT_SIZE, false)
-  return Math.max(DEFAULT_CONTEXT_RADIUS, diameter / 2)
+function bubbleContextRadiusFromNode(node: DiagramNode): number {
+  const trimmed = (node.text ?? '').trim() || ' '
+  const fs =
+    typeof node.style?.fontSize === 'number' ? node.style.fontSize : CONTEXT_FONT_SIZE
+  const measureBold = node.style?.fontWeight === 'bold'
+  const fontFamily = node.style?.fontFamily ?? DIAGRAM_NODE_FONT_STACK
+  const labelOpts = {
+    fontWeight: (measureBold ? 'bold' : 'normal') as 'bold' | 'normal',
+    fontFamily,
+  }
+
+  if (typeof document !== 'undefined' && diagramLabelLikelyNeedsRenderedMeasure(trimmed)) {
+    const w = measureRenderedDiagramLabelWidth(trimmed, fs, labelOpts)
+    const h = measureRenderedDiagramLabelHeight(trimmed, fs, 1_000_000, labelOpts)
+    const diagonal = Math.sqrt(w * w + h * h)
+    const radius = Math.ceil(diagonal / 2 + 10)
+    return Math.max(DEFAULT_CONTEXT_RADIUS, radius)
+  }
+
+  return Math.max(
+    DEFAULT_CONTEXT_RADIUS,
+    calculateBubbleMapRadius(
+      trimmed,
+      fs,
+      10,
+      DEFAULT_CONTEXT_RADIUS,
+      false,
+      measureBold,
+      fontFamily
+    )
+  )
 }
 
 /**
@@ -38,7 +85,7 @@ function radiusFromText(text: string): number {
  */
 export function recalculateBubbleMapLayout(
   nodes: DiagramNode[],
-  nodeDimensions: Record<string, { width: number; height: number }> = {}
+  _nodeDimensions: Record<string, { width: number; height: number }> = {}
 ): DiagramNode[] {
   if (!Array.isArray(nodes) || nodes.length === 0) return []
 
@@ -53,18 +100,19 @@ export function recalculateBubbleMapLayout(
     })
   const nodeCount = bubbleNodes.length
   const topicText = topicNode?.text ?? ''
-  const measuredTopic = topicNode ? nodeDimensions[topicNode.id] : undefined
-  const topicR = measuredTopic
-    ? Math.max(DEFAULT_TOPIC_RADIUS, Math.max(measuredTopic.width, measuredTopic.height) / 2)
-    : Math.max(DEFAULT_TOPIC_RADIUS, computeTopicRadiusForCircleMap(topicText || ' '))
+  const topicStyle = topicNode?.style
+  const topicR = Math.max(
+    DEFAULT_TOPIC_RADIUS,
+    computeTopicRadiusForCircleMap(topicText || ' ', {
+      fontSize: typeof topicStyle?.fontSize === 'number' ? topicStyle.fontSize : undefined,
+      fontWeight: topicStyle?.fontWeight,
+      fontFamily: topicStyle?.fontFamily,
+    })
+  )
   const centerX = DEFAULT_CENTER_X
   const centerY = DEFAULT_CENTER_Y
 
-  const radii = bubbleNodes.map((n) => {
-    const measured = nodeDimensions[n.id]
-    if (measured) return Math.max(measured.width, measured.height) / 2
-    return radiusFromText(n.text)
-  })
+  const radii = bubbleNodes.map((n) => bubbleContextRadiusFromNode(n))
   const uniformRadius =
     bubbleNodes.length > 0 ? Math.max(DEFAULT_CONTEXT_RADIUS, ...radii) : DEFAULT_CONTEXT_RADIUS
 
@@ -80,7 +128,7 @@ export function recalculateBubbleMapLayout(
       style: {
         ...restStyle,
         size: topicR * 2,
-        fontSize: TOPIC_FONT_SIZE,
+        fontSize: restStyle.fontSize ?? TOPIC_FONT_SIZE,
       },
     })
   }
@@ -104,7 +152,7 @@ export function recalculateBubbleMapLayout(
       style: {
         ...node.style,
         size: uniformRadius * 2,
-        fontSize: CONTEXT_FONT_SIZE,
+        fontSize: node.style?.fontSize ?? CONTEXT_FONT_SIZE,
         noWrap: true,
         backgroundColor: color.fill,
         borderColor: color.border,
@@ -132,7 +180,7 @@ export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   const centerY = DEFAULT_CENTER_Y
   const nodeCount = attributes.length
 
-  const radii = attributes.map((attr) => radiusFromText(attr))
+  const radii = attributes.map((attr) => defaultContextBubbleRadiusFromText(attr))
   const uniformRadius =
     nodeCount > 0 ? Math.max(DEFAULT_CONTEXT_RADIUS, ...radii) : DEFAULT_CONTEXT_RADIUS
 

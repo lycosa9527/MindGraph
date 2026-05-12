@@ -13,7 +13,10 @@ import {
   useInlineRecommendationsStore,
   useLLMResultsStore,
 } from '@/stores'
-import { conceptMapUsesRelationshipInlineRec } from '@/utils/conceptMapInlineRec'
+import {
+  conceptMapNodeIsAmbiguousForRec,
+  conceptMapUsesRelationshipInlineRec,
+} from '@/utils/conceptMapInlineRec'
 
 function isTypingUiTarget(el: EventTarget | null): boolean {
   if (!el || !(el instanceof HTMLElement)) return false
@@ -55,6 +58,9 @@ export function useConceptMapRelationshipTabFromSelection(options: {
     const nodeId = selected[0]
     const connections = diagramStore.data?.connections ?? []
     if (!conceptMapUsesRelationshipInlineRec(nodeId, connections)) return
+    // Node is in the middle of a chain (both incoming and outgoing edges): which
+    // edge to label is ambiguous, so disable Tab inline rec for this node.
+    if (conceptMapNodeIsAmbiguousForRec(nodeId, connections)) return
 
     const nodes = diagramStore.data?.nodes ?? []
     const node = nodes.find((n: { id?: string }) => n.id === nodeId)

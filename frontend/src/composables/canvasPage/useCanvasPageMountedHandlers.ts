@@ -26,6 +26,7 @@ import {
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { conceptMapNodeIsAmbiguousForRec } from '@/utils/conceptMapInlineRec'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
 export function useCanvasPageMountedHandlers(options: {
@@ -149,6 +150,10 @@ export function useCanvasPageMountedHandlers(options: {
             notify.warning(t('notification.signInToUse'))
             return
           }
+          // Node is in the middle of a chain (incoming + outgoing edges): which edge
+          // to label is ambiguous, so skip Tab inline rec for relationship labels.
+          const connections = diagramStore.data?.connections ?? []
+          if (conceptMapNodeIsAmbiguousForRec(nodeId, connections)) return
         }
         void startRecommendations(nodeId)
       },

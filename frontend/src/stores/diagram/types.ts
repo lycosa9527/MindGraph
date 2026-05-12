@@ -6,6 +6,11 @@ import type { DiagramData, DiagramNode, DiagramType, HistoryEntry } from '@/type
 export type LoadFromSpecOptions = {
   /** When false, skip `diagram:loaded` so listeners do not treat it as a new diagram. */
   emitLoaded?: boolean
+  /**
+   * When true (same diagram type as before load), merge each previous node's `style` into
+   * newly built nodes by id so typography survives structural reloads (e.g. flow / double-bubble).
+   */
+  mergePreviousNodeStyles?: boolean
 }
 
 export type DiagramEventType =
