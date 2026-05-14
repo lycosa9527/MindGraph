@@ -1,16 +1,15 @@
 /**
- * Lazy-loads the heavy markdown-it + KaTeX pipeline used for diagram labels.
- * Keeps initial canvas / spec-loader chunks free of useMarkdown.ts until math or markdown is needed.
+ * Diagram label measurement uses the same markdown-it + KaTeX pipeline as chat/UI (`useMarkdown`).
+ * That module is already pulled into the app bundle by several static imports; a dynamic import
+ * here only triggered Vite's “dynamic + static” chunk warning without reducing bundle size.
  *
  * Layout bumps use eventBus (not dynamic import of @/stores) so Vite does not warn about
  * ineffective dynamic imports — the stores barrel is already in the app bundle.
  */
 import { eventBus } from '@/composables/core/useEventBus'
+import { renderMarkdownForDiagramLabelMeasure } from '@/composables/core/useMarkdown'
 
-type RenderMarkdownForMeasure = (content: string) => string
-
-let renderMarkdownForMeasure: RenderMarkdownForMeasure | null = null
-let loadPromise: Promise<void> | null = null
+let pipelineLoadHandled = false
 
 /**
  * True when label likely contains markdown or KaTeX (needs rendered DOM width, not source string width).
@@ -23,17 +22,14 @@ export function diagramLabelLikelyNeedsRenderedMeasure(text: string): boolean {
 }
 
 export function isDiagramMarkdownPipelineLoaded(): boolean {
-  return renderMarkdownForMeasure !== null
+  return true
 }
 
 /**
- * Sync render after {@link loadDiagramMarkdownPipeline} has resolved.
+ * Renders diagram label source through the shared markdown + KaTeX pipeline (same output as MindMate/chat).
  */
 export function renderMarkdownForDiagramLabelMeasureSync(content: string): string {
-  if (!renderMarkdownForMeasure) {
-    throw new Error('Diagram markdown pipeline not loaded')
-  }
-  return renderMarkdownForMeasure(content)
+  return renderMarkdownForDiagramLabelMeasure(content)
 }
 
 function bumpDiagramLayoutRecalc(): void {
@@ -41,25 +37,24 @@ function bumpDiagramLayoutRecalc(): void {
 }
 
 /**
- * Loads the shared markdown + KaTeX module once (`renderMarkdownForDiagramLabelMeasure`).
- * @param bumpLayout - When true (default), increments diagram layoutRecalcTrigger after first load so Vue Flow recomputes with accurate measurements. Set false when loading immediately before loadFromSpec (full layout refresh follows).
+ * Ensures diagram label code has run the same initialization path as before (layout bump on first
+ * diagram-driven load). The markdown pipeline module is loaded synchronously with this file.
+ *
+ * @param bumpLayout - When true (default), bumps diagram layout after the first call so Vue Flow
+ *   recomputes with accurate measurements. Set false when calling immediately before loadFromSpec
+ *   (full layout refresh follows).
  */
 export async function loadDiagramMarkdownPipeline(options?: {
   bumpLayout?: boolean
 }): Promise<void> {
-  if (renderMarkdownForMeasure) {
+  if (pipelineLoadHandled) {
     return
   }
-  if (!loadPromise) {
-    const bumpAfterLoad = options?.bumpLayout !== false
-    loadPromise = import('@/composables/core/useMarkdown').then((mod) => {
-      renderMarkdownForMeasure = mod.renderMarkdownForDiagramLabelMeasure
-      if (bumpAfterLoad) {
-        bumpDiagramLayoutRecalc()
-      }
-    })
+  pipelineLoadHandled = true
+  const bumpAfterLoad = options?.bumpLayout !== false
+  if (bumpAfterLoad) {
+    bumpDiagramLayoutRecalc()
   }
-  await loadPromise
 }
 
 /**

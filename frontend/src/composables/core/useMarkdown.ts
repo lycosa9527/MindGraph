@@ -82,7 +82,7 @@ export function renderRichMarkdownHtml(content: string): string {
 }
 
 /**
- * Same as {@link renderRichMarkdownHtml}. Kept for diagram label measurement and lazy pipeline imports.
+ * Same as {@link renderRichMarkdownHtml}. Used by diagram label measurement (`diagramMarkdownPipeline`).
  */
 export function renderMarkdownForDiagramLabelMeasure(content: string): string {
   return renderRichMarkdownHtml(content)

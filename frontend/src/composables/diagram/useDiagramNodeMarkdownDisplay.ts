@@ -1,6 +1,6 @@
 /**
  * Markdown + KaTeX HTML for diagram node label display (sanitized via useMarkdown).
- * Loads the heavy pipeline only when the label likely contains math or markdown.
+ * Skips work unless the label likely contains math or markdown.
  */
 import { type ComputedRef, type Ref, computed, shallowRef, watch } from 'vue'
 
