@@ -4,7 +4,7 @@
  * Uses useMindMate composable for SSE streaming
  * Features: Markdown rendering, code highlighting, message actions, stop generation
  */
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import { ElButton, ElIcon } from 'element-plus'
 
@@ -104,6 +104,15 @@ watch(
   },
   { immediate: true }
 )
+
+/** Remount restores empty local state (`useMindMate` destroy()); reload thread from Pinia. */
+onMounted(() => {
+  const convId = mindMateStore.currentConversationId
+  if (!convId || mindMate.hasMessages.value) {
+    return
+  }
+  void mindMate.loadConversation(convId)
+})
 
 // Watch for title changes to sync display (from store)
 watch(

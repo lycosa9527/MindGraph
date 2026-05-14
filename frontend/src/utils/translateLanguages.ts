@@ -24,3 +24,27 @@ export const TRANSLATE_LANGUAGES: TranslateLanguage[] = [
   { code: 'el', label: 'Ελληνικά (希腊语)' },
   { code: 'tr', label: 'Türkçe (土耳其语)' },
 ]
+
+const CANVAS_TRANSLATE_TARGET_CODES = new Set(
+  TRANSLATE_LANGUAGES.map((entry) => entry.code)
+)
+
+/**
+ * Map MindGraph UI locale to `target_language` for `/api/canvas/translate_*` endpoints.
+ * Only languages in {@link TRANSLATE_LANGUAGES} are supported; others fall back to `en`.
+ * Traditional-Chinese UI (`zh-tw`, `zh-hant`) maps to API code `zh` (see also `ui_locale` body field).
+ */
+export function canvasTranslateTargetForUiLocale(ui: string): string {
+  const code = String(ui || '').trim()
+  if (code === 'zh-tw' || code === 'zh-hant') {
+    return 'zh'
+  }
+  if (CANVAS_TRANSLATE_TARGET_CODES.has(code)) {
+    return code
+  }
+  const base = code.split('-')[0]
+  if (base && base !== code && CANVAS_TRANSLATE_TARGET_CODES.has(base)) {
+    return base
+  }
+  return 'en'
+}

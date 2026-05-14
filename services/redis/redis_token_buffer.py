@@ -61,7 +61,8 @@ class RedisTokenBuffer:
     could lose buffered data.
     """
 
-    # Model pricing (per 1M tokens in CNY)
+    # Model pricing (per 1M tokens in CNY). Logical keys qwen / qwen-turbo map to
+    # QWEN_MODEL_GENERATION / classification (see config); reconcile with 百炼 billing.
     MODEL_PRICING = {
         "qwen": {"input": 0.4, "output": 1.2, "provider": "dashscope"},
         "qwen-turbo": {"input": 0.3, "output": 0.6, "provider": "dashscope"},
@@ -74,11 +75,11 @@ class RedisTokenBuffer:
         "dify": {"input": 0.5, "output": 1.5, "provider": "dify"},
     }
 
-    # Model name mapping
+    # Display names for resolved DashScope model ids (Qwen 3.6 family defaults).
     MODEL_NAME_MAP = {
-        "qwen": "qwen-plus-latest",
-        "qwen-turbo": "qwen-turbo-latest",
-        "qwen-plus": "qwen-plus-latest",
+        "qwen": "qwen3.6-plus",
+        "qwen-turbo": "qwen3.6-flash",
+        "qwen-plus": "qwen3.6-plus",
         "deepseek": "deepseek-v3.1",
         "kimi": "moonshot-v1-32k",
         "hunyuan": "hunyuan-turbo",

@@ -46,12 +46,12 @@ class LLMConfigMixin:
     @property
     def QWEN_MODEL_CLASSIFICATION(self):
         """Model for classification tasks"""
-        return self._get_cached_value("QWEN_MODEL_CLASSIFICATION", "qwen-plus-latest")
+        return self._get_cached_value("QWEN_MODEL_CLASSIFICATION", "qwen3.6-flash")
 
     @property
     def QWEN_MODEL_GENERATION(self):
         """Model for generation tasks (higher quality)"""
-        return self._get_cached_value("QWEN_MODEL_GENERATION", "qwen-plus-latest")
+        return self._get_cached_value("QWEN_MODEL_GENERATION", "qwen3.6-plus")
 
     @property
     def DASHSCOPE_API_URL(self):

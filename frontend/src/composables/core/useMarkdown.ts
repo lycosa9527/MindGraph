@@ -69,10 +69,11 @@ const md = new MarkdownIt({
 md.use(resolveMarkdownItKatexPlugin(), { throwOnError: false, katex })
 
 /**
- * Same pipeline as {@link useMarkdown}'s render — exported for layout measurement
- * (multi-flow map, etc.) so node width matches KaTeX + markdown output on the canvas.
+ * Markdown → sanitized HTML with KaTeX math, fenced-code highlighting, and DOMPurify allowlists.
+ * Use for MindMate bubbles, workshop chat (via {@link useMarkdown}), share/export, debateverse,
+ * ask-once, changelog modal, and anywhere model or user prose is rendered to `v-html`.
  */
-export function renderMarkdownForDiagramLabelMeasure(content: string): string {
+export function renderRichMarkdownHtml(content: string): string {
   const prepared = normalizeKatexDelimitersForMarkdownIt(
     replaceMathLivePlaceholdersForKatex(content)
   )
@@ -80,9 +81,16 @@ export function renderMarkdownForDiagramLabelMeasure(content: string): string {
   return DOMPurify.sanitize(raw, markdownKatexDomPurifyConfig)
 }
 
+/**
+ * Same as {@link renderRichMarkdownHtml}. Kept for diagram label measurement and lazy pipeline imports.
+ */
+export function renderMarkdownForDiagramLabelMeasure(content: string): string {
+  return renderRichMarkdownHtml(content)
+}
+
 export function useMarkdown() {
   function render(content: string): string {
-    return renderMarkdownForDiagramLabelMeasure(content)
+    return renderRichMarkdownHtml(content)
   }
 
   return { render }

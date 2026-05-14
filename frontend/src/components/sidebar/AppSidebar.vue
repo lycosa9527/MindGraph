@@ -105,11 +105,3 @@ const {
   --el-button-hover-bg-color: #f5f5f4;
 }
 </style>
-
-<style>
-/* Global styles for user dropdown popper - arrow on right side */
-.user-dropdown-popper .el-popper__arrow {
-  left: auto !important;
-  right: 16px !important;
-}
-</style>

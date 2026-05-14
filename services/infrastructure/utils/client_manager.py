@@ -68,7 +68,7 @@ class ClientManager:
             from clients.omni_client import OmniClient  # pylint: disable=import-outside-toplevel
 
             try:
-                # Initialize Qwen clients (two instances for different purposes)
+                # Initialize Qwen clients (two instances: classification vs generation model ids)
                 self._clients["qwen"] = QwenClient("generation")
                 self._clients["qwen-turbo"] = QwenClient("classification")
                 self._clients["qwen-plus"] = QwenClient("generation")

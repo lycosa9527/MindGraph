@@ -349,7 +349,7 @@ function handleToggleOrientation() {
   white-space: nowrap;
 }
 
-:deep(.toolbar-content .el-button) {
+:deep(.toolbar-content .el-button:not(.canvas-more-apps-trigger)) {
   --el-button-hover-bg-color: transparent;
   --el-button-hover-text-color: inherit;
   padding: 8px !important;
@@ -384,7 +384,7 @@ function handleToggleOrientation() {
   padding: 8px !important;
 }
 
-:deep(.toolbar-content .el-button:has(span)) {
+:deep(.toolbar-content .el-button:has(span):not(.canvas-more-apps-trigger)) {
   display: inline-flex !important;
   align-items: center !important;
   gap: 4px !important;
@@ -504,39 +504,11 @@ function handleToggleOrientation() {
 }
 
 :deep(.more-apps-btn) {
-  background: white !important;
-  border: 1px solid #e5e7eb !important;
-  color: #374151 !important;
-  padding: 6px 12px !important;
   margin-left: 12px !important;
-  gap: 4px !important;
-}
-
-:deep(.more-apps-btn:hover) {
-  background: #f9fafb !important;
-  border-color: #d1d5db !important;
-}
-
-:deep(.more-apps-btn span) {
-  color: #374151 !important;
-}
-
-:deep(.more-apps-menu) {
-  width: 280px !important;
-}
-
-:deep(.more-apps-menu .el-dropdown-menu__item) {
-  padding: 8px 12px !important;
-  line-height: 1.4 !important;
+  gap: 6px !important;
 }
 
 :deep(.dark .divider) {
   background-color: #4b5563;
-}
-
-:deep(.dark .more-apps-btn) {
-  background: #374151 !important;
-  border-color: #4b5563 !important;
-  color: #e5e7eb !important;
 }
 </style>

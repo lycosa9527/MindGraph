@@ -38,6 +38,7 @@ import {
   ZoomControls,
 } from '@/components/canvas'
 import CanvasCollabOverlay from '@/components/canvas/CanvasCollabOverlay.vue'
+import CanvasTranslateProgressBanner from '@/components/canvas/CanvasTranslateProgressBanner.vue'
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
 import KittyCanvasAnchor from '@/components/kitty/KittyCanvasAnchor.vue'
 import { MindmatePanel, NodePalettePanel, RootConceptModal } from '@/components/panels'
@@ -813,6 +814,8 @@ onUnmounted(() => {
       @collabSession="handleCollabSession"
       @retryConnection="reconnect"
     />
+
+    <CanvasTranslateProgressBanner />
 
     <KittyCanvasAnchor
       :visible="showKittyDesktopIndicator"

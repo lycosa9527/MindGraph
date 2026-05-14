@@ -74,7 +74,7 @@ const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.p
         class="user-dropdown w-full"
       >
         <div
-          class="flex items-center justify-between cursor-pointer hover:bg-stone-100 transition-colors px-4 py-3 w-full"
+          class="user-dropdown-trigger flex items-center justify-between cursor-pointer hover:bg-[#f5f5f4] transition-colors px-4 py-3 w-full"
         >
           <div class="flex items-center min-w-0 flex-1">
             <el-badge
@@ -112,7 +112,7 @@ const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.p
           <ChevronDown class="w-4 h-4 text-stone-400 shrink-0 ml-2" />
         </div>
         <template #dropdown>
-          <el-dropdown-menu class="user-menu">
+          <el-dropdown-menu class="user-dropdown-menu max-h-[min(420px,70vh)] overflow-y-auto">
             <el-dropdown-item
               v-if="showMindGraphGalleryImport"
               @click="triggerImport"
@@ -144,6 +144,7 @@ const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.p
             </el-dropdown-item>
             <el-dropdown-item
               divided
+              class="user-dropdown-item--logout"
               @click="s.handleLogout"
             >
               <LogOut class="w-4 h-4 mr-2" />
@@ -158,6 +159,7 @@ const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.p
         v-else
         trigger="click"
         placement="top-end"
+        popper-class="user-dropdown-popper"
         :popper-options="{
           modifiers: [{ name: 'offset', options: { offset: [0, 8] } }],
         }"
@@ -181,7 +183,7 @@ const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.p
           </el-button>
         </el-badge>
         <template #dropdown>
-          <el-dropdown-menu class="user-menu">
+          <el-dropdown-menu class="user-dropdown-menu max-h-[min(420px,70vh)] overflow-y-auto">
             <el-dropdown-item
               v-if="showMindGraphGalleryImport"
               @click="triggerImport"
@@ -213,6 +215,7 @@ const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.p
             </el-dropdown-item>
             <el-dropdown-item
               divided
+              class="user-dropdown-item--logout"
               @click="s.handleLogout"
             >
               <LogOut class="w-4 h-4 mr-2" />
@@ -265,50 +268,8 @@ const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.p
   font-weight: normal;
 }
 
-.user-dropdown-collapsed :deep(.el-dropdown-menu__item) {
-  display: flex;
-  align-items: center;
-}
-
-.user-dropdown-collapsed :deep(.el-dropdown-menu__item svg) {
-  flex-shrink: 0;
-}
-
-/* User dropdown - Swiss Design style */
 .user-dropdown {
   width: 100%;
-}
-
-.user-dropdown :deep(.el-dropdown-menu) {
-  --el-dropdown-menu-box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border: 1px solid #e7e5e4;
-  border-radius: 8px;
-  padding: 4px;
-  min-width: 160px;
-}
-
-.user-dropdown :deep(.el-dropdown-menu__item) {
-  font-size: 14px;
-  padding: 8px 12px;
-  color: #57534e;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-}
-
-.user-dropdown :deep(.el-dropdown-menu__item:hover) {
-  background-color: #f5f5f4;
-  color: #1c1917;
-}
-
-.user-dropdown :deep(.el-dropdown-menu__item svg) {
-  flex-shrink: 0;
-}
-
-.user-dropdown :deep(.el-dropdown-menu__item.is-divided) {
-  border-top: 1px solid #e7e5e4;
-  margin-top: 4px;
-  padding-top: 8px;
 }
 
 /* Organization name marquee for long names */
@@ -345,5 +306,122 @@ const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.p
   100% {
     transform: translateX(-50%);
   }
+}
+</style>
+
+<!-- Teleported popper — Swiss (matches MindGraphLanguageSwitcher / canvas-more-apps) -->
+<style>
+.user-dropdown-popper.el-popper {
+  box-sizing: border-box !important;
+  width: max-content !important;
+  max-width: min(280px, calc(100vw - 24px)) !important;
+  min-width: 0 !important;
+  padding: 4px !important;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 10px !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.07),
+    0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
+  overflow: hidden !important;
+}
+
+.dark .user-dropdown-popper.el-popper {
+  border-color: #374151 !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.25),
+    0 2px 4px -2px rgba(0, 0, 0, 0.18) !important;
+}
+
+.user-dropdown-popper .el-popper__arrow {
+  left: auto !important;
+  right: 16px !important;
+}
+
+.user-dropdown-popper .user-dropdown-menu.el-dropdown-menu {
+  width: max-content !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  overflow-x: hidden !important;
+  scrollbar-gutter: stable;
+}
+
+.user-dropdown-popper .el-dropdown-menu__item {
+  display: flex !important;
+  align-items: center;
+  padding: 8px 14px !important;
+  font-size: 13px;
+  font-weight: 500;
+  color: #44403c;
+  border-radius: 6px;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.user-dropdown-popper .el-dropdown-menu__item:hover,
+.user-dropdown-popper .el-dropdown-menu__item:focus {
+  background: #f5f5f4 !important;
+  color: #1c1917 !important;
+}
+
+.user-dropdown-popper .el-dropdown-menu__item:active {
+  background: #e7e5e4 !important;
+}
+
+.user-dropdown-popper .el-dropdown-menu__item svg {
+  flex-shrink: 0;
+}
+
+.dark .user-dropdown-popper .el-dropdown-menu__item {
+  color: #d6d3d1;
+}
+
+.dark .user-dropdown-popper .el-dropdown-menu__item:hover,
+.dark .user-dropdown-popper .el-dropdown-menu__item:focus {
+  background: #374151 !important;
+  color: #f9fafb !important;
+}
+
+.dark .user-dropdown-popper .el-dropdown-menu__item:active {
+  background: #4b5563 !important;
+}
+
+.user-dropdown-popper .el-dropdown-menu__item.is-divided {
+  border-top: 1px solid #f3f4f6;
+  margin-top: 2px;
+  padding-top: 10px;
+}
+
+.dark .user-dropdown-popper .el-dropdown-menu__item.is-divided {
+  border-top-color: #4b5563;
+}
+
+.user-dropdown-popper .user-dropdown-item--logout {
+  color: #dc2626;
+}
+
+.user-dropdown-popper .user-dropdown-item--logout:hover,
+.user-dropdown-popper .user-dropdown-item--logout:focus {
+  background: #fef2f2 !important;
+  color: #b91c1c !important;
+}
+
+.dark .user-dropdown-popper .user-dropdown-item--logout {
+  color: #f87171;
+}
+
+.dark .user-dropdown-popper .user-dropdown-item--logout:hover,
+.dark .user-dropdown-popper .user-dropdown-item--logout:focus {
+  background: rgba(127, 29, 29, 0.35) !important;
+  color: #fecaca !important;
 }
 </style>

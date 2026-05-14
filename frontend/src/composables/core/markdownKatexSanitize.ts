@@ -124,7 +124,8 @@ export const markdownKatexDomPurifyConfig: { ADD_TAGS: string[]; ADD_ATTR: strin
 
 /**
  * Sanitize HTML from markdown-it before assigning to v-html.
- * Use for any user- or model-generated markdown; linkify and future plugins must not bypass XSS controls.
+ * Prefer `renderRichMarkdownHtml` from `@/composables/core/useMarkdown` so math and fenced code run
+ * through the markdown pipeline before sanitization. Use this when HTML was produced elsewhere.
  */
 export function sanitizeMarkdownItHtml(html: string): string {
   if (!html) {

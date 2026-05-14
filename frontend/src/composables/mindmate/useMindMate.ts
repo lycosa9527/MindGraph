@@ -6,7 +6,7 @@
  * - Conversation management (userId, conversationId)
  * - Message state (user/assistant messages)
  * - Panel integration via EventBus
- * - Markdown rendering
+ * - Message markdown (see `MessageBubble` + `renderRichMarkdownHtml`)
  *
  * Conversation history list is managed by useMindMateStore (Pinia).
  * This composable handles messages for a single conversation.
@@ -18,7 +18,6 @@ import { computed, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
 
 import { useAuthStore, useMindMateStore } from '@/stores'
-
 import { mindmateDifyUserIdFromSession } from '@/utils/mindmateDifyUserId'
 
 import { eventBus } from '../core/useEventBus'
@@ -812,6 +811,7 @@ export function useMindMate(options: MindMateOptions = {}) {
         }
       }
 
+      conversationId.value = convId
       hasGreeted.value = true
     } catch {
       onError?.('Failed to load conversation')
@@ -1023,12 +1023,12 @@ export function useMindMate(options: MindMateOptions = {}) {
 }
 
 // ============================================================================
-// Markdown Utilities (for components)
+// Markdown Utilities (legacy; prefer `renderRichMarkdownHtml` in components)
 // ============================================================================
 
 /**
- * Simple markdown to HTML converter for MindMate messages
- * For full markdown support, use markdown-it in the component
+ * Tiny regex markdown approximator (unsafe for untrusted input as final HTML; not used by MindMate UI).
+ * Message bubbles use `@/composables/core/useMarkdown` (`renderRichMarkdownHtml`).
  */
 export function simpleMarkdown(text: string): string {
   return (

@@ -43,6 +43,7 @@ from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identi
 from services.features.dashscope_tts import get_tts_service
 from services.features.debateverse_service import DebateVerseService
 from services.llm import llm_service
+from services.llm.llm_utils import stream_enable_thinking
 from utils.auth import get_current_user
 
 
@@ -189,7 +190,7 @@ async def stream_debater_response(
 
             model = participant.model_id or "qwen"
 
-            enable_thinking = model.lower() != "kimi"
+            enable_thinking = stream_enable_thinking(model)
 
             full_content = ""
             full_thinking = ""

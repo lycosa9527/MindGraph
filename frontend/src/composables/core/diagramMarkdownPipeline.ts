@@ -41,7 +41,7 @@ function bumpDiagramLayoutRecalc(): void {
 }
 
 /**
- * Loads markdown-it + KaTeX + DOMPurify (useMarkdown module) once.
+ * Loads the shared markdown + KaTeX module once (`renderMarkdownForDiagramLabelMeasure`).
  * @param bumpLayout - When true (default), increments diagram layoutRecalcTrigger after first load so Vue Flow recomputes with accurate measurements. Set false when loading immediately before loadFromSpec (full layout refresh follows).
  */
 export async function loadDiagramMarkdownPipeline(options?: {

@@ -7,10 +7,8 @@ import { computed, ref, watch } from 'vue'
 
 import { ElDialog, ElScrollbar } from 'element-plus'
 
-import MarkdownIt from 'markdown-it'
-
 import { useLanguage } from '@/composables'
-import { sanitizeMarkdownItHtml } from '@/composables/core/markdownKatexSanitize'
+import { renderRichMarkdownHtml } from '@/composables/core/useMarkdown'
 import { apiGet } from '@/utils/apiClient'
 
 const props = defineProps<{
@@ -37,16 +35,9 @@ const loading = ref(false)
 const loadError = ref<string | null>(null)
 const entries = ref<ChangelogEntry[]>([])
 
-const md = new MarkdownIt({
-  html: false,
-  linkify: true,
-  breaks: true,
-  typographer: true,
-})
-
 function renderMd(source: string): string {
   if (!source.trim()) return ''
-  return sanitizeMarkdownItHtml(md.render(source))
+  return renderRichMarkdownHtml(source)
 }
 
 async function fetchChangelog(): Promise<void> {

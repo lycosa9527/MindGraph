@@ -88,9 +88,20 @@ class QwenAPISettings(BaseModel):
         default="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
         description="Qwen API endpoint URL",
     )
-    QWEN_MODEL_CLASSIFICATION: str = Field(default="qwen-plus-latest", description="Model for classification tasks")
-    QWEN_MODEL_GENERATION: str = Field(default="qwen-plus", description="Model for generation tasks (higher quality)")
-    QWEN_TEMPERATURE: float = Field(default=0.7, ge=0.0, le=2.0, description="Temperature for randomness (0.0-2.0)")
+    QWEN_MODEL_CLASSIFICATION: str = Field(
+        default="qwen3.6-flash",
+        description="Model for classification tasks",
+    )
+    QWEN_MODEL_GENERATION: str = Field(
+        default="qwen3.6-plus",
+        description="Model for generation tasks (higher quality)",
+    )
+    QWEN_TEMPERATURE: float = Field(
+        default=0.7,
+        ge=0.0,
+        le=2.0,
+        description="Temperature for randomness (0.0-2.0)",
+    )
     QWEN_MAX_TOKENS: int = Field(default=1000, gt=0, description="Maximum tokens per request")
     QWEN_TIMEOUT: int = Field(default=40, ge=5, le=120, description="Request timeout in seconds")
     LLM_TEMPERATURE: float = Field(
@@ -388,7 +399,7 @@ class EnvSettingsSchema(BaseModel):
                 "app": {"HOST": "0.0.0.0", "PORT": 9527, "DEBUG": False},
                 "qwen": {
                     "QWEN_API_KEY": "sk-xxx",
-                    "QWEN_MODEL_CLASSIFICATION": "qwen-plus-latest",
+                    "QWEN_MODEL_CLASSIFICATION": "qwen3.6-flash",
                 },
                 # ... more examples
             }

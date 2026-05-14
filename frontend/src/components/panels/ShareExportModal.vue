@@ -10,11 +10,10 @@ import { ElButton, ElCheckbox, ElDialog, ElIcon, ElScrollbar } from 'element-plu
 import { Close, Download, Select } from '@element-plus/icons-vue'
 
 import { toPng } from 'html-to-image'
-import MarkdownIt from 'markdown-it'
 
 import mindmateAvatar from '@/assets/mindmate-avatar-md.png'
 import { useLanguage, useNotifications } from '@/composables'
-import { sanitizeMarkdownItHtml } from '@/composables/core/markdownKatexSanitize'
+import { renderRichMarkdownHtml } from '@/composables/core/useMarkdown'
 import type { MindMateMessage } from '@/composables/mindmate/useMindMate'
 import { useAuthStore } from '@/stores'
 
@@ -37,14 +36,6 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const notify = useNotifications()
-
-// Markdown renderer
-const md = new MarkdownIt({
-  html: false,
-  linkify: true,
-  breaks: true,
-  typographer: true,
-})
 
 // Local state
 const selectedMessageIds = ref<Set<string>>(new Set())
@@ -96,7 +87,7 @@ function deselectAll() {
 
 function renderMarkdown(content: string): string {
   if (!content) return ''
-  return sanitizeMarkdownItHtml(md.render(content))
+  return renderRichMarkdownHtml(content)
 }
 
 /**

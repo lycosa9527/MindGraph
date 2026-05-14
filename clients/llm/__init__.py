@@ -40,8 +40,8 @@ def _initialize_clients():
     doubao_cli = None
 
     try:
-        qwen_client_cls = QwenClient(model_type="classification")  # qwen-plus-latest
-        qwen_client_gen = QwenClient(model_type="generation")  # qwen-plus
+        qwen_client_cls = QwenClient(model_type="classification")  # QWEN_MODEL_CLASSIFICATION
+        qwen_client_gen = QwenClient(model_type="generation")  # QWEN_MODEL_GENERATION
         qwen_client_main = qwen_client_cls  # Legacy compatibility
 
         # Multi-LLM clients - Dedicated classes for each provider

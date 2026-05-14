@@ -6,12 +6,11 @@ import { ElAvatar, ElButton, ElIcon, ElInput, ElTooltip } from 'element-plus'
 import { CopyDocument, Edit, RefreshRight, Share } from '@element-plus/icons-vue'
 
 import { ThumbsDown, ThumbsUp } from 'lucide-vue-next'
-import MarkdownIt from 'markdown-it'
 
 import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import ImagePreviewModal from '@/components/common/ImagePreviewModal.vue'
 import { useLanguage } from '@/composables'
-import { sanitizeMarkdownItHtml } from '@/composables/core/markdownKatexSanitize'
+import { renderRichMarkdownHtml } from '@/composables/core/useMarkdown'
 import type { FeedbackRating, MindMateMessage } from '@/composables/mindmate/useMindMate'
 
 const props = defineProps<{
@@ -39,14 +38,6 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 
-// Markdown renderer
-const md = new MarkdownIt({
-  html: false,
-  linkify: true,
-  breaks: true,
-  typographer: true,
-})
-
 // Local editing state
 const localEditingContent = ref(props.editingContent || props.message.content)
 
@@ -66,11 +57,11 @@ function removeThinkBlocks(content: string): string {
   return content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()
 }
 
-// Render markdown with sanitization
+// Render markdown (+ KaTeX via shared pipeline) with sanitization
 function renderMarkdown(content: string): string {
   if (!content) return ''
   const cleanedContent = removeThinkBlocks(content)
-  return sanitizeMarkdownItHtml(md.render(cleanedContent))
+  return renderRichMarkdownHtml(cleanedContent)
 }
 
 // Get file icon based on type
@@ -218,7 +209,7 @@ function handleMarkdownClick(event: MouseEvent) {
 
             <!-- Assistant message - markdown rendered -->
             <template v-else>
-              <!-- eslint-disable vue/no-v-html -- Content is sanitized via sanitizeMarkdownItHtml -->
+              <!-- eslint-disable vue/no-v-html -- DOMPurify in renderRichMarkdownHtml pipeline -->
               <div
                 class="markdown-content text-sm leading-normal"
                 @click="handleMarkdownClick"

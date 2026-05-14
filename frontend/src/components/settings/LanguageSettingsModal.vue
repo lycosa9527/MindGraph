@@ -284,53 +284,127 @@ function onClose(): void {
   min-width: 0;
 }
 
-.prompt-lang-select :deep(.el-select__selected-item) {
+.prompt-lang-select :deep(.el-select__selection) {
   font-family: v-bind('multiscriptFontFamily');
+}
+
+.prompt-lang-select :deep(.el-select__selected-item) {
+  font-family: inherit;
   min-width: 0;
 }
 
-/* Filterable single select shows the chosen label in `.el-select__placeholder`; it
-   uses ellipsis/nowrap by default and can overflow for long Indic labels. */
-.prompt-lang-select :deep(.el-select__placeholder) {
-  position: relative;
-  top: auto;
-  transform: none;
-  width: 100%;
-  max-width: 100%;
-  overflow: visible;
-  text-overflow: clip;
-  white-space: normal;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  line-height: 1.35;
+.prompt-lang-select :deep(.el-select__input) {
+  font-family: inherit;
 }
 
-.prompt-lang-select :deep(.el-select__tags-text) {
-  overflow: visible;
-  text-overflow: clip;
-  white-space: normal;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  line-height: 1.35;
+/*
+ * Keep Element Plus absolute `.el-select__placeholder` for filterable + value; forcing
+ * `position: relative` stacks the label under the input and shows a spurious blank row.
+ */
+.prompt-lang-select :deep(.el-select__placeholder) {
+  font-family: inherit;
 }
 </style>
 
 <!-- Dropdown is teleported; target via popper-class -->
 <style>
-.prompt-lang-select-popper {
-  max-width: min(92vw, 32rem);
+/*
+ * Element Plus applies `popper-class` to both the tooltip shell (`.el-select__popper`)
+ * and the inner `.el-select-dropdown`. Swiss chrome lives only on the outer popper;
+ * the inner panel is reset so borders/padding are not doubled.
+ */
+.el-select__popper.prompt-lang-select-popper.el-popper {
+  box-sizing: border-box !important;
+  max-width: min(92vw, 32rem) !important;
+  padding: 4px !important;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 10px !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.07),
+    0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
+  background: #ffffff !important;
+  overflow: hidden !important;
+}
+
+.dark .el-select__popper.prompt-lang-select-popper.el-popper {
+  border-color: #374151 !important;
+  background: #1f2937 !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.25),
+    0 2px 4px -2px rgba(0, 0, 0, 0.18) !important;
+}
+
+.el-select-dropdown.prompt-lang-select-popper {
+  max-width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.prompt-lang-select-popper .el-select-dropdown__list {
+  padding: 0 !important;
+  margin: 0 !important;
+  scrollbar-gutter: stable;
 }
 
 .prompt-lang-select-popper .el-select-dropdown__item {
   height: auto !important;
   min-height: 2.25rem;
   line-height: 1.25;
-  padding-top: 0.35rem;
-  padding-bottom: 0.35rem;
+  padding: 0.35rem 12px 0.35rem 10px !important;
+  border-radius: 6px;
   font-family: v-bind('multiscriptFontFamily');
+  font-weight: 500;
+  color: #44403c;
+  letter-spacing: 0.01em;
   white-space: normal;
   word-break: break-word;
   overflow-wrap: break-word;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.dark .prompt-lang-select-popper .el-select-dropdown__item {
+  color: #d6d3d1;
+}
+
+.prompt-lang-select-popper .el-select-dropdown__item.is-hovering,
+.prompt-lang-select-popper .el-select-dropdown__item:hover {
+  background: #f5f5f4 !important;
+  color: #1c1917 !important;
+}
+
+.dark .prompt-lang-select-popper .el-select-dropdown__item.is-hovering,
+.dark .prompt-lang-select-popper .el-select-dropdown__item:hover {
+  background: #374151 !important;
+  color: #f9fafb !important;
+}
+
+.prompt-lang-select-popper .el-select-dropdown__item:active {
+  background: #e7e5e4 !important;
+}
+
+.dark .prompt-lang-select-popper .el-select-dropdown__item:active {
+  background: #4b5563 !important;
+}
+
+.prompt-lang-select-popper .el-select-dropdown__item.is-selected {
+  font-weight: 600 !important;
+  color: #1c1917 !important;
+  background: #f5f5f4 !important;
+}
+
+.dark .prompt-lang-select-popper .el-select-dropdown__item.is-selected {
+  color: #f9fafb !important;
+  background: #374151 !important;
+}
+
+.prompt-lang-select-popper .el-select-dropdown__item.is-disabled {
+  opacity: 0.55;
 }
 
 .prompt-lang-select-popper .prompt-option-row {

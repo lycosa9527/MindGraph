@@ -2,7 +2,7 @@
 DashScope LLM Clients
 
 Clients for Alibaba Cloud DashScope API:
-- QwenClient: Qwen models (qwen-plus, qwen-plus-latest)
+- QwenClient: Qwen 3.x models (ids from ``QWEN_MODEL_CLASSIFICATION`` / ``QWEN_MODEL_GENERATION``)
 - DeepSeekClient: DeepSeek R1 via DashScope
 - KimiClient: Kimi (Moonshot AI) via DashScope
 
@@ -42,7 +42,8 @@ class QwenClient:
         Initialize QwenClient with specific model type
 
         Args:
-            model_type (str): 'classification' for qwen-plus-latest, 'generation' for qwen-plus
+            model_type (str): 'classification' uses ``QWEN_MODEL_CLASSIFICATION``;
+                'generation' uses ``QWEN_MODEL_GENERATION``
         """
         self.api_url = config.QWEN_API_URL
         self.api_key = config.QWEN_API_KEY

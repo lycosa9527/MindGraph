@@ -521,14 +521,14 @@ class EnvManager:
                 "type": "string",
                 "category": "Qwen API",
                 "description": "Model for classification tasks",
-                "default": "qwen-plus-latest",
+                "default": "qwen3.6-flash",
                 "required": False,
             },
             "QWEN_MODEL_GENERATION": {
                 "type": "string",
                 "category": "Qwen API",
                 "description": "Model for generation tasks (higher quality)",
-                "default": "qwen-plus",
+                "default": "qwen3.6-plus",
                 "required": False,
             },
             "QWEN_TEMPERATURE": {

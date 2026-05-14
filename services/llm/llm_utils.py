@@ -19,6 +19,24 @@ class LLMUtils:
     """Utility functions for LLM service."""
 
     @staticmethod
+    def stream_enable_thinking(model: str) -> bool:
+        """
+        Return whether streaming calls should set the provider's thinking/reasoning mode.
+
+        DashScope Qwen3 is kept off app-wide (latency, structured flows). Kimi streams
+        without thinking per existing behavior. Other models (e.g. DeepSeek) may
+        still stream reasoning when True.
+        """
+        ml = (model or "").strip().lower()
+        if not ml:
+            return False
+        if ml == "kimi":
+            return False
+        if ml == "qwen" or ml.startswith("qwen-"):
+            return False
+        return True
+
+    @staticmethod
     def get_default_timeout(model: str) -> float:
         """
         Get default timeout for model (in seconds).
@@ -91,3 +109,8 @@ class LLMUtils:
 
         # For Qwen and other Dashscope models, use shared Dashscope rate limiter
         return rate_limiter
+
+
+def stream_enable_thinking(model: str) -> bool:
+    """Whether streaming should use provider thinking mode; delegates to LLMUtils."""
+    return LLMUtils.stream_enable_thinking(model)

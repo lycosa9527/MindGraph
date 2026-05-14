@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.domain.debateverse import DebateSession, DebateParticipant, DebateMessage
 from services.features.debateverse_context_builder import DebateVerseContextBuilder
 from services.llm import llm_service
+from services.llm.llm_utils import stream_enable_thinking
 
 logger = logging.getLogger(__name__)
 
@@ -249,7 +250,7 @@ class DebateVerseService:
 
         model = participant.model_id or "qwen"
 
-        enable_thinking = model.lower() != "kimi"
+        enable_thinking = stream_enable_thinking(model)
 
         logger.info(
             "Generating response for %s (%s) in stage %s",
@@ -316,7 +317,7 @@ class DebateVerseService:
 
         model = judge.model_id or "deepseek"
 
-        enable_thinking = model.lower() != "kimi"
+        enable_thinking = stream_enable_thinking(model)
 
         logger.info("Generating judge commentary for stage %s", stage)
 

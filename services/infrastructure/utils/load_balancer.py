@@ -52,18 +52,18 @@ class LLMLoadBalancer:
 
     # Fixed model mappings (for non-load-balanced models)
     FIXED_MODEL_MAP = {
-        # Logical models (frontend buttons)
-        "qwen": "qwen",  # → Dashscope qwen-plus-latest (15,000 RPM, 1,200,000 TPM)
+        # Logical models (frontend buttons); DashScope model id comes from env (e.g. qwen3.6-plus).
+        "qwen": "qwen",
         # → Volcengine Kimi via endpoint (ALWAYS - 5,000 RPM, 500,000 TPM vs Dashscope's 60 RPM, 100,000 TPM)
         "kimi": "ark-kimi",
         "doubao": "ark-doubao",  # → Volcengine Doubao via endpoint (higher RPM than Dashscope)
         # DeepSeek load balancing:
         # - Dashscope route (deepseek-v3.1/v3.2): 15,000 RPM, 1,200,000-1,500,000 TPM
         # - Volcengine route (ark-deepseek v3.2): 15,000 RPM, 1,500,000 TPM
-        # Internal aliases
-        "qwen-turbo": "qwen-turbo",  # → Dashscope qwen-turbo
-        "qwen-plus": "qwen-plus",  # → Dashscope qwen-plus
-        "qwen-plus-latest": "qwen-plus",  # → Dashscope qwen-plus-latest
+        # Internal aliases (resolved model id from ``QWEN_MODEL_*`` env)
+        "qwen-turbo": "qwen-turbo",
+        "qwen-plus": "qwen-plus",
+        "qwen-plus-latest": "qwen-plus",
         # Unaffected
         "hunyuan": "hunyuan",  # → Tencent hunyuan
         "omni": "omni",  # → Voice agent

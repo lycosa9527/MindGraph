@@ -2,8 +2,8 @@
 Web content mind map agent — generates mind map specs from extracted page text.
 
 Used by the Chrome extension flow (and API clients). Uses centralized
-``web_content_generation`` prompts and defaults to Qwen with classification
-model id (qwen-plus-latest) via ``dashscope_model`` override.
+``web_content_generation`` prompts and defaults to Qwen classification
+``QWEN_MODEL_CLASSIFICATION`` (default ``qwen3.6-flash``) via ``dashscope_model`` override.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved

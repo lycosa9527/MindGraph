@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.13] - 2026-05-14
+
+### Added
+
+- **Canvas — translate diagram labels** — Authenticated streaming API for batch node-label translation via DashScope/Qwen ([`routers/api/canvas_translate.py`](routers/api/canvas_translate.py)), Pydantic models ([`models/requests/requests_canvas_translate.py`](models/requests/requests_canvas_translate.py)), router registration ([`routers/api/__init__.py`](routers/api/__init__.py)). Canvas UI: [`CanvasTranslateProgressBanner.vue`](frontend/src/components/canvas/CanvasTranslateProgressBanner.vue), [`diagramTranslateUi.ts`](frontend/src/stores/diagramTranslateUi.ts), [`diagramTranslateStream.ts`](frontend/src/utils/diagramTranslateStream.ts), [`translateLanguages.ts`](frontend/src/utils/translateLanguages.ts), wiring in [`useCanvasToolbarApps.ts`](frontend/src/composables/canvasToolbar/useCanvasToolbarApps.ts), [`CanvasToolbarMoreAppsDropdown.vue`](frontend/src/components/canvas/CanvasToolbarMoreAppsDropdown.vue), [`CanvasPage.vue`](frontend/src/pages/CanvasPage.vue); i18n strings added across per-locale canvas bundles (English keys in [`frontend/src/locales/messages/en/canvas.ts`](frontend/src/locales/messages/en/canvas.ts)).
+
+### Changed
+
+- **Markdown / KaTeX** — Diagram and panel Markdown pipeline adjustments ([`diagramMarkdownPipeline.ts`](frontend/src/composables/core/diagramMarkdownPipeline.ts), [`markdownKatexSanitize.ts`](frontend/src/composables/core/markdownKatexSanitize.ts), [`useMarkdown.ts`](frontend/src/composables/core/useMarkdown.ts)).
+- **Panels & canvas chrome** — MindMate, DebateVerse, Ask Once, Share/Export, and update log surfaces updated for Markdown rendering ([`MindmatePanel.vue`](frontend/src/components/panels/MindmatePanel.vue), [`MessageBubble.vue`](frontend/src/components/panels/mindmate/MessageBubble.vue), [`mindmate.css`](frontend/src/components/panels/mindmate/mindmate.css), [`DebateMessage.vue`](frontend/src/components/debateverse/DebateMessage.vue), [`AskOncePanel.vue`](frontend/src/components/askonce/AskOncePanel.vue), [`ShareExportModal.vue`](frontend/src/components/panels/ShareExportModal.vue), [`UpdateLogModal.vue`](frontend/src/components/auth/UpdateLogModal.vue)); simplified [`CanvasToolbar.vue`](frontend/src/components/canvas/CanvasToolbar.vue).
+- **Language settings** — [`LanguageSettingsModal.vue`](frontend/src/components/settings/LanguageSettingsModal.vue) UX updates.
+- **Sidebar** — Account footer rework and minor [`AppSidebar.vue`](frontend/src/components/sidebar/AppSidebar.vue) tweaks ([`AppSidebarAccountFooter.vue`](frontend/src/components/sidebar/AppSidebarAccountFooter.vue)).
+- **Backend — LLM & infra** — DashScope/client exports ([`clients/llm/dashscope.py`](clients/llm/dashscope.py), [`clients/llm/__init__.py`](clients/llm/__init__.py)), [`config/llm_config.py`](config/llm_config.py), helpers in [`services/llm/llm_utils.py`](services/llm/llm_utils.py); token buffer ([`redis_token_buffer.py`](services/redis/redis_token_buffer.py)), env/load-balancer helpers ([`env_manager.py`](services/infrastructure/utils/env_manager.py), [`load_balancer.py`](services/infrastructure/utils/load_balancer.py), [`client_manager.py`](services/infrastructure/utils/client_manager.py)); [`models/domain/env_settings.py`](models/domain/env_settings.py) and [`env.example`](env.example).
+- **Ask Once / DebateVerse** — Small routing and service tweaks ([`routers/features/askonce.py`](routers/features/askonce.py), [`routers/features/debateverse.py`](routers/features/debateverse.py), [`debateverse_service.py`](services/features/debateverse_service.py)).
+- **Other** — [`useMindMate.ts`](frontend/src/composables/mindmate/useMindMate.ts); [`agents/mind_maps/web_content_mind_map_agent.py`](agents/mind_maps/web_content_mind_map_agent.py); [`document_processing.py`](services/knowledge/document_processing.py).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.13).
+
 ## [5.117.12] - 2026-05-14
 
 ### Added

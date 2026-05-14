@@ -7,7 +7,6 @@ import { computed, ref } from 'vue'
 import { ElButton } from 'element-plus'
 
 import { ChevronDown, ChevronUp } from 'lucide-vue-next'
-import MarkdownIt from 'markdown-it'
 
 import deepseekAvatar from '@/assets/deepseek-avatar.png'
 import doubaoAvatar from '@/assets/doubao-avatar.png'
@@ -16,8 +15,8 @@ import kimiAvatar from '@/assets/kimi-avatar.png'
 // Import avatar images
 import qwenAvatar from '@/assets/qwen-avatar.png'
 import userAvatar from '@/assets/user-avatar.png'
-import { sanitizeMarkdownItHtml } from '@/composables/core/markdownKatexSanitize'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { renderRichMarkdownHtml } from '@/composables/core/useMarkdown'
 import type { DebateMessage as DebateMessageType } from '@/stores/debateverse'
 import { useDebateVerseStore } from '@/stores/debateverse'
 
@@ -95,15 +94,9 @@ const roleDisplayName = computed(() => {
   return key ? t(key) : participant.value.role
 })
 
-const md = new MarkdownIt({
-  html: false,
-  breaks: true,
-  linkify: true,
-})
-
 const renderedContent = computed(() => {
   if (!props.message.content) return ''
-  return sanitizeMarkdownItHtml(md.render(props.message.content))
+  return renderRichMarkdownHtml(props.message.content)
 })
 
 const hasThinking = computed(() => props.message.thinking && props.message.thinking.length > 0)
@@ -175,7 +168,7 @@ const isJudge = computed(() => participant.value?.role === 'judge' || !participa
           </span>
         </div>
 
-        <!-- Content (markdown-it + DOMPurify; see sanitizeMarkdownItHtml) -->
+        <!-- Content: renderRichMarkdownHtml (KaTeX + hljs + DOMPurify) -->
         <div
           class="message-content text-sm text-gray-800 prose prose-sm max-w-none"
           :class="{ 'opacity-70': isStreaming }"

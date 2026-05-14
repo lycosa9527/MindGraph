@@ -20,6 +20,7 @@ from config.settings import config as app_config
 
 from . import (
     activity,
+    canvas_translate,
     client_bundles,
     diagram_generation,
     web_content_generation,
@@ -69,6 +70,7 @@ router.include_router(config.router)
 router.include_router(activity.router)
 router.include_router(client_bundles.router)
 router.include_router(diagram_generation.router)
+router.include_router(canvas_translate.router)
 router.include_router(web_content_generation.router)
 router.include_router(png_export.router)
 router.include_router(sse_streaming.router)

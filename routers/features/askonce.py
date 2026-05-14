@@ -18,7 +18,8 @@ AskOnce Router - Multi-LLM Streaming Chat Endpoints
 ====================================================
 
 Provides SSE streaming endpoints for simultaneous chat with multiple LLMs
-(Qwen, DeepSeek, Kimi). Includes thinking process display for supported models.
+(Qwen, DeepSeek, Kimi). Thinking streams are enabled where the provider supports
+them; Qwen (DashScope Qwen3) uses enable_thinking=false.
 
 Uses MindGraph's centralized LLM infrastructure:
 - Rate limiting (prevents quota exhaustion)
@@ -69,7 +70,7 @@ ASKONCE_MODELS = {
         # Backend sends this id to DashScope (overrides QWEN_MODEL_* env for AskOnce only).
         "model_name": "qwen3.5-397b-a17b",
         "default_temperature": 0.9,
-        "enable_thinking": True,
+        "enable_thinking": False,
         "display_name": "Qwen",
     },
     "deepseek": {

@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.117.12",
+  "version": "5.117.13",
   "type": "module",
   "scripts": {
     "sync-version": "npx tsx scripts/sync-version.ts",

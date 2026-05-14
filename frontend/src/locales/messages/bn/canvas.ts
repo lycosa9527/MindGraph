@@ -248,6 +248,23 @@ export default {
   'canvas.toolbar.moreApps': 'More Apps',
   'canvas.toolbar.moreAppSnapshot': 'Snapshot',
   'canvas.toolbar.moreAppSnapshotDesc': 'Save a version of this diagram (max 10)',
+  'canvas.toolbar.moreAppTranslateLabel': 'Translate',
+  'canvas.toolbar.moreAppTranslateLabelDesc':
+    'Translate all node and connection labels to your current interface language using AI',
+  'canvas.toolbar.translateLabelTitle': 'Translate diagram',
+  'canvas.toolbar.translateLabelSource': 'Labels to translate ({count})',
+  'canvas.toolbar.translateLabelTargetLanguage': 'Target language',
+  'canvas.toolbar.translateLabelCancel': 'Cancel',
+  'canvas.toolbar.translateLabelConfirm': 'Translate',
+  'canvas.toolbar.translateLabelSelectOne': 'Select exactly one node to translate',
+  'canvas.toolbar.translateLabelEmpty': 'The selected node has no text to translate',
+  'canvas.toolbar.translateLabelDiagramEmpty': 'No text to translate in this diagram',
+  'canvas.toolbar.translateLabelAndMore': '{n} more not shown…',
+  'canvas.toolbar.translateLabelInProgress': 'Translating diagram…',
+  'canvas.toolbar.translateLabelFallbackEnInfo':
+    'Your interface language is not available as a translation target yet. Labels will be translated to English.',
+  'canvas.toolbar.translateLabelFailed': 'Translation failed. Please try again.',
+  'canvas.toolbar.translateLabelDone': 'Diagram translated',
   'canvas.toolbar.moreAppVirtualKeyboard': 'Virtual Keyboard',
   'canvas.toolbar.moreAppVirtualKeyboardDesc':
     'On-screen keyboard synced to your interface language',

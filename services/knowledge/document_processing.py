@@ -145,7 +145,7 @@ async def chunk_text_with_mode(
     )
     if chunking_method == "mindchunk":
         logger.info(
-            "[RAG] 🧠 MindChunk enabled: Using LLM-based semantic chunking with qwen-plus-latest for doc_id=%s",
+            "[RAG] 🧠 MindChunk enabled: LLM semantic chunking (Qwen classification model) doc_id=%s",
             document_id,
         )
 

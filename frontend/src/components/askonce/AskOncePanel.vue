@@ -11,22 +11,14 @@ import { ElButton, ElCard, ElIcon } from 'element-plus'
 import { Bottom } from '@element-plus/icons-vue'
 
 import { Check, ChevronDown, ChevronUp, Copy, Square } from 'lucide-vue-next'
-import MarkdownIt from 'markdown-it'
 
-import { sanitizeMarkdownItHtml } from '@/composables/core/markdownKatexSanitize'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { renderRichMarkdownHtml } from '@/composables/core/useMarkdown'
 import { type ModelId, type ModelResponse, useAskOnceStore } from '@/stores/askonce'
 
 const store = useAskOnceStore()
 
 const { t } = useLanguage()
-
-// Initialize markdown-it for rendering
-const md = new MarkdownIt({
-  html: false,
-  breaks: true,
-  linkify: true,
-})
 
 const props = defineProps<{
   modelId: ModelId
@@ -53,7 +45,7 @@ const hasContent = computed(() => props.response.content.length > 0)
 
 const renderedContent = computed(() => {
   if (!props.response.content) return ''
-  return sanitizeMarkdownItHtml(md.render(props.response.content))
+  return renderRichMarkdownHtml(props.response.content)
 })
 
 const statusColor = computed(() => {
@@ -332,7 +324,7 @@ function formatTokens(tokens: number): string {
           {{ t('askOnce.panel.responsePlaceholder') }}
         </div>
 
-        <!-- Content (markdown-it + DOMPurify; see sanitizeMarkdownItHtml) -->
+        <!-- Content: renderRichMarkdownHtml (KaTeX + hljs + DOMPurify) -->
         <div
           v-else
           class="markdown-content prose prose-sm max-w-none"
