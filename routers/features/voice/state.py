@@ -1,14 +1,14 @@
 """Shared FastAPI router and in-memory voice session state."""
 
-import logging
-from typing import Any, Dict, List
+from fastapi import APIRouter
 
-from fastapi import APIRouter, WebSocket
-
-logger = logging.getLogger("VOICE")
+from services.kitty_voice.runtime_state import active_websockets, logger, voice_sessions
 
 router = APIRouter()
 
-voice_sessions: Dict[str, Dict[str, Any]] = {}
-
-active_websockets: Dict[str, List[WebSocket]] = {}
+__all__ = [
+    "active_websockets",
+    "logger",
+    "router",
+    "voice_sessions",
+]

@@ -6,6 +6,7 @@ import { unzipSync } from 'fflate'
 import fs from 'node:fs'
 import path from 'node:path'
 
+import { extractIhmcStorablePropMap } from '../src/utils/cmapGraphExtract'
 import { decodeCmapToConceptMapSpec } from '../src/utils/cmapImport'
 import {
   type InstanceParsed,
@@ -36,13 +37,22 @@ function analyzeOne(filePath: string): void {
     console.log(base, 'DECODE_FAIL', e instanceof Error ? e.message : String(e))
     return
   }
-  const concepts = spec.concepts as string[]
+  const concepts = Array.isArray(spec.concepts) ? (spec.concepts as string[]) : []
   const rel = spec.relationships as unknown[]
   const layout = spec._layout_positions_by_label as
     | Record<string, { x: number; y: number }>
     | undefined
   const layoutKeys = layout ? Object.keys(layout) : []
   const matched = concepts.filter((c) => layoutKeys.includes(c)).length
+
+  const importMeta = spec._import_meta as
+    | {
+        concept_map_roots_found?: number
+        semantics?: string
+        relationship_source?: string
+        proposition_edges_used?: boolean
+      }
+    | undefined
 
   const unpacked = unzipSync(u8)
   const cmapBytes = unpacked.cmap
@@ -56,14 +66,13 @@ function analyzeOne(filePath: string): void {
         if (!inst) continue
         const cn = inst.classDesc.name
         if (
-          cn.includes('GraphicalConcept') &&
-          !cn.includes('GraphicalConceptMap') &&
-          !cn.includes('GraphicalLinkingPhrase')
+          (cn.includes('GraphicalConcept') || cn.includes('GraphicalLinkingPhrase')) &&
+          !cn.includes('GraphicalConceptMap')
         ) {
           graphicalConceptLike.add(cn)
-          const map = instanceFieldMap(inst)
-          const x = map.get('_x') ?? map.get('x')
-          const y = map.get('_y') ?? map.get('y')
+          const storMap = extractIhmcStorablePropMap(inst)
+          const x = storMap.get('_x') ?? instanceFieldMap(inst).get('_x')
+          const y = storMap.get('_y') ?? instanceFieldMap(inst).get('_y')
           if (x !== undefined && y !== undefined) coordHits += 1
         }
       }
@@ -75,7 +84,7 @@ function analyzeOne(filePath: string): void {
   }
 
   console.log(
-    `${base}\tconcepts=${concepts.length}\trel=${rel.length}\tlayoutKeys=${layoutKeys.length}\tmatched=${matched}\tcoordInstances=${coordHits}`
+    `${base}\tconcepts=${concepts.length}\trel=${rel.length}\tlayoutKeys=${layoutKeys.length}\tmatched=${matched}\tcoordInstances=${coordHits}\tcmapRoots=${importMeta?.concept_map_roots_found ?? '?'}\tsemantics=${importMeta?.semantics ?? '?'}\trelsrc=${importMeta?.relationship_source ?? '?'}`
   )
   if (graphicalConceptLike.size > 0) {
     console.log(`  GraphicalConcept classes: ${[...graphicalConceptLike].join(', ')}`)

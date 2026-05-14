@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import WebSocket
 
-from routers.features.voice.state import logger
+from services.kitty_voice.runtime_state import logger
 
 _DIAGRAM_HINT_ZH: tuple[str, ...] = (
     "图",
@@ -164,7 +164,7 @@ async def hydrate_omni_for_diagram_pedagogical_review(
     context: Dict[str, Any],
 ) -> None:
     """Push Omni session instructions including the serialized full diagram specification."""
-    from routers.features.voice.session_ops import get_session_omni_client
+    from services.kitty_voice.session_ops import get_session_omni_client
 
     client = get_session_omni_client(voice_session_id)
     if not client:

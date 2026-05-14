@@ -29,12 +29,27 @@ function isValidImportedDiagramSpec(obj: unknown): obj is Record<string, unknown
   const type = spec.type as DiagramType | undefined
   if (!type || !VALID_DIAGRAM_TYPES.includes(type)) return false
   if (type === 'concept_map') {
-    const conceptsOk = Array.isArray(spec.concepts)
+    const units = spec.concept_units
+    const unitsOk =
+      Array.isArray(units) &&
+      units.length > 0 &&
+      units.every(
+        (u: unknown) =>
+          u !== null &&
+          typeof u === 'object' &&
+          typeof (u as { id?: unknown }).id === 'string' &&
+          typeof (u as { label?: unknown }).label === 'string'
+      )
     const relationshipsOk = Array.isArray(spec.relationships)
     const topicOk = typeof spec.topic === 'string' && spec.topic.length > 0
-    if (conceptsOk && relationshipsOk && topicOk) {
+    if (unitsOk && relationshipsOk && topicOk) {
       return true
     }
+    const conceptsOkLegacy = Array.isArray(spec.concepts) && spec.concepts.length > 0
+    if (conceptsOkLegacy && relationshipsOk && topicOk) {
+      return true
+    }
+    return false
   }
   return isValidMindGraphEncryptedExport(obj)
 }
@@ -67,6 +82,14 @@ export function useDiagramImport() {
           if (!isValidImportedDiagramSpec(spec)) {
             notify.error(t('canvas.import.invalidFile'))
             return
+          }
+          const cmapHintsRaw = spec._import_hints
+          if (Array.isArray(cmapHintsRaw)) {
+            cmapHintsRaw.forEach((hintKey) => {
+              if (typeof hintKey === 'string') {
+                notify.info(t(hintKey))
+              }
+            })
           }
           payloadJson = JSON.stringify(spec)
         } else {

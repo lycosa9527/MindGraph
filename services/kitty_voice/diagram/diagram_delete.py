@@ -6,16 +6,16 @@ from fastapi import WebSocket, WebSocketDisconnect
 
 from services.features.voice_agent import kitty_agent_manager
 
-from routers.features.voice.diagram_utils import get_diagram_prefix_map
-from routers.features.voice.messaging import (
+from services.kitty_voice.diagram.diagram_utils import get_diagram_prefix_map
+from services.kitty_voice.messaging import (
     build_voice_instructions,
     safe_websocket_send,
 )
-from routers.features.voice.session_ops import (
+from services.kitty_voice.session_ops import (
     get_agent_session_id,
     get_session_omni_client,
 )
-from routers.features.voice.state import logger, voice_sessions
+from services.kitty_voice.runtime_state import logger, voice_sessions
 
 
 async def voice_apply_delete_node_action(

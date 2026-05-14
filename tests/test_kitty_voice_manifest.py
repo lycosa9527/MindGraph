@@ -1,0 +1,27 @@
+"""Tests for Kitty LLMOps manifest and voice intent catalog."""
+
+from __future__ import annotations
+
+from services.kitty_voice.kitty_llmops_manifest import build_kitty_llmops_manifest
+from services.kitty_voice.voice_intent_catalog import KITTY_VOICE_INTENT_ROWS
+
+
+def test_voice_intent_row_counts() -> None:
+    """4 diagram + 15 UI + none flow = 20 named rows."""
+    diagram = sum(1 for r in KITTY_VOICE_INTENT_ROWS if r["kind"] == "diagram")
+    ui = sum(1 for r in KITTY_VOICE_INTENT_ROWS if r["kind"] == "ui")
+    flow = sum(1 for r in KITTY_VOICE_INTENT_ROWS if r["kind"] == "flow")
+    assert diagram == 4
+    assert ui == 15
+    assert flow == 1
+
+
+def test_llmops_manifest_shape() -> None:
+    m = build_kitty_llmops_manifest()
+    assert m["version"]
+    assert isinstance(m["modules"], list) and len(m["modules"]) >= 3
+    assert "mermaid_kitty_hub" in m
+    assert len(m["intents"]) == 20
+    assert len(m["special_flows"]) == 3
+    assert m["intent_counts"]["diagram_named"] == 4
+    assert m["intent_counts"]["ui_named"] == 15

@@ -252,11 +252,20 @@ export function useDiagramCanvasFit(options: {
     if (!fitViewOnInit.value) {
       if (diagramStore.type === 'concept_map') {
         hasInitialFitDoneForDiagram.value = true
-        if (isDesktopConceptMapManualViewport(diagramStore, uiStore)) {
+        const dv = diagramStore.data as Record<string, unknown> | null | undefined
+        const cmapImportFitPending = dv?.['_import_cmap_fit_view_pending'] === true
+        const isDesktopManual = isDesktopConceptMapManualViewport(diagramStore, uiStore)
+        if (isDesktopManual && !cmapImportFitPending) {
           return
         }
         setTimeout(
           () => {
+            if (dv && typeof dv === 'object' && cmapImportFitPending) {
+              delete dv['_import_cmap_fit_view_pending']
+              fitDiagram(true)
+              eventBus.emit('view:fit_completed', { mode: 'cmap_import_hull', animate: true })
+              return
+            }
             if (!conceptMapInitialTopicFit.value) {
               setViewport({ x: 0, y: 0, zoom: ZOOM.DEFAULT }, { duration: 0 })
               return

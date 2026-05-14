@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.12] - 2026-05-14
+
+### Added
+
+- **Kitty voice — `services/kitty_voice`** — Realtime WebSocket handling, HTTP handlers, hub/diagram bridge, intent catalog, multimodal/Omni helpers, optional Pipecat pipeline path, WS guards, and related tests. Diagram command modules previously under [`routers/features/voice/`](routers/features/voice/) now live under [`services/kitty_voice/diagram/`](services/kitty_voice/diagram/); [`routers/features/voice/kitty_routes.py`](routers/features/voice/kitty_routes.py) is a thin entry layer.
+- **Voice agent tools** — [`services/features/voice_agent_tools.py`](services/features/voice_agent_tools.py) alongside refactors in [`services/features/voice_agent.py`](services/features/voice_agent.py).
+- **Admin — Kitty LLMOps** — [`GET /admin/kitty-llmops/architecture`](routers/auth/admin/kitty_llmops.py) (admin-only) returns the Kitty module manifest; UI tab [`AdminKittyLlmopsTab.vue`](frontend/src/components/admin/AdminKittyLlmopsTab.vue) on Admin and Canvas pages.
+- **Concept map — Cmap import & layout** — Expanded [`cmapImport.ts`](frontend/src/utils/cmapImport.ts), [`cmapLayoutExtract.ts`](frontend/src/utils/cmapLayoutExtract.ts), [`conceptMap.ts`](frontend/src/stores/specLoader/conceptMap.ts) loader, [`javaSerializationParse.ts`](frontend/src/utils/javaSerializationParse.ts); new helpers [`cmapGraphExtract.ts`](frontend/src/utils/cmapGraphExtract.ts), [`cmapLayoutOverlap.ts`](frontend/src/utils/cmapLayoutOverlap.ts), [`cmapConceptPillEstimate.ts`](frontend/src/utils/cmapConceptPillEstimate.ts), [`cmapModifiedUtf8.ts`](frontend/src/utils/cmapModifiedUtf8.ts); composable [`useConceptMapCmapMeasuredLayoutRelax.ts`](frontend/src/composables/diagramCanvas/useConceptMapCmapMeasuredLayoutRelax.ts); Vitest coverage for layout/parse utilities.
+- **Dependencies** — `pipecat-ai[websocket]>=1.1.0` in [`requirements.txt`](requirements.txt).
+- **Agent hub** — [`services/agent_hub/README.md`](services/agent_hub/README.md).
+
+### Changed
+
+- **Feature flags** — [`FEATURE_KITTY_PIPECAT_PIPELINE`](config/features_config.py) (optional Pipecat `PipelineTask` path for Kitty WS JSON); documented in [`env.example`](env.example).
+- **Router registration** — Debug log when Kitty Agent routes load via [`routers/features/voice/routes`](routers/features/voice/routes.py) ([`routers/register.py`](routers/register.py)).
+- **Kitty / desktop** — Pairing and live-spec sync composables ([`useCanvasKittyDesktopPairing.ts`](frontend/src/composables/kitty/useCanvasKittyDesktopPairing.ts), [`useKittyDesktopLiveSpecSync.ts`](frontend/src/composables/kitty/useKittyDesktopLiveSpecSync.ts)); session/desktop Redis and action queue touch-ups; [`ws_metrics.py`](services/infrastructure/monitoring/ws_metrics.py) for WebSocket observability.
+- **Canvas & import** — [`DiagramCanvas.vue`](frontend/src/components/diagram/DiagramCanvas.vue), [`useDiagramCanvasFit.ts`](frontend/src/composables/diagramCanvas/useDiagramCanvasFit.ts), [`useDiagramImport.ts`](frontend/src/composables/editor/useDiagramImport.ts), [`specIO.ts`](frontend/src/stores/diagram/specIO.ts), [`collabPalette.ts`](frontend/src/shared/collabPalette.ts); Cmap folder analyzer and locale materialization script updates.
+- **i18n** — [`frontend/src/i18n/index.ts`](frontend/src/i18n/index.ts) and regenerated per-locale message bundles from English ([`frontend/scripts/materialize-locale-bundles-from-en.ts`](frontend/scripts/materialize-locale-bundles-from-en.ts)).
+- **Voice package wiring** — [`routers/features/voice/__init__.py`](routers/features/voice/__init__.py), [`commands.py`](routers/features/voice/commands.py), [`state.py`](routers/features/voice/state.py), paragraph/CQRS helpers; [`routers/auth/admin/__init__.py`](routers/auth/admin/__init__.py) includes the LLMOps router.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.12).
+
 ## [5.117.11] - 2026-05-12
 
 ### Changed

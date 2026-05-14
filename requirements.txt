@@ -57,6 +57,7 @@ langchain-text-splitters>=1.1.0  # Text chunking for RAG (Personal Knowledge Spa
 langgraph>=1.0.6
 langgraph-checkpoint>=4.0.0
 dashscope>=1.25.8
+pipecat-ai[websocket]>=1.1.0
 opencc-python-reimplemented>=0.1.7  # Simplified vs Traditional detection for thinking-mode language policy
 
 # ============================================================================

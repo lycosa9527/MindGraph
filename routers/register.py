@@ -5,6 +5,7 @@ Centralized router registration for all FastAPI routes.
 This module handles the registration order and conditional feature flags.
 """
 
+import importlib
 import logging
 
 from fastapi import FastAPI
@@ -236,6 +237,11 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(admin_database)  # Admin database management (merge, export/import)
 
     # Feature routers with API endpoints (must be before vue_spa catch-all)
+    kitty_voice_routes = importlib.import_module("routers.features.voice.routes")
+    logger.debug(
+        "[RouterRegistration] Kitty Agent routes registered via %s",
+        kitty_voice_routes.__name__,
+    )
     app.include_router(voice)  # Kitty Agent (realtime WebSocket + REST)
     app.include_router(update_notification)  # Update notification system
     app.include_router(public_dashboard.router, prefix="/api/public", tags=["Public Dashboard"])

@@ -24,6 +24,7 @@ from . import (
     teacher_usage,
     feature_org_access,
     geolite,
+    kitty_llmops,
 )
 
 # Create admin router aggregation
@@ -42,5 +43,6 @@ admin_router.include_router(api_keys.router)
 admin_router.include_router(teacher_usage.router)
 admin_router.include_router(feature_org_access.router)
 admin_router.include_router(geolite.router)
+admin_router.include_router(kitty_llmops.router)
 
 __all__ = ["admin_router"]

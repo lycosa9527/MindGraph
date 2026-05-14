@@ -48,6 +48,7 @@ import {
   getNodePalette,
   getPanelCoordinator,
   useCanvasKittyDesktopPairing,
+  useKittyDesktopLiveSpecSync,
   useDiagramSpecForSave,
   useEventBus,
   useInlineRecommendations,
@@ -260,6 +261,12 @@ const { showKittyDesktopIndicator } = useCanvasKittyDesktopPairing({
       }).catch(() => {})
     }
   },
+})
+
+useKittyDesktopLiveSpecSync({
+  libraryDiagramId: currentDiagramId,
+  syncEnabled: showKittyDesktopIndicator,
+  collabSessionActive: computed(() => diagramStore.collabSessionActive),
 })
 
 useConceptMapRelationshipTabFromSelection({ startRecommendations })

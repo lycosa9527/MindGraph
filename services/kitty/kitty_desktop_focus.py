@@ -1,4 +1,10 @@
-"""Redis-backed hint: last library diagram the user focused on desktop MindGraph."""
+"""Redis-backed hint: last library diagram the user focused on desktop MindGraph.
+
+**Scope (navigation pairing only):** stores which **library / diagram session id** desktop had open so
+mobile Kitty can align ``/ws/kitty/{scope}`` with the PC. This is **not** a channel for diagram
+content or ``diagram_data`` — canvas truth for edits lives in **Agent Hub** /
+``kitty:live_spec`` (see ``apply_diagram_spec_mutation`` and desktop ``live_context`` poll).
+"""
 
 from __future__ import annotations
 

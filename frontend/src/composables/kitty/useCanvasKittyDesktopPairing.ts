@@ -28,7 +28,7 @@ export function useCanvasKittyDesktopPairing(options: {
       options.currentDiagramId.value !== ''
   )
 
-  const { armed: mobileKittySessionVisible } = useKittyMobileLaneArmed(
+  const { armed: mobileKittySessionArmed } = useKittyMobileLaneArmed(
     options.currentDiagramId as Ref<string | null>,
     kittyMobileLanePollOn
   )
@@ -40,7 +40,7 @@ export function useCanvasKittyDesktopPairing(options: {
       !options.isViewer.value &&
       options.currentDiagramId.value != null &&
       options.currentDiagramId.value !== '' &&
-      mobileKittySessionVisible.value
+      mobileKittySessionArmed.value
   )
 
   const kittyDesktopFocusPublishOn = computed(
@@ -86,5 +86,6 @@ export function useCanvasKittyDesktopPairing(options: {
     kittyEphemeralScope,
     kittyWsSessionScope,
     showKittyDesktopIndicator,
+    mobileKittySessionArmed,
   }
 }

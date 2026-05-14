@@ -11,12 +11,12 @@ from prompts.kitty_agent import KITTY_AGENT_PROMPTS
 from services.features.voice_agent import kitty_agent_manager
 from services.llm import llm_service
 
-from routers.features.voice.diagram_execute import execute_diagram_update
-from routers.features.voice.messaging import (
+from services.kitty_voice.diagram.diagram_execute import execute_diagram_update
+from services.kitty_voice.messaging import (
     build_voice_instructions,
     safe_websocket_send,
 )
-from routers.features.voice.session_ops import (
+from services.kitty_voice.session_ops import (
     get_agent_session_id,
     get_session_omni_client,
 )

@@ -3,7 +3,7 @@
 from typing import Dict
 import re
 
-from routers.features.voice.state import logger
+from services.kitty_voice.runtime_state import logger
 
 
 def get_diagram_prefix_map() -> Dict[str, str]:

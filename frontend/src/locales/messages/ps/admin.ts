@@ -1,5 +1,5 @@
 /**
- * ps UI — admin
+ * en UI — admin
  */
 
 export default {
@@ -45,7 +45,8 @@ export default {
   'admin.editSchool': 'Edit School',
   'admin.enabled': 'Enabled',
   'admin.envAdmins': 'Environment-configured Admins',
-  'admin.envAdminsNote': 'Configured via ADMIN_PHONES / ADMIN_USER_IDS in .env (read-only)',
+  'admin.envAdminsNote':
+    'Configured via ADMIN_PHONES or ADMIN_USER_IDS in .env (read-only)',
   'admin.feature.askonce': 'AskOnce (multi-LLM chat)',
   'admin.feature.askonceHint': 'Multi-model streaming chat.',
   'admin.feature.community': 'Community sharing',
@@ -85,6 +86,7 @@ export default {
   'admin.featuresSave': 'Save and reload runtime',
   'admin.featuresSaved': 'Settings saved and runtime configuration reloaded.',
   'admin.featuresTab': 'Features',
+  'admin.kittyLlmopsTab': 'Kitty LLMOps',
   'admin.featuresIntroAccess':
     'Organization and user allowlists are stored in the database and take effect as soon as you save. Use Permissions to limit who can use a module after it is enabled.',
   'admin.featurePermissionsApply': 'Save permissions',

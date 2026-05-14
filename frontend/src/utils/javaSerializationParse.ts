@@ -1,11 +1,8 @@
 /**
  * Minimal Java Object Serialization stream reader for IHMC `.cmap` blobs.
- * Parses TC_* records, builds a handle table, and reconstructs instance field arrays
- * (superclass-first, one skipCustomData per class level) so callers can inspect
- * `nlk.base.GraphicalConcept` coordinates.
- *
- * IHMC BaseStorable / Externalizable streams are not fully modeled yet; layout extraction
- * may return `{}` for some real CmapTools files until this matches full JDK behavior.
+ * Parses TC_* records and builds handles; reconstructed instances include `annotations`
+ * for classes with SC_WRITE_METHOD (e.g. `java.util.Hashtable`) so IHMC proposition data
+ * is recoverable alongside `nlk.base.GraphicalConcept` layouts.
  *
  * Reference: Java Object Serialization Specification (stream protocol).
  */
@@ -29,6 +26,10 @@ const TC_ENUM = 0x7e
 const BASE_WIRE_HANDLE = 0x7e0000
 
 const SKIP_CUSTOM_MAX_STEPS = 500_000
+
+const SC_WRITE_METHOD = 0x01
+const SC_EXTERNALIZABLE = 0x04
+const SC_BLOCK_DATA = 0x08
 
 export class JavaParseError extends Error {
   constructor(
@@ -58,6 +59,11 @@ export interface InstanceParsed {
   classDesc: ClassDescParsed
   /** Superclass-first field order, aligned with flattened field descriptors */
   values: unknown[]
+  /**
+   * Custom data from writeObject blocks (paired key/value payloads for Hashtable, etc.).
+   * One flattened list per superclass level that has SC_WRITE_METHOD, in stream order.
+   */
+  annotations: unknown[]
 }
 
 export interface ParseResult {
@@ -264,6 +270,7 @@ export function readContentElement(posRef: { pos: number }, ctx: ParseCtx): unkn
           super: null,
         },
         values: [nameVal],
+        annotations: [],
       }
       assignHandle(ctx, inst)
       return inst
@@ -275,9 +282,10 @@ export function readContentElement(posRef: { pos: number }, ctx: ParseCtx): unkn
         kind: 'instance',
         classDesc,
         values: [],
+        annotations: [],
       }
       assignHandle(ctx, inst)
-      inst.values.push(...readObjectData(classDesc, posRef, ctx))
+      inst.values.push(...readObjectData(classDesc, posRef, ctx, inst))
       return inst
     }
     case TC_CLASSDESC:
@@ -343,23 +351,23 @@ function readFieldDescriptor(posRef: { pos: number }, ctx: ParseCtx): FieldDesc 
 function readNewClassDesc(posRef: { pos: number }, ctx: ParseCtx): ClassDescParsed {
   const name = readUtfLikeBody(ctx.view, ctx.buf, posRef)
   const serialVersionUid = readI64(ctx.view, ctx.buf, posRef)
-  const flags = readU8(ctx.view, ctx.buf, posRef)
-  const fieldCount = readU16(ctx.view, ctx.buf, posRef)
-  const fields: FieldDesc[] = []
-  for (let i = 0; i < fieldCount; i += 1) {
-    fields.push(readFieldDescriptor(posRef, ctx))
-  }
-  skipAnnotation(posRef, ctx)
-  const superDesc = readClassDesc(posRef, ctx)
   const desc: ClassDescParsed = {
     kind: 'class',
     name,
     serialVersionUid,
-    flags,
-    fields,
-    super: superDesc,
+    flags: 0,
+    fields: [],
+    super: null,
   }
   assignHandle(ctx, desc)
+  desc.flags = readU8(ctx.view, ctx.buf, posRef)
+  const fieldCount = readU16(ctx.view, ctx.buf, posRef)
+  desc.fields = []
+  for (let i = 0; i < fieldCount; i += 1) {
+    desc.fields.push(readFieldDescriptor(posRef, ctx))
+  }
+  skipAnnotation(posRef, ctx)
+  desc.super = readClassDesc(posRef, ctx)
   return desc
 }
 
@@ -416,14 +424,18 @@ function readPrimitiveField(
       return readU8(ctx.view, ctx.buf, posRef)
     case 'C':
       return readU16(ctx.view, ctx.buf, posRef)
-    case 'D':
+    case 'D': {
       if (posRef.pos + 8 > ctx.buf.length) throw new JavaParseError('EOF double', posRef.pos)
+      const v = ctx.view.getFloat64(posRef.pos, false)
       posRef.pos += 8
-      return 0
-    case 'F':
+      return v
+    }
+    case 'F': {
       if (posRef.pos + 4 > ctx.buf.length) throw new JavaParseError('EOF float', posRef.pos)
+      const v = ctx.view.getFloat32(posRef.pos, false)
       posRef.pos += 4
-      return 0
+      return v
+    }
     case 'I':
       return readI32(ctx.view, ctx.buf, posRef)
     case 'J':
@@ -444,18 +456,59 @@ function readFieldValue(field: FieldDesc, posRef: { pos: number }, ctx: ParseCtx
   return readContentElement(posRef, ctx)
 }
 
+function readCustomDataTail(
+  posRef: { pos: number },
+  ctx: ParseCtx,
+  annotationSink: InstanceParsed | undefined,
+  classDesc: ClassDescParsed
+): void {
+  const needsCustom =
+    (classDesc.flags & SC_WRITE_METHOD) !== 0 ||
+    ((classDesc.flags & SC_EXTERNALIZABLE) !== 0 &&
+      (classDesc.flags & SC_BLOCK_DATA) !== 0)
+  if (!needsCustom) {
+    return
+  }
+  if (annotationSink && (classDesc.flags & SC_WRITE_METHOD) !== 0) {
+    readAnnotationsInto(posRef, ctx, annotationSink.annotations)
+    return
+  }
+  skipCustomData(posRef, ctx)
+}
+
+function readAnnotationsInto(posRef: { pos: number }, ctx: ParseCtx, out: unknown[]): void {
+  let steps = 0
+  while (steps < SKIP_CUSTOM_MAX_STEPS) {
+    steps += 1
+    if (posRef.pos >= ctx.buf.length) {
+      return
+    }
+    const peek = ctx.buf[posRef.pos]
+    if (peek === TC_ENDBLOCKDATA) {
+      posRef.pos += 1
+      return
+    }
+    const el = readContentElement(posRef, ctx)
+    if (el !== undefined) {
+      out.push(el)
+    }
+  }
+  throw new JavaParseError('readAnnotationsInto exceeded step budget', posRef.pos)
+}
+
 function readObjectData(
   desc: ClassDescParsed | null,
   posRef: { pos: number },
-  ctx: ParseCtx
+  ctx: ParseCtx,
+  annotationSink?: InstanceParsed
 ): unknown[] {
   if (!desc) return []
   const values: unknown[] = []
-  values.push(...readObjectData(desc.super, posRef, ctx))
+  values.push(...readObjectData(desc.super, posRef, ctx, annotationSink))
   for (const f of desc.fields) {
     values.push(readFieldValue(f, posRef, ctx))
   }
-  skipCustomData(posRef, ctx)
+  readCustomDataTail(posRef, ctx, annotationSink, desc)
   return values
 }
 
@@ -494,10 +547,10 @@ function readNewString(tc: number, posRef: { pos: number }, ctx: ParseCtx): stri
 
 function readNewArray(posRef: { pos: number }, ctx: ParseCtx): unknown[] {
   const desc = readClassDesc(posRef, ctx)
-  const len = readI32(ctx.view, ctx.buf, posRef)
-  if (len < 0 || len > 1_000_000) throw new JavaParseError('Bad array length', posRef.pos)
   const arr: unknown[] = []
   assignHandle(ctx, arr)
+  const len = readI32(ctx.view, ctx.buf, posRef)
+  if (len < 0 || len > 1_000_000) throw new JavaParseError('Bad array length', posRef.pos)
   if (!desc) throw new JavaParseError('Array missing component type', posRef.pos)
   const rootName = desc.name
   if (rootName.startsWith('[')) {

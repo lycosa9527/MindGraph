@@ -8,7 +8,7 @@ import uuid
 from clients.omni_client import OmniClient
 from services.features.voice_agent import kitty_agent_manager
 
-from routers.features.voice.state import active_websockets, logger, voice_sessions
+from services.kitty_voice.runtime_state import active_websockets, logger, voice_sessions
 
 
 def get_agent_session_id(voice_session_id: str) -> str:
@@ -59,6 +59,7 @@ def create_voice_session(
     3. Session manager cleanup (when diagram session ends)
     4. Navigation to gallery (session manager triggers cleanup)
     """
+    ensure_kitty_voice_hub_wired()
     session_id = f"voice_{uuid.uuid4().hex[:12]}"
 
     # CRITICAL: Create a NEW OmniClient instance for this voice session
@@ -89,6 +90,7 @@ def create_voice_session(
 
 def get_voice_session(session_id: str) -> Optional[Dict[str, Any]]:
     """Get session"""
+    ensure_kitty_voice_hub_wired()
     return voice_sessions.get(session_id)
 
 
@@ -250,6 +252,18 @@ async def cleanup_voice_by_diagram_session(diagram_session_id: str) -> bool:
     return False
 
 
+_HUB_VOICE_INFRA_WIRED = False
+
+
+def ensure_kitty_voice_hub_wired() -> None:
+    """Register Agent Hub + Redis getters once (avoids import-time agent_hub cycles)."""
+    global _HUB_VOICE_INFRA_WIRED
+    if _HUB_VOICE_INFRA_WIRED:
+        return
+    _wire_agent_hub_infrastructure()
+    _HUB_VOICE_INFRA_WIRED = True
+
+
 def _wire_agent_hub_infrastructure() -> None:
     from services.agent_hub.scope_lifecycle import (
         configure_kitty_control_state,
@@ -260,6 +274,3 @@ def _wire_agent_hub_infrastructure() -> None:
     configure_voice_session_getter(get_voice_session)
     configure_kitty_voice_cleanup(cleanup_voice_by_diagram_session)
     configure_kitty_control_state(active_websockets, voice_sessions)
-
-
-_wire_agent_hub_infrastructure()

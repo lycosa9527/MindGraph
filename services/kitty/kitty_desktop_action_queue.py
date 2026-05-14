@@ -1,4 +1,9 @@
-"""FIFO queue for Kitty-initiated desktop UX actions (cross-tab; mobile Kitty → desktop SPA)."""
+"""FIFO queue for Kitty-initiated **desktop navigation** (cross-tab; mobile Kitty → desktop SPA).
+
+Only ``kind: open_canvas`` payloads are accepted (diagram slug + optional topic seeds). This queue
+must **not** carry full diagram specs or hub patches — avoid duplicating diagram mutation alongside
+``apply_diagram_spec_mutation`` / ``live_spec``; use hub + Redis live spec for authoritative canvas state.
+"""
 
 from __future__ import annotations
 

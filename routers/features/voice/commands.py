@@ -18,21 +18,21 @@ from services.kitty.kitty_session_redis import (
     apply_redis_live_to_voice_session,
     load_kitty_live_context,
 )
-from routers.features.voice.diagram_execute import execute_diagram_update
-from routers.features.voice.diagram_utils import (
+from services.kitty_voice.diagram.diagram_execute import execute_diagram_update
+from services.kitty_voice.diagram.diagram_utils import (
     get_diagram_prefix_map,
     is_paragraph_text,
 )
 from routers.features.voice.kitty_library_context_refresh import (
     throttled_refresh_voice_context_from_library,
 )
-from routers.features.voice.messaging import (
+from routers.features.voice.paragraph import process_paragraph_with_qwen_plus
+from services.kitty_voice.messaging import (
     hydrate_omni_for_diagram_pedagogical_review,
     safe_websocket_send,
     user_requests_diagram_pedagogical_review,
 )
-from routers.features.voice.paragraph import process_paragraph_with_qwen_plus
-from routers.features.voice.session_ops import (
+from services.kitty_voice.session_ops import (
     get_agent_session_id,
     get_session_omni_client,
     get_voice_session,

@@ -135,6 +135,11 @@ export function useSpecIOSlice(ctx: DiagramContext) {
               'leftBranches',
               'rightBranches',
               'analogies',
+              'concept_units',
+              '_import_meta',
+              '_import_hints',
+              '_import_cmap_fit_view_pending',
+              '_import_cmap_measured_relax_pending',
               '_doubleBubbleMapNodeSizes',
               '_doubleBubbleMeasureHints',
             ].includes(key)
@@ -229,13 +234,22 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     addMeasureHint('left-topic', leftNode)
     addMeasureHint('right-topic', rightNode)
     simIndices.forEach((i) => {
-      addMeasureHint(`similarity-${i}`, nodes.find((n) => n.id === `similarity-${i}`))
+      addMeasureHint(
+        `similarity-${i}`,
+        nodes.find((n) => n.id === `similarity-${i}`)
+      )
     })
     leftDiffIndices.forEach((i) => {
-      addMeasureHint(`left-diff-${i}`, nodes.find((n) => n.id === `left-diff-${i}`))
+      addMeasureHint(
+        `left-diff-${i}`,
+        nodes.find((n) => n.id === `left-diff-${i}`)
+      )
     })
     rightDiffIndices.forEach((i) => {
-      addMeasureHint(`right-diff-${i}`, nodes.find((n) => n.id === `right-diff-${i}`))
+      addMeasureHint(
+        `right-diff-${i}`,
+        nodes.find((n) => n.id === `right-diff-${i}`)
+      )
     })
 
     const _doubleBubbleMapNodeSizes: Record<string, unknown> = {}
@@ -275,9 +289,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       leftDifferences,
       rightDifferences,
       ...(Object.keys(_doubleBubbleMapNodeSizes).length > 0 ? { _doubleBubbleMapNodeSizes } : {}),
-      ...(Object.keys(_doubleBubbleMeasureHints).length > 0
-        ? { _doubleBubbleMeasureHints }
-        : {}),
+      ...(Object.keys(_doubleBubbleMeasureHints).length > 0 ? { _doubleBubbleMeasureHints } : {}),
     }
   }
 

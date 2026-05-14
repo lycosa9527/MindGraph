@@ -16,6 +16,7 @@ import {
   ChatLineRound,
   Coin,
   DataAnalysis,
+  Microphone,
   Odometer,
   Reading,
   School,
@@ -29,6 +30,7 @@ import {
 import AdminDashboardTab from '@/components/admin/AdminDashboardTab.vue'
 import AdminDatabaseTab from '@/components/admin/AdminDatabaseTab.vue'
 import AdminFeaturesTab from '@/components/admin/AdminFeaturesTab.vue'
+import AdminKittyLlmopsTab from '@/components/admin/AdminKittyLlmopsTab.vue'
 import AdminLibraryTab from '@/components/admin/AdminLibraryTab.vue'
 import AdminMarketsTab from '@/components/admin/AdminMarketsTab.vue'
 import AdminPerformanceTab from '@/components/admin/AdminPerformanceTab.vue'
@@ -65,6 +67,7 @@ const allTabsConfig: ReadonlyArray<{
   { name: 'roles', labelKey: 'admin.roleControl', icon: UserFilled, adminOnly: true },
   { name: 'tokens', labelKey: 'admin.tokens', icon: Ticket, adminOnly: true },
   { name: 'features', labelKey: 'admin.featuresTab', icon: Setting, adminOnly: true },
+  { name: 'kitty_llmops', labelKey: 'admin.kittyLlmopsTab', icon: Microphone, adminOnly: true },
   { name: 'library', labelKey: 'admin.library', icon: Reading, adminOnly: true },
   { name: 'markets', labelKey: 'admin.markets', icon: ShoppingCart, adminOnly: true },
   { name: 'database', labelKey: 'admin.database.tab', icon: Coin, adminOnly: true },
@@ -190,6 +193,10 @@ onMounted(scheduleTabBarUpdate)
 
           <template v-else-if="activeTab === 'features'">
             <AdminFeaturesTab />
+          </template>
+
+          <template v-else-if="activeTab === 'kitty_llmops'">
+            <AdminKittyLlmopsTab />
           </template>
 
           <template v-else-if="activeTab === 'library'">

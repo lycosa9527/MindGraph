@@ -1,5 +1,5 @@
 /**
- * ta UI — common
+ * en UI — common
  */
 
 export default {
@@ -55,11 +55,15 @@ export default {
   'common.success': 'Success',
   'common.unit.chars': 'chars',
   'common.warning': 'Warning',
-  'demo.enterCode': 'Please enter a demo code',
-  'demo.invalidCode': 'Invalid demo code',
-  'demo.loginOk': 'Login successful',
-  'demo.loginSuccessNamed': 'Welcome, {name}',
-  'demo.networkError': 'Network error, login failed',
+  'bayiPasskey.enterCode': 'Please enter the 6-digit access code',
+  'bayiPasskey.invalidCode': 'Invalid access code',
+  'bayiPasskey.loginOk': 'Login successful',
+  'bayiPasskey.loginSuccessNamed': 'Welcome, {name}',
+  'bayiPasskey.networkError': 'Network error, login failed',
+  'bayiPasskey.subtitle': 'Enter the school passkey to continue',
+  'bayiPasskey.title': 'School access',
+  'bayiPasskey.submit': 'Continue',
+  'bayiPasskey.back': 'Back to sign in',
   'diagramTemplate.allModelsFailed': 'All models failed, please try again',
   'diagramTemplate.generated': 'Diagram generated ({model})',
   'diagramTemplate.generationFailed': 'Generation failed',
@@ -84,7 +88,7 @@ export default {
   'meta.pageTitle.dashboardLogin': 'Dashboard login',
   'meta.pageTitle.debateverse': 'DebateVerse',
   'meta.pageTitle.default': 'Mind Platform',
-  'meta.pageTitle.demoLogin': 'Demo login',
+  'meta.pageTitle.bayiPasskeyLogin': 'School access',
   'meta.pageTitle.gewe': 'Gewe',
   'meta.pageTitle.knowledgeSpace': 'Knowledge space',
   'meta.pageTitle.library': 'Library',
@@ -103,6 +107,16 @@ export default {
   'canvas.kittyMobileIndicatorTitle': 'Mobile Kitty',
   'mobile.kittyWelcomeSub':
     'Your microphone talks to the same MindGraph you edit. Open a saved diagram on your phone or desktop so Kitty stays in sync.',
+  'mobile.kittyCurrentDiagramLabel': 'Current diagram',
+  'mobile.kittyDiagramTitleEmpty': 'No title',
+  'mobile.kittyDiagramMetaLine': '{type} · {id}',
+  'mobile.kittyHubSourceLive': 'Hub: live',
+  'mobile.kittyHubSourceLibrary': 'Hub: library',
+  'mobile.kittyHubSourceEmpty': 'Hub: empty',
+  'mobile.kittyMicToggleTitle':
+    'Tap to toggle the mic: tap once to speak, tap again when done. Press Space to toggle when not typing in a field.',
+  'mobile.kittyMicToggleAria':
+    'Toggle microphone: tap once to start voice, tap again to stop. Press Space to toggle when not typing in the message field.',
   'meta.pageTitle.notFound': 'Page not found',
   'meta.pageTitle.publicDashboard': 'Statistics',
   'meta.pageTitle.schoolDashboard': 'School dashboard',
@@ -133,8 +147,7 @@ export default {
   'landing.international.mindmateCard.desc': 'Your virtual teaching and research partner',
   'landing.international.shareSite': 'Share site',
   'landing.international.shareSiteModalTitle': 'Share site',
-  'landing.international.shareSiteModalHint':
-    'Scan with a phone or tablet camera to open this page for your class.',
+  'landing.international.shareSiteModalHint': '',
   'landing.international.shareSiteCopy': 'Copy link',
   'landing.international.shareSiteCopied': 'Link copied',
 } as const

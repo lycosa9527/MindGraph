@@ -34,6 +34,7 @@ export type { MobileKittyBootstrapPayload, MobileKittyContextPreview } from './k
 export { useKittyDiagramReviewAnnotationBus } from './kitty/useKittyDiagramReviewAnnotationBus'
 export { useKittyDesktopActionPoll } from './kitty/useKittyDesktopActionPoll'
 export { useCanvasKittyDesktopPairing } from './kitty/useCanvasKittyDesktopPairing'
+export { useKittyDesktopLiveSpecSync } from './kitty/useKittyDesktopLiveSpecSync'
 export { KITTY_PAIR_POLL_MS } from './kitty/runKittyIntervalPoll'
 export {
   buildKittyDiagramContext,

@@ -1,4 +1,6 @@
-/** zh-tw UI — mindmate */
+/**
+ * zh UI — mindmate
+ */
 
 export default {
   'aiModel.conceptAiOff': '點擊開啟：用 AI 生成關係標籤（後臺多模型）',
@@ -11,24 +13,24 @@ export default {
   'aiModel.relationshipsTooltip': '拖拽概念連線即可生成關係',
   'aiModel.tabFocusBadge': 'Tab焦點',
   'aiModel.tabFocusTooltip': '編輯焦點問題時按 Tab 檢驗；之後在底部用數字鍵與 − / = 備選',
-  'aiModel.tabFocusQuestionBadge': 'Tab — 焦點問題',
+  'aiModel.tabFocusQuestionBadge': 'Tab焦點問題',
   'aiModel.conceptMapFocusQuestionTabTooltip':
-    '選取或編輯焦點問題時：按 Tab 進行 AI 檢核（請先輸入有具體內容的焦點問題，並須登入）。',
+    '选中或编辑焦点问题时：按 Tab 进行 AI 检验（须先写有实质内容的焦点问题，并需登录）。',
   'aiModel.tabRecBadge': 'Tab推薦',
-  'aiModel.tabContentRecBadge': 'Tab — 內容',
-  'aiModel.tabRelationshipRecBadge': 'Tab — 關係',
+  'aiModel.tabContentRecBadge': 'Tab內容推薦',
+  'aiModel.tabRelationshipRecBadge': 'Tab關係推薦',
   'aiModel.conceptMapConceptTabTooltip':
-    '編輯模式（單獨概念）：按 Tab 取得替代措辭（須先設定主題）。',
+    '编辑模式（独立概念）：按 Tab 获取备选措辞（须已写好主题）。',
   'aiModel.conceptMapRelationshipTabTooltip':
-    '編輯模式或選取已連線概念（選取模式）：按 Tab 取得聚焦連線的關係建議。',
+    '编辑模式或选中已连线概念（选择模式）：按 Tab 获取关系标签备选。',
   'aiModel.tooltip.clickDeselect': '點擊取消選擇 {name}',
   'aiModel.tooltip.clickSelect': '點擊選擇 {name}',
   'aiModel.tooltip.clickSwitch': '點擊切換到 {name} 結果',
   'aiModel.tooltip.generating': '{name} 生成中...',
   'aiModel.tooltip.modelFailed': '{name} 生成失敗',
   'aiModel.tooltip.showingResult': '當前顯示 {name} 結果',
-  'aiModel.hostPickBadgeTooltip': '主持人正在編輯此模型的圖示版本（多模型檢視）',
-  'aiModel.hostPickBadgeAria': '主持人正在使用 {name} 編輯',
+  'aiModel.hostPickBadgeTooltip': '房主正在編輯該模型的圖示版本（多模型視圖）',
+  'aiModel.hostPickBadgeAria': '房主正在使用 {name} 編輯',
   'autoComplete.collabOwnerOnly': '協作模式下僅圖示所有者可以使用 AI 生成',
   'autoComplete.conceptMapRealtime': '概念圖使用實時關係建議，請通過創建鏈接來生成關係',
   'autoComplete.doubleBubbleNeedBothTopics': '請填寫左右兩個主題後再生成',
@@ -85,7 +87,7 @@ export default {
   'mindmate.input.attachFile': '上傳文件',
   'mindmate.input.placeholder': '請輸入你的問題',
   'mindmate.newChat': '新建對話',
-  'mindmate.otherModules': '其他功能模組',
+  'mindmate.otherModules': '其他功能模塊',
   'mindmate.noHistory': '暫無歷史會話',
   'mindmate.noHistoryPanel': '暫無歷史會話',
   'mindmate.suggestionLabel': '可以試著問我：',
@@ -159,4 +161,4 @@ export default {
   'rootConceptModal.tabTitleRoot': '根概念：{text}',
   'rootConceptModal.title': '根概念',
   'rootConceptModal.titleConceptList': '概念列表',
-} as const
+}

@@ -15,6 +15,42 @@ Orchestration for **multiple agent surfaces** (mobile Kitty, MindMate, workshop,
   2. Redis `live_spec` upsert
 - `close_session(...)` terminates the hub session lifecycle.
 
+## Diagram mutation contract (`MutationOp`)
+
+Authoritative canvas merges use **exactly two** string ops on `mutation_cmd["op"]` (see
+[`scope_lifecycle.py`](scope_lifecycle.py) / `MindGraphAgentHub.apply_diagram_spec_mutation`):
+
+| `op` | Meaning |
+|------|---------|
+| `replace_context` | Default when omitted or not `patch_context`: replace hub merge input with `mutation_cmd["context"]`. |
+| `patch_context` | Shallow-merge top-level keys of `context` and shallow-merge `diagram_data` with the delta. |
+
+**Optional:** `persist_library: true` plus `library_snapshot` (dict) triggers `save_diagram` for the
+current `diagram_library_id`. Bridge code under `services/kitty_voice/` MUST NOT invent other op names.
+
+Kitty realtime paths that call the hub today include `hub_context.apply_kitty_ws_context_patch`
+(`context_update` WS) and `diagram_voice_hub_bridge.try_sync_voice_diagram_to_hub` (after voice diagram edits).
+
+## Kitty WebSocket → hub call sequence (reference)
+
+Typical successful `/ws/kitty/{diagram_session_id}` session matches this order in
+[`services/kitty_voice/kitty_realtime_websocket.py`](../kitty_voice/kitty_realtime_websocket.py)
+(registration still under [`routers/features/voice/kitty_routes.py`](../routers/features/voice/kitty_routes.py)):
+
+1. `open_session(..., source_module="kitty_ws")` — allocate `hub_session_id`.
+2. `preempt_handshake(diagram_scope, user_id)` — single-active-kitty policy on scope.
+3. After client `start` frame: `prepare_kitty_start_context(...)` — library/bootstrap merge.
+4. `set_kitty_runtime(..., connected=False)` — register voice and agent session ids before Omni is up.
+5. `register_kitty_connection(diagram_scope, user_id)` then `set_kitty_runtime(..., connected=True)`.
+6. On each `context_update` message: `apply_kitty_ws_context_patch` → hub `apply_diagram_spec_mutation`.
+7. On socket teardown (finally): `set_kitty_runtime(..., connected=False, agent_session_id=None)`,
+   `unregister_kitty_connection(...)`, `close_session(hub_session_id, ...)`.
+
+Inbound JSON dispatch for audio/text/control is centralized in
+[`services/kitty_voice/kitty_ws_inbound.py`](../kitty_voice/kitty_ws_inbound.py). Optional Pipecat framing uses
+[`services/kitty_voice/pipecat_kitty/session.py`](../kitty_voice/pipecat_kitty/session.py) when
+`FEATURE_KITTY_PIPECAT_PIPELINE=True`; hub APIs above are unchanged.
+
 | Path | Role |
 |------|------|
 | [`scope_lifecycle.py`](scope_lifecycle.py) | `MindGraphAgentHub`, control dispatch, refcount policy |
@@ -22,6 +58,15 @@ Orchestration for **multiple agent surfaces** (mobile Kitty, MindMate, workshop,
 | [`matrix_bus.py`](matrix_bus.py) | Stub `DiagramCommandBus` for `P3` channel spine |
 
 **Primitives** (Redis keys, pub/sub publish, Lua refcount helpers) live under [`services/kitty/`](../kitty/).
+
+## Desktop navigation queue (not diagram truth)
+
+Cross-device **pairing and navigation** use Redis helpers that are intentionally **narrow**:
+
+- [`kitty_desktop_focus.py`](../kitty/kitty_desktop_focus.py) — last library/diagram id the user focused on desktop (mobile aligns `/ws/kitty/{scope}`). **Not** a channel for `diagram_data`.
+- [`kitty_desktop_action_queue.py`](../kitty/kitty_desktop_action_queue.py) — FIFO for `kind: open_canvas` only (slug + seeds). **Not** full specs or hub patches.
+
+Authoritative canvas edits and merged specs remain **`apply_diagram_spec_mutation`**, hub revision, and **`kitty:live_spec`** (including [`GET /api/kitty/live_context/...`](../kitty_voice/kitty_http_handlers.py) on desktop). For Omni image ingress and vision notes see [`omni_multimodal.py`](../kitty_voice/omni_multimodal.py) and [`ws_append_image.py`](../kitty_voice/ws_append_image.py).
 
 **Load balancer:** prefer **sticky sessions** to `/ws/kitty` across workers (latency); refcount remains authoritative for correctness.
 

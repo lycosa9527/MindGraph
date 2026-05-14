@@ -86,6 +86,7 @@ export default {
   'admin.featuresSave': 'Save and reload runtime',
   'admin.featuresSaved': 'Settings saved and runtime configuration reloaded.',
   'admin.featuresTab': 'Features',
+  'admin.kittyLlmopsTab': 'Kitty LLMOps',
   'admin.featuresIntroAccess':
     'Organization and user allowlists are stored in the database and take effect as soon as you save. Use Permissions to limit who can use a module after it is enabled.',
   'admin.featurePermissionsApply': 'Save permissions',

@@ -53,7 +53,7 @@ def _get_voice_session_coalesce(voice_sid: str) -> Optional[Dict[str, Any]]:
     getter = _VOICE_SESSION_GETTER.getter
     if getter is not None:
         return getter(voice_sid)
-    from routers.features.voice.session_ops import get_voice_session
+    from services.kitty_voice.session_ops import get_voice_session
 
     return get_voice_session(voice_sid)
 

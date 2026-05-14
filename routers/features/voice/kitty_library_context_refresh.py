@@ -10,14 +10,14 @@ from services.features.voice_agent import kitty_agent_manager
 from services.kitty.kitty_context_hydrate import merge_voice_context_with_library
 from services.kitty.kitty_session_redis import schedule_persist_kitty_live_debounced
 
-from routers.features.voice.messaging import build_voice_instructions
-from routers.features.voice.session_ops import (
+from services.kitty_voice.messaging import build_voice_instructions
+from services.kitty_voice.runtime_state import logger
+from services.kitty_voice.session_ops import (
     get_agent_session_id,
     get_session_omni_client,
     get_voice_session,
     update_panel_context,
 )
-from routers.features.voice.state import logger
 
 _REFRESH_MIN_INTERVAL = 1.5
 

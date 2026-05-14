@@ -81,6 +81,7 @@ export default {
   'admin.featuresSave': '保存并重载运行时',
   'admin.featuresSaved': '已保存并重载运行时配置。',
   'admin.featuresTab': '功能',
+  'admin.kittyLlmopsTab': 'Kitty 编排',
   'admin.featuresIntroAccess':
     '机构与用户白名单保存在数据库中，保存后立即生效。开启模块后可在「权限」中限制谁能使用。',
   'admin.featurePermissionsApply': '保存权限',

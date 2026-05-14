@@ -6,8 +6,8 @@
  * Two-View Zoom System:
  * - fitToFullCanvas(): Fits diagram to full canvas (no panel space reserved)
  * - fitWithPanel(): Fits diagram with space reserved for right-side panels
- * - Re-fits when panels open/close on most types; desktop concept maps never auto-fit (only user toolbar
- *   “fit” / zoom controls, or `forExport` screenshots, may change the view — see `conceptMapDesktopViewport.ts`)
+ * - Desktop concept maps default to manual zoom; **IHMC cmap imports with layout keys** trigger a
+ *   one-shot `fitDiagram` on first nodes init (`_import_cmap_fit_view_pending`; see useDiagramCanvasFit).
  *
  * SVG text / RTL: primary labels use InlineEditableText (HTML, dir=auto). Decorative
  * overlays (brace/tree/bridge) use SVG <text>; bidi for all-RTL strings can be weaker
@@ -27,6 +27,7 @@ import { useTheme } from '@/composables/core/useTheme'
 import {
   diagramCanvasGridConfig,
   diagramCanvasZoomConfig,
+  useConceptMapCmapMeasuredLayoutRelax,
   useDiagramCanvasConceptMapLink,
   useDiagramCanvasContextMenu,
   useDiagramCanvasEventBus,
@@ -224,6 +225,8 @@ const {
   presentationToolIsNotTimer,
   nodesLength,
 })
+
+useConceptMapCmapMeasuredLayoutRelax(diagramStore)
 
 const conceptMapLink = useDiagramCanvasConceptMapLink({
   diagramStore,

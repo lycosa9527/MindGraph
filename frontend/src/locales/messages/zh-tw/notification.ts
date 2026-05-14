@@ -1,5 +1,5 @@
 /**
- * zh-tw UI — notification
+ * zh UI — notification
  */
 
 export default {
@@ -21,10 +21,10 @@ export default {
   'notification.feedbackThanksDislike': '感謝您的反饋，我們會努力改進',
   'notification.focusQuestionTooShort': '請先輸入更長的焦點問題',
   'notification.geoLiteMissingIntro':
-    '從 MaxMind 下載 GeoLite2 Country，解壓縮 GeoLite2-Country.mmdb，並將其複製到伺服器資料資料夾：',
-  'notification.geoLiteMissingLink': '開啟 MaxMind GeoLite 下載頁面',
-  'notification.geoLiteMissingPathLabel': '預期路徑：',
-  'notification.geoLiteMissingTitle': 'GeoLite2 國家資料庫遺失',
+    '请从 MaxMind 下载 GeoLite2 Country，解压后把 GeoLite2-Country.mmdb 复制到服务器 data 目录：',
+  'notification.geoLiteMissingLink': '打開 MaxMind GeoLite 下載頁',
+  'notification.geoLiteMissingPathLabel': '期望路徑：',
+  'notification.geoLiteMissingTitle': '缺少 GeoLite2 Country 數據庫',
   'notification.fullscreenFailed': '無法進入全屏模式',
   'notification.generationCancelled': '已取消生成',
   'notification.historyClearNodes': '清空節點文字',
@@ -47,4 +47,4 @@ export default {
   'notification.sessionInvalidated': '您已被登出，因為登錄設備數量超過上限',
   'notification.signInToUse': '請登錄後使用',
   'notification.signInToValidateFocus': '請登錄後檢驗焦點問題',
-} as const
+}

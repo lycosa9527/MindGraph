@@ -4,13 +4,14 @@ from typing import Any, Dict
 
 from fastapi import WebSocket
 
-from routers.features.voice.diagram_add import voice_apply_add_node_action
-from routers.features.voice.diagram_delete import voice_apply_delete_node_action
-from routers.features.voice.diagram_handlers import (
+from services.kitty_voice.diagram.diagram_add import voice_apply_add_node_action
+from services.kitty_voice.diagram.diagram_delete import voice_apply_delete_node_action
+from services.kitty_voice.diagram.diagram_handlers import (
     _handle_update_center_action,
     _handle_update_node_action,
 )
-from routers.features.voice.state import logger
+from services.kitty_voice.diagram_voice_hub_bridge import try_sync_voice_diagram_to_hub
+from services.kitty_voice.runtime_state import logger
 
 
 async def execute_diagram_update(
@@ -29,11 +30,14 @@ async def execute_diagram_update(
     node_identifier = command.get("node_identifier")
 
     try:
+        executed = False
         if action == "update_center":
-            return await _handle_update_center_action(websocket, voice_session_id, command, session_context, target)
+            executed = await _handle_update_center_action(
+                websocket, voice_session_id, command, session_context, target
+            )
 
-        if action == "update_node" and target:
-            return await _handle_update_node_action(
+        elif action == "update_node" and target:
+            executed = await _handle_update_node_action(
                 websocket,
                 voice_session_id,
                 command,
@@ -43,11 +47,11 @@ async def execute_diagram_update(
                 node_identifier,
             )
 
-        if action == "add_node":
-            return await voice_apply_add_node_action(websocket, voice_session_id, command, session_context)
+        elif action == "add_node":
+            executed = await voice_apply_add_node_action(websocket, voice_session_id, command, session_context)
 
-        if action == "delete_node":
-            return await voice_apply_delete_node_action(
+        elif action == "delete_node":
+            executed = await voice_apply_delete_node_action(
                 websocket,
                 voice_session_id,
                 command,
@@ -57,7 +61,14 @@ async def execute_diagram_update(
                 node_identifier,
             )
 
-        return False
+        else:
+            return False
+
+        palette_only = action == "add_node" and not command.get("target")
+        if executed and not palette_only:
+            await try_sync_voice_diagram_to_hub(voice_session_id)
+
+        return executed
 
     except (ValueError, KeyError, RuntimeError, AttributeError) as e:
         logger.error("Diagram update execution error: %s", e, exc_info=True)

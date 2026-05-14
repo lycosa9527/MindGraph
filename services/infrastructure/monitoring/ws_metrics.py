@@ -38,12 +38,26 @@ import time
 from typing import Any, Dict
 
 from services.redis.redis_async_client import get_async_redis
-from services.online_collab.redis.redis8_features import (
-    timeseries_enabled,
-    ts_record_counter,
-)
 
 logger = logging.getLogger(__name__)
+
+# Lazy import: loading ``online_collab.redis.redis8_features`` runs
+# ``online_collab`` package ``__init__``, which imports modules that depend on
+# this module during interpreter startup. Defer until first TS/TDigest use.
+_REDIS8_FEATURES_MOD: Any = None
+
+
+def _redis8_features() -> Any:
+    global _REDIS8_FEATURES_MOD
+    if _REDIS8_FEATURES_MOD is None:
+        from services.online_collab.redis import redis8_features
+
+        _REDIS8_FEATURES_MOD = redis8_features
+    return _REDIS8_FEATURES_MOD
+
+
+def _timeseries_enabled() -> bool:
+    return bool(_redis8_features().timeseries_enabled())
 
 _local: Dict[str, int | float] = {
     # Per-endpoint active connection counters (all five endpoint types)
@@ -146,14 +160,14 @@ def _bump(key: str, delta: int = 1) -> None:
     debug level inside ``redis8_features``.
     """
     _local[key] = _local.get(key, 0) + delta
-    if not timeseries_enabled():
+    if not _timeseries_enabled():
         return
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError:
         return
     if loop.is_running():
-        loop.create_task(ts_record_counter(key, float(delta)))
+        loop.create_task(_redis8_features().ts_record_counter(key, float(delta)))
 
 
 def record_ws_connection_delta(endpoint: str, delta: int) -> None:
@@ -310,18 +324,16 @@ def record_ws_broadcast_latency(latency_ms: float) -> None:
     """
     _bump("ws_broadcast_latency_samples_total")
     _local["ws_broadcast_latency_sum_ms"] = _local.get("ws_broadcast_latency_sum_ms", 0) + latency_ms
-    if not timeseries_enabled():
+    if not _timeseries_enabled():
         return
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError:
         return
     if loop.is_running():
-        from services.online_collab.redis.redis8_features import (  # pylint: disable=import-outside-toplevel
-            tdigest_record_latency,
+        loop.create_task(
+            _redis8_features().tdigest_record_latency("broadcast_latency_ms", latency_ms)
         )
-
-        loop.create_task(tdigest_record_latency("broadcast_latency_ms", latency_ms))
 
 
 def record_ws_update_latency(latency_ms: float) -> None:
@@ -335,18 +347,14 @@ def record_ws_update_latency(latency_ms: float) -> None:
     """
     _bump("ws_update_latency_samples_total")
     _local["ws_update_latency_sum_ms"] = _local.get("ws_update_latency_sum_ms", 0) + latency_ms
-    if not timeseries_enabled():
+    if not _timeseries_enabled():
         return
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError:
         return
     if loop.is_running():
-        from services.online_collab.redis.redis8_features import (  # pylint: disable=import-outside-toplevel
-            tdigest_record_latency,
-        )
-
-        loop.create_task(tdigest_record_latency("update_latency_ms", latency_ms))
+        loop.create_task(_redis8_features().tdigest_record_latency("update_latency_ms", latency_ms))
 
 
 def record_ws_update_semaphore_wait_ms(wait_ms: float) -> None:
@@ -356,52 +364,44 @@ def record_ws_update_semaphore_wait_ms(wait_ms: float) -> None:
     """
     _bump("ws_update_semaphore_wait_samples_total")
     _local["ws_update_semaphore_wait_sum_ms"] = _local.get("ws_update_semaphore_wait_sum_ms", 0) + wait_ms
-    if not timeseries_enabled():
+    if not _timeseries_enabled():
         return
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError:
         return
     if loop.is_running():
-        from services.online_collab.redis.redis8_features import (  # pylint: disable=import-outside-toplevel
-            tdigest_record_latency,
+        loop.create_task(
+            _redis8_features().tdigest_record_latency("update_semaphore_wait_ms", wait_ms)
         )
-
-        loop.create_task(tdigest_record_latency("update_semaphore_wait_ms", wait_ms))
 
 
 def record_ws_load_editors_latency_ms(latency_ms: float) -> None:
     """Record Redis HASH/JSON load_editors hot-path latency (ms)."""
     _bump("ws_load_editors_latency_samples_total")
-    if not timeseries_enabled():
+    if not _timeseries_enabled():
         return
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError:
         return
     if loop.is_running():
-        from services.online_collab.redis.redis8_features import (  # pylint: disable=import-outside-toplevel
-            tdigest_record_latency,
-        )
-
-        loop.create_task(tdigest_record_latency("load_editors_ms", latency_ms))
+        loop.create_task(_redis8_features().tdigest_record_latency("load_editors_ms", latency_ms))
 
 
 def record_ws_read_live_spec_latency_ms(latency_ms: float) -> None:
     """Record read_live_spec hot-path latency (ms)."""
     _bump("ws_read_live_spec_latency_samples_total")
-    if not timeseries_enabled():
+    if not _timeseries_enabled():
         return
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError:
         return
     if loop.is_running():
-        from services.online_collab.redis.redis8_features import (  # pylint: disable=import-outside-toplevel
-            tdigest_record_latency,
+        loop.create_task(
+            _redis8_features().tdigest_record_latency("read_live_spec_ms", latency_ms)
         )
-
-        loop.create_task(tdigest_record_latency("read_live_spec_ms", latency_ms))
 
 
 def record_ws_editor_connection_delta(delta: int) -> None:

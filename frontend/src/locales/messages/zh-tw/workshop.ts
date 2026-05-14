@@ -1,4 +1,6 @@
-/** zh-tw UI — workshop */
+/**
+ * zh UI — workshop
+ */
 
 export default {
   'collab.codeCopied': '代碼已複製',
@@ -31,7 +33,7 @@ export default {
   'collab.saveFailed': '保存失敗',
   'collab.scanToJoin': '掃碼加入',
   'collab.schoolDescActive':
-    '校內協同已開啟。同事請在 MindGraph 首頁開啟「協同 → 校內協同」，在列表中選擇此圖示加入（無需輸入邀請碼）。',
+    '校内协同已开启。同事请在 MindGraph 首页打开「协同 → 校内协同」，在列表中选择此图示加入（无需输入邀请码）。',
   'collab.schoolStarted': '校內協同已開啟，同事可在「協同 → 校內協同」中加入',
   'collab.sectionNetwork': '共同協同（邀請碼）',
   'collab.sectionSchool': '校內協同',
@@ -158,7 +160,7 @@ export default {
   'workshop.mainChannelStream': '主頻道',
   'workshop.manageTeachingGroups': '管理教研組',
   'workshop.manageTeachingGroupsBlurb':
-    '可新增或封存教研組，設定公開或私有，修改名稱與簡介，調整列表順序，複製教研組作為範本，並邀請同事加入。發帖權限與通知等請使用「進階設定」。封存後全校成員將不再看到該組。',
+    '可添加或归档教研组，设置公开或私有，修改名称与简介，调整列表顺序，复制教研组作为模板，并邀请同事加入。发帖权限与通知等请使用「高级设置」。归档后全校成员将不再看到该组。',
   'workshop.manageUser': '管理此用戶',
   'workshop.markAllReadChannel': '將全部消息標為已讀',
   'workshop.markAsRead': '標記為已讀',
@@ -318,24 +320,23 @@ export default {
   'workshop.welcomeExampleOrg': '晨曦中學',
   'workshop.welcomeHowTitle': '概念與層級關係',
   'workshop.welcomeIntro':
-    'Workshop 是面向學校的協作空間：發佈公告、開展課例研究，並把討論結構化地組織在教學場景旁邊。',
+    'Workshop 是面向学校的协作空间：发布公告、开展课例研究，并把讨论结构化地组织在教学场景旁边。',
   'workshop.welcomeLessonStudyBody':
-    '課例一般掛在某個課題組下，圍繞具體一節課做磨課、觀課與反思；可帶進度狀態，也可關聯思維圖示。',
+    '课例一般挂在某个课题组下，围绕具体一节课做磨课、观课与反思；可带进度状态，也可关联思维图示。',
   'workshop.welcomeLessonStudyTitle': '課例研究',
   'workshop.welcomeMessagesBody':
-    '訊息是會話或頻道時間線裡的單條發言；回覆、@同事、附件等都體現在訊息上。',
+    '消息是会话或频道时间线里的单条发言；回复、@同事、附件等都体现在消息上。',
   'workshop.welcomeMessagesTitle': '消息',
   'workshop.welcomeSubtitle': '在 MindGraph 上與校內同事協作',
   'workshop.welcomeTitle': '歡迎使用 Workshop（工作坊）',
   'workshop.you': '（你）',
   'workshop.youAnd': '你和',
   'workshopCanvas.connectFailed': '連接在線協作失敗',
-  'workshopCanvas.sessionExpiredReconnect': '您的會話已過期，請重新整理頁面重新加入協作。',
-  'workshopCanvas.sessionRefreshFailed': '無法重新整理在線協作會話，請儲存目前內容並重新登入。',
-  'workshopCanvas.outboundQueueDegraded': '在線協作同步已落後，部分尚未送出的編輯無法保留。',
+  'workshopCanvas.sessionExpiredReconnect': '您的會話已過期，請刷新頁面重新加入協作。',
+  'workshopCanvas.sessionRefreshFailed': '無法刷新在線協作會話，請保存當前內容並重新登錄。',
+  'workshopCanvas.outboundQueueDegraded': '在線協作同步已落後，部分尚未發送的編輯無法保留。',
   'workshopCanvas.connectionClosed': '連接已斷開',
-  'workshopCanvas.connectionClosedSlow':
-    'Connection closed: your connection was too slow to keep up with the collaboration session.',
+  'workshopCanvas.connectionClosedSlow': '連接已斷開：您的網絡速度過慢，無法跟上協作會話。',
   'workshopCanvas.sessionEndedByHost': '主持人已結束在線協作。',
   'workshopCanvas.editingNodeLabel': '{username} 正在編輯…',
   'workshopCanvas.collabEditorDisplayNameFallback': '其他協作者',
@@ -343,9 +344,9 @@ export default {
   'workshopCanvas.editingNode': '{username} {emoji} 正在編輯此節點',
   'workshopCanvas.errorGeneric': '在線協作錯誤',
   'workshopCanvas.updatePartialFiltered':
-    '部分編輯未同步（{count} 個節點）：其他協作者正在編輯這些節點。',
+    '部分编辑未同步（{count} 个节点）：其他协作者正在编辑这些节点。',
   'workshopCanvas.reconnectFailed': '在線協作重連失敗，請刷新頁面重試',
-  'workshopCanvas.resyncWaiting': '圖稿同步比預期更久，正在重試；若編輯異常請嘗試重新整理頁面。',
+  'workshopCanvas.resyncWaiting': '圖稿同步比對預期更久，正在重試；若編輯異常請嘗試刷新頁面。',
   'workshopCanvas.returnedHomeIdle': '空閒時間過長已斷開協作，已返回首頁',
   'workshopCanvas.userJoined': '用戶 {username} 已加入',
   'workshopCanvas.usersJoined': '{count} 位用戶已加入',
@@ -354,7 +355,7 @@ export default {
   'workshopCanvas.wsError': '在線協作連接錯誤，請檢查網絡連接',
   'workshopCanvas.returnedHomeRoomIdle': '本會話圖示長時間無協作編輯，協同已自動結束並已返回首頁',
   'workshopCanvas.roomIdleWarningToast':
-    '圖示長時間未有協作編輯——倒計時結束前若無人編輯圖示，協同將自動結束。',
-  'workshopCanvas.otherTabCollaborationActive': '此賬號的另一個分頁或視窗已保持線上協作連線。',
-  'workshopCanvas.joinQrAlt': '加入線上協作的 QR 碼',
-} as const
+    '图示长时间未有协作编辑——倒计时结束前若无人编辑图示，协同将自动结束。',
+  'workshopCanvas.otherTabCollaborationActive': '該賬號在另一標籤頁或窗口中繼續在線協作。',
+  'workshopCanvas.joinQrAlt': '加入在線協作的二維碼',
+}
