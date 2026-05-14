@@ -52,7 +52,7 @@ class LLMLoadBalancer:
 
     # Fixed model mappings (for non-load-balanced models)
     FIXED_MODEL_MAP = {
-        # Logical models (frontend buttons); DashScope model id comes from env (e.g. qwen3.6-plus).
+        # Logical models (frontend buttons); DashScope model id comes from env (e.g. qwen3.6-flash).
         "qwen": "qwen",
         # → Volcengine Kimi via endpoint (ALWAYS - 5,000 RPM, 500,000 TPM vs Dashscope's 60 RPM, 100,000 TPM)
         "kimi": "ark-kimi",

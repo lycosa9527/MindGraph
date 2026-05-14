@@ -10,7 +10,10 @@ Proprietary License
 """
 
 from typing import Optional, Any
+import asyncio
 import logging
+
+from services.infrastructure.http.error_handler import LLMTimeoutError
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +50,12 @@ class LLMUtils:
         Returns:
             Timeout in seconds
         """
-        # Generous timeouts for complex diagrams
+        # Generous timeouts for complex diagrams. Qwen3.6+ generation can exceed 70s
+        # on large prompts (matches httpx read timeout on the DashScope client).
         timeouts = {
-            "qwen": 70.0,
-            "qwen-turbo": 70.0,
-            "qwen-plus": 70.0,
+            "qwen": 120.0,
+            "qwen-turbo": 120.0,
+            "qwen-plus": 120.0,
             "deepseek": 70.0,
             "ark-deepseek": 70.0,  # Volcengine DeepSeek (Route B)
             "ark-kimi": 70.0,  # Volcengine Kimi (both routes)
@@ -60,7 +64,24 @@ class LLMUtils:
             "doubao": 70.0,
             "chatglm": 70.0,
         }
-        return timeouts.get(model, 70.0)
+        return timeouts.get(model, 120.0)
+
+    @staticmethod
+    def format_request_failure(exc: BaseException) -> str:
+        """
+        Human-readable failure text for logs and LLMServiceError.
+
+        asyncio.TimeoutError has an empty str(); several provider errors may be blank.
+        """
+        if isinstance(exc, asyncio.TimeoutError):
+            return "Request timed out (asyncio.TimeoutError)"
+        if isinstance(exc, LLMTimeoutError):
+            text = str(exc).strip()
+            return text if text else "LLM request timed out"
+        text = str(exc).strip()
+        if text:
+            return text
+        return exc.__class__.__name__
 
     @staticmethod
     def get_rate_limiter(

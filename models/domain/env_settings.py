@@ -93,8 +93,8 @@ class QwenAPISettings(BaseModel):
         description="Model for classification tasks",
     )
     QWEN_MODEL_GENERATION: str = Field(
-        default="qwen3.6-plus",
-        description="Model for generation tasks (higher quality)",
+        default="qwen3.6-flash",
+        description="Model for generation tasks (logical qwen / QwenClient generation)",
     )
     QWEN_TEMPERATURE: float = Field(
         default=0.7,

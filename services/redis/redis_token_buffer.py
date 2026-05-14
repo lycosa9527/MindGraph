@@ -64,9 +64,11 @@ class RedisTokenBuffer:
     # Model pricing (per 1M tokens in CNY). Logical keys qwen / qwen-turbo map to
     # QWEN_MODEL_GENERATION / classification (see config); reconcile with 百炼 billing.
     MODEL_PRICING = {
-        "qwen": {"input": 0.4, "output": 1.2, "provider": "dashscope"},
+        # Logical qwen uses QWEN_MODEL_GENERATION (default qwen3.6-flash); same tier as turbo/flash.
+        "qwen": {"input": 0.3, "output": 0.6, "provider": "dashscope"},
         "qwen-turbo": {"input": 0.3, "output": 0.6, "provider": "dashscope"},
-        "qwen-plus": {"input": 0.4, "output": 1.2, "provider": "dashscope"},
+        # Logical alias still routes to generation client; physical model follows env (flash by default).
+        "qwen-plus": {"input": 0.3, "output": 0.6, "provider": "dashscope"},
         "deepseek": {"input": 0.4, "output": 2.0, "provider": "dashscope"},
         "kimi": {"input": 2.0, "output": 6.0, "provider": "dashscope"},
         "hunyuan": {"input": 0.45, "output": 0.5, "provider": "tencent"},
@@ -77,9 +79,9 @@ class RedisTokenBuffer:
 
     # Display names for resolved DashScope model ids (Qwen 3.6 family defaults).
     MODEL_NAME_MAP = {
-        "qwen": "qwen3.6-plus",
+        "qwen": "qwen3.6-flash",
         "qwen-turbo": "qwen3.6-flash",
-        "qwen-plus": "qwen3.6-plus",
+        "qwen-plus": "qwen3.6-flash",
         "deepseek": "deepseek-v3.1",
         "kimi": "moonshot-v1-32k",
         "hunyuan": "hunyuan-turbo",

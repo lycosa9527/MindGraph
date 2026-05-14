@@ -294,7 +294,8 @@ class LLMService:
             raise
         except Exception as e:
             duration = time.time() - start_time
-            logger.error("[LLMService] %s failed after %.2fs: %s", model, duration, e)
+            detail = LLMUtils.format_request_failure(e)
+            logger.error("[LLMService] %s failed after %.2fs: %s", model, duration, detail)
 
             # Track failed request
             metadata = {
@@ -316,10 +317,10 @@ class LLMService:
                 load_balancer=self.load_balancer,
                 success=False,
                 duration=duration,
-                error=str(e),
+                error=detail,
             )
 
-            raise LLMServiceError(f"Chat failed for model {model}: {e}") from e
+            raise LLMServiceError(f"Chat failed for model {model}: {detail}") from e
 
     async def chat_with_usage(
         self,
@@ -436,9 +437,15 @@ class LLMService:
             raise
         except Exception as e:
             duration = time.time() - start_time
-            logger.error("[LLMService] %s failed after %.2fs: %s", model, duration, e)
+            detail = LLMUtils.format_request_failure(e)
+            logger.error("[LLMService] %s failed after %.2fs: %s", model, duration, detail)
 
-            self.metrics_tracker.record_performance_metrics(model=model, duration=duration, success=False, error=str(e))
+            self.metrics_tracker.record_performance_metrics(
+                model=model,
+                duration=duration,
+                success=False,
+                error=detail,
+            )
 
             if provider and self.load_balancer:
                 await self.metrics_tracker.record_provider_metrics(
@@ -446,10 +453,10 @@ class LLMService:
                     load_balancer=self.load_balancer,
                     success=False,
                     duration=duration,
-                    error=str(e),
+                    error=detail,
                 )
 
-            raise LLMServiceError(f"Chat failed for model {model}: {e}") from e
+            raise LLMServiceError(f"Chat failed for model {model}: {detail}") from e
 
     async def chat_stream(
         self,
@@ -631,7 +638,8 @@ class LLMService:
             raise
         except Exception as e:
             duration = time.time() - start_time
-            logger.error("[LLMService] %s stream failed after %.2fs: %s", model, duration, e)
+            detail = LLMUtils.format_request_failure(e)
+            logger.error("[LLMService] %s stream failed after %.2fs: %s", model, duration, detail)
 
             # Track failure metrics
             metadata = {
@@ -651,10 +659,10 @@ class LLMService:
                 load_balancer=self.load_balancer,
                 success=False,
                 duration=duration,
-                error=str(e),
+                error=detail,
             )
 
-            raise LLMServiceError(f"Chat stream failed for model {model}: {e}") from e
+            raise LLMServiceError(f"Chat stream failed for model {model}: {detail}") from e
 
     # ============================================================================
     # UTILITY METHODS
