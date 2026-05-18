@@ -48,27 +48,31 @@ interface ImportedConceptUnit {
 
 function isConceptMapSpec(spec: Record<string, unknown>): boolean {
   const topicKnown = typeof spec.topic === 'string' && spec.topic.length > 0
-  const relsKnown = Array.isArray(spec.relationships)
-  if (!relsKnown || !topicKnown) {
+  if (!topicKnown || !Array.isArray(spec.relationships)) {
     return false
   }
   const units = spec.concept_units as unknown[] | undefined
   const legacyConcepts = spec.concepts as unknown[] | undefined
-  const unitsOk =
-    Array.isArray(units) &&
-    units.length > 0 &&
-    units.every(
+
+  if (Array.isArray(units) && units.length > 0) {
+    const unitsValid = units.every(
       (candidate) =>
         candidate !== null &&
         typeof candidate === 'object' &&
         typeof (candidate as { id?: unknown }).id === 'string' &&
         typeof (candidate as { label?: unknown }).label === 'string'
     )
-  const legacyOk =
-    Array.isArray(legacyConcepts) &&
-    legacyConcepts.length > 0 &&
-    legacyConcepts.every((value) => typeof value === 'string')
-  return unitsOk || legacyOk
+    if (!unitsValid) {
+      return false
+    }
+  }
+  if (Array.isArray(legacyConcepts) && legacyConcepts.length > 0) {
+    const legacyValid = legacyConcepts.every((value) => typeof value === 'string')
+    if (!legacyValid) {
+      return false
+    }
+  }
+  return true
 }
 
 function computeHierarchicalPositions(
@@ -231,7 +235,8 @@ export function loadConceptMapSpec(spec: Record<string, unknown>): SpecLoaderRes
       })
       .filter((rel): rel is ConceptMapRelationship => rel !== null)
   } else {
-    const conceptsArr = (spec.concepts as string[]).map((label) => normalizeLabel(label))
+    const rawConceptLabels = Array.isArray(spec.concepts) ? (spec.concepts as string[]) : []
+    const conceptsArr = rawConceptLabels.map((label) => normalizeLabel(label))
     branchDisplayLabels = conceptsArr
 
     const labelQueues = new Map<string, string[]>()

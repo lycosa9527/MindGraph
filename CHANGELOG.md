@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.14] - 2026-05-18
+
+### Changed
+
+- **Canvas — AI model selector** — Row alignment and button metrics so stacked model chips and the ready-count label stay visually consistent ([`AIModelSelector.vue`](frontend/src/components/canvas/AIModelSelector.vue)).
+- **Canvas — bottom controls** — Control strip aligns to the top on medium+ breakpoints ([`CanvasPage.vue`](frontend/src/pages/CanvasPage.vue)).
+- **Multi-flow map** — Cause/effect pill label wrap cap is shared via [`MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH`](frontend/src/composables/diagrams/layoutConfig.ts) in [`FlowNode.vue`](frontend/src/components/diagram/nodes/FlowNode.vue) and [`multiFlowMap.ts`](frontend/src/stores/specLoader/multiFlowMap.ts) so layout width matches wrapped labels; left/right topic–column gaps use the same horizontal spacing.
+- **Diagram canvas — selection chrome** — Multi-flow selected nodes drop the solid border fallback and rely on glow only ([`diagramCanvas.css`](frontend/src/components/diagram/diagramCanvas.css)).
+- **Concept map spec loader** — `isConceptMapSpec` accepts topic + `relationships` when concept lists are absent or empty if those arrays are not populated; safer handling when `concepts` is missing ([`conceptMap.ts`](frontend/src/stores/specLoader/conceptMap.ts)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.14).
+
 ## [5.117.13] - 2026-05-14
 
 ### Added

@@ -121,16 +121,11 @@
 .vue-flow__node-flow.selected:has(.multi-flow-map-node),
 .vue-flow__node-topic.selected:has(.multi-flow-map-node) {
   box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
   filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.6))
     drop-shadow(0 0 4px rgba(102, 126, 234, 0.4)) !important;
   animation: pulseGlow 2s ease-in-out infinite !important;
-}
-
-/* Fallback: Target by data-id patterns if :has() not supported (older browsers) */
-.vue-flow__node-flow[data-id^='cause-'].selected,
-.vue-flow__node-flow[data-id^='effect-'].selected,
-.vue-flow__node-topic[data-id='event'].selected {
-  border: 2px solid var(--primary-color, #3b82f6);
 }
 
 /* ── Workshop collab: marching ants on the remote-edited node's shape ─────
@@ -549,6 +544,8 @@
 .vue-flow__node-flow[data-id^='effect-'].selected,
 .vue-flow__node-topic[data-id='event'].selected {
   box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
   filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.6))
     drop-shadow(0 0 4px rgba(102, 126, 234, 0.4)) !important;
   animation: pulseGlow 2s ease-in-out infinite !important;

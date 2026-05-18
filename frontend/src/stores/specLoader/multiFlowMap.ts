@@ -9,6 +9,7 @@ import {
   DEFAULT_NODE_WIDTH,
   DEFAULT_SIDE_SPACING,
   DEFAULT_VERTICAL_SPACING,
+  MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH,
   MULTI_FLOW_MAP_TOPIC_WIDTH,
 } from '@/composables/diagrams/layoutConfig'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
@@ -30,7 +31,7 @@ const FLOW_NODE_PADDING_X = 40
 
 /**
  * Compute adaptive width for a cause/effect node from its text and typography.
- * Used when nodeWidths has no stored width (e.g. newly added from palette).
+ * Uses the same inner wrap cap as FlowNode so layout matches auto-wrapped labels.
  */
 function computeFlowNodeWidth(node: DiagramNode): number {
   const trimmed = (node.text ?? '').trim() || ' '
@@ -38,7 +39,7 @@ function computeFlowNodeWidth(node: DiagramNode): number {
     typeof node.style?.fontSize === 'number' ? node.style.fontSize : FLOW_NODE_FONT_SIZE
   const fontWeight = node.style?.fontWeight
   const fontFamily = node.style?.fontFamily ?? DIAGRAM_NODE_FONT_STACK
-  const textW =
+  const nowrapInner =
     typeof document !== 'undefined'
       ? diagramLabelLikelyNeedsRenderedMeasure(trimmed)
         ? measureRenderedDiagramLabelWidth(trimmed, fs, {
@@ -50,7 +51,8 @@ function computeFlowNodeWidth(node: DiagramNode): number {
             fontWeight: fontWeight === 'bold' ? 'bold' : 'normal',
           })
       : estimateTextWidthFallbackPx(trimmed, fs, { isTopic: fontWeight === 'bold' })
-  return Math.max(DEFAULT_NODE_WIDTH, Math.ceil(textW + FLOW_NODE_PADDING_X))
+  const innerForLayout = Math.min(nowrapInner, MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH)
+  return Math.max(DEFAULT_NODE_WIDTH, Math.ceil(innerForLayout + FLOW_NODE_PADDING_X))
 }
 
 /**
@@ -128,16 +130,13 @@ export function recalculateMultiFlowMapLayout(
 
   // Calculate five columns for visual balance:
   // 1. Cause column width: uniformColumnWidth
-  // 2. Left arrow column (spacing): leftArrowSpacing
+  // 2. Left arrow column (spacing): arrowSpacing
   // 3. Topic column width: actualTopicWidth
-  // 4. Right arrow column (spacing): rightArrowSpacing
+  // 4. Right arrow column (spacing): arrowSpacing
   // 5. Effect column width: uniformColumnWidth
 
-  // Balance the arrow columns (left and right) to be visually equal
-  // User measured: right arrow appears ~1cm (38px) longer, so reduce right spacing
-  // Reduced by 30%: left 200px -> 140px, right 162px -> 113px (maintaining compensation)
-  const leftArrowSpacing = sideSpacing * 0.7
-  const rightArrowSpacing = (sideSpacing - 38) * 0.7 // Compensate for visual difference (1cm ≈ 38px at 96 DPI)
+  // Horizontal gap between topic edges and cause/effect columns (same on both sides).
+  const arrowSpacing = sideSpacing * 0.7
 
   // Calculate edges based on balanced columns
   const topicLeftEdge = centerX - actualTopicWidth / 2
@@ -187,7 +186,7 @@ export function recalculateMultiFlowMapLayout(
       text: node.text,
       type: 'flow',
       position: {
-        x: topicLeftEdge - leftArrowSpacing - uniformColumnWidth,
+        x: topicLeftEdge - arrowSpacing - uniformColumnWidth,
         y: causeYPositions[index],
       },
       data: { ...node.data, groupIndex: index },
@@ -210,7 +209,7 @@ export function recalculateMultiFlowMapLayout(
       text: node.text,
       type: 'flow',
       position: {
-        x: topicRightEdge + rightArrowSpacing,
+        x: topicRightEdge + arrowSpacing,
         y: effectYPositions[index],
       },
       data: { ...node.data, groupIndex: index },

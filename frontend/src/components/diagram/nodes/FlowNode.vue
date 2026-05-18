@@ -12,6 +12,7 @@ import { Handle, Position } from '@vue-flow/core'
 import { X } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables'
+import { MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
@@ -115,24 +116,24 @@ const nodeStyle = computed(() => {
   return baseStyle
 })
 
-const FLOW_MAX_TEXT_WIDTH = 250
 const BALANCE_PADDING = 5
 
 const flowMaxWidth = computed(() => {
   if (!isPillShape.value) return '200px'
 
   const label = ((props.data.label as string) || '').trim()
-  if (!label) return `${FLOW_MAX_TEXT_WIDTH}px`
+  const cap = MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH
+  if (!label) return `${cap}px`
 
   const fontSize = parseFloat(nodeStyle.value.fontSize as string) || 13
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
   const textWidth = measureTextWidth(label, fontSize, { fontWeight })
 
-  if (textWidth <= FLOW_MAX_TEXT_WIDTH) return `${FLOW_MAX_TEXT_WIDTH}px`
+  if (textWidth <= cap) return `${cap}px`
 
-  const numLines = Math.ceil(textWidth / FLOW_MAX_TEXT_WIDTH)
+  const numLines = Math.ceil(textWidth / cap)
   const balancedWidth = Math.ceil(textWidth / numLines) + BALANCE_PADDING
-  return `${Math.min(balancedWidth, FLOW_MAX_TEXT_WIDTH)}px`
+  return `${Math.min(balancedWidth, cap)}px`
 })
 
 // Inline editing state

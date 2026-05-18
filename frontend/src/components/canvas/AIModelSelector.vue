@@ -446,16 +446,17 @@ function getButtonStyle(modelKey: string) {
       </div>
       <div
         v-else
-        class="flex gap-1 flex-1 justify-center min-w-0"
+        class="flex gap-1 flex-1 justify-center items-start min-w-0"
       >
         <ElTooltip
           v-for="modelKey in llmResultsStore.models"
           :key="modelKey"
+          class="inline-flex self-start"
           :content="tooltipForModel(modelKey)"
           placement="top"
         >
           <span
-            class="model-btn-stack inline-flex flex-col items-center relative shrink-0"
+            class="model-btn-stack inline-flex flex-col items-center self-start relative shrink-0"
             :aria-label="hostBadgeAriaLabel(modelKey)"
           >
             <span
@@ -504,7 +505,7 @@ function getButtonStyle(modelKey: string) {
       <!-- Ready count indicator (hidden for concept map — no multi-model autocomplete) -->
       <div
         v-if="!isConceptMap && (llmResultsStore.isGenerating || llmResultsStore.hasAnyResults)"
-        class="text-[10px] text-gray-500 dark:text-gray-400"
+        class="text-[10px] text-gray-500 dark:text-gray-400 shrink-0 self-center leading-none tabular-nums"
       >
         <span v-if="llmResultsStore.isGenerating">
           {{ llmResultsStore.successCount }}/{{
@@ -739,6 +740,7 @@ function getButtonStyle(modelKey: string) {
 }
 
 .model-btn {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 3px;
@@ -752,10 +754,15 @@ function getButtonStyle(modelKey: string) {
   transition: all 0.2s ease;
   font-size: 11px;
   font-weight: 500;
+  line-height: 1.25;
   color: #4b5563;
   white-space: nowrap;
   position: relative;
   overflow: hidden;
+}
+
+.model-btn .btn-label {
+  line-height: 1.25;
 }
 
 .model-btn-content {
@@ -802,7 +809,8 @@ function getButtonStyle(modelKey: string) {
 .model-btn.loading {
   border-color: transparent !important;
   background-color: transparent !important;
-  padding: 2px;
+  /* Match idle button padding so outer height matches siblings (avoids vertical drift in the row) */
+  padding: 3px 9px;
   cursor: wait;
   overflow: visible;
   backdrop-filter: none;
@@ -833,7 +841,7 @@ function getButtonStyle(modelKey: string) {
   display: flex;
   align-items: center;
   gap: 3px;
-  padding: 3px 9px;
+  padding: 0;
   border-radius: 5px;
   position: relative;
   z-index: 1;

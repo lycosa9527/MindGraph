@@ -51,6 +51,12 @@ export const DEFAULT_NODE_HEIGHT = 50
 /** Default topic node width for multi-flow maps (optimized for "事件" - 2 Chinese characters) */
 export const MULTI_FLOW_MAP_TOPIC_WIDTH = 90
 
+/**
+ * Max inner label width for multi-flow cause/effect pills (wrap cap).
+ * Keep in sync with `flowMaxWidth` in `FlowNode.vue`.
+ */
+export const MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH = 250
+
 /** Flow map main topic node width */
 export const FLOW_MAP_TOPIC_WIDTH = 120
 
