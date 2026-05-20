@@ -285,6 +285,10 @@ async function fetchDifyHealth(options?: { silent?: boolean }) {
   }
 }
 
+function onFetchDifyHealthClick() {
+  void fetchDifyHealth()
+}
+
 watch(
   () =>
     [props.orgId, props.difyApiBaseUrl, props.difyApiKeyMasked] as const,
@@ -652,7 +656,7 @@ defineExpose({
                       size="small"
                       :class="[difyStatusButtonClass, 'shrink-0']"
                       :loading="difyStatusLoading"
-                      @click="fetchDifyHealth"
+                      @click="onFetchDifyHealthClick"
                     >
                       {{ difyStatusLabel }}
                     </el-button>
@@ -681,7 +685,7 @@ defineExpose({
                       size="small"
                       :class="[difyStatusButtonClass, 'shrink-0']"
                       :loading="difyStatusLoading"
-                      @click="fetchDifyHealth"
+                      @click="onFetchDifyHealthClick"
                     >
                       {{ difyStatusLabel }}
                     </el-button>
