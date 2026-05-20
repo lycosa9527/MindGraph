@@ -12,15 +12,17 @@ from asyncio import CancelledError
 from typing import Dict, Any, Optional
 import json
 import logging
-import os
 import time
 
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from clients.dify import AsyncDifyClient, DifyFile
+from clients.dify import DifyFile
+from config.database import get_async_db
 from models import AIAssistantRequest, Messages, get_request_language
 from models.domain.auth import User
+from services.dify.org_mindmate_client import resolve_mindmate_dify_client_or_http
 from services.infrastructure.monitoring.mindmate_streaming import (
     mindmate_streaming_begin,
     mindmate_streaming_end,
@@ -42,6 +44,7 @@ async def ai_assistant_stream(
     request: Request,
     x_language: Optional[str] = None,
     current_user: Optional[User] = Depends(get_current_user_or_api_key),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Stream AI assistant responses using Dify API with SSE (async version).
@@ -80,22 +83,21 @@ async def ai_assistant_stream(
         logger.debug("[MindMate] Conversation opener triggered for user %s", req.user_id)
         logger.debug("[MindMate] Dify will respond with configured opening message")
 
-    # Get Dify configuration from environment
-    api_key = os.getenv("DIFY_API_KEY")
-    api_url = os.getenv("DIFY_API_URL", "https://api.dify.ai/v1")
-    timeout = int(os.getenv("DIFY_TIMEOUT", "300"))
+    organization_id_for_dify = None
+    if current_user and hasattr(current_user, "organization_id"):
+        org_raw = getattr(current_user, "organization_id", None)
+        organization_id_for_dify = int(org_raw) if org_raw is not None else None
 
-    has_api_key = bool(api_key)
-    logger.debug(
-        "Dify Configuration - API URL: %s, Has API Key: %s, Timeout: %s",
-        api_url,
-        has_api_key,
-        timeout,
+    dify_client = await resolve_mindmate_dify_client_or_http(
+        db,
+        organization_id_for_dify,
+        detail=Messages.error("ai_not_configured", lang),
     )
-
-    if not api_key:
-        logger.error("DIFY_API_KEY not configured in environment")
-        raise HTTPException(status_code=500, detail=Messages.error("ai_not_configured", lang))
+    logger.debug(
+        "MindMate Dify client resolved for org_id=%s url=%s",
+        organization_id_for_dify,
+        dify_client.api_url,
+    )
 
     message_preview = message[:50] + "..."
     logger.debug("AI assistant request from user %s: %s", req.user_id, message_preview)
@@ -147,9 +149,7 @@ async def ai_assistant_stream(
             return
 
         try:
-            logger.debug("[STREAM] Creating AsyncDifyClient with URL: %s", api_url)
-            client = AsyncDifyClient(api_key=api_key, api_url=api_url, timeout=timeout)
-            logger.debug("[STREAM] AsyncDifyClient created successfully")
+            client = dify_client
 
             dify_files = None
             if req.files:

@@ -69,6 +69,7 @@ export default {
   'sidebar.library': '图书馆',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
+  'sidebar.mindMateAgent': 'Agent {name}',
   'sidebar.mindbot': 'MindBot',
   'sidebar.schoolZone': '学校专区',
   'sidebar.smartResponse': 'Smart Response 智回',

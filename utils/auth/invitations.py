@@ -23,7 +23,7 @@ def load_invitation_codes() -> Dict[str, Tuple[str, Optional[datetime]]]:
     Load invitation codes from environment variable
 
     Format: ORG_CODE:INVITATION_CODE:EXPIRY_DATE
-    Invitation code format: AAAA-XXXXX (4 uppercase letters, dash, 5 letters/digits)
+    Invitation code format: XXX-XXX (safe alphanumeric; excludes 0, O, 1, I, L)
     Example: DEMO-001:DEMO-A1B2C:2025-12-31,SPRING-EDU:SPRN-9K2L1:never
 
     Returns:

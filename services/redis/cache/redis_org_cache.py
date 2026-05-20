@@ -73,6 +73,8 @@ class OrganizationCache:
             "code": str(getattr(org, "code", None) or ""),
             "name": str(getattr(org, "name", None) or ""),
             "display_name": str(getattr(org, "display_name", None) or ""),
+            "mindmate_agent_name": str(getattr(org, "mindmate_agent_name", None) or ""),
+            "mindmate_agent_avatar_url": str(getattr(org, "mindmate_agent_avatar_url", None) or ""),
             "invitation_code": str(getattr(org, "invitation_code", None) or ""),
             "created_at": created_at_val.isoformat() if created_at_val else "",
             "expires_at": expires_at_val.isoformat() if expires_at_val else "",
@@ -97,6 +99,10 @@ class OrganizationCache:
         display_name_val = data.get("display_name") or None
         if hasattr(Organization, "display_name"):
             setattr(org, "display_name", display_name_val)
+        if hasattr(Organization, "mindmate_agent_name"):
+            setattr(org, "mindmate_agent_name", data.get("mindmate_agent_name") or None)
+        if hasattr(Organization, "mindmate_agent_avatar_url"):
+            setattr(org, "mindmate_agent_avatar_url", data.get("mindmate_agent_avatar_url") or None)
 
         # Parse datetime fields
         if data.get("created_at"):

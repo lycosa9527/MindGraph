@@ -21,7 +21,7 @@ from datetime import UTC, datetime
 import logging
 from typing import Optional, cast
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Request, UploadFile, status
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import coalesce as sa_coalesce, count as sa_count, sum as sa_sum
@@ -39,6 +39,20 @@ from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
 from utils.invitations import generate_invitation_code, normalize_or_generate
 from utils.sensitive_mask import mask_invitation_code
+from .organization_dify import (
+    apply_dify_on_create,
+    apply_dify_on_update,
+    dify_list_fields,
+    global_mindmate_dify_fields,
+    probe_mindmate_dify_health,
+    probe_mindmate_dify_health_draft,
+)
+from .organization_mindmate_branding import (
+    apply_mindmate_branding_on_update,
+    mindmate_branding_list_fields,
+    purge_org_mindmate_avatar_storage,
+    save_mindmate_agent_avatar,
+)
 from ..dependencies import get_language_dependency, require_admin
 from ..helpers import utc_to_beijing_iso
 
@@ -55,7 +69,9 @@ async def list_organizations_admin(
     _lang: Language = Depends(get_language_dependency),
 ):
     """List all organizations (ADMIN ONLY)"""
-    orgs = (await db.execute(select(Organization))).scalars().all()
+    orgs = (
+        await db.execute(select(Organization).order_by(Organization.id))
+    ).scalars().all()
     result = []
 
     user_counts_by_org = {}
@@ -123,13 +139,15 @@ async def list_organizations_admin(
         expires_at_val = cast(Optional[datetime], org.expires_at)
         created_at_val = cast(Optional[datetime], org.created_at)
         invite_raw = cast(Optional[str], org.invitation_code)
+        invite_masked = mask_invitation_code(invite_raw)
         result.append(
             {
                 "id": org.id,
                 "code": org.code,
                 "name": org.name,
                 "display_name": getattr(org, "display_name", None),
-                "invitation_code": mask_invitation_code(invite_raw) or "",
+                "invitation_code": "",
+                "invitation_code_masked": invite_masked or "",
                 "user_count": user_count,
                 "manager_count": manager_count,
                 "managers": org_managers,
@@ -137,9 +155,53 @@ async def list_organizations_admin(
                 "is_active": org.is_active if hasattr(org, "is_active") else True,
                 "created_at": utc_to_beijing_iso(created_at_val),
                 "token_stats": org_token_stats,
+                **dify_list_fields(org),
+                **mindmate_branding_list_fields(org),
             }
         )
     return result
+
+
+@router.get("/admin/mindmate/dify-default", dependencies=[Depends(require_admin)])
+async def get_mindmate_dify_default_admin(
+    _request: Request,
+    _current_user: User = Depends(require_admin),
+):
+    """Return masked global MindMate Dify credentials from .env (ADMIN ONLY)."""
+    return global_mindmate_dify_fields()
+
+
+@router.post(
+    "/admin/mindmate-dify-health-draft",
+    dependencies=[Depends(require_admin)],
+)
+async def post_mindmate_dify_health_draft_admin(
+    request: Optional[dict] = Body(None),
+    _current_user: User = Depends(require_admin),
+):
+    """Probe Dify credentials for school create (draft body; no org id)."""
+    body = request if isinstance(request, dict) else None
+    return await probe_mindmate_dify_health_draft(body)
+
+
+@router.post(
+    "/admin/organizations/{org_id}/mindmate-dify-health",
+    dependencies=[Depends(require_admin)],
+)
+async def post_organization_mindmate_dify_health_admin(
+    org_id: int,
+    request: Optional[dict] = Body(None),
+    _current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_async_db),
+    lang: Language = Depends(get_language_dependency),
+):
+    """Probe effective MindMate Dify credentials (optional draft body; never exposes secrets)."""
+    org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
+    if not org:
+        error_msg = Messages.error("organization_not_found", lang, org_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+    body = request if isinstance(request, dict) else None
+    return await probe_mindmate_dify_health(org, body)
 
 
 @router.get(
@@ -153,11 +215,7 @@ async def get_organization_invitation_code_admin(
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
-    """
-    Return the full invitation code for one organization (ADMIN ONLY).
-
-    List endpoints return only masked codes; use this for reveal/copy after auth.
-    """
+    """Return the invitation code for one organization (ADMIN ONLY)."""
     org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if not org:
         error_msg = Messages.error("organization_not_found", lang, org_id)
@@ -224,6 +282,7 @@ async def create_organization_admin(
         invitation_code=invitation_code,
         created_at=datetime.now(UTC),
     )
+    apply_dify_on_create(new_org, request, lang)
 
     db.add(new_org)
     try:
@@ -234,7 +293,7 @@ async def create_organization_admin(
         logger.error("[Auth] Failed to create org in database: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create organization",
+            detail=Messages.error("failed_create_organization", lang),
         ) from e
 
     # Write to Redis cache SECOND (non-blocking)
@@ -371,6 +430,12 @@ async def update_organization_admin(
     if "is_active" in request:
         setattr(org, "is_active", bool(request.get("is_active")))
 
+    if "dify_api_base_url" in request or "dify_api_key" in request:
+        apply_dify_on_update(org, request, lang)
+
+    if "mindmate_agent_name" in request or "mindmate_agent_avatar_url" in request:
+        apply_mindmate_branding_on_update(org, request, lang)
+
     try:
         await db.commit()
         await db.refresh(org)
@@ -379,7 +444,7 @@ async def update_organization_admin(
         logger.error("[Auth] Failed to update org ID %s in database: %s", org_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update organization",
+            detail=Messages.error("failed_update_organization", lang),
         ) from e
 
     if not await org_cache.write_through(org, old_code, old_invite):
@@ -399,6 +464,51 @@ async def update_organization_admin(
         "expires_at": updated_expires.isoformat() if updated_expires else None,
         "is_active": org.is_active if hasattr(org, "is_active") else True,
         "created_at": updated_created.isoformat() if updated_created else None,
+        **dify_list_fields(org),
+        **mindmate_branding_list_fields(org),
+    }
+
+
+@router.post(
+    "/admin/organizations/{org_id}/mindmate-avatar",
+    dependencies=[Depends(require_admin)],
+)
+async def upload_organization_mindmate_avatar_admin(
+    org_id: int,
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_async_db),
+    lang: Language = Depends(get_language_dependency),
+):
+    """Upload MindMate agent avatar for one organization (ADMIN ONLY)."""
+    org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
+    if not org:
+        error_msg = Messages.error("organization_not_found", lang, org_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+
+    old_code = cast(Optional[str], org.code)
+    old_invite = cast(Optional[str], org.invitation_code)
+    avatar_url = await save_mindmate_agent_avatar(org, file)
+    setattr(org, "mindmate_agent_avatar_url", avatar_url)
+
+    try:
+        await db.commit()
+        await db.refresh(org)
+    except Exception as exc:
+        await db.rollback()
+        logger.error("[Auth] Failed to save MindMate avatar for org ID %s: %s", org_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=Messages.error("failed_save_avatar", lang),
+        ) from exc
+
+    if not await org_cache.write_through(org, old_code, old_invite):
+        logger.warning("[Auth] Cache write-through failed for org ID %s", org_id)
+
+    logger.info("Admin %s uploaded MindMate avatar for org_id=%s", current_user.phone, org_id)
+    return {
+        "mindmate_agent_avatar_url": avatar_url,
+        **mindmate_branding_list_fields(org),
     }
 
 
@@ -457,7 +567,7 @@ async def refresh_organization_invitation_code(
         logger.error("[Auth] Failed to refresh invitation code for org %s: %s", org_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to refresh invitation code",
+            detail=Messages.error("failed_refresh_invitation_code", lang),
         ) from e
 
     if not await org_cache.write_through(org, org_code_val, old_invite):
@@ -506,11 +616,13 @@ async def delete_organization_admin(
             await db.flush()
         except Exception as e:
             await db.rollback()
-            logger.error("[Auth] Failed to delete users for org %s: %s", org_id, e)
+            logger.error("[Auth] Failed to delete users for %s: %s", org_id, e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to delete organization users",
+                detail=Messages.error("failed_delete_organization_users", lang),
             ) from e
+
+    purge_org_mindmate_avatar_storage(org_id)
 
     await db.delete(org)
     try:
@@ -520,7 +632,7 @@ async def delete_organization_admin(
         logger.error("[Auth] Failed to delete org ID %s in database: %s", org_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete organization",
+            detail=Messages.error("failed_delete_organization", lang),
         ) from e
 
     try:
@@ -714,7 +826,7 @@ async def set_organization_manager(
         logger.error("[Auth] Failed to set manager role for user ID %s: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to set manager role",
+            detail=Messages.error("failed_set_manager_role", lang),
         ) from e
 
     # Invalidate user cache
@@ -780,7 +892,7 @@ async def remove_organization_manager(
         logger.error("[Auth] Failed to remove manager role from user ID %s: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to remove manager role",
+            detail=Messages.error("failed_remove_manager_role", lang),
         ) from e
 
     # Invalidate user cache

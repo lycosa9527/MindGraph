@@ -15,17 +15,16 @@ Proprietary License
 
 from typing import Optional
 import logging
-import os
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from clients.dify import AsyncDifyClient
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.pinned_conversations import PinnedConversation
+from services.dify.org_mindmate_client import resolve_mindmate_dify_client_or_http
 from utils.auth import get_current_user
 from utils.dify_mindmate_user_id import mindmate_dify_user_id
 
@@ -34,22 +33,17 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["api"])
 
+_DIFY_NOT_CONFIGURED = "AI service not configured"
+
 
 def get_dify_user_id(user: User) -> str:
     """Generate consistent Dify user ID from MindGraph user."""
     return mindmate_dify_user_id(user)
 
 
-def get_dify_client() -> AsyncDifyClient:
-    """Get configured Dify client"""
-    api_key = os.getenv("DIFY_API_KEY")
-    api_url = os.getenv("DIFY_API_URL", "https://api.dify.ai/v1")
-    timeout = int(os.getenv("DIFY_TIMEOUT", "300"))
-
-    if not api_key:
-        raise HTTPException(status_code=500, detail="AI service not configured")
-
-    return AsyncDifyClient(api_key=api_key, api_url=api_url, timeout=timeout)
+def _organization_id_for_user(user: User) -> Optional[int]:
+    org_id = getattr(user, "organization_id", None)
+    return int(org_id) if org_id is not None else None
 
 
 class RenameRequest(BaseModel):
@@ -71,6 +65,7 @@ async def list_conversations(
     last_id: Optional[str] = Query(None, description="Last conversation ID for pagination"),
     limit: int = Query(20, ge=1, le=100, description="Number of conversations to return"),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     List user's conversations from Dify.
@@ -83,7 +78,11 @@ async def list_conversations(
     - updated_at: Last activity timestamp
     """
     try:
-        client = get_dify_client()
+        client = await resolve_mindmate_dify_client_or_http(
+            db,
+            _organization_id_for_user(current_user),
+            detail=_DIFY_NOT_CONFIGURED,
+        )
         dify_user_id = get_dify_user_id(current_user)
 
         result = await client.get_conversations(
@@ -111,14 +110,22 @@ async def list_conversations(
 
 
 @router.delete("/dify/conversations/{conversation_id}")
-async def delete_conversation(conversation_id: str, current_user: User = Depends(get_current_user)):
+async def delete_conversation(
+    conversation_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+):
     """
     Delete a conversation from Dify.
 
     This permanently removes the conversation and all its messages.
     """
     try:
-        client = get_dify_client()
+        client = await resolve_mindmate_dify_client_or_http(
+            db,
+            _organization_id_for_user(current_user),
+            detail=_DIFY_NOT_CONFIGURED,
+        )
         dify_user_id = get_dify_user_id(current_user)
 
         await client.delete_conversation(conversation_id=conversation_id, user_id=dify_user_id)
@@ -139,6 +146,7 @@ async def rename_conversation(
     conversation_id: str,
     request: RenameRequest,
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Rename a conversation or auto-generate a title.
@@ -147,7 +155,11 @@ async def rename_conversation(
     Otherwise, use the provided name.
     """
     try:
-        client = get_dify_client()
+        client = await resolve_mindmate_dify_client_or_http(
+            db,
+            _organization_id_for_user(current_user),
+            detail=_DIFY_NOT_CONFIGURED,
+        )
         dify_user_id = get_dify_user_id(current_user)
 
         result = await client.rename_conversation(
@@ -174,6 +186,7 @@ async def get_conversation_messages(
     first_id: Optional[str] = Query(None, description="First message ID for pagination"),
     limit: int = Query(20, ge=1, le=100, description="Number of messages to return"),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get messages for a specific conversation.
@@ -186,7 +199,11 @@ async def get_conversation_messages(
     - created_at: Timestamp
     """
     try:
-        client = get_dify_client()
+        client = await resolve_mindmate_dify_client_or_http(
+            db,
+            _organization_id_for_user(current_user),
+            detail=_DIFY_NOT_CONFIGURED,
+        )
         dify_user_id = get_dify_user_id(current_user)
 
         result = await client.get_messages(
@@ -236,6 +253,7 @@ async def submit_message_feedback(
     message_id: str,
     request: FeedbackRequest,
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Submit feedback (like/dislike) for a specific message.
@@ -248,7 +266,11 @@ async def submit_message_feedback(
         Success response with feedback result
     """
     try:
-        client = get_dify_client()
+        client = await resolve_mindmate_dify_client_or_http(
+            db,
+            _organization_id_for_user(current_user),
+            detail=_DIFY_NOT_CONFIGURED,
+        )
         dify_user_id = get_dify_user_id(current_user)
 
         result = await client.message_feedback(

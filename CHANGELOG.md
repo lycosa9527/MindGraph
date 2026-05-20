@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.15] - 2026-05-20
+
+### Added
+
+- **Admin — per-school MindMate Dify** — Optional `dify_api_base_url` and `dify_api_key` on organizations (migration `rev_0032`); school detail modal Dify settings can set a school's Dify app or clear the override to use global `DIFY_API_*` env vars. Health probe via [`useSchoolDifyHealthProbe.ts`](frontend/src/composables/admin/useSchoolDifyHealthProbe.ts) and [`organization_dify.py`](routers/auth/admin/organization_dify.py). MindMate routes (`/api/ai_assistant/stream`, `/api/dify/*`) resolve credentials via [`services/dify/org_mindmate_client.py`](services/dify/org_mindmate_client.py). API keys masked in admin responses via [`utils/secrets_mask.py`](utils/secrets_mask.py).
+- **MindMate — per-school branding** — Optional agent display name and avatar on organizations (migrations `rev_0033`, `rev_0034`; agent name capped at 10 characters). Admin avatar upload in [`organization_mindmate_branding.py`](routers/auth/admin/organization_mindmate_branding.py). Branding flows through login/session/register via [`org_profile.py`](routers/auth/org_profile.py) and surfaces in sidebar, welcome, messages, and mobile MindMate via [`useMindMateBranding.ts`](frontend/src/composables/mindmate/useMindMateBranding.ts) and [`MindmateAgentAvatar.vue`](frontend/src/components/panels/mindmate/MindmateAgentAvatar.vue).
+- **Admin — Schools tab components** — Extracted [`AdminSchoolCreateDialog.vue`](frontend/src/components/admin/AdminSchoolCreateDialog.vue), [`AdminSchoolDifySettings.vue`](frontend/src/components/admin/AdminSchoolDifySettings.vue), [`AdminSchoolOrgGeneralTab.vue`](frontend/src/components/admin/AdminSchoolOrgGeneralTab.vue), [`AdminSchoolShareDialog.vue`](frontend/src/components/admin/AdminSchoolShareDialog.vue), and [`AdminSchoolTokenUsageTab.vue`](frontend/src/components/admin/AdminSchoolTokenUsageTab.vue); shared styling in [`admin-schools-swiss.css`](frontend/src/styles/admin-schools-swiss.css).
+- **Invitation codes** — Shared helpers in [`frontend/src/utils/invitationCode.ts`](frontend/src/utils/invitationCode.ts) with Vitest coverage in [`frontend/tests/invitationCode.spec.ts`](frontend/tests/invitationCode.spec.ts).
+
+### Changed
+
+- **Admin — Schools tab** — Simplified create-school dialog to school name and invitation code only (Dify and branding remain in the school detail modal). Removed the tab intro note and list invitation-code column; added agent name and avatar columns. Invitation codes load lazily in the detail modal (skipped when opening via token usage); removed orphaned `admin.schoolsTabNote` locale keys.
+- **i18n** — Admin, MindMate, sidebar, and canvas strings updated across locale bundles for school Dify and branding UI.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.15).
+
 ## [5.117.14] - 2026-05-18
 
 ### Changed

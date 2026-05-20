@@ -7,9 +7,10 @@ import { CopyDocument, Edit, RefreshRight, Share } from '@element-plus/icons-vue
 
 import { ThumbsDown, ThumbsUp } from 'lucide-vue-next'
 
-import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
-import ImagePreviewModal from '@/components/common/ImagePreviewModal.vue'
 import { useLanguage } from '@/composables'
+import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
+
+import MindmateAgentAvatar from './MindmateAgentAvatar.vue'
 import { renderRichMarkdownHtml } from '@/composables/core/useMarkdown'
 import type { FeedbackRating, MindMateMessage } from '@/composables/mindmate/useMindMate'
 
@@ -37,6 +38,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
+const { displayName } = useMindMateBranding('md')
 
 // Local editing state
 const localEditingContent = ref(props.editingContent || props.message.content)
@@ -127,12 +129,9 @@ function handleMarkdownClick(event: MouseEvent) {
         </ElAvatar>
       </template>
       <template v-else>
-        <!-- MindMate avatar -->
-        <ElAvatar
-          :src="mindmateAvatarMd"
-          alt="MindMate"
+        <MindmateAgentAvatar
           :size="40"
-          class="mindmate-avatar flex-shrink-0"
+          avatar-class="mindmate-avatar flex-shrink-0"
         />
       </template>
 

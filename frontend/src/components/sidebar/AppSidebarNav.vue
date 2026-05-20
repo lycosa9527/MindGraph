@@ -55,7 +55,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
     <div class="sidebar-nav-main">
       <!-- MindMate + MindGraph (fixed order); history panels use top border from ChatHistory / DiagramHistory -->
       <el-tooltip
-        :content="s.t('sidebar.mindMate')"
+        :content="s.mindMateNavLabel"
         placement="right"
         :disabled="!s.isCollapsed"
       >
@@ -68,7 +68,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           <span
             v-if="!s.isCollapsed"
             class="nav-label"
-            >{{ s.t('sidebar.mindMate') }}</span
+            >{{ s.mindMateNavLabel }}</span
           >
         </div>
       </el-tooltip>

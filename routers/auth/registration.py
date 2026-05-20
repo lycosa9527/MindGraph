@@ -27,6 +27,7 @@ from config.database import get_async_db
 from models.domain.messages import Messages, Language
 from models.domain.auth import User, Organization
 from models.requests.requests_auth import RegisterRequest, RegisterWithSMSRequest
+from routers.auth.org_profile import organization_session_payload
 from utils.auth import (
     hash_password,
     get_client_ip,
@@ -35,7 +36,7 @@ from utils.auth import (
     compute_device_hash,
     ACCESS_TOKEN_EXPIRY_MINUTES,
 )
-from utils.invitations import INVITE_PATTERN
+from utils.invitations import invitation_code_is_valid
 from services.redis.cache.redis_user_cache import user_cache
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.redis_distributed_lock import phone_registration_lock
@@ -160,7 +161,7 @@ async def finalize_sms_registration_session(
             "id": new_user.id,
             "phone": new_user.phone,
             "name": new_user.name,
-            "organization": org.name,
+            "organization": organization_session_payload(org),
             "ui_language": getattr(new_user, "ui_language", None),
             "prompt_language": getattr(new_user, "prompt_language", None),
             "match_prompt_to_ui": getattr(new_user, "match_prompt_to_ui", True),
@@ -231,8 +232,8 @@ async def register(
         error_msg = Messages.error("invitation_code_required", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
-    # Validate invitation code format (AAAA-XXXXX pattern)
-    if not INVITE_PATTERN.match(provided_invite):
+    # Validate invitation code format (XXX-XXX pattern)
+    if not invitation_code_is_valid(provided_invite):
         duration = time.time() - start_time
         registration_metrics.record_failure("invitation_code_invalid", duration)
         error_msg = Messages.error("invitation_code_invalid_format", lang, request.invitation_code)
@@ -399,7 +400,7 @@ async def register(
             "id": new_user.id,
             "phone": new_user.phone,
             "name": new_user.name,
-            "organization": org.name,
+            "organization": organization_session_payload(org),
             "ui_language": getattr(new_user, "ui_language", None),
             "prompt_language": getattr(new_user, "prompt_language", None),
             "match_prompt_to_ui": getattr(new_user, "match_prompt_to_ui", True),
@@ -446,8 +447,8 @@ async def register_with_sms(
         error_msg = Messages.error("invitation_code_required", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
-    # Validate invitation code format (AAAA-XXXXX pattern)
-    if not INVITE_PATTERN.match(provided_invite):
+    # Validate invitation code format (XXX-XXX pattern)
+    if not invitation_code_is_valid(provided_invite):
         duration = time.time() - start_time
         registration_metrics.record_failure("invitation_code_invalid", duration)
         error_msg = Messages.error("invitation_code_invalid_format", lang, request.invitation_code)

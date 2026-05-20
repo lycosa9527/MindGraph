@@ -4,24 +4,32 @@
  * Used by Schools and Users tabs when clicking a row
  * For org type: also shows invitation code (with refresh) and managers
  */
-import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import { ElMessageBox } from 'element-plus'
 
-import { Delete, Hide, Loading, Lock, Refresh, Share, Unlock, View } from '@element-plus/icons-vue'
+import { Delete, Loading } from '@element-plus/icons-vue'
 
 import { Chart, type ChartConfiguration, type TooltipItem, registerables } from 'chart.js'
 
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 import { intlLocaleForUiCode } from '@/i18n/locales'
+import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
 import { apiRequest } from '@/utils/apiClient'
 
+import AdminSchoolDifySettings from './AdminSchoolDifySettings.vue'
+import AdminSchoolOrgGeneralTab from './AdminSchoolOrgGeneralTab.vue'
+import AdminSchoolTokenUsageTab from './AdminSchoolTokenUsageTab.vue'
+
 Chart.register(...registerables)
+
+type SchoolDialogTab = 'usage' | 'dify' | 'general'
 
 const props = defineProps<{
   visible: boolean
   type: 'org' | 'user'
+  initialSchoolTab?: SchoolDialogTab
   orgName?: string
   orgId?: number
   orgInvitationCode?: string
@@ -29,6 +37,10 @@ const props = defineProps<{
   orgIsActive?: boolean
   orgUserCount?: number
   orgExpiresAt?: string | null
+  orgDifyApiBaseUrl?: string | null
+  orgDifyApiKeyMasked?: string | null
+  orgMindmateAgentName?: string | null
+  orgMindmateAgentAvatarUrl?: string | null
   userName?: string
   userId?: number
 }>()
@@ -40,13 +52,36 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const notify = useNotifications()
+const authStore = useAuthStore()
 const { publicSiteUrl } = usePublicSiteUrl()
 const uiStore = useUIStore()
 
 const chartTitle = ref('')
 const chartLoading = ref(false)
 const chartRef = ref<HTMLCanvasElement | null>(null)
+const tokenUsageTabRef = ref<InstanceType<typeof AdminSchoolTokenUsageTab> | null>(null)
+const mindmateDifyRef = ref<InstanceType<typeof AdminSchoolDifySettings> | null>(null)
+const schoolDialogTab = ref<SchoolDialogTab>('general')
 let chartInstance: Chart<'line'> | null = null
+
+const schoolHeaderNote = computed(() => {
+  if (props.type !== 'org') {
+    return props.orgName || '—'
+  }
+  const nick = (displayNameEdit.value || props.orgDisplayName || '').trim()
+  const legal = (props.orgName ?? '').trim()
+  if (nick && legal && nick !== legal) {
+    return `${nick} · ${legal}`
+  }
+  return nick || legal || '—'
+})
+
+function chartCanvasElement(): HTMLCanvasElement | null {
+  if (props.type === 'org') {
+    return tokenUsageTabRef.value?.chartRef ?? null
+  }
+  return chartRef.value
+}
 
 const periodCards = ref({ today: '-', week: '-', month: '-', total: '-' })
 const period = ref<'today' | 'week' | 'month' | 'total'>('week')
@@ -55,62 +90,16 @@ const invitationCode = ref('')
 const managers = ref<{ id: number; phone: string; name: string }[]>([])
 const orgUsers = ref<{ id: number; phone: string; name: string }[]>([])
 const managersLoading = ref(false)
-const addManagerUserId = ref<number | null>(null)
-const addManagerSelect = ref<number | null>(null)
+const pendingManagerIds = ref<number[]>([])
+const addManagersLoading = ref(false)
 const refreshCodeLoading = ref(false)
+const invitationCodeLoading = ref(false)
 const displayNameEdit = ref('')
-const displayNameSaving = ref(false)
+const generalTabSaving = ref(false)
 const orgActiveState = ref(true)
 const lockLoading = ref(false)
 const deleteLoading = ref(false)
 const expiresAtEdit = ref<string | null>(null)
-const expiresAtSaving = ref(false)
-
-/** True when invitationCode holds the full code (after reveal or refresh); list API is masked only. */
-const revealInvitation = ref(false)
-
-function isLikelyMaskedInviteCode(code: string | undefined | null): boolean {
-  if (code == null || code === '') {
-    return false
-  }
-  return code.includes('*')
-}
-
-/**
- * List/parent org props use masked codes; do not replace a revealed full code with a masked value.
- */
-function applyInvitationCodeFromProps(): void {
-  const fromProp = props.orgInvitationCode ?? ''
-  if (
-    !isLikelyMaskedInviteCode(fromProp) ||
-    isLikelyMaskedInviteCode(invitationCode.value) ||
-    invitationCode.value === ''
-  ) {
-    invitationCode.value = fromProp
-  }
-}
-
-async function toggleRevealInvitation() {
-  if (revealInvitation.value) {
-    revealInvitation.value = false
-    invitationCode.value = props.orgInvitationCode ?? ''
-    return
-  }
-  if (props.orgId == null) return
-  try {
-    const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}/invitation-code`)
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || t('admin.trendChartErrors.refreshFailed'))
-      return
-    }
-    const data = (await res.json()) as { invitation_code?: string }
-    invitationCode.value = data.invitation_code ?? ''
-    revealInvitation.value = true
-  } catch {
-    notify.error(t('admin.trendChartErrors.refreshInvitationCodeFailed'))
-  }
-}
 
 function formatNumber(num: number): string {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
@@ -203,7 +192,8 @@ async function loadUserTokenCards() {
 function renderChart(data: {
   data: Array<{ date: string; value: number; input?: number; output?: number }>
 }) {
-  if (!chartRef.value) return
+  const canvas = chartCanvasElement()
+  if (!canvas) return
   const rawData = data?.data ?? []
   if (rawData.length === 0) return
 
@@ -305,7 +295,7 @@ function renderChart(data: {
       },
     },
   }
-  chartInstance = new Chart(chartRef.value, config)
+  chartInstance = new Chart(canvas, config)
 }
 
 async function load() {
@@ -345,7 +335,6 @@ async function switchPeriod(p: 'today' | 'week' | 'month' | 'total') {
 
 async function loadManagersAndUsers() {
   if (props.type !== 'org' || props.orgId == null) return
-  applyInvitationCodeFromProps()
   managersLoading.value = true
   try {
     const [managersRes, usersRes] = await Promise.all([
@@ -376,8 +365,49 @@ async function loadManagersAndUsers() {
   }
 }
 
+async function ensureInvitationCodeLoaded() {
+  if (props.orgId == null || schoolDialogTab.value !== 'general') {
+    return
+  }
+  const fromProps = (props.orgInvitationCode ?? '').trim()
+  if (fromProps) {
+    invitationCode.value = fromProps
+    return
+  }
+  if (invitationCode.value.trim()) {
+    return
+  }
+  invitationCodeLoading.value = true
+  try {
+    const res = await apiRequest(
+      `/api/auth/admin/organizations/${props.orgId}/invitation-code`
+    )
+    if (!res.ok) {
+      return
+    }
+    const data = (await res.json()) as { invitation_code?: string }
+    const code = String(data.invitation_code ?? '').trim()
+    if (code) {
+      invitationCode.value = code
+    }
+  } catch {
+    /* optional load; copy/refresh can retry */
+  } finally {
+    invitationCodeLoading.value = false
+  }
+}
+
 async function refreshInvitationCode() {
   if (props.orgId == null) return
+  try {
+    await ElMessageBox.confirm(t('admin.refreshInvitationCodeConfirm'), t('admin.refreshInvitationCode'), {
+      type: 'warning',
+      confirmButtonText: t('admin.refreshInvitationCode'),
+      cancelButtonText: t('common.cancel'),
+    })
+  } catch {
+    return
+  }
   refreshCodeLoading.value = true
   try {
     const res = await apiRequest(
@@ -391,7 +421,6 @@ async function refreshInvitationCode() {
     }
     const data = await res.json()
     invitationCode.value = data.invitation_code ?? invitationCode.value
-    revealInvitation.value = true
     notify.success(t('notification.saved'))
     emit('refresh')
   } catch {
@@ -401,26 +430,43 @@ async function refreshInvitationCode() {
   }
 }
 
-async function setManager(userId: number) {
-  if (props.orgId == null) return
-  addManagerUserId.value = userId
+async function addManagers() {
+  if (props.orgId == null || pendingManagerIds.value.length === 0) {
+    return
+  }
+  const userIds = [...pendingManagerIds.value]
+  addManagersLoading.value = true
   try {
-    const res = await apiRequest(
-      `/api/auth/admin/organizations/${props.orgId}/managers/${userId}`,
-      { method: 'PUT' }
+    const results = await Promise.allSettled(
+      userIds.map((userId) =>
+        apiRequest(`/api/auth/admin/organizations/${props.orgId}/managers/${userId}`, {
+          method: 'PUT',
+        })
+      )
     )
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || t('admin.trendChartErrors.setManagerFailed'))
+    const rejected = results.filter((r) => r.status === 'rejected')
+    const failedResponse = results.find(
+      (r): r is PromiseFulfilledResult<Response> =>
+        r.status === 'fulfilled' && !r.value.ok
+    )
+    if (rejected.length > 0 || failedResponse) {
+      if (failedResponse) {
+        const data = await failedResponse.value.json().catch(() => ({}))
+        notify.error((data.detail as string) || t('admin.trendChartErrors.setManagerFailed'))
+      } else {
+        notify.error(t('admin.trendChartErrors.setManagerFailed'))
+      }
+      await loadManagersAndUsers()
       return
     }
     notify.success(t('notification.saved'))
-    addManagerSelect.value = null
+    pendingManagerIds.value = []
     await loadManagersAndUsers()
+    emit('refresh')
   } catch {
     notify.error(t('admin.trendChartErrors.setManagerFailed'))
   } finally {
-    addManagerUserId.value = null
+    addManagersLoading.value = false
   }
 }
 
@@ -436,8 +482,14 @@ async function removeManager(userId: number) {
       notify.error((data.detail as string) || t('admin.trendChartErrors.removeManagerFailed'))
       return
     }
-    notify.success(t('notification.saved'))
+    const data = (await res.json().catch(() => ({}))) as { message?: string }
+    const msg =
+      typeof data.message === 'string' && data.message.trim()
+        ? data.message.trim()
+        : t('notification.saved')
+    notify.success(msg)
     await loadManagersAndUsers()
+    emit('refresh')
   } catch {
     notify.error(t('admin.trendChartErrors.removeManagerFailed'))
   }
@@ -451,19 +503,29 @@ function shareMessageTextForCode(code: string): string {
 }
 
 async function copyShareMessage() {
-  if (props.orgId == null) return
-  try {
-    let code = invitationCode.value
-    if (!revealInvitation.value) {
-      const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}/invitation-code`)
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        notify.error((data.detail as string) || t('admin.trendChartErrors.refreshFailed'))
-        return
+  let code = invitationCode.value.trim()
+  if (!code && props.orgId != null) {
+    try {
+      const res = await apiRequest(
+        `/api/auth/admin/organizations/${props.orgId}/invitation-code`
+      )
+      if (res.ok) {
+        const data = (await res.json()) as { invitation_code?: string }
+        code = String(data.invitation_code ?? '').trim()
+        if (code) {
+          invitationCode.value = code
+        }
       }
-      const data = (await res.json()) as { invitation_code?: string }
-      code = data.invitation_code ?? ''
+    } catch {
+      notify.error(t('admin.schoolInvitationLoadError'))
+      return
     }
+  }
+  if (!code) {
+    notify.error(t('admin.schoolInvitationLoadError'))
+    return
+  }
+  try {
     await navigator.clipboard.writeText(shareMessageTextForCode(code))
     notify.success(t('notification.copied'))
   } catch {
@@ -471,15 +533,20 @@ async function copyShareMessage() {
   }
 }
 
-async function saveExpiresAt() {
-  if (props.orgId == null) return
-  expiresAtSaving.value = true
+async function saveGeneralSettings() {
+  if (props.orgId == null) {
+    return
+  }
+  generalTabSaving.value = true
   try {
     const dateVal = expiresAtEdit.value?.trim() || null
     const expiresAtPayload = dateVal ? `${dateVal}T23:59:59+08:00` : null
     const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}`, {
       method: 'PUT',
-      body: JSON.stringify({ expires_at: expiresAtPayload }),
+      body: JSON.stringify({
+        display_name: displayNameEdit.value.trim() || null,
+        expires_at: expiresAtPayload,
+      }),
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
@@ -488,32 +555,15 @@ async function saveExpiresAt() {
     }
     notify.success(t('notification.saved'))
     emit('refresh')
-  } catch {
-    notify.error(t('admin.trendChartErrors.saveExpirationFailed'))
-  } finally {
-    expiresAtSaving.value = false
-  }
-}
-
-async function saveDisplayName() {
-  if (props.orgId == null) return
-  displayNameSaving.value = true
-  try {
-    const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ display_name: displayNameEdit.value.trim() || null }),
-    })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || t('admin.trendChartErrors.saveFailed'))
-      return
+    const savedLabel = displayNameEdit.value.trim()
+    if (authStore.user?.schoolId === String(props.orgId)) {
+      authStore.patchSchoolDisplayName(savedLabel || null, props.orgName)
+      void authStore.refreshUserProfile({ bypassThrottle: true })
     }
-    notify.success(t('notification.saved'))
-    emit('refresh')
   } catch {
-    notify.error(t('admin.trendChartErrors.saveDisplayNameFailed'))
+    notify.error(t('admin.trendChartErrors.saveFailed'))
   } finally {
-    displayNameSaving.value = false
+    generalTabSaving.value = false
   }
 }
 
@@ -573,7 +623,12 @@ async function deleteOrganization() {
       notify.error((data.detail as string) || t('admin.trendChartErrors.deleteRecordFailed'))
       return
     }
-    notify.success(t('notification.saved'))
+    const data = (await res.json().catch(() => ({}))) as { message?: string }
+    const msg =
+      typeof data.message === 'string' && data.message.trim()
+        ? data.message.trim()
+        : t('notification.saved')
+    notify.success(msg)
     emit('update:visible', false)
     emit('refresh')
   } catch {
@@ -583,25 +638,59 @@ async function deleteOrganization() {
   }
 }
 
+function applyOrgInvitationCodeFromProps() {
+  const fromProps = (props.orgInvitationCode ?? '').trim()
+  if (fromProps) {
+    invitationCode.value = fromProps
+  }
+}
+
+function loadGeneralTabData() {
+  if (props.type !== 'org' || props.orgId == null) {
+    return
+  }
+  void loadManagersAndUsers()
+  void ensureInvitationCodeLoaded()
+}
+
 watch(
   () => props.visible,
   (v) => {
     if (v) {
-      revealInvitation.value = false
+      if (props.type === 'org') {
+        schoolDialogTab.value = props.initialSchoolTab ?? 'general'
+      }
       void load()
       if (props.type === 'org' && props.orgId) {
-        invitationCode.value = props.orgInvitationCode ?? ''
+        applyOrgInvitationCodeFromProps()
         displayNameEdit.value = props.orgDisplayName ?? ''
         orgActiveState.value = props.orgIsActive ?? true
         expiresAtEdit.value = parseExpiresAtToDate(props.orgExpiresAt)
-        void loadManagersAndUsers()
+        loadGeneralTabData()
       }
     } else {
       chartInstance?.destroy()
       chartInstance = null
+      pendingManagerIds.value = []
+      invitationCode.value = ''
     }
   }
 )
+
+watch(
+  () => props.orgDisplayName,
+  (name) => {
+    if (props.visible && props.type === 'org') {
+      displayNameEdit.value = name ?? ''
+    }
+  }
+)
+
+watch(schoolDialogTab, (tab) => {
+  if (tab === 'general' && props.visible && props.type === 'org' && props.orgId) {
+    loadGeneralTabData()
+  }
+})
 
 watch(
   () =>
@@ -620,20 +709,19 @@ watch(
       return
     }
     const orgIdChanged = oldVal != null && newVal[0] !== oldVal[0]
-    if (orgIdChanged) {
-      revealInvitation.value = false
-    }
     void load()
     if (props.type === 'org' && props.orgId) {
       if (orgIdChanged) {
-        invitationCode.value = props.orgInvitationCode ?? ''
+        invitationCode.value = ''
       } else {
-        applyInvitationCodeFromProps()
+        applyOrgInvitationCodeFromProps()
       }
       displayNameEdit.value = props.orgDisplayName ?? ''
       orgActiveState.value = props.orgIsActive ?? true
       expiresAtEdit.value = parseExpiresAtToDate(props.orgExpiresAt)
-      void loadManagersAndUsers()
+      if (schoolDialogTab.value === 'general') {
+        loadGeneralTabData()
+      }
     }
   }
 )
@@ -646,6 +734,148 @@ onBeforeUnmount(() => {
 
 <template>
   <el-dialog
+    v-if="type === 'org'"
+    :model-value="visible"
+    class="school-settings-dialog mindbot-settings-dialog mindbot-swiss-dialog"
+    width="min(760px, 94vw)"
+    destroy-on-close
+    append-to-body
+    align-center
+    modal-class="mindbot-swiss-backdrop"
+    :show-close="true"
+    @update:model-value="(v: boolean) => emit('update:visible', v)"
+    @close="handleClose"
+  >
+    <template #header>
+      <div class="mindbot-swiss-header mindbot-config-header">
+        <span class="mindbot-swiss-header__glyph">◇</span>
+        <span class="mindbot-swiss-header__title">{{ t('admin.editSchool') }}</span>
+        <span
+          class="mindbot-swiss-header__divider"
+          aria-hidden="true"
+          >·</span
+        >
+        <span class="mindbot-swiss-header__note">{{ schoolHeaderNote }}</span>
+      </div>
+    </template>
+    <div class="mindbot-config-body">
+      <div
+        class="mindbot-config-scanlines"
+        aria-hidden="true"
+      />
+      <div class="mindbot-swiss-form-wrap">
+        <el-tabs
+          v-model="schoolDialogTab"
+          class="mindbot-dialog-tabs school-dialog-tabs"
+        >
+          <el-tab-pane
+            name="usage"
+            :label="t('admin.schoolModal.tabUsage')"
+          >
+            <AdminSchoolTokenUsageTab
+              ref="tokenUsageTabRef"
+              :chart-loading="chartLoading"
+              :period="period"
+              :period-cards="periodCards"
+              @switch-period="switchPeriod"
+            />
+          </el-tab-pane>
+          <el-tab-pane
+            name="dify"
+            :label="t('admin.schoolModal.tabMindmate')"
+            lazy
+          >
+            <AdminSchoolDifySettings
+              v-if="orgId"
+              ref="mindmateDifyRef"
+              :org-id="orgId"
+              :dify-api-base-url="orgDifyApiBaseUrl"
+              :dify-api-key-masked="orgDifyApiKeyMasked"
+              :mindmate-agent-name="orgMindmateAgentName"
+              :mindmate-agent-avatar-url="orgMindmateAgentAvatarUrl"
+              @saved="emit('refresh')"
+            />
+          </el-tab-pane>
+          <el-tab-pane
+            name="general"
+            :label="t('admin.schoolModal.tabGeneral')"
+            lazy
+          >
+            <AdminSchoolOrgGeneralTab
+              v-if="orgId"
+              v-model:display-name-edit="displayNameEdit"
+              v-model:expires-at-edit="expiresAtEdit"
+              v-model:pending-manager-ids="pendingManagerIds"
+              :org-name="orgName"
+              :org-active-state="orgActiveState"
+              :invitation-code="invitationCode"
+              :invitation-code-loading="invitationCodeLoading"
+              :managers="managers"
+              :org-users="orgUsers"
+              :managers-loading="managersLoading"
+              :add-managers-loading="addManagersLoading"
+              :lock-loading="lockLoading"
+              :refresh-code-loading="refreshCodeLoading"
+              @toggle-lock="toggleLock"
+              @refresh-invitation-code="refreshInvitationCode"
+              @copy-share-message="copyShareMessage"
+              @add-managers="addManagers"
+              @remove-manager="removeManager"
+            />
+          </el-tab-pane>
+        </el-tabs>
+      </div>
+    </div>
+    <template #footer>
+      <div class="mindbot-dialog-footer flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:flex-wrap">
+        <el-button
+          v-if="schoolDialogTab === 'general' && orgId"
+          type="primary"
+          class="mindbot-pill mindbot-pill--footer-save w-full sm:w-auto"
+          :loading="generalTabSaving"
+          @click="saveGeneralSettings"
+        >
+          {{ t('admin.save') }}
+        </el-button>
+        <el-tooltip
+          v-else-if="schoolDialogTab === 'dify' && orgId"
+          :disabled="Boolean(mindmateDifyRef?.canSave)"
+          :content="t('admin.schoolDifyAuthRequiredBeforeSave')"
+          placement="top"
+        >
+          <el-button
+            type="primary"
+            class="mindbot-pill mindbot-pill--footer-save w-full sm:w-auto"
+            :loading="mindmateDifyRef?.saving"
+            :disabled="!mindmateDifyRef?.canSave"
+            @click="mindmateDifyRef?.saveSettings()"
+          >
+            {{ t('admin.save') }}
+          </el-button>
+        </el-tooltip>
+        <el-button
+          class="mindbot-pill mindbot-pill--footer-cancel w-full sm:w-auto"
+          @click="close"
+        >
+          {{ t('common.close') }}
+        </el-button>
+        <el-button
+          v-if="orgId"
+          type="danger"
+          plain
+          class="mindbot-pill mindbot-pill--footer-danger w-full sm:w-auto"
+          :loading="deleteLoading"
+          @click="deleteOrganization"
+        >
+          <el-icon class="mr-1"><Delete /></el-icon>
+          {{ t('admin.deleteOrganization') }}
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
+
+  <el-dialog
+    v-else
     :model-value="visible"
     :title="chartTitle"
     class="admin-org-dialog"
@@ -730,190 +960,6 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <div
-        v-if="type === 'org' && orgId"
-        class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-4"
-      >
-        <div>
-          <p class="text-sm font-medium mb-2">{{ t('admin.displayNameLabel') }}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
-            {{ t('admin.displayNameHint') }}
-          </p>
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-            <el-input
-              v-model="displayNameEdit"
-              :placeholder="orgName"
-              size="small"
-              clearable
-              class="min-w-0 flex-1"
-            />
-            <el-button
-              type="primary"
-              size="small"
-              class="admin-org-pill-btn shrink-0"
-              :loading="displayNameSaving"
-              @click="saveDisplayName"
-            >
-              {{ t('admin.save') }}
-            </el-button>
-          </div>
-        </div>
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <span class="text-sm font-medium shrink-0">{{ t('admin.status') }}</span>
-          <div class="flex flex-wrap items-center gap-2 min-w-0">
-            <el-tag
-              :type="orgActiveState ? 'success' : 'danger'"
-              size="small"
-            >
-              {{ orgActiveState ? t('admin.enabled') : t('admin.disabled') }}
-            </el-tag>
-            <el-button
-              :loading="lockLoading"
-              size="small"
-              class="admin-org-pill-btn-muted"
-              :type="orgActiveState ? 'warning' : 'success'"
-              @click="toggleLock"
-            >
-              <el-icon class="mr-1">
-                <Lock v-if="orgActiveState" />
-                <Unlock v-else />
-              </el-icon>
-              {{ orgActiveState ? t('admin.lockOrganization') : t('admin.unlockOrganization') }}
-            </el-button>
-          </div>
-        </div>
-        <div>
-          <p class="text-sm font-medium mb-2">{{ t('admin.expirationDate') }}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
-            {{ t('admin.expirationDateHint') }}
-          </p>
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-            <el-date-picker
-              v-model="expiresAtEdit"
-              type="date"
-              :placeholder="t('admin.noExpiration')"
-              value-format="YYYY-MM-DD"
-              size="small"
-              clearable
-              class="min-w-0 flex-1"
-            />
-            <el-button
-              type="primary"
-              size="small"
-              class="admin-org-pill-btn shrink-0"
-              :loading="expiresAtSaving"
-              @click="saveExpiresAt"
-            >
-              {{ t('admin.save') }}
-            </el-button>
-          </div>
-        </div>
-        <div>
-          <p class="text-sm font-medium mb-1">{{ t('admin.invitationCode') }}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
-            {{ t('admin.invitationCodeMaskedHint') }}
-          </p>
-          <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div class="flex min-w-0 flex-wrap items-center gap-2">
-              <el-tag
-                type="info"
-                class="font-mono text-xs max-w-full break-all !h-auto py-1"
-              >
-                {{ invitationCode }}
-              </el-tag>
-              <el-tooltip
-                :content="revealInvitation ? t('admin.sensitiveHide') : t('admin.sensitiveReveal')"
-                placement="top"
-              >
-                <el-button
-                  link
-                  type="primary"
-                  size="small"
-                  class="shrink-0"
-                  @click="toggleRevealInvitation"
-                >
-                  <el-icon><Hide v-if="revealInvitation" /><View v-else /></el-icon>
-                </el-button>
-              </el-tooltip>
-            </div>
-            <div class="flex flex-wrap items-center gap-2 shrink-0">
-              <el-button
-                :loading="refreshCodeLoading"
-                size="small"
-                class="admin-org-pill-btn-muted"
-                @click="refreshInvitationCode"
-              >
-                <el-icon class="mr-1"><Refresh /></el-icon>
-                {{ t('admin.refreshInvitationCode') }}
-              </el-button>
-              <el-tooltip
-                :content="t('admin.shareInviteTitle')"
-                placement="top"
-              >
-                <el-button
-                  size="small"
-                  type="primary"
-                  class="admin-org-pill-btn"
-                  @click="copyShareMessage"
-                >
-                  <el-icon class="mr-1"><Share /></el-icon>
-                  {{ t('admin.copyShareMessage') }}
-                </el-button>
-              </el-tooltip>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <p class="text-sm font-medium mb-2">{{ t('admin.managers') }}</p>
-          <div
-            v-if="managersLoading"
-            class="text-gray-500 text-sm"
-          >
-            {{ t('admin.loading') }}
-          </div>
-          <div
-            v-else
-            class="space-y-2"
-          >
-            <div
-              v-for="m in managers"
-              :key="m.id"
-              class="flex items-center justify-between py-1 px-2 rounded bg-gray-50 dark:bg-gray-800"
-            >
-              <span class="min-w-0 break-words">{{ m.name || m.phone }}</span>
-              <el-button
-                type="danger"
-                link
-                size="small"
-                @click="removeManager(m.id)"
-              >
-                {{ t('admin.removeManager') }}
-              </el-button>
-            </div>
-            <div
-              v-if="orgUsers.length > 0"
-              class="flex flex-col gap-2 mt-2 sm:flex-row sm:items-center"
-            >
-              <el-select
-                v-model="addManagerSelect"
-                :placeholder="t('admin.setManager')"
-                size="small"
-                class="w-full min-w-0 sm:max-w-xs"
-                clearable
-                @change="(v: number | null) => v != null && setManager(v)"
-              >
-                <el-option
-                  v-for="u in orgUsers"
-                  :key="u.id"
-                  :label="u.name || u.phone"
-                  :value="u.id"
-                />
-              </el-select>
-            </div>
-          </div>
-        </div>
-      </div>
     </template>
     <template #footer>
       <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:flex-wrap">
@@ -923,22 +969,27 @@ onBeforeUnmount(() => {
         >
           {{ t('common.close') }}
         </el-button>
-        <el-button
-          v-if="type === 'org' && orgId"
-          type="danger"
-          class="admin-org-pill-btn-danger w-full sm:w-auto"
-          :loading="deleteLoading"
-          @click="deleteOrganization"
-        >
-          <el-icon class="mr-1"><Delete /></el-icon>
-          {{ t('admin.deleteOrganization') }}
-        </el-button>
       </div>
     </template>
   </el-dialog>
 </template>
 
+<style>
+@import '@/styles/admin-mindbot-swiss-dialog-chrome.css';
+</style>
+
 <style scoped>
+.school-settings-dialog.mindbot-swiss-dialog {
+  width: min(92vw, 760px) !important;
+  max-width: 100%;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.school-dialog-tabs :deep(.el-tabs__content) {
+  padding-top: 12px;
+}
+
 .token-period-card :deep(.el-card__body) {
   padding: 12px 16px;
 }

@@ -1,0 +1,88 @@
+/**
+ * Schools admin tab — light Swiss stone palette (matches login / account modals).
+ */
+.admin-schools-tab .admin-schools-card {
+  border: 1px solid #e7e5e4;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.admin-schools-tab .admin-schools-card :deep(.el-card__body) {
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.admin-schools-tab .admin-schools-table :deep(.el-table__header th) {
+  background: #fafaf9 !important;
+  color: #78716c;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e7e5e4;
+}
+
+.admin-schools-tab .admin-schools-table :deep(.el-table__body td) {
+  border-bottom: 1px solid #f5f5f4;
+  color: #44403c;
+}
+
+.admin-schools-tab .admin-schools-table :deep(.el-table__row:hover > td) {
+  background: #fafaf9 !important;
+}
+
+.admin-schools-tab .admin-schools-link {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: #1c1917;
+  text-align: inherit;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.admin-schools-tab .admin-schools-link:hover {
+  color: #57534e;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.admin-schools-tab .admin-schools-status {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  letter-spacing: 0.02em;
+}
+
+.admin-schools-tab .admin-schools-status--on {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.admin-schools-tab .admin-schools-status--off {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.admin-schools-tab .admin-schools-dify-badge {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 4px;
+  background: #e7e5e4;
+  color: #57534e;
+  text-decoration: none;
+}
+
+.admin-schools-tab .admin-schools-agent-avatar {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  object-fit: cover;
+  background: #f5f5f4;
+}

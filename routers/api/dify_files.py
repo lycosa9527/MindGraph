@@ -12,13 +12,14 @@ Proprietary License
 
 from typing import Optional
 import logging
-import os
 
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from clients.dify import AsyncDifyClient
+from config.database import get_async_db
 from models import Messages, get_request_language
 from models.domain.auth import User
+from services.dify.org_mindmate_client import resolve_mindmate_dify_client_or_http
 from utils.auth import get_current_user_or_api_key
 
 
@@ -27,17 +28,11 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["api"])
 
 
-def _get_dify_client(lang: str) -> AsyncDifyClient:
-    """Instantiate AsyncDifyClient from environment, raising 500 if unconfigured."""
-    api_key = os.getenv("DIFY_API_KEY")
-    api_url = os.getenv("DIFY_API_URL", "https://api.dify.ai/v1")
-    timeout = int(os.getenv("DIFY_TIMEOUT", "300"))
-
-    if not api_key:
-        logger.error("DIFY_API_KEY not configured")
-        raise HTTPException(status_code=500, detail=Messages.error("ai_not_configured", lang))
-
-    return AsyncDifyClient(api_key=api_key, api_url=api_url, timeout=timeout)
+def _organization_id_for_user(user: Optional[User]) -> Optional[int]:
+    if user is None:
+        return None
+    org_id = getattr(user, "organization_id", None)
+    return int(org_id) if org_id is not None else None
 
 
 @router.post("/dify/files/upload")
@@ -45,7 +40,8 @@ async def upload_file_to_dify(
     file: UploadFile = File(...),
     user_id: str = Form(...),
     x_language: Optional[str] = None,
-    _current_user: Optional[User] = Depends(get_current_user_or_api_key),
+    current_user: Optional[User] = Depends(get_current_user_or_api_key),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Upload a file to Dify for use in chat messages.
@@ -64,7 +60,11 @@ async def upload_file_to_dify(
         mime_type: File MIME type
     """
     lang = get_request_language(x_language)
-    client = _get_dify_client(lang)
+    client = await resolve_mindmate_dify_client_or_http(
+        db,
+        _organization_id_for_user(current_user),
+        detail=Messages.error("ai_not_configured", lang),
+    )
 
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
@@ -117,14 +117,19 @@ async def upload_file_to_dify(
 @router.get("/dify/app/parameters")
 async def get_dify_parameters(
     x_language: Optional[str] = None,
-    _current_user: Optional[User] = Depends(get_current_user_or_api_key),
+    current_user: Optional[User] = Depends(get_current_user_or_api_key),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get Dify app parameters including opening_statement, suggested_questions,
     file upload settings, etc.
     """
     lang = get_request_language(x_language)
-    client = _get_dify_client(lang)
+    client = await resolve_mindmate_dify_client_or_http(
+        db,
+        _organization_id_for_user(current_user),
+        detail=Messages.error("ai_not_configured", lang),
+    )
 
     try:
         return await client.get_app_parameters()

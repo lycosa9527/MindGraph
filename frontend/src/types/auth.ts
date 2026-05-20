@@ -36,6 +36,10 @@ export interface User {
   allowsSimplifiedChinese?: boolean
   /** False for quick-registration users until they set a known password (SMS) */
   loginPasswordSet?: boolean
+  /** Per-school MindMate sidebar label when configured by admin */
+  mindmateAgentName?: string | null
+  /** Per-school MindMate avatar URL when configured by admin */
+  mindmateAgentAvatarUrl?: string | null
 }
 
 /**
@@ -50,7 +54,13 @@ export interface BackendUser {
   email?: string
   role?: UserRole
   avatar?: string
-  organization?: string | { id?: string | number; name?: string; display_name?: string }
+  organization?: string | {
+    id?: string | number
+    name?: string
+    display_name?: string
+    mindmate_agent_name?: string | null
+    mindmate_agent_avatar_url?: string | null
+  }
   schoolId?: string
   schoolName?: string
   created_at?: string

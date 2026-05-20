@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
 import { useAskOnceStore } from '@/stores/askonce'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
@@ -20,6 +21,7 @@ export function useAppSidebar() {
   const authStore = useAuthStore()
   const mindMateStore = useMindMateStore()
   const askOnceStore = useAskOnceStore()
+  const { displayName: mindMateNavLabel } = useMindMateBranding()
   const {
     featureRagChunkTest,
     featureCourse,
@@ -280,6 +282,7 @@ export function useAppSidebar() {
     isAdmin,
     canAccessWorkshopChat,
     canAccessMindbot,
+    mindMateNavLabel,
     userName,
     userSubtitle,
     userAvatar,

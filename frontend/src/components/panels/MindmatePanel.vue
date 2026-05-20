@@ -4,7 +4,7 @@
  * Uses useMindMate composable for SSE streaming
  * Features: Markdown rendering, code highlighting, message actions, stop generation
  */
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onActivated, ref, watch } from 'vue'
 
 import { ElButton, ElIcon } from 'element-plus'
 
@@ -14,6 +14,7 @@ import { PanelLeftOpen } from 'lucide-vue-next'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useMindMate } from '@/composables/mindmate/useMindMate'
+import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
 import { useAuthStore, useMindMateStore } from '@/stores'
@@ -47,8 +48,10 @@ const authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
 const uiStore = useUIStore()
 
+const { displayName: defaultMindMateTitle } = useMindMateBranding()
+
 // Typing effect state
-const displayTitle = ref('MindMate')
+const displayTitle = ref(defaultMindMateTitle.value)
 const isTypingTitle = ref(false)
 
 // Use MindMate composable for SSE streaming
@@ -86,6 +89,25 @@ const showWelcome = computed(() => {
   return !mindMate.hasMessages.value && !mindMate.isLoading.value && !mindMate.isStreaming.value
 })
 
+function syncHeaderTitleFromBranding() {
+  if (isTypingTitle.value) {
+    return
+  }
+  if (showWelcome.value) {
+    displayTitle.value = defaultMindMateTitle.value
+  }
+}
+
+watch(defaultMindMateTitle, () => {
+  syncHeaderTitleFromBranding()
+})
+
+watch(showWelcome, (welcome) => {
+  if (welcome) {
+    syncHeaderTitleFromBranding()
+  }
+})
+
 // In panel mode (canvas mini-mindmate): fetch conversations from Dify and sync to store
 // ChatHistory sidebar is not mounted on canvas, so we must fetch here
 const { data: conversationsData, isLoading: isLoadingConversationsQuery } = useConversations()
@@ -105,13 +127,22 @@ watch(
   { immediate: true }
 )
 
+function refreshBrandingFromServer() {
+  void authStore.checkAuth(true)
+}
+
 /** Remount restores empty local state (`useMindMate` destroy()); reload thread from Pinia. */
 onMounted(() => {
+  refreshBrandingFromServer()
   const convId = mindMateStore.currentConversationId
   if (!convId || mindMate.hasMessages.value) {
     return
   }
   void mindMate.loadConversation(convId)
+})
+
+onActivated(() => {
+  refreshBrandingFromServer()
 })
 
 // Watch for title changes to sync display (from store)
@@ -154,7 +185,7 @@ function startNewConversation() {
     return
   }
   mindMate.startNewConversation()
-  displayTitle.value = 'MindMate'
+  displayTitle.value = defaultMindMateTitle.value
 }
 
 // Load a conversation from history

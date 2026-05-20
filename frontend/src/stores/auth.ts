@@ -76,7 +76,10 @@ export const useAuthStore = defineStore('auth', () => {
   const pendingRedirect = ref<string | null>(null) // Store intended route after session expired login
   const isCheckingAuth = ref(false) // Prevent duplicate concurrent checkAuth calls
   const lastSessionCheckTime = ref<number>(0) // Track last session status check to prevent rapid-fire calls
+  const lastProfileRefreshTime = ref<number>(0)
   const hasVerifiedAuthThisSession = ref(false) // Track if we've verified auth with server in this session
+  const PROFILE_REFRESH_MIN_MS = 30_000
+  let profileVisibilityListener: (() => void) | null = null
   /**
    * True when the last /me (or refresh) attempt failed before an HTTP status was obtained
    * (network offline, DNS, aborted request, etc.) while a cached user still exists.
@@ -154,7 +157,19 @@ export const useAuthStore = defineStore('auth', () => {
     const orgIsObject = typeof org === 'object' && org !== null
     const orgId = orgIsObject ? org.id : undefined
     const orgName = orgIsObject ? org.name : typeof org === 'string' ? org : undefined
-    const orgDisplayName = orgIsObject && org.display_name ? org.display_name : undefined
+    const orgDisplayNameRaw =
+      orgIsObject && org.display_name != null ? String(org.display_name).trim() : ''
+    const orgDisplayName = orgDisplayNameRaw || undefined
+    const mindmateNameRaw =
+      orgIsObject && org.mindmate_agent_name != null
+        ? String(org.mindmate_agent_name).trim()
+        : ''
+    const mindmateAgentName = mindmateNameRaw || undefined
+    const mindmateAvatarRaw =
+      orgIsObject && org.mindmate_agent_avatar_url != null
+        ? String(org.mindmate_agent_avatar_url).trim()
+        : ''
+    const mindmateAgentAvatarUrl = mindmateAvatarRaw || undefined
     const displayLabel = orgDisplayName || orgName || backendUser.schoolName || ''
 
     const allowsZh = backendUser.allows_simplified_chinese !== false
@@ -195,6 +210,8 @@ export const useAuthStore = defineStore('auth', () => {
       uiVersion: backendUser.ui_version ?? null,
       allowsSimplifiedChinese: allowsZh,
       loginPasswordSet,
+      mindmateAgentName: mindmateAgentName || null,
+      mindmateAgentAvatarUrl: mindmateAgentAvatarUrl || null,
     }
   }
 
@@ -581,6 +598,37 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function refreshUserProfile(options?: { bypassThrottle?: boolean }): Promise<boolean> {
+    if (isMindgraphHeadlessExportSession() || !user.value) {
+      return false
+    }
+    const now = Date.now()
+    if (
+      !options?.bypassThrottle &&
+      now - lastProfileRefreshTime.value < PROFILE_REFRESH_MIN_MS
+    ) {
+      return false
+    }
+    lastProfileRefreshTime.value = now
+    try {
+      const response = await fetch(`${API_BASE}/me`, {
+        method: 'GET',
+        credentials: 'same-origin',
+      })
+      if (!response.ok) {
+        return false
+      }
+      const data = await response.json()
+      if (data.user || data.id) {
+        setUser(data.user || data)
+        return true
+      }
+      return false
+    } catch {
+      return false
+    }
+  }
+
   async function refreshToken(): Promise<boolean> {
     // First try to refresh the access token using the refresh token
     const refreshResult = await refreshAccessToken()
@@ -629,16 +677,30 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  function onProfileVisibilityRefresh(): void {
+    if (document.visibilityState !== 'visible' || !user.value) {
+      return
+    }
+    void refreshUserProfile()
+  }
+
   function startSessionMonitoring(): void {
     // Prevent duplicate monitoring setup
     if (sessionMonitorInterval.value) {
       return
     }
 
+    if (!profileVisibilityListener) {
+      profileVisibilityListener = onProfileVisibilityRefresh
+      document.addEventListener('visibilitychange', profileVisibilityListener)
+    }
+
     sessionMonitorInterval.value = window.setInterval(async () => {
-      if (document.visibilityState === 'visible') {
-        await checkSessionStatus()
+      if (document.visibilityState !== 'visible') {
+        return
       }
+      await checkSessionStatus()
+      await refreshUserProfile({ bypassThrottle: true })
     }, 120000) // 2 minutes - balance between responsiveness and server load
 
     // Only check immediately if not checked recently (within last 5 seconds)
@@ -646,6 +708,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (now - lastSessionCheckTime.value > 5000) {
       checkSessionStatus()
       lastSessionCheckTime.value = now
+      void refreshUserProfile({ bypassThrottle: true })
     }
   }
 
@@ -653,6 +716,10 @@ export const useAuthStore = defineStore('auth', () => {
     if (sessionMonitorInterval.value) {
       clearInterval(sessionMonitorInterval.value)
       sessionMonitorInterval.value = null
+    }
+    if (profileVisibilityListener) {
+      document.removeEventListener('visibilitychange', profileVisibilityListener)
+      profileVisibilityListener = null
     }
   }
 
@@ -786,6 +853,21 @@ export const useAuthStore = defineStore('auth', () => {
     return path
   }
 
+  function patchSchoolDisplayName(displayName: string | null, fallbackName?: string): void {
+    if (!user.value) {
+      return
+    }
+    const trimmedDisplay = (displayName || '').trim()
+    const trimmedFallback = (fallbackName || '').trim()
+    const label = trimmedDisplay || trimmedFallback
+    if (!label) {
+      return
+    }
+    const updated = { ...user.value, schoolName: label }
+    user.value = updated
+    sessionStorage.setItem(USER_KEY, JSON.stringify(updated))
+  }
+
   async function requireAuth(redirectUrl?: string): Promise<boolean> {
     const authenticated = await checkAuth()
     if (!authenticated) {
@@ -829,6 +911,8 @@ export const useAuthStore = defineStore('auth', () => {
     checkAuth,
     detectMode,
     refreshToken,
+    refreshUserProfile,
+    patchSchoolDisplayName,
     fetchCaptcha,
     startSessionMonitoring,
     stopSessionMonitoring,

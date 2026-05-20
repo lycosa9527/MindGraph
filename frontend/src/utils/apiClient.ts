@@ -19,6 +19,12 @@ import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
 const API_BASE = '/api'
 
+/** True only for the session token refresh route (not e.g. refresh-invitation-code). */
+function isSessionTokenRefreshEndpoint(endpointOrUrl: string): boolean {
+  const path = endpointOrUrl.split('?')[0] ?? endpointOrUrl
+  return path === '/api/auth/refresh' || path.endsWith('/api/auth/refresh')
+}
+
 /** Current Vue I18n UI code for API `X-Language` (backend maps to zh / en / az for Messages). */
 function currentUiLocaleCodeForHeaders(): string {
   const loc = i18n.global.locale
@@ -117,7 +123,7 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
       return response
     }
     // Don't retry refresh endpoint to avoid infinite loop
-    if (endpoint.includes('/auth/refresh')) {
+    if (isSessionTokenRefreshEndpoint(endpoint) || isSessionTokenRefreshEndpoint(url)) {
       return response
     }
 

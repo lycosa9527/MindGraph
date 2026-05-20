@@ -273,7 +273,7 @@ def _seed_organizations_if_empty() -> None:
                 Organization(
                     code="DEMO-001",
                     name="Demo School for Testing",
-                    invitation_code="DEMO-A1B2C",
+                    invitation_code="DEM-9K2",
                     created_at=datetime.now(UTC),
                 ),
                 Organization(
@@ -285,13 +285,13 @@ def _seed_organizations_if_empty() -> None:
                 Organization(
                     code="BJ-001",
                     name="Beijing First High School",
-                    invitation_code="BJXX-M3N4P",
+                    invitation_code="BJX-4N5",
                     created_at=datetime.now(UTC),
                 ),
                 Organization(
                     code="SH-042",
                     name="Shanghai International School",
-                    invitation_code="SHXX-Q5R6S",
+                    invitation_code="SHX-6Q7",
                     created_at=datetime.now(UTC),
                 ),
             ]

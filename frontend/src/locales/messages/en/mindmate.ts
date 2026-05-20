@@ -106,7 +106,7 @@ export default {
   'mindmate.tooltip.regenerate': 'Regenerate',
   'mindmate.tooltip.share': 'Share',
   'mindmate.untitled': 'Untitled',
-  'mindmate.welcome': "Hello {username}, I'm your virtual teaching partner",
+  'mindmate.welcome': "Hello {username}, I'm {agentName}, your thinking teaching partner",
   'nodePalette.bridgeAnalogy': 'Analogy',
   'nodePalette.bridgeSource': 'Source',
   'nodePalette.cancel': 'Cancel',

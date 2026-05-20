@@ -7,9 +7,11 @@ import { ElAvatar, ElButton, ElIcon, ElLoading, ElScrollbar } from 'element-plus
 
 import { Bottom } from '@element-plus/icons-vue'
 
-import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import { useLanguage } from '@/composables'
+import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import type { MindMateMessage } from '@/composables/mindmate/useMindMate'
+
+import MindmateAgentAvatar from './MindmateAgentAvatar.vue'
 import { useUIStore } from '@/stores'
 
 import MessageBubble from './MessageBubble.vue'
@@ -19,6 +21,7 @@ import MindmateWelcome from './MindmateWelcome.vue'
 const vLoading = ElLoading.directive
 
 const { t } = useLanguage()
+const { displayName } = useMindMateBranding('md')
 const uiStore = useUIStore()
 
 // Loading background color (dark mode aware)
@@ -204,12 +207,9 @@ watch(
           v-if="isLoading && !isStreaming"
           class="message flex gap-3"
         >
-          <!-- MindMate avatar -->
-          <ElAvatar
-            :src="mindmateAvatarMd"
-            alt="MindMate"
+          <MindmateAgentAvatar
             :size="40"
-            class="mindmate-avatar flex-shrink-0"
+            avatar-class="mindmate-avatar flex-shrink-0"
           />
           <div class="message-content bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2">
             <div class="flex gap-1.5 items-center justify-center">

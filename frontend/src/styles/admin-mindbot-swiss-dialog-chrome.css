@@ -125,6 +125,19 @@
   color: var(--mindbot-swiss-muted);
 }
 
+.mindbot-swiss-dialog .mindbot-section-label.mindbot-swiss-section-label {
+  color: var(--mindbot-swiss-text);
+}
+
+.mindbot-swiss-dialog .mindbot-swiss-form .el-form-item__label {
+  font-family: var(--geek-ulog-font);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--mindbot-swiss-text);
+  line-height: 1.35;
+}
+
 .mindbot-swiss-dialog .mindbot-dialog-footer {
   padding: 0.75rem 1.25rem 1rem;
   border-top: 1px solid rgba(34, 211, 238, 0.2);
@@ -351,7 +364,7 @@
     0 0 20px rgba(227, 6, 19, 0.25);
 }
 
-.mindbot-swiss-dialog .mindbot-pill--copy.el-button--primary,
+.mindbot-swiss-dialog .mindbot-pill--copy.el-button--primary:not(.is-plain),
 .mindbot-swiss-dialog .mindbot-pill--replace.el-button--primary.is-plain {
   border-radius: 2px;
   font-family: var(--geek-ulog-font);
@@ -383,6 +396,62 @@
   --el-button-active-border-color: rgba(251, 191, 36, 0.72);
 }
 
+.mindbot-swiss-dialog .mindbot-pill--unlock.el-button--success.is-plain,
+.mindbot-swiss-dialog .mindbot-pill--copy.el-button--primary.is-plain {
+  border-radius: 2px;
+  font-family: var(--geek-ulog-font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  --el-button-bg-color: var(--geek-elevated);
+  --el-button-border-color: rgba(34, 211, 238, 0.42);
+  --el-button-text-color: var(--geek-text);
+  --el-button-hover-bg-color: var(--geek-elevated-hover);
+  --el-button-hover-border-color: rgba(34, 211, 238, 0.65);
+  --el-button-hover-text-color: #ffffff;
+  --el-button-active-bg-color: var(--geek-elevated-hover);
+  --el-button-active-border-color: rgba(34, 211, 238, 0.55);
+  --el-button-active-text-color: #ffffff;
+}
+
+.mindbot-swiss-dialog .mindbot-pill--unlock.el-button--success.is-plain {
+  --el-button-bg-color: rgba(6, 78, 59, 0.55);
+  --el-button-border-color: rgba(52, 211, 153, 0.45);
+  --el-button-text-color: #a7f3d0;
+  --el-button-hover-bg-color: rgba(6, 95, 70, 0.65);
+  --el-button-hover-border-color: rgba(52, 211, 153, 0.65);
+  --el-button-hover-text-color: #ecfdf5;
+}
+
+.mindbot-swiss-dialog .mindbot-pill--footer-danger.el-button--danger.is-plain {
+  border-radius: 2px;
+  font-family: var(--geek-ulog-font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  --el-button-bg-color: rgba(69, 10, 10, 0.55);
+  --el-button-border-color: rgba(248, 113, 113, 0.45);
+  --el-button-text-color: #fecaca;
+  --el-button-hover-bg-color: rgba(127, 29, 29, 0.65);
+  --el-button-hover-border-color: rgba(248, 113, 113, 0.65);
+  --el-button-hover-text-color: #ffffff;
+  --el-button-active-bg-color: rgba(127, 29, 29, 0.75);
+  --el-button-active-border-color: rgba(248, 113, 113, 0.65);
+  --el-button-active-text-color: #ffffff;
+}
+
+.mindbot-swiss-dialog .mindbot-pill--footer-danger.el-button--danger.is-plain:hover {
+  box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.2);
+}
+
+.mindbot-swiss-dialog .el-button--danger.is-link {
+  --el-button-text-color: #fb7185;
+  --el-button-hover-text-color: #fecdd3;
+  font-family: var(--geek-ulog-font);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 .mindbot-swiss-dialog .mindbot-ai-card-ping {
   border-radius: 2px !important;
   font-family: var(--geek-ulog-font);
@@ -411,4 +480,188 @@
   > .el-form-item__label::before {
   color: #fb7185;
   text-shadow: 0 0 8px rgba(251, 113, 133, 0.45);
+}
+
+.mindbot-swiss-dialog .mindbot-dify-status-btn {
+  font-weight: 500;
+  border-radius: 9999px;
+}
+
+.mindbot-swiss-dialog .mindbot-dify-status-btn--pending {
+  --el-button-bg-color: #f5f5f4;
+  --el-button-border-color: #e7e5e4;
+  --el-button-text-color: #57534e;
+}
+
+.mindbot-swiss-dialog .mindbot-dify-status-btn--online {
+  --el-button-bg-color: #ecfdf5;
+  --el-button-border-color: #6ee7b7;
+  --el-button-hover-bg-color: #d1fae5;
+  --el-button-hover-border-color: #34d399;
+  --el-button-hover-text-color: #065f46;
+  --el-button-text-color: #047857;
+}
+
+.mindbot-swiss-dialog .mindbot-dify-status-btn--offline {
+  --el-button-bg-color: #fef2f2;
+  --el-button-border-color: #fca5a5;
+  --el-button-hover-bg-color: #fee2e2;
+  --el-button-hover-border-color: #f87171;
+  --el-button-hover-text-color: #7f1d1d;
+  --el-button-text-color: #b91c1c;
+}
+
+.mindbot-swiss-dialog .mindbot-dify-status-btn--warn {
+  --el-button-bg-color: #fffbeb;
+  --el-button-border-color: #fde68a;
+  --el-button-text-color: #92400e;
+}
+
+.mindbot-swiss-dialog .school-dify-api-key-input-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mindbot-swiss-dialog .school-dify-api-key-input {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.mindbot-swiss-dialog .school-dify-api-key-input-line .el-button {
+  align-self: center;
+}
+
+/* School settings — General tab: status, chips, action pills */
+.mindbot-swiss-dialog .mindbot-pill.el-button {
+  border-radius: 2px;
+  font-family: var(--geek-ulog-font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  height: auto;
+  min-height: 2rem;
+  padding: 0.4rem 0.85rem;
+}
+
+.mindbot-swiss-dialog .school-general-status-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--geek-ulog-font);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  padding: 0.35rem 0.7rem;
+  border-radius: 2px;
+  border: 1px solid;
+}
+
+.mindbot-swiss-dialog .school-general-status-badge--active {
+  color: #a7f3d0;
+  background: rgba(6, 78, 59, 0.5);
+  border-color: rgba(52, 211, 153, 0.45);
+  box-shadow:
+    0 0 0 1px rgba(52, 211, 153, 0.12),
+    0 0 14px rgba(52, 211, 153, 0.12);
+}
+
+.mindbot-swiss-dialog .school-general-status-badge--locked {
+  color: #fecaca;
+  background: rgba(69, 10, 10, 0.5);
+  border-color: rgba(248, 113, 113, 0.45);
+  box-shadow:
+    0 0 0 1px rgba(248, 113, 113, 0.1),
+    0 0 14px rgba(248, 113, 113, 0.1);
+}
+
+.mindbot-swiss-dialog .school-general-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+  font-family: var(--geek-ulog-font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--mindbot-swiss-text);
+  padding: 0.2rem 0.35rem 0.2rem 0.55rem;
+  border-radius: 2px;
+  border: 1px solid rgba(34, 211, 238, 0.32);
+  background: rgba(2, 6, 23, 0.75);
+  box-shadow: inset 0 1px 0 rgba(34, 211, 238, 0.08);
+}
+
+.mindbot-swiss-dialog .school-general-chip__label {
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mindbot-swiss-dialog .school-general-chip__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--mindbot-swiss-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.mindbot-swiss-dialog .school-general-chip__remove:hover {
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.45);
+}
+
+.mindbot-swiss-dialog .mindbot-pill--rotate.el-button.is-plain,
+.mindbot-swiss-dialog .mindbot-pill--rotate.el-button,
+.mindbot-swiss-dialog .mindbot-pill--lock.el-button.is-plain,
+.mindbot-swiss-dialog .mindbot-pill--lock.el-button {
+  --el-button-bg-color: rgba(69, 26, 3, 0.65);
+  --el-button-border-color: rgba(251, 191, 36, 0.45);
+  --el-button-text-color: var(--geek-amber-text);
+  --el-button-hover-bg-color: rgba(120, 53, 15, 0.55);
+  --el-button-hover-border-color: rgba(251, 191, 36, 0.72);
+  --el-button-hover-text-color: #fffbeb;
+  --el-button-active-bg-color: rgba(120, 53, 15, 0.65);
+  --el-button-active-border-color: rgba(251, 191, 36, 0.72);
+}
+
+.mindbot-swiss-dialog .mindbot-pill--unlock.el-button.is-plain,
+.mindbot-swiss-dialog .mindbot-pill--unlock.el-button {
+  --el-button-bg-color: rgba(6, 78, 59, 0.55);
+  --el-button-border-color: rgba(52, 211, 153, 0.45);
+  --el-button-text-color: #a7f3d0;
+  --el-button-hover-bg-color: rgba(6, 95, 70, 0.65);
+  --el-button-hover-border-color: rgba(52, 211, 153, 0.65);
+  --el-button-hover-text-color: #ecfdf5;
+  --el-button-active-bg-color: rgba(6, 95, 70, 0.7);
+  --el-button-active-border-color: rgba(52, 211, 153, 0.65);
+}
+
+.mindbot-swiss-dialog .mindbot-pill--copy.el-button.is-plain,
+.mindbot-swiss-dialog .mindbot-pill--copy.el-button {
+  --el-button-bg-color: var(--geek-elevated);
+  --el-button-border-color: rgba(34, 211, 238, 0.42);
+  --el-button-text-color: var(--geek-text);
+  --el-button-hover-bg-color: var(--geek-elevated-hover);
+  --el-button-hover-border-color: rgba(34, 211, 238, 0.65);
+  --el-button-hover-text-color: #ffffff;
+  --el-button-active-bg-color: var(--geek-elevated-hover);
+  --el-button-active-border-color: rgba(34, 211, 238, 0.55);
+  --el-button-active-text-color: #ffffff;
 }

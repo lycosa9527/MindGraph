@@ -40,7 +40,6 @@ from services.redis.session.redis_session_manager import (
 )
 from services.redis.cache.redis_user_cache import user_cache
 from utils.auth import (
-    AUTH_MODE,
     get_current_user,
     get_user_role,
     is_https,
@@ -56,10 +55,12 @@ from utils.auth import (
 
 from .dependencies import get_language_dependency
 from .helpers import set_auth_cookies
+from .org_profile import organization_session_payload
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
 
 # Rate limiter for refresh endpoint
 _rate_limiter = RedisRateLimiter()
@@ -318,16 +319,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
             "avatar": current_user.avatar or "🐈‍⬛",
             "role": role,
             "login_password_set": getattr(current_user, "login_password_set", True),
-            "organization": {
-                "id": org.id if org else None,
-                "code": org.code if org else None,
-                "name": org.name if org else None,
-                "display_name": (
-                    getattr(org, "display_name", None)
-                    if org and AUTH_MODE == "bayi"
-                    else None
-                ),
-            },
+            "organization": organization_session_payload(org),
             "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
             "last_login": (current_user.last_login.isoformat() if current_user.last_login else None),
             "ui_language": getattr(current_user, "ui_language", None),

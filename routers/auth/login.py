@@ -53,6 +53,7 @@ from services.infrastructure.security.abuseipdb_service import (
 )
 from utils.email_mainland_china import raise_if_mainland_china_email_for_email_login
 from utils.email_validation import validate_email_for_api
+from routers.auth.org_profile import organization_session_payload
 from utils.auth.config import BAYI_DEFAULT_ORG_CODE, BAYI_DEFAULT_ORG_ID, BAYI_PASSKEY
 from utils.auth import (
     AUTH_MODE,
@@ -226,7 +227,7 @@ async def _complete_login_after_otp_verified(
             "phone": user.phone,
             "email": getattr(user, "email", None),
             "name": user.name,
-            "organization": org.name if org else None,
+            "organization": organization_session_payload(org),
             "avatar": user.avatar or "🐈‍⬛",
             "role": get_user_role(user),
             "ui_language": getattr(user, "ui_language", None),
@@ -487,7 +488,7 @@ async def login(
             "phone": user.phone,
             "email": getattr(user, "email", None),
             "name": user.name,
-            "organization": org.name if org else None,
+            "organization": organization_session_payload(org),
             "avatar": user.avatar or "🐈‍⬛",
             "role": get_user_role(user),
             "ui_language": getattr(user, "ui_language", None),

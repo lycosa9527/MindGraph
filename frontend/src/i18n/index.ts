@@ -184,8 +184,8 @@ export const i18n = createI18n({
 })
 
 /**
- * UI strings for every {@link LocaleCode} are eager-loaded via {@link ALL_UI_MESSAGES}.
- * Callers still await this before {@link setI18nLocale} so bootstrap order stays stable.
+ * UI strings for every LocaleCode are eager-loaded via ALL_UI_MESSAGES.
+ * Callers still await this before setI18nLocale so bootstrap order stays stable.
  */
 export async function loadLocaleMessages(_locale: LocaleCode): Promise<void> {
   await Promise.resolve()

@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { ElAvatar } from 'element-plus'
-
-import mindmateAvatarLg from '@/assets/mindmate-avatar-lg.png'
-import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import { useLanguage } from '@/composables'
+import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useAuthStore } from '@/stores/auth'
+
+import MindmateAgentAvatar from './MindmateAgentAvatar.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -20,30 +19,33 @@ const props = withDefaults(
 const { t } = useLanguage()
 const authStore = useAuthStore()
 const isFullpageMode = computed(() => props.mode === 'fullpage')
+const { displayName } = useMindMateBranding('md')
+const welcomeBrandingSize = computed(() => (isFullpageMode.value ? 'lg' : 'md') as 'md' | 'lg')
+const welcomeAvatarSize = computed(() => (isFullpageMode.value ? 128 : 64))
 const username = computed(() => authStore.user?.username || '')
+const welcomeMessage = computed(() =>
+  t('mindmate.welcome', { username: username.value, agentName: displayName.value })
+)
 </script>
 
 <template>
-  <!-- Welcome Message - Fullpage Mode -->
   <div
     v-if="isFullpageMode"
     class="welcome-fullpage"
   >
-    <ElAvatar
-      :src="mindmateAvatarLg"
-      alt="MindMate"
-      :size="128"
-      class="mindmate-avatar-welcome"
+    <MindmateAgentAvatar
+      :size="welcomeAvatarSize"
+      :branding-size="welcomeBrandingSize"
+      avatar-class="mindmate-avatar-welcome"
     />
     <div class="text-center mt-6">
-      <div class="text-2xl font-medium text-gray-800 mb-2">MindMate</div>
+      <div class="text-2xl font-medium text-gray-800 mb-2">{{ displayName }}</div>
       <div class="text-lg text-gray-600">
-        {{ t('mindmate.welcome', { username }) }}
+        {{ welcomeMessage }}
       </div>
     </div>
   </div>
 
-  <!-- Welcome Message - Panel Mode -->
   <div
     v-else
     class="welcome-panel"
@@ -51,14 +53,16 @@ const username = computed(() => authStore.user?.username || '')
     <div
       class="welcome-card bg-gradient-to-br from-primary-50 to-purple-50 dark:from-gray-700 dark:to-gray-600 rounded-xl p-6 text-center"
     >
-      <ElAvatar
-        :src="mindmateAvatarMd"
-        alt="MindMate"
+      <MindmateAgentAvatar
         :size="64"
-        class="mindmate-avatar mx-auto mb-3"
+        branding-size="md"
+        avatar-class="mindmate-avatar mx-auto mb-3"
       />
+      <p class="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">
+        {{ displayName }}
+      </p>
       <p class="text-sm text-gray-600 dark:text-gray-300">
-        {{ t('mindmate.welcome', { username }) }}
+        {{ welcomeMessage }}
       </p>
     </div>
   </div>

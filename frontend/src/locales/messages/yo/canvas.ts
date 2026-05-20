@@ -261,6 +261,7 @@ export default {
   'canvas.toolbar.translateLabelDiagramEmpty': 'No text to translate in this diagram',
   'canvas.toolbar.translateLabelAndMore': '{n} more not shown…',
   'canvas.toolbar.translateLabelInProgress': 'Translating diagram…',
+  'canvas.toolbar.translateLabelBannerTitle': 'Translating diagram',
   'canvas.toolbar.translateLabelFallbackEnInfo':
     'Your interface language is not available as a translation target yet. Labels will be translated to English.',
   'canvas.toolbar.translateLabelFailed': 'Translation failed. Please try again.',

@@ -168,16 +168,18 @@ ERRORS = {
     },
     "invitation_code_invalid_format": {
         "zh": (
-            "邀请码格式无效。期望格式：AAAA-XXXXX（4个字母，短横线，"
-            "5个字母数字字符）。您输入的是：{}"
+            "邀请码格式无效。期望格式：XXX-XXX（3个字符、短横线、3个字符；"
+            "不含 0、O、1、I、L）。您输入的是：{}"
         ),
         "en": (
-            "Invalid invitation code format. Expected format: AAAA-XXXXX "
-            "(4 letters, dash, 5 alphanumeric characters). You entered: {}"
+            "Invalid invitation code format. Expected format: XXX-XXX "
+            "(3 characters, dash, 3 characters; excludes 0, O, 1, I, L). "
+            "You entered: {}"
         ),
         "az": (
-            "Etibarsız dəvət kodu formatı. Gözlənilən format: AAAA-XXXXX "
-            "(4 hərf, tire, 5 hərf-rəqəm simvolu). Siz daxil etdiniz: {}"
+            "Etibarsız dəvət kodu formatı. Gözlənilən format: XXX-XXX "
+            "(3 simvol, tire, 3 simvol; 0, O, 1, I, L istisna). "
+            "Siz daxil etdiniz: {}"
         ),
     },
     "invitation_code_not_found": {
@@ -1016,6 +1018,7 @@ ERRORS = {
     },
     "organization_not_found": {
         "zh": "未找到组织 ID {}",
+        "zh-tw": "未找到組織 ID {}",
         "en": "Organization ID {} not found",
         "az": "Təşkilat ID {} tapılmadı",
     },
@@ -1044,6 +1047,78 @@ ERRORS = {
         "zh": "用户不属于该组织",
         "en": "User does not belong to this organization",
         "az": "İstifadəçi bu təşkilata aid deyil",
+    },
+    "failed_create_organization": {
+        "zh": "创建组织失败",
+        "zh-tw": "建立組織失敗",
+        "en": "Failed to create organization",
+        "az": "Təşkilat yaratmaq mümkün olmadı",
+    },
+    "failed_update_organization": {
+        "zh": "更新组织失败",
+        "zh-tw": "更新組織失敗",
+        "en": "Failed to update organization",
+        "az": "Təşkilatı yeniləmək mümkün olmadı",
+    },
+    "failed_save_avatar": {
+        "zh": "保存头像失败",
+        "zh-tw": "儲存頭像失敗",
+        "en": "Failed to save avatar",
+        "az": "Avatarı saxlamaq mümkün olmadı",
+    },
+    "failed_refresh_invitation_code": {
+        "zh": "刷新邀请码失败",
+        "zh-tw": "刷新邀請碼失敗",
+        "en": "Failed to refresh invitation code",
+        "az": "Dəvət kodunu yeniləmək mümkün olmadı",
+    },
+    "failed_delete_organization_users": {
+        "zh": "删除组织用户失败",
+        "zh-tw": "刪除組織用戶失敗",
+        "en": "Failed to delete organization users",
+        "az": "Təşkilat istifadəçilərini silmək mümkün olmadı",
+    },
+    "failed_delete_organization": {
+        "zh": "删除组织失败",
+        "zh-tw": "刪除組織失敗",
+        "en": "Failed to delete organization",
+        "az": "Təşkilatı silmək mümkün olmadı",
+    },
+    "failed_set_manager_role": {
+        "zh": "设置管理员角色失败",
+        "zh-tw": "設置管理員角色失敗",
+        "en": "Failed to set manager role",
+        "az": "Menecer rolunu təyin etmək mümkün olmadı",
+    },
+    "failed_remove_manager_role": {
+        "zh": "移除管理员角色失败",
+        "zh-tw": "移除管理員角色失敗",
+        "en": "Failed to remove manager role",
+        "az": "Menecer rolunu silmək mümkün olmadı",
+    },
+    "dify_api_base_url_too_long": {
+        "zh": "Dify API 根地址不能超过 512 个字符",
+        "zh-tw": "Dify API 根網址不能超過 512 個字元",
+        "en": "dify_api_base_url must be at most 512 characters",
+        "az": "dify_api_base_url ən çoxu 512 simvol ola bilər",
+    },
+    "mindmate_agent_name_too_long": {
+        "zh": "MindMate 智能体名称不能超过 10 个字符",
+        "zh-tw": "MindMate 智能體名稱不能超過 10 個字元",
+        "en": "mindmate_agent_name must be at most 10 characters",
+        "az": "mindmate_agent_name ən çoxu 10 simvol ola bilər",
+    },
+    "mindmate_agent_avatar_url_too_long": {
+        "zh": "MindMate 智能体头像 URL 不能超过 512 个字符",
+        "zh-tw": "MindMate 智能體頭像 URL 不能超過 512 個字元",
+        "en": "mindmate_agent_avatar_url must be at most 512 characters",
+        "az": "mindmate_agent_avatar_url ən çoxu 512 simvol ola bilər",
+    },
+    "mindmate_agent_avatar_url_invalid": {
+        "zh": "MindMate 智能体头像 URL 必须是本地上传的路径",
+        "zh-tw": "MindMate 智能體頭像 URL 必須是本地上傳的路徑",
+        "en": "MindMate agent avatar URL must be a locally uploaded path",
+        "az": "MindMate agent avatar URL yerli yüklənmiş yol olmalıdır",
     },
     "school_dashboard_admin_org_required": {
         "zh": "管理员必须提供 organization_id 以选择学校",
@@ -1199,16 +1274,19 @@ SUCCESS = {
     "logged_out": {"zh": "已成功退出登录", "en": "Logged out successfully", "az": "Uğurla çıxış edildi"},
     "organization_deleted": {
         "zh": "组织 {} 已成功删除",
+        "zh-tw": "組織 {} 已成功刪除",
         "en": "Organization {} deleted successfully",
         "az": "Təşkilat {} uğurla silindi",
     },
     "manager_role_set": {
         "zh": "已将 {} 设置为管理员",
+        "zh-tw": "已將 {} 設為管理員",
         "en": "{} has been set as manager",
         "az": "{} menecer olaraq təyin edildi",
     },
     "manager_role_removed": {
         "zh": "已移除 {} 的管理员权限",
+        "zh-tw": "已移除 {} 的管理員權限",
         "en": "Manager role removed from {}",
         "az": "{} üçün menecer rolu silindi",
     },

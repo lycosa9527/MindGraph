@@ -17,6 +17,7 @@ from sqlalchemy import (
     Column,
     Integer,
     String,
+    Text,
     DateTime,
     ForeignKey,
     Boolean,
@@ -29,6 +30,9 @@ class Base(DeclarativeBase):
     """Shared declarative base for all MindGraph ORM models."""
 
     id: object
+
+
+MINDMATE_AGENT_NAME_MAX_LENGTH = 10
 
 
 class Organization(Base):
@@ -51,6 +55,14 @@ class Organization(Base):
     # Service subscription management
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # Per-org MindMate Dify override (optional; falls back to global DIFY_* env)
+    dify_api_base_url = Column(String(512), nullable=True)
+    dify_api_key = Column(Text, nullable=True)
+
+    # Per-org MindMate branding (optional sidebar label + avatar)
+    mindmate_agent_name = Column(String(MINDMATE_AGENT_NAME_MAX_LENGTH), nullable=True)
+    mindmate_agent_avatar_url = Column(String(512), nullable=True)
 
     # Relationship — large collection. Use ``selectinload(Organization.users)``
     # explicitly in the few queries that actually need eager loading.

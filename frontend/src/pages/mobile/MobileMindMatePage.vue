@@ -4,18 +4,19 @@
  * Single top bar: home/history on left, "MindMate" center, new chat on right.
  * Reuses MindmatePanel internals but with a custom mobile header.
  */
-import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { Home, Menu, Plus } from 'lucide-vue-next'
 
-import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import ShareExportModal from '@/components/panels/ShareExportModal.vue'
 import ConversationHistory from '@/components/panels/mindmate/ConversationHistory.vue'
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 import MindmateMessages from '@/components/panels/mindmate/MindmateMessages.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useMindMate } from '@/composables/mindmate/useMindMate'
+import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
+import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
 import { useAuthStore, useMindMateStore, useVoiceStore } from '@/stores'
@@ -27,7 +28,18 @@ const authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
 const voiceStore = useVoiceStore()
 
-const displayTitle = ref('MindMate')
+const { displayName, avatarUrl } = useMindMateBranding('md')
+const welcomeAvatarSrc = ref(avatarUrl.value)
+
+watch(avatarUrl, (url) => {
+  welcomeAvatarSrc.value = url
+})
+
+function onWelcomeAvatarError() {
+  welcomeAvatarSrc.value = mindmateAvatarMd
+}
+
+const displayTitle = ref(displayName.value)
 const isTypingTitle = ref(false)
 
 const mindMate = useMindMate({
@@ -57,6 +69,36 @@ const userAvatar = computed(() => {
 const showWelcome = computed(
   () => !mindMate.hasMessages.value && !mindMate.isLoading.value && !mindMate.isStreaming.value
 )
+
+const welcomeMessage = computed(() =>
+  t('mindmate.welcome', {
+    username: authStore.user?.username || '',
+    agentName: displayName.value,
+  })
+)
+
+function syncHeaderTitleFromBranding() {
+  if (isTypingTitle.value) {
+    return
+  }
+  if (showWelcome.value) {
+    displayTitle.value = displayName.value
+  }
+}
+
+watch(displayName, () => {
+  syncHeaderTitleFromBranding()
+})
+
+watch(showWelcome, (welcome) => {
+  if (welcome) {
+    syncHeaderTitleFromBranding()
+  }
+})
+
+onMounted(() => {
+  void authStore.checkAuth(true)
+})
 
 const { data: conversationsData } = useConversations()
 const { data: pinnedData } = usePinnedConversations()
@@ -112,7 +154,7 @@ function startNewConversation() {
     return
   }
   mindMate.startNewConversation()
-  displayTitle.value = 'MindMate'
+  displayTitle.value = displayName.value
 }
 
 async function loadConversationFromHistory(convId: string) {
@@ -291,14 +333,15 @@ onUnmounted(() => {
       <!-- Welcome content — avatar + text, centered -->
       <div class="flex flex-col items-center justify-center px-6 pt-16 pb-6">
         <img
-          :src="mindmateAvatarMd"
-          alt="MindMate"
-          class="w-16 h-16 rounded-2xl shadow-md"
+          :src="welcomeAvatarSrc"
+          :alt="displayName"
+          class="w-16 h-16 rounded-2xl shadow-md object-cover"
+          @error="onWelcomeAvatarError"
         />
         <div class="text-center mt-4">
-          <div class="text-lg font-medium text-gray-800">MindMate</div>
+          <div class="text-lg font-medium text-gray-800">{{ displayName }}</div>
           <div class="text-sm text-gray-500 mt-1">
-            {{ t('mindmate.welcome', { username: authStore.user?.username || '' }) }}
+            {{ welcomeMessage }}
           </div>
         </div>
       </div>

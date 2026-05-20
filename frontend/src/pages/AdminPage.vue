@@ -23,6 +23,7 @@ import {
   Setting,
   ShoppingCart,
   Ticket,
+  Plus,
   User,
   UserFilled,
 } from '@element-plus/icons-vue'
@@ -51,8 +52,15 @@ const { t } = useLanguage()
 
 const activeTab = ref((route.query.tab as string) || 'dashboard')
 const tabsRef = ref<TabsInstance>()
+const schoolsTabRef = ref<InstanceType<typeof AdminSchoolsTab> | null>(null)
 
 const isAdmin = computed(() => authStore.isAdmin)
+
+const showSchoolsCreateButton = computed(() => isAdmin.value && activeTab.value === 'schools')
+
+function onHeaderCreateSchool(): void {
+  schoolsTabRef.value?.openCreateModal()
+}
 
 const allTabsConfig: ReadonlyArray<{
   name: string
@@ -142,11 +150,20 @@ onMounted(scheduleTabBarUpdate)
 <template>
   <div class="admin-page flex-1 flex flex-col bg-gray-50 overflow-hidden">
     <div
-      class="admin-header h-14 px-4 flex items-center justify-between bg-white border-b border-gray-200"
+      class="admin-header h-14 px-4 flex items-center justify-between gap-3 bg-white border-b border-gray-200 shrink-0"
     >
-      <h1 class="text-sm font-semibold text-gray-900">
+      <h1 class="text-sm font-semibold text-gray-900 truncate min-w-0">
         {{ isAdmin ? t('admin.title') : t('admin.orgManagement') }}
       </h1>
+      <el-button
+        v-if="showSchoolsCreateButton"
+        size="small"
+        class="admin-new-school-btn shrink-0"
+        @click="onHeaderCreateSchool"
+      >
+        <el-icon class="mr-1"><Plus /></el-icon>
+        {{ t('admin.createSchool') }}
+      </el-button>
     </div>
 
     <div class="admin-body flex-1 overflow-y-auto">
@@ -180,7 +197,7 @@ onMounted(scheduleTabBarUpdate)
           </template>
 
           <template v-else-if="activeTab === 'schools'">
-            <AdminSchoolsTab />
+            <AdminSchoolsTab ref="schoolsTabRef" />
           </template>
 
           <template v-else-if="activeTab === 'roles'">
@@ -244,5 +261,19 @@ onMounted(scheduleTabBarUpdate)
 
 .admin-tabs :deep(.el-tabs__nav-wrap::after) {
   display: none;
+}
+
+/* Match MindMate full-page “New Chat” pill (stone, not primary blue) */
+.admin-new-school-btn {
+  --el-button-bg-color: #e7e5e4;
+  --el-button-border-color: #d6d3d1;
+  --el-button-hover-bg-color: #d6d3d1;
+  --el-button-hover-border-color: #a8a29e;
+  --el-button-hover-text-color: #1c1917;
+  --el-button-active-bg-color: #a8a29e;
+  --el-button-active-border-color: #78716c;
+  --el-button-text-color: #1c1917;
+  font-weight: 500;
+  border-radius: 9999px;
 }
 </style>

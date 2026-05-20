@@ -74,6 +74,7 @@ export default {
   'sidebar.library': 'Library',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
+  'sidebar.mindMateAgent': 'Agent {name}',
   'sidebar.mindbot': 'MindBot',
   'sidebar.schoolZone': 'School zone',
   'sidebar.smartResponse': 'Smart Response',

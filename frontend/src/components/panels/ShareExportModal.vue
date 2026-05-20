@@ -11,8 +11,8 @@ import { Close, Download, Select } from '@element-plus/icons-vue'
 
 import { toPng } from 'html-to-image'
 
-import mindmateAvatar from '@/assets/mindmate-avatar-md.png'
 import { useLanguage, useNotifications } from '@/composables'
+import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { renderRichMarkdownHtml } from '@/composables/core/useMarkdown'
 import type { MindMateMessage } from '@/composables/mindmate/useMindMate'
 import { useAuthStore } from '@/stores'
@@ -26,9 +26,9 @@ const props = defineProps<{
 // Auth store for user info
 const authStore = useAuthStore()
 
-// Get display name and avatar from auth store
 const displayName = computed(() => authStore.user?.username || 'You')
 const userAvatar = computed(() => authStore.user?.avatar || '👤')
+const { displayName: mindMateLabel, avatarUrl: mindMateAvatarUrl } = useMindMateBranding('md')
 
 const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
@@ -277,14 +277,14 @@ async function exportAsPng() {
                 >
                 <img
                   v-else
-                  :src="mindmateAvatar"
-                  alt="MindMate"
+                  :src="mindMateAvatarUrl"
+                  :alt="mindMateLabel"
                   class="avatar-img"
                 />
               </div>
               <div class="message-info">
                 <div class="message-role">
-                  {{ message.role === 'user' ? displayName : 'MindMate' }}
+                  {{ message.role === 'user' ? displayName : mindMateLabel }}
                 </div>
                 <div class="message-content-preview">
                   {{ message.content.slice(0, 120) }}{{ message.content.length > 120 ? '...' : '' }}
@@ -319,7 +319,7 @@ async function exportAsPng() {
         >
           <!-- Header -->
           <div class="export-header">
-            <div class="export-logo">MindMate</div>
+            <div class="export-logo">{{ mindMateLabel }}</div>
             <div class="export-title">{{ conversationTitle }}</div>
           </div>
 
@@ -334,12 +334,12 @@ async function exportAsPng() {
               <!-- MindMate message: Avatar on left -->
               <template v-if="message.role === 'assistant'">
                 <img
-                  :src="mindmateAvatar"
-                  alt="MindMate"
+                  :src="mindMateAvatarUrl"
+                  :alt="mindMateLabel"
                   class="export-avatar export-avatar-mindmate"
                 />
                 <div class="export-bubble export-bubble-assistant">
-                  <div class="export-name">MindMate</div>
+                  <div class="export-name">{{ mindMateLabel }}</div>
                   <div class="export-content">
                     <div
                       class="markdown-content"
