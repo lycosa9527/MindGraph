@@ -68,17 +68,69 @@ export function useMobileKittyPairing(
   } = storeToRefs(diagramStore)
   const { activeDiagramId } = storeToRefs(savedDiagramsStore)
 
-  const kittyDesktopPollOn = computed(
-    () => options.kittyServerEnabled.value && authStore.isAuthenticated
-  )
-  const { diagramLibraryId: kittyDesktopLibraryId } = useKittyDesktopFocusHint(kittyDesktopPollOn)
-
   const sessionId = ref(createKittySessionId())
   const bootstrapPayload = ref<MobileKittyBootstrapPayload | null>(null)
   const bootstrapDone = ref(false)
   const bootstrapRecommendedScope = ref<string | null>(null)
+  const bootstrapDesktopLibraryId = computed(() => {
+    const lib = bootstrapPayload.value?.desktop_focus?.diagram_library_id
+    return typeof lib === 'string' && lib.trim() !== '' ? lib.trim() : null
+  })
+  const desktopFocusPollActive = ref(true)
+
+  /** Poll desktop_focus only until pre-connect scope is known (not while connected). */
+  const kittyDesktopPollOn = computed(() => {
+    if (!desktopFocusPollActive.value) {
+      return false
+    }
+    if (!options.kittyServerEnabled.value || !authStore.isAuthenticated) {
+      return false
+    }
+    if (activeDiagramId.value != null && activeDiagramId.value !== '') {
+      return false
+    }
+    if (kitty.isConnected.value) {
+      return false
+    }
+    if (bootstrapRecommendedScope.value != null && bootstrapRecommendedScope.value !== '') {
+      return false
+    }
+    if (bootstrapDesktopLibraryId.value != null) {
+      return false
+    }
+    return true
+  })
+  const { diagramLibraryId: kittyDesktopLibraryId } = useKittyDesktopFocusHint(kittyDesktopPollOn)
   const bootstrapLastFailureAt = ref(0)
   let bootstrapInFlight: Promise<void> | null = null
+
+  watch(kittyDesktopLibraryId, (libraryId) => {
+    if (libraryId != null && libraryId !== '') {
+      desktopFocusPollActive.value = false
+    }
+  })
+
+  watch([bootstrapRecommendedScope, bootstrapDesktopLibraryId], ([scope, bootLib]) => {
+    if ((scope != null && scope !== '') || bootLib != null) {
+      desktopFocusPollActive.value = false
+    }
+  })
+
+  watch(
+    () => kitty.isConnected.value,
+    (connected, wasConnected) => {
+      if (wasConnected && !connected && desktopFocusPollActive.value === false) {
+        const hasLocalScope =
+          (activeDiagramId.value != null && activeDiagramId.value !== '') ||
+          (bootstrapRecommendedScope.value != null && bootstrapRecommendedScope.value !== '') ||
+          bootstrapDesktopLibraryId.value != null ||
+          (kittyDesktopLibraryId.value != null && kittyDesktopLibraryId.value !== '')
+        if (!hasLocalScope) {
+          desktopFocusPollActive.value = true
+        }
+      }
+    }
+  )
 
   const kittyPairScope = computed(() => {
     if (activeDiagramId.value != null && activeDiagramId.value !== '') {
@@ -86,6 +138,9 @@ export function useMobileKittyPairing(
     }
     if (bootstrapRecommendedScope.value != null && bootstrapRecommendedScope.value !== '') {
       return bootstrapRecommendedScope.value
+    }
+    if (bootstrapDesktopLibraryId.value != null) {
+      return bootstrapDesktopLibraryId.value
     }
     if (kittyDesktopLibraryId.value != null && kittyDesktopLibraryId.value !== '') {
       return kittyDesktopLibraryId.value

@@ -10,11 +10,12 @@ from config.settings import config
 from models.domain.auth import User
 
 from services.agent_hub import get_mind_graph_agent_hub
-from services.kitty.kitty_desktop_action_queue import pop_kitty_desktop_action
+from services.kitty.kitty_desktop_action_queue import pop_kitty_desktop_action_wait
 from services.kitty.kitty_desktop_focus import (
     get_kitty_desktop_focus_diagram,
     set_kitty_desktop_focus_diagram,
 )
+from services.kitty.kitty_mobile_active import read_kitty_mobile_active
 from services.kitty.kitty_session_redis import (
     kitty_mobile_indicator_armed_for_user,
     kitty_sessionmeta_active_for_user,
@@ -26,6 +27,13 @@ from services.kitty_voice.ws_guards import (
     KITTY_MOBILE_BOOTSTRAP_DISABLED_BODY,
     kitty_http_allowed,
 )
+
+
+_INACTIVE_MOBILE_ACTIVE: Dict[str, Any] = {
+    "active": False,
+    "scopes": [],
+    "primary_scope": None,
+}
 
 
 async def kitty_rest_mobile_open_bootstrap(
@@ -47,14 +55,52 @@ async def kitty_rest_mobile_open_bootstrap(
     )
 
 
-async def kitty_rest_desktop_action_pop(current_user: User) -> Dict[str, Any]:
-    """Pop one queued desktop action for the user."""
+async def kitty_rest_desktop_action_pop(
+    current_user: User,
+    *,
+    wait_sec: float = 0,
+) -> Dict[str, Any]:
+    """Pop one queued desktop action for the user (optional BLPOP long-poll)."""
     if not config.FEATURE_KITTY_WS_ENABLED:
         return {"action": None}
     if not await kitty_http_allowed(current_user):
         return {"action": None}
-    data = await pop_kitty_desktop_action(int(current_user.id))
+    mobile = await read_kitty_mobile_active(int(current_user.id))
+    if not mobile.get("active"):
+        return {"action": None}
+    data = await pop_kitty_desktop_action_wait(int(current_user.id), wait_sec)
     return {"action": data}
+
+
+async def kitty_rest_desktop_pairing(
+    current_user: User,
+    *,
+    wait_sec: float = 0,
+) -> Dict[str, Any]:
+    """
+    Combined desktop poll: ``mobile_active`` gate plus optional long-poll action pop.
+
+    When ``active`` is false, returns immediately with ``action: null``. When active and
+    ``wait_sec > 0``, blocks on Redis BLPOP for the next queued desktop action.
+    """
+    if not config.FEATURE_KITTY_WS_ENABLED:
+        return {**_INACTIVE_MOBILE_ACTIVE, "action": None}
+    if not await kitty_http_allowed(current_user):
+        return {**_INACTIVE_MOBILE_ACTIVE, "action": None}
+    mobile = await read_kitty_mobile_active(int(current_user.id))
+    if not mobile.get("active"):
+        return {**mobile, "action": None}
+    action = await pop_kitty_desktop_action_wait(int(current_user.id), wait_sec)
+    return {**mobile, "action": action}
+
+
+async def kitty_rest_mobile_active_get(current_user: User) -> Dict[str, Any]:
+    """Whether this user has any active mobile-lane Kitty WebSocket (desktop poll gate)."""
+    if not config.FEATURE_KITTY_WS_ENABLED:
+        return {"active": False, "scopes": [], "primary_scope": None}
+    if not await kitty_http_allowed(current_user):
+        return {"active": False, "scopes": [], "primary_scope": None}
+    return await read_kitty_mobile_active(int(current_user.id))
 
 
 async def kitty_rest_desktop_focus_get(current_user: User) -> Dict[str, Any]:

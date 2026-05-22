@@ -14,11 +14,14 @@ from services.kitty.kitty_scope_refcount import (
     kitty_scope_force_teardown_redis,
     kitty_scope_refcount_read,
 )
+from services.kitty.kitty_desktop_wake_stream import kitty_desktop_wake_stream_response
 from services.kitty_voice.kitty_http_handlers import (
     kitty_rest_desktop_action_pop,
     kitty_rest_desktop_focus_get,
     kitty_rest_desktop_focus_put,
+    kitty_rest_desktop_pairing,
     kitty_rest_live_context_snapshot,
+    kitty_rest_mobile_active_get,
     kitty_rest_mobile_lane_hint,
     kitty_rest_mobile_open_bootstrap,
 )
@@ -54,13 +57,50 @@ async def kitty_mobile_open_bootstrap(
 
 
 @router.get("/api/kitty/desktop_action/pop")
-async def kitty_desktop_action_pop(current_user: User = Depends(get_current_user)):
+async def kitty_desktop_action_pop(
+    current_user: User = Depends(get_current_user),
+    wait_sec: float = Query(default=0, ge=0, le=30),
+):
     """
     Pop one Kitty-queued desktop UX action for the signed-in user (FIFO).
 
-    The desktop SPA polls this while Kitty on mobile may enqueue ``open_canvas`` payloads.
+    Optional ``wait_sec`` (1–30) long-polls via Redis BLPOP until an action arrives.
     """
-    return await kitty_rest_desktop_action_pop(current_user)
+    return await kitty_rest_desktop_action_pop(current_user, wait_sec=wait_sec)
+
+
+@router.get("/api/kitty/desktop_pairing")
+async def kitty_desktop_pairing(
+    current_user: User = Depends(get_current_user),
+    wait_sec: float = Query(default=0, ge=0, le=30),
+):
+    """
+    Combined desktop poll: ``mobile_active`` plus optional long-poll ``action`` pop.
+
+    Desktop SPA uses ``wait_sec=0`` while watching and ``wait_sec=25`` while consuming.
+    """
+    return await kitty_rest_desktop_pairing(current_user, wait_sec=wait_sec)
+
+
+@router.get("/api/kitty/desktop_wake/stream")
+async def kitty_desktop_wake_stream(current_user: User = Depends(get_current_user)):
+    """
+    SSE stream: instant ``mobile_active`` wake when phone Kitty connects or disconnects.
+
+    Desktop SPA uses EventSource (cookie auth) to enter consume mode without waiting for
+    the 12s watch poll. Action delivery still uses ``desktop_pairing`` long-poll BLPOP.
+    """
+    return await kitty_desktop_wake_stream_response(current_user)
+
+
+@router.get("/api/kitty/mobile_active")
+async def kitty_mobile_active(current_user: User = Depends(get_current_user)):
+    """
+    True when this user has any Kitty WebSocket session started from mobile (``client_lane: mobile``).
+
+    Desktop SPA watches this before polling ``desktop_action/pop``.
+    """
+    return await kitty_rest_mobile_active_get(current_user)
 
 
 @router.get("/api/kitty/desktop_focus")

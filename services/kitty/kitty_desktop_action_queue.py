@@ -21,11 +21,25 @@ logger = logging.getLogger(__name__)
 
 _KITTY_DESKTOP_ACTION_QUEUE_TTL = 3600
 _KITTY_DESKTOP_ACTION_QUEUE_MAX_LEN = 32
+_KITTY_DESKTOP_ACTION_BLPOP_MAX_SEC = 30
+
+
+def _decode_action_raw(raw: Any) -> Optional[Dict[str, Any]]:
+    if not raw:
+        return None
+    try:
+        text = raw.decode("utf-8") if isinstance(raw, bytes) else raw
+        data = json.loads(text)
+        if not isinstance(data, dict):
+            return None
+        return data
+    except (TypeError, ValueError, json.JSONDecodeError, UnicodeDecodeError):
+        return None
 
 
 async def enqueue_kitty_desktop_action(user_id: int, payload: Dict[str, Any]) -> bool:
     """
-    Push one JSON payload for the authenticated user; desktop SPA pops with long-poll/interval GET.
+    Push one JSON payload for the authenticated user; desktop SPA pops with long-poll GET.
 
     Returns False if Redis is unavailable or payload is rejected.
     """
@@ -69,20 +83,33 @@ async def enqueue_kitty_desktop_action(user_id: int, payload: Dict[str, Any]) ->
 
 
 async def pop_kitty_desktop_action(user_id: int) -> Optional[Dict[str, Any]]:
-    """Atomically pop the oldest queued action for this user."""
+    """Atomically pop the oldest queued action for this user (instant LPOP)."""
+    return await pop_kitty_desktop_action_wait(user_id, wait_sec=0)
+
+
+async def pop_kitty_desktop_action_wait(user_id: int, wait_sec: float = 0) -> Optional[Dict[str, Any]]:
+    """
+    Pop the oldest queued action; optionally block up to ``wait_sec`` (Redis BLPOP).
+
+    ``wait_sec <= 0`` uses instant LPOP. Otherwise blocks up to 30s for the next item.
+    """
     redis = get_async_redis()
     if redis is None:
         return None
     key = kitty_desktop_action_queue_key(user_id)
     try:
-        raw = await redis.lpop(key)
-        if not raw:
-            return None
-        text = raw.decode("utf-8") if isinstance(raw, bytes) else raw
-        data = json.loads(text)
-        if not isinstance(data, dict):
-            return None
-        return data
-    except (RedisError, TypeError, ValueError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+        if wait_sec <= 0:
+            raw = await redis.lpop(key)
+        else:
+            block = min(max(1, int(wait_sec)), _KITTY_DESKTOP_ACTION_BLPOP_MAX_SEC)
+            result = await redis.blpop(key, timeout=block)
+            if not result:
+                return None
+            if isinstance(result, (list, tuple)) and len(result) >= 2:
+                raw = result[1]
+            else:
+                raw = result
+        return _decode_action_raw(raw)
+    except (RedisError, TypeError, ValueError) as exc:
         logger.debug("[KittyDesktopActions] pop failed user=%s: %s", user_id, exc)
         return None

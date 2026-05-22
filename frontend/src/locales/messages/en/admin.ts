@@ -598,7 +598,7 @@ export default {
   'admin.schoolMindmateAgentAvatarUpload': 'Upload avatar',
   'admin.schoolMindmateAgentAvatarRemove': 'Remove avatar',
   'admin.schoolMindmateAgentAvatarHint':
-    'PNG, JPG, GIF, or WebP; max 1MB; cropped to a 256×256 square automatically.',
+    'PNG, JPG, GIF, or WebP; max 1MB; min 64×64; animated GIFs allowed (max 120 frames); cropped to a 256×256 square.',
   'admin.schoolMindmateAvatarUploaded': 'Avatar uploaded and processed.',
   'admin.schoolMindmateAvatarRemoved': 'Avatar removed.',
   'admin.schoolMindmateAvatarUploadFailed': 'Avatar upload failed. Please try again.',
@@ -606,6 +606,8 @@ export default {
   'admin.schoolMindmateAvatarErrorTooLarge': 'Image must be 1MB or smaller.',
   'admin.schoolMindmateAvatarErrorType': 'Only PNG, JPG, GIF, or WebP images are allowed.',
   'admin.schoolMindmateAvatarErrorInvalid': 'Could not read this image. Choose a valid image file.',
+  'admin.schoolMindmateAvatarErrorTooSmall': 'Image must be at least 64×64 pixels.',
+  'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'Animated GIF must have 120 frames or fewer.',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Dify',
   'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',

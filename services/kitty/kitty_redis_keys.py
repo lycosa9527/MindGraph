@@ -49,3 +49,13 @@ def kitty_desktop_focus_key(user_id: int) -> str:
 def kitty_desktop_action_queue_key(user_id: int) -> str:
     """FIFO queue for cross-device Kitty actions consumed by authenticated desktop SPA."""
     return f"kitty:desktop_actions:{user_id}"
+
+
+def kitty_mobile_active_key(user_id: int) -> str:
+    """Per-user set of scopes with an active mobile-lane Kitty WebSocket (desktop poll gate)."""
+    return f"kitty:mobile_active:{user_id}"
+
+
+def kitty_desktop_wake_channel(user_id: int) -> str:
+    """Redis pub/sub channel: push mobile_active changes to desktop SSE subscribers."""
+    return f"kitty:desktop_wake:{user_id}"

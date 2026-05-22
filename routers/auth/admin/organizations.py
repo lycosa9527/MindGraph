@@ -49,8 +49,10 @@ from .organization_dify import (
 )
 from .organization_mindmate_branding import (
     apply_mindmate_branding_on_update,
+    finalize_mindmate_avatar_upload,
     mindmate_branding_list_fields,
     purge_org_mindmate_avatar_storage,
+    revert_mindmate_avatar_upload,
     save_mindmate_agent_avatar,
 )
 from ..dependencies import get_language_dependency, require_admin
@@ -488,6 +490,7 @@ async def upload_organization_mindmate_avatar_admin(
 
     old_code = cast(Optional[str], org.code)
     old_invite = cast(Optional[str], org.invitation_code)
+    old_avatar_url = cast(Optional[str], getattr(org, "mindmate_agent_avatar_url", None))
     avatar_url = await save_mindmate_agent_avatar(org, file)
     setattr(org, "mindmate_agent_avatar_url", avatar_url)
 
@@ -496,11 +499,14 @@ async def upload_organization_mindmate_avatar_admin(
         await db.refresh(org)
     except Exception as exc:
         await db.rollback()
+        revert_mindmate_avatar_upload(old_avatar_url, avatar_url)
         logger.error("[Auth] Failed to save MindMate avatar for org ID %s: %s", org_id, exc)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=Messages.error("failed_save_avatar", lang),
         ) from exc
+
+    finalize_mindmate_avatar_upload(org_id, old_avatar_url, avatar_url)
 
     if not await org_cache.write_through(org, old_code, old_invite):
         logger.warning("[Auth] Cache write-through failed for org ID %s", org_id)

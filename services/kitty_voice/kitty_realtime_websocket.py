@@ -35,6 +35,7 @@ from services.infrastructure.monitoring.ws_metrics import (
 
 from services.agent_hub import get_mind_graph_agent_hub
 from services.kitty.kitty_ws_scope import normalize_kitty_diagram_session_id
+from services.kitty.kitty_mobile_active import clear_kitty_mobile_scope
 from services.kitty.kitty_session_redis import persist_kitty_live_for_ws
 from services.kitty_voice.messaging import (
     build_greeting_message,
@@ -58,6 +59,16 @@ from services.kitty_voice.runtime_state import active_websockets, logger, voice_
 from routers.features.voice.commands import process_voice_command
 from routers.features.voice.paragraph import process_paragraph_with_qwen_plus
 from routers.features.voice.diagram_session_voice_lock import diagram_session_voice_lock
+
+
+async def _clear_mobile_lane_if_start_aborted(
+    user_id: int,
+    scope: str,
+    client_lane: str | None,
+) -> None:
+    """Drop user-level mobile_active when mobile start fails after Redis persist."""
+    if client_lane == "mobile":
+        await clear_kitty_mobile_scope(int(user_id), scope)
 
 
 async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str):
@@ -304,13 +315,21 @@ async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str
             start_diagram_type,
             start_active_panel,
             client_lane=start_client_lane,
+            preserve_mobile_lane=start_client_lane == "mobile",
         )
+        if start_client_lane != "mobile":
+            await clear_kitty_mobile_scope(int(current_user.id), diagram_session_id)
 
         # CRITICAL: Use session-specific OmniClient (not singleton)
         # Each voice session has its own OmniClient instance to support concurrent users
         session = get_voice_session(voice_session_id)
         if not session:
             logger.error("Voice session %s not found", voice_session_id)
+            await _clear_mobile_lane_if_start_aborted(
+                int(current_user.id),
+                diagram_session_id,
+                start_client_lane,
+            )
             await websocket.close(code=1008, reason="Session not found")
             return
         if start_ts is not None:
@@ -319,6 +338,11 @@ async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str
         omni_client = session.get("omni_client")
         if not omni_client:
             logger.error("OmniClient not found for session %s", voice_session_id)
+            await _clear_mobile_lane_if_start_aborted(
+                int(current_user.id),
+                diagram_session_id,
+                start_client_lane,
+            )
             await websocket.close(code=1008, reason="OmniClient not initialized")
             return
 

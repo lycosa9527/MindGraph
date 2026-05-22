@@ -10,6 +10,7 @@ from typing import Any, Dict, Optional
 
 from redis.exceptions import NoScriptError, RedisError
 
+from services.kitty.kitty_mobile_active import clear_kitty_mobile_scope
 from services.kitty.kitty_redis_keys import (
     kitty_live_spec_key,
     kitty_refcount_ttl_seconds,
@@ -159,7 +160,10 @@ async def kitty_scope_refcount_detach(scope: str, user_id: int) -> Optional[int]
         )
         if raw is None:
             return None
-        return int(raw)
+        result = int(raw)
+        if result == int(KittyDetachResult.KEYS_REMOVED):
+            await clear_kitty_mobile_scope(user_id, scope)
+        return result
     except (RedisError, TypeError, ValueError) as exc:
         logger.warning("[KittyRefcount] detach failed scope=%s: %s", scope, exc)
         return None
@@ -187,7 +191,10 @@ async def kitty_scope_force_teardown_redis(scope: str, user_id: int) -> bool:
             ok,
             uid_arg,
         )
-        return bool(raw and int(raw) == 1)
+        removed = bool(raw and int(raw) == 1)
+        if removed:
+            await clear_kitty_mobile_scope(user_id, scope)
+        return removed
     except (RedisError, TypeError, ValueError) as exc:
         logger.debug("[KittyRefcount] force teardown failed scope=%s: %s", scope, exc)
         return False

@@ -35,7 +35,7 @@ export { useKittyDiagramReviewAnnotationBus } from './kitty/useKittyDiagramRevie
 export { useKittyDesktopActionPoll } from './kitty/useKittyDesktopActionPoll'
 export { useCanvasKittyDesktopPairing } from './kitty/useCanvasKittyDesktopPairing'
 export { useKittyDesktopLiveSpecSync } from './kitty/useKittyDesktopLiveSpecSync'
-export { KITTY_PAIR_POLL_MS } from './kitty/runKittyIntervalPoll'
+export { KITTY_DESKTOP_PAIR_WAIT_SEC, KITTY_MOBILE_WATCH_MS, KITTY_PAIR_POLL_MS } from './kitty/runKittyIntervalPoll'
 export {
   buildKittyDiagramContext,
   buildKittyVoiceContextPreferStore,

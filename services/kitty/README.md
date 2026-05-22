@@ -39,15 +39,40 @@ Written after a successful `start` and on debounced `context_update`. Teardown u
 - `{scope}kitty:scope_owner` — user id that owns the scope row for safe teardown.
 - `{scope}kitty:ws_refcount` — number of active Kitty WS connections across workers.
 
+User-scoped keys (no hash tag):
+
+- `kitty:desktop_focus:{user_id}` — last library diagram id open on desktop (mobile pairs via GET).
+- `kitty:desktop_actions:{user_id}` — FIFO queue for mobile → desktop navigation (`open_canvas`).
+- `kitty:mobile_active:{user_id}` — JSON `{ scopes, primary_scope, updated_at }` for active mobile-lane Kitty sessions (`services/kitty/kitty_mobile_active.py`).
+- `kitty:desktop_wake:{user_id}` — Redis pub/sub channel; publishes `mobile_active` JSON when phone Kitty connects/disconnects (desktop SSE wake).
+
 Refcount Lua defaults to **EVALSHA** (per-worker script cache). Set **`KITTY_REFCOUNT_USE_EVALSHA=0`** to force **EVAL** if server-side scripts are awkward for your Redis topology.
 
 ## Load balancing
 
 Use **sticky sessions** (cookie- or IP-based) to `/ws/kitty` so the same client reconnects the same worker during a session. Preempt and refcount still coordinate across workers, but sticky routing reduces redundant churn. For metrics, `ws_kitty_refcount_meta_drift_total` bumps when `build_desktop_pairing_snapshot` sees sessionmeta and refcount disagree (investigate stale clients or partial failures).
 
+## Desktop action poll (mobile gate)
+
+The desktop SPA (`useKittyDesktopActionPoll` in `App.vue`) **does not** consume the action queue unless:
+
+1. `feature_kitty_agent` is enabled (no Kitty REST traffic when the feature is off).
+2. The user is authenticated on a **desktop** surface (not `/m/*`).
+3. `GET /api/kitty/mobile_active` reports `active: true` (phone Kitty WebSocket started with `client_lane: mobile`).
+
+Both `GET /api/kitty/desktop_pairing` and legacy `GET /api/kitty/desktop_action/pop` gate on ``mobile_active`` before BLPOP.
+
+While mobile Kitty is **off**, desktop opens **SSE** on `GET /api/kitty/desktop_wake/stream` (EventSource + cookie auth) for instant wake when phone Kitty connects. Redis pub/sub on `kitty:desktop_wake:{user_id}` fires on `mark_kitty_mobile_active` / `clear_kitty_mobile_scope`. A **12s fallback** poll on `GET /api/kitty/desktop_pairing?wait_sec=0` runs only when SSE is disconnected. When mobile connects, the leader tab chains long-poll requests to `GET /api/kitty/desktop_pairing?wait_sec=25` (Redis BLPOP on the action queue) until mobile disconnects. Legacy `GET /api/kitty/desktop_action/pop` remains available with optional `wait_sec`.
+
+**Tab leader:** `BroadcastChannel` (`kittyDesktopPollLeader.ts`) elects one desktop tab per browser profile to run the watch/consume loop so multiple open MindGraph tabs do not multiply pairing traffic.
+
+**Mobile `desktop_focus` poll:** `useMobileKittyPairing` polls `GET /api/kitty/desktop_focus` only before the mobile WebSocket connects and only while local scope is still unresolved (no saved diagram id, no bootstrap scope, no bootstrap desktop focus). After connect, polling stops.
+
+Desktop **start** on a scope clears `client_lane: mobile` in sessionmeta (`preserve_mobile_lane=False`) and removes that scope from `kitty:mobile_active:{user_id}` so the pairing indicator does not stay stale after handoff.
+
 ## Desktop pairing hint (poll)
 
-Canvas polls `GET /api/kitty/mobile_lane/{library_diagram_id}` when a **saved** diagram is open. If `armed: true`, `KittyCanvasAnchor` shows the non-interactive indicator. Leaving canvas with an active **library** scope does **not** POST cleanup (mobile may still be live).
+Canvas uses the shared **mobile_active** hub (fed by the leader tab's desktop wake SSE). When SSE data is fresh, the canvas **does not** poll REST. Saved and ephemeral scopes both match via ``scopes`` / ``primary_scope`` (``mobile_lane`` polling removed from canvas).
 
 ## Desktop focus (`desktop_focus`)
 
@@ -64,6 +89,16 @@ Refcount + control-plane pub/sub (`KITTY_CONTROL_CHANNEL`) replace the old “de
 Per-process **`diagram_session_voice_lock`** only serializes starts on a single worker; another worker can still be in `start` until a control message arrives—refcount + Redis meta remain the global source of truth.
 
 Control pub/sub is **at-most-once**; a restarting worker can miss a single “kick” message (usually acceptable).
+
+## Production checklist
+
+- **Auth:** all Kitty REST routes use `get_current_user`; SSE wake requires `kitty_http_allowed`.
+- **User scoping:** Redis keys/channels are always `:{user_id}` from the authenticated session.
+- **Atomic mobile_active:** mark/clear use Redis `WATCH`/`MULTI` (see `kitty_mobile_active.py`).
+- **Leader tab:** one `BroadcastChannel` leader per browser profile; resign on tab close for fast failover.
+- **SSE cap:** 2 concurrent wake streams per user **per worker** (`kitty_desktop_wake_stream.py`).
+- **Stale gate:** SSE heartbeats re-read `mobile_active`; canvas hub fallback polls only when hub is stale (>35s).
+- **Metrics:** watch `ws_kitty_refcount_meta_drift_total` if pairing state looks stuck after disconnect.
 
 ## REST cleanup
 

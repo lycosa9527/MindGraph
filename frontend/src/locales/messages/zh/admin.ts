@@ -569,7 +569,7 @@ export default {
   'admin.schoolMindmateAgentAvatarUpload': '上传形象',
   'admin.schoolMindmateAgentAvatarRemove': '移除形象',
   'admin.schoolMindmateAgentAvatarHint':
-    '支持 PNG、JPG、GIF、WebP；单张不超过 1MB；将自动裁剪为 256×256 方形。',
+    '支持 PNG、JPG、GIF、WebP；单张不超过 1MB；最短边至少 64 像素；支持动图 GIF（最多 120 帧）；将自动裁剪为 256×256 方形。',
   'admin.schoolMindmateAvatarUploaded': '头像已上传并处理完成。',
   'admin.schoolMindmateAvatarRemoved': '头像已移除。',
   'admin.schoolMindmateAvatarUploadFailed': '头像上传失败，请重试。',
@@ -577,6 +577,8 @@ export default {
   'admin.schoolMindmateAvatarErrorTooLarge': '图片不能超过 1MB。',
   'admin.schoolMindmateAvatarErrorType': '仅支持 PNG、JPG、GIF 或 WebP 图片。',
   'admin.schoolMindmateAvatarErrorInvalid': '无法识别该图片，请选择有效的图片文件。',
+  'admin.schoolMindmateAvatarErrorTooSmall': '图片最短边至少 64 像素。',
+  'admin.schoolMindmateAvatarErrorGifTooManyFrames': '动图 GIF 不能超过 120 帧。',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Dify',
   'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',

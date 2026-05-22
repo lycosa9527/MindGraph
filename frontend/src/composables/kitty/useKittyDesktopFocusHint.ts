@@ -14,8 +14,6 @@ export function useKittyDesktopFocusHint(pollEnabled: Ref<boolean>) {
 
   async function tick(): Promise<void> {
     if (!pollEnabled.value) {
-      diagramLibraryId.value = null
-      updatedAt.value = null
       return
     }
     try {
@@ -67,8 +65,6 @@ export function useKittyDesktopFocusHint(pollEnabled: Ref<boolean>) {
         startPolling()
       } else {
         stopPolling()
-        diagramLibraryId.value = null
-        updatedAt.value = null
       }
     },
     { immediate: true }

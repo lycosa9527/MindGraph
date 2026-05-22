@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.16] - 2026-05-22
+
+### Added
+
+- **Kitty — mobile_active signal** — User-scoped Redis key `kitty:mobile_active:{user_id}` tracks diagram scopes with mobile-lane Kitty WebSocket sessions ([`kitty_mobile_active.py`](services/kitty/kitty_mobile_active.py)); atomic mark/clear via `WATCH`/`MULTI`. New `GET /api/kitty/mobile_active` gates desktop action consumption.
+- **Kitty — desktop wake SSE** — `GET /api/kitty/desktop_wake/stream` pushes instant `mobile_active` updates over EventSource (cookie auth) via Redis pub/sub on `kitty:desktop_wake:{user_id}` ([`kitty_desktop_wake_stream.py`](services/kitty/kitty_desktop_wake_stream.py), [`kitty_desktop_wake_fanout.py`](services/kitty/kitty_desktop_wake_fanout.py)); capped at 2 concurrent streams per user per worker.
+- **Kitty — combined desktop pairing poll** — `GET /api/kitty/desktop_pairing` returns `mobile_active` plus optional long-poll action pop (`wait_sec` 0–30); legacy `GET /api/kitty/desktop_action/pop` gains the same `wait_sec` BLPOP support.
+- **Kitty — desktop poll leader & wake hub** — [`kittyDesktopPollLeader.ts`](frontend/src/composables/kitty/kittyDesktopPollLeader.ts) elects one tab per browser profile via `BroadcastChannel`; [`createKittyDesktopWakeStream.ts`](frontend/src/composables/kitty/createKittyDesktopWakeStream.ts) and [`kittyDesktopMobileActiveHub.ts`](frontend/src/composables/kitty/kittyDesktopMobileActiveHub.ts) feed canvas pairing hints without per-tab REST churn; [`useKittyUserMobileActive.ts`](frontend/src/composables/kitty/useKittyUserMobileActive.ts) for mobile-side scope tracking.
+- **MindMate — animated org avatars** — Admin avatar upload accepts animated GIFs (max 120 frames) alongside PNG/JPEG/WebP; canonical files are `avatar.png` or `avatar.gif` at 256×256 ([`organization_mindmate_branding.py`](routers/auth/admin/organization_mindmate_branding.py)); min input size 64×64, max decode 4096 px; superseded files cleaned up after DB commit.
+- **Tests** — [`test_kitty_mobile_active.py`](tests/test_kitty_mobile_active.py) for mobile_active mark/clear, desktop poll gate, and wake fanout; [`test_organization_mindmate_avatar.py`](tests/test_organization_mindmate_avatar.py) for avatar processing (GIF, size, frame limits).
+
+### Changed
+
+- **Kitty — desktop action poll** — [`useKittyDesktopActionPoll.ts`](frontend/src/composables/kitty/useKittyDesktopActionPoll.ts) watches SSE while mobile Kitty is off (12s fallback poll), chains long-poll `desktop_pairing?wait_sec=25` while mobile is active, and only consumes the action queue when `mobile_active` is true.
+- **Kitty — canvas & mobile pairing** — [`useCanvasKittyDesktopPairing.ts`](frontend/src/composables/kitty/useCanvasKittyDesktopPairing.ts) reads the shared mobile_active hub instead of per-scope `mobile_lane` polling; [`useMobileKittyPairing.ts`](frontend/src/composables/kitty/useMobileKittyPairing.ts) stops `desktop_focus` polling after WebSocket connect.
+- **Kitty — session teardown** — Desktop start clears `client_lane: mobile` and removes scope from `mobile_active`; refcount/sessionmeta drift metric documented in [`services/kitty/README.md`](services/kitty/README.md).
+- **Admin — avatar upload UX** — [`AdminSchoolDifySettings.vue`](frontend/src/components/admin/AdminSchoolDifySettings.vue) uses `apiUpload`, `httpErrorDetail`, and new locale strings for too-small and too-many-frames errors.
+- **CI** — Pylint scope includes [`organization_mindmate_branding.py`](routers/auth/admin/organization_mindmate_branding.py); pytest runs [`test_organization_mindmate_avatar.py`](tests/test_organization_mindmate_avatar.py); frontend job uses Node `latest`.
+- **Docs** — [`README.md`](README.md) prerequisites point to latest Node/npm via [`docs/NODE_NVM_SETUP.md`](docs/NODE_NVM_SETUP.md); [`env.example`](env.example) notes `avatar.gif` path.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.16).
+
 ## [5.117.15] - 2026-05-20
 
 ### Added

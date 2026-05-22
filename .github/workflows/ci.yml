@@ -31,14 +31,16 @@ jobs:
             services/features/ws_redis_fanout_publish.py services/features/workshop_ws_fanout_delivery.py \
             routers/api/workshop_ws_auth.py routers/api/workshop_ws_connect.py \
             services/online_collab/participant/workshop_join_resume_tokens.py \
-            scripts/collab_synthetic_probe.py
+            scripts/collab_synthetic_probe.py \
+            routers/auth/admin/organization_mindmate_branding.py
       - name: Pytest (focused + collab)
         run: |
           pytest -q tests/test_collab_ws_json_limits.py tests/test_workshop_update_flush_gate.py \
             tests/test_workshop_ws_integration.py tests/test_online_collab_phase8.py \
             tests/test_workshop_collab_backend.py tests/test_collab_palette_sync.py \
             tests/test_workshop_editor_redis_merge.py tests/test_ws_fanout.py \
-            tests/test_collab_synthetic_probe.py tests/test_workshop_join_resume_tokens.py
+            tests/test_collab_synthetic_probe.py tests/test_workshop_join_resume_tokens.py \
+            tests/test_organization_mindmate_avatar.py
 
   frontend:
     runs-on: ubuntu-latest
@@ -49,7 +51,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "latest"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci

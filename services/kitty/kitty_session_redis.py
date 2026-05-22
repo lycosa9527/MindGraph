@@ -15,6 +15,7 @@ from services.infrastructure.monitoring.ws_metrics import (
     record_kitty_redis_persist,
     record_ws_coalesce_hit,
 )
+from services.kitty.kitty_mobile_active import mark_kitty_mobile_active
 from services.kitty.kitty_redis_keys import (
     kitty_live_spec_key,
     kitty_redis_ttl_seconds,
@@ -65,6 +66,7 @@ async def upsert_kitty_redis_session(
     active_diagram_library_id: Optional[str],
     live_payload: Dict[str, Any],
     client_lane: Optional[str] = None,
+    preserve_mobile_lane: bool = True,
 ) -> Optional[int]:
     """Write session meta + live spec; refresh TTL. Returns live ``updated_at`` epoch or ``None``."""
     redis = get_async_redis()
@@ -84,7 +86,7 @@ async def upsert_kitty_redis_session(
         meta_key = kitty_sessionmeta_key(ws_session_id)
         live_key = kitty_live_spec_key(ws_session_id)
         owner_key = kitty_scope_owner_key(ws_session_id)
-        if client_lane != "mobile":
+        if client_lane != "mobile" and preserve_mobile_lane:
             try:
                 raw_prev = await redis.get(meta_key)
                 if raw_prev:
@@ -100,6 +102,8 @@ async def upsert_kitty_redis_session(
             pipe.set(live_key, json.dumps(live_payload, ensure_ascii=False), ex=ttl)
             pipe.set(owner_key, str(int(user_id)), ex=ttl)
             await pipe.execute()
+        if client_lane == "mobile":
+            await mark_kitty_mobile_active(user_id, ws_session_id)
         record_kitty_redis_persist()
         return now
     except (RedisError, TypeError, ValueError) as exc:
@@ -115,6 +119,7 @@ async def persist_kitty_live_for_ws(
     active_panel: str,
     *,
     client_lane: Optional[str] = None,
+    preserve_mobile_lane: bool = True,
 ) -> Optional[int]:
     """Map VoiceContext merge to Redis live_payload; returns ``updated_at`` or ``None``."""
     lib = merged_context.get("diagram_library_id")
@@ -124,6 +129,7 @@ async def persist_kitty_live_for_ws(
         user_id,
         active_diagram_library_id=lib_str,
         client_lane=client_lane,
+        preserve_mobile_lane=preserve_mobile_lane,
         live_payload={
             "diagram_type": diagram_type,
             "active_panel": active_panel,

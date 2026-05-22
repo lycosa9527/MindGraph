@@ -3,8 +3,9 @@
  */
 import { type ComputedRef, type Ref, computed, onUnmounted, ref, watch } from 'vue'
 
+import { scopeMatchesKittyMobileActive } from '@/composables/kitty/kittyDesktopMobileActiveHub'
 import { useKittyDesktopFocusPublish } from '@/composables/kitty/useKittyDesktopFocusPublish'
-import { useKittyMobileLaneArmed } from '@/composables/kitty/useKittyMobileLaneArmed'
+import { useKittyUserMobileActive } from '@/composables/kitty/useKittyUserMobileActive'
 
 export function useCanvasKittyDesktopPairing(options: {
   currentDiagramId: ComputedRef<string | null>
@@ -19,29 +20,37 @@ export function useCanvasKittyDesktopPairing(options: {
     () => options.currentDiagramId.value ?? kittyEphemeralScope.value
   )
 
-  const kittyMobileLanePollOn = computed(
+  const kittyUserMobilePollOn = computed(
     () =>
       options.kittyFeatureEnabled.value &&
       options.authIsAuthenticated.value &&
-      !options.isViewer.value &&
-      options.currentDiagramId.value != null &&
-      options.currentDiagramId.value !== ''
+      !options.isViewer.value
   )
 
-  const { armed: mobileKittySessionArmed } = useKittyMobileLaneArmed(
-    options.currentDiagramId as Ref<string | null>,
-    kittyMobileLanePollOn
+  const {
+    active: userMobileKittyActive,
+    scopes: userMobileKittyScopes,
+    primaryScope: userMobileKittyPrimaryScope,
+  } = useKittyUserMobileActive(kittyUserMobilePollOn)
+
+  const desktopPairingScopeId = computed(
+    () => options.currentDiagramId.value ?? kittyEphemeralScope.value
   )
 
-  const showKittyDesktopIndicator = computed(
-    () =>
-      options.kittyFeatureEnabled.value &&
-      options.authIsAuthenticated.value &&
-      !options.isViewer.value &&
-      options.currentDiagramId.value != null &&
-      options.currentDiagramId.value !== '' &&
-      mobileKittySessionArmed.value
-  )
+  const showKittyDesktopIndicator = computed(() => {
+    if (
+      !options.kittyFeatureEnabled.value ||
+      !options.authIsAuthenticated.value ||
+      options.isViewer.value
+    ) {
+      return false
+    }
+    return scopeMatchesKittyMobileActive(desktopPairingScopeId.value, {
+      active: userMobileKittyActive.value,
+      scopes: userMobileKittyScopes.value,
+      primaryScope: userMobileKittyPrimaryScope.value,
+    })
+  })
 
   const kittyDesktopFocusPublishOn = computed(
     () =>
@@ -86,6 +95,5 @@ export function useCanvasKittyDesktopPairing(options: {
     kittyEphemeralScope,
     kittyWsSessionScope,
     showKittyDesktopIndicator,
-    mobileKittySessionArmed,
   }
 }

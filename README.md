@@ -81,7 +81,7 @@ AI-powered diagram generation platform. Transform natural language into professi
 ### Prerequisites
 
 - Python 3.13+
-- Node.js 18+
+- Node.js and npm (latest; see [docs/NODE_NVM_SETUP.md](docs/NODE_NVM_SETUP.md))
 - Redis 7.0+ (8.6+ recommended for key-memory histograms and VSET)
 - Qdrant (for Knowledge Space)
 - PostgreSQL (recommended) or SQLite

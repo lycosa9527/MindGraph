@@ -8,7 +8,8 @@ import { computed, ref, watch } from 'vue'
 import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import { useLanguage, useNotifications } from '@/composables'
 import { resolveSchoolMindmateAvatarUrl } from '@/composables/mindmate/useMindMateBranding'
-import { apiRequest } from '@/utils/apiClient'
+import { apiRequest, apiUpload } from '@/utils/apiClient'
+import { httpErrorDetail } from '@/utils/httpErrorDetail'
 
 const props = withDefaults(
   defineProps<{
@@ -427,6 +428,12 @@ function formatAvatarUploadError(detail: string | null | undefined): string {
   if (token === 'mindmate_avatar_invalid_image') {
     return t('admin.schoolMindmateAvatarErrorInvalid')
   }
+  if (token === 'mindmate_avatar_too_small') {
+    return t('admin.schoolMindmateAvatarErrorTooSmall')
+  }
+  if (token === 'mindmate_avatar_gif_too_many_frames') {
+    return t('admin.schoolMindmateAvatarErrorGifTooManyFrames')
+  }
   if (token) {
     return token
   }
@@ -465,13 +472,13 @@ async function onAvatarSelected(event: Event) {
   try {
     const formData = new FormData()
     formData.append('file', file)
-    const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}/mindmate-avatar`, {
-      method: 'POST',
-      body: formData,
-    })
+    const res = await apiUpload(
+      `/api/auth/admin/organizations/${props.orgId}/mindmate-avatar`,
+      formData
+    )
     if (!res.ok) {
-      const data = (await res.json().catch(() => ({}))) as { detail?: string }
-      notify.error(formatAvatarUploadError(data.detail))
+      const data = await res.json().catch(() => ({}))
+      notify.error(formatAvatarUploadError(httpErrorDetail(data)))
       return
     }
     const data = (await res.json()) as { mindmate_agent_avatar_url?: string | null }
@@ -493,8 +500,8 @@ async function removeAvatar() {
       body: JSON.stringify({ mindmate_agent_avatar_url: null }),
     })
     if (!res.ok) {
-      const data = (await res.json().catch(() => ({}))) as { detail?: string }
-      notify.error(formatAvatarUploadError(data.detail))
+      const data = await res.json().catch(() => ({}))
+      notify.error(formatAvatarUploadError(httpErrorDetail(data)))
       return
     }
     agentAvatarUrl.value = null
