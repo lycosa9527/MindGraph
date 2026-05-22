@@ -27,6 +27,7 @@ from services.infrastructure.monitoring.ws_metrics import (
     record_kitty_control_publish_failure,
     record_kitty_control_publish_success,
 )
+from services.kitty.infra.control.kitty_control_secret import get_kitty_control_shared_secret
 from services.kitty.infra.control.kitty_observability import kitty_extra
 from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
 from services.redis.redis_async_client import get_async_redis
@@ -59,13 +60,13 @@ def get_kitty_control_instance_id() -> str:
 
 
 def verify_kitty_control_shared_secret(envelope: Dict[str, Any]) -> bool:
-    """HMAC gate for control payloads when ``KITTY_CONTROL_SHARED_SECRET`` is set."""
-    secret = os.getenv("KITTY_CONTROL_SHARED_SECRET", "").strip()
+    """HMAC gate for control payloads (Redis-backed secret or env override)."""
+    secret = get_kitty_control_shared_secret()
     if not secret:
         if not getattr(config, "DEBUG", True):
             logger.warning(
-                "[KittyControl] KITTY_CONTROL_SHARED_SECRET unset while DEBUG=False; "
-                "rejecting control messages (set secret for multi-worker preempt/cleanup)",
+                "[KittyControl] control shared secret unavailable while DEBUG=False; "
+                "rejecting control messages",
                 extra=kitty_extra("control_secret_missing_subscriber"),
             )
             return False
@@ -110,12 +111,11 @@ async def publish_kitty_close_scope_async(
         )
         return
 
-    secret = os.getenv("KITTY_CONTROL_SHARED_SECRET", "").strip()
+    secret = get_kitty_control_shared_secret()
     if not secret and not getattr(config, "DEBUG", True):
         record_kitty_control_publish_failure()
         logger.warning(
-            "[KittyControl] publish skipped: KITTY_CONTROL_SHARED_SECRET unset while DEBUG=False "
-            "(subscribers would reject; set secret for multi-worker preempt/cleanup)",
+            "[KittyControl] publish skipped: control shared secret unavailable while DEBUG=False",
             extra=kitty_extra(
                 "publish_secret_missing_production",
                 scope=scope_norm,

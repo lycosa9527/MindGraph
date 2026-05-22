@@ -72,7 +72,7 @@ Authoritative canvas edits and merged specs remain **`apply_diagram_spec_mutatio
 
 ## Environment
 
-- `KITTY_CONTROL_SHARED_SECRET` — set when `DEBUG=False` so publishers and subscribers accept the same signed control payloads.
+- `KITTY_CONTROL_SHARED_SECRET` — optional override; when unset, auto-generated in Redis (shared across workers).
 - `KITTY_WS_REFCOUNT_TTL_SECONDS` — optional; default min(1h, session TTL).
 - `KITTY_REFCOUNT_USE_EVALSHA` — default `1` (cached Lua); set `0` for plain `EVAL` if needed.
 

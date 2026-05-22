@@ -107,7 +107,7 @@ If the phone does not mirror every canvas edit, **`merge_voice_context_with_libr
 
 ## Multi-worker
 
-Refcount + control-plane pub/sub (`KITTY_CONTROL_CHANNEL`) replace the old “delete Redis when local `active_websockets` is empty” behavior. Set **`KITTY_CONTROL_SHARED_SECRET`** in production: when `DEBUG=False`, publishers skip sends and subscribers reject envelopes if the secret is missing, so cross-worker kick/cleanup does not half-work.
+Refcount + control-plane pub/sub (`KITTY_CONTROL_CHANNEL`) replace the old “delete Redis when local `active_websockets` is empty” behavior. The control HMAC secret is **auto-generated and stored in Redis** (like `JWT_SECRET_KEY`) with a `data/.kitty_control_secret` backup; optional **`KITTY_CONTROL_SHARED_SECRET`** in `.env` overrides Redis when set explicitly.
 
 Per-process **`diagram_session_voice_lock`** only serializes starts on a single worker; another worker can still be in `start` until a control message arrives—refcount + Redis meta remain the global source of truth.
 

@@ -116,6 +116,7 @@ good-names = [
     "SyncSessionLocal",
     "AsyncSessionLocal",
     "_jwt_secret_cache",
+    "_kitty_control_secret_cache",
     "AES",
     "LIBRARY_MODULE",
     "DEBATEVERSE_MODULE",

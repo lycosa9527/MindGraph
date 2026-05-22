@@ -12,11 +12,13 @@ import asyncio
 import logging
 import os
 
+from config.settings import config
 from services.features.ws_redis_fanout_listener import (
     await_ws_fanout_listener_stopped,
     start_ws_fanout_listener,
     stop_ws_fanout_listener,
 )
+from services.kitty.infra.control.kitty_control_secret import warmup_kitty_control_secret_async
 from services.kitty.infra.control.kitty_control_listener import (
     await_kitty_control_listener_stopped,
     start_kitty_control_listener,
@@ -72,6 +74,17 @@ async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
     try:
         init_redis_sync()
         _validate_collab_production_guards()
+        if config.FEATURE_KITTY_WS_ENABLED:
+            try:
+                await warmup_kitty_control_secret_async()
+                if is_main_worker:
+                    logger.debug("[LIFESPAN] Kitty control secret cache warmed")
+            except RuntimeError as kitty_secret_exc:
+                if is_main_worker:
+                    logger.warning(
+                        "[LIFESPAN] Kitty control secret warmup failed: %s",
+                        kitty_secret_exc,
+                    )
         validate_kitty_production_guards()
         warm_ip_reputation_env_snapshot()
         warm_sismember_cache_ttl_snapshot()

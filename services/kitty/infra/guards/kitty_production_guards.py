@@ -6,6 +6,7 @@ import logging
 import os
 
 from config.settings import config
+from services.kitty.infra.control.kitty_control_secret import get_kitty_control_shared_secret
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ def _env_truthy(name: str, default: str = "0") -> bool:
 
 
 def validate_kitty_production_guards() -> None:
-    """Require control-plane secret when Kitty WS is enabled in production."""
+    """Require a warmed control-plane secret when Kitty WS is enabled in production."""
     if not config.FEATURE_KITTY_WS_ENABLED:
         return
     if os.getenv("ENVIRONMENT", "production").strip().lower() != "production":
@@ -27,13 +28,13 @@ def validate_kitty_production_guards() -> None:
     if config.debug:
         return
 
-    secret = os.getenv("KITTY_CONTROL_SHARED_SECRET", "").strip()
+    secret = get_kitty_control_shared_secret()
     if secret:
         return
 
     message = (
-        "KITTY_CONTROL_SHARED_SECRET is required when FEATURE_KITTY_AGENT is enabled "
-        "in production (DEBUG=False)."
+        "Kitty control shared secret is required when FEATURE_KITTY_AGENT is enabled "
+        "in production (DEBUG=False). Redis warmup should auto-generate one."
     )
     logger.critical("[Kitty] %s", message)
     if _env_truthy("KITTY_STRICT_PROD_GUARDS", "1"):
