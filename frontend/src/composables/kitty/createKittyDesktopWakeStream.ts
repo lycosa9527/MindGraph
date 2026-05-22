@@ -11,6 +11,7 @@ export interface KittyDesktopWakeMobileActive {
 
 export interface KittyDesktopWakeStreamOptions {
   onMobileActive: (payload: KittyDesktopWakeMobileActive) => void
+  onDesktopActionPending?: () => void
   onOpen?: () => void
   onClose?: () => void
   onError?: (event: Event) => void
@@ -79,6 +80,13 @@ export function createKittyDesktopWakeStream(
     eventSource.onmessage = (event: MessageEvent) => {
       try {
         const parsed = JSON.parse(String(event.data)) as unknown
+        if (typeof parsed === 'object' && parsed !== null) {
+          const row = parsed as { type?: unknown }
+          if (row.type === 'desktop_action_pending') {
+            options.onDesktopActionPending?.()
+            return
+          }
+        }
         const payload = parseMobileActivePayload(parsed)
         if (payload != null) {
           options.onMobileActive(payload)

@@ -161,7 +161,9 @@ export type EventTypes = {
   'voice:speech_started': { audioStartMs?: number }
   'voice:speech_stopped': { audioEndMs?: number }
   'voice:response_done': Record<string, never>
+  'voice:assistant_text_done': { text: string }
   'voice:action_executed': { action: string; params?: unknown }
+  'voice:diagram_update_executed': { action: string; updates?: unknown; summary?: string }
   'voice:error': { error: string }
   'voice:destroyed': Record<string, never>
   'voice:cleanup_started': { diagramSessionId?: string }
@@ -176,6 +178,7 @@ export type EventTypes = {
     line: string
   }
   'kitty:inline_recommendations_requested': { nodeId?: string; nodeIndex?: number }
+  'kitty:add_node_with_recommendations_requested': { text?: string }
   'kitty:diagram_review_annotation': {
     summary: string
     items: Array<{ node_id: string; reason: string; suggestion?: string }>

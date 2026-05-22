@@ -12,7 +12,7 @@ Routers:
 - admin_env.py: Admin environment settings
 - admin_logs.py: Admin log streaming
 - node_palette.py: Node Palette endpoints
-- voice/: Kitty Agent (realtime WS + REST helpers)
+- features/kitty/: Kitty Agent (realtime WS + REST helpers)
 - update_notification.py: Update notification system
 
 Author: lycosa9527
@@ -34,7 +34,7 @@ from .admin import (
     logs_router as admin_logs,
     realtime_router as admin_realtime,
 )
-from .features import voice, school_zone, askonce, debateverse, library, gewe
+from .features import kitty, school_zone, askonce, debateverse, library, gewe
 from .core import pages, cache, vue_spa, update_notification
 
 __all__ = [
@@ -48,7 +48,7 @@ __all__ = [
     "node_palette",
     "relationship_labels",
     "inline_recommendations",
-    "voice",
+    "kitty",
     "update_notification",
     "public_dashboard",
     "school_zone",

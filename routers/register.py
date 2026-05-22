@@ -29,7 +29,7 @@ from routers.admin import (
 from routers.core import changelog, pages, cache, update_notification
 from routers.core.vue_spa import router as vue_spa
 from routers.core.health import router as health_router
-from routers.features import voice, school_zone, askonce
+from routers.features import kitty, school_zone, askonce
 
 logger = logging.getLogger(__name__)
 
@@ -237,12 +237,12 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(admin_database)  # Admin database management (merge, export/import)
 
     # Feature routers with API endpoints (must be before vue_spa catch-all)
-    kitty_voice_routes = importlib.import_module("routers.features.voice.routes")
+    kitty_routes = importlib.import_module("routers.features.kitty.routes")
     logger.debug(
         "[RouterRegistration] Kitty Agent routes registered via %s",
-        kitty_voice_routes.__name__,
+        kitty_routes.__name__,
     )
-    app.include_router(voice)  # Kitty Agent (realtime WebSocket + REST)
+    app.include_router(kitty)  # Kitty Agent (realtime WebSocket + REST)
     app.include_router(update_notification)  # Update notification system
     app.include_router(public_dashboard.router, prefix="/api/public", tags=["Public Dashboard"])
     app.include_router(school_zone)  # School Zone (organization-scoped sharing)

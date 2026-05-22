@@ -27,7 +27,7 @@ sys.modules.setdefault("services.online_collab.redis", online_collab_redis_pkg)
 sys.modules.setdefault("services.online_collab.redis.redis8_features", redis8_features_stub)
 
 from services.agent_hub.scope_lifecycle import MindGraphAgentHub
-from services.kitty_voice.diagram_voice_hub_bridge import (
+from services.kitty.diagram.hub_bridge import (
     DIAGRAM_VOICE_INTENTS,
     build_patch_context_mutation_cmd,
     preview_voice_context_after_diagram_intent,
@@ -121,19 +121,31 @@ def test_preview_double_bubble_update_center() -> None:
 def test_preview_unsupported_returns_none() -> None:
     assert (
         preview_voice_context_after_diagram_intent(
-            action="update_center",
-            command={"target": "x"},
-            session_context={"diagram_data": {}},
+            action="update_node",
+            command={"target": "missing"},
+            session_context={"diagram_data": {"children": []}},
             diagram_type="flow_map",
         )
         is None
     )
 
 
+def test_preview_bubble_map_add_node_syncs_attributes() -> None:
+    base = {"diagram_data": {"center": {"text": "Dog"}, "children": []}}
+    out = preview_voice_context_after_diagram_intent(
+        action="add_node",
+        command={"target": "loyal"},
+        session_context=base,
+        diagram_type="bubble_map",
+    )
+    assert out is not None
+    assert out["diagram_data"]["attributes"] == [{"text": "loyal"}]
+
+
 @pytest.mark.asyncio
 async def test_try_sync_voice_diagram_to_hub_updates_revision() -> None:
-    from services.kitty_voice.runtime_state import voice_sessions
-    from services.kitty_voice.session_ops import create_voice_session
+    from services.kitty.session.runtime_state import voice_sessions
+    from services.kitty.session.ops import create_voice_session
 
     hub = MindGraphAgentHub()
     hub_sid = await hub.open_session(42, client_lane="mobile", source_module="kitty_bridge_test")
@@ -159,8 +171,12 @@ async def test_try_sync_voice_diagram_to_hub_updates_revision() -> None:
                 AsyncMock(return_value=123456),
             ),
             patch(
-                "services.kitty_voice.diagram_voice_hub_bridge.get_mind_graph_agent_hub",
+                "services.kitty.diagram.hub_bridge.get_mind_graph_agent_hub",
                 return_value=hub,
+            ),
+            patch(
+                "services.kitty.diagram.hub_bridge.apply_kitty_ws_context_patch",
+                AsyncMock(return_value={"revision": 1}),
             ),
         ):
             await try_sync_voice_diagram_to_hub(vid)

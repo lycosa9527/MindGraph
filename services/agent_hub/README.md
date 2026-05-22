@@ -26,16 +26,16 @@ Authoritative canvas merges use **exactly two** string ops on `mutation_cmd["op"
 | `patch_context` | Shallow-merge top-level keys of `context` and shallow-merge `diagram_data` with the delta. |
 
 **Optional:** `persist_library: true` plus `library_snapshot` (dict) triggers `save_diagram` for the
-current `diagram_library_id`. Bridge code under `services/kitty_voice/` MUST NOT invent other op names.
+current `diagram_library_id`. Bridge code under `services/kitty/` MUST NOT invent other op names.
 
-Kitty realtime paths that call the hub today include `hub_context.apply_kitty_ws_context_patch`
-(`context_update` WS) and `diagram_voice_hub_bridge.try_sync_voice_diagram_to_hub` (after voice diagram edits).
+Kitty realtime paths that call the hub today include `context.hub_context.apply_kitty_ws_context_patch`
+(`context_update` WS) and `diagram.hub_bridge.try_sync_voice_diagram_to_hub` (after voice diagram edits).
 
 ## Kitty WebSocket → hub call sequence (reference)
 
 Typical successful `/ws/kitty/{diagram_session_id}` session matches this order in
-[`services/kitty_voice/kitty_realtime_websocket.py`](../kitty_voice/kitty_realtime_websocket.py)
-(registration still under [`routers/features/voice/kitty_routes.py`](../routers/features/voice/kitty_routes.py)):
+[`services/kitty/ws/realtime.py`](../kitty/ws/realtime.py)
+(registration under [`routers/features/kitty/kitty_routes.py`](../../routers/features/kitty/kitty_routes.py)):
 
 1. `open_session(..., source_module="kitty_ws")` — allocate `hub_session_id`.
 2. `preempt_handshake(diagram_scope, user_id)` — single-active-kitty policy on scope.
@@ -47,9 +47,9 @@ Typical successful `/ws/kitty/{diagram_session_id}` session matches this order i
    `unregister_kitty_connection(...)`, `close_session(hub_session_id, ...)`.
 
 Inbound JSON dispatch for audio/text/control is centralized in
-[`services/kitty_voice/kitty_ws_inbound.py`](../kitty_voice/kitty_ws_inbound.py). Optional Pipecat framing uses
-[`services/kitty_voice/pipecat_kitty/session.py`](../kitty_voice/pipecat_kitty/session.py) when
-`FEATURE_KITTY_PIPECAT_PIPELINE=True`; hub APIs above are unchanged.
+[`services/kitty/ws/inbound.py`](../kitty/ws/inbound.py).
+Diagram intents route through [`services/kitty/routing/command_router.py`](../kitty/routing/command_router.py)
+and Omni native tool calling.
 
 | Path | Role |
 |------|------|
@@ -63,10 +63,10 @@ Inbound JSON dispatch for audio/text/control is centralized in
 
 Cross-device **pairing and navigation** use Redis helpers that are intentionally **narrow**:
 
-- [`kitty_desktop_focus.py`](../kitty/kitty_desktop_focus.py) — last library/diagram id the user focused on desktop (mobile aligns `/ws/kitty/{scope}`). **Not** a channel for `diagram_data`.
-- [`kitty_desktop_action_queue.py`](../kitty/kitty_desktop_action_queue.py) — FIFO for `kind: open_canvas` only (slug + seeds). **Not** full specs or hub patches.
+- [`kitty_desktop_focus.py`](../kitty/infra/desktop/kitty_desktop_focus.py) — last library/diagram id the user focused on desktop (mobile aligns `/ws/kitty/{scope}`). **Not** a channel for `diagram_data`.
+- [`kitty_desktop_action_queue.py`](../kitty/infra/desktop/kitty_desktop_action_queue.py) — FIFO for `kind: open_canvas` only (slug + seeds). **Not** full specs or hub patches.
 
-Authoritative canvas edits and merged specs remain **`apply_diagram_spec_mutation`**, hub revision, and **`kitty:live_spec`** (including [`GET /api/kitty/live_context/...`](../kitty_voice/kitty_http_handlers.py) on desktop). For Omni image ingress and vision notes see [`omni_multimodal.py`](../kitty_voice/omni_multimodal.py) and [`ws_append_image.py`](../kitty_voice/ws_append_image.py).
+Authoritative canvas edits and merged specs remain **`apply_diagram_spec_mutation`**, hub revision, and **`kitty:live_spec`** (including [`GET /api/kitty/live_context/...`](../kitty/http/handlers.py) on desktop). For Omni image ingress and vision notes see [`ws/append_image.py`](../kitty/ws/append_image.py).
 
 **Load balancer:** prefer **sticky sessions** to `/ws/kitty` across workers (latency); refcount remains authoritative for correctness.
 
@@ -84,7 +84,7 @@ Authoritative canvas edits and merged specs remain **`apply_diagram_spec_mutatio
 
 ## Structured logging
 
-Kitty control and hub paths pass ``extra=kitty_extra(...)`` from [`services/kitty/kitty_observability.py`](../kitty/kitty_observability.py). Ship logs to an engine that indexes **custom fields** (e.g. `kitty_event`, `kitty_scope`, `kitty_user_id`, `kitty_reason`, `kitty_error_type`) for dashboards and traces.
+Kitty control and hub paths pass ``extra=kitty_extra(...)`` from [`services/kitty/infra/control/kitty_observability.py`](../kitty/infra/control/kitty_observability.py). Ship logs to an engine that indexes **custom fields** (e.g. `kitty_event`, `kitty_scope`, `kitty_user_id`, `kitty_reason`, `kitty_error_type`) for dashboards and traces.
 
 ## Metrics and RED-style alerting
 
@@ -95,7 +95,7 @@ Counters live in `services/infrastructure/monitoring/ws_metrics.py` (in-process;
 | `ws_kitty_control_received_total` vs `ws_kitty_control_cleanup_applied_total` | **Rate:** large sustained gap under active Kitty traffic → messages ignored, no local scope, or auth rejects. |
 | `ws_kitty_control_message_ignored_total` | **Errors / noise:** correlate spikes with `kitty_event=control_auth_rejected` in logs. |
 | `ws_kitty_refcount_attach_failed_total` / `ws_kitty_refcount_detach_failed_total` | **Errors:** Redis down, Lua errors, or script policy; alert on increase during otherwise healthy traffic. |
-| `ws_kitty_control_cleanup_not_configured_total` | **Errors:** wiring bug (`configure_kitty_voice_cleanup` never called); should stay at zero in production. |
+| `ws_kitty_control_cleanup_not_configured_total` | **Errors:** wiring bug (`configure_kitty_scope_cleanup` never called); should stay at zero in production. |
 | `ws_kitty_control_voice_cleanup_failed_total` | **Errors:** uncaught failures from voice teardown; investigate stack in `kitty_event=voice_cleanup_failed`. |
 | `ws_kitty_control_dispatch_exception_total` | **Errors:** unexpected errors escaping dispatch in the pub/sub listener; should be near zero. |
 | `ws_kitty_refcount_meta_drift_total` | **Drift:** sessionmeta vs refcount mismatch in pairing snapshot; tune alerts if noisy. |

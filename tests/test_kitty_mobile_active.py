@@ -3,14 +3,25 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, Optional
+from types import SimpleNamespace
+from typing import Any, Dict, Optional, cast
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from services.kitty import kitty_desktop_wake_fanout, kitty_mobile_active, kitty_session_redis
-from services.kitty.kitty_redis_keys import kitty_mobile_active_key, kitty_sessionmeta_key
-from services.kitty_voice.kitty_http_handlers import kitty_rest_mobile_active_get
+from models.domain.auth import User
+
+from services.kitty.infra.desktop import (
+    kitty_desktop_wake_fanout,
+    kitty_mobile_active,
+)
+from services.kitty.infra.redis import kitty_session_redis
+from services.kitty.infra.redis.kitty_redis_keys import kitty_mobile_active_key, kitty_sessionmeta_key
+from services.kitty.http.handlers import kitty_rest_mobile_active_get
+
+
+def _kitty_user(user_id: int) -> User:
+    return cast(User, SimpleNamespace(id=user_id))
 
 
 class _FakeRedis:
@@ -45,7 +56,7 @@ class _FakePipeline:
     def __init__(self, redis: _FakeRedis, transaction: bool = False) -> None:
         self._redis = redis
         self._transaction = transaction
-        self._ops: list[tuple[str, Any]] = []
+        self._ops: list[tuple[Any, ...]] = []
         self._watched: set[str] = set()
         self._in_multi = False
 
@@ -224,26 +235,26 @@ async def test_upsert_preserve_mobile_lane_does_not_mark_without_explicit_lane(
 
 
 @pytest.mark.asyncio
-async def test_kitty_rest_desktop_pairing_inactive_skips_pop() -> None:
-    user = type("User", (), {"id": 5})()
+async def test_kitty_rest_desktop_pairing_inactive_long_poll_skips_pop() -> None:
+    user = _kitty_user(5)
     pop_mock = AsyncMock(return_value={"kind": "open_canvas", "diagram_type": "mindmap"})
     with (
-        patch("services.kitty_voice.kitty_http_handlers.config") as cfg,
+        patch("services.kitty.http.handlers.config") as cfg,
         patch(
-            "services.kitty_voice.kitty_http_handlers.kitty_http_allowed",
+            "services.kitty.http.handlers.kitty_http_allowed",
             AsyncMock(return_value=True),
         ),
         patch(
-            "services.kitty_voice.kitty_http_handlers.read_kitty_mobile_active",
+            "services.kitty.http.handlers.read_kitty_mobile_active",
             AsyncMock(return_value={"active": False, "scopes": [], "primary_scope": None}),
         ),
         patch(
-            "services.kitty_voice.kitty_http_handlers.pop_kitty_desktop_action_wait",
+            "services.kitty.http.handlers.pop_kitty_desktop_action_wait",
             pop_mock,
         ),
     ):
         cfg.FEATURE_KITTY_WS_ENABLED = True
-        from services.kitty_voice.kitty_http_handlers import kitty_rest_desktop_pairing
+        from services.kitty.http.handlers import kitty_rest_desktop_pairing
 
         out = await kitty_rest_desktop_pairing(user, wait_sec=25)
 
@@ -253,17 +264,87 @@ async def test_kitty_rest_desktop_pairing_inactive_skips_pop() -> None:
 
 
 @pytest.mark.asyncio
-async def test_kitty_rest_desktop_pairing_active_long_poll_pop() -> None:
-    user = type("User", (), {"id": 6})()
-    pop_mock = AsyncMock(return_value={"kind": "open_canvas", "diagram_type": "mindmap"})
+async def test_kitty_rest_desktop_pairing_inactive_instant_pop() -> None:
+    user = _kitty_user(5)
+    pop_mock = AsyncMock(
+        return_value={"kind": "open_library_diagram", "diagram_library_id": "abc-def-123"}
+    )
     with (
-        patch("services.kitty_voice.kitty_http_handlers.config") as cfg,
+        patch("services.kitty.http.handlers.config") as cfg,
         patch(
-            "services.kitty_voice.kitty_http_handlers.kitty_http_allowed",
+            "services.kitty.http.handlers.kitty_http_allowed",
             AsyncMock(return_value=True),
         ),
         patch(
-            "services.kitty_voice.kitty_http_handlers.read_kitty_mobile_active",
+            "services.kitty.http.handlers.read_kitty_mobile_active",
+            AsyncMock(return_value={"active": False, "scopes": [], "primary_scope": None}),
+        ),
+        patch(
+            "services.kitty.http.handlers.consume_kitty_desktop_action_explicit_drain",
+            AsyncMock(return_value=True),
+        ),
+        patch(
+            "services.kitty.http.handlers.pop_kitty_desktop_action_wait",
+            pop_mock,
+        ),
+    ):
+        cfg.FEATURE_KITTY_WS_ENABLED = True
+        from services.kitty.http.handlers import kitty_rest_desktop_pairing
+
+        out = await kitty_rest_desktop_pairing(user, wait_sec=0)
+
+    assert out["active"] is False
+    assert out["action"]["kind"] == "open_library_diagram"
+    pop_mock.assert_awaited_once_with(5, 0, discard_stale=True)
+
+
+@pytest.mark.asyncio
+async def test_kitty_rest_desktop_pairing_inactive_instant_pop_without_explicit_flag() -> None:
+    user = _kitty_user(5)
+    pop_mock = AsyncMock(
+        return_value={"kind": "open_library_diagram", "diagram_library_id": "abc-def-123"}
+    )
+    with (
+        patch("services.kitty.http.handlers.config") as cfg,
+        patch(
+            "services.kitty.http.handlers.kitty_http_allowed",
+            AsyncMock(return_value=True),
+        ),
+        patch(
+            "services.kitty.http.handlers.read_kitty_mobile_active",
+            AsyncMock(return_value={"active": False, "scopes": [], "primary_scope": None}),
+        ),
+        patch(
+            "services.kitty.http.handlers.consume_kitty_desktop_action_explicit_drain",
+            AsyncMock(return_value=False),
+        ),
+        patch(
+            "services.kitty.http.handlers.pop_kitty_desktop_action_wait",
+            pop_mock,
+        ),
+    ):
+        cfg.FEATURE_KITTY_WS_ENABLED = True
+        from services.kitty.http.handlers import kitty_rest_desktop_pairing
+
+        out = await kitty_rest_desktop_pairing(user, wait_sec=0)
+
+    assert out["active"] is False
+    assert out["action"] is None
+    pop_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_kitty_rest_desktop_pairing_active_long_poll_pop() -> None:
+    user = _kitty_user(6)
+    pop_mock = AsyncMock(return_value={"kind": "open_canvas", "diagram_type": "mindmap"})
+    with (
+        patch("services.kitty.http.handlers.config") as cfg,
+        patch(
+            "services.kitty.http.handlers.kitty_http_allowed",
+            AsyncMock(return_value=True),
+        ),
+        patch(
+            "services.kitty.http.handlers.read_kitty_mobile_active",
             AsyncMock(
                 return_value={
                     "active": True,
@@ -273,23 +354,23 @@ async def test_kitty_rest_desktop_pairing_active_long_poll_pop() -> None:
             ),
         ),
         patch(
-            "services.kitty_voice.kitty_http_handlers.pop_kitty_desktop_action_wait",
+            "services.kitty.http.handlers.pop_kitty_desktop_action_wait",
             pop_mock,
         ),
     ):
         cfg.FEATURE_KITTY_WS_ENABLED = True
-        from services.kitty_voice.kitty_http_handlers import kitty_rest_desktop_pairing
+        from services.kitty.http.handlers import kitty_rest_desktop_pairing
 
         out = await kitty_rest_desktop_pairing(user, wait_sec=25)
 
     assert out["active"] is True
     assert out["action"] == {"kind": "open_canvas", "diagram_type": "mindmap"}
-    pop_mock.assert_awaited_once_with(6, 25)
+    pop_mock.assert_awaited_once_with(6, 25, discard_stale=True)
 
 
 @pytest.mark.asyncio
 async def test_pop_wait_uses_blpop_when_blocking(monkeypatch: pytest.MonkeyPatch) -> None:
-    from services.kitty import kitty_desktop_action_queue as queue
+    from services.kitty.infra.desktop import kitty_desktop_action_queue as queue
 
     class _QueueRedis:
         def __init__(self) -> None:
@@ -311,15 +392,15 @@ async def test_pop_wait_uses_blpop_when_blocking(monkeypatch: pytest.MonkeyPatch
 
 @pytest.mark.asyncio
 async def test_kitty_rest_mobile_active_get_shape() -> None:
-    user = type("User", (), {"id": 12})()
+    user = _kitty_user(12)
     with (
-        patch("services.kitty_voice.kitty_http_handlers.config") as cfg,
+        patch("services.kitty.http.handlers.config") as cfg,
         patch(
-            "services.kitty_voice.kitty_http_handlers.kitty_http_allowed",
+            "services.kitty.http.handlers.kitty_http_allowed",
             AsyncMock(return_value=True),
         ),
         patch(
-            "services.kitty_voice.kitty_http_handlers.read_kitty_mobile_active",
+            "services.kitty.http.handlers.read_kitty_mobile_active",
             AsyncMock(
                 return_value={
                     "active": True,
@@ -370,9 +451,7 @@ async def test_clear_publishes_inactive_wake(monkeypatch: pytest.MonkeyPatch) ->
 
 
 def test_build_desktop_wake_payload_shape() -> None:
-    import json
-
-    from services.kitty.kitty_desktop_wake_fanout import build_kitty_desktop_wake_payload
+    from services.kitty.infra.desktop.kitty_desktop_wake_fanout import build_kitty_desktop_wake_payload
 
     raw = build_kitty_desktop_wake_payload(
         {"active": True, "scopes": ["a"], "primary_scope": "a"}
@@ -385,26 +464,26 @@ def test_build_desktop_wake_payload_shape() -> None:
 
 
 @pytest.mark.asyncio
-async def test_kitty_rest_desktop_action_pop_inactive_skips_queue() -> None:
-    user = type("User", (), {"id": 8})()
+async def test_kitty_rest_desktop_action_pop_inactive_long_poll_skips_queue() -> None:
+    user = _kitty_user(8)
     pop_mock = AsyncMock(return_value={"kind": "open_canvas", "diagram_type": "mindmap"})
     with (
-        patch("services.kitty_voice.kitty_http_handlers.config") as cfg,
+        patch("services.kitty.http.handlers.config") as cfg,
         patch(
-            "services.kitty_voice.kitty_http_handlers.kitty_http_allowed",
+            "services.kitty.http.handlers.kitty_http_allowed",
             AsyncMock(return_value=True),
         ),
         patch(
-            "services.kitty_voice.kitty_http_handlers.read_kitty_mobile_active",
+            "services.kitty.http.handlers.read_kitty_mobile_active",
             AsyncMock(return_value={"active": False, "scopes": [], "primary_scope": None}),
         ),
         patch(
-            "services.kitty_voice.kitty_http_handlers.pop_kitty_desktop_action_wait",
+            "services.kitty.http.handlers.pop_kitty_desktop_action_wait",
             pop_mock,
         ),
     ):
         cfg.FEATURE_KITTY_WS_ENABLED = True
-        from services.kitty_voice.kitty_http_handlers import kitty_rest_desktop_action_pop
+        from services.kitty.http.handlers import kitty_rest_desktop_action_pop
 
         out = await kitty_rest_desktop_action_pop(user, wait_sec=25)
 
@@ -413,10 +492,161 @@ async def test_kitty_rest_desktop_action_pop_inactive_skips_queue() -> None:
 
 
 @pytest.mark.asyncio
+async def test_kitty_rest_desktop_action_pop_inactive_instant_pop() -> None:
+    user = _kitty_user(8)
+    pop_mock = AsyncMock(
+        return_value={"kind": "open_library_diagram", "diagram_library_id": "abc-def-123"}
+    )
+    with (
+        patch("services.kitty.http.handlers.config") as cfg,
+        patch(
+            "services.kitty.http.handlers.kitty_http_allowed",
+            AsyncMock(return_value=True),
+        ),
+        patch(
+            "services.kitty.http.handlers.read_kitty_mobile_active",
+            AsyncMock(return_value={"active": False, "scopes": [], "primary_scope": None}),
+        ),
+        patch(
+            "services.kitty.http.handlers.consume_kitty_desktop_action_explicit_drain",
+            AsyncMock(return_value=True),
+        ),
+        patch(
+            "services.kitty.http.handlers.pop_kitty_desktop_action_wait",
+            pop_mock,
+        ),
+    ):
+        cfg.FEATURE_KITTY_WS_ENABLED = True
+        from services.kitty.http.handlers import kitty_rest_desktop_action_pop
+
+        out = await kitty_rest_desktop_action_pop(user, wait_sec=0)
+
+    assert out["action"]["kind"] == "open_library_diagram"
+    pop_mock.assert_awaited_once_with(8, 0, discard_stale=True)
+
+
+@pytest.mark.asyncio
 async def test_kitty_rest_mobile_active_disabled_returns_inactive() -> None:
-    user = type("User", (), {"id": 3})()
-    with patch("services.kitty_voice.kitty_http_handlers.config") as cfg:
+    user = _kitty_user(3)
+    with patch("services.kitty.http.handlers.config") as cfg:
         cfg.FEATURE_KITTY_WS_ENABLED = False
         out = await kitty_rest_mobile_active_get(user)
 
     assert out == {"active": False, "scopes": [], "primary_scope": None}
+
+
+@pytest.mark.asyncio
+async def test_enqueue_open_library_diagram_accepts_valid_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    from services.kitty.infra.desktop import kitty_desktop_action_queue as queue
+
+    pushed: list[dict] = []
+
+    async def _fake_push(user_id: int, payload: dict) -> bool:
+        pushed.append({"user_id": user_id, "payload": payload})
+        return True
+
+    monkeypatch.setattr(queue, "_push_desktop_action", _fake_push)
+    ok = await queue.enqueue_kitty_desktop_action(
+        9,
+        {
+            "kind": "open_library_diagram",
+            "diagram_library_id": "abc-def-123",
+            "title": "My topic",
+        },
+    )
+    assert ok is True
+    assert pushed[0]["user_id"] == 9
+    assert pushed[0]["payload"]["kind"] == "open_library_diagram"
+    assert pushed[0]["payload"]["diagram_library_id"] == "abc-def-123"
+    assert pushed[0]["payload"]["title"] == "My topic"
+
+
+@pytest.mark.asyncio
+async def test_pop_discards_stale_actions(monkeypatch: pytest.MonkeyPatch) -> None:
+    import time
+
+    from services.kitty.infra.desktop import kitty_desktop_action_queue as queue
+
+    stale = json.dumps(
+        {
+            "kind": "open_canvas",
+            "diagram_type": "mindmap",
+            "enqueued_at": int(time.time()) - 500,
+        }
+    )
+    fresh = json.dumps(
+        {
+            "kind": "open_library_diagram",
+            "diagram_library_id": "abc-def-123",
+            "enqueued_at": int(time.time()),
+        }
+    )
+
+    class _QueueRedis:
+        def __init__(self) -> None:
+            self.items = [stale.encode("utf-8"), fresh.encode("utf-8")]
+
+        async def lpop(self, _key: str) -> bytes | None:
+            if not self.items:
+                return None
+            return self.items.pop(0)
+
+    fake = _QueueRedis()
+    monkeypatch.setattr(queue, "get_async_redis", lambda: fake)
+    out = await queue.pop_kitty_desktop_action_wait(4, wait_sec=0, discard_stale=True)
+    assert out is not None
+    assert out["kind"] == "open_library_diagram"
+
+
+@pytest.mark.asyncio
+async def test_enqueue_open_library_diagram_rejects_invalid_id() -> None:
+    from services.kitty.infra.desktop import kitty_desktop_action_queue as queue
+
+    ok = await queue.enqueue_kitty_desktop_action(
+        9,
+        {"kind": "open_library_diagram", "diagram_library_id": "bad id!"},
+    )
+    assert ok is False
+
+
+@pytest.mark.asyncio
+async def test_kitty_rest_desktop_action_enqueue_ok() -> None:
+    user = _kitty_user(7)
+    enqueue_mock = AsyncMock(return_value=True)
+    wake_mock = AsyncMock()
+    explicit_mock = AsyncMock()
+    with (
+        patch("services.kitty.http.handlers.config") as cfg,
+        patch(
+            "services.kitty.http.handlers.kitty_http_allowed",
+            AsyncMock(return_value=True),
+        ),
+        patch(
+            "services.kitty.http.handlers.enqueue_kitty_desktop_action",
+            enqueue_mock,
+        ),
+        patch(
+            "services.kitty.http.handlers.mark_kitty_desktop_action_explicit_drain",
+            explicit_mock,
+        ),
+        patch(
+            "services.kitty.http.handlers.publish_kitty_desktop_action_pending",
+            wake_mock,
+        ),
+    ):
+        cfg.FEATURE_KITTY_WS_ENABLED = True
+        from services.kitty.http.handlers import kitty_rest_desktop_action_enqueue
+
+        out = await kitty_rest_desktop_action_enqueue(
+            user,
+            {
+                "kind": "open_library_diagram",
+                "diagram_library_id": "scope-1",
+                "title": "Cars",
+            },
+        )
+
+    assert out == {"ok": True}
+    enqueue_mock.assert_awaited_once()
+    explicit_mock.assert_awaited_once_with(7)
+    wake_mock.assert_awaited_once_with(7)

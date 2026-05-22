@@ -29,7 +29,7 @@ sys.modules.setdefault("services.online_collab.redis", online_collab_redis_pkg)
 sys.modules.setdefault("services.online_collab.redis.redis8_features", redis8_features_stub)
 
 from services.agent_hub.scope_lifecycle import MindGraphAgentHub
-from services.kitty.kitty_context_hydrate import resolve_mobile_open_bootstrap
+from services.kitty.infra.bootstrap.kitty_context_hydrate import resolve_mobile_open_bootstrap
 
 
 @pytest.mark.asyncio
@@ -37,11 +37,11 @@ async def test_resolve_mobile_bootstrap_prefers_fresher_focus_scope() -> None:
     """Desktop focus wins when suggested scope metadata is older."""
     with (
         patch(
-            "services.kitty.kitty_context_hydrate.get_kitty_desktop_focus_diagram",
+            "services.kitty.infra.bootstrap.kitty_context_hydrate.get_kitty_desktop_focus_diagram",
             AsyncMock(return_value=("focus_scope", 200)),
         ),
         patch(
-            "services.kitty.kitty_context_hydrate.fetch_kitty_sessionmeta_for_user",
+            "services.kitty.infra.bootstrap.kitty_context_hydrate.fetch_kitty_sessionmeta_for_user",
             AsyncMock(
                 side_effect=[
                     {"updated_at": 100},
@@ -50,7 +50,7 @@ async def test_resolve_mobile_bootstrap_prefers_fresher_focus_scope() -> None:
             ),
         ),
         patch(
-            "services.kitty.kitty_context_hydrate.try_build_context_from_live_spec",
+            "services.kitty.infra.bootstrap.kitty_context_hydrate.try_build_context_from_live_spec",
             AsyncMock(
                 side_effect=[
                     (

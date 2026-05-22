@@ -107,6 +107,7 @@ export default {
   'mindmate.tooltip.share': 'Share',
   'mindmate.untitled': 'Untitled',
   'mindmate.welcome': "Hello {username}, I'm {agentName}, your thinking teaching partner",
+  'mindmate.welcomeSubtitle': 'AI virtual teaching research platform — think anywhere, anytime',
   'nodePalette.bridgeAnalogy': 'Analogy',
   'nodePalette.bridgeSource': 'Source',
   'nodePalette.cancel': 'Cancel',

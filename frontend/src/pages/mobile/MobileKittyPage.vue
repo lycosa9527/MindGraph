@@ -12,12 +12,23 @@ import { storeToRefs } from 'pinia'
 import { Camera, ChevronLeft, Keyboard, Loader2, Mic, MicOff } from 'lucide-vue-next'
 
 import KittyBlackCatMascot from '@/components/kitty/KittyBlackCatMascot.vue'
-import KittyMobileDiagramContextCard from '@/components/kitty/KittyMobileDiagramContextCard.vue'
-import { useKittyAgent, useKittyDiagramReviewAnnotationBus, useLanguage, useNotifications } from '@/composables'
+import KittyIpodClickWheel from '@/components/kitty/KittyIpodClickWheel.vue'
+import KittyMobileDiagramPickerDropdown from '@/components/kitty/KittyMobileDiagramPickerDropdown.vue'
+import {
+  getDiagramOperations,
+  useKittyAgent,
+  useKittyDiagramReviewAnnotationBus,
+  useLanguage,
+  useNotifications,
+} from '@/composables'
+import { eventBus } from '@/composables/core/useEventBus'
 import { compressImageFileForKitty } from '@/composables/kitty/compressImageForKitty'
 import { useKittyMobileDebugBus } from '@/composables/kitty/useKittyMobileDebugBus'
+import { useKittyMobileHubActionBridge } from '@/composables/kitty/useKittyMobileHubActionBridge'
+import { useKittyMobileLibraryDiagramSelect } from '@/composables/kitty/useKittyMobileLibraryDiagramSelect'
+import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
 import { useMobileKittyPairing } from '@/composables/kitty/useMobileKittyPairing'
-import { useAuthStore, useFeatureFlagsStore } from '@/stores'
+import { useAuthStore, useDiagramStore, useFeatureFlagsStore } from '@/stores'
 
 const router = useRouter()
 const { t } = useLanguage()
@@ -33,6 +44,7 @@ const micDenied = ref(false)
 const cameraDenied = ref(false)
 const scrollRoot = ref<HTMLElement | null>(null)
 
+const kittyDebugEnabled = import.meta.env.DEV
 const KITTY_DEBUG_MAX = 42
 const kittyDebugLines = ref<string[]>([])
 
@@ -47,15 +59,19 @@ function pushKittyDebugLine(prefix: string, detail: string): void {
 }
 
 const kitty = useKittyAgent({
-  ownerId: 'MobileKittyPage',
+  ownerId: 'MobileKittyPage_Agent',
   kittyClientLane: 'mobile',
   onError: (err: string) => {
     notify.warning(err)
   },
 })
 
+/** Apply Kitty ``diagram_update`` WS payloads to Pinia (same bridge as canvas pages). */
+getDiagramOperations()
+
 const {
   kittyPairScope,
+  kittyPairScopeWarning,
   mobileKittyContextPreview,
   buildMobileKittyContext,
   scheduleMobileKittyContextSync,
@@ -66,12 +82,23 @@ const {
 })
 
 useKittyMobileDebugBus({
-  ownerId: 'MobileKittyPage',
+  ownerId: 'MobileKittyPage_Debug',
   pushLine: pushKittyDebugLine,
   scheduleContextSync: scheduleMobileKittyContextSync,
 })
 
 useKittyDiagramReviewAnnotationBus('MobileKittyPageKittyReviewBus')
+useKittyVoiceSelectionBus('MobileKittyPage')
+useKittyMobileHubActionBridge(router)
+
+const {
+  showPicker: showDiagramPicker,
+  selecting: diagramSelecting,
+  selectDiagram: selectKittyLibraryDiagram,
+} = useKittyMobileLibraryDiagramSelect({
+  scheduleContextSync: scheduleMobileKittyContextSync,
+  onDebugLine: pushKittyDebugLine,
+})
 
 const connected = computed(() => kitty.isConnected.value)
 const connecting = computed(() => kitty.state.value === 'connecting')
@@ -111,10 +138,37 @@ const kittyDiagramCardAriaLabel = computed(() => {
   if (badge) {
     bits.push(badge)
   }
+  bits.push(t('mobile.kittyDiagramCardTapHint', '点击选择导图'))
   return bits.filter(Boolean).join('. ')
 })
 
+const diagramStore = useDiagramStore()
+let lastDiagramNodeCount = 0
 let connectInFlight: Promise<boolean> | null = null
+
+watch(
+  () => diagramStore.data?.nodes?.length ?? 0,
+  (count) => {
+    if (!kitty.isConnected.value) {
+      lastDiagramNodeCount = count
+      return
+    }
+    if (count !== lastDiagramNodeCount) {
+      notify.success(t('mobile.kittyDiagramUpdated', 'Diagram updated'))
+      lastDiagramNodeCount = count
+    }
+  }
+)
+
+watch(
+  kittyPairScopeWarning,
+  (msg) => {
+    if (msg) {
+      notify.warning(msg)
+    }
+  },
+  { immediate: true }
+)
 
 async function ensureConnected(): Promise<boolean> {
   if (kitty.isConnected.value) {
@@ -365,9 +419,22 @@ onMounted(async () => {
   }
   pushKittyDebugLine('#', 'debug log ready')
   bindKittyMicKeyboard()
+  eventBus.onWithOwner(
+    'voice:ws_closed',
+    (data) => {
+      if (data.wasClean) {
+        return
+      }
+      notify.warning(
+        t('mobile.kittyDisconnected', 'Voice connection lost. Tap the mic to reconnect.')
+      )
+    },
+    'MobileKittyPage_WsClosed'
+  )
 })
 
 onUnmounted(async () => {
+  eventBus.removeAllListenersForOwner('MobileKittyPage_WsClosed')
   unbindKittyMicKeyboard()
   cancelVoiceStartRequested.value = true
   voiceStartInFlight.value = false
@@ -461,16 +528,15 @@ onUnmounted(async () => {
         class="relative z-[2] flex flex-1 flex-col items-center justify-center text-center px-4 py-8 min-h-0"
       >
         <div
+          v-if="kittyDebugEnabled"
           class="pointer-events-none absolute inset-0 z-0 flex items-center justify-start overflow-hidden px-3 sm:pl-4"
           aria-hidden="true"
         >
-          <div
-            class="kitty-agent-debug-fog w-full max-w-[min(20rem,80vw)] text-left text-[8px] sm:text-[10px] leading-[1.4] text-slate-700/15 antialiased"
-          >
+          <div class="kitty-agent-debug-fog">
             <div
               v-for="(row, idx) in kittyDebugLines"
               :key="idx"
-              class="block w-full overflow-hidden text-ellipsis whitespace-nowrap text-left"
+              class="kitty-agent-debug-fog__line"
             >
               {{ row }}
             </div>
@@ -479,6 +545,10 @@ onUnmounted(async () => {
         <KittyBlackCatMascot
           class="relative z-[3] mb-2"
           :agent-state="kittyVoiceState"
+        />
+        <KittyIpodClickWheel
+          class="relative z-[4] w-full"
+          :on-selection-change="scheduleMobileKittyContextSync"
         />
         <p class="relative z-[3] text-gray-700 text-lg font-medium">
           {{ t('mobile.kittyWelcomeLine', '说说你的想法') }}
@@ -521,18 +591,16 @@ onUnmounted(async () => {
         </button>
       </div>
 
-      <div
-        class="flex items-center gap-2 px-3 sm:px-4 py-4 max-w-md mx-auto w-full"
-      >
+      <div class="kitty-bottom-controls px-3 sm:px-4 py-4 max-w-md mx-auto w-full">
         <label
-          class="shrink-0 w-16 h-16 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center shadow-sm border border-gray-200/80"
+          class="kitty-side-control kitty-side-control--camera"
           :class="{
             'pointer-events-none opacity-40': cameraDenied || !kittyServerEnabled || connecting,
             'active:bg-gray-200 cursor-pointer': !cameraDenied && kittyServerEnabled && !connecting,
           }"
           :aria-label="t('mobile.kittyCameraLabel', '拍照或相册')"
         >
-          <Camera :size="26" />
+          <Camera class="kitty-side-control__icon" />
           <input
             type="file"
             accept="image/*"
@@ -543,24 +611,29 @@ onUnmounted(async () => {
           />
         </label>
 
-        <KittyMobileDiagramContextCard
+        <KittyMobileDiagramPickerDropdown
           v-if="kittyServerEnabled"
-          class="flex-1 min-w-0 self-center"
+          v-model="showDiagramPicker"
+          class="kitty-bottom-controls__center"
           :primary-line="kittyDiagramCardPrimary"
           :meta-line="kittyDiagramCardMeta"
           :source-badge="kittyDiagramCardBadge"
           :ariaLabel="kittyDiagramCardAriaLabel"
+          :selecting="diagramSelecting"
+          :current-diagram-id="mobileKittyContextPreview.diagramLibraryId"
+          :disabled="connecting || diagramSelecting"
+          @select="selectKittyLibraryDiagram"
         />
         <div
           v-else
-          class="flex-1 min-w-0 min-h-[4rem]"
+          class="kitty-bottom-controls__center"
           aria-hidden="true"
         />
 
         <button
           type="button"
           data-kitty-mic-toggle
-          class="relative shrink-0 w-16 h-16 rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-transform bg-gradient-to-br from-violet-500 to-indigo-600 border border-violet-400/30 disabled:opacity-45 touch-manipulation select-none"
+          class="kitty-side-control kitty-side-control--mic"
           :disabled="!kittyServerEnabled || connecting || micDenied"
           :aria-pressed="kittyVoiceInputActive"
           :aria-label="t('mobile.kittyMicToggleAria')"
@@ -569,17 +642,16 @@ onUnmounted(async () => {
         >
           <Loader2
             v-if="connecting"
-            :size="28"
-            class="animate-spin text-violet-100"
+            class="kitty-side-control__icon animate-spin text-violet-100"
           />
           <template v-else>
             <MicOff
               v-if="kittyVoiceInputActive"
-              :size="30"
+              class="kitty-side-control__icon"
             />
             <Mic
               v-else
-              :size="30"
+              class="kitty-side-control__icon"
             />
           </template>
           <span
@@ -600,6 +672,7 @@ onUnmounted(async () => {
         <span v-if="cameraDenied">{{ t('mobile.kittyCameraDenied', '相机或图片不可用') }}</span>
       </p>
     </div>
+
   </div>
 </template>
 
@@ -608,9 +681,89 @@ onUnmounted(async () => {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
 
+.kitty-bottom-controls {
+  --kitty-control-size: clamp(3.25rem, 14vw, 4rem);
+  --kitty-control-gap: clamp(0.375rem, 2vw, 0.625rem);
+  display: grid;
+  grid-template-columns: var(--kitty-control-size) minmax(0, 1fr) var(--kitty-control-size);
+  align-items: center;
+  column-gap: var(--kitty-control-gap);
+}
+
+.kitty-bottom-controls__center {
+  min-width: 0;
+  width: 100%;
+  height: var(--kitty-control-size);
+  align-self: center;
+}
+
+.kitty-side-control {
+  position: relative;
+  box-sizing: border-box;
+  width: var(--kitty-control-size);
+  height: var(--kitty-control-size);
+  margin: 0;
+  padding: 0;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  justify-self: center;
+  touch-action: manipulation;
+  user-select: none;
+  transition: transform 0.15s ease;
+}
+
+.kitty-side-control__icon {
+  width: clamp(1.375rem, 6vw, 1.75rem);
+  height: clamp(1.375rem, 6vw, 1.75rem);
+  flex-shrink: 0;
+}
+
+.kitty-side-control--camera {
+  color: #374151;
+  background: #f3f4f6;
+  border: 1px solid rgba(229, 231, 235, 0.9);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.kitty-side-control--mic {
+  color: #ffffff;
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  background: linear-gradient(to bottom right, #8b5cf6, #4f46e5);
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.28);
+}
+
+.kitty-side-control--mic:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.kitty-side-control--mic:disabled {
+  opacity: 0.45;
+}
+
 .kitty-agent-debug-fog {
+  width: 100%;
+  max-width: min(20rem, 80vw);
+  text-align: left;
+  font-size: clamp(0.5625rem, 2.4vw, 0.6875rem);
+  line-height: 1.45;
+  font-weight: 500;
+  color: rgba(51, 65, 85, 0.34);
+  -webkit-font-smoothing: antialiased;
   font-family:
     ui-monospace, 'Cascadia Code', 'Cascadia Mono', 'SFMono-Regular', 'JetBrains Mono', 'Fira Code',
     Consolas, monospace;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.55);
+}
+
+.kitty-agent-debug-fog__line {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
 }
 </style>

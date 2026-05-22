@@ -23,34 +23,34 @@ from services.infrastructure.monitoring.ws_metrics import (
     record_kitty_refcount_detach_mismatch,
     record_kitty_refcount_teardown,
 )
-from services.kitty.kitty_control_fanout import (
+from services.kitty.infra.control.kitty_control_fanout import (
     KITTY_CONTROL_REASON_HANDSHAKE_PREEMPT,
     KITTY_CONTROL_REASON_IDLE_TIMEOUT,
     parse_kitty_control_envelope,
     publish_kitty_close_scope_async,
     verify_kitty_control_shared_secret,
 )
-from services.kitty.kitty_observability import kitty_extra
-from services.kitty.kitty_scope_refcount import (
+from services.kitty.infra.control.kitty_observability import kitty_extra
+from services.kitty.infra.redis.kitty_scope_refcount import (
     KittyDetachResult,
     kitty_scope_refcount_attach,
     kitty_scope_refcount_detach,
 )
-from services.kitty.kitty_context_hydrate import (
+from services.kitty.infra.bootstrap.kitty_context_hydrate import (
     diagram_data_has_visible_content,
     merge_voice_context_with_library,
     resolve_mobile_open_bootstrap,
 )
-from services.kitty.kitty_session_redis import (
+from services.kitty.infra.redis.kitty_session_redis import (
     kitty_sessionmeta_active_for_user,
     upsert_kitty_redis_session,
 )
-from services.kitty.kitty_ws_scope import normalize_kitty_diagram_session_id
+from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 
 logger = logging.getLogger(__name__)
 
-_KITTY_VOICE_CLEANUP: Optional[Callable[[str], Awaitable[bool]]] = None
+_KITTY_SCOPE_CLEANUP: Optional[Callable[[str], Awaitable[bool]]] = None
 _ACTIVE_WEBSOCKETS: Optional[Dict[str, List[WebSocket]]] = None
 _VOICE_SESSIONS: Optional[Dict[str, Any]] = None
 
@@ -104,12 +104,12 @@ class HubSessionState:
 MutationOp = Literal["replace_context", "patch_context"]
 
 
-def configure_kitty_voice_cleanup(
+def configure_kitty_scope_cleanup(
     cleanup_voice_by_diagram: Callable[[str], Awaitable[bool]],
 ) -> None:
     """Inject voice session cleanup (closes local WS + ends Omni sessions)."""
-    global _KITTY_VOICE_CLEANUP
-    _KITTY_VOICE_CLEANUP = cleanup_voice_by_diagram
+    global _KITTY_SCOPE_CLEANUP
+    _KITTY_SCOPE_CLEANUP = cleanup_voice_by_diagram
 
 
 def configure_kitty_control_state(
@@ -496,7 +496,7 @@ class MindGraphAgentHub:
     async def preempt_idle_timeout(self, scope: str, user_id: int) -> None:
         await self.preempt_scope(scope, user_id, KITTY_CONTROL_REASON_IDLE_TIMEOUT)
 
-    async def register_kitty_connection(self, scope: str, user_id: int) -> None:
+    async def register_kitty_connection(self, scope: str, user_id: int) -> bool:
         """Call after successful WS ``start`` + Redis upsert (global refcount)."""
         count = await kitty_scope_refcount_attach(scope)
         if count is None:
@@ -507,7 +507,7 @@ class MindGraphAgentHub:
                 user_id,
                 extra=kitty_extra("refcount_attach_failed", scope=scope, user_id=user_id),
             )
-            return
+            return False
         record_kitty_refcount_attach()
         logger.debug(
             "[AgentHub] refcount attach scope=%s user_id=%s count=%s",
@@ -515,6 +515,7 @@ class MindGraphAgentHub:
             user_id,
             count,
         )
+        return True
 
     async def unregister_kitty_connection(self, scope: str, user_id: int) -> None:
         """Call from WS ``finally`` after removing socket from ``active_websockets``."""
@@ -607,7 +608,7 @@ async def handle_kitty_control_dispatch(raw: str, local_instance: str) -> None:
         record_kitty_control_message_ignored()
         return
 
-    if _KITTY_VOICE_CLEANUP is None:
+    if _KITTY_SCOPE_CLEANUP is None:
         record_kitty_control_cleanup_not_configured()
         logger.warning(
             "[KittyControl] cleanup not configured; ignoring scope=%s",
@@ -623,7 +624,7 @@ async def handle_kitty_control_dispatch(raw: str, local_instance: str) -> None:
         return
 
     try:
-        cleaned = await _KITTY_VOICE_CLEANUP(scope)
+        cleaned = await _KITTY_SCOPE_CLEANUP(scope)
     except Exception as exc:
         record_kitty_control_voice_cleanup_failed()
         logger.warning(

@@ -6,7 +6,7 @@
  * and other desktop-only features. Concept map: 启用 AI in top bar; bottom shows inline
  * rec only while active (tap canvas to dismiss, same as desktop coordinator).
  */
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
@@ -49,6 +49,10 @@ import {
   useNotifications,
 } from '@/composables'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
+import { resolveKittyChildNodeId } from '@/composables/kitty/kittyDiagramChildren'
+import { handleKittyAddNodeWithRecommendationsRequest } from '@/composables/kitty/kittyAddNodeWithRecommendations'
+import { replayKittyPendingCanvasAction } from '@/composables/kitty/useKittyMobileHubActionBridge'
+import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
 import { useCanvasPageTabRecIndicator } from '@/composables/canvasPage/useCanvasPageTabRecIndicator'
 import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
 import {
@@ -112,6 +116,7 @@ const { startRecommendations, selectOptionByGlobalIndex, fetchNextBatch } =
 useConceptMapRelationshipTabFromSelection({ startRecommendations })
 
 useKittyDiagramReviewAnnotationBus('MobileCanvasPage')
+useKittyVoiceSelectionBus('MobileCanvasPage')
 
 const isSaving = ref(false)
 
@@ -483,18 +488,16 @@ eventBus.onWithOwner(
 eventBus.onWithOwner(
   'kitty:inline_recommendations_requested',
   (data: { nodeId?: string; nodeIndex?: number }) => {
-    let nid = data.nodeId
-    if (!nid && data.nodeIndex !== undefined) {
-      const nodes = diagramStore.data?.nodes ?? []
-      const n = nodes[data.nodeIndex]
-      if (n) nid = n.id
-    }
+    const nodes = diagramStore.data?.nodes ?? []
+    let nid = resolveKittyChildNodeId(diagramStore.type, nodes, {
+      nodeId: data.nodeId,
+      nodeIndex: data.nodeIndex,
+    })
     if (!nid) nid = diagramStore.selectedNodes[0]
     if (!nid) {
       notify.warning(t('canvas.toolbar.selectNodesToDelete', '请先选择一个节点'))
       return
     }
-    const nodes = diagramStore.data?.nodes ?? []
     const node = nodes.find((x) => x.id === nid)
     if (
       !node ||
@@ -519,9 +522,28 @@ eventBus.onWithOwner(
   'MobileCanvasPage'
 )
 
+eventBus.onWithOwner(
+  'kitty:add_node_with_recommendations_requested',
+  (data: { text?: string }) => {
+    void handleKittyAddNodeWithRecommendationsRequest({
+      text: data.text,
+      diagramStore,
+      startRecommendations,
+      inlineRecReady: inlineRecStore.isReady,
+      isAuthenticated: authStore.isAuthenticated,
+      conceptMapAiEnabled: Boolean(llmResultsStore.selectedModel),
+      translate: t,
+      notifyWarning: (message: string) => notify.warning(message),
+    })
+  },
+  'MobileCanvasPage'
+)
+
 onMounted(async () => {
   await ensureFontsForLanguageCode(uiStore.promptLanguage)
   inlineRecCoordinator.setup()
+  await nextTick()
+  replayKittyPendingCanvasAction()
   void featureFlagsStore.fetchFlags()
   await savedDiagramsStore.fetchDiagrams()
 

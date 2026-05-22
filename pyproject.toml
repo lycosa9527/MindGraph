@@ -23,7 +23,21 @@ extraPaths = [
 
 [tool.pylint.main]
 # Ensure project root is in path for import resolution (fixes E1123 on agent_graph_workflow_with_styles)
-init-hook = 'import sys; import os; sys.path.insert(0, os.getcwd())'
+init-hook = """
+import sys
+from pathlib import Path
+
+def _mindgraph_project_root() -> Path:
+    here = Path.cwd().resolve()
+    for directory in (here, *here.parents):
+        if (directory / "pyproject.toml").is_file() and (directory / "services").is_dir():
+            return directory
+    return here
+
+_root = str(_mindgraph_project_root())
+if _root not in sys.path:
+    sys.path.insert(0, _root)
+"""
 # Exclude patterns (numeric Alembic revision filenames are not snake_case module names)
 ignore-patterns = [
     "^venv/",

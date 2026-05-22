@@ -7,7 +7,8 @@ import { onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 
-import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
+import { handleKittyDesktopQueuedAction } from '@/composables/kitty/kittyDesktopActionHandlers'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { createKittyDesktopPollLeader } from '@/composables/kitty/kittyDesktopPollLeader'
 import {
   createKittyDesktopWakeStream,
@@ -20,31 +21,17 @@ import {
   KITTY_DESKTOP_PAIR_WAIT_SEC,
   KITTY_MOBILE_WATCH_MS,
 } from '@/composables/kitty/runKittyIntervalPoll'
-import type { DiagramType } from '@/types'
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
-const VALID = new Set<string>(VALID_DIAGRAM_TYPES)
-
 type PollPhase = 'off' | 'watching' | 'consuming'
-
-interface OpenCanvasQueued {
-  kind?: unknown
-  diagram_type?: unknown
-  topic?: unknown
-  left?: unknown
-  right?: unknown
-}
 
 interface DesktopPairingResponse {
   active?: unknown
   action?: unknown
   scopes?: unknown
   primary_scope?: unknown
-}
-
-function isDiagramType(slug: unknown): slug is DiagramType {
-  return typeof slug === 'string' && VALID.has(slug)
 }
 
 function pairingUrl(waitSec: number): string {
@@ -56,7 +43,9 @@ function pairingUrl(waitSec: number): string {
 export function useKittyDesktopActionPoll(): void {
   const authStore = useAuthStore()
   const featureFlagsStore = useFeatureFlagsStore()
+  const savedDiagramsStore = useSavedDiagramsStore()
   const { isAuthenticated } = storeToRefs(authStore)
+  const { t } = useLanguage()
   const route = useRoute()
   const router = useRouter()
 
@@ -112,35 +101,6 @@ export function useKittyDesktopActionPoll(): void {
     consumeRunId += 1
   }
 
-  async function handleOpenCanvasAction(action: unknown): Promise<void> {
-    if (action == null || typeof action !== 'object') {
-      return
-    }
-    const act = action as OpenCanvasQueued
-    if (act.kind !== 'open_canvas') {
-      return
-    }
-    const dt = act.diagram_type
-    if (!isDiagramType(dt)) {
-      return
-    }
-
-    const q: Record<string, string> = { type: dt }
-    const topic = typeof act.topic === 'string' ? act.topic.trim() : ''
-    if (topic.length > 0) {
-      q.kitty_topic = topic.slice(0, 512)
-    }
-    const left = typeof act.left === 'string' ? act.left.trim() : ''
-    const right = typeof act.right === 'string' ? act.right.trim() : ''
-    if (left.length > 0) {
-      q.kitty_left = left.slice(0, 256)
-    }
-    if (right.length > 0) {
-      q.kitty_right = right.slice(0, 256)
-    }
-    await router.push({ path: '/canvas', query: q }).catch(() => undefined)
-  }
-
   function abortPairingFetch(): void {
     if (pairingAbort != null) {
       pairingAbort.abort()
@@ -184,6 +144,25 @@ export function useKittyDesktopActionPoll(): void {
     wakeStreamConnected = false
   }
 
+  async function drainPendingDesktopAction(): Promise<void> {
+    if (!pollingAllowed()) {
+      return
+    }
+    try {
+      const data = await fetchDesktopPairing(0)
+      if (data?.action != null) {
+        await handleKittyDesktopQueuedAction(data.action, {
+          routePath: route.path,
+          savedDiagramsStore,
+          router,
+          t,
+        })
+      }
+    } catch {
+      /* ignore transient network failures */
+    }
+  }
+
   function handleWakeMobileActive(payload: KittyDesktopWakeMobileActive): void {
     publishKittyMobileActiveHub(payload)
     if (!pollingAllowed()) {
@@ -207,6 +186,9 @@ export function useKittyDesktopActionPoll(): void {
     }
     stopWakeStream = createKittyDesktopWakeStream({
       onMobileActive: handleWakeMobileActive,
+      onDesktopActionPending: () => {
+        void drainPendingDesktopAction()
+      },
       onOpen: () => {
         wakeStreamConnected = true
       },
@@ -240,6 +222,14 @@ export function useKittyDesktopActionPoll(): void {
         startConsuming()
         return
       }
+      if (data?.action != null) {
+        await handleKittyDesktopQueuedAction(data.action, {
+          routePath: route.path,
+          savedDiagramsStore,
+          router,
+          t,
+        })
+      }
       publishKittyMobileActiveHub({
         type: 'mobile_active',
         active: false,
@@ -264,7 +254,12 @@ export function useKittyDesktopActionPoll(): void {
           return
         }
         if (data?.action != null) {
-          await handleOpenCanvasAction(data.action)
+          await handleKittyDesktopQueuedAction(data.action, {
+            routePath: route.path,
+            savedDiagramsStore,
+            router,
+            t,
+          })
         }
         if (runId !== consumeRunId || !pollingAllowed() || phase !== 'consuming') {
           return

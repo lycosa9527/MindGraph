@@ -77,6 +77,9 @@ import { useCanvasPageWorkshopCollab } from '@/composables/canvasPage/useCanvasP
 import { useCanvasPageTabRecIndicator } from '@/composables/canvasPage/useCanvasPageTabRecIndicator'
 import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
 import { useKittyDiagramReviewAnnotationBus } from '@/composables/kitty/useKittyDiagramReviewAnnotationBus'
+import { resolveKittyChildNodeId } from '@/composables/kitty/kittyDiagramChildren'
+import { handleKittyAddNodeWithRecommendationsRequest } from '@/composables/kitty/kittyAddNodeWithRecommendations'
+import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
 import {
   canvasVirtualKeyboardOpen,
   ensureCanvasVirtualKeyboardUiVersionSync,
@@ -280,6 +283,7 @@ useCanvasPageMountedHandlers({
 })
 
 useKittyDiagramReviewAnnotationBus('CanvasPage')
+useKittyVoiceSelectionBus('CanvasPage')
 
 eventBus.onWithOwner(
   'diagram:auto_complete_requested',
@@ -305,18 +309,16 @@ eventBus.onWithOwner(
 eventBus.onWithOwner(
   'kitty:inline_recommendations_requested',
   (data: { nodeId?: string; nodeIndex?: number }) => {
-    let nid = data.nodeId
-    if (!nid && data.nodeIndex !== undefined) {
-      const nodes = diagramStore.data?.nodes ?? []
-      const n = nodes[data.nodeIndex]
-      if (n) nid = n.id
-    }
+    const nodes = diagramStore.data?.nodes ?? []
+    let nid = resolveKittyChildNodeId(diagramStore.type, nodes, {
+      nodeId: data.nodeId,
+      nodeIndex: data.nodeIndex,
+    })
     if (!nid) nid = diagramStore.selectedNodes[0]
     if (!nid) {
       notify.warning(t('canvas.toolbar.selectNodesToDelete', '请先选择一个节点'))
       return
     }
-    const nodes = diagramStore.data?.nodes ?? []
     const node = nodes.find((x) => x.id === nid)
     if (
       !node ||
@@ -337,6 +339,23 @@ eventBus.onWithOwner(
       return
     }
     void startRecommendations(nid)
+  },
+  'CanvasPage'
+)
+
+eventBus.onWithOwner(
+  'kitty:add_node_with_recommendations_requested',
+  (data: { text?: string }) => {
+    void handleKittyAddNodeWithRecommendationsRequest({
+      text: data.text,
+      diagramStore,
+      startRecommendations,
+      inlineRecReady: inlineRecStore.isReady,
+      isAuthenticated: authStore.isAuthenticated,
+      conceptMapAiEnabled: Boolean(llmResultsStore.selectedModel),
+      translate: t,
+      notifyWarning: (message: string) => notify.warning(message),
+    })
   },
   'CanvasPage'
 )

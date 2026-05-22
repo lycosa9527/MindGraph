@@ -17,10 +17,14 @@ from services.features.ws_redis_fanout_listener import (
     start_ws_fanout_listener,
     stop_ws_fanout_listener,
 )
-from services.kitty.kitty_control_listener import (
+from services.kitty.infra.control.kitty_control_listener import (
     await_kitty_control_listener_stopped,
     start_kitty_control_listener,
     stop_kitty_control_listener,
+)
+from services.kitty.infra.guards.kitty_production_guards import (
+    KittyProductionGuardError,
+    validate_kitty_production_guards,
 )
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.infrastructure.security.abuseipdb_service import (
@@ -68,6 +72,7 @@ async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
     try:
         init_redis_sync()
         _validate_collab_production_guards()
+        validate_kitty_production_guards()
         warm_ip_reputation_env_snapshot()
         warm_sismember_cache_ttl_snapshot()
         if is_main_worker:
@@ -94,28 +99,32 @@ async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
         if is_main_worker:
             try:
                 from services.redis.redis_async_client import get_async_redis  # pylint: disable=import-outside-toplevel
-                from services.online_collab.redis.online_collab_redis_health import (  # pylint: disable=import-outside-toplevel
-                    check_online_collab_redis_durability,
-                    check_online_collab_redis_version,
+                from services.online_collab.redis import (
+                    online_collab_redis_health as collab_redis_health,
                 )
 
                 redis_async = get_async_redis()
-                await check_online_collab_redis_version(redis_async)
-                await check_online_collab_redis_durability(redis_async)
+                await collab_redis_health.check_online_collab_redis_version(redis_async)
+                await collab_redis_health.check_online_collab_redis_durability(redis_async)
             except Exception as health_exc:  # pylint: disable=broad-except
                 logger.warning(
                     "[LIFESPAN] Workshop Redis durability check skipped: %s",
                     health_exc,
                 )
-    except (RedisStartupError, CollabProductionGuardError) as exc:
-        component = "CollabConfig" if isinstance(exc, CollabProductionGuardError) else "Redis"
+    except (RedisStartupError, CollabProductionGuardError, KittyProductionGuardError) as exc:
+        if isinstance(exc, KittyProductionGuardError):
+            component = "KittyConfig"
+        elif isinstance(exc, CollabProductionGuardError):
+            component = "CollabConfig"
+        else:
+            component = "Redis"
         try:
             CriticalAlertService.send_startup_failure_alert_sync(
                 component=component,
                 error_message=f"{component} startup failed: {str(exc)}",
                 details=(
                     "Application cannot start until required production configuration is present."
-                    if isinstance(exc, CollabProductionGuardError)
+                    if isinstance(exc, (CollabProductionGuardError, KittyProductionGuardError))
                     else "Application cannot start without Redis. Check Redis connection and configuration."
                 ),
             )

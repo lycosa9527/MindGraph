@@ -102,11 +102,6 @@ class FeaturesConfigMixin:
         return bool(self.FEATURE_KITTY_AGENT)
 
     @property
-    def FEATURE_KITTY_PIPECAT_PIPELINE(self):
-        """Route Kitty JSON client messages through Pipecat PipelineTask (optional experimentation)."""
-        return self._get_cached_value("FEATURE_KITTY_PIPECAT_PIPELINE", "False").lower() == "true"
-
-    @property
     def FEATURE_DRAG_AND_DROP(self):
         """Enable drag and drop functionality for diagram nodes."""
         return self._get_cached_value("FEATURE_DRAG_AND_DROP", "False").lower() == "true"

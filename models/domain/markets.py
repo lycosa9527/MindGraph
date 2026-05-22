@@ -63,11 +63,22 @@ class MarketOrder(Base):
     amount_minor: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(10), default="CNY", nullable=False)
     alipay_trade_no: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+    subscription_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("market_subscriptions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     user: Mapped["User"] = relationship("User", lazy="selectin")
     listing: Mapped["MarketListing"] = relationship("MarketListing", back_populates="orders", lazy="selectin")
+    subscription: Mapped[Optional["MarketSubscription"]] = relationship(
+        "MarketSubscription",
+        back_populates="orders",
+        lazy="selectin",
+    )
     payment: Mapped[Optional["MarketPayment"]] = relationship(
         "MarketPayment",
         back_populates="order",
@@ -107,8 +118,15 @@ class MarketEntitlement(Base):
     listing_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("market_listings.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    listing: Mapped["MarketListing"] = relationship("MarketListing", lazy="selectin")
     order_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("market_orders.id", ondelete="SET NULL"), nullable=True
+    )
+    subscription_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("market_subscriptions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
@@ -130,14 +148,22 @@ class MarketSubscription(Base):
         Integer, ForeignKey("market_listings.id", ondelete="RESTRICT"), nullable=False, index=True
     )
     listing: Mapped["MarketListing"] = relationship("MarketListing", lazy="selectin")
+    external_agreement_no: Mapped[Optional[str]] = mapped_column(String(64), unique=True, nullable=True, index=True)
     alipay_agreement_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True, index=True)
     status: Mapped[str] = mapped_column(String(32), default="pending", nullable=False, index=True)
     current_period_end: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    cancelled_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC),
+    )
+    orders: Mapped[list["MarketOrder"]] = relationship(
+        "MarketOrder",
+        back_populates="subscription",
+        lazy="selectin",
     )
 
     __table_args__ = (Index("ix_market_subscriptions_user_listing", "user_id", "listing_id"),)

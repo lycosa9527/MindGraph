@@ -5,10 +5,10 @@ import { type ComputedRef, computed, onUnmounted, ref, watch } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
-import { buildKittyVoiceContextPreferStore } from '@/composables/kitty/buildKittyDiagramContext'
+import { buildKittyContextPreferStore } from '@/composables/kitty/buildKittyDiagramContext'
 import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
-import { useKittyDesktopFocusHint } from '@/composables/kitty/useKittyDesktopFocusHint'
+import { useKittyDesktopFocusHint } from '@/composables/kitty/useKittyDesktopFocus'
 import { useAuthStore, useDiagramStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
@@ -148,6 +148,21 @@ export function useMobileKittyPairing(
     return sessionId.value
   })
 
+  const kittyPairScopeIsEphemeral = computed(
+    () =>
+      (activeDiagramId.value == null || activeDiagramId.value === '') &&
+      (bootstrapRecommendedScope.value == null || bootstrapRecommendedScope.value === '') &&
+      bootstrapDesktopLibraryId.value == null &&
+      (kittyDesktopLibraryId.value == null || kittyDesktopLibraryId.value === '')
+  )
+
+  const kittyPairScopeWarning = computed(() => {
+    if (!kittyPairScopeIsEphemeral.value) {
+      return null
+    }
+    return 'Using a temporary session scope — desktop pairing sync may not work until you open a saved diagram.'
+  })
+
   async function ensureMobileKittyBootstrap(): Promise<void> {
     if (bootstrapInFlight) {
       await bootstrapInFlight
@@ -203,7 +218,7 @@ export function useMobileKittyPairing(
   let contextSyncTimer: ReturnType<typeof setTimeout> | null = null
 
   function buildMobileKittyContext(): KittyAgentContext {
-    const base = buildKittyVoiceContextPreferStore('none')
+    const base = buildKittyContextPreferStore('none')
     const boot = bootstrapPayload.value
     if (boot && boot.source !== 'empty' && boot.context) {
       const serverCtx = boot.context
@@ -214,13 +229,14 @@ export function useMobileKittyPairing(
       const merged: KittyAgentContext = {
         ...base,
         ...serverCtx,
-        diagram_data: diagramData,
+        diagram_data: {
+          ...diagramData,
+          selected_nodes: [...(base.selected_nodes ?? [])],
+        },
         diagram_type:
           (serverCtx.diagram_type as KittyAgentContext['diagram_type']) ?? base.diagram_type,
         active_panel: serverCtx.active_panel ?? base.active_panel,
-        selected_nodes: Array.isArray(serverCtx.selected_nodes)
-          ? serverCtx.selected_nodes
-          : base.selected_nodes,
+        selected_nodes: [...(base.selected_nodes ?? [])],
       }
       const pairLib =
         activeDiagramId.value ??
@@ -320,6 +336,8 @@ export function useMobileKittyPairing(
   return {
     sessionId,
     kittyPairScope,
+    kittyPairScopeIsEphemeral,
+    kittyPairScopeWarning,
     kittyDesktopLibraryId,
     bootstrapPayload,
     mobileKittyContextPreview,

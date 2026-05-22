@@ -1,9 +1,10 @@
 /**
- * Dev-facing voice event log for Mobile Kitty (event bus listeners).
+ * Dev-facing voice event log for Mobile Kitty (curated — no streaming SSE chunks).
  */
 import { onUnmounted } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { formatKittyActionDebug, normalizeKittyDebugText } from '@/composables/kitty/kittyAgentDebug'
 
 export function useKittyMobileDebugBus(options: {
   ownerId: string
@@ -12,22 +13,20 @@ export function useKittyMobileDebugBus(options: {
 }): void {
   const { ownerId, pushLine, scheduleContextSync } = options
 
-  eventBus.onWithOwner(
-    'voice:debug_rx',
-    (payload) => {
-      if (payload.type === 'action') {
-        return
-      }
-      pushLine(`←${payload.type}`, payload.line)
-    },
-    ownerId
-  )
+  let assistantChunkBuffer = ''
+  let assistantTextDoneSeen = false
+
+  function resetAssistantTurn(): void {
+    assistantChunkBuffer = ''
+    assistantTextDoneSeen = false
+  }
 
   eventBus.onWithOwner(
     'voice:started',
     (payload) => {
+      resetAssistantTurn()
       const sid = payload.sessionId ?? ''
-      pushLine('◇ws', sid.length > 14 ? `${sid.slice(0, 14)}…` : sid)
+      pushLine('ws', sid.length > 14 ? `${sid.slice(0, 14)}…` : sid)
     },
     ownerId
   )
@@ -35,7 +34,8 @@ export function useKittyMobileDebugBus(options: {
   eventBus.onWithOwner(
     'voice:stopped',
     () => {
-      pushLine('◇ws', 'voice stopped')
+      resetAssistantTurn()
+      pushLine('ws', 'voice stopped')
     },
     ownerId
   )
@@ -44,7 +44,7 @@ export function useKittyMobileDebugBus(options: {
     'voice:connected',
     (payload) => {
       const sid = payload.sessionId ?? ''
-      pushLine('◆ok', sid.length > 14 ? `${sid.slice(0, 14)}…` : sid)
+      pushLine('ok', sid.length > 14 ? `${sid.slice(0, 14)}…` : sid)
       scheduleContextSync()
     },
     ownerId
@@ -53,7 +53,8 @@ export function useKittyMobileDebugBus(options: {
   eventBus.onWithOwner(
     'voice:ws_closed',
     (p) => {
-      pushLine('◆×', `code=${String(p.code ?? '?')}`)
+      resetAssistantTurn()
+      pushLine('close', `code=${String(p.code ?? '?')}`)
     },
     ownerId
   )
@@ -61,7 +62,7 @@ export function useKittyMobileDebugBus(options: {
   eventBus.onWithOwner(
     'voice:ws_error',
     (p) => {
-      pushLine('⚠ws', String(p.error ?? '').slice(0, 52))
+      pushLine('err_ws', normalizeKittyDebugText(p.error, 120))
     },
     ownerId
   )
@@ -69,7 +70,58 @@ export function useKittyMobileDebugBus(options: {
   eventBus.onWithOwner(
     'voice:server_error',
     (p) => {
-      pushLine('⚠srv', String(p.error ?? '').slice(0, 52))
+      pushLine('err_srv', normalizeKittyDebugText(p.error, 120))
+    },
+    ownerId
+  )
+
+  eventBus.onWithOwner(
+    'voice:transcription',
+    (p) => {
+      const text = normalizeKittyDebugText(p.text, 240)
+      if (text !== '') {
+        pushLine('user', text)
+      }
+    },
+    ownerId
+  )
+
+  eventBus.onWithOwner(
+    'voice:assistant_text_done',
+    (p) => {
+      assistantTextDoneSeen = true
+      const text = normalizeKittyDebugText(p.text, 240)
+      if (text !== '') {
+        pushLine('assistant', text)
+      }
+      assistantChunkBuffer = ''
+    },
+    ownerId
+  )
+
+  eventBus.onWithOwner(
+    'voice:text_chunk',
+    (p) => {
+      if (assistantTextDoneSeen) {
+        return
+      }
+      assistantChunkBuffer += String(p.text ?? '')
+    },
+    ownerId
+  )
+
+  eventBus.onWithOwner(
+    'voice:response_done',
+    () => {
+      if (assistantTextDoneSeen) {
+        resetAssistantTurn()
+        return
+      }
+      const text = normalizeKittyDebugText(assistantChunkBuffer, 240)
+      if (text !== '') {
+        pushLine('assistant', text)
+      }
+      resetAssistantTurn()
     },
     ownerId
   )
@@ -77,14 +129,36 @@ export function useKittyMobileDebugBus(options: {
   eventBus.onWithOwner(
     'voice:action_executed',
     (p) => {
-      let extra = ''
-      try {
-        const j = JSON.stringify(p.params ?? {})
-        extra = j.length > 52 ? `${j.slice(0, 49)}…` : j
-      } catch {
-        extra = ''
-      }
-      pushLine(`→${p.action}`, extra)
+      const params =
+        p.params != null && typeof p.params === 'object'
+          ? (p.params as Record<string, unknown>)
+          : {}
+      const extra = formatKittyActionDebug(p.action, params)
+      pushLine(`act:${p.action}`, extra)
+    },
+    ownerId
+  )
+
+  eventBus.onWithOwner(
+    'voice:diagram_update_executed',
+    (p) => {
+      const detail =
+        typeof p.summary === 'string' && p.summary.trim() !== ''
+          ? p.summary
+          : p.action
+      pushLine('diagram', detail)
+    },
+    ownerId
+  )
+
+  eventBus.onWithOwner(
+    'kitty:diagram_review_annotation',
+    (p) => {
+      const summary = normalizeKittyDebugText(p.summary, 160)
+      const count = Array.isArray(p.items) ? p.items.length : 0
+      const detail =
+        summary !== '' ? `${summary} (${count} nodes)` : `review ${count} node${count === 1 ? '' : 's'}`
+      pushLine('review', detail)
     },
     ownerId
   )

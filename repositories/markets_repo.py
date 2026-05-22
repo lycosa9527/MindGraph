@@ -1,8 +1,9 @@
 """Async repository for market (市场) tables."""
 
+from datetime import UTC, datetime
 from typing import Optional, Sequence
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -141,18 +142,74 @@ class MarketPaymentRepository(BaseRepository[MarketPayment]):
 class MarketEntitlementRepository(BaseRepository[MarketEntitlement]):
     model = MarketEntitlement
 
-    async def has_entitlement(self, user_id: int, listing_id: int) -> bool:
+    @staticmethod
+    def is_row_active(row: Optional[MarketEntitlement]) -> bool:
+        if row is None:
+            return False
+        if row.expires_at is None:
+            return True
+        now = datetime.now(UTC).replace(tzinfo=None)
+        return row.expires_at > now
+
+    async def get_for_user_listing(self, user_id: int, listing_id: int) -> Optional[MarketEntitlement]:
         result = await self.session.execute(
-            select(MarketEntitlement.id).where(
+            select(MarketEntitlement).where(
                 MarketEntitlement.user_id == user_id,
                 MarketEntitlement.listing_id == listing_id,
             )
         )
-        return result.scalar_one_or_none() is not None
+        return result.scalar_one_or_none()
+
+    async def has_entitlement(self, user_id: int, listing_id: int) -> bool:
+        row = await self.get_for_user_listing(user_id, listing_id)
+        return self.is_row_active(row)
+
+    async def list_active_for_user(self, user_id: int) -> Sequence[MarketEntitlement]:
+        now = datetime.now(UTC).replace(tzinfo=None)
+        result = await self.session.execute(
+            select(MarketEntitlement)
+            .options(selectinload(MarketEntitlement.listing))
+            .where(
+                MarketEntitlement.user_id == user_id,
+                or_(MarketEntitlement.expires_at.is_(None), MarketEntitlement.expires_at > now),
+            )
+            .order_by(MarketEntitlement.created_at.desc())
+        )
+        return result.scalars().all()
 
 
 class MarketSubscriptionRepository(BaseRepository[MarketSubscription]):
     model = MarketSubscription
+
+    async def get_open_for_user_listing(self, user_id: int, listing_id: int) -> Optional[MarketSubscription]:
+        result = await self.session.execute(
+            select(MarketSubscription)
+            .options(selectinload(MarketSubscription.listing))
+            .where(
+                MarketSubscription.user_id == user_id,
+                MarketSubscription.listing_id == listing_id,
+                MarketSubscription.status.in_(("pending", "active", "past_due")),
+            )
+            .order_by(MarketSubscription.id.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_by_external_agreement_no(self, external_agreement_no: str) -> Optional[MarketSubscription]:
+        result = await self.session.execute(
+            select(MarketSubscription)
+            .options(selectinload(MarketSubscription.listing))
+            .where(MarketSubscription.external_agreement_no == external_agreement_no)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_by_agreement_id(self, agreement_no: str) -> Optional[MarketSubscription]:
+        result = await self.session.execute(
+            select(MarketSubscription)
+            .options(selectinload(MarketSubscription.listing))
+            .where(MarketSubscription.alipay_agreement_id == agreement_no)
+        )
+        return result.scalar_one_or_none()
 
     async def list_for_user(self, user_id: int) -> Sequence[MarketSubscription]:
         result = await self.session.execute(

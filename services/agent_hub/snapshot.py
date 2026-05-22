@@ -9,10 +9,10 @@ from typing import Any, Dict, Optional
 from redis.exceptions import RedisError
 
 from services.infrastructure.monitoring.ws_metrics import record_kitty_refcount_meta_drift
-from services.kitty.kitty_desktop_focus import get_kitty_desktop_focus_diagram
-from services.kitty.kitty_redis_keys import kitty_sessionmeta_key
-from services.kitty.kitty_scope_refcount import kitty_scope_refcount_read
-from services.kitty.kitty_session_redis import (
+from services.kitty.infra.desktop.kitty_desktop_focus import get_kitty_desktop_focus_diagram
+from services.kitty.infra.redis.kitty_redis_keys import kitty_sessionmeta_key
+from services.kitty.infra.redis.kitty_scope_refcount import kitty_scope_refcount_read
+from services.kitty.infra.redis.kitty_session_redis import (
     kitty_mobile_indicator_armed_for_user,
     load_kitty_live_context,
 )

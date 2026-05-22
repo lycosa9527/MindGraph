@@ -2,6 +2,10 @@
  * Build Voice/Kitty WebSocket context from the diagram store (session_context parity).
  */
 import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
+import {
+  buildKittyChildren,
+  kittyNodeDisplayText,
+} from '@/composables/kitty/kittyDiagramChildren'
 import { buildDiagramData } from '@/composables/nodePalette/diagramDataBuilder'
 import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores/diagram'
@@ -22,20 +26,20 @@ export function kittyInteractionLanguageFromUi(): 'zh' | 'en' {
   return 'zh'
 }
 
-function nodeDisplayText(node: { text?: string; data?: Record<string, unknown> }): string {
-  const raw = (node.text ?? '').trim()
-  if (raw.length > 0) {
-    return raw
-  }
-  const label = node.data?.label
-  if (typeof label === 'string' && label.trim().length > 0) {
-    return label.trim()
-  }
-  const alt = node.data?.text
-  if (typeof alt === 'string') {
-    return alt.trim()
-  }
-  return ''
+export {
+  buildKittyChildren,
+  resolveKittyChildNodeId,
+} from '@/composables/kitty/kittyDiagramChildren'
+
+type VoiceContextNode = {
+  id: string
+  text?: string
+  type?: string
+  data?: Record<string, unknown>
+}
+
+function nodeDisplayText(node: VoiceContextNode): string {
+  return kittyNodeDisplayText(node)
 }
 
 export function buildKittyDiagramContext(
@@ -56,11 +60,7 @@ export function buildKittyDiagramContext(
     focusQuestionFromSpec:
       typeof data?.focus_question === 'string' ? data.focus_question : undefined,
   })
-  const children = nodes.map((n, index) => ({
-    id: n.id,
-    index,
-    text: nodeDisplayText(n),
-  }))
+  const children = buildKittyChildren(dt, nodes)
   const diagram_data: Record<string, unknown> = {
     ...base,
     diagram_type: dt,
@@ -113,7 +113,7 @@ export function buildStandaloneKittyLandingContext(): KittyAgentContext {
 /**
  * Prefer the live diagram in Pinia (e.g. after mobile canvas → Kitty hub); otherwise hub landing stub.
  */
-export function buildKittyVoiceContextPreferStore(activePanel = 'none'): KittyAgentContext {
+export function buildKittyContextPreferStore(activePanel = 'none'): KittyAgentContext {
   const diagramStore = useDiagramStore()
   if (diagramStore.type != null && diagramStore.data != null) {
     return buildKittyDiagramContext(diagramStore, activePanel)

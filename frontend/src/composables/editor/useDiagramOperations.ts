@@ -73,6 +73,8 @@ export interface DiagramOperations {
 export interface UseDiagramOperationsOptions {
   ownerId?: string
   language?: string
+  /** When true, skip automatic destroy on component unmount (app-level singleton). */
+  persistent?: boolean
 }
 
 // ============================================================================
@@ -192,7 +194,7 @@ const DIAGRAM_ALIASES: Record<string, string> = {}
 // ============================================================================
 
 export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) {
-  const { ownerId = `DiagramOps_${Date.now()}`, language = 'en' } = options
+  const { ownerId = `DiagramOps_${Date.now()}`, language = 'en', persistent = false } = options
 
   // Current diagram type
   const diagramType = ref<DiagramType | null>(null)
@@ -659,9 +661,11 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
     eventBus.removeAllListenersForOwner(ownerId)
   }
 
-  onUnmounted(() => {
-    destroy()
-  })
+  if (!persistent) {
+    onUnmounted(() => {
+      destroy()
+    })
+  }
 
   // =========================================================================
   // Return
@@ -695,7 +699,7 @@ let _globalOps: ReturnType<typeof useDiagramOperations> | null = null
 
 export function getDiagramOperations(): ReturnType<typeof useDiagramOperations> {
   if (!_globalOps) {
-    _globalOps = useDiagramOperations({ ownerId: 'GlobalDiagramOps' })
+    _globalOps = useDiagramOperations({ ownerId: 'GlobalDiagramOps', persistent: true })
   }
   return _globalOps
 }

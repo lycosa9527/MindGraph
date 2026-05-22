@@ -26,9 +26,7 @@ export { useInteraction, createVueFlowHandlers } from './editor/useInteraction'
 export { useDiagramOperations, getDiagramOperations } from './editor/useDiagramOperations'
 export { useKittyAgent } from './kitty/useKittyAgent'
 export type { KittyAgentState, KittyAgentContext, KittyAgentOptions } from './kitty/useKittyAgent'
-export { useKittyMobileLaneArmed } from './kitty/useKittyMobileLaneArmed'
-export { useKittyDesktopFocusHint } from './kitty/useKittyDesktopFocusHint'
-export { useKittyDesktopFocusPublish } from './kitty/useKittyDesktopFocusPublish'
+export { useKittyDesktopFocusHint, useKittyDesktopFocusPublish } from './kitty/useKittyDesktopFocus'
 export { useMobileKittyPairing } from './kitty/useMobileKittyPairing'
 export type { MobileKittyBootstrapPayload, MobileKittyContextPreview } from './kitty/useMobileKittyPairing'
 export { useKittyDiagramReviewAnnotationBus } from './kitty/useKittyDiagramReviewAnnotationBus'
@@ -38,7 +36,7 @@ export { useKittyDesktopLiveSpecSync } from './kitty/useKittyDesktopLiveSpecSync
 export { KITTY_DESKTOP_PAIR_WAIT_SEC, KITTY_MOBILE_WATCH_MS, KITTY_PAIR_POLL_MS } from './kitty/runKittyIntervalPoll'
 export {
   buildKittyDiagramContext,
-  buildKittyVoiceContextPreferStore,
+  buildKittyContextPreferStore,
   buildStandaloneKittyLandingContext,
 } from './kitty/buildKittyDiagramContext'
 export { useMindMate, simpleMarkdown } from './mindmate/useMindMate'

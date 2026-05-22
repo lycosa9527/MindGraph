@@ -1,4 +1,27 @@
-# Kitty voice / Redis session module
+# Kitty — realtime agent + session infrastructure
+
+One backend package. There is no separate `kitty_voice` module.
+
+## Layout
+
+| Path | Role |
+|------|------|
+| `services/kitty/ws/` | WebSocket transport (connect, lifecycle, inbound) |
+| `services/kitty/omni/` | Qwen Omni realtime loop + tools |
+| `services/kitty/session/` | Per-scope session registry, events, cleanup |
+| `services/kitty/routing/` | Intent catalog + command router |
+| `services/kitty/diagram/` | Diagram mutations via agent hub |
+| `services/kitty/context/` | Voice context merge + library refresh |
+| `services/kitty/content/` | Paragraph batch apply |
+| `services/kitty/http/` | REST handlers + LLMOps manifest |
+| `services/kitty/infra/redis/` | Key templates, live_spec, refcount |
+| `services/kitty/infra/desktop/` | Mobile/desktop pairing, wake, actions |
+| `services/kitty/infra/control/` | Cross-worker pub/sub |
+| `services/kitty/infra/scope/` | Scope validation and library access |
+| `services/kitty/infra/bootstrap/` | Start-time context hydrate, vocabulary |
+| `services/kitty/infra/guards/` | HTTP gates, production checks |
+| `routers/features/kitty/` | FastAPI route wiring (`/ws/kitty`, `/api/kitty/*`) |
+| `services/agent_hub/` | Authoritative hub mutations (separate on purpose) |
 
 ## Session scopes (`diagram_session_id`)
 
@@ -10,7 +33,7 @@ The URL path `/ws/kitty/{diagram_session_id}` defines a **scope**:
 | Mobile Kitty without a library row | Random client UUID | Desktop `mobile_lane` for a library id stays off until scope matches a saved id + phone sends `start`. |
 | Desktop MindGraph canvas | `savedDiagramsStore.activeDiagramId` or ephemeral UUID | Ephemeral when the canvas has no saved diagram yet. |
 
-Validation: `services/kitty/kitty_ws_scope.normalize_kitty_diagram_session_id` — ASCII alphanumeric, `_`, `-`, max 128 chars.
+Validation: `services.kitty.infra.scope.kitty_ws_scope.normalize_kitty_diagram_session_id` — ASCII alphanumeric, `_`, `-`, max 128 chars.
 
 ## Product rules
 
@@ -30,7 +53,7 @@ On **start**, the server holds `diagram_session_voice_lock(scope)`, closes any o
 
 ## Redis
 
-Session keys use TTL `KITTY_SESSION_REDIS_TTL_SECONDS` (default 4h). Hash-tag prefix `{scope}` keeps sessionmeta, live_spec, owner, and refcount in one Cluster slot (`services/kitty/kitty_redis_keys.py`).
+Session keys use TTL `KITTY_SESSION_REDIS_TTL_SECONDS` (default 4h). Hash-tag prefix `{scope}` keeps sessionmeta, live_spec, owner, and refcount in one Cluster slot (`services/kitty/infra/redis/kitty_redis_keys.py`).
 
 Written after a successful `start` and on debounced `context_update`. Teardown uses a **global Redis refcount** incremented when the socket finishes `start` and decremented in the WebSocket `finally` path via `MindGraphAgentHub` (`services/agent_hub/`). When the count reaches zero, Lua removes sessionmeta, live_spec, owner, and the refcount key together.
 
@@ -43,7 +66,7 @@ User-scoped keys (no hash tag):
 
 - `kitty:desktop_focus:{user_id}` — last library diagram id open on desktop (mobile pairs via GET).
 - `kitty:desktop_actions:{user_id}` — FIFO queue for mobile → desktop navigation (`open_canvas`).
-- `kitty:mobile_active:{user_id}` — JSON `{ scopes, primary_scope, updated_at }` for active mobile-lane Kitty sessions (`services/kitty/kitty_mobile_active.py`).
+- `kitty:mobile_active:{user_id}` — JSON `{ scopes, primary_scope, updated_at }` for active mobile-lane Kitty sessions (`services/kitty/infra/desktop/kitty_mobile_active.py`).
 - `kitty:desktop_wake:{user_id}` — Redis pub/sub channel; publishes `mobile_active` JSON when phone Kitty connects/disconnects (desktop SSE wake).
 
 Refcount Lua defaults to **EVALSHA** (per-worker script cache). Set **`KITTY_REFCOUNT_USE_EVALSHA=0`** to force **EVAL** if server-side scripts are awkward for your Redis topology.
@@ -60,7 +83,7 @@ The desktop SPA (`useKittyDesktopActionPoll` in `App.vue`) **does not** consume 
 2. The user is authenticated on a **desktop** surface (not `/m/*`).
 3. `GET /api/kitty/mobile_active` reports `active: true` (phone Kitty WebSocket started with `client_lane: mobile`).
 
-Both `GET /api/kitty/desktop_pairing` and legacy `GET /api/kitty/desktop_action/pop` gate on ``mobile_active`` before BLPOP.
+Both `GET /api/kitty/desktop_pairing` and legacy `GET /api/kitty/desktop_action/pop` gate **long-poll** BLPOP on ``mobile_active`` (live mobile Kitty WS). **Instant** pop (``wait_sec=0``) runs only after mobile REST enqueue sets a one-shot explicit-drain flag (library diagram pick). Stale queue items are discarded on pop.
 
 While mobile Kitty is **off**, desktop opens **SSE** on `GET /api/kitty/desktop_wake/stream` (EventSource + cookie auth) for instant wake when phone Kitty connects. Redis pub/sub on `kitty:desktop_wake:{user_id}` fires on `mark_kitty_mobile_active` / `clear_kitty_mobile_scope`. A **12s fallback** poll on `GET /api/kitty/desktop_pairing?wait_sec=0` runs only when SSE is disconnected. When mobile connects, the leader tab chains long-poll requests to `GET /api/kitty/desktop_pairing?wait_sec=25` (Redis BLPOP on the action queue) until mobile disconnects. Legacy `GET /api/kitty/desktop_action/pop` remains available with optional `wait_sec`.
 
@@ -76,11 +99,11 @@ Canvas uses the shared **mobile_active** hub (fed by the leader tab's desktop wa
 
 ## Desktop focus (`desktop_focus`)
 
-`GET/PUT /api/kitty/desktop_focus` publishes the library id the user last had open on **desktop** MindGraph so mobile Kitty can pair when local Pinia has no `activeDiagramId`. See `services/kitty/kitty_desktop_focus.py`.
+`GET/PUT /api/kitty/desktop_focus` publishes the library id the user last had open on **desktop** MindGraph so mobile Kitty can pair when local Pinia has no `activeDiagramId`. See `services/kitty/infra/desktop/kitty_desktop_focus.py`.
 
 ## Context parity (desktop-only edits while mobile Kitty is open)
 
-If the phone does not mirror every canvas edit, **`merge_voice_context_with_library`** can still prefer stale node data from the client. The API therefore runs **`throttled_refresh_voice_context_from_library`** (see `routers/features/voice/kitty_library_context_refresh.py`) with `prefer_server_diagram_nodes=True` on throttled **audio** sends and with **`force=True`** at the start of **text command** handling, so library-backed sessions re-read the saved diagram before routing commands. Omni instructions and the LangGraph agent diagram state are updated after each refresh.
+If the phone does not mirror every canvas edit, **`merge_voice_context_with_library`** can still prefer stale node data from the client. The API therefore runs **`throttled_refresh_voice_context_from_library`** (see `services/kitty/context/library_refresh.py`) with `prefer_server_diagram_nodes=True` on throttled **audio** sends and with **`force=True`** at the start of **text command** handling, so library-backed sessions re-read the saved diagram before routing commands. Omni instructions and the LangGraph agent diagram state are updated after each refresh.
 
 ## Multi-worker
 

@@ -4,7 +4,7 @@
 import { type ComputedRef, type Ref, computed, onUnmounted, ref, watch } from 'vue'
 
 import { scopeMatchesKittyMobileActive } from '@/composables/kitty/kittyDesktopMobileActiveHub'
-import { useKittyDesktopFocusPublish } from '@/composables/kitty/useKittyDesktopFocusPublish'
+import { useKittyDesktopFocusPublish } from '@/composables/kitty/useKittyDesktopFocus'
 import { useKittyUserMobileActive } from '@/composables/kitty/useKittyUserMobileActive'
 
 export function useCanvasKittyDesktopPairing(options: {

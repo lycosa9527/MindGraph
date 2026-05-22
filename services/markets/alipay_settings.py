@@ -18,6 +18,8 @@ class AlipayEnvConfig:
     alipay_public_key: str
     sandbox: bool
     notify_base_url: str
+    sign_scene: str
+    personal_product_code: str
 
     @property
     def server_url(self) -> str:
@@ -35,10 +37,14 @@ def load_alipay_config() -> AlipayEnvConfig | None:
         return None
     sandbox = os.getenv("ALIPAY_SANDBOX", "false").lower() == "true"
     notify_base = os.getenv("ALIPAY_NOTIFY_BASE_URL", "").strip().rstrip("/")
+    sign_scene = os.getenv("ALIPAY_SIGN_SCENE", "INDUSTRY|DIGITAL_MEDIA").strip()
+    personal_product_code = os.getenv("ALIPAY_PERSONAL_PRODUCT_CODE", "CYCLE_PAY_AUTH_P").strip()
     return AlipayEnvConfig(
         app_id=app_id,
         app_private_key=app_private_key,
         alipay_public_key=alipay_public_key,
         sandbox=sandbox,
         notify_base_url=notify_base,
+        sign_scene=sign_scene,
+        personal_product_code=personal_product_code,
     )

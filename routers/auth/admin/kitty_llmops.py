@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 
 from models.domain.auth import User
 from routers.auth.dependencies import require_admin
-from services.kitty_voice.kitty_llmops_manifest import build_kitty_llmops_manifest
+from services.kitty.http.llmops_manifest import build_kitty_llmops_manifest
 
 router = APIRouter()
 

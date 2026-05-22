@@ -104,6 +104,7 @@ class OmniRealtimeClient:
         on_output_item_done: Optional[Callable[[dict], None]] = None,
         on_content_part_added: Optional[Callable[[dict], None]] = None,
         on_content_part_done: Optional[Callable[[dict], None]] = None,
+        on_function_call: Optional[Callable[[str, str, str], None]] = None,
     ):
         self.api_key = api_key
         self.model = model
@@ -143,6 +144,7 @@ class OmniRealtimeClient:
         self.on_output_item_done = on_output_item_done
         self.on_content_part_added = on_content_part_added
         self.on_content_part_done = on_content_part_done
+        self.on_function_call = on_function_call
 
         # Response tracking
         self._current_response_id = None
@@ -188,9 +190,9 @@ class OmniRealtimeClient:
             logger.error("Failed to connect: %s", e, exc_info=True)
             raise
 
-    async def _configure_session(self) -> None:
+    async def _configure_session(self, tools: Optional[List[Dict[str, Any]]] = None) -> None:
         """Configure session with initial settings."""
-        session_config = {
+        session_config: Dict[str, Any] = {
             "modalities": ["text", "audio"],
             "voice": self.voice,
             "instructions": self.instructions,
@@ -198,6 +200,8 @@ class OmniRealtimeClient:
             "output_audio_format": self.output_format,
             "input_audio_transcription": {"model": self.transcription_model},
         }
+        if tools:
+            session_config["tools"] = tools
 
         if self.turn_detection_mode == TurnDetectionMode.SERVER_VAD:
             session_config["turn_detection"] = {
@@ -503,8 +507,24 @@ class OmniRealtimeClient:
             elif event_type == "response.output_item.done":
                 item = event.get("item", {})
                 logger.debug("Output item done: %s", item.get("id"))
+                if item.get("type") == "function_call" and self.on_function_call:
+                    name = item.get("name", "")
+                    call_id = item.get("call_id") or item.get("id") or ""
+                    arguments = item.get("arguments") or "{}"
+                    result = self.on_function_call(name, arguments, call_id)
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
                 if self.on_output_item_done:
                     result = self.on_output_item_done(item)
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
+
+            elif event_type == "response.function_call_arguments.done":
+                call_id = event.get("call_id") or event.get("item_id") or ""
+                name = event.get("name") or ""
+                arguments = event.get("arguments") or "{}"
+                if self.on_function_call and name:
+                    result = self.on_function_call(name, arguments, call_id)
                     if result is not None and asyncio.iscoroutine(result):
                         await cast(Coroutine[Any, Any, None], result)
 
@@ -596,6 +616,7 @@ class OmniClient:
         # Native WebSocket client (will be created in start_conversation)
         self._native_client: Optional[OmniRealtimeClient] = None
         self.event_queue: Optional[asyncio.Queue] = None
+        self._diagram_tools: Optional[List[Dict[str, Any]]] = None
 
         logger.debug(
             "Initialized: model=%s, voice=%s, vad_threshold=%s",
@@ -697,11 +718,20 @@ class OmniClient:
             on_output_item_done=make_sync_wrapper(lambda item: {"type": "output_item_done", "item": item}),
             on_content_part_added=make_sync_wrapper(lambda part: {"type": "content_part_added", "part": part}),
             on_content_part_done=make_sync_wrapper(lambda part: {"type": "content_part_done", "part": part}),
+            on_function_call=make_sync_wrapper(
+                lambda name, arguments, call_id: {
+                    "type": "function_call",
+                    "name": name,
+                    "arguments": arguments,
+                    "call_id": call_id,
+                }
+            ),
         )
 
         # Connect
         try:
             await self._native_client.connect()
+            await self.register_diagram_tools()
             # Signal session ready
             await self.event_queue.put({"type": "session_ready"})
         except Exception as e:  # pylint: disable=broad-except
@@ -726,6 +756,18 @@ class OmniClient:
             yield {"type": "error", "error": str(e)}
         finally:
             await self.close()
+
+    async def register_diagram_tools(self) -> None:
+        """Register Kitty diagram tool schemas on the Omni realtime session."""
+        if not self._native_client or not self._native_client.is_connected():
+            return
+        from services.kitty.omni.tools import build_omni_diagram_tools
+
+        self._diagram_tools = build_omni_diagram_tools()
+        session_config: Dict[str, Any] = {
+            "tools": self._diagram_tools,
+        }
+        await self._native_client.update_session(session_config)
 
     async def close(self) -> None:
         """Close the underlying Omni WebSocket connection if active."""
@@ -756,7 +798,7 @@ class OmniClient:
 
         try:
             # Build session config preserving all settings
-            session_config = {
+            session_config: Dict[str, Any] = {
                 "modalities": ["text", "audio"],
                 "voice": self.voice,
                 "instructions": new_instructions,
@@ -770,6 +812,8 @@ class OmniClient:
                     "silence_duration_ms": self.vad_silence_ms,
                 },
             }
+            if self._diagram_tools:
+                session_config["tools"] = self._diagram_tools
 
             await self._native_client.update_session(session_config)
             logger.debug("Instructions updated: %s...", new_instructions[:50])
