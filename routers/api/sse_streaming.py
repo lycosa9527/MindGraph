@@ -16,10 +16,9 @@ import time
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.dify import DifyFile
-from config.database import get_async_db
+from config.database import AsyncSessionLocal
 from models import AIAssistantRequest, Messages, get_request_language
 from models.domain.auth import User
 from services.dify.org_mindmate_client import resolve_mindmate_dify_client_or_http
@@ -44,8 +43,7 @@ async def ai_assistant_stream(
     request: Request,
     x_language: Optional[str] = None,
     current_user: Optional[User] = Depends(get_current_user_or_api_key),
-    db: AsyncSession = Depends(get_async_db),
-):
+) -> StreamingResponse:
     """
     Stream AI assistant responses using Dify API with SSE (async version).
 
@@ -88,11 +86,15 @@ async def ai_assistant_stream(
         org_raw = getattr(current_user, "organization_id", None)
         organization_id_for_dify = int(org_raw) if org_raw is not None else None
 
-    dify_client = await resolve_mindmate_dify_client_or_http(
-        db,
-        organization_id_for_dify,
-        detail=Messages.error("ai_not_configured", lang),
-    )
+    # Resolve Dify credentials in a short-lived session. Do not use Depends(get_async_db)
+    # here: FastAPI keeps request-scoped sessions open until the SSE body finishes, which
+    # leaves a read transaction idle past idle_in_transaction_session_timeout (30s default).
+    async with AsyncSessionLocal() as db:
+        dify_client = await resolve_mindmate_dify_client_or_http(
+            db,
+            organization_id_for_dify,
+            detail=Messages.error("ai_not_configured", lang),
+        )
     logger.debug(
         "MindMate Dify client resolved for org_id=%s url=%s",
         organization_id_for_dify,

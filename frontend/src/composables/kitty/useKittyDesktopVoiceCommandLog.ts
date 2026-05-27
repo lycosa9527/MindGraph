@@ -41,7 +41,7 @@ export function useKittyDesktopVoiceCommandLog(options: {
     const row: KittyDesktopVoiceCommandEntry = {
       id: `vc-${entrySeq}`,
       action: act,
-      label: formatKittyVoiceCommandLabel(act, detail, t),
+      label: formatKittyVoiceCommandLabel(act, detail, (key, params) => t(key, params ?? {})),
       at: Date.now(),
     }
     const next = [...entries.value, row]

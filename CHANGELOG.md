@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.19] - 2026-05-27
+
+### Fixed
+
+- **MindMate — SSE idle-in-transaction timeout** — `/api/ai_assistant/stream` resolves org Dify credentials in a short-lived `AsyncSessionLocal()` instead of `Depends(get_async_db)`, so PostgreSQL no longer kills the connection during long Dify streams (`idle_in_transaction_session_timeout`, default 30s) and session cleanup no longer raises `IdleInTransactionSessionTimeout` after successful responses ([`sse_streaming.py`](routers/api/sse_streaming.py)).
+- **Kitty — mobile hub persist init order** — `useKittyMobileHubPersist` runs after `connected` / `kittyDiagramDisplayTitle` computeds are defined, fixing a temporal-dead-zone ReferenceError on [`MobileKittyPage.vue`](frontend/src/pages/mobile/MobileKittyPage.vue).
+- **Kitty — library snapshot ack** — Treat `library_snapshot_saved` as saved only when strictly `true` ([`kittyAgentInbound.ts`](frontend/src/composables/kitty/kittyAgentInbound.ts)).
+- **Kitty — desktop voice command log i18n** — Pass vue-i18n params through a wrapper so interpolated labels render correctly ([`useKittyDesktopVoiceCommandLog.ts`](frontend/src/composables/kitty/useKittyDesktopVoiceCommandLog.ts)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.19).
+
 ## [5.117.18] - 2026-05-27
 
 ### Added

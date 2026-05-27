@@ -131,7 +131,7 @@ export function handleKittyServerMessage(
       const ackPayload = {
         ok: data.ok !== false,
         revision: typeof data.revision === 'number' ? data.revision : undefined,
-        library_snapshot_saved: data.library_snapshot_saved,
+        library_snapshot_saved: data.library_snapshot_saved === true,
         library_snapshot_error:
           typeof data.library_snapshot_error === 'string'
             ? data.library_snapshot_error

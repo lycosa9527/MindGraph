@@ -114,15 +114,6 @@ const {
   onDebugLine: pushKittyDebugLine,
 })
 
-const { flushHubLibraryPersist } = useKittyMobileHubPersist({
-  libraryDiagramId: kittyLibraryDiagramId,
-  diagramDisplayTitle: kittyDiagramDisplayTitle,
-  isConnected: connected,
-  buildContext: buildMobileKittyContext,
-  updateContext: (ctx, opts) => kitty.updateContext(ctx, opts),
-  onDebugLine: pushKittyDebugLine,
-})
-
 const connected = computed(() => kitty.isConnected.value)
 const connecting = computed(() => kitty.state.value === 'connecting')
 const kittyVoiceState = computed(() => kitty.state.value)
@@ -134,6 +125,15 @@ const kittyLibraryDiagramId = computed(
 const kittyDiagramDisplayTitle = computed(
   () => mobileKittyContextPreview.value.diagramDisplayTitle
 )
+
+const { flushHubLibraryPersist } = useKittyMobileHubPersist({
+  libraryDiagramId: kittyLibraryDiagramId,
+  diagramDisplayTitle: kittyDiagramDisplayTitle,
+  isConnected: connected,
+  buildContext: buildMobileKittyContext,
+  updateContext: (ctx, opts) => kitty.updateContext(ctx, opts),
+  onDebugLine: pushKittyDebugLine,
+})
 
 const kittyDiagramCardPrimary = computed(() => {
   const p = mobileKittyContextPreview.value
