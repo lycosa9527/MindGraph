@@ -7,7 +7,7 @@ from fastapi import WebSocket
 from services.kitty.session.agent_state import kitty_agent_manager
 
 from services.kitty.diagram.diagram_utils import get_diagram_prefix_map
-from services.kitty.context.messaging import safe_websocket_send
+from services.kitty.context.messaging import send_kitty_diagram_update
 from services.kitty.session.ops import get_agent_session_id
 from services.kitty.session.runtime_state import logger, voice_sessions
 
@@ -39,8 +39,9 @@ async def voice_apply_delete_node_action(
 
         delete_payload = {"category_index": category_index, "item_index": item_index}
 
-        await safe_websocket_send(
+        await send_kitty_diagram_update(
             websocket,
+            voice_session_id,
             {
                 "type": "diagram_update",
                 "action": "remove_nodes",
@@ -72,8 +73,9 @@ async def voice_apply_delete_node_action(
 
         delete_payload = {"part_index": part_index, "subpart_index": subpart_index}
 
-        await safe_websocket_send(
+        await send_kitty_diagram_update(
             websocket,
+            voice_session_id,
             {
                 "type": "diagram_update",
                 "action": "remove_nodes",
@@ -106,8 +108,9 @@ async def voice_apply_delete_node_action(
 
         delete_payload = {"branch_index": branch_index, "child_index": child_index}
 
-        await safe_websocket_send(
+        await send_kitty_diagram_update(
             websocket,
+            voice_session_id,
             {
                 "type": "diagram_update",
                 "action": "remove_nodes",
@@ -139,8 +142,9 @@ async def voice_apply_delete_node_action(
 
         delete_payload = {"relationship_index": relationship_index}
 
-        await safe_websocket_send(
+        await send_kitty_diagram_update(
             websocket,
+            voice_session_id,
             {
                 "type": "diagram_update",
                 "action": "remove_nodes",
@@ -170,8 +174,9 @@ async def voice_apply_delete_node_action(
         # Build delete payload with step_index and substep_index
         delete_payload = {"step_index": step_index, "substep_index": substep_index}
 
-        await safe_websocket_send(
+        await send_kitty_diagram_update(
             websocket,
+            voice_session_id,
             {
                 "type": "diagram_update",
                 "action": "remove_nodes",
@@ -246,8 +251,9 @@ async def voice_apply_delete_node_action(
             logger.info("Deleting node: %s (category: %s)", resolved_node_id, category)
         else:
             logger.info("Deleting node: %s", resolved_node_id)
-        await safe_websocket_send(
+        await send_kitty_diagram_update(
             websocket,
+            voice_session_id,
             {
                 "type": "diagram_update",
                 "action": "remove_nodes",

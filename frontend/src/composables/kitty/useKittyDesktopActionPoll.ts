@@ -9,6 +9,8 @@ import { storeToRefs } from 'pinia'
 
 import { handleKittyDesktopQueuedAction } from '@/composables/kitty/kittyDesktopActionHandlers'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { eventBus } from '@/composables/core/useEventBus'
+import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { createKittyDesktopPollLeader } from '@/composables/kitty/kittyDesktopPollLeader'
 import {
   createKittyDesktopWakeStream,
@@ -188,6 +190,45 @@ export function useKittyDesktopActionPoll(): void {
       onMobileActive: handleWakeMobileActive,
       onDesktopActionPending: () => {
         void drainPendingDesktopAction()
+      },
+      onDiagramUpdate: (payload) => {
+        const scope = typeof payload.scope === 'string' ? payload.scope : undefined
+        const action = typeof payload.action === 'string' ? payload.action : undefined
+        traceKittyWorkflow('hub', 'sse_diagram', String(action ?? 'diagram_update'), {
+          scope,
+          action,
+        })
+        eventBus.emit('kitty:desktop_diagram_update', {
+          scope,
+          action,
+          updates: payload.updates,
+        })
+      },
+      onSelectionUpdate: (payload) => {
+        const scope = typeof payload.scope === 'string' ? payload.scope : undefined
+        const raw = payload.selected_nodes
+        const selected_nodes = Array.isArray(raw)
+          ? raw.filter((item): item is string => typeof item === 'string')
+          : []
+        traceKittyWorkflow('hub', 'sse_selection', `${selected_nodes.length} node(s)`, { scope })
+        eventBus.emit('kitty:desktop_selection_update', {
+          scope,
+          selected_nodes,
+        })
+      },
+      onVoiceCommand: (payload) => {
+        const scope = typeof payload.scope === 'string' ? payload.scope : undefined
+        const action = typeof payload.action === 'string' ? payload.action : undefined
+        const detail = typeof payload.detail === 'string' ? payload.detail : undefined
+        traceKittyWorkflow('hub', 'sse_voice_cmd', detail ?? String(action ?? ''), {
+          scope,
+          action,
+        })
+        eventBus.emit('kitty:desktop_voice_command', {
+          scope,
+          action,
+          detail,
+        })
       },
       onOpen: () => {
         wakeStreamConnected = true

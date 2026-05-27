@@ -10,6 +10,10 @@ import {
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
+import {
+  braceMapRootId,
+  isBraceMapSubpartNode,
+} from '@/stores/diagram/braceMapParentResolve'
 import { recalculateCircleMapLayout } from '@/stores/specLoader'
 import type { useDiagramStore } from '@/stores/diagram'
 import type { DiagramNode, DiagramType, Connection } from '@/types'
@@ -179,16 +183,19 @@ function addNodeForDiagramType(
 
   if (diagramType === 'brace_map') {
     const selectedId = store.selectedNodes[0]
-    if (!selectedId || selectedId === 'dimension-label') {
-      const targetIds = new Set(store.data.connections?.map((conn) => conn.target) ?? [])
-      const rootId =
-        store.data.nodes.find((node) => node.type === 'topic')?.id ??
-        store.data.nodes.find((node) => !targetIds.has(node.id))?.id
-      if (!rootId) return false
-      return store.addBraceMapPart(rootId, placeholder, [
-        translate('canvas.toolbar.subpartLabel1', 'Part A'),
-        translate('canvas.toolbar.subpartLabel2', 'Part B'),
-      ])
+    const connections = store.data.connections ?? []
+    const rootId = braceMapRootId(store.data.nodes, connections)
+    const defaultSubparts: [string, string] = [
+      translate('canvas.toolbar.subpartLabel1', 'Part A'),
+      translate('canvas.toolbar.subpartLabel2', 'Part B'),
+    ]
+    if (!rootId) return false
+    if (
+      !selectedId ||
+      selectedId === 'dimension-label' ||
+      !isBraceMapSubpartNode(selectedId, connections, rootId)
+    ) {
+      return store.addBraceMapPart(rootId, placeholder, defaultSubparts)
     }
     return store.addBraceMapPart(selectedId, placeholder)
   }

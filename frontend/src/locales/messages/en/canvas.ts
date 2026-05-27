@@ -381,9 +381,14 @@ export default {
   'canvas.topBar.snapshotRecallCancelBtn': 'Cancel',
   'canvas.topBar.snapshotRecallHistory': 'Before snapshot {n} restore',
   'canvas.topBar.snapshotRecallFailed': 'Failed to restore snapshot, please try again',
+  'canvas.topBar.snapshotRecallNoDiagram':
+    'Save the diagram to your library first, then restore a snapshot.',
+  'canvas.topBar.snapshotRecallNoType':
+    'Diagram type is not ready yet. Wait a moment and try again.',
   'canvas.topBar.snapshotDeleted': 'Snapshot {n} deleted',
   'canvas.topBar.snapshotDeleteFailed': 'Failed to delete snapshot, please try again',
   'canvas.topBar.snapshotBadgeTooltip': 'Click to restore snapshot {n} · Ctrl+Click to delete',
+  'canvas.topBar.snapshotRecallingTooltip': 'Restoring snapshot {n}…',
   'canvas.zoomControls.exitFullscreen': 'Exit fullscreen',
   'canvas.zoomControls.fitCanvas': 'Fit canvas',
   'canvas.zoomControls.fullscreen': 'Fullscreen',

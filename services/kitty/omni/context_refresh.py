@@ -7,6 +7,7 @@ import logging
 from typing import Any, Dict, Optional
 
 from services.kitty.context.messaging import build_voice_instructions
+from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.kitty.session.runtime_state import voice_sessions
 from services.kitty.session.ops import get_session_omni_client
 
@@ -105,8 +106,19 @@ async def _apply_omni_refresh(
 
     try:
         await omni_client.update_instructions(new_instructions)
+        child_count = len(diagram_data.get("children", [])) if isinstance(diagram_data.get("children"), list) else 0
+        kitty_wf_log(
+            "omni_refresh",
+            f"reason={reason} nodes={child_count} delta={bool(delta)}",
+            voice_session_id=voice_session_id,
+        )
     except (RuntimeError, ConnectionError, AttributeError) as exc:
         logger.debug("Omni context refresh skipped for %s: %s", voice_session_id, exc)
+        kitty_wf_log(
+            "omni_refresh_fail",
+            str(exc)[:120],
+            voice_session_id=voice_session_id,
+        )
 
 
 def cancel_pending_omni_refresh(voice_session_id: str) -> None:

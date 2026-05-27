@@ -1,5 +1,7 @@
 /** SSE wake stream: instant mobile_active transitions for desktop Kitty poll. */
 
+import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
+
 export const KITTY_DESKTOP_WAKE_STREAM_URL = '/api/kitty/desktop_wake/stream'
 
 export interface KittyDesktopWakeMobileActive {
@@ -12,9 +14,32 @@ export interface KittyDesktopWakeMobileActive {
 export interface KittyDesktopWakeStreamOptions {
   onMobileActive: (payload: KittyDesktopWakeMobileActive) => void
   onDesktopActionPending?: () => void
+  onDiagramUpdate?: (payload: KittyDesktopDiagramUpdateFanout) => void
+  onSelectionUpdate?: (payload: KittyDesktopSelectionUpdateFanout) => void
+  onVoiceCommand?: (payload: KittyDesktopVoiceCommandFanout) => void
   onOpen?: () => void
   onClose?: () => void
   onError?: (event: Event) => void
+}
+
+export interface KittyDesktopDiagramUpdateFanout {
+  type?: unknown
+  scope?: unknown
+  action?: unknown
+  updates?: unknown
+}
+
+export interface KittyDesktopSelectionUpdateFanout {
+  type?: unknown
+  scope?: unknown
+  selected_nodes?: unknown
+}
+
+export interface KittyDesktopVoiceCommandFanout {
+  type?: unknown
+  scope?: unknown
+  action?: unknown
+  detail?: unknown
 }
 
 function parseMobileActivePayload(raw: unknown): KittyDesktopWakeMobileActive | null {
@@ -58,6 +83,7 @@ export function createKittyDesktopWakeStream(
     clearRetryTimer()
     retryCount += 1
     const delayMs = Math.min(30000, 1000 * retryCount)
+    traceKittyWorkflow('hub', 'sse_reconnect', `retry in ${delayMs}ms`)
     retryTimer = setTimeout(() => {
       retryTimer = null
       connect()
@@ -75,6 +101,7 @@ export function createKittyDesktopWakeStream(
     eventSource = new EventSource(KITTY_DESKTOP_WAKE_STREAM_URL, { withCredentials: true })
     eventSource.onopen = () => {
       retryCount = 0
+      traceKittyWorkflow('hub', 'sse_connect', retryCount > 0 ? 'reconnected' : 'connected')
       options.onOpen?.()
     }
     eventSource.onmessage = (event: MessageEvent) => {
@@ -86,9 +113,26 @@ export function createKittyDesktopWakeStream(
             options.onDesktopActionPending?.()
             return
           }
+          if (row.type === 'diagram_update') {
+            options.onDiagramUpdate?.(parsed as KittyDesktopDiagramUpdateFanout)
+            return
+          }
+          if (row.type === 'selection_update') {
+            options.onSelectionUpdate?.(parsed as KittyDesktopSelectionUpdateFanout)
+            return
+          }
+          if (row.type === 'voice_command') {
+            options.onVoiceCommand?.(parsed as KittyDesktopVoiceCommandFanout)
+            return
+          }
         }
         const payload = parseMobileActivePayload(parsed)
         if (payload != null) {
+          traceKittyWorkflow(
+            'hub',
+            'mobile_active',
+            payload.active === true ? 'active' : 'inactive'
+          )
           options.onMobileActive(payload)
         }
       } catch {

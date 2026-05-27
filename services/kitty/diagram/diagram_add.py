@@ -7,7 +7,7 @@ from fastapi import WebSocket
 from services.kitty.session.agent_state import kitty_agent_manager
 
 from services.kitty.diagram.diagram_utils import get_diagram_prefix_map
-from services.kitty.context.messaging import safe_websocket_send
+from services.kitty.context.messaging import safe_websocket_send, send_kitty_diagram_update
 from services.kitty.session.ops import get_agent_session_id
 from services.kitty.session.runtime_state import logger, voice_sessions
 
@@ -51,8 +51,9 @@ async def voice_apply_add_node_action(
                 "item_index": item_index,
             }
 
-            await safe_websocket_send(
+            await send_kitty_diagram_update(
                 websocket,
+                voice_session_id,
                 {
                     "type": "diagram_update",
                     "action": "add_nodes",
@@ -105,8 +106,9 @@ async def voice_apply_add_node_action(
                 "subpart_index": subpart_index,
             }
 
-            await safe_websocket_send(
+            await send_kitty_diagram_update(
                 websocket,
+                voice_session_id,
                 {
                     "type": "diagram_update",
                     "action": "add_nodes",
@@ -159,8 +161,9 @@ async def voice_apply_add_node_action(
                 "child_index": child_index,
             }
 
-            await safe_websocket_send(
+            await send_kitty_diagram_update(
                 websocket,
+                voice_session_id,
                 {
                     "type": "diagram_update",
                     "action": "add_nodes",
@@ -223,8 +226,9 @@ async def voice_apply_add_node_action(
                 "label": rel_label,
             }
 
-            await safe_websocket_send(
+            await send_kitty_diagram_update(
                 websocket,
+                voice_session_id,
                 {
                     "type": "diagram_update",
                     "action": "add_nodes",
@@ -266,8 +270,9 @@ async def voice_apply_add_node_action(
             if substep_index is not None:
                 update_payload["substep_index"] = substep_index
 
-            await safe_websocket_send(
+            await send_kitty_diagram_update(
                 websocket,
+                voice_session_id,
                 {
                     "type": "diagram_update",
                     "action": "add_nodes",
@@ -349,8 +354,9 @@ async def voice_apply_add_node_action(
                 else:
                     existing_node_id = f"{prefix}_{add_node_index}"
 
-                await safe_websocket_send(
+                await send_kitty_diagram_update(
                     websocket,
+                    voice_session_id,
                     {
                         "type": "diagram_update",
                         "action": "update_nodes",
@@ -393,8 +399,9 @@ async def voice_apply_add_node_action(
                     update_payload["right"] = right
 
                 # Send update with position information and diagram-specific fields
-                await safe_websocket_send(
+                await send_kitty_diagram_update(
                     websocket,
+                    voice_session_id,
                     {
                         "type": "diagram_update",
                         "action": "add_nodes",
@@ -426,8 +433,9 @@ async def voice_apply_add_node_action(
                 update_payload["left"] = left
                 update_payload["right"] = right
 
-            await safe_websocket_send(
+            await send_kitty_diagram_update(
                 websocket,
+                voice_session_id,
                 {
                     "type": "diagram_update",
                     "action": "add_nodes",

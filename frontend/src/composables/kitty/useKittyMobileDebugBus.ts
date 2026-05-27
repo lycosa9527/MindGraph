@@ -5,6 +5,7 @@ import { onUnmounted } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { formatKittyActionDebug, normalizeKittyDebugText } from '@/composables/kitty/kittyAgentDebug'
+import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 
 export function useKittyMobileDebugBus(options: {
   ownerId: string
@@ -12,6 +13,11 @@ export function useKittyMobileDebugBus(options: {
   scheduleContextSync: () => void
 }): void {
   const { ownerId, pushLine, scheduleContextSync } = options
+
+  function trace(prefix: string, detail: string, stage?: string): void {
+    pushLine(prefix, detail)
+    traceKittyWorkflow('mobile', stage ?? prefix, detail)
+  }
 
   let assistantChunkBuffer = ''
   let assistantTextDoneSeen = false
@@ -27,6 +33,7 @@ export function useKittyMobileDebugBus(options: {
       resetAssistantTurn()
       const sid = payload.sessionId ?? ''
       pushLine('ws', sid.length > 14 ? `${sid.slice(0, 14)}…` : sid)
+      traceKittyWorkflow('mobile', 'ws', 'voice started')
     },
     ownerId
   )
@@ -134,7 +141,7 @@ export function useKittyMobileDebugBus(options: {
           ? (p.params as Record<string, unknown>)
           : {}
       const extra = formatKittyActionDebug(p.action, params)
-      pushLine(`act:${p.action}`, extra)
+      trace(`act:${p.action}`, extra, 'action')
     },
     ownerId
   )
@@ -159,6 +166,22 @@ export function useKittyMobileDebugBus(options: {
       const detail =
         summary !== '' ? `${summary} (${count} nodes)` : `review ${count} node${count === 1 ? '' : 's'}`
       pushLine('review', detail)
+    },
+    ownerId
+  )
+
+  eventBus.onWithOwner(
+    'voice:context_mutation_ack',
+    (p) => {
+      const ok = p.ok !== false
+      const rev = typeof p.revision === 'number' ? ` rev=${p.revision}` : ''
+      const persist = p.persist_library === true ? ' persist' : ''
+      const err =
+        typeof p.library_snapshot_error === 'string' ? p.library_snapshot_error : p.error
+      const detail = ok
+        ? `hub ack ok${rev}${persist}`
+        : `hub ack failed ${normalizeKittyDebugText(String(err ?? 'rejected'), 80)}`
+      pushLine('#hub', detail)
     },
     ownerId
   )

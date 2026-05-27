@@ -2,6 +2,11 @@ import { i18n } from '@/i18n'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import { recalculateBraceMapLayout } from '../specLoader'
+import {
+  braceMapRootId,
+  isBraceMapPartAddTarget,
+  resolveBraceMapSubpartAttachParentId,
+} from './braceMapParentResolve'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { emitEvent } from './events'
 import type { DiagramContext } from './types'
@@ -19,7 +24,14 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
     const parentNode = data.value.nodes.find((n) => n.id === parentId)
     if (!parentNode) return false
 
-    const isAddingPart = parentId === 'topic' || parentNode.type === 'topic'
+    const connections = data.value.connections ?? []
+    const rootId = braceMapRootId(data.value.nodes, connections)
+    const isAddingPart = isBraceMapPartAddTarget(parentId, parentNode, rootId)
+    const attachParentId =
+      isAddingPart || !rootId
+        ? parentId
+        : resolveBraceMapSubpartAttachParentId(parentId, connections, rootId)
+
     const t = i18n.global.t
     const partText = text ?? String(isAddingPart ? t('diagram.newPart') : t('diagram.newSubpart'))
     const baseId = Date.now()
@@ -31,7 +43,7 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
       type: 'brace',
       position: { x: 0, y: 0 },
     })
-    ctx.addConnection(parentId, newId)
+    ctx.addConnection(attachParentId, newId)
 
     if (isAddingPart) {
       const [sub1Text, sub2Text] = subpartTexts ?? [
@@ -72,10 +84,8 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
   function removeBraceMapNodes(nodeIds: string[]): number {
     if (type.value !== 'brace_map' || !data.value?.nodes) return 0
 
-    const targetIds = new Set(data.value.connections?.map((c) => c.target) ?? [])
-    const rootId =
-      data.value.nodes.find((n) => n.type === 'topic')?.id ??
-      data.value.nodes.find((n) => !targetIds.has(n.id))?.id
+    const connections = data.value.connections ?? []
+    const rootId = braceMapRootId(data.value.nodes, connections)
     if (!rootId) return 0
 
     const childrenMap = new Map<string, string[]>()

@@ -105,6 +105,22 @@ export default {
   'canvas.kittyMobileIndicatorAria':
     'Status: Mobile Kitty is connected to this MindGraph canvas. Interact on your phone.',
   'canvas.kittyMobileIndicatorTitle': 'Mobile Kitty',
+  'canvas.kittyVoiceCommandLogTitle': 'Voice commands',
+  'canvas.kittyVoiceCommandLogAria': 'Recent voice commands from mobile Kitty',
+  'canvas.kittyWorkflowDebugTitle': 'Kitty workflow trace',
+  'canvas.kittyWorkflowDebugAria': 'Voice to canvas workflow debug log',
+  'kitty.voiceCommand.add_node': 'Add node: {detail}',
+  'kitty.voiceCommand.add_nodes': 'Add nodes: {detail}',
+  'kitty.voiceCommand.update_node': 'Update node: {detail}',
+  'kitty.voiceCommand.update_nodes': 'Update nodes: {detail}',
+  'kitty.voiceCommand.update_center': 'Update topic: {detail}',
+  'kitty.voiceCommand.delete_node': 'Delete node: {detail}',
+  'kitty.voiceCommand.remove_nodes': 'Remove nodes: {detail}',
+  'kitty.voiceCommand.select_node': 'Select node: {detail}',
+  'kitty.voiceCommand.auto_complete': 'Run auto-complete',
+  'kitty.voiceCommand.start_inline_recommendations': 'Inline recommendations',
+  'kitty.voiceCommand.add_node_with_recommendations': 'Add node with recommendations: {detail}',
+  'kitty.voiceCommand.explain_node': 'Explain node: {detail}',
   'mobile.mindgraphDesc': 'Mind mapping agent',
   'mobile.mindmateDesc': 'Teaching research agent',
   'mobile.kittyCardTitle': 'Kitty',
@@ -127,7 +143,7 @@ export default {
   'mobile.kittyDiagramCardTapHint': 'Tap to choose a diagram',
   'mobile.kittyDiagramUpdated': 'Diagram updated',
   'mobile.kittyConnectFailed': 'Connection failed. Check your network and try again.',
-  'mobile.kittyDisconnected': 'Voice connection lost. Tap the mic to reconnect.',
+  'mobile.kittyDisconnected': 'Voice connection lost. Hold the mic to reconnect.',
   'mobile.kittyEnableServerHint':
     'Enable FEATURE_KITTY_AGENT=True in server .env and restart the API.',
   'mobile.kittyServerDisabledBanner':
@@ -147,10 +163,14 @@ export default {
   'mobile.kittyHubSourceLive': 'Hub: live',
   'mobile.kittyHubSourceLibrary': 'Hub: library',
   'mobile.kittyHubSourceEmpty': 'Hub: empty',
+  'mobile.kittyMicPttTitle':
+    'Hold the mic to speak; release to send. Hold Space when not typing in a field.',
+  'mobile.kittyMicPttAria':
+    'Push to talk: hold the microphone button to speak, release to stop. Hold Space when not typing in the message field.',
   'mobile.kittyMicToggleTitle':
-    'Tap to toggle the mic: tap once to speak, tap again when done. Press Space to toggle when not typing in a field.',
+    'Hold the mic to speak; release to send. Hold Space when not typing in a field.',
   'mobile.kittyMicToggleAria':
-    'Toggle microphone: tap once to start voice, tap again to stop. Press Space to toggle when not typing in the message field.',
+    'Push to talk: hold the microphone button to speak, release to stop.',
   'mobile.kittyClickWheelAria': 'Spin the wheel to select a node',
   'mobile.kittyClickWheelHint': 'Drag around the outer ring to switch nodes',
   'mobile.kittyClickWheelEmptyLabel': 'Untitled node',

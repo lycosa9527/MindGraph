@@ -44,6 +44,11 @@ async def setup_session_event_handlers(runtime: KittySessionRuntime) -> SessionE
         elif event.kind == "function_call":
             await _handle_function_call(runtime, event.payload)
         elif event.kind == "diagram_mutated":
+            import time as _time
+
+            from services.kitty.context.library_refresh import bump_voice_mutation_freshness
+
+            bump_voice_mutation_freshness(runtime.voice_session_id)
             delta = event.payload.get("delta")
             await schedule_omni_context_refresh(
                 runtime.voice_session_id,
@@ -82,6 +87,14 @@ async def _handle_transcription(runtime: KittySessionRuntime, payload: Dict[str,
     text = str(payload.get("text") or "").strip()
     if not text:
         return
+
+    from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
+
+    kitty_wf_log(
+        "user_turn",
+        text,
+        voice_session_id=runtime.voice_session_id,
+    )
 
     mem = get_session_memory(runtime.voice_session_id)
     mem.append_user_turn(text, source="transcription")
@@ -143,6 +156,14 @@ async def _handle_function_call(runtime: KittySessionRuntime, payload: Dict[str,
     args = payload.get("arguments") or "{}"
     if not isinstance(name, str):
         return
+    from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
+
+    kitty_wf_log(
+        "omni_tool",
+        str(args)[:160],
+        voice_session_id=runtime.voice_session_id,
+        action=name,
+    )
     session = voice_sessions.get(runtime.voice_session_id) or {}
     session_context = dict(session.get("context") or {})
     await route_omni_function_call(

@@ -4,25 +4,25 @@
 import { onUnmounted } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import { resolveKittyChildNodeId } from '@/composables/kitty/kittyDiagramChildren'
-import { useDiagramStore } from '@/stores/diagram'
+import { applyKittySelectionTarget } from '@/composables/kitty/kittySelectionApply'
 
 const VOICE_SELECT_OWNER_SUFFIX = '_KittyVoiceSelection'
 
-export function useKittyVoiceSelectionBus(ownerId: string): void {
-  const diagramStore = useDiagramStore()
+export function useKittyVoiceSelectionBus(
+  ownerId: string,
+  options?: { onSelectionApplied?: () => void }
+): void {
   const listenerOwner = `${ownerId}${VOICE_SELECT_OWNER_SUFFIX}`
 
   eventBus.onWithOwner(
     'selection:select_requested',
     (data) => {
-      const nodes = diagramStore.data?.nodes ?? []
-      const nodeId = resolveKittyChildNodeId(diagramStore.type, nodes, {
-        nodeId: data.nodeId,
-        nodeIndex: data.nodeIndex,
-      })
-      if (nodeId) {
-        diagramStore.selectNodes([nodeId])
+      const applied = applyKittySelectionTarget(
+        { nodeId: data.nodeId, nodeIndex: data.nodeIndex },
+        { canvasHighlight: false }
+      )
+      if (applied) {
+        options?.onSelectionApplied?.()
       }
     },
     listenerOwner

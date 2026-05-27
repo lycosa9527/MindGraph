@@ -10,14 +10,16 @@ import {
   createKittyPlayback,
   handleKittyServerMessage,
 } from '@/composables/kitty/kittyAgentInbound'
+import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import type {
   KittyAgentContext,
+  KittyContextUpdateOptions,
   KittyAgentOptions,
   KittyAgentState,
   KittyAudioChunk,
 } from '@/composables/kitty/kittyAgentTypes'
 
-export type { KittyAgentContext, KittyAgentOptions, KittyAgentState } from '@/composables/kitty/kittyAgentTypes'
+export type { KittyAgentContext, KittyAgentOptions, KittyAgentState, KittyContextUpdateOptions, KittyLibrarySnapshot } from '@/composables/kitty/kittyAgentTypes'
 
 export function useKittyAgent(options: KittyAgentOptions = {}) {
   const {
@@ -37,6 +39,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
   const isPlaying = ref(false)
   const lastTranscription = ref<string | null>(null)
   const lastError = ref<string | null>(null)
+  const hubScopeRevision = ref<number | null>(null)
 
   const audioContext = shallowRef<AudioContext | null>(null)
   const audioWorkletNode = shallowRef<AudioWorkletNode | null>(null)
@@ -81,6 +84,9 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
   })
 
   function handleServerMessage(data: Record<string, unknown>): void {
+    if (data.type === 'context_mutation_ack' && typeof data.revision === 'number') {
+      hubScopeRevision.value = data.revision
+    }
     handleKittyServerMessage(data, {
       ...lifecycle,
       isVoiceActive,
@@ -122,6 +128,9 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
 
     diagramSessionId.value = diagSessionId
     state.value = 'connecting'
+    traceKittyWorkflow('mobile', 'ws_connect', `scope=${diagSessionId.slice(0, 12)}`, {
+      scope: diagSessionId,
+    })
 
     return new Promise((resolve, reject) => {
       let settled = false
@@ -300,13 +309,35 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
 
   function sendTextMessage(text: string): void {
     if (!text.trim() || !ws.value || ws.value.readyState !== WebSocket.OPEN) return
+    traceKittyWorkflow('mobile', 'text_send', text.trim().slice(0, 120))
     ws.value.send(JSON.stringify({ type: 'text', text: text.trim() }))
     state.value = 'speaking'
   }
 
-  function updateContext(context: KittyAgentContext): void {
+  function updateContext(context: KittyAgentContext, options?: KittyContextUpdateOptions): void {
     if (!ws.value || ws.value.readyState !== WebSocket.OPEN) return
-    ws.value.send(JSON.stringify({ type: 'context_update', context }))
+    const payload: Record<string, unknown> = { type: 'context_update', context }
+    if (options?.persistLibrary === true) {
+      payload.persist_library = true
+    }
+    if (options?.librarySnapshot != null) {
+      payload.library_snapshot = options.librarySnapshot
+    }
+    if (options?.idempotencyKey != null && options.idempotencyKey.trim() !== '') {
+      payload.idempotency_key = options.idempotencyKey.trim()
+    }
+    const rev = options?.expectedRevision ?? hubScopeRevision.value
+    if (typeof rev === 'number') {
+      payload.expected_revision = rev
+    }
+    const persist = options?.persistLibrary === true
+    traceKittyWorkflow(
+      'hub',
+      'context_send',
+      `${persist ? 'persist ' : ''}rev=${typeof rev === 'number' ? rev : '?'}`,
+      { scope: diagramSessionId.value ?? undefined }
+    )
+    ws.value.send(JSON.stringify(payload))
   }
 
   function sendMinimalAudioPreamble(): void {
@@ -325,6 +356,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
 
   function sendAppendImage(dataBase64: string, format = 'jpeg'): void {
     if (!dataBase64 || !ws.value || ws.value.readyState !== WebSocket.OPEN) return
+    traceKittyWorkflow('mobile', 'image_send', `format=${format}`)
     sendMinimalAudioPreamble()
     ws.value.send(
       JSON.stringify({

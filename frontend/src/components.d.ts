@@ -180,6 +180,8 @@ declare module 'vue' {
     JudgeArea: typeof import('./components/debateverse/JudgeArea.vue')['default']
     KittyBlackCatMascot: typeof import('./components/kitty/KittyBlackCatMascot.vue')['default']
     KittyCanvasAnchor: typeof import('./components/kitty/KittyCanvasAnchor.vue')['default']
+    KittyDesktopVoiceCommandLog: typeof import('./components/kitty/KittyDesktopVoiceCommandLog.vue')['default']
+    KittyDesktopWorkflowDebugLog: typeof import('./components/kitty/KittyDesktopWorkflowDebugLog.vue')['default']
     KittyIpodClickWheel: typeof import('./components/kitty/KittyIpodClickWheel.vue')['default']
     KittyMobileDiagramContextCard: typeof import('./components/kitty/KittyMobileDiagramContextCard.vue')['default']
     KittyMobileDiagramPickerDropdown: typeof import('./components/kitty/KittyMobileDiagramPickerDropdown.vue')['default']

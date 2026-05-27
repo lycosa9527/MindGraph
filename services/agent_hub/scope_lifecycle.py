@@ -206,6 +206,13 @@ class MindGraphAgentHub:
                 "revision": sess.binding.revision,
             }
 
+    def get_binding_revision(self, hub_session_id: str) -> Optional[int]:
+        """Return current scope revision for a hub session, or None if unbound."""
+        sess = self._sessions.get(hub_session_id)
+        if sess is None or sess.binding is None:
+            return None
+        return int(sess.binding.revision)
+
     async def switch_scope(
         self,
         hub_session_id: str,
@@ -401,6 +408,23 @@ class MindGraphAgentHub:
             )
             merged["diagram_data"] = {**base_dd, **delta_dd}
             context_payload = merged
+            lib_id = context_payload.get("diagram_library_id")
+            delta_has_visible = diagram_data_has_visible_content(delta_dd)
+            if (
+                sess.client_lane == "mobile"
+                and isinstance(lib_id, str)
+                and lib_id.strip()
+            ):
+                merged_ctx, res_dt, res_panel = await merge_voice_context_with_library(
+                    user_id,
+                    context_payload,
+                    diagram_type=diagram_type,
+                    active_panel=active_panel,
+                    prefer_server_diagram_nodes=not delta_has_visible,
+                )
+                context_payload = merged_ctx
+                diagram_type = res_dt
+                active_panel = res_panel
 
         mut_id = _new_hub_mutation_id()
         request_id = _new_hub_request_id()

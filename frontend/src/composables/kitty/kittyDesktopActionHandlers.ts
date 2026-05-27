@@ -3,6 +3,7 @@ import type { Router } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 
 import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
+import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import type { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 
@@ -86,6 +87,9 @@ export async function handleKittyOpenLibraryDiagramAction(
   await options.router
     .push({ path: '/canvas', query: { diagramId: targetId } })
     .catch(() => undefined)
+  traceKittyWorkflow('desktop', 'desktop_nav', `open_library ${targetId.slice(0, 12)}`, {
+    scope: targetId,
+  })
 }
 
 export async function handleKittyOpenCanvasAction(
@@ -118,6 +122,7 @@ export async function handleKittyOpenCanvasAction(
     q.kitty_right = right.slice(0, 256)
   }
   await router.push({ path: '/canvas', query: q }).catch(() => undefined)
+  traceKittyWorkflow('desktop', 'desktop_nav', `open_canvas type=${dt}`)
 }
 
 export async function handleKittyDesktopQueuedAction(

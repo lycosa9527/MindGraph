@@ -15,6 +15,7 @@ from services.kitty.context.messaging import safe_websocket_send
 from services.kitty.content.paragraph_batch_apply import apply_paragraph_batch_add_nodes
 from services.kitty.session.runtime_state import logger, voice_sessions
 from services.kitty.session.ops import persist_voice_session_context
+from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from utils.prompt_locale import output_language_instruction
 
 
@@ -43,6 +44,11 @@ async def process_paragraph_with_qwen_plus(
     """
     try:
         current_diagram_type = voice_sessions[voice_session_id].get("diagram_type", "circle_map")
+        kitty_wf_log(
+            "paragraph_start",
+            f"len={len(paragraph_text)} diagram={current_diagram_type}",
+            voice_session_id=voice_session_id,
+        )
         diagram_data = session_context.get("diagram_data", {})
 
         # Get current diagram state
@@ -135,9 +141,12 @@ async def process_paragraph_with_qwen_plus(
                     "text": "❌ 抱歉，我无法解析这段文本。请尝试更简洁的描述，或分段输入。",
                 },
             )
+            kitty_wf_log(
+                "paragraph_fail",
+                "json parse error",
+                voice_session_id=voice_session_id,
+            )
             return False
-
-        # CRITICAL: Validate extracted content
         if not extracted_data:
             logger.warning("Qwen Plus returned empty data")
             await safe_websocket_send(
@@ -147,9 +156,8 @@ async def process_paragraph_with_qwen_plus(
                     "text": "❌ 未能从段落中提取到有效内容。请检查文本是否包含可提取的信息。",
                 },
             )
+            kitty_wf_log("paragraph_fail", "empty extract", voice_session_id=voice_session_id)
             return False
-
-        # Validate nodes exist and are not empty
         nodes = extracted_data.get("nodes", [])
         topic = (
             extracted_data.get("topic")
@@ -171,9 +179,8 @@ async def process_paragraph_with_qwen_plus(
                     "text": "❌ 未能从段落中提取到主题或节点。请确保文本包含具体的内容信息。",
                 },
             )
+            kitty_wf_log("paragraph_fail", "no topic or nodes", voice_session_id=voice_session_id)
             return False
-
-        # Filter out empty nodes
         if nodes:
             nodes = [node for node in nodes if node and str(node).strip()]
             extracted_data["nodes"] = nodes
@@ -187,9 +194,8 @@ async def process_paragraph_with_qwen_plus(
                     "text": "❌ 提取的节点内容为空。请检查文本格式。",
                 },
             )
+            kitty_wf_log("paragraph_fail", "empty nodes after filter", voice_session_id=voice_session_id)
             return False
-
-        # Validate node count (reasonable range)
         if len(nodes) > 20:
             logger.warning("Too many nodes extracted (%d), limiting to 15", len(nodes))
             nodes = nodes[:15]
@@ -529,6 +535,11 @@ async def process_paragraph_with_qwen_plus(
             nodes_added,
         )
         persist_voice_session_context(voice_session_id, session_context)
+        kitty_wf_log(
+            "paragraph_apply",
+            f"intent={intent} nodes={nodes_added} type={diagram_type}",
+            voice_session_id=voice_session_id,
+        )
         return True
 
     except (ValueError, KeyError, json.JSONDecodeError, RuntimeError) as e:
@@ -537,4 +548,5 @@ async def process_paragraph_with_qwen_plus(
             websocket,
             {"type": "text_chunk", "text": "处理段落时出现错误，请稍后重试。"},
         )
+        kitty_wf_log("paragraph_fail", str(e)[:120], voice_session_id=voice_session_id)
         return False

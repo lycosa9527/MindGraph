@@ -5,10 +5,13 @@ import { computed, ref, watch } from 'vue'
 
 import { pulseDeviceEngage, pulseDeviceSelection } from '@/composables/core/useDeviceVibration'
 import { buildKittyChildren } from '@/composables/kitty/kittyDiagramChildren'
+import { applyKittySelectionTarget } from '@/composables/kitty/kittySelectionApply'
 import { useDiagramStore } from '@/stores/diagram'
 import type { DiagramType } from '@/types'
 
-const MIN_RING_RADIUS_RATIO = 0.38
+/** Inner hole width/height ratios — touch band is the rectangular frame around the mascot. */
+const FRAME_INNER_WIDTH_RATIO = 0.54
+const FRAME_INNER_HEIGHT_RATIO = 0.5
 
 function rotationStepDeg(childCount: number): number {
   if (childCount <= 0) {
@@ -44,20 +47,28 @@ function pointerAngleRad(clientX: number, clientY: number, rect: DOMRect): numbe
   return Math.atan2(clientY - cy, clientX - cx)
 }
 
-function isOnWheelRing(
+function isOnFrameRing(
   clientX: number,
   clientY: number,
   rect: DOMRect,
-  innerRatio: number
+  innerWidthRatio: number,
+  innerHeightRatio: number
 ): boolean {
-  const cx = rect.left + rect.width / 2
-  const cy = rect.top + rect.height / 2
-  const dx = clientX - cx
-  const dy = clientY - cy
-  const dist = Math.hypot(dx, dy)
-  const outer = Math.min(rect.width, rect.height) / 2
-  const inner = outer * innerRatio
-  return dist >= inner && dist <= outer
+  const x = clientX - rect.left
+  const y = clientY - rect.top
+  const w = rect.width
+  const h = rect.height
+  if (x < 0 || y < 0 || x > w || y > h) {
+    return false
+  }
+  const innerLeft = (w * (1 - innerWidthRatio)) / 2
+  const innerTop = (h * (1 - innerHeightRatio)) / 2
+  const innerRight = w - innerLeft
+  const innerBottom = h - innerTop
+  if (x >= innerLeft && x <= innerRight && y >= innerTop && y <= innerBottom) {
+    return false
+  }
+  return true
 }
 
 export function useKittyClickWheel(options: UseKittyClickWheelOptions = {}) {
@@ -121,7 +132,7 @@ export function useKittyClickWheel(options: UseKittyClickWheelOptions = {}) {
     if (!child) {
       return
     }
-    diagramStore.selectNodes([child.id])
+    applyKittySelectionTarget({ nodeId: child.id }, { canvasHighlight: false })
     pulseDeviceSelection()
     options.onSelectionChange?.()
   }
@@ -145,7 +156,15 @@ export function useKittyClickWheel(options: UseKittyClickWheelOptions = {}) {
       return
     }
     const rect = wheelEl.getBoundingClientRect()
-    if (!isOnWheelRing(ev.clientX, ev.clientY, rect, MIN_RING_RADIUS_RATIO)) {
+    if (
+      !isOnFrameRing(
+        ev.clientX,
+        ev.clientY,
+        rect,
+        FRAME_INNER_WIDTH_RATIO,
+        FRAME_INNER_HEIGHT_RATIO
+      )
+    ) {
       return
     }
     isDragging.value = true

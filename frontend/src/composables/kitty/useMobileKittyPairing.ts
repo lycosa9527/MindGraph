@@ -6,6 +6,7 @@ import { type ComputedRef, computed, onUnmounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { buildKittyContextPreferStore } from '@/composables/kitty/buildKittyDiagramContext'
+import { kittyInteractionLanguageFromUi } from '@/composables/kitty/buildKittyDiagramContext'
 import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import { useKittyDesktopFocusHint } from '@/composables/kitty/useKittyDesktopFocus'
@@ -163,6 +164,42 @@ export function useMobileKittyPairing(
     return 'Using a temporary session scope — desktop pairing sync may not work until you open a saved diagram.'
   })
 
+  async function fetchMobileKittyBootstrap(scopeId?: string): Promise<boolean> {
+    if (!options.kittyServerEnabled.value || !authStore.isAuthenticated) {
+      return false
+    }
+    try {
+      const params = new URLSearchParams()
+      const sid = (scopeId ?? activeDiagramId.value)?.trim()
+      if (sid) {
+        params.set('suggested_scope', sid)
+      }
+      const q = params.toString()
+      const url = q ? `/api/kitty/mobile_open_bootstrap?${q}` : '/api/kitty/mobile_open_bootstrap'
+      const res = await fetch(url, { credentials: 'same-origin' })
+      if (!res.ok) {
+        bootstrapLastFailureAt.value = Date.now()
+        return false
+      }
+      const data = (await res.json()) as MobileKittyBootstrapPayload
+      bootstrapPayload.value = data
+      if (data.recommended_scope && data.source !== 'empty') {
+        bootstrapRecommendedScope.value = data.recommended_scope
+      } else if (scopeId != null && scopeId !== '') {
+        bootstrapRecommendedScope.value = scopeId
+      }
+      if (options.onDebugLine) {
+        const sc =
+          data.recommended_scope != null ? String(data.recommended_scope).slice(0, 12) : '—'
+        options.onDebugLine('#boot', `${data.source} scope=${sc}`)
+      }
+      return true
+    } catch {
+      bootstrapLastFailureAt.value = Date.now()
+      return false
+    }
+  }
+
   async function ensureMobileKittyBootstrap(): Promise<void> {
     if (bootstrapInFlight) {
       await bootstrapInFlight
@@ -180,57 +217,83 @@ export function useMobileKittyPairing(
       return
     }
     bootstrapInFlight = (async () => {
-      let success = false
-      try {
-        const params = new URLSearchParams()
-        const sid = activeDiagramId.value?.trim()
-        if (sid) {
-          params.set('suggested_scope', sid)
-        }
-        const q = params.toString()
-        const url = q ? `/api/kitty/mobile_open_bootstrap?${q}` : '/api/kitty/mobile_open_bootstrap'
-        const res = await fetch(url, { credentials: 'same-origin' })
-        if (!res.ok) {
-          bootstrapLastFailureAt.value = Date.now()
-          return
-        }
-        const data = (await res.json()) as MobileKittyBootstrapPayload
-        bootstrapPayload.value = data
-        if (data.recommended_scope && data.source !== 'empty') {
-          bootstrapRecommendedScope.value = data.recommended_scope
-        }
-        success = true
-        if (options.onDebugLine) {
-          const sc =
-            data.recommended_scope != null ? String(data.recommended_scope).slice(0, 12) : '—'
-          options.onDebugLine('#boot', `${data.source} scope=${sc}`)
-        }
-      } catch {
-        bootstrapLastFailureAt.value = Date.now()
-      } finally {
-        bootstrapDone.value = success
-        bootstrapInFlight = null
-      }
+      const success = await fetchMobileKittyBootstrap()
+      bootstrapDone.value = success
+      bootstrapInFlight = null
     })()
     await bootstrapInFlight
   }
 
+  async function refreshMobileKittyBootstrap(scopeId: string): Promise<void> {
+    bootstrapDone.value = false
+    bootstrapRecommendedScope.value = null
+    await fetchMobileKittyBootstrap(scopeId)
+    bootstrapDone.value = true
+  }
+
   let contextSyncTimer: ReturnType<typeof setTimeout> | null = null
 
+  function resolveMobileLibraryDiagramId(): string | null {
+    const active = activeDiagramId.value?.trim()
+    if (active) {
+      return active
+    }
+    const bootCtx = bootstrapPayload.value?.context
+    const fromBoot =
+      typeof bootCtx?.diagram_library_id === 'string' && bootCtx.diagram_library_id.trim() !== ''
+        ? bootCtx.diagram_library_id.trim()
+        : null
+    if (fromBoot) {
+      return fromBoot
+    }
+    const desk = kittyDesktopLibraryId.value?.trim()
+    if (desk) {
+      return desk
+    }
+    const boot = bootstrapPayload.value
+    const scope = bootstrapRecommendedScope.value?.trim()
+    if (boot?.source === 'library' && scope && scope !== sessionId.value) {
+      return scope
+    }
+    return null
+  }
+
+  function buildMinimalLibraryKittyContext(libId: string): KittyAgentContext {
+    const boot = bootstrapPayload.value
+    const bootCtx = boot?.context
+    const selected = [...diagramStore.selectedNodes]
+    const displayTitle = String(bootCtx?.diagram_display_title ?? '').trim()
+    const diagramType = (bootCtx?.diagram_type ??
+      boot?.diagram_type ??
+      'circle_map') as KittyAgentContext['diagram_type']
+    const diagramData: Record<string, unknown> =
+      selected.length > 0 ? { selected_nodes: selected } : {}
+    return {
+      diagram_type: diagramType,
+      active_panel: 'none',
+      selected_nodes: selected,
+      diagram_data: diagramData,
+      diagram_library_id: libId,
+      diagram_display_title: displayTitle,
+      interaction_language: kittyInteractionLanguageFromUi(),
+    }
+  }
+
   function buildMobileKittyContext(): KittyAgentContext {
+    const libId = resolveMobileLibraryDiagramId()
+    if (libId) {
+      return buildMinimalLibraryKittyContext(libId)
+    }
+
     const base = buildKittyContextPreferStore('none')
     const boot = bootstrapPayload.value
     if (boot && boot.source !== 'empty' && boot.context) {
       const serverCtx = boot.context
-      const diagramData = {
-        ...(base.diagram_data ?? {}),
-        ...(serverCtx.diagram_data ?? {}),
-      }
       const merged: KittyAgentContext = {
         ...base,
         ...serverCtx,
         diagram_data: {
-          ...diagramData,
+          ...(serverCtx.diagram_data ?? {}),
           selected_nodes: [...(base.selected_nodes ?? [])],
         },
         diagram_type:
@@ -239,7 +302,6 @@ export function useMobileKittyPairing(
         selected_nodes: [...(base.selected_nodes ?? [])],
       }
       const pairLib =
-        activeDiagramId.value ??
         (typeof serverCtx.diagram_library_id === 'string' && serverCtx.diagram_library_id !== ''
           ? serverCtx.diagram_library_id
           : null) ??
@@ -258,10 +320,9 @@ export function useMobileKittyPairing(
 
     const ctx = base
     const pairLib =
-      activeDiagramId.value ??
-      (kittyDesktopLibraryId.value != null && kittyDesktopLibraryId.value !== ''
+      kittyDesktopLibraryId.value != null && kittyDesktopLibraryId.value !== ''
         ? kittyDesktopLibraryId.value
-        : null)
+        : null
     if (pairLib != null && pairLib !== '' && ctx.diagram_library_id == null) {
       return { ...ctx, diagram_library_id: pairLib }
     }
@@ -269,14 +330,13 @@ export function useMobileKittyPairing(
   }
 
   const mobileKittyContextPreview = computed<MobileKittyContextPreview>(() => {
-    const ctx = buildMobileKittyContext()
-    const title = String(ctx.diagram_display_title ?? '').trim()
-    const libRaw = ctx.diagram_library_id
-    const lib =
-      typeof libRaw === 'string' && libRaw.trim() !== '' ? libRaw.trim() : null
+    const boot = bootstrapPayload.value
+    const bootCtx = boot?.context
+    const libRaw = activeDiagramId.value ?? bootCtx?.diagram_library_id
+    const lib = typeof libRaw === 'string' && libRaw.trim() !== '' ? libRaw.trim() : null
+    const title = String(bootCtx?.diagram_display_title ?? '').trim()
     const scope = kittyPairScope.value
     const scopeForHint = lib ?? scope
-    const boot = bootstrapPayload.value
     const hubSrc = boot?.source
     const hubSource: MobileKittyBootstrapPayload['source'] | null =
       hubSrc === 'live' || hubSrc === 'library' || hubSrc === 'empty' ? hubSrc : null
@@ -284,7 +344,7 @@ export function useMobileKittyPairing(
     return {
       diagramDisplayTitle: title,
       diagramLibraryId: lib,
-      diagramType: String(ctx.diagram_type ?? ''),
+      diagramType: String(bootCtx?.diagram_type ?? boot?.diagram_type ?? ''),
       pairScopeShort: shortenDiagramScopeHint(String(scope)),
       scopeHintShort: shortenDiagramScopeHint(String(scopeForHint)),
       hubSource,
@@ -297,18 +357,22 @@ export function useMobileKittyPairing(
     }
     contextSyncTimer = setTimeout(() => {
       contextSyncTimer = null
-      if (!kitty.isConnected.value) {
-        return
-      }
-      const ctx = buildMobileKittyContext()
-      kitty.updateContext(ctx)
-      if (options.onDebugLine) {
-        const titleShort = (ctx.diagram_display_title ?? '').slice(0, 28)
-        const lib =
-          ctx.diagram_library_id != null ? String(ctx.diagram_library_id).slice(0, 8) : '—'
-        options.onDebugLine('#ctx', `${String(ctx.diagram_type)} lib=${lib} ${titleShort}`)
-      }
+      syncMobileKittyContextNow()
     }, KITTY_CONTEXT_SYNC_MS)
+  }
+
+  function syncMobileKittyContextNow(): void {
+    if (!kitty.isConnected.value) {
+      return
+    }
+    const ctx = buildMobileKittyContext()
+    kitty.updateContext(ctx)
+    if (options.onDebugLine) {
+      const titleShort = (ctx.diagram_display_title ?? '').slice(0, 28)
+      const lib =
+        ctx.diagram_library_id != null ? String(ctx.diagram_library_id).slice(0, 8) : '—'
+      options.onDebugLine('#ctx', `${String(ctx.diagram_type)} lib=${lib} ${titleShort}`)
+    }
   }
 
   watch(
@@ -342,7 +406,9 @@ export function useMobileKittyPairing(
     bootstrapPayload,
     mobileKittyContextPreview,
     ensureMobileKittyBootstrap,
+    refreshMobileKittyBootstrap,
     buildMobileKittyContext,
     scheduleMobileKittyContextSync,
+    syncMobileKittyContextNow,
   }
 }

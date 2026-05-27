@@ -1,7 +1,9 @@
 import { eventBus } from '@/composables/core/useEventBus'
+import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 
 export function executeKittyAgentAction(action: string, params: Record<string, unknown>): void {
   eventBus.emit('voice:action_executed', { action, params })
+  traceKittyWorkflow('mobile', 'canvas_action', action, { action })
 
   switch (action) {
     case 'open_mindmate':

@@ -274,6 +274,60 @@ async def safe_websocket_send(websocket: WebSocket, message: Dict[str, Any]) -> 
         raise
 
 
+async def send_kitty_diagram_update(
+    websocket: WebSocket,
+    voice_session_id: str,
+    message: Dict[str, Any],
+) -> bool:
+    """
+    Send ``diagram_update`` to the mobile Kitty WebSocket and fan out to desktop SSE.
+
+    Desktop canvas applies incremental mutations; it must not reload voice-shaped live_spec.
+    """
+    sent = await safe_websocket_send(websocket, message)
+    if message.get("type") != "diagram_update":
+        return sent
+    from services.kitty.infra.control.kitty_workflow_trace import (
+        kitty_wf_log,
+        summarize_diagram_update,
+    )
+    from services.kitty.infra.desktop.kitty_desktop_wake_fanout import publish_kitty_diagram_update
+    from services.kitty.session.runtime_state import voice_sessions
+
+    sess = voice_sessions.get(voice_session_id)
+    if not isinstance(sess, dict):
+        return sent
+    user_id = sess.get("user_id")
+    scope = sess.get("diagram_session_id")
+    if user_id is None or not isinstance(scope, str) or not scope.strip():
+        return sent
+    try:
+        uid = int(user_id)
+    except (TypeError, ValueError):
+        return sent
+    await publish_kitty_diagram_update(uid, scope.strip(), message)
+    from services.kitty.infra.desktop.kitty_voice_command_fanout import (
+        fanout_voice_command_from_session,
+    )
+
+    action_raw = message.get("action")
+    if isinstance(action_raw, str) and action_raw.strip():
+        act = action_raw.strip()
+        kitty_wf_log(
+            "ws_out",
+            summarize_diagram_update(act, message.get("updates")),
+            voice_session_id=voice_session_id,
+            scope=scope.strip() if isinstance(scope, str) else None,
+            action=act,
+        )
+        await fanout_voice_command_from_session(
+            voice_session_id,
+            action_raw.strip(),
+            updates=message.get("updates"),
+        )
+    return sent
+
+
 def resolve_voice_interaction_language(context: Dict[str, Any]) -> str:
     """Omni instruction language: default Chinese unless client sets English UI."""
     raw = context.get("interaction_language")

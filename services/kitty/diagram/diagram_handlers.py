@@ -9,6 +9,7 @@ from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.context.messaging import (
     parse_double_bubble_target,
     safe_websocket_send,
+    send_kitty_diagram_update,
 )
 from services.kitty.session.ops import get_agent_session_id
 from services.kitty.session.runtime_state import logger, voice_sessions
@@ -133,8 +134,9 @@ async def _handle_update_center_action(
             )
             return False
 
-    await safe_websocket_send(
+    await send_kitty_diagram_update(
         websocket,
+        voice_session_id,
         {"type": "diagram_update", "action": "update_center", "updates": updates},
     )
 
@@ -262,8 +264,9 @@ async def _handle_update_node_action(
             update_payload["left"] = left
             update_payload["right"] = right
 
-        await safe_websocket_send(
+        await send_kitty_diagram_update(
             websocket,
+            voice_session_id,
             {
                 "type": "diagram_update",
                 "action": "update_nodes",

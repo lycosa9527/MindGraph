@@ -13,6 +13,7 @@ const SELECTION_PULSE_MS = 12
 const ENGAGE_PULSE_MS = 8
 
 let iosSwitchInput: HTMLInputElement | null = null
+let iosSwitchLabel: HTMLLabelElement | null = null
 
 function hasVibrationApi(): boolean {
   return typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function'
@@ -33,50 +34,62 @@ function ensureIosSwitchInput(): HTMLInputElement | null {
   if (typeof document === 'undefined') {
     return null
   }
-  if (iosSwitchInput && document.body.contains(iosSwitchInput)) {
+  if (
+    iosSwitchInput &&
+    iosSwitchLabel &&
+    document.body.contains(iosSwitchLabel)
+  ) {
     return iosSwitchInput
   }
+  const label = document.createElement('label')
+  label.style.position = 'fixed'
+  label.style.opacity = '0'
+  label.style.width = '1px'
+  label.style.height = '1px'
+  label.style.overflow = 'hidden'
+  label.style.pointerEvents = 'none'
+  label.style.left = '0'
+  label.style.top = '0'
+  label.tabIndex = -1
+  label.setAttribute('aria-hidden', 'true')
+
   const input = document.createElement('input')
   input.type = 'checkbox'
   input.setAttribute('switch', '')
-  input.style.position = 'fixed'
-  input.style.opacity = '0'
-  input.style.width = '1px'
-  input.style.height = '1px'
-  input.style.pointerEvents = 'none'
-  input.style.left = '-9999px'
   input.tabIndex = -1
   input.setAttribute('aria-hidden', 'true')
-  document.body.appendChild(input)
+  label.appendChild(input)
+  document.body.appendChild(label)
+  iosSwitchLabel = label
   iosSwitchInput = input
   return input
 }
 
-/** iOS 17.4+ Safari switch-input Taptic pulse. */
+/** iOS 17.4+ Safari switch-input Taptic pulse (label click, not input.click). */
 function pulseIosSwitch(): void {
   const input = ensureIosSwitchInput()
-  if (!input) {
+  if (!input || !iosSwitchLabel) {
     return
   }
   try {
-    input.checked = !input.checked
-    input.click()
+    input.checked = false
+    iosSwitchLabel.click()
   } catch {
     // Platform restriction — ignore.
   }
 }
 
 function runHaptic(durationMs: number): void {
+  if (isIosTouchDevice()) {
+    pulseIosSwitch()
+    return
+  }
   if (hasVibrationApi()) {
     try {
       navigator.vibrate(durationMs)
-      return
     } catch {
-      // Fall through to iOS switch when vibrate throws.
+      // Unsupported — ignore.
     }
-  }
-  if (isIosTouchDevice()) {
-    pulseIosSwitch()
   }
 }
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import time
 from typing import Any, Dict, Optional
 
 from services.agent_hub import get_mind_graph_agent_hub
@@ -10,6 +11,7 @@ from services.agent_hub import get_mind_graph_agent_hub
 from services.kitty.diagram.diagram_utils import get_diagram_prefix_map
 from services.kitty.diagram.diagram_spec_sync import sync_diagram_data_to_spec_shape
 from services.kitty.context.hub_context import apply_kitty_ws_context_patch
+from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.kitty.session.runtime_state import logger
 from services.kitty.session.ops import get_voice_session
 
@@ -255,26 +257,105 @@ async def try_sync_voice_diagram_to_hub(voice_session_id: str) -> None:
     expected_revision = hub_rev_raw if isinstance(hub_rev_raw, int) else None
 
     hub = get_mind_graph_agent_hub()
-    try:
-        mutation_out = await apply_kitty_ws_context_patch(
-            hub,
-            hub_session_id=hub_session_id,
-            diagram_scope=diagram_scope.strip(),
-            merged_context=merged,
-            diagram_type=str(diagram_type),
-            active_panel=str(panel),
-            expected_revision=expected_revision,
-            idempotency_key=None,
-            source_module="kitty_diagram_intent",
-        )
-    except ValueError as exc:
-        logger.warning(
-            "Hub sync after Kitty diagram voice intent rejected for %s: %s",
-            voice_session_id,
-            exc,
-        )
+    mutation_out = await _apply_voice_hub_patch_with_retry(
+        hub,
+        hub_session_id=hub_session_id,
+        voice_session_id=voice_session_id,
+        diagram_scope=diagram_scope.strip(),
+        merged=merged,
+        diagram_type=str(diagram_type),
+        active_panel=str(panel),
+        expected_revision=expected_revision,
+    )
+    if mutation_out is None:
         return
 
     new_rev = mutation_out.get("revision")
     if isinstance(new_rev, int):
         session["_hub_scope_revision"] = new_rev
+
+    kitty_wf_log(
+        "hub_sync",
+        f"voice diagram patched rev={new_rev}",
+        voice_session_id=voice_session_id,
+        scope=diagram_scope.strip(),
+    )
+
+
+async def _apply_voice_hub_patch_with_retry(
+    hub: Any,
+    *,
+    hub_session_id: str,
+    voice_session_id: str,
+    diagram_scope: str,
+    merged: Dict[str, Any],
+    diagram_type: str,
+    active_panel: str,
+    expected_revision: Optional[int],
+) -> Optional[Dict[str, Any]]:
+    """Apply hub patch once; retry once with fresh revision on stale rejection."""
+    idem_key = f"kitty-voice-sync-{voice_session_id}-{int(time.time() * 1000)}"
+    try:
+        return await apply_kitty_ws_context_patch(
+            hub,
+            hub_session_id=hub_session_id,
+            diagram_scope=diagram_scope,
+            merged_context=merged,
+            diagram_type=diagram_type,
+            active_panel=active_panel,
+            expected_revision=expected_revision,
+            idempotency_key=idem_key,
+            source_module="kitty_diagram_intent",
+        )
+    except ValueError as exc:
+        if "stale expected revision" not in str(exc).lower():
+            logger.warning(
+                "Hub sync after Kitty diagram voice intent rejected for %s: %s",
+                voice_session_id,
+                exc,
+            )
+            kitty_wf_log(
+                "hub_sync_fail",
+                str(exc)[:120],
+                voice_session_id=voice_session_id,
+                scope=diagram_scope,
+            )
+            return None
+        fresh_rev = hub.get_binding_revision(hub_session_id)
+        if fresh_rev is None:
+            logger.warning(
+                "Hub sync stale revision with no binding for %s",
+                voice_session_id,
+            )
+            kitty_wf_log(
+                "hub_sync_fail",
+                "stale revision, no binding",
+                voice_session_id=voice_session_id,
+                scope=diagram_scope,
+            )
+            return None
+        try:
+            return await apply_kitty_ws_context_patch(
+                hub,
+                hub_session_id=hub_session_id,
+                diagram_scope=diagram_scope,
+                merged_context=merged,
+                diagram_type=diagram_type,
+                active_panel=active_panel,
+                expected_revision=fresh_rev,
+                idempotency_key=f"{idem_key}-retry",
+                source_module="kitty_diagram_intent",
+            )
+        except ValueError as retry_exc:
+            logger.warning(
+                "Hub sync retry after stale revision failed for %s: %s",
+                voice_session_id,
+                retry_exc,
+            )
+            kitty_wf_log(
+                "hub_sync_fail",
+                f"retry rejected {retry_exc}"[:120],
+                voice_session_id=voice_session_id,
+                scope=diagram_scope,
+            )
+            return None

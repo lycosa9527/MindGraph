@@ -64,6 +64,8 @@ async function readErrorDetail(res: Response): Promise<string> {
 const snapshots = ref<SnapshotMetadata[]>([])
 const isTaking = ref(false)
 const activeSnapshotVersion = ref<number | null>(null)
+/** Version badge currently being restored (flush + recall + load). */
+const recallingVersion = ref<number | null>(null)
 
 async function loadSnapshots(diagramId: string): Promise<void> {
   try {
@@ -163,9 +165,14 @@ function setActiveVersion(version: number | null): void {
   activeSnapshotVersion.value = version
 }
 
+function setRecallingVersion(version: number | null): void {
+  recallingVersion.value = version
+}
+
 function clearSnapshots(): void {
   snapshots.value = []
   activeSnapshotVersion.value = null
+  recallingVersion.value = null
 }
 
 export function useSnapshotHistory() {
@@ -173,11 +180,13 @@ export function useSnapshotHistory() {
     snapshots,
     isTaking,
     activeSnapshotVersion,
+    recallingVersion,
     loadSnapshots,
     takeSnapshot,
     recallSnapshot,
     deleteSnapshot,
     setActiveVersion,
+    setRecallingVersion,
     clearSnapshots,
   }
 }

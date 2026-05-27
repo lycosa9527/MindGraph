@@ -76,29 +76,55 @@ export function useCanvasPageLibrarySnapshots(options: {
     }
   }
 
+  function resolveDiagramTypeForRecall(): DiagramType | null {
+    if (diagramStore.type) {
+      return diagramStore.type
+    }
+    const fromData = diagramStore.data?.type
+    if (typeof fromData === 'string' && fromData.length > 0) {
+      return fromData as DiagramType
+    }
+    return null
+  }
+
   async function handleSnapshotRecall(versionNumber: number): Promise<void> {
     if (diagramStore.collabSessionActive && isDiagramOwner?.value === false) return
+    if (snapshotHistory.recallingVersion.value !== null) return
     const diagramId = savedDiagramsStore.activeDiagramId
-    const diagramType = diagramStore.type
-    if (!diagramId || !diagramType) return
-
-    await diagramAutoSave.flush()
-
-    const recallResult = await snapshotHistory.recallSnapshot(diagramId, versionNumber)
-    if (!recallResult.ok) {
-      notify.error(recallResult.message || t('canvas.topBar.snapshotRecallFailed'))
+    const diagramType = resolveDiagramTypeForRecall()
+    if (!diagramId) {
+      notify.warning(t('canvas.topBar.snapshotRecallNoDiagram'))
       return
     }
-    const spec = recallResult.spec
-
-    diagramStore.pushHistory(t('canvas.topBar.snapshotRecallHistory', { n: versionNumber }))
-    llmResultsStore.clearCache()
-    eventBus.emit('diagram:loaded_from_library', { diagramId, diagramType })
-    if (diagramSpecLikelyNeedsMarkdownPipeline(spec)) {
-      await loadDiagramMarkdownPipeline({ bumpLayout: false })
+    if (!diagramType) {
+      notify.warning(t('canvas.topBar.snapshotRecallNoType'))
+      return
     }
-    diagramStore.loadFromSpec(spec, diagramType)
-    snapshotHistory.setActiveVersion(versionNumber)
+
+    snapshotHistory.setRecallingVersion(versionNumber)
+    try {
+      if (diagramAutoSave.isDirty.value) {
+        await diagramAutoSave.flush()
+      }
+
+      const recallResult = await snapshotHistory.recallSnapshot(diagramId, versionNumber)
+      if (!recallResult.ok) {
+        notify.error(recallResult.message || t('canvas.topBar.snapshotRecallFailed'))
+        return
+      }
+      const spec = recallResult.spec
+
+      diagramStore.pushHistory(t('canvas.topBar.snapshotRecallHistory', { n: versionNumber }))
+      llmResultsStore.clearCache()
+      eventBus.emit('diagram:loaded_from_library', { diagramId, diagramType })
+      if (diagramSpecLikelyNeedsMarkdownPipeline(spec)) {
+        await loadDiagramMarkdownPipeline({ bumpLayout: false })
+      }
+      diagramStore.loadFromSpec(spec, diagramType)
+      snapshotHistory.setActiveVersion(versionNumber)
+    } finally {
+      snapshotHistory.setRecallingVersion(null)
+    }
   }
 
   async function handleSnapshotDelete(versionNumber: number): Promise<void> {

@@ -1,7 +1,8 @@
 /**
  * Pure Kitty diagram child indexing — shared by voice context, click wheel, and canvas actions.
  */
-import type { DiagramType } from '@/types'
+import { resolveVoiceNodeId } from '@/composables/editor/diagramVoiceMutations'
+import type { DiagramNode, DiagramType } from '@/types'
 
 export type KittyVoiceContextNode = {
   id: string
@@ -108,4 +109,31 @@ export function resolveKittyChildNodeId(
   const dt = (diagramType ?? 'circle_map') as DiagramType
   const children = buildKittyChildren(dt, nodes)
   return children[options.nodeIndex]?.id
+}
+
+function normalizedDiagramKind(dt: DiagramType | null | undefined): string {
+  if (!dt) {
+    return 'circle_map'
+  }
+  return dt === 'mind_map' ? 'mindmap' : dt
+}
+
+/** Resolve selection ids from voice index, underscore ids, or Vue Flow ids. */
+export function resolveKittySelectionNodeId(
+  diagramType: DiagramType | null | undefined,
+  nodes: KittyVoiceContextNode[],
+  options: { nodeId?: string; nodeIndex?: number }
+): string | undefined {
+  const rawId = options.nodeId
+  if (typeof rawId === 'string' && rawId.length > 0) {
+    const kind = normalizedDiagramKind(diagramType)
+    const resolved = resolveVoiceNodeId(kind, rawId, nodes as DiagramNode[])
+    if (resolved) {
+      return resolved
+    }
+    if (nodes.some((node) => node.id === rawId)) {
+      return rawId
+    }
+  }
+  return resolveKittyChildNodeId(diagramType, nodes, options)
 }

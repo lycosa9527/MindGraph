@@ -19,6 +19,20 @@ export interface KittyAgentContext {
   interaction_language?: 'zh' | 'en'
 }
 
+export interface KittyLibrarySnapshot {
+  spec: Record<string, unknown>
+  title?: string
+  language?: string
+  thumbnail?: string | null
+}
+
+export interface KittyContextUpdateOptions {
+  persistLibrary?: boolean
+  librarySnapshot?: KittyLibrarySnapshot
+  idempotencyKey?: string
+  expectedRevision?: number | null
+}
+
 export type KittyAgentState = 'idle' | 'connecting' | 'active' | 'listening' | 'speaking' | 'error'
 
 export interface KittyAudioChunk {

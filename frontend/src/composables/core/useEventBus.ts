@@ -164,6 +164,15 @@ export type EventTypes = {
   'voice:assistant_text_done': { text: string }
   'voice:action_executed': { action: string; params?: unknown }
   'voice:diagram_update_executed': { action: string; updates?: unknown; summary?: string }
+  'voice:context_mutation_ack': {
+    ok?: boolean
+    revision?: number
+    library_snapshot_saved?: boolean
+    library_snapshot_error?: string
+    idempotency_key?: string
+    persist_library?: boolean
+    error?: string
+  }
   'voice:error': { error: string }
   'voice:destroyed': Record<string, never>
   'voice:cleanup_started': { diagramSessionId?: string }
@@ -179,6 +188,28 @@ export type EventTypes = {
   }
   'kitty:inline_recommendations_requested': { nodeId?: string; nodeIndex?: number }
   'kitty:add_node_with_recommendations_requested': { text?: string }
+  'kitty:desktop_diagram_update': {
+    scope?: string
+    action?: string
+    updates?: unknown
+  }
+  'kitty:desktop_selection_update': {
+    scope?: string
+    selected_nodes?: string[]
+  }
+  'kitty:desktop_voice_command': {
+    scope?: string
+    action?: string
+    detail?: string
+  }
+  'kitty:workflow_trace': {
+    lane: 'mobile' | 'desktop' | 'hub'
+    stage: string
+    detail: string
+    scope?: string
+    action?: string
+    at: number
+  }
   'kitty:diagram_review_annotation': {
     summary: string
     items: Array<{ node_id: string; reason: string; suggestion?: string }>

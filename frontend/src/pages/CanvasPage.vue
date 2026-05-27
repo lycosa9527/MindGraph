@@ -41,6 +41,8 @@ import CanvasCollabOverlay from '@/components/canvas/CanvasCollabOverlay.vue'
 import CanvasTranslateProgressBanner from '@/components/canvas/CanvasTranslateProgressBanner.vue'
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
 import KittyCanvasAnchor from '@/components/kitty/KittyCanvasAnchor.vue'
+import KittyDesktopVoiceCommandLog from '@/components/kitty/KittyDesktopVoiceCommandLog.vue'
+import KittyDesktopWorkflowDebugLog from '@/components/kitty/KittyDesktopWorkflowDebugLog.vue'
 import { MindmatePanel, NodePalettePanel, RootConceptModal } from '@/components/panels'
 import {
   eventBus,
@@ -49,7 +51,7 @@ import {
   getNodePalette,
   getPanelCoordinator,
   useCanvasKittyDesktopPairing,
-  useKittyDesktopLiveSpecSync,
+  useKittyDesktopRemoteSync,
   useDiagramSpecForSave,
   useEventBus,
   useInlineRecommendations,
@@ -69,6 +71,8 @@ import {
 } from '@/composables/canvasPage/diagramTypeMaps'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { registerCanvasPageDiagramEventBus } from '@/composables/canvasPage/registerCanvasPageDiagramEventBus'
+import { useKittyDesktopVoiceCommandLog } from '@/composables/kitty/useKittyDesktopVoiceCommandLog'
+import { useKittyDesktopWorkflowDebug } from '@/composables/kitty/useKittyDesktopWorkflowDebug'
 import { useCanvasPageEditorShortcuts } from '@/composables/canvasPage/useCanvasPageEditorShortcuts'
 import { useCanvasPageLibrarySnapshots } from '@/composables/canvasPage/useCanvasPageLibrarySnapshots'
 import { useCanvasPageMountedHandlers } from '@/composables/canvasPage/useCanvasPageMountedHandlers'
@@ -128,6 +132,7 @@ const featureFlagsStore = useFeatureFlagsStore()
 const { handleAIGenerate, handleConceptGeneration, isAIGenerating } = useCanvasToolbarApps()
 
 const snapshotHistory = useSnapshotHistory()
+const recallingSnapshotVersion = snapshotHistory.recallingVersion
 
 const {
   canvasPageRef,
@@ -267,9 +272,28 @@ const { showKittyDesktopIndicator } = useCanvasKittyDesktopPairing({
   },
 })
 
-useKittyDesktopLiveSpecSync({
+const { entries: kittyVoiceCommandEntries } = useKittyDesktopVoiceCommandLog({
+  enabled: showKittyDesktopIndicator,
+  scopeId: currentDiagramId,
+})
+
+const { entries: kittyWorkflowDebugEntries } = useKittyDesktopWorkflowDebug({
+  enabled: showKittyDesktopIndicator,
+  scopeId: currentDiagramId,
+})
+
+const kittyRemoteSyncEnabled = computed(
+  () =>
+    featureFlagsStore.getFeatureKittyAgent() &&
+    authStore.isAuthenticated &&
+    !isViewer.value &&
+    currentDiagramId.value != null &&
+    currentDiagramId.value !== ''
+)
+
+useKittyDesktopRemoteSync({
   libraryDiagramId: currentDiagramId,
-  syncEnabled: showKittyDesktopIndicator,
+  syncEnabled: kittyRemoteSyncEnabled,
   collabSessionActive: computed(() => diagramStore.collabSessionActive),
 })
 
@@ -807,6 +831,7 @@ onUnmounted(() => {
         :is-saving="diagramAutoSave.isSaving.value"
         :snapshots="snapshotHistory.snapshots.value"
         :active-snapshot-version="snapshotHistory.activeSnapshotVersion.value"
+        :recalling-snapshot-version="recallingSnapshotVersion"
         :workshop-code="workshopCode"
         :is-collab-guest="isCollabGuest"
         :is-viewer="isViewer"
@@ -835,6 +860,16 @@ onUnmounted(() => {
     />
 
     <CanvasTranslateProgressBanner />
+
+    <KittyDesktopVoiceCommandLog
+      :visible="showKittyDesktopIndicator"
+      :entries="kittyVoiceCommandEntries"
+    />
+
+    <KittyDesktopWorkflowDebugLog
+      :visible="showKittyDesktopIndicator"
+      :entries="kittyWorkflowDebugEntries"
+    />
 
     <KittyCanvasAnchor
       :visible="showKittyDesktopIndicator"

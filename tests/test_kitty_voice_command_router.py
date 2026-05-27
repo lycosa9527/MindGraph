@@ -256,3 +256,71 @@ async def test_route_voice_command_from_voice_skips_turbo() -> None:
         from_voice=True,
     )
     assert result.outcome == RouteOutcome.CONVERSATIONAL_FALLBACK
+
+
+@pytest.mark.asyncio
+async def test_route_voice_select_node_syncs_hub_and_fanout() -> None:
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from services.kitty.routing.command_router import RouteOutcome, route_voice_command
+    from services.kitty.session.ops import create_voice_session
+    from services.kitty.session.runtime_state import voice_sessions
+
+    ws = MagicMock()
+    vid = create_voice_session(user_id="42", diagram_session_id="lib-uuid-sel", diagram_type="circle_map")
+    voice_sessions[vid]["context"] = {
+        "diagram_data": {
+            "children": [{"id": "context-0", "text": "Wheels"}],
+            "center": {"text": "Cars"},
+        },
+        "selected_nodes": [],
+    }
+
+    try:
+        with (
+            patch(
+                "services.kitty.routing.command_router.safe_websocket_send",
+                new=AsyncMock(return_value=True),
+            ) as send_mock,
+            patch(
+                "services.kitty.routing.command_router.parse_voice_intent_with_tools",
+                new=AsyncMock(
+                    return_value={
+                        "action": "select_node",
+                        "node_index": 0,
+                        "confidence": 0.95,
+                    }
+                ),
+            ),
+            patch(
+                "services.kitty.routing.command_router.redis_user_cache.get_by_id",
+                new=AsyncMock(return_value=None),
+            ),
+            patch(
+                "services.kitty.routing.command_router.try_sync_voice_diagram_to_hub",
+                new=AsyncMock(),
+            ) as hub_sync,
+            patch(
+                "services.kitty.routing.command_router.publish_kitty_selection_update",
+                new=AsyncMock(),
+            ) as fanout,
+        ):
+            result = await route_voice_command(
+                ws,
+                vid,
+                "select first node",
+                dict(voice_sessions[vid]["context"]),
+                is_text_message=True,
+                from_voice=False,
+            )
+
+        assert result.outcome == RouteOutcome.EXECUTED
+        hub_sync.assert_awaited_once_with(vid)
+        fanout.assert_awaited_once_with(42, "lib-uuid-sel", ["context-0"])
+        assert voice_sessions[vid]["context"]["selected_nodes"] == ["context-0"]
+        send_mock.assert_awaited()
+        payload = send_mock.await_args.args[1]
+        assert payload["action"] == "select_node"
+        assert payload["params"]["node_id"] == "context-0"
+    finally:
+        voice_sessions.pop(vid, None)

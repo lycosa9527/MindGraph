@@ -75,6 +75,8 @@ const props = defineProps<{
   snapshots?: SnapshotMetadata[]
   /** Currently active (recalled) snapshot version */
   activeSnapshotVersion?: number | null
+  /** Snapshot version being restored (shows loading animation on that badge) */
+  recallingSnapshotVersion?: number | null
   /** Active workshop session code (passed from CanvasPage) */
   workshopCode?: string | null
   /** True when the current user is a collab guest (not the diagram owner) */
@@ -90,6 +92,18 @@ const emit = defineEmits<{
   snapshotRecall: [versionNumber: number]
   snapshotDelete: [versionNumber: number]
 }>()
+
+function onSnapshotBadgeClick(event: MouseEvent, versionNumber: number): void {
+  if (props.isCollabGuest || props.recallingSnapshotVersion != null) {
+    return
+  }
+  event.stopPropagation()
+  if (event.ctrlKey || event.metaKey) {
+    emit('snapshotDelete', versionNumber)
+    return
+  }
+  emit('snapshotRecall', versionNumber)
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -398,24 +412,37 @@ async function handleReset() {
         <ElTooltip
           v-for="snap in props.snapshots"
           :key="snap.version_number"
-          :content="t('canvas.topBar.snapshotBadgeTooltip', { n: snap.version_number })"
+          trigger="hover"
+          :content="
+            snap.version_number === props.recallingSnapshotVersion
+              ? t('canvas.topBar.snapshotRecallingTooltip', { n: snap.version_number })
+              : t('canvas.topBar.snapshotBadgeTooltip', { n: snap.version_number })
+          "
           placement="bottom"
         >
           <span
-            class="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 transition-colors select-none"
+            class="snapshot-version-badge inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 transition-colors select-none"
             :class="[
               props.isCollabGuest ? 'cursor-default opacity-50' : 'cursor-pointer',
-              snap.version_number === props.activeSnapshotVersion
+              snap.version_number === props.recallingSnapshotVersion
+                ? 'snapshot-version-badge--loading'
+                : props.recallingSnapshotVersion != null
+                  ? 'opacity-50 pointer-events-none'
+                  : '',
+              snap.version_number === props.activeSnapshotVersion &&
+              snap.version_number !== props.recallingSnapshotVersion
                 ? 'bg-blue-500 text-white ring-2 ring-blue-300 ring-offset-1'
-                : 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-800/50',
+                : snap.version_number !== props.recallingSnapshotVersion
+                  ? 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-800/50'
+                  : 'bg-blue-500 text-white',
             ]"
-            @click="
-              props.isCollabGuest
-                ? undefined
-                : (e: MouseEvent) =>
-                    e.ctrlKey || e.metaKey
-                      ? emit('snapshotDelete', snap.version_number)
-                      : emit('snapshotRecall', snap.version_number)
+            :aria-busy="snap.version_number === props.recallingSnapshotVersion"
+            role="button"
+            tabindex="0"
+            @click.stop="onSnapshotBadgeClick($event, snap.version_number)"
+            @keydown.enter.stop="onSnapshotBadgeClick($event as unknown as MouseEvent, snap.version_number)"
+            @keydown.space.prevent.stop="
+              onSnapshotBadgeClick($event as unknown as MouseEvent, snap.version_number)
             "
           >
             {{ snap.version_number }}
@@ -622,6 +649,31 @@ async function handleReset() {
   --el-button-text-color: #1e40af;
   font-weight: 500;
   border-radius: 9999px;
+}
+
+/* Snapshot version badge — spinning ring while recall is in progress */
+.snapshot-version-badge {
+  position: relative;
+}
+
+.snapshot-version-badge--loading {
+  pointer-events: none;
+}
+
+.snapshot-version-badge--loading::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid rgb(147 197 253 / 0.35);
+  border-top-color: rgb(255 255 255 / 0.95);
+  animation: snapshot-version-badge-spin 0.65s linear infinite;
+}
+
+@keyframes snapshot-version-badge-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Reset button - subtle warning tone */

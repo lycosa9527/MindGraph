@@ -25,6 +25,7 @@ from services.kitty.infra.redis.kitty_redis_keys import (
     kitty_desktop_action_queue_key,
 )
 from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
+from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
@@ -138,6 +139,13 @@ async def _push_desktop_action(user_id: int, payload: Dict[str, Any]) -> bool:
         await cast(Awaitable[int], redis.rpush(key, line))
         await cast(Awaitable[bool], redis.expire(key, _KITTY_DESKTOP_ACTION_QUEUE_TTL))
         await cast(Awaitable[str], redis.ltrim(key, -_KITTY_DESKTOP_ACTION_QUEUE_MAX_LEN, -1))
+        kind = str(payload.get("kind") or "")
+        kitty_wf_log(
+            "desktop_queue_enqueue",
+            kind,
+            user_id=user_id,
+            action=kind or None,
+        )
         return True
     except (RedisError, TypeError, ValueError) as exc:
         logger.warning("[KittyDesktopActions] enqueue failed user=%s: %s", user_id, exc)
@@ -207,6 +215,13 @@ async def pop_kitty_desktop_action_wait(
                 if data is None:
                     return None
                 if not discard_stale or _action_is_fresh(data, max_age_sec=max_age_sec):
+                    kind = str(data.get("kind") or "")
+                    kitty_wf_log(
+                        "desktop_queue_pop",
+                        kind,
+                        user_id=user_id,
+                        action=kind or None,
+                    )
                     return data
                 logger.debug(
                     "[KittyDesktopActions] discarded stale action user=%s kind=%s",
@@ -225,6 +240,13 @@ async def pop_kitty_desktop_action_wait(
         if data is None:
             return None
         if not discard_stale or _action_is_fresh(data, max_age_sec=max_age_sec):
+            kind = str(data.get("kind") or "")
+            kitty_wf_log(
+                "desktop_queue_pop",
+                kind,
+                user_id=user_id,
+                action=kind or None,
+            )
             return data
         logger.debug(
             "[KittyDesktopActions] discarded stale action user=%s kind=%s",

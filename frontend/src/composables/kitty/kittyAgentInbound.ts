@@ -11,6 +11,7 @@ import {
   normalizeKittyDebugText,
 } from '@/composables/kitty/kittyAgentDebug'
 import type { KittyAgentState } from '@/composables/kitty/kittyAgentTypes'
+import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 
 export interface KittyInboundHandlerDeps {
   destroyed: () => boolean
@@ -43,6 +44,7 @@ export function handleKittyServerMessage(
     case 'transcription':
       deps.lastTranscription.value = String(data.text ?? '')
       eventBus.emit('voice:transcription', { text: String(data.text ?? '') })
+      traceKittyWorkflow('mobile', 'transcription', String(data.text ?? ''))
       deps.onTranscription?.(String(data.text ?? ''))
       deps.state.value = deps.isVoiceActive.value ? 'listening' : 'active'
       break
@@ -64,6 +66,7 @@ export function handleKittyServerMessage(
       eventBus.emit('voice:speech_started', {
         audioStartMs: typeof data.audio_start_ms === 'number' ? data.audio_start_ms : undefined,
       })
+      traceKittyWorkflow('mobile', 'speech', 'user speaking')
       deps.stopAudioPlayback()
       deps.state.value = deps.isVoiceActive.value ? 'listening' : 'active'
       break
@@ -88,17 +91,22 @@ export function handleKittyServerMessage(
     }
 
     case 'action':
+      traceKittyWorkflow('mobile', 'action', String(data.action ?? ''), {
+        action: String(data.action ?? ''),
+      })
       executeKittyAgentAction(String(data.action ?? ''), (data.params as Record<string, unknown>) ?? {})
       break
 
     case 'diagram_update': {
       const diagramAction = String(data.action ?? '')
       const diagramUpdates = (data.updates as Record<string, unknown>) ?? {}
+      const summary = formatKittyDiagramUpdateDebug(diagramAction, diagramUpdates)
       eventBus.emit('voice:diagram_update_executed', {
         action: diagramAction,
         updates: diagramUpdates,
-        summary: formatKittyDiagramUpdateDebug(diagramAction, diagramUpdates),
+        summary,
       })
+      traceKittyWorkflow('mobile', 'diagram_ws', summary, { action: diagramAction })
       applyKittyDiagramUpdate(diagramAction, diagramUpdates)
       break
     }
@@ -116,6 +124,28 @@ export function handleKittyServerMessage(
         summary: String(data.summary ?? ''),
         items: rows,
       })
+      break
+    }
+
+    case 'context_mutation_ack': {
+      const ackPayload = {
+        ok: data.ok !== false,
+        revision: typeof data.revision === 'number' ? data.revision : undefined,
+        library_snapshot_saved: data.library_snapshot_saved,
+        library_snapshot_error:
+          typeof data.library_snapshot_error === 'string'
+            ? data.library_snapshot_error
+            : undefined,
+        idempotency_key:
+          typeof data.idempotency_key === 'string' ? data.idempotency_key : undefined,
+        persist_library: data.persist_library === true,
+        error: typeof data.error === 'string' ? data.error : undefined,
+      }
+      eventBus.emit('voice:context_mutation_ack', ackPayload)
+      const ackDetail = ackPayload.ok
+        ? `ok rev=${ackPayload.revision ?? '?'}${ackPayload.persist_library ? ' persist' : ''}`
+        : `failed ${ackPayload.error ?? ackPayload.library_snapshot_error ?? 'rejected'}`
+      traceKittyWorkflow('hub', 'context_ack', ackDetail)
       break
     }
 

@@ -19,12 +19,16 @@ import {
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
 import { useDiagramStore } from '@/stores'
+import {
+  braceMapRootId,
+  isBraceMapSubpartNode,
+} from '@/stores/diagram/braceMapParentResolve'
 import type { DiagramNode } from '@/types'
 
 export type UseNodeActionsOptions = {
   /**
-   * Mobile: selection drives mind_map / brace primary add.
-   * Desktop toolbar: primary add always adds branch / part (same as toolbar + button).
+   * Mobile: selection drives mind_map / brace_map primary add.
+   * Desktop toolbar: mind_map primary add always adds a branch; brace_map still uses selection.
    */
   addNodePrimaryBehavior?: 'selectionBased' | 'toolbarPrimary'
   /** When false, primary add skips tree map (desktop toolbar shows "in development"). */
@@ -268,7 +272,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       return
     }
 
-    if (diagramType === 'mindmap' || diagramType === 'mind_map' || diagramType === 'brace_map') {
+    if (diagramType === 'mindmap' || diagramType === 'mind_map') {
       if (opts.addNodePrimaryBehavior === 'toolbarPrimary') {
         handleAddBranch()
         return
@@ -287,10 +291,14 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
 
     if (diagramType === 'brace_map') {
       const selectedId = diagramStore.selectedNodes[0]
+      const connections = diagramStore.data.connections ?? []
+      const rootId = braceMapRootId(diagramStore.data.nodes, connections)
       if (!selectedId || selectedId === 'dimension-label') {
         handleAddBranch()
-      } else {
+      } else if (rootId && isBraceMapSubpartNode(selectedId, connections, rootId)) {
         handleAddChild()
+      } else {
+        handleAddBranch()
       }
       return
     }

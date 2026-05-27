@@ -13,6 +13,7 @@ from services.kitty.infra.bootstrap.kitty_diagram_vocabulary import (
 )
 from services.kitty.session.memory import get_session_memory
 from services.llm import llm_service
+from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +88,13 @@ async def parse_voice_intent_with_tools(
         )
         cmd = _extract_tool_call(result)
         if cmd and cmd.get("action") not in (None, "none"):
+            act = str(cmd.get("action") or "")
+            kitty_wf_log(
+                "intent_parse",
+                f"tool action={act} conf={cmd.get('confidence', '?')}",
+                voice_session_id=voice_session_id,
+                action=act,
+            )
             return cmd
 
         content = result.get("content") if isinstance(result, dict) else None
@@ -94,10 +102,27 @@ async def parse_voice_intent_with_tools(
             try:
                 parsed = json.loads(content.strip())
                 if isinstance(parsed, dict) and parsed.get("action"):
+                    act = str(parsed.get("action") or "")
+                    kitty_wf_log(
+                        "intent_parse",
+                        f"json action={act}",
+                        voice_session_id=voice_session_id,
+                        action=act,
+                    )
                     return parsed
             except json.JSONDecodeError:
                 pass
     except (RuntimeError, ValueError, TypeError, KeyError) as exc:
         logger.debug("Tool intent parse failed: %s", exc)
+        kitty_wf_log(
+            "intent_parse",
+            f"failed {exc}",
+            voice_session_id=voice_session_id,
+        )
 
+    kitty_wf_log(
+        "intent_parse",
+        "no tool match → conversational",
+        voice_session_id=voice_session_id,
+    )
     return {"action": "none", "confidence": 0.0}

@@ -125,3 +125,71 @@ async def test_hub_mutation_idempotency_and_revision_guard() -> None:
             expected_revision=0,
             idempotency_key="idem-2",
         )
+
+
+@pytest.mark.asyncio
+async def test_hub_persist_library_from_mutation_cmd() -> None:
+    """persist_library + library_snapshot saves via diagram cache before live_spec."""
+    hub = MindGraphAgentHub()
+    sid = await hub.open_session(77, client_lane="mobile", source_module="kitty_test")
+    await hub.bind_scope(sid, diagram_scope="lib-persist-1", source_module="kitty_test")
+
+    save_mock = AsyncMock(return_value=(True, "lib-persist-1", None))
+    with (
+        patch(
+            "services.agent_hub.scope_lifecycle.get_diagram_cache",
+        ) as cache_factory,
+        patch(
+            "services.agent_hub.scope_lifecycle.upsert_kitty_redis_session",
+            AsyncMock(return_value=999001),
+        ),
+        patch(
+            "services.agent_hub.scope_lifecycle.resolve_mobile_open_bootstrap",
+            AsyncMock(return_value={"context": {}, "source": "library"}),
+        ),
+        patch(
+            "services.agent_hub.scope_lifecycle.merge_voice_context_with_library",
+            AsyncMock(
+                return_value=(
+                    {
+                        "diagram_library_id": "lib-persist-1",
+                        "diagram_data": {"children": []},
+                        "selected_nodes": [],
+                    },
+                    "circle_map",
+                    "none",
+                )
+            ),
+        ),
+    ):
+        cache_factory.return_value.save_diagram = save_mock
+        out = await hub.apply_diagram_spec_mutation(
+            hub_session_id=sid,
+            diagram_scope="lib-persist-1",
+            mutation_cmd={
+                "op": "patch_context",
+                "context": {
+                    "diagram_library_id": "lib-persist-1",
+                    "diagram_data": {"children": []},
+                    "selected_nodes": [],
+                },
+                "diagram_type": "circle_map",
+                "active_panel": "none",
+                "persist_library": True,
+                "library_snapshot": {
+                    "spec": {"nodes": [{"id": "context-0"}], "connections": []},
+                    "title": "Voice save",
+                    "language": "zh",
+                },
+            },
+            source_module="kitty_test",
+            expected_revision=0,
+            idempotency_key="persist-1",
+        )
+
+    assert out["ok"] is True
+    assert out.get("library_snapshot_saved") is True
+    save_mock.assert_awaited_once()
+    save_args = save_mock.await_args.kwargs
+    assert save_args["diagram_id"] == "lib-persist-1"
+    assert save_args["title"] == "Voice save"

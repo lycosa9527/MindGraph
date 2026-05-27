@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.18] - 2026-05-27
+
+### Added
+
+- **Kitty — cross-device diagram sync** — Mobile voice edits fan out `diagram_update` and `selection_update` SSE frames on the desktop wake channel ([`kitty_desktop_wake_fanout.py`](services/kitty/infra/desktop/kitty_desktop_wake_fanout.py)); desktop canvas applies them via [`useKittyDesktopRemoteSync.ts`](frontend/src/composables/kitty/useKittyDesktopRemoteSync.ts), [`useKittyDesktopDiagramUpdateBridge.ts`](frontend/src/composables/kitty/useKittyDesktopDiagramUpdateBridge.ts), [`kittySelectionApply.ts`](frontend/src/composables/kitty/kittySelectionApply.ts), and [`syncDiagramStoreFromVoiceContext.ts`](frontend/src/composables/kitty/syncDiagramStoreFromVoiceContext.ts); content fingerprints in [`kittyDiagramFingerprint.ts`](frontend/src/composables/kitty/kittyDiagramFingerprint.ts).
+- **Kitty — desktop voice command log** — Floating panel above the mobile Kitty FAB shows recent phone voice commands over SSE ([`KittyDesktopVoiceCommandLog.vue`](frontend/src/components/kitty/KittyDesktopVoiceCommandLog.vue), [`useKittyDesktopVoiceCommandLog.ts`](frontend/src/composables/kitty/useKittyDesktopVoiceCommandLog.ts), [`kitty_voice_command_fanout.py`](services/kitty/infra/desktop/kitty_voice_command_fanout.py), [`kittyVoiceCommandLabels.ts`](frontend/src/composables/kitty/kittyVoiceCommandLabels.ts)).
+- **Kitty — workflow trace** — Structured voice-to-diagram trace logging on backend ([`kitty_workflow_trace.py`](services/kitty/infra/control/kitty_workflow_trace.py), `KITTY_WORKFLOW_TRACE=0` to disable) and frontend ([`kittyWorkflowTrace.ts`](frontend/src/composables/kitty/kittyWorkflowTrace.ts), [`KittyDesktopWorkflowDebugLog.vue`](frontend/src/components/kitty/KittyDesktopWorkflowDebugLog.vue), [`useKittyDesktopWorkflowDebug.ts`](frontend/src/composables/kitty/useKittyDesktopWorkflowDebug.ts)).
+- **Kitty — mobile hub library persist** — Debounced Pinia spec → Agent Hub persist after mobile voice edits ([`useKittyMobileHubPersist.ts`](frontend/src/composables/kitty/useKittyMobileHubPersist.ts)); mobile store hydration from library/bootstrap ([`hydrateMobileKittyFromLibrary.ts`](frontend/src/composables/kitty/hydrateMobileKittyFromLibrary.ts), [`hydrateMobileKittyStoreFromBootstrap.ts`](frontend/src/composables/kitty/hydrateMobileKittyStoreFromBootstrap.ts)).
+- **Kitty — hub bridge sync** — Voice diagram mutations sync to Agent Hub when live spec is newer than the saved library row ([`hub_bridge.py`](services/kitty/diagram/hub_bridge.py), [`library_refresh.py`](services/kitty/context/library_refresh.py)).
+- **Canvas — snapshot recall UX** — Loading animation and keyboard-accessible snapshot badges while a version is being restored ([`CanvasTopBar.vue`](frontend/src/components/canvas/CanvasTopBar.vue), [`useSnapshotHistory.ts`](frontend/src/composables/editor/useSnapshotHistory.ts)).
+- **Diagram — brace map parent resolve** — Subparts attach under the correct part group, not under sibling subparts ([`braceMapParentResolve.ts`](frontend/src/stores/diagram/braceMapParentResolve.ts), [`braceMapOps.ts`](frontend/src/stores/diagram/braceMapOps.ts)).
+- **Tests** — [`test_kitty_cross_device_sync.py`](tests/test_kitty_cross_device_sync.py), [`test_kitty_library_refresh.py`](tests/test_kitty_library_refresh.py); Vitest [`useKittyDesktopLiveSpecSync.spec.ts`](frontend/tests/useKittyDesktopLiveSpecSync.spec.ts), [`useKittyMobileHubPersist.spec.ts`](frontend/tests/useKittyMobileHubPersist.spec.ts), [`kittyVoiceCommandLabels.spec.ts`](frontend/tests/kittyVoiceCommandLabels.spec.ts), [`resolveKittySelectionNodeId.spec.ts`](frontend/tests/resolveKittySelectionNodeId.spec.ts), [`braceMapParentResolve.spec.ts`](frontend/tests/braceMapParentResolve.spec.ts).
+
+### Changed
+
+- **Kitty — command router** — Routes voice commands through hub sync, library refresh guards, selection fanout, and voice-command SSE labels ([`command_router.py`](services/kitty/routing/command_router.py), [`intent_parser.py`](services/kitty/routing/intent_parser.py), [`inbound.py`](services/kitty/ws/inbound.py)).
+- **Kitty — mobile pairing & click wheel** — Improved library diagram pick, scope hydration, and child-node cycling ([`useMobileKittyPairing.ts`](frontend/src/composables/kitty/useMobileKittyPairing.ts), [`MobileKittyPage.vue`](frontend/src/pages/mobile/MobileKittyPage.vue), [`KittyIpodClickWheel.vue`](frontend/src/components/kitty/KittyIpodClickWheel.vue), [`useKittyClickWheel.ts`](frontend/src/composables/kitty/useKittyClickWheel.ts)).
+- **Kitty — desktop live spec sync** — Slimmed composable; remote sync extracted to dedicated modules ([`useKittyDesktopLiveSpecSync.ts`](frontend/src/composables/kitty/useKittyDesktopLiveSpecSync.ts)).
+- **Kitty — desktop action poll & wake SSE** — Handles `diagram_update`, `selection_update`, and `voice_command` SSE event types ([`useKittyDesktopActionPoll.ts`](frontend/src/composables/kitty/useKittyDesktopActionPoll.ts), [`createKittyDesktopWakeStream.ts`](frontend/src/composables/kitty/createKittyDesktopWakeStream.ts)).
+- **Kitty — agent & context** — Expanded inbound message types, context messaging, and Omni refresh hooks ([`kittyAgentInbound.ts`](frontend/src/composables/kitty/kittyAgentInbound.ts), [`messaging.py`](services/kitty/context/messaging.py), [`hub_context.py`](services/kitty/context/hub_context.py)).
+- **Canvas — library snapshots** — Snapshot list wiring and node-action snapshot hooks ([`useCanvasPageLibrarySnapshots.ts`](frontend/src/composables/canvasPage/useCanvasPageLibrarySnapshots.ts), [`useNodeActions.ts`](frontend/src/composables/editor/useNodeActions.ts), [`CanvasPage.vue`](frontend/src/pages/CanvasPage.vue)).
+- **Event bus** — New Kitty workflow and diagram sync events ([`useEventBus.ts`](frontend/src/composables/core/useEventBus.ts)).
+- **i18n** — Voice command log and snapshot recall strings in [`canvas.ts`](frontend/src/locales/messages/en/canvas.ts) / [`common.ts`](frontend/src/locales/messages/en/common.ts) and Chinese bundles.
+- **Docs** — [`env.example`](env.example) documents `KITTY_WORKFLOW_TRACE`.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.18).
+
 ## [5.117.17] - 2026-05-23
 
 ### Added

@@ -149,9 +149,12 @@ async def _handle_transcription_event(
     if session_mut is None:
         return
 
-    logger.debug(
-        "Omni transcription received (%d chars)",
-        len(transcription_text),
+    from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
+
+    kitty_wf_log(
+        "transcription",
+        str(transcription_text),
+        voice_session_id=voice_session_id,
     )
 
     await safe_websocket_send(

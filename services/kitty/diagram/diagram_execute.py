@@ -14,6 +14,7 @@ from services.kitty.diagram.diagram_spec_sync import sync_diagram_data_to_spec_s
 from services.kitty.diagram.hub_bridge import try_sync_voice_diagram_to_hub
 from services.kitty.session.runtime_state import logger, voice_sessions
 from services.kitty.session.events import emit_diagram_mutated
+from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 
 
 async def execute_diagram_update(
@@ -64,6 +65,12 @@ async def execute_diagram_update(
             )
 
         else:
+            kitty_wf_log(
+                "diagram_execute_fail",
+                f"unknown action {action}",
+                voice_session_id=voice_session_id,
+                action=action,
+            )
             return False
 
         palette_only = action == "add_node" and not command.get("target")
@@ -82,9 +89,28 @@ async def execute_diagram_update(
                 delta=f"{action} applied",
             )
             await try_sync_voice_diagram_to_hub(voice_session_id)
+            kitty_wf_log(
+                "hub_sync",
+                "diagram mutation queued to hub",
+                voice_session_id=voice_session_id,
+                action=action,
+            )
 
+        if not executed:
+            kitty_wf_log(
+                "diagram_execute_fail",
+                f"{action} not applied target={target or node_index or '—'}",
+                voice_session_id=voice_session_id,
+                action=action,
+            )
         return executed
 
     except (ValueError, KeyError, RuntimeError, AttributeError) as e:
         logger.error("Diagram update execution error: %s", e, exc_info=True)
+        kitty_wf_log(
+            "diagram_execute_fail",
+            str(e)[:120],
+            voice_session_id=voice_session_id,
+            action=action,
+        )
         return False

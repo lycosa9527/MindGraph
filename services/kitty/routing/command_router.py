@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import time
+import copy
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, Optional
@@ -18,13 +18,17 @@ except ImportError:
     redis_user_cache = None
 
 from services.kitty.infra.desktop.kitty_desktop_action_queue import enqueue_kitty_desktop_action
-from services.kitty.infra.desktop.kitty_desktop_wake_fanout import publish_kitty_desktop_action_pending
+from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
+    publish_kitty_desktop_action_pending,
+    publish_kitty_selection_update,
+)
 from services.kitty.infra.bootstrap.kitty_diagram_vocabulary import normalize_voice_desktop_canvas_diagram_type
 from services.kitty.infra.redis.kitty_session_redis import (
     apply_redis_live_to_voice_session,
     load_kitty_live_context,
 )
 from services.kitty.diagram.diagram_execute import execute_diagram_update
+from services.kitty.diagram.hub_bridge import try_sync_voice_diagram_to_hub
 from services.kitty.diagram.diagram_utils import (
     NODE_TARGET_ACTIONS,
     is_paragraph_text,
@@ -32,6 +36,8 @@ from services.kitty.diagram.diagram_utils import (
 )
 from services.kitty.routing.intent_parser import parse_voice_intent_with_tools
 from services.kitty.context.library_refresh import (
+    live_spec_newer_than_library,
+    should_skip_library_refresh,
     throttled_refresh_voice_context_from_library,
 )
 from services.kitty.content.paragraph import process_paragraph_with_qwen_plus
@@ -41,6 +47,7 @@ from services.kitty.context.messaging import (
 )
 from services.kitty.omni.context_refresh import schedule_omni_context_refresh
 from services.kitty.omni.tools import omni_function_call_to_command, parse_node_index_from_identifier
+from services.kitty.infra.desktop.kitty_voice_command_fanout import fanout_voice_command_from_session
 from services.kitty.session.memory import get_session_memory
 from services.kitty.session.ops import (
     get_agent_session_id,
@@ -51,8 +58,6 @@ from services.kitty.session.runtime_state import logger, voice_sessions
 
 VOICE_COMMAND_CONFIDENCE_TEXT = 0.5
 VOICE_COMMAND_CONFIDENCE_VOICE = 0.5
-
-_CONTEXT_FRESH_SEC = 2.0
 
 
 class RouteOutcome(str, Enum):
@@ -65,6 +70,27 @@ class RouteOutcome(str, Enum):
 class RouteResult:
     outcome: RouteOutcome
     reason: Optional[str] = None
+
+
+def _finish_route(
+    voice_session_id: str,
+    outcome: RouteOutcome,
+    *,
+    reason: Optional[str] = None,
+    action: Optional[str] = None,
+) -> RouteResult:
+    from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
+
+    detail = reason or outcome.value
+    if action and str(action) not in ("none", ""):
+        detail = f"{action} → {detail}"
+    kitty_wf_log(
+        "route_outcome",
+        detail,
+        voice_session_id=voice_session_id,
+        action=str(action) if action else None,
+    )
+    return RouteResult(outcome=outcome, reason=reason)
 
 
 async def _send_diagram_failure_ack(voice_session_id: str, message: str) -> None:
@@ -222,21 +248,49 @@ async def route_voice_command(
                 except (ValueError, TypeError):
                     refresh_uid = None
             ws_scope = live_session.get("diagram_session_id")
-            last_ctx_mono = float(live_session.get("_last_context_update_mono") or 0.0)
-            ctx_fresh = (time.monotonic() - last_ctx_mono) < _CONTEXT_FRESH_SEC
+            ctx0 = dict(live_session.get("context") or {})
+            lib_id = ctx0.get("diagram_library_id")
+            skip_refresh = should_skip_library_refresh(
+                voice_session_id,
+                force=bool(is_text_message),
+            )
+            if skip_refresh:
+                from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
+
+                kitty_wf_log(
+                    "library_refresh",
+                    "skipped (fresh voice context)",
+                    voice_session_id=voice_session_id,
+                )
             if (
-                refresh_uid is not None
+                not skip_refresh
+                and refresh_uid is not None
                 and isinstance(ws_scope, str)
                 and ws_scope.strip()
-                and not ctx_fresh
+                and isinstance(lib_id, str)
+                and lib_id.strip()
             ):
-                await throttled_refresh_voice_context_from_library(
-                    user_id=refresh_uid,
-                    voice_session_id=voice_session_id,
-                    diagram_session_id=ws_scope.strip(),
-                    force=bool(is_text_message),
+                live_newer = await live_spec_newer_than_library(
+                    refresh_uid,
+                    lib_id.strip(),
+                    ws_scope.strip(),
                 )
-                session_context = dict(live_session.get("context") or session_context)
+                if not live_newer:
+                    await throttled_refresh_voice_context_from_library(
+                        user_id=refresh_uid,
+                        voice_session_id=voice_session_id,
+                        diagram_session_id=ws_scope.strip(),
+                        force=bool(is_text_message),
+                    )
+                    from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
+
+                    kitty_wf_log(
+                        "library_refresh",
+                        "merged library into voice session",
+                        voice_session_id=voice_session_id,
+                        scope=ws_scope.strip(),
+                    )
+                    session_context = dict(live_session.get("context") or session_context)
 
         if user_requests_diagram_pedagogical_review(command_text):
             try:
@@ -258,8 +312,13 @@ async def route_voice_command(
                 websocket, voice_session_id, command_text, session_context
             )
             if executed:
-                return RouteResult(outcome=RouteOutcome.EXECUTED)
-            return RouteResult(outcome=RouteOutcome.FAILED, reason="paragraph_processing_failed")
+                return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action="paragraph")
+            return _finish_route(
+                voice_session_id,
+                RouteOutcome.FAILED,
+                reason="paragraph_processing_failed",
+                action="paragraph",
+            )
 
         session = live_session or get_voice_session(voice_session_id)
         user_id = None
@@ -328,7 +387,11 @@ async def route_voice_command(
         if pre_parsed_command is not None:
             command = dict(pre_parsed_command)
         elif from_voice:
-            return RouteResult(outcome=RouteOutcome.CONVERSATIONAL_FALLBACK)
+            return _finish_route(
+                voice_session_id,
+                RouteOutcome.CONVERSATIONAL_FALLBACK,
+                reason="from_voice_no_preparse",
+            )
         else:
             command = await parse_voice_intent_with_tools(
                 command_text,
@@ -355,6 +418,19 @@ async def route_voice_command(
             confidence,
             is_text_message,
             from_voice,
+        )
+
+        from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
+
+        route_detail = command_text.strip()[:120] if command_text.strip() else f"tool:{action}"
+        if target:
+            route_detail = f"{route_detail} → {str(target)[:48]}"
+        kitty_wf_log(
+            "route",
+            route_detail,
+            voice_session_id=voice_session_id,
+            action=str(action) if action else None,
+            extra={"confidence": confidence, "from_voice": from_voice},
         )
 
         confidence_threshold = (
@@ -393,17 +469,34 @@ async def route_voice_command(
                     websocket, voice_session_id, action, command, session_context
                 )
                 if executed:
+                    from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
+
+                    kitty_wf_log(
+                        "diagram_execute",
+                        f"{action} ok target={target or node_index or '—'}",
+                        voice_session_id=voice_session_id,
+                        action=str(action),
+                    )
                     memory = get_session_memory(voice_session_id)
                     memory.append_action_turn(
                         f"{action}: {target or node_index or ''}".strip(),
                         action=str(action),
                     )
-                    return RouteResult(outcome=RouteOutcome.EXECUTED)
+                    return _finish_route(
+                        voice_session_id,
+                        RouteOutcome.EXECUTED,
+                        action=str(action) if action else None,
+                    )
                 await _send_diagram_failure_ack(
                     voice_session_id,
                     "抱歉，我没能更新这张导图，请换个说法再试一次。",
                 )
-                return RouteResult(outcome=RouteOutcome.FAILED, reason="diagram_execute_failed")
+                return _finish_route(
+                voice_session_id,
+                RouteOutcome.FAILED,
+                reason="diagram_execute_failed",
+                action=str(action) if action else None,
+            )
             logger.info(
                 "VOIC | Low confidence (%.2f) for diagram update '%s', threshold=%.2f",
                 confidence,
@@ -414,7 +507,12 @@ async def route_voice_command(
                 voice_session_id,
                 "我不太确定要怎么改这张导图，请再说具体一点。",
             )
-            return RouteResult(outcome=RouteOutcome.FAILED, reason="low_confidence_diagram")
+            return _finish_route(
+                voice_session_id,
+                RouteOutcome.FAILED,
+                reason="low_confidence_diagram",
+                action=str(action) if action else None,
+            )
 
         # For non-diagram-update actions, check confidence
         if action not in ui_actions and confidence < confidence_threshold:
@@ -422,20 +520,24 @@ async def route_voice_command(
                 "Low confidence (%s), conversational fallback",
                 confidence,
             )
-            return RouteResult(outcome=RouteOutcome.CONVERSATIONAL_FALLBACK)
+            return _finish_route(
+                voice_session_id,
+                RouteOutcome.CONVERSATIONAL_FALLBACK,
+                action=str(action) if action else None,
+            )
 
         # Handle UI actions first
         if action == "open_thinkguide":
             # Redirect to MindMate
             logger.debug("Opening MindMate panel")
             await safe_websocket_send(websocket, {"type": "action", "action": "open_mindmate", "params": {}})
-            return RouteResult(outcome=RouteOutcome.EXECUTED)
+            return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
         elif action == "close_thinkguide":
             # Redirect to MindMate
             logger.debug("Closing MindMate panel")
             await safe_websocket_send(websocket, {"type": "action", "action": "close_mindmate", "params": {}})
-            return RouteResult(outcome=RouteOutcome.EXECUTED)
+            return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
         elif action == "open_node_palette":
             logger.debug("Opening Node Palette")
@@ -443,7 +545,7 @@ async def route_voice_command(
                 websocket,
                 {"type": "action", "action": "open_node_palette", "params": {}},
             )
-            return RouteResult(outcome=RouteOutcome.EXECUTED)
+            return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
         elif action == "close_node_palette":
             logger.debug("Closing Node Palette")
@@ -451,17 +553,17 @@ async def route_voice_command(
                 websocket,
                 {"type": "action", "action": "close_node_palette", "params": {}},
             )
-            return RouteResult(outcome=RouteOutcome.EXECUTED)
+            return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
         elif action == "open_mindmate":
             logger.debug("Opening MindMate AI panel")
             await safe_websocket_send(websocket, {"type": "action", "action": "open_mindmate", "params": {}})
-            return RouteResult(outcome=RouteOutcome.EXECUTED)
+            return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
         elif action == "close_mindmate":
             logger.debug("Closing MindMate AI panel")
             await safe_websocket_send(websocket, {"type": "action", "action": "close_mindmate", "params": {}})
-            return RouteResult(outcome=RouteOutcome.EXECUTED)
+            return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
         elif action == "close_all_panels":
             logger.debug("Closing all panels")
@@ -469,12 +571,13 @@ async def route_voice_command(
                 websocket,
                 {"type": "action", "action": "close_all_panels", "params": {}},
             )
-            return RouteResult(outcome=RouteOutcome.EXECUTED)
+            return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
         # Interaction control
         elif action == "auto_complete":
             logger.info("Triggering AI auto-complete from text/voice command")
             await safe_websocket_send(websocket, {"type": "action", "action": "auto_complete", "params": {}})
+            await fanout_voice_command_from_session(voice_session_id, "auto_complete")
             # Send acknowledgment message to user via Omni
             try:
                 # Create a response acknowledging the action
@@ -483,7 +586,7 @@ async def route_voice_command(
                     await omni_client.create_response(instructions="收到，正在自动补全。")
             except (RuntimeError, ConnectionError, AttributeError) as e:
                 logger.debug("Could not send acknowledgment to Omni: %s", e)
-            return RouteResult(outcome=RouteOutcome.EXECUTED)
+            return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
         elif action == "start_inline_recommendations":
             logger.info("Kitty: start inline recommendations action")
@@ -506,6 +609,11 @@ async def route_voice_command(
                     "params": params,
                 },
             )
+            await fanout_voice_command_from_session(
+                voice_session_id,
+                "start_inline_recommendations",
+                params=params,
+            )
             try:
                 omni_client = get_session_omni_client(voice_session_id)
                 if omni_client:
@@ -517,7 +625,7 @@ async def route_voice_command(
                         )
             except (RuntimeError, ConnectionError, AttributeError) as e:
                 logger.debug("Could not send acknowledgment to Omni: %s", e)
-            return RouteResult(outcome=RouteOutcome.EXECUTED)
+            return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
         elif action == "add_node_with_recommendations":
             logger.info("Kitty: add node with inline recommendations")
@@ -533,6 +641,11 @@ async def route_voice_command(
                     "params": params,
                 },
             )
+            await fanout_voice_command_from_session(
+                voice_session_id,
+                "add_node_with_recommendations",
+                params=params,
+            )
             try:
                 omni_client = get_session_omni_client(voice_session_id)
                 if omni_client:
@@ -541,7 +654,7 @@ async def route_voice_command(
                     )
             except (RuntimeError, ConnectionError, AttributeError) as e:
                 logger.debug("Could not send acknowledgment to Omni: %s", e)
-            return RouteResult(outcome=RouteOutcome.EXECUTED)
+            return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
         elif action == "ask_thinkguide" and target:
             # Redirect to MindMate
@@ -554,7 +667,7 @@ async def route_voice_command(
                     "params": {"message": target},
                 },
             )
-            return RouteResult(outcome=RouteOutcome.EXECUTED)
+            return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
         elif action == "ask_mindmate" and target:
             logger.debug("Sending question to MindMate: %s", target)
@@ -566,7 +679,7 @@ async def route_voice_command(
                     "params": {"message": target},
                 },
             )
-            return RouteResult(outcome=RouteOutcome.EXECUTED)
+            return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
         elif action == "select_node":
             resolved = _resolve_command_node(
@@ -579,18 +692,60 @@ async def route_voice_command(
                 resolved_node_id = str(resolved["node_id"])
                 resolved_index = resolved.get("node_index")
                 logger.debug("Selecting node: %s", resolved_node_id)
-                await safe_websocket_send(
-                    websocket,
-                    {
-                        "type": "action",
-                        "action": "select_node",
-                        "params": {
-                            "node_id": resolved_node_id,
-                            "node_index": resolved_index,
+                session_row = voice_sessions.get(voice_session_id)
+                if session_row is not None:
+                    ctx = copy.deepcopy(session_row.get("context") or {})
+                    ctx["selected_nodes"] = [resolved_node_id]
+                    diagram_data = ctx.get("diagram_data")
+                    if not isinstance(diagram_data, dict):
+                        diagram_data = {}
+                        ctx["diagram_data"] = diagram_data
+                    diagram_data["selected_nodes"] = [resolved_node_id]
+                    session_row["context"] = ctx
+                    await try_sync_voice_diagram_to_hub(voice_session_id)
+                    user_id_raw = session_row.get("user_id")
+                    diagram_scope = session_row.get("diagram_session_id")
+                    if user_id_raw is not None and isinstance(diagram_scope, str) and diagram_scope.strip():
+                        try:
+                            await publish_kitty_selection_update(
+                                int(user_id_raw),
+                                diagram_scope.strip(),
+                                [resolved_node_id],
+                            )
+                        except (TypeError, ValueError) as sel_exc:
+                            logger.debug(
+                                "select_node selection fanout skipped for %s: %s",
+                                voice_session_id,
+                                sel_exc,
+                            )
+                    await safe_websocket_send(
+                        websocket,
+                        {
+                            "type": "action",
+                            "action": "select_node",
+                            "params": {
+                                "node_id": resolved_node_id,
+                                "node_index": resolved_index,
+                            },
                         },
-                    },
-                )
-            return RouteResult(outcome=RouteOutcome.EXECUTED)
+                    )
+                    return _finish_route(
+                        voice_session_id,
+                        RouteOutcome.EXECUTED,
+                        action=str(action) if action else None,
+                    )
+                return _finish_route(
+                voice_session_id,
+                RouteOutcome.FAILED,
+                reason="select_node_session_missing",
+                action=str(action) if action else None,
+            )
+            return _finish_route(
+            voice_session_id,
+            RouteOutcome.FAILED,
+            reason="select_node_unresolved",
+            action=str(action) if action else None,
+        )
 
         elif action == "explain_node":
             resolved = _resolve_command_node(
@@ -623,19 +778,42 @@ async def route_voice_command(
                             },
                         },
                     )
-            return RouteResult(outcome=RouteOutcome.EXECUTED)
+                    await fanout_voice_command_from_session(
+                        voice_session_id,
+                        "explain_node",
+                        params={"node_label": node_label, "node_id": resolved_node_id},
+                    )
+                    return _finish_route(
+                        voice_session_id,
+                        RouteOutcome.EXECUTED,
+                        action=str(action) if action else None,
+                    )
+            return _finish_route(
+            voice_session_id,
+            RouteOutcome.FAILED,
+            reason="explain_node_unresolved",
+            action=str(action) if action else None,
+        )
 
         elif action == "open_desktop_canvas":
             if user_id is None:
                 logger.warning("Kitty open_desktop_canvas: missing user_id")
-                return RouteResult(outcome=RouteOutcome.CONVERSATIONAL_FALLBACK)
+                return _finish_route(
+                voice_session_id,
+                RouteOutcome.CONVERSATIONAL_FALLBACK,
+                action=str(action) if action else None,
+            )
             raw_slug = command.get("diagram_type")
             slug = normalize_voice_desktop_canvas_diagram_type(
                 raw_slug if isinstance(raw_slug, str) else None
             )
             if slug is None:
                 logger.info("Kitty open_desktop_canvas: rejected diagram_type=%s", raw_slug)
-                return RouteResult(outcome=RouteOutcome.CONVERSATIONAL_FALLBACK)
+                return _finish_route(
+                voice_session_id,
+                RouteOutcome.CONVERSATIONAL_FALLBACK,
+                action=str(action) if action else None,
+            )
 
             payload: Dict[str, Any] = {
                 "kind": "open_canvas",
@@ -661,23 +839,35 @@ async def route_voice_command(
                     await omni_client.create_response(instructions=ack)
             except (RuntimeError, ConnectionError, AttributeError) as e:
                 logger.debug("open_desktop_canvas Omni ack skipped: %s", e)
-            return RouteResult(outcome=RouteOutcome.EXECUTED)
+            return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
         elif action == "help":
             logger.debug("User requested help - opening MindMate")
             await safe_websocket_send(websocket, {"type": "action", "action": "open_mindmate", "params": {}})
-            return RouteResult(outcome=RouteOutcome.EXECUTED)
+            return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
         elif action == "none":
             logger.debug("No command detected - should send to Omni for conversational response")
-            return RouteResult(outcome=RouteOutcome.CONVERSATIONAL_FALLBACK)
+            return _finish_route(
+                voice_session_id,
+                RouteOutcome.CONVERSATIONAL_FALLBACK,
+                action=str(action) if action else None,
+            )
 
         # Unknown action - send to Omni
-        return RouteResult(outcome=RouteOutcome.CONVERSATIONAL_FALLBACK)
+        return _finish_route(
+                voice_session_id,
+                RouteOutcome.CONVERSATIONAL_FALLBACK,
+                action=str(action) if action else None,
+            )
 
     except (ValueError, KeyError, RuntimeError, AttributeError) as e:
         logger.error("Command processing error: %s", e, exc_info=True)
-        return RouteResult(outcome=RouteOutcome.CONVERSATIONAL_FALLBACK, reason=str(e))
+        return _finish_route(
+            voice_session_id,
+            RouteOutcome.CONVERSATIONAL_FALLBACK,
+            reason=str(e),
+        )
 
 
 async def route_omni_function_call(

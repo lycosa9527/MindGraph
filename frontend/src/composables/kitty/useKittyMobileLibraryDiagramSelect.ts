@@ -8,81 +8,23 @@ import { ref } from 'vue'
 
 
 
-import { diagramTypeMap } from '@/composables/canvasPage/diagramTypeMaps'
-
 import { useLanguage, useNotifications } from '@/composables'
 
-import { eventBus } from '@/composables/core/useEventBus'
-
-import { useDiagramStore, useUIStore } from '@/stores'
+import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 
 import { useSavedDiagramsStore, type SavedDiagram } from '@/stores/savedDiagrams'
-
-import type { DiagramType } from '@/types'
-
-
-
-async function loadKittyLibraryDiagramIntoStore(diagramId: string): Promise<boolean> {
-
-  const savedDiagramsStore = useSavedDiagramsStore()
-
-  const diagramStore = useDiagramStore()
-
-  const uiStore = useUIStore()
-
-  const diagram = await savedDiagramsStore.getDiagram(diagramId)
-
-  if (!diagram) {
-
-    return false
-
-  }
-
-
-
-  savedDiagramsStore.setActiveDiagram(diagramId)
-
-  diagramStore.clearHistory()
-
-
-
-  const spec = diagram.spec as Record<string, unknown>
-
-  const loaded = diagramStore.loadFromSpec(spec, diagram.diagram_type as DiagramType)
-
-  if (!loaded) {
-
-    return false
-
-  }
-
-
-
-  uiStore.setSelectedChartType(
-
-    Object.entries(diagramTypeMap).find(([, value]) => value === diagram.diagram_type)?.[0] ||
-
-      diagram.diagram_type
-
-  )
-
-  eventBus.emit('diagram:loaded_from_library', {
-
-    diagramId,
-
-    diagramType: diagram.diagram_type,
-
-  })
-
-  return true
-
-}
 
 
 
 export function useKittyMobileLibraryDiagramSelect(options: {
 
   scheduleContextSync: () => void
+
+  refreshBootstrap: (scopeId: string) => Promise<void>
+
+  hydrateFromLibrary: (diagramId: string) => Promise<boolean>
+
+  hydrateStoreFromBootstrap: () => void
 
   onDebugLine?: (prefix: string, detail: string) => void
 
@@ -132,17 +74,19 @@ export function useKittyMobileLibraryDiagramSelect(options: {
 
     try {
 
-      const loaded = await loadKittyLibraryDiagramIntoStore(diagram.id)
+      savedDiagramsStore.setActiveDiagram(diagram.id)
 
-      if (!loaded) {
+      traceKittyWorkflow('mobile', 'library_select', String(diagram.title).slice(0, 80), {
+        scope: diagram.id,
+      })
 
-        notify.warning(
+      await options.refreshBootstrap(diagram.id)
 
-          t('mobile.kittyDiagramPickFailed', '无法加载该导图，请稍后重试')
+      const hydrated = await options.hydrateFromLibrary(diagram.id)
 
-        )
+      if (!hydrated) {
 
-        return
+        options.hydrateStoreFromBootstrap()
 
       }
 
@@ -172,11 +116,7 @@ export function useKittyMobileLibraryDiagramSelect(options: {
 
       if (!res.ok) {
 
-        notify.warning(
-
-          t('mobile.kittyDesktopJumpFailed', '已切换导图，但无法通知电脑端')
-
-        )
+        notify.warning(t('mobile.kittyDesktopJumpFailed', '已切换导图，但无法通知电脑端'))
 
       } else {
 
@@ -184,19 +124,14 @@ export function useKittyMobileLibraryDiagramSelect(options: {
 
         if (data.ok) {
 
-          notify.success(
-
-            t('mobile.kittyDiagramSelected', '已选择导图，电脑端将同步打开')
-
-          )
+          notify.success(t('mobile.kittyDiagramSelected', '已选择导图，电脑端将同步打开'))
+          traceKittyWorkflow('mobile', 'desktop_enqueue', 'open_library_diagram', {
+            scope: diagram.id,
+          })
 
         } else {
 
-          notify.warning(
-
-            t('mobile.kittyDesktopJumpFailed', '已切换导图，但无法通知电脑端')
-
-          )
+          notify.warning(t('mobile.kittyDesktopJumpFailed', '已切换导图，但无法通知电脑端'))
 
         }
 
