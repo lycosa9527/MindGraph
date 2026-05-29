@@ -77,4 +77,11 @@ export default {
   'sidebar.templateResources': '模板资源',
   'sidebar.userSubtitleDefault': 'MindGraph专业版',
   'sidebar.account': '账号设置',
+  'sidebar.roleSuperAdmin': '超级管理员',
+  'sidebar.rolePlatformAdmin': '管理员',
+  'sidebar.roleExpert': '专家',
+  'sidebar.roleSchoolAdmin': '学校管理员',
+  'sidebar.roleSchoolEdition': '学校版',
+  'sidebar.roleTrialEdition': '体验版',
+  'sidebar.roleSuperMember': '超级会员',
 } as const

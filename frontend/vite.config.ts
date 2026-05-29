@@ -7,6 +7,7 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import { resolve, dirname } from 'path'
 import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -24,6 +25,38 @@ const backendOrigin = backendHost.replace(/\/$/, '')
 const elementPlusResolver = ElementPlusResolver({
   importStyle: 'css',
 })
+
+/** Split Element Plus into route-friendly chunks (data-heavy vs shell). */
+function elementPlusManualChunk(id: string): string | undefined {
+  if (!id.includes('node_modules/element-plus')) {
+    return undefined
+  }
+  if (
+    id.includes('/es/components/table') ||
+    id.includes('/es/components/table-column') ||
+    id.includes('/es/components/upload') ||
+    id.includes('/es/components/pagination') ||
+    id.includes('/es/components/tabs') ||
+    id.includes('/es/components/tab-pane') ||
+    id.includes('/es/components/progress')
+  ) {
+    return 'vendor-ep-data'
+  }
+  if (
+    id.includes('/es/components/dialog') ||
+    id.includes('/es/components/drawer') ||
+    id.includes('/es/components/message') ||
+    id.includes('/es/components/message-box') ||
+    id.includes('/es/components/notification') ||
+    id.includes('/es/components/loading') ||
+    id.includes('/es/components/popover') ||
+    id.includes('/es/components/popconfirm')
+  ) {
+    return 'vendor-ep-overlay'
+  }
+  // Form controls stay in core — a separate form chunk caused circular deps with core.
+  return 'vendor-ep-core'
+}
 
 export default defineConfig({
   optimizeDeps: {
@@ -57,6 +90,15 @@ export default defineConfig({
       dts: 'src/components.d.ts',
       resolvers: [elementPlusResolver],
     }),
+    ...(process.env.ANALYZE === '1'
+      ? [
+          visualizer({
+            filename: 'dist/stats.html',
+            gzipSize: true,
+            open: true,
+          }),
+        ]
+      : []),
   ],
   define: {
     __APP_VERSION__: JSON.stringify(version),
@@ -139,7 +181,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: process.env.SOURCEMAP === '1' ? true : false,
     // Vite’s default 500 kB is aggressive for feature-rich SPAs; 1000 kB is a
     // practical bar once vendors are split (below). Revisit if a single chunk
     // still exceeds this — prefer more `manualChunks` over raising the limit.
@@ -165,8 +207,9 @@ export default defineConfig({
           if (id.includes('node_modules/@element-plus/icons-vue')) {
             return 'vendor-ep-icons'
           }
-          if (id.includes('node_modules/element-plus') || id.includes('node_modules/@element-plus')) {
-            return 'vendor-element-plus'
+          const epChunk = elementPlusManualChunk(id)
+          if (epChunk) {
+            return epChunk
           }
           if (id.includes('node_modules/echarts')) {
             return 'vendor-echarts'
@@ -211,7 +254,7 @@ export default defineConfig({
           if (id.includes('node_modules/@tanstack')) {
             return 'vendor-tanstack'
           }
-          if (id.includes('node_modules/simple-keyboard') || id.includes('node_modules/simple-keyboard-layouts')) {
+          if (id.includes('node_modules/simple-keyboard') && !id.includes('simple-keyboard-layouts')) {
             return 'vendor-keyboard'
           }
           if (id.includes('node_modules/axios')) {

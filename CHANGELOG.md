@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.20] - 2026-05-29
+
+### Added
+
+- **Auth — seven-role user system** — Canonical roles `superadmin`, `platform_bd`, `expert`, `school_admin`, `teacher`, `personal_trial`, and `personal_paid` with legacy mapping (`admin` → `superadmin`, `manager` → `school_admin`, `user` → `teacher`); shared constants and capability scaffolding in [`role_constants.py`](utils/auth/role_constants.py); Alembic `rev_0036` widens `users.role` and backfills legacy values ([`rev_0036_seven_user_roles.py`](alembic/versions/rev_0036_seven_user_roles.py)).
+- **Auth — role assignment UI** — Admin Roles tab lists superadmins and school admins, adds an assignment tab for all seven roles, and shows localized role pills ([`AdminRolesTab.vue`](frontend/src/components/admin/AdminRolesTab.vue), [`userRoleDisplay.ts`](frontend/src/utils/userRoleDisplay.ts)); sidebar account footer displays the user’s role pill ([`AppSidebarNav.vue`](frontend/src/components/sidebar/AppSidebarNav.vue), [`useAppSidebar.ts`](frontend/src/composables/sidebar/useAppSidebar.ts)).
+- **Frontend — lazy markdown** — `markdown-it` and KaTeX load on demand; route-aware preload and reactive `useRenderedMarkdown` ([`lazyMarkdown.ts`](frontend/src/composables/core/lazyMarkdown.ts), [`markdownRenderer.ts`](frontend/src/composables/core/markdownRenderer.ts), [`useRenderedMarkdown.ts`](frontend/src/composables/core/useRenderedMarkdown.ts)).
+- **Frontend — lazy i18n** — Per-locale dynamic imports with English-copy locale codes ([`lazyLocaleLoaders.ts`](frontend/src/i18n/lazyLocaleLoaders.ts), [`generate-lazy-locale-loaders.js`](frontend/scripts/generate-lazy-locale-loaders.js)); locale label cache invalidation for diagram defaults ([`localeLabelCache.ts`](frontend/src/i18n/localeLabelCache.ts)).
+- **Frontend — lazy Chart.js** — Admin trend charts load Chart.js on modal open ([`lazyChartJs.ts`](frontend/src/utils/lazyChartJs.ts), [`AdminTrendChartModal.vue`](frontend/src/components/admin/AdminTrendChartModal.vue)).
+- **Ops — admin SMS alert gating** — `admin_sms_alerts_enabled()` disables admin-target SMS when `DEBUG=true`, `ENVIRONMENT` is test/staging/development, or `ADMIN_SMS_ALERTS_ENABLED=false` ([`critical_alert.py`](services/infrastructure/monitoring/critical_alert.py)); documented in [`env.example`](env.example).
+- **Tests** — Vitest [`lazyMarkdown.spec.ts`](frontend/tests/lazyMarkdown.spec.ts), [`loadLocaleMessages.spec.ts`](frontend/tests/loadLocaleMessages.spec.ts).
+
+### Changed
+
+- **Auth — dependencies and checks** — `require_superadmin` / `require_school_admin` replace ambiguous admin/manager naming; `normalize_role()` used across routers, scripts, and Redis cache ([`dependencies.py`](routers/auth/dependencies.py), [`roles.py`](utils/auth/roles.py), [`roles.py` admin API](routers/auth/admin/roles.py)).
+- **Frontend — bootstrap and bundle** — App bootstraps i18n from the signed-in user’s `uiLanguage`; Element Plus programmatic styles load lazily; diagram layout recalc listener deferred to first canvas mount ([`main.ts`](frontend/src/main.ts), [`notifications.ts`](frontend/src/composables/core/notifications.ts), [`diagramLayoutRecalcBootstrap.ts`](frontend/src/composables/core/diagramLayoutRecalcBootstrap.ts)).
+- **Frontend — sidebar** — Nav icons migrated from Element Plus to Lucide; history panels loaded with `defineAsyncComponent` ([`AppSidebarNav.vue`](frontend/src/components/sidebar/AppSidebarNav.vue)).
+- **Frontend — Vite build** — Element Plus split into `vendor-ep-core`, `vendor-ep-data`, and `vendor-ep-overlay` manual chunks; production sourcemaps opt-in via `SOURCEMAP=1`; bundle analyzer via `ANALYZE=1` ([`vite.config.ts`](frontend/vite.config.ts)).
+- **Diagram — locale-aware labels** — Placeholder and concept-map root label sets build lazily from loaded locales only ([`constants.ts`](frontend/src/stores/diagram/constants.ts), [`diagramDefaultLabels.ts`](frontend/src/stores/diagram/diagramDefaultLabels.ts), [`conceptMapTopicRootEdge.ts`](frontend/src/utils/conceptMapTopicRootEdge.ts)).
+- **i18n** — Role pill and admin role strings in [`sidebar.ts`](frontend/src/locales/messages/en/sidebar.ts) / [`admin.ts`](frontend/src/locales/messages/en/admin.ts) and Chinese bundles.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.20).
+
 ## [5.117.19] - 2026-05-27
 
 ### Fixed

@@ -1,9 +1,13 @@
 /**
  * Materialize `locales/messages/<code>/` from English namespaces + root re-export.
  * Skips: en, zh, zh-tw, az, th, fr, af (existing dedicated bundles).
- * Regenerates `src/i18n/index.ts` with one import per locale.
+ *
+ * Does not modify `src/i18n/index.ts` — locale loading is lazy via `import.meta.glob`
+ * in that file (eager bundles: en + zh only).
+ *
  * Run: npx tsx scripts/materialize-locale-bundles-from-en.ts
  */
+import { execSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -37,21 +41,6 @@ function patchNamespaceHeader(content: string, code: string): string {
   )
 }
 
-function messagesImportName(code: string): string {
-  const parts = code.split('-')
-  const camel =
-    parts[0] +
-    parts
-      .slice(1)
-      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
-      .join('')
-  return `${camel}Messages`
-}
-
-function qc(code: string): string {
-  return code.includes('-') ? `'${code}'` : code
-}
-
 function materializeLocale(code: string): void {
   const dest = join(ROOT, code)
   if (existsSync(dest)) {
@@ -79,82 +68,17 @@ export { default } from './${code}/index'
   )
 }
 
-function writeI18nIndex(): void {
-  const allCodes = SUPPORTED_UI_LOCALES.map((e) => e.code).sort((a, b) => a.localeCompare(b))
-
-  const importLines: string[] = ["import { createI18n } from 'vue-i18n'", '']
-  for (const code of allCodes) {
-    const name = messagesImportName(code)
-    importLines.push(`import ${name} from '@/locales/messages/${code}'`)
-  }
-  importLines.push(
-    '',
-    "import type { LocaleCode } from './locales'",
-    "import { htmlLangForUiCode } from './locales'",
-    '',
-    "export type { LocaleCode } from './locales'",
-    "export { intlLocaleForUiCode } from './locales'",
-    "export type { MessageSchema } from './messageSchema'",
-    "export { loadElementPlusLocale } from './elementPlusLocale'",
-    '',
-    'const EN_FLAT = enMessages as Record<string, string>',
-    '',
-    '/**',
-    ' * All UI locales registered for vue-i18n.',
-    ' * Bundles cloned from English use the same keys until translated.',
-    ' */',
-    'const ALL_UI_MESSAGES: { [K in LocaleCode]: Record<string, string> } = {'
-  )
-
-  for (const code of allCodes) {
-    const rhs = code === 'en' ? 'EN_FLAT' : `${messagesImportName(code)} as Record<string, string>`
-    importLines.push(`  ${qc(code)}: ${rhs},`)
-  }
-  importLines.push(
-    '}',
-    '',
-    "/** Typed keys for `t()` — use `import type { MessageSchema } from '@/i18n/messageSchema'`. */",
-    'export const i18n = createI18n({',
-    '  legacy: false,',
-    '  globalInjection: true,',
-    "  locale: 'zh',",
-    "  fallbackLocale: 'en',",
-    '  messages: ALL_UI_MESSAGES,',
-    '  missingWarn: import.meta.env.DEV,',
-    '  fallbackWarn: import.meta.env.DEV,',
-    '})',
-    '',
-    '/**',
-    ' * UI strings for every LocaleCode are eager-loaded via ALL_UI_MESSAGES.',
-    ' * Callers still await this before setI18nLocale so bootstrap order stays stable.',
-    ' */',
-    'export async function loadLocaleMessages(_locale: LocaleCode): Promise<void> {',
-    '  await Promise.resolve()',
-    '}',
-    '',
-    'export function setI18nLocale(locale: LocaleCode): void {',
-    '  const loc = i18n.global.locale as { value: LocaleCode }',
-    '  loc.value = locale',
-    '}',
-    '',
-    '/** BCP 47–friendly value for the document element. */',
-    'export function htmlLangForLocale(locale: LocaleCode): string {',
-    '  return htmlLangForUiCode(locale)',
-    '}',
-    ''
-  )
-
-  writeFileSync(join(__dirname, '../src/i18n/index.ts'), importLines.join('\n'), 'utf8')
-}
-
 function main(): void {
   for (const { code } of SUPPORTED_UI_LOCALES) {
     if (SKIP_COPY.has(code)) continue
     materializeLocale(code)
     console.log('materialized', code)
   }
-  writeI18nIndex()
-  console.log('wrote src/i18n/index.ts')
+  console.log('done (src/i18n/index.ts is hand-maintained for lazy loading)')
+  execSync('node scripts/generate-lazy-locale-loaders.js', {
+    cwd: join(__dirname, '..'),
+    stdio: 'inherit',
+  })
 }
 
 main()

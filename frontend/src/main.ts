@@ -5,21 +5,17 @@ import { createApp } from 'vue'
 
 import { createPinia } from 'pinia'
 
-import 'element-plus/es/components/loading/style/css'
-import 'element-plus/es/components/message-box/style/css'
-// Element Plus programmatic-API styles (not auto-resolved by unplugin)
-import 'element-plus/es/components/message/style/css'
-import 'element-plus/es/components/notification/style/css'
-
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 
 import App from './App.vue'
-import { eventBus } from './composables/core/useEventBus'
 import './fonts/eagerFonts'
-import { i18n, loadLocaleMessages, setI18nLocale } from './i18n'
+import { ensureElementPlusProgrammaticStyles } from '@/composables/core/notifications'
+import { preloadMarkdownRendererForRoute } from '@/composables/core/useMarkdown'
+import { i18n, htmlLangForLocale, loadLocaleMessages, setI18nLocale } from './i18n'
 import router from './router'
-import { useDiagramStore } from './stores/diagram'
+import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from './stores/ui'
+import { isUiLocale } from './i18n/locales'
 // Styles
 import './styles/index.css'
 
@@ -29,13 +25,20 @@ async function bootstrap(): Promise<void> {
   const pinia = createPinia()
   app.use(pinia)
 
-  eventBus.on('diagram:layout_recalc_bump', () => {
-    useDiagramStore().layoutRecalcTrigger += 1
-  })
-
+  const authStore = useAuthStore()
   const uiStore = useUIStore()
-  await loadLocaleMessages(uiStore.language)
-  setI18nLocale(uiStore.language)
+
+  const bootstrapLang =
+    authStore.user?.uiLanguage && isUiLocale(authStore.user.uiLanguage)
+      ? authStore.user.uiLanguage
+      : uiStore.language
+
+  await loadLocaleMessages(bootstrapLang)
+  setI18nLocale(bootstrapLang)
+  if (uiStore.language !== bootstrapLang) {
+    uiStore.language = bootstrapLang
+    document.documentElement.lang = htmlLangForLocale(bootstrapLang)
+  }
 
   app.use(i18n)
 
@@ -63,6 +66,8 @@ async function bootstrap(): Promise<void> {
 
   // Avoid flashing DefaultLayout on `/` before the guard redirects (e.g. to `/mindmate`).
   await router.isReady()
+  await ensureElementPlusProgrammaticStyles()
+  preloadMarkdownRendererForRoute(router.currentRoute.value.path)
   app.mount('#app')
 }
 

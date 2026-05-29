@@ -10,19 +10,18 @@ import { ElMessageBox } from 'element-plus'
 
 import { Delete, Loading } from '@element-plus/icons-vue'
 
-import { Chart, type ChartConfiguration, type TooltipItem, registerables } from 'chart.js'
+import type { Chart as ChartInstance } from 'chart.js'
 
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
 import { apiRequest } from '@/utils/apiClient'
+import { loadChartJs, type ChartConfiguration, type TooltipItem } from '@/utils/lazyChartJs'
 
 import AdminSchoolDifySettings from './AdminSchoolDifySettings.vue'
 import AdminSchoolOrgGeneralTab from './AdminSchoolOrgGeneralTab.vue'
 import AdminSchoolTokenUsageTab from './AdminSchoolTokenUsageTab.vue'
-
-Chart.register(...registerables)
 
 type SchoolDialogTab = 'usage' | 'dify' | 'general'
 
@@ -62,7 +61,7 @@ const chartRef = ref<HTMLCanvasElement | null>(null)
 const tokenUsageTabRef = ref<InstanceType<typeof AdminSchoolTokenUsageTab> | null>(null)
 const mindmateDifyRef = ref<InstanceType<typeof AdminSchoolDifySettings> | null>(null)
 const schoolDialogTab = ref<SchoolDialogTab>('general')
-let chartInstance: Chart<'line'> | null = null
+let chartInstance: ChartInstance<'line'> | null = null
 
 const schoolHeaderNote = computed(() => {
   if (props.type !== 'org') {
@@ -189,7 +188,7 @@ async function loadUserTokenCards() {
   }
 }
 
-function renderChart(data: {
+async function renderChart(data: {
   data: Array<{ date: string; value: number; input?: number; output?: number }>
 }) {
   const canvas = chartCanvasElement()
@@ -295,6 +294,7 @@ function renderChart(data: {
       },
     },
   }
+  const Chart = await loadChartJs()
   chartInstance = new Chart(canvas, config)
 }
 
@@ -311,7 +311,7 @@ async function load() {
       chartLoading.value = false
       await nextTick()
       await new Promise((r) => setTimeout(r, 50))
-      if (data) renderChart(data)
+      if (data) await renderChart(data)
       await loadOrgTokenCards()
     } else {
       chartTitle.value = `${t('admin.trendUserTokens')}: ${props.userName ?? ''}`
@@ -319,7 +319,7 @@ async function load() {
       chartLoading.value = false
       await nextTick()
       await new Promise((r) => setTimeout(r, 50))
-      if (data) renderChart(data)
+      if (data) await renderChart(data)
       await loadUserTokenCards()
     }
   } catch {

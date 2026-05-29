@@ -29,7 +29,7 @@ from models.domain.school_zone import (
     SharedDiagramLike,
     SharedDiagramComment,
 )
-from utils.auth import get_current_user
+from utils.auth import get_current_user, is_admin_or_manager
 
 
 logger = logging.getLogger(__name__)
@@ -341,7 +341,7 @@ async def delete_shared_diagram(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Diagram not found")
 
     is_author = diagram.author_id == current_user.id
-    is_privileged = current_user.role in ("admin", "manager")
+    is_privileged = is_admin_or_manager(current_user)
 
     if not is_author and not is_privileged:
         raise HTTPException(
@@ -582,7 +582,7 @@ async def delete_comment(
 
     is_comment_author = comment.user_id == current_user.id
     is_diagram_author = diagram.author_id == current_user.id
-    is_privileged = current_user.role in ("admin", "manager")
+    is_privileged = is_admin_or_manager(current_user)
 
     if not is_comment_author and not is_diagram_author and not is_privileged:
         raise HTTPException(

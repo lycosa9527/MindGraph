@@ -68,11 +68,34 @@ def _fire_and_forget(coro: Coroutine) -> None:
 # Configuration
 # ============================================================================
 
-CRITICAL_ALERT_ENABLED = os.getenv("CRITICAL_ALERT_ENABLED", "true").lower() in (
-    "true",
-    "1",
-    "yes",
-)
+_NON_PRODUCTION_ENVIRONMENTS = frozenset({"development", "dev", "test", "staging"})
+
+
+def _env_flag(name: str, default: str) -> bool:
+    return os.getenv(name, default).lower() in ("true", "1", "yes")
+
+
+def admin_sms_alerts_enabled() -> bool:
+    """
+    Whether admin-target SMS alerts (critical, health, process monitor, startup) may be sent.
+
+    Disabled when DEBUG=true, when ENVIRONMENT is non-production (test/staging/development),
+    or when ADMIN_SMS_ALERTS_ENABLED=false. Production defaults follow CRITICAL_ALERT_ENABLED.
+    """
+    if os.getenv("DEBUG", "").lower() == "true":
+        return False
+
+    explicit = os.getenv("ADMIN_SMS_ALERTS_ENABLED")
+    if explicit is not None:
+        return _env_flag("ADMIN_SMS_ALERTS_ENABLED", "false")
+
+    environment = os.getenv("ENVIRONMENT", "production").strip().lower()
+    if environment in _NON_PRODUCTION_ENVIRONMENTS:
+        return False
+
+    return _env_flag("CRITICAL_ALERT_ENABLED", "true")
+
+
 CRITICAL_ALERT_COOLDOWN_SECONDS = int(os.getenv("CRITICAL_ALERT_COOLDOWN_SECONDS", "1800"))  # 30 min default
 CRITICAL_ALERT_EXCEPTION_COOLDOWN_SECONDS = int(
     os.getenv("CRITICAL_ALERT_EXCEPTION_COOLDOWN_SECONDS", "3600")
@@ -191,14 +214,8 @@ class CriticalAlertService:
         Returns:
             True if alert was sent, False if skipped (cooldown or already sent)
         """
-        # Skip SMS alerts in debug mode (frequent restarts during development)
-        is_debug_mode = os.getenv("DEBUG", "").lower() == "true"
-        if is_debug_mode:
-            logger.debug("[CriticalAlert] Critical alert skipped (DEBUG mode enabled)")
-            return False
-
-        if not CRITICAL_ALERT_ENABLED:
-            logger.debug("[CriticalAlert] Critical alerting disabled")
+        if not admin_sms_alerts_enabled():
+            logger.debug("[CriticalAlert] Admin SMS alerts disabled for this environment")
             return False
 
         if not _SMS_AVAILABLE:

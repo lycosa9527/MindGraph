@@ -44,7 +44,6 @@ const diagramStore = useDiagramStore()
 const uiStore = useUIStore()
 
 const { handleAddNode, handleDeleteNode, handleAddCause, handleAddEffect } = useNodeActions({
-  addNodePrimaryBehavior: 'toolbarPrimary',
   includeTreeMapPrimaryAdd: true,
   includeMultiFlowPrimaryAdd: true,
 })

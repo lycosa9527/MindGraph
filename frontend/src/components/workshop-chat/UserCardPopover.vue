@@ -11,6 +11,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
 import { resolveWorkshopAvatarDisplay } from '@/utils/workshopAvatar'
+import { getRolePillStyle } from '@/utils/userRoleDisplay'
 
 export interface UserCardUser {
   id: number
@@ -56,14 +57,8 @@ const presenceLabel = computed(() => {
 })
 
 const roleBadge = computed(() => {
-  const role = props.user.role ?? 'member'
-  const map: Record<string, string> = {
-    admin: t('workshop.roleAdmin'),
-    superadmin: t('workshop.roleAdmin'),
-    manager: t('workshop.roleManager'),
-    owner: t('workshop.roleOwner'),
-  }
-  return map[role] ?? null
+  const style = getRolePillStyle(props.user.role)
+  return style ? t(style.labelKey) : null
 })
 
 const userInitial = computed(() => (props.user.name || '?')[0].toUpperCase())

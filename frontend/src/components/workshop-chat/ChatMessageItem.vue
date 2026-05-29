@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
-import { useMarkdown } from '@/composables/core/useMarkdown'
+import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'
 import {
   type ChatMessage,
   type FileAttachment,
@@ -16,8 +16,11 @@ import MessageActionBar from './MessageActionBar.vue'
 import MessageReactions from './MessageReactions.vue'
 
 const { t } = useLanguage()
-const { render } = useMarkdown()
 const workshopStore = useWorkshopChatStore()
+
+const { html: renderedContent } = useRenderedMarkdown(() =>
+  props.message.is_deleted ? '' : props.message.content
+)
 
 const CONDENSE_THRESHOLD = 300
 
@@ -50,11 +53,6 @@ const formattedTime = computed(() => {
 })
 
 const isEdited = computed(() => !!props.message.edited_at)
-
-const renderedContent = computed(() => {
-  if (props.message.is_deleted) return ''
-  return render(props.message.content)
-})
 
 const senderInitial = computed(() => {
   if (props.message.sender_avatar) return props.message.sender_avatar

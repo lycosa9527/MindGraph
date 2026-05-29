@@ -10,15 +10,8 @@ import { storeToRefs } from 'pinia'
 
 import { ElConfigProvider } from 'element-plus'
 import type { Language } from 'element-plus/es/locale'
-import en from 'element-plus/es/locale/lang/en'
 
-import { LoginModal } from '@/components/auth'
-import CanvasLiveSubtitleOverlay from '@/components/canvas/CanvasLiveSubtitleOverlay.vue'
-import ChatMessageToast from '@/components/common/ChatMessageToast.vue'
-import GeoLiteNotification from '@/components/common/GeoLiteNotification.vue'
-import VersionNotification from '@/components/common/VersionNotification.vue'
-import BrowserLocaleHintDialog from '@/components/settings/BrowserLocaleHintDialog.vue'
-import { useKittyDesktopActionPoll, useLanguage, useNotifications } from '@/composables'
+import { useLanguage, useNotifications } from '@/composables'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { loadElementPlusLocale } from '@/i18n/elementPlusLocale'
 import { isRtlUiLocale } from '@/i18n/locales'
@@ -28,7 +21,22 @@ import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
 const notify = useNotifications()
 
-useKittyDesktopActionPoll()
+const LoginModal = defineAsyncComponent(() => import('@/components/auth/LoginModal.vue'))
+const CanvasLiveSubtitleOverlay = defineAsyncComponent(
+  () => import('@/components/canvas/CanvasLiveSubtitleOverlay.vue')
+)
+const ChatMessageToast = defineAsyncComponent(
+  () => import('@/components/common/ChatMessageToast.vue')
+)
+const GeoLiteNotification = defineAsyncComponent(
+  () => import('@/components/common/GeoLiteNotification.vue')
+)
+const VersionNotification = defineAsyncComponent(
+  () => import('@/components/common/VersionNotification.vue')
+)
+const BrowserLocaleHintDialog = defineAsyncComponent(
+  () => import('@/components/settings/BrowserLocaleHintDialog.vue')
+)
 
 const route = useRoute()
 const router = useRouter()
@@ -56,7 +64,7 @@ const translationDisplayLines = computed(() => {
 })
 const translationLive = translationInterimText
 
-const elLocale = shallowRef<Language>(en)
+const elLocale = shallowRef<Language | undefined>(undefined)
 
 const showBrowserLocaleHint = ref(false)
 

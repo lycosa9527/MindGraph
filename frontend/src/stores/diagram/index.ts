@@ -5,7 +5,7 @@ export type {
   EventCallback,
   MindMapCurveExtents,
 } from './types'
-export { VALID_DIAGRAM_TYPES, MAX_HISTORY_SIZE, PLACEHOLDER_TEXTS } from './constants'
+export { VALID_DIAGRAM_TYPES, MAX_HISTORY_SIZE, getPlaceholderTexts } from './constants'
 export {
   emitEvent,
   subscribeToDiagramEvents,

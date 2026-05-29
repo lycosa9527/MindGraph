@@ -1,4 +1,4 @@
-import { i18n } from '@/i18n'
+import { i18n, isLocaleLoaded } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
 
 type GlobalTForLocale = (
@@ -21,6 +21,9 @@ export function translateForUiLocale(
   params?: Record<string, unknown>
 ): string {
   const safeParams = params ?? {}
+  if (!isLocaleLoaded(locale)) {
+    return String(globalTForLocale(key, safeParams, { locale: 'en' }))
+  }
   const bundle = i18n.global.getLocaleMessage(locale) as Record<string, unknown>
   if (bundle && Object.prototype.hasOwnProperty.call(bundle, key)) {
     return String(globalTForLocale(key, safeParams, { locale }))

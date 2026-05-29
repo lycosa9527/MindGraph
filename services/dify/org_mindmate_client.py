@@ -93,3 +93,24 @@ async def resolve_mindmate_dify_client_or_http(
         return await resolve_mindmate_dify_client(db, organization_id)
     except MindmateDifyNotConfiguredError as exc:
         raise HTTPException(status_code=500, detail=detail) from exc
+
+
+async def resolve_mindmate_dify_client_short_lived(
+    organization_id: Optional[int],
+    *,
+    detail: str,
+) -> AsyncDifyClient:
+    """
+    Resolve MindMate Dify client using a short-lived DB session.
+
+    Use for routes that await slow upstream Dify HTTP after credential lookup, so the
+    request-scoped session is not held open past idle_in_transaction_session_timeout.
+    """
+    from config.database import AsyncSessionLocal
+
+    async with AsyncSessionLocal() as db:
+        return await resolve_mindmate_dify_client_or_http(
+            db,
+            organization_id,
+            detail=detail,
+        )

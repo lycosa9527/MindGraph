@@ -13,7 +13,7 @@ import { Bottom } from '@element-plus/icons-vue'
 import { Check, ChevronDown, ChevronUp, Copy, Square } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables/core/useLanguage'
-import { renderRichMarkdownHtml } from '@/composables/core/useMarkdown'
+import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'
 import { type ModelId, type ModelResponse, useAskOnceStore } from '@/stores/askonce'
 
 const store = useAskOnceStore()
@@ -43,10 +43,7 @@ const hasThinking = computed(() => props.response.thinking.length > 0)
 
 const hasContent = computed(() => props.response.content.length > 0)
 
-const renderedContent = computed(() => {
-  if (!props.response.content) return ''
-  return renderRichMarkdownHtml(props.response.content)
-})
+const { html: renderedContent } = useRenderedMarkdown(() => props.response.content)
 
 const statusColor = computed(() => {
   switch (props.response.status) {

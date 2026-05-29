@@ -5,9 +5,15 @@
  * Diagram nodes may show Markdown + KaTeX; KaTeX fonts load via global CSS. Export uses
  * waitForExportFonts() + document.fonts.ready so formulas rasterize reliably.
  */
-import { toBlob } from 'html-to-image'
-
-type HtmlToImageOptions = NonNullable<Parameters<typeof toBlob>[1]>
+/** Options shape shared by html-to-image export helpers (avoids static import). */
+export interface HtmlToImageOptions {
+  backgroundColor?: string
+  pixelRatio?: number
+  style?: Record<string, string>
+  filter?: (node: Node) => boolean
+  cacheBust?: boolean
+  includeQueryParams?: boolean
+}
 
 /** Wait until after the next two animation frames (layout + paint after Vue/DOM updates). */
 export function waitForNextPaint(): Promise<void> {

@@ -39,7 +39,7 @@ from services.infrastructure.lifecycle.lifespan_shutdown import (
     LifespanBackgroundTasks,
     run_lifespan_shutdown,
 )
-from services.infrastructure.monitoring.critical_alert import CriticalAlertService
+from services.infrastructure.monitoring.critical_alert import CriticalAlertService, admin_sms_alerts_enabled
 from services.infrastructure.monitoring.health_monitor import get_health_monitor
 from services.infrastructure.monitoring.process_monitor import get_process_monitor
 from services.infrastructure.lifecycle.startup import _handle_shutdown_signal
@@ -112,9 +112,8 @@ async def _send_startup_sms_notification_once() -> None:
     Uvicorn does not set UVICORN_WORKER_ID; a Redis lock ensures only one
     worker sends when multiple workers run the lifespan.
     """
-    is_debug_mode = os.getenv("DEBUG", "").lower() == "true"
-    if is_debug_mode:
-        logger.debug("[LIFESPAN] Startup SMS notification skipped (DEBUG mode enabled)")
+    if not admin_sms_alerts_enabled():
+        logger.debug("[LIFESPAN] Startup SMS notification skipped (admin SMS alerts disabled)")
         return
 
     sms_startup_enabled = os.getenv("SMS_STARTUP_NOTIFICATION_ENABLED", "true").lower() in ("true", "1", "yes")

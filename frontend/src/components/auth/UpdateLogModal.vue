@@ -8,7 +8,11 @@ import { computed, ref, watch } from 'vue'
 import { ElDialog, ElScrollbar } from 'element-plus'
 
 import { useLanguage } from '@/composables'
-import { renderRichMarkdownHtml } from '@/composables/core/useMarkdown'
+import {
+  ensureMarkdownRenderer,
+  markdownRendererReady,
+  renderRichMarkdownHtml,
+} from '@/composables/core/useMarkdown'
 import { apiGet } from '@/utils/apiClient'
 
 const props = defineProps<{
@@ -36,9 +40,19 @@ const loadError = ref<string | null>(null)
 const entries = ref<ChangelogEntry[]>([])
 
 function renderMd(source: string): string {
+  markdownRendererReady.value
   if (!source.trim()) return ''
   return renderRichMarkdownHtml(source)
 }
+
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      void ensureMarkdownRenderer()
+    }
+  }
+)
 
 async function fetchChangelog(): Promise<void> {
   loading.value = true

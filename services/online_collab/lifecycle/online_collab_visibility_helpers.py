@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
+from utils.auth.role_constants import SCHOOL_ADMIN_ROLES, SUPERADMIN_ROLES
 from services.online_collab.lifecycle.online_collab_expiry import is_online_collab_expired
 from services.online_collab.redis.online_collab_redis_keys import purge_online_collab_redis_keys
 from services.online_collab.lifecycle.online_collab_session_fields import (
@@ -77,7 +78,7 @@ async def user_may_join_diagram_online_collab(
             owner_row = row
     if joiner_row is None or owner_row is None:
         return False
-    if joiner_row.role in ("admin", "superadmin", "manager"):
+    if joiner_row.role in (*SUPERADMIN_ROLES, *SCHOOL_ADMIN_ROLES):
         return True
     org_joiner = joiner_row.organization_id
     org_owner = owner_row.organization_id

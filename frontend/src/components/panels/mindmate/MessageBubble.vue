@@ -11,7 +11,7 @@ import { useLanguage } from '@/composables'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 
 import MindmateAgentAvatar from './MindmateAgentAvatar.vue'
-import { renderRichMarkdownHtml } from '@/composables/core/useMarkdown'
+import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'
 import type { FeedbackRating, MindMateMessage } from '@/composables/mindmate/useMindMate'
 
 const props = defineProps<{
@@ -40,6 +40,10 @@ const emit = defineEmits<{
 const { t } = useLanguage()
 const { displayName } = useMindMateBranding('md')
 
+const { html: renderedMarkdownHtml } = useRenderedMarkdown(() => props.message.content, {
+  stripThinkBlocks: true,
+})
+
 // Local editing state
 const localEditingContent = ref(props.editingContent || props.message.content)
 
@@ -52,19 +56,6 @@ watch(
     }
   }
 )
-
-// Remove <think> blocks from content
-function removeThinkBlocks(content: string): string {
-  // Remove <think>...</think> blocks (including multiline)
-  return content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()
-}
-
-// Render markdown (+ KaTeX via shared pipeline) with sanitization
-function renderMarkdown(content: string): string {
-  if (!content) return ''
-  const cleanedContent = removeThinkBlocks(content)
-  return renderRichMarkdownHtml(cleanedContent)
-}
 
 // Get file icon based on type
 function getFileIcon(type: string): string {
@@ -212,7 +203,7 @@ function handleMarkdownClick(event: MouseEvent) {
               <div
                 class="markdown-content text-sm leading-normal"
                 @click="handleMarkdownClick"
-                v-html="renderMarkdown(message.content)"
+                v-html="renderedMarkdownHtml"
               />
               <!-- eslint-enable vue/no-v-html -->
               <!-- Streaming cursor -->

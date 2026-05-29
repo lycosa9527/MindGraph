@@ -26,10 +26,15 @@ from utils.auth import (
     can_access_workshop_chat,
     decode_access_token,
     get_current_user,
-    is_admin,
     is_admin_or_manager,
-    is_manager,
+    is_school_admin,
+    is_superadmin,
     user_has_feature_access,
+)
+from utils.auth.role_constants import (
+    CAPABILITY_GLOBAL_DASHBOARD_READONLY,
+    CAPABILITY_PERSONAL_TRIAL_INVITE,
+    user_has_capability,
 )
 
 
@@ -111,27 +116,45 @@ def get_language_dependency(request: Request, x_language: Optional[str] = Header
     return get_request_language(x_language, accept_language)
 
 
+def require_superadmin(
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+) -> User:
+    """
+    FastAPI dependency to require superadmin (full platform admin) access.
+
+    Raises HTTPException 403 if user is not superadmin.
+    """
+    if not is_superadmin(current_user):
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    return current_user
+
+
 def require_admin(
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ) -> User:
     """
-    FastAPI dependency to require admin access.
+    FastAPI dependency to require admin access (alias for superadmin).
 
-    Raises HTTPException 403 if user is not admin.
-
-    Args:
-        current_user: Current authenticated user (from get_current_user)
-        lang: User language (from get_language_dependency)
-
-    Returns:
-        User object (guaranteed to be admin)
-
-    Raises:
-        HTTPException: 403 if user is not admin
+    Raises HTTPException 403 if user is not superadmin.
     """
-    if not is_admin(current_user):
-        error_msg = Messages.error("admin_access_required", lang)
+    return require_superadmin(current_user, lang)
+
+
+def require_school_admin(
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+) -> User:
+    """
+    FastAPI dependency to require school admin access.
+
+    Raises HTTPException 403 if user is not a school admin.
+    Note: Superadmins are NOT school admins — use require_admin_or_manager for shared access.
+    """
+    if not is_school_admin(current_user):
+        error_msg = Messages.error("manager_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     return current_user
 
@@ -140,26 +163,8 @@ def require_manager(
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ) -> User:
-    """
-    FastAPI dependency to require manager access.
-
-    Raises HTTPException 403 if user is not a manager.
-    Note: Admins are NOT managers - use require_admin_or_manager for shared access.
-
-    Args:
-        current_user: Current authenticated user (from get_current_user)
-        lang: User language (from get_language_dependency)
-
-    Returns:
-        User object (guaranteed to be manager)
-
-    Raises:
-        HTTPException: 403 if user is not manager
-    """
-    if not is_manager(current_user):
-        error_msg = Messages.error("manager_access_required", lang)
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
-    return current_user
+    """Alias for require_school_admin — legacy name preserved."""
+    return require_school_admin(current_user, lang)
 
 
 def require_admin_or_manager(
@@ -216,5 +221,27 @@ async def require_workshop_chat_access(
     """
     if not await can_access_workshop_chat(current_user):
         error_msg = Messages.error("elevated_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    return current_user
+
+
+def require_trial_invite_capability(
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+) -> User:
+    """Scaffold: superadmin, platform_bd, or expert may invite personal trial users."""
+    if not user_has_capability(current_user, CAPABILITY_PERSONAL_TRIAL_INVITE):
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    return current_user
+
+
+def require_global_dashboard_readonly(
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+) -> User:
+    """Scaffold: superadmin or platform_bd may view read-only global dashboard."""
+    if not user_has_capability(current_user, CAPABILITY_GLOBAL_DASHBOARD_READONLY):
+        error_msg = Messages.error("admin_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     return current_user

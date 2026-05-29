@@ -9,11 +9,13 @@ import { ElButton, ElCheckbox, ElDialog, ElIcon, ElScrollbar } from 'element-plu
 
 import { Close, Download, Select } from '@element-plus/icons-vue'
 
-import { toPng } from 'html-to-image'
-
 import { useLanguage, useNotifications } from '@/composables'
+import {
+  ensureMarkdownRenderer,
+  markdownRendererReady,
+  renderRichMarkdownHtml,
+} from '@/composables/core/useMarkdown'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
-import { renderRichMarkdownHtml } from '@/composables/core/useMarkdown'
 import type { MindMateMessage } from '@/composables/mindmate/useMindMate'
 import { useAuthStore } from '@/stores'
 
@@ -57,6 +59,7 @@ watch(
   () => props.visible,
   (visible) => {
     if (visible) {
+      void ensureMarkdownRenderer()
       // By default, select all messages
       selectedMessageIds.value = new Set(selectableMessages.value.map((m) => m.id))
     }
@@ -86,6 +89,7 @@ function deselectAll() {
 }
 
 function renderMarkdown(content: string): string {
+  markdownRendererReady.value
   if (!content) return ''
   return renderRichMarkdownHtml(content)
 }
@@ -179,6 +183,7 @@ async function exportAsPng() {
     // Convert all external images to base64 to avoid CORS issues
     await convertImagesToBase64(previewRef.value)
 
+    const { toPng } = await import('html-to-image')
     const dataUrl = await toPng(previewRef.value, {
       backgroundColor: '#ffffff',
       pixelRatio: 2,

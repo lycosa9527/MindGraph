@@ -76,10 +76,14 @@ class User(Base):
     Stores user credentials and security information.
     Password is hashed using bcrypt.
 
-    Roles:
-    - 'user': Regular user (default)
-    - 'manager': Organization manager, can access org-scoped admin dashboard
-    - 'admin': Full admin access to all data
+    Roles (canonical slugs):
+    - 'superadmin': Full platform admin (超级管理员)
+    - 'platform_bd': Platform BD — trial invites, read-only global dashboard
+    - 'expert': Platform expert — trial invites only
+    - 'school_admin': Organization manager (学校管理员)
+    - 'teacher': B2B school member (教师用户)
+    - 'personal_trial': C-end trial account (个人体验账号)
+    - 'personal_paid': C-end paid account (个人付费账号)
     """
 
     __tablename__ = "users"
@@ -99,7 +103,7 @@ class User(Base):
         Integer, ForeignKey("organizations.id", ondelete="SET NULL"), index=True, nullable=True
     )
     avatar: Mapped[str | None] = mapped_column(String(50), nullable=True, default="🐈‍⬛")
-    role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
+    role: Mapped[str] = mapped_column(String(30), nullable=False, default="teacher")
 
     # Security fields
     failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0)

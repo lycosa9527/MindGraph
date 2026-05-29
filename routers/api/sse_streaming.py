@@ -18,10 +18,9 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 
 from clients.dify import DifyFile
-from config.database import AsyncSessionLocal
 from models import AIAssistantRequest, Messages, get_request_language
 from models.domain.auth import User
-from services.dify.org_mindmate_client import resolve_mindmate_dify_client_or_http
+from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short_lived
 from services.infrastructure.monitoring.mindmate_streaming import (
     mindmate_streaming_begin,
     mindmate_streaming_end,
@@ -89,12 +88,10 @@ async def ai_assistant_stream(
     # Resolve Dify credentials in a short-lived session. Do not use Depends(get_async_db)
     # here: FastAPI keeps request-scoped sessions open until the SSE body finishes, which
     # leaves a read transaction idle past idle_in_transaction_session_timeout (30s default).
-    async with AsyncSessionLocal() as db:
-        dify_client = await resolve_mindmate_dify_client_or_http(
-            db,
-            organization_id_for_dify,
-            detail=Messages.error("ai_not_configured", lang),
-        )
+    dify_client = await resolve_mindmate_dify_client_short_lived(
+        organization_id_for_dify,
+        detail=Messages.error("ai_not_configured", lang),
+    )
     logger.debug(
         "MindMate Dify client resolved for org_id=%s url=%s",
         organization_id_for_dify,

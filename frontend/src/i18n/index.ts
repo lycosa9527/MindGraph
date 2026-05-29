@@ -1,175 +1,25 @@
 import { createI18n } from 'vue-i18n'
 
-import afMessages from '@/locales/messages/af'
-import amMessages from '@/locales/messages/am'
-import arMessages from '@/locales/messages/ar'
-import azMessages from '@/locales/messages/az'
-import bgMessages from '@/locales/messages/bg'
-import bnMessages from '@/locales/messages/bn'
-import bsMessages from '@/locales/messages/bs'
-import caMessages from '@/locales/messages/ca'
-import csMessages from '@/locales/messages/cs'
-import daMessages from '@/locales/messages/da'
-import deMessages from '@/locales/messages/de'
-import dvMessages from '@/locales/messages/dv'
-import elMessages from '@/locales/messages/el'
 import enMessages from '@/locales/messages/en'
-import esMessages from '@/locales/messages/es'
-import etMessages from '@/locales/messages/et'
-import faMessages from '@/locales/messages/fa'
-import fiMessages from '@/locales/messages/fi'
-import frMessages from '@/locales/messages/fr'
-import haMessages from '@/locales/messages/ha'
-import heMessages from '@/locales/messages/he'
-import hiMessages from '@/locales/messages/hi'
-import hrMessages from '@/locales/messages/hr'
-import huMessages from '@/locales/messages/hu'
-import hyMessages from '@/locales/messages/hy'
-import idMessages from '@/locales/messages/id'
-import igMessages from '@/locales/messages/ig'
-import itMessages from '@/locales/messages/it'
-import jaMessages from '@/locales/messages/ja'
-import kaMessages from '@/locales/messages/ka'
-import kkMessages from '@/locales/messages/kk'
-import kmMessages from '@/locales/messages/km'
-import koMessages from '@/locales/messages/ko'
-import kyMessages from '@/locales/messages/ky'
-import loMessages from '@/locales/messages/lo'
-import ltMessages from '@/locales/messages/lt'
-import lvMessages from '@/locales/messages/lv'
-import mkMessages from '@/locales/messages/mk'
-import mlMessages from '@/locales/messages/ml'
-import mnMessages from '@/locales/messages/mn'
-import msMessages from '@/locales/messages/ms'
-import myMessages from '@/locales/messages/my'
-import neMessages from '@/locales/messages/ne'
-import nlMessages from '@/locales/messages/nl'
-import noMessages from '@/locales/messages/no'
-import plMessages from '@/locales/messages/pl'
-import psMessages from '@/locales/messages/ps'
-import ptMessages from '@/locales/messages/pt'
-import roMessages from '@/locales/messages/ro'
-import ruMessages from '@/locales/messages/ru'
-import siMessages from '@/locales/messages/si'
-import skMessages from '@/locales/messages/sk'
-import slMessages from '@/locales/messages/sl'
-import soMessages from '@/locales/messages/so'
-import sqMessages from '@/locales/messages/sq'
-import srMessages from '@/locales/messages/sr'
-import ssMessages from '@/locales/messages/ss'
-import stMessages from '@/locales/messages/st'
-import svMessages from '@/locales/messages/sv'
-import swMessages from '@/locales/messages/sw'
-import taMessages from '@/locales/messages/ta'
-import tgMessages from '@/locales/messages/tg'
-import thMessages from '@/locales/messages/th'
-import tkMessages from '@/locales/messages/tk'
-import tlMessages from '@/locales/messages/tl'
-import tnMessages from '@/locales/messages/tn'
-import trMessages from '@/locales/messages/tr'
-import ugMessages from '@/locales/messages/ug'
-import ukMessages from '@/locales/messages/uk'
-import urMessages from '@/locales/messages/ur'
-import uzMessages from '@/locales/messages/uz'
-import viMessages from '@/locales/messages/vi'
-import xhMessages from '@/locales/messages/xh'
-import yoMessages from '@/locales/messages/yo'
-import zhMessages from '@/locales/messages/zh'
-import zhTwMessages from '@/locales/messages/zh-tw'
-import zuMessages from '@/locales/messages/zu'
 
+import { isLocaleEnCopy, lazyLocaleLoaders } from './lazyLocaleLoaders'
 import type { LocaleCode } from './locales'
 import { htmlLangForUiCode } from './locales'
+import { notifyLocaleLoaded } from './localeLabelCache'
 
 export type { LocaleCode } from './locales'
 export { intlLocaleForUiCode } from './locales'
 export type { MessageSchema } from './messageSchema'
 export { loadElementPlusLocale } from './elementPlusLocale'
 
-const EN_FLAT = enMessages as Record<string, string>
+/** Always bundled — fallback for all UI locales. */
+export const EAGER_LOCALES = ['en'] as const satisfies readonly LocaleCode[]
 
-/**
- * All UI locales registered for vue-i18n.
- * Bundles cloned from English use the same keys until translated.
- */
-const ALL_UI_MESSAGES: { [K in LocaleCode]: Record<string, string> } = {
-  af: afMessages as Record<string, string>,
-  am: amMessages as Record<string, string>,
-  ar: arMessages as Record<string, string>,
-  az: azMessages as Record<string, string>,
-  bg: bgMessages as Record<string, string>,
-  bn: bnMessages as Record<string, string>,
-  bs: bsMessages as Record<string, string>,
-  ca: caMessages as Record<string, string>,
-  cs: csMessages as Record<string, string>,
-  da: daMessages as Record<string, string>,
-  de: deMessages as Record<string, string>,
-  dv: dvMessages as Record<string, string>,
-  el: elMessages as Record<string, string>,
-  en: EN_FLAT,
-  es: esMessages as Record<string, string>,
-  et: etMessages as Record<string, string>,
-  fa: faMessages as Record<string, string>,
-  fi: fiMessages as Record<string, string>,
-  fr: frMessages as Record<string, string>,
-  ha: haMessages as Record<string, string>,
-  he: heMessages as Record<string, string>,
-  hi: hiMessages as Record<string, string>,
-  hr: hrMessages as Record<string, string>,
-  hu: huMessages as Record<string, string>,
-  hy: hyMessages as Record<string, string>,
-  id: idMessages as Record<string, string>,
-  ig: igMessages as Record<string, string>,
-  it: itMessages as Record<string, string>,
-  ja: jaMessages as Record<string, string>,
-  ka: kaMessages as Record<string, string>,
-  kk: kkMessages as Record<string, string>,
-  km: kmMessages as Record<string, string>,
-  ko: koMessages as Record<string, string>,
-  ky: kyMessages as Record<string, string>,
-  lo: loMessages as Record<string, string>,
-  lt: ltMessages as Record<string, string>,
-  lv: lvMessages as Record<string, string>,
-  mk: mkMessages as Record<string, string>,
-  ml: mlMessages as Record<string, string>,
-  mn: mnMessages as Record<string, string>,
-  ms: msMessages as Record<string, string>,
-  my: myMessages as Record<string, string>,
-  ne: neMessages as Record<string, string>,
-  nl: nlMessages as Record<string, string>,
-  no: noMessages as Record<string, string>,
-  pl: plMessages as Record<string, string>,
-  ps: psMessages as Record<string, string>,
-  pt: ptMessages as Record<string, string>,
-  ro: roMessages as Record<string, string>,
-  ru: ruMessages as Record<string, string>,
-  si: siMessages as Record<string, string>,
-  sk: skMessages as Record<string, string>,
-  sl: slMessages as Record<string, string>,
-  so: soMessages as Record<string, string>,
-  sq: sqMessages as Record<string, string>,
-  sr: srMessages as Record<string, string>,
-  ss: ssMessages as Record<string, string>,
-  st: stMessages as Record<string, string>,
-  sv: svMessages as Record<string, string>,
-  sw: swMessages as Record<string, string>,
-  ta: taMessages as Record<string, string>,
-  tg: tgMessages as Record<string, string>,
-  th: thMessages as Record<string, string>,
-  tk: tkMessages as Record<string, string>,
-  tl: tlMessages as Record<string, string>,
-  tn: tnMessages as Record<string, string>,
-  tr: trMessages as Record<string, string>,
-  ug: ugMessages as Record<string, string>,
-  uk: ukMessages as Record<string, string>,
-  ur: urMessages as Record<string, string>,
-  uz: uzMessages as Record<string, string>,
-  vi: viMessages as Record<string, string>,
-  xh: xhMessages as Record<string, string>,
-  yo: yoMessages as Record<string, string>,
-  zh: zhMessages as Record<string, string>,
-  'zh-tw': zhTwMessages as Record<string, string>,
-  zu: zuMessages as Record<string, string>,
+const loadedLocales = new Set<LocaleCode>(EAGER_LOCALES)
+const inFlightLoads = new Map<LocaleCode, Promise<void>>()
+
+export function isLocaleLoaded(locale: LocaleCode): boolean {
+  return loadedLocales.has(locale)
 }
 
 /** Typed keys for `t()` — use `import type { MessageSchema } from '@/i18n/messageSchema'`. */
@@ -178,17 +28,51 @@ export const i18n = createI18n({
   globalInjection: true,
   locale: 'zh',
   fallbackLocale: 'en',
-  messages: ALL_UI_MESSAGES,
+  messages: {
+    en: enMessages as Record<string, string>,
+  },
   missingWarn: import.meta.env.DEV,
   fallbackWarn: import.meta.env.DEV,
 })
 
 /**
- * UI strings for every LocaleCode are eager-loaded via ALL_UI_MESSAGES.
- * Callers still await this before setI18nLocale so bootstrap order stays stable.
+ * Load UI strings for a locale when not already eager-loaded.
+ * Callers await this before `setI18nLocale` so bootstrap order stays stable.
  */
-export async function loadLocaleMessages(_locale: LocaleCode): Promise<void> {
-  await Promise.resolve()
+export async function loadLocaleMessages(locale: LocaleCode): Promise<void> {
+  if (isLocaleLoaded(locale)) {
+    return
+  }
+
+  const pending = inFlightLoads.get(locale)
+  if (pending) {
+    await pending
+    return
+  }
+
+  const loadPromise = (async () => {
+    if (isLocaleEnCopy(locale)) {
+      i18n.global.setLocaleMessage(locale, enMessages as Record<string, string>)
+      loadedLocales.add(locale)
+      notifyLocaleLoaded()
+      return
+    }
+    const loader = lazyLocaleLoaders[locale]
+    if (!loader) {
+      throw new Error(`No message bundle loader for locale: ${locale}`)
+    }
+    const mod = await loader()
+    i18n.global.setLocaleMessage(locale, mod.default)
+    loadedLocales.add(locale)
+    notifyLocaleLoaded()
+  })()
+
+  inFlightLoads.set(locale, loadPromise)
+  try {
+    await loadPromise
+  } finally {
+    inFlightLoads.delete(locale)
+  }
 }
 
 export function setI18nLocale(locale: LocaleCode): void {

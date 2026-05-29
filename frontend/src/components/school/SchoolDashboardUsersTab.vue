@@ -11,6 +11,7 @@ import { Edit, Loading, Search, Unlock } from '@element-plus/icons-vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
 import { httpErrorDetail } from '@/utils/httpErrorDetail'
+import { getRolePillStyle } from '@/utils/userRoleDisplay'
 
 const props = defineProps<{
   orgId: number
@@ -41,6 +42,20 @@ function formatNumber(num: number): string {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
   if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
   return num.toLocaleString()
+}
+
+function rolePillForRow(row: unknown): { label: string; bgClass: string; textClass: string; borderClass: string } | null {
+  const role = (row as Record<string, unknown>).role
+  const style = getRolePillStyle(typeof role === 'string' ? role : null)
+  if (!style) {
+    return null
+  }
+  return {
+    label: t(style.labelKey),
+    bgClass: style.bgClass,
+    textClass: style.textClass,
+    borderClass: style.borderClass,
+  }
 }
 
 async function loadUsers() {
@@ -295,8 +310,23 @@ watch(
           <el-table-column
             prop="role"
             :label="t('admin.schoolUserColumnRole')"
-            width="100"
-          />
+            width="120"
+          >
+            <template #default="{ row }">
+              <span
+                v-if="rolePillForRow(row)"
+                class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium"
+                :class="[
+                  rolePillForRow(row)?.bgClass,
+                  rolePillForRow(row)?.textClass,
+                  rolePillForRow(row)?.borderClass,
+                ]"
+              >
+                {{ rolePillForRow(row)?.label }}
+              </span>
+              <span v-else>—</span>
+            </template>
+          </el-table-column>
           <el-table-column
             :label="t('admin.tokensUsed')"
             width="100"

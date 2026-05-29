@@ -4,12 +4,7 @@
  * Displays PDF pages as pre-rendered images
  * Users click on page to place pins, click pins to see comments
  */
-import { computed, createApp, h, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-
-import { ElBadge, ElButton, ElIcon } from 'element-plus'
-import ElementPlus from 'element-plus'
-
-import { ChatRound } from '@element-plus/icons-vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
 
@@ -283,9 +278,6 @@ function handlePinDragEnd(_e: MouseEvent) {
   document.removeEventListener('mouseup', handlePinDragEnd)
 }
 
-// Store mounted Vue apps for cleanup
-const mountedPinApps = new WeakMap<HTMLDivElement, ReturnType<typeof createApp>>()
-
 // Check if user can drag a pin (owner or admin)
 function canDragPin(danmaku: LibraryDanmaku): boolean {
   if (!authStore.user?.id) return false
@@ -295,7 +287,10 @@ function canDragPin(danmaku: LibraryDanmaku): boolean {
   return isOwner || isAdmin
 }
 
-// Create a pin icon element using Element Plus Button, Icon, and Badge
+const PIN_ICON_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
+
+/** Pin marker on the page image (DOM-only; avoids micro Vue + full Element Plus). */
 function createPinIconElement(
   danmakuId: number | null = null,
   isTemporary = false,
@@ -315,76 +310,21 @@ function createPinIconElement(
     pinDiv.classList.add('pdf-pin-draggable')
   }
 
-  // Calculate total comments (main comment + replies)
   const totalComments = repliesCount + 1
+  const showBadge = !isTemporary && totalComments > 0
 
-  // Create a Vue component: Badge wrapping Button with Icon
-  const iconComponent = h(
-    ElBadge,
-    {
-      value: !isTemporary && totalComments > 0 ? totalComments : 0,
-      max: 99,
-      hidden: isTemporary || totalComments === 0,
-    },
-    {
-      default: () =>
-        h(
-          ElButton,
-          {
-            type: 'primary',
-            circle: true,
-            size: 'default',
-            style: {
-              width: '36px',
-              height: '36px',
-              padding: '0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            },
-          },
-          {
-            default: () =>
-              h(
-                ElIcon,
-                {
-                  size: 20,
-                },
-                {
-                  default: () => h(ChatRound),
-                }
-              ),
-          }
-        ),
-    }
-  )
+  const btn = document.createElement('button')
+  btn.type = 'button'
+  btn.className = 'pdf-pin-btn'
+  btn.setAttribute('aria-label', 'Comment pin')
+  btn.innerHTML = PIN_ICON_SVG
+  pinDiv.appendChild(btn)
 
-  // Mount the Vue component to the div
-  try {
-    const app = createApp({
-      render: () => iconComponent,
-    })
-    app.use(ElementPlus)
-    app.mount(pinDiv)
-
-    mountedPinApps.set(pinDiv, app)
-
-    nextTick(() => {
-      pinDiv.style.pointerEvents = 'auto'
-    })
-  } catch (error) {
-    console.error('[ImageViewer] Failed to mount pin icon:', error)
-    pinDiv.textContent = '💬'
-    pinDiv.style.display = 'flex'
-    pinDiv.style.alignItems = 'center'
-    pinDiv.style.justifyContent = 'center'
-    pinDiv.style.backgroundColor = '#3b82f6'
-    pinDiv.style.color = 'white'
-    pinDiv.style.borderRadius = '50%'
-    pinDiv.style.width = '36px'
-    pinDiv.style.height = '36px'
-    pinDiv.style.fontSize = '20px'
-    pinDiv.style.pointerEvents = 'auto'
+  if (showBadge) {
+    const badge = document.createElement('span')
+    badge.className = 'pdf-pin-badge'
+    badge.textContent = totalComments > 99 ? '99+' : String(totalComments)
+    pinDiv.appendChild(badge)
   }
 
   // Track if we're dragging to prevent click events
@@ -454,15 +394,6 @@ function renderPins() {
   const pinsLayer = pinsLayerRef.value
   const image = imageRef.value
 
-  // Clear existing pins and unmount Vue apps
-  const existingPins = pinsLayer.querySelectorAll('.pdf-pin-icon')
-  existingPins.forEach((pin) => {
-    const app = mountedPinApps.get(pin as HTMLDivElement)
-    if (app) {
-      app.unmount()
-      mountedPinApps.delete(pin as HTMLDivElement)
-    }
-  })
   pinsLayer.innerHTML = ''
 
   // Get image dimensions (intrinsic size)
@@ -1037,18 +968,6 @@ onUnmounted(() => {
   if (renderPinsTimeoutId.value !== null) {
     clearTimeout(renderPinsTimeoutId.value)
     renderPinsTimeoutId.value = null
-  }
-
-  // Clean up pin Vue apps
-  if (pinsLayerRef.value) {
-    const existingPins = pinsLayerRef.value.querySelectorAll('.pdf-pin-icon')
-    existingPins.forEach((pin) => {
-      const app = mountedPinApps.get(pin as HTMLDivElement)
-      if (app) {
-        app.unmount()
-        mountedPinApps.delete(pin as HTMLDivElement)
-      }
-    })
   }
 
   // Remove event listeners

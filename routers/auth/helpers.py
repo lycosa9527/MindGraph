@@ -44,6 +44,7 @@ from utils.auth import (
     ACCESS_TOKEN_EXPIRY_MINUTES,
     REFRESH_TOKEN_EXPIRY_DAYS,
 )
+from utils.auth.role_constants import normalize_role
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +134,7 @@ async def track_user_activity(
                 ip_address=ip_address,
                 reuse_existing=True,
             )
-            if db and user.role == "user":
+            if db and normalize_role(user.role) == "teacher":
                 await _log_login_and_compute_stats(user.id, db)
         else:
             session_id = None  # Let record_activity find/create session

@@ -309,7 +309,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
             role = get_user_role(current_user)
         except Exception as role_error:
             logger.error("Error determining user role: %s", role_error, exc_info=True)
-            role = "user"  # Default fallback
+            role = "teacher"  # Default fallback
 
         return {
             "id": current_user.id,

@@ -30,6 +30,7 @@ import {
 import { useAuthStore } from '@/stores'
 import type { Language, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
+import { getRolePillStyle } from '@/utils/userRoleDisplay'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -43,6 +44,21 @@ const userAvatar = computed(() => {
 })
 const displayName = computed(() => user.value?.username || '')
 const orgName = computed(() => user.value?.schoolName || '')
+const userRolePill = computed(() => {
+  if (!user.value?.role) {
+    return null
+  }
+  const style = getRolePillStyle(user.value.role)
+  if (!style) {
+    return null
+  }
+  return {
+    label: t(style.labelKey),
+    bgClass: style.bgClass,
+    textClass: style.textClass,
+    borderClass: style.borderClass,
+  }
+})
 
 const maskedPhone = computed(() => {
   const phone = user.value?.phone || ''
@@ -152,8 +168,17 @@ async function handleLogout() {
         <div class="flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 text-3xl">
           {{ userAvatar }}
         </div>
-        <div class="text-base font-semibold text-gray-900">
-          {{ displayName }}
+        <div class="flex items-center gap-2">
+          <div class="text-base font-semibold text-gray-900">
+            {{ displayName }}
+          </div>
+          <span
+            v-if="userRolePill"
+            class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium"
+            :class="[userRolePill.bgClass, userRolePill.textClass, userRolePill.borderClass]"
+          >
+            {{ userRolePill.label }}
+          </span>
         </div>
         <div
           v-if="orgName"

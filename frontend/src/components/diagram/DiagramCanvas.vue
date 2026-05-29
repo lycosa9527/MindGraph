@@ -23,6 +23,8 @@ import { storeToRefs } from 'pinia'
 
 import { ExportToCommunityModal } from '@/components/canvas'
 import { useBranchMoveDrag, useLanguage } from '@/composables'
+import { registerDiagramLayoutRecalcBootstrap } from '@/composables/core/diagramLayoutRecalcBootstrap'
+import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
 import { useTheme } from '@/composables/core/useTheme'
 import {
   diagramCanvasGridConfig,
@@ -291,6 +293,8 @@ useDiagramCanvasVueFlowHandlers({
 let unsubscribeEventBus: (() => void) | null = null
 
 onMounted(() => {
+  registerDiagramLayoutRecalcBootstrap()
+  void ensureMarkdownRenderer()
   unsubscribeEventBus = mountSubscriptions({
     diagramStore,
     getNodes: () => unref(getVueFlowNodes) as unknown as MindGraphNode[],

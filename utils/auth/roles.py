@@ -16,6 +16,22 @@ from config.settings import config
 from services.redis.cache.redis_feature_org_access_cache import get_cached_map as _get_feature_access_map_cached
 
 from .config import ADMIN_PHONES, ADMIN_USER_IDS
+from .role_constants import (
+    B2B_ORG_ROLES,
+    C2C_CONSUMER_ROLES,
+    LEGACY_ROLE_USER,
+    PLATFORM_LEVEL_ROLES,
+    ROLE_EXPERT,
+    ROLE_PERSONAL_PAID,
+    ROLE_PERSONAL_TRIAL,
+    ROLE_PLATFORM_BD,
+    ROLE_SUPERADMIN,
+    SCHOOL_ADMIN_ROLES,
+    SUPERADMIN_ROLES,
+    TEACHER_ROLES,
+    normalize_role,
+    role_in,
+)
 
 FEATURE_KEY_TO_CONFIG_ATTR = {
     "feature_rag_chunk_test": "FEATURE_RAG_CHUNK_TEST",
@@ -53,86 +69,108 @@ def phone_matches_admin_env_token(user_phone: str | None, token: str) -> bool:
         return False
 
 
-def is_admin(current_user) -> bool:
-    """
-    Check if user is admin (full access to all data)
-
-    Admin access granted if:
-    1. User has role='admin' or 'superadmin' in database
-    2. ``users.id`` is listed in ADMIN_USER_IDS (comma-separated env)
-    3. ``users.phone`` matches a token in ADMIN_PHONES (comma-separated), including
-       case-insensitive UUID strings (e.g. Bayi SSO ``userId``) and values like
-       ``bayi@system.com`` for Bayi passkey.
-
-    Args:
-        current_user: User model object
-
-    Returns:
-        True if user is admin, False otherwise
-    """
-    # Check database role field (admin or superadmin)
-    if hasattr(current_user, "role") and current_user.role in ("admin", "superadmin"):
-        return True
-
+def _is_env_superadmin(current_user) -> bool:
+    """True when user id or phone matches env-configured superadmin tokens."""
     user_id = getattr(current_user, "id", None)
     if user_id is not None and user_id in ADMIN_USER_IDS:
         return True
-
     admin_tokens = [p.strip() for p in ADMIN_PHONES if p.strip()]
     user_phone = getattr(current_user, "phone", None)
     for tok in admin_tokens:
         if phone_matches_admin_env_token(user_phone, tok):
             return True
-
     return False
+
+
+def is_superadmin(current_user) -> bool:
+    """
+    Full platform admin (超级管理员).
+
+    Granted when role is superadmin (or legacy admin) or env admin tokens match.
+    """
+    if role_in(current_user, SUPERADMIN_ROLES):
+        return True
+    return _is_env_superadmin(current_user)
+
+
+def is_admin(current_user) -> bool:
+    """Alias for is_superadmin — full platform admin access."""
+    return is_superadmin(current_user)
+
+
+def is_platform_bd(current_user) -> bool:
+    """Platform BD (平台BD) — trial invites and read-only global dashboard."""
+    return role_in(current_user, frozenset({ROLE_PLATFORM_BD}))
+
+
+def is_expert(current_user) -> bool:
+    """Platform expert (专家) — trial invites only."""
+    return role_in(current_user, frozenset({ROLE_EXPERT}))
+
+
+def is_platform_level(current_user) -> bool:
+    """Any platform-tier role: superadmin, platform_bd, or expert."""
+    if is_superadmin(current_user):
+        return True
+    return role_in(current_user, PLATFORM_LEVEL_ROLES)
+
+
+def is_school_admin(current_user) -> bool:
+    """School org admin (学校管理员), formerly manager."""
+    return role_in(current_user, SCHOOL_ADMIN_ROLES)
 
 
 def is_manager(current_user) -> bool:
-    """
-    Check if user is a manager (org-scoped admin access)
+    """Alias for is_school_admin — legacy name preserved for callers."""
+    return is_school_admin(current_user)
 
-    Manager can access admin dashboard but only sees their organization's data.
 
-    Args:
-        current_user: User model object
+def is_teacher(current_user) -> bool:
+    """B2B school member (教师用户), formerly user."""
+    return role_in(current_user, TEACHER_ROLES)
 
-    Returns:
-        True if user is manager, False otherwise
-    """
-    if hasattr(current_user, "role") and current_user.role == "manager":
-        return True
-    return False
+
+def is_personal_trial(current_user) -> bool:
+    """C-end trial account (个人体验账号)."""
+    return role_in(current_user, frozenset({ROLE_PERSONAL_TRIAL}))
+
+
+def is_personal_paid(current_user) -> bool:
+    """C-end paid account (个人付费账号)."""
+    return role_in(current_user, frozenset({ROLE_PERSONAL_PAID}))
+
+
+def is_c2c_consumer(current_user) -> bool:
+    """Personal consumer account (trial or paid)."""
+    return role_in(current_user, C2C_CONSUMER_ROLES)
+
+
+def is_b2b_org_member(current_user) -> bool:
+    """School admin or teacher within a B2B organization."""
+    return role_in(current_user, B2B_ORG_ROLES)
 
 
 def is_admin_or_manager(current_user) -> bool:
     """
-    Check if user has any elevated access (admin or manager)
+    Elevated org/platform admin access for shared admin routes.
 
-    Used for routes that both admin and manager can access.
-
-    Args:
-        current_user: User model object
-
-    Returns:
-        True if user is admin or manager, False otherwise
+    Superadmin and school_admin only — platform_bd and expert excluded.
     """
-    return is_admin(current_user) or is_manager(current_user)
+    return is_superadmin(current_user) or is_school_admin(current_user)
 
 
 def can_moderate_workshop_channel(current_user, channel) -> bool:
     """
     Whether the user may remove or manage others' content in this channel.
 
-    Mirrors Zulip's model: realm administrators and organization-scoped
-    managers act as stream administrators; the global announce channel is
-    limited to full admins (like a system-wide announcement stream).
+    Superadmins act globally; school admins only within their organization.
     """
     ch_type = getattr(channel, "channel_type", None)
     if ch_type == "announce":
-        return is_admin(current_user)
-    if is_admin(current_user):
+        return is_superadmin(current_user)
+    if is_superadmin(current_user):
         return True
-    if not is_manager(current_user):
+    if not is_school_admin(current_user):
         return False
     org_id = getattr(channel, "organization_id", None)
     user_org = getattr(current_user, "organization_id", None)
@@ -159,20 +197,15 @@ async def user_has_feature_access(current_user, feature_key: str) -> bool:
     """
     Whether the user may use this feature (global FEATURE_* + DB rules).
 
-    Admins always pass when the global flag is on. Managers pass for every
-    feature except ``feature_mindbot``: for MindBot, managers are subject to
-    ``feature_access_*`` grants (same as regular users) so PostgreSQL can
-    restrict which organizations may manage DingTalk credentials.
-
-    For non-admin users, rules in ``feature_access_*`` apply; missing rules
-    fall back to open access except Workshop Chat, which uses
-    WORKSHOP_CHAT_PREVIEW_ORG_IDS.
+    Superadmins always pass when the global flag is on. School admins pass for
+    every feature except ``feature_mindbot``: for MindBot, school admins are
+    subject to ``feature_access_*`` grants (same as regular users).
     """
     if not _global_feature_flag_enabled(feature_key):
         return False
-    if is_admin(current_user):
+    if is_superadmin(current_user):
         return True
-    if is_manager(current_user) and feature_key != "feature_mindbot":
+    if is_school_admin(current_user) and feature_key != "feature_mindbot":
         return True
     doc = await _get_feature_access_map_cached() or {}
     entry = doc.get(feature_key)
@@ -188,24 +221,17 @@ async def user_has_feature_access(current_user, feature_key: str) -> bool:
 
 
 async def can_access_workshop_chat(current_user) -> bool:
-    """
-    Workshop Chat gate: global flag, then DB rules or WORKSHOP_CHAT_PREVIEW_ORG_IDS.
-    """
+    """Workshop Chat gate: global flag, then DB rules or WORKSHOP_CHAT_PREVIEW_ORG_IDS."""
     return await user_has_feature_access(current_user, "feature_workshop_chat")
 
 
 def get_user_role(current_user) -> str:
     """
-    Get the effective role of a user
+    Return the canonical role slug for API responses.
 
-    Args:
-        current_user: User model object
-
-    Returns:
-        'admin', 'manager', or 'user'
+    Env-configured admins resolve as superadmin even if DB role differs.
     """
-    if is_admin(current_user):
-        return "admin"
-    if is_manager(current_user):
-        return "manager"
-    return "user"
+    if is_superadmin(current_user):
+        return ROLE_SUPERADMIN
+    raw = getattr(current_user, "role", None) or LEGACY_ROLE_USER
+    return normalize_role(raw)

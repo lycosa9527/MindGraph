@@ -37,6 +37,7 @@ except ImportError:
 from services.auth.user_fk_cleanup import delete_user_fk_dependent_rows
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
+from utils.auth.role_constants import ROLE_TEACHER, SCHOOL_ADMIN_ROLES, normalize_role
 from utils.invitations import generate_invitation_code, normalize_or_generate
 from utils.sensitive_mask import mask_invitation_code
 from .organization_dify import (
@@ -90,7 +91,7 @@ async def list_organizations_admin(
     managers_by_org: dict[int, list[str]] = {}
     managers_stmt = (
         select(User.organization_id, User.name, User.phone, User.email)
-        .where(User.organization_id.isnot(None), User.role == "manager")
+        .where(User.organization_id.isnot(None), User.role.in_(tuple(SCHOOL_ADMIN_ROLES)))
         .order_by(User.organization_id, User.name)
     )
     managers_query = (await db.execute(managers_stmt)).all()
@@ -675,7 +676,7 @@ async def list_all_managers(
     """
     managers_stmt = (
         select(User)
-        .where(User.organization_id.isnot(None), User.role == "manager")
+        .where(User.organization_id.isnot(None), User.role.in_(tuple(SCHOOL_ADMIN_ROLES)))
         .order_by(User.organization_id, User.name)
     )
     managers = (await db.execute(managers_stmt)).scalars().all()
@@ -732,8 +733,8 @@ async def list_organization_users(
 
     result = []
     for user in users:
-        # Get role (default to 'user' if not set)
-        role = getattr(user, "role", "user") or "user"
+        # Get role (default to teacher if not set)
+        role = getattr(user, "role", ROLE_TEACHER) or ROLE_TEACHER
         phone = user.phone or getattr(user, "email", None) or ""
         masked_phone = phone[:3] + "****" + phone[-4:] if user.phone and len(user.phone) == 11 else phone
         result.append(
@@ -742,7 +743,7 @@ async def list_organization_users(
                 "phone": masked_phone,
                 "name": user.name or phone,
                 "role": role,
-                "is_manager": role == "manager",
+                "is_manager": normalize_role(role) == "school_admin",
             }
         )
 
@@ -768,7 +769,11 @@ async def list_organization_managers(
         error_msg = Messages.error("organization_not_found", lang, org_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
-    managers_stmt = select(User).where(User.organization_id == org_id, User.role == "manager").order_by(User.name)
+    managers_stmt = (
+        select(User)
+        .where(User.organization_id == org_id, User.role.in_(tuple(SCHOOL_ADMIN_ROLES)))
+        .order_by(User.name)
+    )
     managers = (await db.execute(managers_stmt)).scalars().all()
 
     result = []
@@ -822,7 +827,7 @@ async def set_organization_manager(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
     # Set role to manager
-    user.role = "manager"
+    user.role = "school_admin"
 
     try:
         await db.commit()
@@ -870,7 +875,7 @@ async def remove_organization_manager(
     """
     Remove manager role from a user (ADMIN ONLY)
 
-    Resets the user's role back to 'user'.
+    Resets the user's role back to teacher.
     """
     org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if not org:
@@ -887,8 +892,8 @@ async def remove_organization_manager(
         error_msg = Messages.error("user_not_in_organization", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
-    # Reset role to user
-    user.role = "user"
+    # Reset role to teacher
+    user.role = ROLE_TEACHER
 
     try:
         await db.commit()

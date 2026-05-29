@@ -9,8 +9,6 @@ import { useRouter } from 'vue-router'
 
 import { ElButton, ElDialog, ElForm, ElFormItem, ElInput, ElOption, ElSelect } from 'element-plus'
 
-import { toBlob } from 'html-to-image'
-
 import { useLanguage, useNotifications } from '@/composables'
 import { type CommunityPost, createCommunityPost, updateCommunityPost } from '@/utils/apiClient'
 import { getDiagramCanvasHtmlToImageOptions } from '@/utils/diagramHtmlToImage'
@@ -96,6 +94,7 @@ async function generateThumbnail(): Promise<Blob | null> {
     return null
   }
   try {
+    const { toBlob } = await import('html-to-image')
     const blob = await toBlob(container, getDiagramCanvasHtmlToImageOptions())
     return blob
   } catch (e) {

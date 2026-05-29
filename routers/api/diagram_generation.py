@@ -20,7 +20,7 @@ from config.database import AsyncSessionLocal
 from models.domain.diagrams import Diagram
 from models import GenerateRequest, GenerateResponse, Messages, get_request_language
 from models.domain.auth import User
-from utils.auth import get_current_user_or_api_key
+from utils.auth import get_current_user_or_api_key, is_superadmin
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.monitoring.activity_stream import get_activity_stream_service
 
@@ -63,8 +63,7 @@ async def generate_graph(
     if req.diagram_id and current_user:
         workshop_code, diagram_user_id = await _query_diagram_ownership(req.diagram_id)
         if workshop_code:
-            role = getattr(current_user, "role", "user") or "user"
-            if role != "admin" and diagram_user_id != current_user.id:
+            if not is_superadmin(current_user) and diagram_user_id != current_user.id:
                 raise HTTPException(
                     status_code=403,
                     detail=("Only the diagram owner can use AI generation during collaboration"),

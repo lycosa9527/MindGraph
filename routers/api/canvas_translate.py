@@ -20,7 +20,7 @@ from models.requests.requests_canvas_translate import (
 )
 from services.infrastructure.http.error_handler import LLMServiceError
 from services.llm import llm_service
-from utils.auth import get_current_user_or_api_key
+from utils.auth import get_current_user_or_api_key, is_superadmin
 
 from .diagram_generation import _query_diagram_ownership
 from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
@@ -216,8 +216,7 @@ async def _ownership_check_diagram_translate(
     if diagram_id and current_user:
         workshop_code, diagram_user_id = await _query_diagram_ownership(diagram_id)
         if workshop_code:
-            role = getattr(current_user, "role", "user") or "user"
-            if role != "admin" and diagram_user_id != current_user.id:
+            if not is_superadmin(current_user) and diagram_user_id != current_user.id:
                 raise HTTPException(
                     status_code=403,
                     detail=("Only the diagram owner can use AI generation during collaboration"),

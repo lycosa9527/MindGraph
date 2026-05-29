@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.domain.auth import User
 from models.domain.user_activity_log import UserActivityLog
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
-from utils.auth import get_jwt_secret
+from utils.auth import get_jwt_secret, is_teacher
 
 _logger = logging.getLogger(__name__)
 
@@ -167,7 +167,7 @@ def build_public_temp_image_url(request: Request, signed_path: str) -> str:
 
 async def log_diagram_edit(user: User, db: AsyncSession, count: int = 1) -> None:
     """Log diagram_edit events to UserActivityLog for teacher usage tracking."""
-    if getattr(user, "role", None) != "user" or count < 1:
+    if not is_teacher(user) or count < 1:
         return
     try:
         now = datetime.now(timezone.utc)

@@ -33,6 +33,7 @@ from services.auth.password_security import (
 )
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
+from utils.auth.role_constants import normalize_role
 from utils.auth import hash_password
 
 from ..dependencies import get_language_dependency, require_admin
@@ -127,7 +128,7 @@ async def list_users_admin(
                 "id": user.id,
                 "phone": masked_phone,
                 "name": user.name,
-                "role": getattr(user, "role", "user") or "user",
+                "role": normalize_role(getattr(user, "role", None)),
                 "organization_id": user.organization_id,
                 "organization_code": org.code if org else None,
                 "organization_name": org.name if org else None,
@@ -182,7 +183,7 @@ async def get_user_admin(
         "id": user.id,
         "phone": user.phone,
         "name": user.name,
-        "role": getattr(user, "role", "user") or "user",
+        "role": normalize_role(getattr(user, "role", None)),
         "organization_id": user.organization_id,
         "organization_code": org.code if org else None,
         "organization_name": org.name if org else None,

@@ -5,13 +5,28 @@
 export type AuthMode = 'standard' | 'bayi' | 'enterprise'
 
 /**
- * User roles hierarchy:
- * - user: Regular user (default)
- * - manager: Organization manager - can access org-scoped admin dashboard
- * - admin: Full admin access to all organizations
- * - superadmin: Reserved for future use (currently same as admin)
+ * User roles (canonical DB slugs):
+ * - superadmin: Full platform admin (超级管理员)
+ * - platform_bd: Platform BD — trial invites, read-only global dashboard (管理员)
+ * - expert: Platform expert — trial invites only (专家)
+ * - school_admin: Organization manager (学校管理员)
+ * - teacher: B2B school member (教师用户 / 学校版)
+ * - personal_trial: C-end trial account (体验版)
+ * - personal_paid: C-end paid account (超级会员)
  */
-export type UserRole = 'user' | 'manager' | 'admin' | 'superadmin'
+export type UserRole =
+  | 'superadmin'
+  | 'platform_bd'
+  | 'expert'
+  | 'school_admin'
+  | 'teacher'
+  | 'personal_trial'
+  | 'personal_paid'
+
+/** Legacy role slugs still accepted during rollout window */
+export type LegacyUserRole = 'user' | 'manager' | 'admin'
+
+export type AnyUserRole = UserRole | LegacyUserRole
 
 export interface User {
   id: string
@@ -52,7 +67,7 @@ export interface BackendUser {
   username?: string
   phone?: string
   email?: string
-  role?: UserRole
+  role?: AnyUserRole
   avatar?: string
   organization?: string | {
     id?: string | number

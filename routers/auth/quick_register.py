@@ -60,6 +60,7 @@ from services.auth.phone_uniqueness import any_user_id_with_phone
 from services.redis.redis_distributed_lock import phone_registration_lock
 from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
 from utils.auth import get_client_ip, hash_password, is_admin, is_manager
+from utils.auth.role_constants import ROLE_TEACHER
 from utils.auth.registration_gate import http_forbid_if_registration_disabled
 from services.monitoring.registration_metrics import registration_metrics
 
@@ -462,7 +463,7 @@ async def register_quick(
                 name=None,
                 organization_id=org.id,
                 created_at=datetime.now(UTC),
-                role="user",
+                role=ROLE_TEACHER,
                 login_password_set=False,
             )
             db.add(new_user)

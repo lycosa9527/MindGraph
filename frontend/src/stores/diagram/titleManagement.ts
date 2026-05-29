@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 
-import { PLACEHOLDER_TEXTS } from './constants'
+import { getPlaceholderTexts } from './constants'
 import type { DiagramContext } from './types'
 
 export function useTitleSlice(ctx: DiagramContext) {
@@ -12,7 +12,7 @@ export function useTitleSlice(ctx: DiagramContext) {
     )
     if (!topicNode?.text) return null
     const text = topicNode.text.trim()
-    if (PLACEHOLDER_TEXTS.includes(text)) return null
+    if (getPlaceholderTexts().includes(text)) return null
     return text
   }
 

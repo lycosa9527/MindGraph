@@ -4,17 +4,26 @@
  * Top header with back/home button + page title.
  * Content slot fills remaining space; each page owns its own bottom bar.
  */
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { ArrowLeft, Home } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables'
+import { preloadMarkdownRendererForRoute } from '@/composables/core/useMarkdown'
 import { CANVAS_ENTRY_PATH_KEY, isMindGraphLandingPath } from '@/utils/canvasBackNavigation'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useLanguage()
+
+watch(
+  () => route.path,
+  (path) => {
+    preloadMarkdownRendererForRoute(path)
+  },
+  { immediate: true }
+)
 
 const isHome = computed(() => route.name === 'MobileHome' || route.path === '/m')
 

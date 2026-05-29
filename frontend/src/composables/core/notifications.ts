@@ -12,6 +12,21 @@ import type { MessageHandler } from 'element-plus'
 
 import { AlertTriangle, Check, CircleX, Info } from 'lucide-vue-next'
 
+let programmaticStylesPromise: Promise<void> | null = null
+
+/** Load Message / MessageBox / Notification / Loading CSS once (not auto-resolved by unplugin). */
+export function ensureElementPlusProgrammaticStyles(): Promise<void> {
+  if (!programmaticStylesPromise) {
+    programmaticStylesPromise = Promise.all([
+      import('element-plus/es/components/loading/style/css'),
+      import('element-plus/es/components/message-box/style/css'),
+      import('element-plus/es/components/message/style/css'),
+      import('element-plus/es/components/notification/style/css'),
+    ]).then(() => undefined)
+  }
+  return programmaticStylesPromise
+}
+
 export type NotificationType = 'success' | 'warning' | 'info' | 'error'
 
 export type ElNotificationCornerPosition = 'top-left' | 'top-right'

@@ -35,6 +35,7 @@ from models.domain.auth import User
 from services.redis.cache.redis_cache_stampede import with_stampede_lock
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
+from utils.auth.role_constants import normalize_role
 
 
 logger = logging.getLogger(__name__)
@@ -73,7 +74,7 @@ class UserCache:
             "name": user.name or "",
             "organization_id": str(user.organization_id) if user.organization_id else "",
             "avatar": user.avatar or "",
-            "role": getattr(user, "role", "user") or "user",
+            "role": normalize_role(getattr(user, "role", None)),
             "failed_login_attempts": str(user.failed_login_attempts) if user.failed_login_attempts else "0",
             "locked_until": user.locked_until.isoformat() if user.locked_until else "",
             "created_at": user.created_at.isoformat() if user.created_at else "",
@@ -109,7 +110,7 @@ class UserCache:
         org_id_val = data.get("organization_id")
         user.organization_id = int(org_id_val) if org_id_val else None
         user.avatar = data.get("avatar") or None
-        user.role = data.get("role") or "user"
+        user.role = normalize_role(data.get("role"))
         user.failed_login_attempts = int(data.get("failed_login_attempts", "0"))
 
         # Parse datetime fields

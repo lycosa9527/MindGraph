@@ -3,8 +3,14 @@
  */
 import type { LocaleCode } from '@/i18n/locales'
 import { UI_LOCALE_CODES } from '@/i18n/locales'
+import { isLocaleLoaded } from '@/i18n'
+import { registerLocaleLabelCacheInvalidator } from '@/i18n/localeLabelCache'
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import type { DiagramType } from '@/types'
+
+function localesForLabelCache(): LocaleCode[] {
+  return UI_LOCALE_CODES.filter((loc) => isLocaleLoaded(loc))
+}
 
 function defaultsT(key: string, locale: LocaleCode, params?: Record<string, unknown>): string {
   return translateForUiLocale(key, locale, params)
@@ -319,19 +325,46 @@ export function getConceptMapTopicRootRelationshipLabel(lang: LocaleCode): strin
 }
 
 /** Known labels for the topic → root edge (saved diagrams may use any UI locale). */
-export const ALL_TOPIC_ROOT_RELATIONSHIP_LABELS: readonly string[] = UI_LOCALE_CODES.map((l) =>
-  getConceptMapTopicRootRelationshipLabel(l)
-)
+let cachedTopicRootRelationshipLabels: readonly string[] | null = null
+
+export function getAllTopicRootRelationshipLabels(): readonly string[] {
+  if (cachedTopicRootRelationshipLabels === null) {
+    cachedTopicRootRelationshipLabels = localesForLabelCache().map((l) =>
+      getConceptMapTopicRootRelationshipLabel(l)
+    )
+  }
+  return cachedTopicRootRelationshipLabels
+}
 
 /** Known default root concept node texts. */
-export const ALL_ROOT_CONCEPT_NODE_TEXTS: readonly string[] = UI_LOCALE_CODES.map((l) =>
-  getConceptMapRootConceptText(l)
-)
+let cachedRootConceptNodeTexts: readonly string[] | null = null
+
+export function getAllRootConceptNodeTexts(): readonly string[] {
+  if (cachedRootConceptNodeTexts === null) {
+    cachedRootConceptNodeTexts = localesForLabelCache().map((l) => getConceptMapRootConceptText(l))
+  }
+  return cachedRootConceptNodeTexts
+}
 
 /** Default focus question topic strings (for muted styling). */
-export const ALL_FOCUS_QUESTION_DEFAULTS: readonly string[] = UI_LOCALE_CODES.map((l) =>
-  getConceptMapFocusQuestionDefault(l)
-)
+let cachedFocusQuestionDefaults: readonly string[] | null = null
+
+export function getAllFocusQuestionDefaults(): readonly string[] {
+  if (cachedFocusQuestionDefaults === null) {
+    cachedFocusQuestionDefaults = localesForLabelCache().map((l) =>
+      getConceptMapFocusQuestionDefault(l)
+    )
+  }
+  return cachedFocusQuestionDefaults
+}
+
+function invalidateDiagramDefaultLabelCaches(): void {
+  cachedTopicRootRelationshipLabels = null
+  cachedRootConceptNodeTexts = null
+  cachedFocusQuestionDefaults = null
+}
+
+registerLocaleLabelCacheInvalidator(invalidateDiagramDefaultLabelCaches)
 
 export function stripConceptMapFocusQuestionPrefix(raw: string): string {
   const trimmed = raw.trim()
@@ -367,7 +400,7 @@ const LEGACY_ZH_SC_FOCUS_QUESTION_DEFAULT = '焦点问题:请输入'
 
 export function isDefaultFocusQuestionLabel(label: string): boolean {
   const t = label.trim()
-  if (ALL_FOCUS_QUESTION_DEFAULTS.includes(t)) return true
+  if (getAllFocusQuestionDefaults().includes(t)) return true
   return t === LEGACY_ZH_SC_FOCUS_QUESTION_DEFAULT
 }
 
@@ -420,7 +453,7 @@ export function shouldReplaceLabelWithMathInsert(
     case 'concept_map':
       if (nodeId === 'topic') return isDefaultFocusQuestionLabel(text)
       if (nodeId.startsWith('concept-')) {
-        return ALL_ROOT_CONCEPT_NODE_TEXTS.includes(trimmed)
+        return getAllRootConceptNodeTexts().includes(trimmed)
       }
       return false
     default:

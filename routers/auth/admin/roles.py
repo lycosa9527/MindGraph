@@ -1,8 +1,8 @@
 """Admin Role Control Endpoints.
 
 Admin-only endpoints for listing admins and granting/revoking admin access:
-- GET /admin/admins - List all users with admin role (database)
-- PUT /admin/users/{user_id}/role - Update user role (grant/revoke admin)
+- GET /admin/admins - List all users with superadmin role (database)
+- PUT /admin/users/{user_id}/role - Update user role (grant/revoke platform roles)
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -22,6 +22,12 @@ from models.domain.auth import User
 from models.domain.messages import Messages, Language
 from services.redis.cache.redis_user_cache import user_cache
 from utils.auth.config import ADMIN_PHONES, ADMIN_USER_IDS
+from utils.auth.role_constants import (
+    ROLE_SUPERADMIN,
+    SUPERADMIN_ROLES,
+    VALID_ASSIGNABLE_ROLES,
+    normalize_role,
+)
 
 from ..dependencies import get_language_dependency, require_admin
 from ..helpers import utc_to_beijing_iso
@@ -31,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-VALID_ROLES = frozenset({"user", "manager", "admin"})
+VALID_ROLES = VALID_ASSIGNABLE_ROLES
 
 
 def _admin_env_phone_or_clause(env_tokens: list[str]):
@@ -83,12 +89,16 @@ async def list_admins(
     db: AsyncSession = Depends(get_async_db),
 ):
     """
-    List all users with admin role in database (ADMIN ONLY).
+    List all users with superadmin role in database (ADMIN ONLY).
 
-    Returns users where role='admin', plus env-configured ADMIN_PHONES and
-    ADMIN_USER_IDS as read-only reference.
+    Returns users where role is superadmin (or legacy admin), plus env-configured
+    ADMIN_PHONES and ADMIN_USER_IDS as read-only reference.
     """
-    admin_stmt = select(User).where(User.role.in_(["admin", "superadmin"])).order_by(User.created_at.asc())
+    admin_stmt = (
+        select(User)
+        .where(User.role.in_(tuple(SUPERADMIN_ROLES)))
+        .order_by(User.created_at.asc())
+    )
     admin_users = (await db.execute(admin_stmt)).scalars().all()
 
     db_admin_ids = {u.id for u in admin_users}
@@ -143,7 +153,7 @@ async def list_admins(
                 "id": user.id,
                 "phone": masked_phone,
                 "name": user.name,
-                "role": user.role,
+                "role": normalize_role(user.role),
                 "source": "database",
                 "created_at": utc_to_beijing_iso(user.created_at),
             }
@@ -161,17 +171,16 @@ async def list_admins(
 @router.put("/admin/users/{user_id}/role", dependencies=[Depends(require_admin)])
 async def update_user_role(
     user_id: int,
-    role: str = Query(..., description="New role: user, manager, or admin"),
+    role: str = Query(..., description="New canonical role slug"),
     current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
-    Update user role - grant or revoke admin access (ADMIN ONLY).
+    Update user role (SUPERADMIN ONLY).
 
-    Valid roles: user, manager, admin.
-    - Grant admin: set role='admin'
-    - Revoke admin: set role='user' (or 'manager')
+    Valid roles: all seven canonical slugs (superadmin, platform_bd, expert,
+    school_admin, teacher, personal_trial, personal_paid).
     """
     if role not in VALID_ROLES:
         raise HTTPException(
@@ -186,7 +195,7 @@ async def update_user_role(
             detail=Messages.error("user_not_found", user_id, lang=lang),
         )
 
-    old_role = user.role or "user"
+    old_role = normalize_role(user.role)
 
     if old_role == role:
         return {
@@ -199,8 +208,12 @@ async def update_user_role(
             },
         }
 
-    if old_role in ("admin", "superadmin") and role not in ("admin", "superadmin"):
-        count_stmt = select(sa_count()).select_from(User).where(User.role.in_(["admin", "superadmin"]))
+    if old_role == ROLE_SUPERADMIN and role != ROLE_SUPERADMIN:
+        count_stmt = (
+            select(sa_count())
+            .select_from(User)
+            .where(User.role.in_(tuple(SUPERADMIN_ROLES)))
+        )
         admin_count = (await db.execute(count_stmt)).scalar_one()
         if admin_count <= 1:
             raise HTTPException(
@@ -226,14 +239,23 @@ async def update_user_role(
     except Exception as e:
         logger.warning("[Auth] Failed to invalidate/cache user %s: %s", user_id, e)
 
-    if role == "admin":
-        logger.info("Admin %s granted admin role to user %s", current_user.phone, user.phone)
+    if role == ROLE_SUPERADMIN:
+        logger.info("Superadmin %s granted superadmin role to user %s", current_user.phone, user.phone)
+    elif old_role == ROLE_SUPERADMIN:
+        logger.info("Superadmin %s revoked superadmin role from user %s", current_user.phone, user.phone)
     else:
-        logger.info("Admin %s revoked admin role from user %s", current_user.phone, user.phone)
+        logger.info(
+            "Superadmin %s changed role for user %s from %s to %s",
+            current_user.phone,
+            user.phone,
+            old_role,
+            role,
+        )
 
+    granted_superadmin = role == ROLE_SUPERADMIN
     return {
         "message": Messages.success(
-            "admin_role_granted" if role == "admin" else "admin_role_revoked",
+            "admin_role_granted" if granted_superadmin else "admin_role_revoked",
             user.phone,
             lang=lang,
         ),

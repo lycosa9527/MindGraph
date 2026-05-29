@@ -29,7 +29,9 @@ import type {
   LoginCredentials,
   LoginResponse,
   User,
+  UserRole,
 } from '@/types'
+import { normalizeUserRole } from '@/utils/userRoleDisplay'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { clearWorkshopChatCachesForUser } from '@/utils/workshopChatLocalCache'
 import {
@@ -93,10 +95,30 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Getters
   const isAuthenticated = computed(() => !!user.value)
-  const isAdmin = computed(() => user.value?.role === 'admin' || user.value?.role === 'superadmin')
-  const isManager = computed(() => user.value?.role === 'manager')
-  const isAdminOrManager = computed(() => isAdmin.value || isManager.value)
-  const isSuperAdmin = computed(() => user.value?.role === 'superadmin')
+  const userRole = computed((): UserRole | null =>
+    user.value?.role ? normalizeUserRole(user.value.role) : null
+  )
+  const isSuperAdmin = computed(() => userRole.value === 'superadmin')
+  const isPlatformBd = computed(() => userRole.value === 'platform_bd')
+  const isExpert = computed(() => userRole.value === 'expert')
+  const isSchoolAdmin = computed(() => userRole.value === 'school_admin')
+  const isTeacher = computed(() => userRole.value === 'teacher')
+  const isPersonalTrial = computed(() => userRole.value === 'personal_trial')
+  const isPersonalPaid = computed(() => userRole.value === 'personal_paid')
+  const isPlatformLevel = computed(
+    () =>
+      isSuperAdmin.value ||
+      isPlatformBd.value ||
+      isExpert.value
+  )
+  const isB2BOrgMember = computed(() => isSchoolAdmin.value || isTeacher.value)
+  const isC2CConsumer = computed(() => isPersonalTrial.value || isPersonalPaid.value)
+  /** Full platform admin — alias kept for existing admin-only routes */
+  const isAdmin = computed(() => isSuperAdmin.value)
+  /** Legacy alias for school admin */
+  const isManager = computed(() => isSchoolAdmin.value)
+  /** Superadmin or school admin — school dashboard and org-scoped admin routes */
+  const isAdminOrManager = computed(() => isSuperAdmin.value || isSchoolAdmin.value)
 
   // Actions
   function initFromStorage(): void {
@@ -106,7 +128,11 @@ export const useAuthStore = defineStore('auth', () => {
 
     if (storedUser) {
       try {
-        user.value = JSON.parse(storedUser)
+        const parsed = JSON.parse(storedUser) as User
+        if (parsed.role) {
+          parsed.role = normalizeUserRole(parsed.role)
+        }
+        user.value = parsed
       } catch {
         user.value = null
       }
@@ -198,7 +224,7 @@ export const useAuthStore = defineStore('auth', () => {
         backendUser.name || backendUser.username || backendUser.phone || backendUser.email || '',
       phone: backendUser.phone || backendUser.user?.phone || '',
       email: backendUser.email,
-      role: backendUser.role || 'user',
+      role: normalizeUserRole(backendUser.role),
       schoolId: orgId ? String(orgId) : backendUser.schoolId,
       schoolName: displayLabel,
       avatar,
@@ -894,10 +920,20 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Getters
     isAuthenticated,
+    userRole,
+    isSuperAdmin,
+    isPlatformBd,
+    isExpert,
+    isSchoolAdmin,
+    isTeacher,
+    isPersonalTrial,
+    isPersonalPaid,
+    isPlatformLevel,
+    isB2BOrgMember,
+    isC2CConsumer,
     isAdmin,
     isManager,
     isAdminOrManager,
-    isSuperAdmin,
 
     // Actions
     initFromStorage,

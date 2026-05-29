@@ -44,9 +44,13 @@ from .helpers import (
 from .dependencies import (
     get_language_dependency,
     require_admin,
+    require_superadmin,
+    require_school_admin,
     require_admin_or_manager,
     require_manager,
     require_mindbot_admin_access,
+    require_trial_invite_capability,
+    require_global_dashboard_readonly,
 )
 
 # Create main auth router
@@ -81,7 +85,11 @@ __all__ = [
     "commit_user_with_retry",
     "get_language_dependency",
     "require_admin",
+    "require_superadmin",
+    "require_school_admin",
     "require_admin_or_manager",
     "require_manager",
     "require_mindbot_admin_access",
+    "require_trial_invite_capability",
+    "require_global_dashboard_readonly",
 ]

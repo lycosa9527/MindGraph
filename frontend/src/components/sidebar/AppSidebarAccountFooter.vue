@@ -90,8 +90,21 @@ const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.p
               </el-avatar>
             </el-badge>
             <div class="ml-3 min-w-0 flex-1">
-              <div class="text-sm font-medium text-stone-900 truncate leading-tight">
-                {{ s.userName }}
+              <div class="flex items-center gap-1.5 min-w-0">
+                <div class="text-sm font-medium text-stone-900 truncate leading-tight min-w-0">
+                  {{ s.userName }}
+                </div>
+                <span
+                  v-if="s.userRolePill"
+                  class="role-pill shrink-0 inline-flex items-center rounded-full border px-1.5 py-0 text-[10px] font-medium leading-4"
+                  :class="[
+                    s.userRolePill.bgClass,
+                    s.userRolePill.textClass,
+                    s.userRolePill.borderClass,
+                  ]"
+                >
+                  {{ s.userRolePill.label }}
+                </span>
               </div>
               <div class="org-subtitle-wrapper text-xs text-stone-500 leading-tight mt-0.5">
                 <div

@@ -1,13 +1,14 @@
 /**
  * Diagram label measurement uses the same markdown-it + KaTeX pipeline as chat/UI (`useMarkdown`).
- * That module is already pulled into the app bundle by several static imports; a dynamic import
- * here only triggered Vite's “dynamic + static” chunk warning without reducing bundle size.
- *
- * Layout bumps use eventBus (not dynamic import of @/stores) so Vite does not warn about
- * ineffective dynamic imports — the stores barrel is already in the app bundle.
+ * Renderer is lazy-loaded; {@link loadDiagramMarkdownPipeline} and DiagramCanvas mount preload it.
  */
+import { registerDiagramLayoutRecalcBootstrap } from '@/composables/core/diagramLayoutRecalcBootstrap'
 import { eventBus } from '@/composables/core/useEventBus'
-import { renderMarkdownForDiagramLabelMeasure } from '@/composables/core/useMarkdown'
+import {
+  ensureMarkdownRenderer,
+  isMarkdownRendererReady,
+  renderMarkdownForDiagramLabelMeasure,
+} from '@/composables/core/lazyMarkdown'
 
 let pipelineLoadHandled = false
 
@@ -22,7 +23,7 @@ export function diagramLabelLikelyNeedsRenderedMeasure(text: string): boolean {
 }
 
 export function isDiagramMarkdownPipelineLoaded(): boolean {
-  return true
+  return isMarkdownRendererReady()
 }
 
 /**
@@ -37,8 +38,7 @@ function bumpDiagramLayoutRecalc(): void {
 }
 
 /**
- * Ensures diagram label code has run the same initialization path as before (layout bump on first
- * diagram-driven load). The markdown pipeline module is loaded synchronously with this file.
+ * Preloads markdown/KaTeX for diagram labels; bumps layout on first diagram-driven load.
  *
  * @param bumpLayout - When true (default), bumps diagram layout after the first call so Vue Flow
  *   recomputes with accurate measurements. Set false when calling immediately before loadFromSpec
@@ -47,6 +47,8 @@ function bumpDiagramLayoutRecalc(): void {
 export async function loadDiagramMarkdownPipeline(options?: {
   bumpLayout?: boolean
 }): Promise<void> {
+  registerDiagramLayoutRecalcBootstrap()
+  await ensureMarkdownRenderer()
   if (pipelineLoadHandled) {
     return
   }

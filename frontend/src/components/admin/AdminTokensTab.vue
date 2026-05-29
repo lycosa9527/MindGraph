@@ -3,13 +3,12 @@ import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { Key } from '@element-plus/icons-vue'
 
-import { Chart, type ChartConfiguration, type TooltipItem, registerables } from 'chart.js'
+import type { Chart as ChartInstance } from 'chart.js'
 
 import AdminDingtalkGenerationApiKeysDialog from '@/components/admin/AdminDingtalkGenerationApiKeysDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
-
-Chart.register(...registerables)
+import { loadChartJs, type ChartConfiguration, type TooltipItem } from '@/utils/lazyChartJs'
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -47,7 +46,7 @@ const trendModalVisible = ref(false)
 const trendChartTitle = ref('')
 const trendChartLoading = ref(false)
 const trendChartRef = ref<HTMLCanvasElement | null>(null)
-let trendChartInstance: Chart<'line'> | null = null
+let trendChartInstance: ChartInstance<'line'> | null = null
 const periodCards = ref({ today: '-', week: '-', month: '-', total: '-' })
 const trendContext = ref<{
   service: TokenTrendService
@@ -123,7 +122,7 @@ async function loadTokenStats() {
   }
 }
 
-function renderTokenTrendChart(data: {
+async function renderTokenTrendChart(data: {
   data: Array<{ date: string; value: number; input?: number; output?: number }>
 }) {
   if (!trendChartRef.value) return
@@ -227,6 +226,7 @@ function renderTokenTrendChart(data: {
       },
     },
   }
+  const Chart = await loadChartJs()
   trendChartInstance = new Chart(trendChartRef.value, config)
 }
 
@@ -260,7 +260,7 @@ async function showTokenTrendChart(
     trendChartLoading.value = false
     await nextTick()
     await new Promise((r) => setTimeout(r, 50))
-    renderTokenTrendChart(data)
+    await renderTokenTrendChart(data)
 
     const fmt = (p: { input_tokens?: number; output_tokens?: number }) =>
       `${formatNumber(p?.input_tokens ?? 0)}+${formatNumber(p?.output_tokens ?? 0)}`

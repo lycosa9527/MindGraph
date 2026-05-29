@@ -26,6 +26,7 @@ from services.auth.user_fk_cleanup import delete_user_fk_dependent_rows
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
 
+from utils.auth.role_constants import normalize_role
 from ..dependencies import get_language_dependency, require_admin_or_manager
 from ..helpers import utc_to_beijing_iso
 from .school_scope import resolve_school_dashboard_org_id
@@ -140,7 +141,7 @@ async def list_school_users(
                 "id": user.id,
                 "phone": masked_phone,
                 "name": user.name,
-                "role": getattr(user, "role", "user") or "user",
+                "role": normalize_role(getattr(user, "role", None)),
                 "organization_id": user.organization_id,
                 "organization_code": org_row.code if org_row else None,
                 "organization_name": org_row.name if org_row else None,
@@ -188,7 +189,7 @@ async def get_school_user(
         "id": user.id,
         "phone": user.phone,
         "name": user.name,
-        "role": getattr(user, "role", "user") or "user",
+        "role": normalize_role(getattr(user, "role", None)),
         "organization_id": user.organization_id,
         "organization_code": org.code if org else None,
         "organization_name": org.name if org else None,

@@ -2,36 +2,41 @@
 /**
  * Sidebar feature navigation and inline history accordion panels.
  */
-import { computed, inject, reactive } from 'vue'
+import { computed, defineAsyncComponent, inject, reactive } from 'vue'
 import { useRoute } from 'vue-router'
 
 import {
-  ChatDotRound,
-  ChatLineSquare,
-  Connection,
-  Document,
+  BookOpen,
+  Bot,
+  Building2,
+  ChevronDown,
+  FileText,
   Files,
-  MagicStick,
-  OfficeBuilding,
-  Reading,
-  Share,
-  Tools,
-  TrendCharts,
-  VideoPlay,
-} from '@element-plus/icons-vue'
-
-import { Bot, ChevronDown, MessageSquare, Settings, Watch } from 'lucide-vue-next'
+  MessageCircle,
+  MessageSquare,
+  MessagesSquare,
+  Play,
+  Settings,
+  Share2,
+  TrendingUp,
+  Wand2,
+  Watch,
+  Waypoints,
+  Wrench,
+} from 'lucide-vue-next'
 
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 
-import AskOnceHistory from './AskOnceHistory.vue'
-import ChatHistory from './ChatHistory.vue'
-import ChunkTestHistory from './ChunkTestHistory.vue'
-import DebateHistory from './DebateHistory.vue'
-import DiagramHistory from './DiagramHistory.vue'
-import KnowledgeSpaceHistory from './KnowledgeSpaceHistory.vue'
-import LibraryCommentsHistory from './LibraryCommentsHistory.vue'
-import WorkshopChatHistory from './WorkshopChatHistory.vue'
+const AskOnceHistory = defineAsyncComponent(() => import('./AskOnceHistory.vue'))
+const ChatHistory = defineAsyncComponent(() => import('./ChatHistory.vue'))
+const ChunkTestHistory = defineAsyncComponent(() => import('./ChunkTestHistory.vue'))
+const DebateHistory = defineAsyncComponent(() => import('./DebateHistory.vue'))
+const DiagramHistory = defineAsyncComponent(() => import('./DiagramHistory.vue'))
+const KnowledgeSpaceHistory = defineAsyncComponent(() => import('./KnowledgeSpaceHistory.vue'))
+const LibraryCommentsHistory = defineAsyncComponent(() => import('./LibraryCommentsHistory.vue'))
+const WorkshopChatHistory = defineAsyncComponent(() => import('./WorkshopChatHistory.vue'))
+
+const NAV_ICON_SIZE = 18
 
 const _raw = inject(appSidebarInjectionKey)
 if (!_raw) {
@@ -64,7 +69,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           :class="s.navItemClass('mindmate')"
           @click="s.setMode('mindmate')"
         >
-          <el-icon><ChatLineSquare /></el-icon>
+          <MessageSquare
+            class="nav-icon"
+            :size="NAV_ICON_SIZE"
+          />
           <span
             v-if="!s.isCollapsed"
             class="nav-label"
@@ -83,7 +91,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           :class="s.navItemClass('mindgraph')"
           @click="s.setMode('mindgraph')"
         >
-          <el-icon><Connection /></el-icon>
+          <Waypoints
+            class="nav-icon"
+            :size="NAV_ICON_SIZE"
+          />
           <span
             v-if="!s.isCollapsed"
             class="nav-label"
@@ -134,7 +145,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             :class="s.navItemClass('knowledge-space')"
             @click="s.setMode('knowledge-space')"
           >
-            <el-icon><Document /></el-icon>
+            <FileText
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
@@ -163,7 +177,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             :class="s.navItemClass('chunk-test')"
             @click="s.setMode('chunk-test')"
           >
-            <el-icon><Tools /></el-icon>
+            <Wrench
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
@@ -192,7 +209,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             :class="s.navItemClass('askonce')"
             @click="s.setMode('askonce')"
           >
-            <el-icon><MagicStick /></el-icon>
+            <Wand2
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
@@ -221,7 +241,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             :class="s.navItemClass('debateverse')"
             @click="s.setMode('debateverse')"
           >
-            <el-icon><ChatDotRound /></el-icon>
+            <MessageCircle
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
@@ -250,7 +273,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             :class="s.navItemClass('school-zone')"
             @click="s.setMode('school-zone')"
           >
-            <el-icon><OfficeBuilding /></el-icon>
+            <Building2
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
@@ -271,7 +297,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             :class="s.navItemClass('template')"
             @click="s.setMode('template')"
           >
-            <el-icon><Files /></el-icon>
+            <Files
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
@@ -292,7 +321,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             :class="s.navItemClass('course')"
             @click="s.setMode('course')"
           >
-            <el-icon><VideoPlay /></el-icon>
+            <Play
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
@@ -313,7 +345,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             :class="s.navItemClass('community')"
             @click="s.setMode('community')"
           >
-            <el-icon><Share /></el-icon>
+            <Share2
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
@@ -334,7 +369,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             :class="s.navItemClass('library')"
             @click="s.setMode('library')"
           >
-            <el-icon><Reading /></el-icon>
+            <BookOpen
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
@@ -363,7 +401,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             :class="s.navItemClass('workshop-chat')"
             @click="s.setMode('workshop-chat')"
           >
-            <el-icon><MessageSquare /></el-icon>
+            <MessagesSquare
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
             <span
               v-if="!s.isCollapsed"
               class="nav-label ws-menu-title"
@@ -405,7 +446,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           :class="s.navItemClass('gewe')"
           @click="s.setMode('gewe')"
         >
-          <el-icon><ChatDotRound /></el-icon>
+          <MessageCircle
+            class="nav-icon"
+            :size="NAV_ICON_SIZE"
+          />
           <span
             v-if="!s.isCollapsed"
             class="nav-label"
@@ -425,7 +469,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           :class="s.navItemClass('smart-response')"
           @click="s.setMode('smart-response')"
         >
-          <el-icon><Watch /></el-icon>
+          <Watch
+            class="nav-icon"
+            :size="NAV_ICON_SIZE"
+          />
           <span
             v-if="!s.isCollapsed"
             class="nav-label"
@@ -445,7 +492,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           :class="s.navItemClass('teacher-usage')"
           @click="s.setMode('teacher-usage')"
         >
-          <el-icon><TrendCharts /></el-icon>
+          <TrendingUp
+            class="nav-icon"
+            :size="NAV_ICON_SIZE"
+          />
           <span
             v-if="!s.isCollapsed"
             class="nav-label"
@@ -465,7 +515,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           :class="s.navItemClass('mindbot')"
           @click="s.setMode('mindbot')"
         >
-          <el-icon><Bot /></el-icon>
+          <Bot
+            class="nav-icon"
+            :size="NAV_ICON_SIZE"
+          />
           <span
             v-if="!s.isCollapsed"
             class="nav-label"
@@ -485,7 +538,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           :class="s.navItemClass('school-dashboard')"
           @click="s.setMode('school-dashboard')"
         >
-          <el-icon><OfficeBuilding /></el-icon>
+          <Building2
+            class="nav-icon"
+            :size="NAV_ICON_SIZE"
+          />
           <span
             v-if="!s.isCollapsed"
             class="nav-label"
@@ -505,7 +561,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           :class="s.navItemClass('admin')"
           @click="s.setMode('admin')"
         >
-          <el-icon><Settings /></el-icon>
+          <Settings
+            class="nav-icon"
+            :size="NAV_ICON_SIZE"
+          />
           <span
             v-if="!s.isCollapsed"
             class="nav-label"
@@ -607,19 +666,18 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
   background-color: #1c1917;
   color: white;
 }
-.nav-item.is-active .el-icon {
+.nav-item.is-active .nav-icon {
   color: white;
 }
-.nav-item .el-icon {
+.nav-item .nav-icon {
   margin-right: 8px;
-  font-size: 18px;
   flex-shrink: 0;
 }
 .nav-item--collapsed {
   justify-content: center;
   padding: 0;
 }
-.nav-item--collapsed .el-icon {
+.nav-item--collapsed .nav-icon {
   margin-right: 0;
 }
 

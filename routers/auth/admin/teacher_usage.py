@@ -31,6 +31,7 @@ from services.teacher_usage_stats import (
     save_classification_config_async,
     compute_and_upsert_user_usage_stats_async,
 )
+from utils.auth.role_constants import TEACHER_ROLES
 
 from ..dependencies import require_admin
 
@@ -100,7 +101,7 @@ async def get_teacher_usage(
     beijing_today = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
     cutoff_90d = (beijing_today - timedelta(days=90)).astimezone(timezone.utc).replace(tzinfo=None)
 
-    teachers = (await db.execute(select(User).where(User.role == "user"))).scalars().all()
+    teachers = (await db.execute(select(User).where(User.role.in_(tuple(TEACHER_ROLES))))).scalars().all()
     teacher_ids = [u.id for u in teachers]
 
     stats_map: dict[int, tuple] = {}
@@ -261,7 +262,7 @@ async def get_teacher_usage_users(
     page_size: int = Query(50, ge=1, le=100, description="Items per page"),
 ) -> dict[str, Any]:
     """List teachers with usage stats, paginated (ADMIN ONLY)."""
-    teachers = (await db.execute(select(User).where(User.role == "user"))).scalars().all()
+    teachers = (await db.execute(select(User).where(User.role.in_(tuple(TEACHER_ROLES))))).scalars().all()
     teacher_ids = [u.id for u in teachers]
     user_token_total: dict[int, int] = {}
     user_last_active: dict[int, Any] = {}
@@ -367,7 +368,11 @@ async def get_user_weekly_tokens(
     db: AsyncSession = Depends(get_async_db),
 ) -> dict[str, Any]:
     """Get weekly token usage for a specific user (ADMIN ONLY)."""
-    user = (await db.execute(select(User).where(User.id == user_id, User.role == "user"))).scalars().first()
+    user = (
+        await db.execute(
+            select(User).where(User.id == user_id, User.role.in_(tuple(TEACHER_ROLES)))
+        )
+    ).scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     beijing_now = get_beijing_now()
@@ -408,7 +413,11 @@ async def get_user_detail(
     db: AsyncSession = Depends(get_async_db),
 ) -> dict[str, Any]:
     """Get user detail with usage metrics and token stats (ADMIN ONLY)."""
-    user = (await db.execute(select(User).where(User.id == user_id, User.role == "user"))).scalars().first()
+    user = (
+        await db.execute(
+            select(User).where(User.id == user_id, User.role.in_(tuple(TEACHER_ROLES)))
+        )
+    ).scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     beijing_now = get_beijing_now()
@@ -631,7 +640,7 @@ async def put_teacher_usage_config(
 
 async def _run_recompute(db: AsyncSession) -> tuple[int, int]:
     """Recompute user_usage_stats for all teachers. Returns (success, failed)."""
-    teachers = (await db.execute(select(User).where(User.role == "user"))).scalars().all()
+    teachers = (await db.execute(select(User).where(User.role.in_(tuple(TEACHER_ROLES))))).scalars().all()
     success = 0
     failed = 0
     for user in teachers:

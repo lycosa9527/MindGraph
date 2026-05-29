@@ -12,6 +12,7 @@ import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
 import { useAskOnceStore } from '@/stores/askonce'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
 import { userCanAccessMindbotAdmin } from '@/utils/mindbotAccess'
+import { getRolePillStyle } from '@/utils/userRoleDisplay'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
 
 export function useAppSidebar() {
@@ -111,6 +112,21 @@ export function useAppSidebar() {
   })
 
   const userName = computed(() => authStore.user?.username || '')
+  const userRolePill = computed(() => {
+    if (!authStore.user?.role) {
+      return null
+    }
+    const style = getRolePillStyle(authStore.user.role)
+    if (!style) {
+      return null
+    }
+    return {
+      label: t(style.labelKey),
+      bgClass: style.bgClass,
+      textClass: style.textClass,
+      borderClass: style.borderClass,
+    }
+  })
   const userSubtitle = computed(() => {
     const schoolName = authStore.user?.schoolName
     return schoolName && schoolName.trim() ? schoolName : t('sidebar.userSubtitleDefault')
@@ -284,6 +300,7 @@ export function useAppSidebar() {
     canAccessMindbot,
     mindMateNavLabel,
     userName,
+    userRolePill,
     userSubtitle,
     userAvatar,
     showLoginModal,

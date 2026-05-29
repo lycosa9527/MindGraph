@@ -15,7 +15,8 @@ import { useNotifications } from '@/composables/core/useNotifications'
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
 import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import { useDiagramStore } from '@/stores/diagram'
-import { ALL_TOPIC_ROOT_RELATIONSHIP_LABELS } from '@/stores/diagram/diagramDefaultLabels'
+import { getAllTopicRootRelationshipLabels } from '@/stores/diagram/diagramDefaultLabels'
+import { registerLocaleLabelCacheInvalidator } from '@/i18n/localeLabelCache'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { authFetch } from '@/utils/api'
 import { isTopicToRootConceptConnection } from '@/utils/conceptMapTopicRootEdge'
@@ -25,16 +26,26 @@ import { RELATIONSHIP_LABELS_NEXT, RELATIONSHIP_LABELS_START } from '../nodePale
 export const CONCEPT_MAP_GENERATING_KEY = Symbol('conceptMapRelationshipGenerating')
 export const CONCEPT_MAP_OPTIONS_KEY = Symbol('conceptMapRelationshipOptions')
 
-/** Template-default labels (from getDefaultTemplate) — safe to regenerate when concepts change */
-const TEMPLATE_DEFAULT_LABELS = new Set<string>([
-  '关联',
-  '包含',
-  '导致',
-  ...ALL_TOPIC_ROOT_RELATIONSHIP_LABELS,
-  'related to',
-  'includes',
-  'causes',
-])
+let cachedTemplateDefaultLabels: Set<string> | null = null
+
+function getTemplateDefaultLabels(): Set<string> {
+  if (cachedTemplateDefaultLabels === null) {
+    cachedTemplateDefaultLabels = new Set<string>([
+      '关联',
+      '包含',
+      '导致',
+      ...getAllTopicRootRelationshipLabels(),
+      'related to',
+      'includes',
+      'causes',
+    ])
+  }
+  return cachedTemplateDefaultLabels
+}
+
+registerLocaleLabelCacheInvalidator(() => {
+  cachedTemplateDefaultLabels = null
+})
 
 /** Edge label is empty, placeholder, or template default—safe to regenerate */
 function isLabelEmptyOrPlaceholder(label: string | undefined | null): boolean {
@@ -47,7 +58,7 @@ function isLabelEmptyOrPlaceholder(label: string | undefined | null): boolean {
   ) {
     return true
   }
-  return TEMPLATE_DEFAULT_LABELS.has(t) || TEMPLATE_DEFAULT_LABELS.has(t.toLowerCase())
+  return getTemplateDefaultLabels().has(t) || getTemplateDefaultLabels().has(t.toLowerCase())
 }
 
 async function streamRelationshipLabels(

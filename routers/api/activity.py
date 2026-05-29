@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.user_activity_log import UserActivityLog
-from utils.auth import get_current_user
+from utils.auth import get_current_user, is_teacher
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ async def log_diagram_export(
 
     Called by frontend after successful client-side export (PNG/SVG/PDF/JSON).
     """
-    if getattr(current_user, "role", None) != "user":
+    if not is_teacher(current_user):
         return {"status": "skipped", "reason": "not_teacher"}
 
     try:

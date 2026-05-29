@@ -22,6 +22,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
+from utils.auth.role_constants import SUPERADMIN_ROLES
 
 _MENTION_RE = re.compile(r"@\*\*([^*]+)\*\*")
 
@@ -69,7 +70,7 @@ async def _users_matching_mention(
     staff_ids: FrozenSet[int],
 ) -> List[User]:
     """Users whose trimmed lower(name) equals ``lowered`` and pass allow rules."""
-    conds = [User.role == "admin"]
+    conds = [User.role.in_(tuple(SUPERADMIN_ROLES))]
     if effective_org_id is not None:
         conds.append(User.organization_id == effective_org_id)
     if staff_ids:

@@ -27,6 +27,8 @@ get_db = _config_database.get_db
 
 _models_domain_auth = importlib.import_module("models.domain.auth")
 User = _models_domain_auth.User
+_role_constants = importlib.import_module("utils.auth.role_constants")
+SUPERADMIN_ROLES = _role_constants.SUPERADMIN_ROLES
 
 _models_domain_library = importlib.import_module("models.domain.library")
 LibraryDocument = _models_domain_library.LibraryDocument
@@ -74,7 +76,7 @@ def _find_existing_doc_by_folder_name(db: Session, folder_name: str) -> LibraryD
 
 def _get_admin_user(db: Session) -> User | None:
     """Get admin user for uploader, with fallbacks."""
-    admin_user = db.query(User).filter(User.role == "admin").first()
+    admin_user = db.query(User).filter(User.role.in_(tuple(SUPERADMIN_ROLES))).first()
     if admin_user:
         return admin_user
     admin_user = db.query(User).filter(User.phone == "17801353751").first()

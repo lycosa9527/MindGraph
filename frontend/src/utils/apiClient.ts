@@ -12,9 +12,9 @@
  * - Refresh tokens have restricted path (/api/auth)
  * - Device binding prevents token theft across devices
  */
-import { i18n } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
 import { useAuthStore } from '@/stores/auth'
+import { useUIStore } from '@/stores/ui'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
 const API_BASE = '/api'
@@ -25,13 +25,9 @@ function isSessionTokenRefreshEndpoint(endpointOrUrl: string): boolean {
   return path === '/api/auth/refresh' || path.endsWith('/api/auth/refresh')
 }
 
-/** Current Vue I18n UI code for API `X-Language` (backend maps to zh / en / az for Messages). */
+/** Current UI language for API `X-Language` (backend maps to zh / en / az for Messages). */
 function currentUiLocaleCodeForHeaders(): string {
-  const loc = i18n.global.locale
-  if (typeof loc === 'object' && loc !== null && 'value' in loc) {
-    return String((loc as { value: LocaleCode }).value)
-  }
-  return String(loc)
+  return useUIStore().language as LocaleCode
 }
 
 function mergeApiHeaders(

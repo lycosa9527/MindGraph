@@ -34,7 +34,7 @@ from services.infrastructure.http.error_handler import (
     LLMTimeoutError,
     LLMServiceError,
 )
-from utils.auth import get_current_user
+from utils.auth import get_current_user, is_teacher
 from utils.chinese_language_policy import (
     collect_relationship_label_text_blobs,
     effective_language_for_thinking_user,
@@ -123,7 +123,7 @@ async def start_relationship_labels(
     )
 
     # Log relationship_labels for teacher usage tracking
-    if current_user and getattr(current_user, "role", None) == "user":
+    if current_user and is_teacher(current_user):
         try:
             log_entry = UserActivityLog(
                 user_id=current_user.id,

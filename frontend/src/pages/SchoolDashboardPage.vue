@@ -16,15 +16,14 @@ import {
   Warning,
 } from '@element-plus/icons-vue'
 
-import { Chart, type ChartConfiguration, type TooltipItem, registerables } from 'chart.js'
+import type { Chart as ChartInstance } from 'chart.js'
 
 import SchoolDashboardUsersTab from '@/components/school/SchoolDashboardUsersTab.vue'
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
 import { httpErrorDetail } from '@/utils/httpErrorDetail'
-
-Chart.register(...registerables)
+import { loadChartJs, type ChartConfiguration, type TooltipItem } from '@/utils/lazyChartJs'
 
 const { t, isZh } = useLanguage()
 const notify = useNotifications()
@@ -56,7 +55,7 @@ const trendModalVisible = ref(false)
 const trendChartTitle = ref('')
 const trendChartLoading = ref(false)
 const trendChartRef = ref<HTMLCanvasElement | null>(null)
-let trendChartInstance: Chart<'line'> | null = null
+let trendChartInstance: ChartInstance<'line'> | null = null
 const periodCards = ref({ today: '-', week: '-', month: '-', total: '-' })
 const trendPeriod = ref<'today' | 'week' | 'month' | 'total'>('week')
 
@@ -213,7 +212,7 @@ async function showTrendChart(period: 'today' | 'week' | 'month' | 'total' = 'we
     trendChartLoading.value = false
     await nextTick()
     await new Promise((r) => setTimeout(r, 50))
-    renderTrendChart(chartData)
+    await renderTrendChart(chartData)
     if (tokenRes.ok) {
       const tokenData = await tokenRes.json()
       const fmt = (p: { input_tokens?: number; output_tokens?: number }) => {
@@ -234,7 +233,7 @@ async function showTrendChart(period: 'today' | 'week' | 'month' | 'total' = 'we
   }
 }
 
-function renderTrendChart(data: {
+async function renderTrendChart(data: {
   data: Array<{ date: string; value: number; input?: number; output?: number }>
 }) {
   if (!trendChartRef.value) return
@@ -339,6 +338,7 @@ function renderTrendChart(data: {
       },
     },
   }
+  const Chart = await loadChartJs()
   trendChartInstance = new Chart(trendChartRef.value, config)
 }
 

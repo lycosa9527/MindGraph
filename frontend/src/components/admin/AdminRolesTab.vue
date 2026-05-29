@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Admin Roles Tab - List admins and school managers, grant/revoke access
+ * Admin Roles Tab - List superadmins and school admins, assign all seven roles
  */
 import { computed, onMounted, ref, watch } from 'vue'
 
@@ -12,7 +12,9 @@ import type { TabPaneName } from 'element-plus'
 import { Loading, Plus, Refresh, Search, UserFilled } from '@element-plus/icons-vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import type { UserRole } from '@/types'
 import { apiRequest } from '@/utils/apiClient'
+import { getRolePillStyle, normalizeUserRole } from '@/utils/userRoleDisplay'
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -49,7 +51,11 @@ interface ManagerUser {
   created_at: string | null
 }
 
-const activeTab = ref<'admins' | 'managers'>('admins')
+const PLATFORM_ROLES: UserRole[] = ['superadmin', 'platform_bd', 'expert']
+const B2B_ROLES: UserRole[] = ['school_admin', 'teacher']
+const C2C_ROLES: UserRole[] = ['personal_trial', 'personal_paid']
+
+const activeTab = ref<'admins' | 'managers' | 'assignment'>('admins')
 const isLoading = ref(true)
 const admins = ref<AdminUser[]>([])
 const envAdmins = ref<EnvAdmin[]>([])
@@ -64,6 +70,11 @@ function maskPhone(phone: string): string {
   return phone
 }
 
+function roleLabel(role: string): string {
+  const style = getRolePillStyle(role)
+  return style ? t(style.labelKey) : role
+}
+
 const allAdminsForTable = computed(() => {
   const dbRows = admins.value.map((a) => ({
     ...a,
@@ -73,7 +84,7 @@ const allAdminsForTable = computed(() => {
     id: 0,
     phone: maskPhone(ea.phone),
     name: ea.name,
-    role: 'admin',
+    role: 'superadmin',
     source: 'env' as const,
     created_at: null,
   }))
@@ -86,6 +97,14 @@ const addSearchResults = ref<CandidateUser[]>([])
 const addSearchLoading = ref(false)
 const addSearchHasRun = ref(false)
 const addGrantingId = ref<number | null>(null)
+
+const assignSearchQuery = ref('')
+const assignSearchResults = ref<CandidateUser[]>([])
+const assignSearchLoading = ref(false)
+const assignSearchHasRun = ref(false)
+const assignSelectedUser = ref<CandidateUser | null>(null)
+const assignSelectedRole = ref<UserRole>('teacher')
+const assignSubmitting = ref(false)
 
 async function loadAdmins() {
   isLoading.value = true
@@ -106,6 +125,24 @@ async function loadAdmins() {
   }
 }
 
+async function searchUsers(query: string): Promise<CandidateUser[]> {
+  const q = query.trim()
+  if (!q || q.length < 2) {
+    return []
+  }
+  const params = new URLSearchParams({
+    page: '1',
+    page_size: '20',
+    search: q,
+  })
+  const res = await apiRequest(`/api/auth/admin/users?${params}`)
+  if (!res.ok) {
+    return []
+  }
+  const data = await res.json()
+  return (data.users ?? []) as CandidateUser[]
+}
+
 async function searchUsersToAdd() {
   const q = addSearchQuery.value.trim()
   if (!q || q.length < 2) {
@@ -115,20 +152,11 @@ async function searchUsersToAdd() {
   }
   addSearchLoading.value = true
   try {
-    const params = new URLSearchParams({
-      page: '1',
-      page_size: '20',
-      search: q,
-    })
-    const res = await apiRequest(`/api/auth/admin/users?${params}`)
-    if (!res.ok) {
-      addSearchResults.value = []
-      return
-    }
-    const data = await res.json()
-    const users = (data.users ?? []) as CandidateUser[]
+    const users = await searchUsers(q)
     const adminIds = new Set(admins.value.map((a) => a.id))
-    addSearchResults.value = users.filter((u) => !adminIds.has(u.id) && u.role !== 'admin')
+    addSearchResults.value = users.filter(
+      (u) => !adminIds.has(u.id) && normalizeUserRole(u.role) !== 'superadmin'
+    )
   } catch {
     addSearchResults.value = []
   } finally {
@@ -137,7 +165,26 @@ async function searchUsersToAdd() {
   }
 }
 
+async function searchUsersToAssign() {
+  const q = assignSearchQuery.value.trim()
+  if (!q || q.length < 2) {
+    assignSearchResults.value = []
+    assignSearchHasRun.value = false
+    return
+  }
+  assignSearchLoading.value = true
+  try {
+    assignSearchResults.value = await searchUsers(q)
+  } catch {
+    assignSearchResults.value = []
+  } finally {
+    assignSearchLoading.value = false
+    assignSearchHasRun.value = true
+  }
+}
+
 const debouncedSearchUsersToAdd = useDebounceFn(searchUsersToAdd, 400)
+const debouncedSearchUsersToAssign = useDebounceFn(searchUsersToAssign, 400)
 
 watch(addSearchQuery, (val) => {
   const q = val.trim()
@@ -149,6 +196,16 @@ watch(addSearchQuery, (val) => {
   }
 })
 
+watch(assignSearchQuery, (val) => {
+  const q = val.trim()
+  if (q.length >= 2) {
+    debouncedSearchUsersToAssign()
+  } else {
+    assignSearchResults.value = []
+    assignSearchHasRun.value = false
+  }
+})
+
 function openAddModal() {
   addModalVisible.value = true
   addSearchQuery.value = ''
@@ -156,23 +213,28 @@ function openAddModal() {
   addSearchHasRun.value = false
 }
 
+async function updateUserRole(userId: number, role: UserRole): Promise<boolean> {
+  const res = await apiRequest(`/api/auth/admin/users/${userId}/role?role=${role}`, {
+    method: 'PUT',
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    notify.error((data.detail as string) || t('admin.roleAssignFailed'))
+    return false
+  }
+  const data = await res.json()
+  notify.success(data.message || t('admin.roleAssignSuccess'))
+  return true
+}
+
 async function grantAdmin(user: CandidateUser) {
   addGrantingId.value = user.id
   try {
-    const res = await apiRequest(`/api/auth/admin/users/${user.id}/role?role=admin`, {
-      method: 'PUT',
-    })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || 'Failed to grant admin')
-      return
+    const ok = await updateUserRole(user.id, 'superadmin')
+    if (ok) {
+      addModalVisible.value = false
+      loadAdmins()
     }
-    const data = await res.json()
-    notify.success(data.message || t('admin.adminRoleGranted'))
-    addModalVisible.value = false
-    loadAdmins()
-  } catch {
-    notify.error('Failed to grant admin')
   } finally {
     addGrantingId.value = null
   }
@@ -195,17 +257,10 @@ async function revokeAdmin(admin: AdminUser) {
   }
 
   try {
-    const res = await apiRequest(`/api/auth/admin/users/${admin.id}/role?role=user`, {
-      method: 'PUT',
-    })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || 'Failed to revoke admin')
-      return
+    const ok = await updateUserRole(admin.id, 'teacher')
+    if (ok) {
+      loadAdmins()
     }
-    const data = await res.json()
-    notify.success(data.message || t('admin.adminRoleRevoked'))
-    loadAdmins()
   } catch {
     notify.error('Failed to revoke admin')
   }
@@ -264,6 +319,35 @@ async function revokeManager(manager: ManagerUser) {
     notify.error('Failed to remove manager')
   } finally {
     revokingManagerId.value = null
+  }
+}
+
+function selectAssignUser(user: CandidateUser) {
+  assignSelectedUser.value = user
+  assignSelectedRole.value = normalizeUserRole(user.role)
+}
+
+async function submitRoleAssignment() {
+  if (!assignSelectedUser.value) {
+    return
+  }
+  assignSubmitting.value = true
+  try {
+    const ok = await updateUserRole(assignSelectedUser.value.id, assignSelectedRole.value)
+    if (ok) {
+      assignSelectedUser.value = {
+        ...assignSelectedUser.value,
+        role: assignSelectedRole.value,
+      }
+      if (assignSelectedRole.value === 'superadmin') {
+        loadAdmins()
+      }
+      if (assignSelectedRole.value === 'school_admin') {
+        loadManagers()
+      }
+    }
+  } finally {
+    assignSubmitting.value = false
   }
 }
 
@@ -344,6 +428,14 @@ onMounted(loadAdmins)
             >
               <template #default="{ row }">
                 {{ row.name || row.phone || '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column
+              :label="t('admin.schoolUserColumnRole')"
+              width="120"
+            >
+              <template #default="{ row }">
+                {{ roleLabel(row.role) }}
               </template>
             </el-table-column>
             <el-table-column
@@ -482,6 +574,110 @@ onMounted(loadAdmins)
               </template>
             </el-table-column>
           </el-table>
+        </el-tab-pane>
+
+        <el-tab-pane
+          :label="t('admin.roleAssignmentTab')"
+          name="assignment"
+        >
+          <p class="text-sm text-gray-500 mb-4 m-0">
+            {{ t('admin.roleAssignmentDesc') }}
+          </p>
+
+          <el-input
+            v-model="assignSearchQuery"
+            :placeholder="t('admin.searchUserByNameOrPhone')"
+            clearable
+            class="mb-4"
+            @keyup.enter="searchUsersToAssign"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+            <template #append>
+              <el-button
+                :loading="assignSearchLoading"
+                @click="searchUsersToAssign"
+              >
+                {{ t('admin.search') }}
+              </el-button>
+            </template>
+          </el-input>
+
+          <div
+            v-if="assignSearchResults.length > 0"
+            class="max-h-48 overflow-y-auto space-y-2 mb-4"
+          >
+            <div
+              v-for="user in assignSearchResults"
+              :key="user.id"
+              class="flex items-center justify-between p-3 rounded border cursor-pointer transition-colors"
+              :class="
+                assignSelectedUser?.id === user.id
+                  ? 'border-blue-400 bg-blue-50'
+                  : 'border-gray-200 hover:bg-gray-50'
+              "
+              @click="selectAssignUser(user)"
+            >
+              <div>
+                <p class="font-medium m-0">{{ user.name || user.phone }}</p>
+                <p class="text-xs text-gray-500 m-0 mt-1">
+                  {{ user.phone }} · {{ t('admin.currentRole') }}:
+                  {{ roleLabel(user.role) }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div
+            v-if="assignSelectedUser"
+            class="rounded border border-gray-200 p-4 space-y-4"
+          >
+            <p class="text-sm m-0">
+              {{ assignSelectedUser.name || assignSelectedUser.phone }}
+              ({{ roleLabel(assignSelectedUser.role) }})
+            </p>
+            <el-form label-position="top">
+              <el-form-item :label="t('admin.selectRole')">
+                <el-select
+                  v-model="assignSelectedRole"
+                  class="w-full"
+                >
+                  <el-option-group :label="t('admin.roleTierPlatform')">
+                    <el-option
+                      v-for="role in PLATFORM_ROLES"
+                      :key="role"
+                      :label="roleLabel(role)"
+                      :value="role"
+                    />
+                  </el-option-group>
+                  <el-option-group :label="t('admin.roleTierB2B')">
+                    <el-option
+                      v-for="role in B2B_ROLES"
+                      :key="role"
+                      :label="roleLabel(role)"
+                      :value="role"
+                    />
+                  </el-option-group>
+                  <el-option-group :label="t('admin.roleTierC2C')">
+                    <el-option
+                      v-for="role in C2C_ROLES"
+                      :key="role"
+                      :label="roleLabel(role)"
+                      :value="role"
+                    />
+                  </el-option-group>
+                </el-select>
+              </el-form-item>
+            </el-form>
+            <el-button
+              type="primary"
+              :loading="assignSubmitting"
+              @click="submitRoleAssignment"
+            >
+              {{ t('admin.roleAssign') }}
+            </el-button>
+          </div>
         </el-tab-pane>
       </el-tabs>
     </el-card>

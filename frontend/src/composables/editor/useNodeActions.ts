@@ -26,11 +26,6 @@ import {
 import type { DiagramNode } from '@/types'
 
 export type UseNodeActionsOptions = {
-  /**
-   * Mobile: selection drives mind_map / brace_map primary add.
-   * Desktop toolbar: mind_map primary add always adds a branch; brace_map still uses selection.
-   */
-  addNodePrimaryBehavior?: 'selectionBased' | 'toolbarPrimary'
   /** When false, primary add skips tree map (desktop toolbar shows "in development"). */
   includeTreeMapPrimaryAdd?: boolean
   /** When false, primary add skips multi-flow (desktop uses Cause / Effect buttons). */
@@ -38,7 +33,6 @@ export type UseNodeActionsOptions = {
 }
 
 const DEFAULT_NODE_ACTIONS_OPTIONS: Required<UseNodeActionsOptions> = {
-  addNodePrimaryBehavior: 'selectionBased',
   includeTreeMapPrimaryAdd: true,
   includeMultiFlowPrimaryAdd: true,
 }
@@ -270,13 +264,6 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       diagramStore.pushHistory(t('canvas.toolbar.addAnalogyPairHistory'))
       notify.success(t('canvas.toolbar.analogyPairAdded'))
       return
-    }
-
-    if (diagramType === 'mindmap' || diagramType === 'mind_map') {
-      if (opts.addNodePrimaryBehavior === 'toolbarPrimary') {
-        handleAddBranch()
-        return
-      }
     }
 
     if (diagramType === 'mindmap' || diagramType === 'mind_map') {

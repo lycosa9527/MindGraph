@@ -16,7 +16,7 @@ from sqlalchemy.orm import selectinload
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.device import Device
-from utils.auth import get_current_user
+from utils.auth import get_current_user, is_admin_or_manager
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ async def list_devices(
     db: AsyncSession = Depends(get_async_db),
 ):
     """List all devices (admin/manager only)"""
-    if not current_user.is_admin and not current_user.is_manager:
+    if not is_admin_or_manager(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin or manager access required",
@@ -105,7 +105,7 @@ async def list_unassigned_devices(
     db: AsyncSession = Depends(get_async_db),
 ):
     """List unassigned devices"""
-    if not current_user.is_admin and not current_user.is_manager:
+    if not is_admin_or_manager(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin or manager access required",
@@ -144,7 +144,7 @@ async def assign_device(
     db: AsyncSession = Depends(get_async_db),
 ):
     """Assign device to student"""
-    if not current_user.is_admin and not current_user.is_manager:
+    if not is_admin_or_manager(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin or manager access required",
@@ -186,7 +186,7 @@ async def unassign_device(
     db: AsyncSession = Depends(get_async_db),
 ):
     """Unassign device from student"""
-    if not current_user.is_admin and not current_user.is_manager:
+    if not is_admin_or_manager(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin or manager access required",

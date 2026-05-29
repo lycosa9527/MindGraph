@@ -4,9 +4,6 @@
  */
 import { ref } from 'vue'
 
-import { toBlob, toPng, toSvg } from 'html-to-image'
-import { jsPDF } from 'jspdf'
-
 import { useNotifications } from '@/composables'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
@@ -66,6 +63,10 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     }
   }
 
+  async function loadHtmlToImage(): Promise<typeof import('html-to-image')> {
+    return import('html-to-image')
+  }
+
   async function exportAsPng(): Promise<void> {
     const container = getContainer()
     if (!container) {
@@ -76,6 +77,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     isExporting.value = true
     try {
       await waitForExportFonts()
+      const { toBlob } = await loadHtmlToImage()
       const blob = await toBlob(container, getDiagramCanvasHtmlToImageOptions())
       if (!blob) {
         throw new Error('PNG export produced empty image')
@@ -105,6 +107,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     isExporting.value = true
     try {
       await waitForExportFonts()
+      const { toSvg } = await loadHtmlToImage()
       const dataUrl = await toSvg(container, getDiagramCanvasHtmlToImageOptions())
 
       const baseName = sanitizeFilename(getTitle())
@@ -131,6 +134,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     isExporting.value = true
     try {
       await waitForExportFonts()
+      const { toPng } = await loadHtmlToImage()
       const dataUrl = await toPng(container, getDiagramCanvasHtmlToImageOptions({ pixelRatio: 1 }))
 
       const img = new Image()
@@ -140,6 +144,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
         img.src = dataUrl
       })
 
+      const { jsPDF } = await import('jspdf')
       const pdf = new jsPDF({
         orientation: img.width > img.height ? 'landscape' : 'portrait',
         unit: 'px',

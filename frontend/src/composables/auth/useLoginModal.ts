@@ -9,7 +9,7 @@ import { computed, onBeforeUnmount, ref, toRef, watch } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useRegisterRegionDetection } from '@/composables/auth/useRegisterRegionDetection'
-import zhAuth from '@/locales/messages/zh/auth'
+import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import { useAuthStore, useUIStore } from '@/stores'
 import { isBrowserLanguageSimplifiedChinese } from '@/utils/clientRegion'
 
@@ -150,7 +150,7 @@ export function useLoginModal(
       return ''
     }
     if (isBrowserLanguageSimplifiedChinese()) {
-      const full = zhAuth['auth.modal.acknowledgeOverseasScBrowser']
+      const full = translateForUiLocale('auth.modal.acknowledgeOverseasScBrowser', 'zh')
       if (typeof full === 'string' && full.trim() !== '') {
         return full
       }

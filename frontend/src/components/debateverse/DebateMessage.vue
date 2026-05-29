@@ -16,7 +16,7 @@ import kimiAvatar from '@/assets/kimi-avatar.png'
 import qwenAvatar from '@/assets/qwen-avatar.png'
 import userAvatar from '@/assets/user-avatar.png'
 import { useLanguage } from '@/composables/core/useLanguage'
-import { renderRichMarkdownHtml } from '@/composables/core/useMarkdown'
+import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'
 import type { DebateMessage as DebateMessageType } from '@/stores/debateverse'
 import { useDebateVerseStore } from '@/stores/debateverse'
 
@@ -26,6 +26,8 @@ const props = defineProps<{
 
 const store = useDebateVerseStore()
 const { t } = useLanguage()
+
+const { html: renderedContent } = useRenderedMarkdown(() => props.message.content)
 
 // ============================================================================
 // State
@@ -92,11 +94,6 @@ const roleDisplayName = computed(() => {
 
   const key = roleKeys[participant.value.role]
   return key ? t(key) : participant.value.role
-})
-
-const renderedContent = computed(() => {
-  if (!props.message.content) return ''
-  return renderRichMarkdownHtml(props.message.content)
 })
 
 const hasThinking = computed(() => props.message.thinking && props.message.thinking.length > 0)

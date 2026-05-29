@@ -104,6 +104,9 @@ export const useUIStore = defineStore('ui', () => {
    */
   const languagePolicyAllowZh = ref(true)
 
+  /** Guards async locale loads when the user toggles language rapidly. */
+  let languageSwitchSeq = 0
+
   // Getters
   const effectiveTheme = computed(() => {
     if (theme.value === 'system') {
@@ -288,7 +291,12 @@ export const useUIStore = defineStore('ui', () => {
         localStorage.setItem(PROMPT_LANGUAGE_KEY, matched)
       }
     }
+    languageSwitchSeq += 1
+    const seq = languageSwitchSeq
     void loadLocaleMessages(newLanguage).then(() => {
+      if (seq !== languageSwitchSeq) {
+        return
+      }
       setI18nLocale(newLanguage)
     })
   }

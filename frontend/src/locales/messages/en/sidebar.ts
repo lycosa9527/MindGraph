@@ -82,4 +82,11 @@ export default {
   'sidebar.templateResources': 'Templates',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': 'Account',
+  'sidebar.roleSuperAdmin': 'Super Admin',
+  'sidebar.rolePlatformAdmin': 'Admin',
+  'sidebar.roleExpert': 'Expert',
+  'sidebar.roleSchoolAdmin': 'School Admin',
+  'sidebar.roleSchoolEdition': 'School',
+  'sidebar.roleTrialEdition': 'Trial',
+  'sidebar.roleSuperMember': 'Super Member',
 } as const

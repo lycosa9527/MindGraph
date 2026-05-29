@@ -97,8 +97,24 @@ from .account_lockout import (
 )
 
 # Role exports
+from .role_constants import (
+    ALL_USER_ROLES,
+    VALID_ASSIGNABLE_ROLES,
+    normalize_role,
+    user_has_capability,
+)
 from .roles import (
     is_admin,
+    is_superadmin,
+    is_platform_bd,
+    is_expert,
+    is_school_admin,
+    is_teacher,
+    is_personal_trial,
+    is_personal_paid,
+    is_c2c_consumer,
+    is_b2b_org_member,
+    is_platform_level,
     is_manager,
     is_admin_or_manager,
     can_moderate_workshop_channel,
@@ -187,7 +203,21 @@ __all__ = [
     "reset_failed_attempts",
     "increment_failed_attempts",
     # Roles
+    "ALL_USER_ROLES",
+    "VALID_ASSIGNABLE_ROLES",
+    "normalize_role",
+    "user_has_capability",
     "is_admin",
+    "is_superadmin",
+    "is_platform_bd",
+    "is_expert",
+    "is_school_admin",
+    "is_teacher",
+    "is_personal_trial",
+    "is_personal_paid",
+    "is_c2c_consumer",
+    "is_b2b_org_member",
+    "is_platform_level",
     "is_manager",
     "is_admin_or_manager",
     "can_moderate_workshop_channel",

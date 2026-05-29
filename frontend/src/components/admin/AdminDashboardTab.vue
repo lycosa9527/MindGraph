@@ -7,12 +7,11 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { Connection, Document, Loading, TrendCharts, User } from '@element-plus/icons-vue'
 
-import { Chart, type ChartConfiguration, type TooltipItem, registerables } from 'chart.js'
+import type { Chart as ChartInstance } from 'chart.js'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
-
-Chart.register(...registerables)
+import { loadChartJs, type ChartConfiguration, type TooltipItem } from '@/utils/lazyChartJs'
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -49,7 +48,7 @@ const trendModalVisible = ref(false)
 const trendChartTitle = ref('')
 const trendChartLoading = ref(false)
 const trendChartRef = ref<HTMLCanvasElement | null>(null)
-let trendChartInstance: Chart<'line'> | null = null
+let trendChartInstance: ChartInstance<'line'> | null = null
 
 const periodCards = ref({
   today: '-',
@@ -164,7 +163,7 @@ async function showTrendChart(
     trendChartLoading.value = false
     await nextTick()
     await new Promise((r) => setTimeout(r, 50))
-    renderTrendChart(data, metric)
+    await renderTrendChart(data, metric)
     if (metric === 'tokens' && cardsRes.ok) {
       const tokenData = await cardsRes.json()
       const fmt = (p: { input_tokens?: number; output_tokens?: number }) => {
@@ -240,7 +239,7 @@ async function showOrganizationTrendChart(
     trendChartLoading.value = false
     await nextTick()
     await new Promise((r) => setTimeout(r, 50))
-    renderTrendChart(data, 'tokens')
+    await renderTrendChart(data, 'tokens')
     if (orgId != null) {
       const statsRes = await apiRequest(`/api/auth/admin/token-stats?organization_id=${orgId}`)
       if (statsRes.ok) {
@@ -305,7 +304,7 @@ async function showUserTokenTrend(
     trendChartLoading.value = false
     await nextTick()
     await new Promise((r) => setTimeout(r, 50))
-    renderTrendChart(data, 'tokens')
+    await renderTrendChart(data, 'tokens')
     periodCards.value = { today: '-', week: '-', month: '-', total: '-' }
   } catch {
     notify.error(t('admin.dashboardLoadError'))
@@ -313,10 +312,10 @@ async function showUserTokenTrend(
   }
 }
 
-function renderTrendChart(
+async function renderTrendChart(
   data: { data: Array<{ date: string; value: number; input?: number; output?: number }> },
   metric: MetricKey | 'tokens'
-) {
+): Promise<void> {
   if (!trendChartRef.value) return
 
   const rawData = data?.data ?? []
@@ -433,6 +432,7 @@ function renderTrendChart(
     },
   }
 
+  const Chart = await loadChartJs()
   trendChartInstance = new Chart(trendChartRef.value, config)
 }
 

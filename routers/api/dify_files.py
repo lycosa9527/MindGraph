@@ -14,12 +14,10 @@ from typing import Optional
 import logging
 
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_async_db
 from models import Messages, get_request_language
 from models.domain.auth import User
-from services.dify.org_mindmate_client import resolve_mindmate_dify_client_or_http
+from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short_lived
 from utils.auth import get_current_user_or_api_key
 
 
@@ -41,7 +39,6 @@ async def upload_file_to_dify(
     user_id: str = Form(...),
     x_language: Optional[str] = None,
     current_user: Optional[User] = Depends(get_current_user_or_api_key),
-    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Upload a file to Dify for use in chat messages.
@@ -60,8 +57,7 @@ async def upload_file_to_dify(
         mime_type: File MIME type
     """
     lang = get_request_language(x_language)
-    client = await resolve_mindmate_dify_client_or_http(
-        db,
+    client = await resolve_mindmate_dify_client_short_lived(
         _organization_id_for_user(current_user),
         detail=Messages.error("ai_not_configured", lang),
     )
@@ -118,15 +114,13 @@ async def upload_file_to_dify(
 async def get_dify_parameters(
     x_language: Optional[str] = None,
     current_user: Optional[User] = Depends(get_current_user_or_api_key),
-    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get Dify app parameters including opening_statement, suggested_questions,
     file upload settings, etc.
     """
     lang = get_request_language(x_language)
-    client = await resolve_mindmate_dify_client_or_http(
-        db,
+    client = await resolve_mindmate_dify_client_short_lived(
         _organization_id_for_user(current_user),
         detail=Messages.error("ai_not_configured", lang),
     )

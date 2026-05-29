@@ -1,5 +1,7 @@
 import type { LocaleCode } from '@/i18n/locales'
 import { UI_LOCALE_CODES } from '@/i18n/locales'
+import { isLocaleLoaded } from '@/i18n'
+import { registerLocaleLabelCacheInvalidator } from '@/i18n/localeLabelCache'
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import {
   getConceptMapFocusQuestionDefault,
@@ -24,21 +26,42 @@ export const VALID_DIAGRAM_TYPES: DiagramType[] = [
 
 export const MAX_HISTORY_SIZE = 50
 
+function localesForLabelCache(): LocaleCode[] {
+  return UI_LOCALE_CODES.filter((loc) => isLocaleLoaded(loc))
+}
+
 function placeholderStringsForLocales(fn: (lang: LocaleCode) => string): string[] {
-  return UI_LOCALE_CODES.map(fn)
+  return localesForLabelCache().map(fn)
 }
 
 function i18nPlaceholdersForAllLocales(key: string): string[] {
-  return UI_LOCALE_CODES.map((lang) => translateForUiLocale(key, lang))
+  return localesForLabelCache().map((lang) => translateForUiLocale(key, lang))
 }
 
-export const PLACEHOLDER_TEXTS = [
-  ...new Set([
-    ...i18nPlaceholdersForAllLocales('diagram.defaults.topic'),
-    ...i18nPlaceholdersForAllLocales('diagram.defaults.centralTopic'),
-    ...i18nPlaceholdersForAllLocales('diagram.defaults.rootTopic'),
-    ...i18nPlaceholdersForAllLocales('diagram.defaults.mainEvent'),
-    ...placeholderStringsForLocales(getConceptMapFocusQuestionDefault),
-    ...placeholderStringsForLocales(getConceptMapRootConceptText),
-  ]),
-]
+let cachedPlaceholderTexts: readonly string[] | null = null
+
+function buildPlaceholderTexts(): readonly string[] {
+  return [
+    ...new Set([
+      ...i18nPlaceholdersForAllLocales('diagram.defaults.topic'),
+      ...i18nPlaceholdersForAllLocales('diagram.defaults.centralTopic'),
+      ...i18nPlaceholdersForAllLocales('diagram.defaults.rootTopic'),
+      ...i18nPlaceholdersForAllLocales('diagram.defaults.mainEvent'),
+      ...placeholderStringsForLocales(getConceptMapFocusQuestionDefault),
+      ...placeholderStringsForLocales(getConceptMapRootConceptText),
+    ]),
+  ]
+}
+
+export function getPlaceholderTexts(): readonly string[] {
+  if (cachedPlaceholderTexts === null) {
+    cachedPlaceholderTexts = buildPlaceholderTexts()
+  }
+  return cachedPlaceholderTexts
+}
+
+function invalidatePlaceholderTextsCache(): void {
+  cachedPlaceholderTexts = null
+}
+
+registerLocaleLabelCacheInvalidator(invalidatePlaceholderTextsCache)

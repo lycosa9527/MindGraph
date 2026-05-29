@@ -35,6 +35,7 @@ from sqlalchemy.orm import Session
 
 from config.database import SyncSessionLocal
 from models.domain.auth import User
+from utils.auth.role_constants import TEACHER_ROLES
 from models.domain.diagrams import Diagram
 from models.domain.user_activity_log import UserActivityLog
 
@@ -67,10 +68,10 @@ def backfill_diagram_edit(db: Session, dry_run: bool, force: bool) -> int:
     cutoff = (beijing_now - timedelta(days=90)).replace(hour=0, minute=0, second=0, microsecond=0)
     cutoff_utc = cutoff.astimezone(timezone.utc).replace(tzinfo=None)
 
-    teachers = db.query(User.id).filter(User.role == "user").all()
+    teachers = db.query(User.id).filter(User.role.in_(tuple(TEACHER_ROLES))).all()
     teacher_ids = [r.id for r in teachers]
     if not teacher_ids:
-        print("No teachers (role=user) found.")
+        print("No teachers (role=teacher) found.")
         return 0
 
     diagrams_updated = (

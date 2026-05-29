@@ -27,6 +27,7 @@ from models.domain.user_activity_log import UserActivityLog
 from models.domain.user_usage_stats import UserUsageStats
 from models.domain.teacher_usage_config import TeacherUsageConfig
 from services.teacher_usage_stats import compute_and_upsert_user_usage_stats_async
+from utils.auth.role_constants import TEACHER_ROLES
 
 
 async def _create_tables() -> None:
@@ -44,13 +45,13 @@ async def _create_tables() -> None:
 
 
 async def _run_backfill() -> None:
-    """Backfill user_usage_stats for all teachers (role=user)."""
+    """Backfill user_usage_stats for all teachers."""
     print("Creating tables if not exist...")
     await _create_tables()
     print("Tables ready.")
 
     async with AsyncSessionLocal() as db:
-        result = await db.execute(select(User).where(User.role == "user"))
+        result = await db.execute(select(User).where(User.role.in_(tuple(TEACHER_ROLES))))
         teachers = list(result.scalars().all())
     total = len(teachers)
 

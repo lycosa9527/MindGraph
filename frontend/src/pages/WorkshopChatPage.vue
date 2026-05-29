@@ -23,6 +23,7 @@ import TeachingGroupLanding from '@/components/workshop-chat/TeachingGroupLandin
 import WorkshopGearMenu from '@/components/workshop-chat/WorkshopGearMenu.vue'
 import WorkshopInboxWelcome from '@/components/workshop-chat/WorkshopInboxWelcome.vue'
 import WorkshopPersonalMenu from '@/components/workshop-chat/WorkshopPersonalMenu.vue'
+import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useWorkshopChatComposable } from '@/composables/workshop/useWorkshopChat'
 import { intlLocaleForUiCode } from '@/i18n'
@@ -729,6 +730,7 @@ async function applyWorkshopRouteFromQuery(): Promise<void> {
 }
 
 onMounted(async () => {
+  void ensureMarkdownRenderer()
   store.loading = true
   applyOrgScopeFromProfile()
   if (isAdmin.value) {

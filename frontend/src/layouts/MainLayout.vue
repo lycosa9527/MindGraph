@@ -3,17 +3,29 @@
  * MainLayout - Layout with sidebar and main content area
  * Used for MindMate/MindGraph main page
  */
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { Lock, PanelLeftOpen } from 'lucide-vue-next'
 
 import { AppSidebar } from '@/components/sidebar'
-import { useLanguage } from '@/composables'
+import { useKittyDesktopActionPoll, useLanguage } from '@/composables'
+import { preloadMarkdownRendererForRoute } from '@/composables/core/useMarkdown'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
 
+useKittyDesktopActionPoll()
+
 const route = useRoute()
+
+watch(
+  () => route.path,
+  (path) => {
+    preloadMarkdownRendererForRoute(path)
+  },
+  { immediate: true }
+)
+
 const authStore = useAuthStore()
 const uiStore = useUIStore()
 const { t } = useLanguage()

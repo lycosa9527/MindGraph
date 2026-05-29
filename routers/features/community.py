@@ -56,7 +56,7 @@ from services.redis.cache.redis_community_cache import (
     set_cached_list,
     set_cached_post,
 )
-from utils.auth import get_current_user
+from utils.auth import get_current_user, is_school_admin, is_superadmin
 
 logger = logging.getLogger(__name__)
 
@@ -187,9 +187,9 @@ def _can_edit_post(post: CommunityPost, current_user: User) -> bool:
     """
     if post.author_id == current_user.id:
         return True
-    if getattr(current_user, "role", None) in ("admin", "superadmin"):
+    if is_superadmin(current_user):
         return True
-    if getattr(current_user, "role", None) == "manager" and current_user.organization_id:
+    if is_school_admin(current_user) and current_user.organization_id:
         author_org = getattr(post.author, "organization_id", None) if post.author else None
         return author_org == current_user.organization_id
     return False
@@ -202,9 +202,9 @@ def _can_delete_comment(comment: CommunityPostComment, current_user: User) -> bo
     """
     if comment.user_id == current_user.id:
         return True
-    if getattr(current_user, "role", None) in ("admin", "superadmin"):
+    if is_superadmin(current_user):
         return True
-    if getattr(current_user, "role", None) == "manager" and current_user.organization_id:
+    if is_school_admin(current_user) and current_user.organization_id:
         author_org = getattr(comment.user, "organization_id", None) if comment.user else None
         return author_org == current_user.organization_id
     return False

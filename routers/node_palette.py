@@ -45,7 +45,7 @@ from models.requests.requests_thinking import (
     NodePaletteCleanupRequest,
 )
 from services.redis.redis_activity_tracker import get_activity_tracker
-from utils.auth import get_current_user
+from utils.auth import get_current_user, is_teacher
 from utils.placeholder import is_placeholder_text
 
 router = APIRouter(tags=["thinking"])
@@ -212,7 +212,7 @@ async def start_node_palette(
             and isinstance(stage_data, dict)
             and bool(stage_data.get("bootstrap_domains"))
         )
-        if current_user and getattr(current_user, "role", None) == "user" and is_concept_map_bootstrap:
+        if current_user and is_teacher(current_user) and is_concept_map_bootstrap:
             try:
                 log_entry = UserActivityLog(
                     user_id=current_user.id,
