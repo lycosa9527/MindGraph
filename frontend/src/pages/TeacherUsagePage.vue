@@ -15,6 +15,10 @@ import {
 } from '@/composables/teacherUsage/useTeacherUsagePage'
 import { formatUserNumber } from '@/utils/intlDisplay'
 
+defineProps<{
+  embedded?: boolean
+}>()
+
 const page = useTeacherUsagePage()
 provide(teacherUsageInjectionKey, page)
 
@@ -49,9 +53,13 @@ const {
 </script>
 
 <template>
-  <div class="teacher-usage-page flex-1 flex flex-col bg-stone-50 overflow-hidden">
+  <div
+    class="teacher-usage-page flex-1 flex flex-col bg-stone-50 overflow-hidden"
+    :class="{ 'teacher-usage-page--embedded': embedded }"
+  >
     <!-- Header (same as Library, Gewe modules) -->
     <div
+      v-if="!embedded"
       class="teacher-usage-header h-14 px-4 flex items-center justify-between bg-white border-b border-stone-200"
     >
       <h1 class="text-sm font-semibold text-stone-900">
@@ -562,6 +570,16 @@ const {
 <style scoped>
 .teacher-usage-page {
   min-height: 0;
+}
+
+.teacher-usage-page--embedded {
+  background: transparent;
+}
+
+.teacher-usage-page--embedded .teacher-usage-content {
+  padding-top: 0;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .teacher-usage-content {

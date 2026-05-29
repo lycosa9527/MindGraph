@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Admin Roles Tab - List superadmins and school admins, assign all seven roles
+ * Admin Roles Tab — assign all seven roles for the unified management panel.
  */
 import { computed, onMounted, ref, watch } from 'vue'
 

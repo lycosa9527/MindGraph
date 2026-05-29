@@ -7,6 +7,10 @@
 @import 'tailwindcss/theme' layer(theme);
 @import 'tailwindcss/utilities' layer(utilities);
 
+/* App sources only — avoids Tailwind re-scanning locale trees and forcing full reloads on i18n edits. */
+@source "../**/*.{vue,ts,tsx}";
+@source not "../locales/messages/**";
+
 /* Tailwind 4 Theme Configuration (migrated from tailwind.config.js) */
 @theme {
   /* Primary color palette */

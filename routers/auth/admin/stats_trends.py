@@ -24,10 +24,12 @@ from models.domain.auth import User, Organization
 from models.domain.messages import Language, Messages
 from models.domain.token_usage import TokenUsage
 from services.auth.school_dashboard_logger import school_dashboard_extra
+from utils.auth.admin_panel_permissions import CAP_TAB_DATA_CENTER_VIEW
+from utils.auth.admin_scope import AdminScope
 from ..dependencies import (
     get_language_dependency,
     require_admin,
-    require_admin_or_manager,
+    require_panel_capability,
 )
 from .school_scope import resolve_school_dashboard_org_id
 from ..helpers import get_beijing_now, BEIJING_TIMEZONE
@@ -282,13 +284,13 @@ async def get_stats_trends_admin(
     return {"metric": metric, "days": days, "data": trends_data}
 
 
-@router.get("/admin/stats/school/trends", dependencies=[Depends(require_admin_or_manager)])
+@router.get("/admin/stats/school/trends")
 async def get_school_token_trends(
     request: Request,
     organization_id: Optional[int] = None,
     days: Optional[int] = 30,
     hourly: bool = False,
-    current_user: User = Depends(require_admin_or_manager),
+    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_DATA_CENTER_VIEW)),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
@@ -296,14 +298,14 @@ async def get_school_token_trends(
     Get token trends for a school (ADMIN or MANAGER).
     Same as /admin/stats/trends/organization but with org access control.
     """
-    org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
+    org_id = resolve_school_dashboard_org_id(organization_id, scope.actor, lang)
     org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalars().first()
     if not org:
         logger.warning(
             "[SchoolDashboard] organization missing for school token trends",
             extra=school_dashboard_extra(
                 event="school_trends_org_not_found",
-                actor_id=current_user.id,
+                actor_id=scope.actor.id,
                 org_id=org_id,
             ),
         )
@@ -317,7 +319,7 @@ async def get_school_token_trends(
         organization_name=None,
         days=days,
         hourly=hourly,
-        _current_user=current_user,
+        _current_user=scope.actor,
         db=db,
         lang=lang,
     )

@@ -146,39 +146,11 @@ const modules = computed<ModuleItem[]>(() => [
     visible: canWorkshop.value,
   },
   {
-    key: 'smart-response',
-    labelKey: 'sidebar.smartResponse',
-    route: '/smart-response',
-    icon: Watch,
-    visible: isAdminOrManager.value && featureSmartResponse.value,
-  },
-  {
-    key: 'teacher-usage',
-    labelKey: 'sidebar.teacherUsage',
-    route: '/teacher-usage',
-    icon: TrendCharts,
-    visible: isAdmin.value && featureTeacherUsage.value,
-  },
-  {
-    key: 'school-dashboard',
-    labelKey: 'admin.schoolDashboard',
-    route: '/school-dashboard',
-    icon: OfficeBuilding,
-    visible: isAdminOrManager.value,
-  },
-  {
-    key: 'gewe',
-    labelKey: 'Gewe',
-    route: '/gewe',
-    icon: ChatDotRound,
-    visible: isAdmin.value && featureGewe.value,
-  },
-  {
     key: 'admin',
     labelKey: 'admin.title',
     route: '/admin',
     icon: Settings,
-    visible: isAdmin.value,
+    visible: authStore.isManagementPanelUser,
   },
 ])
 

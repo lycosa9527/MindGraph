@@ -1,9 +1,13 @@
 <template>
-  <div class="smart-response-page">
+  <div
+    class="smart-response-page"
+    :class="{ 'smart-response-page--embedded': embedded }"
+  >
     <el-card>
       <template #header>
         <div class="page-header">
-          <h2>Smart Response 智回</h2>
+          <h2 v-if="!embedded">Smart Response 智回</h2>
+          <span v-else class="font-medium">Smart Response 智回</span>
           <el-button
             type="primary"
             :disabled="!selectedDiagramId"
@@ -117,6 +121,10 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import WatchAssignmentModal from '@/components/smart-response/WatchAssignmentModal.vue'
 import { type Watch, useSmartResponseStore } from '@/stores/smartResponse'
 
+defineProps<{
+  embedded?: boolean
+}>()
+
 const store = useSmartResponseStore()
 const watches = computed(() => store.watches)
 const isLoading = computed(() => store.isLoading)
@@ -178,6 +186,10 @@ async function fetchWatches() {
 <style scoped>
 .smart-response-page {
   padding: 20px;
+}
+
+.smart-response-page--embedded {
+  padding: 0;
 }
 
 .page-header {

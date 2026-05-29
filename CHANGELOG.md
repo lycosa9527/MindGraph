@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.23] - 2026-05-29
+
+### Added
+
+- **Admin — unified management panel** — Single `/admin` 管理面板 with six capability-gated tabs (数据中心, 用户管理, 组织管理, 邀请用户, 订单与付费, 系统设置) for roles superadmin, platform_bd, expert, and school_admin; legacy admin URLs redirect into the panel.
+- **Admin — row-level security** — `AdminScope`, `ROLE_PANEL_CAPABILITIES`, and `GET /api/auth/admin/capabilities` enforce org-scoped data for school_admin and read-only global access for platform_bd; roles teacher / personal_* are denied panel access.
+- **Frontend — `useAdminAccess` / `adminCapabilities.ts`** — Tab visibility and org scope mirror backend capabilities at runtime.
+- **Tests** — Admin scope unit tests and RLS HTTP coverage ([`test_admin_scope.py`](tests/auth/test_admin_scope.py), [`test_admin_rls_http.py`](tests/auth/test_admin_rls_http.py)); Vitest [`adminCapabilities.spec.ts`](frontend/tests/adminCapabilities.spec.ts).
+
+### Changed
+
+- **Sidebar** — Removed fixed admin block (Gewe, MindBot, Smart Response, Teacher Usage, school dashboard); one **管理面板** entry in main nav for management roles.
+- **Admin APIs** — School stats and school user routes use panel capability checks and `AdminScope` org resolution.
+- **Frontend — admin layout** — Removed `AdminLayout.vue`; admin pages use `DefaultLayout` with tabbed panel components ([`AdminPage.vue`](frontend/src/pages/AdminPage.vue), [`AdminDataCenterTab.vue`](frontend/src/components/admin/AdminDataCenterTab.vue), [`AdminUsersPanel.vue`](frontend/src/components/admin/AdminUsersPanel.vue)).
+- **Frontend — Vite dev server** — HMR WebSocket defaults to `localhost` when binding `0.0.0.0`; optional WSL `/mnt/c` file polling via `VITE_USE_POLLING` ([`vite.config.ts`](frontend/vite.config.ts)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.23).
+
 ## [5.117.22] - 2026-05-29
 
 ### Added

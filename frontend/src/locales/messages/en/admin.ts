@@ -668,6 +668,21 @@ export default {
   'admin.thisMonth': 'This Month',
   'admin.thisWeek': 'This Week',
   'admin.title': 'Admin Panel',
+  'admin.dataCenter': 'Data Center',
+  'admin.dataCenterOperations': 'Operations',
+  'admin.dataCenterUsage': 'Overall Usage',
+  'admin.inviteUsers': 'Invite Users',
+  'admin.billing': 'Orders & Billing',
+  'admin.systemSettings': 'System Settings',
+  'admin.readOnly': 'Read-only',
+  'admin.dataCenterGlobal': 'Platform (all schools)',
+  'admin.inviteUsersPlatformHint':
+    'Personal trial invitations will be available here in a future release.',
+  'admin.inviteUsersComingSoonTitle': 'Coming soon',
+  'admin.inviteUsersComingSoon':
+    'Personal trial (C2C) invite management is not available yet. You can still use other tabs you have access to.',
+  'admin.inviteUsersSelectSchool':
+    'Select a school to view and copy its organization invitation code.',
   'admin.today': 'Today',
   'admin.todayRegistrations': "Today's Registrations",
   'admin.tokenStatsLoadError': 'Failed to load token stats',

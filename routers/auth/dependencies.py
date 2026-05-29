@@ -14,7 +14,7 @@ Proprietary License
 import logging
 from typing import Optional
 
-from fastapi import Depends, Header, HTTPException, Request, status
+from fastapi import Depends, Header, HTTPException, Query, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError
 
@@ -31,11 +31,13 @@ from utils.auth import (
     is_superadmin,
     user_has_feature_access,
 )
-from utils.auth.role_constants import (
-    CAPABILITY_GLOBAL_DASHBOARD_READONLY,
-    CAPABILITY_PERSONAL_TRIAL_INVITE,
-    user_has_capability,
+from utils.auth.admin_scope import AdminScope, build_admin_scope
+from utils.auth.admin_panel_permissions import (
+    CAP_SCOPE_GLOBAL,
+    CAP_TAB_DATA_CENTER_VIEW,
+    CAP_TAB_INVITES_EDIT,
 )
+from utils.auth.roles import is_management_panel_user
 
 
 # Optional security scheme (auto_error=False means no 401 if missing)
@@ -229,19 +231,64 @@ def require_trial_invite_capability(
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ) -> User:
-    """Scaffold: superadmin, platform_bd, or expert may invite personal trial users."""
-    if not user_has_capability(current_user, CAPABILITY_PERSONAL_TRIAL_INVITE):
+    """Superadmin, platform_bd, or expert may invite personal trial users."""
+    scope = build_admin_scope(current_user, lang=lang)
+    if not scope.has_capability(CAP_TAB_INVITES_EDIT):
         error_msg = Messages.error("admin_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    scope.assert_mutation_allowed(lang)
     return current_user
 
 
-def require_global_dashboard_readonly(
+def require_management_panel(
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ) -> User:
-    """Scaffold: superadmin or platform_bd may view read-only global dashboard."""
-    if not user_has_capability(current_user, CAPABILITY_GLOBAL_DASHBOARD_READONLY):
+    """Require access to the unified management panel (roles 1–4)."""
+    if not is_management_panel_user(current_user):
         error_msg = Messages.error("admin_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     return current_user
+
+
+def get_admin_scope(
+    organization_id: Optional[int] = Query(None),
+    current_user: User = Depends(require_management_panel),
+    lang: Language = Depends(get_language_dependency),
+) -> AdminScope:
+    """Resolve AdminScope for management panel API handlers."""
+    return build_admin_scope(current_user, organization_id=organization_id, lang=lang)
+
+
+def require_panel_capability(capability: str):
+    """Factory: dependency requiring a specific panel capability."""
+
+    def _dependency(
+        scope: AdminScope = Depends(get_admin_scope),
+        lang: Language = Depends(get_language_dependency),
+    ) -> AdminScope:
+        scope.assert_capability(capability, lang)
+        return scope
+
+    return _dependency
+
+
+def require_global_data_center_read(
+    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_DATA_CENTER_VIEW)),
+    lang: Language = Depends(get_language_dependency),
+) -> AdminScope:
+    """Global platform stats: superadmin or platform_bd (scope.global), read-only for BD."""
+    if CAP_SCOPE_GLOBAL not in scope.capabilities:
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    return scope
+
+
+def require_admin_stats_read(
+    scope: AdminScope = Depends(require_global_data_center_read),
+) -> AdminScope:
+    """Deprecated alias — use require_global_data_center_read."""
+    return scope
+
+
+require_global_dashboard_readonly = require_global_data_center_read

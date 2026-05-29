@@ -75,7 +75,7 @@ function goToAdmin(): void {
                   {{ t('editor.newDiagram') }}
                 </el-dropdown-item>
                 <el-dropdown-item
-                  v-if="authStore.isAdmin"
+                  v-if="authStore.isManagementPanelUser"
                   @click="goToAdmin"
                 >
                   Admin

@@ -7,6 +7,14 @@ import { useRouter } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useAdminPanelTabs } from '@/composables/admin/useAdminPanelTabs'
+import {
+  DATA_CENTER_VIEWS,
+  defaultDataCenterView,
+  isDataCenterView,
+  type DataCenterView,
+} from '@/composables/admin/adminDataCenterViews'
+import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
 import { useAskOnceStore } from '@/stores/askonce'
@@ -64,12 +72,15 @@ export function useAppSidebar() {
     if (path.startsWith('/course')) return 'course'
     if (path.startsWith('/community')) return 'community'
     if (path.startsWith('/library')) return 'library'
-    if (path.startsWith('/gewe')) return 'gewe'
-    if (path.startsWith('/school-dashboard')) return 'school-dashboard'
-    if (path.startsWith('/admin/mindbot')) return 'mindbot'
-    if (path.startsWith('/admin')) return 'admin'
-    if (path.startsWith('/smart-response')) return 'smart-response'
-    if (path.startsWith('/teacher-usage')) return 'teacher-usage'
+    if (
+      path.startsWith('/gewe') ||
+      path.startsWith('/school-dashboard') ||
+      path.startsWith('/smart-response') ||
+      path.startsWith('/teacher-usage') ||
+      path.startsWith('/admin')
+    ) {
+      return 'admin'
+    }
     if (path.startsWith('/workshop-chat')) return 'workshop-chat'
     return 'mindmate'
   })
@@ -81,6 +92,42 @@ export function useAppSidebar() {
   })
   const isAdminOrManager = computed(() => authStore.isAdminOrManager)
   const isAdmin = computed(() => authStore.isAdmin)
+  const isManagementPanelUser = computed(() => authStore.isManagementPanelUser)
+  const { tabs: adminNavTabs, loadCapabilities: loadAdminNavCapabilities } = useAdminPanelTabs({
+    loadOnMount: false,
+  })
+  const { can } = useAdminAccess()
+  const expandedPanel = ref<string | null>(null)
+  const dataCenterNavExpanded = ref(true)
+
+  const currentAdminTab = computed((): string | null => {
+    const path = router.currentRoute.value.path
+    if (!path.startsWith('/admin')) {
+      return null
+    }
+    const tab = router.currentRoute.value.query.tab
+    return typeof tab === 'string' && tab.trim() ? tab : 'data_center'
+  })
+
+  const managementPanelExpanded = computed(() => expandedPanel.value === 'admin')
+
+  const dataCenterNavViews = computed(() =>
+    DATA_CENTER_VIEWS.map((view) => ({
+      ...view,
+      label: t(view.labelKey),
+    }))
+  )
+
+  const currentDataCenterView = computed((): DataCenterView | null => {
+    if (currentAdminTab.value !== 'data_center') {
+      return null
+    }
+    const raw = router.currentRoute.value.query.view
+    if (typeof raw === 'string' && isDataCenterView(raw)) {
+      return raw
+    }
+    return defaultDataCenterView(can('scope.global'))
+  })
 
   const canAccessWorkshopChat = computed(() => {
     if (!featureWorkshopChat.value) {
@@ -160,16 +207,76 @@ export function useAppSidebar() {
     course: '/course',
     community: '/community',
     library: '/library',
-    gewe: '/gewe',
-    'school-dashboard': '/school-dashboard',
     admin: '/admin',
-    'smart-response': '/smart-response',
-    'teacher-usage': '/teacher-usage',
     'workshop-chat': '/workshop-chat',
-    mindbot: '/admin/mindbot',
+  }
+
+  function navigateAdminTab(tabName: string, view?: string): void {
+    expandedPanel.value = 'admin'
+    if (tabName === 'data_center') {
+      dataCenterNavExpanded.value = true
+    }
+    const query: Record<string, string> = { tab: tabName }
+    if (tabName === 'data_center') {
+      query.view = view ?? defaultDataCenterView(can('scope.global'))
+    }
+    const orgId = router.currentRoute.value.query.organization_id
+    if (typeof orgId === 'string' && orgId.trim()) {
+      query.organization_id = orgId
+    }
+    void router.push({ path: '/admin', query })
+  }
+
+  function navigateDataCenterView(view: DataCenterView): void {
+    navigateAdminTab('data_center', view)
+  }
+
+  function toggleDataCenterNav(): void {
+    if (currentAdminTab.value === 'data_center') {
+      dataCenterNavExpanded.value = !dataCenterNavExpanded.value
+      return
+    }
+    dataCenterNavExpanded.value = true
+    navigateAdminTab('data_center')
+  }
+
+  function toggleManagementPanel(): void {
+    if (isCollapsed.value) {
+      const tab = currentAdminTab.value ?? adminNavTabs.value[0]?.name ?? 'data_center'
+      if (tab === 'data_center') {
+        navigateAdminTab(tab, currentDataCenterView.value ?? undefined)
+      } else {
+        navigateAdminTab(tab)
+      }
+      return
+    }
+    if (currentMode.value === 'admin') {
+      expandedPanel.value = expandedPanel.value === 'admin' ? null : 'admin'
+      return
+    }
+    expandedPanel.value = 'admin'
+    const tab = adminNavTabs.value[0]?.name ?? 'data_center'
+    navigateAdminTab(tab)
+  }
+
+  function adminSubItemClass(tabName: string) {
+    return {
+      'is-active': currentAdminTab.value === tabName,
+    }
+  }
+
+  function dataCenterSubItemClass(view: DataCenterView) {
+    return {
+      'is-active':
+        currentAdminTab.value === 'data_center' && currentDataCenterView.value === view,
+    }
   }
 
   function setMode(index: string) {
+    if (index === 'admin') {
+      toggleManagementPanel()
+      return
+    }
     if (currentMode.value === index) {
       expandedPanel.value = expandedPanel.value === index ? null : index
       return
@@ -239,7 +346,6 @@ export function useAppSidebar() {
     })
   }
 
-  const expandedPanel = ref<string | null>(null)
   const workshopExpanded = computed(() => expandedPanel.value === 'workshop-chat')
 
   function navItemClass(mode: string) {
@@ -271,6 +377,38 @@ export function useAppSidebar() {
     { immediate: true }
   )
 
+  watch(
+    () => router.currentRoute.value.path,
+    (path) => {
+      if (path.startsWith('/admin')) {
+        expandedPanel.value = 'admin'
+      } else if (expandedPanel.value === 'admin') {
+        expandedPanel.value = null
+      }
+    },
+    { immediate: true }
+  )
+
+  watch(
+    currentAdminTab,
+    (tab) => {
+      if (tab === 'data_center') {
+        dataCenterNavExpanded.value = true
+      }
+    },
+    { immediate: true }
+  )
+
+  watch(
+    isManagementPanelUser,
+    (allowed) => {
+      if (allowed) {
+        void loadAdminNavCapabilities()
+      }
+    },
+    { immediate: true }
+  )
+
   return {
     t,
     router,
@@ -296,6 +434,19 @@ export function useAppSidebar() {
     isAuthenticated,
     isAdminOrManager,
     isAdmin,
+    isManagementPanelUser,
+    adminNavTabs,
+    currentAdminTab,
+    dataCenterNavViews,
+    dataCenterNavExpanded,
+    currentDataCenterView,
+    navigateDataCenterView,
+    toggleDataCenterNav,
+    dataCenterSubItemClass,
+    managementPanelExpanded,
+    navigateAdminTab,
+    toggleManagementPanel,
+    adminSubItemClass,
     canAccessWorkshopChat,
     canAccessMindbot,
     mindMateNavLabel,

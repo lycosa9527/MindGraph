@@ -1,112 +1,69 @@
 <script setup lang="ts">
 /**
- * Admin Page - Admin dashboard with tabs
- *
- * Access levels:
- * - Admin: Full access to all organizations' data
- * - Manager: Access to their organization's data only
+ * Admin Page — unified management panel; tab navigation lives in the sidebar.
  */
-import type { Component } from 'vue'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import type { TabsInstance } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
 
-import {
-  ChatLineRound,
-  Coin,
-  DataAnalysis,
-  Microphone,
-  Odometer,
-  Plus,
-  Reading,
-  School,
-  Setting,
-  ShoppingCart,
-  Ticket,
-  User,
-  UserFilled,
-} from '@element-plus/icons-vue'
-
-import AdminDashboardTab from '@/components/admin/AdminDashboardTab.vue'
-import AdminDatabaseTab from '@/components/admin/AdminDatabaseTab.vue'
-import AdminFeaturesTab from '@/components/admin/AdminFeaturesTab.vue'
-import AdminKittyLlmopsTab from '@/components/admin/AdminKittyLlmopsTab.vue'
-import AdminLibraryTab from '@/components/admin/AdminLibraryTab.vue'
+import AdminDataCenterTab from '@/components/admin/AdminDataCenterTab.vue'
+import AdminInviteUsersTab from '@/components/admin/AdminInviteUsersTab.vue'
 import AdminMarketsTab from '@/components/admin/AdminMarketsTab.vue'
-import AdminPerformanceTab from '@/components/admin/AdminPerformanceTab.vue'
-import AdminRolesTab from '@/components/admin/AdminRolesTab.vue'
 import AdminSchoolsTab from '@/components/admin/AdminSchoolsTab.vue'
-import AdminTokensTab from '@/components/admin/AdminTokensTab.vue'
-import AdminUsersTab from '@/components/admin/AdminUsersTab.vue'
-import GeweLoginComponent from '@/components/admin/GeweLoginComponent.vue'
+import AdminSystemSettingsTab from '@/components/admin/AdminSystemSettingsTab.vue'
+import AdminUsersPanel from '@/components/admin/AdminUsersPanel.vue'
+import { useAdminAccess } from '@/composables/admin/useAdminAccess'
+import {
+  DATA_CENTER_VIEWS,
+  defaultDataCenterView,
+  isDataCenterView,
+} from '@/composables/admin/adminDataCenterViews'
+import { useAdminPanelTabs } from '@/composables/admin/useAdminPanelTabs'
 import { useLanguage } from '@/composables'
-import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useAuthStore } from '@/stores'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-const { featureGewe, featureLibrary, featureMarkets } = useFeatureFlags()
 const { t } = useLanguage()
+const { can, loadCapabilities, isReadOnly } = useAdminAccess()
+const { tabs } = useAdminPanelTabs({ loadOnMount: false })
 
-const activeTab = ref((route.query.tab as string) || 'dashboard')
-const tabsRef = ref<TabsInstance>()
+const activeTab = ref((route.query.tab as string) || 'data_center')
 const schoolsTabRef = ref<InstanceType<typeof AdminSchoolsTab> | null>(null)
 
-const isAdmin = computed(() => authStore.isAdmin)
+const activeDataCenterViewLabel = computed(() => {
+  if (activeTab.value !== 'data_center') {
+    return null
+  }
+  const raw = route.query.view
+  const viewKey =
+    typeof raw === 'string' && isDataCenterView(raw)
+      ? raw
+      : defaultDataCenterView(can('scope.global'))
+  const match = DATA_CENTER_VIEWS.find((view) => view.name === viewKey)
+  return match ? t(match.labelKey) : null
+})
 
-const showSchoolsCreateButton = computed(() => isAdmin.value && activeTab.value === 'schools')
+const activeTabLabel = computed(() => {
+  if (activeDataCenterViewLabel.value) {
+    return activeDataCenterViewLabel.value
+  }
+  const match = tabs.value.find((tab) => tab.name === activeTab.value)
+  return match?.label ?? t('admin.title')
+})
+
+const showSchoolsCreateButton = computed(
+  () =>
+    authStore.isAdmin &&
+    activeTab.value === 'organizations' &&
+    can('tab.organizations.edit')
+)
 
 function onHeaderCreateSchool(): void {
   schoolsTabRef.value?.openCreateModal()
 }
-
-const allTabsConfig: ReadonlyArray<{
-  name: string
-  labelKey: string
-  icon: Component
-  adminOnly: boolean
-  allowManager?: boolean
-}> = [
-  { name: 'dashboard', labelKey: 'admin.dashboard', icon: DataAnalysis, adminOnly: false },
-  { name: 'users', labelKey: 'admin.users', icon: User, adminOnly: false },
-  { name: 'schools', labelKey: 'admin.schools', icon: School, adminOnly: true },
-  { name: 'roles', labelKey: 'admin.roleControl', icon: UserFilled, adminOnly: true },
-  { name: 'tokens', labelKey: 'admin.tokens', icon: Ticket, adminOnly: true },
-  { name: 'features', labelKey: 'admin.featuresTab', icon: Setting, adminOnly: true },
-  { name: 'kitty_llmops', labelKey: 'admin.kittyLlmopsTab', icon: Microphone, adminOnly: true },
-  { name: 'library', labelKey: 'admin.library', icon: Reading, adminOnly: true },
-  { name: 'markets', labelKey: 'admin.markets', icon: ShoppingCart, adminOnly: true },
-  { name: 'database', labelKey: 'admin.database.tab', icon: Coin, adminOnly: true },
-  { name: 'performance', labelKey: 'admin.performance.tab', icon: Odometer, adminOnly: true },
-  { name: 'gewe', labelKey: 'admin.geweWechat', icon: ChatLineRound, adminOnly: true },
-]
-
-const tabs = computed(() => {
-  let visible = allTabsConfig
-  if (!isAdmin.value) {
-    visible = visible.filter((tab) => {
-      if (!tab.adminOnly) {
-        return true
-      }
-      if (tab.allowManager && authStore.isManager) {
-        return true
-      }
-      return false
-    })
-  }
-  if (!featureGewe.value) {
-    visible = visible.filter((tab) => tab.name !== 'gewe')
-  }
-  if (!featureLibrary.value) {
-    visible = visible.filter((tab) => tab.name !== 'library')
-  }
-  if (!featureMarkets.value) {
-    visible = visible.filter((tab) => tab.name !== 'markets')
-  }
-  return visible.map((tab) => ({ ...tab, label: t(tab.labelKey) }))
-})
 
 watch(
   () => route.query.tab,
@@ -117,34 +74,39 @@ watch(
   }
 )
 
-function scheduleTabBarUpdate(): void {
-  void nextTick(() => {
-    tabsRef.value?.tabNavRef?.tabBarRef?.update()
-  })
-}
-
 watch(activeTab, (tab) => {
   const current = route.query.tab as string
-  if (tab !== current) {
-    router.replace({ query: { ...route.query, tab } })
+  const query: Record<string, string | string[]> = { ...route.query, tab }
+  if (tab !== 'settings') {
+    delete query.subtab
   }
-  scheduleTabBarUpdate()
+  if (tab !== 'data_center') {
+    delete query.view
+  } else if (typeof query.view !== 'string' || !isDataCenterView(query.view)) {
+    query.view = defaultDataCenterView(can('scope.global'))
+  }
+  if (tab !== current || route.query.view !== query.view) {
+    router.replace({ query })
+  }
 })
-
-watch(() => tabs.value.map((tab) => `${tab.name}:${tab.label}`).join('|'), scheduleTabBarUpdate)
 
 watch(
   () => tabs.value.map((tab) => tab.name),
   (names) => {
+    if (names.length === 0) {
+      return
+    }
     if (!names.includes(activeTab.value)) {
-      activeTab.value = 'dashboard'
-      void router.replace({ query: { ...route.query, tab: 'dashboard' } })
+      activeTab.value = names[0]
+      void router.replace({ query: { ...route.query, tab: names[0] } })
     }
   },
   { immediate: true }
 )
 
-onMounted(scheduleTabBarUpdate)
+onMounted(async () => {
+  await loadCapabilities()
+})
 </script>
 
 <template>
@@ -153,7 +115,10 @@ onMounted(scheduleTabBarUpdate)
       class="admin-header h-14 px-4 flex items-center justify-between gap-3 bg-white border-b border-gray-200 shrink-0"
     >
       <h1 class="text-sm font-semibold text-gray-900 truncate min-w-0">
-        {{ isAdmin ? t('admin.title') : t('admin.orgManagement') }}
+        {{ activeTabLabel }}
+        <span v-if="isReadOnly" class="text-gray-400 font-normal ml-2">
+          ({{ t('admin.readOnly') }})
+        </span>
       </h1>
       <el-button
         v-if="showSchoolsCreateButton"
@@ -167,75 +132,23 @@ onMounted(scheduleTabBarUpdate)
     </div>
 
     <div class="admin-body flex-1 overflow-y-auto">
-      <div class="px-6 pt-4 pb-6">
-        <el-tabs
-          ref="tabsRef"
-          v-model="activeTab"
-          class="admin-tabs"
-        >
-          <el-tab-pane
-            v-for="tab in tabs"
-            :key="tab.name"
-            :name="tab.name"
-          >
-            <template #label>
-              <span class="flex items-center gap-2">
-                <el-icon><component :is="tab.icon" /></el-icon>
-                <span>{{ tab.label }}</span>
-              </span>
-            </template>
-          </el-tab-pane>
-        </el-tabs>
-
-        <div class="admin-content mt-6">
-          <template v-if="activeTab === 'dashboard'">
-            <AdminDashboardTab />
-          </template>
-
-          <template v-else-if="activeTab === 'users'">
-            <AdminUsersTab />
-          </template>
-
-          <template v-else-if="activeTab === 'schools'">
-            <AdminSchoolsTab ref="schoolsTabRef" />
-          </template>
-
-          <template v-else-if="activeTab === 'roles'">
-            <AdminRolesTab />
-          </template>
-
-          <template v-else-if="activeTab === 'tokens'">
-            <AdminTokensTab />
-          </template>
-
-          <template v-else-if="activeTab === 'features'">
-            <AdminFeaturesTab />
-          </template>
-
-          <template v-else-if="activeTab === 'kitty_llmops'">
-            <AdminKittyLlmopsTab />
-          </template>
-
-          <template v-else-if="activeTab === 'library'">
-            <AdminLibraryTab />
-          </template>
-
-          <template v-else-if="activeTab === 'markets'">
-            <AdminMarketsTab />
-          </template>
-
-          <template v-else-if="activeTab === 'database'">
-            <AdminDatabaseTab />
-          </template>
-
-          <template v-else-if="activeTab === 'performance'">
-            <AdminPerformanceTab />
-          </template>
-
-          <template v-else-if="activeTab === 'gewe'">
-            <GeweLoginComponent />
-          </template>
-        </div>
+      <div
+        class="admin-content"
+        :class="
+          activeTab === 'data_center' && route.query.view === 'school_dashboard'
+            ? 'px-0 py-0'
+            : 'px-6 py-6'
+        "
+      >
+        <AdminDataCenterTab v-if="activeTab === 'data_center'" :read-only="isReadOnly" />
+        <AdminUsersPanel v-else-if="activeTab === 'users'" />
+        <AdminSchoolsTab
+          v-else-if="activeTab === 'organizations'"
+          ref="schoolsTabRef"
+        />
+        <AdminInviteUsersTab v-else-if="activeTab === 'invites'" />
+        <AdminMarketsTab v-else-if="activeTab === 'billing'" />
+        <AdminSystemSettingsTab v-else-if="activeTab === 'settings'" />
       </div>
     </div>
   </div>
@@ -255,15 +168,6 @@ onMounted(scheduleTabBarUpdate)
   margin: 0 auto;
 }
 
-.admin-tabs :deep(.el-tabs__header) {
-  margin-bottom: 0;
-}
-
-.admin-tabs :deep(.el-tabs__nav-wrap::after) {
-  display: none;
-}
-
-/* Match MindMate full-page “New Chat” pill (stone, not primary blue) */
 .admin-new-school-btn {
   --el-button-bg-color: #e7e5e4;
   --el-button-border-color: #d6d3d1;

@@ -7,7 +7,6 @@ import { useMobileDetect } from '@/composables/core/useMobileDetect'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { CANVAS_ENTRY_PATH_KEY } from '@/utils/canvasBackNavigation'
-import { userCanAccessMindbotAdmin } from '@/utils/mindbotAccess'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
 
 /** Localized `document.title` via `meta.pageTitle.*` keys. */
@@ -64,14 +63,10 @@ const routes: RouteRecordRaw[] = [
   // ── Desktop routes ────────────────────────────────────────────────
   {
     path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      layout: 'main',
-      ...pageTitle('smartResponse'),
-    },
+    redirect: (to) => ({
+      path: '/admin',
+      query: { ...to.query, tab: 'settings', subtab: 'smart_response' },
+    }),
   },
   {
     path: '/',
@@ -99,20 +94,21 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/admin/mindbot',
-    name: 'MindbotAdmin',
-    component: () => import('@/pages/MindbotAdminPage.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdminOrManager: true,
-      layout: 'main',
-      ...pageTitle('mindbotAdmin'),
-    },
+    redirect: (to) => ({
+      path: '/admin',
+      query: { ...to.query, tab: 'settings', subtab: 'mindbot' },
+    }),
   },
   {
     path: '/admin',
     name: 'Admin',
     component: () => import('@/pages/AdminPage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main', ...pageTitle('admin') },
+    meta: {
+      requiresAuth: true,
+      requiresManagementPanel: true,
+      layout: 'main',
+      ...pageTitle('admin'),
+    },
   },
   {
     path: '/login',
@@ -170,14 +166,10 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/school-dashboard',
-    name: 'SchoolDashboard',
-    component: () => import('@/pages/SchoolDashboardPage.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdminOrManager: true,
-      layout: 'main',
-      ...pageTitle('schoolDashboard'),
-    },
+    redirect: (to) => ({
+      path: '/admin',
+      query: { ...to.query, tab: 'data_center', view: 'school_dashboard' },
+    }),
   },
   {
     path: '/askonce',
@@ -239,20 +231,17 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/gewe',
-    name: 'Gewe',
-    component: () => import('@/pages/GewePage.vue'),
-    meta: {
-      layout: 'main',
-      requiresAuth: true,
-      requiresAdmin: true,
-      ...pageTitle('gewe'),
-    },
+    redirect: (to) => ({
+      path: '/admin',
+      query: { ...to.query, tab: 'settings', subtab: 'gewe' },
+    }),
   },
   {
     path: '/teacher-usage',
-    name: 'TeacherUsage',
-    component: () => import('@/pages/TeacherUsagePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main', ...pageTitle('teacherUsage') },
+    redirect: (to) => ({
+      path: '/admin',
+      query: { ...to.query, tab: 'settings', subtab: 'teacher_usage' },
+    }),
   },
   {
     path: '/workshop-chat',
@@ -297,7 +286,7 @@ const router = createRouter({
 })
 
 // Navigation guards
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, from) => {
   const authStore = useAuthStore()
   const featureFlagsStore = useFeatureFlagsStore()
   const { isMobile } = useMobileDetect()
@@ -316,18 +305,33 @@ router.beforeEach(async (to, from, next) => {
   if (to.name === 'Main') {
     const isAuthenticated = await authStore.checkAuth()
     if (!isAuthenticated) {
-      return next({ path: '/auth', query: to.query as Record<string, string> })
+      return { path: '/auth', query: to.query as Record<string, string> }
     }
     if (isMobile.value) {
-      return next({ path: '/m', query: to.query as Record<string, string> })
+      return { path: '/m', query: to.query as Record<string, string> }
     }
-    return next({ name: 'MindMate' })
+    return { name: 'MindMate' }
   }
 
   if (to.name === 'Admin' && to.query.tab === 'mindbot') {
-    const restQuery = { ...to.query }
-    delete restQuery.tab
-    return next({ path: '/admin/mindbot', query: restQuery })
+    return {
+      path: '/admin',
+      query: { ...to.query, tab: 'settings', subtab: 'mindbot' },
+    }
+  }
+
+  if (to.name === 'Admin' && to.query.tab === 'dashboard') {
+    return {
+      path: '/admin',
+      query: { ...to.query, tab: 'data_center', view: 'operations' },
+    }
+  }
+
+  if (to.name === 'Admin' && to.query.tab === 'gewe') {
+    return {
+      path: '/admin',
+      query: { ...to.query, tab: 'settings', subtab: 'gewe' },
+    }
   }
 
   // Auto-redirect mobile users to /m/* routes (skip for auth, export, dashboard pages)
@@ -339,7 +343,7 @@ router.beforeEach(async (to, from, next) => {
     to.path.startsWith('/bayi/passkey') ||
     to.path.startsWith('/export-render') ||
     to.path.startsWith('/dashboard') ||
-    to.path.startsWith('/admin/mindbot')
+    to.path.startsWith('/admin')
 
   if (isMobile.value && !skipMobileRedirect) {
     const mobileMap: Record<string, string> = {
@@ -350,9 +354,9 @@ router.beforeEach(async (to, from, next) => {
     }
     const mobilePath = mobileMap[to.path]
     if (mobilePath) {
-      return next({ path: mobilePath, query: to.query as Record<string, string> })
+      return { path: mobilePath, query: to.query as Record<string, string> }
     }
-    return next({ path: '/m' })
+    return { path: '/m' }
   }
 
   // Fetch feature flags if needed (for router guard - doesn't use vue-query)
@@ -371,32 +375,37 @@ router.beforeEach(async (to, from, next) => {
     if (!isAuthenticated) {
       if (hadUserBeforeCheck && to.name !== 'Auth') {
         authStore.handleTokenExpired(undefined, to.fullPath)
-        return next(false)
+        return false
       }
-      return next({ path: '/auth', query: { redirect: to.fullPath } })
+      return { path: '/auth', query: { redirect: to.fullPath } }
     }
   }
 
   if (to.name === 'MobileKitty') {
     await featureFlagsStore.fetchFlags()
     if (!featureFlagsStore.getFeatureKittyAgent()) {
-      return next({ path: '/m' })
+      return { path: '/m' }
     }
+  }
+
+  // Check management panel access
+  if (to.meta.requiresManagementPanel && !authStore.isManagementPanelUser) {
+    return { name: 'MindMate' }
   }
 
   // Check admin access (admin-only, not managers)
   if (to.meta.requiresAdmin && !authStore.isAdmin) {
-    return next({ name: 'MindMate' })
+    return { name: 'MindMate' }
   }
 
   // Check admin or manager access (school dashboard)
   if (to.meta.requiresAdminOrManager && !authStore.isAdminOrManager) {
-    return next({ name: 'MindMate' })
+    return { name: 'MindMate' }
   }
 
   if (to.meta.requiresWorkshopChatAccess) {
     if (!featureFlagsStore.getFeatureWorkshopChat()) {
-      return next({ name: 'MindMate' })
+      return { name: 'MindMate' }
     }
     const previewIds = featureFlagsStore.getWorkshopChatPreviewOrgIds()
     const accessMap = featureFlagsStore.flags?.feature_org_access ?? {}
@@ -410,13 +419,13 @@ router.beforeEach(async (to, from, next) => {
         workshopEntry
       )
     ) {
-      return next({ name: 'MindMate' })
+      return { name: 'MindMate' }
     }
   }
 
   // Check organization membership for school zone
   if (to.meta.requiresOrganization && !authStore.user?.schoolId) {
-    return next({ name: 'MindMate' })
+    return { name: 'MindMate' }
   }
 
   // Check feature flags
@@ -424,71 +433,42 @@ router.beforeEach(async (to, from, next) => {
     to.meta.requiresFeatureFlag === 'ragChunkTest' &&
     !featureFlagsStore.getFeatureRagChunkTest()
   ) {
-    return next({ name: 'MindMate' })
+    return { name: 'MindMate' }
   }
   if (to.name === 'Course' && !featureFlagsStore.getFeatureCourse()) {
-    return next({ name: 'MindMate' })
+    return { name: 'MindMate' }
   }
   if (to.name === 'Template' && !featureFlagsStore.getFeatureTemplate()) {
-    return next({ name: 'MindMate' })
+    return { name: 'MindMate' }
   }
   if (to.name === 'Community' && !featureFlagsStore.getFeatureCommunity()) {
-    return next({ name: 'MindMate' })
+    return { name: 'MindMate' }
   }
   if (to.name === 'AskOnce' && !featureFlagsStore.getFeatureAskOnce()) {
-    return next({ name: 'MindMate' })
+    return { name: 'MindMate' }
   }
   if (to.name === 'DebateVerse' && !featureFlagsStore.getFeatureDebateverse()) {
-    return next({ name: 'MindMate' })
+    return { name: 'MindMate' }
   }
   if (to.name === 'SchoolZone' && !featureFlagsStore.getFeatureSchoolZone()) {
-    return next({ name: 'MindMate' })
+    return { name: 'MindMate' }
   }
   if (to.name === 'KnowledgeSpace' && !featureFlagsStore.getFeatureKnowledgeSpace()) {
-    return next({ name: 'MindMate' })
+    return { name: 'MindMate' }
   }
   if (to.name === 'Library' && !featureFlagsStore.getFeatureLibrary()) {
-    return next({ name: 'MindMate' })
-  }
-  if (to.name === 'Gewe' && !featureFlagsStore.getFeatureGewe()) {
-    return next({ name: 'MindMate' })
-  }
-  if (to.name === 'SmartResponse' && !featureFlagsStore.getFeatureSmartResponse()) {
-    return next({ name: 'MindMate' })
-  }
-  if (to.name === 'TeacherUsage' && !featureFlagsStore.getFeatureTeacherUsage()) {
-    return next({ name: 'MindMate' })
-  }
-  if (to.name === 'MindbotAdmin') {
-    if (!featureFlagsStore.getFeatureMindbot()) {
-      return next({ name: 'MindMate' })
-    }
-    const accessMap = featureFlagsStore.flags?.feature_org_access ?? {}
-    const mindbotEntry = accessMap.feature_mindbot
-    if (
-      !userCanAccessMindbotAdmin(
-        authStore.isAdmin,
-        authStore.isManager,
-        authStore.user?.schoolId,
-        authStore.user?.id,
-        mindbotEntry
-      )
-    ) {
-      return next({ name: 'MindMate' })
-    }
+    return { name: 'MindMate' }
   }
   // Guest-only routes (/auth, /bayi/passkey; /login redirects to /auth): confirm session, then app home
   if (to.meta.guestOnly) {
     const isAuthenticated = await authStore.checkAuth()
     if (isAuthenticated) {
       if (isMobile.value) {
-        return next({ path: '/m' })
+        return { path: '/m' }
       }
-      return next({ name: 'MindMate' })
+      return { name: 'MindMate' }
     }
   }
-
-  next()
 })
 
 export default router

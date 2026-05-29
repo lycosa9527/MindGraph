@@ -32,8 +32,12 @@ import type {
   UserRole,
 } from '@/types'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
-import { normalizeUserRole } from '@/utils/userRoleDisplay'
+import {
+  type AdminCapabilitiesPayload,
+  roleHasPanelAccess,
+} from '@/utils/adminCapabilities'
 import { clearWorkshopChatCachesForUser } from '@/utils/workshopChatLocalCache'
+import { normalizeUserRole } from '@/utils/userRoleDisplay'
 import {
   disconnectWorkshopChatWsIfAny,
   resetWorkshopChatOnAuthClear,
@@ -78,6 +82,8 @@ export const useAuthStore = defineStore('auth', () => {
   const pendingRedirect = ref<string | null>(null) // Store intended route after session expired login
   const isCheckingAuth = ref(false) // Prevent duplicate concurrent checkAuth calls
   const lastSessionCheckTime = ref<number>(0) // Track last session status check to prevent rapid-fire calls
+  const adminCapabilitiesPayload = ref<AdminCapabilitiesPayload | null>(null)
+  const adminCapabilitiesLoaded = ref(false)
   const lastProfileRefreshTime = ref<number>(0)
   const hasVerifiedAuthThisSession = ref(false) // Track if we've verified auth with server in this session
   const PROFILE_REFRESH_MIN_MS = 30_000
@@ -114,6 +120,13 @@ export const useAuthStore = defineStore('auth', () => {
   const isManager = computed(() => isSchoolAdmin.value)
   /** Superadmin or school admin — school dashboard and org-scoped admin routes */
   const isAdminOrManager = computed(() => isSuperAdmin.value || isSchoolAdmin.value)
+  /** Management panel access: from API panel_access when loaded, else role fallback */
+  const isManagementPanelUser = computed(() => {
+    if (adminCapabilitiesLoaded.value && adminCapabilitiesPayload.value != null) {
+      return adminCapabilitiesPayload.value.panel_access
+    }
+    return roleHasPanelAccess(userRole.value)
+  })
 
   // Actions
   function initFromStorage(): void {
@@ -364,6 +377,8 @@ export const useAuthStore = defineStore('auth', () => {
     languagePrefsSeededForUserId.value = null
     languagePrefsSeedInFlight = false
     authVerificationBlockedByNetwork.value = false
+    adminCapabilitiesPayload.value = null
+    adminCapabilitiesLoaded.value = false
     // Clear sessionStorage
     sessionStorage.removeItem(USER_KEY)
     sessionStorage.removeItem(MODE_KEY)
@@ -479,6 +494,47 @@ export const useAuthStore = defineStore('auth', () => {
     window.location.href = '/'
   }
 
+  let loadAdminCapabilitiesPromise: Promise<void> | null = null
+
+  async function loadAdminCapabilities(): Promise<void> {
+    if (loadAdminCapabilitiesPromise) {
+      return loadAdminCapabilitiesPromise
+    }
+
+    loadAdminCapabilitiesPromise = (async () => {
+      if (!user.value) {
+        adminCapabilitiesPayload.value = null
+        adminCapabilitiesLoaded.value = true
+        return
+      }
+      if (!roleHasPanelAccess(userRole.value)) {
+        adminCapabilitiesPayload.value = null
+        adminCapabilitiesLoaded.value = true
+        return
+      }
+      try {
+        const response = await fetch('/api/auth/admin/capabilities', {
+          credentials: 'same-origin',
+        })
+        if (!response.ok) {
+          adminCapabilitiesPayload.value = null
+          return
+        }
+        adminCapabilitiesPayload.value = (await response.json()) as AdminCapabilitiesPayload
+      } catch {
+        adminCapabilitiesPayload.value = null
+      } finally {
+        adminCapabilitiesLoaded.value = true
+      }
+    })()
+
+    try {
+      await loadAdminCapabilitiesPromise
+    } finally {
+      loadAdminCapabilitiesPromise = null
+    }
+  }
+
   async function checkAuth(forceRefresh: boolean = false): Promise<boolean> {
     if (isMindgraphHeadlessExportSession()) {
       return false
@@ -491,6 +547,9 @@ export const useAuthStore = defineStore('auth', () => {
       // User is already loaded and verified, just ensure monitoring is started
       if (!sessionMonitorInterval.value) {
         startSessionMonitoring()
+      }
+      if (!adminCapabilitiesLoaded.value) {
+        void loadAdminCapabilities()
       }
       return true
     }
@@ -521,6 +580,7 @@ export const useAuthStore = defineStore('auth', () => {
         if (data.user || data.id) {
           setUser(data.user || data)
           hasVerifiedAuthThisSession.value = true // Mark as verified
+          void loadAdminCapabilities()
           // Only start monitoring if not already started
           if (!sessionMonitorInterval.value) {
             startSessionMonitoring()
@@ -542,6 +602,7 @@ export const useAuthStore = defineStore('auth', () => {
             if (data.user || data.id) {
               setUser(data.user || data)
               hasVerifiedAuthThisSession.value = true // Mark as verified
+              void loadAdminCapabilities()
               // Only start monitoring if not already started
               if (!sessionMonitorInterval.value) {
                 startSessionMonitoring()
@@ -905,6 +966,8 @@ export const useAuthStore = defineStore('auth', () => {
     sessionExpiredMessage,
     pendingRedirect,
     authVerificationBlockedByNetwork,
+    adminCapabilitiesPayload,
+    adminCapabilitiesLoaded,
 
     // Getters
     isAuthenticated,
@@ -922,6 +985,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAdmin,
     isManager,
     isAdminOrManager,
+    isManagementPanelUser,
 
     // Actions
     initFromStorage,
@@ -936,6 +1000,7 @@ export const useAuthStore = defineStore('auth', () => {
     detectMode,
     refreshToken,
     refreshUserProfile,
+    loadAdminCapabilities,
     patchSchoolDisplayName,
     fetchCaptcha,
     startSessionMonitoring,

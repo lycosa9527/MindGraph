@@ -26,6 +26,56 @@ function resolveCacheDir(projectRoot: string): string {
 
 const cacheDir = resolveCacheDir(__dirname)
 
+const devPort = Number(process.env.PORT) || 41732
+const devHost = process.env.VITE_HOST || '0.0.0.0'
+
+/**
+ * HMR WebSocket target. With `host: 0.0.0.0`, Vite 8 still injects `ws://0.0.0.0`
+ * unless `server.hmr.host` is set — browsers cannot connect and updates never apply.
+ * Same-machine dev: defaults to localhost. LAN/phone testing: set `VITE_HMR_HOST`.
+ */
+function resolveHmrConfig(port: number, host: string | boolean) {
+  const explicitHost = process.env.VITE_HMR_HOST?.trim()
+  const explicitPort = process.env.VITE_HMR_PORT?.trim()
+  const explicitClientPort = process.env.VITE_HMR_CLIENT_PORT?.trim()
+  if (explicitHost || explicitPort || explicitClientPort) {
+    return {
+      ...(explicitHost ? { host: explicitHost } : {}),
+      ...(explicitPort ? { port: Number(explicitPort) } : {}),
+      ...(explicitClientPort ? { clientPort: Number(explicitClientPort) } : {}),
+    }
+  }
+  const bindAll =
+    host === true || host === 'true' || host === '0.0.0.0' || host === '::'
+  if (!bindAll) {
+    return undefined
+  }
+  return {
+    host: 'localhost',
+    port,
+    clientPort: port,
+  }
+}
+
+/** WSL edits on `/mnt/c` from Windows apps do not emit inotify events without polling. */
+function resolveWatchConfig(projectRoot: string) {
+  const flag = process.env.VITE_USE_POLLING?.trim().toLowerCase()
+  const explicit = flag === '1' || flag === 'true'
+  const onWslWindowsMount =
+    process.platform === 'linux' && projectRoot.startsWith('/mnt/')
+  if (!explicit && !onWslWindowsMount) {
+    return undefined
+  }
+  const interval = Number(process.env.VITE_POLL_INTERVAL)
+  return {
+    usePolling: true,
+    interval: Number.isFinite(interval) && interval > 0 ? interval : 1000,
+  }
+}
+
+const devHmr = resolveHmrConfig(devPort, devHost)
+const devWatch = resolveWatchConfig(__dirname)
+
 // Read version from VERSION file (single source of truth)
 const version = readFileSync(resolve(__dirname, '../VERSION'), 'utf-8').trim()
 
@@ -133,12 +183,15 @@ export default defineConfig({
   },
   server: {
     // Use 41732+ to avoid ip_unprivileged_port_start (often 32768 on WSL); override with PORT=3000 npm run dev
-    port: Number(process.env.PORT) || 41732,
+    port: devPort,
     // 0.0.0.0: Vite prints Local + several Network URLs on WSL (LAN IP + 172.x Docker/Hyper-V bridges).
     // - Browser on same Windows host: prefer http://localhost:41732 (auto-forward to WSL2 on recent Windows).
     // - Phone / another PC on Wi‑Fi: use the real LAN line (e.g. http://192.168.x.x:41732), not the 172.* bridges.
-    host: process.env.VITE_HOST || '0.0.0.0',
+    //   Set VITE_HMR_HOST to that LAN IP so the HMR WebSocket matches the page origin.
+    host: devHost,
     strictPort: false,
+    ...(devHmr ? { hmr: devHmr } : {}),
+    ...(devWatch ? { watch: devWatch } : {}),
     proxy: {
       '/api': {
         target: backendHost,

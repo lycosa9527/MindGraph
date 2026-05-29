@@ -58,57 +58,34 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
     }"
   >
     <div class="sidebar-nav-main">
-      <!-- MindMate + MindGraph (fixed order); history panels use top border from ChatHistory / DiagramHistory -->
-      <el-tooltip
-        :content="s.mindMateNavLabel"
-        placement="right"
-        :disabled="!s.isCollapsed"
-      >
-        <div
-          class="nav-item"
-          :class="s.navItemClass('mindmate')"
-          @click="s.setMode('mindmate')"
-        >
-          <MessageSquare
-            class="nav-icon"
-            :size="NAV_ICON_SIZE"
-          />
-          <span
-            v-if="!s.isCollapsed"
-            class="nav-label"
-            >{{ s.mindMateNavLabel }}</span
-          >
-        </div>
-      </el-tooltip>
-
-      <el-tooltip
-        :content="s.t('sidebar.mindGraph')"
-        placement="right"
-        :disabled="!s.isCollapsed"
-      >
-        <div
-          class="nav-item"
-          :class="s.navItemClass('mindgraph')"
-          @click="s.setMode('mindgraph')"
-        >
-          <Waypoints
-            class="nav-icon"
-            :size="NAV_ICON_SIZE"
-          />
-          <span
-            v-if="!s.isCollapsed"
-            class="nav-label"
-            >{{ s.t('sidebar.mindGraph') }}</span
-          >
-        </div>
-      </el-tooltip>
-
+      <!-- MindMate then its history; MindGraph + diagram history below -->
       <div
-        class="sidebar-nav-mind-panels"
+        class="sidebar-nav-mind-section"
         :class="{
-          'sidebar-nav-mind-panels--expanded': s.showPanel('mindmate') || s.showPanel('mindgraph'),
+          'sidebar-nav-mind-section--expanded': s.showPanel('mindmate') || s.showPanel('mindgraph'),
         }"
       >
+        <el-tooltip
+          :content="s.mindMateNavLabel"
+          placement="right"
+          :disabled="!s.isCollapsed"
+        >
+          <div
+            class="nav-item"
+            :class="s.navItemClass('mindmate')"
+            @click="s.setMode('mindmate')"
+          >
+            <MessageSquare
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label"
+              >{{ s.mindMateNavLabel }}</span
+            >
+          </div>
+        </el-tooltip>
         <transition name="panel-slide">
           <div
             v-if="s.showPanel('mindmate')"
@@ -117,6 +94,28 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             <ChatHistory :initial-visible-limit="mindmatePageChatHistoryLimit" />
           </div>
         </transition>
+
+        <el-tooltip
+          :content="s.t('sidebar.mindGraph')"
+          placement="right"
+          :disabled="!s.isCollapsed"
+        >
+          <div
+            class="nav-item"
+            :class="s.navItemClass('mindgraph')"
+            @click="s.setMode('mindgraph')"
+          >
+            <Waypoints
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label"
+              >{{ s.t('sidebar.mindGraph') }}</span
+            >
+          </div>
+        </el-tooltip>
         <transition name="panel-slide">
           <div
             v-if="s.showPanel('mindgraph')"
@@ -389,6 +388,85 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           </div>
         </transition>
 
+        <!-- Management panel (expandable sub-nav) -->
+        <el-tooltip
+          v-if="s.isManagementPanelUser"
+          :content="s.t('admin.title')"
+          placement="right"
+          :disabled="!s.isCollapsed"
+        >
+          <div
+            class="nav-item"
+            :class="s.navItemClass('admin')"
+            @click="s.setMode('admin')"
+          >
+            <Settings
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label admin-menu-title"
+            >
+              {{ s.t('admin.title') }}
+              <ChevronDown
+                class="admin-expand-chevron"
+                :class="{ 'admin-expand-chevron--open': s.managementPanelExpanded }"
+              />
+            </span>
+          </div>
+        </el-tooltip>
+        <transition name="admin-slide">
+          <div
+            v-if="s.managementPanelExpanded && !s.isCollapsed && s.isManagementPanelUser"
+            class="admin-subnav"
+          >
+            <template
+              v-for="tab in s.adminNavTabs"
+              :key="tab.name"
+            >
+              <template v-if="tab.name === 'data_center'">
+                <button
+                  type="button"
+                  class="nav-subitem nav-subitem--parent"
+                  :class="s.adminSubItemClass('data_center')"
+                  @click="s.toggleDataCenterNav()"
+                >
+                  <span>{{ tab.label }}</span>
+                  <ChevronDown
+                    class="admin-expand-chevron admin-expand-chevron--nested"
+                    :class="{ 'admin-expand-chevron--open': s.dataCenterNavExpanded }"
+                  />
+                </button>
+                <div
+                  v-if="s.dataCenterNavExpanded"
+                  class="admin-subnav-nested"
+                >
+                  <button
+                    v-for="view in s.dataCenterNavViews"
+                    :key="view.name"
+                    type="button"
+                    class="nav-subitem nav-subitem--nested"
+                    :class="s.dataCenterSubItemClass(view.name)"
+                    @click="s.navigateDataCenterView(view.name)"
+                  >
+                    {{ view.label }}
+                  </button>
+                </div>
+              </template>
+              <button
+                v-else
+                type="button"
+                class="nav-subitem"
+                :class="s.adminSubItemClass(tab.name)"
+                @click="s.navigateAdminTab(tab.name)"
+              >
+                {{ tab.label }}
+              </button>
+            </template>
+          </div>
+        </transition>
+
         <!-- Workshop Chat (admin & school managers) -->
         <el-tooltip
           v-if="s.canAccessWorkshopChat"
@@ -427,152 +505,6 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </transition>
       </div>
     </div>
-
-    <!-- Admin / management: pinned above account footer (hidden when workshop expanded) -->
-    <div
-      v-if="!s.workshopExpanded && (s.isAdminOrManager || s.isAdmin)"
-      class="sidebar-nav-admin"
-    >
-      <div class="nav-divider" />
-
-      <el-tooltip
-        v-if="s.isAdmin && s.featureGewe"
-        content="Gewe"
-        placement="right"
-        :disabled="!s.isCollapsed"
-      >
-        <div
-          class="nav-item"
-          :class="s.navItemClass('gewe')"
-          @click="s.setMode('gewe')"
-        >
-          <MessageCircle
-            class="nav-icon"
-            :size="NAV_ICON_SIZE"
-          />
-          <span
-            v-if="!s.isCollapsed"
-            class="nav-label"
-            >Gewe</span
-          >
-        </div>
-      </el-tooltip>
-
-      <el-tooltip
-        v-if="s.isAdminOrManager && s.featureSmartResponse"
-        :content="s.t('sidebar.smartResponse')"
-        placement="right"
-        :disabled="!s.isCollapsed"
-      >
-        <div
-          class="nav-item"
-          :class="s.navItemClass('smart-response')"
-          @click="s.setMode('smart-response')"
-        >
-          <Watch
-            class="nav-icon"
-            :size="NAV_ICON_SIZE"
-          />
-          <span
-            v-if="!s.isCollapsed"
-            class="nav-label"
-            >{{ s.t('sidebar.smartResponse') }}</span
-          >
-        </div>
-      </el-tooltip>
-
-      <el-tooltip
-        v-if="s.isAdmin && s.featureTeacherUsage"
-        :content="s.t('sidebar.teacherUsage')"
-        placement="right"
-        :disabled="!s.isCollapsed"
-      >
-        <div
-          class="nav-item"
-          :class="s.navItemClass('teacher-usage')"
-          @click="s.setMode('teacher-usage')"
-        >
-          <TrendingUp
-            class="nav-icon"
-            :size="NAV_ICON_SIZE"
-          />
-          <span
-            v-if="!s.isCollapsed"
-            class="nav-label"
-            >{{ s.t('sidebar.teacherUsage') }}</span
-          >
-        </div>
-      </el-tooltip>
-
-      <el-tooltip
-        v-if="s.canAccessMindbot"
-        :content="s.t('sidebar.mindbot')"
-        placement="right"
-        :disabled="!s.isCollapsed"
-      >
-        <div
-          class="nav-item"
-          :class="s.navItemClass('mindbot')"
-          @click="s.setMode('mindbot')"
-        >
-          <Bot
-            class="nav-icon"
-            :size="NAV_ICON_SIZE"
-          />
-          <span
-            v-if="!s.isCollapsed"
-            class="nav-label"
-            >{{ s.t('sidebar.mindbot') }}</span
-          >
-        </div>
-      </el-tooltip>
-
-      <el-tooltip
-        v-if="s.isAdminOrManager"
-        :content="s.t('admin.schoolDashboard')"
-        placement="right"
-        :disabled="!s.isCollapsed"
-      >
-        <div
-          class="nav-item"
-          :class="s.navItemClass('school-dashboard')"
-          @click="s.setMode('school-dashboard')"
-        >
-          <Building2
-            class="nav-icon"
-            :size="NAV_ICON_SIZE"
-          />
-          <span
-            v-if="!s.isCollapsed"
-            class="nav-label"
-            >{{ s.t('admin.schoolDashboard') }}</span
-          >
-        </div>
-      </el-tooltip>
-
-      <el-tooltip
-        v-if="s.isAdmin"
-        :content="s.t('admin.title')"
-        placement="right"
-        :disabled="!s.isCollapsed"
-      >
-        <div
-          class="nav-item"
-          :class="s.navItemClass('admin')"
-          @click="s.setMode('admin')"
-        >
-          <Settings
-            class="nav-icon"
-            :size="NAV_ICON_SIZE"
-          />
-          <span
-            v-if="!s.isCollapsed"
-            class="nav-label"
-            >{{ s.t('admin.title') }}</span
-          >
-        </div>
-      </el-tooltip>
-    </div>
   </div>
 </template>
 
@@ -600,7 +532,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
   overflow: hidden;
 }
 
-.sidebar-nav-mind-panels {
+.sidebar-nav-mind-section {
   display: flex;
   flex-direction: column;
   flex: 0 0 auto;
@@ -608,7 +540,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
   overflow: hidden;
 }
 
-.sidebar-nav-mind-panels--expanded {
+.sidebar-nav-mind-section--expanded {
   flex: 1 1 0;
   min-height: 0;
 }
@@ -623,12 +555,6 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 .sidebar-nav-rest--below-history {
   flex: 0 1 auto;
   flex-shrink: 12;
-}
-
-.sidebar-nav-admin {
-  flex-shrink: 0;
-  margin-top: auto;
-  padding-top: 4px;
 }
 
 .sidebar-nav-scroll--collapsed {
@@ -755,6 +681,114 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 .panel-slide-enter-to,
 .panel-slide-leave-from {
   max-height: 100dvh;
+  opacity: 1;
+}
+
+.nav-item.is-active .admin-expand-chevron {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.admin-menu-title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+}
+
+.admin-expand-chevron {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: #a8a29e;
+  transition: transform 0.2s ease;
+  transform: rotate(-90deg);
+}
+
+.admin-expand-chevron--open {
+  transform: rotate(0deg);
+}
+
+.admin-subnav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.nav-subitem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  text-align: left;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #78716c;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+
+.nav-subitem:hover {
+  background-color: #f5f5f4;
+  color: #1c1917;
+}
+
+.nav-subitem.is-active {
+  background-color: #e7e5e4;
+  color: #1c1917;
+}
+
+.nav-subitem--parent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.admin-subnav-nested {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 2px;
+}
+
+.nav-subitem--nested {
+  min-height: 36px;
+  padding-left: 28px;
+  font-size: 13px;
+  color: #78716c;
+}
+
+.admin-expand-chevron--nested {
+  width: 12px;
+  height: 12px;
+}
+
+.admin-slide-enter-active {
+  transition: all 0.25s ease;
+  overflow: hidden;
+}
+
+.admin-slide-leave-active {
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.admin-slide-enter-from,
+.admin-slide-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+
+.admin-slide-enter-to,
+.admin-slide-leave-from {
+  max-height: 320px;
   opacity: 1;
 }
 

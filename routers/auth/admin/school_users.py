@@ -26,8 +26,10 @@ from services.auth.user_fk_cleanup import delete_user_fk_dependent_rows
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
 
+from utils.auth.admin_panel_permissions import CAP_TAB_USERS_EDIT, CAP_TAB_USERS_VIEW
+from utils.auth.admin_scope import AdminScope
 from utils.auth.role_constants import normalize_role
-from ..dependencies import get_language_dependency, require_admin_or_manager
+from ..dependencies import get_language_dependency, require_panel_capability
 from ..helpers import utc_to_beijing_iso
 from .school_scope import resolve_school_dashboard_org_id
 
@@ -56,13 +58,13 @@ def _not_found_school_user(lang: Language) -> HTTPException:
     )
 
 
-@router.get("/admin/school/users", dependencies=[Depends(require_admin_or_manager)])
+@router.get("/admin/school/users")
 async def list_school_users(
     organization_id: Optional[int] = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
     search: str = Query(""),
-    current_user: User = Depends(require_admin_or_manager),
+    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_VIEW)),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, Any]:
@@ -70,6 +72,7 @@ async def list_school_users(
     List users in a single organization (school dashboard only).
     Admins: pass organization_id. Managers: scoped to their org.
     """
+    current_user = scope.actor
     org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
     sd_log = get_school_dashboard_logger(logger, actor_id=current_user.id, org_id=org_id)
 
@@ -163,14 +166,15 @@ async def list_school_users(
     }
 
 
-@router.get("/admin/school/users/{user_id}", dependencies=[Depends(require_admin_or_manager)])
+@router.get("/admin/school/users/{user_id}")
 async def get_school_user(
     user_id: int,
     organization_id: Optional[int] = Query(None),
-    current_user: User = Depends(require_admin_or_manager),
+    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_VIEW)),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, Any]:
+    current_user = scope.actor
     org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
     user = await _load_user_in_school_or_not_found(db, user_id, org_id)
     if not user:
@@ -199,15 +203,17 @@ async def get_school_user(
     }
 
 
-@router.put("/admin/school/users/{user_id}", dependencies=[Depends(require_admin_or_manager)])
+@router.put("/admin/school/users/{user_id}")
 async def update_school_user(
     user_id: int,
     request: dict,
     organization_id: Optional[int] = Query(None),
-    current_user: User = Depends(require_admin_or_manager),
+    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_EDIT)),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, Any]:
+    scope.assert_mutation_allowed(lang)
+    current_user = scope.actor
     if not isinstance(request, dict):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -337,14 +343,16 @@ async def update_school_user(
     }
 
 
-@router.delete("/admin/school/users/{user_id}", dependencies=[Depends(require_admin_or_manager)])
+@router.delete("/admin/school/users/{user_id}")
 async def delete_school_user(
     user_id: int,
     organization_id: Optional[int] = Query(None),
-    current_user: User = Depends(require_admin_or_manager),
+    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_EDIT)),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, str]:
+    scope.assert_mutation_allowed(lang)
+    current_user = scope.actor
     org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
     user = await _load_user_in_school_or_not_found(db, user_id, org_id)
     if not user:
@@ -392,17 +400,16 @@ async def delete_school_user(
     return {"message": Messages.success("user_deleted", lang, user_phone)}
 
 
-@router.put(
-    "/admin/school/users/{user_id}/unlock",
-    dependencies=[Depends(require_admin_or_manager)],
-)
+@router.put("/admin/school/users/{user_id}/unlock")
 async def unlock_school_user(
     user_id: int,
     organization_id: Optional[int] = Query(None),
-    current_user: User = Depends(require_admin_or_manager),
+    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_EDIT)),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, str]:
+    scope.assert_mutation_allowed(lang)
+    current_user = scope.actor
     org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
     user = await _load_user_in_school_or_not_found(db, user_id, org_id)
     if not user:

@@ -159,6 +159,17 @@ def is_admin_or_manager(current_user) -> bool:
     return is_superadmin(current_user) or is_school_admin(current_user)
 
 
+def is_management_panel_user(current_user) -> bool:
+    """True when user may access the unified management panel (roles 1–4)."""
+    from utils.auth.admin_panel_permissions import role_has_panel_access
+
+    if not hasattr(current_user, "role"):
+        return False
+    if is_superadmin(current_user):
+        return True
+    return role_has_panel_access(current_user.role)
+
+
 def can_moderate_workshop_channel(current_user, channel) -> bool:
     """
     Whether the user may remove or manage others' content in this channel.

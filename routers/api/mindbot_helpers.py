@@ -18,7 +18,8 @@ from routers.api.mindbot_models import (
 )
 from services.mindbot.errors import MindbotErrorCode
 from services.mindbot.telemetry.metrics import mindbot_metrics
-from utils.auth.roles import is_admin
+from utils.auth.admin_scope import assert_resource_org_in_scope, build_admin_scope
+from utils.auth.roles import is_admin, is_superadmin
 
 
 def _require_mindbot_feature() -> None:
@@ -30,19 +31,11 @@ def _require_mindbot_feature() -> None:
 
 
 def _ensure_org_scope(user: User, organization_id: int) -> None:
-    if is_admin(user):
+    """Enforce org row scope via AdminScope (superadmin unrestricted)."""
+    if is_superadmin(user):
         return
-    uid_org = getattr(user, "organization_id", None)
-    if uid_org is None:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Organization required",
-        )
-    if int(uid_org) != int(organization_id):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Organization access denied",
-        )
+    scope = build_admin_scope(user, organization_id=organization_id, lang="en")
+    assert_resource_org_in_scope(scope, organization_id, "en")
 
 
 _SCHOOL_MANAGER_SECRET_PLACEHOLDER = "********"

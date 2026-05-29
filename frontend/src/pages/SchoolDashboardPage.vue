@@ -30,6 +30,13 @@ const notify = useNotifications()
 const { publicSiteUrl } = usePublicSiteUrl()
 const authStore = useAuthStore()
 
+const props = withDefaults(
+  defineProps<{
+    embedded?: boolean
+  }>(),
+  { embedded: false }
+)
+
 const isAdmin = computed(() => authStore.isAdmin)
 const userSchoolId = computed(() =>
   authStore.user?.schoolId ? Number(authStore.user.schoolId) : null
@@ -402,9 +409,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="school-dashboard-page flex-1 flex flex-col bg-stone-50 overflow-hidden">
+  <div
+    class="flex flex-col bg-stone-50 overflow-hidden"
+    :class="embedded ? 'school-dashboard-embedded min-h-0' : 'school-dashboard-page flex-1'"
+  >
     <div
-      class="school-header h-14 px-4 flex items-center justify-between bg-white border-b border-stone-200"
+      v-if="!embedded"
+      class="school-header h-14 px-4 flex items-center justify-between bg-white border-b border-stone-200 shrink-0"
     >
       <h1 class="text-sm font-semibold text-stone-900">
         {{ t('admin.schoolDashboard') }}
@@ -431,7 +442,31 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div class="school-body flex-1 overflow-y-auto p-6">
+    <div
+      v-if="embedded && isAdmin && organizations.length > 0"
+      class="mb-4 flex items-center justify-end gap-2 px-1"
+    >
+      <span class="text-gray-500 text-sm">{{ t('admin.viewSchool') }}:</span>
+      <el-select
+        v-model="selectedOrgId"
+        filterable
+        :placeholder="t('admin.selectSchool')"
+        size="small"
+        style="width: 260px"
+      >
+        <el-option
+          v-for="org in organizations"
+          :key="org.id"
+          :label="organizationSelectLabel(org)"
+          :value="org.id"
+        />
+      </el-select>
+    </div>
+
+    <div
+      class="school-body flex-1 overflow-y-auto"
+      :class="embedded ? 'p-0 min-h-0' : 'p-6'"
+    >
       <div
         v-if="effectiveOrgId == null && !isLoading"
         class="text-center py-20 text-gray-500"

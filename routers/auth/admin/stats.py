@@ -31,12 +31,19 @@ from services.auth.school_dashboard_logger import (
     get_school_dashboard_logger,
     school_dashboard_extra,
 )
-from utils.auth import get_current_user, is_admin
+from utils.auth import get_current_user, get_user_role, is_admin, is_management_panel_user
+from utils.auth.admin_panel_permissions import (
+    CAP_PANEL_ACCESS,
+    CAP_TAB_DATA_CENTER_VIEW,
+    user_panel_capabilities,
+)
+from utils.auth.admin_scope import AdminScope, panel_read_only_for_user
 
 from ..dependencies import (
     get_language_dependency,
     require_admin,
-    require_admin_or_manager,
+    require_admin_stats_read,
+    require_panel_capability,
 )
 from ..helpers import get_beijing_now, get_beijing_today_start_utc
 from .school_scope import resolve_school_dashboard_org_id
@@ -60,15 +67,43 @@ async def get_admin_status(current_user: User = Depends(get_current_user)) -> Di
     Used by frontend to check admin status without making expensive stats queries.
 
     Returns:
-        {"is_admin": true/false}
+        {"is_admin": true/false, "is_management_panel_user": true/false}
     """
-    return {"is_admin": is_admin(current_user)}
+    return {
+        "is_admin": is_admin(current_user),
+        "is_management_panel_user": is_management_panel_user(current_user),
+    }
 
 
-@router.get("/admin/stats", dependencies=[Depends(require_admin)])
+@router.get("/admin/capabilities")
+async def get_admin_capabilities(
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """
+    Management panel capabilities for the current user.
+
+    Always returns 200 for authenticated users. Roles without panel access get
+    empty capabilities and panel_access=false.
+    """
+    role = get_user_role(current_user)
+    caps = user_panel_capabilities(current_user)
+    org_id = getattr(current_user, "organization_id", None)
+    panel_access = CAP_PANEL_ACCESS in caps or is_management_panel_user(current_user)
+    read_only = panel_read_only_for_user(current_user) if panel_access else False
+    return {
+        "role": role,
+        "capabilities": sorted(caps),
+        "org_ids": [int(org_id)] if org_id is not None and caps else None,
+        "read_only": read_only,
+        "default_org_id": int(org_id) if org_id is not None else None,
+        "panel_access": panel_access,
+    }
+
+
+@router.get("/admin/stats", dependencies=[Depends(require_admin_stats_read)])
 async def get_stats_admin(
     _request: Request,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_admin_stats_read),
     db: AsyncSession = Depends(get_async_db),
     _lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
@@ -197,10 +232,10 @@ async def get_stats_admin(
     }
 
 
-@router.get("/admin/stats/school", dependencies=[Depends(require_admin_or_manager)])
+@router.get("/admin/stats/school")
 async def get_school_stats(
     organization_id: Optional[int] = None,
-    current_user: User = Depends(require_admin_or_manager),
+    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_DATA_CENTER_VIEW)),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
@@ -210,7 +245,7 @@ async def get_school_stats(
     Managers: organization_id must be their own org (or omitted to use their org).
     Admins: organization_id required to select which school to view.
     """
-    effective_org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
+    effective_org_id = resolve_school_dashboard_org_id(organization_id, scope.actor, lang)
 
     org = (await db.execute(select(Organization).where(Organization.id == effective_org_id))).scalars().first()
     if not org:
@@ -218,7 +253,7 @@ async def get_school_stats(
             "[SchoolDashboard] organization missing for school stats",
             extra=school_dashboard_extra(
                 event="school_stats_org_not_found",
-                actor_id=current_user.id,
+                actor_id=scope.actor.id,
                 org_id=effective_org_id,
             ),
         )
@@ -338,11 +373,11 @@ async def get_school_stats(
     }
 
 
-@router.get("/admin/stats/school/token-stats", dependencies=[Depends(require_admin_or_manager)])
+@router.get("/admin/stats/school/token-stats")
 async def get_school_token_stats(
     request: Request,
     organization_id: Optional[int] = None,
-    current_user: User = Depends(require_admin_or_manager),
+    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_DATA_CENTER_VIEW)),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
@@ -350,11 +385,11 @@ async def get_school_token_stats(
     Get token stats for a school (ADMIN or MANAGER).
     Same structure as /admin/token-stats with organization_id filter.
     """
-    org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
+    org_id = resolve_school_dashboard_org_id(organization_id, scope.actor, lang)
     return await get_token_stats_admin(
         _request=request,
         organization_id=org_id,
-        _current_user=current_user,
+        _current_user=scope.actor,
         db=db,
         lang=lang,
     )

@@ -100,7 +100,6 @@ watch(
 const layouts = {
   default: defineAsyncComponent(() => import('@/layouts/DefaultLayout.vue')),
   editor: defineAsyncComponent(() => import('@/layouts/EditorLayout.vue')),
-  admin: defineAsyncComponent(() => import('@/layouts/AdminLayout.vue')),
   auth: defineAsyncComponent(() => import('@/layouts/AuthLayout.vue')),
   main: defineAsyncComponent(() => import('@/layouts/MainLayout.vue')),
   canvas: defineAsyncComponent(() => import('@/layouts/CanvasLayout.vue')),

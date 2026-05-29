@@ -13,6 +13,20 @@ import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
 import { type ChartConfiguration, type TooltipItem, loadChartJs } from '@/utils/lazyChartJs'
 
+const props = withDefaults(
+  defineProps<{
+    section?: 'operations' | 'usage' | 'all'
+  }>(),
+  { section: 'all' }
+)
+
+const showOperations = computed(
+  () => props.section === 'all' || props.section === 'operations'
+)
+const showUsage = computed(() => props.section === 'all' || props.section === 'usage')
+const showUsageTokenRow = computed(() => props.section === 'usage')
+const showRankings = computed(() => showOperations.value || showUsage.value)
+
 const { t } = useLanguage()
 const notify = useNotifications()
 
@@ -464,7 +478,10 @@ onBeforeUnmount(() => {
     </div>
 
     <template v-else>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-4">
+      <div
+        v-if="showOperations"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-4"
+      >
         <el-card
           shadow="hover"
           class="stat-card stat-card-clickable"
@@ -574,7 +591,42 @@ onBeforeUnmount(() => {
         </el-card>
       </div>
 
-      <div class="mt-6">
+      <div
+        v-if="showUsageTokenRow"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-4"
+      >
+        <el-card
+          shadow="hover"
+          class="stat-card stat-card-clickable"
+          @click="showTrendChart('tokens')"
+        >
+          <div class="flex items-center gap-4">
+            <div
+              class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center"
+            >
+              <el-icon
+                :size="24"
+                class="text-orange-500"
+              >
+                <Connection />
+              </el-icon>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                {{ t('admin.tokens') }} ({{ t('admin.pastWeek') }})
+              </p>
+              <p class="text-2xl font-bold text-gray-800 dark:text-white">
+                {{ formatNumber(stats.totalTokens) }}
+              </p>
+            </div>
+          </div>
+        </el-card>
+      </div>
+
+      <div
+        v-if="showRankings"
+        class="mt-6"
+      >
         <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
           <p class="text-sm text-gray-500 dark:text-gray-400 flex-1 min-w-[200px]">
             {{ t('admin.rankingBeijingTodayHint') }}
