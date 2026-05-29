@@ -35,8 +35,7 @@ const FLOW_NODE_PADDING_X = 40
  */
 function computeFlowNodeWidth(node: DiagramNode): number {
   const trimmed = (node.text ?? '').trim() || ' '
-  const fs =
-    typeof node.style?.fontSize === 'number' ? node.style.fontSize : FLOW_NODE_FONT_SIZE
+  const fs = typeof node.style?.fontSize === 'number' ? node.style.fontSize : FLOW_NODE_FONT_SIZE
   const fontWeight = node.style?.fontWeight
   const fontFamily = node.style?.fontFamily ?? DIAGRAM_NODE_FONT_STACK
   const nowrapInner =

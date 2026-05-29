@@ -15,7 +15,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import { Close } from '@element-plus/icons-vue'
 
-import { ArrowLeft, Eye, EyeOff, Loader2, RefreshCw } from 'lucide-vue-next'
+import { ArrowLeft, Eye, EyeOff, Loader2, RefreshCw } from '@lucide/vue'
 
 import { useLoginModal } from '@/composables/auth/useLoginModal'
 import { initCatWalk } from '@/utils/mascot/catWalk'

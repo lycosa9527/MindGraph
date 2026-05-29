@@ -1,4 +1,4 @@
 /**
  * ro UI messages — re-export merged bundles.
  */
-export { default } from './ro/index'
+export { default } from './ro/index.ts'

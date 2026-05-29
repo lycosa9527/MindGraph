@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ElButton, ElTooltip } from 'element-plus'
 
-import { Sparkles, Wand2 } from 'lucide-vue-next'
+import { Sparkles, Wand2 } from '@lucide/vue'
 
 withDefaults(
   defineProps<{

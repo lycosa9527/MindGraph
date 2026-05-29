@@ -4,8 +4,8 @@
  */
 import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
 import { useDiagramStore } from '@/stores/diagram'
-import type { DiagramType } from '@/types'
 import { VALID_DIAGRAM_TYPES } from '@/stores/diagram/constants'
+import type { DiagramType } from '@/types'
 
 function normalizeDiagramType(raw: string): DiagramType | null {
   const slug = raw.trim() === 'mind_map' ? 'mindmap' : raw.trim()

@@ -78,9 +78,7 @@ const MARKDOWN_ROUTE_PREFIXES = [
 ] as const
 
 export function routeUsesRichMarkdown(path: string): boolean {
-  return MARKDOWN_ROUTE_PREFIXES.some(
-    (prefix) => path === prefix || path.startsWith(`${prefix}/`)
-  )
+  return MARKDOWN_ROUTE_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))
 }
 
 /** Fire-and-forget preload when entering a markdown-heavy route. */

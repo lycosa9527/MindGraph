@@ -32,7 +32,7 @@ export function useRenderedMarkdown(
   const ready = computed(() => markdownRendererReady.value)
 
   const html = computed(() => {
-    markdownRendererReady.value
+    void markdownRendererReady.value
     let text = source() || ''
     if (options?.stripThinkBlocks) {
       text = stripThinkBlocksFromContent(text)

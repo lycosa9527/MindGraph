@@ -1,6 +1,6 @@
 /**
  * One-off: generate zh-tw namespace files from zh using OpenCC cn→tw.
- * Run: npx tsx scripts/build-zhtw-from-zh.ts
+ * Run: node scripts/build-zhtw-from-zh.ts
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'

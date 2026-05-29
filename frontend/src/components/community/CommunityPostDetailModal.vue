@@ -14,7 +14,7 @@ import {
   ElScrollbar,
 } from 'element-plus'
 
-import { Download, Heart, MoreVertical, Trash2, X } from 'lucide-vue-next'
+import { Download, Heart, MoreVertical, Trash2, X } from '@lucide/vue'
 
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 import { useLanguage, useNotifications } from '@/composables'

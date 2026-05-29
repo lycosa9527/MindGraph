@@ -68,14 +68,10 @@ const hasSchoolOverride = computed(() => Boolean(props.difyApiKeyMasked))
 
 const globalDifyUnconfigured = computed(
   () =>
-    !globalDifyLoading.value &&
-    !(globalDifyUrl.value ?? '').trim() &&
-    !globalDifyKeyMasked.value
+    !globalDifyLoading.value && !(globalDifyUrl.value ?? '').trim() && !globalDifyKeyMasked.value
 )
 
-const urlPlaceholder = computed(
-  () => globalDifyUrl.value || t('admin.schoolDifyUrlPlaceholder')
-)
+const urlPlaceholder = computed(() => globalDifyUrl.value || t('admin.schoolDifyUrlPlaceholder'))
 
 const difyStatusLabel = computed(() => {
   if (difyStatusLoading.value) {
@@ -84,10 +80,7 @@ const difyStatusLabel = computed(() => {
   return t('admin.schoolDifyAuthTest')
 })
 
-function formatDifyAuthError(
-  error: string | null | undefined,
-  httpStatus?: number | null
-): string {
+function formatDifyAuthError(error: string | null | undefined, httpStatus?: number | null): string {
   const token = (error ?? '').trim()
   if (token === 'api_key_not_configured') {
     return t('admin.schoolDifyAuthErrorNoKey')
@@ -271,9 +264,7 @@ async function fetchDifyHealth(options?: { silent?: boolean }) {
 
     invalidateDifyAuthVerification()
     if (!silent) {
-      notify.error(
-        formatDifyAuthError(difyStatus.value?.error, difyStatus.value?.http_status)
-      )
+      notify.error(formatDifyAuthError(difyStatus.value?.error, difyStatus.value?.http_status))
     }
   } catch {
     difyStatus.value = { online: false, error: 'network' }
@@ -291,8 +282,7 @@ function onFetchDifyHealthClick() {
 }
 
 watch(
-  () =>
-    [props.orgId, props.difyApiBaseUrl, props.difyApiKeyMasked] as const,
+  () => [props.orgId, props.difyApiBaseUrl, props.difyApiKeyMasked] as const,
   () => {
     baseUrl.value = (props.difyApiBaseUrl ?? '').trim()
     apiKey.value = ''
@@ -703,7 +693,9 @@ defineExpose({
                     {{ t('admin.mindbot.difyApiKeyReplaceHint') }}
                   </template>
                   <template v-else-if="!hasSchoolOverride && globalDifyKeyMasked">
-                    {{ t('admin.schoolDifyApiKeyBlankUsesGlobal', { masked: globalDifyKeyMasked }) }}
+                    {{
+                      t('admin.schoolDifyApiKeyBlankUsesGlobal', { masked: globalDifyKeyMasked })
+                    }}
                   </template>
                   <template v-else>
                     {{ t('admin.schoolDifyApiKeyHintOptional') }}

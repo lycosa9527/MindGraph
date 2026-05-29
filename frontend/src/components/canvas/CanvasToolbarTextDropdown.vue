@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ElButton, ElDropdown, ElDropdownMenu, ElTooltip } from 'element-plus'
 
-import { AlignCenter, AlignLeft, AlignRight, Sigma, Type } from 'lucide-vue-next'
+import { AlignCenter, AlignLeft, AlignRight, Sigma, Type } from '@lucide/vue'
 
 withDefaults(
   defineProps<{

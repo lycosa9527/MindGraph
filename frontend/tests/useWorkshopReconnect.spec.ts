@@ -203,7 +203,7 @@ describe('pendingResync round-trip simulation', () => {
    */
   it('flags gap, snapshot clears, then continues', () => {
     let last: number | null = null
-    let pending = false
+    let pending: boolean
 
     {
       const d = evaluateLiveSpecGap(last, 1)

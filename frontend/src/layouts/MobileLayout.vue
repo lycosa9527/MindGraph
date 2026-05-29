@@ -7,7 +7,7 @@
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { ArrowLeft, Home } from 'lucide-vue-next'
+import { ArrowLeft, Home } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { preloadMarkdownRendererForRoute } from '@/composables/core/useMarkdown'

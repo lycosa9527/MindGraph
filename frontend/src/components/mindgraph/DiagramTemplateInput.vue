@@ -10,7 +10,7 @@ import { ElButton, ElIcon, ElInput } from 'element-plus'
 
 import { Close, Loading, Promotion } from '@element-plus/icons-vue'
 
-import { ChevronDown } from 'lucide-vue-next'
+import { ChevronDown } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import {

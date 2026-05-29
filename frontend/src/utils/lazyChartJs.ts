@@ -1,7 +1,7 @@
 /**
  * Lazy-load Chart.js with only line-chart controllers used in admin/school dashboards.
  */
-import type { Chart as ChartType, ChartConfiguration, TooltipItem } from 'chart.js'
+import type { ChartConfiguration, Chart as ChartType, TooltipItem } from 'chart.js'
 
 export type { ChartConfiguration, TooltipItem }
 

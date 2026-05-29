@@ -1,11 +1,8 @@
 /**
  * Build Voice/Kitty WebSocket context from the diagram store (session_context parity).
  */
+import { buildKittyChildren, kittyNodeDisplayText } from '@/composables/kitty/kittyDiagramChildren'
 import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
-import {
-  buildKittyChildren,
-  kittyNodeDisplayText,
-} from '@/composables/kitty/kittyDiagramChildren'
 import { buildDiagramData } from '@/composables/nodePalette/diagramDataBuilder'
 import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores/diagram'

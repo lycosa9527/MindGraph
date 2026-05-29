@@ -10,7 +10,7 @@ import { nextTick, onUnmounted, ref, watch } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
-import { X } from 'lucide-vue-next'
+import { X } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'

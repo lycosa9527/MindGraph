@@ -6,7 +6,7 @@ import { computed } from 'vue'
 
 import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
 
-import { Check, Languages } from 'lucide-vue-next'
+import { Check, Languages } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'

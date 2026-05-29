@@ -15,7 +15,7 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'switch-period', p: 'today' | 'week' | 'month' | 'total'): void
+  (e: 'switchPeriod', p: 'today' | 'week' | 'month' | 'total'): void
 }>()
 
 const { t } = useLanguage()
@@ -57,7 +57,7 @@ defineExpose({ chartRef })
           type="button"
           class="school-token-period-card text-left"
           :class="{ 'school-token-period-card--active': period === item.key }"
-          @click="emit('switch-period', item.key)"
+          @click="emit('switchPeriod', item.key)"
         >
           <p class="school-token-period-card__label">{{ item.label }}</p>
           <p class="school-token-period-card__value">{{ item.value }}</p>

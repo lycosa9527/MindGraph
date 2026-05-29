@@ -17,7 +17,8 @@ export default {
   'canvas.import.invalidFile':
     '无效的图示文件，请选择 MindGraph 导出的 MG 文件或 CmapTools 的 CMAP 文件',
   'canvas.import.parseError': '無法解析圖示文件，請重試',
-  'canvas.import.cmapHeuristicSemantics': '該 CmapTools 文件使用文本順序回退推導連線關係，請在畫布上對照原圖核驗。',
+  'canvas.import.cmapHeuristicSemantics':
+    '該 CmapTools 文件使用文本順序回退推導連線關係，請在畫布上對照原圖核驗。',
   'canvas.import.cmapConnectionFallback': '語義關係是根據 IHMC 圖形連接恢復的，而非命題對象。',
   'canvas.import.cmapEmptyLayout': '未恢復到節點座標，已重新自動生成佈局。',
   'canvas.import.cmapLayoutLabelCollision': '重複的概念標籤共享佈局錨點，部分導入位置可能不準。',
@@ -249,8 +250,7 @@ export default {
   'canvas.toolbar.translateLabelAndMore': '還有 {n} 條未顯示…',
   'canvas.toolbar.translateLabelInProgress': '正在翻譯圖示…',
   'canvas.toolbar.translateLabelBannerTitle': '正在翻譯圖示',
-  'canvas.toolbar.translateLabelFallbackEnInfo':
-    '目前介面語言尚不支援作為翻譯目標，將以英語輸出。',
+  'canvas.toolbar.translateLabelFallbackEnInfo': '目前介面語言尚不支援作為翻譯目標，將以英語輸出。',
   'canvas.toolbar.translateLabelFailed': '翻譯失敗，請稍後重試',
   'canvas.toolbar.translateLabelDone': '翻譯完成',
   'canvas.toolbar.moreAppVirtualKeyboard': '虛擬鍵盤',

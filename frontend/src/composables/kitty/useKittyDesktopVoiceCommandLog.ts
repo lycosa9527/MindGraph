@@ -3,9 +3,9 @@
  */
 import { type ComputedRef, type Ref, onUnmounted, ref, watch } from 'vue'
 
-import { formatKittyVoiceCommandLabel } from '@/composables/kitty/kittyVoiceCommandLabels'
-import { useLanguage } from '@/composables/core/useLanguage'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { formatKittyVoiceCommandLabel } from '@/composables/kitty/kittyVoiceCommandLabels'
 
 export interface KittyDesktopVoiceCommandEntry {
   id: string
@@ -48,11 +48,7 @@ export function useKittyDesktopVoiceCommandLog(options: {
     entries.value = next.length > MAX_ENTRIES ? next.slice(-MAX_ENTRIES) : next
   }
 
-  function onVoiceCommand(payload: {
-    scope?: string
-    action?: string
-    detail?: string
-  }): void {
+  function onVoiceCommand(payload: { scope?: string; action?: string; detail?: string }): void {
     if (!options.enabled.value) {
       return
     }
@@ -68,11 +64,7 @@ export function useKittyDesktopVoiceCommandLog(options: {
     entries.value = []
   }
 
-  eventBus.onWithOwner(
-    'kitty:desktop_voice_command',
-    onVoiceCommand,
-    'KittyDesktopVoiceCommandLog'
-  )
+  eventBus.onWithOwner('kitty:desktop_voice_command', onVoiceCommand, 'KittyDesktopVoiceCommandLog')
 
   watch(
     () => options.enabled.value,

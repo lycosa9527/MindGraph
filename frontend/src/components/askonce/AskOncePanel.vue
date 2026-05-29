@@ -10,7 +10,7 @@ import { ElButton, ElCard, ElIcon } from 'element-plus'
 
 import { Bottom } from '@element-plus/icons-vue'
 
-import { Check, ChevronDown, ChevronUp, Copy, Square } from 'lucide-vue-next'
+import { Check, ChevronDown, ChevronUp, Copy, Square } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'

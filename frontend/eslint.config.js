@@ -30,9 +30,9 @@ export default tseslint.config(
     },
   },
 
-  // Node CLI scripts (.mjs)
+  // Node CLI scripts
   {
-    files: ['scripts/**/*.mjs'],
+    files: ['scripts/**/*.{js,mjs}'],
     languageOptions: {
       globals: {
         ...globals.node,

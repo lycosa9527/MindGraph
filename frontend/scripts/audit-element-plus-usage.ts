@@ -2,17 +2,17 @@
  * Scan frontend/src for Element Plus component usage (explicit imports + templates).
  *
  * Usage:
- *   npx tsx scripts/audit-element-plus-usage.ts
+ *   node scripts/audit-element-plus-usage.ts
  *
  * Bundle verification (after vite.config manualChunks split):
  *   ANALYZE=1 npm run build
- *   Open dist/stats.html â€” confirm vendor-ep-data is not imported by index/App entry.
- *   DevTools â†’ Network â†’ hard refresh /mindmate â€” vendor-ep-data should not load on cold visit.
+ *   Open dist/stats.html â€?confirm vendor-ep-data is not imported by index/App entry.
+ *   DevTools â†?Network â†?hard refresh /mindmate â€?vendor-ep-data should not load on cold visit.
  */
-import { readdirSync, readFileSync, statSync } from 'fs'
+import { readFileSync, readdirSync, statSync } from 'fs'
 import { join, relative } from 'path'
-import { fileURLToPath } from 'url'
 import { dirname } from 'path'
+import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const SRC_ROOT = join(__dirname, '../src')
@@ -51,7 +51,10 @@ function parseFile(filePath: string): FileReport {
   for (const match of text.matchAll(EL_NAMED_IMPORT_RE)) {
     const block = match[1] ?? ''
     for (const part of block.split(',')) {
-      const name = part.trim().split(/\s+as\s+/)[0]?.trim()
+      const name = part
+        .trim()
+        .split(/\s+as\s+/)[0]
+        ?.trim()
       if (name && /^El[A-Z]/.test(name)) {
         namedImports.add(name)
       }

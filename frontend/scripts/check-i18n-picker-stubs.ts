@@ -3,7 +3,7 @@
  * ('English copy; translate values as needed'). Parses the picker list from src/i18n/locales.ts.
  *
  * Default: print warnings, exit 0 (repo may still list picker locales being translated).
- * Strict: `npx tsx scripts/check-i18n-picker-stubs.ts --strict` exits 1 if any stub remains.
+ * Strict: `node scripts/check-i18n-picker-stubs.ts --strict` exits 1 if any stub remains.
  *
  * Run from frontend/: npm run i18n:check-picker-stubs
  */
@@ -73,7 +73,7 @@ function main(): void {
       process.exit(1)
     }
     console.warn(msg)
-    console.warn(`\n(${bad.length} locale(s); exiting 0 â€” use --strict to fail the process)`)
+    console.warn(`\n(${bad.length} locale(s); exiting 0 â€?use --strict to fail the process)`)
     process.exit(0)
   }
 

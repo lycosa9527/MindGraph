@@ -8,7 +8,7 @@ import { computed, ref, watch } from 'vue'
 
 import { Close } from '@element-plus/icons-vue'
 
-import { Eye, EyeOff, Loader2, RefreshCw } from 'lucide-vue-next'
+import { Eye, EyeOff, Loader2, RefreshCw } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'

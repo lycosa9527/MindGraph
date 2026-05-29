@@ -196,9 +196,13 @@ export function useDiagramCanvasEventBus(): {
           if (diagramStore.type === 'flow_map') {
             const spec = diagramStore.buildFlowMapSpecFromNodes()
             if (spec) {
-              diagramStore.loadFromSpec(spec as Record<string, unknown>, 'flow_map' as DiagramType, {
-                mergePreviousNodeStyles: true,
-              })
+              diagramStore.loadFromSpec(
+                spec as Record<string, unknown>,
+                'flow_map' as DiagramType,
+                {
+                  mergePreviousNodeStyles: true,
+                }
+              )
             }
           }
         }

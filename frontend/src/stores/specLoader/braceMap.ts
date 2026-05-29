@@ -62,8 +62,7 @@ function braceTypographyFromNode(
   const fs =
     typeof diagramNode?.style?.fontSize === 'number' ? diagramNode.style.fontSize : baseSize
   const defaultWeight = depth === 0 ? 'bold' : 'normal'
-  const fontWeight =
-    (diagramNode?.style?.fontWeight as string | undefined) ?? defaultWeight
+  const fontWeight = (diagramNode?.style?.fontWeight as string | undefined) ?? defaultWeight
   const fontFamily = diagramNode?.style?.fontFamily
   return { fontSize: fs, fontWeight, fontFamily }
 }

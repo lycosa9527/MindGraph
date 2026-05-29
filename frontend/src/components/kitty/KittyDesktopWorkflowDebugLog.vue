@@ -4,8 +4,8 @@
  */
 import { computed } from 'vue'
 
-import type { KittyDesktopWorkflowEntry } from '@/composables/kitty/useKittyDesktopWorkflowDebug'
 import { useLanguage } from '@/composables/core/useLanguage'
+import type { KittyDesktopWorkflowEntry } from '@/composables/kitty/useKittyDesktopWorkflowDebug'
 
 const props = defineProps<{
   visible: boolean

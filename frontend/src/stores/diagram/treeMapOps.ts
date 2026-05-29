@@ -187,9 +187,9 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
       return m ? parseInt(m[1], 10) : -1
     }
 
-    let sourceCatIdx = -1
+    let sourceCatIdx: number
     let sourceLeafIdx = -1
-    let sourceItem: { id?: string; text: string; children?: unknown[] } | null = null
+    let sourceItem: { id?: string; text: string; children?: unknown[] } | null
 
     if (isCategory(nodeId)) {
       sourceCatIdx = findCategoryIndex(nodeId)

@@ -69,13 +69,15 @@ export interface BackendUser {
   email?: string
   role?: AnyUserRole
   avatar?: string
-  organization?: string | {
-    id?: string | number
-    name?: string
-    display_name?: string
-    mindmate_agent_name?: string | null
-    mindmate_agent_avatar_url?: string | null
-  }
+  organization?:
+    | string
+    | {
+        id?: string | number
+        name?: string
+        display_name?: string
+        mindmate_agent_name?: string | null
+        mindmate_agent_avatar_url?: string | null
+      }
   schoolId?: string
   schoolName?: string
   created_at?: string

@@ -9,7 +9,7 @@ import { onBeforeUnmount, onMounted } from 'vue'
 
 import { Close, Download } from '@element-plus/icons-vue'
 
-import { Link } from 'lucide-vue-next'
+import { Link } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 

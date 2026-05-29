@@ -6,7 +6,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { Hash, MessageSquare, MoreVertical } from 'lucide-vue-next'
+import { Hash, MessageSquare, MoreVertical } from '@lucide/vue'
 
 import ChannelActionsPopover from '@/components/workshop-chat/ChannelActionsPopover.vue'
 import { useLanguage } from '@/composables/core/useLanguage'

@@ -342,7 +342,9 @@ export const useDiagramStore = defineStore('diagram', () => {
     data.value = { ...data.value, focus_question: trimmed }
   }
 
-  function applyKittyDiagramReviewAnnotations(next: Record<string, { reason: string; suggestion?: string }>): void {
+  function applyKittyDiagramReviewAnnotations(
+    next: Record<string, { reason: string; suggestion?: string }>
+  ): void {
     kittyReviewByNodeId.value = { ...next }
   }
 

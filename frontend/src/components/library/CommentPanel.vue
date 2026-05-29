@@ -7,7 +7,7 @@ import { computed, ref, watch } from 'vue'
 
 import { ElButton, ElInput } from 'element-plus'
 
-import { Heart, Loader2, MessageSquare, Send, Trash2, X } from 'lucide-vue-next'
+import { Heart, Loader2, MessageSquare, Send, Trash2, X } from '@lucide/vue'
 
 import { useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores/auth'

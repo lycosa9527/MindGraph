@@ -17,7 +17,7 @@ import {
 
 import { Loading } from '@element-plus/icons-vue'
 
-import { Edit3, FileImage, Lock, MoreHorizontal, Pin, Power, Trash2, Users } from 'lucide-vue-next'
+import { Edit3, FileImage, Lock, MoreHorizontal, Pin, Power, Trash2, Users } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'

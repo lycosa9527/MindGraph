@@ -9,7 +9,7 @@ import { useInfiniteScroll } from '@vueuse/core'
 
 import { ElButton, ElEmpty, ElMessageBox, ElSkeleton } from 'element-plus'
 
-import { Heart, MessageCircle, Pencil, Search, Trash2 } from 'lucide-vue-next'
+import { Heart, MessageCircle, Pencil, Search, Trash2 } from '@lucide/vue'
 
 import { ExportToCommunityModal } from '@/components/canvas'
 import { CommunityPostDetailModal } from '@/components/community'

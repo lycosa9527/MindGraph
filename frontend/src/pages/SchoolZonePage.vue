@@ -6,7 +6,7 @@
  */
 import { computed, onMounted, ref } from 'vue'
 
-import { Files, Heart, MessageCircle, Network, Search, Share2, Users, Video } from 'lucide-vue-next'
+import { Files, Heart, MessageCircle, Network, Search, Share2, Users, Video } from '@lucide/vue'
 
 import { useAuthStore } from '@/stores'
 

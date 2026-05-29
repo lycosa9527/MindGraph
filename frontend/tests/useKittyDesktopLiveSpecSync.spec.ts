@@ -1,8 +1,11 @@
 /**
  * Desktop Kitty live sync applies selection metadata only — never loadFromSpec.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useKittyDesktopLiveSpecSync } from '@/composables/kitty/useKittyDesktopLiveSpecSync'
 
 const { loadFromSpec, selectNodes, clearSelection } = vi.hoisted(() => ({
   loadFromSpec: vi.fn(),
@@ -51,8 +54,6 @@ vi.mock('@/composables/kitty/kittyDesktopMobileActiveHub', () => ({
       updatedAt: 0,
     }),
 }))
-
-import { useKittyDesktopLiveSpecSync } from '@/composables/kitty/useKittyDesktopLiveSpecSync'
 
 describe('useKittyDesktopLiveSpecSync', () => {
   beforeEach(() => {

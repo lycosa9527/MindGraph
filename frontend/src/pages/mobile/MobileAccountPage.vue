@@ -16,7 +16,7 @@ import {
   LogOut,
   Phone,
   Smile,
-} from 'lucide-vue-next'
+} from '@lucide/vue'
 
 import { ChangePasswordModal, ChangePhoneModal } from '@/components/auth'
 import AvatarSelectModal from '@/components/auth/AvatarSelectModal.vue'

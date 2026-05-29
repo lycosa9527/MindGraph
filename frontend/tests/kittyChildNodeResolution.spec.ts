@@ -19,9 +19,9 @@ describe('resolveKittyChildNodeId', () => {
 
   it('prefers explicit node id', () => {
     const nodes = [{ id: 'context-1', type: 'context', text: 'One' }]
-    expect(resolveKittyChildNodeId('circle_map', nodes, { nodeId: 'context-1', nodeIndex: 9 })).toBe(
-      'context-1'
-    )
+    expect(
+      resolveKittyChildNodeId('circle_map', nodes, { nodeId: 'context-1', nodeIndex: 9 })
+    ).toBe('context-1')
   })
 })
 

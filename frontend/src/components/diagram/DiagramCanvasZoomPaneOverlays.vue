@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+
 import type { GraphNode } from '@vue-flow/core'
 
 import { getBranchMoveCircleStyle, getDropTargetStyle } from '@/composables/diagramCanvas'
-import {
-  getDropTargetShapeClass,
-} from '@/composables/diagramCanvas/diagramCanvasZoomPaneStyles'
+import { getDropTargetShapeClass } from '@/composables/diagramCanvas/diagramCanvasZoomPaneStyles'
 import type { DropTarget } from '@/composables/editor/useBranchMoveDrag'
 import type { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
 import type { MindGraphNode } from '@/types/vueflow'

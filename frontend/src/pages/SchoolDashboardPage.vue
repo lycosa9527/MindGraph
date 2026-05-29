@@ -23,7 +23,7 @@ import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
 import { httpErrorDetail } from '@/utils/httpErrorDetail'
-import { loadChartJs, type ChartConfiguration, type TooltipItem } from '@/utils/lazyChartJs'
+import { type ChartConfiguration, type TooltipItem, loadChartJs } from '@/utils/lazyChartJs'
 
 const { t, isZh } = useLanguage()
 const notify = useNotifications()

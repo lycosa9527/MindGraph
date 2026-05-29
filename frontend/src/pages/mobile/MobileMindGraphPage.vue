@@ -9,7 +9,7 @@ import { useRouter } from 'vue-router'
 
 import { ElDrawer } from 'element-plus'
 
-import { ArrowRight, Home, Menu } from 'lucide-vue-next'
+import { ArrowRight, Home, Menu } from '@lucide/vue'
 
 import DiagramPreviewSvg from '@/components/mindgraph/DiagramPreviewSvg.vue'
 import DiagramHistory from '@/components/sidebar/DiagramHistory.vue'

@@ -12,7 +12,7 @@ import { ElButton, ElDialog, ElIcon, ElInput, ElOption, ElSelect } from 'element
 
 import { Plus } from '@element-plus/icons-vue'
 
-import { Send, Settings } from 'lucide-vue-next'
+import { Send, Settings } from '@lucide/vue'
 
 import { AskOncePanel } from '@/components/askonce'
 import { LoginModal } from '@/components/auth'

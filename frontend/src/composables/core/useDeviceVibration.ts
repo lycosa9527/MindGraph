@@ -34,11 +34,7 @@ function ensureIosSwitchInput(): HTMLInputElement | null {
   if (typeof document === 'undefined') {
     return null
   }
-  if (
-    iosSwitchInput &&
-    iosSwitchLabel &&
-    document.body.contains(iosSwitchLabel)
-  ) {
+  if (iosSwitchInput && iosSwitchLabel && document.body.contains(iosSwitchLabel)) {
     return iosSwitchInput
   }
   const label = document.createElement('label')

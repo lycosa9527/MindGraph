@@ -20,7 +20,7 @@ import {
 
 import { Check, CircleClose, Loading, View } from '@element-plus/icons-vue'
 
-import { Sparkles } from 'lucide-vue-next'
+import { Sparkles } from '@lucide/vue'
 
 import { notify } from '@/composables/core/notifications'
 import { useLanguage } from '@/composables/core/useLanguage'

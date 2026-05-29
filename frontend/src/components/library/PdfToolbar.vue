@@ -6,7 +6,7 @@ import { computed } from 'vue'
 
 import { ElButton, ElInputNumber, ElOption, ElSelect } from 'element-plus'
 
-import { Bookmark, MapPin, Printer, RotateCw, ZoomIn, ZoomOut } from 'lucide-vue-next'
+import { Bookmark, MapPin, Printer, RotateCw, ZoomIn, ZoomOut } from '@lucide/vue'
 
 interface Props {
   currentPage: number

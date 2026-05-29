@@ -221,7 +221,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
     const srcSubMatch = sourceId.match(/^flow-substep-(\d+)-(\d+)$/)
     const tgtStepMatch = targetId.match(/^flow-step-(\d+)$/)
 
-    let success = false
+    let success: boolean
 
     if (srcSubMatch && tgtStepMatch) {
       const srcStepIdx = parseInt(srcSubMatch[1], 10)
@@ -290,9 +290,13 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
         const tmp = causes[si]
         causes[si] = causes[ti]
         causes[ti] = tmp
-        return ctx.loadFromSpec({ event: eventNode?.text ?? '', causes, effects }, 'multi_flow_map', {
-          mergePreviousNodeStyles: true,
-        })
+        return ctx.loadFromSpec(
+          { event: eventNode?.text ?? '', causes, effects },
+          'multi_flow_map',
+          {
+            mergePreviousNodeStyles: true,
+          }
+        )
       }
       return false
     }
@@ -306,9 +310,13 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
         const tmp = effects[si]
         effects[si] = effects[ti]
         effects[ti] = tmp
-        return ctx.loadFromSpec({ event: eventNode?.text ?? '', causes, effects }, 'multi_flow_map', {
-          mergePreviousNodeStyles: true,
-        })
+        return ctx.loadFromSpec(
+          { event: eventNode?.text ?? '', causes, effects },
+          'multi_flow_map',
+          {
+            mergePreviousNodeStyles: true,
+          }
+        )
       }
       return false
     }
@@ -397,7 +405,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
 
     if (parentMap.get(sourceId) === targetId) return false
 
-    let success = false
+    let success: boolean
 
     if (srcDepth > tgtDepth) {
       const descendantIds = getNodeGroupIds(sourceId)
@@ -494,7 +502,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
     const dt = ctx.type.value
     if (!dt || !ctx.data.value) return false
 
-    let success = false
+    let success: boolean
     switch (dt) {
       case 'bubble_map':
         success = swapBubbleMapNodes(sourceId, targetId)

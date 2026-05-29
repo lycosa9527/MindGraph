@@ -29,7 +29,7 @@ async function handleSubmit() {
     if (result.success) {
       const userName = result.user?.username || ''
       notify.success(
-        userName ? t('bayiPasskey.loginSuccessNamed', { name: userName }) : t('bayiPasskey.loginOk'),
+        userName ? t('bayiPasskey.loginSuccessNamed', { name: userName }) : t('bayiPasskey.loginOk')
       )
       router.push('/mindmate')
     } else {

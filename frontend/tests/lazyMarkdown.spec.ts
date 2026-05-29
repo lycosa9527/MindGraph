@@ -1,10 +1,7 @@
 /** Vitest: lazy markdown route helpers and ready flag */
 import { describe, expect, it } from 'vitest'
 
-import {
-  markdownRendererReady,
-  routeUsesRichMarkdown,
-} from '@/composables/core/lazyMarkdown'
+import { markdownRendererReady, routeUsesRichMarkdown } from '@/composables/core/lazyMarkdown'
 
 describe('routeUsesRichMarkdown', () => {
   it('matches markdown-heavy app routes', () => {

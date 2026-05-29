@@ -2,17 +2,17 @@
  * Materialize `locales/messages/<code>/` from English namespaces + root re-export.
  * Skips: en, zh, zh-tw, az, th, fr, af (existing dedicated bundles).
  *
- * Does not modify `src/i18n/index.ts` â€” locale loading is lazy via `import.meta.glob`
+ * Does not modify `src/i18n/index.ts` â€?locale loading is lazy via `import.meta.glob`
  * in that file (eager bundles: en + zh only).
  *
- * Run: npx tsx scripts/materialize-locale-bundles-from-en.ts
+ * Run: node scripts/materialize-locale-bundles-from-en.ts
  */
 import { execSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { SUPPORTED_UI_LOCALES } from '../src/i18n/supportedUiLocales'
+import { SUPPORTED_UI_LOCALES } from '../src/i18n/supportedUiLocales.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '../src/locales/messages')
@@ -36,8 +36,8 @@ const NS_FILES = [
 
 function patchNamespaceHeader(content: string, code: string): string {
   return content.replace(
-    /^\/\*\* English UI â€” (.+) \*\//,
-    `/** ${code} UI â€” $1 (English copy; translate values as needed) */`
+    /^\/\*\* English UI â€?(.+) \*\//,
+    `/** ${code} UI â€?$1 (English copy; translate values as needed) */`
   )
 }
 
@@ -60,9 +60,9 @@ function materializeLocale(code: string): void {
   writeFileSync(
     join(ROOT, `${code}.ts`),
     `/**
- * ${code} UI messages â€” re-export merged bundles.
+ * ${code} UI messages â€?re-export merged bundles.
  */
-export { default } from './${code}/index'
+export { default } from './${code}/index.ts'
 `,
     'utf8'
   )

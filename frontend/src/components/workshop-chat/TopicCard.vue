@@ -7,7 +7,7 @@ import { ref } from 'vue'
 
 import { ChatLineSquare } from '@element-plus/icons-vue'
 
-import { MoreVertical } from 'lucide-vue-next'
+import { MoreVertical } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { ChatTopic } from '@/stores/workshopChat'

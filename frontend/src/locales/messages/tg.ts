@@ -1,4 +1,4 @@
 /**
  * tg UI messages — re-export merged bundles.
  */
-export { default } from './tg/index'
+export { default } from './tg/index.ts'

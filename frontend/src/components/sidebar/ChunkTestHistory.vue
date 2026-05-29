@@ -19,7 +19,7 @@ import {
 
 import { Loading } from '@element-plus/icons-vue'
 
-import { Lock, MoreHorizontal, TestTube, Trash2 } from 'lucide-vue-next'
+import { Lock, MoreHorizontal, TestTube, Trash2 } from '@lucide/vue'
 
 import { notify, useLanguage } from '@/composables'
 import {

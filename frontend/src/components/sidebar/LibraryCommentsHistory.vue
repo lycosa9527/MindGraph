@@ -9,7 +9,7 @@ import { useRouter } from 'vue-router'
 
 import { ElScrollbar } from 'element-plus'
 
-import { Bookmark, FileText, Trash2 } from 'lucide-vue-next'
+import { Bookmark, FileText, Trash2 } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { useNotifications } from '@/composables'

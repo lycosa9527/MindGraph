@@ -1,7 +1,6 @@
 <script setup lang="ts">
 /**
- * DanmakuOverlay - Overlay component for displaying danmaku and highlights
- * Uses vue-danmaku for animations and renders highlights on canvas
+ * DanmakuOverlay - Overlay for danmaku highlights on library pages (canvas rendering).
  */
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 

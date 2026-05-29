@@ -1,13 +1,13 @@
 /**
- * Compare first N UI locales' message values to English â€” report % "translated"
+ * Compare first N UI locales' message values to English â€?report % "translated"
  * (value !== English value for that key). English locale is the baseline (skipped).
  *
  * "Translated" here means the string differs from `en` (materialized stubs are 0%).
  *
- * Run: npx tsx scripts/check-ui-translation-coverage.ts
+ * Run: node scripts/check-ui-translation-coverage.ts
  */
-import { INTERFACE_LANGUAGE_PICKER_CODES } from '../src/i18n/locales'
-import { SUPPORTED_UI_LOCALES } from '../src/i18n/supportedUiLocales'
+import { INTERFACE_LANGUAGE_PICKER_CODES } from '../src/i18n/locales.ts'
+import { SUPPORTED_UI_LOCALES } from '../src/i18n/supportedUiLocales.ts'
 
 const ENGLISH_NAME_BY_CODE = new Map(
   SUPPORTED_UI_LOCALES.map((e) => [e.code, e.englishName] as const)
@@ -85,7 +85,7 @@ async function main(): Promise<void> {
 
   for (const code of codes) {
     if (code === 'en') {
-      console.log(`[${code}] (source â€” skipped)\n`)
+      console.log(`[${code}] (source â€?skipped)\n`)
       continue
     }
 

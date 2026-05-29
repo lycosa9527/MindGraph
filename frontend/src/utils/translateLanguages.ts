@@ -25,9 +25,7 @@ export const TRANSLATE_LANGUAGES: TranslateLanguage[] = [
   { code: 'tr', label: 'Türkçe (土耳其语)' },
 ]
 
-const CANVAS_TRANSLATE_TARGET_CODES = new Set(
-  TRANSLATE_LANGUAGES.map((entry) => entry.code)
-)
+const CANVAS_TRANSLATE_TARGET_CODES = new Set(TRANSLATE_LANGUAGES.map((entry) => entry.code))
 
 /**
  * Map MindGraph UI locale to `target_language` for `/api/canvas/translate_*` endpoints.

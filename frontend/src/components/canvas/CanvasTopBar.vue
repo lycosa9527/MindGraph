@@ -23,15 +23,7 @@ import {
 
 import { ChatDotRound, Download } from '@element-plus/icons-vue'
 
-import {
-  ArrowLeft,
-  FileImage,
-  FileJson,
-  FileText,
-  ImageDown,
-  RotateCcw,
-  Share2,
-} from 'lucide-vue-next'
+import { ArrowLeft, FileImage, FileJson, FileText, ImageDown, RotateCcw, Share2 } from '@lucide/vue'
 
 import CanvasToolbar from '@/components/canvas/CanvasToolbar.vue'
 import DiagramSlotFullModal from '@/components/canvas/DiagramSlotFullModal.vue'
@@ -440,7 +432,9 @@ async function handleReset() {
             role="button"
             tabindex="0"
             @click.stop="onSnapshotBadgeClick($event, snap.version_number)"
-            @keydown.enter.stop="onSnapshotBadgeClick($event as unknown as MouseEvent, snap.version_number)"
+            @keydown.enter.stop="
+              onSnapshotBadgeClick($event as unknown as MouseEvent, snap.version_number)
+            "
             @keydown.space.prevent.stop="
               onSnapshotBadgeClick($event as unknown as MouseEvent, snap.version_number)
             "

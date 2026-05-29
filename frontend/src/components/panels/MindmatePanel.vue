@@ -4,18 +4,18 @@
  * Uses useMindMate composable for SSE streaming
  * Features: Markdown rendering, code highlighting, message actions, stop generation
  */
-import { computed, nextTick, onMounted, onActivated, ref, watch } from 'vue'
+import { computed, nextTick, onActivated, onMounted, ref, watch } from 'vue'
 
 import { ElButton, ElIcon } from 'element-plus'
 
 import { Plus } from '@element-plus/icons-vue'
 
-import { PanelLeftOpen } from 'lucide-vue-next'
+import { PanelLeftOpen } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useMindMate } from '@/composables/mindmate/useMindMate'
-import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
+import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
 import { useAuthStore, useMindMateStore } from '@/stores'
 import { useUIStore } from '@/stores/ui'

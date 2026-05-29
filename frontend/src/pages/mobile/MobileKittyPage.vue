@@ -9,7 +9,7 @@ import { useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
 
-import { Camera, ChevronLeft, Keyboard, Loader2, Mic } from 'lucide-vue-next'
+import { Camera, ChevronLeft, Keyboard, Loader2, Mic } from '@lucide/vue'
 
 import KittyBlackCatMascot from '@/components/kitty/KittyBlackCatMascot.vue'
 import KittyIpodClickWheel from '@/components/kitty/KittyIpodClickWheel.vue'
@@ -23,9 +23,9 @@ import {
 } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { compressImageFileForKitty } from '@/composables/kitty/compressImageForKitty'
-import { useKittyMobileDebugBus } from '@/composables/kitty/useKittyMobileDebugBus'
-import { hydrateMobileKittyStoreFromBootstrap } from '@/composables/kitty/hydrateMobileKittyStoreFromBootstrap'
 import { hydrateMobileKittyFromLibrary } from '@/composables/kitty/hydrateMobileKittyFromLibrary'
+import { hydrateMobileKittyStoreFromBootstrap } from '@/composables/kitty/hydrateMobileKittyStoreFromBootstrap'
+import { useKittyMobileDebugBus } from '@/composables/kitty/useKittyMobileDebugBus'
 import { useKittyMobileHubActionBridge } from '@/composables/kitty/useKittyMobileHubActionBridge'
 import { useKittyMobileHubPersist } from '@/composables/kitty/useKittyMobileHubPersist'
 import { useKittyMobileLibraryDiagramSelect } from '@/composables/kitty/useKittyMobileLibraryDiagramSelect'
@@ -119,12 +119,8 @@ const connecting = computed(() => kitty.state.value === 'connecting')
 const kittyVoiceState = computed(() => kitty.state.value)
 const kittyVoiceInputActive = computed(() => kitty.isVoiceActive.value)
 
-const kittyLibraryDiagramId = computed(
-  () => mobileKittyContextPreview.value.diagramLibraryId
-)
-const kittyDiagramDisplayTitle = computed(
-  () => mobileKittyContextPreview.value.diagramDisplayTitle
-)
+const kittyLibraryDiagramId = computed(() => mobileKittyContextPreview.value.diagramLibraryId)
+const kittyDiagramDisplayTitle = computed(() => mobileKittyContextPreview.value.diagramDisplayTitle)
 
 const { flushHubLibraryPersist } = useKittyMobileHubPersist({
   libraryDiagramId: kittyLibraryDiagramId,
@@ -137,7 +133,8 @@ const { flushHubLibraryPersist } = useKittyMobileHubPersist({
 
 const kittyDiagramCardPrimary = computed(() => {
   const p = mobileKittyContextPreview.value
-  const title = p.diagramDisplayTitle !== '' ? p.diagramDisplayTitle : t('mobile.kittyDiagramTitleEmpty')
+  const title =
+    p.diagramDisplayTitle !== '' ? p.diagramDisplayTitle : t('mobile.kittyDiagramTitleEmpty')
   return `${t('mobile.kittyCurrentDiagramLabel')}: ${title}`
 })
 
@@ -161,7 +158,7 @@ const kittyDiagramCardBadge = computed(() => {
   return t('mobile.kittyHubSourceEmpty')
 })
 
-const kittyDiagramCardAriaLabel = computed(() => {
+const kittyDiagramCardAccessibleLabel = computed(() => {
   const meta = kittyDiagramCardMeta.value
   const badge = kittyDiagramCardBadge.value
   const bits = [kittyDiagramCardPrimary.value, meta]
@@ -637,9 +634,7 @@ onUnmounted(async () => {
             </div>
           </div>
         </div>
-        <div
-          class="kitty-stage relative flex-1 w-full min-h-[min(56vh,520px)] shrink-0"
-        >
+        <div class="kitty-stage relative flex-1 w-full min-h-[min(56vh,520px)] shrink-0">
           <KittyBlackCatMascot
             class="kitty-stage__mascot absolute inset-0 z-[3] flex items-center justify-center pointer-events-none mb-0"
             :agent-state="kittyVoiceState"
@@ -711,7 +706,7 @@ onUnmounted(async () => {
           :primary-line="kittyDiagramCardPrimary"
           :meta-line="kittyDiagramCardMeta"
           :source-badge="kittyDiagramCardBadge"
-          :ariaLabel="kittyDiagramCardAriaLabel"
+          :accessible-label="kittyDiagramCardAccessibleLabel"
           :selecting="diagramSelecting"
           :current-diagram-id="mobileKittyContextPreview.diagramLibraryId"
           :disabled="connecting || diagramSelecting"
@@ -760,7 +755,6 @@ onUnmounted(async () => {
         <span v-if="cameraDenied">{{ t('mobile.kittyCameraDenied', '相机或图片不可用') }}</span>
       </p>
     </div>
-
   </div>
 </template>
 

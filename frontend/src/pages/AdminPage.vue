@@ -18,12 +18,12 @@ import {
   DataAnalysis,
   Microphone,
   Odometer,
+  Plus,
   Reading,
   School,
   Setting,
   ShoppingCart,
   Ticket,
-  Plus,
   User,
   UserFilled,
 } from '@element-plus/icons-vue'

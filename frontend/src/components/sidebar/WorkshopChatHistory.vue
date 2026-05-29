@@ -21,7 +21,7 @@ import {
   Plus,
   Search,
   Star,
-} from 'lucide-vue-next'
+} from '@lucide/vue'
 
 import ChannelSidebarItem from '@/components/sidebar/ChannelSidebarItem.vue'
 import ChannelActionsPopover from '@/components/workshop-chat/ChannelActionsPopover.vue'

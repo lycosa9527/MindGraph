@@ -7,17 +7,17 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { Home, Menu, Plus } from 'lucide-vue-next'
+import { Home, Menu, Plus } from '@lucide/vue'
 
+import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import ShareExportModal from '@/components/panels/ShareExportModal.vue'
 import ConversationHistory from '@/components/panels/mindmate/ConversationHistory.vue'
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 import MindmateMessages from '@/components/panels/mindmate/MindmateMessages.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useMindMate } from '@/composables/mindmate/useMindMate'
-import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
-import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
+import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
 import { useAuthStore, useMindMateStore, useVoiceStore } from '@/stores'
 

@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import { ChevronDown, ChevronRight, Globe, Hash, Lock, MoreVertical, Pin } from 'lucide-vue-next'
+import { ChevronDown, ChevronRight, Globe, Hash, Lock, MoreVertical, Pin } from '@lucide/vue'
 
 import ChannelActionsPopover from '@/components/workshop-chat/ChannelActionsPopover.vue'
 import TopicActionsPopover from '@/components/workshop-chat/TopicActionsPopover.vue'

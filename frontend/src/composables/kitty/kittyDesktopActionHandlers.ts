@@ -45,15 +45,12 @@ export async function handleKittyOpenLibraryDiagramAction(
   if (act.kind !== 'open_library_diagram') {
     return
   }
-  const targetId =
-    typeof act.diagram_library_id === 'string' ? act.diagram_library_id.trim() : ''
+  const targetId = typeof act.diagram_library_id === 'string' ? act.diagram_library_id.trim() : ''
   if (targetId.length === 0) {
     return
   }
   const targetTitle =
-    typeof act.title === 'string' && act.title.trim().length > 0
-      ? act.title.trim()
-      : targetId
+    typeof act.title === 'string' && act.title.trim().length > 0 ? act.title.trim() : targetId
 
   const currentId = options.savedDiagramsStore.activeDiagramId?.trim() ?? ''
   const onCanvas = options.routePath === '/canvas' || options.routePath.startsWith('/canvas/')
@@ -92,10 +89,7 @@ export async function handleKittyOpenLibraryDiagramAction(
   })
 }
 
-export async function handleKittyOpenCanvasAction(
-  action: unknown,
-  router: Router
-): Promise<void> {
+export async function handleKittyOpenCanvasAction(action: unknown, router: Router): Promise<void> {
   if (action == null || typeof action !== 'object') {
     return
   }

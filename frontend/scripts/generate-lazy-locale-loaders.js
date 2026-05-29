@@ -3,8 +3,9 @@
  * Locales whose message values are identical to `en` share `import('@/locales/messages/en')`
  * so Vite emits one chunk instead of dozens of duplicates.
  *
- * Run: npx tsx scripts/generate-lazy-locale-loaders.js
+ * Run: node scripts/generate-lazy-locale-loaders.js
  */
+import { execSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -63,6 +64,24 @@ async function loadMerged(code) {
   return mod.default
 }
 
+function jsStringLiteral(value) {
+  return `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
+}
+
+/** Prettier `singleQuote: true` array literal (not JSON.stringify double quotes). */
+function formatCodeArray(codes) {
+  const lines = codes.map((code) => `  ${jsStringLiteral(code)},`)
+  return `[\n${lines.join('\n')}\n]`
+}
+
+/** Prettier `quoteProps: as-needed` — quote keys only when not a valid identifier. */
+function objectPropertyKey(code) {
+  if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(code)) {
+    return code
+  }
+  return jsStringLiteral(code)
+}
+
 async function main() {
   const codes = [
     ...extractCodes(join(root, 'src/i18n/supportedUiLocales.ts')),
@@ -89,10 +108,10 @@ async function main() {
 
   const dedicatedLines = dedicatedCodes
     .sort()
-    .map((code) => `  '${code}': () => import('@/locales/messages/${code}'),`)
+    .map((code) => `  ${objectPropertyKey(code)}: () => import('@/locales/messages/${code}'),`)
 
   const output = `/**
- * Per-locale dynamic imports (generated — run: npx tsx scripts/generate-lazy-locale-loaders.js).
+ * Per-locale dynamic imports (generated — run: node scripts/generate-lazy-locale-loaders.js).
  * \`en\` is eager in i18n/index.ts. LOCALE_EN_COPY_CODES reuse those messages (no import here).
  */
 import type { LocaleCode } from './locales'
@@ -100,7 +119,7 @@ import type { LocaleCode } from './locales'
 type LocaleModule = { default: Record<string, string> }
 
 /** UI locale codes that reuse eager English strings (see loadLocaleMessages in i18n/index.ts). */
-export const LOCALE_EN_COPY_CODES = ${JSON.stringify(enCopyCodes, null, 2)} as const satisfies readonly LocaleCode[]
+export const LOCALE_EN_COPY_CODES = ${formatCodeArray(enCopyCodes)} as const satisfies readonly LocaleCode[]
 
 const enCopySet = new Set<string>(LOCALE_EN_COPY_CODES)
 
@@ -119,6 +138,10 @@ ${dedicatedLines.join('\n')}
     `${JSON.stringify({ enCopyCodes, dedicatedCodes }, null, 2)}\n`,
     'utf8'
   )
+  execSync('npx prettier --write src/i18n/lazyLocaleLoaders.ts src/i18n/localeEnCopyCodes.json', {
+    cwd: root,
+    stdio: 'inherit',
+  })
   console.log(
     `wrote lazyLocaleLoaders.ts: ${lazy.length} loaders (${enCopyCodes.length} en-copy, ${dedicatedCodes.length} dedicated)`
   )

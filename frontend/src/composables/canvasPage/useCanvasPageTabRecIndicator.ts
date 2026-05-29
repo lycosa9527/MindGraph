@@ -16,9 +16,9 @@
 import { watch } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { useDiagramStore } from '@/stores'
 import { useCanvasNodeIndicatorsStore } from '@/stores/canvasNodeIndicators'
 import { useInlineRecommendationsStore } from '@/stores/inlineRecommendations'
-import { useDiagramStore } from '@/stores'
 
 export function useCanvasPageTabRecIndicator(): void {
   const inlineRecStore = useInlineRecommendationsStore()

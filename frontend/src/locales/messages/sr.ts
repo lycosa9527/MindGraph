@@ -1,4 +1,4 @@
 /**
  * sr UI messages — re-export merged bundles.
  */
-export { default } from './sr/index'
+export { default } from './sr/index.ts'

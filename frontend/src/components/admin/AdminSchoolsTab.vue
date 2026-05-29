@@ -7,12 +7,12 @@ import { onMounted, ref } from 'vue'
 
 import { Loading } from '@element-plus/icons-vue'
 
+import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import { useLanguage, useNotifications } from '@/composables'
 import {
   resolveSchoolMindmateAgentName,
   resolveSchoolMindmateAvatarUrl,
 } from '@/composables/mindmate/useMindMateBranding'
-import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import '@/styles/admin-schools-swiss.css'
 import { apiRequest } from '@/utils/apiClient'
 
@@ -51,8 +51,10 @@ function agentDisplayName(row: Record<string, unknown>): string {
 }
 
 function agentAvatarSrc(row: Record<string, unknown>): string {
-  return resolveSchoolMindmateAvatarUrl(row.mindmate_agent_avatar_url as string | null | undefined)
-    ?? mindmateAvatarMd
+  return (
+    resolveSchoolMindmateAvatarUrl(row.mindmate_agent_avatar_url as string | null | undefined) ??
+    mindmateAvatarMd
+  )
 }
 
 function onAgentAvatarError(event: Event) {

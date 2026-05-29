@@ -1,14 +1,14 @@
 /**
  * One-off / maintenance: split monolithic locale default export into namespace files.
- * Run from frontend/: npx tsx scripts/split-locale-bundles.ts
+ * Run from frontend/: node scripts/split-locale-bundles.ts
  */
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import az from '../src/locales/messages/az'
-import en from '../src/locales/messages/en'
-import zh from '../src/locales/messages/zh'
+import az from '../src/locales/messages/az.ts'
+import en from '../src/locales/messages/en.ts'
+import zh from '../src/locales/messages/zh.ts'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -100,7 +100,7 @@ function stringifyBundle(obj: LocaleMessages, localeLabel: string, bundleName: s
     const v = obj[k]
     return `    ${JSON.stringify(k)}: ${JSON.stringify(v)},`
   })
-  return `/** ${localeLabel} â€” ${bundleName} */\nexport default {\n${lines.join('\n')}\n} as const\n`
+  return `/** ${localeLabel} â€?${bundleName} */\nexport default {\n${lines.join('\n')}\n} as const\n`
 }
 
 const bundles = [
@@ -134,15 +134,15 @@ function main(): void {
       fs.writeFileSync(filePath, stringifyBundle(part, label, name), 'utf8')
     }
     const indexPath = path.join(localeDir, 'index.ts')
-    const imports = bundles.map((b) => `import ${b} from './${b}'`).join('\n')
+    const imports = bundles.map((b) => `import ${b} from './${b}.ts'`).join('\n')
     const spreads = bundles.map((b) => `  ...${b}`).join(',\n')
-    const indexContent = `/**\n * ${locale} UI messages â€” merged namespace bundles.\n */\n${imports}\n\nexport default {\n${spreads},\n} as const\n`
+    const indexContent = `/**\n * ${locale} UI messages â€?merged namespace bundles.\n */\n${imports}\n\nexport default {\n${spreads},\n} as const\n`
     fs.writeFileSync(indexPath, indexContent, 'utf8')
   }
 
   for (const locale of ['zh', 'en', 'az'] as const) {
     const legacyPath = path.join(root, `${locale}.ts`)
-    const indexContent = `/**\n * ${locale} UI messages â€” re-export merged bundles.\n */\nexport { default } from './${locale}/index'\n`
+    const indexContent = `/**\n * ${locale} UI messages â€?re-export merged bundles.\n */\nexport { default } from './${locale}/index.ts'\n`
     fs.writeFileSync(legacyPath, indexContent, 'utf8')
   }
 

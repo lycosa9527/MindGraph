@@ -85,7 +85,7 @@ const menuItems = computed<MenuItem[]>(() => {
       label: t('diagram.contextMenu.delete'),
       action: () => {
         const diagramType = diagramStore.type
-        let deleted = false
+        let deleted: boolean
         if (diagramType === 'mindmap' || diagramType === 'mind_map') {
           deleted = diagramStore.removeMindMapNodes([node.id]) > 0
         } else if (diagramType === 'brace_map') {

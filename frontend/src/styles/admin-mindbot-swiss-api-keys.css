@@ -27,7 +27,7 @@
   line-height: 1.35;
 }
 
-.mindbot-swiss-dialog .api-keys-nested-form :deep(.el-form-item) {
+.mindbot-swiss-dialog .api-keys-nested-form .el-form-item {
   margin-bottom: 0.65rem;
 }
 
@@ -99,14 +99,14 @@
   font-size: 0.75rem;
 }
 
-.mindbot-swiss-dialog .api-keys-table :deep(.el-table__header th) {
+.mindbot-swiss-dialog .api-keys-table .el-table__header th {
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
-.mindbot-swiss-dialog .api-keys-table :deep(.el-table__empty-block) {
+.mindbot-swiss-dialog .api-keys-table .el-table__empty-block {
   min-height: 5rem;
   color: #94a3b8;
   font-size: 0.75rem;
@@ -119,7 +119,7 @@
   word-break: break-all;
 }
 
-.mindbot-swiss-dialog .api-keys-key-cell :deep(.el-button--primary.is-link) {
+.mindbot-swiss-dialog .api-keys-key-cell .el-button--primary.is-link {
   color: #67e8f9;
   flex-shrink: 0;
 }
@@ -131,14 +131,14 @@
   gap: 0.1rem 0.25rem;
 }
 
-.mindbot-swiss-dialog .api-keys-row-actions :deep(.el-button.is-link) {
+.mindbot-swiss-dialog .api-keys-row-actions .el-button.is-link {
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   padding: 0.15rem 0.45rem;
 }
 
-.mindbot-swiss-dialog .api-keys-row-actions :deep(.el-button--danger.is-link) {
+.mindbot-swiss-dialog .api-keys-row-actions .el-button--danger.is-link {
   color: #fb7185;
 }
 
@@ -182,11 +182,11 @@
   min-height: 8rem;
 }
 
-.mindbot-swiss-dialog .api-keys-floating-load :deep(.el-loading-mask) {
+.mindbot-swiss-dialog .api-keys-floating-load .el-loading-mask {
   background-color: rgba(2, 6, 23, 0.55);
 }
 
-.mindbot-swiss-dialog .api-keys-floating-load :deep(.el-loading-text) {
+.mindbot-swiss-dialog .api-keys-floating-load .el-loading-text {
   color: #a8b7c9;
   font-family: var(--geek-ulog-font);
   font-size: 0.75rem;

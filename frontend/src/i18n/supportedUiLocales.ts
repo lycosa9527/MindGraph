@@ -1,7 +1,7 @@
 /**
  * UI locale definitions — `SUPPORTED_UI_LOCALES` (imported by `locales.ts`).
  */
-import { SUPPORTED_UI_LOCALES_EXTRA } from './supportedUiLocalesExtra'
+import { SUPPORTED_UI_LOCALES_EXTRA } from './supportedUiLocalesExtra.ts'
 
 export const SUPPORTED_UI_LOCALES = [
   // Traditional Chinese — must appear before `zh` so zh-TW/HK/MO browsers match here first.

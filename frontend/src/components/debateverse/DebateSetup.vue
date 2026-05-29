@@ -17,7 +17,7 @@ import {
 
 import { ArrowDown } from '@element-plus/icons-vue'
 
-import { Send } from 'lucide-vue-next'
+import { Send } from '@lucide/vue'
 
 import debateverseAvatarLg from '@/assets/debateverse-avatar-lg.png'
 import { useLanguage } from '@/composables/core/useLanguage'

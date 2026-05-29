@@ -17,7 +17,8 @@ export default {
   'canvas.import.invalidFile':
     '无效的图示文件，请选择 MindGraph 导出的 MG 文件或 CmapTools 的 CMAP 文件',
   'canvas.import.parseError': '无法解析图示文件，请重试',
-  'canvas.import.cmapHeuristicSemantics': '该 CmapTools 文件使用文本顺序回退推导连线关系，请在画布上对照原图核验。',
+  'canvas.import.cmapHeuristicSemantics':
+    '该 CmapTools 文件使用文本顺序回退推导连线关系，请在画布上对照原图核验。',
   'canvas.import.cmapConnectionFallback': '语义关系是根据 IHMC 图形连接恢复的，而非命题对象。',
   'canvas.import.cmapEmptyLayout': '未恢复到节点坐标，已重新自动生成布局。',
   'canvas.import.cmapLayoutLabelCollision': '重复的概念标签共享布局锚点，部分导入位置可能不准。',

@@ -5,7 +5,7 @@
  */
 import { computed, ref } from 'vue'
 
-import { BookOpen, Play, Search } from 'lucide-vue-next'
+import { BookOpen, Play, Search } from '@lucide/vue'
 
 // Filter options
 const typeOptions = ['全部', 'MindMate', 'MindGraph'] as const

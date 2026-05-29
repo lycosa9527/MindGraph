@@ -94,7 +94,10 @@ export function handleKittyServerMessage(
       traceKittyWorkflow('mobile', 'action', String(data.action ?? ''), {
         action: String(data.action ?? ''),
       })
-      executeKittyAgentAction(String(data.action ?? ''), (data.params as Record<string, unknown>) ?? {})
+      executeKittyAgentAction(
+        String(data.action ?? ''),
+        (data.params as Record<string, unknown>) ?? {}
+      )
       break
 
     case 'diagram_update': {
@@ -133,9 +136,7 @@ export function handleKittyServerMessage(
         revision: typeof data.revision === 'number' ? data.revision : undefined,
         library_snapshot_saved: data.library_snapshot_saved === true,
         library_snapshot_error:
-          typeof data.library_snapshot_error === 'string'
-            ? data.library_snapshot_error
-            : undefined,
+          typeof data.library_snapshot_error === 'string' ? data.library_snapshot_error : undefined,
         idempotency_key:
           typeof data.idempotency_key === 'string' ? data.idempotency_key : undefined,
         persist_library: data.persist_library === true,
@@ -201,7 +202,11 @@ export function createKittyPlayback(deps: KittyPlaybackDeps) {
   }
 
   function playNextAudio(): void {
-    if (deps.destroyed() || !deps.audioContext.value || deps.audioContext.value.state === 'closed') {
+    if (
+      deps.destroyed() ||
+      !deps.audioContext.value ||
+      deps.audioContext.value.state === 'closed'
+    ) {
       deps.isPlaying.value = false
       deps.currentAudioSource.value = null
       deps.audioQueue.length = 0
@@ -284,7 +289,11 @@ export function createKittyCapture(deps: KittyCaptureDeps) {
     const processor = deps.audioContext.value.createScriptProcessor(4096, 1, 1)
 
     processor.onaudioprocess = (e) => {
-      if (!deps.isVoiceActive.value || !deps.ws.value || deps.ws.value.readyState !== WebSocket.OPEN) {
+      if (
+        !deps.isVoiceActive.value ||
+        !deps.ws.value ||
+        deps.ws.value.readyState !== WebSocket.OPEN
+      ) {
         return
       }
 
@@ -327,7 +336,11 @@ export function createKittyCapture(deps: KittyCaptureDeps) {
       const workletNode = new AudioWorkletNode(deps.audioContext.value, 'pcm-processor')
 
       workletNode.port.onmessage = (event) => {
-        if (!deps.isVoiceActive.value || !deps.ws.value || deps.ws.value.readyState !== WebSocket.OPEN) {
+        if (
+          !deps.isVoiceActive.value ||
+          !deps.ws.value ||
+          deps.ws.value.readyState !== WebSocket.OPEN
+        ) {
           return
         }
 

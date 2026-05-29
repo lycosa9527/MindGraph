@@ -5,13 +5,13 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { AtSign, Copy, MessageSquare, ShieldCheck, User } from 'lucide-vue-next'
+import { AtSign, Copy, MessageSquare, ShieldCheck, User } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
-import { resolveWorkshopAvatarDisplay } from '@/utils/workshopAvatar'
 import { getRolePillStyle } from '@/utils/userRoleDisplay'
+import { resolveWorkshopAvatarDisplay } from '@/utils/workshopAvatar'
 
 export interface UserCardUser {
   id: number

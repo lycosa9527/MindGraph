@@ -8,7 +8,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { ElButton } from 'element-plus'
 
-import { ArrowLeft } from 'lucide-vue-next'
+import { ArrowLeft } from '@lucide/vue'
 
 import { LoginModal } from '@/components/auth'
 import CommentPanel from '@/components/library/CommentPanel.vue'

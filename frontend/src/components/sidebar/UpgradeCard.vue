@@ -2,7 +2,7 @@
 /**
  * UpgradeCard - Membership upgrade promotion card
  */
-import { PlusCircle } from 'lucide-vue-next'
+import { PlusCircle } from '@lucide/vue'
 </script>
 
 <template>

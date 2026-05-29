@@ -8,7 +8,7 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { ElButton } from 'element-plus'
 
-import { LogOut, Pause, Play, RotateCcw } from 'lucide-vue-next'
+import { LogOut, Pause, Play, RotateCcw } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { PRESENTATION_Z } from '@/config/uiConfig'

@@ -25,11 +25,11 @@ defineProps<{
 const pendingManagerIds = defineModel<number[]>('pendingManagerIds', { required: true })
 
 const emit = defineEmits<{
-  (e: 'toggle-lock'): void
-  (e: 'refresh-invitation-code'): void
-  (e: 'copy-share-message'): void
-  (e: 'add-managers'): void
-  (e: 'remove-manager', userId: number): void
+  (e: 'toggleLock'): void
+  (e: 'refreshInvitationCode'): void
+  (e: 'copyShareMessage'): void
+  (e: 'addManagers'): void
+  (e: 'removeManager', userId: number): void
 }>()
 
 const { t } = useLanguage()
@@ -71,7 +71,7 @@ const labelClass =
             plain
             class="mindbot-pill shrink-0"
             :class="orgActiveState ? 'mindbot-pill--lock' : 'mindbot-pill--unlock'"
-            @click="emit('toggle-lock')"
+            @click="emit('toggleLock')"
           >
             {{ orgActiveState ? t('admin.lockOrganization') : t('admin.unlockOrganization') }}
           </el-button>
@@ -104,7 +104,7 @@ const labelClass =
               :loading="refreshCodeLoading"
               plain
               class="mindbot-pill mindbot-pill--rotate shrink-0"
-              @click="emit('refresh-invitation-code')"
+              @click="emit('refreshInvitationCode')"
             >
               <el-icon class="mr-1"><Refresh /></el-icon>
               {{ t('admin.refreshInvitationCode') }}
@@ -113,7 +113,7 @@ const labelClass =
               plain
               class="mindbot-pill mindbot-pill--copy shrink-0"
               :disabled="!invitationCode"
-              @click="emit('copy-share-message')"
+              @click="emit('copyShareMessage')"
             >
               <el-icon class="mr-1"><Share /></el-icon>
               {{ t('admin.copyShareMessage') }}
@@ -146,7 +146,7 @@ const labelClass =
                   type="button"
                   class="school-general-chip__remove"
                   :aria-label="t('admin.removeManager')"
-                  @click="emit('remove-manager', m.id)"
+                  @click="emit('removeManager', m.id)"
                 >
                   ×
                 </button>
@@ -167,7 +167,9 @@ const labelClass =
                 collapse-tags-tooltip
                 :disabled="orgUsers.length === 0"
                 :placeholder="
-                  orgUsers.length > 0 ? t('admin.addSchoolManagers') : t('admin.noUsersToAddAsManager')
+                  orgUsers.length > 0
+                    ? t('admin.addSchoolManagers')
+                    : t('admin.noUsersToAddAsManager')
                 "
                 class="mindbot-swiss-select flex-1 min-w-0"
               >
@@ -183,7 +185,7 @@ const labelClass =
                 class="mindbot-pill mindbot-pill--copy shrink-0"
                 :loading="addManagersLoading"
                 :disabled="pendingManagerIds.length === 0"
-                @click="emit('add-managers')"
+                @click="emit('addManagers')"
               >
                 {{ t('admin.addSchoolManagersButton') }}
               </el-button>

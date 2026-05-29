@@ -104,8 +104,7 @@ export default {
   'admin.inShort': '輸入',
   'admin.inputTokens': '輸入 Token（全部）',
   'admin.invitationCode': '邀請碼',
-  'admin.invitationCodeFormatHint':
-    '格式為 XXX-XXX（字母與數字，不含 0、O、1、I、L）。',
+  'admin.invitationCodeFormatHint': '格式為 XXX-XXX（字母與數字，不含 0、O、1、I、L）。',
   'admin.invitationCodeMaskedHint': '邀請碼預設隱藏，需要時請透過眼睛圖示顯示。',
   'admin.sensitiveReveal': '顯示',
   'admin.sensitiveHide': '隱藏',
@@ -579,7 +578,8 @@ export default {
   'admin.schoolMindmateAvatarErrorInvalid': '無法識別此圖片，請選擇有效的圖片檔案。',
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Dify',
-  'admin.schoolDifyGlobalUnconfigured': '未在 .env 中設定全域 Dify（DIFY_API_URL / DIFY_API_KEY）。',
+  'admin.schoolDifyGlobalUnconfigured':
+    '未在 .env 中設定全域 Dify（DIFY_API_URL / DIFY_API_KEY）。',
   'admin.schoolDifySetOverride': '設定本校覆寫',
   'admin.schoolDifyCancelOverrideDraft': '取消',
   'admin.schoolDifyConfigured': '已設定本校專屬 MindMate Dify',
@@ -594,7 +594,8 @@ export default {
   'admin.schoolDifyApiKeyBlankUsesGlobal': '留空則使用全域 API Key（{masked}）。',
   'admin.schoolDifyAuthTest': 'Dify 鑑權測試',
   'admin.schoolDifyAuthTestRunning': '測試中…',
-  'admin.schoolDifyAuthTestTooltip': '使用目前表單中的網址與金鑰（未儲存的修改也會參與）測試 Dify 鑑權。',
+  'admin.schoolDifyAuthTestTooltip':
+    '使用目前表單中的網址與金鑰（未儲存的修改也會參與）測試 Dify 鑑權。',
   'admin.schoolDifyAuthTestPassed': 'Dify 鑑權通過。',
   'admin.schoolDifyAuthTestFailed': 'Dify 鑑權未通過，請檢查 API 根網址與 API Key。',
   'admin.schoolDifyAuthRequiredBeforeSave': '請先通過 Dify 鑑權測試後再儲存。',

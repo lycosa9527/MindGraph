@@ -13,7 +13,7 @@ import {
   Smile,
   Strikethrough,
   X,
-} from 'lucide-vue-next'
+} from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { type OrgMember, useWorkshopChatStore } from '@/stores/workshopChat'

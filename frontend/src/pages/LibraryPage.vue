@@ -7,7 +7,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { BookOpen } from 'lucide-vue-next'
+import { BookOpen } from '@lucide/vue'
 
 import { LoginModal } from '@/components/auth'
 import { useLanguage, useNotifications } from '@/composables'

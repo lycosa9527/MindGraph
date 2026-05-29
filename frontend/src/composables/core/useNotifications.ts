@@ -6,7 +6,7 @@ import { h, ref } from 'vue'
 import { ElNotification } from 'element-plus'
 import type { MessageHandler } from 'element-plus'
 
-import { AlertTriangle } from 'lucide-vue-next'
+import { AlertTriangle } from '@lucide/vue'
 
 import {
   getDefaultElNotificationOptions,

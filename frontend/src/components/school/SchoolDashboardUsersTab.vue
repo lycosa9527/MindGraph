@@ -44,7 +44,9 @@ function formatNumber(num: number): string {
   return num.toLocaleString()
 }
 
-function rolePillForRow(row: unknown): { label: string; bgClass: string; textClass: string; borderClass: string } | null {
+function rolePillForRow(
+  row: unknown
+): { label: string; bgClass: string; textClass: string; borderClass: string } | null {
   const role = (row as Record<string, unknown>).role
   const style = getRolePillStyle(typeof role === 'string' ? role : null)
   if (!style) {

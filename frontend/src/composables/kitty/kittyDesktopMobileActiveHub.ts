@@ -59,8 +59,7 @@ function snapshotFromWakePayload(payload: KittyDesktopWakeMobileActive): KittyMo
   return {
     active: payload.active === true,
     scopes: parseScopes(payload.scopes),
-    primaryScope:
-      typeof primary === 'string' && primary.trim().length > 0 ? primary.trim() : null,
+    primaryScope: typeof primary === 'string' && primary.trim().length > 0 ? primary.trim() : null,
     updatedAt: Date.now(),
   }
 }

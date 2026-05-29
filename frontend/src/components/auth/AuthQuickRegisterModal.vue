@@ -7,7 +7,7 @@ import { onMounted, ref } from 'vue'
 
 import { Close } from '@element-plus/icons-vue'
 
-import { ArrowLeft, Loader2 } from 'lucide-vue-next'
+import { ArrowLeft, Loader2 } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'

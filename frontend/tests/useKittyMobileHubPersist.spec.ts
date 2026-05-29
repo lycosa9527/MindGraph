@@ -1,14 +1,20 @@
 /**
  * Hub persist waits for context_mutation_ack before advancing fingerprint.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
-const { getDiagramSpec, onWithOwnerMock, removeAllListenersForOwnerMock } = vi.hoisted(() => ({
-  getDiagramSpec: vi.fn(() => ({ topic: 'A', context: ['b'] })),
-  onWithOwnerMock: vi.fn(),
-  removeAllListenersForOwnerMock: vi.fn(),
-}))
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useKittyMobileHubPersist } from '@/composables/kitty/useKittyMobileHubPersist'
+
+const { getDiagramSpec, onWithOwnerMock, removeAllListenersForOwnerMock, emitMock } = vi.hoisted(
+  () => ({
+    getDiagramSpec: vi.fn(() => ({ topic: 'A', context: ['b'] })),
+    onWithOwnerMock: vi.fn(),
+    removeAllListenersForOwnerMock: vi.fn(),
+    emitMock: vi.fn(),
+  })
+)
 
 vi.mock('@/composables/editor/useDiagramSpecForSave', () => ({
   useDiagramSpecForSave: () => getDiagramSpec,
@@ -22,6 +28,7 @@ vi.mock('@/composables/core/useEventBus', () => ({
   eventBus: {
     onWithOwner: onWithOwnerMock,
     removeAllListenersForOwner: removeAllListenersForOwnerMock,
+    emit: emitMock,
   },
 }))
 
@@ -39,13 +46,12 @@ vi.mock('@/config', () => ({
   SAVE: { AUTO_SAVE_DEBOUNCE_MS: 2000 },
 }))
 
-import { useKittyMobileHubPersist } from '@/composables/kitty/useKittyMobileHubPersist'
-
 describe('useKittyMobileHubPersist', () => {
   beforeEach(() => {
     getDiagramSpec.mockClear()
     onWithOwnerMock.mockClear()
     removeAllListenersForOwnerMock.mockClear()
+    emitMock.mockClear()
   })
 
   it('sends persist payload and advances fingerprint only after ack', () => {

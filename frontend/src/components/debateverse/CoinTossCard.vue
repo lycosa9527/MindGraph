@@ -7,7 +7,7 @@
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { Coins } from 'lucide-vue-next'
+import { Coins } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useDebateVerseStore } from '@/stores/debateverse'

@@ -7,7 +7,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { ElAlert, ElButton, ElInput, ElTooltip } from 'element-plus'
 
-import { Check, CircleSlash, Equal, Loader2, Minus } from 'lucide-vue-next'
+import { Check, CircleSlash, Equal, Loader2, Minus } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { getLLMColor } from '@/config/llmModelColors'

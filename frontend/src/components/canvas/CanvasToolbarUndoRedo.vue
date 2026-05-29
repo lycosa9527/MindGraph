@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ElButton, ElTooltip } from 'element-plus'
 
-import { RotateCcw, RotateCw } from 'lucide-vue-next'
+import { RotateCcw, RotateCw } from '@lucide/vue'
 
 defineProps<{
   canUndo: boolean

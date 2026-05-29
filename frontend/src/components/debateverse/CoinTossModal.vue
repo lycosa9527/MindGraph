@@ -4,7 +4,7 @@
  */
 import { ElButton, ElDialog } from 'element-plus'
 
-import { Coins } from 'lucide-vue-next'
+import { Coins } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 

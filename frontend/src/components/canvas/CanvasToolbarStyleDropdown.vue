@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElTooltip } from 'element-plus'
 
-import { Brush, PenLine } from 'lucide-vue-next'
+import { Brush, PenLine } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { StylePresetColors } from '@/config/colorPalette'

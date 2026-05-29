@@ -40,9 +40,7 @@ export function getKittyVoiceDiagramFingerprint(
   if (Array.isArray(children)) {
     return JSON.stringify(
       children.map((c) =>
-        typeof c === 'object' && c !== null
-          ? JSON.stringify(c)
-          : JSON.stringify(String(c))
+        typeof c === 'object' && c !== null ? JSON.stringify(c) : JSON.stringify(String(c))
       )
     )
   }

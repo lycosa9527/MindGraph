@@ -3,12 +3,12 @@
  * Renderer is lazy-loaded; {@link loadDiagramMarkdownPipeline} and DiagramCanvas mount preload it.
  */
 import { registerDiagramLayoutRecalcBootstrap } from '@/composables/core/diagramLayoutRecalcBootstrap'
-import { eventBus } from '@/composables/core/useEventBus'
 import {
   ensureMarkdownRenderer,
   isMarkdownRendererReady,
   renderMarkdownForDiagramLabelMeasure,
 } from '@/composables/core/lazyMarkdown'
+import { eventBus } from '@/composables/core/useEventBus'
 
 let pipelineLoadHandled = false
 

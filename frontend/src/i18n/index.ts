@@ -3,9 +3,9 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/messages/en'
 
 import { isLocaleEnCopy, lazyLocaleLoaders } from './lazyLocaleLoaders'
+import { notifyLocaleLoaded } from './localeLabelCache'
 import type { LocaleCode } from './locales'
 import { htmlLangForUiCode } from './locales'
-import { notifyLocaleLoaded } from './localeLabelCache'
 
 export type { LocaleCode } from './locales'
 export { intlLocaleForUiCode } from './locales'

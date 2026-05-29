@@ -18,7 +18,7 @@ import {
   ElTooltip,
 } from 'element-plus'
 
-import { ArrowLeft, ChevronDown, Loader2, RefreshCw, Users } from 'lucide-vue-next'
+import { ArrowLeft, ChevronDown, Loader2, RefreshCw, Users } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { authFetch } from '@/utils/api'

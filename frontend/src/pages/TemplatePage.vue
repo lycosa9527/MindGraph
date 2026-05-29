@@ -5,7 +5,7 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { Folder, Search } from 'lucide-vue-next'
+import { Folder, Search } from '@lucide/vue'
 
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { apiRequest } from '@/utils/apiClient'

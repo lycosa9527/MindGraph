@@ -15,8 +15,8 @@ import {
   markdownRendererReady,
   renderRichMarkdownHtml,
 } from '@/composables/core/useMarkdown'
-import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import type { MindMateMessage } from '@/composables/mindmate/useMindMate'
+import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useAuthStore } from '@/stores'
 
 const props = defineProps<{
@@ -89,7 +89,7 @@ function deselectAll() {
 }
 
 function renderMarkdown(content: string): string {
-  markdownRendererReady.value
+  void markdownRendererReady.value
   if (!content) return ''
   return renderRichMarkdownHtml(content)
 }

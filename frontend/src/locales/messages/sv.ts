@@ -1,4 +1,4 @@
 /**
  * sv UI messages — re-export merged bundles.
  */
-export { default } from './sv/index'
+export { default } from './sv/index.ts'

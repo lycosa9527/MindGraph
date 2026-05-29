@@ -6,14 +6,7 @@ import { computed, ref } from 'vue'
 
 import { ElButton } from 'element-plus'
 
-import {
-  CheckCircle,
-  Coins,
-  Gavel,
-  MessageCircleQuestion,
-  MessageSquare,
-  Mic,
-} from 'lucide-vue-next'
+import { CheckCircle, Coins, Gavel, MessageCircleQuestion, MessageSquare, Mic } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useDebateVerseStore } from '@/stores/debateverse'

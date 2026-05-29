@@ -8,7 +8,7 @@ import { provide } from 'vue'
 
 import { ElButton } from 'element-plus'
 
-import { PanelLeftClose } from 'lucide-vue-next'
+import { PanelLeftClose } from '@lucide/vue'
 
 import { AccountInfoModal, LoginModal, UpdateLogModal } from '@/components/auth'
 import LanguageSettingsModal from '@/components/settings/LanguageSettingsModal.vue'

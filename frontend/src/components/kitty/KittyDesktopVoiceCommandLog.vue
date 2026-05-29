@@ -4,8 +4,8 @@
  */
 import { computed } from 'vue'
 
-import type { KittyDesktopVoiceCommandEntry } from '@/composables/kitty/useKittyDesktopVoiceCommandLog'
 import { useLanguage } from '@/composables/core/useLanguage'
+import type { KittyDesktopVoiceCommandEntry } from '@/composables/kitty/useKittyDesktopVoiceCommandLog'
 
 const props = defineProps<{
   visible: boolean

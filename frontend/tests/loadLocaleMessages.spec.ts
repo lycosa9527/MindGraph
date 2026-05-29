@@ -1,13 +1,7 @@
 /** Vitest: lazy locale loading */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  EAGER_LOCALES,
-  i18n,
-  isLocaleLoaded,
-  loadLocaleMessages,
-  setI18nLocale,
-} from '@/i18n'
+import { EAGER_LOCALES, i18n, isLocaleLoaded, loadLocaleMessages, setI18nLocale } from '@/i18n'
 import { LOCALE_EN_COPY_CODES } from '@/i18n/lazyLocaleLoaders'
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 

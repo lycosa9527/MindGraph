@@ -1,11 +1,11 @@
 /**
  * Load full library spec into Pinia (mobile Kitty preview / picker).
  */
-import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
-import { useDiagramStore } from '@/stores/diagram'
-import type { DiagramType } from '@/types'
-import { VALID_DIAGRAM_TYPES } from '@/stores/diagram/constants'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
+import { useDiagramStore } from '@/stores/diagram'
+import { VALID_DIAGRAM_TYPES } from '@/stores/diagram/constants'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import type { DiagramType } from '@/types'
 
 function normalizeDiagramType(raw: string): DiagramType | null {
   const slug = raw.trim() === 'mind_map' ? 'mindmap' : raw.trim()

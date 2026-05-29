@@ -7,7 +7,7 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { ElButton, ElDialog, ElPopover, ElRadioButton, ElRadioGroup, ElTag } from 'element-plus'
 
-import { Copy, Settings, Users } from 'lucide-vue-next'
+import { Copy, Settings, Users } from '@lucide/vue'
 
 import {
   getDefaultDiagramName,

@@ -1,9 +1,9 @@
+import { registerLocaleLabelCacheInvalidator } from '@/i18n/localeLabelCache'
 import {
   getAllRootConceptNodeTexts,
   getAllTopicRootRelationshipLabels,
   getConceptMapTopicRootRelationshipLabel,
 } from '@/stores/diagram/diagramDefaultLabels'
-import { registerLocaleLabelCacheInvalidator } from '@/i18n/localeLabelCache'
 import { useUIStore } from '@/stores/ui'
 import type { Connection, DiagramNode } from '@/types'
 
@@ -39,9 +39,7 @@ export function getTopicRootConceptTargetId(
 ): string | null {
   if (!connections?.length) return null
   const rootLabels = getRootLabelSet()
-  const c = connections.find(
-    (x) => x.source === 'topic' && rootLabels.has((x.label ?? '').trim())
-  )
+  const c = connections.find((x) => x.source === 'topic' && rootLabels.has((x.label ?? '').trim()))
   return c?.target ?? null
 }
 

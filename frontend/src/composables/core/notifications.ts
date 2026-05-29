@@ -10,7 +10,7 @@ import { h } from 'vue'
 import { ElMessage, ElNotification } from 'element-plus'
 import type { MessageHandler } from 'element-plus'
 
-import { AlertTriangle, Check, CircleX, Info } from 'lucide-vue-next'
+import { AlertTriangle, Check, CircleX, Info } from '@lucide/vue'
 
 let programmaticStylesPromise: Promise<void> | null = null
 

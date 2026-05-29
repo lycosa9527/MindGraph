@@ -6,7 +6,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import { ElButton, ElDialog, ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
 
-import { ChevronDown, Loader2, X } from 'lucide-vue-next'
+import { ChevronDown, Loader2, X } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { usePublicSiteUrl } from '@/composables/core/usePublicSiteUrl'

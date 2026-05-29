@@ -5,7 +5,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { Hash, Inbox, MessageSquare } from 'lucide-vue-next'
+import { Hash, Inbox, MessageSquare } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useWorkshopChatStore } from '@/stores/workshopChat'

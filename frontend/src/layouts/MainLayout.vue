@@ -6,7 +6,7 @@
 import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { Lock, PanelLeftOpen } from 'lucide-vue-next'
+import { Lock, PanelLeftOpen } from '@lucide/vue'
 
 import { AppSidebar } from '@/components/sidebar'
 import { useKittyDesktopActionPoll, useLanguage } from '@/composables'

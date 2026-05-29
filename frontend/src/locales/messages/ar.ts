@@ -1,4 +1,4 @@
 /**
  * ar UI messages — re-export merged bundles.
  */
-export { default } from './ar/index'
+export { default } from './ar/index.ts'

@@ -6,7 +6,7 @@
  */
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight } from '@lucide/vue'
 
 import { useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores/auth'

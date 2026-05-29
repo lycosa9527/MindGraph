@@ -19,10 +19,7 @@ import {
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
 import { useDiagramStore } from '@/stores'
-import {
-  braceMapRootId,
-  isBraceMapSubpartNode,
-} from '@/stores/diagram/braceMapParentResolve'
+import { braceMapRootId, isBraceMapSubpartNode } from '@/stores/diagram/braceMapParentResolve'
 import type { DiagramNode } from '@/types'
 
 export type UseNodeActionsOptions = {

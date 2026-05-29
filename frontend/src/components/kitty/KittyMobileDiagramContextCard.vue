@@ -3,7 +3,7 @@
  * Compact diagram pairing summary for Mobile Kitty bottom bar (camera · card · mic).
  * Tap opens the saved-diagram picker dropdown.
  */
-import { ChevronDown } from 'lucide-vue-next'
+import { ChevronDown } from '@lucide/vue'
 
 defineProps<{
   /** First line e.g. "Current diagram: My topic" */
@@ -13,7 +13,7 @@ defineProps<{
   /** Hub bootstrap source badge (localized short label) */
   sourceBadge?: string | null
   /** Accessible label summarizing pairing state */
-  ariaLabel: string
+  accessibleLabel: string
   /** Dropdown open — rotates chevron */
   expanded?: boolean
   disabled?: boolean
@@ -29,7 +29,7 @@ defineProps<{
     }"
     role="button"
     tabindex="0"
-    :aria-label="ariaLabel"
+    :aria-label="accessibleLabel"
     :aria-expanded="expanded ?? false"
   >
     <div class="kitty-mobile-diag-card__body">

@@ -5,7 +5,7 @@
  */
 import { computed, ref } from 'vue'
 
-import { Bell, ListTree, Settings, SlidersHorizontal } from 'lucide-vue-next'
+import { Bell, ListTree, Settings, SlidersHorizontal } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'

@@ -3,25 +3,22 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useResizeObserver } from '@vueuse/core'
 
-import { ElAvatar, ElButton, ElIcon, ElLoading, ElScrollbar } from 'element-plus'
+import { ElButton, ElIcon, ElLoading, ElScrollbar } from 'element-plus'
 
 import { Bottom } from '@element-plus/icons-vue'
 
 import { useLanguage } from '@/composables'
-import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import type { MindMateMessage } from '@/composables/mindmate/useMindMate'
-
-import MindmateAgentAvatar from './MindmateAgentAvatar.vue'
 import { useUIStore } from '@/stores'
 
 import MessageBubble from './MessageBubble.vue'
+import MindmateAgentAvatar from './MindmateAgentAvatar.vue'
 import MindmateWelcome from './MindmateWelcome.vue'
 
 // v-loading directive
 const vLoading = ElLoading.directive
 
 const { t } = useLanguage()
-const { displayName } = useMindMateBranding('md')
 const uiStore = useUIStore()
 
 // Loading background color (dark mode aware)

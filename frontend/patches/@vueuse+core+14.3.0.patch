@@ -1,0 +1,23 @@
+diff --git a/node_modules/@vueuse/core/dist/index.js b/node_modules/@vueuse/core/dist/index.js
+index fbd5761..92e8b5e 100644
+--- a/node_modules/@vueuse/core/dist/index.js
++++ b/node_modules/@vueuse/core/dist/index.js
+@@ -3359,8 +3359,7 @@ function useElementVisibility(element, options = {}) {
+ }
+ //#endregion
+ //#region useEventBus/internal.ts
+-/* #__PURE__ */
+-const events = /* @__PURE__ */ new Map();
++const events = /*#__PURE__*/ new Map();
+ //#endregion
+ //#region useEventBus/index.ts
+ /* @__NO_SIDE_EFFECTS__ */
+@@ -5777,7 +5776,7 @@ function usePerformanceObserver(options, callback) {
+ }
+ //#endregion
+ //#region usePointer/index.ts
+-const defaultState = (/* #__PURE__ */ {
++const defaultState = ({
+ 	x: 0,
+ 	y: 0,
+ 	pointerId: 0,

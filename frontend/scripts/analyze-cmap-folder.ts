@@ -1,6 +1,6 @@
 /**
  * One-off diagnostics: decode `.cmap` samples and report layout vs concept overlap.
- * Usage: npx tsx scripts/analyze-cmap-folder.ts [folderPath]
+ * Usage: node scripts/analyze-cmap-folder.ts [folderPath]
  */
 import { unzipSync } from 'fflate'
 import fs from 'node:fs'

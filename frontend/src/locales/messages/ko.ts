@@ -1,4 +1,4 @@
 /**
  * ko UI messages — re-export merged bundles.
  */
-export { default } from './ko/index'
+export { default } from './ko/index.ts'

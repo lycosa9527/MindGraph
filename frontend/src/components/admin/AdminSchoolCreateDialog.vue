@@ -5,16 +5,17 @@
 import { computed, ref, watch } from 'vue'
 
 import { Close } from '@element-plus/icons-vue'
-import { Copy, Loader2, RefreshCw } from 'lucide-vue-next'
+
+import { Copy, Loader2, RefreshCw } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { apiRequest } from '@/utils/apiClient'
 import {
   generateInvitationCode,
   isValidInvitationCode,
   normalizeInvitationCodeInput,
   resolveSchoolCodeFromName,
 } from '@/utils/invitationCode'
-import { apiRequest } from '@/utils/apiClient'
 
 const props = defineProps<{
   modelValue: boolean

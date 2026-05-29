@@ -6,7 +6,7 @@ import { computed, ref } from 'vue'
 
 import { ElButton, ElTooltip } from 'element-plus'
 
-import { ArrowDownUp, Brush } from 'lucide-vue-next'
+import { ArrowDownUp, Brush } from '@lucide/vue'
 
 import { useCanvasToolbarApps, useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
 import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimiter'

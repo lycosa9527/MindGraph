@@ -4,8 +4,8 @@
  */
 import { computed, useTemplateRef } from 'vue'
 
-import { useKittyClickWheel } from '@/composables/kitty/useKittyClickWheel'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useKittyClickWheel } from '@/composables/kitty/useKittyClickWheel'
 
 const props = defineProps<{
   onSelectionChange?: () => void
@@ -152,7 +152,10 @@ function handlePointerUp(ev: PointerEvent): void {
     inset 0 0 0 1px rgba(255, 255, 255, 0.45),
     inset 0 0 24px rgba(248, 250, 252, 0.35);
   backdrop-filter: blur(4px);
-  transition: box-shadow 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+  transition:
+    box-shadow 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease;
 }
 
 .kitty-frame-wheel::before {

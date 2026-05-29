@@ -5,14 +5,13 @@ import { ElAvatar, ElButton, ElIcon, ElInput, ElTooltip } from 'element-plus'
 
 import { CopyDocument, Edit, RefreshRight, Share } from '@element-plus/icons-vue'
 
-import { ThumbsDown, ThumbsUp } from 'lucide-vue-next'
+import { ThumbsDown, ThumbsUp } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
-import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
-
-import MindmateAgentAvatar from './MindmateAgentAvatar.vue'
 import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'
 import type { FeedbackRating, MindMateMessage } from '@/composables/mindmate/useMindMate'
+
+import MindmateAgentAvatar from './MindmateAgentAvatar.vue'
 
 const props = defineProps<{
   message: MindMateMessage
@@ -38,7 +37,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
-const { displayName } = useMindMateBranding('md')
 
 const { html: renderedMarkdownHtml } = useRenderedMarkdown(() => props.message.content, {
   stripThinkBlocks: true,

@@ -11,7 +11,7 @@
  */
 import { useRouter } from 'vue-router'
 
-import { X } from 'lucide-vue-next'
+import { X } from '@lucide/vue'
 
 import {
   type ChatToastItem,

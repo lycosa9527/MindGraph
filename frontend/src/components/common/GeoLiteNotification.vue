@@ -6,7 +6,7 @@ import { h, watch } from 'vue'
 
 import { ElNotification } from 'element-plus'
 
-import { AlertTriangle } from 'lucide-vue-next'
+import { AlertTriangle } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { getDefaultElNotificationOptions } from '@/composables/core/notifications'

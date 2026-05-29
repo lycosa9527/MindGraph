@@ -559,7 +559,7 @@ export function applyVoiceDiagramRemoveNodes(
         const orderedParts = braceMapOrderedPartIds(store.data.nodes, conns)
         const pi = o.part_index
         const si = typeof o.subpart_index === 'number' ? o.subpart_index : null
-        let removeId: string | null = null
+        let removeId: string | null
         if (si !== null) {
           removeId = braceMapResolveChildIdByIndex(store.data.nodes, conns, orderedParts, pi, si)
         } else {

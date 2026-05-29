@@ -1,4 +1,4 @@
 /**
  * et UI messages — re-export merged bundles.
  */
-export { default } from './et/index'
+export { default } from './et/index.ts'

@@ -8,7 +8,7 @@ import { computed, ref } from 'vue'
 
 import { ElDropdown, ElDropdownItem, ElDropdownMenu, ElScrollbar } from 'element-plus'
 
-import { Edit3, Lock, MessageCircle, MoreHorizontal, Trash2 } from 'lucide-vue-next'
+import { Edit3, Lock, MessageCircle, MoreHorizontal, Trash2 } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { type AskOnceConversation, useAskOnceStore } from '@/stores/askonce'

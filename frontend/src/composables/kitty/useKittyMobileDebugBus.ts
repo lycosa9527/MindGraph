@@ -4,7 +4,10 @@
 import { onUnmounted } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import { formatKittyActionDebug, normalizeKittyDebugText } from '@/composables/kitty/kittyAgentDebug'
+import {
+  formatKittyActionDebug,
+  normalizeKittyDebugText,
+} from '@/composables/kitty/kittyAgentDebug'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 
 export function useKittyMobileDebugBus(options: {
@@ -149,10 +152,7 @@ export function useKittyMobileDebugBus(options: {
   eventBus.onWithOwner(
     'voice:diagram_update_executed',
     (p) => {
-      const detail =
-        typeof p.summary === 'string' && p.summary.trim() !== ''
-          ? p.summary
-          : p.action
+      const detail = typeof p.summary === 'string' && p.summary.trim() !== '' ? p.summary : p.action
       pushLine('diagram', detail)
     },
     ownerId
@@ -164,7 +164,9 @@ export function useKittyMobileDebugBus(options: {
       const summary = normalizeKittyDebugText(p.summary, 160)
       const count = Array.isArray(p.items) ? p.items.length : 0
       const detail =
-        summary !== '' ? `${summary} (${count} nodes)` : `review ${count} node${count === 1 ? '' : 's'}`
+        summary !== ''
+          ? `${summary} (${count} nodes)`
+          : `review ${count} node${count === 1 ? '' : 's'}`
       pushLine('review', detail)
     },
     ownerId
@@ -176,8 +178,7 @@ export function useKittyMobileDebugBus(options: {
       const ok = p.ok !== false
       const rev = typeof p.revision === 'number' ? ` rev=${p.revision}` : ''
       const persist = p.persist_library === true ? ' persist' : ''
-      const err =
-        typeof p.library_snapshot_error === 'string' ? p.library_snapshot_error : p.error
+      const err = typeof p.library_snapshot_error === 'string' ? p.library_snapshot_error : p.error
       const detail = ok
         ? `hub ack ok${rev}${persist}`
         : `hub ack failed ${normalizeKittyDebugText(String(err ?? 'rejected'), 80)}`

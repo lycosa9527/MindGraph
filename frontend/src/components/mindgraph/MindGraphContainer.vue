@@ -19,7 +19,7 @@ import {
 
 import { Upload } from '@element-plus/icons-vue'
 
-import { Check, Globe, PanelLeftOpen } from 'lucide-vue-next'
+import { Check, Globe, PanelLeftOpen } from '@lucide/vue'
 
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
 import { useLanguage } from '@/composables'

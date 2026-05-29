@@ -6,7 +6,7 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { ChevronRight, MessageSquare, UserCog, Workflow } from 'lucide-vue-next'
+import { ChevronRight, MessageSquare, UserCog, Workflow } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'

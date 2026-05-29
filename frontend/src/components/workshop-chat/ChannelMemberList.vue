@@ -6,7 +6,7 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { ChevronRight, Search } from 'lucide-vue-next'
+import { ChevronRight, Search } from '@lucide/vue'
 
 import UserCardPopover from '@/components/workshop-chat/UserCardPopover.vue'
 import type { UserCardUser } from '@/components/workshop-chat/UserCardPopover.vue'

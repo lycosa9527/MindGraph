@@ -7,7 +7,7 @@ import { computed } from 'vue'
 
 import { OfficeBuilding } from '@element-plus/icons-vue'
 
-import { Globe, Lock, Megaphone, Pin } from 'lucide-vue-next'
+import { Globe, Lock, Megaphone, Pin } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { ChatChannel } from '@/stores/workshopChat'

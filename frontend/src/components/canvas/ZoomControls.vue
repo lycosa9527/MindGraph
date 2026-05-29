@@ -14,7 +14,7 @@ import {
   ElSelect,
 } from 'element-plus'
 
-import { Hand, Maximize2, Minus, Play, Plus, Square, Users } from 'lucide-vue-next'
+import { Hand, Maximize2, Minus, Play, Plus, Square, Users } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { ZOOM } from '@/config/uiConfig'

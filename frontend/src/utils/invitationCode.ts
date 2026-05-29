@@ -8,10 +8,7 @@ export const INVITE_CODE_PATTERN =
   /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{3}-[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{3}$/
 
 function randomPart(length: number, charset: string): string {
-  return Array.from(
-    { length },
-    () => charset[Math.floor(Math.random() * charset.length)]
-  ).join('')
+  return Array.from({ length }, () => charset[Math.floor(Math.random() * charset.length)]).join('')
 }
 
 export function generateInvitationCode(): string {

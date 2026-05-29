@@ -7,15 +7,16 @@ import { createPinia } from 'pinia'
 
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 
-import App from './App.vue'
-import './fonts/eagerFonts'
 import { ensureElementPlusProgrammaticStyles } from '@/composables/core/notifications'
 import { preloadMarkdownRendererForRoute } from '@/composables/core/useMarkdown'
-import { i18n, htmlLangForLocale, loadLocaleMessages, setI18nLocale } from './i18n'
-import router from './router'
 import { useAuthStore } from '@/stores/auth'
-import { useUIStore } from './stores/ui'
+
+import App from './App.vue'
+import './fonts/eagerFonts'
+import { htmlLangForLocale, i18n, loadLocaleMessages, setI18nLocale } from './i18n'
 import { isUiLocale } from './i18n/locales'
+import router from './router'
+import { useUIStore } from './stores/ui'
 // Styles
 import './styles/index.css'
 

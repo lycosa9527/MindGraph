@@ -4,13 +4,16 @@
 import { type ComputedRef, type Ref, onUnmounted, watch } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import { useDiagramSpecForSave } from '@/composables/editor/useDiagramSpecForSave'
-import { getKittyDiagramContentFingerprint } from '@/composables/kitty/kittyDiagramFingerprint'
-import type { KittyAgentContext, KittyContextUpdateOptions } from '@/composables/kitty/kittyAgentTypes'
-import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { useLanguage } from '@/composables/core/useLanguage'
-import { useDiagramStore } from '@/stores/diagram'
+import { useDiagramSpecForSave } from '@/composables/editor/useDiagramSpecForSave'
+import type {
+  KittyAgentContext,
+  KittyContextUpdateOptions,
+} from '@/composables/kitty/kittyAgentTypes'
+import { getKittyDiagramContentFingerprint } from '@/composables/kitty/kittyDiagramFingerprint'
+import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { SAVE } from '@/config'
+import { useDiagramStore } from '@/stores/diagram'
 
 export function useKittyMobileHubPersist(options: {
   libraryDiagramId: ComputedRef<string | null>
@@ -66,7 +69,8 @@ export function useKittyMobileHubPersist(options: {
     const idempotencyKey = `kitty-mobile-persist-${libId}-${persistCounter}`
 
     const ctx = options.buildContext()
-    const title = options.diagramDisplayTitle.value.trim() || ctx.diagram_display_title || 'Untitled'
+    const title =
+      options.diagramDisplayTitle.value.trim() || ctx.diagram_display_title || 'Untitled'
 
     pendingFingerprint = fingerprint
     pendingIdempotencyKey = idempotencyKey
@@ -162,11 +166,7 @@ export function useKittyMobileHubPersist(options: {
     onVoiceDiagramUpdate,
     'KittyMobileHubPersist'
   )
-  eventBus.onWithOwner(
-    'voice:context_mutation_ack',
-    onContextMutationAck,
-    'KittyMobileHubPersist'
-  )
+  eventBus.onWithOwner('voice:context_mutation_ack', onContextMutationAck, 'KittyMobileHubPersist')
 
   onUnmounted(() => {
     clearDebounce()

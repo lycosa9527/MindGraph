@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { LogOut, ScrollText, User } from 'lucide-vue-next'
+import { LogOut, ScrollText, User } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'

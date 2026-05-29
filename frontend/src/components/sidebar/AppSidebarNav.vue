@@ -23,7 +23,7 @@ import {
   Watch,
   Waypoints,
   Wrench,
-} from 'lucide-vue-next'
+} from '@lucide/vue'
 
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 

@@ -8,7 +8,7 @@ import {
   LayoutGrid,
   type LucideIcon,
   Package,
-} from 'lucide-vue-next'
+} from '@lucide/vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -143,7 +143,9 @@ export function useCanvasToolbarApps() {
     if (aiBlockedByCollab.value) {
       return list.filter(
         (a) =>
-          a.appKey !== 'learning_sheet' && a.appKey !== 'snapshot' && a.appKey !== 'translate_diagram'
+          a.appKey !== 'learning_sheet' &&
+          a.appKey !== 'snapshot' &&
+          a.appKey !== 'translate_diagram'
       )
     }
     return list
@@ -260,7 +262,9 @@ export function useCanvasToolbarApps() {
         body: JSON.stringify(body),
       })
       if (!response.ok) {
-        const errorPayload = (await response.json().catch(() => null)) as { detail?: unknown } | null
+        const errorPayload = (await response.json().catch(() => null)) as {
+          detail?: unknown
+        } | null
         let detail: string | null = null
         const detailRaw = errorPayload?.detail
         if (typeof detailRaw === 'string') {

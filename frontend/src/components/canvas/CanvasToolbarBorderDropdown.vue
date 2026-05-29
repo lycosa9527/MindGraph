@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ElButton, ElDropdown, ElDropdownMenu, ElTooltip } from 'element-plus'
 
-import { Square } from 'lucide-vue-next'
+import { Square } from '@lucide/vue'
 
 import type { BorderStyleType } from '@/utils/borderStyleUtils'
 

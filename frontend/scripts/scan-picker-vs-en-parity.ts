@@ -1,20 +1,20 @@
 /**
- * Read-only: for Settings â†’ Interface language (`INTERFACE_LANGUAGE_PICKER_CODES`),
+ * Read-only: for Settings â†?Interface language (`INTERFACE_LANGUAGE_PICKER_CODES`),
  * count message keys that still match `en` (common sign of leftover English copy).
  *
  * Default: merged bundles via `messages/<code>.ts`.
  * With `--bundles=canvas,mindmate,...`: compare only those namespace files (`messages/<code>/<ns>.ts`).
  *
  * Usage (from frontend/):
- *   npx tsx scripts/scan-picker-vs-en-parity.ts
- *   npx tsx scripts/scan-picker-vs-en-parity.ts --sample=30
- *   npx tsx scripts/scan-picker-vs-en-parity.ts --bundles=mindmate,canvas,sidebar,common --sample=0
+ *   node scripts/scan-picker-vs-en-parity.ts
+ *   node scripts/scan-picker-vs-en-parity.ts --sample=30
+ *   node scripts/scan-picker-vs-en-parity.ts --bundles=mindmate,canvas,sidebar,common --sample=0
  */
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { fileURLToPath } from 'node:url'
 
-import { INTERFACE_LANGUAGE_PICKER_CODES } from '../src/i18n/locales'
+import { INTERFACE_LANGUAGE_PICKER_CODES } from '../src/i18n/locales.ts'
 
 const __dirnameRoot = dirname(fileURLToPath(import.meta.url))
 const MESSAGE_ROOT_TS = join(__dirnameRoot, '../src/locales/messages')
@@ -178,8 +178,8 @@ async function main(): Promise<void> {
     bundles === null ? null : (enBundled as Record<BundleFile, Record<string, string>>)
 
   for (const code of picker) {
-    let equal = 0
-    let total = 0
+    let equal: number
+    let total: number
     const equalKeys: string[] = []
     if (bundles === null) {
       if (!enMerged) {
@@ -243,7 +243,7 @@ async function main(): Promise<void> {
         console.log(`    ${k} = ${JSON.stringify(shown)}`)
       }
       if (equalKeys.length > sample) {
-        console.log(`    â€¦ +${equalKeys.length - sample} more`)
+        console.log(`    â€?+${equalKeys.length - sample} more`)
       }
     }
     console.log('')

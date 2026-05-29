@@ -122,8 +122,7 @@ export function useKittyClickWheel(options: UseKittyClickWheelOptions = {}) {
     if (list.length === 0) {
       return
     }
-    const wrapped =
-      ((nextIndex % list.length) + list.length) % list.length
+    const wrapped = ((nextIndex % list.length) + list.length) % list.length
     if (wrapped === activeIndex.value) {
       return
     }

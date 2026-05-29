@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import { ElMessageBox } from 'element-plus'
 
-import { ArrowRightLeft, Bell, BellOff, BookCheck, Eye, Pencil, Trash2 } from 'lucide-vue-next'
+import { ArrowRightLeft, Bell, BellOff, BookCheck, Eye, Pencil, Trash2 } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'

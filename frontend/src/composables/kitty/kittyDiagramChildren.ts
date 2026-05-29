@@ -41,9 +41,7 @@ export function buildKittyChildren(
   switch (dt) {
     case 'circle_map':
       return nodes
-        .filter(
-          (n) => (n.type === 'bubble' || n.type === 'context') && n.id.startsWith('context-')
-        )
+        .filter((n) => (n.type === 'bubble' || n.type === 'context') && n.id.startsWith('context-'))
         .map(toChild)
     case 'bubble_map':
       return nodes.filter((n) => n.type === 'bubble' || n.type === 'attribute').map(toChild)
@@ -73,9 +71,7 @@ export function buildKittyChildren(
         .filter((n) => n.id.startsWith('tree-cat-') || n.id.startsWith('tree-leaf-'))
         .map(toChild)
     case 'concept_map':
-      return nodes
-        .filter((n) => n.id.startsWith('concept-') && n.id !== 'topic')
-        .map(toChild)
+      return nodes.filter((n) => n.id.startsWith('concept-') && n.id !== 'topic').map(toChild)
     case 'mindmap':
     case 'mind_map':
       return nodes.filter((n) => n.id.startsWith('branch-')).map(toChild)
@@ -86,9 +82,15 @@ export function buildKittyChildren(
             n.type !== 'topic' &&
             n.type !== 'center' &&
             n.type !== 'whole' &&
-            !['root', 'topic', 'center', 'flow-topic', 'event', 'left-topic', 'right-topic'].includes(
-              n.id
-            )
+            ![
+              'root',
+              'topic',
+              'center',
+              'flow-topic',
+              'event',
+              'left-topic',
+              'right-topic',
+            ].includes(n.id)
         )
         .map(toChild)
   }

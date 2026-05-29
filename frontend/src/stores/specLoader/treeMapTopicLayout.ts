@@ -48,8 +48,7 @@ export function measureTreeMapTopicDimensions(
 ): { width: number; height: number } {
   const t = (text || '').trim() || ' '
   const b = TREE_MAP_TOPIC_BORDER_WIDTH
-  const fs =
-    typeof style?.fontSize === 'number' ? style.fontSize : TREE_MAP_TOPIC_FONT_SIZE
+  const fs = typeof style?.fontSize === 'number' ? style.fontSize : TREE_MAP_TOPIC_FONT_SIZE
   const fontWeight = (style?.fontWeight as string | undefined) ?? 'bold'
   const fontFamily = style?.fontFamily
   const measureOpts = {
@@ -60,12 +59,7 @@ export function measureTreeMapTopicDimensions(
 
   if (diagramLabelLikelyNeedsRenderedMeasure(t)) {
     const contentW = measureRenderedDiagramLabelWidth(t, fs, measureOpts)
-    const contentH = measureRenderedDiagramLabelHeight(
-      t,
-      fs,
-      adaptiveMaxW,
-      measureOpts
-    )
+    const contentH = measureRenderedDiagramLabelHeight(t, fs, adaptiveMaxW, measureOpts)
     return {
       width: Math.max(
         contentW + 2 * TREE_MAP_TOPIC_PADDING_X + 2 * b,

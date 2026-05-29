@@ -19,7 +19,7 @@ import {
   VideoPlay,
 } from '@element-plus/icons-vue'
 
-import { LayoutGrid, MessageSquare, Settings, Watch } from 'lucide-vue-next'
+import { LayoutGrid, MessageSquare, Settings, Watch } from '@lucide/vue'
 
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'

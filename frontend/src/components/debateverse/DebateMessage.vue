@@ -6,7 +6,7 @@ import { computed, ref } from 'vue'
 
 import { ElButton } from 'element-plus'
 
-import { ChevronDown, ChevronUp } from 'lucide-vue-next'
+import { ChevronDown, ChevronUp } from '@lucide/vue'
 
 import deepseekAvatar from '@/assets/deepseek-avatar.png'
 import doubaoAvatar from '@/assets/doubao-avatar.png'

@@ -1,8 +1,8 @@
 import { type MaybeRefOrGetter, computed, toValue } from 'vue'
 
 import { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
-import { useCanvasNodeIndicatorsStore } from '@/stores/canvasNodeIndicators'
 import { useDiagramStore } from '@/stores'
+import { useCanvasNodeIndicatorsStore } from '@/stores/canvasNodeIndicators'
 
 export interface UseDiagramCanvasNodesEdgesOptions {
   diagramStore: ReturnType<typeof useDiagramStore>

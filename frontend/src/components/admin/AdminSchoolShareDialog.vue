@@ -5,7 +5,8 @@
 import { computed } from 'vue'
 
 import { Close } from '@element-plus/icons-vue'
-import { Copy } from 'lucide-vue-next'
+
+import { Copy } from '@lucide/vue'
 
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 
@@ -62,7 +63,6 @@ async function copyShortInvite() {
     notify.error(t('notification.copyFailed'))
   }
 }
-
 </script>
 
 <template>

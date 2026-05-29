@@ -18,7 +18,7 @@ import {
   RefreshCw,
   Settings,
   Trash2,
-} from 'lucide-vue-next'
+} from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'

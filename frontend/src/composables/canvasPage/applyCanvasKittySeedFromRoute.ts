@@ -3,8 +3,8 @@
  */
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 
-import type { DiagramType } from '@/types'
 import { useDiagramStore } from '@/stores'
+import type { DiagramType } from '@/types'
 
 type DiagramPiniaStore = ReturnType<typeof useDiagramStore>
 
@@ -26,11 +26,7 @@ export function canvasKittySeedQueryKeysPresent(
   )
 }
 
-function patchTopicNode(
-  store: DiagramPiniaStore,
-  nodeId: string,
-  text: string
-): boolean {
+function patchTopicNode(store: DiagramPiniaStore, nodeId: string, text: string): boolean {
   const trimmed = text.trim()
   if (!trimmed || !store.data?.nodes.some((n) => n.id === nodeId)) {
     return false
@@ -77,16 +73,24 @@ export function applyCanvasKittySeedFromRoute(
       break
     }
     case 'tree_map':
-      patchTopicNode(diagramStore, 'tree-topic', tslice) || patchFirstTopicLike(diagramStore, tslice)
+      if (!patchTopicNode(diagramStore, 'tree-topic', tslice)) {
+        patchFirstTopicLike(diagramStore, tslice)
+      }
       break
     case 'flow_map':
-      patchTopicNode(diagramStore, 'flow-topic', tslice) || patchFirstTopicLike(diagramStore, tslice)
+      if (!patchTopicNode(diagramStore, 'flow-topic', tslice)) {
+        patchFirstTopicLike(diagramStore, tslice)
+      }
       break
     case 'multi_flow_map':
-      patchTopicNode(diagramStore, 'event', tslice) || patchFirstTopicLike(diagramStore, tslice)
+      if (!patchTopicNode(diagramStore, 'event', tslice)) {
+        patchFirstTopicLike(diagramStore, tslice)
+      }
       break
     case 'brace_map':
-      patchTopicNode(diagramStore, 'brace-whole', tslice) || patchFirstTopicLike(diagramStore, tslice)
+      if (!patchTopicNode(diagramStore, 'brace-whole', tslice)) {
+        patchFirstTopicLike(diagramStore, tslice)
+      }
       break
     case 'bridge_map':
       patchTopicNode(diagramStore, 'dimension-label', tslice)
@@ -96,7 +100,9 @@ export function applyCanvasKittySeedFromRoute(
     case 'mindmap':
     case 'mind_map':
     case 'concept_map':
-      patchTopicNode(diagramStore, 'topic', tslice) || patchFirstTopicLike(diagramStore, tslice)
+      if (!patchTopicNode(diagramStore, 'topic', tslice)) {
+        patchFirstTopicLike(diagramStore, tslice)
+      }
       break
     default:
       patchFirstTopicLike(diagramStore, tslice)

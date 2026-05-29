@@ -12,7 +12,7 @@ import { type ComputedRef, computed, inject, nextTick, onMounted } from 'vue'
 
 import { ElButton, ElTooltip } from 'element-plus'
 
-import { Check, Loader2, RefreshCw, X } from 'lucide-vue-next'
+import { Check, Loader2, RefreshCw, X } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { getNodePalette } from '@/composables/nodePalette/useNodePalette'

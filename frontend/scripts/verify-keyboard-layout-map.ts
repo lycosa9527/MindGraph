@@ -1,17 +1,17 @@
 /**
- * Smoke-test UI locale â†’ simple-keyboard preset mapping (run: npx tsx scripts/verify-keyboard-layout-map.ts).
+ * Smoke-test UI locale â†?simple-keyboard preset mapping (run: node scripts/verify-keyboard-layout-map.ts).
  */
 import {
   ALL_LAYOUT_PRESET_NAMES,
   PICKER_VIRTUAL_KEYBOARD_PRESET_BY_UI_LOCALE,
   getLayoutPresetKeyForUiLocale,
   loadLayoutForPreset,
-} from '../src/i18n/keyboardLayoutForUiLocale'
+} from '../src/i18n/keyboardLayoutForUiLocale.ts'
 import {
   INTERFACE_LANGUAGE_PICKER_CODES,
   INTERFACE_LANGUAGE_PICKER_LOCALE_COUNT,
-} from '../src/i18n/locales'
-import type { LocaleCode } from '../src/i18n/supportedUiLocales'
+} from '../src/i18n/locales.ts'
+import type { LocaleCode } from '../src/i18n/supportedUiLocales.ts'
 
 async function main(): Promise<void> {
   if (INTERFACE_LANGUAGE_PICKER_CODES.length !== INTERFACE_LANGUAGE_PICKER_LOCALE_COUNT) {

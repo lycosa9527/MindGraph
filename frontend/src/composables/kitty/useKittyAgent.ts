@@ -10,16 +10,22 @@ import {
   createKittyPlayback,
   handleKittyServerMessage,
 } from '@/composables/kitty/kittyAgentInbound'
-import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import type {
   KittyAgentContext,
-  KittyContextUpdateOptions,
   KittyAgentOptions,
   KittyAgentState,
   KittyAudioChunk,
+  KittyContextUpdateOptions,
 } from '@/composables/kitty/kittyAgentTypes'
+import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 
-export type { KittyAgentContext, KittyAgentOptions, KittyAgentState, KittyContextUpdateOptions, KittyLibrarySnapshot } from '@/composables/kitty/kittyAgentTypes'
+export type {
+  KittyAgentContext,
+  KittyAgentOptions,
+  KittyAgentState,
+  KittyContextUpdateOptions,
+  KittyLibrarySnapshot,
+} from '@/composables/kitty/kittyAgentTypes'
 
 export function useKittyAgent(options: KittyAgentOptions = {}) {
   const {

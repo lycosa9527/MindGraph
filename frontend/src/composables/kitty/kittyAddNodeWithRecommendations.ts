@@ -10,13 +10,10 @@ import {
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
-import {
-  braceMapRootId,
-  isBraceMapSubpartNode,
-} from '@/stores/diagram/braceMapParentResolve'
-import { recalculateCircleMapLayout } from '@/stores/specLoader'
 import type { useDiagramStore } from '@/stores/diagram'
-import type { DiagramNode, DiagramType, Connection } from '@/types'
+import { braceMapRootId, isBraceMapSubpartNode } from '@/stores/diagram/braceMapParentResolve'
+import { recalculateCircleMapLayout } from '@/stores/specLoader'
+import type { Connection, DiagramNode, DiagramType } from '@/types'
 
 type DiagramPiniaStore = ReturnType<typeof useDiagramStore>
 
@@ -161,8 +158,9 @@ function addNodeForDiagramType(
     const selectedNode = selectedId
       ? store.data.nodes.find((node) => node.id === selectedId)
       : undefined
-    const catRaw = (selectedNode as DiagramNode & { category?: string } | undefined)?.category
-    const isEffect = catRaw === 'effects' || (typeof selectedId === 'string' && selectedId.startsWith('effect-'))
+    const catRaw = (selectedNode as (DiagramNode & { category?: string }) | undefined)?.category
+    const isEffect =
+      catRaw === 'effects' || (typeof selectedId === 'string' && selectedId.startsWith('effect-'))
     const idPrefix = isEffect ? 'effect' : 'cause'
     const existing = store.data.nodes.filter((node) => node.id.startsWith(`${idPrefix}-`))
     const nextNum = existing.length
@@ -222,10 +220,7 @@ function addNodeForDiagramType(
     const startX = DEFAULT_PADDING + 100 + 10
     let nextX = startX
     if (pairNodes.length > 0) {
-      const rightmostX = pairNodes.reduce(
-        (maxX, node) => Math.max(maxX, node.position?.x || 0),
-        0
-      )
+      const rightmostX = pairNodes.reduce((maxX, node) => Math.max(maxX, node.position?.x || 0), 0)
       nextX = rightmostX + nodeWidth + 50
     }
     store.addNode({
@@ -312,7 +307,10 @@ export async function handleKittyAddNodeWithRecommendationsRequest(
     )
   ) {
     options.notifyWarning(
-      options.translate('notification.nodeNotEligible', 'This node does not support recommendations')
+      options.translate(
+        'notification.nodeNotEligible',
+        'This node does not support recommendations'
+      )
     )
     return
   }

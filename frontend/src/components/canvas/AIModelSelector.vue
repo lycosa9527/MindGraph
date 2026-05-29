@@ -15,7 +15,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { ElTooltip } from 'element-plus'
 
-import { Sparkles, X } from 'lucide-vue-next'
+import { Sparkles, X } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'

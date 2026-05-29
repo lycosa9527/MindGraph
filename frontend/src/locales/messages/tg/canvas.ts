@@ -23,10 +23,12 @@ export default {
     'This CmapTools file used text-order fallback for links—verify relationships against your original map.',
   'canvas.import.cmapConnectionFallback':
     'Relationships were reconstructed from IHMC graphical connections rather than proposition objects.',
-  'canvas.import.cmapEmptyLayout': 'Imported map has no recovered node coordinates; layout was regenerated.',
+  'canvas.import.cmapEmptyLayout':
+    'Imported map has no recovered node coordinates; layout was regenerated.',
   'canvas.import.cmapLayoutLabelCollision':
     'Duplicate concept labels overlap in layout anchors; some imported positions may be wrong.',
-  'canvas.import.cmapLayoutFailed': 'Layout extraction hit a parse error—positions were regenerated.',
+  'canvas.import.cmapLayoutFailed':
+    'Layout extraction hit a parse error—positions were regenerated.',
   'canvas.reset.confirmBody':
     'Are you sure? All current content will be lost, including the diagram and node palette. This cannot be undone.',
   'canvas.reset.confirmButton': 'Reset',

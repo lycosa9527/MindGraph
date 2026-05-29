@@ -17,7 +17,7 @@ import {
 
 import { Loading } from '@element-plus/icons-vue'
 
-import { Edit3, Lock, MessageCircle, MoreHorizontal, Pin, Trash2 } from 'lucide-vue-next'
+import { Edit3, Lock, MessageCircle, MoreHorizontal, Pin, Trash2 } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import {

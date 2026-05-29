@@ -4,12 +4,12 @@
  * Preserves `{placeholder}` tokens. Skips: en (source), es (hand-translated), zh, zh-tw.
  *
  * Usage (from frontend/):
- *   npx tsx scripts/translate-ui-locales-from-en.ts
- *   npx tsx scripts/translate-ui-locales-from-en.ts --locale=de
- *   npx tsx scripts/translate-ui-locales-from-en.ts --locale=de,fr,ja
- *   npx tsx scripts/translate-ui-locales-from-en.ts --dry-run
- *   npx tsx scripts/translate-ui-locales-from-en.ts --skip-ns=notification
- *   npx tsx scripts/translate-ui-locales-from-en.ts --only-ns=sidebar,common,auth
+ *   node scripts/translate-ui-locales-from-en.ts
+ *   node scripts/translate-ui-locales-from-en.ts --locale=de
+ *   node scripts/translate-ui-locales-from-en.ts --locale=de,fr,ja
+ *   node scripts/translate-ui-locales-from-en.ts --dry-run
+ *   node scripts/translate-ui-locales-from-en.ts --skip-ns=notification
+ *   node scripts/translate-ui-locales-from-en.ts --only-ns=sidebar,common,auth
  *
  * Proxy (VPN): uses system proxy on Windows (registry) or `HTTPS_PROXY` / `HTTP_PROXY`.
  * Override: `--proxy=http://127.0.0.1:7890`
@@ -19,19 +19,19 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import type { LocaleCode } from '../src/i18n/locales'
-import { SUPPORTED_UI_LOCALES } from '../src/i18n/supportedUiLocales'
-import adminEn from '../src/locales/messages/en/admin'
-import authEn from '../src/locales/messages/en/auth'
-import canvasEn from '../src/locales/messages/en/canvas'
-import commonEn from '../src/locales/messages/en/common'
-import communityEn from '../src/locales/messages/en/community'
-import knowledgeEn from '../src/locales/messages/en/knowledge'
-import mindmateEn from '../src/locales/messages/en/mindmate'
-import notificationEn from '../src/locales/messages/en/notification'
-import sidebarEn from '../src/locales/messages/en/sidebar'
-import workshopEn from '../src/locales/messages/en/workshop'
-import { setupFetchProxy } from './setup-fetch-proxy'
+import type { LocaleCode } from '../src/i18n/locales.ts'
+import { SUPPORTED_UI_LOCALES } from '../src/i18n/supportedUiLocales.ts'
+import adminEn from '../src/locales/messages/en/admin.ts'
+import authEn from '../src/locales/messages/en/auth.ts'
+import canvasEn from '../src/locales/messages/en/canvas.ts'
+import commonEn from '../src/locales/messages/en/common.ts'
+import communityEn from '../src/locales/messages/en/community.ts'
+import knowledgeEn from '../src/locales/messages/en/knowledge.ts'
+import mindmateEn from '../src/locales/messages/en/mindmate.ts'
+import notificationEn from '../src/locales/messages/en/notification.ts'
+import sidebarEn from '../src/locales/messages/en/sidebar.ts'
+import workshopEn from '../src/locales/messages/en/workshop.ts'
+import { setupFetchProxy } from './setup-fetch-proxy.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '../src/locales/messages')
@@ -163,7 +163,7 @@ function writeNamespaceFile(
         : ns === 'notification'
           ? 'notification'
           : ns
-  const header = `/** ${localeCode} UI â€” ${title} (machine-translated from en; review as needed) */`
+  const header = `/** ${localeCode} UI â€?${title} (machine-translated from en; review as needed) */`
   const lines: string[] = [header, 'export default {']
   for (const [k, v] of Object.entries(entries)) {
     lines.push(`  ${JSON.stringify(k)}: ${JSON.stringify(v)},`)
@@ -174,18 +174,18 @@ function writeNamespaceFile(
 
 function writeIndexTs(localeCode: string): void {
   const raw = `/**
- * ${localeCode} UI messages â€” merged namespace bundles.
+ * ${localeCode} UI messages â€?merged namespace bundles.
  */
-import admin from './admin'
-import auth from './auth'
-import canvas from './canvas'
-import common from './common'
-import community from './community'
-import knowledge from './knowledge'
-import mindmate from './mindmate'
-import notification from './notification'
-import sidebar from './sidebar'
-import workshop from './workshop'
+import admin from './admin.ts'
+import auth from './auth.ts'
+import canvas from './canvas.ts'
+import common from './common.ts'
+import community from './community.ts'
+import knowledge from './knowledge.ts'
+import mindmate from './mindmate.ts'
+import notification from './notification.ts'
+import sidebar from './sidebar.ts'
+import workshop from './workshop.ts'
 
 export default {
   ...common,
@@ -205,9 +205,9 @@ export default {
 
 function writeRootReexport(localeCode: string): void {
   const raw = `/**
- * ${localeCode} UI messages â€” re-export merged bundles.
+ * ${localeCode} UI messages â€?re-export merged bundles.
  */
-export { default } from './${localeCode}/index'
+export { default } from './${localeCode}/index.ts'
 `
   writeFileSync(join(ROOT, `${localeCode}.ts`), raw, 'utf8')
 }

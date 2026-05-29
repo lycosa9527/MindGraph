@@ -17,7 +17,7 @@ import { intlLocaleForUiCode } from '@/i18n/locales'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
 import { apiRequest } from '@/utils/apiClient'
-import { loadChartJs, type ChartConfiguration, type TooltipItem } from '@/utils/lazyChartJs'
+import { type ChartConfiguration, type TooltipItem, loadChartJs } from '@/utils/lazyChartJs'
 
 import AdminSchoolDifySettings from './AdminSchoolDifySettings.vue'
 import AdminSchoolOrgGeneralTab from './AdminSchoolOrgGeneralTab.vue'
@@ -379,9 +379,7 @@ async function ensureInvitationCodeLoaded() {
   }
   invitationCodeLoading.value = true
   try {
-    const res = await apiRequest(
-      `/api/auth/admin/organizations/${props.orgId}/invitation-code`
-    )
+    const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}/invitation-code`)
     if (!res.ok) {
       return
     }
@@ -400,11 +398,15 @@ async function ensureInvitationCodeLoaded() {
 async function refreshInvitationCode() {
   if (props.orgId == null) return
   try {
-    await ElMessageBox.confirm(t('admin.refreshInvitationCodeConfirm'), t('admin.refreshInvitationCode'), {
-      type: 'warning',
-      confirmButtonText: t('admin.refreshInvitationCode'),
-      cancelButtonText: t('common.cancel'),
-    })
+    await ElMessageBox.confirm(
+      t('admin.refreshInvitationCodeConfirm'),
+      t('admin.refreshInvitationCode'),
+      {
+        type: 'warning',
+        confirmButtonText: t('admin.refreshInvitationCode'),
+        cancelButtonText: t('common.cancel'),
+      }
+    )
   } catch {
     return
   }
@@ -446,8 +448,7 @@ async function addManagers() {
     )
     const rejected = results.filter((r) => r.status === 'rejected')
     const failedResponse = results.find(
-      (r): r is PromiseFulfilledResult<Response> =>
-        r.status === 'fulfilled' && !r.value.ok
+      (r): r is PromiseFulfilledResult<Response> => r.status === 'fulfilled' && !r.value.ok
     )
     if (rejected.length > 0 || failedResponse) {
       if (failedResponse) {
@@ -506,9 +507,7 @@ async function copyShareMessage() {
   let code = invitationCode.value.trim()
   if (!code && props.orgId != null) {
     try {
-      const res = await apiRequest(
-        `/api/auth/admin/organizations/${props.orgId}/invitation-code`
-      )
+      const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}/invitation-code`)
       if (res.ok) {
         const data = (await res.json()) as { invitation_code?: string }
         code = String(data.invitation_code ?? '').trim()
@@ -777,7 +776,7 @@ onBeforeUnmount(() => {
               :chart-loading="chartLoading"
               :period="period"
               :period-cards="periodCards"
-              @switch-period="switchPeriod"
+              @switchPeriod="switchPeriod"
             />
           </el-tab-pane>
           <el-tab-pane
@@ -816,18 +815,20 @@ onBeforeUnmount(() => {
               :add-managers-loading="addManagersLoading"
               :lock-loading="lockLoading"
               :refresh-code-loading="refreshCodeLoading"
-              @toggle-lock="toggleLock"
-              @refresh-invitation-code="refreshInvitationCode"
-              @copy-share-message="copyShareMessage"
-              @add-managers="addManagers"
-              @remove-manager="removeManager"
+              @toggleLock="toggleLock"
+              @refreshInvitationCode="refreshInvitationCode"
+              @copyShareMessage="copyShareMessage"
+              @addManagers="addManagers"
+              @removeManager="removeManager"
             />
           </el-tab-pane>
         </el-tabs>
       </div>
     </div>
     <template #footer>
-      <div class="mindbot-dialog-footer flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:flex-wrap">
+      <div
+        class="mindbot-dialog-footer flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:flex-wrap"
+      >
         <el-button
           v-if="schoolDialogTab === 'general' && orgId"
           type="primary"
@@ -959,7 +960,6 @@ onBeforeUnmount(() => {
           </el-card>
         </div>
       </div>
-
     </template>
     <template #footer>
       <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:flex-wrap">

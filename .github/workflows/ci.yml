@@ -55,5 +55,11 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      - name: VueUse PURE annotations (Rolldown build hygiene)
+        run: npm run check:vueuse-pure
+      - name: DEP0205 regression (Node module hooks)
+        run: npm run check:dep0205
+      - name: CLI script smoke (native Node type stripping)
+        run: npm run check:scripts
       - name: Vitest (workshop reconnect)
         run: npx vitest run tests/useWorkshopReconnect.spec.ts

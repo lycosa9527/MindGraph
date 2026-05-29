@@ -369,8 +369,7 @@ export function useMobileKittyPairing(
     kitty.updateContext(ctx)
     if (options.onDebugLine) {
       const titleShort = (ctx.diagram_display_title ?? '').slice(0, 28)
-      const lib =
-        ctx.diagram_library_id != null ? String(ctx.diagram_library_id).slice(0, 8) : '—'
+      const lib = ctx.diagram_library_id != null ? String(ctx.diagram_library_id).slice(0, 8) : '—'
       options.onDebugLine('#ctx', `${String(ctx.diagram_type)} lib=${lib} ${titleShort}`)
     }
   }

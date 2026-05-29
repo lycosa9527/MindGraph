@@ -5,20 +5,19 @@
  */
 import { onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+
 import { storeToRefs } from 'pinia'
 
-import { handleKittyDesktopQueuedAction } from '@/composables/kitty/kittyDesktopActionHandlers'
-import { useLanguage } from '@/composables/core/useLanguage'
 import { eventBus } from '@/composables/core/useEventBus'
-import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
-import { createKittyDesktopPollLeader } from '@/composables/kitty/kittyDesktopPollLeader'
+import { useLanguage } from '@/composables/core/useLanguage'
 import {
-  createKittyDesktopWakeStream,
   type KittyDesktopWakeMobileActive,
+  createKittyDesktopWakeStream,
 } from '@/composables/kitty/createKittyDesktopWakeStream'
-import {
-  publishKittyMobileActiveHub,
-} from '@/composables/kitty/kittyDesktopMobileActiveHub'
+import { handleKittyDesktopQueuedAction } from '@/composables/kitty/kittyDesktopActionHandlers'
+import { publishKittyMobileActiveHub } from '@/composables/kitty/kittyDesktopMobileActiveHub'
+import { createKittyDesktopPollLeader } from '@/composables/kitty/kittyDesktopPollLeader'
+import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import {
   KITTY_DESKTOP_PAIR_WAIT_SEC,
   KITTY_MOBILE_WATCH_MS,

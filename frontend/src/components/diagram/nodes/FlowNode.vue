@@ -9,12 +9,12 @@ import { computed, inject, nextTick, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
-import { X } from 'lucide-vue-next'
+import { X } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
-import { MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
+import { MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { useDiagramStore } from '@/stores'

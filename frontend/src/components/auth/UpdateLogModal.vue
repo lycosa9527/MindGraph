@@ -40,7 +40,7 @@ const loadError = ref<string | null>(null)
 const entries = ref<ChangelogEntry[]>([])
 
 function renderMd(source: string): string {
-  markdownRendererReady.value
+  void markdownRendererReady.value
   if (!source.trim()) return ''
   return renderRichMarkdownHtml(source)
 }

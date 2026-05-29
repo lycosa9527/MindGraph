@@ -2,8 +2,8 @@ import { type ComputedRef, computed, nextTick, onScopeDispose, provide, watch } 
 
 import { eventBus } from '@/composables/core/useEventBus'
 import type { UseLanguageTranslate } from '@/composables/core/useLanguage'
-import { useCanvasNodeIndicatorsStore } from '@/stores/canvasNodeIndicators'
 import type { ActiveEditor, RemoteNodeSelection } from '@/composables/workshop/useWorkshop'
+import { useCanvasNodeIndicatorsStore } from '@/stores/canvasNodeIndicators'
 
 function isCssColorTransparent(value: string): boolean {
   const v = value.trim().toLowerCase()

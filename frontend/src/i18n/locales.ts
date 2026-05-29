@@ -5,12 +5,11 @@
  * `elementPlusLocale.ts`, and `scripts/check-i18n-keys.ts` (regenerate `i18n/index.ts` if the script is extended).
  * Translate UI copy by editing values in `src/locales/messages/<code>/*.ts` (same keys as `en/`), e.g. in Cursor/Composer.
  */
-import promptLanguageRegistry from '@data/prompt_language_registry.json'
+import promptLanguageRegistry from '../../../data/prompt_language_registry.json' with { type: 'json' }
+import { SUPPORTED_UI_LOCALES } from './supportedUiLocales.ts'
+import type { LocaleCode, UiLocaleEntry } from './supportedUiLocales.ts'
 
-import { SUPPORTED_UI_LOCALES } from './supportedUiLocales'
-import type { LocaleCode, UiLocaleEntry } from './supportedUiLocales'
-
-export { SUPPORTED_UI_LOCALES, type LocaleCode, type UiLocaleEntry } from './supportedUiLocales'
+export { SUPPORTED_UI_LOCALES, type LocaleCode, type UiLocaleEntry } from './supportedUiLocales.ts'
 
 /** Enabled UI locales in registry order (for cycling, validation, etc.). */
 export const UI_LOCALE_CODES: LocaleCode[] = SUPPORTED_UI_LOCALES.filter((e) => e.enabled).map(

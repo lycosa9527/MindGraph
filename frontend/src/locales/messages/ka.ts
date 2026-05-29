@@ -1,4 +1,4 @@
 /**
  * ka UI messages — re-export merged bundles.
  */
-export { default } from './ka/index'
+export { default } from './ka/index.ts'

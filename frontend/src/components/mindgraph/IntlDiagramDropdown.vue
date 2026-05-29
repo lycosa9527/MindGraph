@@ -10,7 +10,7 @@ import { ElIcon, ElMessageBox } from 'element-plus'
 
 import { Loading } from '@element-plus/icons-vue'
 
-import { Edit3, FileImage, Pin, Trash2 } from 'lucide-vue-next'
+import { Edit3, FileImage, Pin, Trash2 } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'

@@ -110,7 +110,7 @@ async function submit() {
     return
   }
 
-  let spec: Record<string, unknown> | null = null
+  let spec: Record<string, unknown> | null
   if (props.mode === 'edit' && props.initialPost) {
     spec =
       ((props.initialPost as CommunityPost & { spec?: unknown }).spec as

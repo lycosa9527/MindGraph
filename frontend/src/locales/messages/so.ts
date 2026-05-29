@@ -1,4 +1,4 @@
 /**
  * so UI messages — re-export merged bundles.
  */
-export { default } from './so/index'
+export { default } from './so/index.ts'

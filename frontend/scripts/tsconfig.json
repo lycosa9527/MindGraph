@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "rootDir": ".."
+  },
+  "include": ["./**/*.ts", "../src/locales/messages/**/*.ts", "../src/i18n/**/*.ts"]
+}

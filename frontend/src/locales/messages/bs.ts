@@ -1,4 +1,4 @@
 /**
  * bs UI messages — re-export merged bundles.
  */
-export { default } from './bs/index'
+export { default } from './bs/index.ts'

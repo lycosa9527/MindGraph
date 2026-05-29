@@ -403,9 +403,7 @@ function measureTextWidthNoWrap(
   el.style.whiteSpace = 'nowrap'
   el.style.padding = options.isTopic ? '8px 12px' : '4px 8px'
   el.style.fontSize = `${options.fontSize}px`
-  const fw =
-    options.fontWeight ??
-    (options.isTopic ? 'bold' : 'normal')
+  const fw = options.fontWeight ?? (options.isTopic ? 'bold' : 'normal')
   el.style.fontWeight = fw
   el.textContent = t
   return el.offsetWidth
@@ -598,12 +596,7 @@ export function calculateBubbleMapRadius(
   }
 
   const measureBold = measureBoldOverride !== undefined ? measureBoldOverride : isTopic
-  const { width, height } = measureTextWithSVG(
-    text.trim(),
-    fontSize,
-    measureBold,
-    fontFamily
-  )
+  const { width, height } = measureTextWithSVG(text.trim(), fontSize, measureBold, fontFamily)
 
   const measuredWidth =
     width || estimateTextWidthFallbackPx(text, fontSize, { isTopic: measureBold })

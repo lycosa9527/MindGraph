@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElTooltip } from 'element-plus'
 
-import { ChevronDown, LayoutGrid } from 'lucide-vue-next'
+import { ChevronDown, LayoutGrid } from '@lucide/vue'
 
 import type { MoreAppItem } from '@/composables/canvasToolbar'
 

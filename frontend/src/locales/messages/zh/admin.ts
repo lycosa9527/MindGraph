@@ -592,7 +592,8 @@ export default {
   'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Dify',
   'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
-  'admin.schoolDifyGlobalUnconfigured': '未在 .env 中配置全局 Dify（DIFY_API_URL / DIFY_API_KEY）。',
+  'admin.schoolDifyGlobalUnconfigured':
+    '未在 .env 中配置全局 Dify（DIFY_API_URL / DIFY_API_KEY）。',
   'admin.schoolDifySetOverride': '设置本校覆盖',
   'admin.schoolDifyCancelOverrideDraft': '取消',
   'admin.schoolDifyConfigured': '已配置本校专属 MindMate Dify',
@@ -606,7 +607,8 @@ export default {
   'admin.schoolDifyApiKeyBlankUsesGlobal': '留空则使用全局 API Key（{masked}）。',
   'admin.schoolDifyAuthTest': 'Dify鉴权测试',
   'admin.schoolDifyAuthTestRunning': '测试中…',
-  'admin.schoolDifyAuthTestTooltip': '使用当前表单中的地址与密钥（未保存的修改也会参与）测试 Dify 鉴权。',
+  'admin.schoolDifyAuthTestTooltip':
+    '使用当前表单中的地址与密钥（未保存的修改也会参与）测试 Dify 鉴权。',
   'admin.schoolDifyAuthTestPassed': 'Dify 鉴权通过。',
   'admin.schoolDifyAuthTestFailed': 'Dify 鉴权未通过，请检查 API 根地址与 API Key。',
   'admin.schoolDifyAuthRequiredBeforeSave': '请先通过 Dify 鉴权测试后再保存。',

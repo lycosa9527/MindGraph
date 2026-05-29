@@ -16,3 +16,6 @@ end_of_line = lf
 
 [*.{md,txt,yml,yaml,json,toml,env}]
 end_of_line = lf
+
+[*.{js,ts,mjs,cjs,vue,css,scss}]
+end_of_line = lf

@@ -3,22 +3,22 @@
  */
 import { type ComputedRef, type Ref, onUnmounted, ref, watch } from 'vue'
 
+import { eventBus } from '@/composables/core/useEventBus'
 import { applyKittyDiagramUpdate } from '@/composables/kitty/kittyAgentActions'
-import {
-  getKittyDiagramContentFingerprint,
-  getKittyVoiceDiagramFingerprint,
-} from '@/composables/kitty/kittyDiagramFingerprint'
+import { formatKittyDiagramUpdateDebug } from '@/composables/kitty/kittyAgentDebug'
 import {
   acquireKittyMobileActiveHub,
   isKittyMobileActiveHubFresh,
   useKittyMobileActiveHubSnapshot,
 } from '@/composables/kitty/kittyDesktopMobileActiveHub'
+import {
+  getKittyDiagramContentFingerprint,
+  getKittyVoiceDiagramFingerprint,
+} from '@/composables/kitty/kittyDiagramFingerprint'
 import { applyKittyRemoteCanvasSelection } from '@/composables/kitty/kittySelectionApply'
+import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { KITTY_PAIR_POLL_MS } from '@/composables/kitty/runKittyIntervalPoll'
 import { syncDiagramStoreFromVoiceContext } from '@/composables/kitty/syncDiagramStoreFromVoiceContext'
-import { eventBus } from '@/composables/core/useEventBus'
-import { formatKittyDiagramUpdateDebug } from '@/composables/kitty/kittyAgentDebug'
-import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { useDiagramStore } from '@/stores/diagram'
 import { VALID_DIAGRAM_TYPES } from '@/stores/diagram/constants'
 import type { DiagramType } from '@/types'
@@ -85,10 +85,7 @@ export function useKittyDesktopRemoteSync(options: {
     }
     lastDiagramSseAt.value = Date.now()
     const updates = isRecord(data.updates) || Array.isArray(data.updates) ? data.updates : {}
-    const summary = formatKittyDiagramUpdateDebug(
-      action,
-      updates as Record<string, unknown>
-    )
+    const summary = formatKittyDiagramUpdateDebug(action, updates as Record<string, unknown>)
     traceKittyWorkflow('desktop', 'canvas_apply', summary, { scope, action })
     applyKittyDiagramUpdate(action, updates as Record<string, unknown>)
   }

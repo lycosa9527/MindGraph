@@ -23,7 +23,7 @@ import {
   TableProperties,
   Trash2,
   X,
-} from 'lucide-vue-next'
+} from '@lucide/vue'
 
 import {
   AIModelSelector,
@@ -49,10 +49,6 @@ import {
   useNotifications,
 } from '@/composables'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
-import { resolveKittyChildNodeId } from '@/composables/kitty/kittyDiagramChildren'
-import { handleKittyAddNodeWithRecommendationsRequest } from '@/composables/kitty/kittyAddNodeWithRecommendations'
-import { replayKittyPendingCanvasAction } from '@/composables/kitty/useKittyMobileHubActionBridge'
-import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
 import { useCanvasPageTabRecIndicator } from '@/composables/canvasPage/useCanvasPageTabRecIndicator'
 import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
 import {
@@ -60,6 +56,10 @@ import {
   loadDiagramMarkdownPipeline,
 } from '@/composables/core/diagramMarkdownPipeline'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
+import { handleKittyAddNodeWithRecommendationsRequest } from '@/composables/kitty/kittyAddNodeWithRecommendations'
+import { resolveKittyChildNodeId } from '@/composables/kitty/kittyDiagramChildren'
+import { replayKittyPendingCanvasAction } from '@/composables/kitty/useKittyMobileHubActionBridge'
+import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
 import { IMPORT_SPEC_KEY } from '@/config'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import {

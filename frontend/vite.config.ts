@@ -4,12 +4,27 @@ import tailwindcss from '@tailwindcss/vite'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
-import { resolve, dirname } from 'path'
+import { homedir } from 'os'
+import { resolve, dirname, join } from 'path'
 import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { visualizer } from 'rollup-plugin-visualizer'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+
+/** WSL projects on /mnt/c often hit EACCES when Vite renames deps_temp → deps under node_modules/.vite. */
+function resolveCacheDir(projectRoot: string): string {
+  const override = process.env.VITE_CACHE_DIR?.trim()
+  if (override) {
+    return resolve(override)
+  }
+  if (process.platform === 'linux' && projectRoot.startsWith('/mnt/')) {
+    return join(homedir(), '.cache', 'mindgraph-vite')
+  }
+  return join(projectRoot, 'node_modules', '.vite')
+}
+
+const cacheDir = resolveCacheDir(__dirname)
 
 // Read version from VERSION file (single source of truth)
 const version = readFileSync(resolve(__dirname, '../VERSION'), 'utf-8').trim()
@@ -59,6 +74,7 @@ function elementPlusManualChunk(id: string): string | undefined {
 }
 
 export default defineConfig({
+  cacheDir,
   optimizeDeps: {
     include: [
       'markdown-it',
@@ -66,7 +82,7 @@ export default defineConfig({
       'katex',
       'katex/contrib/mhchem',
       'dompurify',
-      'lucide-vue-next',
+      '@lucide/vue',
       'mathlive',
       '@tanstack/vue-query',
       '@vueuse/core',
@@ -220,7 +236,7 @@ export default defineConfig({
           if (id.includes('node_modules/@vue-flow')) {
             return 'vendor-vue-flow'
           }
-          if (id.includes('node_modules/lucide-vue-next')) {
+          if (id.includes('node_modules/@lucide/vue')) {
             return 'vendor-lucide'
           }
           if (id.includes('node_modules/katex')) {
@@ -256,9 +272,6 @@ export default defineConfig({
           }
           if (id.includes('node_modules/simple-keyboard') && !id.includes('simple-keyboard-layouts')) {
             return 'vendor-keyboard'
-          }
-          if (id.includes('node_modules/axios')) {
-            return 'vendor-axios'
           }
           return undefined
         },

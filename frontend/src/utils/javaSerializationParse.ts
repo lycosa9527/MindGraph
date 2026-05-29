@@ -464,8 +464,7 @@ function readCustomDataTail(
 ): void {
   const needsCustom =
     (classDesc.flags & SC_WRITE_METHOD) !== 0 ||
-    ((classDesc.flags & SC_EXTERNALIZABLE) !== 0 &&
-      (classDesc.flags & SC_BLOCK_DATA) !== 0)
+    ((classDesc.flags & SC_EXTERNALIZABLE) !== 0 && (classDesc.flags & SC_BLOCK_DATA) !== 0)
   if (!needsCustom) {
     return
   }
@@ -528,7 +527,7 @@ function skipCustomData(posRef: { pos: number }, ctx: ParseCtx): void {
 }
 
 function readNewString(tc: number, posRef: { pos: number }, ctx: ParseCtx): string {
-  let len = 0
+  let len: number
   if (tc === TC_STRING) {
     len = readU16(ctx.view, ctx.buf, posRef)
   } else if (tc === TC_LONGSTRING) {

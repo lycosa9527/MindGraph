@@ -9,7 +9,7 @@ import { ref } from 'vue'
 
 import { Delete, Edit } from '@element-plus/icons-vue'
 
-import { ChevronDown, ChevronUp, Link2, Quote, Smile, Star } from 'lucide-vue-next'
+import { ChevronDown, ChevronUp, Link2, Quote, Smile, Star } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 

@@ -6,11 +6,11 @@ import { computed, ref, watch } from 'vue'
 
 import { ElPopover } from 'element-plus'
 
-import { Check, Loader2, Pin, Search } from 'lucide-vue-next'
+import { Check, Loader2, Pin, Search } from '@lucide/vue'
 
 import KittyMobileDiagramContextCard from '@/components/kitty/KittyMobileDiagramContextCard.vue'
 import { useLanguage } from '@/composables'
-import { useSavedDiagramsStore, type SavedDiagram } from '@/stores/savedDiagrams'
+import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 const props = defineProps<{
   modelValue: boolean
@@ -19,7 +19,7 @@ const props = defineProps<{
   primaryLine: string
   metaLine?: string | null
   sourceBadge?: string | null
-  ariaLabel: string
+  accessibleLabel: string
   disabled?: boolean
 }>()
 
@@ -94,7 +94,7 @@ function handleSelect(diagram: SavedDiagram): void {
         :primary-line="primaryLine"
         :meta-line="metaLine"
         :source-badge="sourceBadge"
-        :ariaLabel="ariaLabel"
+        :accessible-label="accessibleLabel"
         :expanded="open"
         :disabled="disabled"
       />

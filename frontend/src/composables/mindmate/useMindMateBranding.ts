@@ -10,16 +10,12 @@ import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import { useLanguage } from '@/composables'
 import { useAuthStore } from '@/stores'
 
-export function resolveSchoolMindmateAgentName(
-  raw: string | null | undefined
-): string | null {
+export function resolveSchoolMindmateAgentName(raw: string | null | undefined): string | null {
   const trimmed = (raw ?? '').trim()
   return trimmed || null
 }
 
-export function resolveSchoolMindmateAvatarUrl(
-  raw: string | null | undefined
-): string | null {
+export function resolveSchoolMindmateAvatarUrl(raw: string | null | undefined): string | null {
   const trimmed = (raw ?? '').trim()
   return trimmed || null
 }

@@ -1,6 +1,6 @@
 /**
  * Align every locale × namespace (except zh) with zh slices: add missing from en; drop extras.
- * Run from frontend/: npx tsx scripts/sync-messages-keys-from-reference.ts [--dry-run]
+ * Run from frontend/: node scripts/sync-messages-keys-from-reference.ts [--dry-run]
  *
  * Interface picker only: `--tier27-only` (matches INTERFACE_LANGUAGE_PICKER_CODES minus zh reference).
  */
@@ -64,7 +64,7 @@ function formatRecord(keysInOrder: string[], out: Record<string, string>): strin
 }
 
 function banner(locale: string, ns: string): string {
-  return `/**\n * ${locale} UI — ${ns}\n */\n`
+  return `/**\n * ${locale} UI �?${ns}\n */\n`
 }
 
 async function loadMod(locale: string, ns: string): Promise<Record<string, string>> {

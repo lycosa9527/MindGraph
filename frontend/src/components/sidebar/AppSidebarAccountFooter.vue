@@ -14,7 +14,7 @@ import {
   Share2,
   Upload,
   UserRound,
-} from 'lucide-vue-next'
+} from '@lucide/vue'
 
 import QuickRegisterModal from '@/components/mindgraph/QuickRegisterModal.vue'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'

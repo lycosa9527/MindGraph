@@ -8,7 +8,7 @@ import { useRouter } from 'vue-router'
 
 import { ElMessage, ElMessageBox } from 'element-plus'
 
-import { ArrowDown, ArrowUp, Copy, LayoutList, Plus, Settings, Trash2 } from 'lucide-vue-next'
+import { ArrowDown, ArrowUp, Copy, LayoutList, Plus, Settings, Trash2 } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'

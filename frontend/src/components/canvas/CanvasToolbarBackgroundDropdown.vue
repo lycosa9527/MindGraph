@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ElButton, ElDropdown, ElDropdownMenu, ElTooltip } from 'element-plus'
 
-import { Image as ImageIcon } from 'lucide-vue-next'
+import { Image as ImageIcon } from '@lucide/vue'
 
 withDefaults(
   defineProps<{

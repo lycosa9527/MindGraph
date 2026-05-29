@@ -1,4 +1,4 @@
 /**
  * ky UI messages — re-export merged bundles.
  */
-export { default } from './ky/index'
+export { default } from './ky/index.ts'

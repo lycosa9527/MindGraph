@@ -327,9 +327,7 @@ export function recalculateTreeMapLayout(
       const leafText = leaf.text ?? ''
       const leafBox = resolveTreeMapBox(leafId, nodeDimensions, () => {
         const fs =
-          typeof leaf.style?.fontSize === 'number'
-            ? leaf.style.fontSize
-            : TREE_MAP_BRANCH_FONT_SIZE
+          typeof leaf.style?.fontSize === 'number' ? leaf.style.fontSize : TREE_MAP_BRANCH_FONT_SIZE
         const fw = (leaf.style?.fontWeight as string | undefined) ?? 'normal'
         const leafDims = measureTextDimensions(leafText, fs, {
           paddingX: TREE_MAP_NODE_PADDING_X / 2,

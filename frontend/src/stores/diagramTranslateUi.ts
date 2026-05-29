@@ -1,8 +1,9 @@
 /**
  * UI state for full-diagram translate: collab-style banner + streamed progress counts.
  */
-import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+
+import { defineStore } from 'pinia'
 
 export const useDiagramTranslateUiStore = defineStore('diagramTranslateUi', () => {
   const bannerVisible = ref(false)

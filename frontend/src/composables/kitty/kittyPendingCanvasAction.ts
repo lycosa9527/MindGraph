@@ -32,7 +32,10 @@ export function consumeKittyPendingCanvasAction(): KittyPendingCanvasAction | nu
   sessionStorage.removeItem(KITTY_PENDING_CANVAS_ACTION_KEY)
   try {
     const parsed = JSON.parse(raw) as KittyPendingCanvasAction
-    if (parsed.kind === 'inline_recommendations' || parsed.kind === 'add_node_with_recommendations') {
+    if (
+      parsed.kind === 'inline_recommendations' ||
+      parsed.kind === 'add_node_with_recommendations'
+    ) {
       return parsed
     }
     return null

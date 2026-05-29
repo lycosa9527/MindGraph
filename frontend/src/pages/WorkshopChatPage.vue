@@ -8,7 +8,7 @@ import { ElMessage } from 'element-plus'
 
 import { CirclePlus } from '@element-plus/icons-vue'
 
-import { MoreVertical, School, Users } from 'lucide-vue-next'
+import { MoreVertical, School, Users } from '@lucide/vue'
 
 import {
   ChannelBrowser,
@@ -23,8 +23,8 @@ import TeachingGroupLanding from '@/components/workshop-chat/TeachingGroupLandin
 import WorkshopGearMenu from '@/components/workshop-chat/WorkshopGearMenu.vue'
 import WorkshopInboxWelcome from '@/components/workshop-chat/WorkshopInboxWelcome.vue'
 import WorkshopPersonalMenu from '@/components/workshop-chat/WorkshopPersonalMenu.vue'
-import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
 import { useWorkshopChatComposable } from '@/composables/workshop/useWorkshopChat'
 import { intlLocaleForUiCode } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'

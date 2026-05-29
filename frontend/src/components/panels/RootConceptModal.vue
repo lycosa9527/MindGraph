@@ -12,7 +12,7 @@ import { computed, nextTick, onMounted, watch } from 'vue'
 
 import { ElButton, ElTooltip } from 'element-plus'
 
-import { Check, Loader2, Plus, RefreshCw, X } from 'lucide-vue-next'
+import { Check, Loader2, Plus, RefreshCw, X } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { PALETTE_CONCEPT_DRAG_MIME } from '@/composables/nodePalette/constants'

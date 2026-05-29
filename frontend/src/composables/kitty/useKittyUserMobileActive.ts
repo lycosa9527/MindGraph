@@ -16,22 +16,6 @@ interface MobileActivePayload {
   primary_scope?: unknown
 }
 
-function parseScopes(raw: unknown): string[] {
-  if (!Array.isArray(raw)) {
-    return []
-  }
-  const out: string[] = []
-  for (const item of raw) {
-    if (typeof item === 'string') {
-      const trimmed = item.trim()
-      if (trimmed.length > 0 && !out.includes(trimmed)) {
-        out.push(trimmed)
-      }
-    }
-  }
-  return out
-}
-
 export function useKittyUserMobileActive(pollEnabled: Ref<boolean>) {
   const hubSnapshot = useKittyMobileActiveHubSnapshot()
   const active = ref(false)

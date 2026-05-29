@@ -51,11 +51,11 @@ import {
   getNodePalette,
   getPanelCoordinator,
   useCanvasKittyDesktopPairing,
-  useKittyDesktopRemoteSync,
   useDiagramSpecForSave,
   useEventBus,
   useInlineRecommendations,
   useInlineRecommendationsCoordinator,
+  useKittyDesktopRemoteSync,
   useLanguage,
   useNotifications,
   useSnapshotHistory,
@@ -65,25 +65,19 @@ import {
   canvasKittySeedQueryKeysPresent,
 } from '@/composables/canvasPage/applyCanvasKittySeedFromRoute'
 import {
+  VALID_DIAGRAM_TYPES,
   diagramTypeMap,
   diagramTypeToChineseMap,
-  VALID_DIAGRAM_TYPES,
 } from '@/composables/canvasPage/diagramTypeMaps'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { registerCanvasPageDiagramEventBus } from '@/composables/canvasPage/registerCanvasPageDiagramEventBus'
-import { useKittyDesktopVoiceCommandLog } from '@/composables/kitty/useKittyDesktopVoiceCommandLog'
-import { useKittyDesktopWorkflowDebug } from '@/composables/kitty/useKittyDesktopWorkflowDebug'
 import { useCanvasPageEditorShortcuts } from '@/composables/canvasPage/useCanvasPageEditorShortcuts'
 import { useCanvasPageLibrarySnapshots } from '@/composables/canvasPage/useCanvasPageLibrarySnapshots'
 import { useCanvasPageMountedHandlers } from '@/composables/canvasPage/useCanvasPageMountedHandlers'
 import { useCanvasPagePresentation } from '@/composables/canvasPage/useCanvasPagePresentation'
-import { useCanvasPageWorkshopCollab } from '@/composables/canvasPage/useCanvasPageWorkshopCollab'
 import { useCanvasPageTabRecIndicator } from '@/composables/canvasPage/useCanvasPageTabRecIndicator'
+import { useCanvasPageWorkshopCollab } from '@/composables/canvasPage/useCanvasPageWorkshopCollab'
 import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
-import { useKittyDiagramReviewAnnotationBus } from '@/composables/kitty/useKittyDiagramReviewAnnotationBus'
-import { resolveKittyChildNodeId } from '@/composables/kitty/kittyDiagramChildren'
-import { handleKittyAddNodeWithRecommendationsRequest } from '@/composables/kitty/kittyAddNodeWithRecommendations'
-import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
 import {
   canvasVirtualKeyboardOpen,
   ensureCanvasVirtualKeyboardUiVersionSync,
@@ -95,6 +89,12 @@ import {
   loadDiagramMarkdownPipeline,
 } from '@/composables/core/diagramMarkdownPipeline'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
+import { handleKittyAddNodeWithRecommendationsRequest } from '@/composables/kitty/kittyAddNodeWithRecommendations'
+import { resolveKittyChildNodeId } from '@/composables/kitty/kittyDiagramChildren'
+import { useKittyDesktopVoiceCommandLog } from '@/composables/kitty/useKittyDesktopVoiceCommandLog'
+import { useKittyDesktopWorkflowDebug } from '@/composables/kitty/useKittyDesktopWorkflowDebug'
+import { useKittyDiagramReviewAnnotationBus } from '@/composables/kitty/useKittyDiagramReviewAnnotationBus'
+import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
 import { IMPORT_SPEC_KEY, SAVE } from '@/config'
 import { FIT_PADDING, PANEL, PANEL_INSET } from '@/config/uiConfig'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'

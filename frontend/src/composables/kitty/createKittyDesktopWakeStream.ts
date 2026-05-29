@@ -1,5 +1,4 @@
 /** SSE wake stream: instant mobile_active transitions for desktop Kitty poll. */
-
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 
 export const KITTY_DESKTOP_WAKE_STREAM_URL = '/api/kitty/desktop_wake/stream'
@@ -57,9 +56,7 @@ function parseMobileActivePayload(raw: unknown): KittyDesktopWakeMobileActive | 
  * Opens ``EventSource`` on ``/api/kitty/desktop_wake/stream``. Returns teardown.
  * Reconnects with backoff when the stream drops unexpectedly.
  */
-export function createKittyDesktopWakeStream(
-  options: KittyDesktopWakeStreamOptions
-): () => void {
+export function createKittyDesktopWakeStream(options: KittyDesktopWakeStreamOptions): () => void {
   if (typeof EventSource === 'undefined') {
     return () => undefined
   }

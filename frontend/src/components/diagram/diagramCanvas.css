@@ -247,7 +247,9 @@
 /* Rotating dashed ring — used only for true-circle nodes (aspect-ratio: 1, border-radius: 50%).
  * Bubble nodes are pill/oval-shaped (no fixed aspect-ratio) and use gradient ants instead. */
 @keyframes circle-ants {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Fix Bug 1: gradient ant stubs look wrong on true-circle nodes — replace with rotating dashed ring at a

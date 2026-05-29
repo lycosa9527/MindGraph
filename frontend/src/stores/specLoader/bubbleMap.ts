@@ -48,8 +48,7 @@ function defaultContextBubbleRadiusFromText(text: string): number {
  */
 function bubbleContextRadiusFromNode(node: DiagramNode): number {
   const trimmed = (node.text ?? '').trim() || ' '
-  const fs =
-    typeof node.style?.fontSize === 'number' ? node.style.fontSize : CONTEXT_FONT_SIZE
+  const fs = typeof node.style?.fontSize === 'number' ? node.style.fontSize : CONTEXT_FONT_SIZE
   const measureBold = node.style?.fontWeight === 'bold'
   const fontFamily = node.style?.fontFamily ?? DIAGRAM_NODE_FONT_STACK
   const labelOpts = {

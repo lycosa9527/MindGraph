@@ -14,7 +14,7 @@ import {
   Sun,
   Timer,
   Trash2,
-} from 'lucide-vue-next'
+} from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { PRESENTATION_Z } from '@/config/uiConfig'

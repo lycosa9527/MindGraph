@@ -1,4 +1,4 @@
 /**
  * sq UI messages — re-export merged bundles.
  */
-export { default } from './sq/index'
+export { default } from './sq/index.ts'

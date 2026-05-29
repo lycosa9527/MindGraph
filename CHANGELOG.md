@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.22] - 2026-05-29
+
+### Added
+
+- **Frontend — DEP0205 regression gate** — `npm run check:dep0205` traces prebuild, vue-tsc, and Vite build; fails on `module.register()` deprecation ([`check-dep0205.mjs`](frontend/scripts/check-dep0205.mjs), CI frontend job).
+- **Frontend — VueUse PURE annotation gate** — `npm run check:vueuse-pure` fails if `@vueuse/core` dist contains Rolldown-invalid `/* #__PURE__ */` forms ([`check-vueuse-pure-annotations.mjs`](frontend/scripts/check-vueuse-pure-annotations.mjs), CI frontend job).
+- **Frontend — CLI script smoke test** — `npm run check:scripts` runs `sync-version` and `check-i18n-keys` under Node native type stripping.
+- **Ops — Node version pin** — [`frontend/.nvmrc`](frontend/.nvmrc) and `engines.node` ≥ 22.18 in [`package.json`](frontend/package.json).
+
+### Changed
+
+- **Frontend — remove tsx** — All CLI scripts use `node scripts/*.ts` (Node 26 native type stripping); `tsx` removed from devDependencies.
+- **Frontend — ESM import suffixes** — Locale bundle `index.ts` files and script imports use explicit `.ts` extensions for Node ESM; [`locales.ts`](frontend/src/i18n/locales.ts) loads prompt registry via relative JSON import with `with { type: 'json' }`.
+- **Frontend — Tailwind 4.3.0 floor** — `@tailwindcss/vite` and `tailwindcss` ^4.3.0 (upstream `registerHooks` on Node 26).
+- **Frontend — @vueuse/core Rolldown fix** — [`patches/@vueuse+core+14.3.0.patch`](frontend/patches/@vueuse+core+14.3.0.patch) applies upstream [vueuse#5388](https://github.com/vueuse/vueuse/pull/5388) until npm publishes a release after 14.3.0; `postinstall` runs `patch-package`.
+- **Ops — WSL node_modules** — [`NODE_NVM_SETUP.md`](docs/NODE_NVM_SETUP.md) documents WSL-only installs and DEP0205 verification.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.22).
+
+## [5.117.21] - 2026-05-29
+
+### Added
+
+- **Frontend — Vite 8 module interop smoke tests** — Vitest project exercises dynamic imports for `vue3-carousel-3d`, `mathlive`, `html-to-image`, and deep Element Plus ESM paths under Rolldown ([`vite8ModuleInterop.spec.ts`](frontend/tests/vite8ModuleInterop.spec.ts)).
+- **Ops — LF normalization scripts** — One-off CRLF→LF helpers for WSL/`/mnt/c` working copies ([`normalize-lf.py`](frontend/scripts/normalize-lf.py), [`normalize-lf-repo.py`](frontend/scripts/normalize-lf-repo.py)).
+
+### Changed
+
+- **Frontend — Vite 8 / Vitest 4** — `vite` ^8.0.14 (Rolldown), `vitest` ^4.1.7; Vitest split into `unit` and `vite8-interop` projects with a 60s timeout for cold ESM imports ([`vitest.config.ts`](frontend/vitest.config.ts), [`vite.config.ts`](frontend/vite.config.ts)).
+- **Frontend — TypeScript 6 & ESLint 10** — `typescript` ^6.0.3 with `ignoreDeprecations: "6.0"`; `eslint` ^10.4.0 and `@eslint/js` ^10.0.1 ([`tsconfig.json`](frontend/tsconfig.json), [`eslint.config.js`](frontend/eslint.config.js)).
+- **Frontend — Lucide icons** — `lucide-vue-next` replaced by `@lucide/vue`; manual chunk renamed to `vendor-lucide` ([`package.json`](frontend/package.json), [`vite.config.ts`](frontend/vite.config.ts)).
+- **Frontend — router & charts** — `vue-router` ^5.1.0; `echarts` ^6.1.0; `katex` ^0.17.0; `jsdom` ^29.1.1.
+- **Frontend — dependency cleanup** — Removed unused `axios`, `@vue-flow/controls`, `@tanstack/vue-virtual`, `page-flip`, and `vue-danmaku`; dropped `vendor-axios` manual chunk.
+- **Frontend — type-only imports** — `import type` / `export type` across Vue SFCs, composables, and stores for `verbatimModuleSyntax` under TypeScript 6.
+- **Frontend — npm allowScripts** — Pinned `core-js@3.49.0` and `esbuild@0.28.0` in the install-script allowlist ([`package.json`](frontend/package.json)).
+- **Repo — LF line endings** — `.editorconfig` enforces LF on `*.{js,ts,mjs,cjs,vue,css,scss}`; locale bundles and frontend sources normalized to LF.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.21).
+
 ## [5.117.20] - 2026-05-29
 
 ### Added

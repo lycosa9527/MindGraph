@@ -1,10 +1,10 @@
 /**
  * Locale-aware placeholder strings for new diagrams and concept map edge/topic logic.
  */
-import type { LocaleCode } from '@/i18n/locales'
-import { UI_LOCALE_CODES } from '@/i18n/locales'
 import { isLocaleLoaded } from '@/i18n'
 import { registerLocaleLabelCacheInvalidator } from '@/i18n/localeLabelCache'
+import type { LocaleCode } from '@/i18n/locales'
+import { UI_LOCALE_CODES } from '@/i18n/locales'
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import type { DiagramType } from '@/types'
 

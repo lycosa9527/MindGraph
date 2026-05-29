@@ -192,12 +192,12 @@ export function loadConceptMapSpec(spec: Record<string, unknown>): SpecLoaderRes
     ? (spec.concept_units as ImportedConceptUnit[])
     : []
 
-  let branchDisplayLabels: string[] = []
+  let branchDisplayLabels: string[]
 
   /** Maps relationship endpoint keys (ids, canonical mind ids, canonical labels). */
   const nameToMindGraphId = new Map<string, string>()
 
-  let resolvedRelationships: ConceptMapRelationship[] = []
+  let resolvedRelationships: ConceptMapRelationship[]
 
   nameToMindGraphId.set(normalizeLabel(topicText), 'topic')
   nameToMindGraphId.set(topicText.trim(), 'topic')

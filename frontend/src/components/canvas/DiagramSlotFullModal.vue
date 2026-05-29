@@ -9,7 +9,7 @@ import { computed, ref, watch } from 'vue'
 
 import { ElButton, ElRadio, ElRadioGroup } from 'element-plus'
 
-import { AlertTriangle, Loader2, Trash2 } from 'lucide-vue-next'
+import { AlertTriangle, Loader2, Trash2 } from '@lucide/vue'
 
 import { useNotifications } from '@/composables'
 import { useLanguage } from '@/composables'

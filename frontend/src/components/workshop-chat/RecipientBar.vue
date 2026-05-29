@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight, Globe, Hash, Lock, User } from 'lucide-vue-next'
+import { ChevronRight, Globe, Hash, Lock, User } from '@lucide/vue'
 
 const props = defineProps<{
   type: 'channel' | 'dm'

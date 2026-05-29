@@ -333,7 +333,7 @@ function startEditing(): void {
       // For right-aligned text, use parent container width if available, otherwise maxWidth
       // This prevents empty space on the left and allows text to expand properly
       const maxWidthPx = parseInt(props.maxWidth) || 180
-      let calculatedWidth = maxWidthPx
+      let calculatedWidth: number
 
       if (parentElement) {
         // Get parent container width (accounting for padding)

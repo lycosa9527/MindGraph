@@ -42,8 +42,8 @@ import {
   INTERFACE_LANGUAGE_PICKER_CODES,
   type InterfaceLanguagePickerCode,
   isInterfaceLanguagePickerLocale,
-} from '@/i18n/locales'
-import type { LocaleCode } from '@/i18n/supportedUiLocales'
+} from './locales.ts'
+import type { LocaleCode } from './supportedUiLocales.ts'
 
 export type SimpleKeyboardLayoutModule = {
   default: {

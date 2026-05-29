@@ -11,7 +11,7 @@ import type { Chart as ChartInstance } from 'chart.js'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
-import { loadChartJs, type ChartConfiguration, type TooltipItem } from '@/utils/lazyChartJs'
+import { type ChartConfiguration, type TooltipItem, loadChartJs } from '@/utils/lazyChartJs'
 
 const { t } = useLanguage()
 const notify = useNotifications()

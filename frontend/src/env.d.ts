@@ -25,3 +25,8 @@ declare module 'vue3-carousel-3d' {
   export const Carousel3d: Component
   export const Slide: Component
 }
+
+declare module 'element-plus/es/components/loading/style/css'
+declare module 'element-plus/es/components/message-box/style/css'
+declare module 'element-plus/es/components/message/style/css'
+declare module 'element-plus/es/components/notification/style/css'

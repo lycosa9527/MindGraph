@@ -8,7 +8,7 @@ import { ElButton, ElInput } from 'element-plus'
 
 import { ArrowRight } from '@element-plus/icons-vue'
 
-import { Send } from 'lucide-vue-next'
+import { Send } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useDebateVerseStore } from '@/stores/debateverse'

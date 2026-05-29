@@ -31,8 +31,8 @@ import type {
   User,
   UserRole,
 } from '@/types'
-import { normalizeUserRole } from '@/utils/userRoleDisplay'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
+import { normalizeUserRole } from '@/utils/userRoleDisplay'
 import { clearWorkshopChatCachesForUser } from '@/utils/workshopChatLocalCache'
 import {
   disconnectWorkshopChatWsIfAny,
@@ -105,12 +105,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isTeacher = computed(() => userRole.value === 'teacher')
   const isPersonalTrial = computed(() => userRole.value === 'personal_trial')
   const isPersonalPaid = computed(() => userRole.value === 'personal_paid')
-  const isPlatformLevel = computed(
-    () =>
-      isSuperAdmin.value ||
-      isPlatformBd.value ||
-      isExpert.value
-  )
+  const isPlatformLevel = computed(() => isSuperAdmin.value || isPlatformBd.value || isExpert.value)
   const isB2BOrgMember = computed(() => isSchoolAdmin.value || isTeacher.value)
   const isC2CConsumer = computed(() => isPersonalTrial.value || isPersonalPaid.value)
   /** Full platform admin — alias kept for existing admin-only routes */
@@ -187,9 +182,7 @@ export const useAuthStore = defineStore('auth', () => {
       orgIsObject && org.display_name != null ? String(org.display_name).trim() : ''
     const orgDisplayName = orgDisplayNameRaw || undefined
     const mindmateNameRaw =
-      orgIsObject && org.mindmate_agent_name != null
-        ? String(org.mindmate_agent_name).trim()
-        : ''
+      orgIsObject && org.mindmate_agent_name != null ? String(org.mindmate_agent_name).trim() : ''
     const mindmateAgentName = mindmateNameRaw || undefined
     const mindmateAvatarRaw =
       orgIsObject && org.mindmate_agent_avatar_url != null
@@ -629,10 +622,7 @@ export const useAuthStore = defineStore('auth', () => {
       return false
     }
     const now = Date.now()
-    if (
-      !options?.bypassThrottle &&
-      now - lastProfileRefreshTime.value < PROFILE_REFRESH_MIN_MS
-    ) {
+    if (!options?.bypassThrottle && now - lastProfileRefreshTime.value < PROFILE_REFRESH_MIN_MS) {
       return false
     }
     lastProfileRefreshTime.value = now
@@ -831,7 +821,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     void (async (): Promise<void> => {
-      let effectiveMode = mode.value
+      let effectiveMode: typeof mode.value
       try {
         effectiveMode = await detectMode()
       } catch {
@@ -839,9 +829,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
       if (effectiveMode === 'bayi') {
         const qp =
-          redirectPath !== undefined &&
-          redirectPath !== null &&
-          redirectPath !== ''
+          redirectPath !== undefined && redirectPath !== null && redirectPath !== ''
             ? `?redirect=${encodeURIComponent(redirectPath)}`
             : ''
         window.location.assign(`/auth${qp}`)

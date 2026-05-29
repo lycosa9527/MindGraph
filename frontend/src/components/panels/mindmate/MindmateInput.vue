@@ -5,7 +5,7 @@ import { ElButton, ElIcon, ElInput, ElTooltip } from 'element-plus'
 
 import { Close, VideoPause } from '@element-plus/icons-vue'
 
-import { Paperclip, Send } from 'lucide-vue-next'
+import { Paperclip, Send } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import type { MindMateFile } from '@/composables/mindmate/useMindMate'
