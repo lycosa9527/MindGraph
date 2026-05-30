@@ -248,6 +248,39 @@ def _assert_global_scope(scope: AdminScope, lang: Language) -> None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
 
+def require_management_panel(
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+) -> User:
+    """Require access to the unified management panel (roles 1–4)."""
+    if not is_management_panel_user(current_user):
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    return current_user
+
+
+def get_admin_scope(
+    organization_id: Optional[int] = Query(None),
+    current_user: User = Depends(require_management_panel),
+    lang: Language = Depends(get_language_dependency),
+) -> AdminScope:
+    """Resolve AdminScope for management panel API handlers."""
+    return build_admin_scope(current_user, organization_id=organization_id, lang=lang)
+
+
+def require_panel_capability(capability: str):
+    """Factory: dependency requiring a specific panel capability."""
+
+    def _dependency(
+        scope: AdminScope = Depends(get_admin_scope),
+        lang: Language = Depends(get_language_dependency),
+    ) -> AdminScope:
+        scope.assert_capability(capability, lang)
+        return scope
+
+    return _dependency
+
+
 def require_global_users_read(
     scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_VIEW)),
     lang: Language = Depends(get_language_dependency),
@@ -300,39 +333,6 @@ def require_invite_org_create(
     )
     _assert_global_scope(scope, lang)
     return scope
-
-
-def require_management_panel(
-    current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
-) -> User:
-    """Require access to the unified management panel (roles 1–4)."""
-    if not is_management_panel_user(current_user):
-        error_msg = Messages.error("admin_access_required", lang)
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
-    return current_user
-
-
-def get_admin_scope(
-    organization_id: Optional[int] = Query(None),
-    current_user: User = Depends(require_management_panel),
-    lang: Language = Depends(get_language_dependency),
-) -> AdminScope:
-    """Resolve AdminScope for management panel API handlers."""
-    return build_admin_scope(current_user, organization_id=organization_id, lang=lang)
-
-
-def require_panel_capability(capability: str):
-    """Factory: dependency requiring a specific panel capability."""
-
-    def _dependency(
-        scope: AdminScope = Depends(get_admin_scope),
-        lang: Language = Depends(get_language_dependency),
-    ) -> AdminScope:
-        scope.assert_capability(capability, lang)
-        return scope
-
-    return _dependency
 
 
 def require_global_data_center_read(
