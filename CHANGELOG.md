@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.24] - 2026-05-30
+
+### Added
+
+- **Org — shared MindBot/MindMate Dify settings** — Alembic `rev_0037` stores timeout, chain-of-thought, and AI-card streaming limits on `organizations`; backfills from the first MindBot config per school when present.
+- **MindBot — `use_org_dify_settings`** — Alembic `rev_0038`; each bot can inherit school MindMate Dify credentials or keep custom per-bot Dify keys ([`organization_dify.py`](routers/auth/admin/organization_dify.py), [`mindbot_admin.py`](routers/api/mindbot_admin.py)).
+- **Admin — token usage by service** — Token stats and dashboard breakdown for MindGraph vs MindMate; per-org today ranking supports service filter ([`stats.py`](routers/auth/admin/stats.py), [`AdminTokenUsageByServicePanel.vue`](frontend/src/components/admin/AdminTokenUsageByServicePanel.vue)).
+- **Admin — user list enrichment** — Shared row builder with diagram counts, paid benefit, and usage fields ([`admin_user_list_rows.py`](services/auth/admin_user_list_rows.py), [`test_admin_user_list_rows.py`](tests/auth/test_admin_user_list_rows.py)).
+- **Frontend — MindBot config refactor** — Extracted [`AdminMindBotConfigForm.vue`](frontend/src/components/admin/AdminMindBotConfigForm.vue), [`useAdminMindBotConfig.ts`](frontend/src/composables/admin/useAdminMindBotConfig.ts), and school-modal pane [`AdminSchoolMindBotTab.vue`](frontend/src/components/admin/AdminSchoolMindBotTab.vue).
+- **Frontend — admin users refactor** — Split users tab into [`AdminUsersTable.vue`](frontend/src/components/admin/AdminUsersTable.vue), [`AdminUserEditModal.vue`](frontend/src/components/admin/AdminUserEditModal.vue), and header toolbar composables.
+- **Frontend — school dashboard org picker** — Admins preview any school dashboard via [`SchoolDashboardOrgPicker.vue`](frontend/src/components/school/SchoolDashboardOrgPicker.vue) and [`useSchoolDashboardOrgPicker.ts`](frontend/src/composables/school/useSchoolDashboardOrgPicker.ts).
+- **Frontend — admin Swiss controls** — Shared select poppers and control styles ([`admin-swiss-controls.css`](frontend/src/styles/admin-swiss-controls.css), school/MindBot select popper CSS).
+- **Ops — WSL reload guard** — [`_reload_watch_guard.py`](services/infrastructure/process/_reload_watch_guard.py) removes self-referential root symlinks that break uvicorn watchfiles; `.gitignore` ignores accidental `/MindGraph` symlink.
+- **Ops — cross-platform native deps** — [`ensure-cross-platform-native-deps.mjs`](frontend/scripts/ensure-cross-platform-native-deps.mjs) installs missing Rolldown/Tailwind bindings when WSL and Windows share `node_modules`.
+- **Tests** — Org Dify / MindBot unification coverage ([`test_org_dify_mindbot_unification.py`](tests/test_org_dify_mindbot_unification.py)).
+
+### Changed
+
+- **Admin — org Dify settings UI** — School MindMate Dify tab edits org-level behavior fields and propagates to bots with `use_org_dify_settings` ([`AdminSchoolDifySettings.vue`](frontend/src/components/admin/AdminSchoolDifySettings.vue)).
+- **Admin — panel layout** — Breadcrumb composable, settings subtabs, and refactored [`AdminPage.vue`](frontend/src/pages/AdminPage.vue) / [`SchoolDashboardPage.vue`](frontend/src/pages/SchoolDashboardPage.vue).
+- **Admin — users & school users APIs** — List endpoints use shared enrichment helper; phone uniqueness checks extended ([`users.py`](routers/auth/admin/users.py), [`school_users.py`](routers/auth/admin/school_users.py)).
+- **Frontend — role display** — Extended localized role labels ([`userRoleDisplay.ts`](frontend/src/utils/userRoleDisplay.ts)).
+- **Frontend — trend charts** — [`AdminTrendChartModal.vue`](frontend/src/components/admin/AdminTrendChartModal.vue) layout and lazy Chart.js loading improvements.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.24).
+
 ## [5.117.23] - 2026-05-29
 
 ### Added

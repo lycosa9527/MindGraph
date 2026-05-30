@@ -2,20 +2,8 @@
 /**
  * System settings — nested admin tools (legacy tabs).
  */
-import type { Component } from 'vue'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-
-import {
-  ChatLineRound,
-  Coin,
-  Microphone,
-  Odometer,
-  Reading,
-  Setting,
-  Ticket,
-  UserFilled,
-} from '@element-plus/icons-vue'
 
 import AdminDatabaseTab from '@/components/admin/AdminDatabaseTab.vue'
 import AdminFeaturesTab from '@/components/admin/AdminFeaturesTab.vue'
@@ -28,6 +16,7 @@ import AdminTokensTab from '@/components/admin/AdminTokensTab.vue'
 import GeweLoginComponent from '@/components/admin/GeweLoginComponent.vue'
 import SmartResponsePanel from '@/components/admin/SmartResponsePanel.vue'
 import TeacherUsagePanel from '@/components/admin/TeacherUsagePanel.vue'
+import { ADMIN_SETTINGS_SUBTAB_CONFIG } from '@/composables/admin/adminSettingsSubtabs'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useLanguage } from '@/composables'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
@@ -43,37 +32,21 @@ const { featureGewe, featureLibrary, featureMindbot, featureOrgAccess } = useFea
 
 const activeSubtab = ref((route.query.subtab as string) || 'features')
 
-const allSubtabs: ReadonlyArray<{
-  name: string
-  labelKey: string
-  icon: Component
-}> = [
-  { name: 'features', labelKey: 'admin.featuresTab', icon: Setting },
-  { name: 'roles', labelKey: 'admin.roleControl', icon: UserFilled },
-  { name: 'tokens', labelKey: 'admin.tokens', icon: Ticket },
-  { name: 'library', labelKey: 'admin.library', icon: Reading },
-  { name: 'database', labelKey: 'admin.database.tab', icon: Coin },
-  { name: 'performance', labelKey: 'admin.performance.tab', icon: Odometer },
-  { name: 'gewe', labelKey: 'admin.geweWechat', icon: ChatLineRound },
-  { name: 'kitty_llmops', labelKey: 'admin.kittyLlmopsTab', icon: Microphone },
-  { name: 'mindbot', labelKey: 'admin.mindbot', icon: Setting },
-  { name: 'smart_response', labelKey: 'sidebar.smartResponse', icon: Setting },
-  { name: 'teacher_usage', labelKey: 'sidebar.teacherUsage', icon: Setting },
-]
-
-const canMindbot = computed(() =>
-  userCanAccessMindbotAdmin(
+const canMindbot = computed(() => {
+  if (!featureMindbot.value) {
+    return false
+  }
+  return userCanAccessMindbotAdmin(
     authStore.isAdmin,
     authStore.isManager,
     authStore.user?.schoolId,
     authStore.user?.id,
-    featureMindbot.value,
     featureOrgAccess.value?.feature_mindbot
   )
-)
+})
 
 const subtabs = computed(() => {
-  let list = allSubtabs.filter((tab) => canViewSettingsSubtab(tab.name))
+  let list = ADMIN_SETTINGS_SUBTAB_CONFIG.filter((tab) => canViewSettingsSubtab(tab.name))
   if (!featureGewe.value) {
     list = list.filter((tab) => tab.name !== 'gewe')
   }

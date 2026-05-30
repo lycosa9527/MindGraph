@@ -107,8 +107,6 @@ _SCHOOL_ADMIN_CAPS: frozenset[str] = frozenset(
     {
         CAP_PANEL_ACCESS,
         CAP_TAB_DATA_CENTER_VIEW,
-        CAP_TAB_USERS_VIEW,
-        CAP_TAB_USERS_EDIT,
         CAP_TAB_INVITES_VIEW,
         CAP_TAB_INVITES_EDIT,
         CAP_SETTINGS_MINDBOT,

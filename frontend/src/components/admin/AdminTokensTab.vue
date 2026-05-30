@@ -727,39 +727,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.service-card :deep(.el-card__header) {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
-}
-
-.service-card :deep(.el-card__body) {
-  padding: 20px;
-}
-
-.mindgraph-card {
-  border-top: 3px solid #3b82f6;
-}
-
-.mindmate-card {
-  border-top: 3px solid #8b5cf6;
-}
-
-.service-card-focusable:focus {
-  outline: none;
-}
-
-.service-card-focusable:focus-visible {
-  box-shadow: 0 0 0 2px var(--el-color-primary);
-}
-
-.service-card-clickable {
-  cursor: pointer;
-}
-
-.service-card-clickable:hover {
-  transform: translateY(-1px);
-}
-
 .token-period-card :deep(.el-card__body) {
   padding: 12px 16px;
 }
@@ -814,13 +781,6 @@ onBeforeUnmount(() => {
   text-align: center;
 }
 
-.stat-item {
-  padding: 12px;
-  background: var(--el-fill-color-lighter);
-  border-radius: 8px;
-}
-
-.dark .stat-item {
-  background: var(--el-fill-color-dark);
-}
 </style>
+
+<style scoped src="@/styles/admin-token-by-service.css"></style>

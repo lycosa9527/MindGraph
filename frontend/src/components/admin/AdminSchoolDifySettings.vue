@@ -16,11 +16,19 @@ const props = withDefaults(
     orgId: number
     difyApiBaseUrl?: string | null
     difyApiKeyMasked?: string | null
+    difyTimeoutSeconds?: number
+    dingtalkAiCardStreamingMaxChars?: number
+    showChainOfThought?: boolean
     mindmateAgentName?: string | null
     mindmateAgentAvatarUrl?: string | null
     swiss?: boolean
   }>(),
-  { swiss: true }
+  {
+    difyTimeoutSeconds: 300,
+    dingtalkAiCardStreamingMaxChars: 6500,
+    showChainOfThought: false,
+    swiss: true,
+  }
 )
 
 const emit = defineEmits<{
@@ -40,8 +48,14 @@ const ALLOWED_AVATAR_MIME = new Set([
 const { t } = useLanguage()
 const notify = useNotifications()
 
+const swissFieldLabelClass =
+  'mindbot-section-label mindbot-swiss-section-label shrink-0 text-[11px] font-semibold tracking-[0.14em] sm:w-[178px] sm:pr-3 leading-snug'
+
 const baseUrl = ref('')
 const apiKey = ref('')
+const difyTimeoutSeconds = ref(300)
+const aiCardStreamingMaxChars = ref(6500)
+const showChainOfThought = ref(false)
 const agentName = ref('')
 const agentAvatarUrl = ref<string | null>(null)
 const avatarUploading = ref(false)
@@ -282,11 +296,22 @@ function onFetchDifyHealthClick() {
 }
 
 watch(
-  () => [props.orgId, props.difyApiBaseUrl, props.difyApiKeyMasked] as const,
+  () =>
+    [
+      props.orgId,
+      props.difyApiBaseUrl,
+      props.difyApiKeyMasked,
+      props.difyTimeoutSeconds,
+      props.dingtalkAiCardStreamingMaxChars,
+      props.showChainOfThought,
+    ] as const,
   () => {
     baseUrl.value = (props.difyApiBaseUrl ?? '').trim()
     apiKey.value = ''
     keyReplaceMode.value = !props.difyApiKeyMasked
+    difyTimeoutSeconds.value = props.difyTimeoutSeconds ?? 300
+    aiCardStreamingMaxChars.value = props.dingtalkAiCardStreamingMaxChars ?? 6500
+    showChainOfThought.value = Boolean(props.showChainOfThought)
     invalidateDifyAuthVerification()
   },
   { immediate: true }
@@ -366,8 +391,11 @@ async function saveSettings() {
     return
   }
 
-  const body: Record<string, string | null> = {
+  const body: Record<string, string | null | number | boolean> = {
     mindmate_agent_name: agentName.value.trim() || null,
+    dify_timeout_seconds: difyTimeoutSeconds.value,
+    dingtalk_ai_card_streaming_max_chars: aiCardStreamingMaxChars.value,
+    show_chain_of_thought: showChainOfThought.value,
   }
 
   if (!url && !key && !hasMasked) {
@@ -704,6 +732,32 @@ defineExpose({
               </template>
             </div>
           </el-form-item>
+          <el-form-item :label="t('admin.mindbot.difyTimeout')">
+            <el-input-number
+              v-model="difyTimeoutSeconds"
+              :min="5"
+              :max="600"
+              class="mindbot-swiss-input-number w-full sm:w-40"
+              controls-position="right"
+            />
+          </el-form-item>
+          <el-form-item :label="t('admin.mindbot.dingtalkAiCardStreamingMaxChars')">
+            <el-input-number
+              v-model="aiCardStreamingMaxChars"
+              :min="500"
+              :max="50000"
+              :step="100"
+              class="mindbot-swiss-input-number w-full sm:w-48"
+              controls-position="right"
+            />
+          </el-form-item>
+          <div class="school-dify-cot-row flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-0">
+            <span :class="swissFieldLabelClass">{{ t('admin.mindbot.difyShowChainOfThought') }}</span>
+            <el-switch
+              v-model="showChainOfThought"
+              class="mindbot-cot-switch mindbot-footer-enabled-switch shrink-0"
+            />
+          </div>
         </el-form>
       </div>
     </template>

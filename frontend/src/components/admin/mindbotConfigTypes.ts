@@ -23,6 +23,7 @@ export interface MindbotConfigRow {
   dingtalk_ai_card_param_key: string | null
   dingtalk_ai_card_streaming_max_chars: number
   is_enabled: boolean
+  use_org_dify_settings: boolean
 }
 
 export interface OrgOption {
@@ -47,4 +48,5 @@ export interface MindbotConfigFormState {
   dingtalk_ai_card_param_key: string
   dingtalk_ai_card_streaming_max_chars: number
   is_enabled: boolean
+  use_org_dify_settings: boolean
 }

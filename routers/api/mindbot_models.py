@@ -16,9 +16,13 @@ class MindbotConfigCreatePayload(BaseModel):
     dingtalk_robot_code: str = Field(..., min_length=1, max_length=128)
     dingtalk_app_secret: str = Field(..., min_length=1)
     dingtalk_client_id: Optional[str] = Field(None, max_length=128)
-    dify_api_base_url: str = Field(..., min_length=1, max_length=512)
-    dify_api_key: str = Field(..., min_length=1)
-    dify_timeout_seconds: int = Field(300, ge=5, le=600)
+    use_org_dify_settings: bool = Field(
+        False,
+        description="When true, Dify URL/key/behavior come from the organization row",
+    )
+    dify_api_base_url: Optional[str] = Field(None, max_length=512)
+    dify_api_key: Optional[str] = Field(None, min_length=1)
+    dify_timeout_seconds: Optional[int] = Field(None, ge=5, le=600)
     dify_inputs_json: Optional[str] = Field(
         None,
         description="Optional JSON object string passed as Dify chat-messages inputs",
@@ -52,12 +56,19 @@ class MindbotConfigPayload(BaseModel):
         description="Omit or empty on update to keep existing secret",
     )
     dingtalk_client_id: Optional[str] = Field(None, max_length=128)
-    dify_api_base_url: str = Field(..., min_length=1, max_length=512)
+    use_org_dify_settings: Optional[bool] = Field(
+        None,
+        description=(
+            "When true, Dify URL/key/behavior come from the organization row; "
+            "omit on update to keep the saved value"
+        ),
+    )
+    dify_api_base_url: Optional[str] = Field(None, max_length=512)
     dify_api_key: Optional[str] = Field(
         None,
         description="Omit or empty on update to keep existing key",
     )
-    dify_timeout_seconds: int = Field(300, ge=5, le=600)
+    dify_timeout_seconds: Optional[int] = Field(None, ge=5, le=600)
     dify_inputs_json: Optional[str] = Field(
         None,
         description="Optional JSON object string passed as Dify chat-messages inputs",
@@ -122,6 +133,7 @@ class MindbotConfigResponse(BaseModel):
     dingtalk_ai_card_template_id: Optional[str]
     dingtalk_ai_card_param_key: Optional[str]
     dingtalk_ai_card_streaming_max_chars: int
+    use_org_dify_settings: bool
     is_enabled: bool
 
 

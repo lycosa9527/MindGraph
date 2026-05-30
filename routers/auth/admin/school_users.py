@@ -28,7 +28,11 @@ from services.redis.cache.redis_user_cache import user_cache
 
 from utils.auth.admin_panel_permissions import CAP_TAB_USERS_EDIT, CAP_TAB_USERS_VIEW
 from utils.auth.admin_scope import AdminScope
-from utils.auth.role_constants import normalize_role
+from services.auth.admin_user_list_rows import (
+    build_admin_user_detail_payload,
+    diagram_quota_for_user,
+    enrich_admin_user_list_rows,
+)
 from ..dependencies import get_language_dependency, require_panel_capability
 from ..helpers import utc_to_beijing_iso
 from .school_scope import resolve_school_dashboard_org_id
@@ -132,28 +136,13 @@ async def list_school_users(
         extra={"sd_event": "school_users_list", "sd_search_len": len(search)},
     )
 
-    result = []
-    for user in users:
-        masked_phone = user.phone
-        if user.phone and len(user.phone) == 11:
-            masked_phone = user.phone[:3] + "****" + user.phone[-4:]
-
-        tstat = token_stats_by_user.get(user.id, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
-        result.append(
-            {
-                "id": user.id,
-                "phone": masked_phone,
-                "name": user.name,
-                "role": normalize_role(getattr(user, "role", None)),
-                "organization_id": user.organization_id,
-                "organization_code": org_row.code if org_row else None,
-                "organization_name": org_row.name if org_row else None,
-                "locked_until": utc_to_beijing_iso(user.locked_until),
-                "created_at": utc_to_beijing_iso(user.created_at),
-                "token_stats": tstat,
-                "email_login_whitelisted_from_cn": getattr(user, "email_login_whitelisted_from_cn", False),
-            }
-        )
+    organizations_by_id = {int(org_row.id): org_row} if org_row else {}
+    result = await enrich_admin_user_list_rows(
+        db,
+        users,
+        organizations_by_id,
+        token_stats_by_user,
+    )
 
     return {
         "users": result,
@@ -189,18 +178,12 @@ async def get_school_user(
     sd_log = get_school_dashboard_logger(logger, actor_id=current_user.id, org_id=org_id, target_user_id=user_id)
     sd_log.info("[SchoolDashboard] user read", extra={"sd_event": "school_user_read"})
 
-    return {
-        "id": user.id,
-        "phone": user.phone,
-        "name": user.name,
-        "role": normalize_role(getattr(user, "role", None)),
-        "organization_id": user.organization_id,
-        "organization_code": org.code if org else None,
-        "organization_name": org.name if org else None,
-        "locked_until": utc_to_beijing_iso(user.locked_until),
-        "created_at": utc_to_beijing_iso(user.created_at),
-        "email_login_whitelisted_from_cn": getattr(user, "email_login_whitelisted_from_cn", False),
-    }
+    diagram_counts = await diagram_quota_for_user(db, user_id)
+    return build_admin_user_detail_payload(
+        user,
+        org,
+        diagram_counts["diagram_count"],
+    )
 
 
 @router.put("/admin/school/users/{user_id}")

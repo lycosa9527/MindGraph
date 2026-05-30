@@ -7,7 +7,6 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
-    "ignoreDeprecations": "6.0",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
@@ -20,7 +19,6 @@
     "jsx": "preserve",
 
     /* Path aliases — keep in sync with `vite.config.ts` `resolve.alias` (required for SFC/CSS + bundler resolution). */
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@data/*": ["../data/*"]

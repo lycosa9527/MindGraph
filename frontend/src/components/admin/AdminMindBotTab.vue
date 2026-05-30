@@ -12,6 +12,10 @@ import type {
   MindbotConfigRow,
   OrgOption,
 } from '@/components/admin/mindbotConfigTypes'
+import {
+  emptyMindbotFormState,
+  fillMindbotFormFromRow,
+} from '@/composables/admin/useAdminMindBotConfig'
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useAuthStore } from '@/stores/auth'
@@ -66,22 +70,7 @@ const editingConfigId = ref<number | null>(null)
 const dingtalkSecretReplaceMode = ref(false)
 const difyApiKeyReplaceMode = ref(false)
 
-const form = ref<MindbotConfigFormState>({
-  bot_label: '',
-  dingtalk_robot_code: '',
-  dingtalk_client_id: '',
-  dingtalk_app_secret: '',
-  dify_api_base_url: '',
-  dify_api_key: '',
-  dify_inputs_json: '',
-  dify_timeout_seconds: 300,
-  show_chain_of_thought: false,
-  chain_of_thought_max_chars: 4000,
-  dingtalk_ai_card_template_id: '',
-  dingtalk_ai_card_param_key: '',
-  dingtalk_ai_card_streaming_max_chars: 6500,
-  is_enabled: true,
-})
+const form = ref<MindbotConfigFormState>(emptyMindbotFormState())
 
 function orgLabel(org: OrgOption): string {
   const display = org.display_name?.trim()
@@ -160,22 +149,7 @@ async function confirmMoveBot(): Promise<void> {
 }
 
 function resetForm(): void {
-  form.value = {
-    bot_label: '',
-    dingtalk_robot_code: '',
-    dingtalk_client_id: '',
-    dingtalk_app_secret: '',
-    dify_api_base_url: '',
-    dify_api_key: '',
-    dify_inputs_json: '',
-    dify_timeout_seconds: 300,
-    show_chain_of_thought: false,
-    chain_of_thought_max_chars: 4000,
-    dingtalk_ai_card_template_id: '',
-    dingtalk_ai_card_param_key: '',
-    dingtalk_ai_card_streaming_max_chars: 6500,
-    is_enabled: true,
-  }
+  form.value = emptyMindbotFormState()
   formOrgId.value = null
   editingConfigId.value = null
   dingtalkSecretReplaceMode.value = false
@@ -183,25 +157,7 @@ function resetForm(): void {
 }
 
 function fillForm(row: MindbotConfigRow): void {
-  form.value = {
-    bot_label: row.bot_label ?? '',
-    dingtalk_robot_code: row.dingtalk_robot_code,
-    dingtalk_client_id: row.dingtalk_client_id ?? '',
-    dingtalk_app_secret: '',
-    dify_api_base_url: row.dify_api_base_url,
-    dify_api_key: '',
-    dify_inputs_json: row.dify_inputs_json ?? '',
-    dify_timeout_seconds: row.dify_timeout_seconds,
-    show_chain_of_thought:
-      Boolean(row.show_chain_of_thought_oto) ||
-      Boolean(row.show_chain_of_thought_internal_group) ||
-      Boolean(row.show_chain_of_thought_cross_org_group),
-    chain_of_thought_max_chars: row.chain_of_thought_max_chars,
-    dingtalk_ai_card_template_id: row.dingtalk_ai_card_template_id ?? '',
-    dingtalk_ai_card_param_key: row.dingtalk_ai_card_param_key ?? '',
-    dingtalk_ai_card_streaming_max_chars: row.dingtalk_ai_card_streaming_max_chars,
-    is_enabled: row.is_enabled,
-  }
+  form.value = fillMindbotFormFromRow(row)
   formOrgId.value = row.organization_id
   editingConfigId.value = row.id
   dingtalkSecretReplaceMode.value = !row.dingtalk_app_secret_masked
@@ -353,7 +309,6 @@ async function createConfig(): Promise<void> {
   }
   saving.value = true
   try {
-    const inputsRaw = form.value.dify_inputs_json.trim()
     const payload: Record<string, unknown> = {
       organization_id: oid,
       bot_label: form.value.bot_label.trim() || null,
@@ -362,7 +317,6 @@ async function createConfig(): Promise<void> {
       dingtalk_app_secret: form.value.dingtalk_app_secret.trim(),
       dify_api_base_url: form.value.dify_api_base_url.trim(),
       dify_api_key: form.value.dify_api_key.trim(),
-      dify_inputs_json: inputsRaw || null,
       dify_timeout_seconds: form.value.dify_timeout_seconds,
       show_chain_of_thought_oto: form.value.show_chain_of_thought,
       show_chain_of_thought_internal_group: form.value.show_chain_of_thought,
@@ -400,13 +354,11 @@ async function updateConfig(): Promise<void> {
   }
   saving.value = true
   try {
-    const inputsRaw = form.value.dify_inputs_json.trim()
     const payload: Record<string, unknown> = {
       bot_label: form.value.bot_label.trim() || null,
       dingtalk_robot_code: form.value.dingtalk_robot_code.trim(),
       dingtalk_client_id: form.value.dingtalk_client_id.trim() || null,
       dify_api_base_url: form.value.dify_api_base_url.trim(),
-      dify_inputs_json: inputsRaw || null,
       dify_timeout_seconds: form.value.dify_timeout_seconds,
       show_chain_of_thought_oto: form.value.show_chain_of_thought,
       show_chain_of_thought_internal_group: form.value.show_chain_of_thought,

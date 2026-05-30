@@ -86,8 +86,6 @@ const EXPERT_CAPS: AdminCapability[] = [
 const SCHOOL_ADMIN_CAPS: AdminCapability[] = [
   'panel.access',
   'tab.data_center.view',
-  'tab.users.view',
-  'tab.users.edit',
   'tab.invites.view',
   'tab.invites.edit',
   'tab.settings.view',
@@ -119,7 +117,7 @@ export function roleHasPanelAccess(role: UserRole | null | undefined): boolean {
 export function tabRequiresCapabilities(tabKey: string): AdminCapability[] {
   const map: Record<string, AdminCapability[]> = {
     data_center: ['tab.data_center.view'],
-    users: ['tab.users.view'],
+    users: ['tab.users.view', 'scope.global'],
     organizations: ['tab.organizations.view'],
     invites: ['tab.invites.view'],
     billing: ['tab.billing.view'],

@@ -65,16 +65,27 @@ async def resolve_mindmate_dify_client(
     api_key = ""
     api_url = ""
     timeout = int(os.getenv("DIFY_TIMEOUT", "300"))
+    org_timeout_set = False
 
     if organization_id is not None:
+        org = (
+            await db.execute(select(Organization).where(Organization.id == organization_id))
+        ).scalar_one_or_none()
+        if org is not None:
+            org_timeout = getattr(org, "dify_timeout_seconds", None)
+            if org_timeout is not None:
+                timeout = int(org_timeout)
+                org_timeout_set = True
         org_creds = await _org_dify_credentials(db, organization_id)
         if org_creds is not None:
             api_key, api_url = org_creds
 
     if not api_key:
-        global_key, global_url, timeout = _global_dify_credentials()
+        global_key, global_url, global_timeout = _global_dify_credentials()
         api_key = global_key
         api_url = global_url
+        if not org_timeout_set:
+            timeout = global_timeout
 
     if not api_key:
         raise MindmateDifyNotConfiguredError()

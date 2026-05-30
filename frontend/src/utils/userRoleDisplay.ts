@@ -13,6 +13,19 @@ export const USER_ROLES = [
   'personal_paid',
 ] as const satisfies readonly UserRole[]
 
+export const PLATFORM_USER_ROLES = ['superadmin', 'platform_bd', 'expert'] as const satisfies readonly UserRole[]
+
+export const B2B_USER_ROLES = ['school_admin', 'teacher'] as const satisfies readonly UserRole[]
+
+export const C2C_USER_ROLES = ['personal_trial', 'personal_paid'] as const satisfies readonly UserRole[]
+
+export interface UserRolePillView {
+  label: string
+  bgClass: string
+  textClass: string
+  borderClass: string
+}
+
 const LEGACY_TO_CANONICAL: Record<string, UserRole> = {
   admin: 'superadmin',
   manager: 'school_admin',
@@ -88,4 +101,54 @@ export function getRolePillStyle(role: string | undefined | null): RolePillStyle
 
 export function isCanonicalUserRole(role: string): role is UserRole {
   return role in ROLE_PILL_STYLES
+}
+
+/** Localized role label (same keys as user table pills). */
+export function userRoleLabel(
+  translate: (key: string) => string,
+  role: string | null | undefined
+): string {
+  const style = getRolePillStyle(role)
+  return style ? translate(style.labelKey) : String(role ?? '—')
+}
+
+/** Pill view for table cells and role selects (labels match sidebar.role*). */
+export function userRolePillView(
+  translate: (key: string) => string,
+  role: string | null | undefined
+): UserRolePillView | null {
+  const style = getRolePillStyle(role)
+  if (!style) {
+    return null
+  }
+  return {
+    label: translate(style.labelKey),
+    bgClass: style.bgClass,
+    textClass: style.textClass,
+    borderClass: style.borderClass,
+  }
+}
+
+/** Options for role el-select (seven canonical roles). */
+export function userRoleSelectOptions(
+  translate: (key: string) => string
+): Array<{ value: UserRole; label: string }> {
+  return USER_ROLES.map((role) => ({
+    value: role,
+    label: userRoleLabel(translate, role),
+  }))
+}
+
+export interface UserRoleSelectTier {
+  tierLabelKey: string
+  roles: readonly UserRole[]
+}
+
+/** Grouped role options (platform / B2B / C2C), same tiers as admin role assignment. */
+export function userRoleSelectTiers(): readonly UserRoleSelectTier[] {
+  return [
+    { tierLabelKey: 'admin.roleTierPlatform', roles: PLATFORM_USER_ROLES },
+    { tierLabelKey: 'admin.roleTierB2B', roles: B2B_USER_ROLES },
+    { tierLabelKey: 'admin.roleTierC2C', roles: C2C_USER_ROLES },
+  ]
 }

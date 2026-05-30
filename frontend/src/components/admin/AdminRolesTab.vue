@@ -14,7 +14,13 @@ import { Loading, Plus, Refresh, Search, UserFilled } from '@element-plus/icons-
 import { useLanguage, useNotifications } from '@/composables'
 import type { UserRole } from '@/types'
 import { apiRequest } from '@/utils/apiClient'
-import { getRolePillStyle, normalizeUserRole } from '@/utils/userRoleDisplay'
+import {
+  B2B_USER_ROLES,
+  C2C_USER_ROLES,
+  PLATFORM_USER_ROLES,
+  normalizeUserRole,
+  userRoleLabel,
+} from '@/utils/userRoleDisplay'
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -51,9 +57,9 @@ interface ManagerUser {
   created_at: string | null
 }
 
-const PLATFORM_ROLES: UserRole[] = ['superadmin', 'platform_bd', 'expert']
-const B2B_ROLES: UserRole[] = ['school_admin', 'teacher']
-const C2C_ROLES: UserRole[] = ['personal_trial', 'personal_paid']
+const PLATFORM_ROLES: UserRole[] = [...PLATFORM_USER_ROLES]
+const B2B_ROLES: UserRole[] = [...B2B_USER_ROLES]
+const C2C_ROLES: UserRole[] = [...C2C_USER_ROLES]
 
 const activeTab = ref<'admins' | 'managers' | 'assignment'>('admins')
 const isLoading = ref(true)
@@ -71,8 +77,7 @@ function maskPhone(phone: string): string {
 }
 
 function roleLabel(role: string): string {
-  const style = getRolePillStyle(role)
-  return style ? t(style.labelKey) : role
+  return userRoleLabel(t, role)
 }
 
 const allAdminsForTable = computed(() => {

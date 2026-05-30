@@ -55,6 +55,9 @@ from services.infrastructure.process.uvicorn_signal_diag import (
     log_uvicorn_supervisor_boot,
     patch_signal_for_uvicorn_sighup_trace,
 )
+from services.infrastructure.process._reload_watch_guard import (
+    clear_reload_breaking_symlinks,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -309,6 +312,16 @@ def run_server() -> None:
                 )
                 patch_signal_for_uvicorn_sighup_trace()
                 log_uvicorn_supervisor_boot(worker_count)
+
+            if reload:
+                removed_loops = clear_reload_breaking_symlinks(script_dir)
+                if removed_loops:
+                    logger.warning(
+                        "[LAUNCHER] Removed %d self-referential symlink(s) that would "
+                        "break uvicorn auto-reload: %s",
+                        len(removed_loops),
+                        ", ".join(removed_loops),
+                    )
 
             uvicorn.run(
                 "main:app",

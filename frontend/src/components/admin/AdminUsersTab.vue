@@ -3,15 +3,29 @@
  * Admin Users Tab - List, search, paginate, edit users
  * Click user row (name/tokens) to open chart + token cards modal
  */
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
-import { Edit, Loading, Search } from '@element-plus/icons-vue'
 
+import { resolveDefaultOrganizationFilter } from '@/composables/admin/useCurrentUserOrganizationId'
+import { useAdminOrganizationsList } from '@/composables/admin/useAdminOrganizationsList'
+import { useAdminUsersSchoolFilterRoute } from '@/composables/admin/useAdminUsersSchoolFilterRoute'
+import {
+  registerAdminUsersHeaderToolbar,
+  unregisterAdminUsersHeaderToolbar,
+} from '@/composables/admin/useAdminUsersHeaderToolbar'
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
+import { useAuthStore } from '@/stores'
 
 import AdminTrendChartModal from './AdminTrendChartModal.vue'
+import AdminUserEditModal from './AdminUserEditModal.vue'
+import AdminUsersTable from './AdminUsersTable.vue'
 
+const route = useRoute()
+const authStore = useAuthStore()
+const { orgFilter, syncOrgFilterToRoute, onOrgFilterChange: applyOrgFilterChange } =
+  useAdminUsersSchoolFilterRoute()
 const { t } = useLanguage()
 const notify = useNotifications()
 
@@ -26,9 +40,10 @@ function openTrendModal(row: Record<string, unknown>) {
   trendModalVisible.value = true
 }
 
+const { organizations, loadOrganizations } = useAdminOrganizationsList()
+
 const isLoading = ref(true)
 const users = ref<Record<string, unknown>[]>([])
-const organizations = ref<{ id: number; name: string; code: string }[]>([])
 const pagination = ref({
   page: 1,
   page_size: 20,
@@ -36,29 +51,9 @@ const pagination = ref({
   total_pages: 0,
 })
 const searchQuery = ref('')
-const orgFilter = ref<number | ''>('')
 
 const editModalVisible = ref(false)
-const editUser = ref<Record<string, unknown> | null>(null)
-const editForm = ref({ phone: '', name: '', organization_id: null as number | null })
-
-function formatNumber(num: number): string {
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
-  if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
-  return num.toLocaleString()
-}
-
-async function loadOrganizations() {
-  const res = await apiRequest('/api/auth/admin/organizations')
-  if (res.ok) {
-    const data = await res.json()
-    organizations.value = data.map((o: { id: number; name: string; code: string }) => ({
-      id: o.id,
-      name: o.name,
-      code: o.code,
-    }))
-  }
-}
+const editUserId = ref<number | null>(null)
 
 async function loadUsers() {
   isLoading.value = true
@@ -85,51 +80,13 @@ async function loadUsers() {
   }
 }
 
-async function openEditModal(user: Record<string, unknown>) {
-  editUser.value = user
-  const uid = user.id as number
-  try {
-    const res = await apiRequest(`/api/auth/admin/users/${uid}`)
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || 'Failed to load user')
-      return
-    }
-    const data = (await res.json()) as {
-      phone?: string
-      name?: string | null
-      organization_id?: number | null
-    }
-    editForm.value = {
-      phone: data.phone || '',
-      name: (data.name as string) || '',
-      organization_id: data.organization_id ?? null,
-    }
-    editModalVisible.value = true
-  } catch {
-    notify.error('Failed to load user')
+function openEditModal(user: Record<string, unknown>): void {
+  const uid = user.id
+  if (typeof uid !== 'number') {
+    return
   }
-}
-
-async function saveUser() {
-  if (!editUser.value) return
-  const id = editUser.value.id as number
-  try {
-    const res = await apiRequest(`/api/auth/admin/users/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(editForm.value),
-    })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || 'Failed to update user')
-      return
-    }
-    notify.success(t('notification.saved'))
-    editModalVisible.value = false
-    loadUsers()
-  } catch {
-    notify.error('Failed to update user')
-  }
+  editUserId.value = uid
+  editModalVisible.value = true
 }
 
 function doSearch() {
@@ -141,7 +98,16 @@ function resetFilters() {
   searchQuery.value = ''
   orgFilter.value = ''
   pagination.value.page = 1
-  loadUsers()
+  if (authStore.isSuperAdmin) {
+    syncOrgFilterToRoute('')
+  }
+  void loadUsers()
+}
+
+function onOrgFilterChange(value: number | ''): void {
+  applyOrgFilterChange(value)
+  pagination.value.page = 1
+  void loadUsers()
 }
 
 function goToPreviousUserPage() {
@@ -162,171 +128,78 @@ const pageInfo = computed(() => {
 })
 
 onMounted(() => {
-  loadOrganizations().then(loadUsers)
+  registerAdminUsersHeaderToolbar({
+    searchQuery,
+    orgFilter,
+    showSchoolFilter: true,
+    doSearch,
+    resetFilters,
+    onOrgFilterChange,
+  })
+  void loadOrganizations().then(() => {
+    if (orgFilter.value === '') {
+      const defaultFilter = resolveDefaultOrganizationFilter(organizations.value)
+      if (defaultFilter !== '') {
+        orgFilter.value = defaultFilter
+        if (authStore.isSuperAdmin) {
+          syncOrgFilterToRoute(defaultFilter)
+        }
+      }
+    }
+    void loadUsers()
+  })
 })
 
-watch([orgFilter], () => {
-  pagination.value.page = 1
-  loadUsers()
+watch(
+  () => route.query.organization_id,
+  () => {
+    if (!authStore.isSuperAdmin) {
+      return
+    }
+    pagination.value.page = 1
+    void loadUsers()
+  }
+)
+
+onBeforeUnmount(() => {
+  unregisterAdminUsersHeaderToolbar()
 })
+
 </script>
 
 <template>
-  <div class="admin-users-tab pt-4">
+  <div class="admin-users-tab">
     <el-card shadow="never">
-      <template #header>
-        <div class="flex items-center justify-between flex-wrap gap-4">
-          <span class="font-medium">{{ t('admin.userManagement') }}</span>
-          <div class="flex items-center gap-2 flex-wrap">
-            <el-input
-              v-model="searchQuery"
-              :placeholder="t('admin.search')"
-              clearable
-              size="small"
-              style="width: 200px"
-              @keyup.enter="doSearch"
-            >
-              <template #prefix>
-                <el-icon><Search /></el-icon>
-              </template>
-            </el-input>
-            <el-select
-              v-model="orgFilter"
-              :placeholder="t('admin.filterBySchool')"
-              clearable
-              size="small"
-              style="width: 180px"
-            >
-              <el-option
-                :label="t('admin.allSchools')"
-                value=""
-              />
-              <el-option
-                v-for="org in organizations"
-                :key="org.id"
-                :label="org.name"
-                :value="org.id"
-              />
-            </el-select>
-            <el-button
-              type="primary"
-              size="small"
-              @click="doSearch"
-            >
-              {{ t('admin.search') }}
-            </el-button>
-            <el-button
-              size="small"
-              @click="resetFilters"
-            >
-              {{ t('admin.reset') }}
-            </el-button>
-          </div>
-        </div>
-      </template>
+      <AdminUsersTable
+        :users="users"
+        :is-loading="isLoading"
+        show-school-column
+        @edit="openEditModal"
+        @open-trend="openTrendModal"
+      />
 
       <div
-        v-if="isLoading"
-        class="flex justify-center py-12"
+        v-if="!isLoading && pagination.total_pages > 1"
+        class="flex justify-between items-center mt-4 pt-4 border-t border-stone-200"
       >
-        <el-icon
-          class="is-loading"
-          :size="32"
-        >
-          <Loading />
-        </el-icon>
-      </div>
-
-      <template v-else>
-        <el-table
-          :data="users"
-          stripe
-          size="small"
-        >
-          <el-table-column
-            prop="phone"
-            :label="t('admin.phone')"
-            width="140"
-          />
-          <el-table-column
-            prop="name"
-            :label="t('admin.name')"
-            width="120"
+        <span class="text-sm text-stone-500">{{ pageInfo }}</span>
+        <div class="flex gap-2">
+          <el-button
+            size="small"
+            :disabled="pagination.page <= 1"
+            @click="goToPreviousUserPage"
           >
-            <template #default="{ row }">
-              <span
-                class="cursor-pointer hover:text-primary-500 hover:underline"
-                @click="openTrendModal(row)"
-              >
-                {{ row.name || row.phone || '-' }}
-              </span>
-            </template>
-          </el-table-column>
-          <el-table-column
-            prop="organization_name"
-            :label="t('admin.organization')"
-            min-width="140"
-          />
-          <el-table-column
-            :label="t('admin.tokensUsed')"
-            width="100"
+            {{ t('admin.previous') }}
+          </el-button>
+          <el-button
+            size="small"
+            :disabled="pagination.page >= pagination.total_pages"
+            @click="goToNextUserPage"
           >
-            <template #default="{ row }">
-              <span
-                class="cursor-pointer hover:text-primary-500"
-                @click="openTrendModal(row)"
-              >
-                {{ formatNumber((row.token_stats?.total_tokens as number) ?? 0) }}
-              </span>
-            </template>
-          </el-table-column>
-          <el-table-column
-            prop="created_at"
-            :label="t('admin.registrationTime')"
-            width="180"
-          />
-          <el-table-column
-            :label="t('admin.actions')"
-            width="100"
-            fixed="right"
-          >
-            <template #default="{ row }">
-              <el-button
-                link
-                type="primary"
-                size="small"
-                @click="openEditModal(row)"
-              >
-                <el-icon><Edit /></el-icon>
-                {{ t('common.edit') }}
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-
-        <div
-          v-if="pagination.total_pages > 1"
-          class="flex justify-between items-center mt-4 pt-4 border-t border-stone-200"
-        >
-          <span class="text-sm text-stone-500">{{ pageInfo }}</span>
-          <div class="flex gap-2">
-            <el-button
-              size="small"
-              :disabled="pagination.page <= 1"
-              @click="goToPreviousUserPage"
-            >
-              {{ t('admin.previous') }}
-            </el-button>
-            <el-button
-              size="small"
-              :disabled="pagination.page >= pagination.total_pages"
-              @click="goToNextUserPage"
-            >
-              {{ t('admin.next') }}
-            </el-button>
-          </div>
+            {{ t('admin.next') }}
+          </el-button>
         </div>
-      </template>
+      </div>
     </el-card>
 
     <AdminTrendChartModal
@@ -336,54 +209,15 @@ watch([orgFilter], () => {
       :user-id="trendUser?.id"
     />
 
-    <el-dialog
-      v-model="editModalVisible"
-      :title="t('common.edit') + ' ' + t('admin.users')"
-      width="480px"
-      destroy-on-close
-    >
-      <el-form
-        v-if="editUser"
-        label-position="top"
-      >
-        <el-form-item :label="t('admin.phone')">
-          <el-input
-            v-model="editForm.phone"
-            placeholder="13812345678"
-            maxlength="11"
-          />
-        </el-form-item>
-        <el-form-item :label="t('admin.name')">
-          <el-input
-            v-model="editForm.name"
-            placeholder="Zhang Wei"
-          />
-        </el-form-item>
-        <el-form-item :label="t('admin.organization')">
-          <el-select
-            v-model="editForm.organization_id"
-            :placeholder="t('admin.filterBySchool')"
-            clearable
-            class="w-full"
-          >
-            <el-option
-              v-for="org in organizations"
-              :key="org.id"
-              :label="org.name"
-              :value="org.id"
-            />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="editModalVisible = false">{{ t('common.cancel') }}</el-button>
-        <el-button
-          type="primary"
-          @click="saveUser"
-        >
-          {{ t('common.save') }}
-        </el-button>
-      </template>
-    </el-dialog>
+    <AdminUserEditModal
+      v-model:visible="editModalVisible"
+      :user-id="editUserId"
+      full-edit
+      mode="global"
+      @saved="loadUsers"
+      @deleted="loadUsers"
+    />
   </div>
 </template>
+
+<style scoped src="@/styles/admin-swiss-controls.css"></style>

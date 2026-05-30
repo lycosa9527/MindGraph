@@ -9,12 +9,17 @@ from typing import Any, Optional
 from fastapi import HTTPException, status
 
 from config.settings import config
-from models.domain.auth import User
+from models.domain.auth import Organization, User
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from routers.api.mindbot_models import (
+    MindbotConfigCreatePayload,
     MindbotConfigPayload,
     MindbotConfigResponse,
     MindbotUsageEventItem,
+)
+from routers.auth.admin.organization_dify import (
+    org_dify_behavior_fields,
+    resolve_organization_dify_credentials,
 )
 from services.mindbot.errors import MindbotErrorCode
 from services.mindbot.telemetry.metrics import mindbot_metrics
@@ -150,6 +155,7 @@ def _to_response(
         dingtalk_ai_card_template_id=(row.dingtalk_ai_card_template_id or "").strip() or None,
         dingtalk_ai_card_param_key=(row.dingtalk_ai_card_param_key or "").strip() or None,
         dingtalk_ai_card_streaming_max_chars=int(row.dingtalk_ai_card_streaming_max_chars),
+        use_org_dify_settings=bool(getattr(row, "use_org_dify_settings", True)),
         is_enabled=row.is_enabled,
     )
 
@@ -184,19 +190,43 @@ def _callback_metrics_snapshot_for_user(user: User) -> dict[str, Any]:
     }
 
 
+def _effective_use_org_dify_settings(
+    payload: MindbotConfigCreatePayload | MindbotConfigPayload,
+    existing: Optional[OrganizationMindbotConfig],
+) -> bool:
+    if isinstance(payload, MindbotConfigCreatePayload):
+        return bool(payload.use_org_dify_settings)
+    if "use_org_dify_settings" in payload.model_fields_set:
+        flag = payload.use_org_dify_settings
+        if flag is not None:
+            return bool(flag)
+    if existing is not None:
+        return bool(getattr(existing, "use_org_dify_settings", True))
+    return False
+
+
 def _resolve_secrets(
     payload: MindbotConfigPayload,
     existing: Optional[OrganizationMindbotConfig],
 ) -> tuple[str, str]:
     secret_raw = (payload.dingtalk_app_secret or "").strip()
     key_raw = (payload.dify_api_key or "").strip()
+    use_org_dify = _effective_use_org_dify_settings(payload, existing)
     if existing is None:
-        if not secret_raw or not key_raw:
+        if not secret_raw:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=(
                     f"{MindbotErrorCode.ADMIN_SECRETS_REQUIRED.value}: "
-                    "dingtalk_app_secret and dify_api_key are required for new config"
+                    "dingtalk_app_secret is required for new config"
+                ),
+            )
+        if not use_org_dify and not key_raw:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    f"{MindbotErrorCode.ADMIN_SECRETS_REQUIRED.value}: "
+                    "dify_api_key is required for new config"
                 ),
             )
         return secret_raw, key_raw
@@ -204,6 +234,64 @@ def _resolve_secrets(
         secret_raw or existing.dingtalk_app_secret,
         key_raw or existing.dify_api_key,
     )
+
+
+def _resolved_dify_settings(
+    payload: MindbotConfigCreatePayload | MindbotConfigPayload,
+    org: Organization,
+    existing: Optional[OrganizationMindbotConfig],
+    *,
+    resolved_dify_key: str,
+) -> dict[str, object]:
+    if _effective_use_org_dify_settings(payload, existing):
+        api_key, api_url = resolve_organization_dify_credentials(org)
+        if not api_key or not api_url:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    f"{MindbotErrorCode.ADMIN_SECRETS_REQUIRED.value}: "
+                    "Configure MindMate Dify credentials for this organization first"
+                ),
+            )
+        behavior = org_dify_behavior_fields(org)
+        return {
+            "dify_api_base_url": api_url,
+            "dify_api_key": api_key,
+            **behavior,
+        }
+
+    base_url = (payload.dify_api_base_url or "").strip()
+    if not base_url:
+        if existing is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    f"{MindbotErrorCode.ADMIN_SECRETS_REQUIRED.value}: "
+                    "dify_api_base_url is required"
+                ),
+            )
+        base_url = existing.dify_api_base_url.strip()
+
+    timeout = payload.dify_timeout_seconds
+    if timeout is None:
+        timeout = existing.dify_timeout_seconds if existing is not None else 300
+
+    streaming = payload.dingtalk_ai_card_streaming_max_chars
+    if streaming is None and existing is not None:
+        streaming = existing.dingtalk_ai_card_streaming_max_chars
+    if streaming is None:
+        streaming = 6500
+
+    return {
+        "dify_api_base_url": base_url,
+        "dify_api_key": resolved_dify_key,
+        "dify_timeout_seconds": timeout,
+        "show_chain_of_thought_oto": payload.show_chain_of_thought_oto,
+        "show_chain_of_thought_internal_group": payload.show_chain_of_thought_internal_group,
+        "show_chain_of_thought_cross_org_group": payload.show_chain_of_thought_cross_org_group,
+        "chain_of_thought_max_chars": payload.chain_of_thought_max_chars,
+        "dingtalk_ai_card_streaming_max_chars": streaming,
+    }
 
 
 def _event_subscription_fields(

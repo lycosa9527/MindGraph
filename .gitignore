@@ -51,6 +51,8 @@ ehthumbs.db
 Thumbs.db
 
 # Application specific
+# Accidental WSL self-symlink at repo root (breaks uvicorn reload watcher)
+/MindGraph
 test_output.jpg
 *.log
 *.tmp

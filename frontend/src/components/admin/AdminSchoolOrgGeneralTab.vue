@@ -1,9 +1,7 @@
 <script setup lang="ts">
 /**
- * School modal — General tab: display name, status, expiry, invitation, managers.
+ * School modal — General tab: display name, status, expiry, managers.
  */
-import { Refresh, Share } from '@element-plus/icons-vue'
-
 import { useLanguage } from '@/composables'
 
 const displayNameEdit = defineModel<string>('displayNameEdit', { required: true })
@@ -12,27 +10,25 @@ const expiresAtEdit = defineModel<string | null>('expiresAtEdit', { required: tr
 defineProps<{
   orgName?: string
   orgActiveState: boolean
-  invitationCode: string
-  invitationCodeLoading?: boolean
   managers: { id: number; phone: string; name: string }[]
   orgUsers: { id: number; phone: string; name: string }[]
   managersLoading: boolean
   addManagersLoading: boolean
   lockLoading: boolean
-  refreshCodeLoading: boolean
 }>()
 
 const pendingManagerIds = defineModel<number[]>('pendingManagerIds', { required: true })
 
 const emit = defineEmits<{
   (e: 'toggleLock'): void
-  (e: 'refreshInvitationCode'): void
-  (e: 'copyShareMessage'): void
   (e: 'addManagers'): void
   (e: 'removeManager', userId: number): void
 }>()
 
 const { t } = useLanguage()
+
+const MINDBOT_SWISS_SELECT_POPPER_WIDE =
+  'mindbot-swiss-select-popper mindbot-swiss-select-popper--wide'
 
 const labelClass =
   'mindbot-section-label mindbot-swiss-section-label shrink-0 text-[11px] font-semibold tracking-[0.14em] sm:w-[178px]'
@@ -90,38 +86,6 @@ const labelClass =
         />
       </div>
 
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <span :class="labelClass">{{ t('admin.invitationCode') }}</span>
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center flex-1 min-w-0 max-w-2xl">
-          <el-input
-            :model-value="invitationCode"
-            readonly
-            class="mindbot-swiss-input font-mono flex-1 min-w-0"
-            :placeholder="invitationCodeLoading ? t('admin.loading') : '—'"
-          />
-          <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <el-button
-              :loading="refreshCodeLoading"
-              plain
-              class="mindbot-pill mindbot-pill--rotate shrink-0"
-              @click="emit('refreshInvitationCode')"
-            >
-              <el-icon class="mr-1"><Refresh /></el-icon>
-              {{ t('admin.refreshInvitationCode') }}
-            </el-button>
-            <el-button
-              plain
-              class="mindbot-pill mindbot-pill--copy shrink-0"
-              :disabled="!invitationCode"
-              @click="emit('copyShareMessage')"
-            >
-              <el-icon class="mr-1"><Share /></el-icon>
-              {{ t('admin.copyShareMessage') }}
-            </el-button>
-          </div>
-        </div>
-      </div>
-
       <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
         <span :class="labelClass">{{ t('admin.managers') }}</span>
         <div class="flex-1 min-w-0 max-w-2xl space-y-2">
@@ -172,13 +136,16 @@ const labelClass =
                     : t('admin.noUsersToAddAsManager')
                 "
                 class="mindbot-swiss-select flex-1 min-w-0"
+                :popper-class="MINDBOT_SWISS_SELECT_POPPER_WIDE"
               >
                 <el-option
                   v-for="u in orgUsers"
                   :key="u.id"
                   :label="u.name || u.phone"
                   :value="u.id"
-                />
+                >
+                  <span class="mindbot-swiss-select-option__label">{{ u.name || u.phone }}</span>
+                </el-option>
               </el-select>
               <el-button
                 plain

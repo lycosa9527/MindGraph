@@ -2,7 +2,7 @@
 /**
  * Data center tab — operations, usage, or school dashboard views.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import AdminDashboardTab from '@/components/admin/AdminDashboardTab.vue'
@@ -17,7 +17,6 @@ import { useAdminOrgContext } from '@/composables/admin/useAdminOrgContext'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useLanguage } from '@/composables'
 import { useAuthStore } from '@/stores'
-import { apiRequest } from '@/utils/apiClient'
 
 const props = defineProps<{
   readOnly?: boolean
@@ -27,9 +26,7 @@ const route = useRoute()
 const { t } = useLanguage()
 const authStore = useAuthStore()
 const { can, effectiveOrgId, isReadOnly } = useAdminAccess()
-const { selectedOrgId, routeOrgId, GLOBAL_ORG_SENTINEL } = useAdminOrgContext()
-
-const organizations = ref<{ id: number; name: string; code: string }[]>([])
+const { routeOrgId } = useAdminOrgContext()
 
 const dataCenterViewQuery = computed((): DataCenterView | null => {
   const raw = route.query.view
@@ -42,6 +39,9 @@ const dataCenterViewQuery = computed((): DataCenterView | null => {
 const showGlobalView = computed(() => {
   if (can('scope.org')) {
     return false
+  }
+  if (dataCenterView.value === 'usage' && can('scope.global')) {
+    return true
   }
   if (dataCenterViewQuery.value === 'operations' && can('scope.global')) {
     return true
@@ -75,64 +75,14 @@ const dashboardSection = computed((): 'operations' | 'usage' => {
   return dataCenterView.value === 'usage' ? 'usage' : 'operations'
 })
 
-const showOrgPicker = computed(
-  () =>
-    authStore.isSuperAdmin &&
-    organizations.value.length > 0 &&
-    dataCenterView.value === 'usage'
-)
-
-async function loadOrganizations(): Promise<void> {
-  if (!authStore.isSuperAdmin) {
-    return
-  }
-  const res = await apiRequest('/api/auth/admin/organizations')
-  if (!res.ok) {
-    return
-  }
-  const data = await res.json()
-  organizations.value = data.map((o: { id: number; name: string; code: string }) => ({
-    id: o.id,
-    name: o.name,
-    code: o.code,
-  }))
-}
-
-onMounted(() => {
-  void loadOrganizations()
-})
 </script>
 
 <template>
   <div>
-    <div
-      v-if="showOrgPicker"
-      class="mb-4 flex items-center gap-2"
-    >
-      <span class="text-sm text-gray-500">{{ t('admin.viewSchool') }}:</span>
-      <el-select
-        v-model="selectedOrgId"
-        filterable
-        :placeholder="t('admin.selectSchool')"
-        size="small"
-        style="width: 280px"
-      >
-        <el-option
-          :label="t('admin.dataCenterGlobal')"
-          :value="GLOBAL_ORG_SENTINEL"
-        />
-        <el-option
-          v-for="org in organizations"
-          :key="org.id"
-          :label="org.name"
-          :value="org.id"
-        />
-      </el-select>
-    </div>
-
     <SchoolDashboardPage
       v-if="dataCenterView === 'school_dashboard'"
       embedded
+      class="min-w-0"
     />
 
     <AdminDashboardTab

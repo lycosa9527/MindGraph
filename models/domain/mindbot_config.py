@@ -47,6 +47,7 @@ class OrganizationMindbotConfig(Base):
         nullable=False,
         default=6500,
     )
+    use_org_dify_settings: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

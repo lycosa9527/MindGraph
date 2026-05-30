@@ -46,3 +46,19 @@ async def other_user_id_with_phone(
     if row is None:
         return None
     return int(row)
+
+
+async def other_user_id_with_email(
+    db: AsyncSession,
+    email: str,
+    exclude_user_id: int,
+) -> Optional[int]:
+    """If another user already has this email, return that user's id; otherwise None."""
+    row = (
+        await db.execute(
+            select(User.id).where(User.email == email, User.id != exclude_user_id).limit(1)
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        return None
+    return int(row)

@@ -5,6 +5,7 @@ from fastapi import HTTPException
 
 from utils.auth.admin_panel_permissions import (
     CAP_PANEL_ACCESS,
+    CAP_SCOPE_GLOBAL,
     CAP_TAB_INVITES_VIEW,
     CAP_TAB_USERS_VIEW,
     capabilities_for_role,
@@ -25,10 +26,16 @@ def test_teacher_has_no_panel_access():
     assert CAP_PANEL_ACCESS not in capabilities_for_role("teacher")
 
 
-def test_school_admin_has_panel_and_users_view():
+def test_school_admin_has_panel_without_global_users_tab():
     caps = capabilities_for_role("school_admin")
     assert CAP_PANEL_ACCESS in caps
+    assert CAP_TAB_USERS_VIEW not in caps
+
+
+def test_superadmin_has_users_tab():
+    caps = capabilities_for_role("superadmin")
     assert CAP_TAB_USERS_VIEW in caps
+    assert CAP_SCOPE_GLOBAL in caps
 
 
 def test_expert_invites_only():

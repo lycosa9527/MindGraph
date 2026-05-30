@@ -5,7 +5,7 @@
  */
 import { onMounted, ref } from 'vue'
 
-import { Loading } from '@element-plus/icons-vue'
+import { Edit, Loading } from '@element-plus/icons-vue'
 
 import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import { useLanguage, useNotifications } from '@/composables'
@@ -38,6 +38,9 @@ const trendOrg = ref<{
   expires_at?: string | null
   dify_api_base_url?: string | null
   dify_api_key_masked?: string | null
+  dify_timeout_seconds?: number
+  dingtalk_ai_card_streaming_max_chars?: number
+  show_chain_of_thought?: boolean
   mindmate_agent_name?: string | null
   mindmate_agent_avatar_url?: string | null
   initial_tab?: 'usage' | 'general'
@@ -64,6 +67,18 @@ function onAgentAvatarError(event: Event) {
   }
 }
 
+function hasPrivateDify(row: Record<string, unknown>): boolean {
+  return Boolean(row.dify_api_key_masked)
+}
+
+function orgShowChainOfThought(row: Record<string, unknown>): boolean {
+  return Boolean(
+    row.show_chain_of_thought_oto ||
+      row.show_chain_of_thought_internal_group ||
+      row.show_chain_of_thought_cross_org_group
+  )
+}
+
 function openTrendModal(row: Record<string, unknown>, initialTab: 'usage' | 'general' = 'general') {
   trendOrg.value = {
     name: String(row.name ?? ''),
@@ -74,6 +89,10 @@ function openTrendModal(row: Record<string, unknown>, initialTab: 'usage' | 'gen
     expires_at: row.expires_at as string | null | undefined,
     dify_api_base_url: row.dify_api_base_url as string | null | undefined,
     dify_api_key_masked: row.dify_api_key_masked as string | null | undefined,
+    dify_timeout_seconds: (row.dify_timeout_seconds as number | undefined) ?? 300,
+    dingtalk_ai_card_streaming_max_chars:
+      (row.dingtalk_ai_card_streaming_max_chars as number | undefined) ?? 6500,
+    show_chain_of_thought: orgShowChainOfThought(row),
     mindmate_agent_name: row.mindmate_agent_name as string | null | undefined,
     mindmate_agent_avatar_url: row.mindmate_agent_avatar_url as string | null | undefined,
     initial_tab: initialTab,
@@ -104,6 +123,10 @@ function syncTrendOrgFromSchools() {
       expires_at: updated.expires_at as string | null | undefined,
       dify_api_base_url: updated.dify_api_base_url as string | null | undefined,
       dify_api_key_masked: updated.dify_api_key_masked as string | null | undefined,
+      dify_timeout_seconds: (updated.dify_timeout_seconds as number | undefined) ?? 300,
+      dingtalk_ai_card_streaming_max_chars:
+        (updated.dingtalk_ai_card_streaming_max_chars as number | undefined) ?? 6500,
+      show_chain_of_thought: orgShowChainOfThought(updated),
       mindmate_agent_name: updated.mindmate_agent_name as string | null | undefined,
       mindmate_agent_avatar_url: updated.mindmate_agent_avatar_url as string | null | undefined,
       initial_tab: currentTrend.initial_tab,
@@ -186,69 +209,63 @@ defineExpose({
       >
         <el-table-column
           prop="name"
-          :label="t('admin.schoolName')"
-          min-width="180"
+          :label="t('admin.organizationName')"
+          min-width="120"
           show-overflow-tooltip
+          class-name="admin-schools-col-text"
+        />
+        <el-table-column
+          :label="t('admin.orgPrivateDify')"
+          min-width="96"
+          align="center"
         >
           <template #default="{ row }">
-            <button
-              type="button"
-              class="admin-schools-link inline-flex items-center gap-1.5"
-              @click="openTrendModal(row)"
+            <span
+              class="admin-schools-private"
+              :class="
+                hasPrivateDify(row)
+                  ? 'admin-schools-private--yes'
+                  : 'admin-schools-private--no'
+              "
             >
-              <span>{{ row.name }}</span>
-              <span
-                v-if="row.dify_api_key_masked"
-                class="admin-schools-dify-badge"
-                :title="t('admin.schoolDifyConfigured')"
-              >
-                {{ t('admin.schoolDifyBadge') }}
-              </span>
-            </button>
+              {{
+                hasPrivateDify(row)
+                  ? t('admin.orgPrivateDifyYes')
+                  : t('admin.orgPrivateDifyNo')
+              }}
+            </span>
           </template>
         </el-table-column>
         <el-table-column
           prop="mindmate_agent_name"
           :label="t('admin.schoolMindmateAgentName')"
-          min-width="120"
+          min-width="112"
           show-overflow-tooltip
+          class-name="admin-schools-col-text"
         >
           <template #default="{ row }">
-            <button
-              type="button"
-              class="admin-schools-link text-stone-700"
-              @click="openTrendModal(row)"
-            >
-              {{ agentDisplayName(row) }}
-            </button>
+            <span class="text-stone-700">{{ agentDisplayName(row) }}</span>
           </template>
         </el-table-column>
         <el-table-column
-          :label="t('admin.schoolMindmateAgentAvatar')"
-          width="88"
+          :label="t('admin.orgAgentAvatar')"
+          min-width="64"
           align="center"
         >
           <template #default="{ row }">
-            <button
-              type="button"
-              class="admin-schools-link inline-flex justify-center"
-              :aria-label="agentDisplayName(row)"
-              @click="openTrendModal(row)"
-            >
-              <img
-                :src="agentAvatarSrc(row)"
-                :alt="agentDisplayName(row)"
-                class="admin-schools-agent-avatar"
-                width="32"
-                height="32"
-                @error="onAgentAvatarError"
-              />
-            </button>
+            <img
+              :src="agentAvatarSrc(row)"
+              :alt="agentDisplayName(row)"
+              class="admin-schools-agent-avatar"
+              width="32"
+              height="32"
+              @error="onAgentAvatarError"
+            />
           </template>
         </el-table-column>
         <el-table-column
           :label="t('admin.tokensUsed')"
-          width="120"
+          min-width="96"
           align="right"
         >
           <template #default="{ row }">
@@ -263,7 +280,7 @@ defineExpose({
         </el-table-column>
         <el-table-column
           :label="t('admin.status')"
-          width="100"
+          min-width="80"
           align="center"
         >
           <template #default="{ row }">
@@ -278,7 +295,7 @@ defineExpose({
         <el-table-column
           prop="user_count"
           :label="t('admin.usersCount')"
-          width="100"
+          min-width="72"
           align="right"
         >
           <template #default="{ row }">
@@ -286,24 +303,32 @@ defineExpose({
           </template>
         </el-table-column>
         <el-table-column
-          :label="t('admin.managers')"
-          min-width="140"
-          show-overflow-tooltip
+          prop="manager_count"
+          :label="t('admin.managerCount')"
+          min-width="80"
+          align="right"
         >
           <template #default="{ row }">
-            <button
-              v-if="(row.managers as string[] | undefined)?.length"
-              type="button"
-              class="admin-schools-link text-left"
+            <span class="tabular-nums text-stone-700">{{ row.manager_count ?? 0 }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          :label="t('admin.actions')"
+          min-width="96"
+          fixed="right"
+          align="center"
+        >
+          <template #default="{ row }">
+            <el-button
+              type="primary"
+              plain
+              size="small"
+              class="admin-swiss-pill-btn admin-swiss-pill-btn--edit"
               @click="openTrendModal(row)"
             >
-              {{ (row.managers as string[]).join(', ') }}
-            </button>
-            <span
-              v-else
-              class="text-stone-400 text-xs"
-              >—</span
-            >
+              <el-icon class="mr-0.5"><Edit /></el-icon>
+              {{ t('common.edit') }}
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -330,6 +355,9 @@ defineExpose({
       :org-expires-at="trendOrg?.expires_at"
       :org-dify-api-base-url="trendOrg?.dify_api_base_url"
       :org-dify-api-key-masked="trendOrg?.dify_api_key_masked"
+      :org-dify-timeout-seconds="trendOrg?.dify_timeout_seconds"
+      :org-dingtalk-ai-card-streaming-max-chars="trendOrg?.dingtalk_ai_card_streaming_max_chars"
+      :org-show-chain-of-thought="trendOrg?.show_chain_of_thought"
       :org-mindmate-agent-name="trendOrg?.mindmate_agent_name"
       :org-mindmate-agent-avatar-url="trendOrg?.mindmate_agent_avatar_url"
       :initial-school-tab="trendOrg?.initial_tab"
@@ -337,3 +365,5 @@ defineExpose({
     />
   </div>
 </template>
+
+<style scoped src="@/styles/admin-swiss-controls.css"></style>

@@ -1,0 +1,241 @@
+/**
+ * Light admin header controls — stone pill style (matches admin-new-school-btn).
+ */
+
+.admin-swiss-glyph {
+  color: #a8a29e;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+}
+
+.admin-swiss-select.el-select {
+  width: auto;
+  max-width: min(168px, 38vw);
+  flex-shrink: 1;
+}
+
+/* School picker / filter — compact pill, centered label */
+.admin-swiss-select--school.el-select {
+  max-width: min(168px, 38vw);
+}
+
+.admin-swiss-select--school :deep(.el-select__selection) {
+  justify-content: center;
+  width: 100%;
+}
+
+.admin-swiss-select--school :deep(.el-select__selected-item) {
+  text-align: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-swiss-select :deep(.el-select__wrapper) {
+  min-height: 28px;
+  padding-left: 0.75rem;
+  padding-right: 1.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #1c1917;
+  background-color: #e7e5e4;
+  border: 1px solid #d6d3d1;
+  border-radius: 9999px;
+  box-shadow: none;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.admin-swiss-select :deep(.el-select__wrapper:hover) {
+  background-color: #d6d3d1;
+  border-color: #a8a29e;
+}
+
+.admin-swiss-select :deep(.el-select__wrapper.is-focused) {
+  background-color: #e7e5e4;
+  border-color: #78716c;
+  box-shadow: 0 0 0 1px #d6d3d1;
+}
+
+.admin-swiss-select :deep(.el-select__placeholder),
+.admin-swiss-select :deep(.el-select__selected-item) {
+  color: #1c1917;
+}
+
+.admin-swiss-select :deep(.el-select__placeholder) {
+  color: #78716c;
+}
+
+.admin-swiss-select :deep(.el-select__caret) {
+  color: #57534e;
+}
+
+.admin-swiss-select :deep(.el-select__selection) {
+  max-width: 100%;
+}
+
+.admin-swiss-select :deep(.el-select__selected-item) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.admin-swiss-select :deep(.el-select__input) {
+  max-width: 100%;
+}
+
+.admin-swiss-select--filter.el-select {
+  width: auto;
+  max-width: min(168px, 38vw);
+}
+
+.admin-swiss-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-swiss-toolbar--header {
+  flex-wrap: nowrap;
+  gap: 0.375rem;
+}
+
+.admin-swiss-input {
+  width: 10rem;
+  max-width: min(12rem, 36vw);
+}
+
+.admin-swiss-input :deep(.el-input__wrapper) {
+  min-height: 28px;
+  padding-left: 0.35rem;
+  padding-right: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #1c1917;
+  background-color: #fafaf9;
+  border: 1px solid #d6d3d1;
+  border-radius: 9999px;
+  box-shadow: none;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.admin-swiss-input :deep(.el-input__wrapper:hover) {
+  border-color: #a8a29e;
+}
+
+.admin-swiss-input :deep(.el-input__wrapper.is-focus) {
+  background-color: #fafaf9;
+  border-color: #78716c;
+  box-shadow: 0 0 0 1px #d6d3d1;
+}
+
+.admin-swiss-input :deep(.el-input__inner) {
+  color: #1c1917;
+}
+
+.admin-swiss-input :deep(.el-input__inner::placeholder) {
+  color: #78716c;
+}
+
+.admin-swiss-input :deep(.el-input__prefix) {
+  color: #a8a29e;
+}
+
+.admin-swiss-btn.el-button {
+  --el-button-bg-color: #e7e5e4;
+  --el-button-border-color: #d6d3d1;
+  --el-button-text-color: #1c1917;
+  --el-button-hover-bg-color: #d6d3d1;
+  --el-button-hover-border-color: #a8a29e;
+  --el-button-hover-text-color: #1c1917;
+  --el-button-active-bg-color: #a8a29e;
+  --el-button-active-border-color: #78716c;
+  min-height: 28px;
+  padding: 0 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-radius: 9999px;
+}
+
+.admin-swiss-btn--ghost.el-button {
+  --el-button-bg-color: #fafaf9;
+  --el-button-border-color: #d6d3d1;
+  --el-button-text-color: #57534e;
+  --el-button-hover-bg-color: #f5f5f4;
+  --el-button-hover-border-color: #a8a29e;
+  --el-button-hover-text-color: #1c1917;
+  --el-button-active-bg-color: #e7e5e4;
+  --el-button-active-border-color: #78716c;
+}
+
+/* Table row actions (用户管理 — 操作) */
+.admin-swiss-pill-btn.el-button {
+  border-radius: 9999px;
+  min-height: 26px;
+  padding: 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Matches MindBot table edit pills — primary blue tint on stone admin UI */
+.admin-swiss-pill-btn--edit.el-button--primary.is-plain {
+  --el-button-bg-color: #ecf5ff;
+  --el-button-border-color: #b3d8ff;
+  --el-button-text-color: #409eff;
+  --el-button-hover-bg-color: #d9ecff;
+  --el-button-hover-border-color: #79bbff;
+  --el-button-hover-text-color: #337ecc;
+  --el-button-active-bg-color: #c6e2ff;
+  --el-button-active-border-color: #409eff;
+  --el-button-active-text-color: #337ecc;
+  min-width: 3.5rem;
+}
+
+html.dark .admin-swiss-pill-btn--edit.el-button--primary.is-plain {
+  --el-button-bg-color: rgb(30 58 138 / 0.35);
+  --el-button-border-color: rgb(59 130 246 / 0.45);
+  --el-button-text-color: rgb(147 197 253);
+  --el-button-hover-bg-color: rgb(30 58 138 / 0.5);
+  --el-button-hover-border-color: rgb(96 165 250 / 0.55);
+  --el-button-hover-text-color: rgb(191 219 254);
+  --el-button-active-bg-color: rgb(30 64 175 / 0.55);
+  --el-button-active-border-color: rgb(59 130 246 / 0.65);
+  --el-button-active-text-color: rgb(219 234 254);
+}
+
+/* Light Swiss tabs (stone ink active indicator). */
+.admin-swiss-tabs :deep(.el-tabs__header) {
+  margin-bottom: 16px;
+}
+
+.admin-swiss-tabs :deep(.el-tabs__nav-wrap::after) {
+  height: 1px;
+  background-color: #e7e5e4;
+}
+
+.admin-swiss-tabs :deep(.el-tabs__active-bar) {
+  height: 2px;
+  background-color: #1c1917;
+}
+
+.admin-swiss-tabs :deep(.el-tabs__item) {
+  color: #78716c;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding-bottom: 0.65rem;
+}
+
+.admin-swiss-tabs :deep(.el-tabs__item:hover) {
+  color: #1c1917;
+}
+
+.admin-swiss-tabs :deep(.el-tabs__item.is-active) {
+  color: #1c1917;
+  font-weight: 600;
+}

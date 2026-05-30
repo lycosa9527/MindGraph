@@ -4,6 +4,7 @@
  */
 import { computed, toRef } from 'vue'
 
+import AdminTokenUsageByServicePanel from '@/components/admin/AdminTokenUsageByServicePanel.vue'
 import { Connection, DocumentCopy, Loading, User } from '@element-plus/icons-vue'
 
 import { useSchoolDashboardStats } from '@/composables/admin/useSchoolDashboardStats'
@@ -112,6 +113,12 @@ async function copyInvitationCode(event: MouseEvent): Promise<void> {
         </div>
       </el-card>
     </div>
+    <AdminTokenUsageByServicePanel
+      v-if="showUsage"
+      class="mt-6"
+      :organization-id="orgId"
+    />
+
     <el-card
       v-if="showUsage && topUsers.length > 0"
       shadow="hover"

@@ -18,7 +18,10 @@ import {
 
 import type { Chart as ChartInstance } from 'chart.js'
 
+import SchoolDashboardOrgPicker from '@/components/school/SchoolDashboardOrgPicker.vue'
 import SchoolDashboardUsersTab from '@/components/school/SchoolDashboardUsersTab.vue'
+import { useAdminAccess } from '@/composables/admin/useAdminAccess'
+import { useSchoolDashboardOrgPicker } from '@/composables/school/useSchoolDashboardOrgPicker'
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
@@ -28,7 +31,6 @@ import { type ChartConfiguration, type TooltipItem, loadChartJs } from '@/utils/
 const { t, isZh } = useLanguage()
 const notify = useNotifications()
 const { publicSiteUrl } = usePublicSiteUrl()
-const authStore = useAuthStore()
 
 const props = withDefaults(
   defineProps<{
@@ -37,18 +39,10 @@ const props = withDefaults(
   { embedded: false }
 )
 
-const isAdmin = computed(() => authStore.isAdmin)
-const userSchoolId = computed(() =>
-  authStore.user?.schoolId ? Number(authStore.user.schoolId) : null
-)
-
-const selectedOrgId = ref<number | null>(null)
-const organizations = ref<{ id: number; name: string; code: string }[]>([])
-
-const effectiveOrgId = computed(() => {
-  if (isAdmin.value && selectedOrgId.value != null) return selectedOrgId.value
-  return userSchoolId.value
-})
+const authStore = useAuthStore()
+const { loadCapabilities } = useAdminAccess()
+const { effectiveOrgId, loadOrganizations, syncSelectedOrgFromUser } =
+  useSchoolDashboardOrgPicker()
 
 const isLoading = ref(true)
 const stats = ref({
@@ -129,27 +123,6 @@ function formatChartLabel(value: number): string {
   if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M'
   if (value >= 1000) return (value / 1000).toFixed(1) + 'K'
   return String(value)
-}
-
-/** Shown in the closed select and used by filterable matching (name + code). */
-function organizationSelectLabel(org: { name: string; code: string }): string {
-  const code = (org.code || '').trim()
-  return code ? `${org.name} (${code})` : org.name
-}
-
-async function loadOrganizations() {
-  if (!isAdmin.value) return
-  const res = await apiRequest('/api/auth/admin/organizations')
-  if (!res.ok) return
-  const data = await res.json()
-  organizations.value = data.map((o: { id: number; name: string; code: string }) => ({
-    id: o.id,
-    name: o.name,
-    code: o.code,
-  }))
-  if (organizations.value.length > 0 && selectedOrgId.value == null) {
-    selectedOrgId.value = organizations.value[0].id
-  }
 }
 
 async function loadStats() {
@@ -387,19 +360,32 @@ watch(activeTab, (tab) => {
   }
 })
 
-watch(effectiveOrgId, () => {
-  if (effectiveOrgId.value != null) {
-    loadStats()
-    if (activeTab.value === 'tokens') {
-      tokenStats.value = null
-      loadTokenStats()
+watch(
+  effectiveOrgId,
+  () => {
+    if (effectiveOrgId.value != null) {
+      loadStats()
+      if (activeTab.value === 'tokens') {
+        tokenStats.value = null
+        loadTokenStats()
+      }
     }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => [authStore.adminCapabilitiesLoaded, authStore.user?.schoolId] as const,
+  () => {
+    syncSelectedOrgFromUser()
   }
-})
+)
 
 onMounted(async () => {
+  await loadCapabilities()
+  syncSelectedOrgFromUser()
   await loadOrganizations()
-  loadStats()
+  syncSelectedOrgFromUser()
 })
 
 onBeforeUnmount(() => {
@@ -410,62 +396,26 @@ onBeforeUnmount(() => {
 
 <template>
   <div
-    class="flex flex-col bg-stone-50 overflow-hidden"
-    :class="embedded ? 'school-dashboard-embedded min-h-0' : 'school-dashboard-page flex-1'"
+    class="school-dashboard flex flex-col min-h-0 min-w-0"
+    :class="
+      embedded
+        ? 'school-dashboard--embedded'
+        : 'school-dashboard--standalone flex-1 bg-stone-50 overflow-hidden'
+    "
   >
     <div
       v-if="!embedded"
-      class="school-header h-14 px-4 flex items-center justify-between bg-white border-b border-stone-200 shrink-0"
+      class="school-header h-14 px-4 flex items-center justify-between gap-3 bg-white border-b border-stone-200 shrink-0"
     >
-      <h1 class="text-sm font-semibold text-stone-900">
+      <h1 class="text-sm font-semibold text-stone-900 truncate min-w-0">
         {{ t('admin.schoolDashboard') }}
       </h1>
-      <div
-        v-if="isAdmin && organizations.length > 0"
-        class="flex items-center gap-2"
-      >
-        <span class="text-gray-500 text-sm">{{ t('admin.viewSchool') }}:</span>
-        <el-select
-          v-model="selectedOrgId"
-          filterable
-          :placeholder="t('admin.selectSchool')"
-          size="small"
-          style="width: 260px"
-        >
-          <el-option
-            v-for="org in organizations"
-            :key="org.id"
-            :label="organizationSelectLabel(org)"
-            :value="org.id"
-          />
-        </el-select>
-      </div>
+      <SchoolDashboardOrgPicker />
     </div>
 
     <div
-      v-if="embedded && isAdmin && organizations.length > 0"
-      class="mb-4 flex items-center justify-end gap-2 px-1"
-    >
-      <span class="text-gray-500 text-sm">{{ t('admin.viewSchool') }}:</span>
-      <el-select
-        v-model="selectedOrgId"
-        filterable
-        :placeholder="t('admin.selectSchool')"
-        size="small"
-        style="width: 260px"
-      >
-        <el-option
-          v-for="org in organizations"
-          :key="org.id"
-          :label="organizationSelectLabel(org)"
-          :value="org.id"
-        />
-      </el-select>
-    </div>
-
-    <div
-      class="school-body flex-1 overflow-y-auto"
-      :class="embedded ? 'p-0 min-h-0' : 'p-6'"
+      class="school-body min-w-0"
+      :class="embedded ? 'school-body--embedded' : 'school-body--standalone flex-1 overflow-y-auto p-6'"
     >
       <div
         v-if="effectiveOrgId == null && !isLoading"
@@ -477,7 +427,7 @@ onBeforeUnmount(() => {
       <template v-else-if="effectiveOrgId != null">
         <el-tabs
           v-model="activeTab"
-          class="school-tabs"
+          class="school-tabs admin-swiss-tabs"
         >
           <el-tab-pane
             :label="t('admin.dashboard')"
@@ -506,7 +456,10 @@ onBeforeUnmount(() => {
         </div>
 
         <template v-else-if="activeTab === 'overview'">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+          <div
+            class="grid grid-cols-1 md:grid-cols-3 gap-6"
+            :class="embedded ? 'pt-0' : 'pt-4'"
+          >
             <el-card
               shadow="hover"
               class="stat-card stat-card-clickable"
@@ -565,7 +518,7 @@ onBeforeUnmount(() => {
               shadow="hover"
               class="stat-card"
             >
-              <div>
+              <div class="flex flex-col gap-3 min-w-0">
                 <div class="flex items-center gap-4 min-w-0">
                   <div
                     class="w-12 h-12 bg-violet-100 dark:bg-violet-900 rounded-lg flex items-center justify-center shrink-0"
@@ -589,21 +542,19 @@ onBeforeUnmount(() => {
                     </p>
                   </div>
                 </div>
-                <div class="mt-2 pl-16 min-w-0">
-                  <el-button
-                    type="primary"
-                    size="small"
-                    round
-                    class="!rounded-full"
-                    :disabled="!(stats.organization?.invitation_code || '').trim()"
-                    @click="copyInvitationCode"
-                  >
-                    <el-icon class="el-icon--left">
-                      <DocumentCopy />
-                    </el-icon>
-                    {{ t('admin.copyShareMessage') }}
-                  </el-button>
-                </div>
+                <el-button
+                  type="primary"
+                  size="small"
+                  round
+                  class="self-start !rounded-full"
+                  :disabled="!(stats.organization?.invitation_code || '').trim()"
+                  @click="copyInvitationCode"
+                >
+                  <el-icon class="el-icon--left">
+                    <DocumentCopy />
+                  </el-icon>
+                  {{ t('admin.copyShareMessage') }}
+                </el-button>
               </div>
             </el-card>
           </div>
@@ -614,14 +565,16 @@ onBeforeUnmount(() => {
             class="mt-6"
           >
             <template #header>
-              <span class="font-medium">{{ t('admin.topUsersByTokens') }}</span>
-              <el-button
-                text
-                size="small"
-                @click="loadStats"
-              >
-                {{ t('common.refresh') }}
-              </el-button>
+              <div class="flex items-center justify-between gap-2 w-full">
+                <span class="font-medium">{{ t('admin.topUsersByTokens') }}</span>
+                <el-button
+                  text
+                  size="small"
+                  @click="loadStats"
+                >
+                  {{ t('common.refresh') }}
+                </el-button>
+              </div>
             </template>
             <el-table
               :data="topUsers"
@@ -1056,6 +1009,14 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.school-dashboard--embedded {
+  background: transparent;
+}
+
+.school-body--standalone {
+  min-height: 0;
+}
+
 .stat-card :deep(.el-card__body) {
   padding: 20px;
 }
@@ -1072,34 +1033,11 @@ onBeforeUnmount(() => {
   padding: 12px 16px;
 }
 
-.school-tabs :deep(.el-tabs__header) {
-  margin-bottom: 16px;
+.school-dashboard--embedded .admin-swiss-tabs :deep(.el-tabs__header) {
+  margin-top: 0;
 }
 
-.stat-item {
-  padding: 12px;
-  background: var(--el-fill-color-lighter);
-  border-radius: 8px;
-}
-
-.dark .stat-item {
-  background: var(--el-fill-color-dark);
-}
-
-.service-card :deep(.el-card__header) {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
-}
-
-.service-card :deep(.el-card__body) {
-  padding: 20px;
-}
-
-.mindgraph-card {
-  border-top: 3px solid #3b82f6;
-}
-
-.mindmate-card {
-  border-top: 3px solid #8b5cf6;
-}
 </style>
+
+<style scoped src="@/styles/admin-swiss-controls.css"></style>
+<style scoped src="@/styles/admin-token-by-service.css"></style>

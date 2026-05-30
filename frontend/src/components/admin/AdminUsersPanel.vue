@@ -1,32 +1,23 @@
 <script setup lang="ts">
 /**
- * Users tab — global admin list or org-scoped school users.
+ * Users tab — superadmin global user management only.
  */
 import { computed } from 'vue'
 
 import AdminUsersTab from '@/components/admin/AdminUsersTab.vue'
-import SchoolDashboardUsersTab from '@/components/school/SchoolDashboardUsersTab.vue'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
-import { useAuthStore } from '@/stores'
 
-const { can, effectiveOrgId, isReadOnly } = useAdminAccess()
-const authStore = useAuthStore()
+const { can } = useAdminAccess()
 
-const useOrgUsers = computed(
-  () =>
-    can('scope.org') ||
-    authStore.isSchoolAdmin ||
-    (authStore.isSuperAdmin && effectiveOrgId.value != null)
-)
-
-const orgId = computed(() => effectiveOrgId.value)
+const canManageUsers = computed(() => can('tab.users.view') && can('scope.global'))
 </script>
 
 <template>
-  <SchoolDashboardUsersTab
-    v-if="useOrgUsers && orgId != null"
-    :org-id="orgId"
-  />
-  <AdminUsersTab v-else-if="can('tab.users.view')" />
-  <div v-else class="text-center py-12 text-gray-500">—</div>
+  <AdminUsersTab v-if="canManageUsers" />
+  <div
+    v-else
+    class="text-center py-12 text-gray-500"
+  >
+    —
+  </div>
 </template>

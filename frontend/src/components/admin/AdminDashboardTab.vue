@@ -5,6 +5,7 @@
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
+import AdminTokenUsageByServicePanel from '@/components/admin/AdminTokenUsageByServicePanel.vue'
 import { Connection, Document, Loading, TrendCharts, User } from '@element-plus/icons-vue'
 
 import type { Chart as ChartInstance } from 'chart.js'
@@ -24,8 +25,8 @@ const showOperations = computed(
   () => props.section === 'all' || props.section === 'operations'
 )
 const showUsage = computed(() => props.section === 'all' || props.section === 'usage')
-const showUsageTokenRow = computed(() => props.section === 'usage')
-const showRankings = computed(() => showOperations.value || showUsage.value)
+const showUsageByService = computed(() => props.section === 'usage')
+const showTokenRankings = computed(() => showOperations.value || showUsageByService.value)
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -42,17 +43,35 @@ interface OrgStats {
   org_id?: number
 }
 const tokenStatsByOrg = ref<Record<string, OrgStats>>({})
+const tokenStatsByOrgMindgraph = ref<Record<string, OrgStats>>({})
+const tokenStatsByOrgMindmate = ref<Record<string, OrgStats>>({})
 
-const topOrgsByTokens = computed(() =>
-  Object.entries(tokenStatsByOrg.value)
-    .map(([name, v]) => ({
+function parseOrgTokenStats(byOrg: Record<string, unknown>): Record<string, OrgStats> {
+  return Object.fromEntries(
+    Object.entries(byOrg).map(([key, value]) => [
+      key,
+      {
+        total_tokens: (value as { total_tokens?: number }).total_tokens ?? 0,
+        org_id: (value as { org_id?: number }).org_id,
+      },
+    ])
+  )
+}
+
+function topOrgsFromStats(byOrg: Record<string, OrgStats>) {
+  return Object.entries(byOrg)
+    .map(([name, entry]) => ({
       name,
-      tokens: v.total_tokens,
-      orgId: v.org_id,
+      tokens: entry.total_tokens,
+      orgId: entry.org_id,
     }))
     .sort((a, b) => b.tokens - a.tokens)
     .slice(0, 10)
-)
+}
+
+const topOrgsByTokens = computed(() => topOrgsFromStats(tokenStatsByOrg.value))
+const topOrgsByMindgraph = computed(() => topOrgsFromStats(tokenStatsByOrgMindgraph.value))
+const topOrgsByMindmate = computed(() => topOrgsFromStats(tokenStatsByOrgMindmate.value))
 
 const topUsersByTokens = ref<
   { id: number; name: string; phone: string; total_tokens: number; organization_name: string }[]
@@ -108,15 +127,14 @@ async function loadStats() {
       recentRegistrations: data.recent_registrations ?? 0,
       totalTokens: data.token_stats?.total_tokens ?? 0,
     }
-    const byOrg = data.token_stats_by_org ?? {}
-    tokenStatsByOrg.value = Object.fromEntries(
-      Object.entries(byOrg).map(([k, v]) => [
-        k,
-        {
-          total_tokens: (v as { total_tokens?: number }).total_tokens ?? 0,
-          org_id: (v as { org_id?: number }).org_id,
-        },
-      ])
+    tokenStatsByOrg.value = parseOrgTokenStats(
+      (data.token_stats_by_org ?? {}) as Record<string, unknown>
+    )
+    tokenStatsByOrgMindgraph.value = parseOrgTokenStats(
+      (data.token_stats_by_org_mindgraph ?? {}) as Record<string, unknown>
+    )
+    tokenStatsByOrgMindmate.value = parseOrgTokenStats(
+      (data.token_stats_by_org_mindmate ?? {}) as Record<string, unknown>
     )
     const rawTop = data.top_users_by_tokens_today as
       | {
@@ -591,40 +609,13 @@ onBeforeUnmount(() => {
         </el-card>
       </div>
 
-      <div
-        v-if="showUsageTokenRow"
-        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-4"
-      >
-        <el-card
-          shadow="hover"
-          class="stat-card stat-card-clickable"
-          @click="showTrendChart('tokens')"
-        >
-          <div class="flex items-center gap-4">
-            <div
-              class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center"
-            >
-              <el-icon
-                :size="24"
-                class="text-orange-500"
-              >
-                <Connection />
-              </el-icon>
-            </div>
-            <div>
-              <p class="text-sm text-gray-500 dark:text-gray-400">
-                {{ t('admin.tokens') }} ({{ t('admin.pastWeek') }})
-              </p>
-              <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                {{ formatNumber(stats.totalTokens) }}
-              </p>
-            </div>
-          </div>
-        </el-card>
-      </div>
+      <AdminTokenUsageByServicePanel
+        v-if="showUsageByService"
+        class="pt-4"
+      />
 
       <div
-        v-if="showRankings"
+        v-if="showTokenRankings"
         class="mt-6"
       >
         <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
@@ -640,7 +631,100 @@ onBeforeUnmount(() => {
             {{ t('common.refresh') }}
           </el-button>
         </div>
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div
+          v-if="showUsageByService"
+          class="grid grid-cols-1 xl:grid-cols-2 gap-6"
+        >
+          <el-card
+            shadow="hover"
+            class="service-card mindgraph-card"
+          >
+            <template #header>
+              <span class="font-medium">{{ t('admin.topSchoolsByMindGraphTokens') }}</span>
+            </template>
+            <el-table
+              :data="topOrgsByMindgraph"
+              stripe
+              size="small"
+              :empty-text="t('admin.listRangeEmpty')"
+            >
+              <el-table-column
+                prop="name"
+                :label="t('admin.schoolName')"
+              >
+                <template #default="{ row }">
+                  <span
+                    class="cursor-pointer hover:text-primary-500 hover:underline"
+                    @click="showOrganizationTrendChart(row.name, row.orgId)"
+                  >
+                    {{ row.name }}
+                  </span>
+                </template>
+              </el-table-column>
+              <el-table-column
+                prop="tokens"
+                :label="t('admin.tokens')"
+                width="140"
+              >
+                <template #default="{ row }">
+                  <span
+                    class="cursor-pointer hover:text-primary-500"
+                    @click="showOrganizationTrendChart(row.name, row.orgId)"
+                  >
+                    {{ formatNumber(row.tokens) }}
+                  </span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+
+          <el-card
+            shadow="hover"
+            class="service-card mindmate-card"
+          >
+            <template #header>
+              <span class="font-medium">{{ t('admin.topSchoolsByMindMateTokens') }}</span>
+            </template>
+            <el-table
+              :data="topOrgsByMindmate"
+              stripe
+              size="small"
+              :empty-text="t('admin.listRangeEmpty')"
+            >
+              <el-table-column
+                prop="name"
+                :label="t('admin.schoolName')"
+              >
+                <template #default="{ row }">
+                  <span
+                    class="cursor-pointer hover:text-primary-500 hover:underline"
+                    @click="showOrganizationTrendChart(row.name, row.orgId)"
+                  >
+                    {{ row.name }}
+                  </span>
+                </template>
+              </el-table-column>
+              <el-table-column
+                prop="tokens"
+                :label="t('admin.tokens')"
+                width="140"
+              >
+                <template #default="{ row }">
+                  <span
+                    class="cursor-pointer hover:text-primary-500"
+                    @click="showOrganizationTrendChart(row.name, row.orgId)"
+                  >
+                    {{ formatNumber(row.tokens) }}
+                  </span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+        </div>
+        <div
+          v-else-if="showOperations"
+          class="grid grid-cols-1 xl:grid-cols-2 gap-6"
+        >
           <el-card shadow="hover">
             <template #header>
               <span class="font-medium">{{ t('admin.topSchoolsByTokens') }}</span>
@@ -846,3 +930,5 @@ onBeforeUnmount(() => {
   padding: 12px 16px;
 }
 </style>
+
+<style scoped src="@/styles/admin-token-by-service.css"></style>

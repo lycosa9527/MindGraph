@@ -23,6 +23,7 @@ from routers.api.mindbot_helpers import (
     _mindbot_auth_field_changes_on_update,
     _require_mindbot_feature,
     _resolve_secrets,
+    _resolved_dify_settings,
     _to_response,
     _usage_event_for_user,
     _usage_events_for_user,
@@ -38,7 +39,7 @@ from routers.api.mindbot_models import (
     MindbotUsageEventItem,
 )
 from routers.auth.dependencies import require_admin, require_mindbot_admin_access
-from services.mindbot.dify.service_health import check_dify_app_api_reachable
+from routers.auth.admin.organization_dify import apply_org_dify_fields_to_mindbot_config
 from services.mindbot.errors import MindbotErrorCode
 from services.mindbot.platforms.dingtalk.cards.ai_card import probe_ai_card_streaming_update_api
 from services.mindbot.session.callback_token import new_public_callback_token
@@ -151,8 +152,9 @@ async def admin_create_mindbot_config(
     _require_mindbot_feature()
     _ensure_org_scope(user, payload.organization_id)
 
-    org_check = await db.execute(select(Organization.id).where(Organization.id == payload.organization_id))
-    if org_check.scalar_one_or_none() is None:
+    org_check = await db.execute(select(Organization).where(Organization.id == payload.organization_id))
+    org = org_check.scalar_one_or_none()
+    if org is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"{MindbotErrorCode.ADMIN_ORGANIZATION_NOT_FOUND.value}: Organization not found",
@@ -184,27 +186,61 @@ async def admin_create_mindbot_config(
     evt_aes = (payload.dingtalk_event_aes_key or "").strip() or None
     evt_owner = (payload.dingtalk_event_owner_key or "").strip() or None
 
+    app_secret = payload.dingtalk_app_secret.strip()
+    if not app_secret:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"{MindbotErrorCode.ADMIN_SECRETS_REQUIRED.value}: "
+                "dingtalk_app_secret is required for new config"
+            ),
+        )
+
+    dify_key_raw = (payload.dify_api_key or "").strip()
+    if not payload.use_org_dify_settings and not dify_key_raw:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"{MindbotErrorCode.ADMIN_SECRETS_REQUIRED.value}: "
+                "dify_api_key is required for new config"
+            ),
+        )
+
+    dify_settings = _resolved_dify_settings(
+        payload,
+        org,
+        None,
+        resolved_dify_key=dify_key_raw,
+    )
+
     row = OrganizationMindbotConfig(
         organization_id=payload.organization_id,
         bot_label=(payload.bot_label or "").strip() or None,
         dingtalk_robot_code=payload.dingtalk_robot_code.strip(),
         public_callback_token=new_public_callback_token(),
-        dingtalk_app_secret=payload.dingtalk_app_secret.strip(),
+        dingtalk_app_secret=app_secret,
         dingtalk_client_id=(payload.dingtalk_client_id or "").strip() or None,
         dingtalk_event_token=evt_token,
         dingtalk_event_aes_key=evt_aes,
         dingtalk_event_owner_key=evt_owner,
-        dify_api_base_url=payload.dify_api_base_url.strip(),
-        dify_api_key=payload.dify_api_key.strip(),
+        dify_api_base_url=str(dify_settings["dify_api_base_url"]),
+        dify_api_key=str(dify_settings["dify_api_key"]),
         dify_inputs_json=(payload.dify_inputs_json or "").strip() or None,
-        dify_timeout_seconds=payload.dify_timeout_seconds,
-        show_chain_of_thought_oto=payload.show_chain_of_thought_oto,
-        show_chain_of_thought_internal_group=payload.show_chain_of_thought_internal_group,
-        show_chain_of_thought_cross_org_group=payload.show_chain_of_thought_cross_org_group,
-        chain_of_thought_max_chars=payload.chain_of_thought_max_chars,
+        dify_timeout_seconds=int(dify_settings["dify_timeout_seconds"]),
+        show_chain_of_thought_oto=bool(dify_settings["show_chain_of_thought_oto"]),
+        show_chain_of_thought_internal_group=bool(
+            dify_settings["show_chain_of_thought_internal_group"]
+        ),
+        show_chain_of_thought_cross_org_group=bool(
+            dify_settings["show_chain_of_thought_cross_org_group"]
+        ),
+        chain_of_thought_max_chars=int(dify_settings["chain_of_thought_max_chars"]),
         dingtalk_ai_card_template_id=(payload.dingtalk_ai_card_template_id or "").strip() or None,
         dingtalk_ai_card_param_key=(payload.dingtalk_ai_card_param_key or "").strip() or None,
-        dingtalk_ai_card_streaming_max_chars=payload.dingtalk_ai_card_streaming_max_chars,
+        dingtalk_ai_card_streaming_max_chars=int(
+            dify_settings["dingtalk_ai_card_streaming_max_chars"]
+        ),
+        use_org_dify_settings=payload.use_org_dify_settings,
         is_enabled=payload.is_enabled,
     )
     db.add(row)
@@ -258,9 +294,24 @@ async def admin_update_mindbot_config(
         )
     _ensure_org_scope(user, existing.organization_id)
 
+    org = (
+        await db.execute(select(Organization).where(Organization.id == existing.organization_id))
+    ).scalar_one_or_none()
+    if org is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"{MindbotErrorCode.ADMIN_ORGANIZATION_NOT_FOUND.value}: Organization not found",
+        )
+
     secret_raw = (payload.dingtalk_app_secret or "").strip()
     key_raw = (payload.dify_api_key or "").strip()
     app_secret, dify_key = _resolve_secrets(payload, existing)
+    dify_settings = _resolved_dify_settings(
+        payload,
+        org,
+        existing,
+        resolved_dify_key=dify_key,
+    )
     evt_token, evt_aes, evt_owner = _event_subscription_fields(payload, existing)
 
     prev_client_id = existing.dingtalk_client_id
@@ -289,21 +340,28 @@ async def admin_update_mindbot_config(
     existing.dingtalk_event_token = evt_token
     existing.dingtalk_event_aes_key = evt_aes
     existing.dingtalk_event_owner_key = evt_owner
-    existing.dify_api_base_url = payload.dify_api_base_url.strip()
-    existing.dify_api_key = dify_key
+    existing.dify_api_base_url = str(dify_settings["dify_api_base_url"])
+    existing.dify_api_key = str(dify_settings["dify_api_key"])
     if "dify_inputs_json" in payload.model_fields_set:
         existing.dify_inputs_json = (payload.dify_inputs_json or "").strip() or None
-    existing.dify_timeout_seconds = payload.dify_timeout_seconds
-    existing.show_chain_of_thought_oto = payload.show_chain_of_thought_oto
-    existing.show_chain_of_thought_internal_group = payload.show_chain_of_thought_internal_group
-    existing.show_chain_of_thought_cross_org_group = payload.show_chain_of_thought_cross_org_group
-    existing.chain_of_thought_max_chars = payload.chain_of_thought_max_chars
+    existing.dify_timeout_seconds = int(dify_settings["dify_timeout_seconds"])
+    existing.show_chain_of_thought_oto = bool(dify_settings["show_chain_of_thought_oto"])
+    existing.show_chain_of_thought_internal_group = bool(
+        dify_settings["show_chain_of_thought_internal_group"]
+    )
+    existing.show_chain_of_thought_cross_org_group = bool(
+        dify_settings["show_chain_of_thought_cross_org_group"]
+    )
+    existing.chain_of_thought_max_chars = int(dify_settings["chain_of_thought_max_chars"])
     if "dingtalk_ai_card_template_id" in payload.model_fields_set:
         existing.dingtalk_ai_card_template_id = (payload.dingtalk_ai_card_template_id or "").strip() or None
     if "dingtalk_ai_card_param_key" in payload.model_fields_set:
         existing.dingtalk_ai_card_param_key = (payload.dingtalk_ai_card_param_key or "").strip() or None
-    if "dingtalk_ai_card_streaming_max_chars" in payload.model_fields_set:
-        existing.dingtalk_ai_card_streaming_max_chars = payload.dingtalk_ai_card_streaming_max_chars
+    existing.dingtalk_ai_card_streaming_max_chars = int(
+        dify_settings["dingtalk_ai_card_streaming_max_chars"]
+    )
+    if "use_org_dify_settings" in payload.model_fields_set and payload.use_org_dify_settings is not None:
+        existing.use_org_dify_settings = bool(payload.use_org_dify_settings)
     existing.is_enabled = payload.is_enabled
 
     await db.commit()
@@ -374,8 +432,9 @@ async def admin_move_mindbot_config(
             detail=f"{MindbotErrorCode.ADMIN_MOVE_SAME_ORGAN.value}: Already in this organization",
         )
 
-    org_check = await db.execute(select(Organization.id).where(Organization.id == new_org_id))
-    if org_check.scalar_one_or_none() is None:
+    org_check = await db.execute(select(Organization).where(Organization.id == new_org_id))
+    dest_org = org_check.scalar_one_or_none()
+    if dest_org is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"{MindbotErrorCode.ADMIN_ORGANIZATION_NOT_FOUND.value}: Organization not found",
@@ -394,6 +453,8 @@ async def admin_move_mindbot_config(
         )
 
     row.organization_id = new_org_id
+    if bool(getattr(row, "use_org_dify_settings", True)):
+        apply_org_dify_fields_to_mindbot_config(dest_org, row)
     await db.commit()
     await db.refresh(row)
     logger.info(

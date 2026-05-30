@@ -7,18 +7,20 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { Plus } from '@element-plus/icons-vue'
 
+import SchoolDashboardOrgPicker from '@/components/school/SchoolDashboardOrgPicker.vue'
 import AdminDataCenterTab from '@/components/admin/AdminDataCenterTab.vue'
 import AdminInviteUsersTab from '@/components/admin/AdminInviteUsersTab.vue'
 import AdminMarketsTab from '@/components/admin/AdminMarketsTab.vue'
 import AdminSchoolsTab from '@/components/admin/AdminSchoolsTab.vue'
 import AdminSystemSettingsTab from '@/components/admin/AdminSystemSettingsTab.vue'
+import AdminUsersHeaderToolbar from '@/components/admin/AdminUsersHeaderToolbar.vue'
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel.vue'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import {
-  DATA_CENTER_VIEWS,
   defaultDataCenterView,
   isDataCenterView,
 } from '@/composables/admin/adminDataCenterViews'
+import { useAdminHeaderBreadcrumb } from '@/composables/admin/useAdminHeaderBreadcrumb'
 import { useAdminPanelTabs } from '@/composables/admin/useAdminPanelTabs'
 import { useLanguage } from '@/composables'
 import { useAuthStore } from '@/stores'
@@ -33,26 +35,19 @@ const { tabs } = useAdminPanelTabs({ loadOnMount: false })
 const activeTab = ref((route.query.tab as string) || 'data_center')
 const schoolsTabRef = ref<InstanceType<typeof AdminSchoolsTab> | null>(null)
 
-const activeDataCenterViewLabel = computed(() => {
-  if (activeTab.value !== 'data_center') {
-    return null
-  }
-  const raw = route.query.view
-  const viewKey =
-    typeof raw === 'string' && isDataCenterView(raw)
-      ? raw
-      : defaultDataCenterView(can('scope.global'))
-  const match = DATA_CENTER_VIEWS.find((view) => view.name === viewKey)
-  return match ? t(match.labelKey) : null
+const hasGlobalScope = computed(() => can('scope.global'))
+
+const headerBreadcrumb = useAdminHeaderBreadcrumb({
+  activeTab,
+  route,
+  tabs,
+  hasGlobalScope,
 })
 
-const activeTabLabel = computed(() => {
-  if (activeDataCenterViewLabel.value) {
-    return activeDataCenterViewLabel.value
-  }
-  const match = tabs.value.find((tab) => tab.name === activeTab.value)
-  return match?.label ?? t('admin.title')
-})
+const showSchoolDashboardPicker = computed(
+  () =>
+    activeTab.value === 'data_center' && route.query.view === 'school_dashboard'
+)
 
 const showSchoolsCreateButton = computed(
   () =>
@@ -114,32 +109,58 @@ onMounted(async () => {
     <div
       class="admin-header h-14 px-4 flex items-center justify-between gap-3 bg-white border-b border-gray-200 shrink-0"
     >
-      <h1 class="text-sm font-semibold text-gray-900 truncate min-w-0">
-        {{ activeTabLabel }}
-        <span v-if="isReadOnly" class="text-gray-400 font-normal ml-2">
+      <nav
+        aria-label="breadcrumb"
+        class="admin-breadcrumb flex-1 text-sm truncate min-w-0"
+      >
+        <template
+          v-for="(segment, index) in headerBreadcrumb"
+          :key="index"
+        >
+          <span
+            v-if="index > 0"
+            class="admin-breadcrumb-sep"
+            aria-hidden="true"
+          >
+            /
+          </span>
+          <span
+            :class="
+              index === headerBreadcrumb.length - 1
+                ? 'admin-breadcrumb-current font-semibold text-gray-900'
+                : 'admin-breadcrumb-parent text-gray-500'
+            "
+          >
+            {{ segment.label }}
+          </span>
+        </template>
+        <span
+          v-if="isReadOnly"
+          class="text-gray-400 font-normal ml-2"
+        >
           ({{ t('admin.readOnly') }})
         </span>
-      </h1>
-      <el-button
-        v-if="showSchoolsCreateButton"
-        size="small"
-        class="admin-new-school-btn shrink-0"
-        @click="onHeaderCreateSchool"
-      >
-        <el-icon class="mr-1"><Plus /></el-icon>
-        {{ t('admin.createSchool') }}
-      </el-button>
+      </nav>
+      <div class="admin-header-actions flex flex-1 items-center justify-end gap-3 min-w-0">
+        <AdminUsersHeaderToolbar v-if="activeTab === 'users'" />
+        <SchoolDashboardOrgPicker
+          v-if="showSchoolDashboardPicker"
+          compact
+        />
+        <el-button
+          v-if="showSchoolsCreateButton"
+          size="small"
+          class="admin-new-school-btn shrink-0"
+          @click="onHeaderCreateSchool"
+        >
+          <el-icon class="mr-1"><Plus /></el-icon>
+          {{ t('admin.createSchool') }}
+        </el-button>
+      </div>
     </div>
 
     <div class="admin-body flex-1 overflow-y-auto">
-      <div
-        class="admin-content"
-        :class="
-          activeTab === 'data_center' && route.query.view === 'school_dashboard'
-            ? 'px-0 py-0'
-            : 'px-6 py-6'
-        "
-      >
+      <div class="admin-content px-6 py-6">
         <AdminDataCenterTab v-if="activeTab === 'data_center'" :read-only="isReadOnly" />
         <AdminUsersPanel v-else-if="activeTab === 'users'" />
         <AdminSchoolsTab
@@ -166,6 +187,19 @@ onMounted(async () => {
 .admin-page .admin-content {
   max-width: 1400px;
   margin: 0 auto;
+}
+
+.admin-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+.admin-breadcrumb-sep {
+  color: #d6d3d1;
+  font-weight: 300;
+  user-select: none;
 }
 
 .admin-new-school-btn {

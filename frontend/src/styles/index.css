@@ -3,6 +3,8 @@
  */
 
 @import 'katex/dist/katex.min.css';
+@import './admin-swiss-school-select-popper.css';
+@import './admin-mindbot-swiss-select-popper.css';
 
 @import 'tailwindcss/theme' layer(theme);
 @import 'tailwindcss/utilities' layer(utilities);

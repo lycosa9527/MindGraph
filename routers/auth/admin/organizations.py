@@ -45,6 +45,7 @@ from .organization_dify import (
     apply_dify_on_update,
     dify_list_fields,
     global_mindmate_dify_fields,
+    propagate_org_dify_settings_to_mindbot_configs,
     probe_mindmate_dify_health,
     probe_mindmate_dify_health_draft,
 )
@@ -433,11 +434,23 @@ async def update_organization_admin(
     if "is_active" in request:
         setattr(org, "is_active", bool(request.get("is_active")))
 
-    if "dify_api_base_url" in request or "dify_api_key" in request:
+    if (
+        "dify_api_base_url" in request
+        or "dify_api_key" in request
+        or "dify_timeout_seconds" in request
+        or "show_chain_of_thought" in request
+        or "show_chain_of_thought_oto" in request
+        or "show_chain_of_thought_internal_group" in request
+        or "show_chain_of_thought_cross_org_group" in request
+        or "chain_of_thought_max_chars" in request
+        or "dingtalk_ai_card_streaming_max_chars" in request
+    ):
         apply_dify_on_update(org, request, lang)
 
     if "mindmate_agent_name" in request or "mindmate_agent_avatar_url" in request:
         apply_mindmate_branding_on_update(org, request, lang)
+
+    await propagate_org_dify_settings_to_mindbot_configs(db, org)
 
     try:
         await db.commit()

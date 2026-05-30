@@ -2,7 +2,7 @@
 /**
  * Admin Trend Chart Modal - Reusable chart + token cards for org/user
  * Used by Schools and Users tabs when clicking a row
- * For org type: also shows invitation code (with refresh) and managers
+ * For org type: also shows managers on the general tab
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
@@ -12,7 +12,13 @@ import { Delete, Loading } from '@element-plus/icons-vue'
 
 import type { Chart as ChartInstance } from 'chart.js'
 
-import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
+import { useLanguage, useNotifications } from '@/composables'
+import { useAdminAccess } from '@/composables/admin/useAdminAccess'
+import {
+  clearAdminMindBotOrgSession,
+  getAdminMindBotOrgSession,
+} from '@/composables/admin/useAdminMindBotConfig'
+import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
@@ -20,10 +26,23 @@ import { apiRequest } from '@/utils/apiClient'
 import { type ChartConfiguration, type TooltipItem, loadChartJs } from '@/utils/lazyChartJs'
 
 import AdminSchoolDifySettings from './AdminSchoolDifySettings.vue'
+import AdminSchoolMindBotTab from './AdminSchoolMindBotTab.vue'
 import AdminSchoolOrgGeneralTab from './AdminSchoolOrgGeneralTab.vue'
 import AdminSchoolTokenUsageTab from './AdminSchoolTokenUsageTab.vue'
 
-type SchoolDialogTab = 'usage' | 'dify' | 'general'
+type SchoolDialogTab =
+  | 'usage'
+  | 'dify'
+  | 'mindbot_dingtalk'
+  | 'mindbot_log'
+  | 'mindbot_monitor'
+  | 'general'
+
+const MIND_BOT_SCHOOL_TABS = new Set<SchoolDialogTab>([
+  'mindbot_dingtalk',
+  'mindbot_log',
+  'mindbot_monitor',
+])
 
 const props = defineProps<{
   visible: boolean
@@ -31,13 +50,15 @@ const props = defineProps<{
   initialSchoolTab?: SchoolDialogTab
   orgName?: string
   orgId?: number
-  orgInvitationCode?: string
   orgDisplayName?: string
   orgIsActive?: boolean
   orgUserCount?: number
   orgExpiresAt?: string | null
   orgDifyApiBaseUrl?: string | null
   orgDifyApiKeyMasked?: string | null
+  orgDifyTimeoutSeconds?: number
+  orgDingtalkAiCardStreamingMaxChars?: number
+  orgShowChainOfThought?: boolean
   orgMindmateAgentName?: string | null
   orgMindmateAgentAvatarUrl?: string | null
   userName?: string
@@ -52,15 +73,103 @@ const emit = defineEmits<{
 const { t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
-const { publicSiteUrl } = usePublicSiteUrl()
 const uiStore = useUIStore()
+const { can } = useAdminAccess()
+const { featureMindbot } = useFeatureFlags()
+
+const showMindbotSchoolTabs = computed(
+  () => can('tab.settings.mindbot') && featureMindbot.value
+)
+
+function isMindbotSchoolTab(tab: SchoolDialogTab): boolean {
+  return MIND_BOT_SCHOOL_TABS.has(tab)
+}
+
+function mindbotEmbeddedPane(
+  tab: SchoolDialogTab
+): 'dingtalk' | 'log' | 'monitor' | null {
+  if (tab === 'mindbot_dingtalk') {
+    return 'dingtalk'
+  }
+  if (tab === 'mindbot_log') {
+    return 'log'
+  }
+  if (tab === 'mindbot_monitor') {
+    return 'monitor'
+  }
+  return null
+}
+
+const schoolDialogTab = ref<SchoolDialogTab>('general')
+
+const activeMindbotPane = computed(() => mindbotEmbeddedPane(schoolDialogTab.value))
+
+const mindbotSaving = computed(() => {
+  const orgId = props.orgId
+  if (orgId == null || activeMindbotPane.value == null) {
+    return false
+  }
+  return getAdminMindBotOrgSession(orgId).saving.value
+})
+
+const mindbotSaveEnabled = computed(() => {
+  const orgId = props.orgId
+  if (orgId == null) {
+    return false
+  }
+  return !getAdminMindBotOrgSession(orgId).featureDisabled.value
+})
+
+const showMindbotFooterEnable = computed(
+  () => isMindbotSchoolTab(schoolDialogTab.value) && props.orgId != null && mindbotSaveEnabled.value
+)
+
+const mindbotEnabled = computed({
+  get: () => {
+    const orgId = props.orgId
+    if (orgId == null) {
+      return false
+    }
+    return getAdminMindBotOrgSession(orgId).form.value.is_enabled
+  },
+  set: (enabled: boolean) => {
+    const orgId = props.orgId
+    if (orgId == null) {
+      return
+    }
+    getAdminMindBotOrgSession(orgId).form.value.is_enabled = enabled
+  },
+})
+
+async function saveMindbotSettings(): Promise<void> {
+  const orgId = props.orgId
+  if (orgId == null) {
+    return
+  }
+  const saved = await getAdminMindBotOrgSession(orgId).saveConfig()
+  if (saved) {
+    emit('refresh')
+  }
+}
+
+function clearMindbotSessionIfNeeded(): void {
+  if (props.orgId != null) {
+    clearAdminMindBotOrgSession(props.orgId)
+  }
+}
+
+function onSchoolModalVisibleChange(visible: boolean): void {
+  if (!visible) {
+    clearMindbotSessionIfNeeded()
+  }
+  emit('update:visible', visible)
+}
 
 const chartTitle = ref('')
 const chartLoading = ref(false)
 const chartRef = ref<HTMLCanvasElement | null>(null)
 const tokenUsageTabRef = ref<InstanceType<typeof AdminSchoolTokenUsageTab> | null>(null)
 const mindmateDifyRef = ref<InstanceType<typeof AdminSchoolDifySettings> | null>(null)
-const schoolDialogTab = ref<SchoolDialogTab>('general')
 let chartInstance: ChartInstance<'line'> | null = null
 
 const schoolHeaderNote = computed(() => {
@@ -85,14 +194,11 @@ function chartCanvasElement(): HTMLCanvasElement | null {
 const periodCards = ref({ today: '-', week: '-', month: '-', total: '-' })
 const period = ref<'today' | 'week' | 'month' | 'total'>('week')
 
-const invitationCode = ref('')
 const managers = ref<{ id: number; phone: string; name: string }[]>([])
 const orgUsers = ref<{ id: number; phone: string; name: string }[]>([])
 const managersLoading = ref(false)
 const pendingManagerIds = ref<number[]>([])
 const addManagersLoading = ref(false)
-const refreshCodeLoading = ref(false)
-const invitationCodeLoading = ref(false)
 const displayNameEdit = ref('')
 const generalTabSaving = ref(false)
 const orgActiveState = ref(true)
@@ -119,6 +225,7 @@ function parseExpiresAtToDate(iso: string | null | undefined): string | null {
 }
 
 function close() {
+  clearMindbotSessionIfNeeded()
   emit('update:visible', false)
 }
 
@@ -365,73 +472,6 @@ async function loadManagersAndUsers() {
   }
 }
 
-async function ensureInvitationCodeLoaded() {
-  if (props.orgId == null || schoolDialogTab.value !== 'general') {
-    return
-  }
-  const fromProps = (props.orgInvitationCode ?? '').trim()
-  if (fromProps) {
-    invitationCode.value = fromProps
-    return
-  }
-  if (invitationCode.value.trim()) {
-    return
-  }
-  invitationCodeLoading.value = true
-  try {
-    const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}/invitation-code`)
-    if (!res.ok) {
-      return
-    }
-    const data = (await res.json()) as { invitation_code?: string }
-    const code = String(data.invitation_code ?? '').trim()
-    if (code) {
-      invitationCode.value = code
-    }
-  } catch {
-    /* optional load; copy/refresh can retry */
-  } finally {
-    invitationCodeLoading.value = false
-  }
-}
-
-async function refreshInvitationCode() {
-  if (props.orgId == null) return
-  try {
-    await ElMessageBox.confirm(
-      t('admin.refreshInvitationCodeConfirm'),
-      t('admin.refreshInvitationCode'),
-      {
-        type: 'warning',
-        confirmButtonText: t('admin.refreshInvitationCode'),
-        cancelButtonText: t('common.cancel'),
-      }
-    )
-  } catch {
-    return
-  }
-  refreshCodeLoading.value = true
-  try {
-    const res = await apiRequest(
-      `/api/auth/admin/organizations/${props.orgId}/refresh-invitation-code`,
-      { method: 'POST' }
-    )
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || t('admin.trendChartErrors.refreshFailed'))
-      return
-    }
-    const data = await res.json()
-    invitationCode.value = data.invitation_code ?? invitationCode.value
-    notify.success(t('notification.saved'))
-    emit('refresh')
-  } catch {
-    notify.error(t('admin.trendChartErrors.refreshInvitationCodeFailed'))
-  } finally {
-    refreshCodeLoading.value = false
-  }
-}
-
 async function addManagers() {
   if (props.orgId == null || pendingManagerIds.value.length === 0) {
     return
@@ -493,42 +533,6 @@ async function removeManager(userId: number) {
     emit('refresh')
   } catch {
     notify.error(t('admin.trendChartErrors.removeManagerFailed'))
-  }
-}
-
-function shareMessageTextForCode(code: string): string {
-  return t('admin.shareInviteMessage', {
-    code,
-    siteUrl: publicSiteUrl.value,
-  })
-}
-
-async function copyShareMessage() {
-  let code = invitationCode.value.trim()
-  if (!code && props.orgId != null) {
-    try {
-      const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}/invitation-code`)
-      if (res.ok) {
-        const data = (await res.json()) as { invitation_code?: string }
-        code = String(data.invitation_code ?? '').trim()
-        if (code) {
-          invitationCode.value = code
-        }
-      }
-    } catch {
-      notify.error(t('admin.schoolInvitationLoadError'))
-      return
-    }
-  }
-  if (!code) {
-    notify.error(t('admin.schoolInvitationLoadError'))
-    return
-  }
-  try {
-    await navigator.clipboard.writeText(shareMessageTextForCode(code))
-    notify.success(t('notification.copied'))
-  } catch {
-    notify.error(t('notification.copyFailed'))
   }
 }
 
@@ -637,19 +641,11 @@ async function deleteOrganization() {
   }
 }
 
-function applyOrgInvitationCodeFromProps() {
-  const fromProps = (props.orgInvitationCode ?? '').trim()
-  if (fromProps) {
-    invitationCode.value = fromProps
-  }
-}
-
 function loadGeneralTabData() {
   if (props.type !== 'org' || props.orgId == null) {
     return
   }
   void loadManagersAndUsers()
-  void ensureInvitationCodeLoaded()
 }
 
 watch(
@@ -661,7 +657,6 @@ watch(
       }
       void load()
       if (props.type === 'org' && props.orgId) {
-        applyOrgInvitationCodeFromProps()
         displayNameEdit.value = props.orgDisplayName ?? ''
         orgActiveState.value = props.orgIsActive ?? true
         expiresAtEdit.value = parseExpiresAtToDate(props.orgExpiresAt)
@@ -671,7 +666,6 @@ watch(
       chartInstance?.destroy()
       chartInstance = null
       pendingManagerIds.value = []
-      invitationCode.value = ''
     }
   }
 )
@@ -696,25 +690,18 @@ watch(
     [
       props.orgId,
       props.orgName,
-      props.orgInvitationCode,
       props.orgDisplayName,
       props.orgIsActive,
       props.orgExpiresAt,
       props.userId,
       props.userName,
     ] as const,
-  (newVal, oldVal) => {
+  () => {
     if (!props.visible) {
       return
     }
-    const orgIdChanged = oldVal != null && newVal[0] !== oldVal[0]
     void load()
     if (props.type === 'org' && props.orgId) {
-      if (orgIdChanged) {
-        invitationCode.value = ''
-      } else {
-        applyOrgInvitationCodeFromProps()
-      }
       displayNameEdit.value = props.orgDisplayName ?? ''
       orgActiveState.value = props.orgIsActive ?? true
       expiresAtEdit.value = parseExpiresAtToDate(props.orgExpiresAt)
@@ -742,7 +729,7 @@ onBeforeUnmount(() => {
     align-center
     modal-class="mindbot-swiss-backdrop"
     :show-close="true"
-    @update:model-value="(v: boolean) => emit('update:visible', v)"
+    @update:model-value="onSchoolModalVisibleChange"
     @close="handleClose"
   >
     <template #header>
@@ -790,9 +777,52 @@ onBeforeUnmount(() => {
               :org-id="orgId"
               :dify-api-base-url="orgDifyApiBaseUrl"
               :dify-api-key-masked="orgDifyApiKeyMasked"
+              :dify-timeout-seconds="orgDifyTimeoutSeconds"
+              :dingtalk-ai-card-streaming-max-chars="orgDingtalkAiCardStreamingMaxChars"
+              :show-chain-of-thought="orgShowChainOfThought"
               :mindmate-agent-name="orgMindmateAgentName"
               :mindmate-agent-avatar-url="orgMindmateAgentAvatarUrl"
               @saved="emit('refresh')"
+            />
+          </el-tab-pane>
+          <el-tab-pane
+            v-if="showMindbotSchoolTabs"
+            name="mindbot_dingtalk"
+            :label="t('admin.mindbot.tabDingtalk')"
+            lazy
+          >
+            <AdminSchoolMindBotTab
+              v-if="orgId && schoolDialogTab === 'mindbot_dingtalk'"
+              :org-id="orgId"
+              embedded-pane="dingtalk"
+              :active="true"
+              @refresh="emit('refresh')"
+            />
+          </el-tab-pane>
+          <el-tab-pane
+            v-if="showMindbotSchoolTabs"
+            name="mindbot_log"
+            :label="t('admin.mindbot.tabLog')"
+            lazy
+          >
+            <AdminSchoolMindBotTab
+              v-if="orgId && schoolDialogTab === 'mindbot_log'"
+              :org-id="orgId"
+              embedded-pane="log"
+              :active="true"
+            />
+          </el-tab-pane>
+          <el-tab-pane
+            v-if="showMindbotSchoolTabs"
+            name="mindbot_monitor"
+            :label="t('admin.mindbot.tabMonitor')"
+            lazy
+          >
+            <AdminSchoolMindBotTab
+              v-if="orgId && schoolDialogTab === 'mindbot_monitor'"
+              :org-id="orgId"
+              embedded-pane="monitor"
+              :active="true"
             />
           </el-tab-pane>
           <el-tab-pane
@@ -807,17 +837,12 @@ onBeforeUnmount(() => {
               v-model:pending-manager-ids="pendingManagerIds"
               :org-name="orgName"
               :org-active-state="orgActiveState"
-              :invitation-code="invitationCode"
-              :invitation-code-loading="invitationCodeLoading"
               :managers="managers"
               :org-users="orgUsers"
               :managers-loading="managersLoading"
               :add-managers-loading="addManagersLoading"
               :lock-loading="lockLoading"
-              :refresh-code-loading="refreshCodeLoading"
               @toggleLock="toggleLock"
-              @refreshInvitationCode="refreshInvitationCode"
-              @copyShareMessage="copyShareMessage"
               @addManagers="addManagers"
               @removeManager="removeManager"
             />
@@ -827,8 +852,21 @@ onBeforeUnmount(() => {
     </div>
     <template #footer>
       <div
-        class="mindbot-dialog-footer flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:flex-wrap"
+        class="mindbot-dialog-footer flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
       >
+        <div
+          v-if="showMindbotFooterEnable"
+          class="mindbot-footer-enable flex min-w-0 items-center gap-2 sm:gap-2.5 order-last sm:order-first"
+        >
+          <span class="mindbot-footer-enable__label">{{ t('admin.mindbot.enabled') }}</span>
+          <el-switch
+            v-model="mindbotEnabled"
+            class="mindbot-footer-enabled-switch shrink-0"
+          />
+        </div>
+        <div
+          class="flex shrink-0 flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:flex-wrap sm:ml-auto"
+        >
         <el-button
           v-if="schoolDialogTab === 'general' && orgId"
           type="primary"
@@ -855,6 +893,15 @@ onBeforeUnmount(() => {
           </el-button>
         </el-tooltip>
         <el-button
+          v-else-if="isMindbotSchoolTab(schoolDialogTab) && orgId && mindbotSaveEnabled"
+          type="primary"
+          class="mindbot-pill mindbot-pill--footer-save w-full sm:w-auto"
+          :loading="mindbotSaving"
+          @click="saveMindbotSettings()"
+        >
+          {{ t('admin.mindbot.save') }}
+        </el-button>
+        <el-button
           class="mindbot-pill mindbot-pill--footer-cancel w-full sm:w-auto"
           @click="close"
         >
@@ -871,6 +918,7 @@ onBeforeUnmount(() => {
           <el-icon class="mr-1"><Delete /></el-icon>
           {{ t('admin.deleteOrganization') }}
         </el-button>
+        </div>
       </div>
     </template>
   </el-dialog>
@@ -980,7 +1028,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .school-settings-dialog.mindbot-swiss-dialog {
-  width: min(92vw, 760px) !important;
+  width: min(92vw, 800px) !important;
   max-width: 100%;
   border-radius: 2px;
   overflow: hidden;
@@ -1025,5 +1073,19 @@ onBeforeUnmount(() => {
   padding-left: 1rem;
   padding-right: 1rem;
   font-weight: 500;
+}
+
+.mindbot-footer-enable__label {
+  font-family: var(--geek-ulog-font);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #e2e8f0;
+  line-height: 1.35;
+}
+
+.mindbot-footer-enabled-switch.el-switch {
+  --el-switch-on-color: #22d3ee;
 }
 </style>

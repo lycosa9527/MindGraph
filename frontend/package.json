@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.117.23",
+  "version": "5.117.24",
   "type": "module",
   "engines": {
     "node": ">=22.18.0"
@@ -22,7 +22,7 @@
     "check:scripts": "node scripts/sync-version.ts && node scripts/check-i18n-keys.ts",
     "check:dep0205": "node scripts/check-dep0205.mjs",
     "check:vueuse-pure": "node scripts/check-vueuse-pure-annotations.mjs",
-    "postinstall": "patch-package",
+    "postinstall": "patch-package && node scripts/ensure-cross-platform-native-deps.mjs",
     "i18n:check-keys": "node scripts/check-i18n-keys.ts",
     "i18n:check-picker-stubs": "node scripts/check-i18n-picker-stubs.ts",
     "i18n:materialize-from-en": "node scripts/materialize-locale-bundles-from-en.ts",

@@ -476,6 +476,11 @@ function onDialogClosed(): void {
               name="dify"
               :label="t('admin.mindbot.tabDify')"
             >
+              <p
+                class="mindbot-config-banner rounded-sm border px-3 py-2 text-xs font-mono leading-snug m-0 mb-3"
+              >
+                {{ t('admin.mindbot.standaloneDifySchoolHint') }}
+              </p>
               <div
                 class="mindbot-section-label mindbot-swiss-section-label text-[11px] font-semibold uppercase tracking-[0.14em] mb-1.5 mt-0.5"
               >
@@ -547,17 +552,6 @@ function onDialogClosed(): void {
                     </div>
                   </template>
                 </el-form-item>
-                <el-form-item>
-                  <el-input
-                    v-model="form.dify_inputs_json"
-                    type="textarea"
-                    :rows="4"
-                    class="mindbot-swiss-input font-mono text-sm w-full max-w-2xl"
-                  />
-                  <div class="mindbot-swiss-hint text-xs mt-1.5 leading-relaxed max-w-2xl">
-                    {{ t('admin.mindbot.difyInputsJsonHint') }}
-                  </div>
-                </el-form-item>
                 <el-form-item :label="t('admin.mindbot.difyTimeout')">
                   <el-input-number
                     v-model="form.dify_timeout_seconds"
@@ -577,14 +571,17 @@ function onDialogClosed(): void {
                     controls-position="right"
                   />
                 </el-form-item>
-                <el-form-item :label="t('admin.mindbot.difyShowChainOfThought')">
-                  <div class="mindbot-cot-field max-w-2xl">
-                    <el-switch
-                      v-model="form.show_chain_of_thought"
-                      class="mindbot-cot-switch"
-                    />
-                  </div>
-                </el-form-item>
+                  <el-form-item
+                    :label="t('admin.mindbot.difyShowChainOfThought')"
+                    class="mindbot-cot-form-item"
+                  >
+                    <div class="mindbot-cot-field">
+                      <el-switch
+                        v-model="form.show_chain_of_thought"
+                        class="mindbot-cot-switch mindbot-footer-enabled-switch"
+                      />
+                    </div>
+                  </el-form-item>
               </div>
             </el-tab-pane>
 
@@ -776,9 +773,8 @@ html.dark .mindbot-section-label::before {
 
 .mindbot-cot-field {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0;
+  align-items: center;
+  line-height: 1;
   width: 100%;
   max-width: 42rem;
 }

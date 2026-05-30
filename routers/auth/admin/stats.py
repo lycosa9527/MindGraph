@@ -14,7 +14,7 @@ from typing import Optional, Dict, Any
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import and_, desc, select
+from sqlalchemy import and_, desc, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.functions import (
@@ -56,6 +56,61 @@ router = APIRouter()
 def _sql_count(column: Any) -> ColumnElement:
     """Helper function to call count for SQLAlchemy queries."""
     return sql_count(column)
+
+
+def _token_usage_service_filter(service: Optional[str]) -> Optional[ColumnElement]:
+    """Filter TokenUsage rows by MindGraph vs MindMate (matches token-stats breakdown)."""
+    if service == "mindmate":
+        return TokenUsage.request_type == "mindmate"
+    if service == "mindgraph":
+        return or_(
+            TokenUsage.request_type != "mindmate",
+            TokenUsage.request_type.is_(None),
+        )
+    return None
+
+
+async def _token_stats_by_org_today(
+    db: AsyncSession,
+    today_start,
+    service: Optional[str] = None,
+) -> Dict[str, Dict[str, Any]]:
+    """Per-organization token usage for the current Beijing calendar day."""
+    token_join = [
+        Organization.id == TokenUsage.organization_id,
+        TokenUsage.success,
+        TokenUsage.created_at >= today_start,
+    ]
+    service_filter = _token_usage_service_filter(service)
+    if service_filter is not None:
+        token_join.append(service_filter)
+
+    org_rows = (
+        await db.execute(
+            select(
+                Organization.id,
+                Organization.name,
+                sa_coalesce(sa_sum(TokenUsage.input_tokens), 0).label("input_tokens"),
+                sa_coalesce(sa_sum(TokenUsage.output_tokens), 0).label("output_tokens"),
+                sa_coalesce(sa_sum(TokenUsage.total_tokens), 0).label("total_tokens"),
+                sa_coalesce(_sql_count(TokenUsage.id), 0).label("request_count"),
+            )
+            .outerjoin(TokenUsage, and_(*token_join))
+            .group_by(Organization.id, Organization.name)
+        )
+    ).all()
+
+    by_org: Dict[str, Dict[str, Any]] = {}
+    for org_stat in org_rows:
+        if org_stat.request_count and org_stat.request_count > 0:
+            by_org[org_stat.name] = {
+                "org_id": org_stat.id,
+                "input_tokens": int(org_stat.input_tokens or 0),
+                "output_tokens": int(org_stat.output_tokens or 0),
+                "total_tokens": int(org_stat.total_tokens or 0),
+                "request_count": int(org_stat.request_count or 0),
+            }
+    return by_org
 
 
 @router.get("/admin/status")
@@ -126,7 +181,9 @@ async def get_stats_admin(
     token_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
 
     # Per-organization token usage (Beijing today) for dashboard ranking
-    token_stats_by_org = {}
+    token_stats_by_org: Dict[str, Dict[str, Any]] = {}
+    token_stats_by_org_mindgraph: Dict[str, Dict[str, Any]] = {}
+    token_stats_by_org_mindmate: Dict[str, Dict[str, Any]] = {}
     top_users_by_tokens_today: list[Dict[str, Any]] = []
 
     try:
@@ -148,40 +205,9 @@ async def get_stats_admin(
                 "total_tokens": int(week_token_stats.total_tokens or 0),
             }
 
-        # Per-organization token usage for the current Beijing calendar day
-        # (for school ranking on the admin dashboard)
-        org_token_stats = (
-            await db.execute(
-                select(
-                    Organization.id,
-                    Organization.name,
-                    sa_coalesce(sa_sum(TokenUsage.input_tokens), 0).label("input_tokens"),
-                    sa_coalesce(sa_sum(TokenUsage.output_tokens), 0).label("output_tokens"),
-                    sa_coalesce(sa_sum(TokenUsage.total_tokens), 0).label("total_tokens"),
-                    sa_coalesce(_sql_count(TokenUsage.id), 0).label("request_count"),
-                )
-                .outerjoin(
-                    TokenUsage,
-                    and_(
-                        Organization.id == TokenUsage.organization_id,
-                        TokenUsage.success,
-                        TokenUsage.created_at >= today_start,
-                    ),
-                )
-                .group_by(Organization.id, Organization.name)
-            )
-        ).all()
-
-        # Only include organizations with token usage today
-        for org_stat in org_token_stats:
-            if org_stat.request_count and org_stat.request_count > 0:
-                token_stats_by_org[org_stat.name] = {
-                    "org_id": org_stat.id,
-                    "input_tokens": int(org_stat.input_tokens or 0),
-                    "output_tokens": int(org_stat.output_tokens or 0),
-                    "total_tokens": int(org_stat.total_tokens or 0),
-                    "request_count": int(org_stat.request_count or 0),
-                }
+        token_stats_by_org = await _token_stats_by_org_today(db, today_start)
+        token_stats_by_org_mindgraph = await _token_stats_by_org_today(db, today_start, "mindgraph")
+        token_stats_by_org_mindmate = await _token_stats_by_org_today(db, today_start, "mindmate")
 
         top_user_rows = (
             await db.execute(
@@ -228,6 +254,8 @@ async def get_stats_admin(
         "recent_registrations": recent_registrations,
         "token_stats": token_stats,  # Global token stats
         "token_stats_by_org": token_stats_by_org,
+        "token_stats_by_org_mindgraph": token_stats_by_org_mindgraph,
+        "token_stats_by_org_mindmate": token_stats_by_org_mindmate,
         "top_users_by_tokens_today": top_users_by_tokens_today,
     }
 

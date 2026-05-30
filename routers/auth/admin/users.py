@@ -25,7 +25,8 @@ from config.database import get_async_db
 from models.domain.auth import Organization, User
 from models.domain.messages import Messages, Language
 from models.domain.token_usage import TokenUsage
-from services.auth.phone_uniqueness import other_user_id_with_phone
+from services.auth.phone_uniqueness import other_user_id_with_email, other_user_id_with_phone
+from utils.email_validation import validate_email_for_api
 from services.auth.user_fk_cleanup import delete_user_fk_dependent_rows
 from services.auth.password_security import (
     invalidate_user_cache_after_password_write,
@@ -33,8 +34,13 @@ from services.auth.password_security import (
 )
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
-from utils.auth.role_constants import normalize_role
 from utils.auth import hash_password
+
+from services.auth.admin_user_list_rows import (
+    build_admin_user_detail_payload,
+    diagram_quota_for_user,
+    enrich_admin_user_list_rows,
+)
 
 from ..dependencies import get_language_dependency, require_admin
 from ..helpers import utc_to_beijing_iso
@@ -113,31 +119,12 @@ async def list_users_admin(
     except (ImportError, Exception) as e:
         logger.debug("TokenUsage not available yet: %s", e)
 
-    result = []
-    for user in users:
-        org = organizations_by_id.get(user.organization_id) if user.organization_id else None
-
-        masked_phone = user.phone
-        if len(user.phone) == 11:
-            masked_phone = user.phone[:3] + "****" + user.phone[-4:]
-
-        user_token_stats = token_stats_by_user.get(user.id, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
-
-        result.append(
-            {
-                "id": user.id,
-                "phone": masked_phone,
-                "name": user.name,
-                "role": normalize_role(getattr(user, "role", None)),
-                "organization_id": user.organization_id,
-                "organization_code": org.code if org else None,
-                "organization_name": org.name if org else None,
-                "locked_until": utc_to_beijing_iso(user.locked_until),
-                "created_at": utc_to_beijing_iso(user.created_at),
-                "token_stats": user_token_stats,
-                "email_login_whitelisted_from_cn": getattr(user, "email_login_whitelisted_from_cn", False),
-            }
-        )
+    result = await enrich_admin_user_list_rows(
+        db,
+        users,
+        organizations_by_id,
+        token_stats_by_user,
+    )
 
     return {
         "users": result,
@@ -179,18 +166,12 @@ async def get_user_admin(
         user_id,
     )
 
-    return {
-        "id": user.id,
-        "phone": user.phone,
-        "name": user.name,
-        "role": normalize_role(getattr(user, "role", None)),
-        "organization_id": user.organization_id,
-        "organization_code": org.code if org else None,
-        "organization_name": org.name if org else None,
-        "locked_until": utc_to_beijing_iso(user.locked_until),
-        "created_at": utc_to_beijing_iso(user.created_at),
-        "email_login_whitelisted_from_cn": getattr(user, "email_login_whitelisted_from_cn", False),
-    }
+    diagram_counts = await diagram_quota_for_user(db, user_id)
+    return build_admin_user_detail_payload(
+        user,
+        org,
+        diagram_counts["diagram_count"],
+    )
 
 
 @router.put("/admin/users/{user_id}", dependencies=[Depends(require_admin)])
@@ -235,6 +216,20 @@ async def update_user_admin(
             phone_will_change = True
         last_requested_new_phone = new_phone
         user.phone = new_phone
+
+    if "email" in request:
+        raw_email = request.get("email")
+        if raw_email is None or (isinstance(raw_email, str) and not raw_email.strip()):
+            user.email = None
+        else:
+            new_email = validate_email_for_api(str(raw_email).strip(), lang)
+            current_email = getattr(user, "email", None)
+            if new_email != current_email:
+                conflict = await other_user_id_with_email(db, new_email, user.id)
+                if conflict is not None:
+                    error_msg = Messages.error("email_already_registered", lang)
+                    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
+            user.email = new_email
 
     if "name" in request:
         new_name = request["name"].strip()
