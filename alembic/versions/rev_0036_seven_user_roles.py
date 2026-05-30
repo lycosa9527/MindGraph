@@ -46,23 +46,9 @@ def downgrade() -> None:
     if not inspector.has_table("users"):
         return
 
-    op.execute(
-        sa.text(
-            "UPDATE users SET role = 'user' WHERE role IN "
-            "('teacher', 'personal_trial', 'personal_paid')"
-        )
-    )
-    op.execute(
-        sa.text(
-            "UPDATE users SET role = 'manager' WHERE role = 'school_admin'"
-        )
-    )
-    op.execute(
-        sa.text(
-            "UPDATE users SET role = 'admin' WHERE role IN "
-            "('superadmin', 'platform_bd', 'expert')"
-        )
-    )
+    op.execute(sa.text("UPDATE users SET role = 'user' WHERE role IN ('teacher', 'personal_trial', 'personal_paid')"))
+    op.execute(sa.text("UPDATE users SET role = 'manager' WHERE role = 'school_admin'"))
+    op.execute(sa.text("UPDATE users SET role = 'admin' WHERE role IN ('superadmin', 'platform_bd', 'expert')"))
 
     cols = {c["name"]: c for c in inspector.get_columns("users")}
     role_col = cols.get("role")

@@ -95,9 +95,7 @@ async def _organization_for_user(db: AsyncSession, user: User) -> Organization |
     org = await org_cache.get_by_id(org_id)
     if org is not None:
         return org
-    return (
-        await db.execute(select(Organization).where(Organization.id == org_id))
-    ).scalar_one_or_none()
+    return (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
 
 
 async def user_has_school_tier_feature(
@@ -159,9 +157,7 @@ def diagram_storage_bytes_per_member_for_tier(tier: str) -> int:
 
 def diagram_storage_limit_bytes_for_org(org: Organization, member_count: int) -> int:
     """Diagram storage cap (bytes) = tier GB per member × current member count."""
-    per_member = diagram_storage_bytes_per_member_for_tier(
-        normalize_school_tier(getattr(org, "school_tier", None))
-    )
+    per_member = diagram_storage_bytes_per_member_for_tier(normalize_school_tier(getattr(org, "school_tier", None)))
     return per_member * max(int(member_count), 0)
 
 

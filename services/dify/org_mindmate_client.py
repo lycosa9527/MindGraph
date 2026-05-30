@@ -37,9 +37,7 @@ async def _org_dify_credentials(
     db: AsyncSession,
     organization_id: int,
 ) -> Optional[tuple[str, str]]:
-    org = (
-        await db.execute(select(Organization).where(Organization.id == organization_id))
-    ).scalar_one_or_none()
+    org = (await db.execute(select(Organization).where(Organization.id == organization_id))).scalar_one_or_none()
     if org is None:
         return None
     base_url = (cast(Optional[str], getattr(org, "dify_api_base_url", None)) or "").strip()
@@ -68,9 +66,7 @@ async def resolve_mindmate_dify_client(
     org_timeout_set = False
 
     if organization_id is not None:
-        org = (
-            await db.execute(select(Organization).where(Organization.id == organization_id))
-        ).scalar_one_or_none()
+        org = (await db.execute(select(Organization).where(Organization.id == organization_id))).scalar_one_or_none()
         if org is not None:
             org_timeout = getattr(org, "dify_timeout_seconds", None)
             if org_timeout is not None:

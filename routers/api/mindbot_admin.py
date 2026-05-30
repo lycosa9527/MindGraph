@@ -190,20 +190,14 @@ async def admin_create_mindbot_config(
     if not app_secret:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=(
-                f"{MindbotErrorCode.ADMIN_SECRETS_REQUIRED.value}: "
-                "dingtalk_app_secret is required for new config"
-            ),
+            detail=(f"{MindbotErrorCode.ADMIN_SECRETS_REQUIRED.value}: dingtalk_app_secret is required for new config"),
         )
 
     dify_key_raw = (payload.dify_api_key or "").strip()
     if not payload.use_org_dify_settings and not dify_key_raw:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=(
-                f"{MindbotErrorCode.ADMIN_SECRETS_REQUIRED.value}: "
-                "dify_api_key is required for new config"
-            ),
+            detail=(f"{MindbotErrorCode.ADMIN_SECRETS_REQUIRED.value}: dify_api_key is required for new config"),
         )
 
     dify_settings = _resolved_dify_settings(
@@ -228,18 +222,12 @@ async def admin_create_mindbot_config(
         dify_inputs_json=(payload.dify_inputs_json or "").strip() or None,
         dify_timeout_seconds=int(dify_settings["dify_timeout_seconds"]),
         show_chain_of_thought_oto=bool(dify_settings["show_chain_of_thought_oto"]),
-        show_chain_of_thought_internal_group=bool(
-            dify_settings["show_chain_of_thought_internal_group"]
-        ),
-        show_chain_of_thought_cross_org_group=bool(
-            dify_settings["show_chain_of_thought_cross_org_group"]
-        ),
+        show_chain_of_thought_internal_group=bool(dify_settings["show_chain_of_thought_internal_group"]),
+        show_chain_of_thought_cross_org_group=bool(dify_settings["show_chain_of_thought_cross_org_group"]),
         chain_of_thought_max_chars=int(dify_settings["chain_of_thought_max_chars"]),
         dingtalk_ai_card_template_id=(payload.dingtalk_ai_card_template_id or "").strip() or None,
         dingtalk_ai_card_param_key=(payload.dingtalk_ai_card_param_key or "").strip() or None,
-        dingtalk_ai_card_streaming_max_chars=int(
-            dify_settings["dingtalk_ai_card_streaming_max_chars"]
-        ),
+        dingtalk_ai_card_streaming_max_chars=int(dify_settings["dingtalk_ai_card_streaming_max_chars"]),
         use_org_dify_settings=payload.use_org_dify_settings,
         is_enabled=payload.is_enabled,
     )
@@ -346,20 +334,14 @@ async def admin_update_mindbot_config(
         existing.dify_inputs_json = (payload.dify_inputs_json or "").strip() or None
     existing.dify_timeout_seconds = int(dify_settings["dify_timeout_seconds"])
     existing.show_chain_of_thought_oto = bool(dify_settings["show_chain_of_thought_oto"])
-    existing.show_chain_of_thought_internal_group = bool(
-        dify_settings["show_chain_of_thought_internal_group"]
-    )
-    existing.show_chain_of_thought_cross_org_group = bool(
-        dify_settings["show_chain_of_thought_cross_org_group"]
-    )
+    existing.show_chain_of_thought_internal_group = bool(dify_settings["show_chain_of_thought_internal_group"])
+    existing.show_chain_of_thought_cross_org_group = bool(dify_settings["show_chain_of_thought_cross_org_group"])
     existing.chain_of_thought_max_chars = int(dify_settings["chain_of_thought_max_chars"])
     if "dingtalk_ai_card_template_id" in payload.model_fields_set:
         existing.dingtalk_ai_card_template_id = (payload.dingtalk_ai_card_template_id or "").strip() or None
     if "dingtalk_ai_card_param_key" in payload.model_fields_set:
         existing.dingtalk_ai_card_param_key = (payload.dingtalk_ai_card_param_key or "").strip() or None
-    existing.dingtalk_ai_card_streaming_max_chars = int(
-        dify_settings["dingtalk_ai_card_streaming_max_chars"]
-    )
+    existing.dingtalk_ai_card_streaming_max_chars = int(dify_settings["dingtalk_ai_card_streaming_max_chars"])
     if "use_org_dify_settings" in payload.model_fields_set and payload.use_org_dify_settings is not None:
         existing.use_org_dify_settings = bool(payload.use_org_dify_settings)
     existing.is_enabled = payload.is_enabled

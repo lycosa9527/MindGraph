@@ -369,10 +369,10 @@ async def get_user_weekly_tokens(
 ) -> dict[str, Any]:
     """Get weekly token usage for a specific user (ADMIN ONLY)."""
     user = (
-        await db.execute(
-            select(User).where(User.id == user_id, User.role.in_(tuple(TEACHER_ROLES)))
-        )
-    ).scalars().first()
+        (await db.execute(select(User).where(User.id == user_id, User.role.in_(tuple(TEACHER_ROLES)))))
+        .scalars()
+        .first()
+    )
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     beijing_now = get_beijing_now()
@@ -414,10 +414,10 @@ async def get_user_detail(
 ) -> dict[str, Any]:
     """Get user detail with usage metrics and token stats (ADMIN ONLY)."""
     user = (
-        await db.execute(
-            select(User).where(User.id == user_id, User.role.in_(tuple(TEACHER_ROLES)))
-        )
-    ).scalars().first()
+        (await db.execute(select(User).where(User.id == user_id, User.role.in_(tuple(TEACHER_ROLES)))))
+        .scalars()
+        .first()
+    )
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     beijing_now = get_beijing_now()

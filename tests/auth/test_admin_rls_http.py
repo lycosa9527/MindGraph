@@ -41,18 +41,14 @@ def test_teacher_denied_school_stats(client: TestClient) -> None:
 
 
 def test_school_admin_cross_org_denied(client: TestClient) -> None:
-    app.dependency_overrides[get_current_user] = lambda: _make_user(
-        "school_admin", organization_id=42
-    )
+    app.dependency_overrides[get_current_user] = lambda: _make_user("school_admin", organization_id=42)
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     response = client.get("/api/auth/admin/stats/school?organization_id=99")
     assert response.status_code == 403
 
 
 def test_school_admin_cross_org_school_users_denied(client: TestClient) -> None:
-    app.dependency_overrides[get_current_user] = lambda: _make_user(
-        "school_admin", organization_id=42
-    )
+    app.dependency_overrides[get_current_user] = lambda: _make_user("school_admin", organization_id=42)
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     response = client.get("/api/auth/admin/school/users?organization_id=99")
     assert response.status_code == 403
@@ -60,18 +56,14 @@ def test_school_admin_cross_org_school_users_denied(client: TestClient) -> None:
 
 def test_school_admin_missing_org_query_not_cross_org_error(client: TestClient) -> None:
     """Managers omit organization_id; must not be treated as cross-org (403)."""
-    app.dependency_overrides[get_current_user] = lambda: _make_user(
-        "school_admin", organization_id=42
-    )
+    app.dependency_overrides[get_current_user] = lambda: _make_user("school_admin", organization_id=42)
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     response = client.get("/api/auth/admin/stats/school")
     assert response.status_code != 403
 
 
 def test_school_admin_denied_global_stats(client: TestClient) -> None:
-    app.dependency_overrides[get_current_user] = lambda: _make_user(
-        "school_admin", organization_id=42
-    )
+    app.dependency_overrides[get_current_user] = lambda: _make_user("school_admin", organization_id=42)
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     response = client.get("/api/auth/admin/stats")
     assert response.status_code == 403
@@ -118,9 +110,7 @@ def test_platform_bd_mutation_blocked_without_edit_cap():
 
 
 def test_school_admin_cross_org_token_stats_denied(client: TestClient) -> None:
-    app.dependency_overrides[get_current_user] = lambda: _make_user(
-        "school_admin", organization_id=42
-    )
+    app.dependency_overrides[get_current_user] = lambda: _make_user("school_admin", organization_id=42)
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     response = client.get("/api/auth/admin/stats/school/token-stats?organization_id=99")
     assert response.status_code == 403

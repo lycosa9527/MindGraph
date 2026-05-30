@@ -75,10 +75,7 @@ def test_parse_school_member_batch_deduplicates_phones() -> None:
 
 
 def test_parse_school_member_batch_rejects_too_many_rows() -> None:
-    payload = [
-        {"phone": f"138{index:08d}", "name": f"User{index}"}
-        for index in range(MAX_BATCH_MEMBERS + 1)
-    ]
+    payload = [{"phone": f"138{index:08d}", "name": f"User{index}"} for index in range(MAX_BATCH_MEMBERS + 1)]
     with pytest.raises(HTTPException) as exc:
         parse_school_member_batch(payload, "en")
     assert exc.value.status_code == 400

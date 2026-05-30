@@ -92,7 +92,7 @@ def validate_school_member_name(name: str, lang: Language) -> str:
     if len(normalized) > MAX_MEMBER_NAME_LENGTH:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=Messages.error("name_too_long", lang=lang, MAX_MEMBER_NAME_LENGTH),
+            detail=Messages.error("name_too_long", MAX_MEMBER_NAME_LENGTH, lang=lang),
         )
     return normalized
 
@@ -240,9 +240,7 @@ async def create_school_member_batch(
     await assert_batch_member_capacity(db, org, members, lang)
 
     phones = [member.phone for member in members]
-    existing_rows = (
-        await db.execute(select(User.phone).where(User.phone.in_(phones)))
-    ).scalars().all()
+    existing_rows = (await db.execute(select(User.phone).where(User.phone.in_(phones)))).scalars().all()
     existing_phones = {str(phone) for phone in existing_rows if phone}
 
     created: list[User] = []

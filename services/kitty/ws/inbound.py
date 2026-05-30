@@ -110,9 +110,7 @@ async def dispatch_kitty_ws_inbound_message(
                 text[:120],
                 voice_session_id=voice_session_id,
             )
-            voice_sessions[voice_session_id]["conversation_history"].append(
-                {"role": "user", "content": text}
-            )
+            voice_sessions[voice_session_id]["conversation_history"].append({"role": "user", "content": text})
             bus = get_session_event_bus(voice_session_id)
             await bus.emit(
                 KittyEvent(
@@ -142,18 +140,12 @@ async def dispatch_kitty_ws_inbound_message(
     if msg_type == "context_update":
         new_context_in = message.get("context", {}) or {}
         cur_panel = voice_sessions[voice_session_id].get("active_panel", "none")
-        active_panel = (
-            message.get("active_panel") or new_context_in.get("active_panel") or cur_panel or "none"
-        )
+        active_panel = message.get("active_panel") or new_context_in.get("active_panel") or cur_panel or "none"
         session_dt = (
-            voice_sessions[voice_session_id].get("diagram_type")
-            or new_context_in.get("diagram_type")
-            or "circle_map"
+            voice_sessions[voice_session_id].get("diagram_type") or new_context_in.get("diagram_type") or "circle_map"
         )
         client_lane = voice_sessions[voice_session_id].get("_kitty_client_lane")
-        delta_dd = (
-            new_context_in.get("diagram_data") if isinstance(new_context_in.get("diagram_data"), dict) else {}
-        )
+        delta_dd = new_context_in.get("diagram_data") if isinstance(new_context_in.get("diagram_data"), dict) else {}
         lib_raw = new_context_in.get("diagram_library_id")
         prefer_server = (
             client_lane == "mobile"
@@ -219,9 +211,7 @@ async def dispatch_kitty_ws_inbound_message(
         )
         persist_library = message.get("persist_library") is True
         library_snapshot_raw = message.get("library_snapshot")
-        library_snapshot = (
-            library_snapshot_raw if isinstance(library_snapshot_raw, dict) else None
-        )
+        library_snapshot = library_snapshot_raw if isinstance(library_snapshot_raw, dict) else None
         try:
             mutation_out = await apply_kitty_ws_context_patch(
                 hub,
@@ -248,9 +238,7 @@ async def dispatch_kitty_ws_inbound_message(
                             diagram_type=new_diagram_type,
                             active_panel=res_panel,
                             expected_revision=fresh_rev,
-                            idempotency_key=(
-                                f"{idempotency_key}-retry" if idempotency_key else None
-                            ),
+                            idempotency_key=(f"{idempotency_key}-retry" if idempotency_key else None),
                             persist_library=persist_library,
                             library_snapshot=library_snapshot,
                         )

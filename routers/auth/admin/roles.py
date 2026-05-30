@@ -96,11 +96,7 @@ async def list_admins(
     Returns users where role is superadmin (or legacy admin), plus env-configured
     ADMIN_PHONES and ADMIN_USER_IDS as read-only reference.
     """
-    admin_stmt = (
-        select(User)
-        .where(User.role.in_(tuple(SUPERADMIN_ROLES)))
-        .order_by(User.created_at.asc())
-    )
+    admin_stmt = select(User).where(User.role.in_(tuple(SUPERADMIN_ROLES))).order_by(User.created_at.asc())
     admin_users = (await db.execute(admin_stmt)).scalars().all()
 
     db_admin_ids = {u.id for u in admin_users}
@@ -164,9 +160,7 @@ async def list_admins(
     return {
         "admins": result,
         "env_admins": env_admins,
-        "env_admins_note": (
-            "Configured via ADMIN_PHONES and ADMIN_USER_IDS environment variables (read-only)"
-        ),
+        "env_admins_note": ("Configured via ADMIN_PHONES and ADMIN_USER_IDS environment variables (read-only)"),
     }
 
 
@@ -211,11 +205,7 @@ async def update_user_role(
         }
 
     if old_role == ROLE_SUPERADMIN and role != ROLE_SUPERADMIN:
-        count_stmt = (
-            select(sa_count())
-            .select_from(User)
-            .where(User.role.in_(tuple(SUPERADMIN_ROLES)))
-        )
+        count_stmt = select(sa_count()).select_from(User).where(User.role.in_(tuple(SUPERADMIN_ROLES)))
         admin_count = (await db.execute(count_stmt)).scalar_one()
         if admin_count <= 1:
             raise HTTPException(

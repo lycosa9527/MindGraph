@@ -85,9 +85,7 @@ async def kitty_ws_handle_append_image(
         logger.debug("commit_audio_buffer after image: %s", commit_err)
     try:
         await omni_client.create_response(
-            instructions=(
-                "请用两到三句话概括图片里的文字或可入图的要点；看不清就说看不清。"
-            ),
+            instructions=("请用两到三句话概括图片里的文字或可入图的要点；看不清就说看不清。"),
         )
     except (RuntimeError, ConnectionError, AttributeError) as resp_err:
         logger.debug("create_response after image: %s", resp_err)

@@ -65,8 +65,7 @@ def verify_kitty_control_shared_secret(envelope: Dict[str, Any]) -> bool:
     if not secret:
         if not getattr(config, "DEBUG", True):
             logger.warning(
-                "[KittyControl] control shared secret unavailable while DEBUG=False; "
-                "rejecting control messages",
+                "[KittyControl] control shared secret unavailable while DEBUG=False; rejecting control messages",
                 extra=kitty_extra("control_secret_missing_subscriber"),
             )
             return False

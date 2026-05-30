@@ -31,9 +31,7 @@ MIN_AVATAR_INPUT_PX = 64
 MAX_AVATAR_DECODE_PX = 4096
 MAX_GIF_FRAMES = 120
 DEFAULT_GIF_FRAME_MS = 100
-CANONICAL_AVATAR_RELATIVE_RE = re.compile(
-    r"^(?P<org_id>\d+)/(avatar\.(?:png|gif))$"
-)
+CANONICAL_AVATAR_RELATIVE_RE = re.compile(r"^(?P<org_id>\d+)/(avatar\.(?:png|gif))$")
 
 
 def mindmate_org_avatar_dir(org_id: int) -> Path:
@@ -50,9 +48,7 @@ def mindmate_org_avatar_public_url(org_id: int, *, animated: bool = False) -> st
 def mindmate_branding_list_fields(org: Organization) -> dict[str, Any]:
     """Serialized MindMate branding fields for admin organization list."""
     agent_name = (cast(Optional[str], getattr(org, "mindmate_agent_name", None)) or "").strip()
-    avatar_url = (
-        cast(Optional[str], getattr(org, "mindmate_agent_avatar_url", None)) or ""
-    ).strip()
+    avatar_url = (cast(Optional[str], getattr(org, "mindmate_agent_avatar_url", None)) or "").strip()
     return {
         "mindmate_agent_name": agent_name or None,
         "mindmate_agent_avatar_url": avatar_url or None,
@@ -126,18 +122,10 @@ def finalize_mindmate_avatar_upload(
     old_path = local_mindmate_avatar_path(old_avatar_url)
 
     if new_path is not None:
-        other_name = (
-            ORG_AVATAR_PNG_FILENAME
-            if new_path.name == ORG_AVATAR_GIF_FILENAME
-            else ORG_AVATAR_GIF_FILENAME
-        )
+        other_name = ORG_AVATAR_PNG_FILENAME if new_path.name == ORG_AVATAR_GIF_FILENAME else ORG_AVATAR_GIF_FILENAME
         _unlink_if_exists(org_dir / other_name)
 
-    if (
-        old_path is not None
-        and new_path is not None
-        and old_path.resolve() != new_path.resolve()
-    ):
+    if old_path is not None and new_path is not None and old_path.resolve() != new_path.resolve():
         _unlink_if_exists(old_path)
 
 
@@ -320,9 +308,7 @@ def _process_animated_gif_avatar(
     for frame_index in range(frame_count):
         opened.seek(frame_index)
         frame = opened.convert("RGBA")
-        frames.append(
-            _square_crop_resize(frame, enforce_min_size=frame_index == 0)
-        )
+        frames.append(_square_crop_resize(frame, enforce_min_size=frame_index == 0))
         raw_duration = opened.info.get("duration", DEFAULT_GIF_FRAME_MS)
         duration_ms = int(raw_duration) if raw_duration else DEFAULT_GIF_FRAME_MS
         if duration_ms < 1:

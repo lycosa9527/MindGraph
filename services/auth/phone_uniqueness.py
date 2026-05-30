@@ -55,9 +55,7 @@ async def other_user_id_with_email(
 ) -> Optional[int]:
     """If another user already has this email, return that user's id; otherwise None."""
     row = (
-        await db.execute(
-            select(User.id).where(User.email == email, User.id != exclude_user_id).limit(1)
-        )
+        await db.execute(select(User.id).where(User.email == email, User.id != exclude_user_id).limit(1))
     ).scalar_one_or_none()
     if row is None:
         return None

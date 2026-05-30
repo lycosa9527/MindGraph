@@ -123,7 +123,7 @@ async def compute_kitty_diagram_review_annotations(
     """
     payload_preview = _diagram_payload_for_inventory(diagram_type, diagram_data or {})
     inv_pairs = _flatten_id_text_pairs(diagram_data if isinstance(diagram_data, dict) else {})
-    inv_lines = [f'- id={nid!r} text={txt!r}' for nid, txt in inv_pairs[:200]]
+    inv_lines = [f"- id={nid!r} text={txt!r}" for nid, txt in inv_pairs[:200]]
 
     lang_note = (
         "If the user's message is primarily English, write summary/reason/suggestion fields in "
@@ -133,7 +133,7 @@ async def compute_kitty_diagram_review_annotations(
     prompt = (
         "You review K12 instructional diagrams for teaching quality and factual plausibility.\n"
         f"{lang_note}\n"
-        'Return ONLY a JSON object of this shape (no markdown):\n'
+        "Return ONLY a JSON object of this shape (no markdown):\n"
         '{"summary":"2-4 sentences overall","nodes":['
         '{"node_id":"<exact id from inventory or empty string>","node_text":"'
         '<optional label substring to match>","reason":"why this node/content is problematic or '
@@ -141,16 +141,15 @@ async def compute_kitty_diagram_review_annotations(
         f"]}}\n"
         "Rules:\n"
         f"- Prefer at most {_MAX_NODES_LLM} nodes.\n"
-        "- node_id MUST be copied exactly from the inventory when known; otherwise use \"\" "
+        '- node_id MUST be copied exactly from the inventory when known; otherwise use "" '
         "and rely on node_text.\n"
-        "- Be precise; if unsure about facts say so briefly in \"reason\" (do not invent "
+        '- Be precise; if unsure about facts say so briefly in "reason" (do not invent '
         "citations).\n"
         "- Omit trivial cosmetic issues unless they confuse learners.\n\n"
         f"User question:\n{user_text}\n\n"
         "Diagram payload (truncated if huge):\n"
         f"{json.dumps(payload_preview, ensure_ascii=False, default=str)}\n\n"
-        "Node id/text inventory:\n"
-        + ("\n".join(inv_lines) if inv_lines else "(no enumerated nodes)")
+        "Node id/text inventory:\n" + ("\n".join(inv_lines) if inv_lines else "(no enumerated nodes)")
     )
 
     empty: Dict[str, Any] = {"summary": "", "items": []}

@@ -41,7 +41,7 @@ from services.auth.admin_user_list_rows import (
     enrich_admin_user_list_rows,
 )
 from ..dependencies import get_language_dependency, require_panel_capability
-from ..helpers import commit_user_with_retry, utc_to_beijing_iso
+from ..helpers import commit_user_with_retry
 from .school_scope import resolve_school_dashboard_org_id
 
 logger = logging.getLogger(__name__)

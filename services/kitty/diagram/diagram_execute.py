@@ -35,9 +35,7 @@ async def execute_diagram_update(
     try:
         executed = False
         if action == "update_center":
-            executed = await _handle_update_center_action(
-                websocket, voice_session_id, command, session_context, target
-            )
+            executed = await _handle_update_center_action(websocket, voice_session_id, command, session_context, target)
 
         elif action == "update_node" and target:
             executed = await _handle_update_node_action(

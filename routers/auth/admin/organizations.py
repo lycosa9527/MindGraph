@@ -90,9 +90,7 @@ async def list_organizations_admin(
     _lang: Language = Depends(get_language_dependency),
 ):
     """List all organizations (ADMIN ONLY)"""
-    orgs = (
-        await db.execute(select(Organization).order_by(Organization.id))
-    ).scalars().all()
+    orgs = (await db.execute(select(Organization).order_by(Organization.id))).scalars().all()
     result = []
 
     user_counts_by_org = {}
@@ -802,9 +800,7 @@ async def list_organization_managers(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
     managers_stmt = (
-        select(User)
-        .where(User.organization_id == org_id, User.role.in_(tuple(SCHOOL_ADMIN_ROLES)))
-        .order_by(User.name)
+        select(User).where(User.organization_id == org_id, User.role.in_(tuple(SCHOOL_ADMIN_ROLES))).order_by(User.name)
     )
     managers = (await db.execute(managers_stmt)).scalars().all()
 

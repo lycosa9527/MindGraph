@@ -52,12 +52,10 @@ async def list_invite_organizations_admin(
 ):
     """List organizations for the invite-users tab (includes full invitation codes)."""
     orgs = (
-        await db.execute(
-            select(Organization)
-            .where(org_filter(scope, Organization.id))
-            .order_by(Organization.id)
-        )
-    ).scalars().all()
+        (await db.execute(select(Organization).where(org_filter(scope, Organization.id)).order_by(Organization.id)))
+        .scalars()
+        .all()
+    )
 
     user_counts_by_org: dict[int, int] = {}
     user_counts_stmt = (

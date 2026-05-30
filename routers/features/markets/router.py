@@ -288,10 +288,7 @@ async def my_entitlements(
 ) -> list[EntitlementOut]:
     require_markets_enabled()
     rows = await list_active_entitlements(db, user.id)
-    return [
-        EntitlementOut(**entitlement_to_dict(row, row.listing))
-        for row in rows
-    ]
+    return [EntitlementOut(**entitlement_to_dict(row, row.listing)) for row in rows]
 
 
 @router.get("/subscriptions", response_model=list[SubscriptionOut])

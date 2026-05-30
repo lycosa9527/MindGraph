@@ -21,24 +21,16 @@ import string
 
 # Exclude confusing letters/digits: O, 0, 1, I, L (and lowercase o, i, l)
 _CONFUSING_CHARS = frozenset("oO0iIlL1")
-_SAFE_CHARS = "".join(
-    c
-    for c in string.ascii_uppercase + string.digits
-    if c not in _CONFUSING_CHARS
-)
+_SAFE_CHARS = "".join(c for c in string.ascii_uppercase + string.digits if c not in _CONFUSING_CHARS)
 
-INVITE_PATTERN = re.compile(
-    rf"^[{re.escape(_SAFE_CHARS)}]{{3}}-[{re.escape(_SAFE_CHARS)}]{{3}}$"
-)
+INVITE_PATTERN = re.compile(rf"^[{re.escape(_SAFE_CHARS)}]{{3}}-[{re.escape(_SAFE_CHARS)}]{{3}}$")
 # Previous format (AAAA-XXXXX); accepted for lookup until codes are refreshed.
 INVITE_PATTERN_LEGACY = re.compile(r"^[A-Z]{4}-[A-Z0-9]{5}$")
 
 
 def invitation_code_is_valid(candidate: str) -> bool:
     """True if candidate matches the current or legacy invitation code format."""
-    return bool(
-        INVITE_PATTERN.fullmatch(candidate) or INVITE_PATTERN_LEGACY.fullmatch(candidate)
-    )
+    return bool(INVITE_PATTERN.fullmatch(candidate) or INVITE_PATTERN_LEGACY.fullmatch(candidate))
 
 
 def _random_part() -> str:

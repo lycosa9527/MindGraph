@@ -151,8 +151,7 @@ def build_omni_diagram_tools() -> List[Dict[str, Any]]:
                 "diagram_type": {
                     "type": "string",
                     "description": (
-                        "Diagram slug (mindmap, bubble_map, circle_map, …) or Chinese label "
-                        "(思维导图, 气泡图, …)"
+                        "Diagram slug (mindmap, bubble_map, circle_map, …) or Chinese label (思维导图, 气泡图, …)"
                     ),
                 },
                 "target": {
@@ -269,9 +268,7 @@ def omni_function_call_to_command(name: str, arguments_json: str) -> Dict[str, A
 
     if name == "open_desktop_canvas":
         raw_dt = args.get("diagram_type")
-        slug = normalize_voice_desktop_canvas_diagram_type(
-            raw_dt if isinstance(raw_dt, str) else None
-        )
+        slug = normalize_voice_desktop_canvas_diagram_type(raw_dt if isinstance(raw_dt, str) else None)
         cmd = {"action": "open_desktop_canvas", "confidence": 0.95}
         if slug is not None:
             cmd["diagram_type"] = slug

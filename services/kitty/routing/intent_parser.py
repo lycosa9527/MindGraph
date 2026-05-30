@@ -63,11 +63,7 @@ async def parse_voice_intent_with_tools(
         + KITTY_DIAGRAM_CATALOG_PROMPT
         + KITTY_VOICE_COMMAND_PROMPT
     )
-    user_prompt = (
-        f"Diagram type: {diagram_type}\n"
-        f"Recent turns:\n{recent or '(none)'}\n"
-        f"User: {command_text.strip()}"
-    )
+    user_prompt = f"Diagram type: {diagram_type}\nRecent turns:\n{recent or '(none)'}\nUser: {command_text.strip()}"
 
     try:
         result = await llm_service.chat(

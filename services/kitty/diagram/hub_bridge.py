@@ -39,12 +39,7 @@ def _preview_double_bubble_update_center(
 ) -> bool:
     left = command.get("left")
     right = command.get("right")
-    if not (
-        isinstance(left, str)
-        and left.strip()
-        and isinstance(right, str)
-        and right.strip()
-    ):
+    if not (isinstance(left, str) and left.strip() and isinstance(right, str) and right.strip()):
         return False
     diagram_data["left"] = left.strip()
     diagram_data["right"] = right.strip()
@@ -97,11 +92,7 @@ def _preview_update_node(
                 resolved_node_id = node.get("id") if isinstance(node, dict) else f"context_{idx}"
                 break
 
-    if (
-        resolved_node_id is None
-        or resolved_node_index is None
-        or not 0 <= resolved_node_index < len(nodes)
-    ):
+    if resolved_node_id is None or resolved_node_index is None or not 0 <= resolved_node_index < len(nodes):
         return False
 
     node = nodes[resolved_node_index]

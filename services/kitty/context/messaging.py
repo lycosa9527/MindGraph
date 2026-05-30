@@ -94,10 +94,9 @@ def user_requests_diagram_pedagogical_review(text: str) -> bool:
     if any(pat in lower for pat in _ENGLISH_REVIEW_SUBSTRINGS):
         return True
 
-    zh_diagram_focus = (
-        ("这张" in trimmed or "这幅" in trimmed or "这个" in trimmed)
-        and "图" in trimmed
-    ) or any(h in trimmed for h in _DIAGRAM_HINT_ZH)
+    zh_diagram_focus = (("这张" in trimmed or "这幅" in trimmed or "这个" in trimmed) and "图" in trimmed) or any(
+        h in trimmed for h in _DIAGRAM_HINT_ZH
+    )
 
     if not zh_diagram_focus:
         return False
@@ -408,9 +407,7 @@ def build_voice_instructions(
         extras = ""
         detail_block = ""
         if children:
-            nodes_list = (
-                f"\n  ({len(children)} nodes; exact content is in the Complete JSON specification below.)"
-            )
+            nodes_list = f"\n  ({len(children)} nodes; exact content is in the Complete JSON specification below.)"
         else:
             nodes_list = "\n  (No children array; see JSON for other fields.)"
     else:

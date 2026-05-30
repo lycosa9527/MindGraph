@@ -62,16 +62,10 @@ class Organization(Base):
     dify_api_key = Column(Text, nullable=True)
     dify_timeout_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=300)
     show_chain_of_thought_oto: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    show_chain_of_thought_internal_group: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
-    show_chain_of_thought_cross_org_group: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
+    show_chain_of_thought_internal_group: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    show_chain_of_thought_cross_org_group: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     chain_of_thought_max_chars: Mapped[int] = mapped_column(Integer, nullable=False, default=4000)
-    dingtalk_ai_card_streaming_max_chars: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=6500
-    )
+    dingtalk_ai_card_streaming_max_chars: Mapped[int] = mapped_column(Integer, nullable=False, default=6500)
 
     # Per-org MindMate branding (optional sidebar label + avatar)
     mindmate_agent_name = Column(String(MINDMATE_AGENT_NAME_MAX_LENGTH), nullable=True)

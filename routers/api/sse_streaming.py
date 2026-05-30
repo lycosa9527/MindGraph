@@ -108,11 +108,7 @@ async def ai_assistant_stream(
         user_id_for_tracking = current_user.id
         organization_id_for_tracking = getattr(current_user, "organization_id", None)
 
-    dify_user_id = (
-        mindmate_dify_user_id(current_user)
-        if current_user and hasattr(current_user, "id")
-        else req.user_id
-    )
+    dify_user_id = mindmate_dify_user_id(current_user) if current_user and hasattr(current_user, "id") else req.user_id
 
     async def generate():
         """Async generator function for SSE streaming."""

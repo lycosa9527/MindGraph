@@ -76,9 +76,7 @@ class SessionEventBus:
             except asyncio.CancelledError:
                 pass
             self._consumer_task = None
-        await self.emit(
-            KittyEvent(kind="stop", voice_session_id=self.voice_session_id, payload={})
-        )
+        await self.emit(KittyEvent(kind="stop", voice_session_id=self.voice_session_id, payload={}))
 
     async def _consume_loop(self) -> None:
         while not self._closed:

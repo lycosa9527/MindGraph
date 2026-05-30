@@ -34,10 +34,7 @@ def _animated_gif_bytes(
     buffer = BytesIO()
     width, height = frame_size
     palette = ("red", "green", "blue", "yellow", "purple", "orange")
-    frames = [
-        Image.new("RGBA", (width, height), palette[index % len(palette)])
-        for index in range(frame_count)
-    ]
+    frames = [Image.new("RGBA", (width, height), palette[index % len(palette)]) for index in range(frame_count)]
     first, *rest = frames
     first.save(
         buffer,
@@ -248,10 +245,7 @@ def test_local_mindmate_avatar_path_strips_cache_buster_for_gif() -> None:
 def test_local_mindmate_avatar_path_rejects_non_canonical_paths() -> None:
     assert branding.local_mindmate_avatar_path("/static/org_mindmate_avatars/5/evil.png") is None
     assert branding.local_mindmate_avatar_path("/static/org_mindmate_avatars/../secrets") is None
-    assert (
-        branding.local_mindmate_avatar_path("/static/org_mindmate_avatars/5/avatar.jpg?v=1")
-        is None
-    )
+    assert branding.local_mindmate_avatar_path("/static/org_mindmate_avatars/5/avatar.jpg?v=1") is None
 
 
 def test_cleanup_stale_upload_temps_removes_orphan_files(

@@ -68,22 +68,25 @@ _ALL_SETTINGS_CAPS: frozenset[str] = frozenset(
     }
 )
 
-_SUPERADMIN_CAPS: frozenset[str] = frozenset(
-    {
-        CAP_PANEL_ACCESS,
-        CAP_TAB_DATA_CENTER_VIEW,
-        CAP_TAB_DATA_CENTER_EDIT,
-        CAP_TAB_USERS_VIEW,
-        CAP_TAB_USERS_EDIT,
-        CAP_TAB_ORGANIZATIONS_VIEW,
-        CAP_TAB_ORGANIZATIONS_EDIT,
-        CAP_TAB_INVITES_VIEW,
-        CAP_TAB_INVITES_EDIT,
-        CAP_TAB_BILLING_VIEW,
-        CAP_TAB_BILLING_EDIT,
-        CAP_SCOPE_GLOBAL,
-    }
-) | _ALL_SETTINGS_CAPS
+_SUPERADMIN_CAPS: frozenset[str] = (
+    frozenset(
+        {
+            CAP_PANEL_ACCESS,
+            CAP_TAB_DATA_CENTER_VIEW,
+            CAP_TAB_DATA_CENTER_EDIT,
+            CAP_TAB_USERS_VIEW,
+            CAP_TAB_USERS_EDIT,
+            CAP_TAB_ORGANIZATIONS_VIEW,
+            CAP_TAB_ORGANIZATIONS_EDIT,
+            CAP_TAB_INVITES_VIEW,
+            CAP_TAB_INVITES_EDIT,
+            CAP_TAB_BILLING_VIEW,
+            CAP_TAB_BILLING_EDIT,
+            CAP_SCOPE_GLOBAL,
+        }
+    )
+    | _ALL_SETTINGS_CAPS
+)
 
 _PLATFORM_BD_CAPS: frozenset[str] = frozenset(
     {

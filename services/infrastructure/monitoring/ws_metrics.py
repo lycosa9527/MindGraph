@@ -59,6 +59,7 @@ def _redis8_features() -> Any:
 def _timeseries_enabled() -> bool:
     return bool(_redis8_features().timeseries_enabled())
 
+
 _local: Dict[str, int | float] = {
     # Per-endpoint active connection counters (all five endpoint types)
     "ws_chat_connections": 0,
@@ -331,9 +332,7 @@ def record_ws_broadcast_latency(latency_ms: float) -> None:
     except RuntimeError:
         return
     if loop.is_running():
-        loop.create_task(
-            _redis8_features().tdigest_record_latency("broadcast_latency_ms", latency_ms)
-        )
+        loop.create_task(_redis8_features().tdigest_record_latency("broadcast_latency_ms", latency_ms))
 
 
 def record_ws_update_latency(latency_ms: float) -> None:
@@ -371,9 +370,7 @@ def record_ws_update_semaphore_wait_ms(wait_ms: float) -> None:
     except RuntimeError:
         return
     if loop.is_running():
-        loop.create_task(
-            _redis8_features().tdigest_record_latency("update_semaphore_wait_ms", wait_ms)
-        )
+        loop.create_task(_redis8_features().tdigest_record_latency("update_semaphore_wait_ms", wait_ms))
 
 
 def record_ws_load_editors_latency_ms(latency_ms: float) -> None:
@@ -399,9 +396,7 @@ def record_ws_read_live_spec_latency_ms(latency_ms: float) -> None:
     except RuntimeError:
         return
     if loop.is_running():
-        loop.create_task(
-            _redis8_features().tdigest_record_latency("read_live_spec_ms", latency_ms)
-        )
+        loop.create_task(_redis8_features().tdigest_record_latency("read_live_spec_ms", latency_ms))
 
 
 def record_ws_editor_connection_delta(delta: int) -> None:

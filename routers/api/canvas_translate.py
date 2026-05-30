@@ -39,9 +39,7 @@ def _chinese_script_extra_rules(ui_locale: Optional[str]) -> str:
     if not ui_locale:
         return ""
     if ui_locale in ("zh-tw", "zh-hant", "hk", "mo"):
-        return (
-            "\n- For Chinese text, use Traditional Chinese characters (繁體中文), not Simplified.\n"
-        )
+        return "\n- For Chinese text, use Traditional Chinese characters (繁體中文), not Simplified.\n"
     if ui_locale == "zh":
         return "\n- For Chinese text, use Simplified Chinese characters (简体中文).\n"
     return ""
@@ -108,7 +106,7 @@ async def _translate_unique_texts_chunk(
     payload = json.dumps(texts, ensure_ascii=False)
     system_message = (
         "You translate diagram labels (node or relationship text). Output rules:\n"
-        "- Respond with only a JSON object: {\"translations\": [\"...\", ...]}.\n"
+        '- Respond with only a JSON object: {"translations": ["...", ...]}.\n'
         "- The translations array MUST have exactly the same length and order as the input JSON array.\n"
         "- Each element must be only the translated string.\n"
         "- No markdown fences, no explanations.\n"

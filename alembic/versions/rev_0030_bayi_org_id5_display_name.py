@@ -23,9 +23,7 @@ _TARGET_DISPLAY_NAME = "北京八一学校"
 
 def upgrade() -> None:
     op.execute(
-        sa.text(
-            "UPDATE organizations SET display_name = :display_name WHERE id = :org_id"
-        ).bindparams(
+        sa.text("UPDATE organizations SET display_name = :display_name WHERE id = :org_id").bindparams(
             org_id=_TARGET_ORG_ID,
             display_name=_TARGET_DISPLAY_NAME,
         )

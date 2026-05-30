@@ -433,9 +433,7 @@ async def route_voice_command(
             extra={"confidence": confidence, "from_voice": from_voice},
         )
 
-        confidence_threshold = (
-            VOICE_COMMAND_CONFIDENCE_TEXT if is_text_message else VOICE_COMMAND_CONFIDENCE_VOICE
-        )
+        confidence_threshold = VOICE_COMMAND_CONFIDENCE_TEXT if is_text_message else VOICE_COMMAND_CONFIDENCE_VOICE
 
         ui_actions = [
             "open_thinkguide",
@@ -465,9 +463,7 @@ async def route_voice_command(
         ]
         if action in diagram_update_actions:
             if confidence >= confidence_threshold:
-                executed = await execute_diagram_update(
-                    websocket, voice_session_id, action, command, session_context
-                )
+                executed = await execute_diagram_update(websocket, voice_session_id, action, command, session_context)
                 if executed:
                     from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 
@@ -492,11 +488,11 @@ async def route_voice_command(
                     "抱歉，我没能更新这张导图，请换个说法再试一次。",
                 )
                 return _finish_route(
-                voice_session_id,
-                RouteOutcome.FAILED,
-                reason="diagram_execute_failed",
-                action=str(action) if action else None,
-            )
+                    voice_session_id,
+                    RouteOutcome.FAILED,
+                    reason="diagram_execute_failed",
+                    action=str(action) if action else None,
+                )
             logger.info(
                 "VOIC | Low confidence (%.2f) for diagram update '%s', threshold=%.2f",
                 confidence,
@@ -620,9 +616,7 @@ async def route_voice_command(
                     if params.get("node_id"):
                         await omni_client.create_response(instructions="好，打开联想建议。")
                     else:
-                        await omni_client.create_response(
-                            instructions="请先在画布上选中一个节点，再说要推荐的内容。"
-                        )
+                        await omni_client.create_response(instructions="请先在画布上选中一个节点，再说要推荐的内容。")
             except (RuntimeError, ConnectionError, AttributeError) as e:
                 logger.debug("Could not send acknowledgment to Omni: %s", e)
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
@@ -649,9 +643,7 @@ async def route_voice_command(
             try:
                 omni_client = get_session_omni_client(voice_session_id)
                 if omni_client:
-                    await omni_client.create_response(
-                        instructions="好，已添加节点，请从推荐里选一个。"
-                    )
+                    await omni_client.create_response(instructions="好，已添加节点，请从推荐里选一个。")
             except (RuntimeError, ConnectionError, AttributeError) as e:
                 logger.debug("Could not send acknowledgment to Omni: %s", e)
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
@@ -735,17 +727,17 @@ async def route_voice_command(
                         action=str(action) if action else None,
                     )
                 return _finish_route(
+                    voice_session_id,
+                    RouteOutcome.FAILED,
+                    reason="select_node_session_missing",
+                    action=str(action) if action else None,
+                )
+            return _finish_route(
                 voice_session_id,
                 RouteOutcome.FAILED,
-                reason="select_node_session_missing",
+                reason="select_node_unresolved",
                 action=str(action) if action else None,
             )
-            return _finish_route(
-            voice_session_id,
-            RouteOutcome.FAILED,
-            reason="select_node_unresolved",
-            action=str(action) if action else None,
-        )
 
         elif action == "explain_node":
             resolved = _resolve_command_node(
@@ -789,31 +781,29 @@ async def route_voice_command(
                         action=str(action) if action else None,
                     )
             return _finish_route(
-            voice_session_id,
-            RouteOutcome.FAILED,
-            reason="explain_node_unresolved",
-            action=str(action) if action else None,
-        )
+                voice_session_id,
+                RouteOutcome.FAILED,
+                reason="explain_node_unresolved",
+                action=str(action) if action else None,
+            )
 
         elif action == "open_desktop_canvas":
             if user_id is None:
                 logger.warning("Kitty open_desktop_canvas: missing user_id")
                 return _finish_route(
-                voice_session_id,
-                RouteOutcome.CONVERSATIONAL_FALLBACK,
-                action=str(action) if action else None,
-            )
+                    voice_session_id,
+                    RouteOutcome.CONVERSATIONAL_FALLBACK,
+                    action=str(action) if action else None,
+                )
             raw_slug = command.get("diagram_type")
-            slug = normalize_voice_desktop_canvas_diagram_type(
-                raw_slug if isinstance(raw_slug, str) else None
-            )
+            slug = normalize_voice_desktop_canvas_diagram_type(raw_slug if isinstance(raw_slug, str) else None)
             if slug is None:
                 logger.info("Kitty open_desktop_canvas: rejected diagram_type=%s", raw_slug)
                 return _finish_route(
-                voice_session_id,
-                RouteOutcome.CONVERSATIONAL_FALLBACK,
-                action=str(action) if action else None,
-            )
+                    voice_session_id,
+                    RouteOutcome.CONVERSATIONAL_FALLBACK,
+                    action=str(action) if action else None,
+                )
 
             payload: Dict[str, Any] = {
                 "kind": "open_canvas",
@@ -856,10 +846,10 @@ async def route_voice_command(
 
         # Unknown action - send to Omni
         return _finish_route(
-                voice_session_id,
-                RouteOutcome.CONVERSATIONAL_FALLBACK,
-                action=str(action) if action else None,
-            )
+            voice_session_id,
+            RouteOutcome.CONVERSATIONAL_FALLBACK,
+            action=str(action) if action else None,
+        )
 
     except (ValueError, KeyError, RuntimeError, AttributeError) as e:
         logger.error("Command processing error: %s", e, exc_info=True)

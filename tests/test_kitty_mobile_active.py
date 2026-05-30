@@ -266,9 +266,7 @@ async def test_kitty_rest_desktop_pairing_inactive_long_poll_skips_pop() -> None
 @pytest.mark.asyncio
 async def test_kitty_rest_desktop_pairing_inactive_instant_pop() -> None:
     user = _kitty_user(5)
-    pop_mock = AsyncMock(
-        return_value={"kind": "open_library_diagram", "diagram_library_id": "abc-def-123"}
-    )
+    pop_mock = AsyncMock(return_value={"kind": "open_library_diagram", "diagram_library_id": "abc-def-123"})
     with (
         patch("services.kitty.http.handlers.config") as cfg,
         patch(
@@ -301,9 +299,7 @@ async def test_kitty_rest_desktop_pairing_inactive_instant_pop() -> None:
 @pytest.mark.asyncio
 async def test_kitty_rest_desktop_pairing_inactive_instant_pop_without_explicit_flag() -> None:
     user = _kitty_user(5)
-    pop_mock = AsyncMock(
-        return_value={"kind": "open_library_diagram", "diagram_library_id": "abc-def-123"}
-    )
+    pop_mock = AsyncMock(return_value={"kind": "open_library_diagram", "diagram_library_id": "abc-def-123"})
     with (
         patch("services.kitty.http.handlers.config") as cfg,
         patch(
@@ -453,9 +449,7 @@ async def test_clear_publishes_inactive_wake(monkeypatch: pytest.MonkeyPatch) ->
 def test_build_desktop_wake_payload_shape() -> None:
     from services.kitty.infra.desktop.kitty_desktop_wake_fanout import build_kitty_desktop_wake_payload
 
-    raw = build_kitty_desktop_wake_payload(
-        {"active": True, "scopes": ["a"], "primary_scope": "a"}
-    )
+    raw = build_kitty_desktop_wake_payload({"active": True, "scopes": ["a"], "primary_scope": "a"})
     data = json.loads(raw)
     assert data["type"] == "mobile_active"
     assert data["active"] is True
@@ -494,9 +488,7 @@ async def test_kitty_rest_desktop_action_pop_inactive_long_poll_skips_queue() ->
 @pytest.mark.asyncio
 async def test_kitty_rest_desktop_action_pop_inactive_instant_pop() -> None:
     user = _kitty_user(8)
-    pop_mock = AsyncMock(
-        return_value={"kind": "open_library_diagram", "diagram_library_id": "abc-def-123"}
-    )
+    pop_mock = AsyncMock(return_value={"kind": "open_library_diagram", "diagram_library_id": "abc-def-123"})
     with (
         patch("services.kitty.http.handlers.config") as cfg,
         patch(

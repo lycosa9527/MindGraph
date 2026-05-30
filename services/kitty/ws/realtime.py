@@ -1,4 +1,4 @@
-﻿"""Kitty Agent WebSocket realtime session (Omni + inbound dispatch)."""
+"""Kitty Agent WebSocket realtime session (Omni + inbound dispatch)."""
 
 from __future__ import annotations
 

@@ -43,9 +43,7 @@ class KittySessionMemory:
         content = "".join(self._assistant_buffer).strip()
         self._assistant_buffer.clear()
         if content:
-            self.turns.append(
-                KittyTurn(role="assistant", content=content, source="omni_tts")
-            )
+            self.turns.append(KittyTurn(role="assistant", content=content, source="omni_tts"))
 
     def append_action_turn(self, summary: str, *, action: str) -> None:
         text = summary.strip()

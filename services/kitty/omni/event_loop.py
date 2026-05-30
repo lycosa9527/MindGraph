@@ -36,9 +36,7 @@ async def run_kitty_omni_event_loop(
                     return
                 diagram_type = session.get("diagram_type", "unknown")
                 sess_ctx = session.get("context", {})
-                greeting_lang = resolve_voice_interaction_language(
-                    sess_ctx if isinstance(sess_ctx, dict) else {}
-                )
+                greeting_lang = resolve_voice_interaction_language(sess_ctx if isinstance(sess_ctx, dict) else {})
                 greeting = build_greeting_message(diagram_type, language=greeting_lang)
 
                 omni_client = get_session_omni_client(voice_session_id)

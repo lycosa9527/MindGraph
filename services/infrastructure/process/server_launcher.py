@@ -317,8 +317,7 @@ def run_server() -> None:
                 removed_loops = clear_reload_breaking_symlinks(script_dir)
                 if removed_loops:
                     logger.warning(
-                        "[LAUNCHER] Removed %d self-referential symlink(s) that would "
-                        "break uvicorn auto-reload: %s",
+                        "[LAUNCHER] Removed %d self-referential symlink(s) that would break uvicorn auto-reload: %s",
                         len(removed_loops),
                         ", ".join(removed_loops),
                     )

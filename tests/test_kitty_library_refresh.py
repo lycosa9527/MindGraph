@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import time
 
-import pytest
 
 from services.kitty.context.library_refresh import (
     bump_voice_mutation_freshness,

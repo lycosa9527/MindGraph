@@ -410,11 +410,7 @@ class MindGraphAgentHub:
             context_payload = merged
             lib_id = context_payload.get("diagram_library_id")
             delta_has_visible = diagram_data_has_visible_content(delta_dd)
-            if (
-                sess.client_lane == "mobile"
-                and isinstance(lib_id, str)
-                and lib_id.strip()
-            ):
+            if sess.client_lane == "mobile" and isinstance(lib_id, str) and lib_id.strip():
                 merged_ctx, res_dt, res_panel = await merge_voice_context_with_library(
                     user_id,
                     context_payload,

@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any, Optional, Sequence
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count as sa_count
 
@@ -110,9 +110,7 @@ async def _paid_benefit_by_user(
     if not user_ids:
         return {}
     now = datetime.now(UTC).replace(tzinfo=None)
-    result: dict[int, dict[str, Any]] = {
-        int(uid): {"expires_at": None, "permanent": False} for uid in user_ids
-    }
+    result: dict[int, dict[str, Any]] = {int(uid): {"expires_at": None, "permanent": False} for uid in user_ids}
 
     ent_stmt = select(MarketEntitlement.user_id, MarketEntitlement.expires_at).where(
         MarketEntitlement.user_id.in_(tuple(user_ids)),

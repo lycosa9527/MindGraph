@@ -30,9 +30,7 @@ async def build_personal_trial_invite_payload(
     if not org_code:
         return {"configured": False}
 
-    org = (
-        await db.execute(select(Organization).where(Organization.code == org_code))
-    ).scalar_one_or_none()
+    org = (await db.execute(select(Organization).where(Organization.code == org_code))).scalar_one_or_none()
     if org is None:
         return {"configured": False, "organization_code": org_code, "missing": True}
 

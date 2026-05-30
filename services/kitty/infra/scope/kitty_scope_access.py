@@ -14,9 +14,7 @@ from config.database import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
 
-_LIBRARY_UUID = re.compile(
-    r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
-)
+_LIBRARY_UUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
 
 def scope_looks_like_library_uuid(scope: str) -> bool:
@@ -59,10 +57,12 @@ async def _library_diagram_owner_id(scope: str) -> Optional[int]:
     try:
         async with AsyncSessionLocal() as db:
             result = await db.execute(
-                select(Diagram.user_id).where(
+                select(Diagram.user_id)
+                .where(
                     Diagram.id == scope,
                     Diagram.is_deleted.is_(False),
-                ).limit(1)
+                )
+                .limit(1)
             )
             row = result.scalar_one_or_none()
             if row is None:

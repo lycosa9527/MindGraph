@@ -59,8 +59,7 @@ class MindbotConfigPayload(BaseModel):
     use_org_dify_settings: Optional[bool] = Field(
         None,
         description=(
-            "When true, Dify URL/key/behavior come from the organization row; "
-            "omit on update to keep the saved value"
+            "When true, Dify URL/key/behavior come from the organization row; omit on update to keep the saved value"
         ),
     )
     dify_api_base_url: Optional[str] = Field(None, max_length=512)

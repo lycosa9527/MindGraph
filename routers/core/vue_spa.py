@@ -101,6 +101,8 @@ async def vue_bayi_passkey():
 async def vue_demo_redirect():
     """Legacy URL: send users to Bayi passkey page."""
     return RedirectResponse(url="/bayi/passkey", status_code=301)
+
+
 @router.get("/dashboard", response_class=HTMLResponse)
 async def vue_dashboard():
     """Serve Vue SPA for dashboard route."""

@@ -112,16 +112,14 @@ def resolve_qdrant_mode() -> str:
     """
     if not _stdin_is_tty() or _non_interactive_env():
         print(
-            "[INFO] Non-interactive (pipe or MINDGRAPH_NON_INTERACTIVE=1): "
-            "full MindGraph Qdrant setup.",
+            "[INFO] Non-interactive (pipe or MINDGRAPH_NON_INTERACTIVE=1): full MindGraph Qdrant setup.",
         )
         return MODE_FULL
 
     print("\n--- Qdrant setup ---")
     print("  1) Full install — GitHub binary, config + systemd if needed, verify API")
     print(
-        "  2) Update only — replace binary and restart service (keeps config; "
-        "requires existing qdrant.service)",
+        "  2) Update only — replace binary and restart service (keeps config; requires existing qdrant.service)",
     )
     while True:
         try:
@@ -181,10 +179,7 @@ def _download(url: str, dest: str) -> bool:
         request = urllib.request.Request(
             url,
             headers={
-                "User-Agent": (
-                    "MindGraph-qdrant-setup/1 "
-                    "(https://github.com/lycosa9527/MindGraph)"
-                ),
+                "User-Agent": ("MindGraph-qdrant-setup/1 (https://github.com/lycosa9527/MindGraph)"),
             },
         )
         with urllib.request.urlopen(request, timeout=300) as response:
@@ -234,8 +229,7 @@ def deploy_qdrant_systemd_stack(*, overwrite_config: bool = False) -> bool:
     """
     if not shutil.which("systemctl"):
         print(
-            "[ERROR] systemctl not in PATH — enable systemd (e.g. WSL2 /etc/wsl.conf). "
-            "See docs/QDRANT_SETUP.md",
+            "[ERROR] systemctl not in PATH — enable systemd (e.g. WSL2 /etc/wsl.conf). See docs/QDRANT_SETUP.md",
         )
         return False
     try:
@@ -362,8 +356,7 @@ def run_upgrade(version: str, no_backup: bool, dry_run: bool) -> int:
     if dry_run:
         print("[INFO] Dry run: would download binary to /usr/local/bin/qdrant.")
         print(
-            "[INFO] Dry run: interactive run would ask full install vs update-only "
-            "(non-interactive defaults to full).",
+            "[INFO] Dry run: interactive run would ask full install vs update-only (non-interactive defaults to full).",
         )
         print("[INFO] Dry run: not downloading or installing.")
         return 0

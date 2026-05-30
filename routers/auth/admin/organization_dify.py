@@ -27,16 +27,10 @@ def org_dify_behavior_fields(org: Organization) -> dict[str, Any]:
     return {
         "dify_timeout_seconds": int(getattr(org, "dify_timeout_seconds", 300) or 300),
         "show_chain_of_thought_oto": bool(getattr(org, "show_chain_of_thought_oto", False)),
-        "show_chain_of_thought_internal_group": bool(
-            getattr(org, "show_chain_of_thought_internal_group", False)
-        ),
-        "show_chain_of_thought_cross_org_group": bool(
-            getattr(org, "show_chain_of_thought_cross_org_group", False)
-        ),
+        "show_chain_of_thought_internal_group": bool(getattr(org, "show_chain_of_thought_internal_group", False)),
+        "show_chain_of_thought_cross_org_group": bool(getattr(org, "show_chain_of_thought_cross_org_group", False)),
         "chain_of_thought_max_chars": int(getattr(org, "chain_of_thought_max_chars", 4000) or 4000),
-        "dingtalk_ai_card_streaming_max_chars": int(
-            getattr(org, "dingtalk_ai_card_streaming_max_chars", 6500) or 6500
-        ),
+        "dingtalk_ai_card_streaming_max_chars": int(getattr(org, "dingtalk_ai_card_streaming_max_chars", 6500) or 6500),
     }
 
 
@@ -287,9 +281,7 @@ async def propagate_org_dify_settings_to_mindbot_configs(
 ) -> None:
     """Copy org-level Dify credentials and behavior settings to all MindBot configs."""
     result = await db.execute(
-        select(OrganizationMindbotConfig).where(
-            OrganizationMindbotConfig.organization_id == org.id
-        )
+        select(OrganizationMindbotConfig).where(OrganizationMindbotConfig.organization_id == org.id)
     )
     rows = result.scalars().all()
     for row in rows:

@@ -92,10 +92,7 @@ async def _apply_omni_refresh(
             center_text = str(center.get("text") or "")
         elif isinstance(diagram_data.get("topic"), str):
             center_text = diagram_data["topic"]
-        append_note = (
-            f"\n\n[Diagram update] {delta}. "
-            f"Current topic: {center_text or '(empty)'}. Nodes: {child_count}."
-        )
+        append_note = f"\n\n[Diagram update] {delta}. Current topic: {center_text or '(empty)'}. Nodes: {child_count}."
         base_instructions = build_voice_instructions(updated_context)
         new_instructions = f"{base_instructions}{append_note}"
     else:

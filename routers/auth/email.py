@@ -262,11 +262,7 @@ async def verify_email_code(
 
     email_norm = normalize_verification_email(email_validated)
 
-    if (
-        request.purpose in ("login", "reset_password")
-        and EMAIL_LOGIN_CN_BLOCK_ENABLED
-        and AUTH_MODE != "bayi"
-    ):
+    if request.purpose in ("login", "reset_password") and EMAIL_LOGIN_CN_BLOCK_ENABLED and AUTH_MODE != "bayi":
         client_ip_geo = get_client_ip(http_request) if http_request else "unknown"
         if request.purpose == "login":
             cached_verify = await user_cache.get_by_email(email_norm)
