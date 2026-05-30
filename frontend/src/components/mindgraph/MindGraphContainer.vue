@@ -22,7 +22,8 @@ import { Upload } from '@element-plus/icons-vue'
 import { Check, Globe, PanelLeftOpen } from '@lucide/vue'
 
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
-import { useLanguage } from '@/composables'
+import { useLanguage, useNotifications } from '@/composables'
+import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useAuthStore, useUIStore } from '@/stores'
 import { useLiveTranslationStore } from '@/stores/liveTranslation'
@@ -38,6 +39,8 @@ import MindGraphLanguageSwitcher from './MindGraphLanguageSwitcher.vue'
 const route = useRoute()
 const router = useRouter()
 const { t } = useLanguage()
+const notify = useNotifications()
+const { canUseOnlineCollab } = useSchoolTierFeatures()
 const { triggerImport } = useDiagramImport()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
@@ -63,12 +66,17 @@ const collabPanelRef = ref<InstanceType<typeof MindGraphCollabPanel> | null>(nul
 // Handle join_workshop query parameter (from QR code scan)
 onMounted(() => {
   const joinWorkshopCode = route.query.join_workshop as string | undefined
-  if (joinWorkshopCode) {
-    const newQuery = { ...route.query }
-    delete newQuery.join_workshop
-    router.replace({ query: newQuery })
-    collabPanelRef.value?.prefillAndAutoJoin(joinWorkshopCode)
+  if (!joinWorkshopCode) {
+    return
   }
+  const newQuery = { ...route.query }
+  delete newQuery.join_workshop
+  router.replace({ query: newQuery })
+  if (!canUseOnlineCollab.value) {
+    notify.warning(t('auth.schoolTierFeatureUnavailable'))
+    return
+  }
+  collabPanelRef.value?.prefillAndAutoJoin(joinWorkshopCode)
 })
 </script>
 

@@ -12,7 +12,9 @@ import { Delete, Loading } from '@element-plus/icons-vue'
 
 import type { Chart as ChartInstance } from 'chart.js'
 
+import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
+import { SCHOOL_TIER_LIMITS, normalizeSchoolTier, type SchoolTier } from '@/constants/schoolTier'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import {
   clearAdminMindBotOrgSession,
@@ -54,6 +56,7 @@ const props = defineProps<{
   orgIsActive?: boolean
   orgUserCount?: number
   orgExpiresAt?: string | null
+  orgSchoolTier?: string | null
   orgDifyApiBaseUrl?: string | null
   orgDifyApiKeyMasked?: string | null
   orgDifyTimeoutSeconds?: number
@@ -100,7 +103,7 @@ function mindbotEmbeddedPane(
   return null
 }
 
-const schoolDialogTab = ref<SchoolDialogTab>('general')
+const schoolDialogTab = ref<SchoolDialogTab>('usage')
 
 const activeMindbotPane = computed(() => mindbotEmbeddedPane(schoolDialogTab.value))
 
@@ -205,6 +208,19 @@ const orgActiveState = ref(true)
 const lockLoading = ref(false)
 const deleteLoading = ref(false)
 const expiresAtEdit = ref<string | null>(null)
+const schoolTierEdit = ref<SchoolTier>('standard')
+
+const selectedTierLimits = computed(() => SCHOOL_TIER_LIMITS[schoolTierEdit.value])
+
+const tierDowngradeBlocked = computed(() => {
+  if (props.type !== 'org') {
+    return false
+  }
+  const limits = selectedTierLimits.value
+  const memberCount = props.orgUserCount ?? 0
+  const managerCount = managers.value.length
+  return memberCount > limits.memberLimit || managerCount > limits.managerLimit
+})
 
 function formatNumber(num: number): string {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
@@ -476,6 +492,17 @@ async function addManagers() {
   if (props.orgId == null || pendingManagerIds.value.length === 0) {
     return
   }
+  const managerLimit = SCHOOL_TIER_LIMITS[schoolTierEdit.value].managerLimit
+  const remaining = Math.max(0, managerLimit - managers.value.length)
+  if (remaining === 0) {
+    notify.warning(t('admin.schoolManagerLimitReached', { limit: managerLimit }))
+    return
+  }
+  if (pendingManagerIds.value.length > remaining) {
+    notify.warning(t('admin.schoolManagerLimitReached', { limit: managerLimit }))
+    pendingManagerIds.value = pendingManagerIds.value.slice(0, remaining)
+    return
+  }
   const userIds = [...pendingManagerIds.value]
   addManagersLoading.value = true
   try {
@@ -540,6 +567,18 @@ async function saveGeneralSettings() {
   if (props.orgId == null) {
     return
   }
+  if (tierDowngradeBlocked.value) {
+    const limits = selectedTierLimits.value
+    notify.warning(
+      t('admin.schoolTierDowngradeBlocked', {
+        members: props.orgUserCount ?? 0,
+        memberLimit: limits.memberLimit,
+        managers: managers.value.length,
+        managerLimit: limits.managerLimit,
+      })
+    )
+    return
+  }
   generalTabSaving.value = true
   try {
     const dateVal = expiresAtEdit.value?.trim() || null
@@ -549,6 +588,7 @@ async function saveGeneralSettings() {
       body: JSON.stringify({
         display_name: displayNameEdit.value.trim() || null,
         expires_at: expiresAtPayload,
+        school_tier: schoolTierEdit.value,
       }),
     })
     if (!res.ok) {
@@ -653,13 +693,14 @@ watch(
   (v) => {
     if (v) {
       if (props.type === 'org') {
-        schoolDialogTab.value = props.initialSchoolTab ?? 'general'
+        schoolDialogTab.value = props.initialSchoolTab ?? 'usage'
       }
       void load()
       if (props.type === 'org' && props.orgId) {
         displayNameEdit.value = props.orgDisplayName ?? ''
         orgActiveState.value = props.orgIsActive ?? true
         expiresAtEdit.value = parseExpiresAtToDate(props.orgExpiresAt)
+        schoolTierEdit.value = normalizeSchoolTier(props.orgSchoolTier)
         loadGeneralTabData()
       }
     } else {
@@ -693,6 +734,7 @@ watch(
       props.orgDisplayName,
       props.orgIsActive,
       props.orgExpiresAt,
+      props.orgSchoolTier,
       props.userId,
       props.userName,
     ] as const,
@@ -705,6 +747,7 @@ watch(
       displayNameEdit.value = props.orgDisplayName ?? ''
       orgActiveState.value = props.orgIsActive ?? true
       expiresAtEdit.value = parseExpiresAtToDate(props.orgExpiresAt)
+      schoolTierEdit.value = normalizeSchoolTier(props.orgSchoolTier)
       if (schoolDialogTab.value === 'general') {
         loadGeneralTabData()
       }
@@ -834,9 +877,11 @@ onBeforeUnmount(() => {
               v-if="orgId"
               v-model:display-name-edit="displayNameEdit"
               v-model:expires-at-edit="expiresAtEdit"
+              v-model:school-tier-edit="schoolTierEdit"
               v-model:pending-manager-ids="pendingManagerIds"
               :org-name="orgName"
               :org-active-state="orgActiveState"
+              :org-user-count="orgUserCount"
               :managers="managers"
               :org-users="orgUsers"
               :managers-loading="managersLoading"
@@ -872,6 +917,7 @@ onBeforeUnmount(() => {
           type="primary"
           class="mindbot-pill mindbot-pill--footer-save w-full sm:w-auto"
           :loading="generalTabSaving"
+          :disabled="tierDowngradeBlocked"
           @click="saveGeneralSettings"
         >
           {{ t('admin.save') }}
@@ -954,58 +1000,34 @@ onBeforeUnmount(() => {
       </div>
       <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <div class="grid grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-4 gap-3">
-          <el-card
-            shadow="hover"
-            class="token-period-card min-w-0 cursor-pointer"
-            :class="{ 'ring-2 ring-primary-500': period === 'today' }"
+          <AdminSwissPeriodCard
+            :label="t('admin.today')"
+            :value="periodCards.today"
+            :active="period === 'today'"
+            theme="storage"
             @click="switchPeriod('today')"
-          >
-            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
-              {{ t('admin.today') }}
-            </p>
-            <p class="text-lg font-bold text-gray-800 dark:text-white">
-              {{ periodCards.today }}
-            </p>
-          </el-card>
-          <el-card
-            shadow="hover"
-            class="token-period-card min-w-0 cursor-pointer"
-            :class="{ 'ring-2 ring-primary-500': period === 'week' }"
+          />
+          <AdminSwissPeriodCard
+            :label="t('admin.pastWeek')"
+            :value="periodCards.week"
+            :active="period === 'week'"
+            theme="storage"
             @click="switchPeriod('week')"
-          >
-            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
-              {{ t('admin.pastWeek') }}
-            </p>
-            <p class="text-lg font-bold text-gray-800 dark:text-white">
-              {{ periodCards.week }}
-            </p>
-          </el-card>
-          <el-card
-            shadow="hover"
-            class="token-period-card min-w-0 cursor-pointer"
-            :class="{ 'ring-2 ring-primary-500': period === 'month' }"
+          />
+          <AdminSwissPeriodCard
+            :label="t('admin.pastMonth')"
+            :value="periodCards.month"
+            :active="period === 'month'"
+            theme="storage"
             @click="switchPeriod('month')"
-          >
-            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
-              {{ t('admin.pastMonth') }}
-            </p>
-            <p class="text-lg font-bold text-gray-800 dark:text-white">
-              {{ periodCards.month }}
-            </p>
-          </el-card>
-          <el-card
-            shadow="hover"
-            class="token-period-card min-w-0 cursor-pointer"
-            :class="{ 'ring-2 ring-primary-500': period === 'total' }"
+          />
+          <AdminSwissPeriodCard
+            :label="t('admin.allTime')"
+            :value="periodCards.total"
+            :active="period === 'total'"
+            theme="storage"
             @click="switchPeriod('total')"
-          >
-            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
-              {{ t('admin.allTime') }}
-            </p>
-            <p class="text-lg font-bold text-gray-800 dark:text-white">
-              {{ periodCards.total }}
-            </p>
-          </el-card>
+          />
         </div>
       </div>
     </template>
@@ -1036,10 +1058,6 @@ onBeforeUnmount(() => {
 
 .school-dialog-tabs :deep(.el-tabs__content) {
   padding-top: 12px;
-}
-
-.token-period-card :deep(.el-card__body) {
-  padding: 12px 16px;
 }
 
 .admin-org-dialog {

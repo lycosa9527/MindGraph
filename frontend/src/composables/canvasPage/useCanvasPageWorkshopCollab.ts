@@ -5,6 +5,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useWorkshop } from '@/composables/workshop/useWorkshop'
 import { useAuthStore, useDiagramStore } from '@/stores'
@@ -21,6 +22,7 @@ export function useCanvasPageWorkshopCollab() {
   const router = useRouter()
   const notify = useNotifications()
   const { t } = useLanguage()
+  const { canUseOnlineCollab } = useSchoolTierFeatures()
   const diagramStore = useDiagramStore()
   const authStore = useAuthStore()
   const savedDiagramsStore = useSavedDiagramsStore()
@@ -215,6 +217,7 @@ export function useCanvasPageWorkshopCollab() {
    */
   async function checkAndReconnectWorkshop(diagramId: string): Promise<void> {
     if (workshopCode.value) return // already connected
+    if (!canUseOnlineCollab.value) return
     try {
       const res = await authFetch(`/api/diagrams/${diagramId}/workshop/status`)
       if (!res.ok) return

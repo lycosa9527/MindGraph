@@ -586,6 +586,12 @@ export default {
   'admin.schoolCodeRequired': 'School code could not be generated from name. Please enter a code.',
   'admin.schoolDashboard': 'School Dashboard',
   'admin.schoolDashboardNoOrg': 'You must belong to a school to view the dashboard.',
+  'admin.memberSeats': 'Member seats',
+  'admin.managerSeats': 'Admin seats',
+  'admin.resourceSpace': 'Resource space',
+  'admin.seatsRemaining': '{count} seats remaining',
+  'admin.storageRemainingGb': '{amount} GB remaining',
+  'admin.storageRemaining': '{amount} remaining',
   'admin.schoolDeleteUserConfirm': 'Delete user {name}? This cannot be undone.',
   'admin.schoolUserColumnRole': 'Role',
   'admin.schoolUsersDeleteError': 'Failed to delete user',
@@ -603,6 +609,36 @@ export default {
   'admin.schoolUsersTab': 'Users',
   'admin.schoolUsersUnlockError': 'Failed to unlock account',
   'admin.schoolUsersUpdateError': 'Failed to update user',
+  'admin.schoolAddMemberButton': 'Add member',
+  'admin.schoolAddMemberModalTitle': '{school} / Add member',
+  'admin.schoolAddMemberTitle': 'Add member',
+  'admin.schoolAddMemberName': 'Name',
+  'admin.schoolAddMemberNamePlaceholder': 'Enter name',
+  'admin.schoolAddMemberPhone': 'Mobile number',
+  'admin.schoolAddMemberPhonePlaceholder': 'Enter mobile number',
+  'admin.schoolAddMemberType': 'Type',
+  'admin.schoolAddMemberBatchTitle': 'Batch import',
+  'admin.schoolAddMemberBatchHint':
+    'Copy rows from Excel, WPS, or Word, then click here and paste (Ctrl+V).',
+  'admin.schoolAddMemberBatchPastePlaceholder':
+    'Paste spreadsheet rows here — phone and name in two columns; either order works',
+  'admin.schoolAddMemberBatchPasteHint':
+    'Tip: select rows in Excel/WPS/Word, copy, then paste here; phone and name are detected automatically.',
+  'admin.schoolAddMemberBatchInvalidPaste':
+    'Could not read pasted rows. Use two columns: mobile number and name (either order).',
+  'admin.schoolAddMemberBatchTooLarge': 'At most {max} members per batch ({count} pasted)',
+  'admin.schoolAddMemberBatchDuplicatesRemoved': '({count} duplicates removed)',
+  'admin.schoolAddMemberBatchEmpty': 'Paste member rows before importing',
+  'admin.schoolAddMemberBatchPreviewMore': '+{count} more',
+  'admin.schoolAddMemberSubmitBatch': 'Add {count} members',
+  'admin.schoolAddMemberBatchPreview': '{count} members ready to import',
+  'admin.schoolAddMemberBatchSkippedRows': '({count} rows skipped)',
+  'admin.schoolAddMemberSubmit': 'Add',
+  'admin.schoolAddMemberSuccess': 'Member added',
+  'admin.schoolAddMemberBatchSuccess': 'Added {created} members',
+  'admin.schoolAddMemberBatchPartial': 'Added {created} members; {failed} failed',
+  'admin.schoolAddMemberCreateError': 'Failed to add member',
+  'admin.schoolAddMemberRequired': 'Fill in name and mobile number, or paste a batch',
   'admin.schoolUserUnlock': 'Unlock',
   'admin.schoolUserUnlockConfirm':
     'Unlock this account? Failed-login lock and attempt counter will be cleared.',
@@ -619,6 +655,20 @@ export default {
   'admin.schoolModal.tabUsage': 'Token usage',
   'admin.schoolModal.tabGeneral': 'Other settings',
   'admin.schoolModal.tabMindmate': 'MindMate auth',
+  'admin.schoolVersionLabel': 'School version',
+  'admin.schoolVersionHint':
+    'Subscription tier sets member cap and diagram storage for this school. Members: {current} / {limit}.',
+  'admin.schoolVersionLiteFeaturesHint':
+    'Basic tier excludes: online collaboration, presentation tools, Chrome extension, API tokens, and OpenClaw integration.',
+  'admin.schoolVersionTierLite': 'Basic teaching & research',
+  'admin.schoolVersionTierStandard': 'Standard teaching & research',
+  'admin.schoolVersionTierProfessional': 'School co-build',
+  'admin.schoolVersionTierOption':
+    '{label} · {members} members · {managers} managers · {storage} GB/member diagram storage',
+  'admin.schoolManagerLimitHint': 'School managers {current} / {limit}',
+  'admin.schoolManagerLimitReached': 'This school has reached its manager limit ({limit})',
+  'admin.schoolTierDowngradeBlocked':
+    'Cannot switch to this tier: {members} members (max {memberLimit}) and {managers} managers (max {managerLimit})',
   'admin.schoolModal.tabMindbot': 'MindBot',
   'admin.schoolModal.mindbotIntro':
     'Configure DingTalk robots for this school. By default each bot uses MindMate Dify settings; you can set custom Dify per bot below the AI card template when needed.',
@@ -707,6 +757,17 @@ export default {
   'admin.inviteUsersComingSoonTitle': 'Coming soon',
   'admin.inviteUsersComingSoon':
     'Personal trial (C2C) invite management is not available yet. You can still use other tabs you have access to.',
+  'admin.personalTrialInviteTitle': 'Personal trial invite',
+  'admin.personalTrialInviteDescription':
+    'Share this invitation code so users can register for a personal experience account.',
+  'admin.personalTrialInviteCopyPayload':
+    'Try MindGraph — AI-powered mind mapping for teaching and learning. Register with invitation code: {code}\n\nVisit {siteUrl} to sign up.',
+  'admin.personalTrialInviteNotConfiguredTitle': 'Not configured',
+  'admin.personalTrialInviteNotConfigured':
+    'Set PERSONAL_TRIAL_ORG_CODE in server environment to enable personal trial invites.',
+  'admin.personalTrialInviteMissingTitle': 'Organization not found',
+  'admin.personalTrialInviteMissing':
+    'PERSONAL_TRIAL_ORG_CODE is set but no matching organization exists in the database.',
   'admin.inviteUsersSelectSchool':
     'Select a school to view and copy its organization invitation code.',
   'admin.today': 'Today',

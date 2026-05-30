@@ -6,7 +6,11 @@ from fastapi import HTTPException
 from utils.auth.admin_panel_permissions import (
     CAP_PANEL_ACCESS,
     CAP_SCOPE_GLOBAL,
+    CAP_TAB_BILLING_VIEW,
+    CAP_TAB_INVITES_EDIT,
     CAP_TAB_INVITES_VIEW,
+    CAP_TAB_ORGANIZATIONS_VIEW,
+    CAP_TAB_USERS_EDIT,
     CAP_TAB_USERS_VIEW,
     capabilities_for_role,
     role_has_panel_access,
@@ -26,10 +30,12 @@ def test_teacher_has_no_panel_access():
     assert CAP_PANEL_ACCESS not in capabilities_for_role("teacher")
 
 
-def test_school_admin_has_panel_without_global_users_tab():
+def test_school_admin_has_school_member_caps_without_global_scope():
     caps = capabilities_for_role("school_admin")
     assert CAP_PANEL_ACCESS in caps
-    assert CAP_TAB_USERS_VIEW not in caps
+    assert CAP_TAB_USERS_VIEW in caps
+    assert CAP_TAB_USERS_EDIT in caps
+    assert CAP_SCOPE_GLOBAL not in caps
 
 
 def test_superadmin_has_users_tab():
@@ -74,12 +80,21 @@ def test_superadmin_requires_org_when_resolving():
     assert exc.value.status_code == 400
 
 
-def test_platform_bd_read_only():
+def test_platform_bd_has_readonly_global_tabs_and_invite_edit():
+    caps = capabilities_for_role("platform_bd")
+    assert CAP_TAB_USERS_VIEW in caps
+    assert CAP_TAB_USERS_EDIT not in caps
+    assert CAP_TAB_ORGANIZATIONS_VIEW in caps
+    assert CAP_TAB_INVITES_EDIT in caps
+    assert CAP_TAB_BILLING_VIEW in caps
+    assert CAP_SCOPE_GLOBAL in caps
+
+
+def test_platform_bd_partial_read_only_flag():
     user = _User("platform_bd")
     scope = build_admin_scope(user, lang="en")
     assert scope.read_only is True
-    with pytest.raises(HTTPException):
-        scope.assert_mutation_allowed("en")
+    assert scope.has_capability(CAP_TAB_INVITES_EDIT)
 
 
 def test_superadmin_not_read_only():

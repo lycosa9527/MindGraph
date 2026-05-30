@@ -14,7 +14,12 @@ from fastapi.responses import Response
 
 from agents.mind_maps.web_content_mind_map_agent import WebContentMindMapAgent
 from models import Messages, WebContentGenerateRequest, WebContentMindmapPngRequest, get_request_language
+from config.database import AsyncSessionLocal
 from models.domain.auth import User
+from utils.auth.school_tier import (
+    TIER_FEATURE_CHROME_EXTENSION,
+    assert_user_has_school_tier_feature,
+)
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.api.vueflow_screenshot import capture_diagram_screenshot
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
@@ -104,6 +109,18 @@ async def generate_from_web_content(
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("generate_from_web_content", identifier, max_requests=100, window_seconds=60)
 
+    accept_language = request.headers.get("Accept-Language", "")
+    lang = get_request_language(None, accept_language)
+
+    if current_user is not None:
+        async with AsyncSessionLocal() as db:
+            await assert_user_has_school_tier_feature(
+                db,
+                current_user,
+                TIER_FEATURE_CHROME_EXTENSION,
+                lang,
+            )
+
     user_id = current_user.id if current_user and hasattr(current_user, "id") else None
     organization_id = (
         getattr(current_user, "organization_id", None) if current_user and hasattr(current_user, "id") else None
@@ -149,6 +166,15 @@ async def web_content_mindmap_png(
 
     accept_language = request.headers.get("Accept-Language", "")
     lang = get_request_language(x_language, accept_language)
+
+    if current_user is not None:
+        async with AsyncSessionLocal() as db:
+            await assert_user_has_school_tier_feature(
+                db,
+                current_user,
+                TIER_FEATURE_CHROME_EXTENSION,
+                lang,
+            )
 
     user_id = current_user.id if current_user and hasattr(current_user, "id") else None
     organization_id = (

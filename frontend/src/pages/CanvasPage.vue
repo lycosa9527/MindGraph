@@ -77,6 +77,7 @@ import { useCanvasPageMountedHandlers } from '@/composables/canvasPage/useCanvas
 import { useCanvasPagePresentation } from '@/composables/canvasPage/useCanvasPagePresentation'
 import { useCanvasPageTabRecIndicator } from '@/composables/canvasPage/useCanvasPageTabRecIndicator'
 import { useCanvasPageWorkshopCollab } from '@/composables/canvasPage/useCanvasPageWorkshopCollab'
+import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
 import {
   canvasVirtualKeyboardOpen,
@@ -128,6 +129,7 @@ const llmResultsStore = useLLMResultsStore()
 const panelsStore = usePanelsStore()
 const { promptLanguage, t, currentLanguage } = useLanguage()
 const notify = useNotifications()
+const { canUseOnlineCollab, canUsePresentationTools } = useSchoolTierFeatures()
 const featureFlagsStore = useFeatureFlagsStore()
 const { handleAIGenerate, handleConceptGeneration, isAIGenerating } = useCanvasToolbarApps()
 
@@ -200,11 +202,23 @@ const currentDiagramId = computed(() => savedDiagramsStore.activeDiagramId ?? nu
 const collabOverlayRef = ref<InstanceType<typeof CanvasCollabOverlay> | null>(null)
 
 function handleOpenCollab(mode: 'organization' | 'network' | 'stop') {
+  if (mode !== 'stop' && !canUseOnlineCollab.value) {
+    notify.warning(t('auth.schoolTierFeatureUnavailable'))
+    return
+  }
   if (mode === 'stop') {
     void collabOverlayRef.value?.stopNow()
     return
   }
   collabOverlayRef.value?.openCollab(mode)
+}
+
+function handleStartPresentationWithTier() {
+  if (!canUsePresentationTools.value) {
+    notify.warning(t('auth.schoolTierFeatureUnavailable'))
+    return
+  }
+  handleStartPresentation()
 }
 
 function handleCollabSession(payload: {
@@ -524,6 +538,19 @@ watch(
   { flush: 'sync' }
 )
 
+watch(canUsePresentationTools, (allowed) => {
+  if (!allowed) {
+    resetPresentationStateOnLeave()
+  }
+})
+
+watch(canUseOnlineCollab, (allowed) => {
+  if (!allowed) {
+    sessionStorage.removeItem('mg_workshop_code')
+    sessionStorage.removeItem('mg_workshop_diagram_id')
+  }
+})
+
 const { handleSaveKey } = useCanvasPageEditorShortcuts({
   workshopCode,
   activeEditors,
@@ -582,6 +609,13 @@ onMounted(async () => {
   // The diagram spec arrives from the server via the WebSocket snapshot message —
   // do not attempt a library load (the diagram belongs to the host, not the guest).
   if (route.query.join_workshop) {
+    if (!canUseOnlineCollab.value) {
+      notify.warning(t('auth.schoolTierFeatureUnavailable'))
+      const nextQuery = { ...route.query } as Record<string, string | string[] | undefined>
+      delete nextQuery.join_workshop
+      router.replace({ query: nextQuery })
+      return
+    }
     applyJoinWorkshopFromQuery()
     return
   }
@@ -605,8 +639,13 @@ onMounted(async () => {
           : null
     const sessionMatchesRoute = !routeDiagramId || routeDiagramId === savedDiagramId
     if (savedCode && savedDiagramId && sessionMatchesRoute) {
-      applyWorkshopCodeFromSession(savedCode, savedDiagramId)
-      return
+      if (!canUseOnlineCollab.value) {
+        sessionStorage.removeItem('mg_workshop_code')
+        sessionStorage.removeItem('mg_workshop_diagram_id')
+      } else {
+        applyWorkshopCodeFromSession(savedCode, savedDiagramId)
+        return
+      }
     }
     if (savedCode && savedDiagramId && !sessionMatchesRoute) {
       sessionStorage.removeItem('mg_workshop_code')
@@ -772,16 +811,19 @@ onUnmounted(() => {
     ref="canvasPageRef"
     class="canvas-page flex flex-col h-screen bg-gray-50 relative"
     :class="{
-      'presentation-active': presentationRailOpen,
-      'presentation-highlighter-mode': presentationRailOpen && presentationTool === 'highlighter',
-      'presentation-pen-mode': presentationRailOpen && presentationTool === 'pen',
-      'presentation-timer-mode': presentationRailOpen && presentationTool === 'timer',
+      'presentation-active': canUsePresentationTools && presentationRailOpen,
+      'presentation-highlighter-mode':
+        canUsePresentationTools && presentationRailOpen && presentationTool === 'highlighter',
+      'presentation-pen-mode':
+        canUsePresentationTools && presentationRailOpen && presentationTool === 'pen',
+      'presentation-timer-mode':
+        canUsePresentationTools && presentationRailOpen && presentationTool === 'timer',
     }"
   >
     <!-- Laser pointer cursor (presentation mode, laser tool) -->
     <Transition name="laser-fade">
       <div
-        v-if="presentationRailOpen && presentationTool === 'laser'"
+        v-if="canUsePresentationTools && presentationRailOpen && presentationTool === 'laser'"
         class="laser-cursor"
         :style="laserCursorStyle"
         aria-hidden="true"
@@ -791,7 +833,7 @@ onUnmounted(() => {
     <!-- Spotlight overlay: dark vignette with circular reveal (spotlight tool) -->
     <Transition name="spotlight-fade">
       <div
-        v-if="presentationRailOpen && presentationTool === 'spotlight'"
+        v-if="canUsePresentationTools && presentationRailOpen && presentationTool === 'spotlight'"
         class="spotlight-overlay"
         :style="spotlightStyle"
         aria-hidden="true"
@@ -800,7 +842,7 @@ onUnmounted(() => {
 
     <!-- Presentation timer: fullscreen dim + large countdown -->
     <PresentationTimerOverlay
-      v-if="presentationRailOpen && presentationTool === 'timer'"
+      v-if="canUsePresentationTools && presentationRailOpen && presentationTool === 'timer'"
       :remaining-seconds="timerRemainingSeconds"
       :total-seconds="timerTotalSeconds"
       :running="timerRunning"
@@ -813,13 +855,13 @@ onUnmounted(() => {
 
     <!-- Presentation tools: vertical rail (right); hidden during timer so overlay is unobstructed -->
     <PresentationSideToolbar
-      v-if="presentationRailOpen && presentationTool !== 'timer'"
+      v-if="canUsePresentationTools && presentationRailOpen && presentationTool !== 'timer'"
       :active-tool="presentationTool"
       :virtual-keyboard-open="canvasVirtualKeyboardOpen"
       @selectTool="presentationTool = $event"
       @clearHighlighter="presentationHighlightStrokes = []"
       @fit="handleFitToScreen"
-      @exit="handleStartPresentation"
+      @exit="handleStartPresentationWithTier"
       @toggleVirtualKeyboard="toggleCanvasVirtualKeyboard"
     />
 
@@ -993,12 +1035,14 @@ onUnmounted(() => {
             :presentation-rail-open="presentationRailOpen"
             :workshop-code="workshopCode"
             :is-collab-guest="isCollabGuest"
+            :allow-presentation-tools="canUsePresentationTools"
+            :allow-online-collab="canUseOnlineCollab"
             @zoomChange="handleZoomChange"
             @zoomIn="handleZoomIn"
             @zoomOut="handleZoomOut"
             @fitToScreen="handleFitToScreen"
             @handToolToggle="handleHandToolToggle"
-            @startPresentation="handleStartPresentation"
+            @startPresentation="handleStartPresentationWithTier"
             @openCollab="handleOpenCollab"
           />
         </div>

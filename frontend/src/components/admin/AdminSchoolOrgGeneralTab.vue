@@ -1,15 +1,24 @@
 <script setup lang="ts">
 /**
- * School modal — General tab: display name, status, expiry, managers.
+ * School modal — General tab: display name, status, expiry, managers, school version.
  */
+import { computed } from 'vue'
+
 import { useLanguage } from '@/composables'
+import {
+  SCHOOL_TIER_LIMITS,
+  SCHOOL_TIER_OPTIONS,
+  type SchoolTier,
+} from '@/constants/schoolTier'
 
 const displayNameEdit = defineModel<string>('displayNameEdit', { required: true })
 const expiresAtEdit = defineModel<string | null>('expiresAtEdit', { required: true })
+const schoolTierEdit = defineModel<SchoolTier>('schoolTierEdit', { required: true })
 
-defineProps<{
+const props = defineProps<{
   orgName?: string
   orgActiveState: boolean
+  orgUserCount?: number
   managers: { id: number; phone: string; name: string }[]
   orgUsers: { id: number; phone: string; name: string }[]
   managersLoading: boolean
@@ -32,6 +41,45 @@ const MINDBOT_SWISS_SELECT_POPPER_WIDE =
 
 const labelClass =
   'mindbot-section-label mindbot-swiss-section-label shrink-0 text-[11px] font-semibold tracking-[0.14em] sm:w-[178px]'
+
+const tierLabelKey: Record<SchoolTier, string> = {
+  lite: 'admin.schoolVersionTierLite',
+  standard: 'admin.schoolVersionTierStandard',
+  professional: 'admin.schoolVersionTierProfessional',
+}
+
+const schoolTierHint = computed(() => {
+  const limits = SCHOOL_TIER_LIMITS[schoolTierEdit.value]
+  return t('admin.schoolVersionHint', {
+    current: props.orgUserCount ?? 0,
+    limit: limits.memberLimit,
+  })
+})
+
+const showLiteFeaturesHint = computed(() => schoolTierEdit.value === 'lite')
+
+const managerLimit = computed(() => SCHOOL_TIER_LIMITS[schoolTierEdit.value].managerLimit)
+
+const managersRemaining = computed(() =>
+  Math.max(0, managerLimit.value - props.managers.length)
+)
+
+const managerLimitHint = computed(() =>
+  t('admin.schoolManagerLimitHint', {
+    current: props.managers.length,
+    limit: managerLimit.value,
+  })
+)
+
+function tierOptionLabel(tier: SchoolTier): string {
+  const limits = SCHOOL_TIER_LIMITS[tier]
+  return t('admin.schoolVersionTierOption', {
+    label: t(tierLabelKey[tier]),
+    members: limits.memberLimit,
+    managers: limits.managerLimit,
+    storage: limits.diagramStorageGbPerMember,
+  })
+}
 </script>
 
 <template>
@@ -47,6 +95,36 @@ const labelClass =
           clearable
           class="mindbot-swiss-input flex-1 min-w-0 max-w-2xl"
         />
+      </div>
+
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <span :class="labelClass">{{ t('admin.schoolVersionLabel') }}</span>
+        <div class="flex-1 min-w-0 max-w-2xl space-y-1.5">
+          <el-select
+            v-model="schoolTierEdit"
+            class="mindbot-swiss-select w-full"
+            teleported
+            :popper-class="MINDBOT_SWISS_SELECT_POPPER_WIDE"
+          >
+            <el-option
+              v-for="tier in SCHOOL_TIER_OPTIONS"
+              :key="tier"
+              :label="tierOptionLabel(tier)"
+              :value="tier"
+            >
+              <span class="mindbot-swiss-select-option__label">{{ tierOptionLabel(tier) }}</span>
+            </el-option>
+          </el-select>
+          <p class="mindbot-swiss-hint text-xs m-0 leading-relaxed">
+            {{ schoolTierHint }}
+          </p>
+          <p
+            v-if="showLiteFeaturesHint"
+            class="mindbot-swiss-hint text-xs m-0 leading-relaxed text-amber-800/90"
+          >
+            {{ t('admin.schoolVersionLiteFeaturesHint') }}
+          </p>
+        </div>
       </div>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -122,6 +200,9 @@ const labelClass =
             >
               {{ t('admin.noManagersFound') }}
             </p>
+            <p class="mindbot-swiss-hint text-xs m-0 leading-relaxed">
+              {{ managerLimitHint }}
+            </p>
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
               <el-select
                 v-model="pendingManagerIds"
@@ -129,7 +210,8 @@ const labelClass =
                 filterable
                 collapse-tags
                 collapse-tags-tooltip
-                :disabled="orgUsers.length === 0"
+                :multiple-limit="managersRemaining"
+                :disabled="orgUsers.length === 0 || managersRemaining === 0"
                 :placeholder="
                   orgUsers.length > 0
                     ? t('admin.addSchoolManagers')
@@ -151,7 +233,7 @@ const labelClass =
                 plain
                 class="mindbot-pill mindbot-pill--copy shrink-0"
                 :loading="addManagersLoading"
-                :disabled="pendingManagerIds.length === 0"
+                :disabled="pendingManagerIds.length === 0 || managersRemaining === 0"
                 @click="emit('addManagers')"
               >
                 {{ t('admin.addSchoolManagersButton') }}

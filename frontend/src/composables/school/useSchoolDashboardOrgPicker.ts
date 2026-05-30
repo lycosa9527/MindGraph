@@ -8,6 +8,7 @@ import {
   resolveDefaultOrganizationId,
   userHasOrgOnlyPanelScope,
 } from '@/composables/admin/useCurrentUserOrganizationId'
+import { fallbackCapabilitiesForRole } from '@/utils/adminCapabilities'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
 
@@ -23,7 +24,12 @@ const selectedOrgId = ref<number | null>(null)
 export function useSchoolDashboardOrgPicker() {
   const authStore = useAuthStore()
 
-  const isSuperAdminPicker = computed(() => authStore.isSuperAdmin)
+  const canPickOrganization = computed(() => {
+    const caps =
+      authStore.adminCapabilitiesPayload?.capabilities ??
+      fallbackCapabilitiesForRole(authStore.userRole)
+    return caps.includes('scope.global')
+  })
 
   const isOrgLocked = computed(() => userHasOrgOnlyPanelScope())
 
@@ -31,18 +37,34 @@ export function useSchoolDashboardOrgPicker() {
     if (isOrgLocked.value) {
       return getCurrentUserOrganizationId()
     }
-    if (isSuperAdminPicker.value && selectedOrgId.value != null) {
+    if (canPickOrganization.value && selectedOrgId.value != null) {
       return selectedOrgId.value
     }
     return getCurrentUserOrganizationId()
   })
 
   const showPicker = computed(
-    () => isSuperAdminPicker.value && organizations.value.length > 0
+    () => canPickOrganization.value && organizations.value.length > 0
   )
 
+  const effectiveOrgName = computed(() => {
+    const orgId = effectiveOrgId.value
+    if (orgId == null) {
+      return ''
+    }
+    const fromList = organizations.value.find((org) => org.id === orgId)?.name
+    if (fromList) {
+      return fromList
+    }
+    const userSchoolId = authStore.user?.schoolId
+    if (userSchoolId != null && String(userSchoolId) === String(orgId)) {
+      return (authStore.user?.schoolName ?? '').trim()
+    }
+    return ''
+  })
+
   async function loadOrganizations(): Promise<void> {
-    if (!isSuperAdminPicker.value) {
+    if (!canPickOrganization.value) {
       return
     }
     const res = await apiRequest('/api/auth/admin/organizations')
@@ -69,7 +91,7 @@ export function useSchoolDashboardOrgPicker() {
       selectedOrgId.value = userOrg
       return
     }
-    if (isSuperAdminPicker.value && selectedOrgId.value == null) {
+    if (canPickOrganization.value && selectedOrgId.value == null) {
       if (
         organizations.value.length === 0 ||
         organizations.value.some((org) => org.id === userOrg)
@@ -83,7 +105,9 @@ export function useSchoolDashboardOrgPicker() {
     organizations,
     selectedOrgId,
     effectiveOrgId,
+    effectiveOrgName,
     showPicker,
+    canPickOrganization,
     isOrgLocked,
     loadOrganizations,
     syncSelectedOrgFromUser,

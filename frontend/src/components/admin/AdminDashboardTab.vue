@@ -5,6 +5,9 @@
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
+import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
+import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
+import AdminSwissServiceCard from '@/components/admin/swiss/AdminSwissServiceCard.vue'
 import AdminTokenUsageByServicePanel from '@/components/admin/AdminTokenUsageByServicePanel.vue'
 import { Connection, Document, Loading, TrendCharts, User } from '@element-plus/icons-vue'
 
@@ -500,113 +503,38 @@ onBeforeUnmount(() => {
         v-if="showOperations"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-4"
       >
-        <el-card
-          shadow="hover"
-          class="stat-card stat-card-clickable"
+        <AdminSwissKpiCard
+          :title="t('admin.totalUsers')"
+          :value="stats.totalUsers"
+          :icon="User"
+          theme="members"
+          clickable
           @click="showTrendChart('users')"
-        >
-          <div class="flex items-center gap-4">
-            <div
-              class="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center"
-            >
-              <el-icon
-                :size="24"
-                class="text-primary-500"
-              >
-                <User />
-              </el-icon>
-            </div>
-            <div>
-              <p class="text-sm text-gray-500 dark:text-gray-400">
-                {{ t('admin.totalUsers') }}
-              </p>
-              <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                {{ stats.totalUsers.toLocaleString() }}
-              </p>
-            </div>
-          </div>
-        </el-card>
-
-        <el-card
-          shadow="hover"
-          class="stat-card stat-card-clickable"
+        />
+        <AdminSwissKpiCard
+          :title="t('admin.todayRegistrations')"
+          :value="stats.recentRegistrations"
+          :icon="TrendCharts"
+          theme="success"
+          clickable
           @click="showTrendChart('registrations')"
-        >
-          <div class="flex items-center gap-4">
-            <div
-              class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center"
-            >
-              <el-icon
-                :size="24"
-                class="text-green-500"
-              >
-                <TrendCharts />
-              </el-icon>
-            </div>
-            <div>
-              <p class="text-sm text-gray-500 dark:text-gray-400">
-                {{ t('admin.todayRegistrations') }}
-              </p>
-              <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                {{ stats.recentRegistrations }}
-              </p>
-            </div>
-          </div>
-        </el-card>
-
-        <el-card
-          shadow="hover"
-          class="stat-card stat-card-clickable"
+        />
+        <AdminSwissKpiCard
+          :title="t('admin.schools')"
+          :value="stats.totalOrganizations"
+          :icon="Document"
+          theme="managers"
+          clickable
           @click="showTrendChart('organizations')"
-        >
-          <div class="flex items-center gap-4">
-            <div
-              class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center"
-            >
-              <el-icon
-                :size="24"
-                class="text-purple-500"
-              >
-                <Document />
-              </el-icon>
-            </div>
-            <div>
-              <p class="text-sm text-gray-500 dark:text-gray-400">
-                {{ t('admin.schools') }}
-              </p>
-              <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                {{ stats.totalOrganizations.toLocaleString() }}
-              </p>
-            </div>
-          </div>
-        </el-card>
-
-        <el-card
-          shadow="hover"
-          class="stat-card stat-card-clickable"
+        />
+        <AdminSwissKpiCard
+          :title="`${t('admin.tokens')} (${t('admin.pastWeek')})`"
+          :value="formatNumber(stats.totalTokens)"
+          :icon="Connection"
+          theme="storage"
+          clickable
           @click="showTrendChart('tokens')"
-        >
-          <div class="flex items-center gap-4">
-            <div
-              class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center"
-            >
-              <el-icon
-                :size="24"
-                class="text-orange-500"
-              >
-                <Connection />
-              </el-icon>
-            </div>
-            <div>
-              <p class="text-sm text-gray-500 dark:text-gray-400">
-                {{ t('admin.tokens') }} ({{ t('admin.pastWeek') }})
-              </p>
-              <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                {{ formatNumber(stats.totalTokens) }}
-              </p>
-            </div>
-          </div>
-        </el-card>
+        />
       </div>
 
       <AdminTokenUsageByServicePanel
@@ -635,12 +563,11 @@ onBeforeUnmount(() => {
           v-if="showUsageByService"
           class="grid grid-cols-1 xl:grid-cols-2 gap-6"
         >
-          <el-card
-            shadow="hover"
-            class="service-card mindgraph-card"
-          >
+          <AdminSwissServiceCard theme="mindgraph">
             <template #header>
-              <span class="font-medium">{{ t('admin.topSchoolsByMindGraphTokens') }}</span>
+              <span class="swiss-stat-card__service-title">{{
+                t('admin.topSchoolsByMindGraphTokens')
+              }}</span>
             </template>
             <el-table
               :data="topOrgsByMindgraph"
@@ -676,14 +603,13 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
             </el-table>
-          </el-card>
+          </AdminSwissServiceCard>
 
-          <el-card
-            shadow="hover"
-            class="service-card mindmate-card"
-          >
+          <AdminSwissServiceCard theme="mindmate">
             <template #header>
-              <span class="font-medium">{{ t('admin.topSchoolsByMindMateTokens') }}</span>
+              <span class="swiss-stat-card__service-title">{{
+                t('admin.topSchoolsByMindMateTokens')
+              }}</span>
             </template>
             <el-table
               :data="topOrgsByMindmate"
@@ -719,7 +645,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
             </el-table>
-          </el-card>
+          </AdminSwissServiceCard>
         </div>
         <div
           v-else-if="showOperations"
@@ -851,58 +777,34 @@ onBeforeUnmount(() => {
         </div>
         <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <el-card
-              shadow="hover"
-              class="token-period-card cursor-pointer"
-              :class="{ 'ring-2 ring-primary-500': trendContext.period === 'today' }"
+            <AdminSwissPeriodCard
+              :label="t('admin.today')"
+              :value="periodCards.today"
+              :active="trendContext.period === 'today'"
+              theme="storage"
               @click="switchTrendPeriod('today')"
-            >
-              <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                {{ t('admin.today') }}
-              </p>
-              <p class="text-lg font-bold text-gray-800 dark:text-white">
-                {{ periodCards.today }}
-              </p>
-            </el-card>
-            <el-card
-              shadow="hover"
-              class="token-period-card cursor-pointer"
-              :class="{ 'ring-2 ring-primary-500': trendContext.period === 'week' }"
+            />
+            <AdminSwissPeriodCard
+              :label="t('admin.pastWeek')"
+              :value="periodCards.week"
+              :active="trendContext.period === 'week'"
+              theme="storage"
               @click="switchTrendPeriod('week')"
-            >
-              <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                {{ t('admin.pastWeek') }}
-              </p>
-              <p class="text-lg font-bold text-gray-800 dark:text-white">
-                {{ periodCards.week }}
-              </p>
-            </el-card>
-            <el-card
-              shadow="hover"
-              class="token-period-card cursor-pointer"
-              :class="{ 'ring-2 ring-primary-500': trendContext.period === 'month' }"
+            />
+            <AdminSwissPeriodCard
+              :label="t('admin.pastMonth')"
+              :value="periodCards.month"
+              :active="trendContext.period === 'month'"
+              theme="storage"
               @click="switchTrendPeriod('month')"
-            >
-              <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                {{ t('admin.pastMonth') }}
-              </p>
-              <p class="text-lg font-bold text-gray-800 dark:text-white">
-                {{ periodCards.month }}
-              </p>
-            </el-card>
-            <el-card
-              shadow="hover"
-              class="token-period-card cursor-pointer"
-              :class="{ 'ring-2 ring-primary-500': trendContext.period === 'total' }"
+            />
+            <AdminSwissPeriodCard
+              :label="t('admin.allTime')"
+              :value="periodCards.total"
+              :active="trendContext.period === 'total'"
+              theme="storage"
               @click="switchTrendPeriod('total')"
-            >
-              <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                {{ t('admin.allTime') }}
-              </p>
-              <p class="text-lg font-bold text-gray-800 dark:text-white">
-                {{ periodCards.total }}
-              </p>
-            </el-card>
+            />
           </div>
         </div>
       </template>
@@ -913,22 +815,3 @@ onBeforeUnmount(() => {
   </div>
 </template>
 
-<style scoped>
-.stat-card :deep(.el-card__body) {
-  padding: 20px;
-}
-
-.stat-card-clickable {
-  cursor: pointer;
-}
-
-.stat-card-clickable:hover {
-  transform: translateY(-1px);
-}
-
-.token-period-card :deep(.el-card__body) {
-  padding: 12px 16px;
-}
-</style>
-
-<style scoped src="@/styles/admin-token-by-service.css"></style>

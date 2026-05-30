@@ -4,10 +4,13 @@
  */
 import { computed, toRef } from 'vue'
 
+import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
 import AdminTokenUsageByServicePanel from '@/components/admin/AdminTokenUsageByServicePanel.vue'
-import { Connection, DocumentCopy, Loading, User } from '@element-plus/icons-vue'
+import SchoolDashboardQuotaCard from '@/components/school/SchoolDashboardQuotaCard.vue'
+import { Connection, DocumentCopy, FolderOpened, Key, Loading, Stamp, User } from '@element-plus/icons-vue'
 
 import { useSchoolDashboardStats } from '@/composables/admin/useSchoolDashboardStats'
+import { useSchoolDashboardQuotas } from '@/composables/school/useSchoolDashboardQuotas'
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 
 const props = withDefaults(
@@ -30,6 +33,15 @@ const { publicSiteUrl } = usePublicSiteUrl()
 
 const orgIdRef = toRef(props, 'orgId')
 const { isLoading, stats, topUsers } = useSchoolDashboardStats(orgIdRef)
+const {
+  storageUsedGb,
+  storageLimitGb,
+  storageUsedLabel,
+  storageLimitLabel,
+  storageRemainingLabel,
+  memberRemaining,
+  managerRemaining,
+} = useSchoolDashboardQuotas(computed(() => stats.value.quotas))
 
 const invitationCodeDisplay = computed(
   () => (stats.value.organization?.invitation_code || '').trim() || '—'
@@ -68,23 +80,47 @@ async function copyInvitationCode(event: MouseEvent): Promise<void> {
     </p>
     <div
       v-if="showOperations"
-      class="grid grid-cols-1 md:grid-cols-2 gap-6"
+      class="grid grid-cols-1 md:grid-cols-3 gap-6"
     >
-      <el-card shadow="hover" class="stat-card">
-        <div class="flex items-center gap-4">
-          <el-icon :size="24" class="text-primary-500"><User /></el-icon>
-          <div>
-            <p class="text-sm text-gray-500">{{ t('admin.totalUsers') }}</p>
-            <p class="text-2xl font-bold">{{ stats.totalUsers.toLocaleString() }}</p>
-          </div>
-        </div>
-      </el-card>
-      <el-card shadow="hover" class="stat-card">
-        <div>
-          <p class="text-sm text-gray-500">{{ t('admin.invitationCode') }}</p>
-          <p class="text-xl font-mono font-bold truncate">{{ invitationCodeDisplay }}</p>
+      <SchoolDashboardQuotaCard
+        :title="t('admin.memberSeats')"
+        :used="stats.quotas.memberCount"
+        :limit="stats.quotas.memberLimit"
+        :remaining-label="t('admin.seatsRemaining', { count: memberRemaining.toLocaleString() })"
+        :icon="User"
+        accent="blue"
+      />
+      <SchoolDashboardQuotaCard
+        :title="t('admin.managerSeats')"
+        :used="stats.quotas.managerCount"
+        :limit="stats.quotas.managerLimit"
+        :remaining-label="t('admin.seatsRemaining', { count: managerRemaining.toLocaleString() })"
+        :icon="Stamp"
+        accent="purple"
+      />
+      <SchoolDashboardQuotaCard
+        :title="t('admin.resourceSpace')"
+        :used="storageUsedGb"
+        :limit="storageLimitGb"
+        :used-display-override="storageUsedLabel"
+        :limit-display-override="storageLimitLabel"
+        :remaining-label="t('admin.storageRemaining', { amount: storageRemainingLabel })"
+        :icon="FolderOpened"
+        accent="orange"
+      />
+    </div>
+    <div
+      v-if="showOperations"
+      class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6"
+    >
+      <AdminSwissKpiCard
+        :title="t('admin.invitationCode')"
+        :value="invitationCodeDisplay"
+        :icon="Key"
+        theme="managers"
+      >
+        <template v-if="!readOnly" #footer>
           <el-button
-            v-if="!readOnly"
             type="primary"
             size="small"
             round
@@ -95,23 +131,20 @@ async function copyInvitationCode(event: MouseEvent): Promise<void> {
             <el-icon class="el-icon--left"><DocumentCopy /></el-icon>
             {{ t('admin.copyShareMessage') }}
           </el-button>
-        </div>
-      </el-card>
+        </template>
+      </AdminSwissKpiCard>
     </div>
     <div
       v-if="showUsage"
       class="grid grid-cols-1 md:grid-cols-2 gap-6"
       :class="{ 'mt-6': showOperations }"
     >
-      <el-card shadow="hover" class="stat-card">
-        <div class="flex items-center gap-4">
-          <el-icon :size="24" class="text-orange-500"><Connection /></el-icon>
-          <div>
-            <p class="text-sm text-gray-500">{{ t('admin.tokens') }}</p>
-            <p class="text-2xl font-bold">{{ formatNumber(stats.totalTokens) }}</p>
-          </div>
-        </div>
-      </el-card>
+      <AdminSwissKpiCard
+        :title="t('admin.tokens')"
+        :value="formatNumber(stats.totalTokens)"
+        :icon="Connection"
+        theme="storage"
+      />
     </div>
     <AdminTokenUsageByServicePanel
       v-if="showUsage"

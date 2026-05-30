@@ -11,6 +11,7 @@ import { ElButton } from 'element-plus'
 import { Close } from '@element-plus/icons-vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
 
@@ -33,6 +34,7 @@ const emit = defineEmits<{
 }>()
 
 const authStore = useAuthStore()
+const { canUseApiToken, canUseChromeExtension, showAccountPlugins } = useSchoolTierFeatures()
 
 const isVisible = computed({
   get: () => props.visible,
@@ -291,7 +293,7 @@ watch(
                   />
                 </div>
 
-                <div>
+                <div v-if="showAccountPlugins">
                   <label
                     class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2"
                   >
@@ -299,6 +301,7 @@ watch(
                   </label>
                   <div class="flex flex-wrap items-center gap-2">
                     <a
+                      v-if="canUseApiToken"
                       class="account-plugin-pill account-plugin-pill--openclaw"
                       :href="openclawSkillZipUrl"
                       download
@@ -306,6 +309,7 @@ watch(
                       {{ t('auth.downloadOpenclawSkill') }}
                     </a>
                     <a
+                      v-if="canUseChromeExtension"
                       class="account-plugin-pill account-plugin-pill--chrome"
                       :href="chromeExtensionZipUrl"
                       download
@@ -313,6 +317,7 @@ watch(
                       {{ t('auth.downloadChromeExtension') }}
                     </a>
                     <button
+                      v-if="canUseApiToken"
                       type="button"
                       class="account-plugin-pill account-plugin-pill--token"
                       @click="showApiTokenModal = true"
@@ -357,7 +362,10 @@ watch(
       @success="emit('success')"
     />
 
-    <ApiTokenModal v-model:visible="showApiTokenModal" />
+    <ApiTokenModal
+      v-if="canUseApiToken"
+      v-model:visible="showApiTokenModal"
+    />
   </Teleport>
 </template>
 

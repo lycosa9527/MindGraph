@@ -4,6 +4,7 @@
  */
 import { ref } from 'vue'
 
+import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
 import { Loading } from '@element-plus/icons-vue'
 
 import { useLanguage } from '@/composables'
@@ -32,7 +33,7 @@ defineExpose({ chartRef })
       class="flex justify-center items-center h-56"
     >
       <el-icon
-        class="is-loading text-[var(--mindbot-swiss-muted)]"
+        class="is-loading text-[var(--swiss-muted)]"
         :size="32"
       >
         <Loading />
@@ -46,7 +47,7 @@ defineExpose({ chartRef })
         />
       </div>
       <div class="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
-        <button
+        <AdminSwissPeriodCard
           v-for="item in [
             { key: 'today' as const, label: t('admin.today'), value: periodCards.today },
             { key: 'week' as const, label: t('admin.pastWeek'), value: periodCards.week },
@@ -54,54 +55,13 @@ defineExpose({ chartRef })
             { key: 'total' as const, label: t('admin.allTime'), value: periodCards.total },
           ]"
           :key="item.key"
-          type="button"
-          class="school-token-period-card text-left"
-          :class="{ 'school-token-period-card--active': period === item.key }"
+          :label="item.label"
+          :value="item.value"
+          :active="period === item.key"
+          theme="storage"
           @click="emit('switchPeriod', item.key)"
-        >
-          <p class="school-token-period-card__label">{{ item.label }}</p>
-          <p class="school-token-period-card__value">{{ item.value }}</p>
-        </button>
+        />
       </div>
     </template>
   </div>
 </template>
-
-<style scoped>
-.school-token-period-card {
-  padding: 12px 14px;
-  border-radius: 4px;
-  border: 1px solid var(--mindbot-swiss-border, rgba(34, 211, 238, 0.32));
-  background: var(--mindbot-swiss-inset, rgba(15, 23, 42, 0.72));
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
-  cursor: pointer;
-}
-
-.school-token-period-card:hover {
-  border-color: rgba(34, 211, 238, 0.55);
-}
-
-.school-token-period-card--active {
-  border-color: #22d3ee;
-  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.35);
-}
-
-.school-token-period-card__label {
-  margin: 0 0 4px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--mindbot-swiss-muted, #a8b7c9);
-}
-
-.school-token-period-card__value {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--mindbot-swiss-text, #f1f5f9);
-}
-</style>

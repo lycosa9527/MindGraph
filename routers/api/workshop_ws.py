@@ -146,6 +146,26 @@ async def canvas_collab_websocket(
     if auth_err or user is None:
         return
 
+    from config.database import AsyncSessionLocal
+    from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, user_has_school_tier_feature
+
+    async with AsyncSessionLocal() as tier_db:
+        collab_allowed = await user_has_school_tier_feature(
+            tier_db,
+            user,
+            TIER_FEATURE_ONLINE_COLLAB,
+        )
+    if not collab_allowed:
+        await websocket.close(
+            code=1008,
+            reason="School tier does not include online collaboration",
+        )
+        logger.warning(
+            "[WorkshopWS] School tier blocked collab for user_id=%s",
+            user.id,
+        )
+        return
+
     norm_code = normalize_canvas_collab_code(code)
     if norm_code is None:
         await websocket.close(

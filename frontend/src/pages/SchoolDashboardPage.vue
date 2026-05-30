@@ -6,22 +6,32 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import {
-  ChatDotRound,
   Connection,
   DocumentCopy,
+  FolderOpened,
   Key,
   Loading,
-  Refresh,
+  Plus,
+  Stamp,
   User,
-  Warning,
 } from '@element-plus/icons-vue'
 
 import type { Chart as ChartInstance } from 'chart.js'
 
 import SchoolDashboardOrgPicker from '@/components/school/SchoolDashboardOrgPicker.vue'
+import SchoolDashboardQuotaCard from '@/components/school/SchoolDashboardQuotaCard.vue'
 import SchoolDashboardUsersTab from '@/components/school/SchoolDashboardUsersTab.vue'
+import SchoolAddMemberDialog from '@/components/school/SchoolAddMemberDialog.vue'
+import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
+import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
+import AdminTokenUsageByServicePanel from '@/components/admin/AdminTokenUsageByServicePanel.vue'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useSchoolDashboardOrgPicker } from '@/composables/school/useSchoolDashboardOrgPicker'
+import { useSchoolDashboardAddMemberOpenRequest } from '@/composables/school/useSchoolDashboardAddMemberHeader'
+import {
+  parseSchoolDashboardQuotas,
+  useSchoolDashboardQuotas,
+} from '@/composables/school/useSchoolDashboardQuotas'
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
@@ -40,16 +50,45 @@ const props = withDefaults(
 )
 
 const authStore = useAuthStore()
-const { loadCapabilities } = useAdminAccess()
-const { effectiveOrgId, loadOrganizations, syncSelectedOrgFromUser } =
+const { loadCapabilities, can, isReadOnly } = useAdminAccess()
+const { effectiveOrgId, loadOrganizations, syncSelectedOrgFromUser, showPicker, effectiveOrgName } =
   useSchoolDashboardOrgPicker()
+
+const addMemberVisible = ref(false)
+const usersTabRef = ref<InstanceType<typeof SchoolDashboardUsersTab> | null>(null)
+const addMemberOpenRequest = useSchoolDashboardAddMemberOpenRequest()
+
+const showAddMemberButton = computed(
+  () =>
+    effectiveOrgId.value != null &&
+    !isReadOnly.value &&
+    (can('tab.users.edit') || (can('scope.org') && can('tab.data_center.view')))
+)
+
+function onMemberCreated(): void {
+  void loadStats()
+  usersTabRef.value?.reloadUsers()
+}
 
 const isLoading = ref(true)
 const stats = ref({
-  totalUsers: 0,
   totalTokens: 0,
   organization: { id: 0, name: '', code: '', invitation_code: '' },
+  quotas: parseSchoolDashboardQuotas(null),
 })
+
+const addMemberSchoolName = computed(() =>
+  (stats.value.organization?.name || effectiveOrgName.value || authStore.user?.schoolName || '').trim()
+)
+const {
+  storageUsedGb,
+  storageLimitGb,
+  storageUsedLabel,
+  storageLimitLabel,
+  storageRemainingLabel,
+  memberRemaining,
+  managerRemaining,
+} = useSchoolDashboardQuotas(computed(() => stats.value.quotas))
 const topUsers = ref<{ id: number; name: string; phone: string; total_tokens: number }[]>([])
 
 const trendModalVisible = ref(false)
@@ -61,37 +100,6 @@ const periodCards = ref({ today: '-', week: '-', month: '-', total: '-' })
 const trendPeriod = ref<'today' | 'week' | 'month' | 'total'>('week')
 
 const activeTab = ref<'overview' | 'tokens' | 'users'>('overview')
-const isLoadingTokens = ref(false)
-const tokenStats = ref<{
-  today?: { input_tokens: number; output_tokens: number; total_tokens: number }
-  past_week?: { input_tokens: number; output_tokens: number; total_tokens: number }
-  past_month?: { input_tokens: number; output_tokens: number; total_tokens: number }
-  total?: { input_tokens: number; output_tokens: number; total_tokens: number }
-  by_service?: {
-    mindgraph: {
-      today: { total_tokens: number; request_count?: number }
-      week: { total_tokens: number; request_count?: number }
-      month: { total_tokens: number; request_count?: number }
-      total: {
-        total_tokens: number
-        input_tokens: number
-        output_tokens: number
-        request_count?: number
-      }
-    }
-    mindmate: {
-      today: { total_tokens: number; request_count?: number }
-      week: { total_tokens: number; request_count?: number }
-      month: { total_tokens: number; request_count?: number }
-      total: {
-        total_tokens: number
-        input_tokens: number
-        output_tokens: number
-        request_count?: number
-      }
-    }
-  }
-} | null>(null)
 
 function formatNumber(num: number): string {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
@@ -147,7 +155,6 @@ async function loadStats() {
       invitation_code: '',
     }
     stats.value = {
-      totalUsers: data.total_users ?? 0,
       totalTokens: data.token_stats?.total_tokens ?? 0,
       organization: {
         id: org.id ?? 0,
@@ -155,6 +162,7 @@ async function loadStats() {
         code: org.code ?? '',
         invitation_code: org.invitation_code ?? '',
       },
+      quotas: parseSchoolDashboardQuotas(data.quotas),
     }
     topUsers.value = data.top_users ?? []
   } catch {
@@ -332,43 +340,11 @@ function closeTrendModal() {
   trendChartInstance = null
 }
 
-async function loadTokenStats() {
-  const orgId = effectiveOrgId.value
-  if (orgId == null) return
-  if (isLoadingTokens.value) return
-  isLoadingTokens.value = true
-  try {
-    const res = await apiRequest(
-      `/api/auth/admin/stats/school/token-stats?organization_id=${orgId}`
-    )
-    if (res.ok) {
-      tokenStats.value = await res.json()
-    } else {
-      const data = await res.json().catch(() => ({}))
-      notify.error(httpErrorDetail(data) || t('admin.tokenStatsLoadError'))
-    }
-  } catch {
-    notify.error(t('admin.tokenStatsNetworkError'))
-  } finally {
-    isLoadingTokens.value = false
-  }
-}
-
-watch(activeTab, (tab) => {
-  if (tab === 'tokens' && !tokenStats.value && effectiveOrgId.value != null) {
-    loadTokenStats()
-  }
-})
-
 watch(
   effectiveOrgId,
   () => {
     if (effectiveOrgId.value != null) {
       loadStats()
-      if (activeTab.value === 'tokens') {
-        tokenStats.value = null
-        loadTokenStats()
-      }
     }
   },
   { immediate: true }
@@ -380,6 +356,12 @@ watch(
     syncSelectedOrgFromUser()
   }
 )
+
+watch(addMemberOpenRequest, () => {
+  if (props.embedded && showAddMemberButton.value) {
+    addMemberVisible.value = true
+  }
+})
 
 onMounted(async () => {
   await loadCapabilities()
@@ -410,7 +392,22 @@ onBeforeUnmount(() => {
       <h1 class="text-sm font-semibold text-stone-900 truncate min-w-0">
         {{ t('admin.schoolDashboard') }}
       </h1>
-      <SchoolDashboardOrgPicker />
+      <div class="flex items-center gap-2 shrink-0">
+        <el-button
+          v-if="showAddMemberButton"
+          type="primary"
+          round
+          class="school-add-member-btn admin-swiss-btn"
+          @click="addMemberVisible = true"
+        >
+          <el-icon class="el-icon--left"><Plus /></el-icon>
+          {{ t('admin.schoolAddMemberButton') }}
+        </el-button>
+        <SchoolDashboardOrgPicker
+          v-if="showPicker"
+          compact
+        />
+      </div>
     </div>
 
     <div
@@ -460,88 +457,58 @@ onBeforeUnmount(() => {
             class="grid grid-cols-1 md:grid-cols-3 gap-6"
             :class="embedded ? 'pt-0' : 'pt-4'"
           >
-            <el-card
-              shadow="hover"
-              class="stat-card stat-card-clickable"
-              @click="showTrendChart('total')"
-            >
-              <div class="flex items-center gap-4">
-                <div
-                  class="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center"
-                >
-                  <el-icon
-                    :size="24"
-                    class="text-primary-500"
-                  >
-                    <User />
-                  </el-icon>
-                </div>
-                <div>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ t('admin.totalUsers') }}
-                  </p>
-                  <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                    {{ stats.totalUsers.toLocaleString() }}
-                  </p>
-                </div>
-              </div>
-            </el-card>
+            <SchoolDashboardQuotaCard
+              :title="t('admin.memberSeats')"
+              :used="stats.quotas.memberCount"
+              :limit="stats.quotas.memberLimit"
+              :remaining-label="
+                t('admin.seatsRemaining', { count: memberRemaining.toLocaleString() })
+              "
+              :icon="User"
+              accent="blue"
+            />
+            <SchoolDashboardQuotaCard
+              :title="t('admin.managerSeats')"
+              :used="stats.quotas.managerCount"
+              :limit="stats.quotas.managerLimit"
+              :remaining-label="
+                t('admin.seatsRemaining', { count: managerRemaining.toLocaleString() })
+              "
+              :icon="Stamp"
+              accent="purple"
+            />
+            <SchoolDashboardQuotaCard
+              :title="t('admin.resourceSpace')"
+              :used="storageUsedGb"
+              :limit="storageLimitGb"
+              :used-display-override="storageUsedLabel"
+              :limit-display-override="storageLimitLabel"
+              :remaining-label="
+                t('admin.storageRemaining', {
+                  amount: storageRemainingLabel,
+                })
+              "
+              :icon="FolderOpened"
+              accent="orange"
+            />
+          </div>
 
-            <el-card
-              shadow="hover"
-              class="stat-card stat-card-clickable"
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <AdminSwissKpiCard
+              :title="`${t('admin.tokens')} (${t('admin.pastWeek')})`"
+              :value="formatNumber(stats.totalTokens)"
+              :icon="Connection"
+              theme="storage"
+              clickable
               @click="showTrendChart('week')"
+            />
+            <AdminSwissKpiCard
+              :title="t('admin.invitationCode')"
+              :value="invitationCodeDisplay"
+              :icon="Key"
+              theme="managers"
             >
-              <div class="flex items-center gap-4">
-                <div
-                  class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center"
-                >
-                  <el-icon
-                    :size="24"
-                    class="text-orange-500"
-                  >
-                    <Connection />
-                  </el-icon>
-                </div>
-                <div>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ t('admin.tokens') }} ({{ t('admin.pastWeek') }})
-                  </p>
-                  <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                    {{ formatNumber(stats.totalTokens) }}
-                  </p>
-                </div>
-              </div>
-            </el-card>
-
-            <el-card
-              shadow="hover"
-              class="stat-card"
-            >
-              <div class="flex flex-col gap-3 min-w-0">
-                <div class="flex items-center gap-4 min-w-0">
-                  <div
-                    class="w-12 h-12 bg-violet-100 dark:bg-violet-900 rounded-lg flex items-center justify-center shrink-0"
-                  >
-                    <el-icon
-                      :size="24"
-                      class="text-violet-500"
-                    >
-                      <Key />
-                    </el-icon>
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                      {{ t('admin.invitationCode') }}
-                    </p>
-                    <p
-                      class="text-2xl font-mono font-bold text-gray-800 dark:text-white truncate"
-                      :title="invitationCodeDisplay"
-                    >
-                      {{ invitationCodeDisplay }}
-                    </p>
-                  </div>
-                </div>
+              <template #footer>
                 <el-button
                   type="primary"
                   size="small"
@@ -555,8 +522,8 @@ onBeforeUnmount(() => {
                   </el-icon>
                   {{ t('admin.copyShareMessage') }}
                 </el-button>
-              </div>
-            </el-card>
+              </template>
+            </AdminSwissKpiCard>
           </div>
 
           <el-card
@@ -605,328 +572,26 @@ onBeforeUnmount(() => {
 
         <!-- Token Usage Tab -->
         <template v-else-if="activeTab === 'tokens'">
-          <div
-            v-if="isLoadingTokens"
-            class="text-center py-12"
-          >
-            <el-icon
-              class="is-loading"
-              :size="32"
-            >
-              <Loading />
-            </el-icon>
-            <p class="mt-4 text-gray-500">{{ t('admin.loadingTokenStats') }}</p>
+          <div class="mt-4 mb-6">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">
+              {{ t('admin.tokenUsageByService') }} - {{ stats.organization?.name }}
+            </h2>
+            <p class="text-sm text-gray-500">
+              {{ t('admin.tokenUsageCompare') }}
+            </p>
           </div>
-
-          <div
-            v-else-if="tokenStats"
-            class="mt-4"
-          >
-            <div class="mb-6">
-              <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">
-                {{ t('admin.tokenUsageByService') }} - {{ stats.organization?.name }}
-              </h2>
-              <p class="text-sm text-gray-500">
-                {{ t('admin.tokenUsageCompare') }}
-              </p>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              <el-card
-                shadow="hover"
-                class="service-card mindgraph-card"
-              >
-                <template #header>
-                  <div class="flex items-center gap-3">
-                    <div
-                      class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center"
-                    >
-                      <el-icon
-                        :size="20"
-                        class="text-blue-500"
-                      >
-                        <Connection />
-                      </el-icon>
-                    </div>
-                    <div>
-                      <h3 class="font-semibold text-gray-800 dark:text-white">MindGraph</h3>
-                      <p class="text-xs text-gray-500">{{ t('admin.diagramGeneration') }}</p>
-                    </div>
-                  </div>
-                </template>
-                <div class="grid grid-cols-2 gap-4">
-                  <div class="stat-item">
-                    <p class="text-xs text-gray-500 mb-1">{{ t('admin.today') }}</p>
-                    <p class="text-xl font-bold text-blue-600 dark:text-blue-400">
-                      {{ formatNumber(tokenStats.by_service?.mindgraph?.today?.total_tokens || 0) }}
-                    </p>
-                    <p class="text-xs text-gray-400">
-                      {{
-                        (
-                          tokenStats.by_service?.mindgraph?.today?.request_count || 0
-                        ).toLocaleString()
-                      }}
-                      {{ t('admin.requests') }}
-                    </p>
-                  </div>
-                  <div class="stat-item">
-                    <p class="text-xs text-gray-500 mb-1">{{ t('admin.thisWeek') }}</p>
-                    <p class="text-xl font-bold text-blue-600 dark:text-blue-400">
-                      {{ formatNumber(tokenStats.by_service?.mindgraph?.week?.total_tokens || 0) }}
-                    </p>
-                    <p class="text-xs text-gray-400">
-                      {{
-                        (
-                          tokenStats.by_service?.mindgraph?.week?.request_count || 0
-                        ).toLocaleString()
-                      }}
-                      {{ t('admin.requests') }}
-                    </p>
-                  </div>
-                  <div class="stat-item">
-                    <p class="text-xs text-gray-500 mb-1">{{ t('admin.thisMonth') }}</p>
-                    <p class="text-xl font-bold text-blue-600 dark:text-blue-400">
-                      {{ formatNumber(tokenStats.by_service?.mindgraph?.month?.total_tokens || 0) }}
-                    </p>
-                    <p class="text-xs text-gray-400">
-                      {{
-                        (
-                          tokenStats.by_service?.mindgraph?.month?.request_count || 0
-                        ).toLocaleString()
-                      }}
-                      {{ t('admin.requests') }}
-                    </p>
-                  </div>
-                  <div class="stat-item">
-                    <p class="text-xs text-gray-500 mb-1">{{ t('admin.allTime') }}</p>
-                    <p class="text-xl font-bold text-blue-600 dark:text-blue-400">
-                      {{ formatNumber(tokenStats.by_service?.mindgraph?.total?.total_tokens || 0) }}
-                    </p>
-                    <p class="text-xs text-gray-400">
-                      {{
-                        (
-                          tokenStats.by_service?.mindgraph?.total?.request_count || 0
-                        ).toLocaleString()
-                      }}
-                      {{ t('admin.requests') }}
-                    </p>
-                  </div>
-                </div>
-                <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                  <div class="flex justify-between text-sm">
-                    <span class="text-gray-500">{{ t('admin.inputTokens') }}</span>
-                    <span class="font-medium text-gray-700 dark:text-gray-300">
-                      {{ formatNumber(tokenStats.by_service?.mindgraph?.total?.input_tokens || 0) }}
-                    </span>
-                  </div>
-                  <div class="flex justify-between text-sm mt-1">
-                    <span class="text-gray-500">{{ t('admin.outputTokens') }}</span>
-                    <span class="font-medium text-gray-700 dark:text-gray-300">
-                      {{
-                        formatNumber(tokenStats.by_service?.mindgraph?.total?.output_tokens || 0)
-                      }}
-                    </span>
-                  </div>
-                </div>
-              </el-card>
-
-              <el-card
-                shadow="hover"
-                class="service-card mindmate-card"
-              >
-                <template #header>
-                  <div class="flex items-center gap-3">
-                    <div
-                      class="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center"
-                    >
-                      <el-icon
-                        :size="20"
-                        class="text-purple-500"
-                      >
-                        <ChatDotRound />
-                      </el-icon>
-                    </div>
-                    <div>
-                      <h3 class="font-semibold text-gray-800 dark:text-white">MindMate</h3>
-                      <p class="text-xs text-gray-500">{{ t('admin.aiAssistant') }}</p>
-                    </div>
-                  </div>
-                </template>
-                <div class="grid grid-cols-2 gap-4">
-                  <div class="stat-item">
-                    <p class="text-xs text-gray-500 mb-1">{{ t('admin.today') }}</p>
-                    <p class="text-xl font-bold text-purple-600 dark:text-purple-400">
-                      {{ formatNumber(tokenStats.by_service?.mindmate?.today?.total_tokens || 0) }}
-                    </p>
-                    <p class="text-xs text-gray-400">
-                      {{
-                        (
-                          tokenStats.by_service?.mindmate?.today?.request_count || 0
-                        ).toLocaleString()
-                      }}
-                      {{ t('admin.requests') }}
-                    </p>
-                  </div>
-                  <div class="stat-item">
-                    <p class="text-xs text-gray-500 mb-1">{{ t('admin.thisWeek') }}</p>
-                    <p class="text-xl font-bold text-purple-600 dark:text-purple-400">
-                      {{ formatNumber(tokenStats.by_service?.mindmate?.week?.total_tokens || 0) }}
-                    </p>
-                    <p class="text-xs text-gray-400">
-                      {{
-                        (tokenStats.by_service?.mindmate?.week?.request_count || 0).toLocaleString()
-                      }}
-                      {{ t('admin.requests') }}
-                    </p>
-                  </div>
-                  <div class="stat-item">
-                    <p class="text-xs text-gray-500 mb-1">{{ t('admin.thisMonth') }}</p>
-                    <p class="text-xl font-bold text-purple-600 dark:text-purple-400">
-                      {{ formatNumber(tokenStats.by_service?.mindmate?.month?.total_tokens || 0) }}
-                    </p>
-                    <p class="text-xs text-gray-400">
-                      {{
-                        (
-                          tokenStats.by_service?.mindmate?.month?.request_count || 0
-                        ).toLocaleString()
-                      }}
-                      {{ t('admin.requests') }}
-                    </p>
-                  </div>
-                  <div class="stat-item">
-                    <p class="text-xs text-gray-500 mb-1">{{ t('admin.allTime') }}</p>
-                    <p class="text-xl font-bold text-purple-600 dark:text-purple-400">
-                      {{ formatNumber(tokenStats.by_service?.mindmate?.total?.total_tokens || 0) }}
-                    </p>
-                    <p class="text-xs text-gray-400">
-                      {{
-                        (
-                          tokenStats.by_service?.mindmate?.total?.request_count || 0
-                        ).toLocaleString()
-                      }}
-                      {{ t('admin.requests') }}
-                    </p>
-                  </div>
-                </div>
-                <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                  <div class="flex justify-between text-sm">
-                    <span class="text-gray-500">{{ t('admin.inputTokens') }}</span>
-                    <span class="font-medium text-gray-700 dark:text-gray-300">
-                      {{ formatNumber(tokenStats.by_service?.mindmate?.total?.input_tokens || 0) }}
-                    </span>
-                  </div>
-                  <div class="flex justify-between text-sm mt-1">
-                    <span class="text-gray-500">{{ t('admin.outputTokens') }}</span>
-                    <span class="font-medium text-gray-700 dark:text-gray-300">
-                      {{ formatNumber(tokenStats.by_service?.mindmate?.total?.output_tokens || 0) }}
-                    </span>
-                  </div>
-                </div>
-              </el-card>
-            </div>
-
-            <el-card shadow="hover">
-              <template #header>
-                <div class="flex items-center justify-between">
-                  <span class="font-medium">{{ t('admin.overallTokenSummary') }}</span>
-                  <el-button
-                    text
-                    size="small"
-                    @click="loadTokenStats"
-                  >
-                    <el-icon class="mr-1"><Refresh /></el-icon>
-                    {{ t('common.refresh') }}
-                  </el-button>
-                </div>
-              </template>
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div class="text-center">
-                  <p class="text-sm text-gray-500 mb-2">{{ t('admin.today') }}</p>
-                  <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                    {{ formatNumber(tokenStats.today?.total_tokens || 0) }}
-                  </p>
-                  <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-                    <span
-                      >{{ t('admin.inShort') }}:
-                      {{ formatNumber(tokenStats.today?.input_tokens || 0) }}</span
-                    >
-                    <span
-                      >{{ t('admin.outShort') }}:
-                      {{ formatNumber(tokenStats.today?.output_tokens || 0) }}</span
-                    >
-                  </div>
-                </div>
-                <div class="text-center">
-                  <p class="text-sm text-gray-500 mb-2">{{ t('admin.pastWeek') }}</p>
-                  <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                    {{ formatNumber(tokenStats.past_week?.total_tokens || 0) }}
-                  </p>
-                  <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-                    <span
-                      >{{ t('admin.inShort') }}:
-                      {{ formatNumber(tokenStats.past_week?.input_tokens || 0) }}</span
-                    >
-                    <span
-                      >{{ t('admin.outShort') }}:
-                      {{ formatNumber(tokenStats.past_week?.output_tokens || 0) }}</span
-                    >
-                  </div>
-                </div>
-                <div class="text-center">
-                  <p class="text-sm text-gray-500 mb-2">{{ t('admin.pastMonth') }}</p>
-                  <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                    {{ formatNumber(tokenStats.past_month?.total_tokens || 0) }}
-                  </p>
-                  <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-                    <span
-                      >{{ t('admin.inShort') }}:
-                      {{ formatNumber(tokenStats.past_month?.input_tokens || 0) }}</span
-                    >
-                    <span
-                      >{{ t('admin.outShort') }}:
-                      {{ formatNumber(tokenStats.past_month?.output_tokens || 0) }}</span
-                    >
-                  </div>
-                </div>
-                <div class="text-center">
-                  <p class="text-sm text-gray-500 mb-2">{{ t('admin.allTime') }}</p>
-                  <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                    {{ formatNumber(tokenStats.total?.total_tokens || 0) }}
-                  </p>
-                  <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-                    <span
-                      >{{ t('admin.inShort') }}:
-                      {{ formatNumber(tokenStats.total?.input_tokens || 0) }}</span
-                    >
-                    <span
-                      >{{ t('admin.outShort') }}:
-                      {{ formatNumber(tokenStats.total?.output_tokens || 0) }}</span
-                    >
-                  </div>
-                </div>
-              </div>
-            </el-card>
-          </div>
-
-          <div
-            v-else
-            class="text-center py-12 text-gray-400"
-          >
-            <el-icon :size="48"><Warning /></el-icon>
-            <p class="mt-4">{{ t('admin.noTokenStats') }}</p>
-            <el-button
-              type="primary"
-              class="mt-4"
-              @click="loadTokenStats"
-            >
-              {{ t('admin.loadStatistics') }}
-            </el-button>
-          </div>
+          <AdminTokenUsageByServicePanel
+            v-if="effectiveOrgId != null"
+            :organization-id="effectiveOrgId"
+            use-school-stats-endpoint
+            show-overall-summary
+          />
         </template>
 
         <template v-else-if="activeTab === 'users'">
           <SchoolDashboardUsersTab
             v-if="effectiveOrgId != null"
+            ref="usersTabRef"
             :org-id="effectiveOrgId"
           />
         </template>
@@ -960,44 +625,34 @@ onBeforeUnmount(() => {
         </div>
         <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <el-card
-              shadow="hover"
-              class="token-period-card cursor-pointer"
-              :class="{ 'ring-2 ring-primary-500': trendPeriod === 'today' }"
+            <AdminSwissPeriodCard
+              :label="t('admin.today')"
+              :value="periodCards.today"
+              :active="trendPeriod === 'today'"
+              theme="storage"
               @click="switchTrendPeriod('today')"
-            >
-              <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">{{ t('admin.today') }}</p>
-              <p class="text-lg font-bold text-gray-800 dark:text-white">{{ periodCards.today }}</p>
-            </el-card>
-            <el-card
-              shadow="hover"
-              class="token-period-card cursor-pointer"
-              :class="{ 'ring-2 ring-primary-500': trendPeriod === 'week' }"
+            />
+            <AdminSwissPeriodCard
+              :label="t('admin.pastWeek')"
+              :value="periodCards.week"
+              :active="trendPeriod === 'week'"
+              theme="storage"
               @click="switchTrendPeriod('week')"
-            >
-              <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">{{ t('admin.pastWeek') }}</p>
-              <p class="text-lg font-bold text-gray-800 dark:text-white">{{ periodCards.week }}</p>
-            </el-card>
-            <el-card
-              shadow="hover"
-              class="token-period-card cursor-pointer"
-              :class="{ 'ring-2 ring-primary-500': trendPeriod === 'month' }"
+            />
+            <AdminSwissPeriodCard
+              :label="t('admin.pastMonth')"
+              :value="periodCards.month"
+              :active="trendPeriod === 'month'"
+              theme="storage"
               @click="switchTrendPeriod('month')"
-            >
-              <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                {{ t('admin.pastMonth') }}
-              </p>
-              <p class="text-lg font-bold text-gray-800 dark:text-white">{{ periodCards.month }}</p>
-            </el-card>
-            <el-card
-              shadow="hover"
-              class="token-period-card cursor-pointer"
-              :class="{ 'ring-2 ring-primary-500': trendPeriod === 'total' }"
+            />
+            <AdminSwissPeriodCard
+              :label="t('admin.allTime')"
+              :value="periodCards.total"
+              :active="trendPeriod === 'total'"
+              theme="storage"
               @click="switchTrendPeriod('total')"
-            >
-              <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">{{ t('admin.allTime') }}</p>
-              <p class="text-lg font-bold text-gray-800 dark:text-white">{{ periodCards.total }}</p>
-            </el-card>
+            />
           </div>
         </div>
       </template>
@@ -1005,6 +660,14 @@ onBeforeUnmount(() => {
         <el-button @click="closeTrendModal">{{ t('common.close') }}</el-button>
       </template>
     </el-dialog>
+
+    <SchoolAddMemberDialog
+      v-if="effectiveOrgId != null"
+      v-model:visible="addMemberVisible"
+      :org-id="effectiveOrgId"
+      :school-name="addMemberSchoolName"
+      @created="onMemberCreated"
+    />
   </div>
 </template>
 
@@ -1017,27 +680,18 @@ onBeforeUnmount(() => {
   min-height: 0;
 }
 
-.stat-card :deep(.el-card__body) {
-  padding: 20px;
-}
-
-.stat-card-clickable {
-  cursor: pointer;
-}
-
-.stat-card-clickable:hover {
-  transform: translateY(-1px);
-}
-
-.token-period-card :deep(.el-card__body) {
-  padding: 12px 16px;
-}
-
 .school-dashboard--embedded .admin-swiss-tabs :deep(.el-tabs__header) {
   margin-top: 0;
+}
+
+.school-add-member-btn.el-button {
+  --el-button-bg-color: #1c1917;
+  --el-button-border-color: #1c1917;
+  --el-button-text-color: #fafaf9;
+  --el-button-hover-bg-color: #292524;
+  --el-button-hover-border-color: #292524;
 }
 
 </style>
 
 <style scoped src="@/styles/admin-swiss-controls.css"></style>
-<style scoped src="@/styles/admin-token-by-service.css"></style>

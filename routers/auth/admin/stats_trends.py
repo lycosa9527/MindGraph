@@ -28,7 +28,7 @@ from utils.auth.admin_panel_permissions import CAP_TAB_DATA_CENTER_VIEW
 from utils.auth.admin_scope import AdminScope
 from ..dependencies import (
     get_language_dependency,
-    require_admin,
+    require_admin_stats_read,
     require_panel_capability,
 )
 from .school_scope import resolve_school_dashboard_org_id
@@ -40,17 +40,17 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/admin/stats/trends", dependencies=[Depends(require_admin)])
+@router.get("/admin/stats/trends")
 async def get_stats_trends_admin(
     _request: Request,
     metric: str,  # 'users', 'organizations', 'registrations', 'tokens'
     days: Optional[int] = 30,  # Number of days to look back
     service: Optional[str] = None,  # For tokens: 'mindgraph' | 'mindmate' to filter by service
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_admin_stats_read),
     db: AsyncSession = Depends(get_async_db),
     _lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
-    """Get time-series trends data for dashboard charts (ADMIN ONLY)"""
+    """Get time-series trends data for dashboard charts."""
     # service filter only applies when metric is 'tokens'
     service_filter = service if metric == "tokens" else None
 
@@ -326,18 +326,18 @@ async def get_school_token_trends(
     return result
 
 
-@router.get("/admin/stats/trends/organization", dependencies=[Depends(require_admin)])
+@router.get("/admin/stats/trends/organization")
 async def get_organization_token_trends_admin(
     _request: Request,
     organization_id: Optional[int] = None,
     organization_name: Optional[str] = None,
     days: Optional[int] = 30,  # Number of days to look back
     hourly: bool = False,  # If True, return hourly data (only for days=1)
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_admin_stats_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
-    """Get token usage trends for a specific organization (ADMIN ONLY)"""
+    """Get token usage trends for a specific organization."""
     if not organization_id and not organization_name:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -523,15 +523,16 @@ async def get_organization_token_trends_admin(
     }
 
 
-@router.get("/admin/stats/trends/user", dependencies=[Depends(require_admin)])
+@router.get("/admin/stats/trends/user")
 async def get_user_token_trends_admin(
     _request: Request,
     user_id: Optional[int] = None,
     days: Optional[int] = 10,  # Number of days to look back, default 10
+    _scope: AdminScope = Depends(require_admin_stats_read),
     db: AsyncSession = Depends(get_async_db),
     _lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
-    """Get token usage trends for a specific user (ADMIN ONLY)"""
+    """Get token usage trends for a specific user."""
     if not user_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user_id must be provided")
 

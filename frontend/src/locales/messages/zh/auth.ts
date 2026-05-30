@@ -16,6 +16,8 @@ export default {
   'auth.accountPlugin': '插件',
   'auth.apiTokenButton': 'API令牌',
   'auth.downloadChromeExtension': 'Chrome 扩展',
+  'auth.schoolTierFeatureUnavailable':
+    '当前学校版本不支持此功能，请升级至标准教研版或校本共建版',
   'auth.downloadOpenclawSkill': 'OpenClaw 技能包',
   'auth.changePhoneButton': '更换手机',
   'auth.passwordChangeSuccess': '密码修改成功',

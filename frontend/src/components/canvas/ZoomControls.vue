@@ -38,8 +38,19 @@ const props = withDefaults(
     workshopCode?: string | null
     /** When true the user is a collab guest — hide the host-only collab button */
     isCollabGuest?: boolean
+    /** School tier allows presentation tools (laser, pen, etc.) */
+    allowPresentationTools?: boolean
+    /** School tier allows starting/joining online collaboration */
+    allowOnlineCollab?: boolean
   }>(),
-  { zoom: null, presentationRailOpen: false, workshopCode: null, isCollabGuest: false }
+  {
+    zoom: null,
+    presentationRailOpen: false,
+    workshopCode: null,
+    isCollabGuest: false,
+    allowPresentationTools: true,
+    allowOnlineCollab: true,
+  }
 )
 
 const zoomLevel = ref(100)
@@ -207,6 +218,7 @@ defineExpose({
 
       <!-- Toggle presentation tools rail (right) -->
       <ElTooltip
+        v-if="props.allowPresentationTools"
         :content="
           props.presentationRailOpen
             ? t('canvas.zoomControls.hidePresentationTools')
@@ -231,7 +243,7 @@ defineExpose({
         </ElButton>
       </ElTooltip>
 
-      <template v-if="!props.isCollabGuest">
+      <template v-if="!props.isCollabGuest && (props.allowOnlineCollab || props.workshopCode)">
         <div class="divider" />
 
         <!-- Online collaboration trigger (host only) -->
@@ -256,15 +268,21 @@ defineExpose({
           </div>
           <template #dropdown>
             <ElDropdownMenu>
-              <ElDropdownItem command="organization">
+              <ElDropdownItem
+                v-if="props.allowOnlineCollab"
+                command="organization"
+              >
                 {{ t('canvas.zoomControls.collabWithinOrg') }}
               </ElDropdownItem>
-              <ElDropdownItem command="network">
+              <ElDropdownItem
+                v-if="props.allowOnlineCollab"
+                command="network"
+              >
                 {{ t('canvas.zoomControls.collabCrossOrg') }}
               </ElDropdownItem>
               <ElDropdownItem
                 v-if="props.workshopCode"
-                divided
+                :divided="props.allowOnlineCollab"
                 command="stop"
               >
                 {{ t('canvas.zoomControls.collabTurnOff') }}

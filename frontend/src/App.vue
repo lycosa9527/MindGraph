@@ -11,7 +11,7 @@ import { storeToRefs } from 'pinia'
 import { ElConfigProvider } from 'element-plus'
 import type { Language } from 'element-plus/es/locale'
 
-import { useLanguage, useNotifications } from '@/composables'
+import { useKittyDesktopActionPoll, useLanguage, useNotifications } from '@/composables'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { loadElementPlusLocale } from '@/i18n/elementPlusLocale'
 import { isRtlUiLocale } from '@/i18n/locales'
@@ -20,6 +20,8 @@ import { useLiveTranslationStore } from '@/stores/liveTranslation'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
 const notify = useNotifications()
+
+useKittyDesktopActionPoll()
 
 const LoginModal = defineAsyncComponent(() => import('@/components/auth/LoginModal.vue'))
 const CanvasLiveSubtitleOverlay = defineAsyncComponent(

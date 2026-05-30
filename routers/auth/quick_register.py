@@ -62,6 +62,7 @@ from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
 from utils.auth import get_client_ip, hash_password, is_admin, is_manager
 from utils.auth.role_constants import ROLE_TEACHER
 from utils.auth.registration_gate import http_forbid_if_registration_disabled
+from utils.auth.school_tier import assert_organization_has_member_capacity
 from services.monitoring.registration_metrics import registration_metrics
 
 from .dependencies import get_language_dependency, require_admin_or_manager
@@ -456,6 +457,8 @@ async def register_quick(
                         detail=Messages.error("quick_reg_redis_unavailable", lang),
                     )
                 reserved_workshop = True
+
+            await assert_organization_has_member_capacity(db, org, lang)
 
             new_user = User(
                 phone=request.phone,

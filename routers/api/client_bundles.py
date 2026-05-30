@@ -1,7 +1,6 @@
-"""On-demand zip downloads for OpenClaw skill folder and Chrome extension (public).
+"""On-demand zip downloads for OpenClaw skill folder and Chrome extension.
 
-Served from the repository tree at runtime so deployments that include the app
-root can offer one-click bundles without committing separate zip assets.
+Tier-gated for school lite organizations; requires authenticated session.
 """
 
 from __future__ import annotations
@@ -11,8 +10,20 @@ import logging
 import zipfile
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
+
+from config.database import AsyncSessionLocal
+from models.domain.auth import User
+from models.domain.messages import Language
+from utils.auth import get_current_user
+from utils.auth.school_tier import (
+    TIER_FEATURE_API_TOKEN,
+    TIER_FEATURE_CHROME_EXTENSION,
+    assert_user_has_school_tier_feature,
+)
+
+from routers.auth.dependencies import get_language_dependency
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +72,18 @@ def _bundle_response(data: bytes, filename: str) -> Response:
 
 
 @router.get("/downloads/mindgraph-openclaw-skill")
-async def download_openclaw_skill_zip() -> Response:
+async def download_openclaw_skill_zip(
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+) -> Response:
     """Zip of `openclaw/skills/mindgraph` for OpenClaw / WorkBuddy."""
+    async with AsyncSessionLocal() as db:
+        await assert_user_has_school_tier_feature(
+            db,
+            current_user,
+            TIER_FEATURE_API_TOKEN,
+            lang,
+        )
     try:
         data = _zip_directory(_OPENCLAW_SKILL_DIR, "mindgraph")
     except FileNotFoundError:
@@ -72,8 +93,18 @@ async def download_openclaw_skill_zip() -> Response:
 
 
 @router.get("/downloads/mindgraph-chrome-extension")
-async def download_chrome_extension_zip() -> Response:
+async def download_chrome_extension_zip(
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+) -> Response:
     """Zip of `chrome-extension` for Load unpacked (or inspection)."""
+    async with AsyncSessionLocal() as db:
+        await assert_user_has_school_tier_feature(
+            db,
+            current_user,
+            TIER_FEATURE_CHROME_EXTENSION,
+            lang,
+        )
     try:
         data = _zip_directory(_CHROME_EXTENSION_DIR, "chrome-extension")
     except FileNotFoundError:

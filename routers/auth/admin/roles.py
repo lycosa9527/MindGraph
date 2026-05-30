@@ -18,16 +18,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count as sa_count
 
 from config.database import get_async_db
-from models.domain.auth import User
+from models.domain.auth import Organization, User
 from models.domain.messages import Messages, Language
 from services.redis.cache.redis_user_cache import user_cache
 from utils.auth.config import ADMIN_PHONES, ADMIN_USER_IDS
 from utils.auth.role_constants import (
+    ROLE_SCHOOL_ADMIN,
     ROLE_SUPERADMIN,
     SUPERADMIN_ROLES,
     VALID_ASSIGNABLE_ROLES,
     normalize_role,
 )
+from utils.auth.school_tier import assert_organization_has_manager_capacity
 
 from ..dependencies import get_language_dependency, require_admin
 from ..helpers import utc_to_beijing_iso
@@ -220,6 +222,19 @@ async def update_user_role(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=Messages.error("cannot_remove_last_admin", lang=lang),
             )
+
+    if role == ROLE_SCHOOL_ADMIN and old_role != ROLE_SCHOOL_ADMIN:
+        org_id = getattr(user, "organization_id", None)
+        if org_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=Messages.error("user_not_in_organization", lang),
+            )
+        org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
+        if org is None:
+            error_msg = Messages.error("organization_not_found", lang, org_id)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+        await assert_organization_has_manager_capacity(db, org, lang)
 
     user.role = role
     try:

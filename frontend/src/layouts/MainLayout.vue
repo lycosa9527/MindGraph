@@ -9,12 +9,10 @@ import { useRoute } from 'vue-router'
 import { Lock, PanelLeftOpen } from '@lucide/vue'
 
 import { AppSidebar } from '@/components/sidebar'
-import { useKittyDesktopActionPoll, useLanguage } from '@/composables'
+import { useLanguage } from '@/composables'
 import { preloadMarkdownRendererForRoute } from '@/composables/core/useMarkdown'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
-
-useKittyDesktopActionPoll()
 
 const route = useRoute()
 

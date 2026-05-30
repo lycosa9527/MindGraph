@@ -1,0 +1,162 @@
+/**
+ * Unified Swiss palette — stone light-admin shell + MindBot phosphor accents.
+ * Canonical geek hues match admin-mindbot-swiss-dialog-chrome.css and perf cards.
+ *
+ * Twelve core colors:
+ *   Stone: ink, muted, border, surface, inset, hover
+ *   Phosphor: red, cyan, violet, amber, pink, teal
+ */
+:root {
+  /* Stone neutrals (school dashboard, schools tab, admin-swiss-controls) */
+  --swiss-ink: #1c1917;
+  --swiss-body: #44403c;
+  --swiss-muted: #78716c;
+  --swiss-subtle: #a8a29e;
+  --swiss-border: #e7e5e4;
+  --swiss-border-strong: #d6d3d1;
+  --swiss-surface: #ffffff;
+  --swiss-inset: #fafaf9;
+  --swiss-hover: #f5f5f4;
+
+  /* MindBot phosphor — canonical (dark Swiss / glow reference) */
+  --swiss-geek-red: #e30613;
+  --swiss-geek-cyan: #22d3ee;
+  --swiss-geek-violet: #a78bfa;
+  --swiss-geek-amber: #fbbf24;
+  --swiss-geek-pink: #f9a8d4;
+  --swiss-geek-teal: #5eead4;
+  --swiss-geek-indigo: #6366f1;
+  --swiss-geek-border: rgba(34, 211, 238, 0.32);
+
+  /* UI variants — readable on light stone surfaces */
+  --swiss-geek-cyan-ui: #0e7490;
+  --swiss-geek-violet-ui: #7c3aed;
+  --swiss-geek-amber-ui: #b45309;
+  --swiss-geek-pink-ui: #db2777;
+  --swiss-geek-teal-ui: #0f766e;
+  --swiss-geek-red-ui: #e30613;
+
+  /* Soft chips on light backgrounds */
+  --swiss-geek-cyan-soft: #ecfeff;
+  --swiss-geek-violet-soft: #f5f3ff;
+  --swiss-geek-amber-soft: #fffbeb;
+  --swiss-geek-pink-soft: #fdf2f8;
+  --swiss-geek-teal-soft: #f0fdfa;
+  --swiss-geek-red-soft: #fef2f2;
+
+  /* Quota / status aliases */
+  --swiss-accent-members: var(--swiss-geek-cyan-ui);
+  --swiss-accent-members-soft: var(--swiss-geek-cyan-soft);
+  --swiss-accent-managers: var(--swiss-geek-violet-ui);
+  --swiss-accent-managers-soft: var(--swiss-geek-violet-soft);
+  --swiss-accent-storage: var(--swiss-geek-amber-ui);
+  --swiss-accent-storage-soft: var(--swiss-geek-amber-soft);
+  --swiss-accent-warn: var(--swiss-geek-pink-ui);
+  --swiss-accent-warn-soft: var(--swiss-geek-pink-soft);
+  --swiss-accent-danger: var(--swiss-geek-red-ui);
+  --swiss-accent-danger-soft: var(--swiss-geek-red-soft);
+
+  /* Legacy aliases */
+  --swiss-accent-teal: var(--swiss-accent-members);
+  --swiss-accent-teal-soft: var(--swiss-accent-members-soft);
+  --swiss-accent-violet: var(--swiss-accent-managers);
+  --swiss-accent-violet-soft: var(--swiss-accent-managers-soft);
+  --swiss-accent-amber: var(--swiss-accent-storage);
+  --swiss-accent-amber-soft: var(--swiss-accent-storage-soft);
+  --swiss-accent-orange: var(--swiss-accent-warn);
+  --swiss-accent-orange-soft: var(--swiss-accent-warn-soft);
+  --swiss-accent-rose: var(--swiss-accent-danger);
+  --swiss-accent-rose-soft: var(--swiss-accent-danger-soft);
+
+  /* Stat card theme tokens (accent / soft / glow) */
+  --swiss-stat-members-accent: var(--swiss-accent-members);
+  --swiss-stat-members-soft: var(--swiss-accent-members-soft);
+  --swiss-stat-members-glow: rgba(34, 211, 238, 0.14);
+  --swiss-stat-managers-accent: var(--swiss-accent-managers);
+  --swiss-stat-managers-soft: var(--swiss-accent-managers-soft);
+  --swiss-stat-managers-glow: rgba(167, 139, 250, 0.16);
+  --swiss-stat-storage-accent: var(--swiss-accent-storage);
+  --swiss-stat-storage-soft: var(--swiss-accent-storage-soft);
+  --swiss-stat-storage-glow: rgba(251, 191, 36, 0.16);
+  --swiss-stat-mindgraph-accent: var(--swiss-accent-members);
+  --swiss-stat-mindgraph-soft: var(--swiss-accent-members-soft);
+  --swiss-stat-mindgraph-glow: rgba(34, 211, 238, 0.14);
+  --swiss-stat-mindmate-accent: var(--swiss-accent-managers);
+  --swiss-stat-mindmate-soft: var(--swiss-accent-managers-soft);
+  --swiss-stat-mindmate-glow: rgba(167, 139, 250, 0.16);
+  --swiss-stat-integration-accent: var(--swiss-geek-teal-ui);
+  --swiss-stat-integration-soft: var(--swiss-geek-teal-soft);
+  --swiss-stat-integration-glow: rgba(94, 234, 212, 0.14);
+  --swiss-stat-success-accent: var(--swiss-geek-teal-ui);
+  --swiss-stat-success-soft: var(--swiss-geek-teal-soft);
+  --swiss-stat-success-glow: rgba(13, 148, 136, 0.14);
+  --swiss-stat-platform-accent: var(--swiss-geek-indigo);
+  --swiss-stat-platform-soft: #eef2ff;
+  --swiss-stat-platform-glow: rgba(99, 102, 241, 0.14);
+  --swiss-stat-warn-accent: var(--swiss-accent-warn);
+  --swiss-stat-warn-soft: var(--swiss-accent-warn-soft);
+  --swiss-stat-warn-glow: rgba(249, 168, 212, 0.16);
+  --swiss-stat-danger-accent: var(--swiss-accent-danger);
+  --swiss-stat-danger-soft: var(--swiss-accent-danger-soft);
+  --swiss-stat-danger-glow: rgba(227, 6, 19, 0.16);
+  --swiss-stat-neutral-accent: var(--swiss-subtle);
+  --swiss-stat-neutral-soft: var(--swiss-inset);
+  --swiss-stat-neutral-glow: rgba(168, 162, 158, 0.12);
+}
+
+html.dark {
+  --swiss-ink: #f1f5f9;
+  --swiss-body: #e2e8f0;
+  --swiss-muted: #a8b7c9;
+  --swiss-subtle: #64748b;
+  --swiss-border: rgba(34, 211, 238, 0.22);
+  --swiss-border-strong: rgba(34, 211, 238, 0.32);
+  --swiss-surface: rgba(15, 23, 42, 0.72);
+  --swiss-inset: rgba(15, 23, 42, 0.45);
+  --swiss-hover: rgba(30, 41, 59, 0.55);
+
+  --swiss-accent-members: var(--swiss-geek-cyan);
+  --swiss-accent-members-soft: rgba(34, 211, 238, 0.16);
+  --swiss-accent-managers: var(--swiss-geek-violet);
+  --swiss-accent-managers-soft: rgba(167, 139, 250, 0.16);
+  --swiss-accent-storage: var(--swiss-geek-amber);
+  --swiss-accent-storage-soft: rgba(251, 191, 36, 0.14);
+  --swiss-accent-warn: var(--swiss-geek-pink);
+  --swiss-accent-warn-soft: rgba(249, 168, 212, 0.14);
+  --swiss-accent-danger: var(--swiss-geek-red);
+  --swiss-accent-danger-soft: rgba(227, 6, 19, 0.18);
+
+  --swiss-stat-members-accent: var(--swiss-accent-members);
+  --swiss-stat-members-soft: var(--swiss-accent-members-soft);
+  --swiss-stat-members-glow: rgba(34, 211, 238, 0.2);
+  --swiss-stat-managers-accent: var(--swiss-accent-managers);
+  --swiss-stat-managers-soft: var(--swiss-accent-managers-soft);
+  --swiss-stat-managers-glow: rgba(167, 139, 250, 0.2);
+  --swiss-stat-storage-accent: var(--swiss-accent-storage);
+  --swiss-stat-storage-soft: var(--swiss-accent-storage-soft);
+  --swiss-stat-storage-glow: rgba(251, 191, 36, 0.18);
+  --swiss-stat-mindgraph-accent: var(--swiss-accent-members);
+  --swiss-stat-mindgraph-soft: var(--swiss-accent-members-soft);
+  --swiss-stat-mindgraph-glow: rgba(34, 211, 238, 0.2);
+  --swiss-stat-mindmate-accent: var(--swiss-accent-managers);
+  --swiss-stat-mindmate-soft: var(--swiss-accent-managers-soft);
+  --swiss-stat-mindmate-glow: rgba(167, 139, 250, 0.2);
+  --swiss-stat-integration-accent: var(--swiss-geek-teal);
+  --swiss-stat-integration-soft: rgba(94, 234, 212, 0.16);
+  --swiss-stat-integration-glow: rgba(94, 234, 212, 0.18);
+  --swiss-stat-success-accent: var(--swiss-geek-teal);
+  --swiss-stat-success-soft: rgba(94, 234, 212, 0.16);
+  --swiss-stat-success-glow: rgba(94, 234, 212, 0.18);
+  --swiss-stat-platform-accent: var(--swiss-geek-indigo);
+  --swiss-stat-platform-soft: rgba(99, 102, 241, 0.16);
+  --swiss-stat-platform-glow: rgba(99, 102, 241, 0.2);
+  --swiss-stat-warn-accent: var(--swiss-accent-warn);
+  --swiss-stat-warn-soft: var(--swiss-accent-warn-soft);
+  --swiss-stat-warn-glow: rgba(249, 168, 212, 0.18);
+  --swiss-stat-danger-accent: var(--swiss-accent-danger);
+  --swiss-stat-danger-soft: var(--swiss-accent-danger-soft);
+  --swiss-stat-danger-glow: rgba(227, 6, 19, 0.22);
+  --swiss-stat-neutral-accent: var(--swiss-muted);
+  --swiss-stat-neutral-soft: var(--swiss-inset);
+  --swiss-stat-neutral-glow: rgba(168, 162, 158, 0.14);
+}

@@ -5,12 +5,13 @@ import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Any, Dict
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
+from models.domain.messages import Language, Messages
 from models.domain.user_api_token import UserAPIToken
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from services.redis.cache.redis_user_token_cache import user_token_cache
@@ -19,6 +20,13 @@ from utils.auth import (
     require_not_mgat_for_token_mint,
 )
 from utils.auth.datetime_compat import as_utc_aware
+from utils.auth.school_tier import (
+    TIER_FEATURE_API_TOKEN,
+    assert_user_has_school_tier_feature,
+    user_has_school_tier_feature,
+)
+
+from routers.auth.dependencies import get_language_dependency
 
 router = APIRouter(tags=["Authentication"])
 
@@ -30,8 +38,15 @@ async def create_user_api_token(
     request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
+    lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """Create or replace the single user API token (mgat_). Session-JWT only."""
+    await assert_user_has_school_tier_feature(
+        db,
+        current_user,
+        TIER_FEATURE_API_TOKEN,
+        lang,
+    )
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "api_token_create",
@@ -82,8 +97,14 @@ async def create_user_api_token(
 async def get_user_api_token_status(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
+    lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """Return metadata for the current user's API token (never the raw secret)."""
+    if not await user_has_school_tier_feature(db, current_user, TIER_FEATURE_API_TOKEN):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=Messages.error("school_tier_feature_unavailable", lang),
+        )
     result = await db.execute(
         select(UserAPIToken).where(
             UserAPIToken.user_id == current_user.id,

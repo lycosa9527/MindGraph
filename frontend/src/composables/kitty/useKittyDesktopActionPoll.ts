@@ -53,7 +53,6 @@ export function useKittyDesktopActionPoll(): void {
   let phase: PollPhase = 'off'
   let intervalId: ReturnType<typeof setInterval> | null = null
   let consumeRunId = 0
-  let flagsLoaded = false
   let isPollLeader = false
   let stopPollLeader: (() => void) | null = null
   let stopWakeStream: (() => void) | null = null
@@ -75,9 +74,13 @@ export function useKittyDesktopActionPoll(): void {
     return featureFlagsStore.getFeatureKittyAgent()
   }
 
+  function flagsReady(): boolean {
+    return featureFlagsStore.flags != null
+  }
+
   function pollingAllowed(): boolean {
     return (
-      flagsLoaded &&
+      flagsReady() &&
       isPollLeader &&
       kittyFeatureEnabled() &&
       isAuthenticated.value &&
@@ -181,6 +184,9 @@ export function useKittyDesktopActionPoll(): void {
   }
 
   function startWakeStreamConnection(): void {
+    if (stopWakeStream != null && wakeStreamConnected) {
+      return
+    }
     stopWakeStreamConnection()
     if (!pollingAllowed()) {
       return
@@ -359,7 +365,7 @@ export function useKittyDesktopActionPoll(): void {
     if (phase === 'consuming') {
       return
     }
-    if (phase === 'watching' && intervalId != null) {
+    if (phase === 'watching' && intervalId != null && stopWakeStream != null) {
       return
     }
     startWatching()
@@ -379,8 +385,11 @@ export function useKittyDesktopActionPoll(): void {
       isPollLeader = leader
       syncPolling()
     })
-    void featureFlagsStore.fetchFlags().finally(() => {
-      flagsLoaded = true
+    const flagsPromise =
+      featureFlagsStore.flags != null
+        ? Promise.resolve()
+        : featureFlagsStore.fetchFlags()
+    void flagsPromise.finally(() => {
       syncPolling()
     })
   })
@@ -392,7 +401,7 @@ export function useKittyDesktopActionPoll(): void {
         route.path,
         route.meta.layout,
         featureFlagsStore.flags?.feature_kitty_agent,
-        flagsLoaded,
+        featureFlagsStore.flags,
       ] as const,
     () => {
       syncPolling()

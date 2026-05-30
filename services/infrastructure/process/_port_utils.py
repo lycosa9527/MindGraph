@@ -107,8 +107,12 @@ def find_process_on_port(port: int) -> Optional[int]:
                 timeout=5,
                 check=False,
             )
-            if result.stdout.strip():
-                return int(result.stdout.strip())
+            stdout = result.stdout.strip()
+            if stdout:
+                for line in stdout.split("\n"):
+                    candidate = line.strip()
+                    if candidate.isdigit():
+                        return int(candidate)
     except Exception as exc:
         logger.debug("Find process on port %d failed: %s", port, exc)
     return None

@@ -18,6 +18,8 @@ export default {
   'auth.accountPlugin': 'Plugin',
   'auth.apiTokenButton': 'API Token',
   'auth.downloadChromeExtension': 'Chrome extension',
+  'auth.schoolTierFeatureUnavailable':
+    'This feature requires the Standard or Professional school tier.',
   'auth.downloadOpenclawSkill': 'OpenClaw skill',
   'auth.changePhoneButton': 'Change phone',
   'auth.passwordChangeSuccess': 'Password changed successfully',

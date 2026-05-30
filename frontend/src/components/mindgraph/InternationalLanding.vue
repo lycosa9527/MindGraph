@@ -16,6 +16,7 @@ import { Check, Globe, PanelLeftOpen } from '@lucide/vue'
 
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
 import { useLanguage, useNotifications } from '@/composables'
+import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useAuthStore, useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
 import { useLiveTranslationStore } from '@/stores/liveTranslation'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
@@ -34,6 +35,7 @@ const LANDING_LLM_MODELS = ['qwen', 'deepseek', 'kimi', 'doubao'] as const
 const route = useRoute()
 const router = useRouter()
 const { t, promptLanguage } = useLanguage()
+const { canUseOnlineCollab } = useSchoolTierFeatures()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
 const diagramStore = useDiagramStore()
@@ -256,12 +258,17 @@ const collabPanelRef = ref<InstanceType<typeof MindGraphCollabPanel> | null>(nul
 onMounted(() => {
   document.addEventListener('mousedown', handleClickOutside)
   const joinWorkshopCode = route.query.join_workshop as string | undefined
-  if (joinWorkshopCode) {
-    const newQuery = { ...route.query }
-    delete newQuery.join_workshop
-    router.replace({ query: newQuery })
-    collabPanelRef.value?.prefillAndAutoJoin(joinWorkshopCode)
+  if (!joinWorkshopCode) {
+    return
   }
+  const newQuery = { ...route.query }
+  delete newQuery.join_workshop
+  router.replace({ query: newQuery })
+  if (!canUseOnlineCollab.value) {
+    notify.warning(t('auth.schoolTierFeatureUnavailable'))
+    return
+  }
+  collabPanelRef.value?.prefillAndAutoJoin(joinWorkshopCode)
 })
 </script>
 

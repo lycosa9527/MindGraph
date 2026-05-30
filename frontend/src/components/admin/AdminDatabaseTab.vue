@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 
 import { ElMessageBox } from 'element-plus'
 
+import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
 
@@ -509,18 +510,24 @@ onMounted(() => {
         class="space-y-4"
       >
         <div class="grid grid-cols-3 gap-4">
-          <div class="stat-card">
-            <div class="stat-value">{{ pgStats.table_count }}</div>
-            <div class="stat-label">{{ t('admin.database.tables') }}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value">{{ pgStats.column_count }}</div>
-            <div class="stat-label">{{ t('admin.database.columns') }}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value">{{ pgStats.total_rows.toLocaleString() }}</div>
-            <div class="stat-label">{{ t('admin.database.totalRows') }}</div>
-          </div>
+          <AdminSwissKpiCard
+            :title="t('admin.database.tables')"
+            :value="pgStats.table_count"
+            theme="neutral"
+            compact
+          />
+          <AdminSwissKpiCard
+            :title="t('admin.database.columns')"
+            :value="pgStats.column_count"
+            theme="neutral"
+            compact
+          />
+          <AdminSwissKpiCard
+            :title="t('admin.database.totalRows')"
+            :value="pgStats.total_rows.toLocaleString()"
+            theme="neutral"
+            compact
+          />
         </div>
 
         <el-table
@@ -626,22 +633,30 @@ onMounted(() => {
 
         <!-- summary cards -->
         <div class="grid grid-cols-4 gap-3 mb-4">
-          <div class="stat-card stat-card-sm">
-            <div class="stat-value text-blue-600">{{ analysis.matched_users }}</div>
-            <div class="stat-label">{{ t('admin.database.matchedUsers') }}</div>
-          </div>
-          <div class="stat-card stat-card-sm">
-            <div class="stat-value text-green-600">{{ analysis.new_users }}</div>
-            <div class="stat-label">{{ t('admin.database.newUsers') }}</div>
-          </div>
-          <div class="stat-card stat-card-sm">
-            <div class="stat-value text-blue-600">{{ analysis.matched_orgs }}</div>
-            <div class="stat-label">{{ t('admin.database.matchedOrgs') }}</div>
-          </div>
-          <div class="stat-card stat-card-sm">
-            <div class="stat-value text-green-600">{{ analysis.new_orgs }}</div>
-            <div class="stat-label">{{ t('admin.database.newOrgs') }}</div>
-          </div>
+          <AdminSwissKpiCard
+            :title="t('admin.database.matchedUsers')"
+            :value="analysis.matched_users"
+            theme="members"
+            compact
+          />
+          <AdminSwissKpiCard
+            :title="t('admin.database.newUsers')"
+            :value="analysis.new_users"
+            theme="success"
+            compact
+          />
+          <AdminSwissKpiCard
+            :title="t('admin.database.matchedOrgs')"
+            :value="analysis.matched_orgs"
+            theme="members"
+            compact
+          />
+          <AdminSwissKpiCard
+            :title="t('admin.database.newOrgs')"
+            :value="analysis.new_orgs"
+            theme="success"
+            compact
+          />
         </div>
 
         <!-- orphans -->
@@ -869,22 +884,30 @@ onMounted(() => {
         <h4 class="font-medium mb-3">{{ t('admin.database.pgAnalysisResult') }}</h4>
 
         <div class="grid grid-cols-4 gap-3 mb-4">
-          <div class="stat-card stat-card-sm">
-            <div class="stat-value text-blue-600">{{ pgDumpAnalysis.matched_users }}</div>
-            <div class="stat-label">{{ t('admin.database.matchedUsers') }}</div>
-          </div>
-          <div class="stat-card stat-card-sm">
-            <div class="stat-value text-green-600">{{ pgDumpAnalysis.new_users }}</div>
-            <div class="stat-label">{{ t('admin.database.newUsers') }}</div>
-          </div>
-          <div class="stat-card stat-card-sm">
-            <div class="stat-value text-blue-600">{{ pgDumpAnalysis.matched_orgs }}</div>
-            <div class="stat-label">{{ t('admin.database.matchedOrgs') }}</div>
-          </div>
-          <div class="stat-card stat-card-sm">
-            <div class="stat-value text-green-600">{{ pgDumpAnalysis.new_orgs }}</div>
-            <div class="stat-label">{{ t('admin.database.newOrgs') }}</div>
-          </div>
+          <AdminSwissKpiCard
+            :title="t('admin.database.matchedUsers')"
+            :value="pgDumpAnalysis.matched_users"
+            theme="members"
+            compact
+          />
+          <AdminSwissKpiCard
+            :title="t('admin.database.newUsers')"
+            :value="pgDumpAnalysis.new_users"
+            theme="success"
+            compact
+          />
+          <AdminSwissKpiCard
+            :title="t('admin.database.matchedOrgs')"
+            :value="pgDumpAnalysis.matched_orgs"
+            theme="members"
+            compact
+          />
+          <AdminSwissKpiCard
+            :title="t('admin.database.newOrgs')"
+            :value="pgDumpAnalysis.new_orgs"
+            theme="success"
+            compact
+          />
         </div>
 
         <div
@@ -1044,30 +1067,3 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped>
-.stat-card {
-  background-color: #f9fafb;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  text-align: center;
-}
-.stat-card-sm {
-  padding: 0.75rem;
-}
-.stat-value {
-  font-size: 1.5rem;
-  line-height: 2rem;
-  font-weight: 700;
-  color: #111827;
-}
-.stat-card-sm .stat-value {
-  font-size: 1.25rem;
-  line-height: 1.75rem;
-}
-.stat-label {
-  font-size: 0.75rem;
-  line-height: 1rem;
-  color: #6b7280;
-  margin-top: 0.25rem;
-}
-</style>

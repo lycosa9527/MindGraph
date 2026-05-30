@@ -35,6 +35,7 @@ from services.auth.password_security import (
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
 from utils.auth import hash_password
+from utils.auth.school_tier import assert_organization_has_member_capacity
 
 from services.auth.admin_user_list_rows import (
     build_admin_user_detail_payload,
@@ -42,7 +43,16 @@ from services.auth.admin_user_list_rows import (
     enrich_admin_user_list_rows,
 )
 
-from ..dependencies import get_language_dependency, require_admin
+from utils.auth.admin_scope import AdminScope
+
+from ..dependencies import (
+    get_language_dependency,
+    require_admin,
+    require_global_organizations_edit,
+    require_global_organizations_read,
+    require_global_users_read,
+    require_invite_org_create,
+)
 from ..helpers import utc_to_beijing_iso
 
 
@@ -51,8 +61,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/admin/users", dependencies=[Depends(require_admin)])
+@router.get("/admin/users")
 async def list_users_admin(
+    _scope: AdminScope = Depends(require_global_users_read),
     db: AsyncSession = Depends(get_async_db),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
@@ -137,10 +148,10 @@ async def list_users_admin(
     }
 
 
-@router.get("/admin/users/{user_id}", dependencies=[Depends(require_admin)])
+@router.get("/admin/users/{user_id}")
 async def get_user_admin(
     user_id: int,
-    current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_global_users_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -162,7 +173,7 @@ async def get_user_admin(
 
     logger.info(
         "[Auth] Admin user_id=%s read full user profile for user_id=%s",
-        current_user.id,
+        _scope.actor.id,
         user_id,
     )
 
@@ -259,6 +270,13 @@ async def update_user_admin(
                 if not org:
                     error_msg = Messages.error("organization_not_found", lang, org_id)
                     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+            if org_id != old_org_id:
+                await assert_organization_has_member_capacity(
+                    db,
+                    org,
+                    lang,
+                    exclude_user_id=user.id,
+                )
             user.organization_id = org_id
 
     try:

@@ -55,6 +55,7 @@ class Organization(Base):
     # Service subscription management
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    school_tier: Mapped[str] = mapped_column(String(32), nullable=False, default="standard")
 
     # Per-org MindMate Dify override (optional; falls back to global DIFY_* env)
     dify_api_base_url = Column(String(512), nullable=True)

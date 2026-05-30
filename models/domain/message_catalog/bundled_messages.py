@@ -1011,6 +1011,33 @@ ERRORS = {
         "en": "Organization '{}' exists",
         "az": "Təşkilat '{}' mövcuddur",
     },
+    "invalid_school_tier": {
+        "zh": "无效的学校版本：{}",
+        "en": "Invalid school tier: {}",
+    },
+    "organization_member_limit_reached": {
+        "zh": "该学校成员数已达上限（{} 人）",
+        "en": "This school has reached its member limit ({} users)",
+    },
+    "organization_manager_limit_reached": {
+        "zh": "该学校管理员数已达上限（{} 人）",
+        "en": "This school has reached its school manager limit ({})",
+        "zh-tw": "該校管理員數已達上限（{} 人）",
+    },
+    "organization_manager_limit_exceeded_for_tier": {
+        "zh": "无法切换学校版本：当前有 {} 位管理员，新版本最多允许 {} 位",
+        "en": "Cannot change school tier: {} managers assigned but the new tier allows at most {}",
+        "zh-tw": "無法切換學校版本：目前有 {} 位管理員，新版本最多允許 {} 位",
+    },
+    "organization_member_limit_exceeded_for_tier": {
+        "zh": "无法切换学校版本：当前有 {} 位成员，新版本最多允许 {} 人",
+        "en": "Cannot change school tier: {} members assigned but the new tier allows at most {}",
+        "zh-tw": "無法切換學校版本：目前有 {} 位成員，新版本最多允許 {} 人",
+    },
+    "school_tier_feature_unavailable": {
+        "zh": "当前学校版本不支持此功能，请升级至标准教研版或校本共建版",
+        "en": "This feature requires the Standard or Professional school tier",
+    },
     "failed_generate_invitation_code": {
         "zh": "生成唯一邀请码失败",
         "en": "Failed to generate unique invitation code",
@@ -1146,6 +1173,51 @@ ERRORS = {
         "en": "Provide at least one of: name, phone",
         "az": "Ən azı ad və ya telefon daxil edin",
     },
+    "school_user_create_invalid_role": {
+        "zh": "仅可添加教师或学校管理员",
+        "en": "Only teacher or school admin roles may be assigned",
+        "az": "Yalnız müəllim və ya məktəb admini təyin oluna bilər",
+    },
+    "school_user_create_manager_role_denied": {
+        "zh": "仅平台管理员可添加学校管理员",
+        "en": "Only platform admins can assign the school admin role",
+        "az": "Məktəb admini rolunu yalnız platforma admini təyin edə bilər",
+    },
+    "school_user_created": {
+        "zh": "成员已添加",
+        "en": "Member added successfully",
+        "az": "Üzv əlavə edildi",
+    },
+    "school_user_batch_empty": {
+        "zh": "请粘贴至少一名成员",
+        "en": "Paste at least one member to import",
+        "az": "İdxal üçün ən azı bir üzv yapışdırın",
+    },
+    "school_user_batch_too_large": {
+        "zh": "单次最多导入 {} 名成员",
+        "en": "At most {} members per batch import",
+        "az": "Bir idxalda ən çox {} üzv",
+    },
+    "school_user_batch_invalid_row": {
+        "zh": "第 {} 行格式无效",
+        "en": "Invalid row at line {}",
+        "az": "Sətir {} yanlış formatdadır",
+    },
+    "school_user_batch_created": {
+        "zh": "已成功添加 {} 名成员",
+        "en": "Added {} members successfully",
+        "az": "{} üzv uğurla əlavə edildi",
+    },
+    "school_user_batch_partial": {
+        "zh": "已添加 {} 名成员，{} 条失败",
+        "en": "Added {} members; {} failed",
+        "az": "{} üzv əlavə edildi; {} uğursuz",
+    },
+    "school_user_batch_all_failed": {
+        "zh": "未能添加任何成员，请检查手机号是否已注册",
+        "en": "No members were added; check whether phones are already registered",
+        "az": "Heç bir üzv əlavə edilmədi; telefonların qeydiyyatda olub-olmadığını yoxlayın",
+    },
     "phone_cannot_be_empty": {"zh": "手机号不能为空", "en": "Phone cannot be empty", "az": "Telefon boş ola bilməz"},
     "phone_format_invalid": {
         "zh": "手机号必须是11位数字，以1开头",
@@ -1171,6 +1243,11 @@ ERRORS = {
         "zh": "姓名至少需要2个字符",
         "en": "Name must be at least 2 characters",
         "az": "Ad ən azı 2 simvol olmalıdır",
+    },
+    "name_too_long": {
+        "zh": "姓名不能超过 {} 个字符",
+        "en": "Name must be at most {} characters",
+        "az": "Ad {} simvoldan çox ola bilməz",
     },
     "name_cannot_contain_numbers": {
         "zh": "姓名不能包含数字",

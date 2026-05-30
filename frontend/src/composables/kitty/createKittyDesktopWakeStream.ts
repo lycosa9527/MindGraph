@@ -97,8 +97,9 @@ export function createKittyDesktopWakeStream(options: KittyDesktopWakeStreamOpti
     }
     eventSource = new EventSource(KITTY_DESKTOP_WAKE_STREAM_URL, { withCredentials: true })
     eventSource.onopen = () => {
+      const reconnected = retryCount > 0
       retryCount = 0
-      traceKittyWorkflow('hub', 'sse_connect', retryCount > 0 ? 'reconnected' : 'connected')
+      traceKittyWorkflow('hub', 'sse_connect', reconnected ? 'reconnected' : 'connected')
       options.onOpen?.()
     }
     eventSource.onmessage = (event: MessageEvent) => {

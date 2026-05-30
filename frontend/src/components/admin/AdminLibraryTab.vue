@@ -3,6 +3,9 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 
 import { ElMessageBox } from 'element-plus'
 
+import { FolderOpened, Loading } from '@element-plus/icons-vue'
+
+import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
 
@@ -437,26 +440,31 @@ onMounted(() => {
       v-if="scanData"
       class="grid grid-cols-4 gap-2.5 mb-4"
     >
-      <div class="stat-card stat-default">
-        <p class="text-[11px] text-stone-400 truncate mb-1">
-          {{ t('admin.library.totalFolders') }}
-        </p>
-        <p class="stat-value">{{ scanData.total }}</p>
-      </div>
-      <div class="stat-card stat-green">
-        <p class="text-[11px] text-stone-400 truncate mb-1">{{ t('admin.library.registered') }}</p>
-        <p class="stat-value">{{ registeredCount }}</p>
-      </div>
-      <div class="stat-card stat-blue">
-        <p class="text-[11px] text-stone-400 truncate mb-1">{{ t('admin.library.visible') }}</p>
-        <p class="stat-value">{{ activeCount }}</p>
-      </div>
-      <div class="stat-card stat-amber">
-        <p class="text-[11px] text-stone-400 truncate mb-1">
-          {{ t('admin.library.newUnregistered') }}
-        </p>
-        <p class="stat-value">{{ newBooks.length }}</p>
-      </div>
+      <AdminSwissKpiCard
+        :title="t('admin.library.totalFolders')"
+        :value="scanData.total"
+        :icon="FolderOpened"
+        theme="neutral"
+        compact
+      />
+      <AdminSwissKpiCard
+        :title="t('admin.library.registered')"
+        :value="registeredCount"
+        theme="success"
+        compact
+      />
+      <AdminSwissKpiCard
+        :title="t('admin.library.visible')"
+        :value="activeCount"
+        theme="members"
+        compact
+      />
+      <AdminSwissKpiCard
+        :title="t('admin.library.newUnregistered')"
+        :value="newBooks.length"
+        theme="warn"
+        compact
+      />
     </div>
 
     <!-- Loading skeleton -->
@@ -772,34 +780,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.stat-card {
-  border-radius: 8px;
-  padding: 12px 14px;
-  background: var(--el-fill-color-lighter);
-  border-left: 3px solid transparent;
-}
-
-.stat-default {
-  border-left-color: var(--el-border-color);
-}
-.stat-green {
-  border-left-color: #22c55e;
-}
-.stat-blue {
-  border-left-color: #3b82f6;
-}
-.stat-amber {
-  border-left-color: #f59e0b;
-}
-
-.stat-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--el-text-color-primary);
-  line-height: 1;
-  margin: 0;
-}
-
 .status-dot {
   width: 7px;
   height: 7px;

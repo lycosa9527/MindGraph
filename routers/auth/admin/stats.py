@@ -38,14 +38,15 @@ from utils.auth.admin_panel_permissions import (
     user_panel_capabilities,
 )
 from utils.auth.admin_scope import AdminScope, panel_read_only_for_user
+from utils.auth.school_tier import school_dashboard_quotas_payload
 
 from ..dependencies import (
     get_language_dependency,
-    require_admin,
     require_admin_stats_read,
     require_panel_capability,
 )
 from ..helpers import get_beijing_now, get_beijing_today_start_utc
+
 from .school_scope import resolve_school_dashboard_org_id
 
 logger = logging.getLogger(__name__)
@@ -385,6 +386,8 @@ async def get_school_stats(
     except (ImportError, Exception) as e:
         logger.debug("TokenUsage not available: %s", e)
 
+    quotas = await school_dashboard_quotas_payload(db, org)
+
     return {
         "organization": {
             "id": org.id,
@@ -398,6 +401,7 @@ async def get_school_stats(
         "token_stats_by_org": token_stats_by_org,
         "users_by_org": users_by_org,
         "top_users": top_users,
+        "quotas": quotas,
     }
 
 
@@ -423,11 +427,11 @@ async def get_school_token_stats(
     )
 
 
-@router.get("/admin/token-stats", dependencies=[Depends(require_admin)])
+@router.get("/admin/token-stats")
 async def get_token_stats_admin(
     _request: Request,
     organization_id: Optional[int] = None,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_admin_stats_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:

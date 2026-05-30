@@ -7,7 +7,6 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
-from models.domain.auth import User
 from models.domain.markets import MarketListing
 from repositories.markets_repo import (
     MarketListingRepository,
@@ -15,7 +14,8 @@ from repositories.markets_repo import (
     MarketSubscriptionRepository,
     MarketUserLookup,
 )
-from routers.auth.dependencies import require_admin
+from utils.auth.admin_scope import AdminScope
+from routers.auth.dependencies import require_global_billing_read
 from routers.features.markets.helpers import require_markets_enabled
 
 router = APIRouter()
@@ -67,7 +67,7 @@ async def admin_list_orders(
     offset: int = Query(0, ge=0, description="Legacy offset; ignored when before_id is supplied."),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_async_db),
-    _admin: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_global_billing_read),
 ) -> list[AdminOrderRow]:
     require_markets_enabled()
     repo = MarketOrderRepository(db)
@@ -111,7 +111,7 @@ async def admin_list_listings(
     offset: int = Query(0, ge=0, description="Legacy offset; ignored when after_id is supplied."),
     limit: int = Query(100, ge=1, le=500),
     db: AsyncSession = Depends(get_async_db),
-    _admin: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_global_billing_read),
 ) -> list[AdminListingRow]:
     require_markets_enabled()
     repo = MarketListingRepository(db)
@@ -147,7 +147,7 @@ async def admin_list_subscriptions(
     offset: int = Query(0, ge=0, description="Legacy offset; ignored when before_id is supplied."),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_async_db),
-    _admin: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_global_billing_read),
 ) -> list[AdminSubscriptionRow]:
     require_markets_enabled()
     repo = MarketSubscriptionRepository(db)
@@ -176,7 +176,7 @@ async def admin_list_subscriptions(
 @router.get("/admin/stats", response_model=dict[str, Any])
 async def admin_stats(
     db: AsyncSession = Depends(get_async_db),
-    _admin: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_global_billing_read),
 ) -> dict[str, Any]:
     require_markets_enabled()
     orepo = MarketOrderRepository(db)

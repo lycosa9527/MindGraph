@@ -13,9 +13,11 @@ from sqlalchemy import select
 
 from config.database import AsyncSessionLocal
 from models.domain.auth import User
+from models.domain.messages import Language, Messages, get_request_language
 from models.domain.user_api_token import UserAPIToken
 from services.redis.cache.redis_user_token_cache import user_token_cache
 from utils.auth.datetime_compat import as_utc_aware
+from utils.auth.school_tier import TIER_FEATURE_API_TOKEN, user_has_school_tier_feature
 
 logger = logging.getLogger(__name__)
 
@@ -146,5 +148,16 @@ async def validate_user_token(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
 
     await _check_org_access_async(user)
+    async with AsyncSessionLocal() as db:
+        allowed = await user_has_school_tier_feature(db, user, TIER_FEATURE_API_TOKEN)
+    if not allowed:
+        lang = Language.ZH
+        if request is not None:
+            lang = get_request_language(
+                request.headers.get("X-Language"),
+                request.headers.get("Accept-Language", ""),
+            )
+        error_msg = Messages.error("school_tier_feature_unavailable", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     _log_mgat_audit(request, user.id)
     return user

@@ -4,6 +4,7 @@
  */
 import { onMounted, ref } from 'vue'
 
+import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
 
@@ -101,18 +102,21 @@ onMounted(() => {
     <div>
       <h2 class="text-base font-semibold text-gray-900 mb-2">{{ t('admin.markets.stats') }}</h2>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <div class="text-xs text-gray-500">{{ t('admin.markets.ordersTotal') }}</div>
-          <div class="text-2xl font-semibold text-gray-900">{{ stats.orders_total }}</div>
-        </div>
-        <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <div class="text-xs text-gray-500">{{ t('admin.markets.ordersPaid') }}</div>
-          <div class="text-2xl font-semibold text-green-700">{{ stats.orders_paid }}</div>
-        </div>
-        <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <div class="text-xs text-gray-500">{{ t('admin.markets.ordersPending') }}</div>
-          <div class="text-2xl font-semibold text-amber-700">{{ stats.orders_pending }}</div>
-        </div>
+        <AdminSwissKpiCard
+          :title="t('admin.markets.ordersTotal')"
+          :value="stats.orders_total"
+          theme="neutral"
+        />
+        <AdminSwissKpiCard
+          :title="t('admin.markets.ordersPaid')"
+          :value="stats.orders_paid"
+          theme="success"
+        />
+        <AdminSwissKpiCard
+          :title="t('admin.markets.ordersPending')"
+          :value="stats.orders_pending"
+          theme="warn"
+        />
       </div>
     </div>
 

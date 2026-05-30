@@ -52,7 +52,16 @@ class AdminScope:
             )
 
     def assert_mutation_allowed(self, lang: Language) -> None:
+        """Deprecated — prefer assert_capability(edit_cap) on mutation routes."""
         self.assert_not_read_only(lang)
+
+    def assert_any_capability(self, capabilities: frozenset[str], lang: Language) -> None:
+        if any(cap in self.capabilities for cap in capabilities):
+            return
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=Messages.error("admin_access_required", lang),
+        )
 
 
 def _read_only_for_role(role: str, capabilities: frozenset[str]) -> bool:

@@ -1,0 +1,458 @@
+/**
+ * Shared Swiss stat card chrome for admin management panel.
+ * Import globally from index.css — do not link from Vue scoped style src.
+ */
+
+.swiss-stat-card {
+  --stat-accent: var(--swiss-stat-members-accent);
+  --stat-accent-soft: var(--swiss-stat-members-soft);
+  --stat-glow: var(--swiss-stat-members-glow);
+  --stat-track: var(--swiss-hover);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  min-height: 100%;
+  padding: 1.125rem 1.25rem 1rem;
+  border: 1px solid var(--swiss-border);
+  border-radius: 12px;
+  background: var(--swiss-surface);
+  box-shadow: 0 1px 2px rgb(28 25 23 / 0.04);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.swiss-stat-card--stripe-left {
+  border-left-width: 4px;
+  border-left-color: var(--stat-accent);
+}
+
+.swiss-stat-card--stripe-top {
+  border-top-width: 3px;
+  border-top-color: var(--stat-accent);
+}
+
+.swiss-stat-card--clickable {
+  cursor: pointer;
+}
+
+.swiss-stat-card--clickable:hover,
+.swiss-stat-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--swiss-border-strong);
+  box-shadow: 0 4px 16px rgb(28 25 23 / 0.07), 0 0 20px var(--stat-glow);
+}
+
+.swiss-stat-card--stripe-left.swiss-stat-card--clickable:hover,
+.swiss-stat-card--stripe-left:hover {
+  border-left-color: var(--stat-accent);
+}
+
+.swiss-stat-card--stripe-top.swiss-stat-card--clickable:hover,
+.swiss-stat-card--stripe-top:hover {
+  border-top-color: var(--stat-accent);
+}
+
+.swiss-stat-card--compact {
+  gap: 0.375rem;
+  padding: 0.75rem 0.875rem;
+  min-height: 0;
+}
+
+.swiss-stat-card--theme-members {
+  --stat-accent: var(--swiss-stat-members-accent);
+  --stat-accent-soft: var(--swiss-stat-members-soft);
+  --stat-glow: var(--swiss-stat-members-glow);
+}
+
+.swiss-stat-card--theme-managers {
+  --stat-accent: var(--swiss-stat-managers-accent);
+  --stat-accent-soft: var(--swiss-stat-managers-soft);
+  --stat-glow: var(--swiss-stat-managers-glow);
+}
+
+.swiss-stat-card--theme-storage {
+  --stat-accent: var(--swiss-stat-storage-accent);
+  --stat-accent-soft: var(--swiss-stat-storage-soft);
+  --stat-glow: var(--swiss-stat-storage-glow);
+}
+
+.swiss-stat-card--theme-mindgraph {
+  --stat-accent: var(--swiss-stat-mindgraph-accent);
+  --stat-accent-soft: var(--swiss-stat-mindgraph-soft);
+  --stat-glow: var(--swiss-stat-mindgraph-glow);
+}
+
+.swiss-stat-card--theme-mindmate {
+  --stat-accent: var(--swiss-stat-mindmate-accent);
+  --stat-accent-soft: var(--swiss-stat-mindmate-soft);
+  --stat-glow: var(--swiss-stat-mindmate-glow);
+}
+
+.swiss-stat-card--theme-integration {
+  --stat-accent: var(--swiss-stat-integration-accent);
+  --stat-accent-soft: var(--swiss-stat-integration-soft);
+  --stat-glow: var(--swiss-stat-integration-glow);
+}
+
+.swiss-stat-card--theme-success {
+  --stat-accent: var(--swiss-stat-success-accent);
+  --stat-accent-soft: var(--swiss-stat-success-soft);
+  --stat-glow: var(--swiss-stat-success-glow);
+}
+
+.swiss-stat-card--theme-platform {
+  --stat-accent: var(--swiss-stat-platform-accent);
+  --stat-accent-soft: var(--swiss-stat-platform-soft);
+  --stat-glow: var(--swiss-stat-platform-glow);
+}
+
+.swiss-stat-card--theme-warn {
+  --stat-accent: var(--swiss-stat-warn-accent);
+  --stat-accent-soft: var(--swiss-stat-warn-soft);
+  --stat-glow: var(--swiss-stat-warn-glow);
+}
+
+.swiss-stat-card--theme-danger {
+  --stat-accent: var(--swiss-stat-danger-accent);
+  --stat-accent-soft: var(--swiss-stat-danger-soft);
+  --stat-glow: var(--swiss-stat-danger-glow);
+}
+
+.swiss-stat-card--theme-neutral {
+  --stat-accent: var(--swiss-stat-neutral-accent);
+  --stat-accent-soft: var(--swiss-stat-neutral-soft);
+  --stat-glow: var(--swiss-stat-neutral-glow);
+}
+
+.swiss-stat-card--near-limit {
+  --stat-accent: var(--swiss-stat-warn-accent);
+  --stat-accent-soft: var(--swiss-stat-warn-soft);
+  --stat-glow: var(--swiss-stat-warn-glow);
+}
+
+.swiss-stat-card--at-limit {
+  --stat-accent: var(--swiss-stat-danger-accent);
+  --stat-accent-soft: var(--swiss-stat-danger-soft);
+  --stat-glow: var(--swiss-stat-danger-glow);
+}
+
+.swiss-stat-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.swiss-stat-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 10px;
+  background: var(--stat-accent-soft);
+  color: var(--stat-accent);
+  flex-shrink: 0;
+}
+
+.swiss-stat-card--compact .swiss-stat-card__icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 8px;
+}
+
+.swiss-stat-card__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--swiss-muted);
+}
+
+.swiss-stat-card--compact .swiss-stat-card__title {
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+}
+
+.swiss-stat-card__badge {
+  flex-shrink: 0;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: var(--swiss-inset);
+  border: 1px solid var(--swiss-border);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--swiss-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.swiss-stat-card__value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--swiss-ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.swiss-stat-card--compact .swiss-stat-card__value {
+  font-size: 1.5rem;
+}
+
+.swiss-stat-card__value-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.375rem;
+}
+
+.swiss-stat-card__value-sep {
+  font-size: 1.125rem;
+  font-weight: 400;
+  color: var(--swiss-subtle);
+}
+
+.swiss-stat-card__value-muted {
+  font-size: 1.0625rem;
+  font-weight: 500;
+  color: var(--swiss-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.swiss-stat-card__pct {
+  flex-shrink: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--stat-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.swiss-stat-card__track {
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--stat-track);
+  overflow: hidden;
+}
+
+.swiss-stat-card__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--stat-accent);
+  transition: width 0.35s ease;
+}
+
+.swiss-stat-card__footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--swiss-muted);
+}
+
+.swiss-stat-card__footer-dot {
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-radius: 999px;
+  background: var(--stat-accent);
+  box-shadow: 0 0 0 3px var(--stat-accent-soft);
+  flex-shrink: 0;
+}
+
+.swiss-stat-card__sub {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--swiss-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.swiss-stat-card__hint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--swiss-muted);
+}
+
+.swiss-stat-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.swiss-stat-card__gauge {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.swiss-stat-card__stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(5.25rem, 1fr));
+  gap: 0.45rem;
+}
+
+.swiss-stat-card__stat-pill {
+  border: 1px solid var(--swiss-border);
+  background: var(--swiss-inset);
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+  min-width: 0;
+}
+
+.swiss-stat-card__stat-pill-k {
+  display: block;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--swiss-muted);
+  margin-bottom: 0.22rem;
+}
+
+.swiss-stat-card__stat-pill-v {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--stat-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.swiss-stat-card__service-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.swiss-stat-card__service-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--swiss-ink);
+}
+
+.swiss-stat-card__period-label {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  color: var(--swiss-muted);
+}
+
+.swiss-stat-card__period-value {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--swiss-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.swiss-stat-card--period {
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  min-height: 0;
+  border-top-width: 3px;
+  border-top-color: var(--swiss-border);
+}
+
+.swiss-stat-card--period-active {
+  border-color: var(--stat-accent);
+  border-top-color: var(--stat-accent);
+  box-shadow: 0 0 0 1px var(--stat-accent-soft), 0 0 16px var(--stat-glow);
+}
+
+.swiss-stat-card__stat-item-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .swiss-stat-card__stat-item-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.swiss-stat-card__stat-item-grid--pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.swiss-stat-card-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.swiss-stat-card-grid--wide {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.swiss-stat-card-grid--dual {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 767px) {
+  .swiss-stat-card-grid--dual {
+    grid-template-columns: 1fr;
+  }
+}
+
+.swiss-stat-card__stat-item {
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: var(--swiss-inset);
+  border: 1px solid var(--swiss-border);
+}
+
+.swiss-stat-card__stat-item-k {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  color: var(--swiss-muted);
+}
+
+.swiss-stat-card__stat-item-v {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--stat-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.swiss-stat-card__stat-item-sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.6875rem;
+  color: var(--swiss-subtle);
+}
+
+.swiss-stat-card-group__title {
+  margin: 0 0 0.6rem;
+  padding-bottom: 0.4rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--swiss-muted);
+  border-bottom: 1px solid var(--swiss-border);
+}
+
+html.dark .swiss-stat-card {
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.04);
+}
+
+html.dark .swiss-stat-card--clickable:hover,
+html.dark .swiss-stat-card:hover {
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.32), 0 0 24px var(--stat-glow);
+}
+
+html.dark .swiss-stat-card--period-active {
+  box-shadow: 0 0 0 1px var(--stat-accent-soft), 0 0 20px var(--stat-glow);
+}

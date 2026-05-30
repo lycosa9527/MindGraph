@@ -146,6 +146,14 @@ watch(
     loadUsers()
   }
 )
+
+function reloadUsers(): void {
+  void loadUsers()
+}
+
+defineExpose({
+  reloadUsers,
+})
 </script>
 
 <template>

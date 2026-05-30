@@ -22,6 +22,13 @@ from models.domain.messages import Messages, Language
 from models.domain.token_usage import TokenUsage
 from services.auth.phone_uniqueness import other_user_id_with_phone
 from services.auth.school_dashboard_logger import get_school_dashboard_logger
+from services.auth.school_user_create import (
+    batch_result_payload,
+    create_school_member_batch,
+    create_school_member_user,
+    parse_school_member_batch,
+    parse_school_member_input,
+)
 from services.auth.user_fk_cleanup import delete_user_fk_dependent_rows
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
@@ -34,7 +41,7 @@ from services.auth.admin_user_list_rows import (
     enrich_admin_user_list_rows,
 )
 from ..dependencies import get_language_dependency, require_panel_capability
-from ..helpers import utc_to_beijing_iso
+from ..helpers import commit_user_with_retry, utc_to_beijing_iso
 from .school_scope import resolve_school_dashboard_org_id
 
 logger = logging.getLogger(__name__)
@@ -155,6 +162,147 @@ async def list_school_users(
     }
 
 
+@router.post("/admin/school/users")
+async def create_school_user(
+    request: dict,
+    organization_id: Optional[int] = Query(None),
+    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_EDIT)),
+    db: AsyncSession = Depends(get_async_db),
+    lang: Language = Depends(get_language_dependency),
+) -> dict[str, Any]:
+    current_user = scope.actor
+    if not isinstance(request, dict):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=Messages.error("invalid_request", lang=lang),
+        )
+
+    org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
+    org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
+    if org is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=Messages.error("organization_not_found", lang, org_id),
+        )
+
+    member = parse_school_member_input(request, lang, actor_role=getattr(current_user, "role", None))
+    sd_log = get_school_dashboard_logger(logger, actor_id=current_user.id, org_id=org_id)
+
+    try:
+        new_user = await create_school_member_user(db, org, member, lang)
+        await commit_user_with_retry(db, new_user, max_retries=5, lang=lang)
+    except HTTPException:
+        await db.rollback()
+        raise
+    except Exception as exc:
+        await db.rollback()
+        sd_log.error(
+            "school user create failed: %s",
+            exc,
+            extra={"sd_event": "school_user_create_failed", "sd_error_type": type(exc).__name__},
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=Messages.error("user_creation_failed", lang=lang),
+        ) from exc
+
+    try:
+        await user_cache.cache_user(new_user)
+    except Exception as exc:
+        sd_log.warning(
+            "school user cache write failed: %s",
+            exc,
+            extra={"sd_event": "school_user_create_cache_failed", "sd_error_type": type(exc).__name__},
+        )
+
+    sd_log.info(
+        "[SchoolDashboard] user created phone=%s",
+        new_user.phone,
+        extra={"sd_event": "school_user_created", "sd_target_user_id": new_user.id},
+    )
+    return {
+        "message": Messages.success("school_user_created", lang=lang),
+        "user": {
+            "id": new_user.id,
+            "phone": new_user.phone,
+            "name": new_user.name,
+            "role": new_user.role,
+        },
+    }
+
+
+@router.post("/admin/school/users/batch")
+async def create_school_users_batch(
+    request: dict,
+    organization_id: Optional[int] = Query(None),
+    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_EDIT)),
+    db: AsyncSession = Depends(get_async_db),
+    lang: Language = Depends(get_language_dependency),
+) -> dict[str, Any]:
+    current_user = scope.actor
+    if not isinstance(request, dict):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=Messages.error("invalid_request", lang=lang),
+        )
+
+    org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
+    org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
+    if org is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=Messages.error("organization_not_found", lang, org_id),
+        )
+
+    members = parse_school_member_batch(
+        request.get("members"),
+        lang,
+        actor_role=getattr(current_user, "role", None),
+    )
+    sd_log = get_school_dashboard_logger(logger, actor_id=current_user.id, org_id=org_id)
+
+    try:
+        created, failed = await create_school_member_batch(db, org, members, lang)
+        if created:
+            await db.commit()
+            for user in created:
+                await db.refresh(user)
+        else:
+            await db.rollback()
+    except HTTPException:
+        await db.rollback()
+        raise
+    except Exception as exc:
+        await db.rollback()
+        sd_log.error(
+            "school user batch create failed: %s",
+            exc,
+            extra={"sd_event": "school_user_batch_create_failed", "sd_error_type": type(exc).__name__},
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=Messages.error("user_creation_failed", lang=lang),
+        ) from exc
+
+    for user in created:
+        try:
+            await user_cache.cache_user(user)
+        except Exception as exc:
+            sd_log.warning(
+                "school user batch cache write failed: %s",
+                exc,
+                extra={"sd_event": "school_user_create_cache_failed", "sd_error_type": type(exc).__name__},
+            )
+
+    sd_log.info(
+        "[SchoolDashboard] batch created count=%s failed=%s",
+        len(created),
+        len(failed),
+        extra={"sd_event": "school_user_batch_created"},
+    )
+    return batch_result_payload(created, failed, lang)
+
+
 @router.get("/admin/school/users/{user_id}")
 async def get_school_user(
     user_id: int,
@@ -195,7 +343,6 @@ async def update_school_user(
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, Any]:
-    scope.assert_mutation_allowed(lang)
     current_user = scope.actor
     if not isinstance(request, dict):
         raise HTTPException(
@@ -334,7 +481,6 @@ async def delete_school_user(
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, str]:
-    scope.assert_mutation_allowed(lang)
     current_user = scope.actor
     org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
     user = await _load_user_in_school_or_not_found(db, user_id, org_id)
@@ -391,7 +537,6 @@ async def unlock_school_user(
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, str]:
-    scope.assert_mutation_allowed(lang)
     current_user = scope.actor
     org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
     user = await _load_user_in_school_or_not_found(db, user_id, org_id)

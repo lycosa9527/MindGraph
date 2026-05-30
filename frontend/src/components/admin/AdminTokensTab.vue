@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { Key } from '@element-plus/icons-vue'
+import { Key, Loading, Refresh, Warning } from '@element-plus/icons-vue'
 
 import type { Chart as ChartInstance } from 'chart.js'
 
 import AdminDingtalkGenerationApiKeysDialog from '@/components/admin/AdminDingtalkGenerationApiKeysDialog.vue'
+import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
+import AdminSwissServiceCard from '@/components/admin/swiss/AdminSwissServiceCard.vue'
+import AdminTokenUsageByServicePanel from '@/components/admin/AdminTokenUsageByServicePanel.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
 import { type ChartConfiguration, type TooltipItem, loadChartJs } from '@/utils/lazyChartJs'
@@ -102,6 +105,13 @@ function formatChartLabel(value: number): string {
   if (value >= 1000) return (value / 1000).toFixed(1) + 'K'
   return String(value)
 }
+
+const overallPeriods = [
+  { key: 'today' as const, label: () => t('admin.today'), statsKey: 'today' as const },
+  { key: 'week' as const, label: () => t('admin.pastWeek'), statsKey: 'past_week' as const },
+  { key: 'month' as const, label: () => t('admin.pastMonth'), statsKey: 'past_month' as const },
+  { key: 'total' as const, label: () => t('admin.allTime'), statsKey: 'total' as const },
+]
 
 async function loadTokenStats() {
   if (isLoadingTokens.value) return
@@ -343,183 +353,25 @@ onBeforeUnmount(() => {
         <p class="text-sm text-gray-500">{{ t('admin.tokenUsageCompare') }}</p>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <!-- MindGraph Card -->
-        <el-card
-          shadow="hover"
-          class="service-card mindgraph-card service-card-clickable"
-          @click="showTokenTrendChart('mindgraph')"
-        >
-          <template #header>
-            <div class="flex items-center gap-3">
-              <div
-                class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center"
-              >
-                <el-icon
-                  :size="20"
-                  class="text-blue-500"
-                  ><Connection
-                /></el-icon>
-              </div>
-              <div>
-                <h3 class="font-semibold text-gray-800 dark:text-white">MindGraph</h3>
-                <p class="text-xs text-gray-500">{{ t('admin.diagramGeneration') }}</p>
-              </div>
-            </div>
-          </template>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="stat-item">
-              <p class="text-xs text-gray-500 mb-1">{{ t('admin.today') }}</p>
-              <p class="text-xl font-bold text-blue-600 dark:text-blue-400">
-                {{ formatNumber(tokenStats.by_service?.mindgraph?.today?.total_tokens || 0) }}
-              </p>
-              <p class="text-xs text-gray-400">
-                {{ (tokenStats.by_service?.mindgraph?.today?.request_count || 0).toLocaleString() }}
-                {{ t('admin.requests') }}
-              </p>
-            </div>
-            <div class="stat-item">
-              <p class="text-xs text-gray-500 mb-1">{{ t('admin.thisWeek') }}</p>
-              <p class="text-xl font-bold text-blue-600 dark:text-blue-400">
-                {{ formatNumber(tokenStats.by_service?.mindgraph?.week?.total_tokens || 0) }}
-              </p>
-              <p class="text-xs text-gray-400">
-                {{ (tokenStats.by_service?.mindgraph?.week?.request_count || 0).toLocaleString() }}
-                {{ t('admin.requests') }}
-              </p>
-            </div>
-            <div class="stat-item">
-              <p class="text-xs text-gray-500 mb-1">{{ t('admin.thisMonth') }}</p>
-              <p class="text-xl font-bold text-blue-600 dark:text-blue-400">
-                {{ formatNumber(tokenStats.by_service?.mindgraph?.month?.total_tokens || 0) }}
-              </p>
-              <p class="text-xs text-gray-400">
-                {{ (tokenStats.by_service?.mindgraph?.month?.request_count || 0).toLocaleString() }}
-                {{ t('admin.requests') }}
-              </p>
-            </div>
-            <div class="stat-item">
-              <p class="text-xs text-gray-500 mb-1">{{ t('admin.allTime') }}</p>
-              <p class="text-xl font-bold text-blue-600 dark:text-blue-400">
-                {{ formatNumber(tokenStats.by_service?.mindgraph?.total?.total_tokens || 0) }}
-              </p>
-              <p class="text-xs text-gray-400">
-                {{ (tokenStats.by_service?.mindgraph?.total?.request_count || 0).toLocaleString() }}
-                {{ t('admin.requests') }}
-              </p>
-            </div>
-          </div>
-          <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-500">{{ t('admin.inputTokens') }}</span>
-              <span class="font-medium text-gray-700 dark:text-gray-300">
-                {{ formatNumber(tokenStats.by_service?.mindgraph?.total?.input_tokens || 0) }}
-              </span>
-            </div>
-            <div class="flex justify-between text-sm mt-1">
-              <span class="text-gray-500">{{ t('admin.outputTokens') }}</span>
-              <span class="font-medium text-gray-700 dark:text-gray-300">
-                {{ formatNumber(tokenStats.by_service?.mindgraph?.total?.output_tokens || 0) }}
-              </span>
-            </div>
-          </div>
-        </el-card>
+      <AdminTokenUsageByServicePanel
+        :stats="tokenStats"
+        clickable
+        @service-click="showTokenTrendChart($event)"
+      />
 
-        <!-- MindMate Card -->
-        <el-card
-          shadow="hover"
-          class="service-card mindmate-card service-card-clickable"
-          @click="showTokenTrendChart('mindmate')"
-        >
-          <template #header>
-            <div class="flex items-center gap-3">
-              <div
-                class="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center"
-              >
-                <el-icon
-                  :size="20"
-                  class="text-purple-500"
-                  ><ChatDotRound
-                /></el-icon>
-              </div>
-              <div>
-                <h3 class="font-semibold text-gray-800 dark:text-white">MindMate</h3>
-                <p class="text-xs text-gray-500">{{ t('admin.aiAssistant') }}</p>
-              </div>
-            </div>
-          </template>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="stat-item">
-              <p class="text-xs text-gray-500 mb-1">{{ t('admin.today') }}</p>
-              <p class="text-xl font-bold text-purple-600 dark:text-purple-400">
-                {{ formatNumber(tokenStats.by_service?.mindmate?.today?.total_tokens || 0) }}
-              </p>
-              <p class="text-xs text-gray-400">
-                {{ (tokenStats.by_service?.mindmate?.today?.request_count || 0).toLocaleString() }}
-                {{ t('admin.requests') }}
-              </p>
-            </div>
-            <div class="stat-item">
-              <p class="text-xs text-gray-500 mb-1">{{ t('admin.thisWeek') }}</p>
-              <p class="text-xl font-bold text-purple-600 dark:text-purple-400">
-                {{ formatNumber(tokenStats.by_service?.mindmate?.week?.total_tokens || 0) }}
-              </p>
-              <p class="text-xs text-gray-400">
-                {{ (tokenStats.by_service?.mindmate?.week?.request_count || 0).toLocaleString() }}
-                {{ t('admin.requests') }}
-              </p>
-            </div>
-            <div class="stat-item">
-              <p class="text-xs text-gray-500 mb-1">{{ t('admin.thisMonth') }}</p>
-              <p class="text-xl font-bold text-purple-600 dark:text-purple-400">
-                {{ formatNumber(tokenStats.by_service?.mindmate?.month?.total_tokens || 0) }}
-              </p>
-              <p class="text-xs text-gray-400">
-                {{ (tokenStats.by_service?.mindmate?.month?.request_count || 0).toLocaleString() }}
-                {{ t('admin.requests') }}
-              </p>
-            </div>
-            <div class="stat-item">
-              <p class="text-xs text-gray-500 mb-1">{{ t('admin.allTime') }}</p>
-              <p class="text-xl font-bold text-purple-600 dark:text-purple-400">
-                {{ formatNumber(tokenStats.by_service?.mindmate?.total?.total_tokens || 0) }}
-              </p>
-              <p class="text-xs text-gray-400">
-                {{ (tokenStats.by_service?.mindmate?.total?.request_count || 0).toLocaleString() }}
-                {{ t('admin.requests') }}
-              </p>
-            </div>
-          </div>
-          <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-500">{{ t('admin.inputTokens') }}</span>
-              <span class="font-medium text-gray-700 dark:text-gray-300">
-                {{ formatNumber(tokenStats.by_service?.mindmate?.total?.input_tokens || 0) }}
-              </span>
-            </div>
-            <div class="flex justify-between text-sm mt-1">
-              <span class="text-gray-500">{{ t('admin.outputTokens') }}</span>
-              <span class="font-medium text-gray-700 dark:text-gray-300">
-                {{ formatNumber(tokenStats.by_service?.mindmate?.total?.output_tokens || 0) }}
-              </span>
-            </div>
-          </div>
-        </el-card>
-      </div>
-
-      <!-- Overall summary + DingTalk image API keys -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-2 items-stretch">
-        <el-card
-          shadow="hover"
-          class="overall-token-row-card service-card-clickable h-full min-h-0 lg:col-span-2"
+        <AdminSwissServiceCard
+          theme="platform"
+          class="overall-token-row lg:col-span-2 h-full min-h-0"
+          clickable
           @click="showTokenTrendChart(null)"
         >
           <template #header>
             <div
-              class="flex items-center justify-between"
+              class="flex items-center justify-between w-full"
               @click.stop
             >
-              <span class="font-medium">{{ t('admin.overallTokenSummary') }}</span>
+              <span class="swiss-stat-card__service-title">{{ t('admin.overallTokenSummary') }}</span>
               <el-button
                 text
                 size="small"
@@ -530,116 +382,59 @@ onBeforeUnmount(() => {
               </el-button>
             </div>
           </template>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="text-center">
-              <p class="text-sm text-gray-500 mb-1">{{ t('admin.today') }}</p>
-              <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                {{ formatNumber(tokenStats.today?.total_tokens || 0) }}
+          <div class="swiss-stat-card__stat-item-grid">
+            <div
+              v-for="period in overallPeriods"
+              :key="period.key"
+              class="swiss-stat-card__stat-item text-center"
+            >
+              <p class="swiss-stat-card__stat-item-k">{{ period.label() }}</p>
+              <p class="swiss-stat-card__stat-item-v">
+                {{ formatNumber(tokenStats[period.statsKey]?.total_tokens || 0) }}
               </p>
-              <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-                <span
-                  >{{ t('admin.inShort') }}:
-                  {{ formatNumber(tokenStats.today?.input_tokens || 0) }}</span
-                >
-                <span
-                  >{{ t('admin.outShort') }}:
-                  {{ formatNumber(tokenStats.today?.output_tokens || 0) }}</span
-                >
-              </div>
-            </div>
-            <div class="text-center">
-              <p class="text-sm text-gray-500 mb-1">{{ t('admin.pastWeek') }}</p>
-              <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                {{ formatNumber(tokenStats.past_week?.total_tokens || 0) }}
+              <p class="swiss-stat-card__stat-item-sub">
+                {{ t('admin.inShort') }}:
+                {{ formatNumber(tokenStats[period.statsKey]?.input_tokens || 0) }}
+                · {{ t('admin.outShort') }}:
+                {{ formatNumber(tokenStats[period.statsKey]?.output_tokens || 0) }}
               </p>
-              <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-                <span
-                  >{{ t('admin.inShort') }}:
-                  {{ formatNumber(tokenStats.past_week?.input_tokens || 0) }}</span
-                >
-                <span
-                  >{{ t('admin.outShort') }}:
-                  {{ formatNumber(tokenStats.past_week?.output_tokens || 0) }}</span
-                >
-              </div>
-            </div>
-            <div class="text-center">
-              <p class="text-sm text-gray-500 mb-1">{{ t('admin.pastMonth') }}</p>
-              <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                {{ formatNumber(tokenStats.past_month?.total_tokens || 0) }}
-              </p>
-              <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-                <span
-                  >{{ t('admin.inShort') }}:
-                  {{ formatNumber(tokenStats.past_month?.input_tokens || 0) }}</span
-                >
-                <span
-                  >{{ t('admin.outShort') }}:
-                  {{ formatNumber(tokenStats.past_month?.output_tokens || 0) }}</span
-                >
-              </div>
-            </div>
-            <div class="text-center">
-              <p class="text-sm text-gray-500 mb-1">{{ t('admin.allTime') }}</p>
-              <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                {{ formatNumber(tokenStats.total?.total_tokens || 0) }}
-              </p>
-              <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-                <span
-                  >{{ t('admin.inShort') }}:
-                  {{ formatNumber(tokenStats.total?.input_tokens || 0) }}</span
-                >
-                <span
-                  >{{ t('admin.outShort') }}:
-                  {{ formatNumber(tokenStats.total?.output_tokens || 0) }}</span
-                >
-              </div>
             </div>
           </div>
-        </el-card>
+        </AdminSwissServiceCard>
 
-        <el-card
-          shadow="hover"
-          class="dingtalk-generation-card service-card-focusable service-card-clickable h-full min-h-0 border-t-[3px] border-t-sky-500"
-          role="button"
-          :tabindex="0"
+        <AdminSwissServiceCard
+          theme="integration"
+          class="h-full min-h-0"
+          clickable
+          focusable
           :aria-label="`${t('admin.dingtalkGenerationCard')}. ${t('admin.dingtalkCardClickToEditApiKeys')}`"
           @click="openDingtalkApiKeysDialog"
           @keydown="onDingtalkCardKeydown"
         >
           <template #header>
             <div class="flex min-h-0 items-center gap-2">
-              <div
-                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-100 dark:bg-sky-900/40"
-              >
-                <el-icon
-                  :size="16"
-                  class="text-sky-600 dark:text-sky-400"
-                >
+              <div class="swiss-stat-card__icon">
+                <el-icon :size="16">
                   <Key />
                 </el-icon>
               </div>
-              <div class="min-w-0">
-                <p class="text-sm font-medium text-gray-800 dark:text-white">
-                  {{ t('admin.dingtalkGenerationCard') }}
-                </p>
-              </div>
+              <p class="swiss-stat-card__service-title">
+                {{ t('admin.dingtalkGenerationCard') }}
+              </p>
             </div>
           </template>
           <div class="dingtalk-generation-body">
-            <p
-              class="text-xl font-semibold tabular-nums text-sky-600 dark:text-sky-300 sm:text-2xl"
-            >
+            <p class="text-xl font-semibold tabular-nums sm:text-2xl" style="color: var(--stat-accent)">
               <template v-if="dingtalkKeyUsesTotal !== null">
                 {{ t('admin.dingtalkCardTotalUses', { count: dingtalkKeyUsesTotal }) }}
               </template>
               <template v-else>—</template>
             </p>
-            <p class="text-center text-xs leading-snug text-gray-500 dark:text-gray-400">
+            <p class="text-center text-xs leading-snug text-[var(--swiss-muted)]">
               {{ t('admin.dingtalkCardClickToEditApiKeys') }}
             </p>
           </div>
-        </el-card>
+        </AdminSwissServiceCard>
       </div>
     </div>
 
@@ -688,7 +483,7 @@ onBeforeUnmount(() => {
         </div>
         <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <el-card
+            <AdminSwissPeriodCard
               v-for="(cardPeriod, key) in {
                 today: 'today',
                 week: 'week',
@@ -696,26 +491,20 @@ onBeforeUnmount(() => {
                 total: 'total',
               } as const"
               :key="key"
-              shadow="hover"
-              class="token-period-card cursor-pointer"
-              :class="{ 'ring-2 ring-primary-500': trendContext.period === key }"
+              :label="
+                key === 'today'
+                  ? t('admin.today')
+                  : key === 'week'
+                    ? t('admin.pastWeek')
+                    : key === 'month'
+                      ? t('admin.pastMonth')
+                      : t('admin.allTime')
+              "
+              :value="periodCards[key]"
+              :active="trendContext.period === key"
+              theme="storage"
               @click="switchTokenTrendPeriod(key as 'today' | 'week' | 'month' | 'total')"
-            >
-              <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                {{
-                  key === 'today'
-                    ? t('admin.today')
-                    : key === 'week'
-                      ? t('admin.pastWeek')
-                      : key === 'month'
-                        ? t('admin.pastMonth')
-                        : t('admin.allTime')
-                }}
-              </p>
-              <p class="text-lg font-bold text-gray-800 dark:text-white">
-                {{ periodCards[key] }}
-              </p>
-            </el-card>
+            />
           </div>
         </div>
       </template>
@@ -725,62 +514,5 @@ onBeforeUnmount(() => {
     </el-dialog>
   </div>
 </template>
-
-<style scoped>
-.token-period-card :deep(.el-card__body) {
-  padding: 12px 16px;
-}
-
-/* Token row: flex layout so body tracks row height; align with DingTalk card */
-.overall-token-row-card {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-}
-
-.overall-token-row-card :deep(.el-card__header) {
-  padding: 12px 16px;
-}
-
-.overall-token-row-card :deep(.el-card__body) {
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: 12px 16px 16px;
-}
-
-.dingtalk-generation-card {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-}
-
-.dingtalk-generation-card :deep(.el-card__header) {
-  padding: 12px 16px;
-}
-
-.dingtalk-generation-card :deep(.el-card__body) {
-  display: flex;
-  flex: 1 1 auto;
-  min-height: 0;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 16px 12px;
-}
-
-.dingtalk-generation-body {
-  display: flex;
-  width: 100%;
-  max-width: 100%;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  row-gap: 0.25rem;
-  text-align: center;
-}
-
-</style>
 
 <style scoped src="@/styles/admin-token-by-service.css"></style>

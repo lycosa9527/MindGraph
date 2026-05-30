@@ -57,7 +57,24 @@ from .organization_mindmate_branding import (
     revert_mindmate_avatar_upload,
     save_mindmate_agent_avatar,
 )
-from ..dependencies import get_language_dependency, require_admin
+from utils.auth.school_tier import (
+    apply_school_tier_on_create,
+    apply_school_tier_on_update,
+    assert_organization_has_manager_capacity,
+    assert_organization_tier_allows_current_managers,
+    assert_organization_tier_allows_current_members,
+    manager_limit_for_org,
+    member_count_for_org,
+    school_tier_list_fields,
+)
+from utils.auth.admin_scope import AdminScope
+
+from ..dependencies import (
+    get_language_dependency,
+    require_global_organizations_edit,
+    require_global_organizations_read,
+    require_invite_org_create,
+)
 from ..helpers import utc_to_beijing_iso
 
 logger = logging.getLogger(__name__)
@@ -65,10 +82,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/admin/organizations", dependencies=[Depends(require_admin)])
+@router.get("/admin/organizations")
 async def list_organizations_admin(
     _request: Request,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_global_organizations_read),
     db: AsyncSession = Depends(get_async_db),
     _lang: Language = Depends(get_language_dependency),
 ):
@@ -161,41 +178,36 @@ async def list_organizations_admin(
                 "token_stats": org_token_stats,
                 **dify_list_fields(org),
                 **mindmate_branding_list_fields(org),
+                **school_tier_list_fields(org, user_count),
             }
         )
     return result
 
 
-@router.get("/admin/mindmate/dify-default", dependencies=[Depends(require_admin)])
+@router.get("/admin/mindmate/dify-default")
 async def get_mindmate_dify_default_admin(
     _request: Request,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_global_organizations_read),
 ):
-    """Return masked global MindMate Dify credentials from .env (ADMIN ONLY)."""
+    """Return masked global MindMate Dify credentials from .env."""
     return global_mindmate_dify_fields()
 
 
-@router.post(
-    "/admin/mindmate-dify-health-draft",
-    dependencies=[Depends(require_admin)],
-)
+@router.post("/admin/mindmate-dify-health-draft")
 async def post_mindmate_dify_health_draft_admin(
     request: Optional[dict] = Body(None),
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_invite_org_create),
 ):
     """Probe Dify credentials for school create (draft body; no org id)."""
     body = request if isinstance(request, dict) else None
     return await probe_mindmate_dify_health_draft(body)
 
 
-@router.post(
-    "/admin/organizations/{org_id}/mindmate-dify-health",
-    dependencies=[Depends(require_admin)],
-)
+@router.post("/admin/organizations/{org_id}/mindmate-dify-health")
 async def post_organization_mindmate_dify_health_admin(
     org_id: int,
     request: Optional[dict] = Body(None),
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_global_organizations_edit),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -208,39 +220,37 @@ async def post_organization_mindmate_dify_health_admin(
     return await probe_mindmate_dify_health(org, body)
 
 
-@router.get(
-    "/admin/organizations/{org_id}/invitation-code",
-    dependencies=[Depends(require_admin)],
-)
+@router.get("/admin/organizations/{org_id}/invitation-code")
 async def get_organization_invitation_code_admin(
     org_id: int,
     _request: Request,
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_global_organizations_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
-    """Return the invitation code for one organization (ADMIN ONLY)."""
+    """Return the invitation code for one organization."""
     org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if not org:
         error_msg = Messages.error("organization_not_found", lang, org_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
     logger.info(
         "[Auth] Admin user_id=%s read full invitation code for org_id=%s",
-        current_user.id,
+        scope.actor.id,
         org_id,
     )
     return {"invitation_code": cast(Optional[str], org.invitation_code) or ""}
 
 
-@router.post("/admin/organizations", dependencies=[Depends(require_admin)])
+@router.post("/admin/organizations")
 async def create_organization_admin(
     request: dict,
     _http_request: Request,
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_invite_org_create),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
-    """Create new organization (ADMIN ONLY)"""
+    """Create new organization (superadmin or platform_bd invite tab)."""
+    current_user = scope.actor
     if not all(k in request for k in ["code", "name"]):
         error_msg = Messages.error("missing_required_fields", lang, "code, name")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
@@ -287,6 +297,7 @@ async def create_organization_admin(
         created_at=datetime.now(UTC),
     )
     apply_dify_on_create(new_org, request, lang)
+    apply_school_tier_on_create(new_org, request)
 
     db.add(new_org)
     try:
@@ -317,16 +328,17 @@ async def create_organization_admin(
     }
 
 
-@router.put("/admin/organizations/{org_id}", dependencies=[Depends(require_admin)])
+@router.put("/admin/organizations/{org_id}")
 async def update_organization_admin(
     org_id: int,
     request: dict,
     _http_request: Request,
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_global_organizations_edit),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
-    """Update organization (ADMIN ONLY)"""
+    """Update organization (superadmin only)."""
+    current_user = scope.actor
     org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if not org:
         error_msg = Messages.error("organization_not_found", lang, org_id)
@@ -450,6 +462,11 @@ async def update_organization_admin(
     if "mindmate_agent_name" in request or "mindmate_agent_avatar_url" in request:
         apply_mindmate_branding_on_update(org, request, lang)
 
+    if "school_tier" in request:
+        apply_school_tier_on_update(org, request, lang)
+        await assert_organization_tier_allows_current_managers(db, org, lang)
+        await assert_organization_tier_allows_current_members(db, org, lang)
+
     await propagate_org_dify_settings_to_mindbot_configs(db, org)
 
     try:
@@ -465,12 +482,14 @@ async def update_organization_admin(
 
     if not await org_cache.write_through(org, old_code, old_invite):
         logger.warning("[Auth] Cache write-through failed for org ID %s", org_id)
+        await org_cache.recover_after_failed_write_through(org, old_code, old_invite)
     else:
         logger.info("[Auth] Updated and re-cached org ID %s", org_id)
 
     logger.info("Admin %s updated organization: %s", current_user.phone, org.code)
     updated_expires = cast(Optional[datetime], org.expires_at)
     updated_created = cast(Optional[datetime], org.created_at)
+    member_count = await member_count_for_org(db, int(org.id))
     return {
         "id": org.id,
         "code": org.code,
@@ -482,21 +501,20 @@ async def update_organization_admin(
         "created_at": updated_created.isoformat() if updated_created else None,
         **dify_list_fields(org),
         **mindmate_branding_list_fields(org),
+        **school_tier_list_fields(org, member_count),
     }
 
 
-@router.post(
-    "/admin/organizations/{org_id}/mindmate-avatar",
-    dependencies=[Depends(require_admin)],
-)
+@router.post("/admin/organizations/{org_id}/mindmate-avatar")
 async def upload_organization_mindmate_avatar_admin(
     org_id: int,
     file: UploadFile = File(...),
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_global_organizations_edit),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
-    """Upload MindMate agent avatar for one organization (ADMIN ONLY)."""
+    """Upload MindMate agent avatar for one organization."""
+    current_user = scope.actor
     org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if not org:
         error_msg = Messages.error("organization_not_found", lang, org_id)
@@ -524,6 +542,7 @@ async def upload_organization_mindmate_avatar_admin(
 
     if not await org_cache.write_through(org, old_code, old_invite):
         logger.warning("[Auth] Cache write-through failed for org ID %s", org_id)
+        await org_cache.recover_after_failed_write_through(org, old_code, old_invite)
 
     logger.info("Admin %s uploaded MindMate avatar for org_id=%s", current_user.phone, org_id)
     return {
@@ -532,18 +551,16 @@ async def upload_organization_mindmate_avatar_admin(
     }
 
 
-@router.post(
-    "/admin/organizations/{org_id}/refresh-invitation-code",
-    dependencies=[Depends(require_admin)],
-)
+@router.post("/admin/organizations/{org_id}/refresh-invitation-code")
 async def refresh_organization_invitation_code(
     org_id: int,
     _request: Request,
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_invite_org_create),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
-    """Generate a new invitation code for the organization (ADMIN ONLY)"""
+    """Generate a new invitation code for the organization."""
+    current_user = scope.actor
     org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if org is None:
         error_msg = Messages.error("organization_not_found", org_id, lang=lang)
@@ -592,6 +609,7 @@ async def refresh_organization_invitation_code(
 
     if not await org_cache.write_through(org, org_code_val, old_invite):
         logger.warning("[Auth] Cache write-through failed for org ID %s", org_id)
+        await org_cache.recover_after_failed_write_through(org, org_code_val, old_invite)
 
     logger.info("Admin %s refreshed invitation code for org %s", current_user.phone, org.code)
     return {
@@ -600,16 +618,17 @@ async def refresh_organization_invitation_code(
     }
 
 
-@router.delete("/admin/organizations/{org_id}", dependencies=[Depends(require_admin)])
+@router.delete("/admin/organizations/{org_id}")
 async def delete_organization_admin(
     org_id: int,
     _request: Request,
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_global_organizations_edit),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
     delete_users: bool = False,
 ):
-    """Delete organization (ADMIN ONLY). Use delete_users=true to also remove all user accounts."""
+    """Delete organization (superadmin only). Use delete_users=true to also remove all user accounts."""
+    current_user = scope.actor
     org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if org is None:
         error_msg = Messages.error("organization_not_found", lang, org_id)
@@ -675,10 +694,10 @@ async def delete_organization_admin(
 # =============================================================================
 
 
-@router.get("/admin/managers", dependencies=[Depends(require_admin)])
+@router.get("/admin/managers")
 async def list_all_managers(
     _request: Request,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_global_organizations_read),
     db: AsyncSession = Depends(get_async_db),
     _lang: Language = Depends(get_language_dependency),
 ):
@@ -723,11 +742,11 @@ async def list_all_managers(
     return {"managers": result}
 
 
-@router.get("/admin/organizations/{org_id}/users", dependencies=[Depends(require_admin)])
+@router.get("/admin/organizations/{org_id}/users")
 async def list_organization_users(
     org_id: int,
     _request: Request,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_global_organizations_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -766,11 +785,11 @@ async def list_organization_users(
     }
 
 
-@router.get("/admin/organizations/{org_id}/managers", dependencies=[Depends(require_admin)])
+@router.get("/admin/organizations/{org_id}/managers")
 async def list_organization_managers(
     org_id: int,
     _request: Request,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_global_organizations_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -804,26 +823,26 @@ async def list_organization_managers(
     return {
         "organization": {"id": org.id, "code": org.code, "name": org.name},
         "managers": result,
+        "manager_count": len(result),
+        "manager_limit": manager_limit_for_org(org),
     }
 
 
-@router.put(
-    "/admin/organizations/{org_id}/managers/{user_id}",
-    dependencies=[Depends(require_admin)],
-)
+@router.put("/admin/organizations/{org_id}/managers/{user_id}")
 async def set_organization_manager(
     org_id: int,
     user_id: int,
     _request: Request,
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_global_organizations_edit),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
-    Set a user as manager of their organization (ADMIN ONLY)
+    Set a user as manager of their organization.
 
     The user must belong to the specified organization.
     """
+    current_user = scope.actor
     org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if not org:
         error_msg = Messages.error("organization_not_found", lang, org_id)
@@ -838,6 +857,9 @@ async def set_organization_manager(
     if user.organization_id != org_id:
         error_msg = Messages.error("user_not_in_organization", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
+
+    if normalize_role(user.role) != "school_admin":
+        await assert_organization_has_manager_capacity(db, org, lang)
 
     # Set role to manager
     user.role = "school_admin"
@@ -873,23 +895,21 @@ async def set_organization_manager(
     }
 
 
-@router.delete(
-    "/admin/organizations/{org_id}/managers/{user_id}",
-    dependencies=[Depends(require_admin)],
-)
+@router.delete("/admin/organizations/{org_id}/managers/{user_id}")
 async def remove_organization_manager(
     org_id: int,
     user_id: int,
     _request: Request,
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_global_organizations_edit),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
-    Remove manager role from a user (ADMIN ONLY)
+    Remove manager role from a user.
 
     Resets the user's role back to teacher.
     """
+    current_user = scope.actor
     org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if not org:
         error_msg = Messages.error("organization_not_found", lang, org_id)

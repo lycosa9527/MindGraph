@@ -34,8 +34,13 @@ from utils.auth import (
 from utils.auth.admin_scope import AdminScope, build_admin_scope
 from utils.auth.admin_panel_permissions import (
     CAP_SCOPE_GLOBAL,
+    CAP_TAB_BILLING_VIEW,
     CAP_TAB_DATA_CENTER_VIEW,
     CAP_TAB_INVITES_EDIT,
+    CAP_TAB_ORGANIZATIONS_EDIT,
+    CAP_TAB_ORGANIZATIONS_VIEW,
+    CAP_TAB_USERS_EDIT,
+    CAP_TAB_USERS_VIEW,
 )
 from utils.auth.roles import is_management_panel_user
 
@@ -233,11 +238,68 @@ def require_trial_invite_capability(
 ) -> User:
     """Superadmin, platform_bd, or expert may invite personal trial users."""
     scope = build_admin_scope(current_user, lang=lang)
-    if not scope.has_capability(CAP_TAB_INVITES_EDIT):
+    scope.assert_capability(CAP_TAB_INVITES_EDIT, lang)
+    return current_user
+
+
+def _assert_global_scope(scope: AdminScope, lang: Language) -> None:
+    if CAP_SCOPE_GLOBAL not in scope.capabilities:
         error_msg = Messages.error("admin_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
-    scope.assert_mutation_allowed(lang)
-    return current_user
+
+
+def require_global_users_read(
+    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_VIEW)),
+    lang: Language = Depends(get_language_dependency),
+) -> AdminScope:
+    """Global user list (superadmin read, platform_bd read-only)."""
+    _assert_global_scope(scope, lang)
+    return scope
+
+
+def require_global_users_edit(
+    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_EDIT)),
+    lang: Language = Depends(get_language_dependency),
+) -> AdminScope:
+    _assert_global_scope(scope, lang)
+    return scope
+
+
+def require_global_organizations_read(
+    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_ORGANIZATIONS_VIEW)),
+    lang: Language = Depends(get_language_dependency),
+) -> AdminScope:
+    _assert_global_scope(scope, lang)
+    return scope
+
+
+def require_global_organizations_edit(
+    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_ORGANIZATIONS_EDIT)),
+    lang: Language = Depends(get_language_dependency),
+) -> AdminScope:
+    _assert_global_scope(scope, lang)
+    return scope
+
+
+def require_global_billing_read(
+    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_BILLING_VIEW)),
+    lang: Language = Depends(get_language_dependency),
+) -> AdminScope:
+    _assert_global_scope(scope, lang)
+    return scope
+
+
+def require_invite_org_create(
+    scope: AdminScope = Depends(get_admin_scope),
+    lang: Language = Depends(get_language_dependency),
+) -> AdminScope:
+    """Create organization via invite tab (invites.edit) or full org admin."""
+    scope.assert_any_capability(
+        frozenset({CAP_TAB_INVITES_EDIT, CAP_TAB_ORGANIZATIONS_EDIT}),
+        lang,
+    )
+    _assert_global_scope(scope, lang)
+    return scope
 
 
 def require_management_panel(

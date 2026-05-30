@@ -7,6 +7,11 @@ import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
 import { httpErrorDetail } from '@/utils/httpErrorDetail'
 
+import {
+  parseSchoolDashboardQuotas,
+  type SchoolDashboardQuotas,
+} from '@/composables/school/useSchoolDashboardQuotas'
+
 export interface SchoolDashboardOrganization {
   id: number
   name: string
@@ -22,13 +27,17 @@ export interface SchoolDashboardTopUser {
 }
 
 export interface SchoolDashboardStats {
-  totalUsers: number
   totalTokens: number
   organization: SchoolDashboardOrganization
+  quotas: SchoolDashboardQuotas
 }
 
 function emptyOrganization(): SchoolDashboardOrganization {
   return { id: 0, name: '', code: '', invitation_code: '' }
+}
+
+function emptyQuotas(): SchoolDashboardQuotas {
+  return parseSchoolDashboardQuotas(null)
 }
 
 export function useSchoolDashboardStats(orgId: Ref<number | null>) {
@@ -37,9 +46,9 @@ export function useSchoolDashboardStats(orgId: Ref<number | null>) {
 
   const isLoading = ref(false)
   const stats = ref<SchoolDashboardStats>({
-    totalUsers: 0,
     totalTokens: 0,
     organization: emptyOrganization(),
+    quotas: emptyQuotas(),
   })
   const topUsers = ref<SchoolDashboardTopUser[]>([])
 
@@ -61,7 +70,6 @@ export function useSchoolDashboardStats(orgId: Ref<number | null>) {
       const data = await res.json()
       const org = data.organization ?? emptyOrganization()
       stats.value = {
-        totalUsers: data.total_users ?? 0,
         totalTokens: data.token_stats?.total_tokens ?? 0,
         organization: {
           id: org.id ?? 0,
@@ -69,6 +77,7 @@ export function useSchoolDashboardStats(orgId: Ref<number | null>) {
           code: org.code ?? '',
           invitation_code: org.invitation_code ?? '',
         },
+        quotas: parseSchoolDashboardQuotas(data.quotas),
       }
       topUsers.value = data.top_users ?? []
     } catch {

@@ -20,6 +20,8 @@ import {
   defaultDataCenterView,
   isDataCenterView,
 } from '@/composables/admin/adminDataCenterViews'
+import { requestOpenSchoolAddMemberDialog } from '@/composables/school/useSchoolDashboardAddMemberHeader'
+import { useSchoolDashboardOrgPicker } from '@/composables/school/useSchoolDashboardOrgPicker'
 import { useAdminHeaderBreadcrumb } from '@/composables/admin/useAdminHeaderBreadcrumb'
 import { useAdminPanelTabs } from '@/composables/admin/useAdminPanelTabs'
 import { useLanguage } from '@/composables'
@@ -29,11 +31,16 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const { t } = useLanguage()
-const { can, loadCapabilities, isReadOnly } = useAdminAccess()
+const { can, canEditTab, isTabReadOnly, loadCapabilities, isReadOnly } = useAdminAccess()
+const {
+  effectiveOrgId: schoolDashboardOrgId,
+  loadOrganizations: loadSchoolDashboardOrganizations,
+  syncSelectedOrgFromUser: syncSchoolDashboardOrg,
+} = useSchoolDashboardOrgPicker()
 const { tabs } = useAdminPanelTabs({ loadOnMount: false })
 
 const activeTab = ref((route.query.tab as string) || 'data_center')
-const schoolsTabRef = ref<InstanceType<typeof AdminSchoolsTab> | null>(null)
+const invitesTabRef = ref<InstanceType<typeof AdminInviteUsersTab> | null>(null)
 
 const hasGlobalScope = computed(() => can('scope.global'))
 
@@ -46,19 +53,47 @@ const headerBreadcrumb = useAdminHeaderBreadcrumb({
 
 const showSchoolDashboardPicker = computed(
   () =>
-    activeTab.value === 'data_center' && route.query.view === 'school_dashboard'
+    activeTab.value === 'data_center' &&
+    route.query.view === 'school_dashboard' &&
+    can('scope.global')
+)
+
+const showSchoolAddMemberButton = computed(
+  () =>
+    activeTab.value === 'data_center' &&
+    route.query.view === 'school_dashboard' &&
+    schoolDashboardOrgId.value != null &&
+    !isReadOnly.value &&
+    (can('tab.users.edit') || (can('scope.org') && can('tab.data_center.view')))
 )
 
 const showSchoolsCreateButton = computed(
   () =>
-    authStore.isAdmin &&
-    activeTab.value === 'organizations' &&
-    can('tab.organizations.edit')
+    activeTab.value === 'invites' &&
+    canEditTab('invites') &&
+    (can('scope.org') || can('scope.global'))
 )
 
+const showTabReadOnlyBadge = computed(() => isTabReadOnly(activeTab.value))
+
 function onHeaderCreateSchool(): void {
-  schoolsTabRef.value?.openCreateModal()
+  invitesTabRef.value?.openCreateModal()
 }
+
+function onHeaderAddSchoolMember(): void {
+  requestOpenSchoolAddMemberDialog()
+}
+
+watch(
+  () => [activeTab.value, route.query.view] as const,
+  ([tab, view]) => {
+    if (tab === 'data_center' && view === 'school_dashboard') {
+      syncSchoolDashboardOrg()
+      void loadSchoolDashboardOrganizations()
+    }
+  },
+  { immediate: true }
+)
 
 watch(
   () => route.query.tab,
@@ -135,7 +170,7 @@ onMounted(async () => {
           </span>
         </template>
         <span
-          v-if="isReadOnly"
+          v-if="showTabReadOnlyBadge"
           class="text-gray-400 font-normal ml-2"
         >
           ({{ t('admin.readOnly') }})
@@ -147,6 +182,16 @@ onMounted(async () => {
           v-if="showSchoolDashboardPicker"
           compact
         />
+        <el-button
+          v-if="showSchoolAddMemberButton"
+          type="primary"
+          size="small"
+          class="admin-add-member-btn shrink-0"
+          @click="onHeaderAddSchoolMember"
+        >
+          <el-icon class="mr-1"><Plus /></el-icon>
+          {{ t('admin.schoolAddMemberButton') }}
+        </el-button>
         <el-button
           v-if="showSchoolsCreateButton"
           size="small"
@@ -161,13 +206,19 @@ onMounted(async () => {
 
     <div class="admin-body flex-1 overflow-y-auto">
       <div class="admin-content px-6 py-6">
-        <AdminDataCenterTab v-if="activeTab === 'data_center'" :read-only="isReadOnly" />
-        <AdminUsersPanel v-else-if="activeTab === 'users'" />
+        <AdminDataCenterTab
+          v-if="activeTab === 'data_center'"
+          :read-only="isTabReadOnly('data_center')"
+        />
+        <AdminUsersPanel v-else-if="activeTab === 'users'" :read-only="isTabReadOnly('users')" />
         <AdminSchoolsTab
           v-else-if="activeTab === 'organizations'"
-          ref="schoolsTabRef"
+          :read-only="isTabReadOnly('organizations')"
         />
-        <AdminInviteUsersTab v-else-if="activeTab === 'invites'" />
+        <AdminInviteUsersTab
+          v-else-if="activeTab === 'invites'"
+          ref="invitesTabRef"
+        />
         <AdminMarketsTab v-else-if="activeTab === 'billing'" />
         <AdminSystemSettingsTab v-else-if="activeTab === 'settings'" />
       </div>
@@ -211,6 +262,19 @@ onMounted(async () => {
   --el-button-active-bg-color: #a8a29e;
   --el-button-active-border-color: #78716c;
   --el-button-text-color: #1c1917;
+  font-weight: 500;
+  border-radius: 9999px;
+}
+
+.admin-add-member-btn {
+  --el-button-bg-color: #1c1917;
+  --el-button-border-color: #1c1917;
+  --el-button-text-color: #fafaf9;
+  --el-button-hover-bg-color: #292524;
+  --el-button-hover-border-color: #292524;
+  --el-button-hover-text-color: #fafaf9;
+  --el-button-active-bg-color: #44403c;
+  --el-button-active-border-color: #44403c;
   font-weight: 500;
   border-radius: 9999px;
 }

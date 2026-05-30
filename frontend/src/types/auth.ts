@@ -28,6 +28,15 @@ export type LegacyUserRole = 'user' | 'manager' | 'admin'
 
 export type AnyUserRole = UserRole | LegacyUserRole
 
+export type SchoolTier = 'lite' | 'standard' | 'professional'
+
+export interface SchoolTierFeatures {
+  online_collab: boolean
+  chrome_extension: boolean
+  presentation_tools: boolean
+  api_token: boolean
+}
+
 export interface User {
   id: string
   username: string
@@ -55,6 +64,10 @@ export interface User {
   mindmateAgentName?: string | null
   /** Per-school MindMate avatar URL when configured by admin */
   mindmateAgentAvatarUrl?: string | null
+  /** B2B school subscription tier (lite | standard | professional) */
+  schoolTier?: SchoolTier | null
+  /** Tier-gated feature flags from login /me organization payload */
+  schoolTierFeatures?: SchoolTierFeatures | null
 }
 
 /**
@@ -77,6 +90,8 @@ export interface BackendUser {
         display_name?: string
         mindmate_agent_name?: string | null
         mindmate_agent_avatar_url?: string | null
+        school_tier?: string | null
+        school_tier_features?: SchoolTierFeatures | null
       }
   schoolId?: string
   schoolName?: string

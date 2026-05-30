@@ -15,10 +15,12 @@ const props = withDefaults(
     isLoading: boolean
     showSchoolColumn?: boolean
     linkNameAndTokens?: boolean
+    readOnly?: boolean
   }>(),
   {
     showSchoolColumn: true,
     linkNameAndTokens: true,
+    readOnly: false,
   }
 )
 
@@ -226,6 +228,7 @@ function registrationTimeLabel(row: Record<string, unknown>): string {
           :row="row"
         >
           <el-button
+            v-if="!props.readOnly"
             type="primary"
             plain
             size="small"

@@ -22,6 +22,15 @@ import AdminTrendChartModal from './AdminTrendChartModal.vue'
 import AdminUserEditModal from './AdminUserEditModal.vue'
 import AdminUsersTable from './AdminUsersTable.vue'
 
+const props = withDefaults(
+  defineProps<{
+    readOnly?: boolean
+  }>(),
+  {
+    readOnly: false,
+  }
+)
+
 const route = useRoute()
 const authStore = useAuthStore()
 const { orgFilter, syncOrgFilterToRoute, onOrgFilterChange: applyOrgFilterChange } =
@@ -173,6 +182,7 @@ onBeforeUnmount(() => {
       <AdminUsersTable
         :users="users"
         :is-loading="isLoading"
+        :read-only="props.readOnly"
         show-school-column
         @edit="openEditModal"
         @open-trend="openTrendModal"
@@ -210,6 +220,7 @@ onBeforeUnmount(() => {
     />
 
     <AdminUserEditModal
+      v-if="!props.readOnly"
       v-model:visible="editModalVisible"
       :user-id="editUserId"
       full-edit

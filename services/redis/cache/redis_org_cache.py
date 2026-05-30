@@ -79,6 +79,7 @@ class OrganizationCache:
             "created_at": created_at_val.isoformat() if created_at_val else "",
             "expires_at": expires_at_val.isoformat() if expires_at_val else "",
             "is_active": "1" if is_active_val else "0",
+            "school_tier": str(getattr(org, "school_tier", None) or "standard"),
         }
 
     def _deserialize_org(self, data: Dict[str, str]) -> Organization:
@@ -124,6 +125,9 @@ class OrganizationCache:
         # Parse boolean
         if hasattr(Organization, "is_active"):
             setattr(org, "is_active", data.get("is_active", "0") == "1")
+
+        if hasattr(Organization, "school_tier"):
+            setattr(org, "school_tier", data.get("school_tier") or "standard")
 
         return org
 
@@ -596,6 +600,20 @@ class OrganizationCache:
         """
         await self.invalidate(int(getattr(org, "id", 0)), old_code, old_invite)
         return await self.cache_org(org)
+
+    async def recover_after_failed_write_through(
+        self,
+        org: Organization,
+        old_code: Optional[str],
+        old_invite: Optional[str],
+    ) -> None:
+        """Invalidate org cache entries after a failed post-commit write-through."""
+        org_id = int(getattr(org, "id", 0))
+        await self.invalidate(org_id, old_code, old_invite)
+        new_code = getattr(org, "code", None)
+        new_invite = getattr(org, "invitation_code", None)
+        if new_code != old_code or new_invite != old_invite:
+            await self.invalidate(org_id, new_code, new_invite)
 
 
 def get_org_cache() -> OrganizationCache:

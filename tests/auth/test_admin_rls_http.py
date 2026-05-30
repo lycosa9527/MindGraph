@@ -107,11 +107,20 @@ def test_superadmin_capabilities_full_panel(client: TestClient) -> None:
     assert "tab.data_center.view" in body["capabilities"]
 
 
-def test_platform_bd_mutation_blocked_on_scope() -> None:
+def test_platform_bd_mutation_blocked_without_edit_cap():
     from utils.auth.admin_scope import build_admin_scope
 
-    user = _make_user("platform_bd")
+    user = _User("platform_bd")
     scope = build_admin_scope(user, lang="en")
     with pytest.raises(HTTPException) as exc:
-        scope.assert_mutation_allowed("en")
+        scope.assert_capability(CAP_TAB_USERS_EDIT, "en")
     assert exc.value.status_code == 403
+
+
+def test_school_admin_cross_org_token_stats_denied(client: TestClient) -> None:
+    app.dependency_overrides[get_current_user] = lambda: _make_user(
+        "school_admin", organization_id=42
+    )
+    app.dependency_overrides[get_language_dependency] = lambda: "en"
+    response = client.get("/api/auth/admin/stats/school/token-stats?organization_id=99")
+    assert response.status_code == 403

@@ -549,6 +549,12 @@ export default {
   'admin.schoolCodeRequired': '無法從名稱生成代碼，請手動輸入學校代碼。',
   'admin.schoolDashboard': '學校儀表盤',
   'admin.schoolDashboardNoOrg': '您需要屬於某個學校才能查看儀表盤。',
+  'admin.memberSeats': '成員席位',
+  'admin.managerSeats': '管理員席位',
+  'admin.resourceSpace': '資源空間',
+  'admin.seatsRemaining': '剩餘 {count} 個席位',
+  'admin.storageRemainingGb': '剩餘 {amount} GB',
+  'admin.storageRemaining': '剩餘 {amount}',
   'admin.schoolDeleteUserConfirm': '確定刪除用戶 {name}？此操作不可恢復。',
   'admin.schoolUserColumnRole': '角色',
   'admin.schoolUsersDeleteError': '刪除用戶失敗',
@@ -571,6 +577,18 @@ export default {
   'admin.schoolInvitationLoadError': '無法載入邀請碼',
   'admin.schoolModal.tabUsage': 'Token 使用',
   'admin.schoolModal.tabGeneral': '其他設定',
+  'admin.schoolVersionLabel': '學校版本',
+  'admin.schoolVersionHint':
+    '選擇學校訂閱版本，決定成員上限與導圖儲存空間。目前成員 {current} / {limit} 人。',
+  'admin.schoolVersionLiteFeaturesHint':
+    '基礎教研版不含：線上協同、演示工具、Chrome 擴充、API 令牌與 OpenClaw 整合。',
+  'admin.schoolVersionTierLite': '基礎教研版',
+  'admin.schoolVersionTierStandard': '標準教研版',
+  'admin.schoolVersionTierProfessional': '校本共建版',
+  'admin.schoolVersionTierOption':
+    '{label} · {members} 人 · {managers} 管理員 · 每人 {storage} GB 導圖儲存',
+  'admin.schoolManagerLimitHint': '學校管理員 {current} / {limit} 人',
+  'admin.schoolManagerLimitReached': '該校管理員數已達上限（{limit} 人）',
   'admin.schoolModal.tabMindmate': 'MindMate 鑑權',
   'admin.schoolModal.tabMindbot': 'MindBot',
   'admin.schoolModal.mindbotIntro':

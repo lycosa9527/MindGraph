@@ -20,6 +20,8 @@ import {
 
   settingsSubtabRequiresCapabilities,
 
+  tabEditCapability,
+
   tabRequiresCapabilities,
 
 } from '@/utils/adminCapabilities'
@@ -60,9 +62,41 @@ export function useAdminAccess() {
 
       authStore.adminCapabilitiesPayload?.read_only ??
 
-      authStore.userRole === 'platform_bd'
+      authStore.isPlatformBd
 
   )
+
+
+
+  function canEditTab(tabKey: string): boolean {
+
+    const editCap = tabEditCapability(tabKey)
+
+    if (!editCap) {
+
+      return false
+
+    }
+
+    return can(editCap)
+
+  }
+
+
+
+  function isTabReadOnly(tabKey: string): boolean {
+
+    const editCap = tabEditCapability(tabKey)
+
+    if (!editCap) {
+
+      return isReadOnly.value
+
+    }
+
+    return !can(editCap)
+
+  }
 
 
 
@@ -187,6 +221,10 @@ export function useAdminAccess() {
     capabilitiesLoaded: computed(() => authStore.adminCapabilitiesLoaded),
 
     isReadOnly,
+
+    canEditTab,
+
+    isTabReadOnly,
 
     effectiveOrgId,
 

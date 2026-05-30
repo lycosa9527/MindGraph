@@ -57,6 +57,7 @@ from services.online_collab.core.online_collab_manager import (
 from services.online_collab.lifecycle.online_collab_expiry import is_online_collab_expired
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from utils.auth import get_current_user
+from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, user_has_school_tier_feature
 
 from routers.api.diagrams_workshop_routes import router as workshop_router
 
@@ -311,10 +312,19 @@ async def get_diagram(
         # as the diagram owner.  This covers participants who navigate to the
         # canvas URL directly (e.g. after a page reload) before the WebSocket
         # snapshot arrives.
-        diagram = await _get_diagram_as_org_workshop_participant(
-            diagram_id,
-            getattr(current_user, "organization_id", None),
-        )
+        org_id = getattr(current_user, "organization_id", None)
+        if org_id is not None:
+            async with AsyncSessionLocal() as tier_db:
+                collab_allowed = await user_has_school_tier_feature(
+                    tier_db,
+                    current_user,
+                    TIER_FEATURE_ONLINE_COLLAB,
+                )
+            if collab_allowed:
+                diagram = await _get_diagram_as_org_workshop_participant(
+                    diagram_id,
+                    org_id,
+                )
 
     if not diagram:
         raise HTTPException(status_code=404, detail="Diagram not found")

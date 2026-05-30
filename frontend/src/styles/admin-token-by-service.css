@@ -1,44 +1,20 @@
-/* Shared MindGraph / MindMate token-by-service cards (school dashboard + admin usage). */
+/* Layout helpers for token-by-service panels (Swiss card styles live in admin-swiss-stat-cards.css). */
 
-.service-card :deep(.el-card__header) {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+.admin-token-by-service {
+  min-width: 0;
 }
 
-.service-card :deep(.el-card__body) {
-  padding: 20px;
+.admin-token-by-service .overall-token-row {
+  min-height: 0;
 }
 
-.mindgraph-card {
-  border-top: 3px solid #3b82f6;
-}
-
-.mindmate-card {
-  border-top: 3px solid #8b5cf6;
-}
-
-.stat-item {
-  padding: 12px;
-  background: var(--el-fill-color-lighter);
-  border-radius: 8px;
-}
-
-.dark .stat-item {
-  background: var(--el-fill-color-dark);
-}
-
-.service-card-clickable {
-  cursor: pointer;
-}
-
-.service-card-clickable:hover {
-  transform: translateY(-1px);
-}
-
-.service-card-focusable:focus {
-  outline: none;
-}
-
-.service-card-focusable:focus-visible {
-  box-shadow: 0 0 0 2px var(--el-color-primary);
+.admin-token-by-service .dingtalk-generation-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 0;
+  text-align: center;
 }

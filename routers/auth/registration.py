@@ -37,6 +37,7 @@ from utils.auth import (
     ACCESS_TOKEN_EXPIRY_MINUTES,
 )
 from utils.invitations import invitation_code_is_valid
+from utils.auth.school_tier import assert_organization_has_member_capacity
 from services.redis.cache.redis_user_cache import user_cache
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.redis_distributed_lock import phone_registration_lock
@@ -271,6 +272,8 @@ async def register(
                 error_msg = Messages.error("phone_already_registered", lang)
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
 
+            await assert_organization_has_member_capacity(db, org, lang)
+
             # Create new user
             new_user = User(
                 phone=request.phone,
@@ -488,6 +491,8 @@ async def register_with_sms(
                 org.code,
                 org.name,
             )
+
+            await assert_organization_has_member_capacity(db, org, lang)
 
             # Create new user
             new_user = User(

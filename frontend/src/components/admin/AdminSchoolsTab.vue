@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Admin Schools Tab - List and create organizations (Swiss panel)
+ * Admin Schools Tab - List organizations (Swiss panel)
  * Click school row to open chart + token cards modal
  */
 import { onMounted, ref } from 'vue'
@@ -16,18 +16,22 @@ import {
 import '@/styles/admin-schools-swiss.css'
 import { apiRequest } from '@/utils/apiClient'
 
-import AdminSchoolCreateDialog from './AdminSchoolCreateDialog.vue'
-import AdminSchoolShareDialog from './AdminSchoolShareDialog.vue'
 import AdminTrendChartModal from './AdminTrendChartModal.vue'
+
+const props = withDefaults(
+  defineProps<{
+    readOnly?: boolean
+  }>(),
+  {
+    readOnly: false,
+  }
+)
 
 const { t } = useLanguage()
 const notify = useNotifications()
 
 const isLoading = ref(true)
 const schools = ref<Record<string, unknown>[]>([])
-const createModalVisible = ref(false)
-const shareModalVisible = ref(false)
-const shareInvitationCode = ref('')
 const trendModalVisible = ref(false)
 const trendOrg = ref<{
   name: string
@@ -36,6 +40,7 @@ const trendOrg = ref<{
   is_active?: boolean
   user_count?: number
   expires_at?: string | null
+  school_tier?: string | null
   dify_api_base_url?: string | null
   dify_api_key_masked?: string | null
   dify_timeout_seconds?: number
@@ -79,7 +84,7 @@ function orgShowChainOfThought(row: Record<string, unknown>): boolean {
   )
 }
 
-function openTrendModal(row: Record<string, unknown>, initialTab: 'usage' | 'general' = 'general') {
+function openTrendModal(row: Record<string, unknown>, initialTab: 'usage' | 'general' = 'usage') {
   trendOrg.value = {
     name: String(row.name ?? ''),
     id: row.id as number | undefined,
@@ -87,6 +92,7 @@ function openTrendModal(row: Record<string, unknown>, initialTab: 'usage' | 'gen
     is_active: row.is_active as boolean | undefined,
     user_count: (row.user_count as number) ?? 0,
     expires_at: row.expires_at as string | null | undefined,
+    school_tier: row.school_tier as string | null | undefined,
     dify_api_base_url: row.dify_api_base_url as string | null | undefined,
     dify_api_key_masked: row.dify_api_key_masked as string | null | undefined,
     dify_timeout_seconds: (row.dify_timeout_seconds as number | undefined) ?? 300,
@@ -121,6 +127,7 @@ function syncTrendOrgFromSchools() {
       is_active: updated.is_active as boolean | undefined,
       user_count: (updated.user_count as number) ?? 0,
       expires_at: updated.expires_at as string | null | undefined,
+      school_tier: updated.school_tier as string | null | undefined,
       dify_api_base_url: updated.dify_api_base_url as string | null | undefined,
       dify_api_key_masked: updated.dify_api_key_masked as string | null | undefined,
       dify_timeout_seconds: (updated.dify_timeout_seconds as number | undefined) ?? 300,
@@ -157,27 +164,7 @@ async function loadSchools(options?: { silent?: boolean }) {
   }
 }
 
-function openCreateModal() {
-  createModalVisible.value = true
-}
-
-function openShareModalWithCode(code: string) {
-  shareInvitationCode.value = code
-  shareModalVisible.value = true
-}
-
-function onSchoolCreated(payload: { invitation_code?: string }) {
-  void loadSchools()
-  if (payload.invitation_code) {
-    openShareModalWithCode(payload.invitation_code)
-  }
-}
-
 onMounted(loadSchools)
-
-defineExpose({
-  openCreateModal,
-})
 </script>
 
 <template>
@@ -320,6 +307,7 @@ defineExpose({
         >
           <template #default="{ row }">
             <el-button
+              v-if="!props.readOnly"
               type="primary"
               plain
               size="small"
@@ -334,16 +322,6 @@ defineExpose({
       </el-table>
     </el-card>
 
-    <AdminSchoolCreateDialog
-      v-model="createModalVisible"
-      @created="onSchoolCreated"
-    />
-
-    <AdminSchoolShareDialog
-      v-model="shareModalVisible"
-      :invitation-code="shareInvitationCode"
-    />
-
     <AdminTrendChartModal
       v-model:visible="trendModalVisible"
       type="org"
@@ -353,6 +331,7 @@ defineExpose({
       :org-is-active="trendOrg?.is_active"
       :org-user-count="trendOrg?.user_count ?? 0"
       :org-expires-at="trendOrg?.expires_at"
+      :org-school-tier="trendOrg?.school_tier"
       :org-dify-api-base-url="trendOrg?.dify_api_base_url"
       :org-dify-api-key-masked="trendOrg?.dify_api_key_masked"
       :org-dify-timeout-seconds="trendOrg?.dify_timeout_seconds"

@@ -28,9 +28,15 @@ import type {
   CaptchaResponse,
   LoginCredentials,
   LoginResponse,
+  SchoolTier,
+  SchoolTierFeatures,
   User,
   UserRole,
 } from '@/types'
+import {
+  mergeSchoolTierFeatures,
+  normalizeSchoolTier,
+} from '@/constants/schoolTier'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import {
   type AdminCapabilitiesPayload,
@@ -202,6 +208,14 @@ export const useAuthStore = defineStore('auth', () => {
         ? String(org.mindmate_agent_avatar_url).trim()
         : ''
     const mindmateAgentAvatarUrl = mindmateAvatarRaw || undefined
+    const schoolTierRaw =
+      orgIsObject && org.school_tier != null ? normalizeSchoolTier(org.school_tier) : undefined
+    const schoolTierFeaturesRaw =
+      orgIsObject && org.school_tier_features != null ? org.school_tier_features : undefined
+    const schoolTier: SchoolTier | undefined = orgId ? schoolTierRaw ?? 'standard' : undefined
+    const schoolTierFeatures: SchoolTierFeatures | undefined = orgId
+      ? mergeSchoolTierFeatures(schoolTier, schoolTierFeaturesRaw)
+      : undefined
     const displayLabel = orgDisplayName || orgName || backendUser.schoolName || ''
 
     const allowsZh = backendUser.allows_simplified_chinese !== false
@@ -244,6 +258,8 @@ export const useAuthStore = defineStore('auth', () => {
       loginPasswordSet,
       mindmateAgentName: mindmateAgentName || null,
       mindmateAgentAvatarUrl: mindmateAgentAvatarUrl || null,
+      schoolTier: schoolTier ?? null,
+      schoolTierFeatures: schoolTierFeatures ?? null,
     }
   }
 

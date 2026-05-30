@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.25] - 2026-05-31
+
+### Added
+
+- **Org — school subscription tier** — Alembic `rev_0039` adds `school_tier` (`lite` | `standard` | `professional`) on `organizations`; member/manager caps, premium feature gates (online collab, presentation tools, Chrome extension, API tokens), and school dashboard quota payload ([`school_tier.py`](utils/auth/school_tier.py), [`schoolTier.ts`](frontend/src/constants/schoolTier.ts)).
+- **School dashboard — quotas & add members** — [`SchoolDashboardQuotaCard.vue`](frontend/src/components/school/SchoolDashboardQuotaCard.vue) and [`SchoolAddMemberDialog.vue`](frontend/src/components/school/SchoolAddMemberDialog.vue) with Excel-paste batch import ([`parseBatchMemberPaste.ts`](frontend/src/utils/parseBatchMemberPaste.ts), [`school_user_create.py`](services/auth/school_user_create.py)).
+- **Admin — personal trial (C2C) invite** — [`AdminPersonalTrialInviteCard.vue`](frontend/src/components/admin/AdminPersonalTrialInviteCard.vue) and `GET /api/auth/admin/invites/personal-trial` when `PERSONAL_TRIAL_ORG_CODE` is set ([`personal_trial_invite.py`](services/auth/personal_trial_invite.py)).
+- **Admin — invites organizations API** — Scoped org list with invitation codes for the invite-users tab ([`invites.py`](routers/auth/admin/invites.py)).
+- **Admin — Swiss stat cards** — Shared KPI, quota, period, performance, and service card components ([`frontend/src/components/admin/swiss/`](frontend/src/components/admin/swiss/), [`admin-swiss-palette.css`](frontend/src/styles/admin-swiss-palette.css), [`admin-swiss-stat-cards.css`](frontend/src/styles/admin-swiss-stat-cards.css)).
+- **Frontend — school tier features** — [`useSchoolTierFeatures.ts`](frontend/src/composables/auth/useSchoolTierFeatures.ts) gates collab, presentation tools, Chrome extension, and API tokens in canvas, account, and MindGraph UI.
+- **Utils — org storage estimate** — Diagram storage usage estimate for quota display ([`org_storage_estimate.py`](utils/auth/org_storage_estimate.py), [`formatStorageBytes.ts`](frontend/src/utils/formatStorageBytes.ts)).
+- **Tests** — School tier limits, HTTP feature gating, school user batch create, org storage estimate, and MindBot admin RLS ([`test_school_tier.py`](tests/test_school_tier.py), [`test_school_tier_http.py`](tests/test_school_tier_http.py), [`test_school_user_create.py`](tests/auth/test_school_user_create.py), [`test_org_storage_estimate.py`](tests/test_org_storage_estimate.py), [`test_mindbot_admin_rls_http.py`](tests/auth/test_mindbot_admin_rls_http.py)).
+
+### Changed
+
+- **Admin — Swiss stat dashboard refactor** — Data center, performance, tokens, and token-by-service panels use shared Swiss card layout ([`AdminDashboardTab.vue`](frontend/src/components/admin/AdminDashboardTab.vue), [`AdminPerformanceTab.vue`](frontend/src/components/admin/AdminPerformanceTab.vue), [`AdminTokensTab.vue`](frontend/src/components/admin/AdminTokensTab.vue)).
+- **Admin — school tier UI** — Tier selector and quota hints in school org modal ([`AdminSchoolOrgGeneralTab.vue`](frontend/src/components/admin/AdminSchoolOrgGeneralTab.vue)); tier downgrade blocked when member or manager counts exceed the selected tier cap.
+- **School tier — backend feature gates** — Lite tier blocks workshop collab, presentation generation, personal API tokens, and premium client bundles ([`diagrams_workshop_routes.py`](routers/api/diagrams_workshop_routes.py), [`web_content_generation.py`](routers/api/web_content_generation.py), [`personal_token.py`](routers/auth/personal_token.py)).
+- **School dashboard — layout refactor** — Quota cards, embedded add-member from admin header, and slimmer page shell ([`SchoolDashboardPage.vue`](frontend/src/pages/SchoolDashboardPage.vue)).
+- **Admin — invite users tab** — Personal trial card and organizations list wired to invites API ([`AdminInviteUsersTab.vue`](frontend/src/components/admin/AdminInviteUsersTab.vue)).
+- **Auth — profile payload** — JWT and org profile include `school_tier` and tier feature flags ([`org_profile.py`](routers/auth/org_profile.py), [`auth.ts`](frontend/src/types/auth.ts)).
+- **Expert role — admin panel** — Invites tab view/edit capabilities for expert and platform BD ([`admin_panel_permissions.py`](utils/auth/admin_panel_permissions.py)).
+- **Frontend — Kitty desktop poll** — Global action poll mounted from [`App.vue`](frontend/src/App.vue) instead of canvas-only layouts.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.25).
+
 ## [5.117.24] - 2026-05-30
 
 ### Added

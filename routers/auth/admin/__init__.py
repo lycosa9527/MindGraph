@@ -13,6 +13,7 @@ from fastapi import APIRouter
 
 from . import (
     organizations,
+    invites,
     roles,
     users,
     school_users,
@@ -32,6 +33,7 @@ admin_router = APIRouter()
 
 # Include all admin sub-routers
 admin_router.include_router(organizations.router)
+admin_router.include_router(invites.router)
 admin_router.include_router(roles.router)
 admin_router.include_router(users.router)
 admin_router.include_router(school_users.router)

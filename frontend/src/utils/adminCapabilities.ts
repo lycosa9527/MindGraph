@@ -72,8 +72,12 @@ const SUPERADMIN_CAPS: AdminCapability[] = [
 const PLATFORM_BD_CAPS: AdminCapability[] = [
   'panel.access',
   'tab.data_center.view',
+  'tab.data_center.edit',
+  'tab.users.view',
+  'tab.organizations.view',
   'tab.invites.view',
   'tab.invites.edit',
+  'tab.billing.view',
   'scope.global',
 ]
 
@@ -86,6 +90,8 @@ const EXPERT_CAPS: AdminCapability[] = [
 const SCHOOL_ADMIN_CAPS: AdminCapability[] = [
   'panel.access',
   'tab.data_center.view',
+  'tab.users.view',
+  'tab.users.edit',
   'tab.invites.view',
   'tab.invites.edit',
   'tab.settings.view',
@@ -112,6 +118,19 @@ export function fallbackCapabilitiesForRole(role: UserRole | null): AdminCapabil
 
 export function roleHasPanelAccess(role: UserRole | null | undefined): boolean {
   return fallbackCapabilitiesForRole(role ?? null).includes('panel.access')
+}
+
+const TAB_EDIT_CAPABILITY: Record<string, AdminCapability> = {
+  data_center: 'tab.data_center.edit',
+  users: 'tab.users.edit',
+  organizations: 'tab.organizations.edit',
+  invites: 'tab.invites.edit',
+  billing: 'tab.billing.edit',
+  settings: 'tab.settings.edit',
+}
+
+export function tabEditCapability(tabKey: string): AdminCapability | null {
+  return TAB_EDIT_CAPABILITY[tabKey] ?? null
 }
 
 export function tabRequiresCapabilities(tabKey: string): AdminCapability[] {

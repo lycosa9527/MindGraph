@@ -4,10 +4,9 @@
  */
 import { computed } from 'vue'
 
+import AdminSwissPerfCard from '@/components/admin/swiss/AdminSwissPerfCard.vue'
 import { useLanguage } from '@/composables'
 import { usePerformanceLive } from '@/composables/admin/usePerformanceLive'
-import '@/styles/admin-mindbot-swiss-shell.css'
-import '@/styles/admin-performance-cards.css'
 
 const { t } = useLanguage()
 
@@ -263,6 +262,13 @@ const wsExtraLines = computed(() => {
   ]
 })
 
+function pctLimitFlags(pct: number): { nearLimit: boolean; atLimit: boolean } {
+  return {
+    nearLimit: pct >= 70 && pct < 90,
+    atLimit: pct >= 90,
+  }
+}
+
 const progressColors = [
   { color: '#22d3ee', percentage: 60 },
   { color: '#fbbf24', percentage: 85 },
@@ -273,500 +279,372 @@ const progressColors = [
 <template>
   <div
     v-loading="loading"
-    class="admin-performance-swiss max-w-[1400px] mx-auto"
+    class="max-w-[1400px] mx-auto space-y-6"
   >
-    <div
-      class="admin-performance-swiss__scanlines"
-      aria-hidden="true"
-    />
-    <div class="admin-performance-swiss__body">
-      <div class="perf-swiss-header">
-        <span class="perf-swiss-header__glyph">◇</span>
-        <span class="perf-swiss-header__title">{{ t('admin.performance.title') }}</span>
-        <span
-          class="perf-swiss-header__divider"
-          aria-hidden="true"
-          >·</span
+    <div>
+      <h2 class="text-lg font-semibold text-[var(--swiss-text)]">
+        {{ t('admin.performance.title') }}
+      </h2>
+      <p class="text-sm text-[var(--swiss-muted)] mt-1">
+        {{ t('admin.performance.subtitle') }}
+      </p>
+    </div>
+
+    <p
+      v-if="clusterMeta"
+      class="text-sm text-[var(--swiss-muted)] font-mono"
+    >
+      {{ t('admin.performance.workersReportingCluster', { n: String(clusterMeta.n) }) }}
+    </p>
+
+    <p
+      v-if="fetchError"
+      class="text-sm text-[var(--swiss-stat-danger-accent,#e30613)]"
+    >
+      {{ fetchError }}
+    </p>
+
+    <p
+      v-if="appMeta"
+      class="text-xs text-[var(--swiss-muted)] font-mono"
+    >
+      {{ t('admin.performance.version', { version: appMeta.version }) }}
+      ·
+      {{ t('admin.performance.uptimeSec', { sec: appMeta.uptime }) }}
+    </p>
+
+    <section
+      v-if="hostRamCard || appRamCard || hostCpuCard || processCpuCard"
+      aria-labelledby="perf-group-compute"
+    >
+      <h3
+        id="perf-group-compute"
+        class="swiss-stat-card-group__title"
+      >
+        {{ t('admin.performance.groupCompute') }}
+      </h3>
+      <div class="swiss-stat-card-grid swiss-stat-card-grid--wide">
+        <AdminSwissPerfCard
+          v-if="hostRamCard"
+          :label="t('admin.performance.cardHostRam')"
+          :pct="hostRamCard.pct"
+          theme="storage"
+          v-bind="pctLimitFlags(hostRamCard.pct)"
         >
-        <span class="perf-swiss-header__note">{{ t('admin.performance.subtitle') }}</span>
+          <template #sub>{{ hostRamCard.line }}</template>
+        </AdminSwissPerfCard>
+
+        <AdminSwissPerfCard
+          v-if="appRamCard"
+          :label="t('admin.performance.cardAppRam')"
+          :pct="appRamCard.pct"
+          theme="storage"
+          v-bind="pctLimitFlags(appRamCard.pct)"
+        >
+          <template #sub>{{ appRamCard.line }}</template>
+          <template
+            v-if="appRamCard.workerCount > 1"
+            #hint
+          >
+            {{ t('admin.performance.workersRssHint', { n: String(appRamCard.workerCount) }) }}
+          </template>
+          <template
+            v-else-if="appRamCard.pid != null"
+            #hint
+          >
+            {{ t('admin.performance.pidLabel', { pid: String(appRamCard.pid) }) }}
+          </template>
+        </AdminSwissPerfCard>
+
+        <AdminSwissPerfCard
+          v-if="hostCpuCard"
+          :label="t('admin.performance.cardHostCpu')"
+          :pct="hostCpuCard.pct"
+          theme="warn"
+          progress-variant="gauge"
+          v-bind="pctLimitFlags(hostCpuCard.pct)"
+        >
+          <template
+            v-if="hostCpuCard.sub"
+            #sub
+          >
+            {{ hostCpuCard.sub }}
+          </template>
+        </AdminSwissPerfCard>
+
+        <AdminSwissPerfCard
+          v-if="processCpuCard"
+          :label="t('admin.performance.cardProcessCpu')"
+          :pct="processCpuCard.ringPct"
+          theme="warn"
+          progress-variant="gauge"
+          v-bind="pctLimitFlags(processCpuCard.ringPct)"
+        >
+          <template #hint>
+            {{
+              processCpuCard.workerCount > 1
+                ? processCpuCard.clusterHint
+                : t('admin.performance.hintProcessCpuSingle')
+            }}
+          </template>
+        </AdminSwissPerfCard>
       </div>
+    </section>
 
-      <p
-        v-if="clusterMeta"
-        class="perf-cluster-banner perf-mono"
+    <section
+      v-if="diskCard || netCards || diskExtraVolumes.length"
+      aria-labelledby="perf-group-storage"
+    >
+      <h3
+        id="perf-group-storage"
+        class="swiss-stat-card-group__title"
       >
-        {{ t('admin.performance.workersReportingCluster', { n: String(clusterMeta.n) }) }}
-      </p>
+        {{ t('admin.performance.groupStorageNet') }}
+      </h3>
+      <div class="swiss-stat-card-grid swiss-stat-card-grid--wide">
+        <AdminSwissPerfCard
+          v-if="diskCard"
+          :label="t('admin.performance.cardPrimaryDisk')"
+          :pct="diskCard.pct"
+          theme="storage"
+          v-bind="pctLimitFlags(diskCard.pct)"
+        >
+          <template #sub>{{ diskCard.line }}</template>
+          <template
+            v-if="diskHint"
+            #hint
+          >
+            {{ diskHint }}
+          </template>
+        </AdminSwissPerfCard>
 
-      <p
-        v-if="fetchError"
-        class="text-sm mb-3"
-        style="color: #fb7185"
-      >
-        {{ fetchError }}
-      </p>
+        <AdminSwissPerfCard
+          v-if="netCards"
+          :label="t('admin.performance.sectionNetwork')"
+          theme="integration"
+          progress-variant="none"
+        >
+          <div class="swiss-stat-card__stat-grid">
+            <div class="swiss-stat-card__stat-pill">
+              <span class="swiss-stat-card__stat-pill-k">{{ t('admin.performance.netUp') }}</span>
+              <span class="swiss-stat-card__stat-pill-v">{{ netCards.up }}</span>
+            </div>
+            <div class="swiss-stat-card__stat-pill">
+              <span class="swiss-stat-card__stat-pill-k">{{ t('admin.performance.netDown') }}</span>
+              <span class="swiss-stat-card__stat-pill-v">{{ netCards.down }}</span>
+            </div>
+          </div>
+          <template #hint>
+            {{ t('admin.performance.hintNetwork') }}
+          </template>
+        </AdminSwissPerfCard>
+      </div>
 
       <div
-        v-if="appMeta"
-        class="perf-hint mb-4 perf-mono"
+        v-if="diskExtraVolumes.length"
+        class="mt-4"
       >
-        {{ t('admin.performance.version', { version: appMeta.version }) }}
-        ·
-        {{ t('admin.performance.uptimeSec', { sec: appMeta.uptime }) }}
-      </div>
-
-      <div class="perf-layout">
-        <section
-          v-if="hostRamCard || appRamCard || hostCpuCard || processCpuCard"
-          class="perf-card-group"
-          aria-labelledby="perf-group-compute"
+        <div class="swiss-stat-card-group__title">{{ t('admin.performance.sectionOtherVolumes') }}</div>
+        <el-table
+          :data="diskExtraVolumes"
+          size="small"
+          class="font-mono mt-2"
+          max-height="200"
         >
-          <h3
-            id="perf-group-compute"
-            class="perf-card-group__title"
+          <el-table-column
+            prop="mount"
+            :label="t('admin.performance.colVolumeMount')"
+            min-width="120"
+          />
+          <el-table-column
+            :label="t('admin.performance.colVolumePct')"
+            width="100"
           >
-            {{ t('admin.performance.groupCompute') }}
-          </h3>
-          <div class="perf-cards-grid">
-            <div
-              v-if="hostRamCard"
-              class="perf-metric-card"
-            >
-              <div class="perf-metric-card__head">
-                <span class="perf-metric-card__label">{{
-                  t('admin.performance.cardHostRam')
-                }}</span>
-                <span class="perf-metric-card__value perf-mono">{{ hostRamCard.pct }}%</span>
-              </div>
+            <template #default="{ row }">
               <el-progress
-                :percentage="hostRamCard.pct"
-                :color="progressColors"
+                v-if="row.percent_used != null"
+                :percentage="clampPct(row.percent_used)"
                 :stroke-width="8"
-                :show-text="false"
-                class="perf-progress-line"
-              />
-              <p class="perf-metric-card__sub perf-mono">{{ hostRamCard.line }}</p>
-            </div>
-
-            <div
-              v-if="appRamCard"
-              class="perf-metric-card"
-            >
-              <div class="perf-metric-card__head">
-                <span class="perf-metric-card__label">{{ t('admin.performance.cardAppRam') }}</span>
-                <span class="perf-metric-card__value perf-mono">{{ appRamCard.pct }}%</span>
-              </div>
-              <el-progress
-                :percentage="appRamCard.pct"
                 :color="progressColors"
-                :stroke-width="8"
-                :show-text="false"
-                class="perf-progress-line"
               />
-              <p class="perf-metric-card__sub perf-mono">{{ appRamCard.line }}</p>
-              <p
-                v-if="appRamCard.workerCount > 1"
-                class="perf-hint perf-metric-card__hint"
-              >
-                {{ t('admin.performance.workersRssHint', { n: String(appRamCard.workerCount) }) }}
-              </p>
-              <p
-                v-else-if="appRamCard.pid != null"
-                class="perf-hint perf-metric-card__hint"
-              >
-                {{ t('admin.performance.pidLabel', { pid: String(appRamCard.pid) }) }}
-              </p>
-            </div>
+              <span v-else>—</span>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </section>
 
-            <div
-              v-if="hostCpuCard"
-              class="perf-metric-card perf-metric-card--gauge"
+    <section
+      v-if="redisCard || connTiles || aiCardStreaming || mindmateStreaming"
+      aria-labelledby="perf-group-platform"
+    >
+      <h3
+        id="perf-group-platform"
+        class="swiss-stat-card-group__title"
+      >
+        {{ t('admin.performance.groupPlatform') }}
+      </h3>
+      <div class="space-y-4">
+        <div
+          v-if="redisCard || connTiles"
+          class="swiss-stat-card-grid--dual"
+        >
+          <AdminSwissPerfCard
+            v-if="redisCard"
+            :label="t('admin.performance.sectionRedis')"
+            :pct="redisCard.fragPct"
+            theme="integration"
+            progress-variant="linear"
+            v-bind="pctLimitFlags(redisCard.fragPct)"
+          >
+            <template #kpi>
+              {{ redisCard.human }}
+              · {{ t('admin.performance.peakLabel') }} {{ redisCard.peak }}
+              · {{ t('admin.performance.fragLabel') }} {{ redisCard.fragText }}
+            </template>
+            <template
+              v-if="redisDetailLine"
+              #hint
             >
-              <div class="perf-metric-card__head">
-                <span class="perf-metric-card__label">{{
-                  t('admin.performance.cardHostCpu')
-                }}</span>
-                <span class="perf-metric-card__value perf-mono">{{ hostCpuCard.pct }}%</span>
-              </div>
-              <div class="perf-metric-card__gauge">
-                <el-progress
-                  type="dashboard"
-                  :percentage="hostCpuCard.pct"
-                  :color="progressColors"
-                  :width="88"
-                  :stroke-width="8"
-                  :show-text="false"
-                />
-              </div>
-              <p
-                v-if="hostCpuCard.sub"
-                class="perf-metric-card__sub perf-metric-card__sub--center"
-              >
-                {{ hostCpuCard.sub }}
-              </p>
-            </div>
+              {{ redisDetailLine }}
+            </template>
+          </AdminSwissPerfCard>
 
-            <div
-              v-if="processCpuCard"
-              class="perf-metric-card perf-metric-card--gauge"
-            >
-              <div class="perf-metric-card__head">
-                <span class="perf-metric-card__label">{{
-                  t('admin.performance.cardProcessCpu')
+          <AdminSwissPerfCard
+            v-if="connTiles"
+            :label="t('admin.performance.sectionConnections')"
+            theme="members"
+            progress-variant="none"
+          >
+            <div class="swiss-stat-card__stat-grid">
+              <div
+                v-if="connTiles.chat != null"
+                class="swiss-stat-card__stat-pill"
+              >
+                <span class="swiss-stat-card__stat-pill-k">{{ t('admin.performance.tileWsChat') }}</span>
+                <span class="swiss-stat-card__stat-pill-v">{{ connTiles.chat }}</span>
+              </div>
+              <div
+                v-if="connTiles.workshop != null"
+                class="swiss-stat-card__stat-pill"
+              >
+                <span class="swiss-stat-card__stat-pill-k">{{
+                  t('admin.performance.tileWsWorkshop')
                 }}</span>
-                <span class="perf-metric-card__value perf-mono"
-                  >{{ processCpuCard.headerPct }}%</span
-                >
+                <span class="swiss-stat-card__stat-pill-v">{{ connTiles.workshop }}</span>
               </div>
-              <div class="perf-metric-card__gauge">
-                <el-progress
-                  type="dashboard"
-                  :percentage="processCpuCard.ringPct"
-                  :color="progressColors"
-                  :width="88"
-                  :stroke-width="8"
-                  :show-text="false"
-                />
+              <div
+                v-if="connTiles.wsRedis != null"
+                class="swiss-stat-card__stat-pill"
+              >
+                <span class="swiss-stat-card__stat-pill-k">{{ t('admin.performance.tileWsRedis') }}</span>
+                <span class="swiss-stat-card__stat-pill-v">{{ connTiles.wsRedis }}</span>
               </div>
-              <p class="perf-hint perf-metric-card__hint">
+              <div
+                v-if="connTiles.sessions != null"
+                class="swiss-stat-card__stat-pill"
+              >
+                <span class="swiss-stat-card__stat-pill-k">{{ t('admin.performance.tileSessions') }}</span>
+                <span class="swiss-stat-card__stat-pill-v">{{ connTiles.sessions }}</span>
+              </div>
+              <div
+                v-if="connTiles.unique != null"
+                class="swiss-stat-card__stat-pill"
+              >
+                <span class="swiss-stat-card__stat-pill-k">{{
+                  t('admin.performance.tileUniqueUsers')
+                }}</span>
+                <span class="swiss-stat-card__stat-pill-v">{{ connTiles.unique }}</span>
+              </div>
+            </div>
+            <template #hint>
+              <span
+                v-for="(line, idx) in wsExtraLines"
+                :key="idx"
+                class="block"
+              >{{ line }}</span>
+              {{ t('admin.performance.hintConnections') }}
+            </template>
+          </AdminSwissPerfCard>
+        </div>
+
+        <div
+          v-if="aiCardStreaming || mindmateStreaming"
+          class="swiss-stat-card-grid--dual"
+        >
+          <AdminSwissPerfCard
+            v-if="aiCardStreaming"
+            :label="t('admin.performance.sectionAiCardStreaming')"
+            theme="mindgraph"
+            progress-variant="none"
+          >
+            <template #kpi>{{ aiCardStreaming.activeNow }}</template>
+            <p
+              v-if="aiCardStreaming.concurrencyError"
+              class="swiss-stat-card__sub text-[var(--swiss-stat-danger-accent,#e30613)]"
+            >
+              {{
+                t('admin.performance.mindbotStreamingNowError', {
+                  reason: aiCardStreaming.concurrencyError,
+                })
+              }}
+            </p>
+            <p class="swiss-stat-card__sub">
+              {{ t('admin.performance.streamingMax24hLabel') }}
+              {{ aiCardStreaming.activeMax24h != null ? aiCardStreaming.activeMax24h : '—' }}
+            </p>
+            <template #hint>
+              <span
+                v-if="aiCardStreaming.peak24hError"
+                class="text-[var(--swiss-stat-danger-accent,#e30613)]"
+              >
                 {{
-                  processCpuCard.workerCount > 1
-                    ? processCpuCard.clusterHint
-                    : t('admin.performance.hintProcessCpuSingle')
+                  t('admin.performance.streamingMax24hError', {
+                    reason: aiCardStreaming.peak24hError,
+                  })
                 }}
-              </p>
-            </div>
-          </div>
-        </section>
+              </span>
+              <span v-else>{{ t('admin.performance.hintAiCardStreaming') }}</span>
+            </template>
+          </AdminSwissPerfCard>
 
-        <section
-          v-if="diskCard || netCards || diskExtraVolumes.length"
-          class="perf-card-group"
-          aria-labelledby="perf-group-storage"
-        >
-          <h3
-            id="perf-group-storage"
-            class="perf-card-group__title"
+          <AdminSwissPerfCard
+            v-if="mindmateStreaming"
+            :label="t('admin.performance.sectionMindmateStreaming')"
+            theme="mindmate"
+            progress-variant="none"
           >
-            {{ t('admin.performance.groupStorageNet') }}
-          </h3>
-          <div class="perf-cards-grid">
-            <div
-              v-if="diskCard"
-              class="perf-metric-card"
+            <template #kpi>{{ mindmateStreaming.activeNow }}</template>
+            <p
+              v-if="mindmateStreaming.concurrencyError"
+              class="swiss-stat-card__sub text-[var(--swiss-stat-danger-accent,#e30613)]"
             >
-              <div class="perf-metric-card__head">
-                <span class="perf-metric-card__label">{{
-                  t('admin.performance.cardPrimaryDisk')
-                }}</span>
-                <span class="perf-metric-card__value perf-mono">{{ diskCard.pct }}%</span>
-              </div>
-              <el-progress
-                :percentage="diskCard.pct"
-                :color="progressColors"
-                :stroke-width="8"
-                :show-text="false"
-                class="perf-progress-line"
-              />
-              <p class="perf-metric-card__sub perf-mono">{{ diskCard.line }}</p>
-              <p
-                v-if="diskHint"
-                class="perf-hint perf-metric-card__hint"
+              {{
+                t('admin.performance.mindmateStreamingNowError', {
+                  reason: mindmateStreaming.concurrencyError,
+                })
+              }}
+            </p>
+            <p class="swiss-stat-card__sub">
+              {{ t('admin.performance.streamingMax24hLabel') }}
+              {{ mindmateStreaming.activeMax24h != null ? mindmateStreaming.activeMax24h : '—' }}
+            </p>
+            <template #hint>
+              <span
+                v-if="mindmateStreaming.peak24hError"
+                class="text-[var(--swiss-stat-danger-accent,#e30613)]"
               >
-                {{ diskHint }}
-              </p>
-            </div>
-
-            <div
-              v-if="netCards"
-              class="perf-metric-card"
-            >
-              <div class="perf-metric-card__head perf-metric-card__head--solo">
-                <span class="perf-metric-card__label">{{
-                  t('admin.performance.sectionNetwork')
-                }}</span>
-              </div>
-              <div class="perf-stat-row">
-                <div class="perf-stat-pill">
-                  <span class="perf-stat-pill__k">{{ t('admin.performance.netUp') }}</span>
-                  <span class="perf-stat-pill__v perf-mono">{{ netCards.up }}</span>
-                </div>
-                <div class="perf-stat-pill">
-                  <span class="perf-stat-pill__k">{{ t('admin.performance.netDown') }}</span>
-                  <span class="perf-stat-pill__v perf-mono">{{ netCards.down }}</span>
-                </div>
-              </div>
-              <p class="perf-hint perf-metric-card__hint">
-                {{ t('admin.performance.hintNetwork') }}
-              </p>
-            </div>
-          </div>
-
-          <div
-            v-if="diskExtraVolumes.length"
-            class="perf-card-group__table"
-          >
-            <div class="perf-section-label">{{ t('admin.performance.sectionOtherVolumes') }}</div>
-            <div class="perf-inset mt-2">
-              <el-table
-                :data="diskExtraVolumes"
-                size="small"
-                class="perf-mono"
-                max-height="200"
-              >
-                <el-table-column
-                  prop="mount"
-                  :label="t('admin.performance.colVolumeMount')"
-                  min-width="120"
-                />
-                <el-table-column
-                  :label="t('admin.performance.colVolumePct')"
-                  width="100"
-                >
-                  <template #default="{ row }">
-                    <el-progress
-                      v-if="row.percent_used != null"
-                      :percentage="clampPct(row.percent_used)"
-                      :stroke-width="8"
-                      :color="progressColors"
-                    />
-                    <span v-else>—</span>
-                  </template>
-                </el-table-column>
-              </el-table>
-            </div>
-          </div>
-        </section>
-
-        <section
-          v-if="redisCard || connTiles || aiCardStreaming || mindmateStreaming"
-          class="perf-card-group"
-          aria-labelledby="perf-group-platform"
-        >
-          <h3
-            id="perf-group-platform"
-            class="perf-card-group__title"
-          >
-            {{ t('admin.performance.groupPlatform') }}
-          </h3>
-          <div class="perf-cards-grid perf-cards-grid--platform">
-            <div
-              v-if="redisCard || connTiles"
-              class="perf-platform-dual"
-              :class="{ 'perf-platform-dual--single': !redisCard || !connTiles }"
-            >
-              <div
-                v-if="redisCard"
-                class="perf-metric-card"
-              >
-                <div class="perf-metric-card__head perf-metric-card__head--solo">
-                  <span class="perf-metric-card__label">{{
-                    t('admin.performance.sectionRedis')
-                  }}</span>
-                </div>
-                <p class="perf-metric-card__kpi perf-mono">
-                  {{ redisCard.human }}
-                  <span class="perf-metric-card__kpi-sep">·</span>
-                  <span class="perf-metric-card__kpi-muted">{{
-                    t('admin.performance.peakLabel')
-                  }}</span>
-                  {{ redisCard.peak }}
-                </p>
-                <div class="perf-metric-card__frag-head">
-                  <span class="perf-metric-card__frag-label">{{
-                    t('admin.performance.fragLabel')
-                  }}</span>
-                  <span class="perf-metric-card__frag-val perf-mono">{{ redisCard.fragText }}</span>
-                </div>
-                <el-progress
-                  :percentage="redisCard.fragPct"
-                  :color="progressColors"
-                  :stroke-width="7"
-                  :show-text="false"
-                  class="perf-progress-line"
-                />
-                <p
-                  v-if="redisDetailLine"
-                  class="perf-hint perf-mono perf-metric-card__hint perf-metric-card__footer"
-                >
-                  {{ redisDetailLine }}
-                </p>
-              </div>
-
-              <div
-                v-if="connTiles"
-                class="perf-metric-card"
-              >
-                <div class="perf-metric-card__head perf-metric-card__head--solo">
-                  <span class="perf-metric-card__label">{{
-                    t('admin.performance.sectionConnections')
-                  }}</span>
-                </div>
-                <div class="perf-stat-grid">
-                  <div
-                    v-if="connTiles.chat != null"
-                    class="perf-stat-pill"
-                  >
-                    <span class="perf-stat-pill__k">{{ t('admin.performance.tileWsChat') }}</span>
-                    <span class="perf-stat-pill__v perf-mono">{{ connTiles.chat }}</span>
-                  </div>
-                  <div
-                    v-if="connTiles.workshop != null"
-                    class="perf-stat-pill"
-                  >
-                    <span class="perf-stat-pill__k">{{
-                      t('admin.performance.tileWsWorkshop')
-                    }}</span>
-                    <span class="perf-stat-pill__v perf-mono">{{ connTiles.workshop }}</span>
-                  </div>
-                  <div
-                    v-if="connTiles.wsRedis != null"
-                    class="perf-stat-pill"
-                  >
-                    <span class="perf-stat-pill__k">{{ t('admin.performance.tileWsRedis') }}</span>
-                    <span class="perf-stat-pill__v perf-mono">{{ connTiles.wsRedis }}</span>
-                  </div>
-                  <div
-                    v-if="connTiles.sessions != null"
-                    class="perf-stat-pill"
-                  >
-                    <span class="perf-stat-pill__k">{{ t('admin.performance.tileSessions') }}</span>
-                    <span class="perf-stat-pill__v perf-mono">{{ connTiles.sessions }}</span>
-                  </div>
-                  <div
-                    v-if="connTiles.unique != null"
-                    class="perf-stat-pill"
-                  >
-                    <span class="perf-stat-pill__k">{{
-                      t('admin.performance.tileUniqueUsers')
-                    }}</span>
-                    <span class="perf-stat-pill__v perf-mono">{{ connTiles.unique }}</span>
-                  </div>
-                </div>
-                <div class="perf-metric-card__footer">
-                  <div
-                    v-if="wsExtraLines.length"
-                    class="perf-hint perf-mono flex flex-wrap gap-x-3 gap-y-1"
-                  >
-                    <span
-                      v-for="(line, idx) in wsExtraLines"
-                      :key="idx"
-                      >{{ line }}</span
-                    >
-                  </div>
-                  <p class="perf-hint perf-metric-card__hint">
-                    {{ t('admin.performance.hintConnections') }}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div
-              v-if="aiCardStreaming || mindmateStreaming"
-              class="perf-streaming-dual"
-              :class="{
-                'perf-streaming-dual--single': !aiCardStreaming || !mindmateStreaming,
-              }"
-            >
-              <div
-                v-if="aiCardStreaming"
-                class="perf-metric-card"
-              >
-                <div class="perf-metric-card__head perf-metric-card__head--solo">
-                  <span class="perf-metric-card__label">{{
-                    t('admin.performance.sectionAiCardStreaming')
-                  }}</span>
-                </div>
-                <p class="perf-metric-card__kpi perf-mono">
-                  {{ aiCardStreaming.activeNow }}
-                </p>
-                <p
-                  v-if="aiCardStreaming.concurrencyError"
-                  class="perf-metric-card__sub"
-                  style="color: #fb7185"
-                >
-                  {{
-                    t('admin.performance.mindbotStreamingNowError', {
-                      reason: aiCardStreaming.concurrencyError,
-                    })
-                  }}
-                </p>
-                <p class="perf-section-sublabel">
-                  {{ t('admin.performance.streamingMax24hLabel') }}
-                  <span class="perf-mono">{{
-                    aiCardStreaming.activeMax24h != null ? aiCardStreaming.activeMax24h : '—'
-                  }}</span>
-                </p>
-                <p
-                  v-if="aiCardStreaming.peak24hError"
-                  class="perf-hint perf-metric-card__hint"
-                  style="color: #fb7185"
-                >
-                  {{
-                    t('admin.performance.streamingMax24hError', {
-                      reason: aiCardStreaming.peak24hError,
-                    })
-                  }}
-                </p>
-                <p
-                  v-else
-                  class="perf-hint perf-metric-card__hint"
-                >
-                  {{ t('admin.performance.hintAiCardStreaming') }}
-                </p>
-              </div>
-
-              <div
-                v-if="mindmateStreaming"
-                class="perf-metric-card"
-              >
-                <div class="perf-metric-card__head perf-metric-card__head--solo">
-                  <span class="perf-metric-card__label">{{
-                    t('admin.performance.sectionMindmateStreaming')
-                  }}</span>
-                </div>
-                <p class="perf-metric-card__kpi perf-mono">
-                  {{ mindmateStreaming.activeNow }}
-                </p>
-                <p
-                  v-if="mindmateStreaming.concurrencyError"
-                  class="perf-metric-card__sub"
-                  style="color: #fb7185"
-                >
-                  {{
-                    t('admin.performance.mindmateStreamingNowError', {
-                      reason: mindmateStreaming.concurrencyError,
-                    })
-                  }}
-                </p>
-                <p class="perf-section-sublabel">
-                  {{ t('admin.performance.streamingMax24hLabel') }}
-                  <span class="perf-mono">{{
-                    mindmateStreaming.activeMax24h != null ? mindmateStreaming.activeMax24h : '—'
-                  }}</span>
-                </p>
-                <p
-                  v-if="mindmateStreaming.peak24hError"
-                  class="perf-hint perf-metric-card__hint"
-                  style="color: #fb7185"
-                >
-                  {{
-                    t('admin.performance.streamingMax24hError', {
-                      reason: mindmateStreaming.peak24hError,
-                    })
-                  }}
-                </p>
-                <p
-                  v-else
-                  class="perf-hint perf-metric-card__hint"
-                >
-                  {{ t('admin.performance.hintMindmateStreaming') }}
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+                {{
+                  t('admin.performance.streamingMax24hError', {
+                    reason: mindmateStreaming.peak24hError,
+                  })
+                }}
+              </span>
+              <span v-else>{{ t('admin.performance.hintMindmateStreaming') }}</span>
+            </template>
+          </AdminSwissPerfCard>
+        </div>
       </div>
-    </div>
+    </section>
   </div>
 </template>
