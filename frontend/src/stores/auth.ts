@@ -212,7 +212,7 @@ export const useAuthStore = defineStore('auth', () => {
       orgIsObject && org.school_tier != null ? normalizeSchoolTier(org.school_tier) : undefined
     const schoolTierFeaturesRaw =
       orgIsObject && org.school_tier_features != null ? org.school_tier_features : undefined
-    const schoolTier: SchoolTier | undefined = orgId ? schoolTierRaw ?? 'standard' : undefined
+    const schoolTier: SchoolTier | undefined = orgId ? schoolTierRaw ?? 'trial' : undefined
     const schoolTierFeatures: SchoolTierFeatures | undefined = orgId
       ? mergeSchoolTierFeatures(schoolTier, schoolTierFeaturesRaw)
       : undefined

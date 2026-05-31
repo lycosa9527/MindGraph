@@ -16,6 +16,11 @@ import {
 } from '@/composables/mindmate/useMindMateBranding'
 import '@/styles/admin-schools-swiss.css'
 import { apiRequest } from '@/utils/apiClient'
+import {
+  buildPrivatizedColumnFilters,
+  filterOrgByPrivatized,
+  isOrgPrivatized,
+} from '@/utils/orgPrivatization'
 
 import AdminSchoolCreateDialog from './AdminSchoolCreateDialog.vue'
 import AdminSchoolShareDialog from './AdminSchoolShareDialog.vue'
@@ -31,8 +36,17 @@ const createModalVisible = ref(false)
 const shareModalVisible = ref(false)
 const shareInvitationCode = ref('')
 
-const showOrgInvites = computed(() => can('scope.org') || can('scope.global'))
+const showOrgInvites = computed(
+  () => can('scope.org') || can('scope.global') || can('scope.invited_orgs')
+)
 const canEditInvites = computed(() => canEditTab('invites'))
+
+const orgTableEmptyText = computed(() => {
+  if (can('scope.invited_orgs')) {
+    return t('admin.inviteOrgsEmpty')
+  }
+  return t('admin.noData')
+})
 
 function agentDisplayName(row: Record<string, unknown>): string {
   const customName = resolveSchoolMindmateAgentName(
@@ -55,9 +69,12 @@ function onAgentAvatarError(event: Event) {
   }
 }
 
-function hasPrivateDify(row: Record<string, unknown>): boolean {
-  return Boolean(row.dify_api_key_masked)
-}
+const privatizedColumnFilters = computed(() =>
+  buildPrivatizedColumnFilters(
+    t('admin.orgPrivateDifyYes') as string,
+    t('admin.orgPrivateDifyNo') as string
+  )
+)
 
 function formatNumber(num: number): string {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
@@ -144,7 +161,7 @@ defineExpose({
           :data="organizations"
           row-key="id"
           class="admin-schools-table w-full"
-          :empty-text="t('admin.noData')"
+          :empty-text="orgTableEmptyText"
           stripe
           size="small"
         >
@@ -156,21 +173,25 @@ defineExpose({
             class-name="admin-schools-col-text"
           />
           <el-table-column
+            column-key="is_privatized"
             :label="t('admin.orgPrivateDify')"
             min-width="96"
             align="center"
+            :filters="privatizedColumnFilters"
+            :filter-method="filterOrgByPrivatized"
+            filter-placement="bottom-end"
           >
             <template #default="{ row }">
               <span
                 class="admin-schools-private"
                 :class="
-                  hasPrivateDify(row)
+                  isOrgPrivatized(row)
                     ? 'admin-schools-private--yes'
                     : 'admin-schools-private--no'
                 "
               >
                 {{
-                  hasPrivateDify(row)
+                  isOrgPrivatized(row)
                     ? t('admin.orgPrivateDifyYes')
                     : t('admin.orgPrivateDifyNo')
                 }}

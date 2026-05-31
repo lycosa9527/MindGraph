@@ -24,6 +24,12 @@ import {
 
   tabRequiresCapabilities,
 
+  canViewDataCenterTab,
+
+  canViewFeatureDevTab,
+
+  canViewUsersTab,
+
 } from '@/utils/adminCapabilities'
 
 import { useAuthStore } from '@/stores'
@@ -47,6 +53,12 @@ export function useAdminAccess() {
     if (fromStore?.length) {
 
       return fromStore
+
+    }
+
+    if (authStore.adminCapabilitiesLoaded) {
+
+      return []
 
     }
 
@@ -85,6 +97,12 @@ export function useAdminAccess() {
 
 
   function isTabReadOnly(tabKey: string): boolean {
+
+    if (tabKey === 'invites' && canEditTab('invites')) {
+
+      return false
+
+    }
 
     const editCap = tabEditCapability(tabKey)
 
@@ -140,6 +158,24 @@ export function useAdminAccess() {
 
   function canViewTab(tabKey: string): boolean {
 
+    if (tabKey === 'data_center') {
+
+      return canViewDataCenterTab(capabilities.value)
+
+    }
+
+    if (tabKey === 'feature_dev') {
+
+      return canViewFeatureDevTab(capabilities.value)
+
+    }
+
+    if (tabKey === 'users') {
+
+      return canViewUsersTab(capabilities.value)
+
+    }
+
     const required = tabRequiresCapabilities(tabKey)
 
     return required.every((cap) => can(cap))
@@ -160,7 +196,7 @@ export function useAdminAccess() {
 
   const visibleTabKeys = computed(() => {
 
-    const keys = ['data_center', 'users', 'organizations', 'invites', 'billing', 'settings']
+    const keys = ['data_center', 'users', 'organizations', 'invites', 'billing', 'settings', 'feature_dev']
 
     return keys.filter((key) => canViewTab(key))
 

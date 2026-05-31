@@ -24,6 +24,7 @@ const props = defineProps<{
   managersLoading: boolean
   addManagersLoading: boolean
   lockLoading: boolean
+  readOnly?: boolean
 }>()
 
 const pendingManagerIds = defineModel<number[]>('pendingManagerIds', { required: true })
@@ -43,6 +44,7 @@ const labelClass =
   'mindbot-section-label mindbot-swiss-section-label shrink-0 text-[11px] font-semibold tracking-[0.14em] sm:w-[178px]'
 
 const tierLabelKey: Record<SchoolTier, string> = {
+  trial: 'admin.schoolVersionTierTrial',
   lite: 'admin.schoolVersionTierLite',
   standard: 'admin.schoolVersionTierStandard',
   professional: 'admin.schoolVersionTierProfessional',
@@ -56,7 +58,9 @@ const schoolTierHint = computed(() => {
   })
 })
 
-const showLiteFeaturesHint = computed(() => schoolTierEdit.value === 'lite')
+const showLiteFeaturesHint = computed(
+  () => schoolTierEdit.value === 'trial' || schoolTierEdit.value === 'lite'
+)
 
 const managerLimit = computed(() => SCHOOL_TIER_LIMITS[schoolTierEdit.value].managerLimit)
 
@@ -92,6 +96,7 @@ function tierOptionLabel(tier: SchoolTier): string {
         <el-input
           v-model="displayNameEdit"
           :placeholder="orgName"
+          :disabled="props.readOnly"
           clearable
           class="mindbot-swiss-input flex-1 min-w-0 max-w-2xl"
         />
@@ -102,6 +107,7 @@ function tierOptionLabel(tier: SchoolTier): string {
         <div class="flex-1 min-w-0 max-w-2xl space-y-1.5">
           <el-select
             v-model="schoolTierEdit"
+            :disabled="props.readOnly"
             class="mindbot-swiss-select w-full"
             teleported
             :popper-class="MINDBOT_SWISS_SELECT_POPPER_WIDE"
@@ -141,6 +147,7 @@ function tierOptionLabel(tier: SchoolTier): string {
             {{ orgActiveState ? t('admin.enabled') : t('admin.disabled') }}
           </span>
           <el-button
+            v-if="!props.readOnly"
             :loading="lockLoading"
             plain
             class="mindbot-pill shrink-0"
@@ -157,6 +164,7 @@ function tierOptionLabel(tier: SchoolTier): string {
         <el-date-picker
           v-model="expiresAtEdit"
           type="date"
+          :disabled="props.readOnly"
           :placeholder="t('admin.noExpiration')"
           value-format="YYYY-MM-DD"
           clearable
@@ -185,6 +193,7 @@ function tierOptionLabel(tier: SchoolTier): string {
               >
                 <span class="school-general-chip__label">{{ m.name || m.phone }}</span>
                 <button
+                  v-if="!props.readOnly"
                   type="button"
                   class="school-general-chip__remove"
                   :aria-label="t('admin.removeManager')"
@@ -203,7 +212,10 @@ function tierOptionLabel(tier: SchoolTier): string {
             <p class="mindbot-swiss-hint text-xs m-0 leading-relaxed">
               {{ managerLimitHint }}
             </p>
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div
+              v-if="!props.readOnly"
+              class="flex flex-col gap-2 sm:flex-row sm:items-center"
+            >
               <el-select
                 v-model="pendingManagerIds"
                 multiple

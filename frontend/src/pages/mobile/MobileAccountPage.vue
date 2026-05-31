@@ -48,7 +48,7 @@ const userRolePill = computed(() => {
   if (!user.value?.role) {
     return null
   }
-  const style = getRolePillStyle(user.value.role)
+  const style = getRolePillStyle(user.value.role, user.value.schoolTier)
   if (!style) {
     return null
   }

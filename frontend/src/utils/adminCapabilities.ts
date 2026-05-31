@@ -8,6 +8,7 @@ export type AdminCapability =
   | 'panel.access'
   | 'tab.data_center.view'
   | 'tab.data_center.edit'
+  | 'tab.school_dashboard.view'
   | 'tab.users.view'
   | 'tab.users.edit'
   | 'tab.organizations.view'
@@ -31,6 +32,7 @@ export type AdminCapability =
   | 'tab.settings.teacher_usage'
   | 'scope.global'
   | 'scope.org'
+  | 'scope.invited_orgs'
 
 export interface AdminCapabilitiesPayload {
   role: UserRole | string
@@ -45,6 +47,7 @@ const SUPERADMIN_CAPS: AdminCapability[] = [
   'panel.access',
   'tab.data_center.view',
   'tab.data_center.edit',
+  'tab.school_dashboard.view',
   'tab.users.view',
   'tab.users.edit',
   'tab.organizations.view',
@@ -73,29 +76,28 @@ const PLATFORM_BD_CAPS: AdminCapability[] = [
   'panel.access',
   'tab.data_center.view',
   'tab.data_center.edit',
+  'tab.school_dashboard.view',
   'tab.users.view',
   'tab.organizations.view',
   'tab.invites.view',
   'tab.invites.edit',
   'tab.billing.view',
   'scope.global',
+  'scope.invited_orgs',
 ]
 
 const EXPERT_CAPS: AdminCapability[] = [
   'panel.access',
   'tab.invites.view',
   'tab.invites.edit',
+  'scope.invited_orgs',
 ]
 
 const SCHOOL_ADMIN_CAPS: AdminCapability[] = [
   'panel.access',
-  'tab.data_center.view',
+  'tab.school_dashboard.view',
   'tab.users.view',
   'tab.users.edit',
-  'tab.invites.view',
-  'tab.invites.edit',
-  'tab.settings.view',
-  'tab.settings.mindbot',
   'scope.org',
 ]
 
@@ -126,6 +128,7 @@ const TAB_EDIT_CAPABILITY: Record<string, AdminCapability> = {
   organizations: 'tab.organizations.edit',
   invites: 'tab.invites.edit',
   billing: 'tab.billing.edit',
+  feature_dev: 'tab.settings.edit',
   settings: 'tab.settings.edit',
 }
 
@@ -135,7 +138,7 @@ export function tabEditCapability(tabKey: string): AdminCapability | null {
 
 export function tabRequiresCapabilities(tabKey: string): AdminCapability[] {
   const map: Record<string, AdminCapability[]> = {
-    data_center: ['tab.data_center.view'],
+    data_center: [],
     users: ['tab.users.view', 'scope.global'],
     organizations: ['tab.organizations.view'],
     invites: ['tab.invites.view'],
@@ -145,11 +148,29 @@ export function tabRequiresCapabilities(tabKey: string): AdminCapability[] {
   return map[tabKey] ?? ['panel.access']
 }
 
+export function canViewUsersTab(caps: AdminCapability[]): boolean {
+  return (
+    caps.includes('tab.users.view') &&
+    caps.includes('scope.global')
+  )
+}
+
+export function canViewDataCenterTab(caps: AdminCapability[]): boolean {
+  return caps.includes('tab.data_center.view') || caps.includes('tab.school_dashboard.view')
+}
+
+const FEATURE_DEV_SUBTABS = ['smart_response', 'kitty_llmops', 'teacher_usage'] as const
+
+export function canViewFeatureDevTab(caps: AdminCapability[]): boolean {
+  return FEATURE_DEV_SUBTABS.some((subtab) =>
+    settingsSubtabRequiresCapabilities(subtab).every((cap) => caps.includes(cap))
+  )
+}
+
 export function settingsSubtabRequiresCapabilities(subtab: string): AdminCapability[] {
   const map: Record<string, AdminCapability[]> = {
     features: ['tab.settings.features'],
     roles: ['tab.settings.roles'],
-    tokens: ['tab.settings.tokens'],
     library: ['tab.settings.library'],
     database: ['tab.settings.database'],
     performance: ['tab.settings.performance'],

@@ -1,760 +1,253 @@
 <script setup lang="ts">
 /**
- * Admin Roles Tab — assign all seven roles for the unified management panel.
+ * Admin Roles Tab — four platform roles with members listed per tab.
  */
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-import { useDebounceFn } from '@vueuse/core'
+import { Loading, UserFilled } from '@element-plus/icons-vue'
 
-import { ElMessageBox } from 'element-plus'
-import type { TabPaneName } from 'element-plus'
-
-import { Loading, Plus, Refresh, Search, UserFilled } from '@element-plus/icons-vue'
-
-import { useLanguage, useNotifications } from '@/composables'
-import type { UserRole } from '@/types'
-import { apiRequest } from '@/utils/apiClient'
+import AdminRoleAddMemberDialog from '@/components/admin/AdminRoleAddMemberDialog.vue'
+import { useLanguage } from '@/composables'
+import { useAdminRoleControl } from '@/composables/admin/useAdminRoleControl'
+import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import {
-  B2B_USER_ROLES,
-  C2C_USER_ROLES,
-  PLATFORM_USER_ROLES,
-  normalizeUserRole,
-  userRoleLabel,
-} from '@/utils/userRoleDisplay'
+  isRoleControlTab,
+  registerAdminRolesHeaderToolbar,
+  ROLE_CONTROL_TABS,
+  unregisterAdminRolesHeaderToolbar,
+} from '@/composables/admin/useAdminRolesHeaderToolbar'
 
+const route = useRoute()
+const router = useRouter()
 const { t } = useLanguage()
-const notify = useNotifications()
+const { canEditTab } = useAdminAccess()
 
-interface AdminUser {
-  id: number
-  phone: string
-  name: string | null
-  role: string
-  source: string
-  created_at: string | null
-}
+const {
+  activeTab,
+  activeRows,
+  activeTabDescKey,
+  addGrantingId,
+  addModalVisible,
+  addSearchHasRun,
+  addSearchLoading,
+  addSearchQuery,
+  addSearchResults,
+  grantActiveRole,
+  isEnvRow,
+  isLoading,
+  loadActiveTab,
+  openAddModal,
+  revokeMember,
+  revokingId,
+  roleLabel,
+  searchUsersToAdd,
+  tabLabel,
+} = useAdminRoleControl()
 
-interface CandidateUser {
-  id: number
-  phone: string
-  name: string | null
-  role: string
-}
+const canEdit = computed(() => canEditTab('settings'))
+const showSchoolColumn = computed(() => activeTab.value === 'school_admin')
+const showSuperadminColumns = computed(() => activeTab.value === 'superadmin')
 
-interface EnvAdmin {
-  phone: string
-  user_id?: number | null
-  name: string | null
-}
-
-interface ManagerUser {
-  id: number
-  phone: string
-  name: string | null
-  organization_id: number | null
-  organization_code: string | null
-  organization_name: string | null
-  created_at: string | null
-}
-
-const PLATFORM_ROLES: UserRole[] = [...PLATFORM_USER_ROLES]
-const B2B_ROLES: UserRole[] = [...B2B_USER_ROLES]
-const C2C_ROLES: UserRole[] = [...C2C_USER_ROLES]
-
-const activeTab = ref<'admins' | 'managers' | 'assignment'>('admins')
-const isLoading = ref(true)
-const admins = ref<AdminUser[]>([])
-const envAdmins = ref<EnvAdmin[]>([])
-const managers = ref<ManagerUser[]>([])
-const managersLoading = ref(false)
-const revokingManagerId = ref<number | null>(null)
-
-function maskPhone(phone: string): string {
-  if (phone.length === 11) {
-    return phone.slice(0, 3) + '****' + phone.slice(-4)
+function syncRoleTabToRoute(tab: typeof activeTab.value): void {
+  if (route.query.subtab !== 'roles') {
+    return
   }
-  return phone
+  const current = route.query.role_tab
+  if (current === tab) {
+    return
+  }
+  void router.replace({ query: { ...route.query, role_tab: tab } })
 }
 
-function roleLabel(role: string): string {
-  return userRoleLabel(t, role)
-}
-
-const allAdminsForTable = computed(() => {
-  const dbRows = admins.value.map((a) => ({
-    ...a,
-    source: 'database' as const,
-  }))
-  const envRows = envAdmins.value.map((ea) => ({
-    id: 0,
-    phone: maskPhone(ea.phone),
-    name: ea.name,
-    role: 'superadmin',
-    source: 'env' as const,
-    created_at: null,
-  }))
-  return [...dbRows, ...envRows]
-})
-
-const addModalVisible = ref(false)
-const addSearchQuery = ref('')
-const addSearchResults = ref<CandidateUser[]>([])
-const addSearchLoading = ref(false)
-const addSearchHasRun = ref(false)
-const addGrantingId = ref<number | null>(null)
-
-const assignSearchQuery = ref('')
-const assignSearchResults = ref<CandidateUser[]>([])
-const assignSearchLoading = ref(false)
-const assignSearchHasRun = ref(false)
-const assignSelectedUser = ref<CandidateUser | null>(null)
-const assignSelectedRole = ref<UserRole>('teacher')
-const assignSubmitting = ref(false)
-
-async function loadAdmins() {
-  isLoading.value = true
-  try {
-    const res = await apiRequest('/api/auth/admin/admins')
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || 'Failed to load admins')
+watch(
+  () => route.query.role_tab,
+  (roleTab) => {
+    if (route.query.subtab !== 'roles' || typeof roleTab !== 'string') {
       return
     }
-    const data = await res.json()
-    admins.value = data.admins ?? []
-    envAdmins.value = data.env_admins ?? []
-  } catch {
-    notify.error('Failed to load admins')
-  } finally {
-    isLoading.value = false
+    if (isRoleControlTab(roleTab) && roleTab !== activeTab.value) {
+      activeTab.value = roleTab
+    }
   }
-}
+)
 
-async function searchUsers(query: string): Promise<CandidateUser[]> {
-  const q = query.trim()
-  if (!q || q.length < 2) {
-    return []
-  }
-  const params = new URLSearchParams({
-    page: '1',
-    page_size: '20',
-    search: q,
-  })
-  const res = await apiRequest(`/api/auth/admin/users?${params}`)
-  if (!res.ok) {
-    return []
-  }
-  const data = await res.json()
-  return (data.users ?? []) as CandidateUser[]
-}
+watch(activeTab, (tab) => {
+  syncRoleTabToRoute(tab)
+})
 
-async function searchUsersToAdd() {
-  const q = addSearchQuery.value.trim()
-  if (!q || q.length < 2) {
-    addSearchResults.value = []
-    addSearchHasRun.value = false
-    return
-  }
-  addSearchLoading.value = true
-  try {
-    const users = await searchUsers(q)
-    const adminIds = new Set(admins.value.map((a) => a.id))
-    addSearchResults.value = users.filter(
-      (u) => !adminIds.has(u.id) && normalizeUserRole(u.role) !== 'superadmin'
-    )
-  } catch {
-    addSearchResults.value = []
-  } finally {
-    addSearchLoading.value = false
-    addSearchHasRun.value = true
-  }
-}
-
-async function searchUsersToAssign() {
-  const q = assignSearchQuery.value.trim()
-  if (!q || q.length < 2) {
-    assignSearchResults.value = []
-    assignSearchHasRun.value = false
-    return
-  }
-  assignSearchLoading.value = true
-  try {
-    assignSearchResults.value = await searchUsers(q)
-  } catch {
-    assignSearchResults.value = []
-  } finally {
-    assignSearchLoading.value = false
-    assignSearchHasRun.value = true
-  }
-}
-
-const debouncedSearchUsersToAdd = useDebounceFn(searchUsersToAdd, 400)
-const debouncedSearchUsersToAssign = useDebounceFn(searchUsersToAssign, 400)
-
-watch(addSearchQuery, (val) => {
-  const q = val.trim()
-  if (q.length >= 2) {
-    debouncedSearchUsersToAdd()
+onMounted(() => {
+  const fromQuery = route.query.role_tab
+  if (isRoleControlTab(fromQuery) && fromQuery !== activeTab.value) {
+    activeTab.value = fromQuery
   } else {
-    addSearchResults.value = []
-    addSearchHasRun.value = false
+    void loadActiveTab()
   }
-})
 
-watch(assignSearchQuery, (val) => {
-  const q = val.trim()
-  if (q.length >= 2) {
-    debouncedSearchUsersToAssign()
-  } else {
-    assignSearchResults.value = []
-    assignSearchHasRun.value = false
-  }
-})
-
-function openAddModal() {
-  addModalVisible.value = true
-  addSearchQuery.value = ''
-  addSearchResults.value = []
-  addSearchHasRun.value = false
-}
-
-async function updateUserRole(userId: number, role: UserRole): Promise<boolean> {
-  const res = await apiRequest(`/api/auth/admin/users/${userId}/role?role=${role}`, {
-    method: 'PUT',
+  registerAdminRolesHeaderToolbar({
+    activeRoleTab: activeTab,
+    canEdit,
+    isRefreshing: isLoading,
+    refresh: loadActiveTab,
+    openAddModal,
   })
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}))
-    notify.error((data.detail as string) || t('admin.roleAssignFailed'))
-    return false
-  }
-  const data = await res.json()
-  notify.success(data.message || t('admin.roleAssignSuccess'))
-  return true
-}
+  syncRoleTabToRoute(activeTab.value)
+})
 
-async function grantAdmin(user: CandidateUser) {
-  addGrantingId.value = user.id
-  try {
-    const ok = await updateUserRole(user.id, 'superadmin')
-    if (ok) {
-      addModalVisible.value = false
-      loadAdmins()
-    }
-  } finally {
-    addGrantingId.value = null
-  }
-}
-
-async function revokeAdmin(admin: AdminUser) {
-  try {
-    const displayName = admin.name || admin.phone
-    await ElMessageBox.confirm(
-      `${t('admin.revokeAdminConfirm')} ${displayName}?`,
-      t('admin.revokeAdmin'),
-      {
-        type: 'warning',
-        confirmButtonText: t('admin.confirm'),
-        cancelButtonText: t('admin.cancel'),
-      }
-    )
-  } catch {
-    return
-  }
-
-  try {
-    const ok = await updateUserRole(admin.id, 'teacher')
-    if (ok) {
-      loadAdmins()
-    }
-  } catch {
-    notify.error('Failed to revoke admin')
-  }
-}
-
-async function loadManagers() {
-  managersLoading.value = true
-  try {
-    const res = await apiRequest('/api/auth/admin/managers')
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || 'Failed to load managers')
-      return
-    }
-    const data = await res.json()
-    managers.value = data.managers ?? []
-  } catch {
-    notify.error('Failed to load managers')
-  } finally {
-    managersLoading.value = false
-  }
-}
-
-async function revokeManager(manager: ManagerUser) {
-  if (!manager.organization_id) return
-  try {
-    const displayName = manager.name || manager.phone
-    await ElMessageBox.confirm(
-      `${t('admin.removeManager')} ${displayName}?`,
-      t('admin.removeManager'),
-      {
-        type: 'warning',
-        confirmButtonText: t('admin.confirm'),
-        cancelButtonText: t('admin.cancel'),
-      }
-    )
-  } catch {
-    return
-  }
-
-  revokingManagerId.value = manager.id
-  try {
-    const res = await apiRequest(
-      `/api/auth/admin/organizations/${manager.organization_id}/managers/${manager.id}`,
-      { method: 'DELETE' }
-    )
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || 'Failed to remove manager')
-      return
-    }
-    const data = await res.json()
-    notify.success(data.message || t('admin.managerRoleRemoved'))
-    loadManagers()
-  } catch {
-    notify.error('Failed to remove manager')
-  } finally {
-    revokingManagerId.value = null
-  }
-}
-
-function selectAssignUser(user: CandidateUser) {
-  assignSelectedUser.value = user
-  assignSelectedRole.value = normalizeUserRole(user.role)
-}
-
-async function submitRoleAssignment() {
-  if (!assignSelectedUser.value) {
-    return
-  }
-  assignSubmitting.value = true
-  try {
-    const ok = await updateUserRole(assignSelectedUser.value.id, assignSelectedRole.value)
-    if (ok) {
-      assignSelectedUser.value = {
-        ...assignSelectedUser.value,
-        role: assignSelectedRole.value,
-      }
-      if (assignSelectedRole.value === 'superadmin') {
-        loadAdmins()
-      }
-      if (assignSelectedRole.value === 'school_admin') {
-        loadManagers()
-      }
-    }
-  } finally {
-    assignSubmitting.value = false
-  }
-}
-
-function onTabChange(tab: TabPaneName) {
-  if (tab === 'managers') {
-    loadManagers()
-  }
-}
-
-onMounted(loadAdmins)
+onUnmounted(() => {
+  unregisterAdminRolesHeaderToolbar()
+})
 </script>
 
 <template>
-  <div class="admin-roles-tab pt-4">
-    <el-card shadow="never">
-      <template #header>
-        <span class="font-medium">{{ t('admin.roleControl') }}</span>
-      </template>
-
-      <el-tabs
-        v-model="activeTab"
-        @tab-change="onTabChange"
-      >
-        <el-tab-pane
-          :label="t('admin.adminsTab')"
-          name="admins"
-        >
-          <div class="flex items-center justify-between mb-4">
-            <p class="text-sm text-gray-500 m-0">
-              {{ t('admin.roleControlDesc') }}
-            </p>
-            <div class="flex items-center gap-2">
-              <el-button
-                type="primary"
-                size="small"
-                @click="openAddModal"
-              >
-                <el-icon class="mr-1"><Plus /></el-icon>
-                {{ t('admin.addAdmin') }}
-              </el-button>
-              <el-button
-                size="small"
-                @click="loadAdmins"
-              >
-                <el-icon class="mr-1"><Refresh /></el-icon>
-                {{ t('admin.refresh') }}
-              </el-button>
-            </div>
-          </div>
-
-          <div
-            v-if="isLoading"
-            class="flex justify-center py-12"
-          >
-            <el-icon
-              class="is-loading"
-              :size="32"
-            >
-              <Loading />
-            </el-icon>
-          </div>
-
-          <el-table
-            v-else
-            :data="allAdminsForTable"
-            stripe
-            size="small"
-          >
-            <el-table-column
-              prop="phone"
-              :label="t('admin.phone')"
-              width="140"
-            />
-            <el-table-column
-              prop="name"
-              :label="t('admin.name')"
-              width="140"
-            >
-              <template #default="{ row }">
-                {{ row.name || row.phone || '-' }}
-              </template>
-            </el-table-column>
-            <el-table-column
-              :label="t('admin.schoolUserColumnRole')"
-              width="120"
-            >
-              <template #default="{ row }">
-                {{ roleLabel(row.role) }}
-              </template>
-            </el-table-column>
-            <el-table-column
-              prop="created_at"
-              :label="t('admin.registrationTime')"
-              width="200"
-            >
-              <template #default="{ row }">
-                {{ row.source === 'database' ? row.created_at || '—' : '—' }}
-              </template>
-            </el-table-column>
-            <el-table-column
-              prop="source"
-              :label="t('admin.source')"
-              width="120"
-            >
-              <template #default="{ row }">
-                {{ row.source === 'env' ? t('admin.sourceEnv') : t('admin.sourceDatabase') }}
-              </template>
-            </el-table-column>
-            <el-table-column
-              :label="t('admin.actions')"
-              width="120"
-            >
-              <template #default="{ row }">
-                <el-button
-                  v-if="row.source === 'database'"
-                  type="danger"
-                  link
-                  size="small"
-                  @click="revokeAdmin(row)"
-                >
-                  {{ t('admin.revokeAdmin') }}
-                </el-button>
-                <span
-                  v-else
-                  class="text-xs text-gray-500"
-                >
-                  {{ t('admin.envAdminsNote') }}
-                </span>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-tab-pane>
-
-        <el-tab-pane
-          :label="t('admin.schoolManagersTab')"
-          name="managers"
-        >
-          <div class="flex items-center justify-between mb-4">
-            <p class="text-sm text-gray-500 m-0">
-              {{ t('admin.roleControlDescManagers') }}
-            </p>
-            <el-button
-              size="small"
-              @click="loadManagers"
-            >
-              <el-icon class="mr-1"><Refresh /></el-icon>
-              {{ t('admin.refresh') }}
-            </el-button>
-          </div>
-
-          <div
-            v-if="managersLoading"
-            class="flex justify-center py-12"
-          >
-            <el-icon
-              class="is-loading"
-              :size="32"
-            >
-              <Loading />
-            </el-icon>
-          </div>
-
-          <div
-            v-else-if="managers.length === 0"
-            class="text-center py-12 text-gray-500"
-          >
-            <el-icon :size="32"><UserFilled /></el-icon>
-            <p class="mt-2">{{ t('admin.noManagersFound') }}</p>
-          </div>
-
-          <el-table
-            v-else
-            :data="managers"
-            stripe
-            size="small"
-          >
-            <el-table-column
-              prop="phone"
-              :label="t('admin.phone')"
-              width="140"
-            />
-            <el-table-column
-              prop="name"
-              :label="t('admin.name')"
-              width="140"
-            >
-              <template #default="{ row }">
-                {{ row.name || row.phone || '-' }}
-              </template>
-            </el-table-column>
-            <el-table-column
-              prop="organization_name"
-              :label="t('admin.schoolName')"
-              min-width="160"
-            >
-              <template #default="{ row }">
-                {{ row.organization_name || row.organization_code || '—' }}
-              </template>
-            </el-table-column>
-            <el-table-column
-              prop="created_at"
-              :label="t('admin.registrationTime')"
-              width="200"
-            >
-              <template #default="{ row }">
-                {{ row.created_at || '—' }}
-              </template>
-            </el-table-column>
-            <el-table-column
-              :label="t('admin.actions')"
-              width="140"
-            >
-              <template #default="{ row }">
-                <el-button
-                  v-if="row.organization_id"
-                  type="danger"
-                  link
-                  size="small"
-                  :loading="revokingManagerId === row.id"
-                  @click="revokeManager(row)"
-                >
-                  {{ t('admin.removeManager') }}
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-tab-pane>
-
-        <el-tab-pane
-          :label="t('admin.roleAssignmentTab')"
-          name="assignment"
-        >
-          <p class="text-sm text-gray-500 mb-4 m-0">
-            {{ t('admin.roleAssignmentDesc') }}
-          </p>
-
-          <el-input
-            v-model="assignSearchQuery"
-            :placeholder="t('admin.searchUserByNameOrPhone')"
-            clearable
-            class="mb-4"
-            @keyup.enter="searchUsersToAssign"
-          >
-            <template #prefix>
-              <el-icon><Search /></el-icon>
-            </template>
-            <template #append>
-              <el-button
-                :loading="assignSearchLoading"
-                @click="searchUsersToAssign"
-              >
-                {{ t('admin.search') }}
-              </el-button>
-            </template>
-          </el-input>
-
-          <div
-            v-if="assignSearchResults.length > 0"
-            class="max-h-48 overflow-y-auto space-y-2 mb-4"
-          >
-            <div
-              v-for="user in assignSearchResults"
-              :key="user.id"
-              class="flex items-center justify-between p-3 rounded border cursor-pointer transition-colors"
-              :class="
-                assignSelectedUser?.id === user.id
-                  ? 'border-blue-400 bg-blue-50'
-                  : 'border-gray-200 hover:bg-gray-50'
-              "
-              @click="selectAssignUser(user)"
-            >
-              <div>
-                <p class="font-medium m-0">{{ user.name || user.phone }}</p>
-                <p class="text-xs text-gray-500 m-0 mt-1">
-                  {{ user.phone }} · {{ t('admin.currentRole') }}:
-                  {{ roleLabel(user.role) }}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div
-            v-if="assignSelectedUser"
-            class="rounded border border-gray-200 p-4 space-y-4"
-          >
-            <p class="text-sm m-0">
-              {{ assignSelectedUser.name || assignSelectedUser.phone }}
-              ({{ roleLabel(assignSelectedUser.role) }})
-            </p>
-            <el-form label-position="top">
-              <el-form-item :label="t('admin.selectRole')">
-                <el-select
-                  v-model="assignSelectedRole"
-                  class="w-full"
-                >
-                  <el-option-group :label="t('admin.roleTierPlatform')">
-                    <el-option
-                      v-for="role in PLATFORM_ROLES"
-                      :key="role"
-                      :label="roleLabel(role)"
-                      :value="role"
-                    />
-                  </el-option-group>
-                  <el-option-group :label="t('admin.roleTierB2B')">
-                    <el-option
-                      v-for="role in B2B_ROLES"
-                      :key="role"
-                      :label="roleLabel(role)"
-                      :value="role"
-                    />
-                  </el-option-group>
-                  <el-option-group :label="t('admin.roleTierC2C')">
-                    <el-option
-                      v-for="role in C2C_ROLES"
-                      :key="role"
-                      :label="roleLabel(role)"
-                      :value="role"
-                    />
-                  </el-option-group>
-                </el-select>
-              </el-form-item>
-            </el-form>
-            <el-button
-              type="primary"
-              :loading="assignSubmitting"
-              @click="submitRoleAssignment"
-            >
-              {{ t('admin.roleAssign') }}
-            </el-button>
-          </div>
-        </el-tab-pane>
-      </el-tabs>
-    </el-card>
-
-    <el-dialog
-      v-model="addModalVisible"
-      :title="t('admin.addAdmin')"
-      width="480px"
-      destroy-on-close
+  <div class="admin-roles-tab">
+    <el-tabs
+      v-model="activeTab"
+      class="admin-swiss-tabs"
     >
-      <div class="space-y-4">
-        <el-input
-          v-model="addSearchQuery"
-          :placeholder="t('admin.searchUserByNameOrPhone')"
-          clearable
-          size="default"
-          @keyup.enter="searchUsersToAdd"
-        >
-          <template #prefix>
-            <el-icon><Search /></el-icon>
-          </template>
-          <template #append>
-            <el-button
-              :loading="addSearchLoading"
-              @click="searchUsersToAdd"
-            >
-              {{ t('admin.search') }}
-            </el-button>
-          </template>
-        </el-input>
+      <el-tab-pane
+        v-for="roleTab in ROLE_CONTROL_TABS"
+        :key="roleTab"
+        :label="tabLabel(roleTab)"
+        :name="roleTab"
+      />
+    </el-tabs>
 
-        <div
-          v-if="
-            addSearchQuery.trim().length >= 2 &&
-            (addSearchLoading || (addSearchHasRun && addSearchResults.length === 0))
-          "
-          class="text-center py-8 text-gray-500"
-        >
-          <template v-if="addSearchLoading">
-            <el-icon class="is-loading"><Loading /></el-icon>
-            <p class="mt-2">{{ t('admin.loading') }}</p>
-          </template>
-          <template v-else>
-            <el-icon :size="32"><UserFilled /></el-icon>
-            <p class="mt-2">{{ t('admin.noUsersFound') }}</p>
-          </template>
-        </div>
+    <p class="admin-roles-tab__desc">
+      {{ t(activeTabDescKey) }}
+    </p>
 
-        <div
-          v-else-if="addSearchResults.length > 0"
-          class="max-h-64 overflow-y-auto space-y-2"
-        >
-          <div
-            v-for="user in addSearchResults"
-            :key="user.id"
-            class="flex items-center justify-between p-3 rounded border border-gray-200 hover:bg-gray-50"
+    <div
+      v-if="isLoading"
+      class="admin-roles-tab__empty"
+    >
+      <el-icon
+        class="is-loading"
+        :size="32"
+      >
+        <Loading />
+      </el-icon>
+    </div>
+
+    <div
+      v-else-if="activeRows.length === 0"
+      class="admin-roles-tab__empty"
+    >
+      <el-icon :size="32"><UserFilled /></el-icon>
+      <p class="admin-roles-tab__empty-title">{{ t('admin.noRoleMembersFound') }}</p>
+      <p
+        v-if="canEdit"
+        class="admin-roles-tab__empty-hint"
+      >
+        {{ t('admin.noRoleMembersEmptyHint') }}
+      </p>
+    </div>
+
+    <el-table
+      v-else
+      :data="activeRows"
+      class="admin-swiss-table w-full"
+      stripe
+      size="small"
+    >
+      <el-table-column
+        prop="phone"
+        :label="t('admin.phone')"
+        width="140"
+      />
+      <el-table-column
+        prop="name"
+        :label="t('admin.name')"
+        width="140"
+      >
+        <template #default="{ row }">
+          {{ row.name || row.phone || '—' }}
+        </template>
+      </el-table-column>
+      <el-table-column
+        v-if="showSchoolColumn"
+        prop="organization_name"
+        :label="t('admin.schoolName')"
+        min-width="160"
+      >
+        <template #default="{ row }">
+          {{ row.organization_name || row.organization_code || '—' }}
+        </template>
+      </el-table-column>
+      <el-table-column
+        v-if="showSuperadminColumns"
+        :label="t('admin.schoolUserColumnRole')"
+        width="120"
+      >
+        <template #default="{ row }">
+          {{ roleLabel(row.role) }}
+        </template>
+      </el-table-column>
+      <el-table-column
+        prop="created_at"
+        :label="t('admin.registrationTime')"
+        width="200"
+      >
+        <template #default="{ row }">
+          {{ isEnvRow(row) ? '—' : row.created_at || '—' }}
+        </template>
+      </el-table-column>
+      <el-table-column
+        v-if="showSuperadminColumns"
+        prop="source"
+        :label="t('admin.source')"
+        width="120"
+      >
+        <template #default="{ row }">
+          {{ isEnvRow(row) ? t('admin.sourceEnv') : t('admin.sourceDatabase') }}
+        </template>
+      </el-table-column>
+      <el-table-column
+        :label="t('admin.actions')"
+        width="140"
+      >
+        <template #default="{ row }">
+          <el-button
+            v-if="canEdit && !isEnvRow(row)"
+            type="danger"
+            link
+            size="small"
+            :loading="revokingId === row.id"
+            @click="revokeMember(row)"
           >
-            <div>
-              <p class="font-medium">{{ user.name || user.phone }}</p>
-              <p class="text-xs text-gray-500">{{ user.phone }}</p>
-            </div>
-            <el-button
-              type="primary"
-              size="small"
-              :loading="addGrantingId === user.id"
-              @click="grantAdmin(user)"
-            >
-              {{ t('admin.grantAdmin') }}
-            </el-button>
-          </div>
-        </div>
-      </div>
-    </el-dialog>
+            {{ t('admin.revokeRole') }}
+          </el-button>
+          <span
+            v-else-if="isEnvRow(row)"
+            class="admin-roles-tab__env-note"
+          >
+            {{ t('admin.envAdminsNote') }}
+          </span>
+          <span
+            v-else
+            class="admin-roles-tab__muted"
+          >
+            —
+          </span>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <AdminRoleAddMemberDialog
+      v-model:visible="addModalVisible"
+      v-model:search-query="addSearchQuery"
+      :role-tab-label="tabLabel(activeTab)"
+      :results="addSearchResults"
+      :loading="addSearchLoading"
+      :has-run="addSearchHasRun"
+      :granting-id="addGrantingId"
+      :role-label-for="roleLabel"
+      :show-school-in-results="showSchoolColumn"
+      @search="searchUsersToAdd"
+      @grant="grantActiveRole"
+    />
   </div>
 </template>
+
+<style scoped src="@/styles/admin-swiss-controls.css"></style>
+<style scoped src="@/styles/admin-swiss-table.css"></style>

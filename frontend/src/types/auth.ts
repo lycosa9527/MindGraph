@@ -8,8 +8,8 @@ export type AuthMode = 'standard' | 'bayi' | 'enterprise'
  * User roles (canonical DB slugs):
  * - superadmin: Full platform admin (超级管理员)
  * - platform_bd: Platform BD — trial invites, read-only global dashboard (管理员)
- * - expert: Platform expert — trial invites only (专家)
- * - school_admin: Organization manager (学校管理员)
+ * - expert: Platform expert — B2B school invites (own orgs) + C2C trial invites (专家)
+ * - school_admin: Organization manager — own-school dashboard + user mgmt (学校管理员)
  * - teacher: B2B school member (教师用户 / 学校版)
  * - personal_trial: C-end trial account (体验版)
  * - personal_paid: C-end paid account (超级会员)
@@ -28,7 +28,7 @@ export type LegacyUserRole = 'user' | 'manager' | 'admin'
 
 export type AnyUserRole = UserRole | LegacyUserRole
 
-export type SchoolTier = 'lite' | 'standard' | 'professional'
+export type SchoolTier = 'trial' | 'lite' | 'standard' | 'professional'
 
 export interface SchoolTierFeatures {
   online_collab: boolean
@@ -64,7 +64,7 @@ export interface User {
   mindmateAgentName?: string | null
   /** Per-school MindMate avatar URL when configured by admin */
   mindmateAgentAvatarUrl?: string | null
-  /** B2B school subscription tier (lite | standard | professional) */
+  /** B2B school subscription tier (trial | lite | standard | professional) */
   schoolTier?: SchoolTier | null
   /** Tier-gated feature flags from login /me organization payload */
   schoolTierFeatures?: SchoolTierFeatures | null

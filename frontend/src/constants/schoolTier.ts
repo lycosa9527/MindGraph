@@ -1,6 +1,7 @@
-export type SchoolTier = 'lite' | 'standard' | 'professional'
+export type SchoolTier = 'trial' | 'lite' | 'standard' | 'professional'
 
 export const SCHOOL_TIER_OPTIONS: readonly SchoolTier[] = [
+  'trial',
   'lite',
   'standard',
   'professional',
@@ -10,6 +11,7 @@ export const SCHOOL_TIER_LIMITS: Record<
   SchoolTier,
   { memberLimit: number; managerLimit: number; diagramStorageGbPerMember: number }
 > = {
+  trial: { memberLimit: 30, managerLimit: 1, diagramStorageGbPerMember: 1 },
   lite: { memberLimit: 50, managerLimit: 1, diagramStorageGbPerMember: 1 },
   standard: { memberLimit: 120, managerLimit: 3, diagramStorageGbPerMember: 2 },
   professional: { memberLimit: 200, managerLimit: 5, diagramStorageGbPerMember: 5 },
@@ -36,10 +38,15 @@ export const LITE_SCHOOL_TIER_FEATURES: SchoolTierFeatures = {
   api_token: false,
 }
 
+/** Paid school tiers (superadmin-assigned); trial is the default experience edition. */
+export function isPaidSchoolTier(tier: SchoolTier | null | undefined): boolean {
+  return tier === 'lite' || tier === 'standard' || tier === 'professional'
+}
+
 export function tierFeaturesForSchoolTier(
   tier: SchoolTier | null | undefined
 ): SchoolTierFeatures {
-  if (!tier || tier === 'lite') {
+  if (!tier || tier === 'trial' || tier === 'lite') {
     return LITE_SCHOOL_TIER_FEATURES
   }
   return PREMIUM_SCHOOL_TIER_FEATURES
@@ -64,8 +71,13 @@ export function mergeSchoolTierFeatures(
 
 export function normalizeSchoolTier(value: unknown): SchoolTier {
   const token = String(value ?? '').trim().toLowerCase()
-  if (token === 'lite' || token === 'professional') {
+  if (
+    token === 'trial' ||
+    token === 'lite' ||
+    token === 'standard' ||
+    token === 'professional'
+  ) {
     return token
   }
-  return 'standard'
+  return 'trial'
 }

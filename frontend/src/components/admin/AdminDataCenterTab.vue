@@ -9,6 +9,7 @@ import AdminDashboardTab from '@/components/admin/AdminDashboardTab.vue'
 import AdminOrgDataCenterPanel from '@/components/admin/AdminOrgDataCenterPanel.vue'
 import SchoolDashboardPage from '@/pages/SchoolDashboardPage.vue'
 import {
+  canViewDataCenterSubView,
   defaultDataCenterView,
   isDataCenterView,
   type DataCenterView,
@@ -25,8 +26,12 @@ const props = defineProps<{
 const route = useRoute()
 const { t } = useLanguage()
 const authStore = useAuthStore()
-const { can, effectiveOrgId, isReadOnly } = useAdminAccess()
+const { can, capabilities, effectiveOrgId, isReadOnly } = useAdminAccess()
 const { routeOrgId } = useAdminOrgContext()
+
+const hasGlobalDataCenter = computed(
+  () => can('scope.global') && can('tab.data_center.view')
+)
 
 const dataCenterViewQuery = computed((): DataCenterView | null => {
   const raw = route.query.view
@@ -36,7 +41,21 @@ const dataCenterViewQuery = computed((): DataCenterView | null => {
   return null
 })
 
+const dataCenterView = computed((): DataCenterView => {
+  const fromQuery = dataCenterViewQuery.value
+  if (fromQuery != null && canViewDataCenterSubView(fromQuery, capabilities.value)) {
+    return fromQuery
+  }
+  return defaultDataCenterView(hasGlobalDataCenter.value)
+})
+
 const showGlobalView = computed(() => {
+  if (dataCenterView.value === 'school_dashboard') {
+    return false
+  }
+  if (!can('tab.data_center.view')) {
+    return false
+  }
   if (can('scope.org')) {
     return false
   }
@@ -50,13 +69,6 @@ const showGlobalView = computed(() => {
     return false
   }
   return can('scope.global')
-})
-
-const dataCenterView = computed((): DataCenterView => {
-  if (dataCenterViewQuery.value != null) {
-    return dataCenterViewQuery.value
-  }
-  return defaultDataCenterView(showGlobalView.value)
 })
 
 const activeOrgId = computed(() => {
@@ -91,7 +103,7 @@ const dashboardSection = computed((): 'operations' | 'usage' => {
     />
 
     <AdminOrgDataCenterPanel
-      v-else-if="activeOrgId != null"
+      v-else-if="activeOrgId != null && can('tab.data_center.view')"
       :org-id="activeOrgId"
       :read-only="panelReadOnly"
       :section="dashboardSection"

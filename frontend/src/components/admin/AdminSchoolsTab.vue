@@ -3,7 +3,7 @@
  * Admin Schools Tab - List organizations (Swiss panel)
  * Click school row to open chart + token cards modal
  */
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { Edit, Loading } from '@element-plus/icons-vue'
 
@@ -15,6 +15,11 @@ import {
 } from '@/composables/mindmate/useMindMateBranding'
 import '@/styles/admin-schools-swiss.css'
 import { apiRequest } from '@/utils/apiClient'
+import {
+  buildPrivatizedColumnFilters,
+  filterOrgByPrivatized,
+  isOrgPrivatized,
+} from '@/utils/orgPrivatization'
 
 import AdminTrendChartModal from './AdminTrendChartModal.vue'
 
@@ -72,9 +77,12 @@ function onAgentAvatarError(event: Event) {
   }
 }
 
-function hasPrivateDify(row: Record<string, unknown>): boolean {
-  return Boolean(row.dify_api_key_masked)
-}
+const privatizedColumnFilters = computed(() =>
+  buildPrivatizedColumnFilters(
+    t('admin.orgPrivateDifyYes') as string,
+    t('admin.orgPrivateDifyNo') as string
+  )
+)
 
 function orgShowChainOfThought(row: Record<string, unknown>): boolean {
   return Boolean(
@@ -202,21 +210,25 @@ onMounted(loadSchools)
           class-name="admin-schools-col-text"
         />
         <el-table-column
+          column-key="is_privatized"
           :label="t('admin.orgPrivateDify')"
           min-width="96"
           align="center"
+          :filters="privatizedColumnFilters"
+          :filter-method="filterOrgByPrivatized"
+          filter-placement="bottom-end"
         >
           <template #default="{ row }">
             <span
               class="admin-schools-private"
               :class="
-                hasPrivateDify(row)
+                isOrgPrivatized(row)
                   ? 'admin-schools-private--yes'
                   : 'admin-schools-private--no'
               "
             >
               {{
-                hasPrivateDify(row)
+                isOrgPrivatized(row)
                   ? t('admin.orgPrivateDifyYes')
                   : t('admin.orgPrivateDifyNo')
               }}
@@ -340,6 +352,7 @@ onMounted(loadSchools)
       :org-mindmate-agent-name="trendOrg?.mindmate_agent_name"
       :org-mindmate-agent-avatar-url="trendOrg?.mindmate_agent_avatar_url"
       :initial-school-tab="trendOrg?.initial_tab"
+      :read-only="props.readOnly"
       @refresh="() => loadSchools({ silent: true })"
     />
   </div>

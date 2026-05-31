@@ -17,21 +17,28 @@ from services.redis.cache.redis_org_cache import org_cache
 from utils.auth.role_constants import SCHOOL_ADMIN_ROLES
 from utils.auth.roles import is_superadmin
 
+SCHOOL_TIER_TRIAL: Final[str] = "trial"
 SCHOOL_TIER_LITE: Final[str] = "lite"
 SCHOOL_TIER_STANDARD: Final[str] = "standard"
 SCHOOL_TIER_PROFESSIONAL: Final[str] = "professional"
 
 SCHOOL_TIERS: Final[tuple[str, ...]] = (
+    SCHOOL_TIER_TRIAL,
     SCHOOL_TIER_LITE,
     SCHOOL_TIER_STANDARD,
     SCHOOL_TIER_PROFESSIONAL,
 )
 
-DEFAULT_SCHOOL_TIER: Final[str] = SCHOOL_TIER_STANDARD
+DEFAULT_SCHOOL_TIER: Final[str] = SCHOOL_TIER_TRIAL
 
 _GIB = 1024**3
 
 SCHOOL_TIER_LIMITS: Final[dict[str, dict[str, int]]] = {
+    SCHOOL_TIER_TRIAL: {
+        "member_limit": 30,
+        "manager_limit": 1,
+        "diagram_storage_bytes_per_member": 1 * _GIB,
+    },
     SCHOOL_TIER_LITE: {
         "member_limit": 50,
         "manager_limit": 1,
@@ -66,15 +73,17 @@ _STANDARD_PLUS_FEATURES: Final[frozenset[str]] = frozenset(
 
 
 def school_tier_allows_feature(tier: str, feature: str) -> bool:
-    """Lite tier blocks collab, presentation tools, Chrome extension, and API tokens."""
+    """Trial and lite tiers block collab, presentation tools, Chrome extension, and API tokens."""
     if feature not in _STANDARD_PLUS_FEATURES:
         return True
-    return normalize_school_tier(tier) != SCHOOL_TIER_LITE
+    normalized = normalize_school_tier(tier)
+    return normalized not in (SCHOOL_TIER_TRIAL, SCHOOL_TIER_LITE)
 
 
 def school_tier_features_payload(tier: str) -> dict[str, bool]:
     """Feature flags derived from a school's tier slug."""
-    allows_premium = normalize_school_tier(tier) != SCHOOL_TIER_LITE
+    normalized = normalize_school_tier(tier)
+    allows_premium = normalized not in (SCHOOL_TIER_TRIAL, SCHOOL_TIER_LITE)
     return {
         TIER_FEATURE_ONLINE_COLLAB: allows_premium,
         TIER_FEATURE_CHROME_EXTENSION: allows_premium,
@@ -130,7 +139,7 @@ async def assert_user_has_school_tier_feature(
 
 
 def normalize_school_tier(value: object | None) -> str:
-    """Return a canonical tier slug; unknown values fall back to standard."""
+    """Return a canonical tier slug; unknown values fall back to trial."""
     token = str(value or "").strip().lower()
     if token in SCHOOL_TIER_LIMITS:
         return token

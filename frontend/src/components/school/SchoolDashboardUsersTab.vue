@@ -6,6 +6,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { Search } from '@element-plus/icons-vue'
 
+import AdminSwissPagination from '@/components/admin/AdminSwissPagination.vue'
 import AdminUserEditModal from '@/components/admin/AdminUserEditModal.vue'
 import AdminUsersTable from '@/components/admin/AdminUsersTable.vue'
 
@@ -197,28 +198,14 @@ defineExpose({
         @edit="openEditModal"
       />
 
-      <div
+      <AdminSwissPagination
         v-if="!isLoading && pagination.total_pages > 1"
-        class="flex justify-between items-center mt-4 pt-4 border-t border-stone-200"
-      >
-        <span class="text-sm text-stone-500">{{ pageInfo }}</span>
-        <div class="flex gap-2">
-          <el-button
-            size="small"
-            :disabled="pagination.page <= 1"
-            @click="goToPreviousUserPage"
-          >
-            {{ t('admin.previous') }}
-          </el-button>
-          <el-button
-            size="small"
-            :disabled="pagination.page >= pagination.total_pages"
-            @click="goToNextUserPage"
-          >
-            {{ t('admin.next') }}
-          </el-button>
-        </div>
-      </div>
+        :page-info="pageInfo"
+        :page="pagination.page"
+        :total-pages="pagination.total_pages"
+        @previous="goToPreviousUserPage"
+        @next="goToNextUserPage"
+      />
     </el-card>
 
     <AdminUserEditModal

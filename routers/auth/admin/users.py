@@ -43,7 +43,7 @@ from services.auth.admin_user_list_rows import (
     enrich_admin_user_list_rows,
 )
 
-from utils.auth.admin_scope import AdminScope
+from utils.auth.admin_scope import AdminScope, assert_panel_user_readable
 
 from ..dependencies import (
     get_language_dependency,
@@ -147,7 +147,7 @@ async def list_users_admin(
 @router.get("/admin/users/{user_id}")
 async def get_user_admin(
     user_id: int,
-    _scope: AdminScope = Depends(require_global_users_read),
+    scope: AdminScope = Depends(require_global_users_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -161,6 +161,8 @@ async def get_user_admin(
         error_msg = Messages.error("user_not_found", lang, user_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
+    await assert_panel_user_readable(scope, user.organization_id, db, lang)
+
     org = None
     if user.organization_id:
         org = (
@@ -169,7 +171,7 @@ async def get_user_admin(
 
     logger.info(
         "[Auth] Admin user_id=%s read full user profile for user_id=%s",
-        _scope.actor.id,
+        scope.actor.id,
         user_id,
     )
 

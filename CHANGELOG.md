@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [5.117.26] - 2026-05-31
+
+### Added
+
+- **Org — school trial tier (体验版)** — Fourth school subscription tier `trial` (体验版) is the default for new organizations; Alembic `rev_0041` migrates legacy implicit `standard` rows to `trial` and updates the column default. Teachers in trial orgs see a 体验版 sidebar pill; school managers keep 学校管理员; paid tiers (lite/standard/professional) show 学校版 for teachers ([`school_tier.py`](utils/auth/school_tier.py), [`schoolTier.ts`](frontend/src/constants/schoolTier.ts), [`userRoleDisplay.ts`](frontend/src/utils/userRoleDisplay.ts)).
+- **Org — MindMate privatization flag** — Admin org and invite lists expose derived `is_privatized` when custom agent name, avatar, and dedicated Dify credentials are all set ([`org_privatization.py`](utils/auth/org_privatization.py), [`orgPrivatization.ts`](frontend/src/utils/orgPrivatization.ts)).
+- **Auth — expert invite org scope** — Alembic `rev_0040` adds `organizations.invited_by_user_id` for expert/platform BD B2B org scoping ([`rev_0040_organization_invited_by_user.py`](alembic/versions/rev_0040_organization_invited_by_user.py)).
+- **Admin — feature development tab** — Top-level `feature_dev` panel with subtabs for Smart Response, Kitty LLM Ops, and teacher usage; legacy routes redirect into the unified admin panel ([`AdminFeatureDevTab.vue`](frontend/src/components/admin/AdminFeatureDevTab.vue), [`adminFeatureDevNav.ts`](frontend/src/composables/admin/adminFeatureDevNav.ts)).
+- **Admin — token overview row** — Extracted [`AdminTokenOverviewRow.vue`](frontend/src/components/admin/AdminTokenOverviewRow.vue) for platform token summary and DingTalk generation API-key card on the data center dashboard.
+- **Admin — MindBot token stats helper** — Aggregates successful `mindbot_usage_events` Dify token counts for admin stats APIs ([`mindbot_token_stats.py`](utils/auth/mindbot_token_stats.py)).
+- **Admin — role add-member modal** — Swiss stone dialog with `{action}-{role}` title, autofocus search, and stone table styling on the roles tab ([`AdminRoleAddMemberDialog.vue`](frontend/src/components/admin/AdminRoleAddMemberDialog.vue), [`admin-swiss-table.css`](frontend/src/styles/admin-swiss-table.css)).
+- **Admin — Swiss pagination** — Shared [`AdminSwissPagination.vue`](frontend/src/components/admin/AdminSwissPagination.vue) for admin and school user tables.
+- **Tests** — School trial tier, org privatization, expert invite scope, MindBot token stats, role-control members, admin panel org scope RLS, and frontend capability/sidebar specs ([`test_school_tier.py`](tests/test_school_tier.py), [`test_org_privatization.py`](tests/test_org_privatization.py), [`test_expert_invite_scope.py`](tests/auth/test_expert_invite_scope.py), [`test_mindbot_token_stats.py`](tests/auth/test_mindbot_token_stats.py), [`schoolTier.spec.ts`](frontend/tests/schoolTier.spec.ts)).
+
+### Changed
+
+- **Admin — token overview includes DingTalk MindBot (Dify)** — `Token 使用总览`, MindMate breakdown, dashboard week totals, school org rankings (today), and token trend charts fold in successful `mindbot_usage_events` token counts (same Dify stack as web MindMate). `/api/generate_dingtalk` remains Qwen/MindGraph; the DingTalk API-key card still shows key hit counts only ([`stats.py`](routers/auth/admin/stats.py), [`stats_trends.py`](routers/auth/admin/stats_trends.py)).
+- **Auth — role matrix alignment** — Seven-role permission matrix enforced end-to-end: expert and platform BD invites scoped via `invited_by_user_id` and `scope.invited_orgs`; school_admin limited to own-school dashboard and user management; MindBot admin superadmin-only; new `tab.school_dashboard.view` cap for school stats APIs ([`admin_panel_permissions.py`](utils/auth/admin_panel_permissions.py), [`admin_scope.py`](utils/auth/admin_scope.py), [`adminCapabilities.ts`](frontend/src/utils/adminCapabilities.ts)).
+- **Admin — unified panel navigation** — Standalone MindBot admin page removed; `/admin/mindbot`, `/school-dashboard`, `/teacher-usage`, `/smart-response`, and `/gewe` redirect into capability-gated admin tabs; settings sidebar uses [`useAdminSettingsNav.ts`](frontend/src/composables/admin/useAdminSettingsNav.ts) ([`AdminPage.vue`](frontend/src/pages/AdminPage.vue), [`router/index.ts`](frontend/src/router/index.ts)).
+- **Admin — roles tab refactor** — Role control extracted into composables and header toolbar; schools and invite tables show privatization column ([`AdminRolesTab.vue`](frontend/src/components/admin/AdminRolesTab.vue), [`useAdminRoleControl.ts`](frontend/src/composables/admin/useAdminRoleControl.ts)).
+
+### Removed
+
+- **Admin — standalone tokens tab** — [`AdminTokensTab.vue`](frontend/src/components/admin/AdminTokensTab.vue) removed; token KPIs live on the data center dashboard via [`AdminTokenOverviewRow.vue`](frontend/src/components/admin/AdminTokenOverviewRow.vue).
+- **Admin — MindBot admin page** — [`MindbotAdminPage.vue`](frontend/src/pages/MindbotAdminPage.vue) retired in favor of the organizations tab and superadmin-only MindBot access.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.26).
+
 ## [5.117.25] - 2026-05-31
 
 ### Added

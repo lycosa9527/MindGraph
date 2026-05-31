@@ -24,14 +24,17 @@ from models.domain.auth import User, Organization
 from models.domain.messages import Language, Messages
 from models.domain.token_usage import TokenUsage
 from services.auth.school_dashboard_logger import school_dashboard_extra
-from utils.auth.admin_panel_permissions import CAP_TAB_DATA_CENTER_VIEW
-from utils.auth.admin_scope import AdminScope
+from utils.auth.admin_scope import AdminScope, assert_panel_org_readable, assert_panel_user_readable
+from utils.auth.mindbot_token_stats import (
+    aggregate_mindbot_tokens_by_date,
+    merge_mindbot_daily_rows_into_tokens_by_date,
+)
 from ..dependencies import (
     get_language_dependency,
     require_admin_stats_read,
-    require_panel_capability,
+    require_school_dashboard_read,
 )
-from .school_scope import resolve_school_dashboard_org_id
+from .school_scope import resolve_school_dashboard_org_id_scoped
 from ..helpers import get_beijing_now, BEIJING_TIMEZONE
 from .stats import _sql_count
 
@@ -259,6 +262,17 @@ async def get_stats_trends_admin(
                 tokens_by_date[beijing_date_str]["input"] += int(row.input_tokens or 0)
                 tokens_by_date[beijing_date_str]["output"] += int(row.output_tokens or 0)
 
+            if service_filter != "mindgraph":
+                mindbot_counts = await aggregate_mindbot_tokens_by_date(
+                    db,
+                    created_since=trends_filter_start_utc,
+                )
+                merge_mindbot_daily_rows_into_tokens_by_date(
+                    tokens_by_date,
+                    mindbot_counts,
+                    beijing_timezone=BEIJING_TIMEZONE,
+                )
+
             for date in date_list:
                 date_str = str(date)
                 tokens = tokens_by_date.get(date_str, {"total": 0, "input": 0, "output": 0})
@@ -290,7 +304,7 @@ async def get_school_token_trends(
     organization_id: Optional[int] = None,
     days: Optional[int] = 30,
     hourly: bool = False,
-    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_DATA_CENTER_VIEW)),
+    scope: AdminScope = Depends(require_school_dashboard_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
@@ -298,7 +312,7 @@ async def get_school_token_trends(
     Get token trends for a school (ADMIN or MANAGER).
     Same as /admin/stats/trends/organization but with org access control.
     """
-    org_id = resolve_school_dashboard_org_id(organization_id, scope.actor, lang)
+    org_id = await resolve_school_dashboard_org_id_scoped(scope, organization_id, db, lang)
     org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalars().first()
     if not org:
         logger.warning(
@@ -319,7 +333,7 @@ async def get_school_token_trends(
         organization_name=None,
         days=days,
         hourly=hourly,
-        _current_user=scope.actor,
+        scope=scope,
         db=db,
         lang=lang,
     )
@@ -333,7 +347,7 @@ async def get_organization_token_trends_admin(
     organization_name: Optional[str] = None,
     days: Optional[int] = 30,  # Number of days to look back
     hourly: bool = False,  # If True, return hourly data (only for days=1)
-    _scope: AdminScope = Depends(require_admin_stats_read),
+    scope: AdminScope = Depends(require_admin_stats_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
@@ -368,6 +382,8 @@ async def get_organization_token_trends_admin(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=Messages.error("organization_not_found", lang, not_found_id),
         )
+
+    await assert_panel_org_readable(scope, int(org.id), db, lang)
 
     # Use Beijing time for date calculations
     beijing_now = get_beijing_now()
@@ -499,6 +515,17 @@ async def get_organization_token_trends_admin(
                 tokens_by_date[beijing_date_str]["input"] += int(row.input_tokens or 0)
                 tokens_by_date[beijing_date_str]["output"] += int(row.output_tokens or 0)
 
+            mindbot_counts = await aggregate_mindbot_tokens_by_date(
+                db,
+                created_since=trends_filter_start_utc,
+                organization_id=org.id,
+            )
+            merge_mindbot_daily_rows_into_tokens_by_date(
+                tokens_by_date,
+                mindbot_counts,
+                beijing_timezone=BEIJING_TIMEZONE,
+            )
+
             for date in date_list:
                 date_str = str(date)
                 tokens = tokens_by_date.get(date_str, {"total": 0, "input": 0, "output": 0})
@@ -528,9 +555,9 @@ async def get_user_token_trends_admin(
     _request: Request,
     user_id: Optional[int] = None,
     days: Optional[int] = 10,  # Number of days to look back, default 10
-    _scope: AdminScope = Depends(require_admin_stats_read),
+    scope: AdminScope = Depends(require_admin_stats_read),
     db: AsyncSession = Depends(get_async_db),
-    _lang: str = Depends(get_language_dependency),
+    lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """Get token usage trends for a specific user."""
     if not user_id:
@@ -550,6 +577,8 @@ async def get_user_token_trends_admin(
     user = (await db.execute(select(User).where(User.id == user_id))).scalars().first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    await assert_panel_user_readable(scope, user.organization_id, db, lang)
 
     # Use Beijing time for date calculations
     beijing_now = get_beijing_now()

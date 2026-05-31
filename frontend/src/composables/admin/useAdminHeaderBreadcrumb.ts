@@ -12,10 +12,22 @@ import {
 } from '@/composables/admin/adminDataCenterViews'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminOrganizationsList } from '@/composables/admin/useAdminOrganizationsList'
+import { useAdminRolesHeaderToolbarModel } from '@/composables/admin/useAdminRolesHeaderToolbar'
 import { useAdminUsersHeaderToolbarModel } from '@/composables/admin/useAdminUsersHeaderToolbar'
-import { ADMIN_SETTINGS_SUBTAB_CONFIG } from '@/composables/admin/adminSettingsSubtabs'
+import {
+  defaultFeatureDevSubtab,
+  resolveFeatureDevSubtab,
+  featureDevSubtabLabelKey,
+} from '@/composables/admin/adminFeatureDevNav'
+import {
+  defaultSettingsSubtab,
+  isSettingsSubtab,
+  settingsSubtabLabelKey,
+} from '@/composables/admin/adminSettingsNav'
 import { useLanguage } from '@/composables'
+import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useAuthStore } from '@/stores'
+import { userRoleLabel } from '@/utils/userRoleDisplay'
 
 export interface AdminHeaderBreadcrumbSegment {
   label: string
@@ -29,8 +41,10 @@ export function useAdminHeaderBreadcrumb(options: {
 }) {
   const { t } = useLanguage()
   const authStore = useAuthStore()
+  const { featureSmartResponse, featureTeacherUsage, featureKittyAgent } = useFeatureFlags()
   const toolbarModel = useAdminUsersHeaderToolbarModel()
-  const { effectiveOrgId } = useAdminAccess()
+  const rolesToolbarModel = useAdminRolesHeaderToolbarModel()
+  const { effectiveOrgId, canViewSettingsSubtab } = useAdminAccess()
   const { organizations, loadOrganizations } = useAdminOrganizationsList()
 
   watch(
@@ -98,13 +112,38 @@ export function useAdminHeaderBreadcrumb(options: {
       }
     }
 
+    if (options.activeTab.value === 'feature_dev') {
+      const featureDevVisibility = {
+        canViewSettingsSubtab,
+        featureSmartResponse: featureSmartResponse.value,
+        featureTeacherUsage: featureTeacherUsage.value,
+        featureKittyAgent: featureKittyAgent.value,
+      }
+      const subtabName =
+        resolveFeatureDevSubtab(options.route.query.subtab as string, featureDevVisibility) ??
+        defaultFeatureDevSubtab(featureDevVisibility)
+      const subtabLabelKey = subtabName ? featureDevSubtabLabelKey(subtabName) : null
+      const subtabLabel = subtabLabelKey ? t(subtabLabelKey) : null
+      if (subtabLabel) {
+        return [{ label: tabLabel }, { label: subtabLabel }]
+      }
+    }
+
     if (options.activeTab.value === 'settings') {
       const raw = options.route.query.subtab
-      const subtabName = typeof raw === 'string' ? raw : 'features'
-      const match = ADMIN_SETTINGS_SUBTAB_CONFIG.find((item) => item.name === subtabName)
-      const childLabel = match ? t(match.labelKey) : null
-      if (childLabel) {
-        return [{ label: tabLabel }, { label: childLabel }]
+      const subtabName =
+        typeof raw === 'string' && isSettingsSubtab(raw) ? raw : defaultSettingsSubtab()
+      const subtabLabelKey = settingsSubtabLabelKey(subtabName)
+      const subtabLabel = subtabLabelKey ? t(subtabLabelKey) : null
+      if (subtabLabel) {
+        if (subtabName === 'roles') {
+          const activeRole = rolesToolbarModel.value?.activeRoleTab.value
+          const roleLabel = activeRole ? userRoleLabel(t, activeRole) : null
+          if (roleLabel) {
+            return [{ label: tabLabel }, { label: subtabLabel }, { label: roleLabel }]
+          }
+        }
+        return [{ label: tabLabel }, { label: subtabLabel }]
       }
     }
 

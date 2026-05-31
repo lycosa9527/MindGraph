@@ -34,20 +34,26 @@ from services.auth.school_dashboard_logger import (
 from utils.auth import get_current_user, get_user_role, is_admin, is_management_panel_user
 from utils.auth.admin_panel_permissions import (
     CAP_PANEL_ACCESS,
-    CAP_TAB_DATA_CENTER_VIEW,
     user_panel_capabilities,
 )
-from utils.auth.admin_scope import AdminScope, panel_read_only_for_user
+from utils.auth.admin_scope import AdminScope, assert_panel_org_readable, panel_read_only_for_user
+from utils.auth.mindbot_token_stats import (
+    add_service_period,
+    add_token_period,
+    aggregate_mindbot_token_totals,
+    aggregate_mindbot_tokens_by_org_today,
+    merge_org_token_stats,
+)
 from utils.auth.school_tier import school_dashboard_quotas_payload
 
 from ..dependencies import (
     get_language_dependency,
     require_admin_stats_read,
-    require_panel_capability,
+    require_school_dashboard_read,
 )
 from ..helpers import get_beijing_now, get_beijing_today_start_utc
 
-from .school_scope import resolve_school_dashboard_org_id
+from .school_scope import resolve_school_dashboard_org_id_scoped
 
 logger = logging.getLogger(__name__)
 
@@ -206,9 +212,18 @@ async def get_stats_admin(
                 "total_tokens": int(week_token_stats.total_tokens or 0),
             }
 
+        mindbot_week = await aggregate_mindbot_token_totals(db, created_since=week_ago)
+        token_stats = add_token_period(token_stats, mindbot_week)
+
         token_stats_by_org = await _token_stats_by_org_today(db, today_start)
         token_stats_by_org_mindgraph = await _token_stats_by_org_today(db, today_start, "mindgraph")
         token_stats_by_org_mindmate = await _token_stats_by_org_today(db, today_start, "mindmate")
+        mindbot_orgs_today = await aggregate_mindbot_tokens_by_org_today(db, today_start)
+        token_stats_by_org = merge_org_token_stats(token_stats_by_org, mindbot_orgs_today)
+        token_stats_by_org_mindmate = merge_org_token_stats(
+            token_stats_by_org_mindmate,
+            mindbot_orgs_today,
+        )
 
         top_user_rows = (
             await db.execute(
@@ -264,7 +279,7 @@ async def get_stats_admin(
 @router.get("/admin/stats/school")
 async def get_school_stats(
     organization_id: Optional[int] = None,
-    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_DATA_CENTER_VIEW)),
+    scope: AdminScope = Depends(require_school_dashboard_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
@@ -274,7 +289,9 @@ async def get_school_stats(
     Managers: organization_id must be their own org (or omitted to use their org).
     Admins: organization_id required to select which school to view.
     """
-    effective_org_id = resolve_school_dashboard_org_id(organization_id, scope.actor, lang)
+    effective_org_id = await resolve_school_dashboard_org_id_scoped(
+        scope, organization_id, db, lang
+    )
 
     org = (await db.execute(select(Organization).where(Organization.id == effective_org_id))).scalars().first()
     if not org:
@@ -409,7 +426,7 @@ async def get_school_stats(
 async def get_school_token_stats(
     request: Request,
     organization_id: Optional[int] = None,
-    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_DATA_CENTER_VIEW)),
+    scope: AdminScope = Depends(require_school_dashboard_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
@@ -417,11 +434,11 @@ async def get_school_token_stats(
     Get token stats for a school (ADMIN or MANAGER).
     Same structure as /admin/token-stats with organization_id filter.
     """
-    org_id = resolve_school_dashboard_org_id(organization_id, scope.actor, lang)
+    org_id = await resolve_school_dashboard_org_id_scoped(scope, organization_id, db, lang)
     return await get_token_stats_admin(
         _request=request,
         organization_id=org_id,
-        _current_user=scope.actor,
+        scope=scope,
         db=db,
         lang=lang,
     )
@@ -431,7 +448,7 @@ async def get_school_token_stats(
 async def get_token_stats_admin(
     _request: Request,
     organization_id: Optional[int] = None,
-    _scope: AdminScope = Depends(require_admin_stats_read),
+    scope: AdminScope = Depends(require_admin_stats_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
@@ -442,7 +459,7 @@ async def get_token_stats_admin(
 
     Returns separate stats for:
     - mindgraph: Diagram generation and related features
-    - mindmate: AI assistant (Dify) conversations
+    - mindmate: Web MindMate (Dify) plus DingTalk bot (MindBot / Dify) token usage
     - dingtalk_generations: Counts of successful /api/generate_dingtalk (PNG + markdown) calls
     """
     # Use Beijing time for "today" calculations
@@ -504,7 +521,7 @@ async def get_token_stats_admin(
             if not org:
                 sd_log = get_school_dashboard_logger(
                     logger,
-                    actor_id=_current_user.id,
+                    actor_id=scope.actor.id,
                     org_id=organization_id,
                 )
                 sd_log.warning(
@@ -515,6 +532,7 @@ async def get_token_stats_admin(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=Messages.error("organization_not_found", lang, organization_id),
                 )
+            await assert_panel_org_readable(scope, int(organization_id), db, lang)
             org_filter.append(TokenUsage.organization_id == organization_id)
 
         # Today stats - sum all token usage today (including records with user_id=NULL)
@@ -617,6 +635,31 @@ async def get_token_stats_admin(
                 "total_tokens": int(total_token_stats.total_tokens or 0),
             }
 
+        mindbot_org_id = organization_id if organization_id else None
+        mindbot_today = await aggregate_mindbot_token_totals(
+            db,
+            created_since=today_start,
+            organization_id=mindbot_org_id,
+        )
+        today_stats = add_token_period(today_stats, mindbot_today)
+        mindbot_week = await aggregate_mindbot_token_totals(
+            db,
+            created_since=week_ago,
+            organization_id=mindbot_org_id,
+        )
+        week_stats = add_token_period(week_stats, mindbot_week)
+        mindbot_month = await aggregate_mindbot_token_totals(
+            db,
+            created_since=month_ago,
+            organization_id=mindbot_org_id,
+        )
+        month_stats = add_token_period(month_stats, mindbot_month)
+        mindbot_total = await aggregate_mindbot_token_totals(
+            db,
+            organization_id=mindbot_org_id,
+        )
+        total_stats = add_token_period(total_stats, mindbot_total)
+
         # Service breakdown: MindGraph vs MindMate
         # Query stats grouped by request_type for different time periods
         async def get_service_stats(date_filter=None):
@@ -656,6 +699,16 @@ async def get_token_stats_admin(
                 by_service[service][period]["output_tokens"] += int(result.output_tokens or 0)
                 by_service[service][period]["total_tokens"] += int(result.total_tokens or 0)
                 by_service[service][period]["request_count"] += int(result.request_count or 0)
+
+            mindbot_period = await aggregate_mindbot_token_totals(
+                db,
+                created_since=date_filter,
+                organization_id=mindbot_org_id,
+            )
+            by_service["mindmate"][period] = add_service_period(
+                by_service["mindmate"][period],
+                mindbot_period,
+            )
 
         _dingtalk_path = and_(
             TokenUsage.endpoint_path == "/api/generate_dingtalk",

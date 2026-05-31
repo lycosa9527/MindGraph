@@ -24,6 +24,7 @@ CAP_PANEL_ACCESS: Final[str] = "panel.access"
 
 CAP_TAB_DATA_CENTER_VIEW: Final[str] = "tab.data_center.view"
 CAP_TAB_DATA_CENTER_EDIT: Final[str] = "tab.data_center.edit"
+CAP_TAB_SCHOOL_DASHBOARD_VIEW: Final[str] = "tab.school_dashboard.view"
 CAP_TAB_USERS_VIEW: Final[str] = "tab.users.view"
 CAP_TAB_USERS_EDIT: Final[str] = "tab.users.edit"
 CAP_TAB_ORGANIZATIONS_VIEW: Final[str] = "tab.organizations.view"
@@ -49,6 +50,7 @@ CAP_SETTINGS_TEACHER_USAGE: Final[str] = "tab.settings.teacher_usage"
 
 CAP_SCOPE_GLOBAL: Final[str] = "scope.global"
 CAP_SCOPE_ORG: Final[str] = "scope.org"
+CAP_SCOPE_INVITED_ORGS: Final[str] = "scope.invited_orgs"
 
 _ALL_SETTINGS_CAPS: frozenset[str] = frozenset(
     {
@@ -74,6 +76,7 @@ _SUPERADMIN_CAPS: frozenset[str] = (
             CAP_PANEL_ACCESS,
             CAP_TAB_DATA_CENTER_VIEW,
             CAP_TAB_DATA_CENTER_EDIT,
+            CAP_TAB_SCHOOL_DASHBOARD_VIEW,
             CAP_TAB_USERS_VIEW,
             CAP_TAB_USERS_EDIT,
             CAP_TAB_ORGANIZATIONS_VIEW,
@@ -93,12 +96,14 @@ _PLATFORM_BD_CAPS: frozenset[str] = frozenset(
         CAP_PANEL_ACCESS,
         CAP_TAB_DATA_CENTER_VIEW,
         CAP_TAB_DATA_CENTER_EDIT,
+        CAP_TAB_SCHOOL_DASHBOARD_VIEW,
         CAP_TAB_USERS_VIEW,
         CAP_TAB_ORGANIZATIONS_VIEW,
         CAP_TAB_INVITES_VIEW,
         CAP_TAB_INVITES_EDIT,
         CAP_TAB_BILLING_VIEW,
         CAP_SCOPE_GLOBAL,
+        CAP_SCOPE_INVITED_ORGS,
     }
 )
 
@@ -107,19 +112,16 @@ _EXPERT_CAPS: frozenset[str] = frozenset(
         CAP_PANEL_ACCESS,
         CAP_TAB_INVITES_VIEW,
         CAP_TAB_INVITES_EDIT,
+        CAP_SCOPE_INVITED_ORGS,
     }
 )
 
 _SCHOOL_ADMIN_CAPS: frozenset[str] = frozenset(
     {
         CAP_PANEL_ACCESS,
-        CAP_TAB_DATA_CENTER_VIEW,
+        CAP_TAB_SCHOOL_DASHBOARD_VIEW,
         CAP_TAB_USERS_VIEW,
         CAP_TAB_USERS_EDIT,
-        CAP_TAB_INVITES_VIEW,
-        CAP_TAB_INVITES_EDIT,
-        CAP_SETTINGS_MINDBOT,
-        CAP_TAB_SETTINGS_VIEW,
         CAP_SCOPE_ORG,
     }
 )

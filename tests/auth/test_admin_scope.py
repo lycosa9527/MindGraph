@@ -6,10 +6,14 @@ from fastapi import HTTPException
 from utils.auth.admin_panel_permissions import (
     CAP_PANEL_ACCESS,
     CAP_SCOPE_GLOBAL,
+    CAP_SCOPE_INVITED_ORGS,
     CAP_TAB_BILLING_VIEW,
+    CAP_TAB_DATA_CENTER_VIEW,
     CAP_TAB_INVITES_EDIT,
     CAP_TAB_INVITES_VIEW,
     CAP_TAB_ORGANIZATIONS_VIEW,
+    CAP_TAB_SCHOOL_DASHBOARD_VIEW,
+    CAP_TAB_SETTINGS_VIEW,
     CAP_TAB_USERS_EDIT,
     CAP_TAB_USERS_VIEW,
     capabilities_for_role,
@@ -35,6 +39,10 @@ def test_school_admin_has_school_member_caps_without_global_scope():
     assert CAP_PANEL_ACCESS in caps
     assert CAP_TAB_USERS_VIEW in caps
     assert CAP_TAB_USERS_EDIT in caps
+    assert CAP_TAB_SCHOOL_DASHBOARD_VIEW in caps
+    assert CAP_TAB_DATA_CENTER_VIEW not in caps
+    assert CAP_TAB_INVITES_VIEW not in caps
+    assert CAP_TAB_SETTINGS_VIEW not in caps
     assert CAP_SCOPE_GLOBAL not in caps
 
 
@@ -48,7 +56,16 @@ def test_expert_invites_only():
     caps = capabilities_for_role("expert")
     assert CAP_PANEL_ACCESS in caps
     assert CAP_TAB_INVITES_VIEW in caps
+    assert CAP_TAB_INVITES_EDIT in caps
+    assert CAP_SCOPE_INVITED_ORGS in caps
     assert CAP_TAB_USERS_VIEW not in caps
+    assert CAP_TAB_DATA_CENTER_VIEW not in caps
+
+
+def test_expert_scope_empty_without_db():
+    user = _User("expert", user_id=7)
+    scope = build_admin_scope(user, lang="en")
+    assert scope.org_ids == frozenset()
 
 
 def test_build_admin_scope_rejects_teacher():
@@ -88,6 +105,16 @@ def test_platform_bd_has_readonly_global_tabs_and_invite_edit():
     assert CAP_TAB_INVITES_EDIT in caps
     assert CAP_TAB_BILLING_VIEW in caps
     assert CAP_SCOPE_GLOBAL in caps
+    assert CAP_SCOPE_INVITED_ORGS in caps
+
+
+def test_platform_bd_invite_scope_keeps_global_org_ids():
+    user = _User("platform_bd", user_id=9)
+    scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset({101, 102}))
+    assert scope.org_ids is None
+    assert scope.invited_org_ids == frozenset({101, 102})
+    assert scope.has_capability(CAP_SCOPE_GLOBAL)
+    assert scope.has_capability(CAP_SCOPE_INVITED_ORGS)
 
 
 def test_platform_bd_partial_read_only_flag():

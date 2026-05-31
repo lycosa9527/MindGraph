@@ -11,8 +11,11 @@ from utils.auth.school_tier import (
     SCHOOL_TIER_LITE,
     SCHOOL_TIER_PROFESSIONAL,
     SCHOOL_TIER_STANDARD,
+    SCHOOL_TIER_TRIAL,
     TIER_FEATURE_API_TOKEN,
     TIER_FEATURE_ONLINE_COLLAB,
+    apply_school_tier_on_create,
+    apply_school_tier_on_update,
     assert_organization_tier_allows_current_members,
     diagram_storage_limit_bytes_for_org,
     manager_limit_for_org,
@@ -29,33 +32,43 @@ class _FakeOrg:
         self.school_tier = school_tier
 
 
-def test_normalize_school_tier_defaults_to_standard():
+def test_normalize_school_tier_defaults_to_trial():
     assert normalize_school_tier(None) == DEFAULT_SCHOOL_TIER
     assert normalize_school_tier("unknown") == DEFAULT_SCHOOL_TIER
-    assert DEFAULT_SCHOOL_TIER == SCHOOL_TIER_STANDARD
+    assert DEFAULT_SCHOOL_TIER == SCHOOL_TIER_TRIAL
     assert normalize_school_tier("STANDARD") == SCHOOL_TIER_STANDARD
     assert normalize_school_tier("LITE") == SCHOOL_TIER_LITE
+    assert normalize_school_tier("TRIAL") == SCHOOL_TIER_TRIAL
 
 
 def test_member_and_storage_limits_by_tier():
+    trial = _FakeOrg(SCHOOL_TIER_TRIAL)
     lite = _FakeOrg(SCHOOL_TIER_LITE)
     standard = _FakeOrg(SCHOOL_TIER_STANDARD)
     professional = _FakeOrg(SCHOOL_TIER_PROFESSIONAL)
 
+    assert member_limit_for_org(trial) == 30
     assert member_limit_for_org(lite) == 50
     assert member_limit_for_org(standard) == 120
     assert member_limit_for_org(professional) == 200
 
+    assert manager_limit_for_org(trial) == 1
     assert manager_limit_for_org(lite) == 1
     assert manager_limit_for_org(standard) == 3
     assert manager_limit_for_org(professional) == 5
 
     assert diagram_storage_limit_bytes_for_org(lite, 10) == 10 * 1024**3
+    assert diagram_storage_limit_bytes_for_org(trial, 10) == 10 * 1024**3
     assert diagram_storage_limit_bytes_for_org(standard, 25) == 50 * 1024**3
     assert diagram_storage_limit_bytes_for_org(professional, 4) == 20 * 1024**3
 
 
 def test_school_tier_list_fields():
+    trial_fields = school_tier_list_fields(_FakeOrg(SCHOOL_TIER_TRIAL), 10)
+    assert trial_fields["school_tier"] == SCHOOL_TIER_TRIAL
+    assert trial_fields["school_tier_member_limit"] == 30
+    assert trial_fields["school_tier_features"]["online_collab"] is False
+
     fields = school_tier_list_fields(_FakeOrg(SCHOOL_TIER_STANDARD), 25)
     assert fields["school_tier"] == SCHOOL_TIER_STANDARD
     assert fields["school_tier_member_limit"] == 120
@@ -66,6 +79,7 @@ def test_school_tier_list_fields():
 
 
 def test_school_tier_feature_gating():
+    assert school_tier_allows_feature(SCHOOL_TIER_TRIAL, TIER_FEATURE_ONLINE_COLLAB) is False
     assert school_tier_allows_feature(SCHOOL_TIER_LITE, TIER_FEATURE_ONLINE_COLLAB) is False
     assert school_tier_allows_feature(SCHOOL_TIER_STANDARD, TIER_FEATURE_ONLINE_COLLAB) is True
     assert school_tier_allows_feature(SCHOOL_TIER_PROFESSIONAL, TIER_FEATURE_ONLINE_COLLAB) is True
@@ -73,6 +87,9 @@ def test_school_tier_feature_gating():
     assert lite_features["presentation_tools"] is False
     assert lite_features["chrome_extension"] is False
     assert lite_features["api_token"] is False
+    trial_features = school_tier_features_payload(SCHOOL_TIER_TRIAL)
+    assert trial_features["online_collab"] is False
+    assert trial_features["api_token"] is False
     assert school_tier_allows_feature(SCHOOL_TIER_LITE, TIER_FEATURE_API_TOKEN) is False
     assert school_tier_allows_feature(SCHOOL_TIER_STANDARD, TIER_FEATURE_API_TOKEN) is True
 
@@ -114,3 +131,43 @@ async def test_assert_organization_tier_allows_current_members_allows_within_cap
     )
 
     await assert_organization_tier_allows_current_members(db, org, "en")
+
+
+def test_apply_school_tier_on_create_defaults_to_trial():
+    org = _FakeOrg()
+    apply_school_tier_on_create(org, {})
+    assert org.school_tier == SCHOOL_TIER_TRIAL
+
+
+def test_apply_school_tier_on_create_accepts_explicit_tier():
+    org = _FakeOrg()
+    apply_school_tier_on_create(org, {"school_tier": "professional"})
+    assert org.school_tier == SCHOOL_TIER_PROFESSIONAL
+
+
+def test_apply_school_tier_on_update_rejects_unknown_tier():
+    org = _FakeOrg(SCHOOL_TIER_TRIAL)
+    with pytest.raises(HTTPException) as exc_info:
+        apply_school_tier_on_update(org, {"school_tier": "enterprise"}, "en")
+    assert exc_info.value.status_code == 400
+    assert org.school_tier == SCHOOL_TIER_TRIAL
+
+
+def test_apply_school_tier_on_create_defaults_to_trial():
+    org = _FakeOrg()
+    apply_school_tier_on_create(org, {})
+    assert org.school_tier == SCHOOL_TIER_TRIAL
+
+
+def test_apply_school_tier_on_create_accepts_explicit_tier():
+    org = _FakeOrg()
+    apply_school_tier_on_create(org, {"school_tier": "professional"})
+    assert org.school_tier == SCHOOL_TIER_PROFESSIONAL
+
+
+def test_apply_school_tier_on_update_rejects_unknown_tier():
+    org = _FakeOrg(SCHOOL_TIER_TRIAL)
+    with pytest.raises(HTTPException) as exc_info:
+        apply_school_tier_on_update(org, {"school_tier": "enterprise"}, "en")
+    assert exc_info.value.status_code == 400
+    assert org.school_tier == SCHOOL_TIER_TRIAL

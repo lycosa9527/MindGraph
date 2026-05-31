@@ -174,6 +174,17 @@
   --el-button-active-border-color: #78716c;
 }
 
+.admin-swiss-btn--primary.el-button {
+  --el-button-bg-color: #1c1917;
+  --el-button-border-color: #1c1917;
+  --el-button-text-color: #fafaf9;
+  --el-button-hover-bg-color: #292524;
+  --el-button-hover-border-color: #292524;
+  --el-button-hover-text-color: #fafaf9;
+  --el-button-active-bg-color: #44403c;
+  --el-button-active-border-color: #44403c;
+}
+
 /* Table row actions (用户管理 — 操作) */
 .admin-swiss-pill-btn.el-button {
   border-radius: 9999px;
@@ -238,4 +249,73 @@ html.dark .admin-swiss-pill-btn--edit.el-button--primary.is-plain {
 .admin-swiss-tabs :deep(.el-tabs__item.is-active) {
   color: #1c1917;
   font-weight: 600;
+}
+
+/* Stone pill toggles — replaces default Element Plus blue on light admin surfaces */
+.admin-swiss-switch.el-switch {
+  --el-switch-on-color: var(--swiss-ink);
+  --el-switch-off-color: var(--swiss-border-strong);
+  height: 22px;
+  line-height: 22px;
+}
+
+.admin-swiss-switch.el-switch :deep(.el-switch__core) {
+  min-width: 40px;
+  height: 22px;
+  border-radius: 9999px;
+  border: 1px solid var(--swiss-border-strong);
+  background-color: var(--swiss-border-strong);
+}
+
+.admin-swiss-switch.el-switch.is-checked :deep(.el-switch__core) {
+  border-color: var(--swiss-ink);
+  background-color: var(--swiss-ink);
+}
+
+.admin-swiss-switch.el-switch :deep(.el-switch__core .el-switch__action) {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background-color: var(--swiss-surface);
+  box-shadow: 0 1px 2px rgb(28 25 23 / 12%);
+}
+
+.admin-swiss-switch.el-switch.is-disabled {
+  opacity: 0.45;
+}
+
+html.dark .admin-swiss-switch.el-switch :deep(.el-switch__core .el-switch__action) {
+  box-shadow: 0 1px 3px rgb(0 0 0 / 35%);
+}
+
+/* Table footer pagination (用户管理, school dashboard users). */
+.admin-swiss-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--swiss-border, #e7e5e4);
+}
+
+.admin-swiss-pagination__info {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--swiss-muted, #78716c);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-swiss-pagination__nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.admin-swiss-pagination__nav .el-button.is-disabled,
+.admin-swiss-pagination__nav .el-button.is-disabled:hover {
+  opacity: 0.42;
+  cursor: not-allowed;
 }

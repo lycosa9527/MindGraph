@@ -23,6 +23,8 @@ from models.domain.messages import Messages, Language
 from services.redis.cache.redis_user_cache import user_cache
 from utils.auth.config import ADMIN_PHONES, ADMIN_USER_IDS
 from utils.auth.role_constants import (
+    ROLE_EXPERT,
+    ROLE_PLATFORM_BD,
     ROLE_SCHOOL_ADMIN,
     ROLE_SUPERADMIN,
     SUPERADMIN_ROLES,
@@ -144,7 +146,7 @@ async def list_admins(
     result = []
     for user in admin_users:
         phone = user.phone or getattr(user, "email", None) or ""
-        masked_phone = phone[:3] + "****" + phone[-4:] if user.phone and len(user.phone) == 11 else phone
+        masked_phone = _mask_user_phone(user.phone)
 
         result.append(
             {
@@ -162,6 +164,49 @@ async def list_admins(
         "env_admins": env_admins,
         "env_admins_note": ("Configured via ADMIN_PHONES and ADMIN_USER_IDS environment variables (read-only)"),
     }
+
+
+PLATFORM_ROLE_TAB_SLUGS = frozenset({ROLE_PLATFORM_BD, ROLE_EXPERT})
+
+
+def _mask_user_phone(phone: str | None) -> str:
+    """Mask an 11-digit phone for admin list responses."""
+    if phone and len(phone) == 11:
+        return phone[:3] + "****" + phone[-4:]
+    return phone or ""
+
+
+@router.get("/admin/platform-role-members", dependencies=[Depends(require_admin)])
+async def list_platform_role_members(
+    role: str = Query(..., description="platform_bd or expert"),
+    db: AsyncSession = Depends(get_async_db),
+):
+    """
+    List users with a platform-tier role (platform_bd or expert) for role control.
+    """
+    if role not in PLATFORM_ROLE_TAB_SLUGS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid role: {role}. Must be one of: {', '.join(sorted(PLATFORM_ROLE_TAB_SLUGS))}",
+        )
+
+    members_stmt = select(User).where(User.role == role).order_by(User.created_at.asc())
+    members = (await db.execute(members_stmt)).scalars().all()
+
+    result = []
+    for user in members:
+        result.append(
+            {
+                "id": user.id,
+                "phone": _mask_user_phone(user.phone),
+                "name": user.name,
+                "role": normalize_role(user.role),
+                "source": "database",
+                "created_at": utc_to_beijing_iso(user.created_at),
+            }
+        )
+
+    return {"members": result}
 
 
 @router.put("/admin/users/{user_id}/role", dependencies=[Depends(require_admin)])

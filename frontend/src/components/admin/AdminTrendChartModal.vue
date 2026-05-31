@@ -66,6 +66,7 @@ const props = defineProps<{
   orgMindmateAgentAvatarUrl?: string | null
   userName?: string
   userId?: number
+  readOnly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -80,8 +81,10 @@ const uiStore = useUIStore()
 const { can } = useAdminAccess()
 const { featureMindbot } = useFeatureFlags()
 
+const panelReadOnly = computed(() => props.readOnly === true)
+
 const showMindbotSchoolTabs = computed(
-  () => can('tab.settings.mindbot') && featureMindbot.value
+  () => !panelReadOnly.value && can('tab.settings.mindbot') && featureMindbot.value
 )
 
 function isMindbotSchoolTab(tab: SchoolDialogTab): boolean {
@@ -208,7 +211,7 @@ const orgActiveState = ref(true)
 const lockLoading = ref(false)
 const deleteLoading = ref(false)
 const expiresAtEdit = ref<string | null>(null)
-const schoolTierEdit = ref<SchoolTier>('standard')
+const schoolTierEdit = ref<SchoolTier>('trial')
 
 const selectedTierLimits = computed(() => SCHOOL_TIER_LIMITS[schoolTierEdit.value])
 
@@ -887,6 +890,7 @@ onBeforeUnmount(() => {
               :managers-loading="managersLoading"
               :add-managers-loading="addManagersLoading"
               :lock-loading="lockLoading"
+              :read-only="panelReadOnly"
               @toggleLock="toggleLock"
               @addManagers="addManagers"
               @removeManager="removeManager"
@@ -900,7 +904,7 @@ onBeforeUnmount(() => {
         class="mindbot-dialog-footer flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
       >
         <div
-          v-if="showMindbotFooterEnable"
+          v-if="showMindbotFooterEnable && !panelReadOnly"
           class="mindbot-footer-enable flex min-w-0 items-center gap-2 sm:gap-2.5 order-last sm:order-first"
         >
           <span class="mindbot-footer-enable__label">{{ t('admin.mindbot.enabled') }}</span>
@@ -910,6 +914,7 @@ onBeforeUnmount(() => {
           />
         </div>
         <div
+          v-if="!panelReadOnly"
           class="flex shrink-0 flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:flex-wrap sm:ml-auto"
         >
         <el-button

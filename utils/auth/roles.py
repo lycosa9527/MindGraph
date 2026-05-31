@@ -104,7 +104,7 @@ def is_platform_bd(current_user) -> bool:
 
 
 def is_expert(current_user) -> bool:
-    """Platform expert (专家) — trial invites only."""
+    """Platform expert (专家) — B2B school invites (own orgs) + C2C trial invites."""
     return role_in(current_user, frozenset({ROLE_EXPERT}))
 
 

@@ -9,6 +9,9 @@ export default {
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
   'admin.addAdmin':
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.addRoleMember': 'Add member',
+  'admin.addRoleMemberModalTitle': 'Add member-{role}',
+  'admin.roleAddMemberSearchHint': 'Enter at least 2 characters to search by name or phone',
   'admin.addUser':
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
   'admin.adminRoleGranted':
@@ -158,6 +161,10 @@ export default {
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
   'admin.featuresTab':
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.featureDevTab':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.newFeaturesTab':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
   'admin.featuresIntroAccess':
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
   'admin.featurePermissionsApply':
@@ -194,6 +201,7 @@ export default {
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
   'admin.grantAdmin':
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.grantRole': 'Grant role',
   'admin.inShort':
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
   'admin.inputTokens':
@@ -654,6 +662,10 @@ export default {
   'admin.noData': 'No data',
   'admin.noExpiration': 'No expiration',
   'admin.noManagersFound': 'No school managers',
+  'admin.noRoleMembersFound': 'No members assigned for this role yet',
+  'admin.noRoleMembersEmptyHint': 'Use Add member above to assign this role to a user.',
+  'admin.inviteOrgsEmpty': 'You have not created any invite schools yet',
+  'admin.roleAddMemberNoSearchResults': 'No users match your search',
   'admin.noTokenStats': 'No token statistics available',
   'admin.noUsersFound': 'No users found',
   'admin.orgManagement': 'Organization Management',
@@ -837,11 +849,18 @@ export default {
   'admin.reset': 'Reset',
   'admin.revokeAdmin': 'Revoke Admin',
   'admin.revokeAdminConfirm': 'Revoke admin access from',
+  'admin.revokeRole': 'Remove role',
+  'admin.revokeRoleConfirm': 'Remove role from',
   'admin.roleControl': 'Role Control',
   'admin.roleControlDesc':
-    'Manage admin access. Users with admin role can access the management panel.',
+    'Manage superadmin access. Users with this role can access the full management panel.',
+  'admin.roleControlDescPlatformBd':
+    'Manage platform BD access. Platform BD can view global data and manage trial invites.',
+  'admin.roleControlDescExpert':
+    'Manage expert access. Experts can create schools and manage organizations in their invite scope.',
   'admin.roleControlDescManagers':
-    'Manage school managers. Managers can access the school dashboard for their organization.',
+    'Manage school admins. They can access the school dashboard for their organization. Users must already belong to a school before being granted this role.',
+  'admin.roleMembersLoadFailed': 'Failed to load role members',
   'admin.save':
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
   'admin.schoolCode': 'School Code',
@@ -862,12 +881,15 @@ export default {
     'Unlock this account? Failed-login lock and attempt counter will be cleared.',
   'admin.listRange': '{start}–{end} of {total}',
   'admin.listRangeEmpty': 'No results',
+  'admin.schoolManagerGrantRequiresOrg':
+    'This user is not in a school yet. Add them to a school before granting school manager.',
   'admin.schoolManagersTab': 'School Managers',
   'admin.schoolName': 'School Name',
   'admin.schoolNameRequired': 'School name is required',
   'admin.schools': 'Schools',
   'admin.search': 'Search',
   'admin.searchUserByNameOrPhone': 'Search by name or phone',
+  'admin.userSearchFailed': 'User search failed',
   'admin.selectSchool': 'Select school',
   'admin.setManager': 'Set as Manager',
   'admin.shareInviteMessage':

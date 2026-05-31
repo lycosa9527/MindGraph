@@ -12,7 +12,10 @@ import AdminDataCenterTab from '@/components/admin/AdminDataCenterTab.vue'
 import AdminInviteUsersTab from '@/components/admin/AdminInviteUsersTab.vue'
 import AdminMarketsTab from '@/components/admin/AdminMarketsTab.vue'
 import AdminSchoolsTab from '@/components/admin/AdminSchoolsTab.vue'
+import AdminFeatureDevTab from '@/components/admin/AdminFeatureDevTab.vue'
 import AdminSystemSettingsTab from '@/components/admin/AdminSystemSettingsTab.vue'
+import AdminFeaturesHeaderToolbar from '@/components/admin/AdminFeaturesHeaderToolbar.vue'
+import AdminRolesHeaderToolbar from '@/components/admin/AdminRolesHeaderToolbar.vue'
 import AdminUsersHeaderToolbar from '@/components/admin/AdminUsersHeaderToolbar.vue'
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel.vue'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
@@ -20,6 +23,7 @@ import {
   defaultDataCenterView,
   isDataCenterView,
 } from '@/composables/admin/adminDataCenterViews'
+import { LEGACY_FEATURE_DEV_SETTINGS_SUBTABS } from '@/composables/admin/adminFeatureDevNav'
 import { requestOpenSchoolAddMemberDialog } from '@/composables/school/useSchoolDashboardAddMemberHeader'
 import { useSchoolDashboardOrgPicker } from '@/composables/school/useSchoolDashboardOrgPicker'
 import { useAdminHeaderBreadcrumb } from '@/composables/admin/useAdminHeaderBreadcrumb'
@@ -64,14 +68,26 @@ const showSchoolAddMemberButton = computed(
     route.query.view === 'school_dashboard' &&
     schoolDashboardOrgId.value != null &&
     !isReadOnly.value &&
-    (can('tab.users.edit') || (can('scope.org') && can('tab.data_center.view')))
+    (can('tab.users.edit') ||
+      (can('scope.org') && (can('tab.school_dashboard.view') || can('tab.data_center.view'))))
 )
 
 const showSchoolsCreateButton = computed(
   () =>
     activeTab.value === 'invites' &&
     canEditTab('invites') &&
-    (can('scope.org') || can('scope.global'))
+    (can('scope.global') || can('scope.invited_orgs'))
+)
+
+const showFeaturesApplyButton = computed(
+  () =>
+    activeTab.value === 'settings' &&
+    route.query.subtab === 'features' &&
+    canEditTab('settings')
+)
+
+const showRolesHeaderToolbar = computed(
+  () => activeTab.value === 'settings' && route.query.subtab === 'roles' && can('tab.settings.roles')
 )
 
 const showTabReadOnlyBadge = computed(() => isTabReadOnly(activeTab.value))
@@ -104,16 +120,39 @@ watch(
   }
 )
 
+watch(
+  () => [route.query.tab, route.query.subtab] as const,
+  ([tab, subtab]) => {
+    if (
+      tab === 'settings' &&
+      typeof subtab === 'string' &&
+      LEGACY_FEATURE_DEV_SETTINGS_SUBTABS.includes(subtab)
+    ) {
+      void router.replace({
+        query: { ...route.query, tab: 'feature_dev', subtab },
+      })
+      return
+    }
+    if (tab === 'feature_dev' && subtab === 'features') {
+      void router.replace({
+        query: { ...route.query, tab: 'settings', subtab: 'features' },
+      })
+    }
+  },
+  { immediate: true }
+)
+
 watch(activeTab, (tab) => {
   const current = route.query.tab as string
   const query: Record<string, string | string[]> = { ...route.query, tab }
-  if (tab !== 'settings') {
+  if (tab !== 'settings' && tab !== 'feature_dev') {
     delete query.subtab
+    delete query.role_tab
   }
   if (tab !== 'data_center') {
     delete query.view
   } else if (typeof query.view !== 'string' || !isDataCenterView(query.view)) {
-    query.view = defaultDataCenterView(can('scope.global'))
+    query.view = defaultDataCenterView(can('scope.global') && can('tab.data_center.view'))
   }
   if (tab !== current || route.query.view !== query.view) {
     router.replace({ query })
@@ -177,6 +216,8 @@ onMounted(async () => {
         </span>
       </nav>
       <div class="admin-header-actions flex flex-1 items-center justify-end gap-3 min-w-0">
+        <AdminFeaturesHeaderToolbar v-if="showFeaturesApplyButton" />
+        <AdminRolesHeaderToolbar v-if="showRolesHeaderToolbar" />
         <AdminUsersHeaderToolbar v-if="activeTab === 'users'" />
         <SchoolDashboardOrgPicker
           v-if="showSchoolDashboardPicker"
@@ -220,6 +261,7 @@ onMounted(async () => {
           ref="invitesTabRef"
         />
         <AdminMarketsTab v-else-if="activeTab === 'billing'" />
+        <AdminFeatureDevTab v-else-if="activeTab === 'feature_dev'" />
         <AdminSystemSettingsTab v-else-if="activeTab === 'settings'" />
       </div>
     </div>

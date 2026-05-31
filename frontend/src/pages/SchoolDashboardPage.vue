@@ -62,7 +62,8 @@ const showAddMemberButton = computed(
   () =>
     effectiveOrgId.value != null &&
     !isReadOnly.value &&
-    (can('tab.users.edit') || (can('scope.org') && can('tab.data_center.view')))
+    (can('tab.users.edit') ||
+      (can('scope.org') && (can('tab.school_dashboard.view') || can('tab.data_center.view'))))
 )
 
 function onMemberCreated(): void {

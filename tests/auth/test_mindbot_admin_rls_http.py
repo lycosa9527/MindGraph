@@ -32,6 +32,17 @@ def clear_dependency_overrides():
     app.dependency_overrides.clear()
 
 
+def test_school_admin_denied_mindbot_admin(client: TestClient) -> None:
+    """School admins no longer have MindBot admin access (matrix alignment)."""
+    app.dependency_overrides[get_current_user] = lambda: _make_user(
+        "school_admin",
+        organization_id=42,
+    )
+    app.dependency_overrides[get_language_dependency] = lambda: "en"
+    response = client.get("/api/mindbot/admin/configs/1")
+    assert response.status_code == 403
+
+
 def test_school_admin_cross_org_mindbot_config_denied(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,

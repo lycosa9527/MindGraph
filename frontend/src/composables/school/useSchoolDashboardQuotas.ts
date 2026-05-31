@@ -29,7 +29,7 @@ const BYTES_PER_GIB = 1024 ** 3
 
 function emptyQuotas(): SchoolDashboardQuotas {
   return {
-    schoolTier: 'standard',
+    schoolTier: 'trial',
     memberCount: 0,
     memberLimit: 0,
     managerCount: 0,
@@ -46,7 +46,7 @@ export function parseSchoolDashboardQuotas(
     return emptyQuotas()
   }
   return {
-    schoolTier: String(raw.school_tier ?? 'standard'),
+    schoolTier: String(raw.school_tier ?? 'trial'),
     memberCount: Number(raw.member_count ?? 0),
     memberLimit: Number(raw.member_limit ?? 0),
     managerCount: Number(raw.manager_count ?? 0),

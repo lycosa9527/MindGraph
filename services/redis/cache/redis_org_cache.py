@@ -79,7 +79,7 @@ class OrganizationCache:
             "created_at": created_at_val.isoformat() if created_at_val else "",
             "expires_at": expires_at_val.isoformat() if expires_at_val else "",
             "is_active": "1" if is_active_val else "0",
-            "school_tier": str(getattr(org, "school_tier", None) or "standard"),
+            "school_tier": str(getattr(org, "school_tier", None) or "trial"),
         }
 
     def _deserialize_org(self, data: Dict[str, str]) -> Organization:
@@ -127,7 +127,7 @@ class OrganizationCache:
             setattr(org, "is_active", data.get("is_active", "0") == "1")
 
         if hasattr(Organization, "school_tier"):
-            setattr(org, "school_tier", data.get("school_tier") or "standard")
+            setattr(org, "school_tier", data.get("school_tier") or "trial")
 
         return org
 

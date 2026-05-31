@@ -42,7 +42,7 @@ from services.auth.admin_user_list_rows import (
 )
 from ..dependencies import get_language_dependency, require_panel_capability
 from ..helpers import commit_user_with_retry
-from .school_scope import resolve_school_dashboard_org_id
+from .school_scope import resolve_school_dashboard_org_id_scoped
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ async def list_school_users(
     Admins: pass organization_id. Managers: scoped to their org.
     """
     current_user = scope.actor
-    org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
+    org_id = await resolve_school_dashboard_org_id_scoped(scope, organization_id, db, lang)
     sd_log = get_school_dashboard_logger(logger, actor_id=current_user.id, org_id=org_id)
 
     conditions: list[Any] = [User.organization_id == org_id]
@@ -177,7 +177,7 @@ async def create_school_user(
             detail=Messages.error("invalid_request", lang=lang),
         )
 
-    org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
+    org_id = await resolve_school_dashboard_org_id_scoped(scope, organization_id, db, lang)
     org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if org is None:
         raise HTTPException(
@@ -246,7 +246,7 @@ async def create_school_users_batch(
             detail=Messages.error("invalid_request", lang=lang),
         )
 
-    org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
+    org_id = await resolve_school_dashboard_org_id_scoped(scope, organization_id, db, lang)
     org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if org is None:
         raise HTTPException(
@@ -312,7 +312,7 @@ async def get_school_user(
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, Any]:
     current_user = scope.actor
-    org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
+    org_id = await resolve_school_dashboard_org_id_scoped(scope, organization_id, db, lang)
     user = await _load_user_in_school_or_not_found(db, user_id, org_id)
     if not user:
         raise _not_found_school_user(lang)
@@ -365,7 +365,7 @@ async def update_school_user(
             detail=Messages.error("school_user_update_empty", lang=lang),
         )
 
-    org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
+    org_id = await resolve_school_dashboard_org_id_scoped(scope, organization_id, db, lang)
     user = await _load_user_in_school_or_not_found(db, user_id, org_id)
     if not user:
         raise _not_found_school_user(lang)
@@ -482,7 +482,7 @@ async def delete_school_user(
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, str]:
     current_user = scope.actor
-    org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
+    org_id = await resolve_school_dashboard_org_id_scoped(scope, organization_id, db, lang)
     user = await _load_user_in_school_or_not_found(db, user_id, org_id)
     if not user:
         raise _not_found_school_user(lang)
@@ -538,7 +538,7 @@ async def unlock_school_user(
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, str]:
     current_user = scope.actor
-    org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
+    org_id = await resolve_school_dashboard_org_id_scoped(scope, organization_id, db, lang)
     user = await _load_user_in_school_or_not_found(db, user_id, org_id)
     if not user:
         raise _not_found_school_user(lang)

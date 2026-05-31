@@ -79,7 +79,7 @@ onMounted(() => {
 
     <el-alert
       v-else-if="missing"
-      type="warning"
+      type="info"
       :closable="false"
       show-icon
       :title="t('admin.personalTrialInviteMissingTitle')"

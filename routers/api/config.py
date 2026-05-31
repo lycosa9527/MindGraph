@@ -97,6 +97,11 @@ async def get_feature_flags(
     external_base = normalize_external_base_url(env_base)
     raw_access = await load_feature_org_access_map() if current_user is not None else {}
     access_map = _sanitize_feature_org_access_map(current_user, raw_access) if current_user is not None else {}
+    kitty_agent_flag = (
+        config.FEATURE_KITTY_AGENT
+        if current_user is not None and is_admin(current_user)
+        else await _effective_feature_kitty_agent(current_user)
+    )
     return FeatureFlagsResponse(
         external_base_url=external_base,
         feature_rag_chunk_test=config.FEATURE_RAG_CHUNK_TEST,
@@ -114,7 +119,7 @@ async def get_feature_flags(
         feature_workshop_chat=config.FEATURE_WORKSHOP_CHAT,
         feature_markets=config.FEATURE_MARKETS,
         feature_mindbot=config.FEATURE_MINDBOT,
-        feature_kitty_agent=await _effective_feature_kitty_agent(current_user),
+        feature_kitty_agent=kitty_agent_flag,
         workshop_chat_preview_org_ids=sorted(config.WORKSHOP_CHAT_PREVIEW_ORG_IDS),
         feature_org_access=access_map,
     )

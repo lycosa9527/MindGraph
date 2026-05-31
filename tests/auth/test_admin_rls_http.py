@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 from main import app
 from routers.auth.dependencies import get_language_dependency
 from utils.auth import get_current_user
+from utils.auth.admin_panel_permissions import CAP_TAB_USERS_EDIT
 
 
 def _make_user(role: str, organization_id: int | None = None, user_id: int = 1):
@@ -102,7 +103,7 @@ def test_superadmin_capabilities_full_panel(client: TestClient) -> None:
 def test_platform_bd_mutation_blocked_without_edit_cap():
     from utils.auth.admin_scope import build_admin_scope
 
-    user = _User("platform_bd")
+    user = _make_user("platform_bd")
     scope = build_admin_scope(user, lang="en")
     with pytest.raises(HTTPException) as exc:
         scope.assert_capability(CAP_TAB_USERS_EDIT, "en")

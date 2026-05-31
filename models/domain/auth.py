@@ -50,12 +50,18 @@ class Organization(Base):
     name = Column(String(200), nullable=False)  # e.g., "Demo School for Testing"
     display_name = Column(String(200), nullable=True)  # Custom text shown in sidebar (e.g. "MindGraph专业版")
     invitation_code = Column(String(50), unique=True, nullable=True)  # For controlled registration
+    invited_by_user_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        index=True,
+        nullable=True,
+    )
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     # Service subscription management
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    school_tier: Mapped[str] = mapped_column(String(32), nullable=False, default="standard")
+    school_tier: Mapped[str] = mapped_column(String(32), nullable=False, default="trial")
 
     # Per-org MindMate Dify override (optional; falls back to global DIFY_* env)
     dify_api_base_url = Column(String(512), nullable=True)
@@ -73,7 +79,13 @@ class Organization(Base):
 
     # Relationship — large collection. Use ``selectinload(Organization.users)``
     # explicitly in the few queries that actually need eager loading.
-    users = relationship("User", back_populates="organization", lazy="select")
+    # ``foreign_keys`` required: ``invited_by_user_id`` also references ``users``.
+    users = relationship(
+        "User",
+        back_populates="organization",
+        lazy="select",
+        foreign_keys="User.organization_id",
+    )
 
 
 class User(Base):
@@ -86,8 +98,8 @@ class User(Base):
     Roles (canonical slugs):
     - 'superadmin': Full platform admin (超级管理员)
     - 'platform_bd': Platform BD — trial invites, read-only global dashboard
-    - 'expert': Platform expert — trial invites only
-    - 'school_admin': Organization manager (学校管理员)
+    - 'expert': Platform expert — B2B school invites (own orgs) + C2C trial invites
+    - 'school_admin': Organization manager (学校管理员) — own-school dashboard + user mgmt
     - 'teacher': B2B school member (教师用户)
     - 'personal_trial': C-end trial account (个人体验账号)
     - 'personal_paid': C-end paid account (个人付费账号)
@@ -146,7 +158,12 @@ class User(Base):
     # Default-eager (selectin) therefore issued one wasted SELECT per User
     # load on the auth hot path. Use ``select`` so the relationship is only
     # materialised when explicitly requested via ``selectinload`` (G11).
-    organization = relationship("Organization", back_populates="users", lazy="select")
+    organization = relationship(
+        "Organization",
+        back_populates="users",
+        lazy="select",
+        foreign_keys="User.organization_id",
+    )
     # ``diagrams`` is a large 1:N collection. Default to ``select`` so the auth
     # hot path does not pull every user's full diagram set on every login;
     # callers that genuinely need them must use ``selectinload(User.diagrams)``.

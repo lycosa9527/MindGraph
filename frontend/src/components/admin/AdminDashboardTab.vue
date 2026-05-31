@@ -8,11 +8,13 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
 import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
 import AdminSwissServiceCard from '@/components/admin/swiss/AdminSwissServiceCard.vue'
+import AdminTokenOverviewRow from '@/components/admin/AdminTokenOverviewRow.vue'
 import AdminTokenUsageByServicePanel from '@/components/admin/AdminTokenUsageByServicePanel.vue'
 import { Connection, Document, Loading, TrendCharts, User } from '@element-plus/icons-vue'
 
 import type { Chart as ChartInstance } from 'chart.js'
 
+import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
 import { type ChartConfiguration, type TooltipItem, loadChartJs } from '@/utils/lazyChartJs'
@@ -33,8 +35,38 @@ const showTokenRankings = computed(() => showOperations.value || showUsageByServ
 
 const { t } = useLanguage()
 const notify = useNotifications()
+const { can } = useAdminAccess()
+
+interface TokenPeriodStats {
+  input_tokens: number
+  output_tokens: number
+  total_tokens: number
+  request_count?: number
+}
+
+interface ServiceStats {
+  today: TokenPeriodStats
+  week: TokenPeriodStats
+  month: TokenPeriodStats
+  total: TokenPeriodStats
+}
+
+interface PlatformTokenStats {
+  today: TokenPeriodStats
+  past_week: TokenPeriodStats
+  past_month: TokenPeriodStats
+  total: TokenPeriodStats
+  by_service: {
+    mindgraph: ServiceStats
+    mindmate: ServiceStats
+  }
+}
+
+type TokenTrendService = 'mindgraph' | 'mindmate' | null
 
 const isLoading = ref(true)
+const platformTokenStats = ref<PlatformTokenStats | null>(null)
+const showDingtalkOverview = computed(() => can('tab.settings.tokens'))
 const stats = ref({
   totalUsers: 0,
   totalOrganizations: 0,
@@ -93,8 +125,9 @@ const periodCards = ref({
   total: '-',
 })
 const trendContext = ref<{
-  type: 'metric' | 'org' | 'user'
+  type: 'metric' | 'org' | 'user' | 'service'
   metric?: MetricKey
+  service?: TokenTrendService
   orgName?: string
   orgId?: number
   userName?: string
@@ -114,14 +147,40 @@ function formatChartLabel(value: number): string {
   return String(value)
 }
 
+async function loadPlatformTokenStats(): Promise<void> {
+  if (!showUsageByService.value) {
+    return
+  }
+  try {
+    const response = await apiRequest('/api/auth/admin/token-stats')
+    if (response.ok) {
+      platformTokenStats.value = await response.json()
+    }
+  } catch {
+    platformTokenStats.value = null
+  }
+}
+
 async function loadStats() {
   isLoading.value = true
   try {
-    const response = await apiRequest('/api/auth/admin/stats')
+    const requests: [Promise<Response>, Promise<Response> | null] = [
+      apiRequest('/api/auth/admin/stats'),
+      showUsageByService.value ? apiRequest('/api/auth/admin/token-stats') : null,
+    ]
+    const [response, tokenResponse] = await Promise.all([
+      requests[0],
+      requests[1] ?? Promise.resolve(null),
+    ])
     if (!response.ok) {
       const data = await response.json().catch(() => ({}))
       notify.error(data.detail || t('admin.dashboardLoadError'))
       return
+    }
+    if (tokenResponse?.ok) {
+      platformTokenStats.value = await tokenResponse.json()
+    } else if (showUsageByService.value) {
+      platformTokenStats.value = null
     }
     const data = await response.json()
     stats.value = {
@@ -308,8 +367,82 @@ function switchTrendPeriod(period: 'today' | 'week' | 'month' | 'total') {
     showOrganizationTrendChart(ctx.orgName, ctx.orgId, period)
   } else if (ctx.type === 'user' && ctx.userId != null) {
     showUserTokenTrend(ctx.userName ?? '', ctx.userId, period)
+  } else if (ctx.type === 'service') {
+    showServiceTokenTrendChart(ctx.service ?? null, period)
   } else if (ctx.type === 'metric' && ctx.metric) {
     showTrendChart(ctx.metric, period)
+  }
+}
+
+async function showServiceTokenTrendChart(
+  service: TokenTrendService,
+  period: 'today' | 'week' | 'month' | 'total' = 'week'
+) {
+  trendContext.value = { type: 'service', service, period }
+  if (service === 'mindgraph') {
+    trendChartTitle.value = `MindGraph - ${t('admin.trendTokens')}`
+  } else if (service === 'mindmate') {
+    trendChartTitle.value = `MindMate - ${t('admin.trendTokens')}`
+  } else {
+    trendChartTitle.value = t('admin.trendTokens')
+  }
+  trendModalVisible.value = true
+  trendChartLoading.value = true
+
+  const daysMap = { today: 1, week: 7, month: 30, total: 0 }
+  const params = new URLSearchParams({ metric: 'tokens', days: String(daysMap[period]) })
+  if (service) {
+    params.set('service', service)
+  }
+
+  try {
+    const chartRes = await apiRequest(`/api/auth/admin/stats/trends?${params}`)
+    if (!chartRes.ok) {
+      notify.error(t('admin.dashboardLoadError'))
+      trendChartLoading.value = false
+      return
+    }
+    const data = await chartRes.json()
+    trendChartLoading.value = false
+    await nextTick()
+    await new Promise((r) => setTimeout(r, 50))
+    await renderTrendChart(data, 'tokens')
+
+    const fmt = (p: { input_tokens?: number; output_tokens?: number }) =>
+      `${formatNumber(p?.input_tokens ?? 0)}+${formatNumber(p?.output_tokens ?? 0)}`
+
+    const statsData = platformTokenStats.value
+    if (statsData) {
+      if (service === 'mindgraph' && statsData.by_service?.mindgraph) {
+        const s = statsData.by_service.mindgraph
+        periodCards.value = {
+          today: fmt(s.today),
+          week: fmt(s.week),
+          month: fmt(s.month),
+          total: fmt(s.total),
+        }
+      } else if (service === 'mindmate' && statsData.by_service?.mindmate) {
+        const s = statsData.by_service.mindmate
+        periodCards.value = {
+          today: fmt(s.today),
+          week: fmt(s.week),
+          month: fmt(s.month),
+          total: fmt(s.total),
+        }
+      } else {
+        periodCards.value = {
+          today: fmt(statsData.today),
+          week: fmt(statsData.past_week),
+          month: fmt(statsData.past_month),
+          total: fmt(statsData.total),
+        }
+      }
+    } else {
+      periodCards.value = { today: '-', week: '-', month: '-', total: '-' }
+    }
+  } catch {
+    notify.error(t('admin.dashboardLoadError'))
+    trendChartLoading.value = false
   }
 }
 
@@ -540,6 +673,19 @@ onBeforeUnmount(() => {
       <AdminTokenUsageByServicePanel
         v-if="showUsageByService"
         class="pt-4"
+        :stats="platformTokenStats ?? undefined"
+        clickable
+        @service-click="showServiceTokenTrendChart($event)"
+      />
+
+      <AdminTokenOverviewRow
+        v-if="showUsageByService && platformTokenStats"
+        class="mt-6"
+        :token-stats="platformTokenStats"
+        :show-dingtalk="showDingtalkOverview"
+        clickable
+        @overall-click="showServiceTokenTrendChart(null)"
+        @refresh="loadPlatformTokenStats"
       />
 
       <div

@@ -5,6 +5,7 @@ import type { Component } from 'vue'
 
 import {
   DataAnalysis,
+  MagicStick,
   Promotion,
   School,
   Setting,
@@ -25,4 +26,5 @@ export const ADMIN_PANEL_TAB_CONFIG: readonly AdminPanelTabConfig[] = [
   { name: 'invites', labelKey: 'admin.inviteUsers', icon: Promotion },
   { name: 'billing', labelKey: 'admin.billing', icon: ShoppingCart },
   { name: 'settings', labelKey: 'admin.systemSettings', icon: Setting },
+  { name: 'feature_dev', labelKey: 'admin.featureDevTab', icon: MagicStick },
 ]

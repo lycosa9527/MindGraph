@@ -6,6 +6,9 @@ export default {
   'admin.actions': 'Actions',
   'admin.activeToday': 'Active Today',
   'admin.addAdmin': 'Add Admin',
+  'admin.addRoleMember': 'Add member',
+  'admin.addRoleMemberModalTitle': 'Add member-{role}',
+  'admin.roleAddMemberSearchHint': 'Enter at least 2 characters to search by name or phone',
   'admin.addUser': 'Add User',
   'admin.adminRoleGranted': 'Admin role granted',
   'admin.adminRoleRevoked': 'Admin role revoked',
@@ -74,6 +77,9 @@ export default {
   'admin.feature.smartResponseHint': 'ESP32 / teacher watch integration.',
   'admin.feature.teacherUsage': 'Teacher usage analytics',
   'admin.feature.teacherUsageHint': 'Admin dashboards for teacher engagement.',
+  'admin.feature.kittyAgent': 'Kitty Agent (voice & canvas)',
+  'admin.feature.kittyAgentHint':
+    'Qwen-Omni realtime multimodal agent; WebSocket and REST respect org/user access rules.',
   'admin.feature.template': 'Template resources',
   'admin.feature.templateHint': 'Template gallery and related APIs.',
   'admin.feature.workshopChat': 'Workshop (教研坊)',
@@ -82,10 +88,12 @@ export default {
   'admin.featureSaveFailed': 'Could not save settings',
   'admin.featuresIntro':
     'Toggle module flags. Values are written to .env and reloaded into the running server so the UI and most API checks update immediately. If a module was never loaded at process start, you may still need a full restart to register its routes.',
-  'admin.featuresReloadFailed': 'Saved to .env but runtime reload failed. Restart the server.',
-  'admin.featuresSave': 'Save and reload runtime',
-  'admin.featuresSaved': 'Settings saved and runtime configuration reloaded.',
+  'admin.featuresReloadFailed': 'Could not apply changes. Restart the server.',
+  'admin.featuresSave': 'Apply',
+  'admin.featuresSaved': 'Changes applied.',
   'admin.featuresTab': 'Features',
+  'admin.featureDevTab': 'Feature development',
+  'admin.newFeaturesTab': 'New features',
   'admin.kittyLlmopsTab': 'Kitty LLMOps',
   'admin.featuresIntroAccess':
     'Organization and user allowlists are stored in the database and take effect as soon as you save. Use Permissions to limit who can use a module after it is enabled.',
@@ -109,6 +117,7 @@ export default {
   'admin.filterBySchool': 'Filter by School',
   'admin.geweWechat': 'Gewe WeChat',
   'admin.grantAdmin': 'Grant Admin',
+  'admin.grantRole': 'Grant role',
   'admin.inShort': 'In',
   'admin.inputTokens': 'Input Tokens (All Time)',
   'admin.invitationCode': 'Invitation Code',
@@ -379,6 +388,10 @@ export default {
   'admin.noData': 'No data',
   'admin.noExpiration': 'No expiration',
   'admin.noManagersFound': 'No school managers',
+  'admin.noRoleMembersFound': 'No members assigned for this role yet',
+  'admin.noRoleMembersEmptyHint': 'Use Add member above to assign this role to a user.',
+  'admin.inviteOrgsEmpty': 'You have not created any invite schools yet',
+  'admin.roleAddMemberNoSearchResults': 'No users match your search',
   'admin.noTokenStats': 'No token statistics available',
   'admin.noUsersFound': 'No users found',
   'admin.orgManagement': 'Organization Management',
@@ -564,11 +577,17 @@ export default {
   'admin.reset': 'Reset',
   'admin.revokeAdmin': 'Revoke Admin',
   'admin.revokeAdminConfirm': 'Revoke admin access from',
+  'admin.revokeRole': 'Remove role',
+  'admin.revokeRoleConfirm': 'Remove role from',
   'admin.roleControl': 'Role Control',
   'admin.roleControlDesc':
-    'Manage admin access. Users with admin role can access the management panel.',
+    'Manage superadmin access. Users with this role can access the full management panel.',
+  'admin.roleControlDescPlatformBd':
+    'Manage platform BD access. Platform BD can view global data and manage trial invites.',
+  'admin.roleControlDescExpert':
+    'Manage expert access. Experts can create schools and manage organizations in their invite scope.',
   'admin.roleControlDescManagers':
-    'Manage school managers. Managers can access the school dashboard for their organization.',
+    'Manage school admins. They can access the school dashboard for their organization. Users must already belong to a school before being granted this role.',
   'admin.roleAssignmentTab': 'Role assignment',
   'admin.roleAssignmentDesc':
     'Assign one of seven roles to a user. Platform, B2B, and C2C roles have different permissions.',
@@ -578,6 +597,7 @@ export default {
   'admin.roleAssign': 'Assign role',
   'admin.roleAssignSuccess': 'Role updated',
   'admin.roleAssignFailed': 'Failed to assign role',
+  'admin.roleMembersLoadFailed': 'Failed to load role members',
   'admin.currentRole': 'Current role',
   'admin.selectRole': 'Select role',
   'admin.save': 'Save',
@@ -586,6 +606,8 @@ export default {
   'admin.schoolCodeRequired': 'School code could not be generated from name. Please enter a code.',
   'admin.schoolDashboard': 'School Dashboard',
   'admin.schoolDashboardNoOrg': 'You must belong to a school to view the dashboard.',
+  'admin.usersTabSchoolDashboardHint':
+    'School members are managed from the School Dashboard. Open it to add or edit users in your organization.',
   'admin.memberSeats': 'Member seats',
   'admin.managerSeats': 'Admin seats',
   'admin.resourceSpace': 'Resource space',
@@ -644,6 +666,8 @@ export default {
     'Unlock this account? Failed-login lock and attempt counter will be cleared.',
   'admin.listRange': '{start}–{end} of {total}',
   'admin.listRangeEmpty': 'No results',
+  'admin.schoolManagerGrantRequiresOrg':
+    'This user is not in a school yet. Add them to a school before granting school manager.',
   'admin.schoolManagersTab': 'School Managers',
   'admin.schoolName': 'School Name',
   'admin.schoolNamePlaceholder': 'e.g. Beijing High School',
@@ -659,7 +683,8 @@ export default {
   'admin.schoolVersionHint':
     'Subscription tier sets member cap and diagram storage for this school. Members: {current} / {limit}.',
   'admin.schoolVersionLiteFeaturesHint':
-    'Basic tier excludes: online collaboration, presentation tools, Chrome extension, API tokens, and OpenClaw integration.',
+    'Trial and basic tiers exclude: online collaboration, presentation tools, Chrome extension, API tokens, and OpenClaw integration.',
+  'admin.schoolVersionTierTrial': 'Trial experience',
   'admin.schoolVersionTierLite': 'Basic teaching & research',
   'admin.schoolVersionTierStandard': 'Standard teaching & research',
   'admin.schoolVersionTierProfessional': 'School co-build',
@@ -732,6 +757,7 @@ export default {
   'admin.schoolDifyAuthErrorDetail': 'Dify auth failed: {detail}',
   'admin.search': 'Search',
   'admin.searchUserByNameOrPhone': 'Search by name or phone',
+  'admin.userSearchFailed': 'User search failed',
   'admin.selectSchool': 'Select school',
   'admin.setManager': 'Set as Manager',
   'admin.shareInviteMessage':
@@ -765,9 +791,9 @@ export default {
   'admin.personalTrialInviteNotConfiguredTitle': 'Not configured',
   'admin.personalTrialInviteNotConfigured':
     'Set PERSONAL_TRIAL_ORG_CODE in server environment to enable personal trial invites.',
-  'admin.personalTrialInviteMissingTitle': 'Organization not found',
+  'admin.personalTrialInviteMissingTitle': 'Personal trial not ready',
   'admin.personalTrialInviteMissing':
-    'PERSONAL_TRIAL_ORG_CODE is set but no matching organization exists in the database.',
+    'Check that PERSONAL_TRIAL_ORG_CODE points to a valid organization in the database.',
   'admin.inviteUsersSelectSchool':
     'Select a school to view and copy its organization invitation code.',
   'admin.today': 'Today',

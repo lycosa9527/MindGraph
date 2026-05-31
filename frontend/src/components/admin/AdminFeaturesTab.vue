@@ -2,11 +2,15 @@
 /**
  * Admin — toggle FEATURE_* flags (writes .env + runtime reload) and DB access rules.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { useQueryClient } from '@tanstack/vue-query'
 
 import { useLanguage, useNotifications } from '@/composables'
+import {
+  registerAdminFeaturesHeaderToolbar,
+  unregisterAdminFeaturesHeaderToolbar,
+} from '@/composables/admin/useAdminFeaturesHeaderToolbar'
 import type { FeatureOrgAccessEntry } from '@/stores/featureFlags'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { apiRequest } from '@/utils/apiClient'
@@ -32,6 +36,7 @@ interface FeatureFlagsPayload {
   feature_workshop_chat: boolean
   feature_markets: boolean
   feature_mindbot: boolean
+  feature_kitty_agent: boolean
   feature_org_access?: Record<string, FeatureOrgAccessEntry>
 }
 
@@ -134,6 +139,12 @@ const ROWS: RowDef[] = [
     envKey: 'FEATURE_TEACHER_USAGE',
     labelKey: 'admin.feature.teacherUsage',
     hintKey: 'admin.feature.teacherUsageHint',
+  },
+  {
+    apiKey: 'feature_kitty_agent',
+    envKey: 'FEATURE_KITTY_AGENT',
+    labelKey: 'admin.feature.kittyAgent',
+    hintKey: 'admin.feature.kittyAgentHint',
   },
 ]
 
@@ -361,19 +372,17 @@ async function save(): Promise<void> {
 }
 
 onMounted(() => {
+  registerAdminFeaturesHeaderToolbar({ saving, save })
   void load()
+})
+
+onUnmounted(() => {
+  unregisterAdminFeaturesHeaderToolbar()
 })
 </script>
 
 <template>
   <div class="admin-features-tab max-w-3xl">
-    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-      {{ t('admin.featuresIntro') }}
-    </p>
-    <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
-      {{ t('admin.featuresIntroAccess') }}
-    </p>
-
     <div
       v-if="loading"
       class="py-12 text-center text-gray-500"
@@ -388,7 +397,7 @@ onMounted(() => {
       <div
         v-for="row in ROWS"
         :key="row.apiKey"
-        class="flex flex-col gap-2 py-3 border-b border-gray-200 dark:border-gray-700"
+        class="flex flex-col gap-2 py-3 border-b border-stone-200 dark:border-stone-700"
       >
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div class="min-w-0 flex-1">
@@ -411,6 +420,7 @@ onMounted(() => {
           <div class="flex flex-row items-center gap-2 shrink-0">
             <el-button
               size="small"
+              class="admin-swiss-btn admin-swiss-btn--ghost"
               :disabled="saving"
               @click="openPermissionDialog(row.apiKey)"
             >
@@ -418,20 +428,11 @@ onMounted(() => {
             </el-button>
             <el-switch
               v-model="draft[row.apiKey]"
+              class="admin-swiss-switch"
               :disabled="saving"
             />
           </div>
         </div>
-      </div>
-
-      <div class="pt-4">
-        <el-button
-          type="primary"
-          :loading="saving"
-          @click="save"
-        >
-          {{ t('admin.featuresSave') }}
-        </el-button>
       </div>
     </div>
 
@@ -453,7 +454,10 @@ onMounted(() => {
           <p class="text-xs text-gray-500 mb-2">
             {{ t('admin.featurePermissionsRestrictHint') }}
           </p>
-          <el-switch v-model="accessDraft[permissionDialogKey].restrict" />
+          <el-switch
+            v-model="accessDraft[permissionDialogKey].restrict"
+            class="admin-swiss-switch"
+          />
         </div>
         <div>
           <div class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
@@ -507,3 +511,5 @@ onMounted(() => {
     </el-dialog>
   </div>
 </template>
+
+<style scoped src="@/styles/admin-swiss-controls.css"></style>

@@ -16,7 +16,8 @@ from sqlalchemy.orm import selectinload
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.device import Device
-from utils.auth import get_current_user, is_admin_or_manager
+from utils.auth import get_current_user
+from utils.auth.roles import is_superadmin
 
 logger = logging.getLogger(__name__)
 
@@ -75,11 +76,11 @@ async def list_devices(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """List all devices (admin/manager only)"""
-    if not is_admin_or_manager(current_user):
+    """List all devices (superadmin only — Smart Response admin panel)."""
+    if not is_superadmin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin or manager access required",
+            detail="Superadmin access required",
         )
 
     stmt = select(Device).options(selectinload(Device.student))
@@ -105,10 +106,10 @@ async def list_unassigned_devices(
     db: AsyncSession = Depends(get_async_db),
 ):
     """List unassigned devices"""
-    if not is_admin_or_manager(current_user):
+    if not is_superadmin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin or manager access required",
+            detail="Superadmin access required",
         )
 
     result = await db.execute(select(Device).where(Device.status == "unassigned"))
@@ -144,10 +145,10 @@ async def assign_device(
     db: AsyncSession = Depends(get_async_db),
 ):
     """Assign device to student"""
-    if not is_admin_or_manager(current_user):
+    if not is_superadmin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin or manager access required",
+            detail="Superadmin access required",
         )
 
     result = await db.execute(select(Device).where(Device.watch_id == watch_id))
@@ -186,10 +187,10 @@ async def unassign_device(
     db: AsyncSession = Depends(get_async_db),
 ):
     """Unassign device from student"""
-    if not is_admin_or_manager(current_user):
+    if not is_superadmin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin or manager access required",
+            detail="Superadmin access required",
         )
 
     result = await db.execute(select(Device).where(Device.watch_id == watch_id))

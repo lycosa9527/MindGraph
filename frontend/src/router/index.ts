@@ -65,7 +65,7 @@ const routes: RouteRecordRaw[] = [
     path: '/smart-response',
     redirect: (to) => ({
       path: '/admin',
-      query: { ...to.query, tab: 'settings', subtab: 'smart_response' },
+      query: { ...to.query, tab: 'feature_dev', subtab: 'smart_response' },
     }),
   },
   {
@@ -96,7 +96,7 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/mindbot',
     redirect: (to) => ({
       path: '/admin',
-      query: { ...to.query, tab: 'settings', subtab: 'mindbot' },
+      query: { ...to.query, tab: 'organizations' },
     }),
   },
   {
@@ -240,7 +240,7 @@ const routes: RouteRecordRaw[] = [
     path: '/teacher-usage',
     redirect: (to) => ({
       path: '/admin',
-      query: { ...to.query, tab: 'settings', subtab: 'teacher_usage' },
+      query: { ...to.query, tab: 'feature_dev', subtab: 'teacher_usage' },
     }),
   },
   {
@@ -316,7 +316,7 @@ router.beforeEach(async (to, from) => {
   if (to.name === 'Admin' && to.query.tab === 'mindbot') {
     return {
       path: '/admin',
-      query: { ...to.query, tab: 'settings', subtab: 'mindbot' },
+      query: { ...to.query, tab: 'organizations' },
     }
   }
 

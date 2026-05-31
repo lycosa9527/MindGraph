@@ -83,7 +83,7 @@ export default {
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': 'Account',
   'sidebar.roleSuperAdmin': 'Super Admin',
-  'sidebar.rolePlatformAdmin': 'Admin',
+  'sidebar.rolePlatformAdmin': 'Platform BD',
   'sidebar.roleExpert': 'Expert',
   'sidebar.roleSchoolAdmin': 'School Admin',
   'sidebar.roleSchoolEdition': 'School',

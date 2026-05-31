@@ -67,9 +67,18 @@ from utils.auth.school_tier import (
     member_count_for_org,
     school_tier_list_fields,
 )
-from utils.auth.admin_scope import AdminScope
+from utils.auth.admin_panel_permissions import CAP_TAB_INVITES_VIEW, CAP_TAB_ORGANIZATIONS_VIEW
+from utils.auth.org_privatization import org_privatization_list_field
+from utils.auth.admin_scope import (
+    AdminScope,
+    assert_panel_org_readable,
+    assert_resource_org_in_scope,
+    invite_org_filter,
+    panel_org_table_filter,
+)
 
 from ..dependencies import (
+    get_admin_scope,
     get_language_dependency,
     require_global_organizations_edit,
     require_global_organizations_read,
@@ -85,18 +94,27 @@ router = APIRouter()
 @router.get("/admin/organizations")
 async def list_organizations_admin(
     _request: Request,
-    _scope: AdminScope = Depends(require_global_organizations_read),
+    scope: AdminScope = Depends(require_global_organizations_read),
     db: AsyncSession = Depends(get_async_db),
     _lang: Language = Depends(get_language_dependency),
 ):
     """List all organizations (ADMIN ONLY)"""
-    orgs = (await db.execute(select(Organization).order_by(Organization.id))).scalars().all()
+    orgs = (
+        await db.execute(
+            select(Organization)
+            .where(panel_org_table_filter(scope))
+            .order_by(Organization.id)
+        )
+    ).scalars().all()
     result = []
 
     user_counts_by_org = {}
     user_counts_stmt = (
         select(User.organization_id, sa_count(User.id).label("user_count"))
-        .where(User.organization_id.isnot(None))
+        .where(
+            User.organization_id.isnot(None),
+            invite_org_filter(scope, User.organization_id),
+        )
         .group_by(User.organization_id)
     )
     user_counts_query = (await db.execute(user_counts_stmt)).all()
@@ -107,7 +125,11 @@ async def list_organizations_admin(
     managers_by_org: dict[int, list[str]] = {}
     managers_stmt = (
         select(User.organization_id, User.name, User.phone, User.email)
-        .where(User.organization_id.isnot(None), User.role.in_(tuple(SCHOOL_ADMIN_ROLES)))
+        .where(
+            User.organization_id.isnot(None),
+            User.role.in_(tuple(SCHOOL_ADMIN_ROLES)),
+            invite_org_filter(scope, User.organization_id),
+        )
         .order_by(User.organization_id, User.name)
     )
     managers_query = (await db.execute(managers_stmt)).all()
@@ -129,6 +151,7 @@ async def list_organizations_admin(
                     sa_coalesce(sa_sum(TokenUsage.output_tokens), 0).label("output_tokens"),
                     sa_coalesce(sa_sum(TokenUsage.total_tokens), 0).label("total_tokens"),
                 )
+                .where(panel_org_table_filter(scope))
                 .outerjoin(
                     TokenUsage,
                     and_(
@@ -176,6 +199,7 @@ async def list_organizations_admin(
                 "token_stats": org_token_stats,
                 **dify_list_fields(org),
                 **mindmate_branding_list_fields(org),
+                **org_privatization_list_field(org),
                 **school_tier_list_fields(org, user_count),
             }
         )
@@ -222,15 +246,25 @@ async def post_organization_mindmate_dify_health_admin(
 async def get_organization_invitation_code_admin(
     org_id: int,
     _request: Request,
-    scope: AdminScope = Depends(require_global_organizations_read),
+    scope: AdminScope = Depends(get_admin_scope),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """Return the invitation code for one organization."""
+    scope.assert_any_capability(
+        frozenset({CAP_TAB_ORGANIZATIONS_VIEW, CAP_TAB_INVITES_VIEW}),
+        lang,
+    )
     org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if not org:
         error_msg = Messages.error("organization_not_found", lang, org_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+    assert_resource_org_in_scope(
+        scope,
+        org_id,
+        lang,
+        resource_invited_by_user_id=getattr(org, "invited_by_user_id", None),
+    )
     logger.info(
         "[Auth] Admin user_id=%s read full invitation code for org_id=%s",
         scope.actor.id,
@@ -247,7 +281,7 @@ async def create_organization_admin(
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
-    """Create new organization (superadmin or platform_bd invite tab)."""
+    """Create new organization (superadmin, platform_bd, or expert invite tab)."""
     current_user = scope.actor
     if not all(k in request for k in ["code", "name"]):
         error_msg = Messages.error("missing_required_fields", lang, "code, name")
@@ -292,6 +326,7 @@ async def create_organization_admin(
         code=request["code"],
         name=request["name"],
         invitation_code=invitation_code,
+        invited_by_user_id=int(current_user.id),
         created_at=datetime.now(UTC),
     )
     apply_dify_on_create(new_org, request, lang)
@@ -499,6 +534,7 @@ async def update_organization_admin(
         "created_at": updated_created.isoformat() if updated_created else None,
         **dify_list_fields(org),
         **mindmate_branding_list_fields(org),
+        **org_privatization_list_field(org),
         **school_tier_list_fields(org, member_count),
     }
 
@@ -563,6 +599,13 @@ async def refresh_organization_invitation_code(
     if org is None:
         error_msg = Messages.error("organization_not_found", org_id, lang=lang)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+
+    assert_resource_org_in_scope(
+        scope,
+        org_id,
+        lang,
+        resource_invited_by_user_id=getattr(org, "invited_by_user_id", None),
+    )
 
     old_invite = cast(Optional[str], org.invitation_code)
     org_name_val = cast(Optional[str], org.name)
@@ -695,7 +738,7 @@ async def delete_organization_admin(
 @router.get("/admin/managers")
 async def list_all_managers(
     _request: Request,
-    _scope: AdminScope = Depends(require_global_organizations_read),
+    scope: AdminScope = Depends(require_global_organizations_read),
     db: AsyncSession = Depends(get_async_db),
     _lang: Language = Depends(get_language_dependency),
 ):
@@ -706,7 +749,11 @@ async def list_all_managers(
     """
     managers_stmt = (
         select(User)
-        .where(User.organization_id.isnot(None), User.role.in_(tuple(SCHOOL_ADMIN_ROLES)))
+        .where(
+            User.organization_id.isnot(None),
+            User.role.in_(tuple(SCHOOL_ADMIN_ROLES)),
+            invite_org_filter(scope, User.organization_id),
+        )
         .order_by(User.organization_id, User.name)
     )
     managers = (await db.execute(managers_stmt)).scalars().all()
@@ -744,7 +791,7 @@ async def list_all_managers(
 async def list_organization_users(
     org_id: int,
     _request: Request,
-    _scope: AdminScope = Depends(require_global_organizations_read),
+    scope: AdminScope = Depends(require_global_organizations_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -757,6 +804,7 @@ async def list_organization_users(
     if not org:
         error_msg = Messages.error("organization_not_found", lang, org_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+    await assert_panel_org_readable(scope, org_id, db, lang)
 
     users_stmt = select(User).where(User.organization_id == org_id).order_by(User.name)
     users = (await db.execute(users_stmt)).scalars().all()
@@ -787,7 +835,7 @@ async def list_organization_users(
 async def list_organization_managers(
     org_id: int,
     _request: Request,
-    _scope: AdminScope = Depends(require_global_organizations_read),
+    scope: AdminScope = Depends(require_global_organizations_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -798,6 +846,7 @@ async def list_organization_managers(
     if not org:
         error_msg = Messages.error("organization_not_found", lang, org_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+    await assert_panel_org_readable(scope, org_id, db, lang)
 
     managers_stmt = (
         select(User).where(User.organization_id == org_id, User.role.in_(tuple(SCHOOL_ADMIN_ROLES))).order_by(User.name)

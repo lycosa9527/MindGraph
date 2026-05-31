@@ -9,12 +9,17 @@ import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAdminPanelTabs } from '@/composables/admin/useAdminPanelTabs'
 import {
+  canViewDataCenterSubView,
   DATA_CENTER_VIEWS,
   defaultDataCenterView,
   isDataCenterView,
+  visibleDataCenterViews,
   type DataCenterView,
 } from '@/composables/admin/adminDataCenterViews'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
+import { useAdminFeatureDevNav } from '@/composables/admin/useAdminFeatureDevNav'
+import { defaultFeatureDevSubtab } from '@/composables/admin/adminFeatureDevNav'
+import { useAdminSettingsNav } from '@/composables/admin/useAdminSettingsNav'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
 import { useAskOnceStore } from '@/stores/askonce'
@@ -44,6 +49,7 @@ export function useAppSidebar() {
     featureGewe,
     featureSmartResponse,
     featureTeacherUsage,
+    featureKittyAgent,
     featureWorkshopChat,
     featureMindbot,
     workshopChatPreviewOrgIds,
@@ -96,9 +102,9 @@ export function useAppSidebar() {
   const { tabs: adminNavTabs, loadCapabilities: loadAdminNavCapabilities } = useAdminPanelTabs({
     loadOnMount: false,
   })
-  const { can } = useAdminAccess()
+  const { can, canViewSettingsSubtab, capabilities } = useAdminAccess()
   const expandedPanel = ref<string | null>(null)
-  const dataCenterNavExpanded = ref(true)
+  const dataCenterNavExpanded = ref(false)
 
   const currentAdminTab = computed((): string | null => {
     const path = router.currentRoute.value.path
@@ -111,12 +117,13 @@ export function useAppSidebar() {
 
   const managementPanelExpanded = computed(() => expandedPanel.value === 'admin')
 
-  const dataCenterNavViews = computed(() =>
-    DATA_CENTER_VIEWS.map((view) => ({
+  const dataCenterNavViews = computed(() => {
+    const allowed = new Set(visibleDataCenterViews(capabilities.value))
+    return DATA_CENTER_VIEWS.filter((view) => allowed.has(view.name)).map((view) => ({
       ...view,
       label: t(view.labelKey),
     }))
-  )
+  })
 
   const currentDataCenterView = computed((): DataCenterView | null => {
     if (currentAdminTab.value !== 'data_center') {
@@ -126,7 +133,7 @@ export function useAppSidebar() {
     if (typeof raw === 'string' && isDataCenterView(raw)) {
       return raw
     }
-    return defaultDataCenterView(can('scope.global'))
+    return defaultDataCenterView(can('scope.global') && can('tab.data_center.view'))
   })
 
   const canAccessWorkshopChat = computed(() => {
@@ -143,18 +150,17 @@ export function useAppSidebar() {
     )
   })
 
-  /** Same rules as router `MindbotAdmin`: feature flag + admin or eligible manager. */
+  /** Same rules as server `require_mindbot_admin_access` — superadmin only. */
   const canAccessMindbot = computed(() => {
     if (!featureMindbot.value) {
       return false
     }
-    const entry = featureOrgAccess.value.feature_mindbot
     return userCanAccessMindbotAdmin(
       authStore.isAdmin,
       authStore.isManager,
       authStore.user?.schoolId,
       authStore.user?.id,
-      entry
+      featureOrgAccess.value.feature_mindbot
     )
   })
 
@@ -163,7 +169,7 @@ export function useAppSidebar() {
     if (!authStore.user?.role) {
       return null
     }
-    const style = getRolePillStyle(authStore.user.role)
+    const style = getRolePillStyle(authStore.user.role, authStore.user.schoolTier)
     if (!style) {
       return null
     }
@@ -211,14 +217,44 @@ export function useAppSidebar() {
     'workshop-chat': '/workshop-chat',
   }
 
+  const settingsNav = useAdminSettingsNav({
+    t,
+    canViewSettingsSubtab,
+    featureGewe,
+    featureLibrary,
+    currentAdminTab,
+  })
+
+  const featureDevNav = useAdminFeatureDevNav({
+    t,
+    canViewSettingsSubtab,
+    featureSmartResponse,
+    featureTeacherUsage,
+    featureKittyAgent,
+    currentAdminTab,
+  })
+
   function navigateAdminTab(tabName: string, view?: string): void {
     expandedPanel.value = 'admin'
-    if (tabName === 'data_center') {
-      dataCenterNavExpanded.value = true
-    }
     const query: Record<string, string> = { tab: tabName }
+    if (tabName === 'feature_dev') {
+      const first = defaultFeatureDevSubtab(featureDevNav.visibilityOptions.value)
+      if (first) {
+        query.subtab = featureDevNav.currentFeatureDevSubtab.value ?? first
+      }
+    }
+    if (tabName === 'settings') {
+      query.subtab = settingsNav.currentSettingsSubtab.value ?? 'roles'
+    }
     if (tabName === 'data_center') {
-      query.view = view ?? defaultDataCenterView(can('scope.global'))
+      let resolvedView =
+        view && isDataCenterView(view)
+          ? view
+          : defaultDataCenterView(can('scope.global') && can('tab.data_center.view'))
+      if (!canViewDataCenterSubView(resolvedView, capabilities.value)) {
+        resolvedView = defaultDataCenterView(can('scope.global') && can('tab.data_center.view'))
+      }
+      query.view = resolvedView
     }
     const orgId = router.currentRoute.value.query.organization_id
     if (typeof orgId === 'string' && orgId.trim()) {
@@ -392,8 +428,14 @@ export function useAppSidebar() {
   watch(
     currentAdminTab,
     (tab) => {
-      if (tab === 'data_center') {
-        dataCenterNavExpanded.value = true
+      if (tab !== 'data_center') {
+        dataCenterNavExpanded.value = false
+      }
+      if (tab !== 'settings') {
+        settingsNav.settingsNavExpanded.value = false
+      }
+      if (tab !== 'feature_dev') {
+        featureDevNav.featureDevNavExpanded.value = false
       }
     },
     { immediate: true }
@@ -447,6 +489,18 @@ export function useAppSidebar() {
     navigateAdminTab,
     toggleManagementPanel,
     adminSubItemClass,
+    featureDevNavExpanded: featureDevNav.featureDevNavExpanded,
+    featureDevNavItems: featureDevNav.featureDevNavItems,
+    currentFeatureDevSubtab: featureDevNav.currentFeatureDevSubtab,
+    navigateFeatureDevSubtab: featureDevNav.navigateFeatureDevSubtab,
+    toggleFeatureDevNav: featureDevNav.toggleFeatureDevNav,
+    featureDevSubItemClass: featureDevNav.featureDevSubItemClass,
+    settingsNavExpanded: settingsNav.settingsNavExpanded,
+    currentSettingsSubtab: settingsNav.currentSettingsSubtab,
+    settingsNavItems: settingsNav.settingsNavItems,
+    navigateSettingsSubtab: settingsNav.navigateSettingsSubtab,
+    toggleSettingsNav: settingsNav.toggleSettingsNav,
+    settingsSubItemClass: settingsNav.settingsSubItemClass,
     canAccessWorkshopChat,
     canAccessMindbot,
     mindMateNavLabel,

@@ -7,8 +7,6 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 
-import { resolveDefaultOrganizationFilter } from '@/composables/admin/useCurrentUserOrganizationId'
-import { useAdminOrganizationsList } from '@/composables/admin/useAdminOrganizationsList'
 import { useAdminUsersSchoolFilterRoute } from '@/composables/admin/useAdminUsersSchoolFilterRoute'
 import {
   registerAdminUsersHeaderToolbar,
@@ -18,6 +16,7 @@ import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
 import { useAuthStore } from '@/stores'
 
+import AdminSwissPagination from './AdminSwissPagination.vue'
 import AdminTrendChartModal from './AdminTrendChartModal.vue'
 import AdminUserEditModal from './AdminUserEditModal.vue'
 import AdminUsersTable from './AdminUsersTable.vue'
@@ -48,8 +47,6 @@ function openTrendModal(row: Record<string, unknown>) {
   }
   trendModalVisible.value = true
 }
-
-const { organizations, loadOrganizations } = useAdminOrganizationsList()
 
 const isLoading = ref(true)
 const users = ref<Record<string, unknown>[]>([])
@@ -131,9 +128,12 @@ function goToNextUserPage() {
 
 const pageInfo = computed(() => {
   const p = pagination.value
+  if (p.total <= 0) {
+    return t('admin.listRangeEmpty')
+  }
   const start = (p.page - 1) * p.page_size + 1
   const end = Math.min(p.page * p.page_size, p.total)
-  return `${start}-${end} of ${p.total}`
+  return t('admin.listRange', { start, end, total: p.total })
 })
 
 onMounted(() => {
@@ -145,18 +145,7 @@ onMounted(() => {
     resetFilters,
     onOrgFilterChange,
   })
-  void loadOrganizations().then(() => {
-    if (orgFilter.value === '') {
-      const defaultFilter = resolveDefaultOrganizationFilter(organizations.value)
-      if (defaultFilter !== '') {
-        orgFilter.value = defaultFilter
-        if (authStore.isSuperAdmin) {
-          syncOrgFilterToRoute(defaultFilter)
-        }
-      }
-    }
-    void loadUsers()
-  })
+  void loadUsers()
 })
 
 watch(
@@ -188,28 +177,14 @@ onBeforeUnmount(() => {
         @open-trend="openTrendModal"
       />
 
-      <div
+      <AdminSwissPagination
         v-if="!isLoading && pagination.total_pages > 1"
-        class="flex justify-between items-center mt-4 pt-4 border-t border-stone-200"
-      >
-        <span class="text-sm text-stone-500">{{ pageInfo }}</span>
-        <div class="flex gap-2">
-          <el-button
-            size="small"
-            :disabled="pagination.page <= 1"
-            @click="goToPreviousUserPage"
-          >
-            {{ t('admin.previous') }}
-          </el-button>
-          <el-button
-            size="small"
-            :disabled="pagination.page >= pagination.total_pages"
-            @click="goToNextUserPage"
-          >
-            {{ t('admin.next') }}
-          </el-button>
-        </div>
-      </div>
+        :page-info="pageInfo"
+        :page="pagination.page"
+        :total-pages="pagination.total_pages"
+        @previous="goToPreviousUserPage"
+        @next="goToNextUserPage"
+      />
     </el-card>
 
     <AdminTrendChartModal
@@ -230,5 +205,3 @@ onBeforeUnmount(() => {
     />
   </div>
 </template>
-
-<style scoped src="@/styles/admin-swiss-controls.css"></style>

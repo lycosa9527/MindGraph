@@ -1,7 +1,8 @@
 /**
  * User role display helpers — canonical slugs, legacy mapping, sidebar pill styles.
  */
-import type { UserRole } from '@/types'
+import type { SchoolTier, UserRole } from '@/types'
+import { normalizeSchoolTier } from '@/constants/schoolTier'
 
 export const USER_ROLES = [
   'superadmin',
@@ -94,8 +95,15 @@ export function normalizeUserRole(role: string | undefined | null): UserRole {
   return LEGACY_TO_CANONICAL[role] ?? 'teacher'
 }
 
-export function getRolePillStyle(role: string | undefined | null): RolePillStyle | null {
+export function getRolePillStyle(
+  role: string | undefined | null,
+  schoolTier?: SchoolTier | null
+): RolePillStyle | null {
   const canonical = normalizeUserRole(role)
+  const tier = schoolTier != null ? normalizeSchoolTier(schoolTier) : null
+  if (tier === 'trial' && canonical === 'teacher') {
+    return ROLE_PILL_STYLES.personal_trial
+  }
   return ROLE_PILL_STYLES[canonical] ?? null
 }
 
@@ -106,18 +114,20 @@ export function isCanonicalUserRole(role: string): role is UserRole {
 /** Localized role label (same keys as user table pills). */
 export function userRoleLabel(
   translate: (key: string) => string,
-  role: string | null | undefined
+  role: string | null | undefined,
+  schoolTier?: SchoolTier | null
 ): string {
-  const style = getRolePillStyle(role)
+  const style = getRolePillStyle(role, schoolTier)
   return style ? translate(style.labelKey) : String(role ?? '—')
 }
 
 /** Pill view for table cells and role selects (labels match sidebar.role*). */
 export function userRolePillView(
   translate: (key: string) => string,
-  role: string | null | undefined
+  role: string | null | undefined,
+  schoolTier?: SchoolTier | null
 ): UserRolePillView | null {
-  const style = getRolePillStyle(role)
+  const style = getRolePillStyle(role, schoolTier)
   if (!style) {
     return null
   }

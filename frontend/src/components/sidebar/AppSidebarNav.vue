@@ -454,6 +454,64 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
                   </button>
                 </div>
               </template>
+              <template v-else-if="tab.name === 'feature_dev'">
+                <button
+                  type="button"
+                  class="nav-subitem nav-subitem--parent"
+                  :class="s.adminSubItemClass('feature_dev')"
+                  @click="s.toggleFeatureDevNav()"
+                >
+                  <span>{{ tab.label }}</span>
+                  <ChevronDown
+                    class="admin-expand-chevron admin-expand-chevron--nested"
+                    :class="{ 'admin-expand-chevron--open': s.featureDevNavExpanded }"
+                  />
+                </button>
+                <div
+                  v-if="s.featureDevNavExpanded"
+                  class="admin-subnav-nested"
+                >
+                  <button
+                    v-for="item in s.featureDevNavItems"
+                    :key="item.name"
+                    type="button"
+                    class="nav-subitem nav-subitem--nested"
+                    :class="s.featureDevSubItemClass(item.name)"
+                    @click="s.navigateFeatureDevSubtab(item.name)"
+                  >
+                    {{ item.label }}
+                  </button>
+                </div>
+              </template>
+              <template v-else-if="tab.name === 'settings'">
+                <button
+                  type="button"
+                  class="nav-subitem nav-subitem--parent"
+                  :class="s.adminSubItemClass('settings')"
+                  @click="s.toggleSettingsNav()"
+                >
+                  <span>{{ tab.label }}</span>
+                  <ChevronDown
+                    class="admin-expand-chevron admin-expand-chevron--nested"
+                    :class="{ 'admin-expand-chevron--open': s.settingsNavExpanded }"
+                  />
+                </button>
+                <div
+                  v-if="s.settingsNavExpanded"
+                  class="admin-subnav-nested"
+                >
+                  <button
+                    v-for="item in s.settingsNavItems"
+                    :key="item.name"
+                    type="button"
+                    class="nav-subitem nav-subitem--nested"
+                    :class="s.settingsSubItemClass(item.name)"
+                    @click="s.navigateSettingsSubtab(item.name)"
+                  >
+                    {{ item.label }}
+                  </button>
+                </div>
+              </template>
               <button
                 v-else
                 type="button"
@@ -765,6 +823,16 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
   color: #78716c;
 }
 
+.nav-subitem--deep {
+  min-height: 34px;
+  padding-left: 40px;
+  font-size: 12px;
+}
+
+.admin-subnav-nested--deep {
+  margin-bottom: 0;
+}
+
 .admin-expand-chevron--nested {
   width: 12px;
   height: 12px;
@@ -788,7 +856,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 
 .admin-slide-enter-to,
 .admin-slide-leave-from {
-  max-height: 320px;
+  max-height: 520px;
   opacity: 1;
 }
 

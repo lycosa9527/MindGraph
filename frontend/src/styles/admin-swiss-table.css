@@ -1,0 +1,68 @@
+/**
+ * Light Swiss stone tables for admin panel (roles, schools, etc.).
+ */
+
+.admin-roles-tab__desc {
+  margin: 0 0 1rem;
+  font-size: 0.8125rem;
+  color: #78716c;
+  line-height: 1.5;
+}
+
+.admin-roles-tab__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 3rem 1rem;
+  color: #78716c;
+  font-size: 0.875rem;
+}
+
+.admin-roles-tab__empty p {
+  margin: 0.5rem 0 0;
+}
+
+.admin-roles-tab__empty-title {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #57534e;
+}
+
+.admin-roles-tab__empty-hint {
+  max-width: 20rem;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: #78716c;
+  line-height: 1.5;
+}
+
+.admin-roles-tab__env-note {
+  font-size: 0.75rem;
+  color: #78716c;
+}
+
+.admin-roles-tab__muted {
+  font-size: 0.75rem;
+  color: #a8a29e;
+}
+
+.admin-swiss-table :deep(.el-table__header th) {
+  background: #fafaf9 !important;
+  color: #78716c;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e7e5e4;
+}
+
+.admin-swiss-table :deep(.el-table__body td) {
+  border-bottom: 1px solid #f5f5f4;
+  color: #44403c;
+}
+
+.admin-swiss-table :deep(.el-table__row:hover > td) {
+  background: #fafaf9 !important;
+}

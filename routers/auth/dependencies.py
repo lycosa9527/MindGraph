@@ -17,7 +17,9 @@ from typing import Optional
 from fastapi import Depends, Header, HTTPException, Query, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.messages import Messages, get_request_language, Language
 from services.redis.session.redis_session_manager import get_session_manager
@@ -31,14 +33,16 @@ from utils.auth import (
     is_superadmin,
     user_has_feature_access,
 )
-from utils.auth.admin_scope import AdminScope, build_admin_scope
+from utils.auth.admin_scope import AdminScope, build_admin_scope, build_admin_scope_async
 from utils.auth.admin_panel_permissions import (
     CAP_SCOPE_GLOBAL,
+    CAP_SCOPE_INVITED_ORGS,
     CAP_TAB_BILLING_VIEW,
     CAP_TAB_DATA_CENTER_VIEW,
     CAP_TAB_INVITES_EDIT,
     CAP_TAB_ORGANIZATIONS_EDIT,
     CAP_TAB_ORGANIZATIONS_VIEW,
+    CAP_TAB_SCHOOL_DASHBOARD_VIEW,
     CAP_TAB_USERS_EDIT,
     CAP_TAB_USERS_VIEW,
 )
@@ -201,15 +205,11 @@ def require_admin_or_manager(
 
 
 async def require_mindbot_admin_access(
-    current_user: User = Depends(require_admin_or_manager),
+    current_user: User = Depends(require_admin),
     lang: Language = Depends(get_language_dependency),
 ) -> User:
     """
-    MindBot admin UI/API: admin or manager, plus feature_org_access for MindBot.
-
-    Managers are scoped to their ``users.organization_id`` in MindBot routes;
-    when ``feature_access_rules`` restricts ``feature_mindbot``, the manager's
-    organization (or user id) must appear in the corresponding grants.
+    MindBot admin UI/API: superadmin only, plus feature_org_access for MindBot.
     """
     if not await user_has_feature_access(current_user, "feature_mindbot"):
         error_msg = Messages.error("mindbot_feature_access_required", lang)
@@ -259,13 +259,28 @@ def require_management_panel(
     return current_user
 
 
-def get_admin_scope(
+def _assert_invite_org_scope(scope: AdminScope, lang: Language) -> None:
+    if CAP_SCOPE_GLOBAL in scope.capabilities:
+        return
+    if CAP_SCOPE_INVITED_ORGS in scope.capabilities:
+        return
+    error_msg = Messages.error("admin_access_required", lang)
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+
+
+async def get_admin_scope(
     organization_id: Optional[int] = Query(None),
     current_user: User = Depends(require_management_panel),
     lang: Language = Depends(get_language_dependency),
+    db: AsyncSession = Depends(get_async_db),
 ) -> AdminScope:
     """Resolve AdminScope for management panel API handlers."""
-    return build_admin_scope(current_user, organization_id=organization_id, lang=lang)
+    return await build_admin_scope_async(
+        current_user,
+        db,
+        organization_id=organization_id,
+        lang=lang,
+    )
 
 
 def require_panel_capability(capability: str):
@@ -326,12 +341,24 @@ def require_invite_org_create(
     scope: AdminScope = Depends(get_admin_scope),
     lang: Language = Depends(get_language_dependency),
 ) -> AdminScope:
-    """Create organization via invite tab (invites.edit) or full org admin."""
+    """Create organization via invite tab (global or expert invited-org scope)."""
     scope.assert_any_capability(
         frozenset({CAP_TAB_INVITES_EDIT, CAP_TAB_ORGANIZATIONS_EDIT}),
         lang,
     )
-    _assert_global_scope(scope, lang)
+    _assert_invite_org_scope(scope, lang)
+    return scope
+
+
+def require_school_dashboard_read(
+    scope: AdminScope = Depends(get_admin_scope),
+    lang: Language = Depends(get_language_dependency),
+) -> AdminScope:
+    """School dashboard stats: school_admin or global data-center roles."""
+    scope.assert_any_capability(
+        frozenset({CAP_TAB_SCHOOL_DASHBOARD_VIEW, CAP_TAB_DATA_CENTER_VIEW}),
+        lang,
+    )
     return scope
 
 

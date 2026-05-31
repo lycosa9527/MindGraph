@@ -7,26 +7,25 @@ Proprietary License
 
 from typing import Optional
 
-from models.domain.auth import User
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from models.domain.messages import Language
 from utils.auth import is_admin
-from utils.auth.admin_scope import build_admin_scope, resolve_effective_org_id
+from utils.auth.admin_scope import AdminScope, assert_panel_org_readable, resolve_effective_org_id
 
 
-def resolve_school_dashboard_org_id(
+async def resolve_school_dashboard_org_id_scoped(
+    scope: AdminScope,
     organization_id: Optional[int],
-    current_user: User,
+    db: AsyncSession,
     lang: Language,
 ) -> int:
-    """
-    Enforce school-dashboard org scope via AdminScope.
-
-    Superadmin must pass organization_id; school_admin is locked to their org.
-    """
-    scope = build_admin_scope(current_user, organization_id=organization_id, lang=lang)
-    return resolve_effective_org_id(
+    """Resolve school dashboard org and enforce invited-org read scope for BD / expert."""
+    org_id = resolve_effective_org_id(
         scope,
         organization_id,
         lang,
-        require_org_for_superadmin=is_admin(current_user),
+        require_org_for_superadmin=is_admin(scope.actor),
     )
+    await assert_panel_org_readable(scope, org_id, db, lang)
+    return org_id

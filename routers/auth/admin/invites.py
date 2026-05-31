@@ -14,7 +14,8 @@ from models.domain.auth import Organization, User
 from models.domain.messages import Language
 from services.auth.personal_trial_invite import build_personal_trial_invite_payload
 from utils.auth.admin_panel_permissions import CAP_TAB_INVITES_EDIT, CAP_TAB_INVITES_VIEW
-from utils.auth.admin_scope import AdminScope, org_filter
+from utils.auth.admin_scope import AdminScope, invite_org_filter
+from utils.auth.org_privatization import org_privatization_list_field
 from utils.auth.role_constants import SCHOOL_ADMIN_ROLES
 
 try:
@@ -52,7 +53,7 @@ async def list_invite_organizations_admin(
 ):
     """List organizations for the invite-users tab (includes full invitation codes)."""
     orgs = (
-        (await db.execute(select(Organization).where(org_filter(scope, Organization.id)).order_by(Organization.id)))
+        (await db.execute(select(Organization).where(invite_org_filter(scope, Organization.id)).order_by(Organization.id)))
         .scalars()
         .all()
     )
@@ -60,7 +61,7 @@ async def list_invite_organizations_admin(
     user_counts_by_org: dict[int, int] = {}
     user_counts_stmt = (
         select(User.organization_id, sa_count(User.id).label("user_count"))
-        .where(User.organization_id.isnot(None), org_filter(scope, User.organization_id))
+        .where(User.organization_id.isnot(None), invite_org_filter(scope, User.organization_id))
         .group_by(User.organization_id)
     )
     for count_result in (await db.execute(user_counts_stmt)).all():
@@ -72,7 +73,7 @@ async def list_invite_organizations_admin(
         .where(
             User.organization_id.isnot(None),
             User.role.in_(tuple(SCHOOL_ADMIN_ROLES)),
-            org_filter(scope, User.organization_id),
+            invite_org_filter(scope, User.organization_id),
         )
         .order_by(User.organization_id, User.name)
     )
@@ -98,7 +99,7 @@ async def list_invite_organizations_admin(
                         TokenUsage.success,
                     ),
                 )
-                .where(org_filter(scope, Organization.id))
+                .where(invite_org_filter(scope, Organization.id))
                 .group_by(Organization.id)
             )
             for org_stat in (await db.execute(org_token_stmt)).all():
@@ -138,6 +139,7 @@ async def list_invite_organizations_admin(
                 "token_stats": org_token_stats,
                 **dify_list_fields(org),
                 **mindmate_branding_list_fields(org),
+                **org_privatization_list_field(org),
             }
         )
     return result

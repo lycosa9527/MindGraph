@@ -78,7 +78,7 @@ export default {
   'sidebar.userSubtitleDefault': 'MindGraph专业版',
   'sidebar.account': '账号设置',
   'sidebar.roleSuperAdmin': '超级管理员',
-  'sidebar.rolePlatformAdmin': '管理员',
+  'sidebar.rolePlatformAdmin': '平台BD',
   'sidebar.roleExpert': '专家',
   'sidebar.roleSchoolAdmin': '学校管理员',
   'sidebar.roleSchoolEdition': '学校版',
