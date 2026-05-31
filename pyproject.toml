@@ -13,9 +13,11 @@ exclude = [
 # No venv - using system Python
 pythonVersion = "3.13"
 typeCheckingMode = "basic"
-reportMissingImports = false  # Suppress false positive import warnings for installed packages
-reportMissingTypeStubs = false
-reportMissingModuleSource = false  # Suppress import resolution errors for known installed packages
+# Catch broken imports in the editor (e.g. `from typing import tzinfo`).
+reportMissingImports = "error"
+reportGeneralTypeIssues = "error"  # unknown import symbol, invalid type forms
+reportMissingModuleSource = "warning"  # installed package but no resolvable .py/.pyi
+reportMissingTypeStubs = false  # keep off: third-party stub noise, not runtime import bugs
 pythonPlatform = "Linux"
 extraPaths = [
     "C:\\Users\\roywang\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\site-packages"

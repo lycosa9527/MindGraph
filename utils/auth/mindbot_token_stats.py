@@ -7,8 +7,8 @@ the MindMate service bucket.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Any, Dict, MutableMapping, Optional, TypedDict, tzinfo
+from datetime import datetime, timezone, tzinfo
+from typing import Any, Dict, MutableMapping, Optional, TypedDict
 
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
