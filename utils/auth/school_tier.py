@@ -71,7 +71,7 @@ async def user_has_school_tier_feature(
         return True
     org = await _organization_for_user(db, user)
     if org is None:
-        return True
+        return False
     tier = effective_school_tier_for_org(org)
     return school_tier_allows_feature(tier, feature)
 
@@ -114,7 +114,7 @@ async def max_diagrams_for_user(db: AsyncSession, user: User) -> int:
         return SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED
     org = await _organization_for_user(db, user)
     if org is None:
-        return SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED
+        return max_diagrams_for_tier(DEFAULT_SCHOOL_TIER)
     return max_diagrams_for_tier(effective_school_tier_for_org(org))
 
 
@@ -144,8 +144,20 @@ def school_tier_list_fields(org: Organization, member_count: int) -> dict[str, A
     }
 
 
-def apply_school_tier_on_create(org: Organization, request: dict) -> None:
-    """Apply optional school_tier when creating an organization."""
+def apply_school_tier_on_create(
+    org: Organization,
+    request: dict,
+    *,
+    allow_explicit_tier: bool = False,
+) -> None:
+    """Apply school_tier when creating an organization (defaults to trial).
+
+    Non-superadmin invite flows must not set paid tiers; only ``allow_explicit_tier``
+    (superadmin) may honor ``school_tier`` in the request body.
+    """
+    if not allow_explicit_tier:
+        setattr(org, "school_tier", DEFAULT_SCHOOL_TIER)
+        return
     if "school_tier" not in request:
         setattr(org, "school_tier", DEFAULT_SCHOOL_TIER)
         return

@@ -38,6 +38,7 @@ from services.auth.user_fk_cleanup import delete_user_fk_dependent_rows
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
 from utils.auth.role_constants import ROLE_TEACHER, SCHOOL_ADMIN_ROLES, normalize_role
+from utils.auth.roles import is_superadmin
 from utils.invitations import generate_invitation_code, normalize_or_generate
 from utils.sensitive_mask import mask_invitation_code
 from .organization_dify import (
@@ -330,7 +331,11 @@ async def create_organization_admin(
         created_at=datetime.now(UTC),
     )
     apply_dify_on_create(new_org, request, lang)
-    apply_school_tier_on_create(new_org, request)
+    apply_school_tier_on_create(
+        new_org,
+        request,
+        allow_explicit_tier=is_superadmin(current_user),
+    )
 
     db.add(new_org)
     try:

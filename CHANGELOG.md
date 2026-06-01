@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.28] - 2026-06-01
+
+> **Backup checkpoint before database-layer RLS.** This release captures the current application-layer school-tier and admin org-create behavior immediately before introducing PostgreSQL row-level security (RLS) at the database layer. Tag or branch from this commit if you need to roll back or compare pre-RLS behavior.
+
+### Added
+
+- **Tests** — School tier guards when org is missing (`user_has_school_tier_feature` denies; `max_diagrams_for_user` uses trial cap) and superadmin-only explicit tier on org create ([`test_school_tier.py`](tests/test_school_tier.py)).
+
+### Changed
+
+- **School tier — org create tier gate** — Only superadmins may set `school_tier` in the create-org request body; invite and non-superadmin flows always default to trial ([`school_tier.py`](utils/auth/school_tier.py), [`organizations.py`](routers/auth/admin/organizations.py)).
+- **School tier — missing org fallbacks** — Users without a resolvable organization are denied tier-gated features and use the trial diagram cap instead of unlimited ([`school_tier.py`](utils/auth/school_tier.py)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.28).
+
 ## [5.117.27] - 2026-06-01
 
 ### Added

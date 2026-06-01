@@ -23,12 +23,14 @@ from utils.auth.school_tier import (
     is_unlimited_member_limit,
     manager_limit_for_org,
     max_diagrams_for_tier,
+    max_diagrams_for_user,
     member_limit_for_org,
     normalize_school_tier,
     parse_diagram_save_limit_error,
     school_tier_allows_feature,
     school_tier_features_payload,
     school_tier_list_fields,
+    user_has_school_tier_feature,
 )
 
 from models.domain.messages import Messages
@@ -170,10 +172,54 @@ def test_apply_school_tier_on_create_defaults_to_trial():
     assert org.school_tier == SCHOOL_TIER_TRIAL
 
 
-def test_apply_school_tier_on_create_accepts_explicit_tier():
+def test_apply_school_tier_on_create_ignores_explicit_tier_without_superadmin():
     org = _FakeOrg()
     apply_school_tier_on_create(org, {"school_tier": "professional"})
+    assert org.school_tier == SCHOOL_TIER_TRIAL
+
+
+def test_apply_school_tier_on_create_accepts_explicit_tier_for_superadmin():
+    org = _FakeOrg()
+    apply_school_tier_on_create(
+        org,
+        {"school_tier": "professional"},
+        allow_explicit_tier=True,
+    )
     assert org.school_tier == SCHOOL_TIER_PROFESSIONAL
+
+
+@pytest.mark.asyncio
+async def test_user_has_school_tier_feature_denied_when_org_missing(monkeypatch):
+    user = SimpleNamespace(id=1, organization_id=99, role="teacher")
+
+    async def _no_org(_db, _user):
+        return None
+
+    monkeypatch.setattr(
+        "utils.auth.school_tier.is_superadmin",
+        lambda _user: False,
+    )
+    monkeypatch.setattr(
+        "utils.auth.school_tier._organization_for_user",
+        _no_org,
+    )
+    allowed = await user_has_school_tier_feature(AsyncMock(), user, TIER_FEATURE_ONLINE_COLLAB)
+    assert allowed is False
+
+
+@pytest.mark.asyncio
+async def test_max_diagrams_for_user_uses_trial_cap_when_org_missing(monkeypatch):
+    user = SimpleNamespace(id=1, organization_id=99, role="teacher")
+
+    async def _no_org(_db, _user):
+        return None
+
+    monkeypatch.setattr(
+        "utils.auth.school_tier._organization_for_user",
+        _no_org,
+    )
+    cap = await max_diagrams_for_user(AsyncMock(), user)
+    assert cap == max_diagrams_for_tier(SCHOOL_TIER_TRIAL)
 
 
 def test_apply_school_tier_on_update_rejects_unknown_tier():
