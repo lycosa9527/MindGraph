@@ -2,12 +2,15 @@
 /**
  * Token usage by service (MindGraph / MindMate) — platform-wide or per-organization.
  */
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 
 import AdminSwissServiceCard from '@/components/admin/swiss/AdminSwissServiceCard.vue'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useLanguage, useNotifications } from '@/composables'
-import { apiRequest } from '@/utils/apiClient'
-import { httpErrorDetail } from '@/utils/httpErrorDetail'
+import {
+  useAdminSchoolTokenStats,
+  useAdminTokenStats,
+} from '@/composables/queries'
 import { ChatDotRound, Connection, Loading, Refresh } from '@element-plus/icons-vue'
 
 interface TokenPeriodStats {
@@ -62,11 +65,31 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const notify = useNotifications()
-
-const isLoading = ref(false)
-const tokenStats = ref<TokenStatsByService | null>(null)
+const { on: onAdminEvent } = useAdminEventBus('AdminTokenUsageByServicePanel')
 
 const usesExternalStats = computed(() => props.stats !== undefined)
+
+const orgIdRef = computed(() => props.organizationId ?? null)
+
+const platformTokenQuery = useAdminTokenStats(orgIdRef, {
+  enabled: computed(() => !usesExternalStats.value && !props.useSchoolStatsEndpoint),
+})
+
+const schoolTokenQuery = useAdminSchoolTokenStats(orgIdRef, {
+  enabled: computed(
+    () =>
+      !usesExternalStats.value &&
+      props.useSchoolStatsEndpoint &&
+      props.organizationId != null
+  ),
+})
+
+const activeQuery = computed(() =>
+  props.useSchoolStatsEndpoint ? schoolTokenQuery : platformTokenQuery
+)
+
+const isLoading = computed(() => activeQuery.value.isFetching.value)
+const tokenStats = computed(() => (activeQuery.value.data.value as TokenStatsByService | undefined) ?? null)
 
 const displayStats = computed(() =>
   usesExternalStats.value ? (props.stats ?? null) : tokenStats.value
@@ -118,26 +141,24 @@ function serviceStats(service: 'mindgraph' | 'mindmate', period: keyof ServiceSt
 }
 
 async function loadTokenStats(): Promise<void> {
-  if (isLoading.value) {
-    return
-  }
-  isLoading.value = true
   try {
-    const response = await apiRequest(statsEndpoint())
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}))
-      notify.error(httpErrorDetail(data) || t('admin.tokenStatsLoadError'))
-      return
-    }
-    tokenStats.value = await response.json()
-  } catch {
-    notify.error(t('admin.tokenStatsNetworkError'))
-  } finally {
-    isLoading.value = false
+    await activeQuery.value.refetch()
+  } catch (err) {
+    const message = err instanceof Error ? err.message : t('admin.tokenStatsNetworkError')
+    notify.error(message || t('admin.tokenStatsNetworkError'))
   }
 }
 
 const hasData = computed(() => displayStats.value != null)
+
+onAdminEvent('admin:refresh_requested', ({ domain }) => {
+  if (usesExternalStats.value) {
+    return
+  }
+  if (domain === 'token-stats' || domain === 'stats' || domain === 'all') {
+    void loadTokenStats()
+  }
+})
 
 onMounted(() => {
   if (!usesExternalStats.value) {
@@ -147,10 +168,8 @@ onMounted(() => {
 
 watch(
   () => props.stats,
-  (value) => {
-    if (usesExternalStats.value) {
-      tokenStats.value = value ?? null
-    }
+  () => {
+    /* parent-provided stats bypass internal query */
   },
   { immediate: true }
 )
@@ -161,12 +180,9 @@ watch(
     if (usesExternalStats.value) {
       return
     }
-    tokenStats.value = null
     void loadTokenStats()
   }
 )
-
-defineExpose({ loadTokenStats, hasData })
 </script>
 
 <template>

@@ -2,10 +2,11 @@
 /**
  * Admin Page — unified management panel; tab navigation lives in the sidebar.
  */
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { Plus } from '@element-plus/icons-vue'
+import { storeToRefs } from 'pinia'
 
 import SchoolDashboardOrgPicker from '@/components/school/SchoolDashboardOrgPicker.vue'
 import AdminDataCenterTab from '@/components/admin/AdminDataCenterTab.vue'
@@ -19,32 +20,21 @@ import AdminRolesHeaderToolbar from '@/components/admin/AdminRolesHeaderToolbar.
 import AdminUsersHeaderToolbar from '@/components/admin/AdminUsersHeaderToolbar.vue'
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel.vue'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
-import {
-  defaultDataCenterView,
-  isDataCenterView,
-} from '@/composables/admin/adminDataCenterViews'
-import { LEGACY_FEATURE_DEV_SETTINGS_SUBTABS } from '@/composables/admin/adminFeatureDevNav'
-import { requestOpenSchoolAddMemberDialog } from '@/composables/school/useSchoolDashboardAddMemberHeader'
-import { useSchoolDashboardOrgPicker } from '@/composables/school/useSchoolDashboardOrgPicker'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useAdminHeaderBreadcrumb } from '@/composables/admin/useAdminHeaderBreadcrumb'
 import { useAdminPanelTabs } from '@/composables/admin/useAdminPanelTabs'
+import { useAdminRouteSync } from '@/composables/admin/useAdminRouteSync'
 import { useLanguage } from '@/composables'
-import { useAuthStore } from '@/stores'
+import { useAdminPanelStore } from '@/stores'
 
 const route = useRoute()
-const router = useRouter()
-const authStore = useAuthStore()
 const { t } = useLanguage()
 const { can, canEditTab, isTabReadOnly, loadCapabilities, isReadOnly } = useAdminAccess()
-const {
-  effectiveOrgId: schoolDashboardOrgId,
-  loadOrganizations: loadSchoolDashboardOrganizations,
-  syncSelectedOrgFromUser: syncSchoolDashboardOrg,
-} = useSchoolDashboardOrgPicker()
 const { tabs } = useAdminPanelTabs({ loadOnMount: false })
-
-const activeTab = ref((route.query.tab as string) || 'data_center')
-const invitesTabRef = ref<InstanceType<typeof AdminInviteUsersTab> | null>(null)
+const { activeTab } = useAdminRouteSync({ tabs })
+const adminPanel = useAdminPanelStore()
+const { selectedOrgId } = storeToRefs(adminPanel)
+const { emit: emitAdminEvent } = useAdminEventBus('AdminPage')
 
 const hasGlobalScope = computed(() => can('scope.global'))
 
@@ -66,7 +56,7 @@ const showSchoolAddMemberButton = computed(
   () =>
     activeTab.value === 'data_center' &&
     route.query.view === 'school_dashboard' &&
-    schoolDashboardOrgId.value != null &&
+    selectedOrgId.value != null &&
     !isReadOnly.value &&
     (can('tab.users.edit') ||
       (can('scope.org') && (can('tab.school_dashboard.view') || can('tab.data_center.view'))))
@@ -93,85 +83,18 @@ const showRolesHeaderToolbar = computed(
 const showTabReadOnlyBadge = computed(() => isTabReadOnly(activeTab.value))
 
 function onHeaderCreateSchool(): void {
-  invitesTabRef.value?.openCreateModal()
+  emitAdminEvent('admin:toolbar_action', {
+    action: 'open_create_school',
+    tab: 'invites',
+  })
 }
 
 function onHeaderAddSchoolMember(): void {
-  requestOpenSchoolAddMemberDialog()
+  emitAdminEvent('admin:toolbar_action', {
+    action: 'open_add_school_member',
+    tab: 'data_center',
+  })
 }
-
-watch(
-  () => [activeTab.value, route.query.view] as const,
-  ([tab, view]) => {
-    if (tab === 'data_center' && view === 'school_dashboard') {
-      syncSchoolDashboardOrg()
-      void loadSchoolDashboardOrganizations()
-    }
-  },
-  { immediate: true }
-)
-
-watch(
-  () => route.query.tab,
-  (tab) => {
-    if (tab && typeof tab === 'string') {
-      activeTab.value = tab
-    }
-  }
-)
-
-watch(
-  () => [route.query.tab, route.query.subtab] as const,
-  ([tab, subtab]) => {
-    if (
-      tab === 'settings' &&
-      typeof subtab === 'string' &&
-      LEGACY_FEATURE_DEV_SETTINGS_SUBTABS.includes(subtab)
-    ) {
-      void router.replace({
-        query: { ...route.query, tab: 'feature_dev', subtab },
-      })
-      return
-    }
-    if (tab === 'feature_dev' && subtab === 'features') {
-      void router.replace({
-        query: { ...route.query, tab: 'settings', subtab: 'features' },
-      })
-    }
-  },
-  { immediate: true }
-)
-
-watch(activeTab, (tab) => {
-  const current = route.query.tab as string
-  const query: Record<string, string | string[]> = { ...route.query, tab }
-  if (tab !== 'settings' && tab !== 'feature_dev') {
-    delete query.subtab
-    delete query.role_tab
-  }
-  if (tab !== 'data_center') {
-    delete query.view
-  } else if (typeof query.view !== 'string' || !isDataCenterView(query.view)) {
-    query.view = defaultDataCenterView(can('scope.global') && can('tab.data_center.view'))
-  }
-  if (tab !== current || route.query.view !== query.view) {
-    router.replace({ query })
-  }
-})
-
-watch(
-  () => tabs.value.map((tab) => tab.name),
-  (names) => {
-    if (names.length === 0) {
-      return
-    }
-    if (!names.includes(activeTab.value)) {
-      activeTab.value = names[0]
-      void router.replace({ query: { ...route.query, tab: names[0] } })
-    }
-  },
-  { immediate: true }
-)
 
 onMounted(async () => {
   await loadCapabilities()
@@ -256,10 +179,7 @@ onMounted(async () => {
           v-else-if="activeTab === 'organizations'"
           :read-only="isTabReadOnly('organizations')"
         />
-        <AdminInviteUsersTab
-          v-else-if="activeTab === 'invites'"
-          ref="invitesTabRef"
-        />
+        <AdminInviteUsersTab v-else-if="activeTab === 'invites'" />
         <AdminMarketsTab v-else-if="activeTab === 'billing'" />
         <AdminFeatureDevTab v-else-if="activeTab === 'feature_dev'" />
         <AdminSystemSettingsTab v-else-if="activeTab === 'settings'" />

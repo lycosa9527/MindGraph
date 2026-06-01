@@ -8,7 +8,12 @@ import { computed, ref, watch } from 'vue'
 import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import { useLanguage, useNotifications } from '@/composables'
 import { resolveSchoolMindmateAvatarUrl } from '@/composables/mindmate/useMindMateBranding'
-import { apiRequest, apiUpload } from '@/utils/apiClient'
+import {
+  useAdminMindmateDifyDefault,
+  useProbeAdminOrganizationMindmateDifyHealth,
+  useUpdateAdminOrganization,
+  useUploadAdminOrganizationMindmateAvatar,
+} from '@/composables/queries'
 import { httpErrorDetail } from '@/utils/httpErrorDetail'
 
 const props = withDefaults(
@@ -47,6 +52,11 @@ const ALLOWED_AVATAR_MIME = new Set([
 
 const { t } = useLanguage()
 const notify = useNotifications()
+
+const updateOrganizationMutation = useUpdateAdminOrganization()
+const uploadAvatarMutation = useUploadAdminOrganizationMindmateAvatar()
+const probeDifyHealthMutation = useProbeAdminOrganizationMindmateDifyHealth()
+const mindmateDifyDefaultQuery = useAdminMindmateDifyDefault({ enabled: false })
 
 const swissFieldLabelClass =
   'mindbot-section-label mindbot-swiss-section-label shrink-0 text-[11px] font-semibold tracking-[0.14em] sm:w-[178px] sm:pr-3 leading-snug'
@@ -183,11 +193,11 @@ function invalidateDifyAuthVerification() {
 async function loadGlobalDify() {
   globalDifyLoading.value = true
   try {
-    const res = await apiRequest('/api/auth/admin/mindmate/dify-default')
-    if (!res.ok) {
+    const result = await mindmateDifyDefaultQuery.refetch()
+    if (result.error) {
       return
     }
-    const data = (await res.json()) as {
+    const data = (result.data ?? {}) as {
       dify_api_base_url?: string | null
       dify_api_key_masked?: string | null
     }
@@ -240,33 +250,11 @@ async function fetchDifyHealth(options?: { silent?: boolean }) {
 
   difyStatusLoading.value = true
   try {
-    const res = await apiRequest(
-      `/api/auth/admin/organizations/${props.orgId}/mindmate-dify-health`,
-      {
-        method: 'POST',
-        body: JSON.stringify(probeBody()),
-      }
-    )
-    if (res.ok) {
-      difyStatus.value = (await res.json()) as typeof difyStatus.value
-    } else {
-      const data = (await res.json().catch(() => ({}))) as { detail?: string }
-      const detail =
-        typeof data.detail === 'string' && data.detail.trim()
-          ? data.detail.trim()
-          : `http_${res.status}`
-      difyStatus.value = {
-        online: false,
-        error: detail,
-        http_status: res.status,
-      }
-      invalidateDifyAuthVerification()
-      if (!silent) {
-        notify.error(formatDifyAuthError(detail, res.status))
-      }
-      return
-    }
-
+    const data = (await probeDifyHealthMutation.mutateAsync({
+      orgId: props.orgId,
+      body: probeBody(),
+    })) as typeof difyStatus.value
+    difyStatus.value = data
     if (isDifyAuthPassing()) {
       difyAuthVerified.value = true
       difyAuthVerifiedFingerprint.value = difyFormFingerprint()
@@ -280,11 +268,15 @@ async function fetchDifyHealth(options?: { silent?: boolean }) {
     if (!silent) {
       notify.error(formatDifyAuthError(difyStatus.value?.error, difyStatus.value?.http_status))
     }
-  } catch {
-    difyStatus.value = { online: false, error: 'network' }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    difyStatus.value = {
+      online: false,
+      error: message || 'network',
+    }
     invalidateDifyAuthVerification()
     if (!silent) {
-      notify.error(formatDifyAuthError('network'))
+      notify.error(formatDifyAuthError(difyStatus.value?.error, difyStatus.value?.http_status))
     }
   } finally {
     difyStatusLoading.value = false
@@ -349,24 +341,20 @@ async function clearSchoolDifyOverride() {
   invalidateDifyAuthVerification()
   saving.value = true
   try {
-    const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}`, {
-      method: 'PUT',
-      body: JSON.stringify({
+    await updateOrganizationMutation.mutateAsync({
+      orgId: props.orgId,
+      body: {
         mindmate_agent_name: agentName.value.trim() || null,
         dify_api_base_url: null,
         dify_api_key: null,
-      }),
+      },
     })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || t('admin.trendChartErrors.saveFailed'))
-      return
-    }
     notify.success(t('notification.saved'))
     emit('saved')
     void fetchDifyHealth({ silent: true })
-  } catch {
-    notify.error(t('admin.trendChartErrors.saveFailed'))
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : ''
+    notify.error(detail || t('admin.trendChartErrors.saveFailed'))
   } finally {
     saving.value = false
   }
@@ -410,22 +398,18 @@ async function saveSettings() {
 
   saving.value = true
   try {
-    const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}`, {
-      method: 'PUT',
-      body: JSON.stringify(body),
+    await updateOrganizationMutation.mutateAsync({
+      orgId: props.orgId,
+      body,
     })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || t('admin.trendChartErrors.saveFailed'))
-      return
-    }
     notify.success(t('notification.saved'))
     apiKey.value = ''
     keyReplaceMode.value = false
     emit('saved')
     void fetchDifyHealth({ silent: true })
-  } catch {
-    notify.error(t('admin.trendChartErrors.saveFailed'))
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : ''
+    notify.error(detail || t('admin.trendChartErrors.saveFailed'))
   } finally {
     saving.value = false
   }
@@ -490,21 +474,16 @@ async function onAvatarSelected(event: Event) {
   try {
     const formData = new FormData()
     formData.append('file', file)
-    const res = await apiUpload(
-      `/api/auth/admin/organizations/${props.orgId}/mindmate-avatar`,
-      formData
-    )
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error(formatAvatarUploadError(httpErrorDetail(data)))
-      return
-    }
-    const data = (await res.json()) as { mindmate_agent_avatar_url?: string | null }
-    agentAvatarUrl.value = data.mindmate_agent_avatar_url ?? null
+    const data = await uploadAvatarMutation.mutateAsync({
+      orgId: props.orgId,
+      formData,
+    })
+    agentAvatarUrl.value = (data.mindmate_agent_avatar_url as string | null | undefined) ?? null
     notify.success(t('admin.schoolMindmateAvatarUploaded'))
     emit('saved')
-  } catch {
-    notify.error(t('admin.schoolMindmateAvatarUploadFailed'))
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : httpErrorDetail({})
+    notify.error(formatAvatarUploadError(detail))
   } finally {
     avatarUploading.value = false
   }
@@ -513,20 +492,16 @@ async function onAvatarSelected(event: Event) {
 async function removeAvatar() {
   avatarUploading.value = true
   try {
-    const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ mindmate_agent_avatar_url: null }),
+    await updateOrganizationMutation.mutateAsync({
+      orgId: props.orgId,
+      body: { mindmate_agent_avatar_url: null },
     })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error(formatAvatarUploadError(httpErrorDetail(data)))
-      return
-    }
     agentAvatarUrl.value = null
     notify.success(t('admin.schoolMindmateAvatarRemoved'))
     emit('saved')
-  } catch {
-    notify.error(t('admin.schoolMindmateAvatarRemoveFailed'))
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : httpErrorDetail({})
+    notify.error(formatAvatarUploadError(detail))
   } finally {
     avatarUploading.value = false
   }

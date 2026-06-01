@@ -39,7 +39,7 @@ async def get_personal_trial_invite_admin(
     db: AsyncSession = Depends(get_async_db),
     _lang: Language = Depends(get_language_dependency),
 ) -> dict[str, Any]:
-    """Personal experience invite code for expert / platform BD (C2C trial org)."""
+    """Personal experience invite code for expert / operations (C2C trial org)."""
     payload = await build_personal_trial_invite_payload(db)
     payload["can_edit"] = scope.has_capability(CAP_TAB_INVITES_EDIT)
     return payload

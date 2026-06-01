@@ -6,6 +6,7 @@ import { computed } from 'vue'
 
 import { useLanguage } from '@/composables'
 import {
+  isUnlimitedMemberLimit,
   SCHOOL_TIER_LIMITS,
   SCHOOL_TIER_OPTIONS,
   type SchoolTier,
@@ -54,7 +55,9 @@ const schoolTierHint = computed(() => {
   const limits = SCHOOL_TIER_LIMITS[schoolTierEdit.value]
   return t('admin.schoolVersionHint', {
     current: props.orgUserCount ?? 0,
-    limit: limits.memberLimit,
+    limit: isUnlimitedMemberLimit(limits.memberLimit)
+      ? t('admin.unlimited')
+      : limits.memberLimit,
   })
 })
 
@@ -68,15 +71,25 @@ const managersRemaining = computed(() =>
   Math.max(0, managerLimit.value - props.managers.length)
 )
 
-const managerLimitHint = computed(() =>
-  t('admin.schoolManagerLimitHint', {
+const managerLimitHint = computed(() => {
+  if (managerLimit.value <= 0) {
+    return t('admin.schoolManagerNotAvailableTrial')
+  }
+  return t('admin.schoolManagerLimitHint', {
     current: props.managers.length,
     limit: managerLimit.value,
   })
-)
+})
 
 function tierOptionLabel(tier: SchoolTier): string {
   const limits = SCHOOL_TIER_LIMITS[tier]
+  if (tier === 'trial') {
+    return t('admin.schoolVersionTierOptionTrial', {
+      label: t(tierLabelKey[tier]),
+      diagrams: limits.diagramsPerMember ?? 20,
+      storage: limits.diagramStorageGbPerMember,
+    })
+  }
   return t('admin.schoolVersionTierOption', {
     label: t(tierLabelKey[tier]),
     members: limits.memberLimit,

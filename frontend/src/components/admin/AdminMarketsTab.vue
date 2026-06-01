@@ -2,23 +2,39 @@
 /**
  * Admin — Market (市场): orders, listings, subscriptions.
  */
-import { onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
-import { useLanguage, useNotifications } from '@/composables'
-import { apiRequest } from '@/utils/apiClient'
+import {
+  useAdminMarketsListings,
+  useAdminMarketsOrders,
+  useAdminMarketsStats,
+  useAdminMarketsSubscriptions,
+} from '@/composables/queries'
+import { useLanguage } from '@/composables'
 
 const { t } = useLanguage()
-const notify = useNotifications()
 
-const loading = ref(true)
 const activeTab = ref<'orders' | 'listings' | 'subscriptions'>('orders')
 
-const stats = ref({
-  orders_total: 0,
-  orders_paid: 0,
-  orders_pending: 0,
-})
+const statsQuery = useAdminMarketsStats()
+const ordersQuery = useAdminMarketsOrders(200)
+const listingsQuery = useAdminMarketsListings(500)
+const subscriptionsQuery = useAdminMarketsSubscriptions(200)
+
+const loading = computed(
+  () =>
+    statsQuery.isFetching.value ||
+    ordersQuery.isFetching.value ||
+    listingsQuery.isFetching.value ||
+    subscriptionsQuery.isFetching.value
+)
+
+const stats = computed(() => ({
+  orders_total: statsQuery.data.value?.orders_total ?? 0,
+  orders_paid: statsQuery.data.value?.orders_paid ?? 0,
+  orders_pending: statsQuery.data.value?.orders_pending ?? 0,
+}))
 
 interface OrderRow {
   id: number
@@ -56,42 +72,9 @@ interface SubRow {
   current_period_end: string | null
 }
 
-const orders = ref<OrderRow[]>([])
-const listings = ref<ListingRow[]>([])
-const subscriptions = ref<SubRow[]>([])
-
-async function loadAll(): Promise<void> {
-  loading.value = true
-  try {
-    const [resStats, resOrders, resListings, resSubs] = await Promise.all([
-      apiRequest('/api/markets/admin/stats'),
-      apiRequest('/api/markets/admin/orders?limit=200'),
-      apiRequest('/api/markets/admin/listings?limit=500'),
-      apiRequest('/api/markets/admin/subscriptions?limit=200'),
-    ])
-    if (!resStats.ok || !resOrders.ok || !resListings.ok || !resSubs.ok) {
-      notify.error(t('admin.markets.loadError'))
-      return
-    }
-    const jStats = (await resStats.json()) as {
-      orders_total: number
-      orders_paid: number
-      orders_pending: number
-    }
-    stats.value = jStats
-    orders.value = (await resOrders.json()) as OrderRow[]
-    listings.value = (await resListings.json()) as ListingRow[]
-    subscriptions.value = (await resSubs.json()) as SubRow[]
-  } catch {
-    notify.error(t('admin.markets.loadError'))
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(() => {
-  void loadAll()
-})
+const orders = computed(() => (ordersQuery.data.value ?? []) as OrderRow[])
+const listings = computed(() => (listingsQuery.data.value ?? []) as ListingRow[])
+const subscriptions = computed(() => (subscriptionsQuery.data.value ?? []) as SubRow[])
 </script>
 
 <template>

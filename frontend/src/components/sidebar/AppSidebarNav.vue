@@ -19,6 +19,7 @@ import {
   Settings,
   Share2,
   TrendingUp,
+  UserPlus,
   Wand2,
   Watch,
   Waypoints,
@@ -388,9 +389,34 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           </div>
         </transition>
 
+        <!-- Single management tab (e.g. invite users for experts) -->
+        <el-tooltip
+          v-if="s.isManagementPanelUser && s.singleAdminNavTab"
+          :content="s.singleAdminNavTab.label"
+          placement="right"
+          :disabled="!s.isCollapsed"
+        >
+          <div
+            class="nav-item"
+            :class="s.navItemClass('admin')"
+            @click="s.openDirectAdminTab()"
+          >
+            <UserPlus
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label"
+            >
+              {{ s.singleAdminNavTab.label }}
+            </span>
+          </div>
+        </el-tooltip>
+
         <!-- Management panel (expandable sub-nav) -->
         <el-tooltip
-          v-if="s.isManagementPanelUser"
+          v-if="s.isManagementPanelUser && s.showManagementPanelSubnav"
           :content="s.t('admin.title')"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -418,7 +444,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </el-tooltip>
         <transition name="admin-slide">
           <div
-            v-if="s.managementPanelExpanded && !s.isCollapsed && s.isManagementPanelUser"
+            v-if="s.managementPanelExpanded && !s.isCollapsed && s.showManagementPanelSubnav"
             class="admin-subnav"
           >
             <template

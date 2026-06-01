@@ -4,7 +4,7 @@
  */
 import { computed, onMounted } from 'vue'
 
-import { useSchoolDashboardOrgPicker } from '@/composables/school/useSchoolDashboardOrgPicker'
+import { useAdminOrgScope } from '@/composables/admin/useAdminOrgScope'
 import { useLanguage } from '@/composables'
 
 const SELECT_FONT = '500 13px ui-sans-serif, system-ui, sans-serif'
@@ -39,7 +39,7 @@ withDefaults(
 )
 
 const { t } = useLanguage()
-const { organizations, selectedOrgId, showPicker, loadOrganizations } = useSchoolDashboardOrgPicker()
+const { organizations, selectedOrgId, showPicker, refetchOrganizations } = useAdminOrgScope()
 
 const selectDisplayText = computed(() => {
   if (selectedOrgId.value == null) {
@@ -59,7 +59,7 @@ const selectWidthStyle = computed(() => {
 })
 
 onMounted(() => {
-  void loadOrganizations()
+  void refetchOrganizations()
 })
 </script>
 

@@ -2,7 +2,7 @@
  * Teacher usage analytics: state, charts, modals, and API.
  */
 import type { InjectionKey } from 'vue'
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { BarChart, LineChart, PieChart } from 'echarts/charts'
 import {
@@ -28,7 +28,14 @@ import {
   type UserDetailData,
 } from '@/composables/teacherUsage/teacherUsageTypes'
 import { useUIStore } from '@/stores/ui'
-import { apiRequest } from '@/utils/apiClient'
+import {
+  useAdminTeacherUsage,
+  useAdminTeacherUsageConfig,
+  useAdminTeacherUsageUserDetail,
+  useAdminTeacherUsageUsers,
+  useRecomputeAdminTeacherUsage,
+  useUpdateAdminTeacherUsageConfig,
+} from '@/composables/queries'
 import { formatUserNumber } from '@/utils/intlDisplay'
 
 echarts.use([
@@ -113,6 +120,19 @@ export function useTeacherUsagePage() {
   const usersPage = ref(1)
   const usersPageSize = 50
 
+  const overviewQuery = useAdminTeacherUsage()
+  const usersQuery = useAdminTeacherUsageUsers(usersPage, usersPageSize, {
+    enabled: computed(() => activeTab.value === 'teachers'),
+  })
+  const configQuery = useAdminTeacherUsageConfig()
+  const updateConfigMutation = useUpdateAdminTeacherUsageConfig()
+  const recomputeMutation = useRecomputeAdminTeacherUsage()
+
+  const selectedUserId = ref<number | null>(null)
+  const userDetailQuery = useAdminTeacherUsageUserDetail(selectedUserId, {
+    enabled: computed(() => selectedUserId.value != null && showUserChartModal.value),
+  })
+
   const userDetailData = ref<UserDetailData | null>(null)
 
   const groupStats = ref<Record<string, GroupStats>>({})
@@ -155,10 +175,11 @@ export function useTeacherUsagePage() {
     userDetailData.value = null
     showUserChartModal.value = true
     userChartLoading.value = true
+    selectedUserId.value = row.id
     try {
-      const response = await apiRequest(`auth/admin/teacher-usage/user/${row.id}/detail`)
-      if (response.ok) {
-        const data = await response.json()
+      const result = await userDetailQuery.refetch()
+      const data = result.data
+      if (data) {
         userDetailData.value = {
           diagrams: data.diagrams ?? 0,
           conceptGen: data.conceptGen ?? 0,
@@ -241,13 +262,12 @@ export function useTeacherUsagePage() {
   }
 
   async function loadAllUsers(page = 1) {
+    usersPage.value = page
     allUsersLoading.value = true
     try {
-      const response = await apiRequest(
-        `auth/admin/teacher-usage/users?page=${page}&page_size=${usersPageSize}`
-      )
-      if (response.ok) {
-        const data = await response.json()
+      const result = await usersQuery.refetch()
+      const data = result.data
+      if (data) {
         allUsers.value = data.users ?? []
         usersTotal.value = data.total ?? 0
         usersPage.value = data.page ?? page
@@ -276,6 +296,7 @@ export function useTeacherUsagePage() {
     userChart?.dispose()
     userChart = null
     selectedUser.value = null
+    selectedUserId.value = null
     userDetailData.value = null
   }
 
@@ -294,9 +315,9 @@ export function useTeacherUsagePage() {
 
   async function loadConfig() {
     try {
-      const response = await apiRequest('auth/admin/teacher-usage/config')
-      if (response.ok) {
-        const data = await response.json()
+      const result = await configQuery.refetch()
+      const data = result.data
+      if (data) {
         configForm.value = {
           continuous: { ...configForm.value.continuous, ...data.continuous },
           rejection: { ...configForm.value.rejection, ...data.rejection },
@@ -312,16 +333,7 @@ export function useTeacherUsagePage() {
   async function saveConfig() {
     isSavingConfig.value = true
     try {
-      const response = await apiRequest('auth/admin/teacher-usage/config', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(configForm.value),
-      })
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}))
-        notify.error(data.detail || t('teacher.analytics.notify.saveFailed'))
-        return
-      }
+      await updateConfigMutation.mutateAsync(configForm.value)
       notify.success(t('teacher.analytics.notify.configSaved'))
       await loadTeacherUsage()
     } catch (error) {
@@ -335,25 +347,10 @@ export function useTeacherUsagePage() {
   async function recomputeClassifications() {
     isRecomputing.value = true
     try {
-      const saveRes = await apiRequest('auth/admin/teacher-usage/config', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(configForm.value),
-      })
-      if (!saveRes.ok) {
-        notify.error(t('teacher.analytics.notify.saveFailed'))
-        return
-      }
-      const recomputeRes = await apiRequest('auth/admin/teacher-usage/recompute', {
-        method: 'POST',
-      })
-      if (!recomputeRes.ok) {
-        const data = await recomputeRes.json().catch(() => ({}))
-        notify.error(data.detail || t('teacher.analytics.notify.recomputeFailed'))
-        return
-      }
-      const data = await recomputeRes.json()
-      notify.success(t('teacher.analytics.notify.savedRecomputed', { n: data.recomputed }))
+      const data = await recomputeMutation.mutateAsync(configForm.value)
+      notify.success(
+        t('teacher.analytics.notify.savedRecomputed', { n: data.recomputed ?? 0 })
+      )
       await loadTeacherUsage()
     } catch (error) {
       console.error('Failed to recompute:', error)
@@ -381,63 +378,68 @@ export function useTeacherUsagePage() {
   let barChart: EChartsType | null = null
   const groupCharts: Record<string, EChartsType | null> = {}
 
+  function applyOverviewData(data: Record<string, unknown>): void {
+    const rawStats = data.stats as Record<string, number> | undefined
+    stats.value = {
+      totalTeachers: rawStats?.totalTeachers ?? 0,
+      unused: rawStats?.unused ?? 0,
+      continuous: rawStats?.continuous ?? 0,
+      rejection: rawStats?.rejection ?? 0,
+      stopped: rawStats?.stopped ?? 0,
+      intermittent: rawStats?.intermittent ?? 0,
+    }
+    const groups = data.groups as Record<string, GroupStats> | undefined
+    for (const g of GROUPS) {
+      const gData = groups?.[g.id]
+      groupStats.value[g.id] = {
+        count: gData?.count ?? 0,
+        totalTokens: gData?.totalTokens ?? 0,
+        teachers: gData?.teachers ?? [],
+        weeklyTokens: gData?.weeklyTokens ?? [],
+      }
+    }
+    const seen = new Set<number>()
+    const allTeachers: Teacher[] = []
+    let totalTokensSum = 0
+    const maxWeeks = Math.max(
+      0,
+      ...GROUPS.map((gr) => groupStats.value[gr.id]?.weeklyTokens?.length ?? 0)
+    )
+    const weeklyTokensTotal = new Array(maxWeeks).fill(0)
+    for (const g of GROUPS) {
+      const gs = groupStats.value[g.id]
+      if (gs) {
+        totalTokensSum += gs.totalTokens
+        for (const teacher of gs.teachers) {
+          if (!seen.has(teacher.id)) {
+            seen.add(teacher.id)
+            allTeachers.push(teacher)
+          }
+        }
+        const wt = gs.weeklyTokens ?? []
+        wt.forEach((v, i) => {
+          weeklyTokensTotal[i] = (weeklyTokensTotal[i] ?? 0) + v
+        })
+      }
+    }
+    groupStats.value.total = {
+      count: stats.value.totalTeachers,
+      totalTokens: totalTokensSum,
+      teachers: allTeachers,
+      weeklyTokens: weeklyTokensTotal,
+    }
+  }
+
   async function loadTeacherUsage() {
     isLoading.value = true
     try {
-      const response = await apiRequest('auth/admin/teacher-usage')
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}))
-        notify.error(data.detail || t('teacher.analytics.notify.loadDataFailed'))
+      const result = await overviewQuery.refetch()
+      const data = result.data as Record<string, unknown> | undefined
+      if (!data) {
+        notify.error(t('teacher.analytics.notify.loadDataFailed'))
         return
       }
-      const data = await response.json()
-      stats.value = {
-        totalTeachers: data.stats?.totalTeachers ?? 0,
-        unused: data.stats?.unused ?? 0,
-        continuous: data.stats?.continuous ?? 0,
-        rejection: data.stats?.rejection ?? 0,
-        stopped: data.stats?.stopped ?? 0,
-        intermittent: data.stats?.intermittent ?? 0,
-      }
-      for (const g of GROUPS) {
-        const gData = data.groups?.[g.id]
-        groupStats.value[g.id] = {
-          count: gData?.count ?? 0,
-          totalTokens: gData?.totalTokens ?? 0,
-          teachers: gData?.teachers ?? [],
-          weeklyTokens: gData?.weeklyTokens ?? [],
-        }
-      }
-      const seen = new Set<number>()
-      const allTeachers: Teacher[] = []
-      let totalTokensSum = 0
-      const maxWeeks = Math.max(
-        0,
-        ...GROUPS.map((gr) => groupStats.value[gr.id]?.weeklyTokens?.length ?? 0)
-      )
-      const weeklyTokensTotal = new Array(maxWeeks).fill(0)
-      for (const g of GROUPS) {
-        const gs = groupStats.value[g.id]
-        if (gs) {
-          totalTokensSum += gs.totalTokens
-          for (const teacher of gs.teachers) {
-            if (!seen.has(teacher.id)) {
-              seen.add(teacher.id)
-              allTeachers.push(teacher)
-            }
-          }
-          const wt = gs.weeklyTokens ?? []
-          wt.forEach((v, i) => {
-            weeklyTokensTotal[i] = (weeklyTokensTotal[i] ?? 0) + v
-          })
-        }
-      }
-      groupStats.value.total = {
-        count: stats.value.totalTeachers,
-        totalTokens: totalTokensSum,
-        teachers: allTeachers,
-        weeklyTokens: weeklyTokensTotal,
-      }
+      applyOverviewData(data)
     } catch (error) {
       console.error('Failed to load teacher usage:', error)
       notify.error(t('teacher.analytics.notify.networkError'))

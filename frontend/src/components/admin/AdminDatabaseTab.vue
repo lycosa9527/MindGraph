@@ -5,7 +5,19 @@ import { ElMessageBox } from 'element-plus'
 
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import { apiRequest } from '@/utils/apiClient'
+import {
+  useAdminDatabaseOrphans,
+  useAdminDatabaseStats,
+  useAnalyzeAdminDatabase,
+  useAnalyzeAdminDatabaseDump,
+  useCleanupAdminDatabaseOrphans,
+  useCleanupAdminSqliteOrphans,
+  useExportAdminDatabase,
+  useImportAdminDatabaseDump,
+  useMergeAdminDatabase,
+  useMergeAdminDatabaseDump,
+  useScanAdminDatabase,
+} from '@/composables/queries'
 
 // ── types ────────────────────────────────────────────────────────────
 
@@ -72,6 +84,18 @@ interface PgDumpMergeResult {
 
 const { t } = useLanguage()
 const notify = useNotifications()
+
+const statsQuery = useAdminDatabaseStats()
+const orphansQuery = useAdminDatabaseOrphans({ enabled: false })
+const scanDatabase = useScanAdminDatabase()
+const analyzeDatabase = useAnalyzeAdminDatabase()
+const cleanupSqliteOrphans = useCleanupAdminSqliteOrphans()
+const mergeDatabase = useMergeAdminDatabase()
+const exportDatabase = useExportAdminDatabase()
+const importDatabaseDump = useImportAdminDatabaseDump()
+const analyzeDatabaseDump = useAnalyzeAdminDatabaseDump()
+const mergeDatabaseDump = useMergeAdminDatabaseDump()
+const cleanupDatabaseOrphans = useCleanupAdminDatabaseOrphans()
 
 // ── state ────────────────────────────────────────────────────────────
 
@@ -165,9 +189,8 @@ function formatDate(iso: string): string {
 async function loadStats() {
   isLoadingStats.value = true
   try {
-    const response = await apiRequest('/api/auth/admin/database/stats')
-    if (!response.ok) throw new Error('stats request failed')
-    pgStats.value = (await response.json()) as PgStats
+    const result = await statsQuery.refetch()
+    pgStats.value = (result.data as PgStats | undefined) ?? null
   } catch {
     notify.error(t('admin.database.statsError'))
   } finally {
@@ -184,9 +207,7 @@ async function scanBackup() {
   pgDumpMergeResult.value = null
   selectedDump.value = null
   try {
-    const response = await apiRequest('/api/auth/admin/database/scan')
-    if (!response.ok) throw new Error('scan request failed')
-    scanResult.value = (await response.json()) as ScanResult
+    scanResult.value = (await scanDatabase.mutateAsync()) as unknown as ScanResult
   } catch {
     notify.error(t('admin.database.scanError'))
   } finally {
@@ -200,20 +221,11 @@ async function analyzeSqlite(filename: string) {
   analysis.value = null
   mergeResult.value = null
   try {
-    const response = await apiRequest('/api/auth/admin/database/analyze', {
-      method: 'POST',
-      body: JSON.stringify({ filename }),
-    })
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      const detail = body?.detail ?? response.statusText
-      notify.error(`${t('admin.database.analyzeError')}: ${detail}`)
-      return
-    }
-    analysis.value = (await response.json()) as AnalysisResult
+    analysis.value = (await analyzeDatabase.mutateAsync({ filename })) as unknown as AnalysisResult
   } catch (err: unknown) {
     console.error('[AdminDB] analyze error:', err)
-    notify.error(t('admin.database.analyzeError'))
+    const message = err instanceof Error ? err.message : t('admin.database.analyzeError')
+    notify.error(message)
   } finally {
     isAnalyzing.value = false
   }
@@ -241,17 +253,7 @@ async function cleanSqliteOrphans() {
 
   isCleaningSqliteOrphans.value = true
   try {
-    const response = await apiRequest('/api/auth/admin/database/cleanup-sqlite-orphans', {
-      method: 'POST',
-      body: JSON.stringify({ filename }),
-    })
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      const detail = body?.detail ?? response.statusText
-      notify.error(`Cleanup failed: ${detail}`)
-      return
-    }
-    const result = (await response.json()) as Record<string, number>
+    const result = (await cleanupSqliteOrphans.mutateAsync({ filename })) as Record<string, number>
     const total = Object.values(result).reduce((s, v) => s + v, 0)
     notify.success(`Cleaned ${total} orphaned records from SQLite`)
     await analyzeSqlite(filename)
@@ -285,17 +287,7 @@ async function executeMerge() {
 
   isMerging.value = true
   try {
-    const response = await apiRequest('/api/auth/admin/database/merge', {
-      method: 'POST',
-      body: JSON.stringify({ filename }),
-    })
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      const detail = body?.detail ?? response.statusText
-      notify.error(`${t('admin.database.mergeError')}: ${detail}`)
-      return
-    }
-    mergeResult.value = (await response.json()) as MergeResult
+    mergeResult.value = (await mergeDatabase.mutateAsync({ filename })) as unknown as MergeResult
     notify.success(t('admin.database.mergeSuccess'))
     loadStats()
   } catch (err: unknown) {
@@ -309,9 +301,10 @@ async function executeMerge() {
 async function exportDump() {
   isExporting.value = true
   try {
-    const response = await apiRequest('/api/auth/admin/database/export', { method: 'POST' })
-    if (!response.ok) throw new Error('export request failed')
-    const result = (await response.json()) as { success: boolean; filename?: string }
+    const result = (await exportDatabase.mutateAsync()) as unknown as {
+      success: boolean
+      filename?: string
+    }
     if (result.success) {
       notify.success(t('admin.database.exportSuccess') + `: ${result.filename}`)
       scanBackup()
@@ -340,17 +333,7 @@ async function importDump(filename: string) {
 
   isImporting.value = true
   try {
-    const response = await apiRequest('/api/auth/admin/database/import-dump', {
-      method: 'POST',
-      body: JSON.stringify({ filename }),
-    })
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      const detail = body?.detail ?? response.statusText
-      notify.error(`${t('admin.database.importError')}: ${detail}`)
-      return
-    }
-    const result = (await response.json()) as { success: boolean }
+    const result = (await importDatabaseDump.mutateAsync({ filename })) as { success: boolean }
     if (result.success) {
       notify.success(t('admin.database.importSuccess'))
       loadStats()
@@ -371,17 +354,7 @@ async function analyzeDump(filename: string) {
   pgDumpAnalysis.value = null
   pgDumpMergeResult.value = null
   try {
-    const response = await apiRequest('/api/auth/admin/database/analyze-dump', {
-      method: 'POST',
-      body: JSON.stringify({ filename }),
-    })
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      const detail = body?.detail ?? response.statusText
-      notify.error(`${t('admin.database.pgAnalyzeError')}: ${detail}`)
-      return
-    }
-    pgDumpAnalysis.value = (await response.json()) as PgDumpAnalysis
+    pgDumpAnalysis.value = (await analyzeDatabaseDump.mutateAsync({ filename })) as unknown as PgDumpAnalysis
   } catch (err: unknown) {
     console.error('[AdminDB] PG dump analyze error:', err)
     notify.error(t('admin.database.pgAnalyzeError'))
@@ -412,17 +385,7 @@ async function executePgMerge() {
 
   isMergingDump.value = true
   try {
-    const response = await apiRequest('/api/auth/admin/database/merge-dump', {
-      method: 'POST',
-      body: JSON.stringify({ filename }),
-    })
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      const detail = body?.detail ?? response.statusText
-      notify.error(`${t('admin.database.pgMergeError')}: ${detail}`)
-      return
-    }
-    pgDumpMergeResult.value = (await response.json()) as PgDumpMergeResult
+    pgDumpMergeResult.value = (await mergeDatabaseDump.mutateAsync({ filename })) as unknown as PgDumpMergeResult
     notify.success(t('admin.database.pgMergeSuccess'))
     loadStats()
   } catch (err: unknown) {
@@ -436,9 +399,8 @@ async function executePgMerge() {
 async function detectOrphans() {
   isDetectingOrphans.value = true
   try {
-    const response = await apiRequest('/api/auth/admin/database/orphans')
-    if (!response.ok) throw new Error('orphan detect failed')
-    orphans.value = (await response.json()) as Record<string, number>
+    const result = await orphansQuery.refetch()
+    orphans.value = (result.data as Record<string, number> | undefined) ?? null
   } catch {
     notify.error(t('admin.database.orphanDetectError'))
   } finally {
@@ -465,11 +427,7 @@ async function cleanOrphans() {
 
   isCleaningOrphans.value = true
   try {
-    const response = await apiRequest('/api/auth/admin/database/cleanup-orphans', {
-      method: 'POST',
-    })
-    if (!response.ok) throw new Error('orphan cleanup failed')
-    const result = (await response.json()) as Record<string, number>
+    const result = (await cleanupDatabaseOrphans.mutateAsync({})) as Record<string, number>
     const total = Object.values(result).reduce((s, v) => s + v, 0)
     notify.success(`${t('admin.database.orphanCleanSuccess')}: ${total}`)
     detectOrphans()

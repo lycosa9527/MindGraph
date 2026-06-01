@@ -159,6 +159,17 @@ export function canViewDataCenterTab(caps: AdminCapability[]): boolean {
   return caps.includes('tab.data_center.view') || caps.includes('tab.school_dashboard.view')
 }
 
+/** School managers use the school dashboard sub-view with tab.users.edit, not tab.data_center.edit. */
+export function isDataCenterTabReadOnly(caps: AdminCapability[]): boolean {
+  if (caps.includes('tab.data_center.edit')) {
+    return false
+  }
+  if (caps.includes('tab.school_dashboard.view') && caps.includes('tab.users.edit')) {
+    return false
+  }
+  return true
+}
+
 const FEATURE_DEV_SUBTABS = ['smart_response', 'kitty_llmops', 'teacher_usage'] as const
 
 export function canViewFeatureDevTab(caps: AdminCapability[]): boolean {

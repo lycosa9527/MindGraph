@@ -263,17 +263,9 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                 logger.warning("Bayi SSO blocked: Organization %s is locked", org.code)
                 return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
 
-            expires_at = cast(
-                Optional[datetime],
-                getattr(org, "expires_at", None),
-            )
-            if expires_at is not None and expires_at < datetime.now(UTC):
-                logger.warning(
-                    "Bayi SSO blocked: Organization %s expired on %s",
-                    org.code,
-                    expires_at,
-                )
-                return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
+            from utils.auth.org_subscription import ensure_org_subscription_current
+
+            org = await ensure_org_subscription_current(org) or org
 
             result = await db.execute(select(User).where(User.phone == user_phone))
             bayi_user = result.scalar_one_or_none()

@@ -4,36 +4,61 @@
  */
 import { computed, onMounted, ref } from 'vue'
 
-import { ElMessageBox } from 'element-plus'
-
 import AdminMindBotConfigDialog from '@/components/admin/AdminMindBotConfigDialog.vue'
 import type {
-  MindbotConfigFormState,
   MindbotConfigRow,
   OrgOption,
 } from '@/components/admin/mindbotConfigTypes'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import {
-  emptyMindbotFormState,
-  fillMindbotFormFromRow,
+  MINDBOT_BOT_CAP,
+  useAdminMindBotConfig,
 } from '@/composables/admin/useAdminMindBotConfig'
-import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
+import { useLanguage, useNotifications } from '@/composables'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
+import { useAdminOrganizations, useMoveAdminMindbotConfig } from '@/composables/queries'
 import { useAuthStore } from '@/stores/auth'
-import { apiRequest } from '@/utils/apiClient'
 import { maskSensitiveDisplay } from '@/utils/sensitiveMask'
 
 const { t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
-const { publicSiteUrl } = usePublicSiteUrl()
 const { featureMindbot } = useFeatureFlags()
+const { on: onAdminEvent } = useAdminEventBus('AdminMindBotTab')
 
-const BOT_CAP = 5
+const mindbot = useAdminMindBotConfig()
+const {
+  loading,
+  saving,
+  rotating,
+  configs,
+  dialogMode,
+  formOrgId,
+  editingConfigId,
+  dingtalkSecretReplaceMode,
+  difyApiKeyReplaceMode,
+  form,
+  editingRow,
+  canLoadUsage,
+  buildCallbackUrlByToken,
+  resetForm,
+  fillForm,
+  loadConfigs,
+  saveConfig,
+  rotateCallbackUrl,
+  deleteConfig,
+  copyUrl,
+  startReplaceDingtalkSecret,
+  startReplaceDifyApiKey,
+} = mindbot
 
-const loading = ref(true)
-const saving = ref(false)
-const configs = ref<MindbotConfigRow[]>([])
-const schools = ref<OrgOption[]>([])
+const moveConfigMutation = useMoveAdminMindbotConfig()
+const orgsQuery = useAdminOrganizations({
+  enabled: computed(() => authStore.isAdmin),
+})
+
+const BOT_CAP = MINDBOT_BOT_CAP
+const schools = computed(() => (orgsQuery.data.value ?? []) as OrgOption[])
 
 const isAdmin = computed(() => authStore.isAdmin)
 const isManager = computed(() => authStore.isManager)
@@ -46,31 +71,11 @@ const managerOrgId = computed(() => {
   return Number.isFinite(n) ? n : NaN
 })
 
-const apiMindbotBase = computed(() => {
-  const origin = publicSiteUrl.value.replace(/\/$/, '')
-  return `${origin}/api/mindbot`
-})
-
-function buildCallbackUrlByToken(token: string): string {
-  const tok = token.trim()
-  return `${apiMindbotBase.value}/dingtalk/callback/t/${encodeURIComponent(tok)}`
-}
-
 const dialogVisible = ref(false)
-const dialogMode = ref<'create' | 'edit'>('create')
-const rotating = ref(false)
 const moveDialogVisible = ref(false)
 const moveSourceRow = ref<MindbotConfigRow | null>(null)
 const moveTargetOrgId = ref<number | null>(null)
 const moveSubmitting = ref(false)
-const formOrgId = ref<number | null>(null)
-/** Config PK of the row being edited; null when creating a new bot. */
-const editingConfigId = ref<number | null>(null)
-/** True when user chose to type a new DingTalk / Dify secret (edit mode). */
-const dingtalkSecretReplaceMode = ref(false)
-const difyApiKeyReplaceMode = ref(false)
-
-const form = ref<MindbotConfigFormState>(emptyMindbotFormState())
 
 function orgLabel(org: OrgOption): string {
   const display = org.display_name?.trim()
@@ -132,49 +137,21 @@ async function confirmMoveBot(): Promise<void> {
   }
   moveSubmitting.value = true
   try {
-    const res = await apiRequest(`/api/mindbot/admin/configs/${row.id}/move`, {
-      method: 'POST',
-      body: JSON.stringify({ organization_id: oid }),
+    await moveConfigMutation.mutateAsync({
+      configId: row.id,
+      body: { organization_id: oid },
     })
-    if (!res.ok) {
-      notify.error(t('admin.mindbot.moveError'))
-      return
-    }
     notify.success(t('admin.mindbot.moveSuccess'))
     moveDialogVisible.value = false
-    await load()
+    await loadConfigs(true)
+  } catch {
+    notify.error(t('admin.mindbot.moveError'))
   } finally {
     moveSubmitting.value = false
   }
 }
 
-function resetForm(): void {
-  form.value = emptyMindbotFormState()
-  formOrgId.value = null
-  editingConfigId.value = null
-  dingtalkSecretReplaceMode.value = false
-  difyApiKeyReplaceMode.value = false
-}
-
-function fillForm(row: MindbotConfigRow): void {
-  form.value = fillMindbotFormFromRow(row)
-  formOrgId.value = row.organization_id
-  editingConfigId.value = row.id
-  dingtalkSecretReplaceMode.value = !row.dingtalk_app_secret_masked
-  difyApiKeyReplaceMode.value = !row.dify_api_key_masked
-}
-
-function startReplaceDingtalkSecret(): void {
-  dingtalkSecretReplaceMode.value = true
-  form.value.dingtalk_app_secret = ''
-}
-
-function startReplaceDifyApiKey(): void {
-  difyApiKeyReplaceMode.value = true
-  form.value.dify_api_key = ''
-}
-
-/** Schools that have not yet reached the 5-bot cap. */
+/** Schools that have not yet reached the per-school bot cap. */
 const orgsUnderLimit = computed(() => {
   const counts = new Map<number, number>()
   for (const c of configs.value) {
@@ -183,17 +160,6 @@ const orgsUnderLimit = computed(() => {
   return schools.value.filter((o) => (counts.get(o.id) ?? 0) < BOT_CAP)
 })
 
-const editingRow = computed(() => {
-  const cid = editingConfigId.value
-  if (cid == null) {
-    return undefined
-  }
-  return configs.value.find((c) => c.id === cid)
-})
-
-const canLoadUsage = computed(() => dialogMode.value === 'edit' && editingConfigId.value != null)
-
-/** Manager create dialog: prefer profile school name (schools list may be empty). */
 const managerSchoolDisplayName = computed(() => {
   const fromProfile = authStore.user?.schoolName?.trim()
   if (fromProfile) {
@@ -223,48 +189,6 @@ const mindbotDialogSchoolDisplayName = computed(() => {
   }
   return String(oid)
 })
-
-async function loadAllConfigs(): Promise<MindbotConfigRow[]> {
-  const PAGE_SIZE = 200
-  const all: MindbotConfigRow[] = []
-  let afterId: number | null = null
-  for (;;) {
-    const url =
-      afterId == null
-        ? `/api/mindbot/admin/configs?limit=${PAGE_SIZE}`
-        : `/api/mindbot/admin/configs?limit=${PAGE_SIZE}&after_id=${afterId}`
-    const res = await apiRequest(url)
-    if (!res.ok) {
-      throw new Error('configs_fetch_failed')
-    }
-    const page = (await res.json()) as MindbotConfigRow[]
-    all.push(...page)
-    if (page.length < PAGE_SIZE) {
-      break
-    }
-    afterId = page[page.length - 1].id
-  }
-  return all
-}
-
-async function load(): Promise<void> {
-  loading.value = true
-  try {
-    configs.value = await loadAllConfigs()
-    if (isAdmin.value) {
-      const orgRes = await apiRequest('/api/auth/admin/organizations')
-      if (orgRes.ok) {
-        schools.value = (await orgRes.json()) as OrgOption[]
-      } else {
-        schools.value = []
-      }
-    }
-  } catch {
-    notify.error(t('admin.mindbot.loadError'))
-  } finally {
-    loading.value = false
-  }
-}
 
 function openCreate(): void {
   dialogMode.value = 'create'
@@ -297,196 +221,22 @@ function openManagerMindbotDialog(): void {
   dialogVisible.value = true
 }
 
-async function createConfig(): Promise<void> {
-  const oid = formOrgId.value
-  if (oid == null) {
-    notify.error(t('admin.mindbot.saveError'))
-    return
-  }
-  if (!form.value.dingtalk_app_secret.trim() || !form.value.dify_api_key.trim()) {
-    notify.error(t('admin.mindbot.saveError'))
-    return
-  }
-  saving.value = true
-  try {
-    const payload: Record<string, unknown> = {
-      organization_id: oid,
-      bot_label: form.value.bot_label.trim() || null,
-      dingtalk_robot_code: form.value.dingtalk_robot_code.trim(),
-      dingtalk_client_id: form.value.dingtalk_client_id.trim() || null,
-      dingtalk_app_secret: form.value.dingtalk_app_secret.trim(),
-      dify_api_base_url: form.value.dify_api_base_url.trim(),
-      dify_api_key: form.value.dify_api_key.trim(),
-      dify_timeout_seconds: form.value.dify_timeout_seconds,
-      show_chain_of_thought_oto: form.value.show_chain_of_thought,
-      show_chain_of_thought_internal_group: form.value.show_chain_of_thought,
-      show_chain_of_thought_cross_org_group: form.value.show_chain_of_thought,
-      chain_of_thought_max_chars: form.value.chain_of_thought_max_chars,
-      dingtalk_ai_card_template_id: form.value.dingtalk_ai_card_template_id.trim() || null,
-      dingtalk_ai_card_param_key: form.value.dingtalk_ai_card_param_key.trim() || null,
-      dingtalk_ai_card_streaming_max_chars: form.value.dingtalk_ai_card_streaming_max_chars,
-      is_enabled: form.value.is_enabled,
-    }
-    const res = await apiRequest('/api/mindbot/admin/configs', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-    if (!res.ok) {
-      notify.error(t('admin.mindbot.saveError'))
-      return
-    }
-    const saved = (await res.json()) as MindbotConfigRow
-    notify.success(t('admin.mindbot.saved'))
-    await load()
-    const row = configs.value.find((c) => c.id === saved.id) ?? saved
-    fillForm(row)
-    dialogMode.value = 'edit'
-  } finally {
-    saving.value = false
-  }
-}
-
-async function updateConfig(): Promise<void> {
-  const cid = editingConfigId.value
-  if (cid == null) {
-    notify.error(t('admin.mindbot.saveError'))
-    return
-  }
-  saving.value = true
-  try {
-    const payload: Record<string, unknown> = {
-      bot_label: form.value.bot_label.trim() || null,
-      dingtalk_robot_code: form.value.dingtalk_robot_code.trim(),
-      dingtalk_client_id: form.value.dingtalk_client_id.trim() || null,
-      dify_api_base_url: form.value.dify_api_base_url.trim(),
-      dify_timeout_seconds: form.value.dify_timeout_seconds,
-      show_chain_of_thought_oto: form.value.show_chain_of_thought,
-      show_chain_of_thought_internal_group: form.value.show_chain_of_thought,
-      show_chain_of_thought_cross_org_group: form.value.show_chain_of_thought,
-      chain_of_thought_max_chars: form.value.chain_of_thought_max_chars,
-      dingtalk_ai_card_template_id: form.value.dingtalk_ai_card_template_id.trim() || null,
-      dingtalk_ai_card_param_key: form.value.dingtalk_ai_card_param_key.trim() || null,
-      dingtalk_ai_card_streaming_max_chars: form.value.dingtalk_ai_card_streaming_max_chars,
-      is_enabled: form.value.is_enabled,
-    }
-    if (dingtalkSecretReplaceMode.value) {
-      const sec = form.value.dingtalk_app_secret.trim()
-      if (sec) {
-        payload.dingtalk_app_secret = sec
-      }
-    }
-    if (difyApiKeyReplaceMode.value) {
-      const key = form.value.dify_api_key.trim()
-      if (key) {
-        payload.dify_api_key = key
-      }
-    }
-    const res = await apiRequest(`/api/mindbot/admin/configs/${cid}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    })
-    if (!res.ok) {
-      notify.error(t('admin.mindbot.saveError'))
-      return
-    }
-    const saved = (await res.json()) as MindbotConfigRow
-    notify.success(t('admin.mindbot.saved'))
-    await load()
-    const row = configs.value.find((c) => c.id === saved.id) ?? saved
-    fillForm(row)
-    dialogMode.value = 'edit'
-  } finally {
-    saving.value = false
-  }
-}
-
 async function save(): Promise<void> {
-  if (dialogMode.value === 'create') {
-    await createConfig()
-  } else {
-    await updateConfig()
-  }
-}
-
-async function rotateCallbackUrl(): Promise<void> {
-  const cid = editingConfigId.value
-  if (cid == null) {
-    return
-  }
-  try {
-    await ElMessageBox.confirm(
-      t('admin.mindbot.rotateConfirm'),
-      t('admin.mindbot.rotateConfirmTitle'),
-      {
-        type: 'warning',
-        customClass: 'mindbot-swiss-message-box mindbot-swiss-msg--rotate',
-        modalClass: 'mindbot-swiss-backdrop',
-        cancelButtonClass: 'mindbot-pill mindbot-pill--footer-cancel',
-        showClose: true,
-      }
-    )
-  } catch {
-    return
-  }
-  rotating.value = true
-  try {
-    const res = await apiRequest(`/api/mindbot/admin/configs/${cid}/rotate-callback-token`, {
-      method: 'POST',
-    })
-    if (!res.ok) {
-      notify.error(t('admin.mindbot.loadError'))
-      return
-    }
-    const row = (await res.json()) as MindbotConfigRow
-    const idx = configs.value.findIndex((c) => c.id === cid)
-    if (idx >= 0) {
-      configs.value[idx] = row
-    }
-    fillForm(row)
-    notify.success(t('admin.mindbot.callbackRotated'))
-  } finally {
-    rotating.value = false
-  }
+  await saveConfig()
 }
 
 async function removeRow(row: MindbotConfigRow): Promise<void> {
-  try {
-    await ElMessageBox.confirm(
-      t('admin.mindbot.deleteConfirm'),
-      t('admin.mindbot.deleteConfirmTitle'),
-      {
-        type: 'warning',
-        customClass: 'mindbot-swiss-message-box mindbot-swiss-msg--delete',
-        modalClass: 'mindbot-swiss-backdrop',
-        cancelButtonClass: 'mindbot-pill mindbot-pill--footer-cancel',
-        showClose: true,
-      }
-    )
-  } catch {
-    return
-  }
-  const res = await apiRequest(`/api/mindbot/admin/configs/${row.id}`, {
-    method: 'DELETE',
-  })
-  if (!res.ok) {
-    notify.error(t('admin.mindbot.deleteError'))
-    return
-  }
-  notify.success(t('admin.mindbot.deleted'))
-  await load()
-}
-
-async function copyUrl(text: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(text)
-    notify.success(t('admin.mindbot.copied'))
-  } catch {
-    notify.error(t('admin.mindbot.saveError'))
-  }
+  await deleteConfig(row)
 }
 
 onMounted(() => {
-  void load()
+  void loadConfigs(true)
+})
+
+onAdminEvent('admin:refresh_requested', ({ domain }) => {
+  if (domain === 'mindbot' || domain === 'all') {
+    void loadConfigs(true)
+  }
 })
 
 const isAddBotDisabled = computed(() => loading.value || orgsUnderLimit.value.length === 0)

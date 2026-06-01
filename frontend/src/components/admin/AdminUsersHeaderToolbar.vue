@@ -2,67 +2,70 @@
 import { computed, onMounted, watch } from 'vue'
 
 import { Search } from '@element-plus/icons-vue'
+import { storeToRefs } from 'pinia'
 
-import { useAdminOrganizationsList } from '@/composables/admin/useAdminOrganizationsList'
-import { useAdminUsersHeaderToolbarModel } from '@/composables/admin/useAdminUsersHeaderToolbar'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useLanguage } from '@/composables'
+import { useAdminOrganizations } from '@/composables/queries'
+import { useAdminPanelStore } from '@/stores'
 
 const { t } = useLanguage()
-const toolbarState = useAdminUsersHeaderToolbarModel()
-const { organizations, loadOrganizations } = useAdminOrganizationsList()
+const adminPanel = useAdminPanelStore()
+const { usersToolbar } = storeToRefs(adminPanel)
+const { emit: emitAdminEvent } = useAdminEventBus('AdminUsersHeaderToolbar')
+const orgsQuery = useAdminOrganizations()
+const organizations = computed(() => orgsQuery.data.value ?? [])
 
 const searchQuery = computed({
-  get: () => toolbarState.value?.searchQuery.value ?? '',
+  get: () => usersToolbar.value?.searchQuery ?? '',
   set: (value: string) => {
-    const model = toolbarState.value
-    if (model) {
-      model.searchQuery.value = value
-    }
+    adminPanel.patchUsersToolbar({ searchQuery: value })
   },
 })
 
 const orgFilter = computed({
-  get: () => toolbarState.value?.orgFilter?.value ?? '',
+  get: () => usersToolbar.value?.orgFilter ?? '',
   set: (value: number | '') => {
-    const model = toolbarState.value
-    if (model?.orgFilter) {
-      model.orgFilter.value = value
-    }
+    adminPanel.patchUsersToolbar({ orgFilter: value })
   },
 })
 
-const showSchoolFilter = computed(() => toolbarState.value?.showSchoolFilter === true)
+const showSchoolFilter = computed(() => usersToolbar.value?.showSchoolFilter === true)
 
 const SCHOOL_SELECT_POPPER_CLASS = 'admin-swiss-school-select-popper'
 
 onMounted(() => {
   if (showSchoolFilter.value) {
-    void loadOrganizations()
+    void orgsQuery.refetch()
   }
 })
 
 watch(showSchoolFilter, (enabled) => {
   if (enabled) {
-    void loadOrganizations()
+    void orgsQuery.refetch()
   }
 })
 
 function onSearch(): void {
-  toolbarState.value?.doSearch()
+  emitAdminEvent('admin:toolbar_action', { action: 'users_search', tab: 'users' })
 }
 
 function onReset(): void {
-  toolbarState.value?.resetFilters?.()
+  emitAdminEvent('admin:toolbar_action', { action: 'users_reset_filters', tab: 'users' })
 }
 
 function onOrgFilterChange(value: number | ''): void {
-  toolbarState.value?.onOrgFilterChange?.(value)
+  emitAdminEvent('admin:toolbar_action', {
+    action: 'users_org_filter_change',
+    tab: 'users',
+    payload: { value },
+  })
 }
 </script>
 
 <template>
   <div
-    v-if="toolbarState"
+    v-if="usersToolbar"
     class="admin-swiss-toolbar admin-swiss-toolbar--header"
   >
     <el-input
@@ -111,7 +114,7 @@ function onOrgFilterChange(value: number | ''): void {
       {{ t('admin.search') }}
     </el-button>
     <el-button
-      v-if="toolbarState?.resetFilters"
+      v-if="usersToolbar?.hasResetFilters"
       size="small"
       class="admin-swiss-btn admin-swiss-btn--ghost"
       @click="onReset"

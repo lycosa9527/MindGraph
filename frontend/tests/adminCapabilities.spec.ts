@@ -4,6 +4,7 @@ import {
   canViewDataCenterTab,
   canViewUsersTab,
   fallbackCapabilitiesForRole,
+  isDataCenterTabReadOnly,
   roleHasPanelAccess,
   tabEditCapability,
   tabRequiresCapabilities,
@@ -20,6 +21,7 @@ describe('adminCapabilities', () => {
     expect(caps).not.toContain('tab.invites.view')
     expect(caps).not.toContain('tab.settings.view')
     expect(visibleDataCenterViews(caps)).toEqual(['school_dashboard'])
+    expect(isDataCenterTabReadOnly(caps)).toBe(false)
   })
 
   it('teacher has no panel capabilities', () => {
@@ -28,6 +30,7 @@ describe('adminCapabilities', () => {
 
   it('platform_bd has read-only global tabs plus invite edit', () => {
     const caps = fallbackCapabilitiesForRole('platform_bd')
+    expect(isDataCenterTabReadOnly(caps)).toBe(false)
     expect(caps).toContain('tab.data_center.view')
     expect(caps).toContain('tab.data_center.edit')
     expect(caps).toContain('tab.school_dashboard.view')

@@ -5,7 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [5.117.27] - 2026-06-01
+
+### Added
+
+- **Org — subscription expiry downgrade** — When `organizations.expires_at` is in the past, effective school tier resolves to trial and paid tiers are persisted as trial on login and page load ([`org_subscription.py`](utils/auth/org_subscription.py), [`test_org_subscription.py`](tests/test_org_subscription.py)).
+- **School tier — trial diagram cap** — Trial schools enforce 20 saved diagrams per teacher; paid tiers and personal accounts use unlimited saves (`diagrams_per_member` / zero cap) ([`school_tier.py`](utils/auth/school_tier.py), [`diagramLimit.ts`](frontend/src/utils/diagramLimit.ts)).
+- **Admin — TanStack Query layer** — Typed admin API helpers, query keys, and read/mutation composables centralize admin fetches ([`adminApi.ts`](frontend/src/composables/queries/adminApi.ts), [`adminKeys.ts`](frontend/src/composables/queries/adminKeys.ts), [`useAdminQueries.ts`](frontend/src/composables/queries/useAdminQueries.ts), [`useAdminMutations.ts`](frontend/src/composables/queries/useAdminMutations.ts)).
+- **Admin — panel Pinia store** — Shared tab context, org selection, toolbar state, and visibility-aware poll registration ([`adminPanel.ts`](frontend/src/stores/adminPanel.ts), [`useAdminOrgScope.ts`](frontend/src/composables/admin/useAdminOrgScope.ts), [`useAdminRouteSync.ts`](frontend/src/composables/admin/useAdminRouteSync.ts), [`useAdminPolling.ts`](frontend/src/composables/admin/useAdminPolling.ts)).
+- **Admin — query error UX** — Scoped abort, ignorable cancel/abort detection, and mounted-only query error toasts ([`useScopedAbort.ts`](frontend/src/composables/core/useScopedAbort.ts), [`queryErrors.ts`](frontend/src/utils/queryErrors.ts), [`useQueryErrorNotification.ts`](frontend/src/composables/admin/useQueryErrorNotification.ts)).
+- **Tests** — Org subscription expiry, diagram limit formatting, and query error classification ([`diagramLimit.spec.ts`](frontend/tests/diagramLimit.spec.ts), [`queryErrors.spec.ts`](frontend/tests/queryErrors.spec.ts)).
+
+### Changed
+
+- **Diagrams API — tier-based limits** — Create, list, and duplicate pass per-user caps from school tier (and subscription expiry) into Redis diagram cache; localized 403 detail on cap ([`diagrams.py`](routers/api/diagrams.py), [`redis_diagram_cache.py`](services/redis/cache/redis_diagram_cache.py)).
+- **School tier — trial member cap removed** — Trial `member_limit` is unlimited (zero = no cap); manager and storage quotas unchanged ([`school_tier.py`](utils/auth/school_tier.py), [`schoolTier.ts`](frontend/src/constants/schoolTier.ts)).
+- **Frontend — saved diagrams store** — `max_diagrams` from API drives unlimited vs capped UI, i18n limit toasts, and 403 handling ([`savedDiagrams.ts`](frontend/src/stores/savedDiagrams.ts), auth locale keys).
+- **Admin — data-fetch refactor** — Schools, users, roles, MindBot, performance, teacher usage, and school dashboard tabs migrate to Vue Query + `adminPanel` store; legacy org/list/header composables removed.
+- **Auth — login and profile** — Subscription check on login; org profile and token paths use effective tier after expiry ([`login.py`](routers/auth/login.py), [`org_profile.py`](routers/auth/org_profile.py), [`user_tokens.py`](utils/auth/user_tokens.py)).
+
+### Removed
+
+- **Admin — legacy org composables** — [`useAdminOrgContext.ts`](frontend/src/composables/admin/useAdminOrgContext.ts), [`useAdminOrganizationsList.ts`](frontend/src/composables/admin/useAdminOrganizationsList.ts), per-tab header toolbar composables, and school-dashboard org-picker/add-member header composables (logic consolidated into store + queries).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.27).
 
 ## [5.117.26] - 2026-05-31
 

@@ -17,14 +17,21 @@ from utils.auth.school_tier import (
     apply_school_tier_on_create,
     apply_school_tier_on_update,
     assert_organization_tier_allows_current_members,
+    diagram_limit_reached_message,
     diagram_storage_limit_bytes_for_org,
+    format_diagram_save_limit_error,
+    is_unlimited_member_limit,
     manager_limit_for_org,
+    max_diagrams_for_tier,
     member_limit_for_org,
     normalize_school_tier,
+    parse_diagram_save_limit_error,
     school_tier_allows_feature,
     school_tier_features_payload,
     school_tier_list_fields,
 )
+
+from models.domain.messages import Messages
 
 
 class _FakeOrg:
@@ -47,15 +54,20 @@ def test_member_and_storage_limits_by_tier():
     standard = _FakeOrg(SCHOOL_TIER_STANDARD)
     professional = _FakeOrg(SCHOOL_TIER_PROFESSIONAL)
 
-    assert member_limit_for_org(trial) == 30
+    assert is_unlimited_member_limit(member_limit_for_org(trial))
+    assert member_limit_for_org(trial) == 0
     assert member_limit_for_org(lite) == 50
     assert member_limit_for_org(standard) == 120
     assert member_limit_for_org(professional) == 200
 
-    assert manager_limit_for_org(trial) == 1
+    assert manager_limit_for_org(trial) == 0
     assert manager_limit_for_org(lite) == 1
     assert manager_limit_for_org(standard) == 3
     assert manager_limit_for_org(professional) == 5
+
+    assert max_diagrams_for_tier(SCHOOL_TIER_TRIAL) == 20
+    assert max_diagrams_for_tier(SCHOOL_TIER_LITE) == 0
+    assert max_diagrams_for_tier(SCHOOL_TIER_PROFESSIONAL) == 0
 
     assert diagram_storage_limit_bytes_for_org(lite, 10) == 10 * 1024**3
     assert diagram_storage_limit_bytes_for_org(trial, 10) == 10 * 1024**3
@@ -63,10 +75,29 @@ def test_member_and_storage_limits_by_tier():
     assert diagram_storage_limit_bytes_for_org(professional, 4) == 20 * 1024**3
 
 
+@pytest.mark.asyncio
+async def test_trial_tier_allows_unlimited_members_on_downgrade_check(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    org = SimpleNamespace(id=1, school_tier=SCHOOL_TIER_TRIAL)
+    db = AsyncMock()
+
+    async def _count(_db, _org_id):
+        return 500
+
+    monkeypatch.setattr(
+        "utils.auth.school_tier.member_count_for_org",
+        _count,
+    )
+
+    await assert_organization_tier_allows_current_members(db, org, "en")
+
+
 def test_school_tier_list_fields():
     trial_fields = school_tier_list_fields(_FakeOrg(SCHOOL_TIER_TRIAL), 10)
     assert trial_fields["school_tier"] == SCHOOL_TIER_TRIAL
-    assert trial_fields["school_tier_member_limit"] == 30
+    assert trial_fields["school_tier_member_limit"] == 0
+    assert trial_fields["school_tier_manager_limit"] == 0
     assert trial_fields["school_tier_features"]["online_collab"] is False
 
     fields = school_tier_list_fields(_FakeOrg(SCHOOL_TIER_STANDARD), 25)
@@ -153,21 +184,8 @@ def test_apply_school_tier_on_update_rejects_unknown_tier():
     assert org.school_tier == SCHOOL_TIER_TRIAL
 
 
-def test_apply_school_tier_on_create_defaults_to_trial():
-    org = _FakeOrg()
-    apply_school_tier_on_create(org, {})
-    assert org.school_tier == SCHOOL_TIER_TRIAL
-
-
-def test_apply_school_tier_on_create_accepts_explicit_tier():
-    org = _FakeOrg()
-    apply_school_tier_on_create(org, {"school_tier": "professional"})
-    assert org.school_tier == SCHOOL_TIER_PROFESSIONAL
-
-
-def test_apply_school_tier_on_update_rejects_unknown_tier():
-    org = _FakeOrg(SCHOOL_TIER_TRIAL)
-    with pytest.raises(HTTPException) as exc_info:
-        apply_school_tier_on_update(org, {"school_tier": "enterprise"}, "en")
-    assert exc_info.value.status_code == 400
-    assert org.school_tier == SCHOOL_TIER_TRIAL
+def test_diagram_save_limit_error_token():
+    token = format_diagram_save_limit_error(20)
+    assert parse_diagram_save_limit_error(token) == 20
+    assert parse_diagram_save_limit_error("other error") is None
+    assert diagram_limit_reached_message("zh", 20) == Messages.error("diagram_limit_reached", "zh", 20)

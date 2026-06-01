@@ -102,6 +102,11 @@ export function useAppSidebar() {
   const { tabs: adminNavTabs, loadCapabilities: loadAdminNavCapabilities } = useAdminPanelTabs({
     loadOnMount: false,
   })
+  const singleAdminNavTab = computed(() => {
+    const visible = adminNavTabs.value
+    return visible.length === 1 ? visible[0] : null
+  })
+  const showManagementPanelSubnav = computed(() => adminNavTabs.value.length > 1)
   const { can, canViewSettingsSubtab, capabilities } = useAdminAccess()
   const expandedPanel = ref<string | null>(null)
   const dataCenterNavExpanded = ref(false)
@@ -234,8 +239,18 @@ export function useAppSidebar() {
     currentAdminTab,
   })
 
+  function openDirectAdminTab(): void {
+    const tab = singleAdminNavTab.value
+    if (!tab) {
+      return
+    }
+    navigateAdminTab(tab.name)
+  }
+
   function navigateAdminTab(tabName: string, view?: string): void {
-    expandedPanel.value = 'admin'
+    if (showManagementPanelSubnav.value) {
+      expandedPanel.value = 'admin'
+    }
     const query: Record<string, string> = { tab: tabName }
     if (tabName === 'feature_dev') {
       const first = defaultFeatureDevSubtab(featureDevNav.visibilityOptions.value)
@@ -417,7 +432,9 @@ export function useAppSidebar() {
     () => router.currentRoute.value.path,
     (path) => {
       if (path.startsWith('/admin')) {
-        expandedPanel.value = 'admin'
+        if (showManagementPanelSubnav.value) {
+          expandedPanel.value = 'admin'
+        }
       } else if (expandedPanel.value === 'admin') {
         expandedPanel.value = null
       }
@@ -478,6 +495,9 @@ export function useAppSidebar() {
     isAdmin,
     isManagementPanelUser,
     adminNavTabs,
+    singleAdminNavTab,
+    showManagementPanelSubnav,
+    openDirectAdminTab,
     currentAdminTab,
     dataCenterNavViews,
     dataCenterNavExpanded,

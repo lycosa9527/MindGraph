@@ -13,8 +13,27 @@ import { Delete, Loading } from '@element-plus/icons-vue'
 import type { Chart as ChartInstance } from 'chart.js'
 
 import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
+import { queryErrorMessage } from '@/composables/admin/useQueryErrorNotification'
+import { useScopedAbort } from '@/composables/core/useScopedAbort'
 import { useLanguage, useNotifications } from '@/composables'
-import { SCHOOL_TIER_LIMITS, normalizeSchoolTier, type SchoolTier } from '@/constants/schoolTier'
+import {
+  fetchAdminOrganizationManagers,
+  fetchAdminOrganizationUsers,
+  fetchAdminStatsTrendsOrganization,
+  fetchAdminStatsTrendsUser,
+  fetchAdminTokenStats,
+  useAddAdminOrganizationManager,
+  useDeleteAdminOrganization,
+  useRemoveAdminOrganizationManager,
+  useUpdateAdminOrganization,
+} from '@/composables/queries'
+import {
+  isUnlimitedMemberLimit,
+  SCHOOL_TIER_LIMITS,
+  normalizeSchoolTier,
+  type SchoolTier,
+} from '@/constants/schoolTier'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import {
   clearAdminMindBotOrgSession,
@@ -24,7 +43,6 @@ import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
-import { apiRequest } from '@/utils/apiClient'
 import { type ChartConfiguration, type TooltipItem, loadChartJs } from '@/utils/lazyChartJs'
 
 import AdminSchoolDifySettings from './AdminSchoolDifySettings.vue'
@@ -80,6 +98,13 @@ const authStore = useAuthStore()
 const uiStore = useUIStore()
 const { can } = useAdminAccess()
 const { featureMindbot } = useFeatureFlags()
+const { on: onAdminEvent } = useAdminEventBus('AdminTrendChartModal')
+const { beginRequest: beginChartRequest, abort: abortChartRequests } = useScopedAbort()
+
+const updateOrganizationMutation = useUpdateAdminOrganization()
+const deleteOrganizationMutation = useDeleteAdminOrganization()
+const addManagerMutation = useAddAdminOrganizationManager()
+const removeManagerMutation = useRemoveAdminOrganizationManager()
 
 const panelReadOnly = computed(() => props.readOnly === true)
 
@@ -222,7 +247,9 @@ const tierDowngradeBlocked = computed(() => {
   const limits = selectedTierLimits.value
   const memberCount = props.orgUserCount ?? 0
   const managerCount = managers.value.length
-  return memberCount > limits.memberLimit || managerCount > limits.managerLimit
+  const memberOverLimit =
+    !isUnlimitedMemberLimit(limits.memberLimit) && memberCount > limits.memberLimit
+  return memberOverLimit || managerCount > limits.managerLimit
 })
 
 function formatNumber(num: number): string {
@@ -244,47 +271,49 @@ function parseExpiresAtToDate(iso: string | null | undefined): string | null {
 }
 
 function close() {
+  abortChartRequests()
   clearMindbotSessionIfNeeded()
   emit('update:visible', false)
 }
 
 function handleClose() {
+  abortChartRequests()
   chartInstance?.destroy()
   chartInstance = null
 }
 
-async function loadOrgChart() {
+async function loadOrgChart(signal: AbortSignal) {
   if (props.orgName == null) return
   const daysMap = { today: 1, week: 7, month: 30, total: 0 }
   const days = daysMap[period.value]
   const hourly = period.value === 'today'
-  let params = `days=${days}&hourly=${hourly}`
-  if (props.orgId != null) {
-    params += `&organization_id=${props.orgId}`
-  } else {
-    params += `&organization_name=${encodeURIComponent(props.orgName)}`
-  }
-  const res = await apiRequest(`/api/auth/admin/stats/trends/organization?${params}`)
-  if (!res.ok) throw new Error('Failed to load')
-  return res.json()
+  return fetchAdminStatsTrendsOrganization(
+    {
+      organization_id: props.orgId,
+      organization_name: props.orgId == null ? props.orgName : undefined,
+      days,
+      hourly,
+    },
+    signal
+  )
 }
 
-async function loadUserChart() {
+async function loadUserChart(signal: AbortSignal) {
   if (props.userId == null) return
   const daysMap = { today: 1, week: 7, month: 30, total: 0 }
   const days = daysMap[period.value]
-  const res = await apiRequest(
-    `/api/auth/admin/stats/trends/user?user_id=${props.userId}&days=${days}`
+  return fetchAdminStatsTrendsUser(
+    {
+      user_id: props.userId,
+      days,
+    },
+    signal
   )
-  if (!res.ok) throw new Error('Failed to load')
-  return res.json()
 }
 
-async function loadOrgTokenCards() {
+async function loadOrgTokenCards(signal: AbortSignal) {
   if (props.orgId == null) return
-  const res = await apiRequest(`/api/auth/admin/token-stats?organization_id=${props.orgId}`)
-  if (!res.ok) return
-  const data = await res.json()
+  const data = await fetchAdminTokenStats(props.orgId, signal)
   const fmt = (p: { input_tokens?: number; output_tokens?: number }) => {
     const i = p?.input_tokens ?? 0
     const o = p?.output_tokens ?? 0
@@ -298,12 +327,10 @@ async function loadOrgTokenCards() {
   }
 }
 
-async function loadUserTokenCards() {
+async function loadUserTokenCards(signal: AbortSignal) {
   if (props.userId == null) return
-  const res = await apiRequest(`/api/auth/admin/stats/trends/user?user_id=${props.userId}&days=0`)
-  if (!res.ok) return
-  const data = await res.json()
-  const arr = data?.data ?? []
+  const data = await fetchAdminStatsTrendsUser({ user_id: props.userId, days: 0 }, signal)
+  const arr = (data as { data?: Array<{ value?: number }> }).data ?? []
   const sum = (n: number) =>
     arr.slice(-n).reduce((a: number, b: { value?: number }) => a + (b.value ?? 0), 0)
   periodCards.value = {
@@ -430,26 +457,30 @@ async function load() {
   if (props.type === 'user' && props.userId == null) return
   chartLoading.value = true
   periodCards.value = { today: '-', week: '-', month: '-', total: '-' }
+  const signal = beginChartRequest()
   try {
     if (props.type === 'org') {
       chartTitle.value = `${t('admin.trendOrgTokens')}: ${props.orgName ?? ''}`
-      const data = await loadOrgChart()
+      const data = await loadOrgChart(signal)
       chartLoading.value = false
       await nextTick()
       await new Promise((r) => setTimeout(r, 50))
-      if (data) await renderChart(data)
-      await loadOrgTokenCards()
+      if (data) await renderChart({ data: data.data ?? [] })
+      await loadOrgTokenCards(signal)
     } else {
       chartTitle.value = `${t('admin.trendUserTokens')}: ${props.userName ?? ''}`
-      const data = await loadUserChart()
+      const data = await loadUserChart(signal)
       chartLoading.value = false
       await nextTick()
       await new Promise((r) => setTimeout(r, 50))
-      if (data) await renderChart(data)
-      await loadUserTokenCards()
+      if (data) await renderChart({ data: data.data ?? [] })
+      await loadUserTokenCards(signal)
     }
-  } catch {
-    notify.error(t('admin.dashboardLoadError'))
+  } catch (err) {
+    const message = queryErrorMessage(err, t('admin.dashboardLoadError'))
+    if (message) {
+      notify.error(message)
+    }
     chartLoading.value = false
   }
 }
@@ -463,26 +494,26 @@ async function loadManagersAndUsers() {
   if (props.type !== 'org' || props.orgId == null) return
   managersLoading.value = true
   try {
-    const [managersRes, usersRes] = await Promise.all([
-      apiRequest(`/api/auth/admin/organizations/${props.orgId}/managers`),
-      apiRequest(`/api/auth/admin/organizations/${props.orgId}/users`),
+    const [managerRows, userRows] = await Promise.all([
+      fetchAdminOrganizationManagers(props.orgId),
+      fetchAdminOrganizationUsers(props.orgId),
     ])
-    if (managersRes.ok) {
-      const mData = await managersRes.json()
-      managers.value = mData.managers ?? []
-    }
-    if (usersRes.ok) {
-      const uData = await usersRes.json()
-      const users = uData.users ?? []
-      const managerIds = new Set(managers.value.map((x) => x.id))
-      orgUsers.value = users
-        .filter((u: { id: number; is_manager?: boolean }) => !managerIds.has(u.id) && !u.is_manager)
-        .map((u: { id: number; phone?: string; name?: string }) => ({
-          id: u.id,
-          phone: u.phone ?? '',
-          name: u.name ?? u.phone ?? '',
-        }))
-    }
+    managers.value = managerRows.map((user) => ({
+      id: user.id,
+      phone: user.phone ?? '',
+      name: user.name ?? user.phone ?? '',
+    }))
+    const managerIds = new Set(managers.value.map((x) => x.id))
+    orgUsers.value = userRows
+      .filter((user) => {
+        const row = user as { id: number; is_manager?: boolean }
+        return !managerIds.has(row.id) && !row.is_manager
+      })
+      .map((user) => ({
+        id: user.id,
+        phone: user.phone ?? '',
+        name: user.name ?? user.phone ?? '',
+      }))
   } catch {
     managers.value = []
     orgUsers.value = []
@@ -509,33 +540,19 @@ async function addManagers() {
   const userIds = [...pendingManagerIds.value]
   addManagersLoading.value = true
   try {
-    const results = await Promise.allSettled(
+    await Promise.all(
       userIds.map((userId) =>
-        apiRequest(`/api/auth/admin/organizations/${props.orgId}/managers/${userId}`, {
-          method: 'PUT',
-        })
+        addManagerMutation.mutateAsync({ orgId: props.orgId as number, userId })
       )
     )
-    const rejected = results.filter((r) => r.status === 'rejected')
-    const failedResponse = results.find(
-      (r): r is PromiseFulfilledResult<Response> => r.status === 'fulfilled' && !r.value.ok
-    )
-    if (rejected.length > 0 || failedResponse) {
-      if (failedResponse) {
-        const data = await failedResponse.value.json().catch(() => ({}))
-        notify.error((data.detail as string) || t('admin.trendChartErrors.setManagerFailed'))
-      } else {
-        notify.error(t('admin.trendChartErrors.setManagerFailed'))
-      }
-      await loadManagersAndUsers()
-      return
-    }
     notify.success(t('notification.saved'))
     pendingManagerIds.value = []
     await loadManagersAndUsers()
     emit('refresh')
-  } catch {
-    notify.error(t('admin.trendChartErrors.setManagerFailed'))
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : ''
+    notify.error(detail || t('admin.trendChartErrors.setManagerFailed'))
+    await loadManagersAndUsers()
   } finally {
     addManagersLoading.value = false
   }
@@ -544,25 +561,13 @@ async function addManagers() {
 async function removeManager(userId: number) {
   if (props.orgId == null) return
   try {
-    const res = await apiRequest(
-      `/api/auth/admin/organizations/${props.orgId}/managers/${userId}`,
-      { method: 'DELETE' }
-    )
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || t('admin.trendChartErrors.removeManagerFailed'))
-      return
-    }
-    const data = (await res.json().catch(() => ({}))) as { message?: string }
-    const msg =
-      typeof data.message === 'string' && data.message.trim()
-        ? data.message.trim()
-        : t('notification.saved')
-    notify.success(msg)
+    await removeManagerMutation.mutateAsync({ orgId: props.orgId, userId })
+    notify.success(t('notification.saved'))
     await loadManagersAndUsers()
     emit('refresh')
-  } catch {
-    notify.error(t('admin.trendChartErrors.removeManagerFailed'))
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : ''
+    notify.error(detail || t('admin.trendChartErrors.removeManagerFailed'))
   }
 }
 
@@ -575,9 +580,13 @@ async function saveGeneralSettings() {
     notify.warning(
       t('admin.schoolTierDowngradeBlocked', {
         members: props.orgUserCount ?? 0,
-        memberLimit: limits.memberLimit,
+        memberLimit: isUnlimitedMemberLimit(limits.memberLimit)
+          ? t('admin.unlimited')
+          : limits.memberLimit,
         managers: managers.value.length,
-        managerLimit: limits.managerLimit,
+        managerLimit: limits.managerLimit <= 0
+          ? t('admin.noSchoolManagersShort')
+          : limits.managerLimit,
       })
     )
     return
@@ -586,19 +595,14 @@ async function saveGeneralSettings() {
   try {
     const dateVal = expiresAtEdit.value?.trim() || null
     const expiresAtPayload = dateVal ? `${dateVal}T23:59:59+08:00` : null
-    const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}`, {
-      method: 'PUT',
-      body: JSON.stringify({
+    await updateOrganizationMutation.mutateAsync({
+      orgId: props.orgId,
+      body: {
         display_name: displayNameEdit.value.trim() || null,
         expires_at: expiresAtPayload,
         school_tier: schoolTierEdit.value,
-      }),
+      },
     })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || t('admin.trendChartErrors.saveFailed'))
-      return
-    }
     notify.success(t('notification.saved'))
     emit('refresh')
     const savedLabel = displayNameEdit.value.trim()
@@ -606,8 +610,9 @@ async function saveGeneralSettings() {
       authStore.patchSchoolDisplayName(savedLabel || null, props.orgName)
       void authStore.refreshUserProfile({ bypassThrottle: true })
     }
-  } catch {
-    notify.error(t('admin.trendChartErrors.saveFailed'))
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : ''
+    notify.error(detail || t('admin.trendChartErrors.saveFailed'))
   } finally {
     generalTabSaving.value = false
   }
@@ -618,20 +623,16 @@ async function toggleLock() {
   lockLoading.value = true
   try {
     const newActive = !orgActiveState.value
-    const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ is_active: newActive }),
+    await updateOrganizationMutation.mutateAsync({
+      orgId: props.orgId,
+      body: { is_active: newActive },
     })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || t('admin.trendChartErrors.updateFailed'))
-      return
-    }
     orgActiveState.value = newActive
     notify.success(t('notification.saved'))
     emit('refresh')
-  } catch {
-    notify.error(t('admin.trendChartErrors.updateOrgStatusFailed'))
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : ''
+    notify.error(detail || t('admin.trendChartErrors.updateFailed'))
   } finally {
     lockLoading.value = false
   }
@@ -659,26 +660,16 @@ async function deleteOrganization() {
   }
   deleteLoading.value = true
   try {
-    const url =
-      userCount > 0
-        ? `/api/auth/admin/organizations/${props.orgId}?delete_users=true`
-        : `/api/auth/admin/organizations/${props.orgId}`
-    const res = await apiRequest(url, { method: 'DELETE' })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || t('admin.trendChartErrors.deleteRecordFailed'))
-      return
-    }
-    const data = (await res.json().catch(() => ({}))) as { message?: string }
-    const msg =
-      typeof data.message === 'string' && data.message.trim()
-        ? data.message.trim()
-        : t('notification.saved')
-    notify.success(msg)
+    await deleteOrganizationMutation.mutateAsync({
+      orgId: props.orgId,
+      deleteUsers: userCount > 0,
+    })
+    notify.success(t('notification.saved'))
     emit('update:visible', false)
     emit('refresh')
-  } catch {
-    notify.error(t('admin.trendChartErrors.deleteOrgFailed'))
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : ''
+    notify.error(detail || t('admin.trendChartErrors.deleteOrgFailed'))
   } finally {
     deleteLoading.value = false
   }
@@ -707,6 +698,7 @@ watch(
         loadGeneralTabData()
       }
     } else {
+      abortChartRequests()
       chartInstance?.destroy()
       chartInstance = null
       pendingManagerIds.value = []

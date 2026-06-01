@@ -16,7 +16,7 @@ from models.domain.auth import User
 from models.domain.messages import Language, Messages, get_request_language
 from models.domain.user_api_token import UserAPIToken
 from services.redis.cache.redis_user_token_cache import user_token_cache
-from utils.auth.datetime_compat import as_utc_aware
+from utils.auth.org_subscription import ensure_org_subscription_current
 from utils.auth.school_tier import TIER_FEATURE_API_TOKEN, user_has_school_tier_feature
 
 logger = logging.getLogger(__name__)
@@ -61,12 +61,7 @@ async def _check_org_access_async(user: User) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Organization account is locked. Please contact support.",
         )
-    if hasattr(org_row, "expires_at") and org_row.expires_at:
-        if as_utc_aware(org_row.expires_at) < datetime.now(UTC):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Organization subscription has expired. Please contact support.",
-            )
+    await ensure_org_subscription_current(org_row)
 
 
 def _log_mgat_audit(request: Optional[Request], user_id: int) -> None:

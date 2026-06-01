@@ -44,9 +44,13 @@ function tokenTotal(row: Record<string, unknown>): number {
   return stats?.total_tokens ?? 0
 }
 
-function diagramRemaining(row: Record<string, unknown>): number {
+function diagramRemaining(row: Record<string, unknown>): string {
+  const max = row.diagram_quota_max
+  if (typeof max === 'number' && max <= 0) {
+    return '∞'
+  }
   const value = row.diagram_remaining
-  return typeof value === 'number' ? value : 0
+  return typeof value === 'number' ? String(value) : '0'
 }
 
 function paidBenefitLabel(row: Record<string, unknown>): string {

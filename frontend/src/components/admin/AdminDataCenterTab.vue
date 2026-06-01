@@ -5,6 +5,8 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { storeToRefs } from 'pinia'
+
 import AdminDashboardTab from '@/components/admin/AdminDashboardTab.vue'
 import AdminOrgDataCenterPanel from '@/components/admin/AdminOrgDataCenterPanel.vue'
 import SchoolDashboardPage from '@/pages/SchoolDashboardPage.vue'
@@ -14,10 +16,9 @@ import {
   isDataCenterView,
   type DataCenterView,
 } from '@/composables/admin/adminDataCenterViews'
-import { useAdminOrgContext } from '@/composables/admin/useAdminOrgContext'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useLanguage } from '@/composables'
-import { useAuthStore } from '@/stores'
+import { useAdminPanelStore, useAuthStore } from '@/stores'
 
 const props = defineProps<{
   readOnly?: boolean
@@ -26,8 +27,9 @@ const props = defineProps<{
 const route = useRoute()
 const { t } = useLanguage()
 const authStore = useAuthStore()
+const adminPanel = useAdminPanelStore()
+const { selectedOrgId } = storeToRefs(adminPanel)
 const { can, capabilities, effectiveOrgId, isReadOnly } = useAdminAccess()
-const { routeOrgId } = useAdminOrgContext()
 
 const hasGlobalDataCenter = computed(
   () => can('scope.global') && can('tab.data_center.view')
@@ -65,7 +67,7 @@ const showGlobalView = computed(() => {
   if (dataCenterViewQuery.value === 'operations' && can('scope.global')) {
     return true
   }
-  if (can('scope.global') && authStore.isSuperAdmin && routeOrgId.value != null) {
+  if (can('scope.global') && authStore.isSuperAdmin && selectedOrgId.value != null) {
     return false
   }
   return can('scope.global')
@@ -75,8 +77,8 @@ const activeOrgId = computed(() => {
   if (can('scope.org')) {
     return effectiveOrgId.value
   }
-  if (authStore.isSuperAdmin && routeOrgId.value != null) {
-    return routeOrgId.value
+  if (authStore.isSuperAdmin && selectedOrgId.value != null) {
+    return selectedOrgId.value
   }
   return effectiveOrgId.value
 })

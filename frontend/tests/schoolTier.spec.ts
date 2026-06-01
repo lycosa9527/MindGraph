@@ -17,7 +17,13 @@ describe('schoolTier constants', () => {
 
   it('defines limits for every tier slug', () => {
     for (const tier of SCHOOL_TIER_OPTIONS) {
-      expect(SCHOOL_TIER_LIMITS[tier].memberLimit).toBeGreaterThan(0)
+      if (tier === 'trial') {
+        expect(SCHOOL_TIER_LIMITS[tier].memberLimit).toBe(0)
+        expect(SCHOOL_TIER_LIMITS[tier].managerLimit).toBe(0)
+        expect(SCHOOL_TIER_LIMITS[tier].diagramsPerMember).toBe(20)
+      } else {
+        expect(SCHOOL_TIER_LIMITS[tier].memberLimit).toBeGreaterThan(0)
+      }
     }
   })
 
@@ -40,6 +46,10 @@ describe('schoolTier constants', () => {
     const merged = mergeSchoolTierFeatures('trial', { online_collab: true })
     expect(merged.online_collab).toBe(true)
     expect(merged.api_token).toBe(false)
+  })
+
+  it('treats zero manager limit as unavailable on trial', () => {
+    expect(SCHOOL_TIER_LIMITS.trial.managerLimit).toBe(0)
   })
 
   it('isPaidSchoolTier excludes trial', () => {

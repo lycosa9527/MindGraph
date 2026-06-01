@@ -8,13 +8,10 @@ import { useRoute } from 'vue-router'
 
 
 import { useAdminUsersSchoolFilterRoute } from '@/composables/admin/useAdminUsersSchoolFilterRoute'
-import {
-  registerAdminUsersHeaderToolbar,
-  unregisterAdminUsersHeaderToolbar,
-} from '@/composables/admin/useAdminUsersHeaderToolbar'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useLanguage, useNotifications } from '@/composables'
-import { apiRequest } from '@/utils/apiClient'
-import { useAuthStore } from '@/stores'
+import { useAdminUsers } from '@/composables/queries'
+import { useAdminPanelStore, useAuthStore } from '@/stores'
 
 import AdminSwissPagination from './AdminSwissPagination.vue'
 import AdminTrendChartModal from './AdminTrendChartModal.vue'
@@ -32,6 +29,8 @@ const props = withDefaults(
 
 const route = useRoute()
 const authStore = useAuthStore()
+const adminPanel = useAdminPanelStore()
+const { on: onAdminEvent } = useAdminEventBus('AdminUsersTab')
 const { orgFilter, syncOrgFilterToRoute, onOrgFilterChange: applyOrgFilterChange } =
   useAdminUsersSchoolFilterRoute()
 const { t } = useLanguage()
@@ -48,8 +47,6 @@ function openTrendModal(row: Record<string, unknown>) {
   trendModalVisible.value = true
 }
 
-const isLoading = ref(true)
-const users = ref<Record<string, unknown>[]>([])
 const pagination = ref({
   page: 1,
   page_size: 20,
@@ -58,31 +55,35 @@ const pagination = ref({
 })
 const searchQuery = ref('')
 
+const usersQueryParams = computed(() => ({
+  page: pagination.value.page,
+  page_size: pagination.value.page_size,
+  search: searchQuery.value,
+  organization_id: orgFilter.value || undefined,
+}))
+
+const usersQuery = useAdminUsers(usersQueryParams)
+
 const editModalVisible = ref(false)
 const editUserId = ref<number | null>(null)
 
-async function loadUsers() {
-  isLoading.value = true
-  try {
-    const params = new URLSearchParams({
-      page: String(pagination.value.page),
-      page_size: String(pagination.value.page_size),
-      search: searchQuery.value,
-    })
-    if (orgFilter.value) params.set('organization_id', String(orgFilter.value))
-    const res = await apiRequest(`/api/auth/admin/users?${params}`)
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || 'Failed to load users')
-      return
+const isLoading = computed(() => usersQuery.isFetching.value)
+const users = computed(() => (usersQuery.data.value?.users ?? []) as Record<string, unknown>[])
+
+watch(
+  () => usersQuery.data.value?.pagination,
+  (nextPagination) => {
+    if (nextPagination) {
+      pagination.value = nextPagination
     }
-    const data = await res.json()
-    users.value = data.users ?? []
-    pagination.value = data.pagination ?? pagination.value
+  }
+)
+
+async function loadUsers() {
+  try {
+    await usersQuery.refetch()
   } catch {
     notify.error('Failed to load users')
-  } finally {
-    isLoading.value = false
   }
 }
 
@@ -136,15 +137,59 @@ const pageInfo = computed(() => {
   return t('admin.listRange', { start, end, total: p.total })
 })
 
-onMounted(() => {
-  registerAdminUsersHeaderToolbar({
-    searchQuery,
-    orgFilter,
+function syncUsersToolbarState(): void {
+  adminPanel.setUsersToolbar({
+    searchQuery: searchQuery.value,
+    orgFilter: orgFilter.value,
     showSchoolFilter: true,
-    doSearch,
-    resetFilters,
-    onOrgFilterChange,
+    scopedOrgId: null,
+    hasResetFilters: true,
   })
+}
+
+watch(searchQuery, (value) => {
+  adminPanel.patchUsersToolbar({ searchQuery: value })
+})
+
+watch(orgFilter, (value) => {
+  adminPanel.patchUsersToolbar({ orgFilter: value })
+})
+
+watch(
+  () => adminPanel.usersToolbar?.searchQuery,
+  (value) => {
+    if (value !== undefined && value !== searchQuery.value) {
+      searchQuery.value = value
+    }
+  }
+)
+
+watch(
+  () => adminPanel.usersToolbar?.orgFilter,
+  (value) => {
+    if (value !== undefined && value !== orgFilter.value) {
+      orgFilter.value = value
+    }
+  }
+)
+
+onAdminEvent('admin:toolbar_action', (payload) => {
+  if (payload.tab !== 'users') {
+    return
+  }
+  if (payload.action === 'users_search') {
+    doSearch()
+  } else if (payload.action === 'users_reset_filters') {
+    resetFilters()
+  } else if (payload.action === 'users_org_filter_change') {
+    const raw = payload.payload?.value
+    const value = raw === '' || typeof raw === 'number' ? raw : orgFilter.value
+    onOrgFilterChange(value)
+  }
+})
+
+onMounted(() => {
+  syncUsersToolbarState()
   void loadUsers()
 })
 
@@ -160,7 +205,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  unregisterAdminUsersHeaderToolbar()
+  adminPanel.clearUsersToolbar()
 })
 
 </script>

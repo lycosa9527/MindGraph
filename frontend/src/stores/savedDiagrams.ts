@@ -15,10 +15,13 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
+import { notify } from '@/composables/core/notifications'
 import { getDefaultDiagramName } from '@/composables'
 import { SAVE } from '@/config'
+import { i18n } from '@/i18n'
 import type { DiagramId, DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
+import { hasDiagramSaveLimit } from '@/utils/diagramLimit'
 
 import { useAuthStore } from './auth'
 import { useDiagramStore } from './diagram'
@@ -29,6 +32,20 @@ import { useUIStore } from './ui'
 
 // Security constants - must match backend limits
 const MAX_THUMBNAIL_SIZE = 150000 // Max base64 chars (~100KB decoded)
+
+function diagramLimitMessage(max: number, apiDetail?: string): string {
+  if (apiDetail && apiDetail.trim()) {
+    return apiDetail.trim()
+  }
+  if (hasDiagramSaveLimit(max)) {
+    return i18n.global.t('auth.diagramLimitReached', { max }) as string
+  }
+  return i18n.global.t('library.slotFull.title') as string
+}
+
+function notifyDiagramLimitReached(max: number, apiDetail?: string): void {
+  notify.warning(diagramLimitMessage(max, apiDetail))
+}
 
 /**
  * Check if a diagram spec is empty/unmodified (still matches default template)
@@ -137,7 +154,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
   // State
   const diagrams = ref<SavedDiagram[]>([])
   const total = ref(0)
-  const maxDiagrams = ref(20)
+  const maxDiagrams = ref(0)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const currentDiagramId = ref<string | null>(null)
@@ -149,10 +166,17 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
   // Getters
   const authStore = useAuthStore()
   const uiStore = useUIStore()
-  const canSaveMore = computed(() => diagrams.value.length < maxDiagrams.value)
-  const remainingSlots = computed(() => maxDiagrams.value - diagrams.value.length)
+  const hasSaveLimit = computed(() => hasDiagramSaveLimit(maxDiagrams.value))
+  const canSaveMore = computed(
+    () => !hasSaveLimit.value || diagrams.value.length < maxDiagrams.value
+  )
+  const remainingSlots = computed(() =>
+    hasSaveLimit.value ? maxDiagrams.value - diagrams.value.length : Number.POSITIVE_INFINITY
+  )
   const isActiveDiagramSaved = computed(() => activeDiagramId.value !== null)
-  const isSlotsFullyUsed = computed(() => diagrams.value.length >= maxDiagrams.value)
+  const isSlotsFullyUsed = computed(
+    () => hasSaveLimit.value && diagrams.value.length >= maxDiagrams.value
+  )
 
   // Actions
   async function fetchDiagrams(page: number = 1, pageSize: number = 50): Promise<boolean> {
@@ -282,7 +306,17 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
           return null
         }
         if (response.status === 403) {
-          error.value = 'Diagram limit reached'
+          let apiDetail = ''
+          try {
+            const payload = await response.json()
+            if (typeof payload.detail === 'string') {
+              apiDetail = payload.detail
+            }
+          } catch {
+            apiDetail = ''
+          }
+          error.value = diagramLimitMessage(maxDiagrams.value, apiDetail)
+          notifyDiagramLimitReached(maxDiagrams.value, apiDetail)
           return null
         }
         throw new Error(`Failed to save diagram: ${response.status}`)
@@ -445,7 +479,17 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
           return null
         }
         if (response.status === 403) {
-          error.value = 'Diagram limit reached'
+          let apiDetail = ''
+          try {
+            const payload = await response.json()
+            if (typeof payload.detail === 'string') {
+              apiDetail = payload.detail
+            }
+          } catch {
+            apiDetail = ''
+          }
+          error.value = diagramLimitMessage(maxDiagrams.value, apiDetail)
+          notifyDiagramLimitReached(maxDiagrams.value, apiDetail)
           return null
         }
         throw new Error(`Failed to duplicate diagram: ${response.status}`)
@@ -687,6 +731,9 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
 
     // New diagram - check slots
     if (!canSaveMore.value) {
+      notify.warning(
+        i18n.global.t('auth.diagramLimitReached', { max: maxDiagrams.value }) as string
+      )
       return {
         success: false,
         action: 'skipped',
@@ -761,6 +808,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     isAutoSaving,
 
     // Getters
+    hasSaveLimit,
     canSaveMore,
     remainingSlots,
     isActiveDiagramSaved,

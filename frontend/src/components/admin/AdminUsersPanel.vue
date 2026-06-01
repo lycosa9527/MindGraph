@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Users tab — global user management (superadmin / platform_bd read-only).
+ * Users tab — global user management (superadmin / operations read-only).
  */
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'

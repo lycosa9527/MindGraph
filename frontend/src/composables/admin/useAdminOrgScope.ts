@@ -1,28 +1,23 @@
 /**
- * Admin school selection for the school dashboard (shared page + management header).
+ * Admin org scope — selected org, effective org for school-scoped views, org list for pickers.
  */
-import { computed, ref } from 'vue'
+import { computed, watch } from 'vue'
+
+import { storeToRefs } from 'pinia'
 
 import {
   getCurrentUserOrganizationId,
   resolveDefaultOrganizationId,
   userHasOrgOnlyPanelScope,
 } from '@/composables/admin/useCurrentUserOrganizationId'
+import { useAdminOrganizations } from '@/composables/queries'
 import { fallbackCapabilitiesForRole } from '@/utils/adminCapabilities'
-import { useAuthStore } from '@/stores'
-import { apiRequest } from '@/utils/apiClient'
+import { useAdminPanelStore, useAuthStore } from '@/stores'
 
-export interface SchoolDashboardOrganization {
-  id: number
-  name: string
-  code: string
-}
-
-const organizations = ref<SchoolDashboardOrganization[]>([])
-const selectedOrgId = ref<number | null>(null)
-
-export function useSchoolDashboardOrgPicker() {
+export function useAdminOrgScope() {
   const authStore = useAuthStore()
+  const adminPanel = useAdminPanelStore()
+  const { selectedOrgId } = storeToRefs(adminPanel)
 
   const canPickOrganization = computed(() => {
     const caps =
@@ -32,6 +27,12 @@ export function useSchoolDashboardOrgPicker() {
   })
 
   const isOrgLocked = computed(() => userHasOrgOnlyPanelScope())
+
+  const organizationsQuery = useAdminOrganizations({
+    enabled: computed(() => canPickOrganization.value),
+  })
+
+  const organizations = computed(() => organizationsQuery.data.value ?? [])
 
   const effectiveOrgId = computed(() => {
     if (isOrgLocked.value) {
@@ -63,23 +64,18 @@ export function useSchoolDashboardOrgPicker() {
     return ''
   })
 
-  async function loadOrganizations(): Promise<void> {
-    if (!canPickOrganization.value) {
-      return
-    }
-    const res = await apiRequest('/api/auth/admin/organizations')
-    if (!res.ok) {
-      return
-    }
-    const data = await res.json()
-    organizations.value = data.map((org: SchoolDashboardOrganization) => ({
-      id: org.id,
-      name: org.name,
-      code: org.code,
-    }))
+  function ensureDefaultOrgSelection(): void {
     if (organizations.value.length > 0 && selectedOrgId.value == null) {
       selectedOrgId.value = resolveDefaultOrganizationId(organizations.value)
     }
+  }
+
+  async function refetchOrganizations(): Promise<void> {
+    if (!canPickOrganization.value) {
+      return
+    }
+    await organizationsQuery.refetch()
+    ensureDefaultOrgSelection()
   }
 
   function syncSelectedOrgFromUser(): void {
@@ -101,15 +97,20 @@ export function useSchoolDashboardOrgPicker() {
     }
   }
 
+  watch(organizations, () => {
+    ensureDefaultOrgSelection()
+  })
+
   return {
     organizations,
+    organizationsQuery,
     selectedOrgId,
     effectiveOrgId,
     effectiveOrgName,
     showPicker,
     canPickOrganization,
     isOrgLocked,
-    loadOrganizations,
+    refetchOrganizations,
     syncSelectedOrgFromUser,
   }
 }

@@ -2,14 +2,14 @@
 /**
  * Platform token overview — overall usage summary and DingTalk generation card.
  */
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { Key, Refresh } from '@element-plus/icons-vue'
 
 import AdminDingtalkGenerationApiKeysDialog from '@/components/admin/AdminDingtalkGenerationApiKeysDialog.vue'
 import AdminSwissServiceCard from '@/components/admin/swiss/AdminSwissServiceCard.vue'
 import { useLanguage } from '@/composables'
-import { apiRequest } from '@/utils/apiClient'
+import { useAdminApiKeys } from '@/composables/queries'
 
 interface TokenPeriodStats {
   input_tokens: number
@@ -44,7 +44,16 @@ const emit = defineEmits<{
 const { t } = useLanguage()
 
 const dingtalkApiKeysDialogVisible = ref(false)
-const dingtalkKeyUsesTotal = ref<number | null>(null)
+
+const apiKeysQuery = useAdminApiKeys()
+
+const dingtalkKeyUsesTotal = computed(() => {
+  const list = apiKeysQuery.data.value
+  if (!list) {
+    return null
+  }
+  return list.reduce((acc, row) => acc + (row.usage_count ?? 0), 0)
+})
 
 const overallPeriods = [
   { key: 'today' as const, label: () => t('admin.today'), statsKey: 'today' as const },
@@ -67,21 +76,21 @@ function openDingtalkApiKeysDialog(): void {
   dingtalkApiKeysDialogVisible.value = true
 }
 
-async function loadDingtalkKeyUsesTotal(): Promise<void> {
-  try {
-    const res = await apiRequest('/api/auth/admin/api_keys')
-    if (!res.ok) {
-      dingtalkKeyUsesTotal.value = null
-      return
-    }
-    const raw: unknown = await res.json()
-    const list: Array<{ usage_count?: number }> = Array.isArray(raw) ? raw : []
-    const sum = list.reduce((acc, row) => acc + (row.usage_count ?? 0), 0)
-    dingtalkKeyUsesTotal.value = sum
-  } catch {
-    dingtalkKeyUsesTotal.value = null
+watch(dingtalkApiKeysDialogVisible, (open) => {
+  if (!open) {
+    void apiKeysQuery.refetch()
   }
-}
+})
+
+watch(
+  () => props.showDingtalk,
+  (show) => {
+    if (show) {
+      void apiKeysQuery.refetch()
+    }
+  },
+  { immediate: true }
+)
 
 function onDingtalkCardKeydown(e: KeyboardEvent): void {
   if (e.key !== 'Enter' && e.key !== ' ') {
@@ -90,22 +99,6 @@ function onDingtalkCardKeydown(e: KeyboardEvent): void {
   e.preventDefault()
   openDingtalkApiKeysDialog()
 }
-
-watch(dingtalkApiKeysDialogVisible, (open) => {
-  if (!open) {
-    void loadDingtalkKeyUsesTotal()
-  }
-})
-
-watch(
-  () => props.showDingtalk,
-  (show) => {
-    if (show) {
-      void loadDingtalkKeyUsesTotal()
-    }
-  },
-  { immediate: true }
-)
 </script>
 
 <template>

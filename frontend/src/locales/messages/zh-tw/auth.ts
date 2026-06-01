@@ -16,6 +16,12 @@ export default {
   'auth.accountPlugin': '插件',
   'auth.apiTokenButton': 'API令牌',
   'auth.downloadChromeExtension': 'Chrome 擴展',
+  'auth.schoolTierFeatureUnavailable':
+    '目前學校版本不支援此功能，請升級至標準教研版或校本共建版（基礎教研版不含此功能）',
+  'auth.schoolSubscriptionExpiredDowngraded':
+    '學校訂閱已到期，已自動切換為體驗版。如需續訂請聯絡平台管理員。',
+  'auth.diagramLimitReached':
+    '體驗版每位教師最多保存 {max} 張導圖，請刪除後再保存。',
   'auth.downloadOpenclawSkill': 'OpenClaw 技能包',
   'auth.changePhoneButton': '更換手機',
   'auth.passwordChangeSuccess': '密碼修改成功',

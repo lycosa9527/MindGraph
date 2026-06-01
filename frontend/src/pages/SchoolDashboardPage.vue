@@ -26,16 +26,21 @@ import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
 import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
 import AdminTokenUsageByServicePanel from '@/components/admin/AdminTokenUsageByServicePanel.vue'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
-import { useSchoolDashboardOrgPicker } from '@/composables/school/useSchoolDashboardOrgPicker'
-import { useSchoolDashboardAddMemberOpenRequest } from '@/composables/school/useSchoolDashboardAddMemberHeader'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
+import { queryErrorMessage } from '@/composables/admin/useQueryErrorNotification'
+import { useSchoolDashboardStats } from '@/composables/admin/useSchoolDashboardStats'
+import { useScopedAbort } from '@/composables/core/useScopedAbort'
+import { useAdminOrgScope } from '@/composables/admin/useAdminOrgScope'
 import {
-  parseSchoolDashboardQuotas,
   useSchoolDashboardQuotas,
 } from '@/composables/school/useSchoolDashboardQuotas'
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
+import {
+  fetchAdminSchoolTokenStats,
+  fetchAdminSchoolTrends,
+} from '@/composables/queries'
 import { useAuthStore } from '@/stores'
-import { apiRequest } from '@/utils/apiClient'
-import { httpErrorDetail } from '@/utils/httpErrorDetail'
+import { isManagerAssignmentUnavailable, isUnlimitedMemberLimit } from '@/constants/schoolTier'
 import { type ChartConfiguration, type TooltipItem, loadChartJs } from '@/utils/lazyChartJs'
 
 const { t, isZh } = useLanguage()
@@ -51,12 +56,15 @@ const props = withDefaults(
 
 const authStore = useAuthStore()
 const { loadCapabilities, can, isReadOnly } = useAdminAccess()
-const { effectiveOrgId, loadOrganizations, syncSelectedOrgFromUser, showPicker, effectiveOrgName } =
-  useSchoolDashboardOrgPicker()
+const { effectiveOrgId, refetchOrganizations, syncSelectedOrgFromUser, showPicker, effectiveOrgName } =
+  useAdminOrgScope()
+const { on: onAdminEvent, emit: emitAdminEvent } = useAdminEventBus('SchoolDashboardPage')
+const { beginRequest: beginTrendRequest, abort: abortTrendRequests } = useScopedAbort()
+
+const effectiveOrgIdRef = computed(() => effectiveOrgId.value)
+const { isLoading, stats, topUsers, loadStats } = useSchoolDashboardStats(effectiveOrgIdRef)
 
 const addMemberVisible = ref(false)
-const usersTabRef = ref<InstanceType<typeof SchoolDashboardUsersTab> | null>(null)
-const addMemberOpenRequest = useSchoolDashboardAddMemberOpenRequest()
 
 const showAddMemberButton = computed(
   () =>
@@ -68,15 +76,8 @@ const showAddMemberButton = computed(
 
 function onMemberCreated(): void {
   void loadStats()
-  usersTabRef.value?.reloadUsers()
+  emitAdminEvent('admin:mutation_completed', { domain: 'school_users' })
 }
-
-const isLoading = ref(true)
-const stats = ref({
-  totalTokens: 0,
-  organization: { id: 0, name: '', code: '', invitation_code: '' },
-  quotas: parseSchoolDashboardQuotas(null),
-})
 
 const addMemberSchoolName = computed(() =>
   (stats.value.organization?.name || effectiveOrgName.value || authStore.user?.schoolName || '').trim()
@@ -90,7 +91,6 @@ const {
   memberRemaining,
   managerRemaining,
 } = useSchoolDashboardQuotas(computed(() => stats.value.quotas))
-const topUsers = ref<{ id: number; name: string; phone: string; total_tokens: number }[]>([])
 
 const trendModalVisible = ref(false)
 const trendChartTitle = ref('')
@@ -134,45 +134,6 @@ function formatChartLabel(value: number): string {
   return String(value)
 }
 
-async function loadStats() {
-  const orgId = effectiveOrgId.value
-  if (orgId == null) {
-    isLoading.value = false
-    return
-  }
-  isLoading.value = true
-  try {
-    const res = await apiRequest(`/api/auth/admin/stats/school?organization_id=${orgId}`)
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error(httpErrorDetail(data) || t('admin.dashboardLoadError'))
-      return
-    }
-    const data = await res.json()
-    const org = data.organization ?? {
-      id: 0,
-      name: '',
-      code: '',
-      invitation_code: '',
-    }
-    stats.value = {
-      totalTokens: data.token_stats?.total_tokens ?? 0,
-      organization: {
-        id: org.id ?? 0,
-        name: org.name ?? '',
-        code: org.code ?? '',
-        invitation_code: org.invitation_code ?? '',
-      },
-      quotas: parseSchoolDashboardQuotas(data.quotas),
-    }
-    topUsers.value = data.top_users ?? []
-  } catch {
-    notify.error(t('admin.dashboardLoadError'))
-  } finally {
-    isLoading.value = false
-  }
-}
-
 async function showTrendChart(period: 'today' | 'week' | 'month' | 'total' = 'week') {
   const orgId = effectiveOrgId.value
   if (orgId == null) return
@@ -184,26 +145,17 @@ async function showTrendChart(period: 'today' | 'week' | 'month' | 'total' = 'we
   const daysMap = { today: 1, week: 7, month: 30, total: 0 }
   const days = daysMap[period]
   const hourly = period === 'today'
+  const signal = beginTrendRequest()
   try {
-    const [chartRes, tokenRes] = await Promise.all([
-      apiRequest(
-        `/api/auth/admin/stats/school/trends?organization_id=${orgId}&days=${days}&hourly=${hourly}`
-      ),
-      apiRequest(`/api/auth/admin/stats/school/token-stats?organization_id=${orgId}`),
+    const [chartData, tokenData] = await Promise.all([
+      fetchAdminSchoolTrends({ organization_id: orgId, days, hourly }, signal),
+      fetchAdminSchoolTokenStats(orgId, signal),
     ])
-    if (!chartRes.ok) {
-      const errBody = await chartRes.json().catch(() => ({}))
-      notify.error(httpErrorDetail(errBody) || t('admin.dashboardLoadError'))
-      trendChartLoading.value = false
-      return
-    }
-    const chartData = await chartRes.json()
     trendChartLoading.value = false
     await nextTick()
     await new Promise((r) => setTimeout(r, 50))
-    await renderTrendChart(chartData)
-    if (tokenRes.ok) {
-      const tokenData = await tokenRes.json()
+    await renderTrendChart({ data: chartData.data ?? [] })
+    if (tokenData) {
       const fmt = (p: { input_tokens?: number; output_tokens?: number }) => {
         const i = p?.input_tokens ?? 0
         const o = p?.output_tokens ?? 0
@@ -216,8 +168,11 @@ async function showTrendChart(period: 'today' | 'week' | 'month' | 'total' = 'we
         total: fmt(tokenData.total),
       }
     }
-  } catch {
-    notify.error(t('admin.dashboardLoadError'))
+  } catch (err) {
+    const message = queryErrorMessage(err, t('admin.dashboardLoadError'))
+    if (message) {
+      notify.error(message)
+    }
     trendChartLoading.value = false
   }
 }
@@ -336,20 +291,21 @@ function switchTrendPeriod(period: 'today' | 'week' | 'month' | 'total') {
 }
 
 function closeTrendModal() {
+  abortTrendRequests()
   trendModalVisible.value = false
   trendChartInstance?.destroy()
   trendChartInstance = null
 }
 
-watch(
-  effectiveOrgId,
-  () => {
-    if (effectiveOrgId.value != null) {
-      loadStats()
-    }
-  },
-  { immediate: true }
-)
+onAdminEvent('admin:toolbar_action', (payload) => {
+  if (
+    payload.action === 'open_add_school_member' &&
+    props.embedded &&
+    showAddMemberButton.value
+  ) {
+    addMemberVisible.value = true
+  }
+})
 
 watch(
   () => [authStore.adminCapabilitiesLoaded, authStore.user?.schoolId] as const,
@@ -358,16 +314,10 @@ watch(
   }
 )
 
-watch(addMemberOpenRequest, () => {
-  if (props.embedded && showAddMemberButton.value) {
-    addMemberVisible.value = true
-  }
-})
-
 onMounted(async () => {
   await loadCapabilities()
   syncSelectedOrgFromUser()
-  await loadOrganizations()
+  await refetchOrganizations()
   syncSelectedOrgFromUser()
 })
 
@@ -462,8 +412,13 @@ onBeforeUnmount(() => {
               :title="t('admin.memberSeats')"
               :used="stats.quotas.memberCount"
               :limit="stats.quotas.memberLimit"
+              :limit-display-override="
+                isUnlimitedMemberLimit(stats.quotas.memberLimit) ? t('admin.unlimited') : ''
+              "
               :remaining-label="
-                t('admin.seatsRemaining', { count: memberRemaining.toLocaleString() })
+                memberRemaining === null
+                  ? t('admin.unlimitedMembers')
+                  : t('admin.seatsRemaining', { count: memberRemaining.toLocaleString() })
               "
               :icon="User"
               accent="blue"
@@ -472,8 +427,15 @@ onBeforeUnmount(() => {
               :title="t('admin.managerSeats')"
               :used="stats.quotas.managerCount"
               :limit="stats.quotas.managerLimit"
+              :limit-display-override="
+                isManagerAssignmentUnavailable(stats.quotas.managerLimit)
+                  ? t('admin.noSchoolManagersShort')
+                  : ''
+              "
               :remaining-label="
-                t('admin.seatsRemaining', { count: managerRemaining.toLocaleString() })
+                managerRemaining === null
+                  ? t('admin.schoolManagerNotAvailableTrial')
+                  : t('admin.seatsRemaining', { count: managerRemaining.toLocaleString() })
               "
               :icon="Stamp"
               accent="purple"
@@ -592,7 +554,6 @@ onBeforeUnmount(() => {
         <template v-else-if="activeTab === 'users'">
           <SchoolDashboardUsersTab
             v-if="effectiveOrgId != null"
-            ref="usersTabRef"
             :org-id="effectiveOrgId"
           />
         </template>

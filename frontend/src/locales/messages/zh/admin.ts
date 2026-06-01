@@ -104,7 +104,7 @@ export default {
   'admin.featurePermissionsUserIds': '用户 ID（可选）',
   'admin.featurePermissionsUserIdsHint': '用逗号分隔的数字用户 ID，用于例外账号（如试点教师）。',
   'admin.featurePermissionsUserIdsPlaceholder': '例如：12, 34, 56',
-  'admin.expirationDate': '到期日期',
+  'admin.expirationDate': '截止日期',
   'admin.expirationDateHint': '超过此日期后学校将被锁定。留空表示无限制。',
   'admin.filterBySchool': '按学校筛选',
   'admin.geweWechat': 'Gewe 微信',
@@ -557,7 +557,7 @@ export default {
   'admin.revokeRoleConfirm': '确定要移除以下用户的角色：',
   'admin.roleControl': '角色控制',
   'admin.roleControlDesc': '管理超级管理员权限。拥有该角色的用户可访问完整管理面板。',
-  'admin.roleControlDescPlatformBd': '管理平台 BD 权限。平台 BD 可查看全局数据并管理试用邀请。',
+  'admin.roleControlDescPlatformBd': '管理运营权限。运营可查看全局数据并管理试用邀请。',
   'admin.roleControlDescExpert': '管理专家权限。专家可创建学校并管理其邀请范围内的组织。',
   'admin.roleControlDescManagers':
     '管理学校管理员。学校管理员可访问其所属组织的学校仪表盘。授予该角色前，用户须已加入学校。',
@@ -649,6 +649,10 @@ export default {
   'admin.schoolVersionLabel': '学校版本',
   'admin.schoolVersionHint':
     '选择学校订阅版本，决定成员上限与导图存储空间。当前成员 {current} / {limit} 人。',
+  'admin.unlimited': '不限',
+  'admin.unlimitedMembers': '成员不限',
+  'admin.schoolManagerNotAvailableTrial': '体验版学校不可设置学校管理员。',
+  'admin.noSchoolManagersShort': '不可设置',
   'admin.schoolVersionLiteFeaturesHint':
     '体验版与基础教研版不含：在线协同、演示工具、Chrome 扩展、API 令牌与 OpenClaw 集成。',
   'admin.schoolVersionTierTrial': '体验版',
@@ -657,6 +661,8 @@ export default {
   'admin.schoolVersionTierProfessional': '校本共建版',
   'admin.schoolVersionTierOption':
     '{label} · {members} 人 · {managers} 管理员 · 每人 {storage} GB 导图存储',
+  'admin.schoolVersionTierOptionTrial':
+    '{label} · 成员不限 · 不可设学校管理员 · 每位教师 {diagrams} 张导图 · 每人 {storage} GB 存储',
   'admin.schoolManagerLimitHint': '学校管理员 {current} / {limit} 人',
   'admin.schoolManagerLimitReached': '该学校管理员数已达上限（{limit} 人）',
   'admin.schoolTierDowngradeBlocked':

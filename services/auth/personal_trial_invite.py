@@ -1,4 +1,4 @@
-"""Personal trial (C2C) invite payload for expert and platform BD panels."""
+"""Personal trial (C2C) invite payload for expert and operations panels."""
 
 from __future__ import annotations
 

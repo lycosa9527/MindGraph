@@ -11,7 +11,10 @@ import {
   mindbotThreadKey,
 } from '@/components/admin/mindbotUsageTypes'
 import { useLanguage, useNotifications } from '@/composables'
-import { apiRequest } from '@/utils/apiClient'
+import {
+  fetchAdminMindbotUsageEvents,
+  fetchAdminMindbotUsageThreadEvents,
+} from '@/composables/queries'
 
 const props = defineProps<{
   organizationId: number | null
@@ -118,21 +121,17 @@ async function loadPage(append: boolean): Promise<void> {
     loading.value = true
   }
   try {
-    const params = new URLSearchParams({ limit: '50' })
-    if (append && cursorBeforeId.value != null) {
-      params.set('before_id', String(cursorBeforeId.value))
-    }
-    if (selectedStaffId.value) {
-      params.set('dingtalk_staff_id', selectedStaffId.value)
-    }
-    const res = await apiRequest(
-      `/api/mindbot/admin/configs/${props.organizationId}/usage-events?${params.toString()}`
-    )
-    if (!res.ok) {
+    let batch: MindbotUsageEventRow[]
+    try {
+      batch = await fetchAdminMindbotUsageEvents(props.organizationId, {
+        limit: 50,
+        before_id: append && cursorBeforeId.value != null ? cursorBeforeId.value : undefined,
+        dingtalk_staff_id: selectedStaffId.value ?? undefined,
+      })
+    } catch {
       notify.error(t('admin.mindbot.usageLoadError'))
       return
     }
-    const batch = (await res.json()) as MindbotUsageEventRow[]
     if (append) {
       events.value = [...events.value, ...batch]
     } else {
@@ -240,32 +239,32 @@ async function loadThreadPage(append: boolean): Promise<void> {
     threadLoading.value = true
   }
   try {
-    const params = new URLSearchParams({
-      limit: '50',
-      dingtalk_staff_id: th.dingtalk_staff_id,
-    })
     const dt = th.dingtalk_conversation_id?.trim()
     const df = th.dify_conversation_id?.trim()
-    if (dt) {
-      params.set('dingtalk_conversation_id', dt)
-    } else if (df) {
-      params.set('dify_conversation_id', df)
-    } else {
+    if (!dt && !df) {
       threadLoading.value = false
       threadLoadingMore.value = false
       return
     }
-    if (append && threadCursorBeforeId.value != null) {
-      params.set('before_id', String(threadCursorBeforeId.value))
-    }
-    const res = await apiRequest(
-      `/api/mindbot/admin/configs/${orgId}/usage-thread-events?${params.toString()}`
-    )
-    if (!res.ok) {
+    let batch: MindbotUsageEventRow[]
+    try {
+      const threadParams: Record<string, string | number | undefined> = {
+        limit: 50,
+        dingtalk_staff_id: th.dingtalk_staff_id,
+      }
+      if (dt) {
+        threadParams.dingtalk_conversation_id = dt
+      } else if (df) {
+        threadParams.dify_conversation_id = df
+      }
+      if (append && threadCursorBeforeId.value != null) {
+        threadParams.before_id = threadCursorBeforeId.value
+      }
+      batch = await fetchAdminMindbotUsageThreadEvents(orgId, threadParams)
+    } catch {
       notify.error(t('admin.mindbot.usageLoadError'))
       return
     }
-    const batch = (await res.json()) as MindbotUsageEventRow[]
     if (append) {
       threadEvents.value = [...threadEvents.value, ...batch]
     } else {
@@ -314,20 +313,11 @@ async function fetchAllUsageEventsForExport(): Promise<MindbotUsageEventRow[]> {
   const all: MindbotUsageEventRow[] = []
   let beforeId: number | null = null
   for (;;) {
-    const params = new URLSearchParams({ limit: '100' })
-    if (beforeId != null) {
-      params.set('before_id', String(beforeId))
-    }
-    if (selectedStaffId.value) {
-      params.set('dingtalk_staff_id', selectedStaffId.value)
-    }
-    const res = await apiRequest(
-      `/api/mindbot/admin/configs/${orgId}/usage-events?${params.toString()}`
-    )
-    if (!res.ok) {
-      throw new Error('fetch')
-    }
-    const batch = (await res.json()) as MindbotUsageEventRow[]
+    const batch = await fetchAdminMindbotUsageEvents(orgId, {
+      limit: 100,
+      before_id: beforeId ?? undefined,
+      dingtalk_staff_id: selectedStaffId.value ?? undefined,
+    })
     if (batch.length === 0) {
       break
     }

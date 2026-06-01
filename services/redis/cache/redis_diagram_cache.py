@@ -9,7 +9,7 @@ Features:
 - Write-through pattern: Database first, then Redis cache (immediate durability)
 - Redis for fast reads (cache-aside pattern)
 - Database fallback for cache misses
-- 20 diagrams per user limit
+- Tier-based per-user saved-diagram cap (trial schools: 20; paid tiers: unlimited)
 
 Key Schema:
 - diagram:{user_id}:{diagram_id} -> JSON diagram data
@@ -44,7 +44,6 @@ from services.redis.cache._redis_diagram_cache_helpers import (
     CACHE_TTL,
     SYNC_INTERVAL,
     SYNC_BATCH_SIZE,
-    MAX_PER_USER,
     MAX_SPEC_SIZE_KB,
     DIAGRAM_KEY,
     USER_META_KEY,
@@ -52,6 +51,11 @@ from services.redis.cache._redis_diagram_cache_helpers import (
 )
 from config.database import AsyncSessionLocal
 from models.domain.diagrams import Diagram
+from utils.auth.school_tier import (
+    format_diagram_save_limit_error,
+    is_unlimited_diagram_limit,
+    max_diagrams_for_user_id,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -70,9 +74,8 @@ class RedisDiagramCache:
         self._total_synced: int = 0
         self._total_errors: int = 0
         logger.info(
-            "[DiagramCache] Initialized: cache_ttl=%ss, max_per_user=%s (write-through pattern)",
+            "[DiagramCache] Initialized: cache_ttl=%ss (tier-based diagram caps)",
             CACHE_TTL,
-            MAX_PER_USER,
         )
 
     def _use_redis(self) -> bool:
@@ -113,6 +116,12 @@ class RedisDiagramCache:
 
         return await count_diagrams_from_db(user_id)
 
+    async def _resolve_diagram_cap(self, user_id: int, max_per_user: Optional[int]) -> int:
+        if max_per_user is not None:
+            return int(max_per_user)
+        async with AsyncSessionLocal() as db:
+            return await max_diagrams_for_user_id(db, user_id)
+
     async def save_diagram(
         self,
         user_id: int,
@@ -122,6 +131,7 @@ class RedisDiagramCache:
         spec: Dict[str, Any],
         language: str = "zh",
         thumbnail: Optional[str] = None,
+        max_per_user: Optional[int] = None,
     ) -> Tuple[bool, Optional[str], Optional[str]]:
         """
         Save diagram using write-through pattern: Database first, then Redis cache.
@@ -154,12 +164,13 @@ class RedisDiagramCache:
         # spec_json is not used further; SQLAlchemy handles JSONB serialization.
 
         is_new = diagram_id is None
+        diagram_cap = await self._resolve_diagram_cap(user_id, max_per_user)
 
-        # Check user quota for new diagrams
-        if is_new:
+        # Check user quota for new diagrams (trial tier only; paid tiers are unlimited)
+        if is_new and not is_unlimited_diagram_limit(diagram_cap):
             current_count = await self.count_user_diagrams(user_id)
-            if current_count >= MAX_PER_USER:
-                return False, None, f"Diagram limit reached ({MAX_PER_USER} max)"
+            if current_count >= diagram_cap:
+                return False, None, format_diagram_save_limit_error(diagram_cap)
             # Generate UUID for new diagram
             diagram_id = str(uuid.uuid4())
 
@@ -525,7 +536,13 @@ class RedisDiagramCache:
 
         return await with_stampede_lock(cache_key, _loader, _reader)
 
-    async def list_diagrams(self, user_id: int, page: int = 1, page_size: int = 10) -> Dict[str, Any]:
+    async def list_diagrams(
+        self,
+        user_id: int,
+        page: int = 1,
+        page_size: int = 10,
+        max_per_user: Optional[int] = None,
+    ) -> Dict[str, Any]:
         """
         List user's diagrams with pagination (cache-aside pattern).
 
@@ -535,6 +552,7 @@ class RedisDiagramCache:
         Returns:
             Dict with 'diagrams', 'total', 'page', 'page_size', 'has_more', 'max_diagrams'
         """
+        diagram_cap = await self._resolve_diagram_cap(user_id, max_per_user)
         list_key = self._get_user_list_key(user_id)
 
         # Try Redis cache first
@@ -558,7 +576,7 @@ class RedisDiagramCache:
                             "page": page,
                             "page_size": page_size,
                             "has_more": offset + len(paginated) < total,
-                            "max_diagrams": MAX_PER_USER,
+                            "max_diagrams": diagram_cap,
                         }
                 except Exception as e:
                     logger.warning("[DiagramCache] Redis list cache read failed: %s", e)
@@ -595,7 +613,7 @@ class RedisDiagramCache:
             "page": page,
             "page_size": page_size,
             "has_more": offset + len(paginated) < total,
-            "max_diagrams": MAX_PER_USER,
+            "max_diagrams": diagram_cap,
         }
 
     async def _load_list_from_database(self, user_id: int) -> List[Dict[str, Any]]:
@@ -704,17 +722,23 @@ class RedisDiagramCache:
 
         return True, None
 
-    async def duplicate_diagram(self, user_id: int, diagram_id: str) -> Tuple[bool, Optional[str], Optional[str]]:
+    async def duplicate_diagram(
+        self,
+        user_id: int,
+        diagram_id: str,
+        max_per_user: Optional[int] = None,
+    ) -> Tuple[bool, Optional[str], Optional[str]]:
         """
         Duplicate an existing diagram.
 
         Returns:
             Tuple of (success, new_diagram_id, error_message)
         """
-        # Check quota first
-        current_count = await self.count_user_diagrams(user_id)
-        if current_count >= MAX_PER_USER:
-            return False, None, f"Diagram limit reached ({MAX_PER_USER} max)"
+        diagram_cap = await self._resolve_diagram_cap(user_id, max_per_user)
+        if not is_unlimited_diagram_limit(diagram_cap):
+            current_count = await self.count_user_diagrams(user_id)
+            if current_count >= diagram_cap:
+                return False, None, format_diagram_save_limit_error(diagram_cap)
 
         # Get original diagram
         original = await self.get_diagram(user_id, diagram_id)
@@ -734,6 +758,7 @@ class RedisDiagramCache:
             spec=original["spec"],
             language=original.get("language", "zh"),
             thumbnail=original.get("thumbnail"),
+            max_per_user=diagram_cap,
         )
 
         return success, new_id, error
@@ -879,7 +904,7 @@ class RedisDiagramCache:
                 "cache_ttl": CACHE_TTL,
                 "sync_interval": SYNC_INTERVAL,
                 "sync_batch_size": SYNC_BATCH_SIZE,
-                "max_per_user": MAX_PER_USER,
+                "diagram_caps": "tier_based",
                 "max_spec_size_kb": MAX_SPEC_SIZE_KB,
             },
         }

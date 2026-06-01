@@ -583,7 +583,7 @@ export default {
   'admin.roleControlDesc':
     'Manage superadmin access. Users with this role can access the full management panel.',
   'admin.roleControlDescPlatformBd':
-    'Manage platform BD access. Platform BD can view global data and manage trial invites.',
+    'Manage operations access. Operations can view global data and manage trial invites.',
   'admin.roleControlDescExpert':
     'Manage expert access. Experts can create schools and manage organizations in their invite scope.',
   'admin.roleControlDescManagers':
@@ -682,6 +682,10 @@ export default {
   'admin.schoolVersionLabel': 'School version',
   'admin.schoolVersionHint':
     'Subscription tier sets member cap and diagram storage for this school. Members: {current} / {limit}.',
+  'admin.unlimited': 'Unlimited',
+  'admin.unlimitedMembers': 'Unlimited members',
+  'admin.schoolManagerNotAvailableTrial': 'Trial schools cannot assign school managers.',
+  'admin.noSchoolManagersShort': 'Not available',
   'admin.schoolVersionLiteFeaturesHint':
     'Trial and basic tiers exclude: online collaboration, presentation tools, Chrome extension, API tokens, and OpenClaw integration.',
   'admin.schoolVersionTierTrial': 'Trial experience',
@@ -690,6 +694,8 @@ export default {
   'admin.schoolVersionTierProfessional': 'School co-build',
   'admin.schoolVersionTierOption':
     '{label} · {members} members · {managers} managers · {storage} GB/member diagram storage',
+  'admin.schoolVersionTierOptionTrial':
+    '{label} · Unlimited members · No school managers · {diagrams} diagrams/teacher · {storage} GB/member storage',
   'admin.schoolManagerLimitHint': 'School managers {current} / {limit}',
   'admin.schoolManagerLimitReached': 'This school has reached its manager limit ({limit})',
   'admin.schoolTierDowngradeBlocked':

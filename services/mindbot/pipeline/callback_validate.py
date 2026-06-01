@@ -5,7 +5,6 @@ from __future__ import annotations
 import dataclasses
 import logging
 import time
-from datetime import UTC, datetime
 from typing import Any, Optional
 
 from config.settings import config
@@ -74,25 +73,12 @@ async def _check_org_active(organization_id: int) -> Optional[tuple[int, dict[st
                 organization_id=organization_id,
             ),
         )
-    expires_at = getattr(org, "expires_at", None)
-    if expires_at is not None:
-        try:
-            exp = expires_at if expires_at.tzinfo else expires_at.replace(tzinfo=UTC)
-            if exp < datetime.now(UTC):
-                logger.warning(
-                    "[MindBot] org_expired org_id=%s expires_at=%s — rejecting inbound callback",
-                    organization_id,
-                    expires_at,
-                )
-                return (
-                    403,
-                    mindbot_error_headers(
-                        MindbotErrorCode.ORG_LOCKED,
-                        organization_id=organization_id,
-                    ),
-                )
-        except Exception:
-            pass
+    try:
+        from utils.auth.org_subscription import ensure_org_subscription_current
+
+        await ensure_org_subscription_current(org)
+    except Exception:
+        pass
     return None
 
 

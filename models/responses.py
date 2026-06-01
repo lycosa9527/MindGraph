@@ -242,7 +242,7 @@ class DiagramListResponse(BaseModel):
     page: int = Field(..., description="Current page number")
     page_size: int = Field(..., description="Number of items per page")
     has_more: bool = Field(..., description="Whether there are more pages")
-    max_diagrams: int = Field(20, description="Maximum diagrams allowed per user")
+    max_diagrams: int = Field(0, description="Maximum diagrams allowed per user (0 = unlimited)")
 
     class Config:
         """Configuration for DiagramListResponse JSON schema"""
@@ -262,7 +262,7 @@ class DiagramListResponse(BaseModel):
                 "page": 1,
                 "page_size": 10,
                 "has_more": False,
-                "max_diagrams": 20,
+                "max_diagrams": 0,
             }
         }
 

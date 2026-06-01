@@ -10,7 +10,7 @@ API endpoints for user diagram storage:
 - POST /api/diagrams/{id}/pin - Pin/unpin diagram to top
 
 Rate limited: 100 requests per minute per user.
-Max diagrams per user: 20 (configurable via DIAGRAM_MAX_PER_USER).
+Max diagrams per user: tier-based (trial schools: 20; paid tiers and personal accounts: unlimited).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -35,6 +35,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import AsyncSessionLocal, get_async_db
 from models.domain.auth import User
+from models.domain.messages import Language
 from models.domain.diagram_snapshots import DiagramSnapshot
 from models.domain.diagrams import Diagram
 from models.requests.requests_diagram import (
@@ -57,7 +58,15 @@ from services.online_collab.core.online_collab_manager import (
 from services.online_collab.lifecycle.online_collab_expiry import is_online_collab_expired
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from utils.auth import get_current_user
-from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, user_has_school_tier_feature
+from utils.auth.school_tier import (
+    TIER_FEATURE_ONLINE_COLLAB,
+    diagram_limit_reached_message,
+    max_diagrams_for_user,
+    parse_diagram_save_limit_error,
+    user_has_school_tier_feature,
+)
+
+from routers.auth.dependencies import get_language_dependency
 
 from routers.api.diagrams_workshop_routes import router as workshop_router
 
@@ -71,6 +80,13 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["diagrams"])
 router.include_router(workshop_router)
+
+
+def _diagram_limit_http_detail(error: str | None, lang: Language) -> str | None:
+    cap = parse_diagram_save_limit_error(error)
+    if cap is None:
+        return None
+    return diagram_limit_reached_message(lang, cap)
 
 
 async def _get_diagram_as_org_workshop_participant(
@@ -185,18 +201,21 @@ async def create_diagram(
     req: DiagramCreateRequest,
     request: Request,
     current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
 ):
     """
     Create a new diagram.
 
     Rate limited: 100 requests per minute per user.
-    Max diagrams per user: 20.
+    Max diagrams per user: tier-based (trial: 20; paid/personal: unlimited).
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
 
     cache = get_diagram_cache()
+    async with AsyncSessionLocal() as tier_db:
+        diagram_cap = await max_diagrams_for_user(tier_db, current_user)
 
     success, diagram_id, error = await cache.save_diagram(
         user_id=current_user.id,
@@ -206,11 +225,13 @@ async def create_diagram(
         spec=req.spec,
         language=req.language,
         thumbnail=req.thumbnail,
+        max_per_user=diagram_cap,
     )
 
     if not success:
-        if "limit reached" in (error or "").lower():
-            raise HTTPException(status_code=403, detail=error)
+        limit_detail = _diagram_limit_http_detail(error, lang)
+        if limit_detail is not None:
+            raise HTTPException(status_code=403, detail=limit_detail)
         raise HTTPException(status_code=400, detail=error or "Failed to create diagram")
 
     # Get the created diagram
@@ -251,7 +272,9 @@ async def list_diagrams(
     await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
 
     cache = get_diagram_cache()
-    result = await cache.list_diagrams(current_user.id, page, page_size)
+    async with AsyncSessionLocal() as tier_db:
+        diagram_cap = await max_diagrams_for_user(tier_db, current_user)
+    result = await cache.list_diagrams(current_user.id, page, page_size, max_per_user=diagram_cap)
 
     # Convert to response models
     items = []
@@ -473,23 +496,31 @@ async def duplicate_diagram(
     diagram_id: str,
     request: Request,
     current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
 ):
     """
     Duplicate an existing diagram.
 
     Rate limited: 100 requests per minute per user.
-    Max diagrams per user: 20.
+    Max diagrams per user: tier-based (trial: 20; paid/personal: unlimited).
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
 
     cache = get_diagram_cache()
-    success, new_id, error = await cache.duplicate_diagram(current_user.id, diagram_id)
+    async with AsyncSessionLocal() as tier_db:
+        diagram_cap = await max_diagrams_for_user(tier_db, current_user)
+    success, new_id, error = await cache.duplicate_diagram(
+        current_user.id,
+        diagram_id,
+        max_per_user=diagram_cap,
+    )
 
     if not success:
-        if "limit reached" in (error or "").lower():
-            raise HTTPException(status_code=403, detail=error)
+        limit_detail = _diagram_limit_http_detail(error, lang)
+        if limit_detail is not None:
+            raise HTTPException(status_code=403, detail=limit_detail)
         if "not found" in (error or "").lower():
             raise HTTPException(status_code=404, detail=error)
         raise HTTPException(status_code=400, detail=error or "Failed to duplicate diagram")

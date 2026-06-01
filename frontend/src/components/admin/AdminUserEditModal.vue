@@ -7,10 +7,17 @@ import { computed, ref, watch } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
 
-import { useAdminOrganizationsList } from '@/composables/admin/useAdminOrganizationsList'
 import { useLanguage, useNotifications } from '@/composables'
+import {
+  useAdminOrganizations,
+  useAdminUser,
+  useDeleteAdminSchoolUser,
+  useDeleteAdminUser,
+  useUpdateAdminSchoolUser,
+  useUpdateAdminUser,
+  useUpdateAdminUserRole,
+} from '@/composables/queries'
 import type { UserRole } from '@/types'
-import { apiRequest } from '@/utils/apiClient'
 import { httpErrorDetail } from '@/utils/httpErrorDetail'
 import {
   normalizeUserRole,
@@ -47,7 +54,19 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const notify = useNotifications()
-const { organizations, loadOrganizations } = useAdminOrganizationsList()
+const orgsQuery = useAdminOrganizations()
+const organizations = computed(() => orgsQuery.data.value ?? [])
+
+const userIdRef = computed(() => props.userId)
+const schoolOrgIdRef = computed(() => (props.mode === 'school' ? props.schoolOrgId : null))
+const userQuery = useAdminUser(userIdRef, schoolOrgIdRef, {
+  enabled: computed(() => visible.value && props.userId != null),
+})
+const updateUserMutation = useUpdateAdminUser()
+const updateUserRoleMutation = useUpdateAdminUserRole()
+const updateSchoolUserMutation = useUpdateAdminSchoolUser()
+const deleteUserMutation = useDeleteAdminUser()
+const deleteSchoolUserMutation = useDeleteAdminSchoolUser()
 
 const loading = ref(false)
 const saving = ref(false)
@@ -83,6 +102,9 @@ const diagramRemainingDisplay = computed(() => {
   const max = detail.value?.diagram_quota_max
   if (typeof remaining !== 'number') {
     return '—'
+  }
+  if (typeof max === 'number' && max <= 0) {
+    return t('admin.unlimited')
   }
   if (typeof max === 'number') {
     return `${remaining} / ${max}`
@@ -147,30 +169,25 @@ async function loadDetail(): Promise<void> {
   if (props.userId == null) {
     return
   }
+  if (props.mode === 'school' && props.schoolOrgId == null) {
+    notify.error(t('admin.schoolUsersLoadError'))
+    onClose()
+    return
+  }
   loading.value = true
   detail.value = null
   try {
-    let url = `/api/auth/admin/users/${props.userId}`
-    if (props.mode === 'school') {
-      const orgId = props.schoolOrgId
-      if (orgId == null) {
-        notify.error(t('admin.schoolUsersLoadError'))
-        onClose()
-        return
-      }
-      url = `/api/auth/admin/school/users/${props.userId}?organization_id=${orgId}`
-    }
-    const res = await apiRequest(url)
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error(httpErrorDetail(data) || t('admin.schoolUsersLoadError'))
+    const result = await userQuery.refetch()
+    const data = result.data as Record<string, unknown> | undefined
+    if (!data) {
+      notify.error(t('admin.schoolUsersLoadError'))
       onClose()
       return
     }
-    const data = (await res.json()) as Record<string, unknown>
     applyDetail(data)
-  } catch {
-    notify.error(t('admin.schoolUsersLoadError'))
+  } catch (err) {
+    const message = err instanceof Error ? err.message : t('admin.schoolUsersLoadError')
+    notify.error(message)
     onClose()
   } finally {
     loading.value = false
@@ -217,28 +234,17 @@ async function saveGlobalUser(): Promise<boolean> {
     body.email = null
   }
 
-  const res = await apiRequest(`/api/auth/admin/users/${props.userId}`, {
-    method: 'PUT',
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}))
-    notify.error(httpErrorDetail(data) || t('admin.schoolUsersUpdateError'))
+  try {
+    await updateUserMutation.mutateAsync({ userId: props.userId, body })
+    if (roleEdit.value !== initialRole.value) {
+      await updateUserRoleMutation.mutateAsync({ userId: props.userId, role: roleEdit.value })
+    }
+    return true
+  } catch (err) {
+    const message = err instanceof Error ? err.message : t('admin.schoolUsersUpdateError')
+    notify.error(message)
     return false
   }
-
-  if (roleEdit.value !== initialRole.value) {
-    const roleRes = await apiRequest(
-      `/api/auth/admin/users/${props.userId}/role?role=${encodeURIComponent(roleEdit.value)}`,
-      { method: 'PUT' }
-    )
-    if (!roleRes.ok) {
-      const data = await roleRes.json().catch(() => ({}))
-      notify.error(httpErrorDetail(data) || t('admin.schoolUsersUpdateError'))
-      return false
-    }
-  }
-  return true
 }
 
 async function saveSchoolUser(): Promise<boolean> {
@@ -250,19 +256,18 @@ async function saveSchoolUser(): Promise<boolean> {
   if (phone) {
     body.phone = phone
   }
-  const res = await apiRequest(
-    `/api/auth/admin/school/users/${props.userId}?organization_id=${props.schoolOrgId}`,
-    {
-      method: 'PUT',
-      body: JSON.stringify(body),
-    }
-  )
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}))
-    notify.error(httpErrorDetail(data) || t('admin.schoolUsersUpdateError'))
+  try {
+    await updateSchoolUserMutation.mutateAsync({
+      userId: props.userId,
+      organizationId: props.schoolOrgId,
+      body,
+    })
+    return true
+  } catch (err) {
+    const message = err instanceof Error ? err.message : t('admin.schoolUsersUpdateError')
+    notify.error(message)
     return false
   }
-  return true
 }
 
 async function deleteUser(): Promise<void> {
@@ -276,21 +281,20 @@ async function deleteUser(): Promise<void> {
 
   deleting.value = true
   try {
-    const url =
-      props.mode === 'school' && !props.fullEdit
-        ? `/api/auth/admin/school/users/${props.userId}?organization_id=${props.schoolOrgId}`
-        : `/api/auth/admin/users/${props.userId}`
-    const res = await apiRequest(url, { method: 'DELETE' })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error(httpErrorDetail(data) || t('admin.schoolUsersDeleteError'))
-      return
+    if (props.mode === 'school' && !props.fullEdit && props.schoolOrgId != null) {
+      await deleteSchoolUserMutation.mutateAsync({
+        userId: props.userId,
+        organizationId: props.schoolOrgId,
+      })
+    } else {
+      await deleteUserMutation.mutateAsync(props.userId)
     }
     notify.success(t('notification.deleted'))
     emit('deleted')
     onClose()
-  } catch {
-    notify.error(t('admin.schoolUsersDeleteError'))
+  } catch (err) {
+    const message = err instanceof Error ? err.message : t('admin.schoolUsersDeleteError')
+    notify.error(message)
   } finally {
     deleting.value = false
   }
@@ -346,7 +350,7 @@ async function saveUser(): Promise<void> {
 watch(visible, (open) => {
   if (open) {
     if (props.fullEdit || props.mode === 'global') {
-      void loadOrganizations()
+      void orgsQuery.refetch()
     }
     void loadDetail()
   } else {

@@ -97,7 +97,7 @@ class User(Base):
 
     Roles (canonical slugs):
     - 'superadmin': Full platform admin (超级管理员)
-    - 'platform_bd': Platform BD — trial invites, read-only global dashboard
+    - 'platform_bd': Operations — trial invites, read-only global dashboard
     - 'expert': Platform expert — B2B school invites (own orgs) + C2C trial invites
     - 'school_admin': Organization manager (学校管理员) — own-school dashboard + user mgmt
     - 'teacher': B2B school member (教师用户)

@@ -21,6 +21,7 @@ from utils.auth.role_constants import ROLE_SCHOOL_ADMIN, ROLE_TEACHER, normalize
 from utils.auth.school_tier import (
     assert_organization_has_manager_capacity,
     assert_organization_has_member_capacity,
+    is_unlimited_member_limit,
     manager_count_for_org,
     manager_limit_for_org,
     member_count_for_org,
@@ -181,7 +182,7 @@ async def assert_batch_member_capacity(
 ) -> None:
     current_members = await member_count_for_org(db, int(org.id))
     max_members = member_limit_for_org(org)
-    if current_members + len(members) > max_members:
+    if not is_unlimited_member_limit(max_members) and current_members + len(members) > max_members:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=Messages.error("organization_member_limit_reached", lang, max_members),

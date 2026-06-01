@@ -1,5 +1,8 @@
 export type SchoolTier = 'trial' | 'lite' | 'standard' | 'professional'
 
+/** Zero means no member cap (trial schools may have hundreds of teachers). */
+export const SCHOOL_TIER_MEMBER_LIMIT_UNLIMITED = 0
+
 export const SCHOOL_TIER_OPTIONS: readonly SchoolTier[] = [
   'trial',
   'lite',
@@ -9,12 +12,33 @@ export const SCHOOL_TIER_OPTIONS: readonly SchoolTier[] = [
 
 export const SCHOOL_TIER_LIMITS: Record<
   SchoolTier,
-  { memberLimit: number; managerLimit: number; diagramStorageGbPerMember: number }
+  {
+    memberLimit: number
+    managerLimit: number
+    diagramStorageGbPerMember: number
+    diagramsPerMember?: number
+  }
 > = {
-  trial: { memberLimit: 30, managerLimit: 1, diagramStorageGbPerMember: 1 },
+  trial: {
+    memberLimit: SCHOOL_TIER_MEMBER_LIMIT_UNLIMITED,
+    managerLimit: 0,
+    diagramStorageGbPerMember: 1,
+    diagramsPerMember: 20,
+  },
   lite: { memberLimit: 50, managerLimit: 1, diagramStorageGbPerMember: 1 },
   standard: { memberLimit: 120, managerLimit: 3, diagramStorageGbPerMember: 2 },
   professional: { memberLimit: 200, managerLimit: 5, diagramStorageGbPerMember: 5 },
+}
+
+/** Paid tiers have no per-user saved-diagram count cap (only trial is limited). */
+
+export function isUnlimitedMemberLimit(limit: number): boolean {
+  return limit <= 0
+}
+
+/** Trial tier sets manager_limit to 0 — school managers cannot be assigned. */
+export function isManagerAssignmentUnavailable(limit: number): boolean {
+  return limit <= 0
 }
 
 export interface SchoolTierFeatures {

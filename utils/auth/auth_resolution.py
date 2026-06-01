@@ -12,7 +12,6 @@ Proprietary License
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Optional
 
@@ -21,7 +20,7 @@ from fastapi import HTTPException, Request, status
 from models.domain.auth import User
 from services.auth.http_auth_token import extract_bearer_token
 from utils.auth.config import AUTH_MODE
-from utils.auth.datetime_compat import as_utc_aware
+from utils.auth.org_subscription import ensure_org_subscription_current
 from utils.auth.tokens import decode_access_token
 from utils.auth.user_tokens import validate_user_token
 
@@ -45,7 +44,7 @@ except ImportError:
 
 
 async def raise_if_org_locked_or_expired_async(user: User) -> None:
-    """Raise HTTPException if org is locked or subscription expired."""
+    """Raise HTTPException if org is locked; downgrade expired subscription to trial."""
     if not user.organization_id:
         return
     org = None
@@ -63,12 +62,7 @@ async def raise_if_org_locked_or_expired_async(user: User) -> None:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Organization account is locked. Please contact support.",
             )
-        if hasattr(org, "expires_at") and org.expires_at:
-            if as_utc_aware(org.expires_at) < datetime.now(UTC):
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Organization subscription has expired. Please contact support.",
-                )
+        await ensure_org_subscription_current(org)
 
 
 async def resolve_authenticated_user_optional(request: Request) -> Optional[User]:

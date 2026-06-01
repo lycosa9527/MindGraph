@@ -11,14 +11,10 @@ import AdminUserEditModal from '@/components/admin/AdminUserEditModal.vue'
 import AdminUsersTable from '@/components/admin/AdminUsersTable.vue'
 
 import { useAdminUsersSchoolFilterRoute } from '@/composables/admin/useAdminUsersSchoolFilterRoute'
-import {
-  registerAdminUsersHeaderToolbar,
-  unregisterAdminUsersHeaderToolbar,
-} from '@/composables/admin/useAdminUsersHeaderToolbar'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useLanguage, useNotifications } from '@/composables'
-import { useAuthStore } from '@/stores'
-import { apiRequest } from '@/utils/apiClient'
-import { httpErrorDetail } from '@/utils/httpErrorDetail'
+import { useAdminSchoolUsers } from '@/composables/queries'
+import { useAdminPanelStore, useAuthStore } from '@/stores'
 
 const props = withDefaults(
   defineProps<{
@@ -29,15 +25,15 @@ const props = withDefaults(
 )
 
 const authStore = useAuthStore()
+const adminPanel = useAdminPanelStore()
 const { t } = useLanguage()
 const notify = useNotifications()
+const { on: onAdminEvent } = useAdminEventBus('SchoolDashboardUsersTab')
 const { orgFilter, onOrgFilterChange } = useAdminUsersSchoolFilterRoute()
 const showSchoolFilterInHeader = computed(
   () => props.registerHeaderToolbar && authStore.isSuperAdmin
 )
 
-const isLoading = ref(true)
-const users = ref<Record<string, unknown>[]>([])
 const pagination = ref({
   page: 1,
   page_size: 20,
@@ -46,35 +42,35 @@ const pagination = ref({
 })
 const searchQuery = ref('')
 
+const schoolUsersParams = computed(() => ({
+  page: pagination.value.page,
+  page_size: pagination.value.page_size,
+  search: searchQuery.value,
+  organization_id: props.orgId,
+}))
+
+const schoolUsersQuery = useAdminSchoolUsers(schoolUsersParams)
+
 const editModalVisible = ref(false)
 const editUserId = ref<number | null>(null)
 
-function orgQueryString(): string {
-  return new URLSearchParams({ organization_id: String(props.orgId) }).toString()
-}
+const isLoading = computed(() => schoolUsersQuery.isFetching.value)
+const users = computed(() => (schoolUsersQuery.data.value?.users ?? []) as Record<string, unknown>[])
+
+watch(
+  () => schoolUsersQuery.data.value?.pagination,
+  (nextPagination) => {
+    if (nextPagination) {
+      pagination.value = nextPagination
+    }
+  }
+)
 
 async function loadUsers() {
-  isLoading.value = true
   try {
-    const params = new URLSearchParams({
-      page: String(pagination.value.page),
-      page_size: String(pagination.value.page_size),
-      search: searchQuery.value,
-      organization_id: String(props.orgId),
-    })
-    const res = await apiRequest(`/api/auth/admin/school/users?${params}`)
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error(httpErrorDetail(data) || t('admin.schoolUsersLoadError'))
-      return
-    }
-    const data = await res.json()
-    users.value = data.users ?? []
-    pagination.value = data.pagination ?? pagination.value
+    await schoolUsersQuery.refetch()
   } catch {
     notify.error(t('admin.schoolUsersLoadError'))
-  } finally {
-    isLoading.value = false
   }
 }
 
@@ -113,30 +109,67 @@ const pageInfo = computed(() => {
   return t('admin.listRange', { start, end, total: p.total })
 })
 
-const scopedOrgId = computed(() => props.orgId)
+function syncUsersToolbarState(): void {
+  if (!props.registerHeaderToolbar) {
+    return
+  }
+  adminPanel.setUsersToolbar({
+    searchQuery: searchQuery.value,
+    orgFilter: orgFilter.value,
+    showSchoolFilter: showSchoolFilterInHeader.value,
+    scopedOrgId: props.orgId,
+    hasResetFilters: false,
+  })
+}
+
+watch(searchQuery, (value) => {
+  if (props.registerHeaderToolbar) {
+    adminPanel.patchUsersToolbar({ searchQuery: value })
+  }
+})
+
+watch(
+  () => adminPanel.usersToolbar?.searchQuery,
+  (value) => {
+    if (!props.registerHeaderToolbar || value === undefined) {
+      return
+    }
+    if (value !== searchQuery.value) {
+      searchQuery.value = value
+    }
+  }
+)
+
+onAdminEvent('admin:toolbar_action', (payload) => {
+  if (!props.registerHeaderToolbar || payload.tab !== 'users') {
+    return
+  }
+  if (payload.action === 'users_search') {
+    doSearch()
+  } else if (payload.action === 'users_org_filter_change') {
+    const raw = payload.payload?.value
+    const value = raw === '' || typeof raw === 'number' ? raw : orgFilter.value
+    onOrgFilterChange(value)
+    pagination.value.page = 1
+  }
+})
+
+onAdminEvent('admin:mutation_completed', ({ domain }) => {
+  if (domain === 'school_users' || domain === 'users' || domain === 'all') {
+    void loadUsers()
+  }
+})
 
 onMounted(() => {
   if (props.registerHeaderToolbar) {
-    registerAdminUsersHeaderToolbar({
-      searchQuery,
-      scopedOrgId,
-      orgFilter: showSchoolFilterInHeader.value ? orgFilter : undefined,
-      showSchoolFilter: showSchoolFilterInHeader.value,
-      doSearch,
-      onOrgFilterChange: showSchoolFilterInHeader.value
-        ? (value) => {
-            onOrgFilterChange(value)
-            pagination.value.page = 1
-          }
-        : undefined,
-    })
+    syncUsersToolbarState()
   }
   loadUsers()
 })
 
 onBeforeUnmount(() => {
   if (props.registerHeaderToolbar) {
-    unregisterAdminUsersHeaderToolbar()
+    adminPanel.clearUsersToolbar()
   }
 })
 
@@ -145,16 +178,11 @@ watch(
   () => {
     pagination.value.page = 1
     loadUsers()
+    if (props.registerHeaderToolbar) {
+      adminPanel.patchUsersToolbar({ scopedOrgId: props.orgId })
+    }
   }
 )
-
-function reloadUsers(): void {
-  void loadUsers()
-}
-
-defineExpose({
-  reloadUsers,
-})
 </script>
 
 <template>

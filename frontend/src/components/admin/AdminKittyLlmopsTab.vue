@@ -2,11 +2,9 @@
 /**
  * Admin — Kitty LLMOps: module map and hub contract (read-only).
  */
-import { onMounted, ref } from 'vue'
+import { computed } from 'vue'
 
-import { ElMessage } from 'element-plus'
-
-import { apiRequest } from '@/utils/apiClient'
+import { useAdminKittyLlmopsArchitecture } from '@/composables/queries'
 
 interface LlmopsModule {
   id: string
@@ -33,31 +31,11 @@ interface LlmopsManifest {
   special_flows?: SpecialFlowRow[]
 }
 
-const loading = ref(true)
-const manifest = ref<LlmopsManifest | null>(null)
-const flowText = ref('')
+const architectureQuery = useAdminKittyLlmopsArchitecture()
 
-async function load(): Promise<void> {
-  loading.value = true
-  try {
-    const res = await apiRequest('/api/auth/admin/kitty-llmops/architecture')
-    if (!res.ok) {
-      throw new Error('request failed')
-    }
-    const data = (await res.json()) as LlmopsManifest
-    manifest.value = data
-    flowText.value = data.mermaid_flow || ''
-  } catch {
-    ElMessage.error('Failed to load Kitty architecture manifest')
-    manifest.value = null
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(() => {
-  void load()
-})
+const loading = computed(() => architectureQuery.isFetching.value)
+const manifest = computed(() => architectureQuery.data.value as LlmopsManifest | null | undefined)
+const flowText = computed(() => manifest.value?.mermaid_flow ?? '')
 </script>
 
 <template>

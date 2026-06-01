@@ -281,7 +281,7 @@ async def create_organization_admin(
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
-    """Create new organization (superadmin, platform_bd, or expert invite tab)."""
+    """Create new organization (superadmin, operations, or expert invite tab)."""
     current_user = scope.actor
     if not all(k in request for k in ["code", "name"]):
         error_msg = Messages.error("missing_required_fields", lang, "code, name")

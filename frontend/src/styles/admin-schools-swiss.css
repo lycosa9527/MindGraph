@@ -25,6 +25,38 @@
   border-bottom: 1px solid #e7e5e4;
 }
 
+.admin-schools-tab .admin-schools-table .el-table__header .admin-schools-col-header-trigger {
+  display: inline;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: inherit;
+  color: #78716c;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.admin-schools-tab .admin-schools-table .el-table__header .admin-schools-col-header-trigger:hover {
+  color: #57534e;
+}
+
+.admin-schools-tab .admin-schools-table .el-table__header .admin-schools-col-header-trigger--active {
+  color: #44403c;
+}
+
+.admin-schools-tab .admin-schools-table .el-table__header .el-dropdown {
+  display: inline;
+  font: inherit;
+  color: inherit;
+  vertical-align: baseline;
+}
+
 .admin-schools-tab .admin-schools-table .admin-schools-col-text .cell {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -102,4 +134,103 @@
   border-radius: 9999px;
   object-fit: cover;
   background: #f5f5f4;
+}
+
+.admin-schools-tab .admin-schools-table .el-table__header th.is-center .cell {
+  text-align: center;
+}
+
+.admin-schools-tab .admin-schools-table .el-table__header th.is-right .cell {
+  text-align: right;
+}
+
+.admin-schools-tab .admin-schools-table .el-table__header th.is-center .el-dropdown {
+  display: inline-block;
+}
+
+.admin-schools-tab .admin-schools-sort-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+}
+
+.admin-schools-tab .admin-schools-table .el-table__header th.is-center .admin-schools-sort-header {
+  justify-content: center;
+  width: 100%;
+}
+
+.admin-schools-tab .admin-schools-table .el-table__header th.is-right .admin-schools-sort-header {
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.admin-schools-tab .admin-schools-sort-header__dir {
+  font-size: 0.5rem;
+  font-weight: 400;
+  line-height: 1;
+  color: #57534e;
+}
+
+.el-popper.admin-swiss-school-filter-popper.el-popper {
+  box-sizing: border-box !important;
+  width: max-content !important;
+  min-width: unset !important;
+  max-width: calc(100vw - 24px) !important;
+  padding: 4px !important;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 10px !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.07),
+    0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
+  background: #ffffff !important;
+  overflow: hidden !important;
+}
+
+.admin-swiss-school-filter-popper .el-dropdown-menu {
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  min-width: 0 !important;
+  width: max-content !important;
+}
+
+.admin-swiss-school-filter-popper .el-dropdown-menu__item {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  width: auto;
+  min-height: 2rem;
+  line-height: 1.3;
+  padding: 0.4rem 10px !important;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #44403c;
+  letter-spacing: 0.01em;
+  text-align: center;
+  white-space: nowrap;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.admin-swiss-school-filter-popper .el-dropdown-menu__item:hover,
+.admin-swiss-school-filter-popper .el-dropdown-menu__item:focus {
+  background: #f5f5f4 !important;
+  color: #1c1917 !important;
+}
+
+.admin-swiss-school-filter-popper .el-dropdown-menu__item:active {
+  background: #e7e5e4 !important;
+}
+
+.admin-swiss-school-filter-popper .el-dropdown-menu__item.is-selected {
+  font-weight: 600 !important;
+  color: #1c1917 !important;
+  background: #f5f5f4 !important;
 }

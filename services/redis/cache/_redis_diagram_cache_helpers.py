@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 CACHE_TTL = _keys.TTL_DIAGRAM
 SYNC_INTERVAL = float(os.getenv("DIAGRAM_SYNC_INTERVAL", "300"))
 SYNC_BATCH_SIZE = int(os.getenv("DIAGRAM_SYNC_BATCH_SIZE", "100"))
+# Legacy env default; per-user save caps are tier-based (see utils.auth.school_tier).
 MAX_PER_USER = int(os.getenv("DIAGRAM_MAX_PER_USER", "20"))
 MAX_SPEC_SIZE_KB = int(os.getenv("DIAGRAM_MAX_SPEC_SIZE_KB", "500"))
 

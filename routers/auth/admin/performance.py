@@ -267,6 +267,23 @@ _WS_SUM_KEYS = frozenset(
 )
 
 
+def _sync_host_network_snapshot() -> Dict[str, Any]:
+    """Blocking psutil host + network sample for thread-pool execution."""
+    return {
+        "host": _host_snapshot(),
+        "network": _compute_network_rates(),
+    }
+
+
+def _sync_worker_local_snapshots() -> Dict[str, Any]:
+    """Blocking process/LLM/app samples for thread-pool execution."""
+    return {
+        "process": _process_snapshot(),
+        "llm": _llm_snapshot(),
+        "app": _app_snapshot(),
+    }
+
+
 async def build_worker_perf_payload_async() -> Dict[str, Any]:
     """Per-uvicorn-worker snapshot (published to Redis and merged on admin poll)."""
     websockets: Dict[str, Any] = {}
@@ -292,15 +309,16 @@ async def build_worker_perf_payload_async() -> Dict[str, Any]:
         mindmate_streaming = {"error": "mindmate streaming snapshot timed out"}
     except (RuntimeError, TypeError, ValueError) as exc:
         mindmate_streaming = {"error": str(exc)}
+    local = await asyncio.to_thread(_sync_worker_local_snapshots)
     return {
         "pid": int(os.getpid()),
         "ts": time.time(),
-        "process": _process_snapshot(),
+        "process": local["process"],
         "mindbot_concurrency": mindbot_concurrency,
         "mindmate_streaming": mindmate_streaming,
-        "llm": _llm_snapshot(),
+        "llm": local["llm"],
         "websockets": websockets,
-        "app": _app_snapshot(),
+        "app": local["app"],
     }
 
 
@@ -541,10 +559,11 @@ async def get_admin_performance_live(
         peak_mate = {"active_max_24h": None, "error": "24h peak timed out"}
     except (ConnectionError, RuntimeError, OSError, TypeError, ValueError) as exc:
         peak_mate = {"active_max_24h": None, "error": str(exc)}
+    host_network = await asyncio.to_thread(_sync_host_network_snapshot)
     payload: Dict[str, Any] = {
         "timestamp": time.time(),
-        "host": _host_snapshot(),
-        "network": _compute_network_rates(),
+        "host": host_network["host"],
+        "network": host_network["network"],
         "process": cluster_fields["process"],
         "app": _pick_app_cluster(cluster_rows),
         "llm": cluster_fields["llm"],

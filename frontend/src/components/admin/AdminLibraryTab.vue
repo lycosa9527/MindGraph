@@ -6,8 +6,18 @@ import { ElMessageBox } from 'element-plus'
 import { FolderOpened, Loading } from '@element-plus/icons-vue'
 
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useLanguage, useNotifications } from '@/composables'
-import { apiRequest } from '@/utils/apiClient'
+import {
+  useDeleteAdminLibraryDocument,
+  useGenerateAdminLibraryDocumentCover,
+  useRegisterAdminLibraryBook,
+  useRegisterAdminLibraryBooksBatch,
+  useRenameAdminLibraryPages,
+  useRepairAdminLibrary,
+  useScanAdminLibrary,
+  useUpdateAdminLibraryDocumentVisibility,
+} from '@/composables/queries'
 
 interface BookEntry {
   folder_name: string
@@ -45,6 +55,16 @@ interface RenameResult {
 
 const { t } = useLanguage()
 const notify = useNotifications()
+const { on: onAdminEvent } = useAdminEventBus('AdminLibraryTab')
+
+const scanLibraryMutation = useScanAdminLibrary()
+const registerBookMutation = useRegisterAdminLibraryBook()
+const registerBooksBatchMutation = useRegisterAdminLibraryBooksBatch()
+const repairLibraryMutation = useRepairAdminLibrary()
+const updateVisibilityMutation = useUpdateAdminLibraryDocumentVisibility()
+const generateCoverMutation = useGenerateAdminLibraryDocumentCover()
+const deleteDocumentMutation = useDeleteAdminLibraryDocument()
+const renamePagesMutation = useRenameAdminLibraryPages()
 
 const isScanning = ref(false)
 const scanData = ref<ScanResponse | null>(null)
@@ -108,15 +128,10 @@ function sortedBooks(books: BookEntry[]): BookEntry[] {
 async function scan() {
   isScanning.value = true
   try {
-    const res = await apiRequest('/api/library/admin/scan')
-    if (res.ok) {
-      scanData.value = await res.json()
-    } else {
-      const data = await res.json().catch(() => ({}))
-      notify.error(data.detail || t('admin.library.scanError'))
-    }
-  } catch {
-    notify.error(t('admin.library.scanError'))
+    scanData.value = (await scanLibraryMutation.mutateAsync()) as unknown as ScanResponse
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : ''
+    notify.error(detail || t('admin.library.scanError'))
   } finally {
     isScanning.value = false
   }
@@ -125,20 +140,12 @@ async function scan() {
 async function registerBook(book: BookEntry) {
   registeringFolders.value.add(book.folder_name)
   try {
-    const res = await apiRequest('/api/library/books/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folder_path: book.folder_name }),
-    })
-    if (res.ok) {
-      notify.success(t('admin.library.registerSuccess'))
-      await scan()
-    } else {
-      const data = await res.json().catch(() => ({}))
-      notify.error(data.detail || t('admin.library.registerError'))
-    }
-  } catch {
-    notify.error(t('admin.library.registerError'))
+    await registerBookMutation.mutateAsync({ folder_path: book.folder_name })
+    notify.success(t('admin.library.registerSuccess'))
+    await scan()
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : ''
+    notify.error(detail || t('admin.library.registerError'))
   } finally {
     registeringFolders.value.delete(book.folder_name)
   }
@@ -149,20 +156,11 @@ async function registerAll() {
   if (!folders.length) return
   isRegisteringAll.value = true
   try {
-    const res = await apiRequest('/api/library/books/register-batch', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folder_paths: folders }),
-    })
-    if (res.ok) {
-      const data = await res.json()
-      notify.success(
-        `${t('admin.library.registerAllSuccess')}: ${data.successful_count} / ${data.total}`
-      )
-      await scan()
-    } else {
-      notify.error(t('admin.library.registerError'))
-    }
+    const data = await registerBooksBatchMutation.mutateAsync({ folder_paths: folders })
+    notify.success(
+      `${t('admin.library.registerAllSuccess')}: ${data.successful_count} / ${data.total}`
+    )
+    await scan()
   } catch {
     notify.error(t('admin.library.registerError'))
   } finally {
@@ -173,21 +171,17 @@ async function registerAll() {
 async function repairPaths() {
   isRepairing.value = true
   try {
-    const res = await apiRequest('/api/library/admin/repair', { method: 'POST' })
-    if (res.ok) {
-      const data = await res.json()
-      if (data.updated > 0) {
-        notify.success(t('admin.library.repairSuccess').replace('{count}', String(data.updated)))
-        await scan()
-      } else {
-        notify.success(t('admin.library.repairNothingToFix'))
-      }
+    const data = await repairLibraryMutation.mutateAsync()
+    const updated = Number(data.updated ?? 0)
+    if (updated > 0) {
+      notify.success(t('admin.library.repairSuccess').replace('{count}', String(updated)))
+      await scan()
     } else {
-      const data = await res.json().catch(() => ({}))
-      notify.error(data.detail || t('admin.library.repairError'))
+      notify.success(t('admin.library.repairNothingToFix'))
     }
-  } catch {
-    notify.error(t('admin.library.repairError'))
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : ''
+    notify.error(detail || t('admin.library.repairError'))
   } finally {
     isRepairing.value = false
   }
@@ -199,16 +193,11 @@ async function toggleVisibility(book: BookEntry) {
   togglingIds.value.add(docId)
   const newValue = !book.is_active
   try {
-    const res = await apiRequest(`/api/library/documents/${docId}/visibility`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ is_active: newValue }),
+    await updateVisibilityMutation.mutateAsync({
+      docId,
+      body: { is_active: newValue },
     })
-    if (res.ok) {
-      book.is_active = newValue
-    } else {
-      notify.error(t('admin.library.visibilityError'))
-    }
+    book.is_active = newValue
   } catch {
     notify.error(t('admin.library.visibilityError'))
   } finally {
@@ -221,18 +210,12 @@ async function generateCover(book: BookEntry) {
   const docId = book.document_id
   generatingCoverIds.value.add(docId)
   try {
-    const res = await apiRequest(`/api/library/admin/documents/${docId}/generate-cover`, {
-      method: 'POST',
-    })
-    if (res.ok) {
-      coverTimestamps.value[docId] = Date.now()
-      notify.success(t('admin.library.generateCoverSuccess'))
-    } else {
-      const data = await res.json().catch(() => ({}))
-      notify.error(data.detail || t('admin.library.generateCoverError'))
-    }
-  } catch {
-    notify.error(t('admin.library.generateCoverError'))
+    await generateCoverMutation.mutateAsync(docId)
+    coverTimestamps.value[docId] = Date.now()
+    notify.success(t('admin.library.generateCoverSuccess'))
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : ''
+    notify.error(detail || t('admin.library.generateCoverError'))
   } finally {
     generatingCoverIds.value.delete(docId)
   }
@@ -260,21 +243,14 @@ async function deleteBook(book: BookEntry, deleteFiles: boolean) {
   const docId = book.document_id
   deletingIds.value.add(docId)
   try {
-    const url = deleteFiles
-      ? `/api/library/admin/documents/${docId}?delete_files=true`
-      : `/api/library/admin/documents/${docId}`
-    const res = await apiRequest(url, { method: 'DELETE' })
-    if (res.ok) {
-      notify.success(
-        deleteFiles ? t('admin.library.deleteBookSuccess') : t('admin.library.deleteSuccess')
-      )
-      await scan()
-    } else {
-      const data = await res.json().catch(() => ({}))
-      notify.error(data.detail || t('admin.library.deleteError'))
-    }
-  } catch {
-    notify.error(t('admin.library.deleteError'))
+    await deleteDocumentMutation.mutateAsync({ docId, deleteFiles })
+    notify.success(
+      deleteFiles ? t('admin.library.deleteBookSuccess') : t('admin.library.deleteSuccess')
+    )
+    await scan()
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : ''
+    notify.error(detail || t('admin.library.deleteError'))
   } finally {
     deletingIds.value.delete(docId)
   }
@@ -292,23 +268,14 @@ async function previewRename() {
   if (!renameDialog.book) return
   renameDialog.isLoadingPreview = true
   try {
-    const res = await apiRequest('/api/library/admin/rename-pages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        folder_name: renameDialog.book.folder_name,
-        book_name: renameDialog.bookName || renameDialog.book.folder_name,
-        dry_run: true,
-      }),
-    })
-    if (res.ok) {
-      renameDialog.result = await res.json()
-    } else {
-      const data = await res.json().catch(() => ({}))
-      notify.error(data.detail || t('admin.library.renameError'))
-    }
-  } catch {
-    notify.error(t('admin.library.renameError'))
+    renameDialog.result = (await renamePagesMutation.mutateAsync({
+      folder_name: renameDialog.book.folder_name,
+      book_name: renameDialog.bookName || renameDialog.book.folder_name,
+      dry_run: true,
+    })) as unknown as RenameResult
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : ''
+    notify.error(detail || t('admin.library.renameError'))
   } finally {
     renameDialog.isLoadingPreview = false
   }
@@ -318,28 +285,19 @@ async function applyRename() {
   if (!renameDialog.book || !renameDialog.result?.rename_count) return
   renameDialog.isApplying = true
   try {
-    const res = await apiRequest('/api/library/admin/rename-pages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        folder_name: renameDialog.book.folder_name,
-        book_name: renameDialog.bookName || renameDialog.book.folder_name,
-        dry_run: false,
-      }),
-    })
-    if (res.ok) {
-      const data: RenameResult = await res.json()
-      notify.success(
-        `${t('admin.library.renameSuccess').replace('{count}', String(data.rename_count))}`
-      )
-      renameDialog.visible = false
-      await registerBook(renameDialog.book)
-    } else {
-      const errData = await res.json().catch(() => ({}))
-      notify.error(errData.detail || t('admin.library.renameError'))
-    }
-  } catch {
-    notify.error(t('admin.library.renameError'))
+    const data = (await renamePagesMutation.mutateAsync({
+      folder_name: renameDialog.book.folder_name,
+      book_name: renameDialog.bookName || renameDialog.book.folder_name,
+      dry_run: false,
+    })) as unknown as RenameResult
+    notify.success(
+      `${t('admin.library.renameSuccess').replace('{count}', String(data.rename_count))}`
+    )
+    renameDialog.visible = false
+    await registerBook(renameDialog.book)
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : ''
+    notify.error(detail || t('admin.library.renameError'))
   } finally {
     renameDialog.isApplying = false
   }
@@ -354,6 +312,12 @@ watch(
 
 onMounted(() => {
   scan()
+})
+
+onAdminEvent('admin:refresh_requested', ({ domain }) => {
+  if (domain === 'library' || domain === 'all') {
+    void scan()
+  }
 })
 </script>
 

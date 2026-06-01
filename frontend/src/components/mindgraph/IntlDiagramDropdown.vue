@@ -15,6 +15,7 @@ import { Edit3, FileImage, Pin, Trash2 } from '@lucide/vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { formatDiagramCountLabel } from '@/utils/diagramLimit'
 
 const emit = defineEmits<{
   (e: 'select', diagram: SavedDiagram): void
@@ -28,6 +29,9 @@ const store = useSavedDiagramsStore()
 const diagrams = computed(() => store.diagrams)
 const isLoading = computed(() => store.isLoading)
 const maxDiagrams = computed(() => store.maxDiagrams)
+const diagramCountLabel = computed(() =>
+  formatDiagramCountLabel(diagrams.value.length, maxDiagrams.value)
+)
 
 onMounted(() => {
   if (authStore.isAuthenticated) {
@@ -155,7 +159,7 @@ async function handleDelete(diagramId: string) {
 
     <!-- Footer — slot counter -->
     <div class="dd-footer">
-      <span class="dd-footer-count">{{ diagrams.length }}/{{ maxDiagrams }}</span>
+      <span class="dd-footer-count">{{ diagramCountLabel }}</span>
       <span class="dd-footer-label">{{ t('sidebar.diagramHistory.title') }}</span>
     </div>
   </div>

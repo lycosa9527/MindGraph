@@ -15,6 +15,7 @@ Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
 All Rights Reserved -- Proprietary License
 """
 
+import asyncio
 import logging
 import os
 from pathlib import Path
@@ -84,7 +85,7 @@ async def database_stats(
 ) -> Dict[str, Any]:
     """Current PostgreSQL table row counts and summary."""
     try:
-        return get_pg_stats(engine)
+        return await asyncio.to_thread(get_pg_stats, engine)
     except Exception as exc:
         logger.error("[AdminDB] stats failed: %s", exc)
         raise HTTPException(
@@ -98,7 +99,7 @@ async def scan_files(
     _admin: User = Depends(require_admin),
 ) -> Dict[str, Any]:
     """Scan backup/ folder for SQLite and PG dump files."""
-    return scan_backup_folder(BACKUP_DIR)
+    return await asyncio.to_thread(scan_backup_folder, BACKUP_DIR)
 
 
 @router.get("/dumps")
@@ -106,7 +107,7 @@ async def list_dumps(
     _admin: User = Depends(require_admin),
 ):
     """List available PostgreSQL dump files in backup/."""
-    return list_pg_dumps(BACKUP_DIR)
+    return await asyncio.to_thread(list_pg_dumps, BACKUP_DIR)
 
 
 @router.post("/analyze")

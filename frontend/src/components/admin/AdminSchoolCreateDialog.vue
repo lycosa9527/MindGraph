@@ -9,7 +9,7 @@ import { Close } from '@element-plus/icons-vue'
 import { Copy, Loader2, RefreshCw } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
-import { apiRequest } from '@/utils/apiClient'
+import { useCreateAdminOrganization } from '@/composables/queries'
 import {
   generateInvitationCode,
   isValidInvitationCode,
@@ -28,6 +28,7 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const notify = useNotifications()
+const createOrganization = useCreateAdminOrganization()
 
 const isVisible = computed({
   get: () => props.modelValue,
@@ -92,21 +93,13 @@ async function submitCreate() {
     if (inviteRaw) {
       payload.invitation_code = inviteRaw.toUpperCase()
     }
-    const res = await apiRequest('/api/auth/admin/organizations', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || t('admin.schoolCreateFailed'))
-      return
-    }
-    const data = (await res.json()) as { invitation_code?: string }
+    const data = (await createOrganization.mutateAsync(payload)) as { invitation_code?: string }
     notify.success(t('notification.saved'))
     isVisible.value = false
     emit('created', { invitation_code: data.invitation_code })
-  } catch {
-    notify.error(t('admin.schoolCreateFailed'))
+  } catch (err) {
+    const message = err instanceof Error ? err.message : t('admin.schoolCreateFailed')
+    notify.error(message)
   } finally {
     isSubmitting.value = false
   }

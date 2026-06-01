@@ -10,7 +10,13 @@ import type {
   MindbotConfigRow,
 } from '@/components/admin/mindbotConfigTypes'
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
-import { apiRequest } from '@/utils/apiClient'
+import {
+  fetchAllAdminMindbotConfigs,
+  useCreateAdminMindbotConfig,
+  useDeleteAdminMindbotConfig,
+  useRotateAdminMindbotCallbackToken,
+  useUpdateAdminMindbotConfig,
+} from '@/composables/queries'
 import { httpErrorDetail } from '@/utils/httpErrorDetail'
 
 export const MINDBOT_BOT_CAP = 5
@@ -41,29 +47,7 @@ export type MindbotConfigsFetchResult = {
 }
 
 export async function fetchAllMindbotConfigs(): Promise<MindbotConfigsFetchResult> {
-  const pageSize = 200
-  const all: MindbotConfigRow[] = []
-  let afterId: number | null = null
-  for (;;) {
-    const url =
-      afterId == null
-        ? `/api/mindbot/admin/configs?limit=${pageSize}`
-        : `/api/mindbot/admin/configs?limit=${pageSize}&after_id=${afterId}`
-    const res = await apiRequest(url)
-    if (res.status === 404) {
-      return { configs: [], featureDisabled: true }
-    }
-    if (!res.ok) {
-      throw new Error('configs_fetch_failed')
-    }
-    const page = (await res.json()) as MindbotConfigRow[]
-    all.push(...page)
-    if (page.length < pageSize) {
-      break
-    }
-    afterId = page[page.length - 1].id
-  }
-  return { configs: all, featureDisabled: false }
+  return fetchAllAdminMindbotConfigs()
 }
 
 export function fillMindbotFormFromRow(row: MindbotConfigRow): MindbotConfigFormState {
@@ -125,6 +109,11 @@ export function useAdminMindBotConfig(options?: {
   const featureDisabled = ref(false)
   let loadConfigsPromise: Promise<void> | null = null
   let configsHydrated = false
+
+  const createConfigMutation = useCreateAdminMindbotConfig()
+  const updateConfigMutation = useUpdateAdminMindbotConfig()
+  const rotateTokenMutation = useRotateAdminMindbotCallbackToken()
+  const deleteConfigMutation = useDeleteAdminMindbotConfig()
 
   const apiMindbotBase = computed(() => {
     const origin = publicSiteUrl.value.replace(/\/$/, '')
@@ -292,23 +281,17 @@ export function useAdminMindBotConfig(options?: {
     }
     saving.value = true
     try {
-      const res = await apiRequest('/api/mindbot/admin/configs', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        const detail = httpErrorDetail(data)
-        notify.error(detail || t('admin.mindbot.saveError'))
-        return false
-      }
-      const saved = (await res.json()) as MindbotConfigRow
+      const saved = await createConfigMutation.mutateAsync(payload)
       notify.success(t('admin.mindbot.saved'))
       await loadConfigs(true)
       const row = configs.value.find((item) => item.id === saved.id) ?? saved
       fillForm(row)
       dialogMode.value = 'edit'
       return true
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : ''
+      notify.error(detail || t('admin.mindbot.saveError'))
+      return false
     } finally {
       saving.value = false
     }
@@ -327,23 +310,17 @@ export function useAdminMindBotConfig(options?: {
     }
     saving.value = true
     try {
-      const res = await apiRequest(`/api/mindbot/admin/configs/${configId}`, {
-        method: 'PUT',
-        body: JSON.stringify(payload),
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        const detail = httpErrorDetail(data)
-        notify.error(detail || t('admin.mindbot.saveError'))
-        return false
-      }
-      const saved = (await res.json()) as MindbotConfigRow
+      const saved = await updateConfigMutation.mutateAsync({ configId, body: payload })
       notify.success(t('admin.mindbot.saved'))
       await loadConfigs(true)
       const row = configs.value.find((item) => item.id === saved.id) ?? saved
       fillForm(row)
       dialogMode.value = 'edit'
       return true
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : ''
+      notify.error(detail || t('admin.mindbot.saveError'))
+      return false
     } finally {
       saving.value = false
     }
@@ -378,20 +355,15 @@ export function useAdminMindBotConfig(options?: {
     }
     rotating.value = true
     try {
-      const res = await apiRequest(`/api/mindbot/admin/configs/${configId}/rotate-callback-token`, {
-        method: 'POST',
-      })
-      if (!res.ok) {
-        notify.error(t('admin.mindbot.loadError'))
-        return
-      }
-      const row = (await res.json()) as MindbotConfigRow
+      const row = await rotateTokenMutation.mutateAsync(configId)
       const idx = configs.value.findIndex((item) => item.id === configId)
       if (idx >= 0) {
-        configs.value[idx] = row
+        configs.value[idx] = row as unknown as MindbotConfigRow
       }
-      fillForm(row)
+      fillForm(row as unknown as MindbotConfigRow)
       notify.success(t('admin.mindbot.callbackRotated'))
+    } catch {
+      notify.error(t('admin.mindbot.loadError'))
     } finally {
       rotating.value = false
     }
@@ -413,18 +385,16 @@ export function useAdminMindBotConfig(options?: {
     } catch {
       return false
     }
-    const res = await apiRequest(`/api/mindbot/admin/configs/${row.id}`, {
-      method: 'DELETE',
-    })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      const detail = httpErrorDetail(data)
+    try {
+      await deleteConfigMutation.mutateAsync(row.id)
+      notify.success(t('admin.mindbot.deleted'))
+      await loadConfigs(true)
+      return true
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : httpErrorDetail({})
       notify.error(detail || t('admin.mindbot.deleteError'))
       return false
     }
-    notify.success(t('admin.mindbot.deleted'))
-    await loadConfigs(true)
-    return true
   }
 
   async function copyUrl(text: string): Promise<void> {

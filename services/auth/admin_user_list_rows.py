@@ -13,8 +13,13 @@ from models.domain.auth import Organization, User
 from models.domain.diagrams import Diagram
 from models.domain.markets import MarketEntitlement, MarketSubscription
 from routers.auth.helpers import utc_to_beijing_iso
-from services.redis.cache._redis_diagram_cache_helpers import MAX_PER_USER
+from utils.auth.org_subscription import effective_school_tier_for_org
 from utils.auth.role_constants import normalize_role
+from utils.auth.school_tier import (
+    is_unlimited_diagram_limit,
+    max_diagrams_for_tier,
+    SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED,
+)
 
 _ACTIVE_SUBSCRIPTION_STATUSES = ("pending", "active", "past_due")
 
@@ -46,12 +51,28 @@ def _mask_phone(phone: Optional[str]) -> Optional[str]:
     return phone
 
 
-def diagram_quota_from_count(diagram_count: int) -> dict[str, int]:
+def _max_diagrams_for_user(user: User, org: Optional[Organization]) -> int:
+    if org is None:
+        return SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED
+    tier = effective_school_tier_for_org(org)
+    return max_diagrams_for_tier(tier)
+
+
+def diagram_quota_from_count(
+    diagram_count: int,
+    max_diagrams: int = SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED,
+) -> dict[str, int]:
     """Diagram slot usage for one user (admin detail / list enrichment)."""
-    remaining = max(0, MAX_PER_USER - diagram_count)
+    if is_unlimited_diagram_limit(max_diagrams):
+        return {
+            "diagram_count": diagram_count,
+            "diagram_quota_max": SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED,
+            "diagram_remaining": SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED,
+        }
+    remaining = max(0, max_diagrams - diagram_count)
     return {
         "diagram_count": diagram_count,
-        "diagram_quota_max": MAX_PER_USER,
+        "diagram_quota_max": max_diagrams,
         "diagram_remaining": remaining,
     }
 
@@ -67,7 +88,7 @@ def build_admin_user_detail_payload(
     diagram_count: int,
 ) -> dict[str, Any]:
     """Serialize one user for admin edit modal (full phone/email, quota fields)."""
-    quota = diagram_quota_from_count(diagram_count)
+    quota = diagram_quota_from_count(diagram_count, _max_diagrams_for_user(user, org))
     return {
         "id": user.id,
         "phone": user.phone,
@@ -160,7 +181,11 @@ def build_admin_user_list_row(
     paid_benefit: dict[str, Any],
 ) -> dict[str, Any]:
     """Serialize one user for admin user-management tables."""
-    remaining = max(0, MAX_PER_USER - diagram_count)
+    max_diagrams = _max_diagrams_for_user(user, org)
+    if is_unlimited_diagram_limit(max_diagrams):
+        remaining = SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED
+    else:
+        remaining = max(0, max_diagrams - diagram_count)
     effective_benefit = _resolve_paid_benefit(user, org, paid_benefit)
     permanent = bool(effective_benefit.get("permanent"))
     benefit_dt = effective_benefit.get("expires_at")
@@ -176,7 +201,7 @@ def build_admin_user_list_row(
         "created_at": utc_to_beijing_iso(user.created_at),
         "token_stats": token_stats,
         "diagram_count": diagram_count,
-        "diagram_quota_max": MAX_PER_USER,
+        "diagram_quota_max": max_diagrams,
         "diagram_remaining": remaining,
         "paid_benefit_permanent": permanent,
         "paid_benefit_expires_at": None if permanent else utc_to_beijing_iso(benefit_dt),

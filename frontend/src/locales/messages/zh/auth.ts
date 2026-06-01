@@ -17,7 +17,11 @@ export default {
   'auth.apiTokenButton': 'API令牌',
   'auth.downloadChromeExtension': 'Chrome 扩展',
   'auth.schoolTierFeatureUnavailable':
-    '当前学校版本不支持此功能，请升级至标准教研版或校本共建版',
+    '当前学校版本不支持此功能，请升级至标准教研版或校本共建版（基础教研版不含此功能）',
+  'auth.schoolSubscriptionExpiredDowngraded':
+    '学校订阅已到期，已自动切换为体验版。如需续订请联系平台管理员。',
+  'auth.diagramLimitReached':
+    '体验版每位教师最多保存 {max} 张导图，请删除后再保存。',
   'auth.downloadOpenclawSkill': 'OpenClaw 技能包',
   'auth.changePhoneButton': '更换手机',
   'auth.passwordChangeSuccess': '密码修改成功',

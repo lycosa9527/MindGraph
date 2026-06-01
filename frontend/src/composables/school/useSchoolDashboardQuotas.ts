@@ -4,6 +4,7 @@
 import { computed, type Ref } from 'vue'
 
 import { formatStorageBytes, formatStorageRemainingBytes } from '@/utils/formatStorageBytes'
+import { isManagerAssignmentUnavailable, isUnlimitedMemberLimit } from '@/constants/schoolTier'
 
 export interface SchoolDashboardQuotas {
   schoolTier: string
@@ -68,12 +69,18 @@ export function useSchoolDashboardQuotas(quotas: Ref<SchoolDashboardQuotas>) {
     formatStorageRemainingBytes(storageRemainingBytes.value, quotas.value.storageUsedBytes)
   )
 
-  const memberRemaining = computed(() =>
-    Math.max(0, quotas.value.memberLimit - quotas.value.memberCount)
-  )
-  const managerRemaining = computed(() =>
-    Math.max(0, quotas.value.managerLimit - quotas.value.managerCount)
-  )
+  const memberRemaining = computed(() => {
+    if (isUnlimitedMemberLimit(quotas.value.memberLimit)) {
+      return null
+    }
+    return Math.max(0, quotas.value.memberLimit - quotas.value.memberCount)
+  })
+  const managerRemaining = computed(() => {
+    if (isManagerAssignmentUnavailable(quotas.value.managerLimit)) {
+      return null
+    }
+    return Math.max(0, quotas.value.managerLimit - quotas.value.managerCount)
+  })
 
   return {
     storageUsedGb,

@@ -3,7 +3,7 @@
  * Admin Schools Tab - List organizations (Swiss panel)
  * Click school row to open chart + token cards modal
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { Edit, Loading } from '@element-plus/icons-vue'
 
@@ -14,14 +14,16 @@ import {
   resolveSchoolMindmateAvatarUrl,
 } from '@/composables/mindmate/useMindMateBranding'
 import '@/styles/admin-schools-swiss.css'
-import { apiRequest } from '@/utils/apiClient'
-import {
-  buildPrivatizedColumnFilters,
-  filterOrgByPrivatized,
-  isOrgPrivatized,
-} from '@/utils/orgPrivatization'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
+import { useAdminOrganizations } from '@/composables/queries'
+import { isOrgPrivatized } from '@/utils/orgPrivatization'
 
 import AdminTrendChartModal from './AdminTrendChartModal.vue'
+
+const SWISS_FILTER_POPPER = 'admin-swiss-school-filter-popper'
+
+type PrivatizedFilterValue = 'yes' | 'no' | ''
+type ColumnSortOrder = 'none' | 'asc' | 'desc'
 
 const props = withDefaults(
   defineProps<{
@@ -34,9 +36,173 @@ const props = withDefaults(
 
 const { t } = useLanguage()
 const notify = useNotifications()
+const { on: onAdminEvent } = useAdminEventBus('AdminSchoolsTab')
 
-const isLoading = ref(true)
-const schools = ref<Record<string, unknown>[]>([])
+const organizationsQuery = useAdminOrganizations()
+
+const isLoading = computed(() => organizationsQuery.isFetching.value)
+const schools = computed(
+  () => (organizationsQuery.data.value ?? []) as unknown as Record<string, unknown>[]
+)
+const privatizedFilter = ref<PrivatizedFilterValue>('')
+const tokenSortOrder = ref<ColumnSortOrder>('none')
+const expiresAtSortOrder = ref<ColumnSortOrder>('none')
+const userCountSortOrder = ref<ColumnSortOrder>('none')
+const managerCountSortOrder = ref<ColumnSortOrder>('none')
+
+const columnSortOrders = [
+  tokenSortOrder,
+  expiresAtSortOrder,
+  userCountSortOrder,
+  managerCountSortOrder,
+] as const
+
+const privatizedFilterOptions = computed(() => [
+  { value: '' as const, label: t('common.all') as string },
+  { value: 'yes' as const, label: t('admin.orgPrivateDifyYes') as string },
+  { value: 'no' as const, label: t('admin.orgPrivateDifyNo') as string },
+])
+
+function tokenTotal(row: Record<string, unknown>): number {
+  const stats = row.token_stats as { total_tokens?: number } | undefined
+  return stats?.total_tokens ?? 0
+}
+
+function userCountTotal(row: Record<string, unknown>): number {
+  const count = row.user_count
+  return typeof count === 'number' ? count : 0
+}
+
+function managerCountTotal(row: Record<string, unknown>): number {
+  const count = row.manager_count
+  return typeof count === 'number' ? count : 0
+}
+
+function expiresAtDatePart(iso: string | null | undefined): string | null {
+  if (!iso) {
+    return null
+  }
+  const match = iso.match(/^(\d{4}-\d{2}-\d{2})/)
+  return match ? match[1] : null
+}
+
+function expiresAtSortKey(row: Record<string, unknown>): number | null {
+  const datePart = expiresAtDatePart(row.expires_at as string | null | undefined)
+  if (!datePart) {
+    return null
+  }
+  return new Date(`${datePart}T00:00:00+08:00`).getTime()
+}
+
+function expiresAtLabel(row: Record<string, unknown>): string {
+  const datePart = expiresAtDatePart(row.expires_at as string | null | undefined)
+  if (!datePart) {
+    return t('admin.noExpiration') as string
+  }
+  return datePart
+}
+
+function compareExpiresAt(
+  a: Record<string, unknown>,
+  b: Record<string, unknown>,
+  ascending: boolean
+): number {
+  const left = expiresAtSortKey(a)
+  const right = expiresAtSortKey(b)
+  if (left == null && right == null) {
+    return 0
+  }
+  if (left == null) {
+    return 1
+  }
+  if (right == null) {
+    return -1
+  }
+  return ascending ? left - right : right - left
+}
+
+function sortTriangle(order: Exclude<ColumnSortOrder, 'none'>): string {
+  return order === 'asc' ? '▲' : '▼'
+}
+
+function sortAriaValue(order: ColumnSortOrder): 'none' | 'ascending' | 'descending' {
+  if (order === 'asc') {
+    return 'ascending'
+  }
+  if (order === 'desc') {
+    return 'descending'
+  }
+  return 'none'
+}
+
+const tokenSortAriaSort = computed(() => sortAriaValue(tokenSortOrder.value))
+const expiresAtSortAriaSort = computed(() => sortAriaValue(expiresAtSortOrder.value))
+const userCountSortAriaSort = computed(() => sortAriaValue(userCountSortOrder.value))
+const managerCountSortAriaSort = computed(() => sortAriaValue(managerCountSortOrder.value))
+
+const displayedSchools = computed(() => {
+  let list = [...schools.value]
+  if (privatizedFilter.value === 'yes') {
+    list = list.filter((row) => isOrgPrivatized(row))
+  } else if (privatizedFilter.value === 'no') {
+    list = list.filter((row) => !isOrgPrivatized(row))
+  }
+  if (tokenSortOrder.value === 'asc') {
+    list.sort((a, b) => tokenTotal(a) - tokenTotal(b))
+  } else if (tokenSortOrder.value === 'desc') {
+    list.sort((a, b) => tokenTotal(b) - tokenTotal(a))
+  } else if (expiresAtSortOrder.value === 'asc') {
+    list.sort((a, b) => compareExpiresAt(a, b, true))
+  } else if (expiresAtSortOrder.value === 'desc') {
+    list.sort((a, b) => compareExpiresAt(a, b, false))
+  } else if (userCountSortOrder.value === 'asc') {
+    list.sort((a, b) => userCountTotal(a) - userCountTotal(b))
+  } else if (userCountSortOrder.value === 'desc') {
+    list.sort((a, b) => userCountTotal(b) - userCountTotal(a))
+  } else if (managerCountSortOrder.value === 'asc') {
+    list.sort((a, b) => managerCountTotal(a) - managerCountTotal(b))
+  } else if (managerCountSortOrder.value === 'desc') {
+    list.sort((a, b) => managerCountTotal(b) - managerCountTotal(a))
+  }
+  return list
+})
+
+function cycleColumnSort(active: (typeof columnSortOrders)[number]): void {
+  if (active.value === 'none') {
+    active.value = 'desc'
+    columnSortOrders.forEach((order) => {
+      if (order !== active) {
+        order.value = 'none'
+      }
+    })
+    return
+  }
+  if (active.value === 'desc') {
+    active.value = 'asc'
+    return
+  }
+  active.value = 'none'
+}
+
+function setPrivatizedFilter(value: PrivatizedFilterValue): void {
+  privatizedFilter.value = value
+}
+
+function cycleTokenSort(): void {
+  cycleColumnSort(tokenSortOrder)
+}
+
+function cycleExpiresAtSort(): void {
+  cycleColumnSort(expiresAtSortOrder)
+}
+
+function cycleUserCountSort(): void {
+  cycleColumnSort(userCountSortOrder)
+}
+
+function cycleManagerCountSort(): void {
+  cycleColumnSort(managerCountSortOrder)
+}
 const trendModalVisible = ref(false)
 const trendOrg = ref<{
   name: string
@@ -76,13 +242,6 @@ function onAgentAvatarError(event: Event) {
     img.src = mindmateAvatarMd
   }
 }
-
-const privatizedColumnFilters = computed(() =>
-  buildPrivatizedColumnFilters(
-    t('admin.orgPrivateDifyYes') as string,
-    t('admin.orgPrivateDifyNo') as string
-  )
-)
 
 function orgShowChainOfThought(row: Record<string, unknown>): boolean {
   return Boolean(
@@ -149,30 +308,20 @@ function syncTrendOrgFromSchools() {
   }
 }
 
-async function loadSchools(options?: { silent?: boolean }) {
-  const silent = options?.silent === true
-  if (!silent) {
-    isLoading.value = true
-  }
+async function loadSchools(options?: { silent?: boolean }): Promise<void> {
   try {
-    const res = await apiRequest('/api/auth/admin/organizations')
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || t('admin.schoolsLoadError'))
-      return
-    }
-    schools.value = await res.json()
+    await organizationsQuery.refetch()
     syncTrendOrgFromSchools()
   } catch {
     notify.error(t('admin.schoolsLoadError'))
-  } finally {
-    if (!silent) {
-      isLoading.value = false
-    }
   }
 }
 
-onMounted(loadSchools)
+onAdminEvent('admin:refresh_requested', ({ domain }) => {
+  if (domain === 'organizations' || domain === 'all') {
+    void loadSchools({ silent: true })
+  }
+})
 </script>
 
 <template>
@@ -195,7 +344,7 @@ onMounted(loadSchools)
 
       <el-table
         v-else
-        :data="schools"
+        :data="displayedSchools"
         row-key="id"
         class="admin-schools-table w-full"
         :empty-text="t('admin.noData')"
@@ -211,13 +360,37 @@ onMounted(loadSchools)
         />
         <el-table-column
           column-key="is_privatized"
-          :label="t('admin.orgPrivateDify')"
           min-width="96"
           align="center"
-          :filters="privatizedColumnFilters"
-          :filter-method="filterOrgByPrivatized"
-          filter-placement="bottom-end"
+          header-align="center"
         >
+          <template #header>
+            <el-dropdown
+              trigger="click"
+              :popper-class="SWISS_FILTER_POPPER"
+              @command="setPrivatizedFilter"
+            >
+              <button
+                type="button"
+                class="admin-schools-col-header-trigger"
+                :class="{ 'admin-schools-col-header-trigger--active': privatizedFilter !== '' }"
+              >
+                {{ t('admin.orgPrivateDify') }}
+              </button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item
+                    v-for="opt in privatizedFilterOptions"
+                    :key="opt.value || 'all'"
+                    :command="opt.value"
+                    :class="{ 'is-selected': privatizedFilter === opt.value }"
+                  >
+                    {{ opt.label }}
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </template>
           <template #default="{ row }">
             <span
               class="admin-schools-private"
@@ -239,6 +412,8 @@ onMounted(loadSchools)
           prop="mindmate_agent_name"
           :label="t('admin.schoolMindmateAgentName')"
           min-width="112"
+          align="center"
+          header-align="center"
           show-overflow-tooltip
           class-name="admin-schools-col-text"
         >
@@ -250,6 +425,7 @@ onMounted(loadSchools)
           :label="t('admin.orgAgentAvatar')"
           min-width="64"
           align="center"
+          header-align="center"
         >
           <template #default="{ row }">
             <img
@@ -263,17 +439,35 @@ onMounted(loadSchools)
           </template>
         </el-table-column>
         <el-table-column
-          :label="t('admin.tokensUsed')"
-          min-width="96"
-          align="right"
+          min-width="108"
+          align="center"
+          header-align="center"
         >
+          <template #header>
+            <button
+              type="button"
+              class="admin-schools-col-header-trigger admin-schools-sort-header"
+              :class="{ 'admin-schools-col-header-trigger--active': tokenSortOrder !== 'none' }"
+              :aria-sort="tokenSortAriaSort"
+              @click="cycleTokenSort"
+            >
+              <span>{{ t('admin.tokensUsed') }}</span>
+              <span
+                v-if="tokenSortOrder !== 'none'"
+                class="admin-schools-sort-header__dir"
+                aria-hidden="true"
+              >
+                {{ sortTriangle(tokenSortOrder) }}
+              </span>
+            </button>
+          </template>
           <template #default="{ row }">
             <button
               type="button"
               class="admin-schools-link tabular-nums"
               @click="openTrendModal(row, 'usage')"
             >
-              {{ formatNumber((row.token_stats?.total_tokens as number) ?? 0) }}
+              {{ formatNumber(tokenTotal(row)) }}
             </button>
           </template>
         </el-table-column>
@@ -281,6 +475,7 @@ onMounted(loadSchools)
           :label="t('admin.status')"
           min-width="80"
           align="center"
+          header-align="center"
         >
           <template #default="{ row }">
             <span
@@ -292,23 +487,97 @@ onMounted(loadSchools)
           </template>
         </el-table-column>
         <el-table-column
-          prop="user_count"
-          :label="t('admin.usersCount')"
-          min-width="72"
-          align="right"
+          min-width="108"
+          align="center"
+          header-align="center"
         >
+          <template #header>
+            <button
+              type="button"
+              class="admin-schools-col-header-trigger admin-schools-sort-header"
+              :class="{
+                'admin-schools-col-header-trigger--active': expiresAtSortOrder !== 'none',
+              }"
+              :aria-sort="expiresAtSortAriaSort"
+              @click="cycleExpiresAtSort"
+            >
+              <span>{{ t('admin.expirationDate') }}</span>
+              <span
+                v-if="expiresAtSortOrder !== 'none'"
+                class="admin-schools-sort-header__dir"
+                aria-hidden="true"
+              >
+                {{ sortTriangle(expiresAtSortOrder) }}
+              </span>
+            </button>
+          </template>
           <template #default="{ row }">
-            <span class="tabular-nums text-stone-700">{{ row.user_count ?? 0 }}</span>
+            <span
+              class="tabular-nums"
+              :class="
+                expiresAtDatePart(row.expires_at as string | null | undefined)
+                  ? 'text-stone-700'
+                  : 'text-stone-400'
+              "
+            >
+              {{ expiresAtLabel(row) }}
+            </span>
           </template>
         </el-table-column>
         <el-table-column
-          prop="manager_count"
-          :label="t('admin.managerCount')"
-          min-width="80"
-          align="right"
+          min-width="72"
+          align="center"
+          header-align="center"
         >
+          <template #header>
+            <button
+              type="button"
+              class="admin-schools-col-header-trigger admin-schools-sort-header"
+              :class="{ 'admin-schools-col-header-trigger--active': userCountSortOrder !== 'none' }"
+              :aria-sort="userCountSortAriaSort"
+              @click="cycleUserCountSort"
+            >
+              <span>{{ t('admin.usersCount') }}</span>
+              <span
+                v-if="userCountSortOrder !== 'none'"
+                class="admin-schools-sort-header__dir"
+                aria-hidden="true"
+              >
+                {{ sortTriangle(userCountSortOrder) }}
+              </span>
+            </button>
+          </template>
           <template #default="{ row }">
-            <span class="tabular-nums text-stone-700">{{ row.manager_count ?? 0 }}</span>
+            <span class="tabular-nums text-stone-700">{{ userCountTotal(row) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          min-width="80"
+          align="center"
+          header-align="center"
+        >
+          <template #header>
+            <button
+              type="button"
+              class="admin-schools-col-header-trigger admin-schools-sort-header"
+              :class="{
+                'admin-schools-col-header-trigger--active': managerCountSortOrder !== 'none',
+              }"
+              :aria-sort="managerCountSortAriaSort"
+              @click="cycleManagerCountSort"
+            >
+              <span>{{ t('admin.managerCount') }}</span>
+              <span
+                v-if="managerCountSortOrder !== 'none'"
+                class="admin-schools-sort-header__dir"
+                aria-hidden="true"
+              >
+                {{ sortTriangle(managerCountSortOrder) }}
+              </span>
+            </button>
+          </template>
+          <template #default="{ row }">
+            <span class="tabular-nums text-stone-700">{{ managerCountTotal(row) }}</span>
           </template>
         </el-table-column>
         <el-table-column
@@ -316,6 +585,7 @@ onMounted(loadSchools)
           min-width="96"
           fixed="right"
           align="center"
+          header-align="center"
         >
           <template #default="{ row }">
             <el-button

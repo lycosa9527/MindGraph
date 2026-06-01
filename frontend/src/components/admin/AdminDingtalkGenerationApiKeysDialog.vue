@@ -3,7 +3,7 @@
  * Admin dialog: list / create / delete integration API keys
  * (X-API-Key for /api/generate_dingtalk and other public API routes).
  */
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { ElMessageBox } from 'element-plus'
 
@@ -13,12 +13,20 @@ import { useLanguage, useNotifications } from '@/composables'
 import '@/styles/admin-mindbot-swiss-api-keys.css'
 import '@/styles/admin-mindbot-swiss-dialog-chrome.css'
 import '@/styles/admin-mindbot-swiss-messagebox.css'
-import { apiRequest } from '@/utils/apiClient'
+import {
+  useAdminApiKeys,
+  useCreateAdminApiKey,
+  useDeleteAdminApiKey,
+} from '@/composables/queries'
 
 const modelValue = defineModel<boolean>({ default: false })
 
 const { t } = useLanguage()
 const notify = useNotifications()
+
+const apiKeysQuery = useAdminApiKeys({ enabled: computed(() => modelValue.value) })
+const createApiKey = useCreateAdminApiKey()
+const deleteApiKey = useDeleteAdminApiKey()
 
 interface TokenStats {
   input_tokens: number
@@ -40,8 +48,8 @@ interface AdminApiKeyRow {
   token_stats: TokenStats
 }
 
-const listLoading = ref(false)
-const rows = ref<AdminApiKeyRow[]>([])
+const listLoading = computed(() => apiKeysQuery.isFetching.value)
+const rows = computed(() => (apiKeysQuery.data.value ?? []) as AdminApiKeyRow[])
 
 const createOpen = ref(false)
 const createSubmitting = ref(false)
@@ -61,20 +69,7 @@ function resetCreateForm(): void {
 }
 
 async function loadList(): Promise<void> {
-  listLoading.value = true
-  try {
-    const res = await apiRequest('/api/auth/admin/api_keys')
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data as { detail?: string }).detail || t('admin.apiKeysLoadError'))
-      return
-    }
-    rows.value = (await res.json()) as AdminApiKeyRow[]
-  } catch {
-    notify.error(t('admin.apiKeysLoadError'))
-  } finally {
-    listLoading.value = false
-  }
+  await apiKeysQuery.refetch()
 }
 
 watch(modelValue, (v) => {
@@ -113,15 +108,7 @@ async function submitCreate(): Promise<void> {
     const d = parseOptionalInt(createExpiresDays.value)
     if (d !== null) body.expires_days = d
 
-    const res = await apiRequest('/api/auth/admin/api_keys', {
-      method: 'POST',
-      body: JSON.stringify(body),
-    })
-    const data = await res.json().catch(() => ({}))
-    if (!res.ok) {
-      notify.error((data as { detail?: string }).detail || t('admin.apiKeysLoadError'))
-      return
-    }
+    const data = await createApiKey.mutateAsync(body)
     newKeyPlaintext.value = (data as { key?: string }).key ?? null
     createOpen.value = false
     resetCreateForm()
@@ -131,8 +118,9 @@ async function submitCreate(): Promise<void> {
     } else {
       notify.success(t('admin.apiKeysCreateSuccess'))
     }
-  } catch {
-    notify.error(t('admin.apiKeysLoadError'))
+  } catch (err) {
+    const message = err instanceof Error ? err.message : t('admin.apiKeysLoadError')
+    notify.error(message)
   } finally {
     createSubmitting.value = false
   }
@@ -156,14 +144,14 @@ async function confirmDelete(row: AdminApiKeyRow): Promise<void> {
   } catch {
     return
   }
-  const res = await apiRequest(`/api/auth/admin/api_keys/${row.id}`, { method: 'DELETE' })
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}))
-    notify.error((data as { detail?: string }).detail || t('admin.apiKeysLoadError'))
-    return
+  try {
+    await deleteApiKey.mutateAsync(row.id)
+    await loadList()
+    notify.success(t('admin.apiKeysDeleteSuccess'))
+  } catch (err) {
+    const message = err instanceof Error ? err.message : t('admin.apiKeysLoadError')
+    notify.error(message)
   }
-  await loadList()
-  notify.success(t('admin.apiKeysDeleteSuccess'))
 }
 
 async function copyToClipboard(value: string): Promise<void> {

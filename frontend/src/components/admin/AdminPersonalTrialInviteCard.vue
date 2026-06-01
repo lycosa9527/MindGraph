@@ -1,45 +1,27 @@
 <script setup lang="ts">
 /**
- * Personal trial (C2C) invite — share registration message for expert / platform BD.
+ * Personal trial (C2C) invite — share registration message for expert / operations.
  */
-import { onMounted, ref } from 'vue'
+import { computed } from 'vue'
 
 import { DocumentCopy, Loading } from '@element-plus/icons-vue'
 
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
-import { apiRequest } from '@/utils/apiClient'
+import { useAdminPersonalTrialInvite } from '@/composables/queries'
 
 const { t } = useLanguage()
 const notify = useNotifications()
 const { publicSiteUrl } = usePublicSiteUrl()
 
-const isLoading = ref(true)
-const configured = ref(false)
-const missing = ref(false)
-const invitationCode = ref('')
+const inviteQuery = useAdminPersonalTrialInvite()
 
-async function loadInvite(): Promise<void> {
-  isLoading.value = true
-  try {
-    const res = await apiRequest('/api/auth/admin/invites/personal-trial')
-    if (!res.ok) {
-      configured.value = false
-      return
-    }
-    const data = (await res.json()) as {
-      configured?: boolean
-      missing?: boolean
-      invitation_code?: string
-    }
-    configured.value = Boolean(data.configured)
-    missing.value = Boolean(data.missing)
-    invitationCode.value = String(data.invitation_code ?? '').trim()
-  } catch {
-    configured.value = false
-  } finally {
-    isLoading.value = false
-  }
-}
+const isLoading = computed(() => inviteQuery.isFetching.value)
+
+const configured = computed(() => Boolean(inviteQuery.data.value?.configured))
+const missing = computed(() => Boolean(inviteQuery.data.value?.missing))
+const invitationCode = computed(() =>
+  String(inviteQuery.data.value?.invitation_code ?? '').trim()
+)
 
 async function copyShareMessage(): Promise<void> {
   if (!invitationCode.value) {
@@ -56,10 +38,6 @@ async function copyShareMessage(): Promise<void> {
     notify.error(t('notification.copyFailed'))
   }
 }
-
-onMounted(() => {
-  void loadInvite()
-})
 </script>
 
 <template>

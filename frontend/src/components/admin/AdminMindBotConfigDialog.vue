@@ -14,7 +14,7 @@ import type {
   OrgOption,
 } from '@/components/admin/mindbotConfigTypes'
 import { useLanguage, useNotifications } from '@/composables'
-import { apiRequest } from '@/utils/apiClient'
+import { useAdminMindbotStreamingStatus } from '@/composables/queries'
 
 const visible = defineModel<boolean>({ required: true })
 const form = defineModel<MindbotConfigFormState>('form', { required: true })
@@ -52,6 +52,13 @@ const notify = useNotifications()
 const dialogTab = ref<'dingtalk' | 'dify' | 'log' | 'monitor'>('dingtalk')
 const aiCardStreamCheckLoading = ref(false)
 const aiCardStreamMessage = ref<{ ok: boolean; text: string } | null>(null)
+const streamingStatusQueryString = ref('')
+
+const streamingStatusQuery = useAdminMindbotStreamingStatus(
+  computed(() => props.editingOrgRow?.id),
+  streamingStatusQueryString,
+  { enabled: false }
+)
 
 /** Effective OpenAPI app key: form overrides saved row. */
 const effectiveDingtalkClientId = computed(() => {
@@ -153,22 +160,21 @@ async function checkAiCardStreaming(): Promise<void> {
       params.set('dingtalk_client_id', cid)
     }
     const q = params.toString() ? `?${params.toString()}` : ''
-    const res = await apiRequest(
-      `/api/mindbot/admin/configs/${configId}/ai-card-streaming-status${q}`
-    )
-    const data = (await res.json()) as {
+    streamingStatusQueryString.value = q
+    const result = await streamingStatusQuery.refetch()
+    if (result.error) {
+      const detail = result.error instanceof Error ? result.error.message : ''
+      const errText = detail || t('admin.mindbot.dingtalkAiCardStreamFail')
+      notify.error(errText)
+      aiCardStreamMessage.value = { ok: false, text: errText }
+      return
+    }
+    const data = (result.data ?? {}) as {
       ok?: boolean
       error?: string
       detail?: string
       friendly_message?: string
       dingtalk_code?: string
-    }
-    if (!res.ok) {
-      const detail = typeof data.detail === 'string' ? data.detail : ''
-      const errText = detail || t('admin.mindbot.dingtalkAiCardStreamFail')
-      notify.error(errText)
-      aiCardStreamMessage.value = { ok: false, text: errText }
-      return
     }
     if (data.ok) {
       notify.success(t('admin.mindbot.dingtalkAiCardStreamOk'))

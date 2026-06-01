@@ -13,15 +13,17 @@ import { useAdminRoleControl } from '@/composables/admin/useAdminRoleControl'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import {
   isRoleControlTab,
-  registerAdminRolesHeaderToolbar,
   ROLE_CONTROL_TABS,
-  unregisterAdminRolesHeaderToolbar,
-} from '@/composables/admin/useAdminRolesHeaderToolbar'
+} from '@/composables/admin/adminRoleControlNav'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
+import { useAdminPanelStore } from '@/stores'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useLanguage()
 const { canEditTab } = useAdminAccess()
+const adminPanel = useAdminPanelStore()
+const { on: onAdminEvent } = useAdminEventBus('AdminRolesTab')
 
 const {
   activeTab,
@@ -74,6 +76,26 @@ watch(
 
 watch(activeTab, (tab) => {
   syncRoleTabToRoute(tab)
+  adminPanel.patchRolesToolbar({ activeRoleTab: tab })
+})
+
+watch(canEdit, (value) => {
+  adminPanel.patchRolesToolbar({ canEdit: value })
+})
+
+watch(isLoading, (value) => {
+  adminPanel.patchRolesToolbar({ isRefreshing: value })
+})
+
+onAdminEvent('admin:toolbar_action', (payload) => {
+  if (payload.tab !== 'settings') {
+    return
+  }
+  if (payload.action === 'roles_refresh') {
+    void loadActiveTab()
+  } else if (payload.action === 'roles_open_add') {
+    openAddModal()
+  }
 })
 
 onMounted(() => {
@@ -84,18 +106,16 @@ onMounted(() => {
     void loadActiveTab()
   }
 
-  registerAdminRolesHeaderToolbar({
-    activeRoleTab: activeTab,
-    canEdit,
-    isRefreshing: isLoading,
-    refresh: loadActiveTab,
-    openAddModal,
+  adminPanel.setRolesToolbar({
+    activeRoleTab: activeTab.value,
+    canEdit: canEdit.value,
+    isRefreshing: isLoading.value,
   })
   syncRoleTabToRoute(activeTab.value)
 })
 
 onUnmounted(() => {
-  unregisterAdminRolesHeaderToolbar()
+  adminPanel.clearRolesToolbar()
 })
 </script>
 

@@ -11,9 +11,6 @@ import {
   isDataCenterView,
 } from '@/composables/admin/adminDataCenterViews'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
-import { useAdminOrganizationsList } from '@/composables/admin/useAdminOrganizationsList'
-import { useAdminRolesHeaderToolbarModel } from '@/composables/admin/useAdminRolesHeaderToolbar'
-import { useAdminUsersHeaderToolbarModel } from '@/composables/admin/useAdminUsersHeaderToolbar'
 import {
   defaultFeatureDevSubtab,
   resolveFeatureDevSubtab,
@@ -26,7 +23,8 @@ import {
 } from '@/composables/admin/adminSettingsNav'
 import { useLanguage } from '@/composables'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
-import { useAuthStore } from '@/stores'
+import { useAdminOrganizations } from '@/composables/queries'
+import { useAdminPanelStore, useAuthStore } from '@/stores'
 import { userRoleLabel } from '@/utils/userRoleDisplay'
 
 export interface AdminHeaderBreadcrumbSegment {
@@ -41,29 +39,30 @@ export function useAdminHeaderBreadcrumb(options: {
 }) {
   const { t } = useLanguage()
   const authStore = useAuthStore()
+  const adminPanel = useAdminPanelStore()
   const { featureSmartResponse, featureTeacherUsage, featureKittyAgent } = useFeatureFlags()
-  const toolbarModel = useAdminUsersHeaderToolbarModel()
-  const rolesToolbarModel = useAdminRolesHeaderToolbarModel()
   const { effectiveOrgId, canViewSettingsSubtab } = useAdminAccess()
-  const { organizations, loadOrganizations } = useAdminOrganizationsList()
+  const orgsQuery = useAdminOrganizations({
+    enabled: computed(() => options.activeTab.value === 'users'),
+  })
+  const organizations = computed(() => orgsQuery.data.value ?? [])
 
   watch(
     () => options.activeTab.value,
     (tab) => {
       if (tab === 'users') {
-        void loadOrganizations()
+        void orgsQuery.refetch()
       }
     },
     { immediate: true }
   )
 
   const usersTabOrgId = computed((): number | null => {
-    const scoped = toolbarModel.value?.scopedOrgId?.value
+    const scoped = adminPanel.usersToolbar?.scopedOrgId
     if (scoped != null && Number.isFinite(scoped)) {
       return scoped
     }
-    const filterRef = toolbarModel.value?.orgFilter
-    const filterVal = filterRef?.value
+    const filterVal = adminPanel.usersToolbar?.orgFilter
     if (filterVal !== undefined && filterVal !== '') {
       return Number(filterVal)
     }
@@ -137,7 +136,7 @@ export function useAdminHeaderBreadcrumb(options: {
       const subtabLabel = subtabLabelKey ? t(subtabLabelKey) : null
       if (subtabLabel) {
         if (subtabName === 'roles') {
-          const activeRole = rolesToolbarModel.value?.activeRoleTab.value
+          const activeRole = adminPanel.rolesToolbar?.activeRoleTab
           const roleLabel = activeRole ? userRoleLabel(t, activeRole) : null
           if (roleLabel) {
             return [{ label: tabLabel }, { label: subtabLabel }, { label: roleLabel }]

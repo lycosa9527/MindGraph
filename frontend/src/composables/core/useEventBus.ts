@@ -545,6 +545,13 @@ export type EventTypes = {
   'multi_flow_map:topic_width_changed': { nodeId: string; width: number | null }
   'multi_flow_map:node_width_changed': { nodeId: string; width: number | null }
 
+  // Admin Panel Events
+  'admin:tab_activated': { tab: string; subtab?: string; view?: string }
+  'admin:org_selected': { orgId: number | null }
+  'admin:refresh_requested': { domain: string }
+  'admin:mutation_completed': { domain: string; entityId?: number | string }
+  'admin:toolbar_action': { action: string; tab: string; payload?: Record<string, unknown> }
+
   // Wildcard for any event (for debugging)
   '*': { event: string; data: unknown }
 }

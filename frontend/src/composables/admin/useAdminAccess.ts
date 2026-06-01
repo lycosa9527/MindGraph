@@ -30,6 +30,8 @@ import {
 
   canViewUsersTab,
 
+  isDataCenterTabReadOnly,
+
 } from '@/utils/adminCapabilities'
 
 import { useAuthStore } from '@/stores'
@@ -101,6 +103,12 @@ export function useAdminAccess() {
     if (tabKey === 'invites' && canEditTab('invites')) {
 
       return false
+
+    }
+
+    if (tabKey === 'data_center') {
+
+      return isDataCenterTabReadOnly(capabilities.value)
 
     }
 

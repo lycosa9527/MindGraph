@@ -3,7 +3,7 @@
  * Admin Dashboard Tab — stats from GET /api/auth/admin/stats.
  * School and user token rankings use today (Beijing time); stat cards open Chart.js trends.
  */
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
 import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
@@ -15,8 +15,21 @@ import { Connection, Document, Loading, TrendCharts, User } from '@element-plus/
 import type { Chart as ChartInstance } from 'chart.js'
 
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
+import {
+  queryErrorMessage,
+  useQueryErrorNotification,
+} from '@/composables/admin/useQueryErrorNotification'
+import { useScopedAbort } from '@/composables/core/useScopedAbort'
 import { useLanguage, useNotifications } from '@/composables'
-import { apiRequest } from '@/utils/apiClient'
+import {
+  fetchAdminStatsTrends,
+  fetchAdminStatsTrendsOrganization,
+  fetchAdminStatsTrendsUser,
+  fetchAdminTokenStats,
+  useAdminStats,
+  useAdminTokenStats,
+} from '@/composables/queries'
 import { type ChartConfiguration, type TooltipItem, loadChartJs } from '@/utils/lazyChartJs'
 
 const props = withDefaults(
@@ -36,6 +49,16 @@ const showTokenRankings = computed(() => showOperations.value || showUsageByServ
 const { t } = useLanguage()
 const notify = useNotifications()
 const { can } = useAdminAccess()
+const { on: onAdminEvent } = useAdminEventBus('AdminDashboardTab')
+
+const statsQuery = useAdminStats()
+const tokenStatsQuery = useAdminTokenStats(undefined, {
+  enabled: computed(() => showUsageByService.value),
+})
+const { beginRequest: beginTrendRequest, abort: abortTrendRequests } = useScopedAbort()
+
+useQueryErrorNotification(statsQuery.error, () => t('admin.dashboardLoadError'))
+useQueryErrorNotification(tokenStatsQuery.error, () => t('admin.dashboardLoadError'))
 
 interface TokenPeriodStats {
   input_tokens: number
@@ -64,7 +87,7 @@ interface PlatformTokenStats {
 
 type TokenTrendService = 'mindgraph' | 'mindmate' | null
 
-const isLoading = ref(true)
+const isLoading = computed(() => statsQuery.isFetching.value)
 const platformTokenStats = ref<PlatformTokenStats | null>(null)
 const showDingtalkOverview = computed(() => can('tab.settings.tokens'))
 const stats = ref({
@@ -147,78 +170,90 @@ function formatChartLabel(value: number): string {
   return String(value)
 }
 
+function applyStatsPayload(data: Record<string, unknown>): void {
+  stats.value = {
+    totalUsers: (data.total_users as number | undefined) ?? 0,
+    totalOrganizations: (data.total_organizations as number | undefined) ?? 0,
+    recentRegistrations: (data.recent_registrations as number | undefined) ?? 0,
+    totalTokens:
+      ((data.token_stats as { total_tokens?: number } | undefined)?.total_tokens) ?? 0,
+  }
+  tokenStatsByOrg.value = parseOrgTokenStats(
+    (data.token_stats_by_org ?? {}) as Record<string, unknown>
+  )
+  tokenStatsByOrgMindgraph.value = parseOrgTokenStats(
+    (data.token_stats_by_org_mindgraph ?? {}) as Record<string, unknown>
+  )
+  tokenStatsByOrgMindmate.value = parseOrgTokenStats(
+    (data.token_stats_by_org_mindmate ?? {}) as Record<string, unknown>
+  )
+  const rawTop = data.top_users_by_tokens_today as
+    | {
+        id?: number
+        name?: string
+        phone?: string
+        total_tokens?: number
+        organization_name?: string
+      }[]
+    | undefined
+  topUsersByTokens.value = (rawTop ?? []).map((u) => ({
+    id: Number(u.id) || 0,
+    name: String(u.name ?? ''),
+    phone: String(u.phone ?? ''),
+    total_tokens: Number(u.total_tokens ?? 0),
+    organization_name: String(u.organization_name ?? ''),
+  }))
+}
+
+watch(
+  () => statsQuery.data.value,
+  (data) => {
+    if (data) {
+      applyStatsPayload(data as Record<string, unknown>)
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => tokenStatsQuery.data.value,
+  (data) => {
+    if (!showUsageByService.value) {
+      platformTokenStats.value = null
+      return
+    }
+    platformTokenStats.value = (data as unknown as PlatformTokenStats | null) ?? null
+  },
+  { immediate: true }
+)
+
 async function loadPlatformTokenStats(): Promise<void> {
   if (!showUsageByService.value) {
     return
   }
   try {
-    const response = await apiRequest('/api/auth/admin/token-stats')
-    if (response.ok) {
-      platformTokenStats.value = await response.json()
-    }
+    await tokenStatsQuery.refetch()
+    platformTokenStats.value =
+      (tokenStatsQuery.data.value as unknown as PlatformTokenStats | null) ?? null
   } catch {
     platformTokenStats.value = null
   }
 }
 
 async function loadStats() {
-  isLoading.value = true
-  try {
-    const requests: [Promise<Response>, Promise<Response> | null] = [
-      apiRequest('/api/auth/admin/stats'),
-      showUsageByService.value ? apiRequest('/api/auth/admin/token-stats') : null,
-    ]
-    const [response, tokenResponse] = await Promise.all([
-      requests[0],
-      requests[1] ?? Promise.resolve(null),
-    ])
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}))
-      notify.error(data.detail || t('admin.dashboardLoadError'))
-      return
-    }
-    if (tokenResponse?.ok) {
-      platformTokenStats.value = await tokenResponse.json()
-    } else if (showUsageByService.value) {
-      platformTokenStats.value = null
-    }
-    const data = await response.json()
-    stats.value = {
-      totalUsers: data.total_users ?? 0,
-      totalOrganizations: data.total_organizations ?? 0,
-      recentRegistrations: data.recent_registrations ?? 0,
-      totalTokens: data.token_stats?.total_tokens ?? 0,
-    }
-    tokenStatsByOrg.value = parseOrgTokenStats(
-      (data.token_stats_by_org ?? {}) as Record<string, unknown>
-    )
-    tokenStatsByOrgMindgraph.value = parseOrgTokenStats(
-      (data.token_stats_by_org_mindgraph ?? {}) as Record<string, unknown>
-    )
-    tokenStatsByOrgMindmate.value = parseOrgTokenStats(
-      (data.token_stats_by_org_mindmate ?? {}) as Record<string, unknown>
-    )
-    const rawTop = data.top_users_by_tokens_today as
-      | {
-          id?: number
-          name?: string
-          phone?: string
-          total_tokens?: number
-          organization_name?: string
-        }[]
-      | undefined
-    topUsersByTokens.value = (rawTop ?? []).map((u) => ({
-      id: Number(u.id) || 0,
-      name: String(u.name ?? ''),
-      phone: String(u.phone ?? ''),
-      total_tokens: Number(u.total_tokens ?? 0),
-      organization_name: String(u.organization_name ?? ''),
-    }))
-  } catch {
-    notify.error(t('admin.dashboardLoadError'))
-  } finally {
-    isLoading.value = false
+  const requests: Promise<unknown>[] = [statsQuery.refetch()]
+  if (showUsageByService.value) {
+    requests.push(tokenStatsQuery.refetch())
   }
+  await Promise.all(requests)
+}
+
+function notifyTrendFetchError(err: unknown): void {
+  const message = queryErrorMessage(err, t('admin.dashboardLoadError'))
+  if (message) {
+    notify.error(message)
+  }
+  trendChartLoading.value = false
 }
 
 type MetricKey = 'users' | 'organizations' | 'registrations' | 'tokens'
@@ -241,25 +276,23 @@ async function showTrendChart(
 
   const daysMap = { today: 1, week: 7, month: 30, total: 0 }
   const days = daysMap[period]
+  const signal = beginTrendRequest()
   try {
-    const [chartRes, cardsRes] = await Promise.all([
-      apiRequest(`/api/auth/admin/stats/trends?metric=${metric}&days=${days}`),
+    const [chartData, cardsData] = await Promise.all([
+      fetchAdminStatsTrends(
+        { metric, days, service: metric === 'tokens' ? null : undefined },
+        signal
+      ),
       metric === 'tokens'
-        ? apiRequest('/api/auth/admin/token-stats')
-        : apiRequest(`/api/auth/admin/stats/trends?metric=${metric}&days=0`),
+        ? fetchAdminTokenStats(undefined, signal)
+        : fetchAdminStatsTrends({ metric, days: 0 }, signal),
     ])
-    if (!chartRes.ok) {
-      notify.error(t('admin.dashboardLoadError'))
-      trendChartLoading.value = false
-      return
-    }
-    const data = await chartRes.json()
     trendChartLoading.value = false
     await nextTick()
     await new Promise((r) => setTimeout(r, 50))
-    await renderTrendChart(data, metric)
-    if (metric === 'tokens' && cardsRes.ok) {
-      const tokenData = await cardsRes.json()
+    await renderTrendChart(chartData as { data: Array<{ date: string; value: number; input?: number; output?: number }> }, metric)
+    if (metric === 'tokens') {
+      const tokenData = cardsData as unknown as PlatformTokenStats
       const fmt = (p: { input_tokens?: number; output_tokens?: number }) => {
         const i = p?.input_tokens ?? 0
         const o = p?.output_tokens ?? 0
@@ -271,9 +304,9 @@ async function showTrendChart(
         month: fmt(tokenData.past_month),
         total: fmt(tokenData.total),
       }
-    } else if (cardsRes.ok && metric !== 'tokens') {
-      const cardsData = await cardsRes.json()
-      const arr = cardsData?.data ?? []
+    } else {
+      const cardsResData = cardsData as { data?: Array<{ value: number }> }
+      const arr = cardsResData?.data ?? []
       if (metric === 'registrations') {
         const sum = (n: number) =>
           arr.slice(-n).reduce((a: number, b: { value: number }) => a + (b.value ?? 0), 0)
@@ -294,12 +327,9 @@ async function showTrendChart(
           total: String(final),
         }
       }
-    } else {
-      periodCards.value = { today: '-', week: '-', month: '-', total: '-' }
     }
-  } catch {
-    notify.error(t('admin.dashboardLoadError'))
-    trendChartLoading.value = false
+  } catch (err) {
+    notifyTrendFetchError(err)
   }
 }
 
@@ -316,48 +346,39 @@ async function showOrganizationTrendChart(
   const daysMap = { today: 1, week: 7, month: 30, total: 0 }
   const days = daysMap[period]
   const hourly = period === 'today'
+  const signal = beginTrendRequest()
   try {
-    let params = `days=${days}&hourly=${hourly}`
-    if (orgId) {
-      params += `&organization_id=${orgId}`
-    } else {
-      params += `&organization_name=${encodeURIComponent(orgName)}`
-    }
-    const chartRes = await apiRequest(`/api/auth/admin/stats/trends/organization?${params}`)
-    if (!chartRes.ok) {
-      notify.error(t('admin.dashboardLoadError'))
-      trendChartLoading.value = false
-      return
-    }
-    const data = await chartRes.json()
+    const data = await fetchAdminStatsTrendsOrganization(
+      {
+        organization_id: orgId,
+        organization_name: orgId == null ? orgName : undefined,
+        days,
+        hourly,
+      },
+      signal
+    )
     trendChartLoading.value = false
     await nextTick()
     await new Promise((r) => setTimeout(r, 50))
-    await renderTrendChart(data, 'tokens')
+    await renderTrendChart(data as { data: Array<{ date: string; value: number; input?: number; output?: number }> }, 'tokens')
     if (orgId != null) {
-      const statsRes = await apiRequest(`/api/auth/admin/token-stats?organization_id=${orgId}`)
-      if (statsRes.ok) {
-        const tokenData = await statsRes.json()
-        const fmt = (p: { input_tokens?: number; output_tokens?: number }) => {
-          const i = p?.input_tokens ?? 0
-          const o = p?.output_tokens ?? 0
-          return `${formatNumber(i)}+${formatNumber(o)}`
-        }
-        periodCards.value = {
-          today: fmt(tokenData.today),
-          week: fmt(tokenData.past_week),
-          month: fmt(tokenData.past_month),
-          total: fmt(tokenData.total),
-        }
-      } else {
-        periodCards.value = { today: '-', week: '-', month: '-', total: '-' }
+      const tokenData = await fetchAdminTokenStats(orgId, signal)
+      const fmt = (p: { input_tokens?: number; output_tokens?: number }) => {
+        const i = p?.input_tokens ?? 0
+        const o = p?.output_tokens ?? 0
+        return `${formatNumber(i)}+${formatNumber(o)}`
+      }
+      periodCards.value = {
+        today: fmt(tokenData.today),
+        week: fmt(tokenData.past_week),
+        month: fmt(tokenData.past_month),
+        total: fmt(tokenData.total),
       }
     } else {
       periodCards.value = { today: '-', week: '-', month: '-', total: '-' }
     }
-  } catch {
-    notify.error(t('admin.dashboardLoadError'))
-    trendChartLoading.value = false
+  } catch (err) {
+    notifyTrendFetchError(err)
   }
 }
 
@@ -390,23 +411,21 @@ async function showServiceTokenTrendChart(
   trendChartLoading.value = true
 
   const daysMap = { today: 1, week: 7, month: 30, total: 0 }
-  const params = new URLSearchParams({ metric: 'tokens', days: String(daysMap[period]) })
-  if (service) {
-    params.set('service', service)
-  }
+  const signal = beginTrendRequest()
 
   try {
-    const chartRes = await apiRequest(`/api/auth/admin/stats/trends?${params}`)
-    if (!chartRes.ok) {
-      notify.error(t('admin.dashboardLoadError'))
-      trendChartLoading.value = false
-      return
-    }
-    const data = await chartRes.json()
+    const data = await fetchAdminStatsTrends(
+      {
+        metric: 'tokens',
+        days: daysMap[period],
+        service,
+      },
+      signal
+    )
     trendChartLoading.value = false
     await nextTick()
     await new Promise((r) => setTimeout(r, 50))
-    await renderTrendChart(data, 'tokens')
+    await renderTrendChart(data as { data: Array<{ date: string; value: number; input?: number; output?: number }> }, 'tokens')
 
     const fmt = (p: { input_tokens?: number; output_tokens?: number }) =>
       `${formatNumber(p?.input_tokens ?? 0)}+${formatNumber(p?.output_tokens ?? 0)}`
@@ -440,9 +459,8 @@ async function showServiceTokenTrendChart(
     } else {
       periodCards.value = { today: '-', week: '-', month: '-', total: '-' }
     }
-  } catch {
-    notify.error(t('admin.dashboardLoadError'))
-    trendChartLoading.value = false
+  } catch (err) {
+    notifyTrendFetchError(err)
   }
 }
 
@@ -459,24 +477,22 @@ async function showUserTokenTrend(
   const daysMap = { today: 1, week: 7, month: 30, total: 0 }
   const days = daysMap[period]
   const daysParam = days === 0 ? 0 : days
+  const signal = beginTrendRequest()
   try {
-    const chartRes = await apiRequest(
-      `/api/auth/admin/stats/trends/user?user_id=${userId}&days=${daysParam}`
+    const data = await fetchAdminStatsTrendsUser(
+      {
+        user_id: userId,
+        days: daysParam,
+      },
+      signal
     )
-    if (!chartRes.ok) {
-      notify.error(t('admin.dashboardLoadError'))
-      trendChartLoading.value = false
-      return
-    }
-    const data = await chartRes.json()
     trendChartLoading.value = false
     await nextTick()
     await new Promise((r) => setTimeout(r, 50))
-    await renderTrendChart(data, 'tokens')
+    await renderTrendChart(data as { data: Array<{ date: string; value: number; input?: number; output?: number }> }, 'tokens')
     periodCards.value = { today: '-', week: '-', month: '-', total: '-' }
-  } catch {
-    notify.error(t('admin.dashboardLoadError'))
-    trendChartLoading.value = false
+  } catch (err) {
+    notifyTrendFetchError(err)
   }
 }
 
@@ -605,12 +621,21 @@ async function renderTrendChart(
 }
 
 function closeTrendModal() {
+  abortTrendRequests()
   trendModalVisible.value = false
   trendChartInstance?.destroy()
   trendChartInstance = null
 }
 
-onMounted(loadStats)
+onMounted(() => {
+  void loadStats()
+})
+
+onAdminEvent('admin:refresh_requested', ({ domain }) => {
+  if (domain === 'stats' || domain === 'token-stats' || domain === 'all') {
+    void loadStats()
+  }
+})
 onBeforeUnmount(() => {
   trendChartInstance?.destroy()
   trendChartInstance = null

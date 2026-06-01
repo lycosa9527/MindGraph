@@ -8,9 +8,12 @@ import { Close, DocumentCopy } from '@element-plus/icons-vue'
 import { Loader2 } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
-import { useSchoolDashboardOrgPicker } from '@/composables/school/useSchoolDashboardOrgPicker'
+import {
+  useCreateAdminSchoolUser,
+  useCreateAdminSchoolUsersBatch,
+} from '@/composables/queries'
+import { useAdminOrgScope } from '@/composables/admin/useAdminOrgScope'
 import { useAuthStore } from '@/stores'
-import { apiRequest } from '@/utils/apiClient'
 import { httpErrorDetail } from '@/utils/httpErrorDetail'
 import {
   dedupeMemberRows,
@@ -37,7 +40,9 @@ const emit = defineEmits<{
 const { t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
-const { effectiveOrgName } = useSchoolDashboardOrgPicker()
+const { effectiveOrgName } = useAdminOrgScope()
+const createSchoolUser = useCreateAdminSchoolUser()
+const createSchoolUsersBatch = useCreateAdminSchoolUsersBatch()
 
 const modalTitle = computed(() => {
   const school = (
@@ -139,22 +144,22 @@ function onPasteFromClipboard(event: ClipboardEvent): void {
 }
 
 async function submitSingle(): Promise<boolean> {
-  const res = await apiRequest(`/api/auth/admin/school/users?${orgQueryString()}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      name: nameEdit.value.trim(),
-      phone: normalizeMemberPhone(phoneEdit.value),
-      role: 'teacher',
-    }),
-  })
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}))
-    notify.error(httpErrorDetail(data) || t('admin.schoolAddMemberCreateError'))
+  try {
+    await createSchoolUser.mutateAsync({
+      organizationId: props.orgId,
+      body: {
+        name: nameEdit.value.trim(),
+        phone: normalizeMemberPhone(phoneEdit.value),
+        role: 'teacher',
+      },
+    })
+    notify.success(t('admin.schoolAddMemberSuccess'))
+    return true
+  } catch (err) {
+    const message = err instanceof Error ? err.message : t('admin.schoolAddMemberCreateError')
+    notify.error(message)
     return false
   }
-  notify.success(t('admin.schoolAddMemberSuccess'))
-  return true
 }
 
 async function submitBatch(): Promise<boolean> {
@@ -170,33 +175,31 @@ async function submitBatch(): Promise<boolean> {
     role: 'teacher',
   }))
 
-  const res = await apiRequest(`/api/auth/admin/school/users/batch?${orgQueryString()}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ members }),
-  })
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}))
-    notify.error(httpErrorDetail(data) || t('admin.schoolAddMemberCreateError'))
+  try {
+    const data = (await createSchoolUsersBatch.mutateAsync({
+      organizationId: props.orgId,
+      body: { members },
+    })) as {
+      message?: string
+      created_count?: number
+      failed_count?: number
+    }
+    const created = data.created_count ?? 0
+    const failed = data.failed_count ?? 0
+    if (failed > 0 && created > 0) {
+      notify.warning(t('admin.schoolAddMemberBatchPartial', { created, failed }))
+    } else if (failed > 0) {
+      notify.error(data.message || t('admin.schoolAddMemberCreateError'))
+      return false
+    } else {
+      notify.success(t('admin.schoolAddMemberBatchSuccess', { created }))
+    }
+    return true
+  } catch (err) {
+    const message = err instanceof Error ? err.message : t('admin.schoolAddMemberCreateError')
+    notify.error(message)
     return false
   }
-
-  const data = (await res.json()) as {
-    message?: string
-    created_count?: number
-    failed_count?: number
-  }
-  const created = data.created_count ?? 0
-  const failed = data.failed_count ?? 0
-  if (failed > 0 && created > 0) {
-    notify.warning(t('admin.schoolAddMemberBatchPartial', { created, failed }))
-  } else if (failed > 0) {
-    notify.error(data.message || t('admin.schoolAddMemberCreateError'))
-    return false
-  } else {
-    notify.success(t('admin.schoolAddMemberBatchSuccess', { created }))
-  }
-  return true
 }
 
 async function handleSubmit(): Promise<void> {

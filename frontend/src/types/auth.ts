@@ -7,7 +7,7 @@ export type AuthMode = 'standard' | 'bayi' | 'enterprise'
 /**
  * User roles (canonical DB slugs):
  * - superadmin: Full platform admin (超级管理员)
- * - platform_bd: Platform BD — trial invites, read-only global dashboard (管理员)
+ * - platform_bd: Operations — trial invites, read-only global dashboard (运营)
  * - expert: Platform expert — B2B school invites (own orgs) + C2C trial invites (专家)
  * - school_admin: Organization manager — own-school dashboard + user mgmt (学校管理员)
  * - teacher: B2B school member (教师用户 / 学校版)
@@ -68,6 +68,8 @@ export interface User {
   schoolTier?: SchoolTier | null
   /** Tier-gated feature flags from login /me organization payload */
   schoolTierFeatures?: SchoolTierFeatures | null
+  /** True when the school contract end date has passed (tier downgraded to trial) */
+  subscriptionExpired?: boolean
 }
 
 /**
@@ -92,6 +94,7 @@ export interface BackendUser {
         mindmate_agent_avatar_url?: string | null
         school_tier?: string | null
         school_tier_features?: SchoolTierFeatures | null
+        subscription_expired?: boolean
       }
   schoolId?: string
   schoolName?: string

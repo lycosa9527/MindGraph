@@ -8,9 +8,17 @@ import { useDebounceFn } from '@vueuse/core'
 import { ElMessageBox } from 'element-plus'
 
 import { useLanguage, useNotifications } from '@/composables'
-import type { RoleControlTab } from '@/composables/admin/useAdminRolesHeaderToolbar'
+import type { RoleControlTab } from '@/composables/admin/adminRoleControlNav'
+import {
+  useAddAdminOrganizationManager,
+  useAdminAdmins,
+  useAdminManagers,
+  useAdminPlatformRoleMembers,
+  useAdminUsers,
+  useRemoveAdminOrganizationManager,
+  useUpdateAdminUserRole,
+} from '@/composables/queries'
 import type { UserRole } from '@/types'
-import { apiRequest } from '@/utils/apiClient'
 import { normalizeUserRole, userRoleLabel } from '@/utils/userRoleDisplay'
 
 export interface AdminUser {
@@ -67,12 +75,6 @@ export function useAdminRoleControl() {
   const notify = useNotifications()
 
   const activeTab = ref<RoleControlTab>('superadmin')
-  const isLoading = ref(true)
-  const admins = ref<AdminUser[]>([])
-  const envAdmins = ref<EnvAdmin[]>([])
-  const platformBdMembers = ref<PlatformRoleMember[]>([])
-  const expertMembers = ref<PlatformRoleMember[]>([])
-  const managers = ref<ManagerUser[]>([])
   const revokingId = ref<number | null>(null)
 
   const addModalVisible = ref(false)
@@ -81,6 +83,56 @@ export function useAdminRoleControl() {
   const addSearchLoading = ref(false)
   const addSearchHasRun = ref(false)
   const addGrantingId = ref<number | null>(null)
+
+  const adminsQuery = useAdminAdmins({
+    enabled: computed(() => activeTab.value === 'superadmin'),
+  })
+  const platformBdQuery = useAdminPlatformRoleMembers(
+    computed(() => 'platform_bd'),
+    { enabled: computed(() => activeTab.value === 'platform_bd') }
+  )
+  const expertQuery = useAdminPlatformRoleMembers(
+    computed(() => 'expert'),
+    { enabled: computed(() => activeTab.value === 'expert') }
+  )
+  const managersQuery = useAdminManagers({
+    enabled: computed(() => activeTab.value === 'school_admin'),
+  })
+
+  const userSearchParams = computed(() => ({
+    page: 1,
+    page_size: 20,
+    search: addSearchQuery.value.trim(),
+  }))
+  const userSearchEnabled = computed(() => addSearchQuery.value.trim().length >= 2)
+  const userSearchQuery = useAdminUsers(userSearchParams, {
+    enabled: userSearchEnabled,
+  })
+
+  const addManagerMutation = useAddAdminOrganizationManager()
+  const removeManagerMutation = useRemoveAdminOrganizationManager()
+  const updateRoleMutation = useUpdateAdminUserRole()
+
+  const admins = computed(() => adminsQuery.data.value?.admins ?? [])
+  const envAdmins = computed(() => adminsQuery.data.value?.env_admins ?? [])
+  const platformBdMembers = computed(() => platformBdQuery.data.value ?? [])
+  const expertMembers = computed(() => expertQuery.data.value ?? [])
+  const managers = computed(() => managersQuery.data.value ?? [])
+
+  const isLoading = computed(() => {
+    switch (activeTab.value) {
+      case 'superadmin':
+        return adminsQuery.isFetching.value
+      case 'platform_bd':
+        return platformBdQuery.isFetching.value
+      case 'expert':
+        return expertQuery.isFetching.value
+      case 'school_admin':
+        return managersQuery.isFetching.value
+      default:
+        return false
+    }
+  })
 
   function maskPhone(phone: string): string {
     if (phone.length === 11) {
@@ -140,93 +192,27 @@ export function useAdminRoleControl() {
     return keys[role]
   }
 
-  async function loadAdmins() {
-    const res = await apiRequest('/api/auth/admin/admins')
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || t('admin.roleMembersLoadFailed'))
-      admins.value = []
-      envAdmins.value = []
-      return false
-    }
-    const data = await res.json()
-    admins.value = data.admins ?? []
-    envAdmins.value = data.env_admins ?? []
-    return true
-  }
-
-  async function loadPlatformMembers(role: 'platform_bd' | 'expert') {
-    const targetRef = role === 'platform_bd' ? platformBdMembers : expertMembers
-    targetRef.value = []
-    const params = new URLSearchParams({ role })
-    const res = await apiRequest(`/api/auth/admin/platform-role-members?${params}`)
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || t('admin.roleMembersLoadFailed'))
-      targetRef.value = []
-      return false
-    }
-    const data = await res.json()
-    targetRef.value = (data.members ?? []) as PlatformRoleMember[]
-    return true
-  }
-
-  async function loadManagers() {
-    const res = await apiRequest('/api/auth/admin/managers')
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || t('admin.roleMembersLoadFailed'))
-      managers.value = []
-      return false
-    }
-    const data = await res.json()
-    managers.value = data.managers ?? []
-    return true
-  }
-
-  async function loadActiveTab() {
-    isLoading.value = true
+  async function loadActiveTab(): Promise<void> {
     try {
       switch (activeTab.value) {
         case 'superadmin':
-          await loadAdmins()
+          await adminsQuery.refetch()
           break
         case 'platform_bd':
-          await loadPlatformMembers('platform_bd')
+          await platformBdQuery.refetch()
           break
         case 'expert':
-          await loadPlatformMembers('expert')
+          await expertQuery.refetch()
           break
         case 'school_admin':
-          await loadManagers()
+          await managersQuery.refetch()
           break
         default:
           break
       }
     } catch {
       notify.error(t('admin.roleMembersLoadFailed'))
-    } finally {
-      isLoading.value = false
     }
-  }
-
-  async function searchUsers(query: string): Promise<CandidateUser[]> {
-    const q = query.trim()
-    if (!q || q.length < 2) {
-      return []
-    }
-    const params = new URLSearchParams({
-      page: '1',
-      page_size: '20',
-      search: q,
-    })
-    const res = await apiRequest(`/api/auth/admin/users?${params}`)
-    if (!res.ok) {
-      notify.error(t('admin.userSearchFailed'))
-      return []
-    }
-    const data = await res.json()
-    return (data.users ?? []) as CandidateUser[]
   }
 
   function existingMemberIds(): Set<number> {
@@ -244,7 +230,7 @@ export function useAdminRoleControl() {
     }
   }
 
-  async function searchUsersToAdd() {
+  async function searchUsersToAdd(): Promise<void> {
     const q = addSearchQuery.value.trim()
     if (!q || q.length < 2) {
       addSearchResults.value = []
@@ -253,7 +239,8 @@ export function useAdminRoleControl() {
     }
     addSearchLoading.value = true
     try {
-      const users = await searchUsers(q)
+      const result = await userSearchQuery.refetch()
+      const users = (result.data?.users ?? []) as unknown as CandidateUser[]
       const memberIds = existingMemberIds()
       const targetRole = activeTab.value
       addSearchResults.value = users.filter((user) => {
@@ -270,6 +257,7 @@ export function useAdminRoleControl() {
       })
     } catch {
       addSearchResults.value = []
+      notify.error(t('admin.userSearchFailed'))
     } finally {
       addSearchLoading.value = false
       addSearchHasRun.value = true
@@ -293,7 +281,7 @@ export function useAdminRoleControl() {
     void loadActiveTab()
   })
 
-  function openAddModal() {
+  function openAddModal(): void {
     addModalVisible.value = true
     addSearchQuery.value = ''
     addSearchResults.value = []
@@ -306,50 +294,43 @@ export function useAdminRoleControl() {
       notify.error(t('admin.schoolManagerGrantRequiresOrg'))
       return false
     }
-    const res = await apiRequest(
-      `/api/auth/admin/organizations/${orgId}/managers/${user.id}`,
-      { method: 'PUT' }
-    )
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || t('admin.trendChartErrors.setManagerFailed'))
+    try {
+      await addManagerMutation.mutateAsync({ orgId, userId: user.id })
+      notify.success(t('admin.roleAssignSuccess'))
+      return true
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t('admin.trendChartErrors.setManagerFailed')
+      notify.error(message)
       return false
     }
-    const data = await res.json()
-    notify.success((data.message as string) || t('admin.roleAssignSuccess'))
-    return true
   }
 
   async function removeSchoolManager(userId: number, orgId: number): Promise<boolean> {
-    const res = await apiRequest(
-      `/api/auth/admin/organizations/${orgId}/managers/${userId}`,
-      { method: 'DELETE' }
-    )
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || t('admin.trendChartErrors.removeManagerFailed'))
+    try {
+      await removeManagerMutation.mutateAsync({ orgId, userId })
+      notify.success(t('admin.managerRoleRemoved'))
+      return true
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : t('admin.trendChartErrors.removeManagerFailed')
+      notify.error(message)
       return false
     }
-    const data = await res.json()
-    notify.success((data.message as string) || t('admin.managerRoleRemoved'))
-    return true
   }
 
   async function updateUserRole(userId: number, role: UserRole): Promise<boolean> {
-    const res = await apiRequest(`/api/auth/admin/users/${userId}/role?role=${role}`, {
-      method: 'PUT',
-    })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || t('admin.roleAssignFailed'))
+    try {
+      await updateRoleMutation.mutateAsync({ userId, role })
+      notify.success(t('admin.roleAssignSuccess'))
+      return true
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t('admin.roleAssignFailed')
+      notify.error(message)
       return false
     }
-    const data = await res.json()
-    notify.success(data.message || t('admin.roleAssignSuccess'))
-    return true
   }
 
-  async function grantActiveRole(user: CandidateUser) {
+  async function grantActiveRole(user: CandidateUser): Promise<void> {
     addGrantingId.value = user.id
     try {
       const ok =
@@ -365,7 +346,7 @@ export function useAdminRoleControl() {
     }
   }
 
-  async function revokeMember(row: RoleMemberRow) {
+  async function revokeMember(row: RoleMemberRow): Promise<void> {
     if ('source' in row && row.source === 'env') {
       return
     }

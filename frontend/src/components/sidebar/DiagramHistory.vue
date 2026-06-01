@@ -23,6 +23,7 @@ import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useAuthStore } from '@/stores'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { formatDiagramCountLabel, hasDiagramSaveLimit } from '@/utils/diagramLimit'
 
 const props = defineProps<{
   isBlurred?: boolean
@@ -46,6 +47,10 @@ const diagrams = computed(() => savedDiagramsStore.diagrams)
 const isLoading = computed(() => savedDiagramsStore.isLoading)
 const currentDiagramId = computed(() => savedDiagramsStore.currentDiagramId)
 const maxDiagrams = computed(() => savedDiagramsStore.maxDiagrams)
+const hasSaveLimit = computed(() => savedDiagramsStore.hasSaveLimit)
+const diagramCountLabel = computed(() =>
+  formatDiagramCountLabel(diagrams.value.length, maxDiagrams.value)
+)
 const _remainingSlots = computed(() => savedDiagramsStore.remainingSlots)
 
 // Group diagrams by time period with pinned at top
@@ -238,7 +243,7 @@ async function handleTurnOffOnlineCollab(diagramId: string): Promise<void> {
         v-if="!isBlurred && diagrams.length > 0"
         class="text-xs text-stone-400"
       >
-        {{ diagrams.length }}/{{ maxDiagrams }}
+        {{ diagramCountLabel }}
       </div>
     </div>
 
@@ -264,7 +269,10 @@ async function handleTurnOffOnlineCollab(diagramId: string): Promise<void> {
           <p class="text-xs text-stone-400">
             {{ t('sidebar.diagramHistory.empty') }}
           </p>
-          <p class="text-xs text-stone-300 mt-1">
+          <p
+            v-if="hasSaveLimit"
+            class="text-xs text-stone-300 mt-1"
+          >
             {{ t('sidebar.diagramHistory.capacity', { n: maxDiagrams }) }}
           </p>
         </div>

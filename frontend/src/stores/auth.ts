@@ -216,6 +216,8 @@ export const useAuthStore = defineStore('auth', () => {
     const schoolTierFeatures: SchoolTierFeatures | undefined = orgId
       ? mergeSchoolTierFeatures(schoolTier, schoolTierFeaturesRaw)
       : undefined
+    const subscriptionExpired =
+      orgIsObject && org.subscription_expired === true ? true : undefined
     const displayLabel = orgDisplayName || orgName || backendUser.schoolName || ''
 
     const allowsZh = backendUser.allows_simplified_chinese !== false
@@ -260,7 +262,18 @@ export const useAuthStore = defineStore('auth', () => {
       mindmateAgentAvatarUrl: mindmateAgentAvatarUrl || null,
       schoolTier: schoolTier ?? null,
       schoolTierFeatures: schoolTierFeatures ?? null,
+      subscriptionExpired: subscriptionExpired ?? false,
     }
+  }
+
+  const subscriptionExpiredNotified = ref(false)
+
+  function maybeNotifySubscriptionExpired(target: User): void {
+    if (!target.subscriptionExpired || subscriptionExpiredNotified.value) {
+      return
+    }
+    subscriptionExpiredNotified.value = true
+    notify.warning(getTranslatedMessage('auth.schoolSubscriptionExpiredDowngraded'), 6000)
   }
 
   function applyUserLanguageFromProfile(target: User): void {
@@ -305,6 +318,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Normalize backend user format to frontend format
     const normalizedUser = normalizeUser(newUser)
     user.value = normalizedUser
+    maybeNotifySubscriptionExpired(normalizedUser)
     // Store in sessionStorage (cleared on browser close, not a security risk like localStorage)
     sessionStorage.setItem(USER_KEY, JSON.stringify(normalizedUser))
 
@@ -393,6 +407,7 @@ export const useAuthStore = defineStore('auth', () => {
     languagePrefsSeededForUserId.value = null
     languagePrefsSeedInFlight = false
     authVerificationBlockedByNetwork.value = false
+    subscriptionExpiredNotified.value = false
     adminCapabilitiesPayload.value = null
     adminCapabilitiesLoaded.value = false
     // Clear sessionStorage

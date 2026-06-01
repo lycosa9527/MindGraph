@@ -4,21 +4,27 @@
  */
 import { computed } from 'vue'
 
+import { storeToRefs } from 'pinia'
+
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useLanguage } from '@/composables'
-import { useAdminFeaturesHeaderToolbarModel } from '@/composables/admin/useAdminFeaturesHeaderToolbar'
+import { useAdminPanelStore } from '@/stores'
 
 const { t } = useLanguage()
-const toolbarState = useAdminFeaturesHeaderToolbarModel()
-const saving = computed(() => toolbarState.value?.saving.value ?? false)
+const adminPanel = useAdminPanelStore()
+const { featuresToolbar } = storeToRefs(adminPanel)
+const { emit: emitAdminEvent } = useAdminEventBus('AdminFeaturesHeaderToolbar')
+
+const saving = computed(() => featuresToolbar.value?.saving ?? false)
 
 function onApply(): void {
-  void toolbarState.value?.save()
+  emitAdminEvent('admin:toolbar_action', { action: 'features_save', tab: 'settings' })
 }
 </script>
 
 <template>
   <el-button
-    v-if="toolbarState"
+    v-if="featuresToolbar"
     type="primary"
     size="small"
     class="admin-features-apply-btn shrink-0"

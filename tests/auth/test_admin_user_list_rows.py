@@ -59,11 +59,22 @@ def test_paid_benefit_organization_without_expiry_is_permanent():
 
 def test_user_detail_payload_includes_email_and_diagram_remaining():
     org = _org(None)
+    org.school_tier = "trial"
     user = _user()
     user.email = "teacher@example.com"
     payload = build_admin_user_detail_payload(user, org, diagram_count=3)
     assert payload["email"] == "teacher@example.com"
-    assert payload["diagram_remaining"] == diagram_quota_from_count(3)["diagram_remaining"]
+    assert payload["diagram_quota_max"] == 20
+    assert payload["diagram_remaining"] == 17
+
+
+def test_paid_tier_user_detail_has_unlimited_diagram_quota():
+    org = _org(None)
+    org.school_tier = "standard"
+    user = _user()
+    payload = build_admin_user_detail_payload(user, org, diagram_count=50)
+    assert payload["diagram_quota_max"] == 0
+    assert payload["diagram_remaining"] == 0
 
 
 def test_paid_benefit_without_organization_uses_market():

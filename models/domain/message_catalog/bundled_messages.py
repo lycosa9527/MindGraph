@@ -927,10 +927,12 @@ ERRORS = {
     "invalid_school_tier": {
         "zh": "无效的学校版本：{}",
         "en": "Invalid school tier: {}",
+        "zh-tw": "無效的學校版本：{}",
     },
     "organization_member_limit_reached": {
         "zh": "该学校成员数已达上限（{} 人）",
         "en": "This school has reached its member limit ({} users)",
+        "zh-tw": "該校成員數已達上限（{} 人）",
     },
     "organization_manager_limit_reached": {
         "zh": "该学校管理员数已达上限（{} 人）",
@@ -949,7 +951,13 @@ ERRORS = {
     },
     "school_tier_feature_unavailable": {
         "zh": "当前学校版本不支持此功能，请升级至标准教研版或校本共建版",
-        "en": "This feature requires the Standard or Professional school tier",
+        "en": "This feature requires the Standard or Professional school tier (Basic tier excluded)",
+        "zh-tw": "目前學校版本不支援此功能，請升級至標準教研版或校本共建版",
+    },
+    "diagram_limit_reached": {
+        "zh": "体验版每位教师最多保存 {} 张导图，请删除后再保存",
+        "en": "Trial schools allow up to {} saved diagrams per teacher. Delete one to save a new diagram.",
+        "zh-tw": "體驗版每位教師最多保存 {} 張導圖，請刪除後再保存",
     },
     "failed_generate_invitation_code": {
         "zh": "生成唯一邀请码失败",

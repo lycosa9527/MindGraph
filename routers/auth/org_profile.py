@@ -5,8 +5,11 @@ from __future__ import annotations
 from typing import Optional
 
 
+from utils.auth.org_subscription import (
+    effective_school_tier_for_org,
+    is_org_subscription_expired,
+)
 from utils.auth.school_tier import (
-    normalize_school_tier,
     school_tier_features_for_no_org,
     school_tier_features_payload,
 )
@@ -44,10 +47,11 @@ def organization_session_payload(org) -> dict:
             "mindmate_agent_avatar_url": None,
             "school_tier": None,
             "school_tier_features": school_tier_features_for_no_org(),
+            "subscription_expired": False,
         }
     display_raw = getattr(org, "display_name", None)
     display_stripped = (str(display_raw).strip() if display_raw else "") or None
-    tier = normalize_school_tier(getattr(org, "school_tier", None))
+    tier = effective_school_tier_for_org(org)
     return {
         "id": org.id,
         "code": org.code,
@@ -57,4 +61,5 @@ def organization_session_payload(org) -> dict:
         "mindmate_agent_avatar_url": _org_mindmate_avatar_url(org),
         "school_tier": tier,
         "school_tier_features": school_tier_features_payload(tier),
+        "subscription_expired": is_org_subscription_expired(org),
     }

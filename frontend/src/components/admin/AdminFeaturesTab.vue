@@ -2,25 +2,38 @@
 /**
  * Admin — toggle FEATURE_* flags (writes .env + runtime reload) and DB access rules.
  */
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useQueryClient } from '@tanstack/vue-query'
 
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useLanguage, useNotifications } from '@/composables'
 import {
-  registerAdminFeaturesHeaderToolbar,
-  unregisterAdminFeaturesHeaderToolbar,
-} from '@/composables/admin/useAdminFeaturesHeaderToolbar'
+  useAdminConfigFeatures,
+  useAdminOrganizations,
+  useReloadAdminEnvRuntime,
+  useUpdateAdminEnvSettings,
+  useUpdateAdminFeatureOrgAccess,
+  type AdminFeatureFlagsPayload,
+} from '@/composables/queries'
 import type { FeatureOrgAccessEntry } from '@/stores/featureFlags'
+import { useAdminPanelStore } from '@/stores'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
-import { apiRequest } from '@/utils/apiClient'
 
 const { t } = useLanguage()
 const notify = useNotifications()
 const queryClient = useQueryClient()
 const featureFlagsStore = useFeatureFlagsStore()
+const adminPanel = useAdminPanelStore()
+const { on: onAdminEvent } = useAdminEventBus('AdminFeaturesTab')
 
-interface FeatureFlagsPayload {
+const configFeaturesQuery = useAdminConfigFeatures()
+const organizationsQuery = useAdminOrganizations()
+const updateFeatureAccessMutation = useUpdateAdminFeatureOrgAccess()
+const updateEnvSettingsMutation = useUpdateAdminEnvSettings()
+const reloadEnvRuntimeMutation = useReloadAdminEnvRuntime()
+
+interface FeatureFlagsPayload extends AdminFeatureFlagsPayload {
   feature_rag_chunk_test: boolean
   feature_course: boolean
   feature_template: boolean
@@ -154,14 +167,19 @@ interface OrgOption {
   display_name?: string | null
 }
 
-const loading = ref(true)
+const loading = computed(
+  () => configFeaturesQuery.isFetching.value || organizationsQuery.isFetching.value
+)
 const saving = ref(false)
 const savingPermissions = ref(false)
 const draft = ref<Partial<Record<ApiKey, boolean>>>({})
 const accessDraft = ref<Record<ApiKey, FeatureOrgAccessEntry>>(
   {} as Record<ApiKey, FeatureOrgAccessEntry>
 )
-const orgOptions = ref<OrgOption[]>([])
+const orgOptions = computed(() => {
+  const list = organizationsQuery.data.value
+  return Array.isArray(list) ? (list as OrgOption[]) : []
+})
 
 const dialogVisible = ref(false)
 const permissionDialogKey = ref<ApiKey | null>(null)
@@ -260,18 +278,15 @@ function buildAccessBody(): Record<string, FeatureOrgAccessEntry> {
 }
 
 async function persistFeatureAccess(): Promise<boolean> {
-  const res = await apiRequest('/api/auth/admin/feature-org-access', {
-    method: 'PUT',
-    body: JSON.stringify(buildAccessBody()),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
+  try {
+    await updateFeatureAccessMutation.mutateAsync(buildAccessBody())
+    featureFlagsStore.markStale()
+    await queryClient.invalidateQueries({ queryKey: ['featureFlags'] })
+    return true
+  } catch (err) {
     notify.error(formatHttpErrorDetail(err) || t('admin.featurePermissionsSaveFailed'))
     return false
   }
-  featureFlagsStore.markStale()
-  await queryClient.invalidateQueries({ queryKey: ['featureFlags'] })
-  return true
 }
 
 function openPermissionDialog(key: ApiKey): void {
@@ -312,30 +327,41 @@ function isRestricted(key: ApiKey): boolean {
   return Boolean(accessDraft.value[key]?.restrict)
 }
 
+function applyFeaturesPayload(data: FeatureFlagsPayload): void {
+  initDraft(data)
+  initAccessDraft(data.feature_org_access)
+}
+
 async function load(): Promise<void> {
-  loading.value = true
   try {
-    const [featuresRes, orgsRes] = await Promise.all([
-      apiRequest('/api/config/features'),
-      apiRequest('/api/auth/admin/organizations'),
+    const [featuresResult, orgsResult] = await Promise.all([
+      configFeaturesQuery.refetch(),
+      organizationsQuery.refetch(),
     ])
-    if (!featuresRes.ok) {
+    if (featuresResult.error) {
       notify.error(t('admin.featureLoadFailed'))
       return
     }
-    const data = (await featuresRes.json()) as FeatureFlagsPayload
-    initDraft(data)
-    initAccessDraft(data.feature_org_access)
-    if (orgsRes.ok) {
-      const list = (await orgsRes.json()) as unknown
-      orgOptions.value = Array.isArray(list) ? (list as OrgOption[]) : []
-    } else {
-      orgOptions.value = []
+    if (featuresResult.data) {
+      applyFeaturesPayload(featuresResult.data as FeatureFlagsPayload)
     }
-  } finally {
-    loading.value = false
+    if (orgsResult.error) {
+      notify.error(t('admin.featureLoadFailed'))
+    }
+  } catch {
+    notify.error(t('admin.featureLoadFailed'))
   }
 }
+
+watch(
+  () => configFeaturesQuery.data.value,
+  (data) => {
+    if (data) {
+      applyFeaturesPayload(data as FeatureFlagsPayload)
+    }
+  },
+  { immediate: true }
+)
 
 async function save(): Promise<void> {
   saving.value = true
@@ -345,39 +371,44 @@ async function save(): Promise<void> {
       const v = draft.value[row.apiKey]
       payload[row.envKey] = v ? 'True' : 'False'
     }
-    const putRes = await apiRequest('/api/auth/admin/env/settings', {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    })
-    if (!putRes.ok) {
-      const err = await putRes.json().catch(() => ({}))
-      const parsed = formatHttpErrorDetail(err)
-      notify.error(parsed || t('admin.featureSaveFailed'))
-      return
-    }
-    const reloadRes = await apiRequest('/api/auth/admin/env/reload-runtime', { method: 'POST' })
-    if (!reloadRes.ok) {
-      notify.error(t('admin.featuresReloadFailed'))
-      return
-    }
+    await updateEnvSettingsMutation.mutateAsync(payload)
+    await reloadEnvRuntimeMutation.mutateAsync()
     const accessOk = await persistFeatureAccess()
     if (!accessOk) {
       return
     }
     notify.success(t('admin.featuresSaved'))
     await load()
+  } catch (err) {
+    notify.error(formatHttpErrorDetail(err) || t('admin.featureSaveFailed'))
   } finally {
     saving.value = false
   }
 }
 
+onAdminEvent('admin:refresh_requested', ({ domain }) => {
+  if (domain === 'features' || domain === 'config-features' || domain === 'all') {
+    void load()
+  }
+})
+
+watch(saving, (value) => {
+  adminPanel.patchFeaturesToolbar({ saving: value })
+})
+
+onAdminEvent('admin:toolbar_action', (payload) => {
+  if (payload.tab === 'settings' && payload.action === 'features_save') {
+    void save()
+  }
+})
+
 onMounted(() => {
-  registerAdminFeaturesHeaderToolbar({ saving, save })
+  adminPanel.setFeaturesToolbar({ saving: saving.value })
   void load()
 })
 
 onUnmounted(() => {
-  unregisterAdminFeaturesHeaderToolbar()
+  adminPanel.clearFeaturesToolbar()
 })
 </script>
 

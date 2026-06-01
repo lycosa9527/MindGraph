@@ -35,6 +35,7 @@ export { useLiveSubtitlesStore } from './liveSubtitles'
 export { useAskOnceStore, type AskOnceMessage, type ModelResponse, type ModelId } from './askonce'
 export { useKnowledgeSpaceStore, type KnowledgeDocument } from './knowledgeSpace'
 export { useFeatureFlagsStore } from './featureFlags'
+export { useAdminPanelStore, type AdminPollKey } from './adminPanel'
 export {
   usePresentationPointerStore,
   PRESENTATION_POINTER_SCALE_MIN,

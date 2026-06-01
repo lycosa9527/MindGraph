@@ -2,20 +2,21 @@
 /**
  * Invite users tab — organization table with invitation codes.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { DocumentCopy, Loading } from '@element-plus/icons-vue'
 
 import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import AdminPersonalTrialInviteCard from '@/components/admin/AdminPersonalTrialInviteCard.vue'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
+import { useAdminOrganizationInvites } from '@/composables/queries'
 import {
   resolveSchoolMindmateAgentName,
   resolveSchoolMindmateAvatarUrl,
 } from '@/composables/mindmate/useMindMateBranding'
 import '@/styles/admin-schools-swiss.css'
-import { apiRequest } from '@/utils/apiClient'
 import {
   buildPrivatizedColumnFilters,
   filterOrgByPrivatized,
@@ -29,16 +30,25 @@ const { t } = useLanguage()
 const notify = useNotifications()
 const { publicSiteUrl } = usePublicSiteUrl()
 const { can, canEditTab } = useAdminAccess()
-
-const isLoading = ref(true)
-const organizations = ref<Record<string, unknown>[]>([])
-const createModalVisible = ref(false)
-const shareModalVisible = ref(false)
-const shareInvitationCode = ref('')
+const { on: onAdminEvent } = useAdminEventBus('AdminInviteUsersTab')
 
 const showOrgInvites = computed(
   () => can('scope.org') || can('scope.global') || can('scope.invited_orgs')
 )
+
+const invitesQuery = useAdminOrganizationInvites({
+  enabled: showOrgInvites,
+})
+
+const isLoading = computed(() => invitesQuery.isFetching.value)
+const organizations = computed(() => {
+  const data = invitesQuery.data.value
+  return Array.isArray(data) ? (data as Record<string, unknown>[]) : []
+})
+const createModalVisible = ref(false)
+const shareModalVisible = ref(false)
+const shareInvitationCode = ref('')
+
 const canEditInvites = computed(() => canEditTab('invites'))
 
 const orgTableEmptyText = computed(() => {
@@ -87,19 +97,10 @@ function invitationCodeFor(row: Record<string, unknown>): string {
 }
 
 async function loadOrganizations(): Promise<void> {
-  isLoading.value = true
   try {
-    const res = await apiRequest('/api/auth/admin/invites/organizations')
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || t('admin.schoolsLoadError'))
-      return
-    }
-    organizations.value = await res.json()
+    await invitesQuery.refetch()
   } catch {
     notify.error(t('admin.schoolsLoadError'))
-  } finally {
-    isLoading.value = false
   }
 }
 
@@ -135,14 +136,16 @@ function onSchoolCreated(payload: { invitation_code?: string }): void {
   }
 }
 
-onMounted(() => {
-  if (showOrgInvites.value) {
-    void loadOrganizations()
+onAdminEvent('admin:toolbar_action', (payload) => {
+  if (payload.action === 'open_create_school' && payload.tab === 'invites') {
+    openCreateModal()
   }
 })
 
-defineExpose({
-  openCreateModal,
+onAdminEvent('admin:refresh_requested', ({ domain }) => {
+  if (domain === 'invites' || domain === 'all') {
+    void loadOrganizations()
+  }
 })
 </script>
 

@@ -19,7 +19,11 @@ export default {
   'auth.apiTokenButton': 'API Token',
   'auth.downloadChromeExtension': 'Chrome extension',
   'auth.schoolTierFeatureUnavailable':
-    'This feature requires the Standard or Professional school tier.',
+    'This feature requires the Standard or Professional school tier (Basic tier excluded).',
+  'auth.schoolSubscriptionExpiredDowngraded':
+    'Your school subscription has ended. Your account is now on the trial tier. Contact your platform administrator to renew.',
+  'auth.diagramLimitReached':
+    'Trial schools allow up to {max} saved diagrams per teacher. Delete one to save a new diagram.',
   'auth.downloadOpenclawSkill': 'OpenClaw skill',
   'auth.changePhoneButton': 'Change phone',
   'auth.passwordChangeSuccess': 'Password changed successfully',

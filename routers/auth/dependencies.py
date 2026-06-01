@@ -236,7 +236,7 @@ def require_trial_invite_capability(
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ) -> User:
-    """Superadmin, platform_bd, or expert may invite personal trial users."""
+    """Superadmin, operations (platform_bd), or expert may invite personal trial users."""
     scope = build_admin_scope(current_user, lang=lang)
     scope.assert_capability(CAP_TAB_INVITES_EDIT, lang)
     return current_user
@@ -300,7 +300,7 @@ def require_global_users_read(
     scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_VIEW)),
     lang: Language = Depends(get_language_dependency),
 ) -> AdminScope:
-    """Global user list (superadmin read, platform_bd read-only)."""
+    """Global user list (superadmin read, operations read-only)."""
     _assert_global_scope(scope, lang)
     return scope
 
@@ -366,7 +366,7 @@ def require_global_data_center_read(
     scope: AdminScope = Depends(require_panel_capability(CAP_TAB_DATA_CENTER_VIEW)),
     lang: Language = Depends(get_language_dependency),
 ) -> AdminScope:
-    """Global platform stats: superadmin or platform_bd (scope.global), read-only for BD."""
+    """Global platform stats: superadmin or operations (read-only)."""
     if CAP_SCOPE_GLOBAL not in scope.capabilities:
         error_msg = Messages.error("admin_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)

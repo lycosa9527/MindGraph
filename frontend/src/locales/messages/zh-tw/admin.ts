@@ -103,7 +103,7 @@ export default {
   'admin.featurePermissionsUserIds': '用戶 ID（可選）',
   'admin.featurePermissionsUserIdsHint': '用逗號分隔的數字用戶 ID，用於例外賬號（如試點教師）。',
   'admin.featurePermissionsUserIdsPlaceholder': '例如：12, 34, 56',
-  'admin.expirationDate': '到期日期',
+  'admin.expirationDate': '截止日期',
   'admin.expirationDateHint': '超過此日期後學校將被鎖定。留空表示無限制。',
   'admin.filterBySchool': '按學校篩選',
   'admin.geweWechat': 'Gewe 微信',
@@ -556,7 +556,7 @@ export default {
   'admin.revokeRoleConfirm': '確定要移除以下用戶的角色：',
   'admin.roleControl': '角色控制',
   'admin.roleControlDesc': '管理超級管理員權限。擁有該角色的用戶可訪問完整管理面板。',
-  'admin.roleControlDescPlatformBd': '管理平台 BD 權限。平台 BD 可查看全局數據並管理試用邀請。',
+  'admin.roleControlDescPlatformBd': '管理營運權限。營運可查看全局數據並管理試用邀請。',
   'admin.roleControlDescExpert': '管理專家權限。專家可創建學校並管理其邀請範圍內的組織。',
   'admin.roleControlDescManagers':
     '管理學校管理員。學校管理員可訪問其所屬組織的學校儀表盤。授予該角色前，用戶須已加入學校。',
@@ -601,6 +601,12 @@ export default {
   'admin.schoolVersionLabel': '學校版本',
   'admin.schoolVersionHint':
     '選擇學校訂閱版本，決定成員上限與導圖儲存空間。目前成員 {current} / {limit} 人。',
+  'admin.unlimited': '不限',
+  'admin.unlimitedMembers': '成員不限',
+  'admin.schoolManagerNotAvailableTrial': '體驗版學校不可設定學校管理員。',
+  'admin.noSchoolManagersShort': '不可設定',
+  'admin.schoolTierDowngradeBlocked':
+    '無法切換至該版本：目前 {members} 名成員（上限 {memberLimit}），{managers} 位管理員（上限 {managerLimit}）',
   'admin.schoolVersionLiteFeaturesHint':
     '體驗版與基礎教研版不含：線上協同、演示工具、Chrome 擴充、API 令牌與 OpenClaw 整合。',
   'admin.schoolVersionTierTrial': '體驗版',
@@ -609,6 +615,8 @@ export default {
   'admin.schoolVersionTierProfessional': '校本共建版',
   'admin.schoolVersionTierOption':
     '{label} · {members} 人 · {managers} 管理員 · 每人 {storage} GB 導圖儲存',
+  'admin.schoolVersionTierOptionTrial':
+    '{label} · 成員不限 · 不可設學校管理員 · 每位教師 {diagrams} 張導圖 · 每人 {storage} GB 儲存',
   'admin.schoolManagerLimitHint': '學校管理員 {current} / {limit} 人',
   'admin.schoolManagerLimitReached': '該校管理員數已達上限（{limit} 人）',
   'admin.schoolModal.tabMindmate': 'MindMate 鑑權',

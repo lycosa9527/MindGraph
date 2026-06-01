@@ -2,7 +2,7 @@
  * Shared Dify health probe helpers for school create/edit admin flows.
  */
 import { useLanguage } from '@/composables'
-import { apiRequest } from '@/utils/apiClient'
+import { useProbeAdminMindmateDifyHealthDraft } from '@/composables/queries'
 
 export type DifyHealthStatus = {
   online: boolean
@@ -12,6 +12,7 @@ export type DifyHealthStatus = {
 
 export function useSchoolDifyHealthProbe() {
   const { t } = useLanguage()
+  const probeMutation = useProbeAdminMindmateDifyHealthDraft()
 
   function formatDifyAuthError(
     error: string | null | undefined,
@@ -45,7 +46,7 @@ export function useSchoolDifyHealthProbe() {
     if (token && token !== 'validation_failed') {
       return t('admin.schoolDifyAuthErrorDetail', { detail: token })
     }
-    return t('admin.schoolDifyAuthTestFailed')
+    return t('admin.schoolDifyAuthErrorTestFailed')
   }
 
   function isDifyAuthPassing(status: DifyHealthStatus | null): boolean {
@@ -68,25 +69,17 @@ export function useSchoolDifyHealthProbe() {
     if (key) {
       body.dify_api_key = key
     }
-    const res = await apiRequest('/api/auth/admin/mindmate-dify-health-draft', {
-      method: 'POST',
-      body: JSON.stringify(body),
-    })
-    if (!res.ok) {
-      const data = (await res.json().catch(() => ({}))) as { detail?: string }
-      const detail =
-        typeof data.detail === 'string' && data.detail.trim()
-          ? data.detail.trim()
-          : `http_${res.status}`
+    try {
+      const status = (await probeMutation.mutateAsync(body)) as DifyHealthStatus
+      return { status, ok: isDifyAuthPassing(status) }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
       const status: DifyHealthStatus = {
         online: false,
-        error: detail,
-        http_status: res.status,
+        error: message,
       }
       return { status, ok: false }
     }
-    const status = (await res.json()) as DifyHealthStatus
-    return { status, ok: isDifyAuthPassing(status) }
   }
 
   return {

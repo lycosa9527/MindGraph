@@ -53,6 +53,7 @@ from services.infrastructure.security.abuseipdb_service import (
 )
 from utils.email_mainland_china import raise_if_mainland_china_email_for_email_login
 from utils.email_validation import validate_email_for_api
+from utils.auth.org_subscription import enforce_org_accessible_or_raise, ensure_org_subscription_current
 from routers.auth.org_profile import organization_session_payload
 from utils.auth.config import BAYI_DEFAULT_ORG_CODE, BAYI_DEFAULT_ORG_ID, BAYI_PASSKEY
 from utils.auth import (
@@ -202,6 +203,8 @@ async def _complete_login_after_otp_verified(
         if org:
             db.expunge(org)
             await org_cache.cache_org(org)
+    if org:
+        org = await ensure_org_subscription_current(org) or org
     org_name = org.name if org else "None"
 
     logger.info(
@@ -399,22 +402,9 @@ async def login(
     # Get organization (use cache with database fallback)
     org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None
 
-    # Check organization status (locked or expired)
+    # Check organization status (locked; expired subscription downgrades to trial)
     if org:
-        if not org.is_active:
-            logger.warning("Login blocked: Organization %s is locked", org.code)
-            error_msg = Messages.error("organization_locked", lang, org.name)
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
-
-        if org.expires_at is not None and org.expires_at < datetime.now(UTC):
-            logger.warning(
-                "Login blocked: Organization %s expired on %s",
-                org.code,
-                org.expires_at,
-            )
-            expired_date = org.expires_at.strftime("%Y-%m-%d")
-            error_msg = Messages.error("organization_expired", lang, org.name, expired_date)
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+        org = await enforce_org_accessible_or_raise(org, lang)
 
     # Session management: Allow multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS)
     session_manager = get_session_manager()
@@ -528,18 +518,9 @@ async def login_with_sms(
     # Get organization and check status BEFORE consuming code (use cache)
     org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None
 
-    # Check organization status
+    # Check organization status (locked; expired subscription downgrades to trial)
     if org:
-        if not org.is_active:
-            logger.warning("SMS login blocked: Organization %s is locked", org.code)
-            error_msg = Messages.error("organization_locked", lang, org.name)
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
-
-        if org.expires_at is not None and org.expires_at < datetime.now(UTC):
-            logger.warning("SMS login blocked: Organization %s expired", org.code)
-            expired_date = org.expires_at.strftime("%Y-%m-%d")
-            error_msg = Messages.error("organization_expired", lang, org.name, expired_date)
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+        org = await enforce_org_accessible_or_raise(org, lang)
 
     # All validations passed - now consume the SMS code
     await _verify_and_consume_sms_code(request.phone, request.sms_code, "login", db, lang)
@@ -579,16 +560,7 @@ async def login_with_email(
     org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None
 
     if org:
-        if not org.is_active:
-            logger.warning("Email OTP login blocked: Organization %s is locked", org.code)
-            error_msg = Messages.error("organization_locked", lang, org.name)
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
-
-        if org.expires_at is not None and org.expires_at < datetime.now(UTC):
-            logger.warning("Email OTP login blocked: Organization %s expired", org.code)
-            expired_date = org.expires_at.strftime("%Y-%m-%d")
-            error_msg = Messages.error("organization_expired", lang, org.name, expired_date)
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+        org = await enforce_org_accessible_or_raise(org, lang)
 
     if EMAIL_LOGIN_CN_BLOCK_ENABLED and AUTH_MODE != "bayi":
         must_deny, geo_msg_key, stamp_cn = email_cn_geo_blocked(

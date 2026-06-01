@@ -12,6 +12,7 @@ import { Connection, DocumentCopy, FolderOpened, Key, Loading, Stamp, User } fro
 import { useSchoolDashboardStats } from '@/composables/admin/useSchoolDashboardStats'
 import { useSchoolDashboardQuotas } from '@/composables/school/useSchoolDashboardQuotas'
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
+import { isManagerAssignmentUnavailable, isUnlimitedMemberLimit } from '@/constants/schoolTier'
 
 const props = withDefaults(
   defineProps<{
@@ -86,7 +87,14 @@ async function copyInvitationCode(event: MouseEvent): Promise<void> {
         :title="t('admin.memberSeats')"
         :used="stats.quotas.memberCount"
         :limit="stats.quotas.memberLimit"
-        :remaining-label="t('admin.seatsRemaining', { count: memberRemaining.toLocaleString() })"
+        :limit-display-override="
+          isUnlimitedMemberLimit(stats.quotas.memberLimit) ? t('admin.unlimited') : ''
+        "
+        :remaining-label="
+          memberRemaining === null
+            ? t('admin.unlimitedMembers')
+            : t('admin.seatsRemaining', { count: memberRemaining.toLocaleString() })
+        "
         :icon="User"
         accent="blue"
       />
@@ -94,7 +102,16 @@ async function copyInvitationCode(event: MouseEvent): Promise<void> {
         :title="t('admin.managerSeats')"
         :used="stats.quotas.managerCount"
         :limit="stats.quotas.managerLimit"
-        :remaining-label="t('admin.seatsRemaining', { count: managerRemaining.toLocaleString() })"
+        :limit-display-override="
+          isManagerAssignmentUnavailable(stats.quotas.managerLimit)
+            ? t('admin.noSchoolManagersShort')
+            : ''
+        "
+        :remaining-label="
+          managerRemaining === null
+            ? t('admin.schoolManagerNotAvailableTrial')
+            : t('admin.seatsRemaining', { count: managerRemaining.toLocaleString() })
+        "
         :icon="Stamp"
         accent="purple"
       />

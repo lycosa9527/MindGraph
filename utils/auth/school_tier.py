@@ -14,6 +14,7 @@ from utils.auth.org_storage_estimate import org_diagram_storage_estimate
 from models.domain.messages import Language, Messages
 
 from services.redis.cache.redis_org_cache import org_cache
+from utils.auth.org_subscription import effective_school_tier_for_org
 from utils.auth.role_constants import SCHOOL_ADMIN_ROLES
 from utils.auth.roles import is_superadmin
 
@@ -31,13 +32,21 @@ SCHOOL_TIERS: Final[tuple[str, ...]] = (
 
 DEFAULT_SCHOOL_TIER: Final[str] = SCHOOL_TIER_TRIAL
 
+# Zero member_limit means no cap (trial schools may have hundreds of teachers).
+SCHOOL_TIER_MEMBER_LIMIT_UNLIMITED: Final[int] = 0
+# Zero diagram cap means no per-user saved-diagram limit (paid / personal accounts).
+SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED: Final[int] = 0
+
+DIAGRAM_SAVE_LIMIT_ERROR_PREFIX: Final[str] = "diagram_limit_reached:"
+
 _GIB = 1024**3
 
 SCHOOL_TIER_LIMITS: Final[dict[str, dict[str, int]]] = {
     SCHOOL_TIER_TRIAL: {
-        "member_limit": 30,
-        "manager_limit": 1,
+        "member_limit": SCHOOL_TIER_MEMBER_LIMIT_UNLIMITED,
+        "manager_limit": 0,
         "diagram_storage_bytes_per_member": 1 * _GIB,
+        "diagrams_per_member": 20,
     },
     SCHOOL_TIER_LITE: {
         "member_limit": 50,
@@ -121,7 +130,7 @@ async def user_has_school_tier_feature(
     org = await _organization_for_user(db, user)
     if org is None:
         return True
-    tier = normalize_school_tier(getattr(org, "school_tier", None))
+    tier = effective_school_tier_for_org(org)
     return school_tier_allows_feature(tier, feature)
 
 
@@ -146,15 +155,51 @@ def normalize_school_tier(value: object | None) -> str:
     return DEFAULT_SCHOOL_TIER
 
 
+def is_unlimited_member_limit(limit: int) -> bool:
+    """True when the tier has no member cap (member_limit <= 0)."""
+    return int(limit) <= 0
+
+
+def is_unlimited_diagram_limit(limit: int) -> bool:
+    """True when the user has no saved-diagram count cap (limit <= 0)."""
+    return int(limit) <= 0
+
+
+def is_manager_assignment_unavailable(limit: int) -> bool:
+    """True when the tier does not allow school managers (manager_limit <= 0)."""
+    return int(limit) <= 0
+
+
+def format_diagram_save_limit_error(cap: int) -> str:
+    """Machine-readable diagram quota error token for API routers to localize."""
+    return f"{DIAGRAM_SAVE_LIMIT_ERROR_PREFIX}{int(cap)}"
+
+
+def parse_diagram_save_limit_error(error: str | None) -> int | None:
+    """Return the diagram cap from a quota error token, or None if not a limit error."""
+    if not error or not error.startswith(DIAGRAM_SAVE_LIMIT_ERROR_PREFIX):
+        return None
+    token = error[len(DIAGRAM_SAVE_LIMIT_ERROR_PREFIX):]
+    try:
+        return int(token)
+    except ValueError:
+        return None
+
+
+def diagram_limit_reached_message(lang: Language, limit: int) -> str:
+    """Localized message when a trial user hits the saved-diagram cap."""
+    return Messages.error("diagram_limit_reached", lang, limit)
+
+
 def member_limit_for_org(org: Organization) -> int:
-    """Member cap for the organization's current tier."""
-    tier = normalize_school_tier(getattr(org, "school_tier", None))
+    """Member cap for the organization's current tier (0 = unlimited)."""
+    tier = effective_school_tier_for_org(org)
     return int(SCHOOL_TIER_LIMITS[tier]["member_limit"])
 
 
 def manager_limit_for_org(org: Organization) -> int:
     """School manager (school_admin) cap for the organization's current tier."""
-    tier = normalize_school_tier(getattr(org, "school_tier", None))
+    tier = effective_school_tier_for_org(org)
     return int(SCHOOL_TIER_LIMITS[tier]["manager_limit"])
 
 
@@ -166,13 +211,41 @@ def diagram_storage_bytes_per_member_for_tier(tier: str) -> int:
 
 def diagram_storage_limit_bytes_for_org(org: Organization, member_count: int) -> int:
     """Diagram storage cap (bytes) = tier GB per member × current member count."""
-    per_member = diagram_storage_bytes_per_member_for_tier(normalize_school_tier(getattr(org, "school_tier", None)))
+    per_member = diagram_storage_bytes_per_member_for_tier(effective_school_tier_for_org(org))
     return per_member * max(int(member_count), 0)
+
+
+def max_diagrams_for_tier(tier: str) -> int:
+    """Saved-diagram cap for a school tier (0 = unlimited; trial = 20)."""
+    limits = SCHOOL_TIER_LIMITS[normalize_school_tier(tier)]
+    tier_cap = limits.get("diagrams_per_member")
+    if tier_cap is not None:
+        return int(tier_cap)
+    return SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED
+
+
+async def max_diagrams_for_user(db: AsyncSession, user: User) -> int:
+    """Saved-diagram cap for a user based on org tier (non-org users: unlimited)."""
+    org_id = getattr(user, "organization_id", None)
+    if org_id is None:
+        return SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED
+    org = await _organization_for_user(db, user)
+    if org is None:
+        return SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED
+    return max_diagrams_for_tier(effective_school_tier_for_org(org))
+
+
+async def max_diagrams_for_user_id(db: AsyncSession, user_id: int) -> int:
+    """Saved-diagram cap resolved from a user id (unlimited when user/org missing)."""
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if user is None:
+        return SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED
+    return await max_diagrams_for_user(db, user)
 
 
 def school_tier_list_fields(org: Organization, member_count: int) -> dict[str, Any]:
     """API fields derived from the organization's school tier."""
-    tier = normalize_school_tier(getattr(org, "school_tier", None))
+    tier = effective_school_tier_for_org(org)
     limits = SCHOOL_TIER_LIMITS[tier]
     per_member_bytes = int(limits["diagram_storage_bytes_per_member"])
     return {
@@ -232,7 +305,7 @@ async def school_dashboard_quotas_payload(
 ) -> dict[str, Any]:
     """Quota usage and tier limits for the school dashboard."""
     org_id = int(org.id)
-    tier = normalize_school_tier(getattr(org, "school_tier", None))
+    tier = effective_school_tier_for_org(org)
     member_count = await member_count_for_org(db, org_id)
     manager_count = await manager_count_for_org(db, org_id)
     storage_estimate = await org_diagram_storage_estimate(db, org_id)
@@ -263,6 +336,8 @@ async def assert_organization_has_member_capacity(
 ) -> None:
     """Reject when the organization has reached its tier member limit."""
     limit = member_limit_for_org(org)
+    if is_unlimited_member_limit(limit):
+        return
     stmt = select(func.count(User.id)).where(User.organization_id == org.id)
     if exclude_user_id is not None:
         stmt = stmt.where(User.id != exclude_user_id)
@@ -310,6 +385,8 @@ async def assert_organization_tier_allows_current_members(
 ) -> None:
     """Reject tier changes that would leave more members than the new tier allows."""
     limit = member_limit_for_org(org)
+    if is_unlimited_member_limit(limit):
+        return
     current_count = await member_count_for_org(db, int(org.id))
     if current_count > limit:
         error_msg = Messages.error(

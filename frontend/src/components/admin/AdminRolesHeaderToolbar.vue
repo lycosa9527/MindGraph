@@ -2,27 +2,32 @@
 import { computed } from 'vue'
 
 import { Plus, Refresh } from '@element-plus/icons-vue'
+import { storeToRefs } from 'pinia'
 
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useLanguage } from '@/composables'
-import { useAdminRolesHeaderToolbarModel } from '@/composables/admin/useAdminRolesHeaderToolbar'
+import { useAdminPanelStore } from '@/stores'
 
 const { t } = useLanguage()
-const toolbarState = useAdminRolesHeaderToolbarModel()
-const canEdit = computed(() => toolbarState.value?.canEdit.value ?? false)
-const isRefreshing = computed(() => toolbarState.value?.isRefreshing.value ?? false)
+const adminPanel = useAdminPanelStore()
+const { rolesToolbar } = storeToRefs(adminPanel)
+const { emit: emitAdminEvent } = useAdminEventBus('AdminRolesHeaderToolbar')
+
+const canEdit = computed(() => rolesToolbar.value?.canEdit ?? false)
+const isRefreshing = computed(() => rolesToolbar.value?.isRefreshing ?? false)
 
 function onRefresh(): void {
-  void toolbarState.value?.refresh()
+  emitAdminEvent('admin:toolbar_action', { action: 'roles_refresh', tab: 'settings' })
 }
 
 function onAdd(): void {
-  toolbarState.value?.openAddModal()
+  emitAdminEvent('admin:toolbar_action', { action: 'roles_open_add', tab: 'settings' })
 }
 </script>
 
 <template>
   <div
-    v-if="toolbarState"
+    v-if="rolesToolbar"
     class="admin-roles-header-toolbar flex items-center gap-2 shrink-0"
   >
     <el-button

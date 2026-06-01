@@ -82,7 +82,7 @@ def is_superadmin_role_only(role: str) -> bool:
 
 
 def panel_read_only_for_user(current_user) -> bool:
-    """Whether the user has read-only panel access (platform BD, etc.)."""
+    """Whether the user has read-only panel access (operations, etc.)."""
     if is_superadmin(current_user):
         return False
     role = normalize_role(getattr(current_user, "role", None))
@@ -91,7 +91,7 @@ def panel_read_only_for_user(current_user) -> bool:
 
 
 async def load_expert_invited_org_ids(db: AsyncSession, actor_id: int) -> frozenset[int]:
-    """Organization IDs created via invite flow by this expert or platform BD."""
+    """Organization IDs created via invite flow by this expert or operations user."""
     rows = (
         await db.execute(
             select(Organization.id).where(Organization.invited_by_user_id == actor_id)
@@ -297,7 +297,7 @@ def panel_org_table_filter(scope: AdminScope) -> ColumnElement:
 
 
 def invite_org_filter(scope: AdminScope, column: Any) -> ColumnElement:
-    """SQLAlchemy filter for invite-tab org lists (includes platform BD invited scope)."""
+    """SQLAlchemy filter for invite-tab org lists (includes operations invited scope)."""
     if CAP_SCOPE_INVITED_ORGS not in scope.capabilities:
         return org_filter(scope, column)
     if column is Organization.id:
