@@ -17,7 +17,7 @@ jobs:
           python-version: "3.13"
       - name: App import smoke
         run: python -c "from main import app; assert app.title"
-      - name: Pylint (collab / WS paths)
+      - name: Pylint (collab / WS paths + auth tier split)
         run: |
           pylint services/online_collab/spec/online_collab_live_spec_shutdown.py \
             services/online_collab/spec/online_collab_live_flush.py \
@@ -32,7 +32,9 @@ jobs:
             routers/api/workshop_ws_auth.py routers/api/workshop_ws_connect.py \
             services/online_collab/participant/workshop_join_resume_tokens.py \
             scripts/collab_synthetic_probe.py \
-            routers/auth/admin/organization_mindmate_branding.py
+            routers/auth/admin/organization_mindmate_branding.py \
+            utils/auth/school_tier_defs.py utils/auth/school_tier_effective.py \
+            utils/auth/org_subscription.py utils/auth/school_tier.py utils/auth/auth_resolution.py
       - name: Pytest (focused + collab)
         run: |
           pytest -q tests/test_collab_ws_json_limits.py tests/test_workshop_update_flush_gate.py \
@@ -40,7 +42,8 @@ jobs:
             tests/test_workshop_collab_backend.py tests/test_collab_palette_sync.py \
             tests/test_workshop_editor_redis_merge.py tests/test_ws_fanout.py \
             tests/test_collab_synthetic_probe.py tests/test_workshop_join_resume_tokens.py \
-            tests/test_organization_mindmate_avatar.py
+            tests/test_organization_mindmate_avatar.py tests/test_org_subscription.py \
+            tests/test_school_tier.py
 
   frontend:
     runs-on: ubuntu-latest

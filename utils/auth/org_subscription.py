@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime
 from typing import Optional
 
 from fastapi import HTTPException, status
@@ -13,10 +12,10 @@ from config.database import AsyncSessionLocal
 from models.domain.auth import Organization
 from models.domain.messages import Language, Messages
 
-from utils.auth.datetime_compat import as_utc_aware
-from utils.auth.school_tier import (
-    SCHOOL_TIER_TRIAL,
-    normalize_school_tier,
+from utils.auth.school_tier_defs import SCHOOL_TIER_TRIAL, normalize_school_tier
+from utils.auth.school_tier_effective import (
+    effective_school_tier_for_org,
+    is_org_subscription_expired,
 )
 
 logger = logging.getLogger(__name__)
@@ -29,25 +28,6 @@ try:
     _org_cache = _redis_org_cache
 except ImportError:
     pass
-
-
-def is_org_subscription_expired(org: object | None) -> bool:
-    """Return True when the org has a subscription end date in the past."""
-    if org is None:
-        return False
-    expires_at = getattr(org, "expires_at", None)
-    if expires_at is None:
-        return False
-    return as_utc_aware(expires_at) < datetime.now(UTC)
-
-
-def effective_school_tier_for_org(org: object | None) -> str:
-    """Tier after applying subscription expiry (expired paid org → trial)."""
-    if org is None:
-        return SCHOOL_TIER_TRIAL
-    if is_org_subscription_expired(org):
-        return SCHOOL_TIER_TRIAL
-    return normalize_school_tier(getattr(org, "school_tier", None))
 
 
 async def downgrade_expired_org_to_trial(org_id: int) -> Optional[Organization]:
@@ -117,3 +97,12 @@ async def enforce_org_accessible_or_raise(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     updated = await ensure_org_subscription_current(org)
     return updated or org
+
+
+__all__ = [
+    "downgrade_expired_org_to_trial",
+    "effective_school_tier_for_org",
+    "ensure_org_subscription_current",
+    "enforce_org_accessible_or_raise",
+    "is_org_subscription_expired",
+]

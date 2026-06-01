@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -66,10 +66,10 @@ async def test_downgrade_expired_org_to_trial_persists_trial():
     db_org = _org(tier=SCHOOL_TIER_STANDARD, expires_at=past)
     db_org.code = "DEMO-001"
 
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = db_org
     mock_db = AsyncMock()
-    mock_db.execute.return_value = mock_result
+    mock_db.execute = AsyncMock(return_value=mock_result)
 
     class _SessionCtx:
         async def __aenter__(self):
@@ -78,9 +78,7 @@ async def test_downgrade_expired_org_to_trial_persists_trial():
         async def __aexit__(self, *_args):
             return False
 
-    with patch("utils.auth.org_subscription.AsyncSessionLocal") as session_local:
-        session_local.return_value.__aenter__ = AsyncMock(return_value=mock_db)
-        session_local.return_value.__aexit__ = AsyncMock(return_value=False)
+    with patch("utils.auth.org_subscription.AsyncSessionLocal", return_value=_SessionCtx()):
         with patch("utils.auth.org_subscription._org_cache", None):
             from utils.auth.org_subscription import downgrade_expired_org_to_trial
 

@@ -176,7 +176,6 @@ disable = [
     "duplicate-code",
     "arguments-renamed",
     "global-statement",
-    "cyclic-import",  # FastAPI app wiring has intentional cycles; tracked in architecture
     "no-else-return",
     "no-else-raise",
     "no-else-continue",

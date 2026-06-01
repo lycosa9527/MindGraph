@@ -1,109 +1,51 @@
-"""School subscription tier limits for B2B organizations."""
+"""School subscription tier limits and quota enforcement for B2B organizations."""
 
 from __future__ import annotations
 
-from typing import Any, Final
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import Organization, User
-
-from utils.auth.org_storage_estimate import org_diagram_storage_estimate
 from models.domain.messages import Language, Messages
 
 from services.redis.cache.redis_org_cache import org_cache
-from utils.auth.org_subscription import effective_school_tier_for_org
+from utils.auth.org_storage_estimate import org_diagram_storage_estimate
 from utils.auth.role_constants import SCHOOL_ADMIN_ROLES
 from utils.auth.roles import is_superadmin
-
-SCHOOL_TIER_TRIAL: Final[str] = "trial"
-SCHOOL_TIER_LITE: Final[str] = "lite"
-SCHOOL_TIER_STANDARD: Final[str] = "standard"
-SCHOOL_TIER_PROFESSIONAL: Final[str] = "professional"
-
-SCHOOL_TIERS: Final[tuple[str, ...]] = (
-    SCHOOL_TIER_TRIAL,
-    SCHOOL_TIER_LITE,
-    SCHOOL_TIER_STANDARD,
-    SCHOOL_TIER_PROFESSIONAL,
+from utils.auth import school_tier_defs
+from utils.auth.school_tier_defs import (
+    DEFAULT_SCHOOL_TIER,
+    SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED,
+    SCHOOL_TIER_LIMITS,
+    diagram_storage_bytes_per_member_for_tier,
+    is_unlimited_member_limit,
+    max_diagrams_for_tier,
+    normalize_school_tier,
+    school_tier_allows_feature,
+    school_tier_features_payload,
 )
+from utils.auth.school_tier_effective import effective_school_tier_for_org
 
-DEFAULT_SCHOOL_TIER: Final[str] = SCHOOL_TIER_TRIAL
-
-# Zero member_limit means no cap (trial schools may have hundreds of teachers).
-SCHOOL_TIER_MEMBER_LIMIT_UNLIMITED: Final[int] = 0
-# Zero diagram cap means no per-user saved-diagram limit (paid / personal accounts).
-SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED: Final[int] = 0
-
-DIAGRAM_SAVE_LIMIT_ERROR_PREFIX: Final[str] = "diagram_limit_reached:"
-
-_GIB = 1024**3
-
-SCHOOL_TIER_LIMITS: Final[dict[str, dict[str, int]]] = {
-    SCHOOL_TIER_TRIAL: {
-        "member_limit": SCHOOL_TIER_MEMBER_LIMIT_UNLIMITED,
-        "manager_limit": 0,
-        "diagram_storage_bytes_per_member": 1 * _GIB,
-        "diagrams_per_member": 20,
-    },
-    SCHOOL_TIER_LITE: {
-        "member_limit": 50,
-        "manager_limit": 1,
-        "diagram_storage_bytes_per_member": 1 * _GIB,
-    },
-    SCHOOL_TIER_STANDARD: {
-        "member_limit": 120,
-        "manager_limit": 3,
-        "diagram_storage_bytes_per_member": 2 * _GIB,
-    },
-    SCHOOL_TIER_PROFESSIONAL: {
-        "member_limit": 200,
-        "manager_limit": 5,
-        "diagram_storage_bytes_per_member": 5 * _GIB,
-    },
-}
-
-
-TIER_FEATURE_ONLINE_COLLAB: Final[str] = "online_collab"
-TIER_FEATURE_CHROME_EXTENSION: Final[str] = "chrome_extension"
-TIER_FEATURE_PRESENTATION_TOOLS: Final[str] = "presentation_tools"
-TIER_FEATURE_API_TOKEN: Final[str] = "api_token"
-
-_STANDARD_PLUS_FEATURES: Final[frozenset[str]] = frozenset(
-    {
-        TIER_FEATURE_ONLINE_COLLAB,
-        TIER_FEATURE_CHROME_EXTENSION,
-        TIER_FEATURE_PRESENTATION_TOOLS,
-        TIER_FEATURE_API_TOKEN,
-    }
-)
-
-
-def school_tier_allows_feature(tier: str, feature: str) -> bool:
-    """Trial and lite tiers block collab, presentation tools, Chrome extension, and API tokens."""
-    if feature not in _STANDARD_PLUS_FEATURES:
-        return True
-    normalized = normalize_school_tier(tier)
-    return normalized not in (SCHOOL_TIER_TRIAL, SCHOOL_TIER_LITE)
-
-
-def school_tier_features_payload(tier: str) -> dict[str, bool]:
-    """Feature flags derived from a school's tier slug."""
-    normalized = normalize_school_tier(tier)
-    allows_premium = normalized not in (SCHOOL_TIER_TRIAL, SCHOOL_TIER_LITE)
-    return {
-        TIER_FEATURE_ONLINE_COLLAB: allows_premium,
-        TIER_FEATURE_CHROME_EXTENSION: allows_premium,
-        TIER_FEATURE_PRESENTATION_TOOLS: allows_premium,
-        TIER_FEATURE_API_TOKEN: allows_premium,
-    }
-
-
-def school_tier_features_for_no_org() -> dict[str, bool]:
-    """Personal / non-org accounts keep premium canvas features enabled."""
-    return school_tier_features_payload(SCHOOL_TIER_PROFESSIONAL)
+DIAGRAM_SAVE_LIMIT_ERROR_PREFIX = school_tier_defs.DIAGRAM_SAVE_LIMIT_ERROR_PREFIX
+SCHOOL_TIER_LITE = school_tier_defs.SCHOOL_TIER_LITE
+SCHOOL_TIER_MEMBER_LIMIT_UNLIMITED = school_tier_defs.SCHOOL_TIER_MEMBER_LIMIT_UNLIMITED
+SCHOOL_TIER_PROFESSIONAL = school_tier_defs.SCHOOL_TIER_PROFESSIONAL
+SCHOOL_TIER_STANDARD = school_tier_defs.SCHOOL_TIER_STANDARD
+SCHOOL_TIER_TRIAL = school_tier_defs.SCHOOL_TIER_TRIAL
+SCHOOL_TIERS = school_tier_defs.SCHOOL_TIERS
+TIER_FEATURE_API_TOKEN = school_tier_defs.TIER_FEATURE_API_TOKEN
+TIER_FEATURE_CHROME_EXTENSION = school_tier_defs.TIER_FEATURE_CHROME_EXTENSION
+TIER_FEATURE_ONLINE_COLLAB = school_tier_defs.TIER_FEATURE_ONLINE_COLLAB
+TIER_FEATURE_PRESENTATION_TOOLS = school_tier_defs.TIER_FEATURE_PRESENTATION_TOOLS
+diagram_limit_reached_message = school_tier_defs.diagram_limit_reached_message
+format_diagram_save_limit_error = school_tier_defs.format_diagram_save_limit_error
+is_manager_assignment_unavailable = school_tier_defs.is_manager_assignment_unavailable
+is_unlimited_diagram_limit = school_tier_defs.is_unlimited_diagram_limit
+parse_diagram_save_limit_error = school_tier_defs.parse_diagram_save_limit_error
+school_tier_features_for_no_org = school_tier_defs.school_tier_features_for_no_org
 
 
 async def _organization_for_user(db: AsyncSession, user: User) -> Organization | None:
@@ -147,50 +89,6 @@ async def assert_user_has_school_tier_feature(
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
 
-def normalize_school_tier(value: object | None) -> str:
-    """Return a canonical tier slug; unknown values fall back to trial."""
-    token = str(value or "").strip().lower()
-    if token in SCHOOL_TIER_LIMITS:
-        return token
-    return DEFAULT_SCHOOL_TIER
-
-
-def is_unlimited_member_limit(limit: int) -> bool:
-    """True when the tier has no member cap (member_limit <= 0)."""
-    return int(limit) <= 0
-
-
-def is_unlimited_diagram_limit(limit: int) -> bool:
-    """True when the user has no saved-diagram count cap (limit <= 0)."""
-    return int(limit) <= 0
-
-
-def is_manager_assignment_unavailable(limit: int) -> bool:
-    """True when the tier does not allow school managers (manager_limit <= 0)."""
-    return int(limit) <= 0
-
-
-def format_diagram_save_limit_error(cap: int) -> str:
-    """Machine-readable diagram quota error token for API routers to localize."""
-    return f"{DIAGRAM_SAVE_LIMIT_ERROR_PREFIX}{int(cap)}"
-
-
-def parse_diagram_save_limit_error(error: str | None) -> int | None:
-    """Return the diagram cap from a quota error token, or None if not a limit error."""
-    if not error or not error.startswith(DIAGRAM_SAVE_LIMIT_ERROR_PREFIX):
-        return None
-    token = error[len(DIAGRAM_SAVE_LIMIT_ERROR_PREFIX):]
-    try:
-        return int(token)
-    except ValueError:
-        return None
-
-
-def diagram_limit_reached_message(lang: Language, limit: int) -> str:
-    """Localized message when a trial user hits the saved-diagram cap."""
-    return Messages.error("diagram_limit_reached", lang, limit)
-
-
 def member_limit_for_org(org: Organization) -> int:
     """Member cap for the organization's current tier (0 = unlimited)."""
     tier = effective_school_tier_for_org(org)
@@ -203,25 +101,10 @@ def manager_limit_for_org(org: Organization) -> int:
     return int(SCHOOL_TIER_LIMITS[tier]["manager_limit"])
 
 
-def diagram_storage_bytes_per_member_for_tier(tier: str) -> int:
-    """Diagram storage allowance per member (bytes) for a tier slug."""
-    normalized = normalize_school_tier(tier)
-    return int(SCHOOL_TIER_LIMITS[normalized]["diagram_storage_bytes_per_member"])
-
-
 def diagram_storage_limit_bytes_for_org(org: Organization, member_count: int) -> int:
     """Diagram storage cap (bytes) = tier GB per member × current member count."""
     per_member = diagram_storage_bytes_per_member_for_tier(effective_school_tier_for_org(org))
     return per_member * max(int(member_count), 0)
-
-
-def max_diagrams_for_tier(tier: str) -> int:
-    """Saved-diagram cap for a school tier (0 = unlimited; trial = 20)."""
-    limits = SCHOOL_TIER_LIMITS[normalize_school_tier(tier)]
-    tier_cap = limits.get("diagrams_per_member")
-    if tier_cap is not None:
-        return int(tier_cap)
-    return SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED
 
 
 async def max_diagrams_for_user(db: AsyncSession, user: User) -> int:
