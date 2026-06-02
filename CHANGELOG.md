@@ -5,8 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
 ## [5.117.30] - 2026-06-02
 
 > **RLS panel fixes (Alembic `0051`–`0053`) and Python dependency sweep.** Run migrations through `0053` before deploy. Upgrade Qdrant server to **1.18.1** when refreshing `qdrant-client` (`scripts/setup/update_qdrant_server.py`). Reinstall deps: `pip install -U -r requirements.txt`.
