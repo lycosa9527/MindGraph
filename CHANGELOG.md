@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [5.117.30] - 2026-06-02
+
+> **RLS panel fixes (Alembic `0051`–`0053`) and Python dependency sweep.** Run migrations through `0053` before deploy. Upgrade Qdrant server to **1.18.1** when refreshing `qdrant-client` (`scripts/setup/update_qdrant_server.py`). Reinstall deps: `pip install -U -r requirements.txt`.
+
+### Fixed
+
+- **platform_bd RLS global read** — [`admin_scope_to_session_vars()`](utils/db/rls_admin_scope.py) checks `CAP_SCOPE_GLOBAL` before invited-org mapping so operations gets `panel_global_read=1` on global tabs.
+- **Global organizations list for platform_bd** — [`panel_org_table_filter()`](utils/auth/admin_scope.py) returns all orgs when `scope.global`; invite tab still uses [`invite_org_filter()`](utils/auth/admin_scope.py) with invited + legacy scope for BD.
+- **Post-commit panel RLS** — [`get_admin_scope`](routers/auth/dependencies.py) and [`bind_panel_superadmin_rls`](utils/db/rls_request.py) call `set_rls_context()` so `after_begin` re-applies panel GUCs after `commit`.
+
+### Changed
+
+- **PyPDF2 → pypdf** — PDF text extraction uses [`pypdf`](services/knowledge/document_processor.py) (PyPDF2 is deprecated); `pdfplumber` remains the fallback.
+- **Pydantic v3-ready models** — Replaced nested `class Config` with `ConfigDict`, `@validator` → `@field_validator`, `min_items`/`max_items` → `min_length`/`max_length`; `pydantic>=2.13.4,<3.0` until v3 ships on PyPI.
+- **pytest `pythonpath`** — [`pyproject.toml`](pyproject.toml) sets `pythonpath = ["."]` so bare `pytest` works from the repo root (WSL or Windows).
+- **Alembic `0051`** — `rls_diagram_visible` scopes panel mode via org lookup; `panel_global_read` still sees all user-owned rows ([`rls_functions_sql.py`](alembic/rls_functions_sql.py)).
+- **Alembic `0052`** — `rls_lookup_user_organization_id` (`SECURITY DEFINER`) prevents `rls_user_visible` stack overflow when panel policies read `users`.
+- **Alembic `0053`** — `rls_lookup_org_invited_by_user_id` fixes `rls_panel_legacy_org_visible` recursion on `organizations`.
+- **RLS head revision** — [`scripts/db/migration_urls.py`](scripts/db/migration_urls.py) expects Alembic through `0053`.
+- **Global organizations list** — user/manager aggregates on [`GET /admin/organizations`](routers/auth/admin/organizations.py) use [`org_filter()`](utils/auth/admin_scope.py) so platform_bd counts match full org list.
+- **Python dependencies (PyPI sweep)** — [`requirements.txt`](requirements.txt) minimum versions raised to current stable (FastAPI, LangChain/LangGraph, OpenAI, redis-py 8.x, numpy 2.x, pylint 4.x, ruff 0.15.x, and related stacks); `qdrant-client>=1.18.0,<1.19` with setup default **1.18.1** ([`update_qdrant_server.py`](scripts/setup/update_qdrant_server.py), [`setup.py`](scripts/setup/setup.py)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.30).
+
 ## [5.117.29] - 2026-06-02
 
 > **PostgreSQL row-level security (RLS).** Database-layer tenant isolation replaces bare `AsyncSessionLocal()` across the app. Requires Alembic through `0050`, `mindgraph_app` / `mindgraph_migrate` roles, and `DATABASE_MIGRATION_URL` for DDL. See [`alembic/README.md`](alembic/README.md) and [`env.example`](env.example).

@@ -8,14 +8,12 @@ from typing import Any, Optional
 
 from utils.auth.admin_panel_permissions import (
     CAP_SCOPE_GLOBAL,
-    CAP_SCOPE_INVITED_ORGS,
     CAP_SCOPE_ORG,
 )
 from utils.auth.admin_scope import AdminScope, uses_invited_org_panel_scope
 from utils.auth.roles import is_superadmin
 from utils.db.rls_context import (
     MODE_PANEL,
-    MODE_PANEL_SUPERADMIN,
     RlsContext,
 )
 
@@ -62,6 +60,15 @@ def admin_scope_to_session_vars(scope: AdminScope) -> dict[str, Any]:
             "actor_user_id": int(actor_id) if actor_id is not None else None,
         }
 
+    if CAP_SCOPE_GLOBAL in scope.capabilities:
+        return {
+            "mode": MODE_PANEL,
+            "user_id": int(actor_id) if actor_id is not None else None,
+            "role": role,
+            "actor_user_id": int(actor_id) if actor_id is not None else None,
+            "panel_global_read": True,
+        }
+
     if uses_invited_org_panel_scope(scope):
         invited = scope.invited_org_ids if scope.invited_org_ids is not None else frozenset()
         return {
@@ -73,15 +80,6 @@ def admin_scope_to_session_vars(scope: AdminScope) -> dict[str, Any]:
             "role": role,
             "readable_org_ids": _comma_join_org_ids(invited),
             "actor_user_id": int(actor_id) if actor_id is not None else None,
-        }
-
-    if CAP_SCOPE_GLOBAL in scope.capabilities:
-        return {
-            "mode": MODE_PANEL,
-            "user_id": int(actor_id) if actor_id is not None else None,
-            "role": role,
-            "actor_user_id": int(actor_id) if actor_id is not None else None,
-            "panel_global_read": True,
         }
 
     return {

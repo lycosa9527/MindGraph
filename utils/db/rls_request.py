@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import Path, Request
 
-from utils.db.rls_context import RlsContext
+from utils.db.rls_context import RlsContext, set_rls_context
 
 
 def bind_public_org_list_rls(request: Request) -> None:
@@ -29,7 +29,9 @@ def bind_authenticated_rls(
 
 
 def bind_panel_superadmin_rls(request: Request, user) -> None:
-    request.state.rls_context = RlsContext.panel_superadmin(user)
+    ctx = RlsContext.panel_superadmin(user)
+    request.state.rls_context = ctx
+    set_rls_context(ctx)
 
 
 def bind_mindbot_callback_rls(request: Request, *, organization_id: int, callback_token: str) -> None:

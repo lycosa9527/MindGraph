@@ -36,7 +36,7 @@ import urllib.request
 from typing import Optional, Tuple
 
 # Keep in sync with QDRANT_GITHUB_VERSION in scripts/setup/setup.py
-DEFAULT_QDRANT_VERSION = "1.17.1"
+DEFAULT_QDRANT_VERSION = "1.18.1"
 
 MODE_FULL = "full"
 MODE_UPDATE_ONLY = "update_only"

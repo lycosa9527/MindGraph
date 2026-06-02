@@ -34,15 +34,17 @@ python -m alembic upgrade head
 python -m alembic current
 ```
 
-## PostgreSQL RLS (revisions 0042–0049)
+## PostgreSQL RLS (revisions 0042–0053)
 
 Row-level security uses two database roles:
 
 - **`mindgraph_migrate`** — `DATABASE_MIGRATION_URL`; runs Alembic with `BYPASSRLS`.
 - **`mindgraph_app`** — production `DATABASE_URL` after cutover; policies enforce tenant isolation.
 
+**AdminScope ↔ RLS:** see [`docs/db-rls-admin-scope.md`](../docs/db-rls-admin-scope.md).
+
 **Operator entry point:** `python scripts/db/run_migrations.py` auto-resolves the migrate URL,
-verifies RLS through 0049, can patch `.env`, and optionally flush Redis (option 3 or after migrate).
+verifies RLS through 0053, can patch `.env`, and optionally flush Redis (option 3 or after migrate).
 Shortcut: `PYTHONPATH=. python scripts/db/check_migration_status.py`. `main.py` also auto-resolves
 `DATABASE_MIGRATION_URL` on startup when only `mindgraph_app` is configured.
 

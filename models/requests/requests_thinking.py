@@ -12,7 +12,7 @@ Proprietary License
 
 from typing import Optional, Dict, Any, List
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from utils.prompt_output_languages import is_prompt_output_language
 
@@ -71,10 +71,8 @@ class NodePaletteStartRequest(BaseModel):
         """Reject unknown generation language codes."""
         return _validate_node_palette_language(value)
 
-    class Config:
-        """Configuration for NodePaletteStartRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "session_id": "palette_abc123",
                 "diagram_type": "circle_map",
@@ -93,6 +91,7 @@ class NodePaletteStartRequest(BaseModel):
                 "user_id": "user123",
             }
         }
+    )
 
 
 class NodePaletteNextRequest(BaseModel):
@@ -137,10 +136,8 @@ class NodePaletteNextRequest(BaseModel):
         """Reject unknown generation language codes."""
         return _validate_node_palette_language(value)
 
-    class Config:
-        """Configuration for NodePaletteNextRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "session_id": "palette_abc123",
                 "center_topic": "Photosynthesis",
@@ -150,6 +147,7 @@ class NodePaletteNextRequest(BaseModel):
                 },
             }
         }
+    )
 
 
 class NodeSelectionRequest(BaseModel):
@@ -160,10 +158,8 @@ class NodeSelectionRequest(BaseModel):
     selected: bool = Field(..., description="True if selected, False if deselected")
     node_text: str = Field(..., max_length=200, description="Text content of the node")
 
-    class Config:
-        """Configuration for NodeSelectionRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "session_id": "palette_abc123",
                 "node_id": "palette_abc123_qwen_1_5",
@@ -171,6 +167,7 @@ class NodeSelectionRequest(BaseModel):
                 "node_text": "Chlorophyll pigments",
             }
         }
+    )
 
 
 class NodePaletteFinishRequest(BaseModel):
@@ -182,10 +179,8 @@ class NodePaletteFinishRequest(BaseModel):
     batches_loaded: int = Field(..., ge=1, description="Number of batches loaded")
     diagram_type: Optional[str] = Field(None, description="Diagram type for cleanup in generator")
 
-    class Config:
-        """Configuration for NodePaletteFinishRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "session_id": "palette_abc123",
                 "selected_node_ids": [
@@ -197,6 +192,7 @@ class NodePaletteFinishRequest(BaseModel):
                 "batches_loaded": 4,
             }
         }
+    )
 
 
 class RelationshipLabelsStartRequest(BaseModel):
@@ -362,7 +358,6 @@ class NodePaletteCleanupRequest(BaseModel):
     session_id: str = Field(..., min_length=1, max_length=100, description="Node Palette session ID")
     diagram_type: Optional[str] = Field(None, description="Diagram type for cleanup in generator")
 
-    class Config:
-        """Configuration for NodePaletteCleanupRequest model."""
-
-        json_schema_extra = {"example": {"session_id": "palette_abc123", "diagram_type": "circle_map"}}
+    model_config = ConfigDict(
+        json_schema_extra={"example": {"session_id": "palette_abc123", "diagram_type": "circle_map"}}
+    )

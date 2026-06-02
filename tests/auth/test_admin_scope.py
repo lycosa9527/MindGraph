@@ -134,6 +134,30 @@ def test_platform_bd_invite_scope_keeps_global_org_ids():
     assert scope.has_capability(CAP_SCOPE_INVITED_ORGS)
 
 
+def test_platform_bd_to_rls_session_vars_global_read():
+    user = _User("platform_bd", user_id=9)
+    scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset({101, 102}))
+    vars_map = scope.to_rls_session_vars()
+    assert vars_map["rls_mode"] == "panel"
+    assert vars_map.get("panel_global_read") == "1"
+    assert "readable_org_ids" not in vars_map
+
+
+def test_platform_bd_invited_orgs_still_loaded_in_scope():
+    user = _User("platform_bd", user_id=9)
+    scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset({101, 102}))
+    assert scope.invited_org_ids == frozenset({101, 102})
+
+
+def test_expert_still_uses_readable_org_ids_not_global():
+    user = _User("expert", user_id=5)
+    scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset({10, 20}))
+    vars_map = scope.to_rls_session_vars()
+    assert vars_map["rls_mode"] == "panel"
+    assert vars_map.get("readable_org_ids") == "10,20"
+    assert "panel_global_read" not in vars_map
+
+
 def test_platform_bd_partial_read_only_flag():
     user = _User("platform_bd")
     scope = build_admin_scope(user, lang="en")

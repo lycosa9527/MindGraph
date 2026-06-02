@@ -74,7 +74,7 @@ from utils.auth.admin_scope import (
     AdminScope,
     assert_panel_org_readable,
     assert_resource_org_in_scope,
-    invite_org_filter,
+    org_filter,
     panel_org_table_filter,
 )
 
@@ -114,7 +114,7 @@ async def list_organizations_admin(
         select(User.organization_id, sa_count(User.id).label("user_count"))
         .where(
             User.organization_id.isnot(None),
-            invite_org_filter(scope, User.organization_id),
+            org_filter(scope, User.organization_id),
         )
         .group_by(User.organization_id)
     )
@@ -129,7 +129,7 @@ async def list_organizations_admin(
         .where(
             User.organization_id.isnot(None),
             User.role.in_(tuple(SCHOOL_ADMIN_ROLES)),
-            invite_org_filter(scope, User.organization_id),
+            org_filter(scope, User.organization_id),
         )
         .order_by(User.organization_id, User.name)
     )
@@ -757,7 +757,7 @@ async def list_all_managers(
         .where(
             User.organization_id.isnot(None),
             User.role.in_(tuple(SCHOOL_ADMIN_ROLES)),
-            invite_org_filter(scope, User.organization_id),
+            org_filter(scope, User.organization_id),
         )
         .order_by(User.organization_id, User.name)
     )

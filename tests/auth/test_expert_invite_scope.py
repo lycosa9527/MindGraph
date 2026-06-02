@@ -40,7 +40,15 @@ def test_expert_to_rls_session_vars_matches_invited_org_ids():
     assert invite_org_filter(scope, Organization.id) is not None
 
 
-def test_expert_org_filter_excludes_uninvited():
+def test_platform_bd_org_filter_global_read():
+    from sqlalchemy.sql import true as sql_true
+
+    user = _User("platform_bd", user_id=9)
+    scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset({10, 20}))
+    assert org_filter(scope, Organization.id) == sql_true()
+
+
+def test_expert_org_filter_still_scoped_without_global():
     user = _User("expert", user_id=5)
     scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset({10}))
     clause = org_filter(scope, Organization.id)
@@ -91,6 +99,14 @@ def test_platform_bd_assert_resource_org_in_scope_allows_owned_org():
     user = _User("platform_bd", user_id=9)
     scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset({10, 20}))
     assert_resource_org_in_scope(scope, 10, "en", resource_invited_by_user_id=9)
+
+
+def test_panel_org_table_filter_global_bd_sees_all_orgs():
+    from sqlalchemy.sql import true as sql_true
+
+    user = _User("platform_bd", user_id=9)
+    scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset({10, 20}))
+    assert panel_org_table_filter(scope) == sql_true()
 
 
 def test_panel_org_table_filter_allows_legacy_null_only_when_no_invited_ids():

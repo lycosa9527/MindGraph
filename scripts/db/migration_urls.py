@@ -18,7 +18,7 @@ ROLE_APP = "mindgraph_app"
 ROLE_MIGRATE = "mindgraph_migrate"
 ROLE_LEGACY = "mindgraph_user"
 
-RLS_HEAD_REVISION = "0049"
+RLS_HEAD_REVISION = "0053"
 
 _DEFAULT_RUNTIME = "postgresql://mindgraph_user:mindgraph_password@localhost:5432/mindgraph"
 

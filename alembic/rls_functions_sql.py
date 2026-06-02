@@ -151,6 +151,16 @@ AS $$
         )
 $$;
 
+CREATE OR REPLACE FUNCTION rls_lookup_org_invited_by_user_id(target_org_id bigint)
+RETURNS bigint
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT invited_by_user_id FROM organizations WHERE id = target_org_id
+$$;
+
 CREATE OR REPLACE FUNCTION rls_panel_legacy_org_visible(target_org_id bigint)
 RETURNS boolean
 LANGUAGE sql
@@ -158,11 +168,8 @@ STABLE
 PARALLEL SAFE
 AS $$
     SELECT coalesce(rls_setting_text('app.role'), '') <> 'expert'
-        AND EXISTS (
-            SELECT 1 FROM organizations o
-            WHERE o.id = target_org_id
-              AND o.invited_by_user_id IS NULL
-        )
+        AND target_org_id IS NOT NULL
+        AND rls_lookup_org_invited_by_user_id(target_org_id) IS NULL
 $$;
 
 CREATE OR REPLACE FUNCTION rls_org_visible(target_org_id bigint)
@@ -211,6 +218,16 @@ AS $$
         )
 $$;
 
+CREATE OR REPLACE FUNCTION rls_lookup_user_organization_id(target_user_id bigint)
+RETURNS bigint
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT organization_id FROM users WHERE id = target_user_id
+$$;
+
 CREATE OR REPLACE FUNCTION rls_user_visible(target_user_id bigint)
 RETURNS boolean
 LANGUAGE sql
@@ -224,11 +241,7 @@ AS $$
         WHEN target_user_id = rls_current_user_id() THEN true
         WHEN rls_is_panel_mode() THEN (
             rls_panel_global_read()
-            OR EXISTS (
-                SELECT 1 FROM users u
-                WHERE u.id = target_user_id
-                  AND rls_org_visible(u.organization_id)
-            )
+            OR rls_org_visible(rls_lookup_user_organization_id(target_user_id))
         )
         ELSE rls_same_org_users(target_user_id)
     END
@@ -244,7 +257,11 @@ AS $$
         WHEN rls_is_system_mode() THEN true
         WHEN rls_is_deny_mode() THEN false
         WHEN owner_user_id = rls_current_user_id() THEN true
-        WHEN rls_is_panel_mode() OR rls_panel_global_read() THEN true
+        WHEN rls_panel_global_read() THEN true
+        WHEN rls_is_panel_mode() THEN (
+            owner_user_id IS NOT NULL
+            AND rls_org_visible(rls_lookup_user_organization_id(owner_user_id))
+        )
         ELSE rls_same_org_users(owner_user_id)
     END
 $$;
@@ -334,6 +351,8 @@ DROP FUNCTION IF EXISTS rls_knowledge_document_visible(integer);
 DROP FUNCTION IF EXISTS rls_knowledge_space_visible(integer);
 DROP FUNCTION IF EXISTS rls_diagram_visible(bigint);
 DROP FUNCTION IF EXISTS rls_user_visible(bigint);
+DROP FUNCTION IF EXISTS rls_lookup_org_invited_by_user_id(bigint);
+DROP FUNCTION IF EXISTS rls_lookup_user_organization_id(bigint);
 DROP FUNCTION IF EXISTS rls_same_org_users(bigint);
 DROP FUNCTION IF EXISTS rls_org_visible(bigint);
 DROP FUNCTION IF EXISTS rls_panel_legacy_org_visible(bigint);

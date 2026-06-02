@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from services.auth.quick_register_redis import WORKSHOP_MAX_USES_CAP
 from utils.prompt_output_languages import is_prompt_output_language
@@ -71,10 +71,8 @@ class RegisterRequest(BaseModel):
             raise ValueError("Name cannot contain numbers. Please enter your name using letters only.")
         return v
 
-    class Config:
-        """Configuration for RegisterRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "phone": "13812345678",
                 "password": "Teacher123!",
@@ -84,6 +82,7 @@ class RegisterRequest(BaseModel):
                 "captcha_id": "uuid-captcha-session",
             }
         }
+    )
 
 
 class RegisterOverseasRequest(BaseModel):
@@ -147,10 +146,8 @@ class LoginRequest(BaseModel):
             raise ValueError("Provide exactly one of phone or email")
         return self
 
-    class Config:
-        """Configuration for LoginRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "phone": "13812345678",
                 "password": "Teacher123!",
@@ -158,6 +155,7 @@ class LoginRequest(BaseModel):
                 "captcha_id": "uuid-captcha-session",
             }
         }
+    )
 
 
 class PasskeyVerifyRequest(BaseModel):
@@ -175,10 +173,7 @@ class PasskeyVerifyRequest(BaseModel):
             raise ValueError("Passkey must be exactly 6 digits")
         return value
 
-    class Config:
-        """Configuration for PasskeyVerifyRequest model."""
-
-        json_schema_extra = {"example": {"passkey": "888888"}}
+    model_config = ConfigDict(json_schema_extra={"example": {"passkey": "888888"}})
 
 
 # ============================================================================
@@ -221,10 +216,8 @@ class SendSMSCodeRequest(BaseModel):
             raise ValueError(f"Purpose must be one of: {', '.join(valid_purposes)}")
         return v
 
-    class Config:
-        """Configuration for SendSMSCodeRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "phone": "13812345678",
                 "purpose": "register",
@@ -232,6 +225,7 @@ class SendSMSCodeRequest(BaseModel):
                 "captcha_id": "uuid-captcha-session",
             }
         }
+    )
 
 
 class SendSMSCodeSimpleRequest(BaseModel):
@@ -259,16 +253,15 @@ class SendSMSCodeSimpleRequest(BaseModel):
             )
         return v
 
-    class Config:
-        """Configuration for SendSMSCodeSimpleRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "phone": "13812345678",
                 "captcha": "AB3D",
                 "captcha_id": "uuid-captcha-session",
             }
         }
+    )
 
 
 class VerifySMSCodeRequest(BaseModel):
@@ -308,10 +301,9 @@ class VerifySMSCodeRequest(BaseModel):
             raise ValueError(f"SMS verification code must be exactly 6 digits. You entered {len(v)} digit(s).")
         return v
 
-    class Config:
-        """Configuration for VerifySMSCodeRequest model."""
-
-        json_schema_extra = {"example": {"phone": "13812345678", "code": "123456", "purpose": "register"}}
+    model_config = ConfigDict(
+        json_schema_extra={"example": {"phone": "13812345678", "code": "123456", "purpose": "register"}}
+    )
 
 
 # ============================================================================
@@ -346,10 +338,8 @@ class SendEmailCodeRequest(BaseModel):
             raise ValueError(f"Purpose must be one of: {', '.join(valid)}")
         return v
 
-    class Config:
-        """Configuration for SendEmailCodeRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "email": "user@example.com",
                 "purpose": "register",
@@ -357,6 +347,7 @@ class SendEmailCodeRequest(BaseModel):
                 "captcha_id": "uuid-captcha-session",
             }
         }
+    )
 
 
 class VerifyEmailCodeRequest(BaseModel):
@@ -384,10 +375,9 @@ class VerifyEmailCodeRequest(BaseModel):
             raise ValueError(f"Purpose must be one of: {', '.join(valid)}")
         return v
 
-    class Config:
-        """Configuration for VerifyEmailCodeRequest model."""
-
-        json_schema_extra = {"example": {"email": "user@example.com", "code": "123456", "purpose": "register"}}
+    model_config = ConfigDict(
+        json_schema_extra={"example": {"email": "user@example.com", "code": "123456", "purpose": "register"}}
+    )
 
 
 class ResetPasswordWithEmailRequest(BaseModel):
@@ -410,16 +400,15 @@ class ResetPasswordWithEmailRequest(BaseModel):
             raise ValueError("Email verification code must be exactly 6 digits.")
         return v
 
-    class Config:
-        """Configuration for ResetPasswordWithEmailRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "email": "user@university.edu",
                 "email_code": "123456",
                 "new_password": "NewPassword123!",
             }
         }
+    )
 
 
 class RegisterWithSMSRequest(BaseModel):
@@ -475,10 +464,8 @@ class RegisterWithSMSRequest(BaseModel):
             raise ValueError(f"SMS verification code must be exactly 6 digits. You entered {len(v)} digit(s).")
         return v
 
-    class Config:
-        """Configuration for RegisterWithSMSRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "phone": "13812345678",
                 "password": "Teacher123!",
@@ -487,6 +474,7 @@ class RegisterWithSMSRequest(BaseModel):
                 "sms_code": "123456",
             }
         }
+    )
 
 
 class RegisterQuickRequest(BaseModel):
@@ -638,10 +626,7 @@ class LoginWithSMSRequest(BaseModel):
             raise ValueError(f"SMS verification code must be exactly 6 digits. You entered {len(v)} digit(s).")
         return v
 
-    class Config:
-        """Configuration for LoginWithSMSRequest model."""
-
-        json_schema_extra = {"example": {"phone": "13812345678", "sms_code": "123456"}}
+    model_config = ConfigDict(json_schema_extra={"example": {"phone": "13812345678", "sms_code": "123456"}})
 
 
 class LoginWithEmailRequest(BaseModel):
@@ -663,12 +648,11 @@ class LoginWithEmailRequest(BaseModel):
             raise ValueError("Email verification code must be exactly 6 digits.")
         return v
 
-    class Config:
-        """Configuration for LoginWithEmailRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {"email": "user@university.edu", "email_code": "123456"},
         }
+    )
 
 
 class ChangePasswordRequest(BaseModel):
@@ -717,16 +701,15 @@ class ResetPasswordWithSMSRequest(BaseModel):
             raise ValueError(f"SMS verification code must be exactly 6 digits. You entered {len(v)} digit(s).")
         return v
 
-    class Config:
-        """Configuration for ResetPasswordWithSMSRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "phone": "13812345678",
                 "sms_code": "123456",
                 "new_password": "NewPassword123!",
             }
         }
+    )
 
 
 class SendChangePhoneSMSRequest(BaseModel):
@@ -759,16 +742,15 @@ class SendChangePhoneSMSRequest(BaseModel):
             )
         return v
 
-    class Config:
-        """Configuration for SendChangePhoneSMSRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "new_phone": "13987654321",
                 "captcha": "AB3D",
                 "captcha_id": "uuid-captcha-session",
             }
         }
+    )
 
 
 class ChangePhoneRequest(BaseModel):
@@ -812,10 +794,7 @@ class ChangePhoneRequest(BaseModel):
             raise ValueError(f"SMS verification code must be exactly 6 digits. You entered {len(v)} digit(s).")
         return v
 
-    class Config:
-        """Configuration for ChangePhoneRequest model."""
-
-        json_schema_extra = {"example": {"new_phone": "13987654321", "sms_code": "123456"}}
+    model_config = ConfigDict(json_schema_extra={"example": {"new_phone": "13987654321", "sms_code": "123456"}})
 
 
 _VALID_UI_VERSIONS = frozenset(("chinese", "international"))

@@ -16,7 +16,7 @@ from typing import Optional
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, joinedload
@@ -70,10 +70,7 @@ class SharedDiagramResponse(BaseModel):
     created_at: str
     is_liked: bool = False
 
-    class Config:
-        """Pydantic configuration for SharedDiagramResponse."""
-
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CommentCreate(BaseModel):
@@ -90,10 +87,7 @@ class CommentResponse(BaseModel):
     author: dict
     created_at: str
 
-    class Config:
-        """Pydantic configuration for SharedDiagramResponse."""
-
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # =============================================================================

@@ -262,6 +262,8 @@ def org_filter(scope: AdminScope, column: Any) -> ColumnElement:
         if len(scope.org_ids) == 0:
             return false()
         return column.in_(scope.org_ids)
+    if CAP_SCOPE_GLOBAL in scope.capabilities:
+        return true()
     if uses_invited_org_panel_scope(scope):
         return column.in_(panel_readable_org_id_subquery(scope))
     if scope.org_ids is not None:
@@ -311,6 +313,8 @@ def panel_readable_org_id_subquery(scope: AdminScope):
 
 def panel_org_table_filter(scope: AdminScope) -> ColumnElement:
     """Filter Organization rows for list endpoints (superadmin = all rows)."""
+    if CAP_SCOPE_GLOBAL in scope.capabilities:
+        return true()
     if not uses_invited_org_panel_scope(scope):
         return true()
     return panel_readable_org_condition(scope)
@@ -321,6 +325,8 @@ def invite_org_filter(scope: AdminScope, column: Any) -> ColumnElement:
     if CAP_SCOPE_INVITED_ORGS not in scope.capabilities:
         return org_filter(scope, column)
     if column is Organization.id:
+        if CAP_SCOPE_GLOBAL in scope.capabilities:
+            return panel_readable_org_condition(scope)
         return panel_org_table_filter(scope)
     return column.in_(panel_readable_org_id_subquery(scope))
 

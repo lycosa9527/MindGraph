@@ -14,7 +14,7 @@ Proprietary License
 
 from typing import Optional, Dict, Any, List
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ErrorResponse(BaseModel):
@@ -25,16 +25,15 @@ class ErrorResponse(BaseModel):
     context: Optional[Dict[str, Any]] = Field(None, description="Additional error context")
     timestamp: Optional[float] = Field(None, description="Error timestamp")
 
-    class Config:
-        """Configuration for ErrorResponse JSON schema"""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "error": "Invalid diagram type",
                 "error_type": "validation",
                 "timestamp": 1696800000.0,
             }
         }
+    )
 
 
 class GenerateResponse(BaseModel):
@@ -62,10 +61,8 @@ class GenerateResponse(BaseModel):
         description="Multiple relationship label options (3–5) for concept map picker",
     )
 
-    class Config:
-        """Configuration for GenerateResponse JSON schema"""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "success": True,
                 "spec": {"topic": "Photosynthesis", "concepts": []},
@@ -73,6 +70,7 @@ class GenerateResponse(BaseModel):
                 "language": "zh",
             }
         }
+    )
 
 
 class HealthResponse(BaseModel):
@@ -81,15 +79,14 @@ class HealthResponse(BaseModel):
     status: str = Field(..., description="Health status")
     version: str = Field(..., description="Application version")
 
-    class Config:
-        """Configuration for HealthResponse JSON schema"""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "status": "ok",
                 "version": "4.9.0",  # Example only - actual version from config.VERSION
             }
         }
+    )
 
 
 class StatusResponse(BaseModel):
@@ -126,10 +123,8 @@ class LLMHealthResponse(BaseModel):
     healthy_count: Optional[int] = Field(None, description="Number of healthy models")
     total_models: Optional[int] = Field(None, description="Total number of models checked")
 
-    class Config:
-        """Configuration for LLMHealthResponse JSON schema"""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "status": "success",
                 "health": {
@@ -145,6 +140,7 @@ class LLMHealthResponse(BaseModel):
                 "total_models": 2,
             }
         }
+    )
 
 
 class DatabaseHealthResponse(BaseModel):
@@ -156,10 +152,8 @@ class DatabaseHealthResponse(BaseModel):
     database_stats: Dict[str, Any] = Field(default_factory=dict, description="Database statistics")
     timestamp: int = Field(..., description="Unix timestamp of health check")
 
-    class Config:
-        """Configuration for DatabaseHealthResponse JSON schema"""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "status": "healthy",
                 "database_healthy": True,
@@ -172,6 +166,7 @@ class DatabaseHealthResponse(BaseModel):
                 "timestamp": 1642012345,
             }
         }
+    )
 
 
 # ============================================================================
@@ -191,10 +186,8 @@ class DiagramResponse(BaseModel):
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
-    class Config:
-        """Configuration for DiagramResponse JSON schema"""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
                 "title": "My Mind Map",
@@ -206,6 +199,7 @@ class DiagramResponse(BaseModel):
                 "updated_at": "2026-01-07T12:00:00",
             }
         }
+    )
 
 
 class DiagramListItem(BaseModel):
@@ -219,10 +213,8 @@ class DiagramListItem(BaseModel):
     is_pinned: bool = Field(False, description="Whether diagram is pinned to top")
     workshop_active: bool = Field(False, description="Whether diagram has a live collab session")
 
-    class Config:
-        """Configuration for DiagramListItem JSON schema"""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
                 "title": "My Mind Map",
@@ -232,6 +224,7 @@ class DiagramListItem(BaseModel):
                 "is_pinned": False,
             }
         }
+    )
 
 
 class DiagramListResponse(BaseModel):
@@ -244,10 +237,8 @@ class DiagramListResponse(BaseModel):
     has_more: bool = Field(..., description="Whether there are more pages")
     max_diagrams: int = Field(0, description="Maximum diagrams allowed per user (0 = unlimited)")
 
-    class Config:
-        """Configuration for DiagramListResponse JSON schema"""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "diagrams": [
                     {
@@ -265,6 +256,7 @@ class DiagramListResponse(BaseModel):
                 "max_diagrams": 0,
             }
         }
+    )
 
 
 # ============================================================================
@@ -478,16 +470,15 @@ class SnapshotMetadata(BaseModel):
     version_number: int = Field(..., description="Version number within the diagram (1–10)")
     created_at: datetime = Field(..., description="When the snapshot was taken")
 
-    class Config:
-        """Configuration for SnapshotMetadata JSON schema."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": 1,
                 "version_number": 1,
                 "created_at": "2026-03-24T10:00:00",
             }
         }
+    )
 
 
 class SnapshotListResponse(BaseModel):
@@ -498,10 +489,8 @@ class SnapshotListResponse(BaseModel):
         description="Snapshots ordered by version_number ascending",
     )
 
-    class Config:
-        """Configuration for SnapshotListResponse JSON schema."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "snapshots": [
                     {"id": 1, "version_number": 1, "created_at": "2026-03-24T10:00:00"},
@@ -509,6 +498,7 @@ class SnapshotListResponse(BaseModel):
                 ]
             }
         }
+    )
 
 
 class SnapshotRecallResponse(BaseModel):
@@ -517,12 +507,11 @@ class SnapshotRecallResponse(BaseModel):
     version_number: int = Field(..., description="The version that was recalled")
     spec: Dict[str, Any] = Field(..., description="Diagram specification at that version")
 
-    class Config:
-        """Configuration for SnapshotRecallResponse JSON schema."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "version_number": 1,
                 "spec": {"topic": "Central Topic", "children": []},
             }
         }
+    )

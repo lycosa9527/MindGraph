@@ -21,7 +21,7 @@ Proprietary License
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 # ============================================================================
@@ -395,11 +395,9 @@ class EnvSettingsSchema(BaseModel):
     database: DatabaseSettings
     auth: AuthSettings
 
-    class Config:
-        """Pydantic configuration"""
-
-        use_enum_values = True  # Convert enums to their values
-        json_schema_extra = {
+    model_config = ConfigDict(
+        use_enum_values=True,
+        json_schema_extra={
             "example": {
                 "app": {"HOST": "0.0.0.0", "PORT": 9527, "DEBUG": False},
                 "qwen": {
@@ -408,7 +406,8 @@ class EnvSettingsSchema(BaseModel):
                 },
                 # ... more examples
             }
-        }
+        },
+    )
 
 
 # Backward compatibility alias

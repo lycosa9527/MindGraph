@@ -33,8 +33,8 @@ from utils.auth import (
     is_superadmin,
     user_has_feature_access,
 )
-from utils.auth.admin_scope import AdminScope, build_admin_scope, build_admin_scope_async
-from utils.db.rls_context import RlsContext, apply_rls_context_async
+from utils.auth.admin_scope import AdminScope, build_admin_scope_async
+from utils.db.rls_context import RlsContext, apply_rls_context_async, set_rls_context
 from utils.db.rls_request import bind_panel_superadmin_rls
 from utils.auth.admin_panel_permissions import (
     CAP_SCOPE_GLOBAL,
@@ -283,6 +283,7 @@ async def get_admin_scope(
     )
     ctx = RlsContext.from_admin_scope(scope)
     request.state.rls_context = ctx
+    set_rls_context(ctx)
     await apply_rls_context_async(db, ctx)
     return scope
 

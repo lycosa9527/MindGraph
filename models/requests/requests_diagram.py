@@ -12,7 +12,7 @@ Proprietary License
 
 from typing import Literal, Optional, Dict, Any, List
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from utils.prompt_output_languages import is_prompt_output_language
 
@@ -145,10 +145,8 @@ class GenerateRequest(BaseModel):
             raise ValueError("Prompt is required unless fixed_dimension or dimension_only_mode is provided")
         return self
 
-    class Config:
-        """Configuration for GenerateRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "prompt": "生成关于光合作用的概念图",
                 "diagram_type": "concept_map",
@@ -156,6 +154,7 @@ class GenerateRequest(BaseModel):
                 "llm": "qwen",
             }
         }
+    )
 
 
 class EnhanceRequest(BaseModel):
@@ -173,10 +172,8 @@ class EnhanceRequest(BaseModel):
         """Reject unknown generation language codes."""
         return _validate_prompt_output_language(value)
 
-    class Config:
-        """Configuration for EnhanceRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "diagram_data": {"topic": "Example"},
                 "diagram_type": "bubble_map",
@@ -185,6 +182,7 @@ class EnhanceRequest(BaseModel):
                 "llm": "qwen",
             }
         }
+    )
 
 
 class ExportPNGRequest(BaseModel):
@@ -196,10 +194,8 @@ class ExportPNGRequest(BaseModel):
     height: Optional[int] = Field(800, ge=300, le=3000, description="PNG height in pixels")
     scale: Optional[int] = Field(2, ge=1, le=4, description="Scale factor for high-DPI displays")
 
-    class Config:
-        """Configuration for ExportPNGRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "diagram_data": {"topic": "Example"},
                 "diagram_type": "bubble_map",
@@ -208,6 +204,7 @@ class ExportPNGRequest(BaseModel):
                 "scale": 2,
             }
         }
+    )
 
 
 class GeneratePNGRequest(BaseModel):
@@ -228,10 +225,8 @@ class GeneratePNGRequest(BaseModel):
         """Reject unknown generation language codes."""
         return _validate_prompt_output_language(value)
 
-    class Config:
-        """Configuration for GeneratePNGRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "prompt": "Create a mind map about machine learning",
                 "language": "en",
@@ -240,6 +235,7 @@ class GeneratePNGRequest(BaseModel):
                 "height": 800,
             }
         }
+    )
 
 
 class GenerateDingTalkRequest(BaseModel):
@@ -257,10 +253,7 @@ class GenerateDingTalkRequest(BaseModel):
         """Reject unknown generation language codes."""
         return _validate_prompt_output_language(value)
 
-    class Config:
-        """Configuration for GenerateDingTalkRequest model."""
-
-        json_schema_extra = {"example": {"prompt": "比较猫和狗", "language": "zh"}}
+    model_config = ConfigDict(json_schema_extra={"example": {"prompt": "比较猫和狗", "language": "zh"}})
 
 
 class WebContentGenerateRequest(BaseModel):
@@ -289,10 +282,8 @@ class WebContentGenerateRequest(BaseModel):
         """Reject unknown generation language codes."""
         return _validate_prompt_output_language(value)
 
-    class Config:
-        """Configuration for WebContentGenerateRequest."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "page_content": "# Article\n\nParagraph...",
                 "content_format": "text/markdown",
@@ -301,6 +292,7 @@ class WebContentGenerateRequest(BaseModel):
                 "language": "zh",
             }
         }
+    )
 
 
 class WebContentMindmapPngRequest(WebContentGenerateRequest):
@@ -330,10 +322,8 @@ class DiagramCreateRequest(BaseModel):
         """Reject unknown generation language codes."""
         return _validate_prompt_output_language(value)
 
-    class Config:
-        """Configuration for DiagramCreateRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "title": "My Mind Map",
                 "diagram_type": "mind_map",
@@ -341,6 +331,7 @@ class DiagramCreateRequest(BaseModel):
                 "language": "zh",
             }
         }
+    )
 
 
 class DiagramUpdateRequest(BaseModel):
@@ -361,15 +352,14 @@ class DiagramUpdateRequest(BaseModel):
         description="Number of content edits (add/delete/change nodes) since last save",
     )
 
-    class Config:
-        """Configuration for DiagramUpdateRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "title": "Updated Title",
                 "spec": {"topic": "Updated Topic", "children": []},
             }
         }
+    )
 
 
 class FocusQuestionReviewRequest(BaseModel):
@@ -529,7 +519,4 @@ class SnapshotTakeRequest(BaseModel):
 
     spec: Dict[str, Any] = Field(..., description="Diagram specification to snapshot (llm_results excluded)")
 
-    class Config:
-        """Configuration for SnapshotTakeRequest model."""
-
-        json_schema_extra = {"example": {"spec": {"topic": "Central Topic", "children": []}}}
+    model_config = ConfigDict(json_schema_extra={"example": {"spec": {"topic": "Central Topic", "children": []}}})

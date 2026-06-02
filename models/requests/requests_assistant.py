@@ -12,7 +12,7 @@ Proprietary License
 
 from typing import Optional, Dict, Any, List
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class AIAssistantFile(BaseModel):
@@ -23,16 +23,15 @@ class AIAssistantFile(BaseModel):
     url: Optional[str] = Field(None, description="File URL (for remote_url transfer method)")
     upload_file_id: Optional[str] = Field(None, description="Uploaded file ID (for local_file transfer method)")
 
-    class Config:
-        """Configuration for AIAssistantFile model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "type": "image",
                 "transfer_method": "remote_url",
                 "url": "https://example.com/image.png",
             }
         }
+    )
 
 
 class AIAssistantRequest(BaseModel):
@@ -59,10 +58,8 @@ class AIAssistantRequest(BaseModel):
     workflow_id: Optional[str] = Field(None, description="Specific workflow version ID")
     trace_id: Optional[str] = Field(None, description="Trace ID for distributed tracing")
 
-    class Config:
-        """Configuration for AIAssistantRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "message": "帮我解释一下概念图的作用",
                 "user_id": "user_123",
@@ -76,6 +73,7 @@ class AIAssistantRequest(BaseModel):
                 ],
             }
         }
+    )
 
 
 class FrontendLogRequest(BaseModel):
@@ -99,13 +97,11 @@ class FrontendLogRequest(BaseModel):
 class FrontendLogBatchRequest(BaseModel):
     """Request model for /api/frontend_log_batch endpoint (batched logs)"""
 
-    logs: List[FrontendLogRequest] = Field(..., min_items=1, max_items=50, description="Batch of log entries")
+    logs: List[FrontendLogRequest] = Field(..., min_length=1, max_length=50, description="Batch of log entries")
     batch_size: int = Field(..., description="Number of logs in this batch")
 
-    class Config:
-        """Configuration for FrontendLogBatchRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "logs": [
                     {
@@ -124,6 +120,7 @@ class FrontendLogBatchRequest(BaseModel):
                 "batch_size": 2,
             }
         }
+    )
 
 
 class FeedbackRequest(BaseModel):
@@ -135,10 +132,8 @@ class FeedbackRequest(BaseModel):
     user_id: Optional[str] = Field(None, description="User ID if available")
     user_name: Optional[str] = Field(None, description="User name if available")
 
-    class Config:
-        """Configuration for FeedbackRequest model."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "message": "The diagram export feature is not working properly.",
                 "captcha_id": "uuid-here",
@@ -147,3 +142,4 @@ class FeedbackRequest(BaseModel):
                 "user_name": "John Doe",
             }
         }
+    )

@@ -31,11 +31,11 @@ except ImportError:
 
 # Try to import optional dependencies
 try:
-    import PyPDF2
+    import pypdf
 
-    PYPDF2_AVAILABLE = True
+    PYPDF_AVAILABLE = True
 except ImportError:
-    PYPDF2_AVAILABLE = False
+    PYPDF_AVAILABLE = False
 
 try:
     import pdfplumber
@@ -328,11 +328,11 @@ class DocumentProcessor:
     def _extract_pdf_metadata(self, file_path: str) -> Dict[str, Any]:
         """Extract metadata from PDF."""
         metadata = {}
-        if not PYPDF2_AVAILABLE:
+        if not PYPDF_AVAILABLE:
             return metadata
         try:
             with open(file_path, "rb") as file:
-                pdf_reader = PyPDF2.PdfReader(file)
+                pdf_reader = pypdf.PdfReader(file)
                 if pdf_reader.metadata:
                     pdf_meta = pdf_reader.metadata
                     if pdf_meta.get("/Title"):
@@ -449,23 +449,22 @@ class DocumentProcessor:
 
     def _extract_pdf(self, file_path: str) -> str:
         """Extract text from PDF."""
-        if not PYPDF2_AVAILABLE and not PDFPLUMBER_AVAILABLE:
-            raise ImportError("PyPDF2 or pdfplumber required for PDF extraction")
+        if not PYPDF_AVAILABLE and not PDFPLUMBER_AVAILABLE:
+            raise ImportError("pypdf or pdfplumber required for PDF extraction")
 
-        # Try PyPDF2 first if available
-        if PYPDF2_AVAILABLE:
+        # Try pypdf first if available
+        if PYPDF_AVAILABLE:
             try:
                 text_parts = []
                 with open(file_path, "rb") as file:
-                    pdf_reader = PyPDF2.PdfReader(file)
+                    pdf_reader = pypdf.PdfReader(file)
                     for page in pdf_reader.pages:
                         text = page.extract_text()
                         if text:
                             text_parts.append(text)
                 return "\n\n".join(text_parts)
             except Exception as e:
-                logger.warning("[DocumentProcessor] PyPDF2 failed, trying pdfplumber: %s", e)
-                # Fallback to pdfplumber if PyPDF2 fails
+                logger.warning("[DocumentProcessor] pypdf failed, trying pdfplumber: %s", e)
                 if PDFPLUMBER_AVAILABLE:
                     with pdfplumber.open(file_path) as pdf:
                         text_parts = []
@@ -476,7 +475,6 @@ class DocumentProcessor:
                         return "\n\n".join(text_parts)
                 raise
 
-        # Use pdfplumber if PyPDF2 not available
         if PDFPLUMBER_AVAILABLE:
             with pdfplumber.open(file_path) as pdf:
                 text_parts = []
@@ -486,7 +484,7 @@ class DocumentProcessor:
                         text_parts.append(text)
                 return "\n\n".join(text_parts)
 
-        raise ImportError("PyPDF2 or pdfplumber required for PDF extraction")
+        raise ImportError("pypdf or pdfplumber required for PDF extraction")
 
     def extract_text_with_pages(self, file_path: str, file_type: str) -> tuple[str, List[Dict[str, Any]]]:
         """

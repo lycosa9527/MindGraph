@@ -13,7 +13,7 @@ Proprietary License
 from typing import Optional, List
 import re
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class DocumentResponse(BaseModel):
@@ -68,33 +68,32 @@ class DanmakuCreate(BaseModel):
     color: Optional[str] = None
     highlight_color: Optional[str] = None
 
+    @field_validator("color", "highlight_color")
     @classmethod
-    @validator("color", "highlight_color")
-    def validate_hex_color(cls, v):
+    def validate_hex_color(cls, value: Optional[str]) -> Optional[str]:
         """Validate hex color format."""
-        if v is None:
-            return v
-        if not re.match(r"^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$", v):
+        if value is None:
+            return value
+        if not re.match(r"^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$", value):
             raise ValueError("Invalid hex color format. Use #RRGGBB or #RRGGBBAA")
-        return v
+        return value
 
+    @field_validator("text_bbox")
     @classmethod
-    @validator("text_bbox")
-    def validate_text_bbox(cls, v):
+    def validate_text_bbox(cls, value: Optional[dict]) -> Optional[dict]:
         """Validate text bounding box structure."""
-        if v is None:
-            return v
-        if not isinstance(v, dict):
+        if value is None:
+            return value
+        if not isinstance(value, dict):
             raise ValueError("text_bbox must be a dictionary")
         required_keys = {"x", "y", "width", "height"}
-        if not required_keys.issubset(v.keys()):
-            missing = required_keys - set(v.keys())
+        if not required_keys.issubset(value.keys()):
+            missing = required_keys - set(value.keys())
             raise ValueError(f"text_bbox missing required keys: {missing}")
-        # Validate values are numbers
         for key in required_keys:
-            if not isinstance(v[key], (int, float)):
+            if not isinstance(value[key], (int, float)):
                 raise ValueError(f"text_bbox.{key} must be a number")
-        return v
+        return value
 
 
 class ReplyCreate(BaseModel):
