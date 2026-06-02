@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from alembic.rls_functions_sql import build_grant_rls_functions_to_app_sql
+
 
 def _sql_escape(value: str) -> str:
     return value.replace("'", "''")
@@ -49,7 +51,7 @@ BEGIN
         GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO mindgraph_migrate;
     END IF;
 END $$;
-"""
+""" + build_grant_rls_functions_to_app_sql()
 
 
 def build_ensure_migrate_bypassrls_sql() -> str:

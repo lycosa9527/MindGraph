@@ -11,6 +11,7 @@ from alembic import op
 
 from alembic.rls_functions_sql import (
     RLS_FUNCTIONS_DOWNGRADE,
+    build_grant_rls_functions_to_app_sql,
     rls_functions_upgrade_statements,
 )
 
@@ -23,18 +24,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     for statement in rls_functions_upgrade_statements():
         op.execute(sa.text(statement))
-    op.execute(
-        sa.text(
-            """
-            DO $$
-            BEGIN
-                IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'mindgraph_app') THEN
-                    GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO mindgraph_app;
-                END IF;
-            END $$;
-            """
-        )
-    )
+    op.execute(sa.text(build_grant_rls_functions_to_app_sql()))
 
 
 def downgrade() -> None:

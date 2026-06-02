@@ -20,6 +20,36 @@ def rls_functions_upgrade_statements() -> list[str]:
     return split_sql_statements(RLS_FUNCTIONS_UPGRADE)
 
 
+def build_grant_rls_functions_to_app_sql() -> str:
+    """
+    Grant EXECUTE on MindGraph ``rls_*`` helpers to ``mindgraph_app`` only.
+
+    Avoids ``GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public``, which fails when
+    ``pg_stat_statements`` (rev 0031) installs functions the migrate role cannot grant.
+    """
+    return """
+DO $$
+DECLARE
+    fn record;
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'mindgraph_app') THEN
+        FOR fn IN
+            SELECT p.oid::regprocedure AS signature
+            FROM pg_proc p
+            JOIN pg_namespace n ON n.oid = p.pronamespace
+            WHERE n.nspname = 'public'
+              AND p.proname ~ '^rls_'
+        LOOP
+            EXECUTE format(
+                'GRANT EXECUTE ON FUNCTION %s TO mindgraph_app',
+                fn.signature
+            );
+        END LOOP;
+    END IF;
+END $$;
+"""
+
+
 RLS_FUNCTIONS_UPGRADE = """
 CREATE OR REPLACE FUNCTION rls_setting_text(setting_name text)
 RETURNS text
