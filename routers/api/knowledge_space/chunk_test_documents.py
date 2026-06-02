@@ -15,7 +15,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count as sa_count
 
-from config.database import AsyncSessionLocal, get_async_db
+from config.database import get_async_db
+from utils.db.session_open import user_rls_session
 from models.domain.auth import User
 from models.domain.knowledge_space import ChunkTestDocument, ChunkTestDocumentChunk
 from models.requests.requests_knowledge_space import ProcessSelectedRequest
@@ -34,14 +35,14 @@ _doc_processing_sem = threading.Semaphore(_MAX_CONCURRENT_DOC_THREADS)
 
 async def _run_process_document(user_id: int, document_id: int) -> None:
     """Run document processing using the async session and service."""
-    async with AsyncSessionLocal() as db:
+    async with user_rls_session(user_id) as db:
         service = ChunkTestDocumentService(db, user_id)
         await service.process_document(document_id)
 
 
 async def _mark_document_failed(user_id: int, document_id: int, error: Exception) -> None:
     """Mark a chunk-test document as failed via an independent async session."""
-    async with AsyncSessionLocal() as db:
+    async with user_rls_session(user_id) as db:
         doc = await db.get(ChunkTestDocument, document_id)
         if doc and doc.user_id == user_id and doc.status == "processing":
             doc.status = "failed"

@@ -16,7 +16,7 @@ from typing import Any, List, Tuple
 from sqlalchemy import select
 from sqlalchemy.sql.functions import count as sa_count
 
-from config.database import AsyncSessionLocal
+from utils.db.session_open import user_rls_session
 from models.domain.diagrams import Diagram
 from services.redis import keys as _keys
 
@@ -62,7 +62,7 @@ async def _redis_json_set_paths(
 async def count_diagrams_from_db(user_id: int) -> int:
     """Count non-deleted diagrams for a user directly from the database."""
     try:
-        async with AsyncSessionLocal() as db:
+        async with user_rls_session(user_id) as db:
             result = await db.execute(
                 select(sa_count()).select_from(Diagram).where(Diagram.user_id == user_id, Diagram.is_deleted.is_(False))
             )

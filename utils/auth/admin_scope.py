@@ -68,6 +68,12 @@ class AdminScope:
             detail=Messages.error("admin_access_required", lang),
         )
 
+    def to_rls_session_vars(self) -> dict[str, str]:
+        """Map panel scope to SET LOCAL app.* keys for Postgres RLS policies."""
+        from utils.db.rls_admin_scope import to_rls_session_vars as _to_vars
+
+        return _to_vars(self)
+
 
 def _read_only_for_role(role: str, capabilities: frozenset[str]) -> bool:
     if is_superadmin_role_only(role):
@@ -90,13 +96,16 @@ def panel_read_only_for_user(current_user) -> bool:
     return _read_only_for_role(role, capabilities)
 
 
-async def load_expert_invited_org_ids(db: AsyncSession, actor_id: int) -> frozenset[int]:
+async def load_expert_invited_org_ids(actor_id: int) -> frozenset[int]:
     """Organization IDs created via invite flow by this expert or operations user."""
-    rows = (
-        await db.execute(
-            select(Organization.id).where(Organization.invited_by_user_id == actor_id)
-        )
-    ).scalars().all()
+    from utils.db.session_open import system_rls_session
+
+    async with system_rls_session() as db:
+        rows = (
+            await db.execute(
+                select(Organization.id).where(Organization.invited_by_user_id == actor_id)
+            )
+        ).scalars().all()
     return frozenset(int(org_id) for org_id in rows)
 
 
@@ -181,7 +190,6 @@ def build_admin_scope(
 
 async def build_admin_scope_async(
     current_user: Any,
-    db: AsyncSession,
     organization_id: Optional[int] = None,
     lang: Language = "en",
 ) -> AdminScope:
@@ -191,7 +199,7 @@ async def build_admin_scope_async(
     if CAP_SCOPE_INVITED_ORGS in capabilities:
         actor_id = getattr(current_user, "id", None)
         if actor_id is not None:
-            invited_org_ids = await load_expert_invited_org_ids(db, int(actor_id))
+            invited_org_ids = await load_expert_invited_org_ids(int(actor_id))
         else:
             invited_org_ids = frozenset()
     return build_admin_scope(
@@ -270,14 +278,26 @@ def uses_invited_org_panel_scope(scope: AdminScope) -> bool:
     return CAP_SCOPE_INVITED_ORGS in scope.capabilities
 
 
+def expert_invite_scope_only(scope: AdminScope) -> bool:
+    """Expert invite tab: own created orgs only (no global or legacy org access)."""
+    return (
+        CAP_SCOPE_INVITED_ORGS in scope.capabilities
+        and CAP_SCOPE_GLOBAL not in scope.capabilities
+    )
+
+
 def panel_readable_org_where_clause() -> ColumnElement:
     """WHERE clause on Organization: legacy shared (NULL invited_by_user_id)."""
     return Organization.invited_by_user_id.is_(None)
 
 
 def panel_readable_org_condition(scope: AdminScope) -> ColumnElement:
-    """Organization-row predicate: invited org ids plus legacy NULL orgs."""
+    """Organization-row predicate for invited-org panel roles."""
     invited_ids = scope.invited_org_ids if scope.invited_org_ids is not None else frozenset()
+    if expert_invite_scope_only(scope):
+        if len(invited_ids) == 0:
+            return false()
+        return Organization.id.in_(invited_ids)
     legacy_clause = panel_readable_org_where_clause()
     if len(invited_ids) == 0:
         return legacy_clause
@@ -313,9 +333,11 @@ def org_id_readable_in_panel_scope(
     """Return True when org_id is readable for invited-org panel roles."""
     if not uses_invited_org_panel_scope(scope):
         return True
+    invited_ids = scope.invited_org_ids if scope.invited_org_ids is not None else frozenset()
+    if expert_invite_scope_only(scope):
+        return int(org_id) in invited_ids
     if invited_by_user_id is None:
         return True
-    invited_ids = scope.invited_org_ids if scope.invited_org_ids is not None else frozenset()
     return int(org_id) in invited_ids
 
 

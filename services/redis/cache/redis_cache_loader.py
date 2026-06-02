@@ -33,7 +33,7 @@ from services.redis.cache.redis_org_cache import get_org_cache
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_async_ops import AsyncRedisOps
 from services.redis.redis_client import is_redis_available
-from config.database import AsyncSessionLocal
+from utils.db.session_open import system_rls_session
 from models.domain.auth import User, Organization
 
 logger = logging.getLogger(__name__)
@@ -203,7 +203,7 @@ async def load_all_users_to_cache() -> Tuple[int, int]:
 
     try:
         while True:
-            async with AsyncSessionLocal() as db:
+            async with system_rls_session() as db:
                 result = await db.execute(select(User).where(User.id > last_id).order_by(User.id).limit(_BATCH_SIZE))
                 batch = result.scalars().all()
 
@@ -270,7 +270,7 @@ async def load_all_orgs_to_cache() -> Tuple[int, int]:
 
     try:
         while True:
-            async with AsyncSessionLocal() as db:
+            async with system_rls_session() as db:
                 result = await db.execute(
                     select(Organization).where(Organization.id > last_id).order_by(Organization.id).limit(_BATCH_SIZE)
                 )

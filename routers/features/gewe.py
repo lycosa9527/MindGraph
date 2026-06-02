@@ -31,20 +31,14 @@ from models.domain.gewe_responses import (
 )
 from clients.gewe import GeweAPIError
 from services.gewe import GeweService
+from routers.auth.dependencies import require_admin
 from utils.auth import get_current_user
-from utils.auth.roles import is_admin
+from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/gewe", tags=["Gewe WeChat"])
-
-
-def require_admin(current_user: User = Depends(get_current_user)) -> User:
-    """Require admin access."""
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-    return current_user
 
 
 # =============================================================================
@@ -546,7 +540,11 @@ async def reset_gewe_device_id(_current_user: User = Depends(require_admin), db:
 
 
 @router.post("/webhook", response_model=dict)
-async def gewe_webhook(request: Request, db: AsyncSession = Depends(get_async_db)):
+async def gewe_webhook(
+    request: Request,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
+    db: AsyncSession = Depends(get_async_db),
+):
     """
     Webhook endpoint to receive messages from Gewe.
 

@@ -572,10 +572,6 @@ export async function fetchAdminOrganizationInvites(): Promise<Record<string, un
   return adminFetchJson('/api/auth/admin/invites/organizations')
 }
 
-export async function fetchAdminPersonalTrialInvite(): Promise<Record<string, unknown>> {
-  return adminFetchJson('/api/auth/admin/invites/personal-trial')
-}
-
 // ============================================================================
 // MindBot
 // ============================================================================

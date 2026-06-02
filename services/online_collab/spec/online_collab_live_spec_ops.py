@@ -18,7 +18,7 @@ from redis.exceptions import RedisError, WatchError
 from sqlalchemy import text as sql_text
 from sqlalchemy.exc import SQLAlchemyError
 
-from config.database import AsyncSessionLocal
+from utils.db.session_open import system_rls_session
 from services.online_collab.common.online_collab_json_offload import dumps_maybe_offload
 from services.online_collab.db.online_collab_stmt_cache import (
     STMT_DIAGRAM_BY_ID,
@@ -105,7 +105,7 @@ async def ensure_live_spec_seeded(
     existing = await read_live_spec(redis, code)
     if existing:
         return existing
-    async with AsyncSessionLocal() as db:
+    async with system_rls_session() as db:
         result = await db.execute(STMT_DIAGRAM_BY_ID, {"p_id": diagram_id})
         diagram = result.scalars().first()
         if not diagram:
@@ -496,7 +496,7 @@ async def _flush_live_spec_to_db_impl(code: str, diagram_id: str) -> bool:
     redis = get_async_redis()
     if not redis:
         return False
-    async with AsyncSessionLocal() as db:
+    async with system_rls_session() as db:
         try:
             flushed = await flush_live_spec_to_db_in_session(
                 db,

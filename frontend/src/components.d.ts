@@ -29,7 +29,6 @@ declare module 'vue' {
     AdminMindBotUsagePanel: typeof import('./components/admin/AdminMindBotUsagePanel.vue')['default']
     AdminOrgDataCenterPanel: typeof import('./components/admin/AdminOrgDataCenterPanel.vue')['default']
     AdminPerformanceTab: typeof import('./components/admin/AdminPerformanceTab.vue')['default']
-    AdminPersonalTrialInviteCard: typeof import('./components/admin/AdminPersonalTrialInviteCard.vue')['default']
     AdminRoleAddMemberDialog: typeof import('./components/admin/AdminRoleAddMemberDialog.vue')['default']
     AdminRolesHeaderToolbar: typeof import('./components/admin/AdminRolesHeaderToolbar.vue')['default']
     AdminRolesTab: typeof import('./components/admin/AdminRolesTab.vue')['default']

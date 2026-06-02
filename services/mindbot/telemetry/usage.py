@@ -10,7 +10,7 @@ import logging
 import time
 from typing import Any, Optional
 
-from config.database import AsyncSessionLocal
+from utils.db.rls_context import RlsContext, rls_async_session
 from models.domain.mindbot_usage import MindbotUsageEvent
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.mindbot.errors import MindbotErrorCode
@@ -83,8 +83,12 @@ async def persist_mindbot_usage_event(
         conversation_user_turn=conversation_user_turn,
         linked_user_id=None,
     )
+    ctx = RlsContext.for_mindbot_service(
+        organization_id=int(cfg.organization_id),
+        callback_token=getattr(cfg, "public_callback_token", None),
+    )
     try:
-        async with AsyncSessionLocal() as session:
+        async with rls_async_session(ctx) as session:
             session.add(row)
             await session.commit()
     except Exception as exc:

@@ -20,7 +20,7 @@ from celery import group
 from sqlalchemy import select
 
 from config.celery import celery_app
-from config.database import AsyncSessionLocal, SyncSessionLocal
+from utils.db.rls_context import RlsContext, rls_async_session, rls_sync_session
 from models.domain.knowledge_space import DocumentBatch, KnowledgeDocument
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 async def _process_document_async(user_id: int, document_id: int) -> None:
     """Run document processing in an async context."""
-    async with AsyncSessionLocal() as db:
+    async with rls_async_session(RlsContext.for_celery_user(user_id)) as db:
         service = KnowledgeSpaceService(db, user_id)
 
         doc = await service.get_document(document_id)
@@ -75,7 +75,7 @@ async def _process_document_async(user_id: int, document_id: int) -> None:
 
 async def _mark_document_failed_async(document_id: int, error: Exception) -> None:
     """Mark a document as failed in the database."""
-    async with AsyncSessionLocal() as db:
+    async with rls_async_session(RlsContext.system_bootstrap()) as db:
         result = await db.execute(select(KnowledgeDocument).where(KnowledgeDocument.id == document_id))
         doc = result.scalar_one_or_none()
         if doc and doc.status != "failed":
@@ -96,14 +96,14 @@ async def _mark_document_failed_async(document_id: int, error: Exception) -> Non
 
 async def _update_batch_progress_async(user_id: int, batch_id: int, completed: int, failed: int) -> None:
     """Update batch completion progress via async session."""
-    async with AsyncSessionLocal() as db:
+    async with rls_async_session(RlsContext.for_celery_user(user_id)) as db:
         service = KnowledgeSpaceService(db, user_id)
         await service.update_batch_progress(batch_id, completed=completed, failed=failed)
 
 
 async def _update_document_async(user_id: int, document_id: int) -> None:
     """Check updated document status in async context."""
-    async with AsyncSessionLocal() as db:
+    async with rls_async_session(RlsContext.for_celery_user(user_id)) as db:
         service = KnowledgeSpaceService(db, user_id)
         document = await service.get_document(document_id)
         if document and document.status == "processing":
@@ -131,7 +131,7 @@ def _start_batch_sync(batch_id: int, user_id: int) -> List[int]:
     This is a plain synchronous function so it can safely be called from a
     Celery task without blocking an asyncio event loop.
     """
-    with SyncSessionLocal() as db:
+    with rls_sync_session(RlsContext.for_celery_user(user_id)) as db:
         batch = db.execute(
             select(DocumentBatch).where(
                 DocumentBatch.id == batch_id,
@@ -155,7 +155,7 @@ def _start_batch_sync(batch_id: int, user_id: int) -> List[int]:
 
 def _mark_batch_failed_sync(user_id: int, batch_id: int, error: Exception) -> None:
     """Mark a batch as failed.  Plain sync — safe to call from a Celery task."""
-    with SyncSessionLocal() as db:
+    with rls_sync_session(RlsContext.for_celery_user(user_id)) as db:
         try:
             batch = db.execute(
                 select(DocumentBatch).where(

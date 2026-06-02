@@ -113,9 +113,9 @@ async def resolve_mindmate_dify_client_short_lived(
     Use for routes that await slow upstream Dify HTTP after credential lookup, so the
     request-scoped session is not held open past idle_in_transaction_session_timeout.
     """
-    from config.database import AsyncSessionLocal
+    from utils.db.session_open import system_rls_session
 
-    async with AsyncSessionLocal() as db:
+    async with system_rls_session() as db:
         return await resolve_mindmate_dify_client_or_http(
             db,
             organization_id,

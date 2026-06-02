@@ -556,7 +556,7 @@ export default {
   'admin.revokeRoleConfirm': '確定要移除以下用戶的角色：',
   'admin.roleControl': '角色控制',
   'admin.roleControlDesc': '管理超級管理員權限。擁有該角色的用戶可訪問完整管理面板。',
-  'admin.roleControlDescPlatformBd': '管理營運權限。營運可查看全局數據並管理試用邀請。',
+  'admin.roleControlDescPlatformBd': '管理營運權限。營運可查看全局數據並管理學校邀請。',
   'admin.roleControlDescExpert': '管理專家權限。專家可創建學校並管理其邀請範圍內的組織。',
   'admin.roleControlDescManagers':
     '管理學校管理員。學校管理員可訪問其所屬組織的學校儀表盤。授予該角色前，用戶須已加入學校。',
@@ -698,10 +698,6 @@ export default {
   'admin.systemSettings': '系統設置',
   'admin.readOnly': '唯讀',
   'admin.dataCenterGlobal': '平台（全部學校）',
-  'admin.inviteUsersPlatformHint': '個人體驗版邀請功能即將上線。',
-  'admin.inviteUsersComingSoonTitle': '即將上線',
-  'admin.inviteUsersComingSoon':
-    '個人體驗版（C2C）邀請管理尚未開放。您仍可使用已授權的其他標籤頁。',
   'admin.inviteUsersSelectSchool': '請選擇學校以查看並複製組織邀請碼。',
   'admin.today': '今日',
   'admin.todayRegistrations': '今日註冊',

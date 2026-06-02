@@ -2,7 +2,7 @@
 
 from datetime import datetime
 import logging
-from typing import Any, Optional, cast
+from typing import Optional, cast
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import and_, select
@@ -12,8 +12,7 @@ from sqlalchemy.sql.functions import coalesce as sa_coalesce, count as sa_count,
 from config.database import get_async_db
 from models.domain.auth import Organization, User
 from models.domain.messages import Language
-from services.auth.personal_trial_invite import build_personal_trial_invite_payload
-from utils.auth.admin_panel_permissions import CAP_TAB_INVITES_EDIT, CAP_TAB_INVITES_VIEW
+from utils.auth.admin_panel_permissions import CAP_TAB_INVITES_VIEW
 from utils.auth.admin_scope import AdminScope, invite_org_filter
 from utils.auth.org_privatization import org_privatization_list_field
 from utils.auth.role_constants import SCHOOL_ADMIN_ROLES
@@ -31,18 +30,6 @@ from .organization_mindmate_branding import mindmate_branding_list_fields
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-
-@router.get("/admin/invites/personal-trial")
-async def get_personal_trial_invite_admin(
-    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_INVITES_VIEW)),
-    db: AsyncSession = Depends(get_async_db),
-    _lang: Language = Depends(get_language_dependency),
-) -> dict[str, Any]:
-    """Personal experience invite code for expert / operations (C2C trial org)."""
-    payload = await build_personal_trial_invite_payload(db)
-    payload["can_edit"] = scope.has_capability(CAP_TAB_INVITES_EDIT)
-    return payload
 
 
 @router.get("/admin/invites/organizations")

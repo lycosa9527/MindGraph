@@ -16,6 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
+from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 from models.domain.auth import User
 from models.domain.messages import Messages, Language
 from models.requests.requests_auth import SendEmailCodeRequest, VerifyEmailCodeRequest
@@ -60,6 +61,7 @@ router = APIRouter()
 async def send_email_code(
     request: SendEmailCodeRequest,
     http_request: Request,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):

@@ -31,7 +31,7 @@ from typing import Dict, Optional
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import AsyncSessionLocal
+from utils.db.session_open import system_rls_session
 from models.domain.auth import UpdateNotification, UpdateNotificationDismissed
 
 logger = logging.getLogger(__name__)
@@ -72,7 +72,7 @@ class UpdateNotifier:
         Returns:
             Dict containing notification state and content
         """
-        async with AsyncSessionLocal() as db:
+        async with system_rls_session() as db:
             notification = await self._ensure_notification_exists(db)
             return {
                 "enabled": notification.enabled,
@@ -115,7 +115,7 @@ class UpdateNotifier:
             changelog_items_en,
             kwargs,
         )
-        async with AsyncSessionLocal() as db:
+        async with system_rls_session() as db:
             try:
                 notification = await self._ensure_notification_exists(db)
                 old_version = notification.version or ""
@@ -165,7 +165,7 @@ class UpdateNotifier:
         Returns:
             True if notification should be shown, False otherwise
         """
-        async with AsyncSessionLocal() as db:
+        async with system_rls_session() as db:
             notification = await self._ensure_notification_exists(db)
 
             if not notification.enabled:
@@ -198,7 +198,7 @@ class UpdateNotifier:
         if not await self.should_show_notification(user_id):
             return None
 
-        async with AsyncSessionLocal() as db:
+        async with system_rls_session() as db:
             notification = await self._ensure_notification_exists(db)
 
             return {
@@ -225,7 +225,7 @@ class UpdateNotifier:
         Returns:
             True if successful
         """
-        async with AsyncSessionLocal() as db:
+        async with system_rls_session() as db:
             try:
                 notification = await self._ensure_notification_exists(db)
                 version = notification.version or ""
@@ -271,7 +271,7 @@ class UpdateNotifier:
         Returns:
             Updated notification configuration
         """
-        async with AsyncSessionLocal() as db:
+        async with system_rls_session() as db:
             try:
                 notification = await self._ensure_notification_exists(db)
                 notification.enabled = False
@@ -300,7 +300,7 @@ class UpdateNotifier:
         Returns:
             True if successful
         """
-        async with AsyncSessionLocal() as db:
+        async with system_rls_session() as db:
             try:
                 result = await db.execute(delete(UpdateNotificationDismissed))
                 deleted = result.rowcount
@@ -320,7 +320,7 @@ class UpdateNotifier:
         Returns:
             Count of dismissed users for current version
         """
-        async with AsyncSessionLocal() as db:
+        async with system_rls_session() as db:
             notification = await self._ensure_notification_exists(db)
             version = notification.version or ""
 

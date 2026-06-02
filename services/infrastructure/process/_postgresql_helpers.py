@@ -19,9 +19,42 @@ else:
         psycopg2 = None
 
 
+def postgresql_accepts_connections(host: str, port: int) -> bool:
+    """
+    True when something on ``host:port`` accepts PostgreSQL connections.
+
+    Uses ``pg_isready`` when available (no app credentials required).
+    """
+    try:
+        result = subprocess.run(
+            ["pg_isready", "-h", host, "-p", str(port), "-t", "2"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+        if result.returncode == 0:
+            return True
+    except (FileNotFoundError, subprocess.SubprocessError, ValueError):
+        pass
+
+    if psycopg2 is None:
+        return False
+    try:
+        test_url = f"postgresql://postgres@{host}:{port}/postgres"
+        conn = psycopg2.connect(test_url, connect_timeout=2)
+        conn.close()
+        return True
+    except Exception:
+        return False
+
+
 def verify_postgresql_on_port(host: str, port: int, db_url: Optional[str] = None) -> bool:
     """
     Verify that PostgreSQL is actually running on the specified port.
+
+    Prefers a successful ``DATABASE_URL`` connection; otherwise checks whether
+    the server accepts connections (``pg_isready`` / generic probe).
 
     Args:
         host: PostgreSQL host
@@ -31,19 +64,14 @@ def verify_postgresql_on_port(host: str, port: int, db_url: Optional[str] = None
     Returns:
         bool: True if PostgreSQL is responding, False otherwise
     """
-    if psycopg2 is None:
-        return False
-    try:
-        if db_url and "postgresql" in db_url:
+    if psycopg2 is not None and db_url and "postgresql" in db_url:
+        try:
             conn = psycopg2.connect(db_url, connect_timeout=2)
             conn.close()
             return True
-        test_url = f"postgresql://postgres@{host}:{port}/postgres"
-        conn = psycopg2.connect(test_url, connect_timeout=2)
-        conn.close()
-        return True
-    except Exception:
-        return False
+        except Exception:
+            pass
+    return postgresql_accepts_connections(host, port)
 
 
 def cleanup_stale_pid_file(data_path: Path) -> None:

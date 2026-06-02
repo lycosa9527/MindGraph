@@ -82,7 +82,6 @@ export const adminKeys = {
   invites: {
     all: () => [...adminKeys.all, 'invites'] as const,
     organizations: () => [...adminKeys.all, 'invites', 'organizations'] as const,
-    personalTrial: () => [...adminKeys.all, 'invites', 'personal-trial'] as const,
   },
 
   teacherUsage: {

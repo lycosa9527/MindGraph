@@ -5,6 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.29] - 2026-06-02
+
+> **PostgreSQL row-level security (RLS).** Database-layer tenant isolation replaces bare `AsyncSessionLocal()` across the app. Requires Alembic through `0050`, `mindgraph_app` / `mindgraph_migrate` roles, and `DATABASE_MIGRATION_URL` for DDL. See [`alembic/README.md`](alembic/README.md) and [`env.example`](env.example).
+
+### Added
+
+- **PostgreSQL RLS** — Alembic `0042`–`0050`: `rls_*()` helpers, `mindgraph_app` / `mindgraph_migrate` roles, tenant policies on registry tables, policy indexes; [`utils/db/rls_context.py`](utils/db/rls_context.py) + `SET LOCAL app.*` on every transaction; AdminScope [`to_rls_session_vars()`](utils/auth/admin_scope.py); [`alembic/README.md`](alembic/README.md) operator guide; `pg_dump --no-policies`; tests under [`tests/db/`](tests/db/) and RLS policy regressions ([`tests/test_rls_*.py`](tests/)).
+- **Expert invite org scope (Alembic `0050`)** — Experts and platform BD see only orgs they created on the invite tab; legacy NULL `invited_by_user_id` orgs hidden from experts at SQL and RLS layers ([`invite_org_filter`](utils/auth/admin_scope.py), [`rls_panel_legacy_org_visible`](alembic/rls_functions_sql.py)); admin invites list route ([`invites.py`](routers/auth/admin/invites.py)).
+- **RLS FastAPI helpers** — [`utils/db/rls_request.py`](utils/db/rls_request.py) binds `request.state.rls_context` (panel superadmin, mindbot callback, public org list, dashboard, system bootstrap); [`utils/db/session_open.py`](utils/db/session_open.py) exposes `user_rls_session`, `actor_rls_session`, `system_rls_session`, and `panel_superadmin_rls_session`.
+- **RLS migration CLI** — [`scripts/db/migration_urls.py`](scripts/db/migration_urls.py) resolves runtime vs migrate URLs; [`scripts/db/rls_roles_bootstrap.py`](scripts/db/rls_roles_bootstrap.py) ensures roles exist; [`scripts/db/redis_flush.py`](scripts/db/redis_flush.py) optional `FLUSHDB` after URL cutover; [`scripts/db/postgres_app_startup.py`](scripts/db/postgres_app_startup.py) prepares RLS after PG is listening; Celery workers call `bootstrap_rls_migration_from_env()` on import ([`config/celery.py`](config/celery.py)).
+- **RLS session lint** — [`scripts/lint/lint_rls_session.py`](scripts/lint/lint_rls_session.py) flags bare `AsyncSessionLocal()` outside RLS helpers.
+- **`RLS_CONTEXT_STRICT`** — optional env flag logs ERROR when transactions start without `RlsContext`.
+- **`get_db_sync()`** — uses `rls_sync_session`; Celery sync paths use `rls_sync_session(for_celery_user)`.
+- **Admin users — school tier in rows** — List/detail payloads include effective `school_tier` ([`admin_user_list_rows.py`](services/auth/admin_user_list_rows.py)); admin table and edit modal show tier-aware role pills ([`userRoleDisplay.ts`](frontend/src/utils/userRoleDisplay.ts), [`AdminUsersTable.vue`](frontend/src/components/admin/AdminUsersTable.vue), [`AdminUserEditModal.vue`](frontend/src/components/admin/AdminUserEditModal.vue)).
+- **Tests** — Phone/email uniqueness RLS ([`test_phone_uniqueness_rls.py`](tests/auth/test_phone_uniqueness_rls.py)), admin scope RLS session vars, expert invite org scope and `load_expert_invited_org_ids`, migration URL / redis flush scripts, and frontend school-tier row spec ([`userRoleDisplaySchoolTierRow.spec.ts`](frontend/tests/userRoleDisplaySchoolTierRow.spec.ts)).
+
+### Fixed
+
+- **`require_admin`** — Passes `Request` into `require_superadmin` so `panel_superadmin` RLS binds on Gewe, library admin, and other `Depends(require_admin)` routes.
+- **DebateVerse stream** — Background SSE session uses `user_rls_session(owner_id)` instead of `system_rls_session`.
+- **Devices RLS** — Policy uses `student_id` (Alembic `0049`); ESP32 register/status bind system RLS before DB; admin list/assign uses `require_admin`.
+- **MindBot callback RLS** — Per-token DingTalk route binds `mindbot_service` RLS before and after tenant resolution ([`mindbot_callback.py`](routers/api/mindbot_callback.py)).
+- **Phone/email uniqueness** — Global lookups use `system_rls_session` so registration and profile edits see all users under RLS ([`phone_uniqueness.py`](services/auth/phone_uniqueness.py)).
+- **WebSocket auth** — User DB fallback via `system_rls_session`; removed `Depends(get_async_db)` ([`websocket_auth.py`](utils/auth/websocket_auth.py)).
+- **Expert invited orgs** — `load_expert_invited_org_ids` uses system RLS; `build_admin_scope_async` no longer requires a caller DB session ([`admin_scope.py`](utils/auth/admin_scope.py)).
+- **Update notifier** — All DB paths use `system_rls_session` instead of bare `AsyncSessionLocal`.
+- **RLS `after_begin`** — Register listener on `Session` only (`AsyncSession` has no `after_begin` event in SQLAlchemy 2.x).
+- **Alembic rev 0042** — Drop invalid ``LEAKPROOF`` on ``rls_*()`` helpers (``current_setting`` is not leakproof in PostgreSQL).
+- **`run_migrations.py` RLS** — Auto-resolves `DATABASE_MIGRATION_URL` (never uses `mindgraph_app` for DDL); verifies rev 0050 + roles + policies; optional `.env` patch; pg_restore uses migrate URL; lightweight PG start (no LLM import); rev 0042 runs per-function DDL.
+- **`main.py` / `init_db` RLS** — Startup and `_run_alembic_upgrade` auto-resolve migrate URL and load RLS Alembic helpers when `DATABASE_URL` is `mindgraph_app`.
+- **Local Postgres subprocess** — Default leave server running after CLI exit; `MINDGRAPH_STOP_POSTGRES_ON_EXIT=1` restores stop-on-exit. Added [`scripts/db/check_migration_status.py`](scripts/db/check_migration_status.py).
+
+### Changed
+
+- **`get_async_db`** — Reads `request.state.rls_context`; auth middleware sets default user/deny context for direct sessions.
+- **Auth middleware** — Sets per-request RLS context var (preset from route deps, authenticated user, or deny-default) ([`middleware.py`](services/infrastructure/http/middleware.py)).
+- **Admin panel scope** — `get_admin_scope` binds and applies RLS to the session; workshop chat access sets `allow_global_channels` ([`dependencies.py`](routers/auth/dependencies.py)).
+- **App-wide session migration** — Auth, API, features, Redis cache loaders, online collab, Celery tasks, and background jobs replace bare `AsyncSessionLocal()` with RLS session helpers.
+- **`DATABASE_MIGRATION_URL`** — Alembic and org seed use migrate role when set ([`alembic/env.py`](alembic/env.py), [`env.example`](env.example)); documents `MINDGRAPH_APP_PASSWORD` / `MINDGRAPH_MIGRATE_PASSWORD` and managed-Postgres reuse behavior.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.29).
+
 ## [5.117.28] - 2026-06-01
 
 > **Backup checkpoint before database-layer RLS.** This release captures the current application-layer school-tier and admin org-create behavior immediately before introducing PostgreSQL row-level security (RLS) at the database layer. Tag or branch from this commit if you need to roll back or compare pre-RLS behavior.

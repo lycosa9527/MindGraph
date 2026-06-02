@@ -75,6 +75,23 @@ def test_build_admin_scope_rejects_teacher():
     assert exc.value.status_code == 403
 
 
+def test_superadmin_to_rls_session_vars_global_read():
+    user = _User("superadmin", user_id=1)
+    scope = build_admin_scope(user, lang="en")
+    vars_map = scope.to_rls_session_vars()
+    assert vars_map["rls_mode"] == "panel"
+    assert vars_map.get("panel_global_read") == "1"
+
+
+def test_school_admin_to_rls_session_vars_org_scope():
+    user = _User("school_admin", organization_id=42)
+    scope = build_admin_scope(user, lang="en")
+    vars_map = scope.to_rls_session_vars()
+    assert vars_map["rls_mode"] == "panel"
+    assert vars_map["readable_org_ids"] == "42"
+    assert vars_map["organization_id"] == "42"
+
+
 def test_school_admin_locked_org():
     user = _User("school_admin", organization_id=42)
     scope = build_admin_scope(user, lang="en")

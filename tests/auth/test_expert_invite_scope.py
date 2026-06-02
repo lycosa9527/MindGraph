@@ -31,6 +31,15 @@ def test_expert_with_invited_orgs_scoped():
     assert scope.has_capability(CAP_TAB_INVITES_EDIT)
 
 
+def test_expert_to_rls_session_vars_matches_invited_org_ids():
+    user = _User("expert", user_id=5)
+    scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset({10, 20}))
+    vars_map = scope.to_rls_session_vars()
+    assert vars_map["rls_mode"] == "panel"
+    assert vars_map["readable_org_ids"] == "10,20"
+    assert invite_org_filter(scope, Organization.id) is not None
+
+
 def test_expert_org_filter_excludes_uninvited():
     user = _User("expert", user_id=5)
     scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset({10}))
@@ -45,27 +54,29 @@ def test_platform_bd_invite_org_filter_uses_invited_ids():
     assert clause is not None
 
 
-def test_invite_org_filter_includes_legacy_null_when_no_invited_ids():
+def test_invite_org_filter_excludes_all_orgs_when_expert_has_no_invited_ids():
     user = _User("expert", user_id=5)
     scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset())
     clause = invite_org_filter(scope, Organization.id)
-    assert clause is not None
-    assert clause != sql_false()
+    assert clause == sql_false()
 
 
-def test_legacy_null_org_readable_for_expert():
+def test_legacy_null_org_not_readable_for_expert():
     user = _User("expert", user_id=5)
     scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset({10}))
-    assert org_id_readable_in_panel_scope(scope, 999, None) is True
-    assert_resource_org_in_scope(scope, 999, "en", resource_invited_by_user_id=None)
+    assert org_id_readable_in_panel_scope(scope, 999, None) is False
+    with pytest.raises(HTTPException) as exc:
+        assert_resource_org_in_scope(scope, 999, "en", resource_invited_by_user_id=None)
+    assert exc.value.status_code == 404
 
 
-def test_expert_org_filter_includes_legacy_via_subquery():
+def test_expert_org_filter_excludes_legacy_null_orgs():
     user = _User("expert", user_id=5)
     scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset({10}))
     clause = org_filter(scope, Organization.id)
     assert clause is not None
     assert clause != sql_false()
+    assert org_id_readable_in_panel_scope(scope, 999, None) is False
 
 
 def test_platform_bd_assert_resource_org_in_scope_blocks_foreign_org():

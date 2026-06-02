@@ -95,6 +95,17 @@ export function normalizeUserRole(role: string | undefined | null): UserRole {
   return LEGACY_TO_CANONICAL[role] ?? 'teacher'
 }
 
+/** Read effective school tier from an admin/school user list row. */
+export function schoolTierFromUserRow(
+  row: Record<string, unknown>
+): SchoolTier | null | undefined {
+  const raw = row.school_tier
+  if (typeof raw !== 'string' || !raw.trim()) {
+    return undefined
+  }
+  return normalizeSchoolTier(raw)
+}
+
 export function getRolePillStyle(
   role: string | undefined | null,
   schoolTier?: SchoolTier | null

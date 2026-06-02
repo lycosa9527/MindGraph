@@ -2,9 +2,11 @@
 /**
  * Stone Swiss pagination bar — previous/next pill buttons for admin tables.
  */
+import { computed } from 'vue'
+
 import { useLanguage } from '@/composables'
 
-defineProps<{
+const props = defineProps<{
   pageInfo: string
   page: number
   totalPages: number
@@ -16,6 +18,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
+
+const effectiveTotalPages = computed(() => Math.max(props.totalPages, 1))
 </script>
 
 <template>
@@ -33,7 +37,7 @@ const { t } = useLanguage()
       <el-button
         size="small"
         class="admin-swiss-btn"
-        :disabled="page >= totalPages"
+        :disabled="page >= effectiveTotalPages"
         @click="emit('next')"
       >
         {{ t('admin.next') }}

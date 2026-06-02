@@ -22,6 +22,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
+from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 from models.domain.auth import Organization, User
 from models.domain.messages import Messages, Language
 from models.requests.requests_auth import (
@@ -328,6 +329,7 @@ async def register_quick(
     request: RegisterQuickRequest,
     http_request: Request,
     response: Response,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -424,7 +426,7 @@ async def register_quick(
 
     try:
         async with phone_registration_lock(request.phone):
-            if await any_user_id_with_phone(db, request.phone) is not None:
+            if await any_user_id_with_phone(request.phone) is not None:
                 registration_metrics.record_failure("phone_exists", time.time() - start_time)
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,

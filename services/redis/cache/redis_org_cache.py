@@ -34,7 +34,7 @@ from sqlalchemy import select
 from services.redis.cache.redis_cache_stampede import with_stampede_lock
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
-from config.database import AsyncSessionLocal
+from utils.db.session_open import system_rls_session
 from models.domain.auth import Organization
 
 logger = logging.getLogger(__name__)
@@ -187,7 +187,7 @@ class OrganizationCache:
     ) -> Optional[Organization]:
         """Inner DB load — runs under the stampede lock when one was acquired."""
         try:
-            async with AsyncSessionLocal() as db:
+            async with system_rls_session() as db:
                 if org_id:
                     result = await db.execute(select(Organization).where(Organization.id == org_id))
                     org = result.scalar_one_or_none()

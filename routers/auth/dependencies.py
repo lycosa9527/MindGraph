@@ -34,6 +34,8 @@ from utils.auth import (
     user_has_feature_access,
 )
 from utils.auth.admin_scope import AdminScope, build_admin_scope, build_admin_scope_async
+from utils.db.rls_context import RlsContext, apply_rls_context_async
+from utils.db.rls_request import bind_panel_superadmin_rls
 from utils.auth.admin_panel_permissions import (
     CAP_SCOPE_GLOBAL,
     CAP_SCOPE_INVITED_ORGS,
@@ -128,6 +130,7 @@ def get_language_dependency(request: Request, x_language: Optional[str] = Header
 
 
 def require_superadmin(
+    request: Request,
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ) -> User:
@@ -139,10 +142,12 @@ def require_superadmin(
     if not is_superadmin(current_user):
         error_msg = Messages.error("admin_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    bind_panel_superadmin_rls(request, current_user)
     return current_user
 
 
 def require_admin(
+    request: Request,
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ) -> User:
@@ -151,7 +156,7 @@ def require_admin(
 
     Raises HTTPException 403 if user is not superadmin.
     """
-    return require_superadmin(current_user, lang)
+    return require_superadmin(request, current_user, lang)
 
 
 def require_school_admin(
@@ -218,6 +223,7 @@ async def require_mindbot_admin_access(
 
 
 async def require_workshop_chat_access(
+    request: Request,
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ) -> User:
@@ -229,16 +235,10 @@ async def require_workshop_chat_access(
     if not await can_access_workshop_chat(current_user):
         error_msg = Messages.error("elevated_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
-    return current_user
-
-
-def require_trial_invite_capability(
-    current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency),
-) -> User:
-    """Superadmin, operations (platform_bd), or expert may invite personal trial users."""
-    scope = build_admin_scope(current_user, lang=lang)
-    scope.assert_capability(CAP_TAB_INVITES_EDIT, lang)
+    request.state.rls_context = RlsContext.from_user(
+        current_user,
+        allow_global_channels=True,
+    )
     return current_user
 
 
@@ -269,18 +269,22 @@ def _assert_invite_org_scope(scope: AdminScope, lang: Language) -> None:
 
 
 async def get_admin_scope(
+    request: Request,
     organization_id: Optional[int] = Query(None),
     current_user: User = Depends(require_management_panel),
     lang: Language = Depends(get_language_dependency),
     db: AsyncSession = Depends(get_async_db),
 ) -> AdminScope:
     """Resolve AdminScope for management panel API handlers."""
-    return await build_admin_scope_async(
+    scope = await build_admin_scope_async(
         current_user,
-        db,
         organization_id=organization_id,
         lang=lang,
     )
+    ctx = RlsContext.from_admin_scope(scope)
+    request.state.rls_context = ctx
+    await apply_rls_context_async(db, ctx)
+    return scope
 
 
 def require_panel_capability(capability: str):

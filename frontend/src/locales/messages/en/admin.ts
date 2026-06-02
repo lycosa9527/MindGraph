@@ -583,7 +583,7 @@ export default {
   'admin.roleControlDesc':
     'Manage superadmin access. Users with this role can access the full management panel.',
   'admin.roleControlDescPlatformBd':
-    'Manage operations access. Operations can view global data and manage trial invites.',
+    'Manage operations access. Operations can view global data and school invite management.',
   'admin.roleControlDescExpert':
     'Manage expert access. Experts can create schools and manage organizations in their invite scope.',
   'admin.roleControlDescManagers':
@@ -784,22 +784,6 @@ export default {
   'admin.systemSettings': 'System Settings',
   'admin.readOnly': 'Read-only',
   'admin.dataCenterGlobal': 'Platform (all schools)',
-  'admin.inviteUsersPlatformHint':
-    'Personal trial invitations will be available here in a future release.',
-  'admin.inviteUsersComingSoonTitle': 'Coming soon',
-  'admin.inviteUsersComingSoon':
-    'Personal trial (C2C) invite management is not available yet. You can still use other tabs you have access to.',
-  'admin.personalTrialInviteTitle': 'Personal trial invite',
-  'admin.personalTrialInviteDescription':
-    'Share this invitation code so users can register for a personal experience account.',
-  'admin.personalTrialInviteCopyPayload':
-    'Try MindGraph — AI-powered mind mapping for teaching and learning. Register with invitation code: {code}\n\nVisit {siteUrl} to sign up.',
-  'admin.personalTrialInviteNotConfiguredTitle': 'Not configured',
-  'admin.personalTrialInviteNotConfigured':
-    'Set PERSONAL_TRIAL_ORG_CODE in server environment to enable personal trial invites.',
-  'admin.personalTrialInviteMissingTitle': 'Personal trial not ready',
-  'admin.personalTrialInviteMissing':
-    'Check that PERSONAL_TRIAL_ORG_CODE points to a valid organization in the database.',
   'admin.inviteUsersSelectSchool':
     'Select a school to view and copy its organization invitation code.',
   'admin.today': 'Today',

@@ -29,6 +29,11 @@ from services.mindbot.platforms.dingtalk.auth.verify import extract_dingtalk_rob
 from services.mindbot.telemetry.metrics import mindbot_metrics
 from routers.api.mindbot_helpers import _dict_from_dingtalk_raw_body, _require_mindbot_feature
 from models.domain.mindbot_config import OrganizationMindbotConfig
+from utils.db.rls_context import RlsContext, apply_rls_context_async
+from utils.db.rls_request import (
+    bind_mindbot_callback_rls,
+    bind_mindbot_callback_rls_from_path_dependency,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -160,12 +165,17 @@ async def dingtalk_callback_by_token_get(
 @router.post("/dingtalk/callback/t/{public_callback_token}")
 async def dingtalk_callback_by_token(
     request: Request,
+    _mindbot_rls: None = Depends(bind_mindbot_callback_rls_from_path_dependency),
     db: AsyncSession = Depends(get_async_db),
     public_callback_token: str = Path(..., min_length=8, max_length=64),
 ) -> Response:
     """Per-school URL: resolve tenant by secret token in path (HTTP receive mode)."""
     _require_mindbot_feature()
     token = public_callback_token.strip()
+    await apply_rls_context_async(
+        db,
+        RlsContext.for_mindbot_service(organization_id=0, callback_token=token),
+    )
     raw = await request.body()
     body = _dict_from_dingtalk_raw_body(raw)
     route_label = f"token_{token[:8]}"
@@ -187,6 +197,17 @@ async def dingtalk_callback_by_token(
         mindbot_metrics.record_from_headers(dict(resp.headers))
         return resp
     cfg = await repo.get_enabled_by_public_callback_token(token)
+    if cfg is not None:
+        ctx = RlsContext.for_mindbot_service(
+            organization_id=int(cfg.organization_id),
+            callback_token=token,
+        )
+        bind_mindbot_callback_rls(
+            request,
+            organization_id=int(cfg.organization_id),
+            callback_token=token,
+        )
+        await apply_rls_context_async(db, ctx)
     if cfg is None:
         resp = Response(
             status_code=404,

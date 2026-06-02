@@ -30,6 +30,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count as sa_count, sum as sa_sum
 
 from config.database import get_async_db
+from utils.db.rls_request import bind_dashboard_rls_dependency
 from config.settings import config
 from models.domain.auth import User
 from models.domain.token_usage import TokenUsage
@@ -254,7 +255,11 @@ async def get_cached_stats(tracker) -> Dict:
 
 
 @router.get("/stats")
-async def get_dashboard_stats(request: Request, db: AsyncSession = Depends(get_async_db)) -> Dict[str, Any]:
+async def get_dashboard_stats(
+    request: Request,
+    _dashboard_rls: None = Depends(bind_dashboard_rls_dependency),
+    db: AsyncSession = Depends(get_async_db),
+) -> Dict[str, Any]:
     """
     Get public dashboard statistics.
 

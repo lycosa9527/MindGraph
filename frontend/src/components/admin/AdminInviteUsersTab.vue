@@ -7,7 +7,6 @@ import { computed, ref } from 'vue'
 import { DocumentCopy, Loading } from '@element-plus/icons-vue'
 
 import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
-import AdminPersonalTrialInviteCard from '@/components/admin/AdminPersonalTrialInviteCard.vue'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
@@ -297,11 +296,6 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
           </el-table-column>
         </el-table>
       </el-card>
-      <AdminPersonalTrialInviteCard />
-    </template>
-
-    <template v-else-if="can('tab.invites.view')">
-      <AdminPersonalTrialInviteCard />
     </template>
 
     <AdminSchoolCreateDialog

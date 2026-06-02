@@ -11,7 +11,7 @@ from typing import Optional
 from fastapi import HTTPException, Request, status
 from sqlalchemy import select
 
-from config.database import AsyncSessionLocal
+from utils.db.session_open import system_rls_session, user_rls_session
 from models.domain.auth import User
 from models.domain.messages import Language, Messages, get_request_language
 from models.domain.user_api_token import UserAPIToken
@@ -39,7 +39,7 @@ async def _load_user(user_id: int) -> Optional[User]:
         user = await _redis.user_cache.get_by_id(int(user_id))
         if user:
             return user
-    async with AsyncSessionLocal() as db:
+    async with user_rls_session(int(user_id)) as db:
         result = await db.execute(select(User).where(User.id == int(user_id)))
         row = result.scalar_one_or_none()
         if row and _redis.available and _redis.user_cache:
@@ -115,7 +115,7 @@ async def validate_user_token(
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
         user_id = int(cached["user_id"])
     else:
-        async with AsyncSessionLocal() as db:
+        async with system_rls_session() as db:
             result = await db.execute(
                 select(UserAPIToken).where(
                     UserAPIToken.token_hash == token_hash_full,
@@ -143,7 +143,7 @@ async def validate_user_token(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
 
     await _check_org_access_async(user)
-    async with AsyncSessionLocal() as db:
+    async with user_rls_session(int(user.id), getattr(user, "organization_id", None)) as db:
         allowed = await user_has_school_tier_feature(db, user, TIER_FEATURE_API_TOKEN)
     if not allowed:
         lang = Language.ZH

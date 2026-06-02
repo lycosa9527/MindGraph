@@ -78,7 +78,7 @@ async def test_downgrade_expired_org_to_trial_persists_trial():
         async def __aexit__(self, *_args):
             return False
 
-    with patch("utils.auth.org_subscription.AsyncSessionLocal", return_value=_SessionCtx()):
+    with patch("utils.auth.org_subscription.system_rls_session", return_value=_SessionCtx()):
         with patch("utils.auth.org_subscription._org_cache", None):
             from utils.auth.org_subscription import downgrade_expired_org_to_trial
 

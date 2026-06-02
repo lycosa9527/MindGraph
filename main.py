@@ -21,6 +21,8 @@ Status: Production Ready
 
 import os
 import secrets
+import sys
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -29,6 +31,15 @@ from dotenv import load_dotenv
 # see the correct values.  The load_dotenv() call inside setup_early_configuration()
 # is harmless — it won't override env vars already in os.environ.
 load_dotenv()
+
+
+_project_root = Path(__file__).resolve().parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
+
+from scripts.db.migration_urls import bootstrap_rls_migration_from_env
+
+bootstrap_rls_migration_from_env()
 
 # Auto-generate COLLAB_FANOUT_ORIGIN_SECRET when not explicitly configured.
 # Must happen here (before router imports) because the fanout modules cache the

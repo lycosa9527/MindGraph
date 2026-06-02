@@ -10,7 +10,7 @@ from sqlalchemy import select
 
 from models.domain.diagrams import Diagram
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
-from config.database import AsyncSessionLocal
+from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ async def user_may_access_kitty_scope(user_id: int, scope: str) -> bool:
 
 async def _library_diagram_owner_id(scope: str) -> Optional[int]:
     try:
-        async with AsyncSessionLocal() as db:
+        async with system_rls_session() as db:
             result = await db.execute(
                 select(Diagram.user_id)
                 .where(

@@ -233,6 +233,11 @@ class DatabaseSettings(BaseModel):
         description="Database connection URL",
     )
 
+    DATABASE_MIGRATION_URL: str = Field(
+        default="",
+        description="Alembic/migrate connection URL (mindgraph_migrate, BYPASSRLS). Empty = use DATABASE_URL.",
+    )
+
     @field_validator("DATABASE_URL")
     @classmethod
     def validate_database_url(cls, v):

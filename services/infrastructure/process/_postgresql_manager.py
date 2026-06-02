@@ -54,11 +54,24 @@ def _check_existing_postgresql(port: str, port_int: int, db_url: str) -> Optiona
     Returns:
         True if using existing instance, False if port conflict, None if need to start
     """
-    port_in_use, pid = check_port_in_use("localhost", port_int)
+    host = "localhost"
+    port_in_use, pid = check_port_in_use(host, port_int)
     if port_in_use:
-        if verify_postgresql_on_port("localhost", port_int, db_url):
+        if verify_postgresql_on_port(host, port_int, db_url):
             print(f"[POSTGRESQL] Port {port} is in use by existing PostgreSQL instance (PID: {pid})")
             print("[POSTGRESQL] ✓ Using existing PostgreSQL server")
+            if db_url and "postgresql" in db_url:
+                try:
+                    conn = psycopg2.connect(db_url, connect_timeout=2)
+                    conn.close()
+                except Exception as exc:
+                    if "password authentication failed" in str(exc).lower():
+                        print(
+                            "[POSTGRESQL] Server is up but DATABASE_URL credentials failed. "
+                            "Fix .env (roles/passwords) or run scripts/db/run_migrations.py option 4."
+                        )
+                    else:
+                        logger.debug("DATABASE_URL probe after reuse: %s", exc)
             return True
         if pid is None:
             postgres_pids = []
@@ -602,7 +615,22 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
         def stop_wrapper():
             stop_postgresql_server(server_state)
 
-        atexit.register(stop_wrapper)
+        stop_on_exit = os.getenv("MINDGRAPH_STOP_POSTGRES_ON_EXIT", "").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+        if stop_on_exit:
+            atexit.register(stop_wrapper)
+        else:
+            try:
+                pid = server_state.postgresql_process.pid
+                print(
+                    f"[POSTGRESQL] Leaving server running (PID: {pid}). "
+                    "Stop manually or set MINDGRAPH_STOP_POSTGRES_ON_EXIT=1 to stop on exit."
+                )
+            except (AttributeError, ValueError, OSError):
+                pass
 
         # Wait for PostgreSQL to become ready
         superuser_name = "postgres"

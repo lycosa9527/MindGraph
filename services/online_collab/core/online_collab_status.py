@@ -19,7 +19,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import AsyncSessionLocal
+from utils.db.session_open import system_rls_session, user_rls_session
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
 from services.redis.redis_async_client import get_async_redis
@@ -65,7 +65,7 @@ async def _sql_list_org_sessions_by_org_id(
     Includes sessions from org-less hosts (organization_id IS NULL) so that
     admin/superuser-hosted sessions are still discoverable when Redis is unavailable.
     """
-    async with AsyncSessionLocal() as db:
+    async with system_rls_session() as db:
         try:
             result = await db.execute(
                 select(Diagram, User)
@@ -132,7 +132,7 @@ async def list_org_online_collab_sessions_for_user(
     is unavailable or the registry set is empty (e.g., immediately after a fresh
     deployment before any new sessions are registered).
     """
-    async with AsyncSessionLocal() as db:
+    async with user_rls_session(user_id) as db:
         try:
             result = await db.execute(select(User).filter(User.id == user_id))
             viewer = result.scalars().first()
@@ -198,7 +198,7 @@ async def online_collab_visibility_for_diagram_id(
         cached = await _redis_visibility_for_code(code)
         if cached is not None:
             return cached
-    async with AsyncSessionLocal() as db:
+    async with system_rls_session() as db:
         try:
             result = await db.execute(
                 select(Diagram.workshop_visibility).filter(
@@ -273,7 +273,7 @@ async def get_online_collab_status_for_viewer(
 
     *error* is one of ``''`` (success), ``'not_found'``, or ``'forbidden'``.
     """
-    async with AsyncSessionLocal() as db:
+    async with user_rls_session(viewer_user_id) as db:
         try:
             result = await db.execute(
                 select(Diagram).filter(
@@ -298,7 +298,7 @@ async def diagram_title_for_active_workshop(diagram_id: str) -> Optional[str]:
     """
     Persisted diagram title for collab handshake / session banners (never raises).
     """
-    async with AsyncSessionLocal() as db:
+    async with system_rls_session() as db:
         try:
             result = await db.execute(
                 select(Diagram.title).where(

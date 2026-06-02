@@ -8,6 +8,7 @@ from services.auth.admin_user_list_rows import (
     build_admin_user_list_row,
     diagram_quota_from_count,
 )
+from utils.auth.school_tier_defs import SCHOOL_TIER_TRIAL
 
 
 def _user(org_id: int | None = 1) -> User:
@@ -29,6 +30,32 @@ def _org(expires_at: datetime | None) -> Organization:
     org.name = "Demo School"
     org.expires_at = expires_at
     return org
+
+
+def test_list_row_includes_effective_school_tier():
+    org = _org(None)
+    org.school_tier = "standard"
+    row = build_admin_user_list_row(
+        _user(),
+        org,
+        {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0},
+        0,
+        {"expires_at": None, "permanent": False},
+    )
+    assert row["school_tier"] == "standard"
+
+
+def test_list_row_trial_tier_for_trial_org():
+    org = _org(None)
+    org.school_tier = SCHOOL_TIER_TRIAL
+    row = build_admin_user_list_row(
+        _user(),
+        org,
+        {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0},
+        0,
+        {"expires_at": None, "permanent": False},
+    )
+    assert row["school_tier"] == SCHOOL_TIER_TRIAL
 
 
 def test_paid_benefit_uses_organization_expires_at():
@@ -66,6 +93,7 @@ def test_user_detail_payload_includes_email_and_diagram_remaining():
     assert payload["email"] == "teacher@example.com"
     assert payload["diagram_quota_max"] == 20
     assert payload["diagram_remaining"] == 17
+    assert payload["school_tier"] == SCHOOL_TIER_TRIAL
 
 
 def test_paid_tier_user_detail_has_unlimited_diagram_quota():

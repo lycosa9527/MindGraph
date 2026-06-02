@@ -307,6 +307,15 @@ onAdminEvent('admin:toolbar_action', (payload) => {
   }
 })
 
+onAdminEvent('admin:mutation_completed', ({ domain, entityId }) => {
+  if (domain !== 'organizations' || entityId == null || effectiveOrgId.value == null) {
+    return
+  }
+  if (effectiveOrgId.value === Number(entityId)) {
+    void loadStats()
+  }
+})
+
 watch(
   () => [authStore.adminCapabilitiesLoaded, authStore.user?.schoolId] as const,
   () => {

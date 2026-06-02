@@ -7,7 +7,7 @@ import { computed } from 'vue'
 
 import { useLanguage } from '@/composables'
 import { formatBeijingDateTime } from '@/utils/formatBeijingDateTime'
-import { userRolePillView } from '@/utils/userRoleDisplay'
+import { schoolTierFromUserRow, userRolePillView } from '@/utils/userRoleDisplay'
 
 const props = withDefaults(
   defineProps<{
@@ -69,7 +69,7 @@ function rolePillForRow(row: Record<string, unknown>) {
   if (typeof role !== 'string') {
     return null
   }
-  return userRolePillView(t, role)
+  return userRolePillView(t, role, schoolTierFromUserRow(row))
 }
 
 function displayName(row: Record<string, unknown>): string {
@@ -123,17 +123,17 @@ function registrationTimeLabel(row: Record<string, unknown>): string {
     :data="users"
     stripe
     size="small"
-    class="admin-users-table"
+    class="admin-users-table w-full"
   >
     <el-table-column
       prop="phone"
       :label="t('admin.phone')"
-      width="128"
+      min-width="104"
       show-overflow-tooltip
     />
     <el-table-column
       :label="t('admin.name')"
-      min-width="100"
+      min-width="88"
       show-overflow-tooltip
     >
       <template #default="{ row }">
@@ -153,12 +153,12 @@ function registrationTimeLabel(row: Record<string, unknown>): string {
       v-if="showSchoolColumn"
       prop="organization_name"
       :label="t('admin.organization')"
-      min-width="120"
+      min-width="104"
       show-overflow-tooltip
     />
     <el-table-column
       :label="t('admin.userType')"
-      width="128"
+      min-width="96"
     >
       <template #default="{ row }">
         <span
@@ -177,7 +177,7 @@ function registrationTimeLabel(row: Record<string, unknown>): string {
     </el-table-column>
     <el-table-column
       :label="t('admin.tokensUsed')"
-      width="108"
+      min-width="80"
       align="right"
     >
       <template #default="{ row }">
@@ -195,7 +195,7 @@ function registrationTimeLabel(row: Record<string, unknown>): string {
     </el-table-column>
     <el-table-column
       :label="t('admin.remainingResourcePoints')"
-      width="108"
+      min-width="80"
       align="right"
     >
       <template #default="{ row }">
@@ -204,7 +204,7 @@ function registrationTimeLabel(row: Record<string, unknown>): string {
     </el-table-column>
     <el-table-column
       :label="t('admin.paidBenefitRemaining')"
-      min-width="148"
+      min-width="112"
       show-overflow-tooltip
     >
       <template #default="{ row }">
@@ -213,7 +213,7 @@ function registrationTimeLabel(row: Record<string, unknown>): string {
     </el-table-column>
     <el-table-column
       :label="t('admin.registrationTime')"
-      width="168"
+      min-width="132"
       show-overflow-tooltip
     >
       <template #default="{ row }">
@@ -222,7 +222,7 @@ function registrationTimeLabel(row: Record<string, unknown>): string {
     </el-table-column>
     <el-table-column
       :label="t('admin.actions')"
-      width="88"
+      min-width="72"
       fixed="right"
       align="center"
     >

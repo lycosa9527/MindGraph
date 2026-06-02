@@ -22,7 +22,7 @@ from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import AsyncSessionLocal
+from utils.db.rls_context import RlsContext, rls_async_session
 from models.domain.auth import User
 from .config import AUTH_MODE, JWT_ALGORITHM
 from .jwt_secret import get_jwt_secret
@@ -317,7 +317,7 @@ async def get_current_user_or_api_key(
             pass
 
     if api_key:
-        async with AsyncSessionLocal() as db:
+        async with rls_async_session(RlsContext.system_bootstrap()) as db:
             if await validate_api_key(api_key, db):
                 key_record = await get_api_key_record(api_key, db)
 

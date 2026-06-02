@@ -17,6 +17,7 @@ import {
   useUpdateAdminUser,
   useUpdateAdminUserRole,
 } from '@/composables/queries'
+import { normalizeSchoolTier } from '@/constants/schoolTier'
 import type { UserRole } from '@/types'
 import { httpErrorDetail } from '@/utils/httpErrorDetail'
 import {
@@ -123,7 +124,10 @@ const organizationReadonly = computed(() => {
 const roleSelectTiers = computed(() => userRoleSelectTiers())
 
 function roleLabel(role: UserRole): string {
-  return userRoleLabel(t, role)
+  const rawTier = detail.value?.school_tier
+  const schoolTier =
+    typeof rawTier === 'string' && rawTier.trim() ? normalizeSchoolTier(rawTier) : null
+  return userRoleLabel(t, role, schoolTier)
 }
 
 const deleteTargetName = computed(() => {

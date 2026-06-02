@@ -19,7 +19,7 @@ from datetime import UTC, datetime
 from fastapi import HTTPException, status
 from sqlalchemy import select
 
-from config.database import AsyncSessionLocal
+from utils.db.session_open import system_rls_session
 from models.domain.auth import User, Organization
 from .config import ENTERPRISE_DEFAULT_ORG_CODE, ENTERPRISE_DEFAULT_USER_PHONE
 from .password import hash_password
@@ -55,7 +55,7 @@ async def get_enterprise_user() -> User:
     Raises:
         HTTPException: If enterprise organization not found
     """
-    async with AsyncSessionLocal() as db:
+    async with system_rls_session() as db:
         result = await db.execute(select(Organization).where(Organization.code == ENTERPRISE_DEFAULT_ORG_CODE))
         org = result.scalar_one_or_none()
         if not org:

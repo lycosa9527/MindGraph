@@ -219,7 +219,7 @@ async def update_user_admin(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
         if new_phone != user.phone:
-            if await other_user_id_with_phone(db, new_phone, user.id) is not None:
+            if await other_user_id_with_phone(new_phone, user.id) is not None:
                 error_msg = Messages.error("phone_already_registered_other", lang, new_phone)
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
             phone_will_change = True
@@ -234,7 +234,7 @@ async def update_user_admin(
             new_email = validate_email_for_api(str(raw_email).strip(), lang)
             current_email = getattr(user, "email", None)
             if new_email != current_email:
-                conflict = await other_user_id_with_email(db, new_email, user.id)
+                conflict = await other_user_id_with_email(new_email, user.id)
                 if conflict is not None:
                     error_msg = Messages.error("email_already_registered", lang)
                     raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)

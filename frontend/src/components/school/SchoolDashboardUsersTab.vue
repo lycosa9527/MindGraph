@@ -60,9 +60,12 @@ const users = computed(() => (schoolUsersQuery.data.value?.users ?? []) as Recor
 watch(
   () => schoolUsersQuery.data.value?.pagination,
   (nextPagination) => {
-    if (nextPagination) {
-      pagination.value = nextPagination
+    if (!nextPagination) {
+      return
     }
+    pagination.value.total = nextPagination.total
+    pagination.value.total_pages = nextPagination.total_pages
+    pagination.value.page_size = nextPagination.page_size
   }
 )
 
@@ -90,14 +93,20 @@ function doSearch() {
 }
 
 function goToPreviousUserPage() {
-  pagination.value.page -= 1
-  loadUsers()
+  if (pagination.value.page > 1) {
+    pagination.value.page -= 1
+  }
 }
 
 function goToNextUserPage() {
-  pagination.value.page += 1
-  loadUsers()
+  if (pagination.value.page < pagination.value.total_pages) {
+    pagination.value.page += 1
+  }
 }
+
+const showPaginationBar = computed(
+  () => !isLoading.value && schoolUsersQuery.data.value != null
+)
 
 const pageInfo = computed(() => {
   const p = pagination.value
@@ -187,7 +196,10 @@ watch(
 
 <template>
   <div class="school-dashboard-users-tab">
-    <el-card shadow="never">
+    <el-card
+      shadow="never"
+      class="admin-users-card"
+    >
       <template
         v-if="!registerHeaderToolbar"
         #header
@@ -226,14 +238,18 @@ watch(
         @edit="openEditModal"
       />
 
-      <AdminSwissPagination
-        v-if="!isLoading && pagination.total_pages > 1"
-        :page-info="pageInfo"
-        :page="pagination.page"
-        :total-pages="pagination.total_pages"
-        @previous="goToPreviousUserPage"
-        @next="goToNextUserPage"
-      />
+      <template
+        v-if="showPaginationBar"
+        #footer
+      >
+        <AdminSwissPagination
+          :page-info="pageInfo"
+          :page="pagination.page"
+          :total-pages="pagination.total_pages"
+          @previous="goToPreviousUserPage"
+          @next="goToNextUserPage"
+        />
+      </template>
     </el-card>
 
     <AdminUserEditModal

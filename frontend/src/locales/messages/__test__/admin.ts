@@ -855,7 +855,7 @@ export default {
   'admin.roleControlDesc':
     'Manage superadmin access. Users with this role can access the full management panel.',
   'admin.roleControlDescPlatformBd':
-    'Manage operations access. Operations can view global data and manage trial invites.',
+    'Manage operations access. Operations can view global data and school invite management.',
   'admin.roleControlDescExpert':
     'Manage expert access. Experts can create schools and manage organizations in their invite scope.',
   'admin.roleControlDescManagers':

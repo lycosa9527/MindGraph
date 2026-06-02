@@ -49,7 +49,7 @@ from services.redis.cache._redis_diagram_cache_helpers import (
     USER_META_KEY,
     USER_LIST_KEY,
 )
-from config.database import AsyncSessionLocal
+from utils.db.session_open import user_rls_session
 from models.domain.diagrams import Diagram
 from utils.auth.school_tier import (
     format_diagram_save_limit_error,
@@ -119,7 +119,7 @@ class RedisDiagramCache:
     async def _resolve_diagram_cap(self, user_id: int, max_per_user: Optional[int]) -> int:
         if max_per_user is not None:
             return int(max_per_user)
-        async with AsyncSessionLocal() as db:
+        async with user_rls_session(user_id) as db:
             return await max_diagrams_for_user_id(db, user_id)
 
     async def save_diagram(
@@ -258,7 +258,7 @@ class RedisDiagramCache:
     ) -> bool:
         """Create new diagram in database using INSERT ... RETURNING to confirm in one query."""
         try:
-            async with AsyncSessionLocal() as db:
+            async with user_rls_session(user_id) as db:
                 try:
                     stmt = (
                         pg_insert(Diagram)
@@ -297,7 +297,7 @@ class RedisDiagramCache:
     ) -> bool:
         """Update title/thumbnail only (spec column untouched)."""
         try:
-            async with AsyncSessionLocal() as db:
+            async with user_rls_session(user_id) as db:
                 try:
                     stmt = (
                         sa_update(Diagram)
@@ -376,7 +376,7 @@ class RedisDiagramCache:
     ) -> bool:
         """Update diagram in database."""
         try:
-            async with AsyncSessionLocal() as db:
+            async with user_rls_session(user_id) as db:
                 try:
                     stmt = (
                         sa_update(Diagram)
@@ -461,7 +461,7 @@ class RedisDiagramCache:
     async def _query_diagram_from_db(self, user_id: int, diagram_id: str) -> Optional[Dict[str, Any]]:
         """Inner DB load — runs under the stampede lock when one was acquired."""
         try:
-            async with AsyncSessionLocal() as db:
+            async with user_rls_session(user_id) as db:
                 result = await db.execute(
                     select(Diagram).where(
                         Diagram.id == diagram_id,
@@ -619,7 +619,7 @@ class RedisDiagramCache:
     async def _load_list_from_database(self, user_id: int) -> List[Dict[str, Any]]:
         """Load diagram list metadata from database."""
         try:
-            async with AsyncSessionLocal() as db:
+            async with user_rls_session(user_id) as db:
                 result = await db.execute(
                     select(Diagram)
                     .where(Diagram.user_id == user_id, Diagram.is_deleted.is_(False))
@@ -658,7 +658,7 @@ class RedisDiagramCache:
         now = datetime.now(UTC)
 
         try:
-            async with AsyncSessionLocal() as db:
+            async with user_rls_session(user_id) as db:
                 try:
                     result = await db.execute(
                         select(Diagram).where(Diagram.id == diagram_id, Diagram.user_id == user_id)
@@ -778,7 +778,7 @@ class RedisDiagramCache:
         now = datetime.now(UTC)
 
         try:
-            async with AsyncSessionLocal() as db:
+            async with user_rls_session(user_id) as db:
                 try:
                     stmt = (
                         sa_update(Diagram)

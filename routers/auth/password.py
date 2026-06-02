@@ -20,6 +20,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
+from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 from models.domain.auth import User
 from models.domain.messages import Messages, Language
 from models.requests.requests_auth import (
@@ -113,6 +114,7 @@ def _raise_for_captcha_failure(captcha_error: Optional[str], lang: Language) -> 
 async def reset_password_with_sms(
     request: ResetPasswordWithSMSRequest,
     http_request: Request,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -172,6 +174,7 @@ async def reset_password_with_sms(
 async def reset_password_with_email(
     request: ResetPasswordWithEmailRequest,
     http_request: Request,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):

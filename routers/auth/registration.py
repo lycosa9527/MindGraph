@@ -24,6 +24,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
+from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 from models.domain.messages import Messages, Language
 from models.domain.auth import User, Organization
 from models.requests.requests_auth import RegisterRequest, RegisterWithSMSRequest
@@ -175,6 +176,7 @@ async def register(
     request: RegisterRequest,
     http_request: Request,
     response: Response,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -266,7 +268,7 @@ async def register(
     # Use distributed lock to prevent race condition on phone uniqueness check
     try:
         async with phone_registration_lock(request.phone):
-            if await any_user_id_with_phone(db, request.phone) is not None:
+            if await any_user_id_with_phone(request.phone) is not None:
                 duration = time.time() - start_time
                 registration_metrics.record_failure("phone_exists", duration)
                 error_msg = Messages.error("phone_already_registered", lang)
@@ -416,6 +418,7 @@ async def register_with_sms(
     request: RegisterWithSMSRequest,
     http_request: Request,
     response: Response,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -477,7 +480,7 @@ async def register_with_sms(
     # Use distributed lock to prevent race condition on phone uniqueness check
     try:
         async with phone_registration_lock(request.phone):
-            if await any_user_id_with_phone(db, request.phone) is not None:
+            if await any_user_id_with_phone(request.phone) is not None:
                 duration = time.time() - start_time
                 registration_metrics.record_failure("phone_exists", duration)
                 error_msg = Messages.error("phone_already_registered", lang)

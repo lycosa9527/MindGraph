@@ -13,7 +13,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 
-from config.database import AsyncSessionLocal
+from utils.db.session_open import actor_rls_session
 from models.domain.auth import User
 from models.domain.messages import Language
 from utils.auth import get_current_user
@@ -77,7 +77,7 @@ async def download_openclaw_skill_zip(
     lang: Language = Depends(get_language_dependency),
 ) -> Response:
     """Zip of `openclaw/skills/mindgraph` for OpenClaw / WorkBuddy."""
-    async with AsyncSessionLocal() as db:
+    async with actor_rls_session(current_user) as db:
         await assert_user_has_school_tier_feature(
             db,
             current_user,
@@ -98,7 +98,7 @@ async def download_chrome_extension_zip(
     lang: Language = Depends(get_language_dependency),
 ) -> Response:
     """Zip of `chrome-extension` for Load unpacked (or inspection)."""
-    async with AsyncSessionLocal() as db:
+    async with actor_rls_session(current_user) as db:
         await assert_user_has_school_tier_feature(
             db,
             current_user,

@@ -171,6 +171,7 @@ def export_postgres_dump(
         pg_dump,
         "-Fc",
         "--no-owner",
+        "--no-policies",
         "-f",
         str(dump_path),
         libpq_database_url(db_url),

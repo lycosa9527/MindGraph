@@ -17,6 +17,7 @@ from models.domain.markets import MarketListing, MarketOrder, MarketSubscription
 from repositories.markets_repo import MarketListingRepository, MarketOrderRepository, MarketSubscriptionRepository
 from routers.api.helpers import normalize_external_base_url
 from routers.auth.dependencies import get_current_user
+from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 from routers.features.markets.helpers import require_markets_enabled
 from services.markets.alipay_agreement_sign import build_agreement_sign_form_html
 from services.markets.alipay_agreement_unsign import unsign_agreement
@@ -138,6 +139,7 @@ async def list_listings(
     ),
     offset: int = Query(0, ge=0, description="Legacy offset; ignored when after_id is supplied."),
     limit: int = Query(50, ge=1, le=100),
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
 ) -> list[ListingOut]:
     require_markets_enabled()
@@ -174,6 +176,7 @@ async def list_listings(
 @router.post("/orders", response_model=OrderOut)
 async def create_order(
     body: OrderCreateBody,
+    _catalog_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
     user: User = Depends(get_current_user),
 ) -> OrderOut:
@@ -214,6 +217,7 @@ async def create_order(
 @router.post("/orders/{order_id}/pay", response_class=HTMLResponse)
 async def pay_order(
     order_id: int,
+    _catalog_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
     user: User = Depends(get_current_user),
 ) -> HTMLResponse:
@@ -305,6 +309,7 @@ async def my_subscriptions(
 @router.post("/subscriptions/intent", response_model=SubscriptionOut)
 async def subscription_intent(
     body: SubscriptionIntentBody,
+    _catalog_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
     user: User = Depends(get_current_user),
 ) -> SubscriptionOut:
@@ -327,6 +332,7 @@ async def subscription_intent(
 @router.post("/subscriptions/{subscription_id}/sign", response_class=HTMLResponse)
 async def sign_subscription(
     subscription_id: int,
+    _catalog_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
     user: User = Depends(get_current_user),
 ) -> HTMLResponse:
@@ -396,7 +402,11 @@ async def cancel_subscription(
 
 
 @router.post("/payments/alipay/notify", response_class=PlainTextResponse)
-async def alipay_notify(request: Request, db: AsyncSession = Depends(get_async_db)) -> PlainTextResponse:
+async def alipay_notify(
+    request: Request,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
+    db: AsyncSession = Depends(get_async_db),
+) -> PlainTextResponse:
     """Alipay async notification (unsigned route; signature verified inside)."""
     if not config.FEATURE_MARKETS:
         return PlainTextResponse("fail")

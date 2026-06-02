@@ -19,7 +19,8 @@ import time
 import orjson
 from sqlalchemy import insert as sa_insert
 
-from config.database import AsyncSessionLocal, check_disk_space
+from config.database import check_disk_space
+from utils.db.session_open import system_rls_session
 from models.domain.token_usage import TokenUsage
 from services.redis import keys as _keys
 from services.redis.redis_async_client import get_async_redis
@@ -238,7 +239,7 @@ class RedisTokenBuffer:
             except Exception as exc:
                 logger.debug("Token buffer disk space check failed: %s", exc)
 
-            async with AsyncSessionLocal() as db:
+            async with system_rls_session() as db:
                 try:
                     await db.execute(sa_insert(TokenUsage), records)
                     await db.commit()

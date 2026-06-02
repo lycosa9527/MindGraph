@@ -16,8 +16,8 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials
 
 from models.domain.auth import User
+from routers.auth.dependencies import require_admin
 from utils.auth import get_current_user
-from utils.auth.roles import is_admin
 from utils.auth.tokens import security
 
 
@@ -44,13 +44,6 @@ def serialize_document(document) -> dict:
             "name": document.uploader.name if document.uploader else None,
         },
     }
-
-
-def require_admin(current_user: User = Depends(get_current_user)) -> User:
-    """Require admin access."""
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-    return current_user
 
 
 def get_optional_user(

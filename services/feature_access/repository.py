@@ -6,7 +6,7 @@ from typing import Dict
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import AsyncSessionLocal
+from utils.db.session_open import system_rls_session
 from services.redis.cache import redis_feature_org_access_cache
 from models.domain.auth import Organization, User
 from models.domain.feature_access_control import (
@@ -45,7 +45,7 @@ async def load_feature_org_access_map() -> Dict[str, FeatureOrgAccessEntry]:
     cached = await redis_feature_org_access_cache.get_cached_map()
     if cached is not None:
         return cached
-    async with AsyncSessionLocal() as db:
+    async with system_rls_session() as db:
         data = await load_feature_org_access_session(db)
     await redis_feature_org_access_cache.set_cached_map(data)
     return data

@@ -137,7 +137,7 @@ async def test_idle_stop_flush_failure_keeps_session_intact() -> None:
     manager.destroy_session = AsyncMock()
 
     with (
-        patch.object(stop_ops, "AsyncSessionLocal", return_value=fake_context),
+        patch.object(stop_ops, "user_rls_session", return_value=fake_context),
         patch.object(stop_ops, "get_async_redis", return_value=fake_redis),
         patch.object(
             stop_ops,

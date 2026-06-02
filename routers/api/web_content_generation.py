@@ -14,7 +14,7 @@ from fastapi.responses import Response
 
 from agents.mind_maps.web_content_mind_map_agent import WebContentMindMapAgent
 from models import Messages, WebContentGenerateRequest, WebContentMindmapPngRequest, get_request_language
-from config.database import AsyncSessionLocal
+from utils.db.session_open import actor_rls_session
 from models.domain.auth import User
 from utils.auth.school_tier import (
     TIER_FEATURE_CHROME_EXTENSION,
@@ -113,7 +113,7 @@ async def generate_from_web_content(
     lang = get_request_language(None, accept_language)
 
     if current_user is not None:
-        async with AsyncSessionLocal() as db:
+        async with actor_rls_session(current_user) as db:
             await assert_user_has_school_tier_feature(
                 db,
                 current_user,
@@ -168,7 +168,7 @@ async def web_content_mindmap_png(
     lang = get_request_language(x_language, accept_language)
 
     if current_user is not None:
-        async with AsyncSessionLocal() as db:
+        async with actor_rls_session(current_user) as db:
             await assert_user_has_school_tier_feature(
                 db,
                 current_user,

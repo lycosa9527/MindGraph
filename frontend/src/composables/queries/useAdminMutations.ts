@@ -87,6 +87,10 @@ export function useCreateAdminOrganization() {
   })
 }
 
+function organizationUpdateAffectsTierOrQuotas(body: Record<string, unknown>): boolean {
+  return 'school_tier' in body || 'expires_at' in body
+}
+
 export function useUpdateAdminOrganization() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -97,10 +101,14 @@ export function useUpdateAdminOrganization() {
       orgId: number
       body: Record<string, unknown>
     }) => updateAdminOrganization(orgId, body),
-    onSuccess: (_data, { orgId }) => {
+    onSuccess: (_data, { orgId, body }) => {
       invalidateOrganizations(queryClient)
       queryClient.invalidateQueries({ queryKey: adminKeys.organization(orgId) })
       invalidateStats(queryClient)
+      if (organizationUpdateAffectsTierOrQuotas(body)) {
+        invalidateUsers(queryClient)
+        queryClient.invalidateQueries({ queryKey: adminKeys.schoolStats(orgId) })
+      }
     },
   })
 }

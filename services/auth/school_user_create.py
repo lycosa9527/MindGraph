@@ -207,7 +207,7 @@ async def create_school_member_user(
     member: SchoolMemberInput,
     lang: Language,
 ) -> User:
-    if await any_user_id_with_phone(db, member.phone) is not None:
+    if await any_user_id_with_phone(member.phone) is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=Messages.error("phone_already_registered_other", lang, member.phone),

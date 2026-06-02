@@ -28,7 +28,6 @@ import {
   fetchAdminOrganizations,
   fetchAdminOrganizationUsers,
   fetchAdminPerformanceLive,
-  fetchAdminPersonalTrialInvite,
   fetchAdminPlatformRoleMembers,
   fetchAdminSchoolStats,
   fetchAdminSchoolTokenStats,
@@ -559,15 +558,6 @@ export function useAdminOrganizationInvites(options?: { enabled?: MaybeRefOrGett
   return useQuery({
     queryKey: adminKeys.invites.organizations(),
     queryFn: fetchAdminOrganizationInvites,
-    staleTime: ADMIN_STALE_MS.default,
-    enabled: options?.enabled,
-  })
-}
-
-export function useAdminPersonalTrialInvite(options?: { enabled?: MaybeRefOrGetter<boolean> }) {
-  return useQuery({
-    queryKey: adminKeys.invites.personalTrial(),
-    queryFn: fetchAdminPersonalTrialInvite,
     staleTime: ADMIN_STALE_MS.default,
     enabled: options?.enabled,
   })

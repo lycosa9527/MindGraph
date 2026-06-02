@@ -24,7 +24,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from config.database import AsyncSessionLocal
+from utils.db.session_open import system_rls_session
 from models.domain.auth import User, Organization
 from services.redis.session.redis_session_manager import get_session_manager
 from services.redis.cache.redis_org_cache import org_cache
@@ -205,7 +205,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
 
         user_phone = str(body["userId"]).strip()
 
-        async with AsyncSessionLocal() as db:
+        async with system_rls_session() as db:
             org: Optional[Organization] = None
 
             if BAYI_DEFAULT_ORG_ID is not None:

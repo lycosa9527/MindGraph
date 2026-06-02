@@ -49,7 +49,6 @@ from .dependencies import (
     require_admin_or_manager,
     require_manager,
     require_mindbot_admin_access,
-    require_trial_invite_capability,
     require_global_data_center_read,
     require_global_dashboard_readonly,
 )
@@ -91,7 +90,6 @@ __all__ = [
     "require_admin_or_manager",
     "require_manager",
     "require_mindbot_admin_access",
-    "require_trial_invite_capability",
     "require_global_data_center_read",
     "require_global_dashboard_readonly",
 ]

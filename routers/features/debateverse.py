@@ -36,7 +36,8 @@ from sqlalchemy.sql.functions import count as sa_count
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.tts_realtime_client import AudioFormat, SessionMode, TTSRealtimeClient
-from config.database import get_async_db, AsyncSessionLocal
+from config.database import get_async_db
+from utils.db.session_open import user_rls_session
 from models.domain.debateverse import DebateMessage, DebateParticipant, DebateSession
 from prompts.debateverse import get_position_generation_prompt
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
@@ -171,7 +172,10 @@ async def stream_debater_response(
     - {"type": "done"} - Stream complete
     - {"type": "error", "error": "..."} - Error occurred
     """
-    async with AsyncSessionLocal() as db:
+    if user_id is None:
+        yield f"data: {json.dumps({'type': 'error', 'error': 'Unauthorized'})}\n\n"
+        return
+    async with user_rls_session(user_id) as db:
         try:
             service = DebateVerseService(session_id, db)
 

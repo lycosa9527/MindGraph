@@ -23,7 +23,7 @@ from redis.exceptions import RedisError
 from sqlalchemy import select, text as sql_text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from config.database import AsyncSessionLocal
+from utils.db.session_open import system_rls_session, user_rls_session
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
@@ -150,7 +150,7 @@ async def cleanup_expired_online_collabs_impl() -> int:
 
     cleaned_count = 0
     try:
-        async with AsyncSessionLocal() as db:
+        async with system_rls_session() as db:
             try:
                 # PG 18: set lock_timeout so the MERGE cannot block indefinitely
                 # waiting for a row-level lock held by a concurrent editor.
@@ -316,7 +316,7 @@ async def start_online_collab_impl(
         other diagrams stopped to enforce single hosted session per owner.
         It is ``0`` on error paths prior to teardown.
     """
-    async with AsyncSessionLocal() as db:
+    async with user_rls_session(user_id) as db:
         try:
             result = await db.execute(
                 select(Diagram).filter(
@@ -589,7 +589,7 @@ async def start_online_collab_impl(
                     exc_info=True,
                 )
                 try:
-                    async with AsyncSessionLocal() as rollback_db:
+                    async with user_rls_session(user_id) as rollback_db:
                         await clear_online_collab_session_by_id_returning(
                             rollback_db,
                             diagram_id,

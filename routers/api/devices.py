@@ -16,8 +16,9 @@ from sqlalchemy.orm import selectinload
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.device import Device
+from routers.auth.dependencies import require_admin
 from utils.auth import get_current_user
-from utils.auth.roles import is_superadmin
+from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 
 logger = logging.getLogger(__name__)
 
@@ -48,41 +49,36 @@ class DeviceResponse(BaseModel):
 
 @router.post("/register", response_model=DeviceResponse)
 async def register_device(
-    request: DeviceRegisterRequest,
+    body: DeviceRegisterRequest,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """Register a new ESP32 watch device"""
-    result = await db.execute(select(Device).where(Device.watch_id == request.watch_id))
+    """Register a new ESP32 watch device (system RLS — unauthenticated)."""
+    result = await db.execute(select(Device).where(Device.watch_id == body.watch_id))
     existing = result.scalar_one_or_none()
     if existing:
         return existing
 
     device = Device(
-        watch_id=request.watch_id,
-        mac_address=request.mac_address,
+        watch_id=body.watch_id,
+        mac_address=body.mac_address,
         status="unassigned",
     )
     db.add(device)
     await db.commit()
     await db.refresh(device)
 
-    logger.info("Registered device: %s", request.watch_id)
+    logger.info("Registered device: %s", body.watch_id)
     return device
 
 
 @router.get("", response_model=List[DeviceResponse])
 async def list_devices(
     status_filter: Optional[str] = None,
-    current_user: User = Depends(get_current_user),
+    _current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_async_db),
 ):
     """List all devices (superadmin only — Smart Response admin panel)."""
-    if not is_superadmin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Superadmin access required",
-        )
-
     stmt = select(Device).options(selectinload(Device.student))
     if status_filter:
         stmt = stmt.where(Device.status == status_filter)
@@ -102,16 +98,10 @@ async def list_devices(
 
 @router.get("/unassigned", response_model=List[DeviceResponse])
 async def list_unassigned_devices(
-    current_user: User = Depends(get_current_user),
+    _current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """List unassigned devices"""
-    if not is_superadmin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Superadmin access required",
-        )
-
+    """List unassigned devices (superadmin only)."""
     result = await db.execute(select(Device).where(Device.status == "unassigned"))
     return result.scalars().all()
 
@@ -122,7 +112,7 @@ async def get_device(
     _current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """Get device details"""
+    """Get device details (authenticated; visible per org/student RLS)."""
     result = await db.execute(select(Device).options(selectinload(Device.student)).where(Device.watch_id == watch_id))
     device = result.scalar_one_or_none()
     if not device:
@@ -140,17 +130,11 @@ async def get_device(
 @router.post("/{watch_id}/assign", response_model=DeviceResponse)
 async def assign_device(
     watch_id: str,
-    request: DeviceAssignRequest,
-    current_user: User = Depends(get_current_user),
+    body: DeviceAssignRequest,
+    _current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """Assign device to student"""
-    if not is_superadmin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Superadmin access required",
-        )
-
+    """Assign device to student (superadmin only)."""
     result = await db.execute(select(Device).where(Device.watch_id == watch_id))
     device = result.scalar_one_or_none()
     if not device:
@@ -159,7 +143,7 @@ async def assign_device(
             detail="Device not found",
         )
 
-    student_result = await db.execute(select(User).where(User.id == request.student_id))
+    student_result = await db.execute(select(User).where(User.id == body.student_id))
     student = student_result.scalar_one_or_none()
     if not student:
         raise HTTPException(
@@ -167,13 +151,13 @@ async def assign_device(
             detail="Student not found",
         )
 
-    device.student_id = request.student_id
+    device.student_id = body.student_id
     device.status = "assigned"
     device.updated_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(device)
 
-    logger.info("Assigned device %s to student %d", watch_id, request.student_id)
+    logger.info("Assigned device %s to student %d", watch_id, body.student_id)
 
     data = DeviceResponse.model_validate(device).model_dump()
     data["student_name"] = student.name
@@ -183,16 +167,10 @@ async def assign_device(
 @router.delete("/{watch_id}/assign")
 async def unassign_device(
     watch_id: str,
-    current_user: User = Depends(get_current_user),
+    _current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """Unassign device from student"""
-    if not is_superadmin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Superadmin access required",
-        )
-
+    """Unassign device from student (superadmin only)."""
     result = await db.execute(select(Device).where(Device.watch_id == watch_id))
     device = result.scalar_one_or_none()
     if not device:
@@ -213,9 +191,10 @@ async def unassign_device(
 @router.get("/{watch_id}/status", response_model=DeviceResponse)
 async def get_device_status(
     watch_id: str,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """Get device status (public endpoint for watch polling)"""
+    """Get device status (public endpoint for watch polling; system RLS)."""
     result = await db.execute(select(Device).options(selectinload(Device.student)).where(Device.watch_id == watch_id))
     device = result.scalar_one_or_none()
     if not device:

@@ -12,11 +12,11 @@ from sqlalchemy import select, text
 
 from config.database import (
     recover_from_kill_9,
-    AsyncSessionLocal,
     check_integrity,
     async_engine,
     DATABASE_URL,
 )
+from utils.db.session_open import system_rls_session, user_rls_session
 from models.domain.knowledge_space import ChunkTestDocument
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.infrastructure.recovery.recovery_locks import (
@@ -56,7 +56,7 @@ async def _cleanup_user_documents(user_id, docs) -> int:
     Returns count cleaned.
     """
     cleaned = 0
-    async with AsyncSessionLocal() as db:
+    async with user_rls_session(int(user_id)) as db:
         try:
             service = ChunkTestDocumentService(db, user_id)
         except Exception as exc:
@@ -106,7 +106,7 @@ async def cleanup_incomplete_chunk_operations() -> int:
                 ChunkTestDocument.__tablename__,
             )
             return 0
-        async with AsyncSessionLocal() as db:
+        async with system_rls_session() as db:
             result = await db.execute(select(ChunkTestDocument).where(ChunkTestDocument.status == "processing"))
             stuck_docs = result.scalars().all()
     except ImportError as exc:

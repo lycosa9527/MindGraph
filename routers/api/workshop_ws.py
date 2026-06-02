@@ -146,10 +146,10 @@ async def canvas_collab_websocket(
     if auth_err or user is None:
         return
 
-    from config.database import AsyncSessionLocal
     from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, user_has_school_tier_feature
+    from utils.db.session_open import actor_rls_session
 
-    async with AsyncSessionLocal() as tier_db:
+    async with actor_rls_session(user) as tier_db:
         collab_allowed = await user_has_school_tier_feature(
             tier_db,
             user,

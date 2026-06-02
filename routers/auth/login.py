@@ -79,6 +79,8 @@ from utils.auth import (
     ACCESS_TOKEN_EXPIRY_MINUTES,
 )
 
+from utils.db.rls_request import bind_system_bootstrap_rls_dependency
+
 from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
 from .email import verify_and_consume_email_code
@@ -251,6 +253,7 @@ async def login(
     request: LoginRequest,
     http_request: Request,
     response: Response,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -494,6 +497,7 @@ async def login_with_sms(
     request: LoginWithSMSRequest,
     http_request: Request,
     response: Response,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -539,6 +543,7 @@ async def login_with_email(
     request: LoginWithEmailRequest,
     http_request: Request,
     response: Response,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -593,6 +598,7 @@ async def verify_bayi_passkey_login(
     passkey_request: PasskeyVerifyRequest,
     request: Request,
     response: Response,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):

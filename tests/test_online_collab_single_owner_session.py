@@ -41,7 +41,7 @@ async def test_stop_other_calls_stop_online_collab_per_candidate() -> None:
 
     with (
         patch(
-            "services.online_collab.lifecycle.online_collab_single_owner_session.AsyncSessionLocal",
+            "services.online_collab.lifecycle.online_collab_single_owner_session.user_rls_session",
             return_value=context,
         ),
         patch(
@@ -79,7 +79,7 @@ async def test_stop_other_returns_zero_on_listing_error() -> None:
 
     with (
         patch(
-            "services.online_collab.lifecycle.online_collab_single_owner_session.AsyncSessionLocal",
+            "services.online_collab.lifecycle.online_collab_single_owner_session.user_rls_session",
             return_value=context,
         ),
         patch(

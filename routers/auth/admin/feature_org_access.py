@@ -13,7 +13,7 @@ from services.feature_access.repository import (
     load_feature_org_access_session,
     replace_feature_org_access,
 )
-from utils.auth import get_current_user, is_admin
+from routers.auth.dependencies import require_admin
 
 logger = logging.getLogger(__name__)
 
@@ -22,15 +22,10 @@ router = APIRouter()
 
 @router.get("/admin/feature-org-access")
 async def get_feature_org_access_admin(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Return all feature access rules (admin only)."""
-    if not is_admin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required",
-        )
     data = await load_feature_org_access_session(db)
     logger.info("Admin %s read feature org access (%d keys)", current_user.phone, len(data))
     return data
@@ -39,15 +34,10 @@ async def get_feature_org_access_admin(
 @router.put("/admin/feature-org-access")
 async def put_feature_org_access_admin(
     body: Dict[str, FeatureOrgAccessEntry],
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Replace feature access rules (admin only)."""
-    if not is_admin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required",
-        )
     try:
         await replace_feature_org_access(db, body)
     except ValueError as exc:

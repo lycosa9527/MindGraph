@@ -31,7 +31,7 @@ from agents.core.learning_sheet import (
     _detect_learning_sheet_from_prompt,
 )
 from agents.core.utils import create_error_response, validate_inputs
-from config.database import AsyncSessionLocal
+from utils.db.session_open import user_rls_session
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
 if TYPE_CHECKING:
@@ -461,7 +461,7 @@ auto-complete - user has dimension but no topic (generate topic and children)
         if use_rag and user_id:
             try:
                 rag_service = RAGService()
-                async with AsyncSessionLocal() as db:
+                async with user_rls_session(int(user_id)) as db:
                     if await rag_service.has_knowledge_base(db, user_id):
                         logger.info(
                             "[RAG] Retrieving context for user %d, top_k=%d",

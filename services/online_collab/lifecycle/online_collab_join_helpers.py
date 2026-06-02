@@ -8,7 +8,7 @@ from redis.exceptions import RedisError
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from config.database import AsyncSessionLocal
+from utils.db.session_open import user_rls_session
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
 from services.online_collab.lifecycle.online_collab_expiry import expires_at_to_unix
@@ -61,7 +61,7 @@ async def restore_online_collab_redis_from_db_row(
         owner_id = getattr(diagram, "user_id", None)
         if owner_id is not None:
             try:
-                async with AsyncSessionLocal() as db:
+                async with user_rls_session(int(owner_id)) as db:
                     result = await db.execute(select(User.organization_id, User.name).where(User.id == owner_id))
                     row = result.first()
                     if row:

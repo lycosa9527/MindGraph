@@ -288,6 +288,45 @@ html.dark .admin-swiss-switch.el-switch :deep(.el-switch__core .el-switch__actio
   box-shadow: 0 1px 3px rgb(0 0 0 / 35%);
 }
 
+/* User list card (用户管理, school dashboard users). */
+.admin-users-card {
+  border: 1px solid var(--swiss-border, #e7e5e4);
+  border-radius: 12px;
+  background: var(--swiss-surface, #fff);
+}
+
+.admin-users-card :deep(.el-card__body) {
+  padding: 1rem 1.25rem 0.75rem;
+}
+
+.admin-users-card :deep(.el-card__footer) {
+  border-top: none;
+  padding: 0 1.25rem 1rem;
+}
+
+.admin-users-card :deep(.el-card__footer) .admin-swiss-pagination {
+  margin-top: 0;
+}
+
+.admin-users-table {
+  width: 100%;
+}
+
+.admin-users-table :deep(.el-table__inner-wrapper) {
+  width: 100%;
+}
+
+.admin-users-table :deep(.el-table__header th),
+.admin-users-table :deep(.el-table__body td) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-users-table :deep(.el-table__header th .cell),
+.admin-users-table :deep(.el-table__body td .cell) {
+  white-space: nowrap;
+}
+
 /* Table footer pagination (用户管理, school dashboard users). */
 .admin-swiss-pagination {
   display: flex;
@@ -295,8 +334,6 @@ html.dark .admin-swiss-switch.el-switch :deep(.el-switch__core .el-switch__actio
   align-items: center;
   gap: 1rem;
   margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--swiss-border, #e7e5e4);
 }
 
 .admin-swiss-pagination__info {
@@ -311,7 +348,7 @@ html.dark .admin-swiss-switch.el-switch :deep(.el-switch__core .el-switch__actio
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 0.5rem;
+  gap: 0.125rem;
 }
 
 .admin-swiss-pagination__nav .el-button.is-disabled,

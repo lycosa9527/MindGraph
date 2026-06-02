@@ -4,13 +4,12 @@
  * Click user row (name/tokens) to open chart + token cards modal
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-
 
 import { useAdminUsersSchoolFilterRoute } from '@/composables/admin/useAdminUsersSchoolFilterRoute'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminUsers } from '@/composables/queries'
+import type { AdminUsersQuery } from '@/composables/queries/adminApi'
 import { useAdminPanelStore, useAuthStore } from '@/stores'
 
 import AdminSwissPagination from './AdminSwissPagination.vue'
@@ -27,7 +26,6 @@ const props = withDefaults(
   }
 )
 
-const route = useRoute()
 const authStore = useAuthStore()
 const adminPanel = useAdminPanelStore()
 const { on: onAdminEvent } = useAdminEventBus('AdminUsersTab')
@@ -55,12 +53,19 @@ const pagination = ref({
 })
 const searchQuery = ref('')
 
-const usersQueryParams = computed(() => ({
-  page: pagination.value.page,
-  page_size: pagination.value.page_size,
-  search: searchQuery.value,
-  organization_id: orgFilter.value || undefined,
-}))
+function buildUsersQueryParams(): AdminUsersQuery {
+  const params: AdminUsersQuery = {
+    page: pagination.value.page,
+    page_size: pagination.value.page_size,
+    search: searchQuery.value,
+  }
+  if (orgFilter.value !== '') {
+    params.organization_id = orgFilter.value
+  }
+  return params
+}
+
+const usersQueryParams = computed(() => buildUsersQueryParams())
 
 const usersQuery = useAdminUsers(usersQueryParams)
 
@@ -70,14 +75,40 @@ const editUserId = ref<number | null>(null)
 const isLoading = computed(() => usersQuery.isFetching.value)
 const users = computed(() => (usersQuery.data.value?.users ?? []) as Record<string, unknown>[])
 
+const apiPagination = computed(() => usersQuery.data.value?.pagination)
+
+const showPaginationBar = computed(
+  () => !isLoading.value && usersQuery.data.value != null
+)
+
+function resetPaginationMeta(): void {
+  pagination.value.total = 0
+  pagination.value.total_pages = 0
+}
+
 watch(
   () => usersQuery.data.value?.pagination,
   (nextPagination) => {
-    if (nextPagination) {
-      pagination.value = nextPagination
+    if (!nextPagination) {
+      return
     }
+    if (nextPagination.page !== pagination.value.page) {
+      return
+    }
+    pagination.value.total = nextPagination.total
+    pagination.value.total_pages = nextPagination.total_pages
+    pagination.value.page_size = nextPagination.page_size
   }
 )
+
+watch(orgFilter, (value, oldValue) => {
+  adminPanel.patchUsersToolbar({ orgFilter: value })
+  if (value === oldValue) {
+    return
+  }
+  pagination.value.page = 1
+  resetPaginationMeta()
+})
 
 async function loadUsers() {
   try {
@@ -98,44 +129,51 @@ function openEditModal(user: Record<string, unknown>): void {
 
 function doSearch() {
   pagination.value.page = 1
-  loadUsers()
+  resetPaginationMeta()
+  void loadUsers()
 }
 
 function resetFilters() {
   searchQuery.value = ''
   orgFilter.value = ''
-  pagination.value.page = 1
   if (authStore.isSuperAdmin) {
     syncOrgFilterToRoute('')
   }
-  void loadUsers()
 }
 
 function onOrgFilterChange(value: number | ''): void {
   applyOrgFilterChange(value)
-  pagination.value.page = 1
-  void loadUsers()
 }
 
 function goToPreviousUserPage() {
-  pagination.value.page -= 1
-  loadUsers()
+  if (pagination.value.page > 1) {
+    pagination.value.page -= 1
+  }
 }
 
 function goToNextUserPage() {
-  pagination.value.page += 1
-  loadUsers()
+  const totalPages = apiPagination.value?.total_pages ?? pagination.value.total_pages
+  if (pagination.value.page < totalPages) {
+    pagination.value.page += 1
+  }
 }
 
 const pageInfo = computed(() => {
-  const p = pagination.value
-  if (p.total <= 0) {
+  const meta = apiPagination.value ?? pagination.value
+  if (meta.total <= 0) {
     return t('admin.listRangeEmpty')
   }
-  const start = (p.page - 1) * p.page_size + 1
-  const end = Math.min(p.page * p.page_size, p.total)
-  return t('admin.listRange', { start, end, total: p.total })
+  const page = pagination.value.page
+  const pageSize = meta.page_size
+  const start = (page - 1) * pageSize + 1
+  const end = Math.min(page * pageSize, meta.total)
+  return t('admin.listRange', { start, end, total: meta.total })
 })
+
+const paginationPage = computed(() => pagination.value.page)
+const paginationTotalPages = computed(
+  () => apiPagination.value?.total_pages ?? pagination.value.total_pages
+)
 
 function syncUsersToolbarState(): void {
   adminPanel.setUsersToolbar({
@@ -149,10 +187,6 @@ function syncUsersToolbarState(): void {
 
 watch(searchQuery, (value) => {
   adminPanel.patchUsersToolbar({ searchQuery: value })
-})
-
-watch(orgFilter, (value) => {
-  adminPanel.patchUsersToolbar({ orgFilter: value })
 })
 
 watch(
@@ -190,19 +224,7 @@ onAdminEvent('admin:toolbar_action', (payload) => {
 
 onMounted(() => {
   syncUsersToolbarState()
-  void loadUsers()
 })
-
-watch(
-  () => route.query.organization_id,
-  () => {
-    if (!authStore.isSuperAdmin) {
-      return
-    }
-    pagination.value.page = 1
-    void loadUsers()
-  }
-)
 
 onBeforeUnmount(() => {
   adminPanel.clearUsersToolbar()
@@ -212,7 +234,10 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="admin-users-tab">
-    <el-card shadow="never">
+    <el-card
+      shadow="never"
+      class="admin-users-card"
+    >
       <AdminUsersTable
         :users="users"
         :is-loading="isLoading"
@@ -222,14 +247,18 @@ onBeforeUnmount(() => {
         @open-trend="openTrendModal"
       />
 
-      <AdminSwissPagination
-        v-if="!isLoading && pagination.total_pages > 1"
-        :page-info="pageInfo"
-        :page="pagination.page"
-        :total-pages="pagination.total_pages"
-        @previous="goToPreviousUserPage"
-        @next="goToNextUserPage"
-      />
+      <template
+        v-if="showPaginationBar"
+        #footer
+      >
+        <AdminSwissPagination
+          :page-info="pageInfo"
+          :page="paginationPage"
+          :total-pages="paginationTotalPages"
+          @previous="goToPreviousUserPage"
+          @next="goToNextUserPage"
+        />
+      </template>
     </el-card>
 
     <AdminTrendChartModal
@@ -250,3 +279,5 @@ onBeforeUnmount(() => {
     />
   </div>
 </template>
+
+<style scoped src="@/styles/admin-swiss-controls.css"></style>

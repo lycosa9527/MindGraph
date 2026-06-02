@@ -8,7 +8,7 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from config.database import AsyncSessionLocal
+from utils.db.session_open import system_rls_session
 from models.domain.diagrams import Diagram
 from services.online_collab.lifecycle.session_meta_cache import get_session_meta_cached
 from services.online_collab.lifecycle.online_collab_expiry import redis_ttl_seconds_for_expires_at
@@ -67,7 +67,7 @@ async def get_online_collab_redis_ttl_seconds(
             return cached
     try:
         async with asyncio.timeout(_DB_TIMEOUT_SEC):
-            async with AsyncSessionLocal() as db:
+            async with system_rls_session() as db:
                 result = await db.execute(
                     select(Diagram.workshop_expires_at).where(
                         Diagram.id == diagram_id,

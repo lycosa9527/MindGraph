@@ -99,12 +99,12 @@ def is_admin(current_user) -> bool:
 
 
 def is_platform_bd(current_user) -> bool:
-    """Operations (运营) — trial invites and read-only global dashboard."""
+    """Operations (运营) — read-only global dashboard."""
     return role_in(current_user, frozenset({ROLE_PLATFORM_BD}))
 
 
 def is_expert(current_user) -> bool:
-    """Platform expert (专家) — B2B school invites (own orgs) + C2C trial invites."""
+    """Platform expert (专家) — B2B school invites (own orgs)."""
     return role_in(current_user, frozenset({ROLE_EXPERT}))
 
 

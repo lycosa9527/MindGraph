@@ -22,6 +22,7 @@ import re
 import time
 import warnings
 
+from fastapi import Request
 from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -79,6 +80,12 @@ if _RAW_DB_URL is None:
     )
     _RAW_DB_URL = _DEFAULT_DB_URL
 DATABASE_URL = _normalise_db_url(_RAW_DB_URL)
+
+_RAW_MIGRATION_URL = os.getenv("DATABASE_MIGRATION_URL")
+if _RAW_MIGRATION_URL is None:
+    DATABASE_MIGRATION_URL = DATABASE_URL
+else:
+    DATABASE_MIGRATION_URL = _normalise_db_url(_RAW_MIGRATION_URL)
 
 # Create SQLAlchemy engine with proper pool configuration
 # PostgreSQL/MySQL pool configuration for production workloads
@@ -243,10 +250,21 @@ AsyncSessionLocal = async_sessionmaker(
     expire_on_commit=False,
 )
 
+from utils.db.rls_context import register_rls_listeners
+
+register_rls_listeners(async_engine, engine)
+
 
 def _seed_organizations_if_empty() -> None:
     """Insert organizations when the table is empty (INVITATION_CODES or built-in defaults)."""
-    db = SyncSessionLocal()
+    from utils.db.rls_context import RlsContext, rls_sync_session
+
+    with rls_sync_session(RlsContext.system_bootstrap()) as db:
+        _seed_organizations_if_empty_with_session(db)
+
+
+def _seed_organizations_if_empty_with_session(db) -> None:
+    """Seed logic using an open sync session (migrate/system RLS context)."""
     try:
         org_count = db.execute(select(func.count()).select_from(Organization)).scalar_one()
         if org_count != 0:
@@ -305,8 +323,6 @@ def _seed_organizations_if_empty() -> None:
     except Exception as e:
         logger.error("Error seeding database: %s", e)
         db.rollback()
-    finally:
-        db.close()
 
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -358,6 +374,28 @@ def _run_alembic_upgrade() -> None:
     from alembic.command import upgrade as alembic_upgrade
     from alembic.config import Config as AlembicConfig
     from alembic.script import ScriptDirectory
+
+    from scripts.db.migration_urls import configure_rls_migration_environment
+    from utils.db.alembic_migration import ensure_rls_migration_modules_loaded
+
+    if "postgresql" in DATABASE_URL:
+        from scripts.db.rls_roles_bootstrap import ensure_rls_roles_exist
+
+        roles_ok, roles_msg = ensure_rls_roles_exist()
+        if not roles_ok:
+            raise RuntimeError(
+                f"RLS PostgreSQL bootstrap failed before Alembic: {roles_msg}"
+            )
+        if roles_msg != "RLS roles already exist":
+            logger.info("[Database] %s", roles_msg)
+        try:
+            configure_rls_migration_environment()
+        except Exception as exc:
+            logger.warning(
+                "[Database] Could not auto-resolve DATABASE_MIGRATION_URL for Alembic: %s",
+                exc,
+            )
+        ensure_rls_migration_modules_loaded()
 
     alembic_cfg = AlembicConfig(_ALEMBIC_INI)
     alembic_cfg.set_main_option("script_location", _ALEMBIC_SCRIPT_DIR)
@@ -608,19 +646,22 @@ def init_db(seed_organizations: bool = True):
 
 
 def get_db_sync():
-    """Sync dependency — only for Celery tasks and migration scripts."""
-    db = SyncSessionLocal()
-    try:
+    """Sync dependency — Celery / scripts; uses context var set by caller or deny default."""
+    from utils.db.rls_context import resolve_rls_context_for_transaction, rls_sync_session
+
+    ctx = resolve_rls_context_for_transaction()
+    with rls_sync_session(ctx) as db:
         yield db
-    finally:
-        db.close()
 
 
 get_db = get_db_sync  # backward-compat alias (will be removed)
 
 
-async def get_async_db():
+async def get_async_db(request: Request):
     """Async dependency for FastAPI route handlers.
+
+    Applies Postgres RLS session vars from ``request.state.rls_context`` when set,
+    otherwise from ``auth_context_user`` or deny-by-default for anonymous callers.
 
     Usage::
 
@@ -629,12 +670,26 @@ async def get_async_db():
             result = await db.execute(select(User))
             ...
     """
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        except Exception:
-            await session.rollback()
-            raise
+    from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR
+    from utils.db.rls_context import RlsContext, reset_rls_context, set_rls_context
+
+    ctx = getattr(request.state, "rls_context", None)
+    if ctx is None:
+        user = getattr(request.state, AUTH_CONTEXT_USER_ATTR, None)
+        if user is not None:
+            ctx = RlsContext.from_user(user)
+        else:
+            ctx = RlsContext.deny_default()
+    token = set_rls_context(ctx)
+    try:
+        async with AsyncSessionLocal() as session:
+            try:
+                yield session
+            except Exception:
+                await session.rollback()
+                raise
+    finally:
+        reset_rls_context(token)
 
 
 def check_disk_space(required_mb: int = 100) -> bool:

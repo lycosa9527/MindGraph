@@ -12,7 +12,7 @@ Proprietary License
 from typing import Dict, List, Optional, Any
 import logging
 
-from config.database import AsyncSessionLocal
+from utils.db.session_open import user_rls_session
 from services.llm.rag_service import get_rag_service
 
 logger = logging.getLogger(__name__)
@@ -112,7 +112,7 @@ class LLMMessageBuilder:
 
         try:
             rag_service = get_rag_service()
-            async with AsyncSessionLocal() as db:
+            async with user_rls_session(int(user_id)) as db:
                 if not await rag_service.has_knowledge_base(db, user_id):
                     return messages
 
@@ -212,7 +212,7 @@ class LLMMessageBuilder:
 
         try:
             rag_service = get_rag_service()
-            async with AsyncSessionLocal() as db:
+            async with user_rls_session(int(user_id)) as db:
                 if not await rag_service.has_knowledge_base(db, user_id):
                     return prompt
 

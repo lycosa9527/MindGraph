@@ -21,7 +21,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.settings import config
-from config.database import AsyncSessionLocal
+from utils.db.session_open import actor_rls_session
 from models.domain.auth import User as UserModel
 from models.domain.workshop_chat import ChatChannel, ChannelMember
 from routers.features.workshop_chat.dependencies import (
@@ -219,7 +219,7 @@ async def chat_websocket(websocket: WebSocket):
                 channel_ids=old_channels,
             )
             if presence_org is not None:
-                async with AsyncSessionLocal() as db_local:
+                async with actor_rls_session(user, allow_global_channels=True) as db_local:
                     row = (
                         await db_local.execute(select(UserModel).where(UserModel.id == user.id))
                     ).scalar_one_or_none()
@@ -250,7 +250,7 @@ async def _handle_subscribe_channels(
     channel_ids = channel_ids[:MAX_CHANNEL_IDS_SUBSCRIBE]
     if not channel_ids:
         return
-    async with AsyncSessionLocal() as db:
+    async with actor_rls_session(user, allow_global_channels=True) as db:
         # Batch membership check: single SELECT instead of one per channel.
         member_ids = await channel_service.get_user_member_channel_ids(db, user.id, channel_ids)
     valid_ids = [cid for cid in channel_ids if cid in member_ids]
@@ -306,7 +306,7 @@ async def _handle_channel_message(
     if not channel_id or not content:
         return
 
-    async with AsyncSessionLocal() as db:
+    async with actor_rls_session(user, allow_global_channels=True) as db:
         post_channel = await _ws_channel_post_gate(websocket, db, channel_id, user)
         if post_channel is None:
             return
@@ -361,7 +361,7 @@ async def _handle_topic_message(
     if not channel_id or not topic_id or not content:
         return
 
-    async with AsyncSessionLocal() as db:
+    async with actor_rls_session(user, allow_global_channels=True) as db:
         post_channel = await _ws_channel_post_gate(websocket, db, channel_id, user)
         if post_channel is None:
             return
@@ -418,7 +418,7 @@ async def _handle_dm(
     if not recipient_id or not content:
         return
 
-    async with AsyncSessionLocal() as db:
+    async with actor_rls_session(user, allow_global_channels=True) as db:
         recip_row = await db.execute(select(UserModel).where(UserModel.id == recipient_id))
         recipient = recip_row.scalar_one_or_none()
         if not recipient:
@@ -527,7 +527,7 @@ async def _handle_typing_dm(
     if not recipient_id:
         return
 
-    async with AsyncSessionLocal() as db:
+    async with actor_rls_session(user, allow_global_channels=True) as db:
         recip_row = await db.execute(select(UserModel).where(UserModel.id == recipient_id))
         recipient = recip_row.scalar_one_or_none()
         sender_row = await db.execute(select(UserModel).where(UserModel.id == user.id))
@@ -551,7 +551,7 @@ async def _handle_read_channel(
     channel_id = data.get("channel_id")
     msg_id = data.get("message_id")
     if channel_id and msg_id:
-        async with AsyncSessionLocal() as db:
+        async with actor_rls_session(user, allow_global_channels=True) as db:
             await message_service.update_last_read(
                 db,
                 channel_id,

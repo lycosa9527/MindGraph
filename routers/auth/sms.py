@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
+from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 from config.settings import config
 from models.domain.messages import Messages, Language
 from models.requests.requests_auth import (
@@ -68,6 +69,7 @@ async def _enforce_sms_send_ip_limit(http_request: Request, lang: Language) -> N
 async def send_sms_code(
     request: SendSMSCodeRequest,
     http_request: Request,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -121,12 +123,12 @@ async def send_sms_code(
     purpose = request.purpose
 
     if purpose == "register":
-        if await any_user_id_with_phone(db, phone) is not None:
+        if await any_user_id_with_phone(phone) is not None:
             error_msg = Messages.error("phone_already_registered", lang)
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
 
     if purpose in ("login", "reset_password"):
-        if await any_user_id_with_phone(db, phone) is None:
+        if await any_user_id_with_phone(phone) is None:
             if purpose == "login":
                 error_msg = Messages.error("phone_not_registered_login", lang)
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
@@ -353,12 +355,12 @@ async def _send_sms_code_with_purpose(
     phone = request.phone
 
     if purpose == "register":
-        if await any_user_id_with_phone(db, phone) is not None:
+        if await any_user_id_with_phone(phone) is not None:
             error_msg = Messages.error("phone_already_registered", lang)
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
 
     if purpose in ("login", "reset_password"):
-        if await any_user_id_with_phone(db, phone) is None:
+        if await any_user_id_with_phone(phone) is None:
             if purpose == "login":
                 error_msg = Messages.error("phone_not_registered_login", lang)
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
@@ -440,6 +442,7 @@ async def _send_sms_code_with_purpose(
 async def send_sms_code_for_login(
     request: SendSMSCodeSimpleRequest,
     http_request: Request,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -456,6 +459,7 @@ async def send_sms_code_for_login(
 async def send_sms_code_for_reset(
     request: SendSMSCodeSimpleRequest,
     http_request: Request,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -472,6 +476,7 @@ async def send_sms_code_for_reset(
 async def send_sms_code_for_register(
     request: SendSMSCodeSimpleRequest,
     http_request: Request,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):

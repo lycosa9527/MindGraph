@@ -26,7 +26,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import object_session
 
-from config.database import AsyncSessionLocal
+from utils.db.session_open import user_rls_session
 from models.domain.auth import User
 from models.domain.messages import Language, Messages
 from models.domain.user_activity_log import UserActivityLog
@@ -178,7 +178,7 @@ async def _log_login_and_compute_stats(user_id: int, db: AsyncSession) -> None:
         return
 
     try:
-        async with AsyncSessionLocal() as stats_session:
+        async with user_rls_session(int(user_id)) as stats_session:
             await compute_and_upsert_user_usage_stats_async(user_id, stats_session)
     except Exception as exc:
         logger.debug("Failed to compute login usage stats: %s", exc)

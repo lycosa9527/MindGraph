@@ -17,7 +17,7 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from config.database import AsyncSessionLocal
+from utils.db.session_open import user_rls_session
 from models.domain.diagrams import Diagram
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ async def stop_other_owner_online_collabs(
 
     ids_to_stop: list[str] = []
     try:
-        async with AsyncSessionLocal() as db:
+        async with user_rls_session(owner_user_id) as db:
             result = await db.execute(
                 select(Diagram.id, Diagram.workshop_code).where(
                     Diagram.user_id == owner_user_id,

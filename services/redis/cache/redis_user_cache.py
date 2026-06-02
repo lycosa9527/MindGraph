@@ -30,7 +30,7 @@ import logging
 
 from sqlalchemy import select
 
-from config.database import AsyncSessionLocal
+from utils.db.session_open import system_rls_session, user_rls_session
 from models.domain.auth import User
 from services.redis.cache.redis_cache_stampede import with_stampede_lock
 from services.redis.redis_async_client import get_async_redis
@@ -209,7 +209,8 @@ class UserCache:
     ) -> Optional[User]:
         """Inner DB load — runs under the stampede lock when one was acquired."""
         try:
-            async with AsyncSessionLocal() as db:
+            ctx_mgr = user_rls_session(int(user_id)) if user_id else system_rls_session()
+            async with ctx_mgr as db:
                 if user_id:
                     result = await db.execute(select(User).where(User.id == user_id))
                     user = result.scalar_one_or_none()

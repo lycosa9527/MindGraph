@@ -557,7 +557,7 @@ export default {
   'admin.revokeRoleConfirm': '确定要移除以下用户的角色：',
   'admin.roleControl': '角色控制',
   'admin.roleControlDesc': '管理超级管理员权限。拥有该角色的用户可访问完整管理面板。',
-  'admin.roleControlDescPlatformBd': '管理运营权限。运营可查看全局数据并管理试用邀请。',
+  'admin.roleControlDescPlatformBd': '管理运营权限。运营可查看全局数据并管理学校邀请。',
   'admin.roleControlDescExpert': '管理专家权限。专家可创建学校并管理其邀请范围内的组织。',
   'admin.roleControlDescManagers':
     '管理学校管理员。学校管理员可访问其所属组织的学校仪表盘。授予该角色前，用户须已加入学校。',
@@ -747,20 +747,6 @@ export default {
   'admin.systemSettings': '系统设置',
   'admin.readOnly': '只读',
   'admin.dataCenterGlobal': '平台（全部学校）',
-  'admin.inviteUsersPlatformHint': '个人体验版邀请功能即将上线。',
-  'admin.inviteUsersComingSoonTitle': '即将上线',
-  'admin.inviteUsersComingSoon':
-    '个人体验版（C2C）邀请管理尚未开放。您仍可使用已授权的其他标签页。',
-  'admin.personalTrialInviteTitle': '个人体验版邀请',
-  'admin.personalTrialInviteDescription': '分享以下邀请码，邀请用户注册个人体验账号。',
-  'admin.personalTrialInviteCopyPayload':
-    '邀请您体验 MindGraph — AI 思维导图教学工具。体验邀请码：{code}\n\n请访问 {siteUrl} 完成注册。',
-  'admin.personalTrialInviteNotConfiguredTitle': '尚未配置',
-  'admin.personalTrialInviteNotConfigured':
-    '请在服务器环境变量中设置 PERSONAL_TRIAL_ORG_CODE 以启用个人体验版邀请。',
-  'admin.personalTrialInviteMissingTitle': '个人体验版尚未就绪',
-  'admin.personalTrialInviteMissing':
-    '请检查 PERSONAL_TRIAL_ORG_CODE 是否指向有效的学校组织。',
   'admin.inviteUsersSelectSchool': '请选择学校以查看并复制组织邀请码。',
   'admin.today': '今日',
   'admin.todayRegistrations': '今日注册',

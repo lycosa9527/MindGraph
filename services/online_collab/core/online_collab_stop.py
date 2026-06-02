@@ -10,7 +10,7 @@ from redis.exceptions import RedisError
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from config.database import AsyncSessionLocal
+from utils.db.session_open import system_rls_session, user_rls_session
 from models.domain.diagrams import Diagram
 from services.online_collab.lifecycle.online_collab_session_fields import (
     clear_online_collab_session_by_id_returning,
@@ -87,7 +87,7 @@ async def _extend_room_ttl_after_flush_failure(redis: Any, code: str) -> None:
 
 async def stop_online_collab_impl(diagram_id: str, user_id: int) -> bool:
     """Owner-initiated workshop stop."""
-    async with AsyncSessionLocal() as db:
+    async with user_rls_session(user_id) as db:
         try:
             owner_row = await db.execute(
                 select(Diagram.user_id, Diagram.workshop_code).where(
@@ -201,7 +201,7 @@ async def stop_online_collab_for_room_idle_impl(
 ) -> bool:
     """Idle-timer initiated stop with expected-code protection."""
     norm = expected_code.strip().upper()
-    async with AsyncSessionLocal() as db:
+    async with system_rls_session() as db:
         try:
             result = await db.execute(
                 select(Diagram).filter(

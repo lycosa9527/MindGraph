@@ -8,7 +8,8 @@ from pydantic import BaseModel
 
 from models.domain.auth import User
 from services.utils.update_notifier import update_notifier
-from utils.auth import get_current_user, is_admin
+from routers.auth.dependencies import require_admin
+from utils.auth import get_current_user
 
 """
 Update Notification Router
@@ -153,15 +154,12 @@ async def dismiss_update_notification(current_user: User = Depends(get_current_u
 
 
 @router.get("/api/admin/update-notification")
-async def get_notification_config(current_user: User = Depends(get_current_user)):
+async def get_notification_config(_current_user: User = Depends(require_admin)):
     """
     Get full notification configuration (ADMIN ONLY).
 
     Returns current notification settings including dismissed count.
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     try:
         notification = await update_notifier.get_notification()
         dismissed_count = await update_notifier.get_dismissed_count()
@@ -189,15 +187,15 @@ async def get_notification_config(current_user: User = Depends(get_current_user)
 
 
 @router.put("/api/admin/update-notification")
-async def set_notification_config(request: NotificationSetRequest, current_user: User = Depends(get_current_user)):
+async def set_notification_config(
+    request: NotificationSetRequest,
+    current_user: User = Depends(require_admin),
+):
     """
     Set or update notification configuration (ADMIN ONLY).
 
     When version changes, all users will see the notification again.
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     try:
         notification = await update_notifier.set_notification(
             enabled=request.enabled,
@@ -231,15 +229,12 @@ async def set_notification_config(request: NotificationSetRequest, current_user:
 
 
 @router.delete("/api/admin/update-notification")
-async def disable_notification(current_user: User = Depends(get_current_user)):
+async def disable_notification(current_user: User = Depends(require_admin)):
     """
     Disable the update notification (ADMIN ONLY).
 
     Quick way to turn off notification without changing content.
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     try:
         notification = await update_notifier.disable_notification()
 
@@ -256,15 +251,12 @@ async def disable_notification(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/api/admin/update-notification/reset-dismissed")
-async def reset_dismissed(current_user: User = Depends(get_current_user)):
+async def reset_dismissed(current_user: User = Depends(require_admin)):
     """
     Reset all dismissed states (ADMIN ONLY).
 
     All users will see the notification again, even if they dismissed it.
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     try:
         success = await update_notifier.clear_dismissed()
 
@@ -288,16 +280,16 @@ async def reset_dismissed(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/api/admin/update-notification/upload-image")
-async def upload_announcement_image(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
+async def upload_announcement_image(
+    file: UploadFile = File(...),
+    _current_user: User = Depends(require_admin),
+):
     """
     Upload an image for the announcement (ADMIN ONLY).
 
     Supports PNG, JPG, GIF images up to 5MB.
     Returns the URL to embed in the announcement.
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     # Validate file type
     allowed_types = ["image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp"]
     if file.content_type not in allowed_types:

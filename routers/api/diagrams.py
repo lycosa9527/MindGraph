@@ -33,7 +33,8 @@ from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import AsyncSessionLocal, get_async_db
+from config.database import get_async_db
+from utils.db.session_open import actor_rls_session, user_rls_session
 from models.domain.auth import User
 from models.domain.messages import Language
 from models.domain.diagram_snapshots import DiagramSnapshot
@@ -92,6 +93,7 @@ def _diagram_limit_http_detail(error: str | None, lang: Language) -> str | None:
 async def _get_diagram_as_org_workshop_participant(
     diagram_id: str,
     requesting_org_id: Optional[int],
+    viewer_user_id: int,
 ) -> Optional[dict]:
     """
     Return raw diagram data dict for a participant accessing via an active org
@@ -106,7 +108,7 @@ async def _get_diagram_as_org_workshop_participant(
     if not requesting_org_id:
         return None
     try:
-        async with AsyncSessionLocal() as db:
+        async with user_rls_session(viewer_user_id, requesting_org_id) as db:
             result = await db.execute(
                 select(Diagram, User)
                 .join(User, User.id == Diagram.user_id)
@@ -214,7 +216,7 @@ async def create_diagram(
     await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
 
     cache = get_diagram_cache()
-    async with AsyncSessionLocal() as tier_db:
+    async with actor_rls_session(current_user) as tier_db:
         diagram_cap = await max_diagrams_for_user(tier_db, current_user)
 
     success, diagram_id, error = await cache.save_diagram(
@@ -272,7 +274,7 @@ async def list_diagrams(
     await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
 
     cache = get_diagram_cache()
-    async with AsyncSessionLocal() as tier_db:
+    async with actor_rls_session(current_user) as tier_db:
         diagram_cap = await max_diagrams_for_user(tier_db, current_user)
     result = await cache.list_diagrams(current_user.id, page, page_size, max_per_user=diagram_cap)
 
@@ -337,7 +339,7 @@ async def get_diagram(
         # snapshot arrives.
         org_id = getattr(current_user, "organization_id", None)
         if org_id is not None:
-            async with AsyncSessionLocal() as tier_db:
+            async with actor_rls_session(current_user) as tier_db:
                 collab_allowed = await user_has_school_tier_feature(
                     tier_db,
                     current_user,
@@ -347,6 +349,7 @@ async def get_diagram(
                 diagram = await _get_diagram_as_org_workshop_participant(
                     diagram_id,
                     org_id,
+                    int(current_user.id),
                 )
 
     if not diagram:
@@ -509,7 +512,7 @@ async def duplicate_diagram(
     await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
 
     cache = get_diagram_cache()
-    async with AsyncSessionLocal() as tier_db:
+    async with actor_rls_session(current_user) as tier_db:
         diagram_cap = await max_diagrams_for_user(tier_db, current_user)
     success, new_id, error = await cache.duplicate_diagram(
         current_user.id,

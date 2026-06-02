@@ -72,7 +72,7 @@ async def send_change_phone_code(
             detail=Messages.error("phone_same_as_current", lang),
         )
 
-    if await other_user_id_with_phone(db, new_phone, int(current_user.id)) is not None:
+    if await other_user_id_with_phone(new_phone, int(current_user.id)) is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=Messages.error("phone_already_in_use", lang),
@@ -202,7 +202,7 @@ async def change_phone(
             detail=Messages.error("phone_same_as_current", lang),
         )
 
-    if await other_user_id_with_phone(db, new_phone, int(current_user.id)) is not None:
+    if await other_user_id_with_phone(new_phone, int(current_user.id)) is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=Messages.error("phone_already_in_use", lang),

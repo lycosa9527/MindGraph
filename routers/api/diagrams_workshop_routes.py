@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from sqlalchemy import select
 
-from config.database import AsyncSessionLocal
+from utils.db.session_open import actor_rls_session, user_rls_session
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
 from models.domain.messages import Language
@@ -31,7 +31,7 @@ router = APIRouter(tags=["diagrams"])
 
 async def _owner_has_active_workshop(diagram_id: str, user_id: int) -> bool:
     """True when this user owns the diagram and it still has a workshop code."""
-    async with AsyncSessionLocal() as db:
+    async with user_rls_session(user_id) as db:
         row = await db.execute(
             select(Diagram.workshop_code).where(
                 Diagram.id == diagram_id,
@@ -47,7 +47,7 @@ async def _require_online_collab_tier(
     current_user: User,
     lang: Language,
 ) -> None:
-    async with AsyncSessionLocal() as db:
+    async with actor_rls_session(current_user) as db:
         await assert_user_has_school_tier_feature(
             db,
             current_user,

@@ -9,7 +9,7 @@ from redis.exceptions import RedisError
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from config.database import AsyncSessionLocal
+from utils.db.session_open import system_rls_session, user_rls_session
 from models.domain.diagrams import Diagram
 from services.online_collab.lifecycle.online_collab_expiry import (
     is_online_collab_expired,
@@ -37,7 +37,7 @@ async def get_active_online_collab_code_for_diagram_impl(
     diagram_id: str,
 ) -> Optional[str]:
     """Return active non-expired workshop code for diagram, else None."""
-    async with AsyncSessionLocal() as db:
+    async with system_rls_session() as db:
         try:
             result = await db.execute(
                 select(
@@ -72,7 +72,7 @@ async def join_online_collab_impl(
     user_id: int,
 ) -> Optional[Dict[str, Any]]:
     """Join collaboration by shared code."""
-    async with AsyncSessionLocal() as db:
+    async with user_rls_session(user_id) as db:
         try:
             code = code.strip().upper()
 
@@ -142,7 +142,7 @@ async def join_online_collab_by_diagram_impl(
     user_id: int,
 ) -> Optional[Dict[str, Any]]:
     """Join organization-scoped session by diagram id."""
-    async with AsyncSessionLocal() as db:
+    async with user_rls_session(user_id) as db:
         result = await db.execute(
             select(Diagram).filter(
                 Diagram.id == diagram_id,

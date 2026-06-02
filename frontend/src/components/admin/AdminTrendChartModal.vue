@@ -98,7 +98,7 @@ const authStore = useAuthStore()
 const uiStore = useUIStore()
 const { can } = useAdminAccess()
 const { featureMindbot } = useFeatureFlags()
-const { on: onAdminEvent } = useAdminEventBus('AdminTrendChartModal')
+const { emit: emitAdminEvent } = useAdminEventBus('AdminTrendChartModal')
 const { beginRequest: beginChartRequest, abort: abortChartRequests } = useScopedAbort()
 
 const updateOrganizationMutation = useUpdateAdminOrganization()
@@ -595,7 +595,7 @@ async function saveGeneralSettings() {
   try {
     const dateVal = expiresAtEdit.value?.trim() || null
     const expiresAtPayload = dateVal ? `${dateVal}T23:59:59+08:00` : null
-    await updateOrganizationMutation.mutateAsync({
+    const updated = await updateOrganizationMutation.mutateAsync({
       orgId: props.orgId,
       body: {
         display_name: displayNameEdit.value.trim() || null,
@@ -603,8 +603,16 @@ async function saveGeneralSettings() {
         school_tier: schoolTierEdit.value,
       },
     })
+    const savedTier = updated.school_tier
+    if (typeof savedTier === 'string' && savedTier.trim()) {
+      schoolTierEdit.value = normalizeSchoolTier(savedTier)
+    }
     notify.success(t('notification.saved'))
     emit('refresh')
+    emitAdminEvent('admin:mutation_completed', {
+      domain: 'organizations',
+      entityId: props.orgId,
+    })
     const savedLabel = displayNameEdit.value.trim()
     if (authStore.user?.schoolId === String(props.orgId)) {
       authStore.patchSchoolDisplayName(savedLabel || null, props.orgName)

@@ -1,0 +1,2 @@
+# Baseline for bare AsyncSessionLocal until all §E paths are migrated.
+# Remove lines as files are fixed.

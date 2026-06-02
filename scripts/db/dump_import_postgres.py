@@ -36,8 +36,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from sqlalchemy import inspect, text
-
 from config.database import DATABASE_URL, engine, init_db, libpq_database_url
 
 try:
@@ -550,6 +548,7 @@ def run_dump(db_url: str, backup_path: Path) -> bool:
         pg_dump,
         "-Fc",
         "--no-owner",
+        "--no-policies",
         "-f",
         str(backup_path),
         libpq_database_url(db_url),

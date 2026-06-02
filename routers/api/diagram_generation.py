@@ -16,7 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 
 from agents.core.workflow import agent_graph_workflow_with_styles
-from config.database import AsyncSessionLocal
+from utils.db.session_open import system_rls_session
 from models.domain.diagrams import Diagram
 from models import GenerateRequest, GenerateResponse, Messages, get_request_language
 from models.domain.auth import User
@@ -33,7 +33,7 @@ router = APIRouter(tags=["api"])
 
 async def _query_diagram_ownership(diagram_id):
     """Query diagram ownership info using a short-lived async session."""
-    async with AsyncSessionLocal() as db:
+    async with system_rls_session() as db:
         result = await db.execute(select(Diagram).where(Diagram.id == diagram_id, ~Diagram.is_deleted))
         diagram = result.scalar_one_or_none()
         if diagram:

@@ -22,21 +22,38 @@ it.  However, you can still run it from the CLI for debugging or CI pipelines.
 ## Quick Reference
 
 ```bash
-# Apply all pending migrations (done automatically on startup)
-alembic upgrade head
+# Preferred: operator CLI (starts PG, resolves migrate URL, verifies RLS)
+PYTHONPATH=. python scripts/db/run_migrations.py
+
+# Manual Alembic (same env as the app — not ~/.local/bin/alembic on another Python)
+export PYTHONPATH="${PWD}:${PYTHONPATH}"
+# load .env first; set DATABASE_MIGRATION_URL or mindgraph_user URL
+python -m alembic upgrade head
 
 # Check current revision
-alembic current
-
-# Show migration history
-alembic history
-
-# Generate a new migration after changing ORM models
-alembic revision --autogenerate -m "describe the change"
-
-# Roll back the last migration
-alembic downgrade -1
+python -m alembic current
 ```
+
+## PostgreSQL RLS (revisions 0042–0049)
+
+Row-level security uses two database roles:
+
+- **`mindgraph_migrate`** — `DATABASE_MIGRATION_URL`; runs Alembic with `BYPASSRLS`.
+- **`mindgraph_app`** — production `DATABASE_URL` after cutover; policies enforce tenant isolation.
+
+**Operator entry point:** `python scripts/db/run_migrations.py` auto-resolves the migrate URL,
+verifies RLS through 0049, can patch `.env`, and optionally flush Redis (option 3 or after migrate).
+Shortcut: `PYTHONPATH=. python scripts/db/check_migration_status.py`. `main.py` also auto-resolves
+`DATABASE_MIGRATION_URL` on startup when only `mindgraph_app` is configured.
+
+RLS SQL helpers live in `alembic/rls_functions_sql.py` and `alembic/rls_policy_builder.py`.
+They are registered via [`alembic/migration_support.py`](migration_support.py) (PyPI `alembic`
+name clash). `alembic/env.py` loads that module directly — not via `utils.db` — to avoid
+importing the FastAPI/RLS stack during CLI migrations.
+
+Never enable RLS without policies in the same migration. See [`docs/db-rls-rollout.md`](../docs/db-rls-rollout.md).
+
+`pg_dump` backups use `--no-policies`; restore as migrate, then `alembic upgrade head`.
 
 ## Fresh Install
 

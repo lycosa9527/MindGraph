@@ -12,6 +12,8 @@ Proprietary License
 """
 
 from fastapi import APIRouter, Depends, Request, Response
+
+from utils.db.rls_request import bind_public_org_list_rls_dependency
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -84,7 +86,10 @@ async def get_auth_mode():
 
 
 @router.get("/organizations")
-async def list_organizations(db: AsyncSession = Depends(get_async_db)):
+async def list_organizations(
+    _public_org_rls: None = Depends(bind_public_org_list_rls_dependency),
+    db: AsyncSession = Depends(get_async_db),
+):
     """
     Get list of all organizations (public endpoint for registration)
 

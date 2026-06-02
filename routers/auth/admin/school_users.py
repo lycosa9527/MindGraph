@@ -384,7 +384,7 @@ async def update_school_user(
             error_msg = Messages.error("phone_format_invalid", lang=lang)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
         if new_phone != user.phone:
-            if await other_user_id_with_phone(db, new_phone, user.id) is not None:
+            if await other_user_id_with_phone(new_phone, user.id) is not None:
                 error_msg = Messages.error("phone_already_registered_other", lang, new_phone)
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
             phone_will_change = True

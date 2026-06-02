@@ -350,12 +350,24 @@ async def auth_context_middleware(request: Request, call_next):
     """
     Resolve JWT/mgat_ User once per request so geo middleware and Depends() reuse it.
     """
+    from utils.db.rls_context import RlsContext, reset_rls_context, set_rls_context
+
     if request.method == "OPTIONS":
         return await call_next(request)
     user = await resolve_authenticated_user_optional(request)
     if user is not None:
         setattr(request.state, AUTH_CONTEXT_USER_ATTR, user)
-    return await call_next(request)
+    preset = getattr(request.state, "rls_context", None)
+    if preset is not None:
+        token = set_rls_context(preset)
+    elif user is not None:
+        token = set_rls_context(RlsContext.from_user(user))
+    else:
+        token = set_rls_context(RlsContext.deny_default())
+    try:
+        return await call_next(request)
+    finally:
+        reset_rls_context(token)
 
 
 async def vpn_cn_geo_middleware(request: Request, call_next):

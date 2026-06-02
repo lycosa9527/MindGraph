@@ -12,7 +12,9 @@ from typing import List, Optional, Set
 
 from sqlalchemy import select, update
 
-from config.database import AsyncSessionLocal, SyncSessionLocal
+from config.database import SyncSessionLocal
+from utils.db.rls_context import RlsContext, reset_rls_context, rls_sync_session, set_rls_context
+from utils.db.session_open import system_rls_session
 from models.domain.knowledge_space import ChunkTestResult
 from services.knowledge.rag_chunk_test import get_rag_chunk_test_service
 
@@ -61,15 +63,15 @@ def _cleanup_active_tests():
     with _active_tests_lock:
         if not _active_tests:
             return
+        test_ids = list(_active_tests)
 
-        logger.info(
-            "[ChunkTestBackground] Cleaning up %s active tests on shutdown",
-            len(_active_tests),
-        )
-        db = None
-        try:
-            db = SyncSessionLocal()
-            for test_id in _active_tests:
+    logger.info(
+        "[ChunkTestBackground] Cleaning up %s active tests on shutdown",
+        len(test_ids),
+    )
+    try:
+        with rls_sync_session(RlsContext.system_bootstrap()) as db:
+            for test_id in test_ids:
                 try:
                     test_result = db.execute(
                         select(ChunkTestResult).where(ChunkTestResult.id == test_id)
@@ -87,24 +89,9 @@ def _cleanup_active_tests():
                         test_id,
                         e,
                     )
-            if db is not None:
-                db.commit()
-        except Exception as e:
-            logger.error("[ChunkTestBackground] Error during test cleanup: %s", e)
-            if db is not None:
-                try:
-                    db.rollback()
-                except Exception as exc:
-                    logger.debug("Rollback during test cleanup failed: %s", exc)
-        finally:
-            if db is not None:
-                try:
-                    db.close()
-                except Exception as close_error:
-                    logger.warning(
-                        "[ChunkTestBackground] Error closing cleanup session: %s",
-                        close_error,
-                    )
+            db.commit()
+    except Exception as e:
+        logger.error("[ChunkTestBackground] Error during test cleanup: %s", e)
 
 
 # Register cleanup handler
@@ -128,7 +115,7 @@ async def detect_and_mark_stuck_tests_async() -> int:
     threshold_time = datetime.now(UTC) - timedelta(minutes=STUCK_TEST_THRESHOLD_MINUTES)
 
     try:
-        async with AsyncSessionLocal() as db:
+        async with system_rls_session() as db:
             result = await db.execute(
                 select(ChunkTestResult).where(
                     ChunkTestResult.status.in_(["pending", "processing"]),
@@ -220,6 +207,7 @@ def run_test_in_background(
     service = get_rag_chunk_test_service()
     test_result = None
 
+    rls_token = set_rls_context(RlsContext.for_celery_user(user_id))
     try:
         # Create database session with proper error handling
         db = SyncSessionLocal()
@@ -437,6 +425,7 @@ def run_test_in_background(
                     test_id,
                     close_error,
                 )
+        reset_rls_context(rls_token)
         logger.info(
             "[ChunkTestBackground] Background test thread completed for test %s",
             test_id,
@@ -466,6 +455,7 @@ def run_benchmark_in_background(
     service = get_rag_chunk_test_service()
     test_result = None
 
+    rls_token = set_rls_context(RlsContext.for_celery_user(user_id))
     try:
         # Create database session with proper error handling
         db = SyncSessionLocal()
@@ -685,6 +675,7 @@ def run_benchmark_in_background(
                     test_id,
                     close_error,
                 )
+        reset_rls_context(rls_token)
         logger.info(
             "[ChunkTestBackground] Background benchmark test thread completed for test %s",
             test_id,

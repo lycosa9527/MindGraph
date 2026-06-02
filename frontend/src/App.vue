@@ -11,6 +11,7 @@ import { storeToRefs } from 'pinia'
 import { ElConfigProvider } from 'element-plus'
 import type { Language } from 'element-plus/es/locale'
 
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useKittyDesktopActionPoll, useLanguage, useNotifications } from '@/composables'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { loadElementPlusLocale } from '@/i18n/elementPlusLocale'
@@ -44,7 +45,17 @@ const route = useRoute()
 const router = useRouter()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
+const { on: onAdminEvent } = useAdminEventBus('App')
 const { t } = useLanguage()
+
+onAdminEvent('admin:mutation_completed', ({ domain, entityId }) => {
+  if (domain !== 'organizations' || entityId == null || !authStore.user?.schoolId) {
+    return
+  }
+  if (authStore.user.schoolId === String(entityId)) {
+    void authStore.refreshUserProfile({ bypassThrottle: true })
+  }
+})
 const liveTranslationStore = useLiveTranslationStore()
 const {
   enabled: translationEnabled,

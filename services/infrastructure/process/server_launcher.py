@@ -197,11 +197,28 @@ def run_server() -> None:
                 sys.exit(1)
             logger.debug("[POSTGRESQL] %s", message)
             logger.debug("[POSTGRESQL] Starting PostgreSQL server...")
-            postgresql_server = start_postgresql_server()  # Verifies PostgreSQL is running (exits if not ready)
+            postgresql_server = start_postgresql_server()  # Reuse 5432 if up; else start subprocess
             if postgresql_server:
                 logger.debug("[POSTGRESQL] ✓ PostgreSQL server started as subprocess")
             else:
-                logger.debug("[POSTGRESQL] ✓ PostgreSQL server is running (external or systemd service)")
+                logger.debug("[POSTGRESQL] ✓ PostgreSQL server is running (reused existing instance)")
+
+            from scripts.db.postgres_app_startup import prepare_postgresql_rls_runtime
+
+            rls_ready, rls_message = prepare_postgresql_rls_runtime()
+            if not rls_ready:
+                print("[ERROR] PostgreSQL RLS roles are not ready.")
+                print(f"        {rls_message}")
+                print(
+                    "        Run: PYTHONPATH=. python scripts/db/run_migrations.py"
+                    "  → option 4 (full local setup)"
+                )
+                print(
+                    "        Or set PG_ADMIN_URL to a superuser URL in .env,"
+                    " then retry."
+                )
+                sys.exit(1)
+            logger.debug("[POSTGRESQL] RLS runtime ready: %s", rls_message)
 
         # 3. Qdrant (REQUIRED only if Knowledge Space feature is enabled)
         qdrant_server = None

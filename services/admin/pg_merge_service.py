@@ -9,6 +9,9 @@ database via a temporary staging database:
 3. Merge every table in FK-safe order, remapping IDs.
 4. Drop the staging database.
 
+RLS: dumps use ``pg_dump --no-policies``; after restore, run ``alembic upgrade head`` as
+``mindgraph_migrate`` so policies come from rev_0042–0048, not from the dump file.
+
 Public API:
     analyze_pg_dump()  – preview what the merge would do
     merge_pg_dump()    – execute the full merge
