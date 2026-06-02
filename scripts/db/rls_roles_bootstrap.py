@@ -6,6 +6,7 @@ import logging
 import os
 import subprocess
 import sys
+from pathlib import Path
 from typing import Iterable
 
 from sqlalchemy import create_engine, text
@@ -350,6 +351,75 @@ def _roles_missing_on_url(database_url: str) -> bool:
         engine.dispose()
 
 
+def _psql_tcp_host_port() -> tuple[str, str]:
+    """Host/port for the MindGraph PostgreSQL instance (not distro default socket)."""
+    runtime = normalise_db_url(_runtime_url())
+    parsed = make_url(runtime)
+    host = (parsed.host or "localhost").strip()
+    if host in ("localhost", ""):
+        host = "127.0.0.1"
+    port = str(parsed.port or int(os.getenv("POSTGRESQL_PORT", "5432")))
+    return host, port
+
+
+def _managed_postgresql_socket_dir() -> Path | None:
+    """Socket directory for app-managed postgres (``POSTGRESQL_DATA_DIR``/sockets)."""
+    raw = os.getenv("POSTGRESQL_DATA_DIR", "").strip()
+    if not raw:
+        return None
+    socket_dir = Path(raw).expanduser() / "sockets"
+    return socket_dir if socket_dir.is_dir() else None
+
+
+def _psql_host_connection_args() -> list[list[str]]:
+    """
+    ``psql`` ``-h`` targets: TCP first, then managed unix socket dir if present.
+
+    Default ``psql`` uses ``/var/run/postgresql``, which is empty when only the
+    MindGraph subprocess is listening on ``127.0.0.1:POSTGRESQL_PORT``.
+    """
+    host, port = _psql_tcp_host_port()
+    args: list[list[str]] = [["-h", host, "-p", port]]
+    socket_dir = _managed_postgresql_socket_dir()
+    if socket_dir is not None:
+        args.append(["-h", str(socket_dir.resolve())])
+    return args
+
+
+def _admin_url_for_database(dbname: str) -> str | None:
+    """First admin URL that connects, with database set to ``dbname``."""
+    for admin_url in admin_url_candidates():
+        target = make_url(admin_url).set(database=dbname)
+        url = normalise_db_url(target.render_as_string(hide_password=False))
+        engine = create_engine(url, poolclass=NullPool, pool_pre_ping=True)
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            return url
+        except Exception as exc:
+            logger.debug("Admin connect failed for %s: %s", url, exc)
+        finally:
+            engine.dispose()
+    return None
+
+
+def _try_run_sql_via_admin(dbname: str, sql: str) -> tuple[bool, str]:
+    """Run superuser SQL over TCP when PG_ADMIN_URL / postgres password works."""
+    admin_url = _admin_url_for_database(dbname)
+    if admin_url is None:
+        return False, "no admin database URL"
+    engine = create_engine(admin_url, poolclass=NullPool)
+    try:
+        with engine.connect() as conn:
+            conn.execute(text(sql))
+            conn.commit()
+        return True, ""
+    except Exception as exc:
+        return False, str(exc)
+    finally:
+        engine.dispose()
+
+
 def _verify_roles_created(base_url: str) -> bool:
     for role in (ROLE_APP, ROLE_MIGRATE):
         role_url = build_role_url(base_url, role)
@@ -372,7 +442,11 @@ def _run_sudo_postgres_psql(
     allow_password_prompt: bool,
 ) -> tuple[bool, str]:
     """
-    Run ``sudo -u postgres psql -f …`` using a world-readable script under ``/tmp``.
+    Apply superuser SQL via admin URL, then ``psql`` on the app PostgreSQL instance.
+
+    Uses ``-h`` / ``-p`` from ``DATABASE_URL`` (managed subprocess), not the distro
+    default socket under ``/var/run/postgresql``.  Falls back to ``sudo -u postgres``
+    when direct ``psql`` is not available.
 
     ``NamedTemporaryFile`` defaults to mode 0600, which the ``postgres`` OS user cannot
     read — that caused "Permission denied" on WSL.  Mode 0644 avoids that.
@@ -380,52 +454,63 @@ def _run_sudo_postgres_psql(
     if sys.platform == "win32":
         return False, "sudo postgres bootstrap unavailable on Windows"
 
+    admin_ok, admin_detail = _try_run_sql_via_admin(dbname, sql)
+    if admin_ok:
+        return True, ""
+
     sql_path = f"/tmp/mindgraph_rls_bootstrap_{os.getpid()}.sql"
     try:
         with open(sql_path, "w", encoding="utf-8") as handle:
             handle.write(sql)
         os.chmod(sql_path, 0o644)
 
-        psql_args = [
-            "psql",
-            "-d",
-            dbname,
-            "-v",
-            "ON_ERROR_STOP=1",
-            "-f",
-            sql_path,
-        ]
-        attempts: list[tuple[list[str], bool]] = [
-            (["sudo", "-n", "-u", "postgres", *psql_args], True),
-        ]
-        if allow_password_prompt:
-            attempts.append((["sudo", "-u", "postgres", *psql_args], False))
+        last_detail = admin_detail
+        for host_args in _psql_host_connection_args():
+            psql_core = [
+                "psql",
+                *host_args,
+                "-U",
+                "postgres",
+                "-d",
+                dbname,
+                "-v",
+                "ON_ERROR_STOP=1",
+                "-f",
+                sql_path,
+            ]
+            wrappers: list[tuple[list[str], bool, bool]] = [
+                ([], True, False),
+                (["sudo", "-n", "-u", "postgres"], True, True),
+            ]
+            if allow_password_prompt:
+                wrappers.append((["sudo", "-u", "postgres"], False, True))
 
-        last_detail = ""
-        for cmd, capture in attempts:
-            try:
-                if capture:
-                    result = subprocess.run(
-                        cmd,
-                        capture_output=True,
-                        text=True,
-                        timeout=120,
-                        check=False,
-                    )
-                    last_detail = (result.stderr or result.stdout or "").strip()
-                else:
-                    print("[RLS] If prompted, enter your Linux password for sudo …")
-                    result = subprocess.run(cmd, timeout=300, check=False)
+            for prefix, capture, needs_sudo_hint in wrappers:
+                cmd = [*prefix, *psql_core]
+                try:
+                    if capture:
+                        result = subprocess.run(
+                            cmd,
+                            capture_output=True,
+                            text=True,
+                            timeout=120,
+                            check=False,
+                        )
+                        last_detail = (result.stderr or result.stdout or "").strip()
+                    else:
+                        if needs_sudo_hint:
+                            print("[RLS] If prompted, enter your Linux password for sudo …")
+                        result = subprocess.run(cmd, timeout=300, check=False)
+                        last_detail = f"exit code {result.returncode}"
+                except (OSError, subprocess.TimeoutExpired) as exc:
+                    last_detail = str(exc)
+                    continue
+                if result.returncode == 0:
+                    return True, ""
+                if not capture and result.returncode != 0:
                     last_detail = f"exit code {result.returncode}"
-            except (OSError, subprocess.TimeoutExpired) as exc:
-                last_detail = str(exc)
-                continue
-            if result.returncode == 0:
-                return True, ""
-            if not capture and result.returncode != 0:
-                last_detail = f"exit code {result.returncode}"
 
-        return False, last_detail or "sudo postgres psql failed"
+        return False, last_detail or "postgres psql failed"
     finally:
         try:
             os.unlink(sql_path)
