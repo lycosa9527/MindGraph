@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [5.117.32] - 2026-06-06
+
+> **Admin token stats include MindBot usage with shared trend modals; auth supports verification-code login (SMS/email) and optional overseas education email.**
+
+### Changed
+
+- **Admin — token statistics consistency** — School week totals and organizations list include MindBot usage; user rankings merge linked-user MindBot tokens (including promote-only users); org scoping unified on rankings; phones masked in token-stats rankings; schools tab token column opens all-time trend chart ([`stats.py`](routers/auth/admin/stats.py), [`stats_helpers.py`](routers/auth/admin/stats_helpers.py), [`mindbot_token_stats.py`](utils/auth/mindbot_token_stats.py), [`AdminSchoolsTab.vue`](frontend/src/components/admin/AdminSchoolsTab.vue)).
+- **Admin — trend modals** — Shared org trend dialog on platform dashboard; empty-chart states; i18n for service names and load errors; `AdminStatsResponse` types aligned with API; chart locale follows UI language; org period cards resolve `organization_id` from trends when opened by name ([`AdminDashboardTab.vue`](frontend/src/components/admin/AdminDashboardTab.vue), [`useOrgTokenTrendModal.ts`](frontend/src/composables/admin/useOrgTokenTrendModal.ts), [`useAdminTrendChart.ts`](frontend/src/composables/admin/useAdminTrendChart.ts), [`adminApi.ts`](frontend/src/composables/queries/adminApi.ts)).
+- **Admin — org data center** — User trend guard when id missing; top-users empty state; shared school invitation clipboard helper ([`AdminOrgDataCenterPanel.vue`](frontend/src/components/admin/AdminOrgDataCenterPanel.vue), [`copySchoolInvitationCode.ts`](frontend/src/utils/admin/copySchoolInvitationCode.ts)).
+- **Auth — verification code login label** — `/auth` link text **短信登录** → **验证码登录** (SMS or email OTP). Password login, OTP login, and forgot-password flows accept phone or email; placeholders and validation copy aligned ([`LoginModal.vue`](frontend/src/components/auth/LoginModal.vue), [`useLoginModal.ts`](frontend/src/composables/auth/useLoginModal.ts), locale `auth.ts`).
+
+### Added
+
+- **Admin — shared stats helpers** — [`token_stats_queries.py`](utils/auth/token_stats_queries.py), [`stats_helpers.py`](routers/auth/admin/stats_helpers.py), [`useAdminTrendChart.ts`](frontend/src/composables/admin/useAdminTrendChart.ts); tests in [`test_admin_stats_http.py`](tests/auth/test_admin_stats_http.py), [`test_admin_stats_trends_http.py`](tests/auth/test_admin_stats_trends_http.py).
+- **Auth — optional overseas education email** — `SWOT_ACADEMIC_EMAIL_REQUIRED` now defaults to **`false`**: overseas users may register with any non-mainland-China email (e.g. gmail.com). Set `SWOT_ACADEMIC_EMAIL_REQUIRED=true` to restore SWOT academic + Kikobeats free-domain enforcement. Exposed to the registration UI via `GET /api/auth/mode` → `overseas_education_email_required` ([`services/auth/swot_academic.py`](services/auth/swot_academic.py), [`routers/auth/public.py`](routers/auth/public.py), [`frontend/src/stores/auth.ts`](frontend/src/stores/auth.ts), [`frontend/src/composables/auth/useLoginModal.ts`](frontend/src/composables/auth/useLoginModal.ts)).
+- **Tests** — Academic-email toggle and `/api/auth/mode` field ([`tests/test_overseas_registration_academic_flag.py`](tests/test_overseas_registration_academic_flag.py)).
+
+### Fixed
+
+- **Auth — overseas email verify parity** — `POST /email/verify` and `verify_and_consume_email_code` with `purpose=register` now reject mainland China email domains (same as `/email/send` and `/register-overseas`).
+- **Auth — acknowledgement errors** — Generic `register_overseas_acknowledgment_required_any` when `SWOT_ACADEMIC_EMAIL_REQUIRED` is false ([`routers/auth/registration_overseas.py`](routers/auth/registration_overseas.py), [`bundled_messages.py`](models/domain/message_catalog/bundled_messages.py)).
+- **Frontend — SC browser overseas ack** — `acknowledgeOverseasAnyScBrowser` shown when education email is optional but the browser prefers Simplified Chinese ([`useLoginModal.ts`](frontend/src/composables/auth/useLoginModal.ts)).
+- **Auth — flag-aware overseas API errors** — GeoIP, mainland-CN domain, and acknowledgement messages use generic `*_any` copy when education email is optional ([`utils/auth/overseas_registration_messages.py`](utils/auth/overseas_registration_messages.py), [`bundled_messages.py`](models/domain/message_catalog/bundled_messages.py)).
+- **Auth — live SWOT flag reads** — `SWOT_ACADEMIC_EMAIL_REQUIRED` is read from the environment on each check (not cached at import); `GET /api/auth/mode` reflects the current value after restart.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.32).
+
 ## [5.117.31] - 2026-06-05
 
 > **RLS bootstrap reliability on managed PostgreSQL.** Fixes `sudo psql` connecting to the wrong socket and Alembic `0042` failing when `pg_stat_statements` is installed.

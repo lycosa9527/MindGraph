@@ -79,17 +79,6 @@ export interface AdminUsersQuery {
   organization_id?: number | string
 }
 
-export interface AdminStatsResponse {
-  total_users?: number
-  total_organizations?: number
-  recent_registrations?: number
-  token_stats?: { total_tokens?: number }
-  token_stats_by_org?: Record<string, unknown>
-  token_stats_by_org_mindgraph?: Record<string, unknown>
-  token_stats_by_org_mindmate?: Record<string, unknown>
-  top_users?: Array<Record<string, unknown>>
-}
-
 export interface AdminTokenPeriodStats {
   input_tokens: number
   output_tokens: number
@@ -97,12 +86,33 @@ export interface AdminTokenPeriodStats {
   request_count?: number
 }
 
+export interface AdminStatsResponse {
+  total_users?: number
+  total_organizations?: number
+  recent_registrations?: number
+  token_stats?: { total_tokens?: number; input_tokens?: number; output_tokens?: number }
+  token_stats_by_org?: Record<string, unknown>
+  token_stats_by_org_mindgraph?: Record<string, unknown>
+  token_stats_by_org_mindmate?: Record<string, unknown>
+  top_users_by_tokens_today?: Array<Record<string, unknown>>
+}
+
+export interface AdminServicePeriodStats {
+  today: AdminTokenPeriodStats
+  week: AdminTokenPeriodStats
+  month: AdminTokenPeriodStats
+  total: AdminTokenPeriodStats
+}
+
 export interface AdminPlatformTokenStats {
   today: AdminTokenPeriodStats
   past_week: AdminTokenPeriodStats
   past_month: AdminTokenPeriodStats
   total: AdminTokenPeriodStats
-  by_service: Record<string, Record<string, AdminTokenPeriodStats>>
+  top_users?: Array<Record<string, unknown>>
+  top_users_today?: Array<Record<string, unknown>>
+  dingtalk_generations?: Record<string, number>
+  by_service: Record<string, AdminServicePeriodStats>
 }
 
 export interface AdminTrendPoint {
@@ -111,6 +121,7 @@ export interface AdminTrendPoint {
 }
 
 export interface AdminTrendsResponse {
+  organization_id?: number
   labels?: string[]
   values?: number[]
   points?: AdminTrendPoint[]
@@ -478,6 +489,8 @@ export async function fetchAdminStatsTrendsUser(
   params: {
     user_id: number
     days?: number
+    hourly?: boolean
+    service?: string | null
     metric?: string
   },
   signal?: AbortSignal
@@ -500,6 +513,7 @@ export async function fetchAdminSchoolTrends(
     organization_id: number
     days?: number
     hourly?: boolean
+    service?: string | null
   },
   signal?: AbortSignal
 ): Promise<AdminTrendsResponse> {

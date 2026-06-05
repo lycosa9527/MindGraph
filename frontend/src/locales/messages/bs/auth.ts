@@ -116,7 +116,6 @@ export default {
   'auth.resetPassword': 'Reset Password',
   'auth.sessionExpired': 'Session expired. Please login again.',
   'auth.smsLogin': 'SMS Login',
-  'auth.sesLogin': 'Email login',
   'auth.username': 'Username',
   'auth.waitCaptchaLoad': 'Please wait for captcha to load',
   'auth.quickRegPageTitle': 'Quick registration',

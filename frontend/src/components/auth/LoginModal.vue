@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * LoginModal - Auth modal: password login, register (phone or overseas email), OTP login
+ * LoginModal - Auth modal: password login, register (phone or overseas email; education optional), OTP login
  * (SMS code or email verification code), and password reset (SMS or email code).
  *
  * Design: Swiss Design (Modern Minimalism)
@@ -81,16 +81,14 @@ const {
   smsLoginUsesEmail,
   maskIdentifierForCodeSent,
   overseasAcknowledgeCheckboxLabel,
+  hybridRegisterEmailTabLabel,
+  registrationEmailLabel,
+  registrationEmailHint,
   emailSending,
   emailCountdown,
   handleResetPassword,
   handleBackdropClick,
 } = useLoginModal(props, emit)
-
-const registrationEmailHint = computed(() => t('auth.modal.registrationEmailHint').trim())
-
-/** Focus account field for email + password sign-in on the same form. */
-const loginIdentifierRef = ref<HTMLInputElement | null>(null)
 
 const loginModalOverlayRef = ref<HTMLElement | null>(null)
 const loginModalCardRef = ref<HTMLElement | null>(null)
@@ -129,12 +127,6 @@ watch(
 onBeforeUnmount(() => {
   disposeLoginCatWalk?.()
 })
-
-function focusSesLogin() {
-  void nextTick(() => {
-    loginIdentifierRef.value?.focus()
-  })
-}
 </script>
 
 <template>
@@ -154,7 +146,7 @@ function focusSesLogin() {
 
         <!-- min-h-full: scroll tall modals inside the overlay; @click.self: backdrop only (not card) -->
         <div
-          class="relative min-h-full flex items-center justify-center px-4 pt-4"
+          class="relative min-h-full flex items-start sm:items-center justify-center px-4 pt-4"
           :class="
             lightBackdrop
               ? 'pb-[max(6.5rem,env(safe-area-inset-bottom,0px))] sm:pb-20 md:p-4'
@@ -280,11 +272,10 @@ function focusSesLogin() {
                   </label>
                   <input
                     id="login-phone"
-                    ref="loginIdentifierRef"
                     v-model="loginForm.phone"
                     type="text"
                     name="login-phone"
-                    :placeholder="t('auth.modal.phonePlaceholder11')"
+                    :placeholder="t('auth.modal.forgotPhoneOrEmailPlaceholder')"
                     maxlength="254"
                     autocomplete="username"
                     class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
@@ -332,7 +323,7 @@ function focusSesLogin() {
                   >
                     {{ t('auth.captcha') }}
                   </label>
-                  <div class="flex gap-3 items-center">
+                  <div class="captcha-row">
                     <input
                       id="login-captcha"
                       v-model="loginForm.captcha"
@@ -340,7 +331,7 @@ function focusSesLogin() {
                       name="login-captcha"
                       :placeholder="t('auth.modal.captchaPlaceholderShort')"
                       maxlength="4"
-                      class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                      class="captcha-row__input px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                     />
                     <img
                       v-if="captchaImage && !captchaLoading"
@@ -399,14 +390,6 @@ function focusSesLogin() {
                   >
                     {{ t('auth.smsLogin') }}
                   </el-button>
-                  <span class="text-stone-300 select-none">|</span>
-                  <el-button
-                    type="primary"
-                    link
-                    @click="focusSesLogin"
-                  >
-                    {{ t('auth.sesLogin') }}
-                  </el-button>
                 </div>
               </form>
 
@@ -440,7 +423,7 @@ function focusSesLogin() {
                     "
                     @click="setRegisterPath('email')"
                   >
-                    {{ t('auth.modal.hybridRegisterEmailTab') }}
+                    {{ hybridRegisterEmailTabLabel }}
                   </button>
                   <button
                     type="button"
@@ -480,7 +463,7 @@ function focusSesLogin() {
                     class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                     for="register-education-email"
                   >
-                    {{ t('auth.modal.registrationEmailLabel') }}
+                    {{ registrationEmailLabel }}
                   </label>
                   <input
                     id="register-education-email"
@@ -574,7 +557,7 @@ function focusSesLogin() {
                   >
                     {{ t('auth.captcha') }} *
                   </label>
-                  <div class="flex gap-3 items-center">
+                  <div class="captcha-row">
                     <input
                       id="register-captcha"
                       v-model="registerForm.captcha"
@@ -582,7 +565,7 @@ function focusSesLogin() {
                       name="register-captcha"
                       :placeholder="t('auth.modal.captchaPlaceholderShort')"
                       maxlength="4"
-                      class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                      class="captcha-row__input px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                     />
                     <img
                       v-if="captchaImage && !captchaLoading"
@@ -692,12 +675,8 @@ function focusSesLogin() {
                     v-model="smsLoginForm.phone"
                     type="text"
                     name="sms-login-phone"
-                    :placeholder="
-                      smsLoginUsesEmail
-                        ? t('auth.modal.forgotPhoneOrEmailPlaceholder')
-                        : t('auth.modal.phoneRegisteredPlaceholder')
-                    "
-                    :maxlength="smsLoginUsesEmail ? 254 : 11"
+                    :placeholder="t('auth.modal.forgotPhoneOrEmailPlaceholder')"
+                    maxlength="254"
                     inputmode="text"
                     autocomplete="username"
                     :disabled="smsSent"
@@ -712,7 +691,7 @@ function focusSesLogin() {
                   >
                     {{ t('auth.captcha') }}
                   </label>
-                  <div class="flex gap-3 items-center">
+                  <div class="captcha-row">
                     <input
                       id="sms-login-captcha"
                       v-model="smsLoginForm.captcha"
@@ -720,7 +699,7 @@ function focusSesLogin() {
                       name="sms-login-captcha"
                       :placeholder="t('auth.modal.captchaPlaceholderShort')"
                       maxlength="4"
-                      class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                      class="captcha-row__input px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                     />
                     <img
                       v-if="captchaImage && !captchaLoading"
@@ -762,10 +741,10 @@ function focusSesLogin() {
                     smsSending
                       ? smsLoginUsesEmail
                         ? t('auth.modal.sendingEmailCode')
-                        : t('auth.modal.sendingSms')
+                        : t('auth.modal.sendingVerificationCode')
                       : smsLoginUsesEmail
                         ? t('auth.modal.sendEmailCode')
-                        : t('auth.modal.sendSmsCode')
+                        : t('auth.modal.sendVerificationCode')
                   }}
                 </button>
 
@@ -864,7 +843,7 @@ function focusSesLogin() {
                   >
                     {{ t('auth.captcha') }}
                   </label>
-                  <div class="flex gap-3 items-center">
+                  <div class="captcha-row">
                     <input
                       id="forgot-captcha"
                       v-model="forgotForm.captcha"
@@ -872,7 +851,7 @@ function focusSesLogin() {
                       name="forgot-captcha"
                       :placeholder="t('auth.modal.captchaPlaceholderShort')"
                       maxlength="4"
-                      class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                      class="captcha-row__input px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                     />
                     <img
                       v-if="captchaImage && !captchaLoading"
@@ -912,8 +891,12 @@ function focusSesLogin() {
                   />
                   {{
                     smsSending
-                      ? t('auth.modal.sendingVerificationCode')
-                      : t('auth.modal.sendVerificationCode')
+                      ? forgotUsesEmail
+                        ? t('auth.modal.sendingEmailCode')
+                        : t('auth.modal.sendingVerificationCode')
+                      : forgotUsesEmail
+                        ? t('auth.modal.sendEmailCode')
+                        : t('auth.modal.sendVerificationCode')
                   }}
                 </button>
 
@@ -934,11 +917,19 @@ function focusSesLogin() {
                       v-model="forgotForm.smsCode"
                       type="text"
                       name="forgot-sms-code"
-                      :placeholder="t('auth.modal.smsCodePlaceholder')"
+                      :placeholder="
+                        forgotUsesEmail
+                          ? t('auth.modal.emailCodePlaceholder')
+                          : t('auth.modal.smsCodePlaceholder')
+                      "
                       maxlength="6"
                       autocomplete="one-time-code"
                       class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                     />
+                    <p class="text-xs text-stone-400 mt-1">
+                      {{ t('auth.modal.codeSentTo') }}
+                      {{ maskIdentifierForCodeSent(forgotForm.phone) }}
+                    </p>
                   </div>
 
                   <div>
@@ -1046,11 +1037,6 @@ function focusSesLogin() {
 </template>
 
 <style scoped>
-/* Scroll and overscroll stay on the overlay (mobile: avoid dragging the page behind). */
-.login-modal-overlay {
-  -webkit-overflow-scrolling: touch;
-}
-
 /* Modal transitions */
 .modal-enter-active,
 .modal-leave-active {
@@ -1160,37 +1146,6 @@ function focusSesLogin() {
   font-weight: 500;
   color: #1c1917;
   flex-shrink: 0;
-}
-
-/* Captcha image - sharp display like MindLLMCross */
-.captcha-image {
-  height: 48px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
-  flex-shrink: 0;
-}
-
-.captcha-image:hover {
-  opacity: 0.8;
-}
-
-.captcha-placeholder {
-  height: 48px;
-  width: 120px;
-  border-radius: 8px;
-  cursor: pointer;
-  background: #f5f5f4;
-  border: 1px solid #e7e5e4;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: opacity 0.2s ease;
-}
-
-.captcha-placeholder:hover {
-  opacity: 0.8;
 }
 
 /* Close button positioning and styling */

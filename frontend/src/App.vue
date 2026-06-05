@@ -18,6 +18,7 @@ import { loadElementPlusLocale } from '@/i18n/elementPlusLocale'
 import { isRtlUiLocale } from '@/i18n/locales'
 import { useAuthStore, useUIStore } from '@/stores'
 import { useLiveTranslationStore } from '@/stores/liveTranslation'
+import { isGuestAuthPath } from '@/utils/authRedirect'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
 const notify = useNotifications()
@@ -172,9 +173,13 @@ onMounted(async () => {
   if (!isExportRender) {
     await authStore.checkAuth().catch(() => false)
 
-    setTimeout(() => {
-      notify.info(t('app.aiDisclaimer'))
-    }, 500)
+    const onGuestAuthPage = isGuestAuthPath(route.path)
+
+    if (!onGuestAuthPage) {
+      setTimeout(() => {
+        notify.info(t('app.aiDisclaimer'))
+      }, 500)
+    }
 
     setTimeout(() => {
       if (
@@ -185,6 +190,9 @@ onMounted(async () => {
         return
       }
       const current = router.currentRoute.value
+      if (onGuestAuthPage || isGuestAuthPath(current.path)) {
+        return
+      }
       if (current.meta.layout === 'mobile' || current.path.startsWith('/m')) {
         return
       }

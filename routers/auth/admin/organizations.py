@@ -39,25 +39,7 @@ from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
 from utils.auth.role_constants import ROLE_TEACHER, SCHOOL_ADMIN_ROLES, normalize_role
 from utils.auth.roles import is_superadmin
-from utils.invitations import generate_invitation_code, normalize_or_generate
-from utils.sensitive_mask import mask_invitation_code
-from .organization_dify import (
-    apply_dify_on_create,
-    apply_dify_on_update,
-    dify_list_fields,
-    global_mindmate_dify_fields,
-    propagate_org_dify_settings_to_mindbot_configs,
-    probe_mindmate_dify_health,
-    probe_mindmate_dify_health_draft,
-)
-from .organization_mindmate_branding import (
-    apply_mindmate_branding_on_update,
-    finalize_mindmate_avatar_upload,
-    mindmate_branding_list_fields,
-    purge_org_mindmate_avatar_storage,
-    revert_mindmate_avatar_upload,
-    save_mindmate_agent_avatar,
-)
+from utils.auth.mindbot_token_stats import add_token_period, aggregate_mindbot_token_totals
 from utils.auth.school_tier import (
     apply_school_tier_on_create,
     apply_school_tier_on_update,
@@ -76,6 +58,25 @@ from utils.auth.admin_scope import (
     assert_resource_org_in_scope,
     org_filter,
     panel_org_table_filter,
+)
+from utils.invitations import generate_invitation_code, normalize_or_generate
+from utils.sensitive_mask import mask_invitation_code
+from .organization_dify import (
+    apply_dify_on_create,
+    apply_dify_on_update,
+    dify_list_fields,
+    global_mindmate_dify_fields,
+    propagate_org_dify_settings_to_mindbot_configs,
+    probe_mindmate_dify_health,
+    probe_mindmate_dify_health_draft,
+)
+from .organization_mindmate_branding import (
+    apply_mindmate_branding_on_update,
+    finalize_mindmate_avatar_upload,
+    mindmate_branding_list_fields,
+    purge_org_mindmate_avatar_storage,
+    revert_mindmate_avatar_upload,
+    save_mindmate_agent_avatar,
 )
 
 from ..dependencies import (
@@ -170,6 +171,12 @@ async def list_organizations_admin(
                     "output_tokens": int(org_stat.output_tokens or 0),
                     "total_tokens": int(org_stat.total_tokens or 0),
                 }
+            for org_key, org_stats in list(token_stats_by_org.items()):
+                mindbot_totals = await aggregate_mindbot_token_totals(
+                    db,
+                    organization_id=int(org_key),
+                )
+                token_stats_by_org[org_key] = add_token_period(org_stats, mindbot_totals)
         except Exception as e:
             logger.debug("TokenUsage query failed: %s", e)
 

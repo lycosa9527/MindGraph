@@ -7,6 +7,7 @@
 @import './admin-swiss-stat-cards.css';
 @import './admin-swiss-school-select-popper.css';
 @import './admin-mindbot-swiss-select-popper.css';
+@import './auth-captcha.css';
 
 @import 'tailwindcss/theme' layer(theme);
 @import 'tailwindcss/utilities' layer(utilities);

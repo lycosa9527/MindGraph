@@ -29,7 +29,7 @@ export const INLINE_RECOMMENDATIONS_SUPPORTED_TYPES = [
   'concept_map',
 ] as const
 
-export const LEARNING_SHEET_PLACEHOLDER = '___'
+export { LEARNING_SHEET_PLACEHOLDER } from '@/stores/specLoader/utils'
 
 export const STAGED_DIAGRAM_TYPES = [
   'mindmap',

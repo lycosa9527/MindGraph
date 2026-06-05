@@ -344,15 +344,16 @@ export function useCanvasToolbarApps() {
         diagramStore.applyLearningSheetView()
         notify.success(t('canvas.toolbar.learningSheetRestored'))
       } else {
-        diagramStore.setLearningSheetMode(true)
         const spec = diagramStore.getSpecForSave()
         if (spec && diagramStore.type) {
-          const enrichedSpec = {
-            ...spec,
-            is_learning_sheet: true,
-            hidden_node_percentage: 0.2,
-          }
-          diagramStore.loadFromSpec(enrichedSpec, diagramStore.type)
+          diagramStore.loadFromSpec(
+            {
+              ...spec,
+              is_learning_sheet: true,
+              hidden_node_percentage: 0.2,
+            },
+            diagramStore.type
+          )
           notify.success(t('canvas.toolbar.switchedLearningSheetMode'))
         }
       }

@@ -6,6 +6,8 @@ import { computed, ref, watch } from 'vue'
 
 import { ElButton } from 'element-plus'
 
+import { Loader2 } from '@lucide/vue'
+
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
@@ -194,7 +196,7 @@ watch(
     <Transition name="modal">
       <div
         v-if="isVisible"
-        class="fixed inset-0 z-[60] flex items-center justify-center p-4"
+        class="fixed inset-0 z-[60] overflow-y-auto overscroll-y-contain auth-modal-overlay flex items-start sm:items-center justify-center p-4"
         @click.self="close"
       >
         <div class="absolute inset-0 bg-stone-900/60 backdrop-blur-[2px]" />
@@ -219,26 +221,35 @@ watch(
               >
                 {{ t('auth.captcha') }}
               </label>
-              <div class="flex gap-2">
+              <div class="captcha-row">
                 <input
                   id="sp-captcha"
                   v-model="captcha"
                   type="text"
                   maxlength="4"
-                  class="min-w-0 flex-1 px-3 py-2 border border-stone-200 rounded-lg"
+                  autocomplete="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  class="captcha-row__input px-3 py-2 border border-stone-200 rounded-lg"
                 />
-                <button
-                  type="button"
-                  class="w-28 border border-stone-200 rounded-lg overflow-hidden"
+                <img
+                  v-if="captchaImage"
+                  :src="captchaImage"
+                  class="captcha-image"
+                  :alt="t('auth.captcha')"
+                  :title="t('auth.clickToRefresh')"
+                  @click="loadCaptcha"
+                />
+                <div
+                  v-else
+                  class="captcha-placeholder"
                   @click="loadCaptcha"
                 >
-                  <img
-                    v-if="captchaImage"
-                    :src="captchaImage"
-                    class="h-9 w-full object-cover"
-                    alt=""
+                  <Loader2
+                    v-if="captchaLoading"
+                    class="w-5 h-5 text-stone-400 animate-spin"
                   />
-                </button>
+                </div>
               </div>
             </div>
             <ElButton

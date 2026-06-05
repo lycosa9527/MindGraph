@@ -6,6 +6,7 @@ import { type RouteRecordRaw, createRouter, createWebHistory } from 'vue-router'
 import { useMobileDetect } from '@/composables/core/useMobileDetect'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { useUIStore } from '@/stores/ui'
 import { CANVAS_ENTRY_PATH_KEY } from '@/utils/canvasBackNavigation'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
 
@@ -467,6 +468,9 @@ router.beforeEach(async (to, from) => {
         return { path: '/m' }
       }
       return { name: 'MindMate' }
+    }
+    if (to.name === 'Auth') {
+      useUIStore().syncGuestLocaleFromBrowser()
     }
   }
 })

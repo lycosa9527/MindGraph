@@ -1,10 +1,16 @@
 """Unit tests for MindBot token aggregation helpers."""
 
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
 from utils.auth.mindbot_token_stats import (
     MINDBOT_USAGE_SUCCESS_CODES,
     add_service_period,
     add_token_period,
     empty_token_period,
+    merge_mindbot_hourly_into_tokens_by_hour,
+    merge_mindbot_tokens_into_top_user_rows,
     merge_org_token_stats,
 )
 from services.mindbot.errors import MindbotErrorCode
@@ -64,3 +70,71 @@ def test_merge_org_token_stats_adds_and_creates():
     assert merged["School A"]["total_tokens"] == 165
     assert merged["School A"]["request_count"] == 3
     assert merged["School B"]["total_tokens"] == 2
+
+
+def test_merge_mindbot_hourly_into_tokens_by_hour():
+    tokens_by_hour = {"2026-06-06 10:00:00": {"total": 1, "input": 0, "output": 1}}
+    mindbot = {"2026-06-06 10:00:00": {"total": 5, "input": 2, "output": 3}}
+    merge_mindbot_hourly_into_tokens_by_hour(tokens_by_hour, mindbot)
+    assert tokens_by_hour["2026-06-06 10:00:00"]["total"] == 6
+    assert tokens_by_hour["2026-06-06 10:00:00"]["input"] == 2
+
+
+@pytest.mark.asyncio
+async def test_merge_mindbot_tokens_into_top_user_rows_reorders_by_total():
+    rows = [
+        {"id": 1, "name": "A", "total_tokens": 100, "input_tokens": 0, "output_tokens": 0},
+        {"id": 2, "name": "B", "total_tokens": 50, "input_tokens": 0, "output_tokens": 0},
+    ]
+    mindbot = {
+        2: {
+            "input_tokens": 10,
+            "output_tokens": 70,
+            "total_tokens": 80,
+            "request_count": 1,
+        },
+    }
+    db = AsyncMock()
+    db.execute = AsyncMock(return_value=MagicMock(first=lambda: None))
+    merged = await merge_mindbot_tokens_into_top_user_rows(
+        db,
+        rows,
+        mindbot,
+        limit=10,
+        include_io_tokens=True,
+    )
+    assert merged[0]["id"] == 2
+    assert merged[0]["total_tokens"] == 130
+    assert merged[0]["input_tokens"] == 10
+    assert merged[1]["id"] == 1
+
+
+@pytest.mark.asyncio
+async def test_merge_mindbot_tokens_promotes_linked_user():
+    rows = [{"id": 1, "name": "A", "total_tokens": 10}]
+    mindbot = {
+        99: {
+            "input_tokens": 1,
+            "output_tokens": 499,
+            "total_tokens": 500,
+            "request_count": 1,
+        },
+    }
+    user_row = MagicMock()
+    user_row.id = 99
+    user_row.phone = "13800000099"
+    user_row.name = "Bot User"
+    user_row.organization_name = "School A"
+    db = AsyncMock()
+    db.execute = AsyncMock(return_value=MagicMock(first=lambda: user_row))
+    merged = await merge_mindbot_tokens_into_top_user_rows(
+        db,
+        rows,
+        mindbot,
+        limit=10,
+        mask_phone=True,
+        include_org_name=True,
+    )
+    assert len(merged) == 2
+    assert merged[0]["id"] == 99
+    assert merged[0]["total_tokens"] == 500

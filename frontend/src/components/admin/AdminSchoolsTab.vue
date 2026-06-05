@@ -220,6 +220,7 @@ const trendOrg = ref<{
   mindmate_agent_name?: string | null
   mindmate_agent_avatar_url?: string | null
   initial_tab?: 'usage' | 'general'
+  initial_trend_period?: 'today' | 'week' | 'month' | 'total'
 } | null>(null)
 
 function agentDisplayName(row: Record<string, unknown>): string {
@@ -251,7 +252,11 @@ function orgShowChainOfThought(row: Record<string, unknown>): boolean {
   )
 }
 
-function openTrendModal(row: Record<string, unknown>, initialTab: 'usage' | 'general' = 'usage') {
+function openTrendModal(
+  row: Record<string, unknown>,
+  initialTab: 'usage' | 'general' = 'usage',
+  initialTrendPeriod: 'today' | 'week' | 'month' | 'total' = 'week'
+) {
   trendOrg.value = {
     name: String(row.name ?? ''),
     id: row.id as number | undefined,
@@ -269,6 +274,7 @@ function openTrendModal(row: Record<string, unknown>, initialTab: 'usage' | 'gen
     mindmate_agent_name: row.mindmate_agent_name as string | null | undefined,
     mindmate_agent_avatar_url: row.mindmate_agent_avatar_url as string | null | undefined,
     initial_tab: initialTab,
+    initial_trend_period: initialTrendPeriod,
   }
   trendModalVisible.value = true
 }
@@ -304,6 +310,7 @@ function syncTrendOrgFromSchools() {
       mindmate_agent_name: updated.mindmate_agent_name as string | null | undefined,
       mindmate_agent_avatar_url: updated.mindmate_agent_avatar_url as string | null | undefined,
       initial_tab: currentTrend.initial_tab,
+      initial_trend_period: currentTrend.initial_trend_period,
     }
   }
 }
@@ -451,7 +458,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
               :aria-sort="tokenSortAriaSort"
               @click="cycleTokenSort"
             >
-              <span>{{ t('admin.tokensUsed') }}</span>
+              <span>{{ t('admin.tokensUsedAllTime') }}</span>
               <span
                 v-if="tokenSortOrder !== 'none'"
                 class="admin-schools-sort-header__dir"
@@ -465,7 +472,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
             <button
               type="button"
               class="admin-schools-link tabular-nums"
-              @click="openTrendModal(row, 'usage')"
+              @click="openTrendModal(row, 'usage', 'total')"
             >
               {{ formatNumber(tokenTotal(row)) }}
             </button>
@@ -622,6 +629,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
       :org-mindmate-agent-name="trendOrg?.mindmate_agent_name"
       :org-mindmate-agent-avatar-url="trendOrg?.mindmate_agent_avatar_url"
       :initial-school-tab="trendOrg?.initial_tab"
+      :initial-trend-period="trendOrg?.initial_trend_period ?? 'week'"
       :read-only="props.readOnly"
       @refresh="() => loadSchools({ silent: true })"
     />

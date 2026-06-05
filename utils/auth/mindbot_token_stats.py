@@ -17,7 +17,7 @@ from sqlalchemy.sql.functions import coalesce as sa_coalesce
 from sqlalchemy.sql.functions import count as sql_count
 from sqlalchemy.sql.functions import sum as sa_sum
 
-from models.domain.auth import Organization
+from models.domain.auth import Organization, User
 from models.domain.mindbot_usage import MindbotUsageEvent
 from services.mindbot.errors import MindbotErrorCode
 
@@ -187,6 +187,120 @@ async def aggregate_mindbot_tokens_by_org_today(
     return by_org
 
 
+async def aggregate_mindbot_tokens_by_linked_user(
+    db: AsyncSession,
+    *,
+    created_since: Optional[datetime] = None,
+    organization_id: Optional[int] = None,
+) -> Dict[int, TokenPeriodTotals]:
+    """MindBot tokens keyed by linked MindGraph user id (when SSO linked)."""
+    filters = _mindbot_usage_filters(
+        created_since=created_since,
+        organization_id=organization_id,
+    )
+    stmt = (
+        select(
+            MindbotUsageEvent.linked_user_id,
+            sa_sum(_effective_input_expr()).label("input_tokens"),
+            sa_sum(_effective_output_expr()).label("output_tokens"),
+            sa_sum(_effective_total_expr()).label("total_tokens"),
+            sql_count(MindbotUsageEvent.id).label("request_count"),
+        )
+        .where(filters, MindbotUsageEvent.linked_user_id.isnot(None))
+        .group_by(MindbotUsageEvent.linked_user_id)
+    )
+    rows = (await db.execute(stmt)).all()
+    by_user: Dict[int, TokenPeriodTotals] = {}
+    for row in rows:
+        if row.linked_user_id is None:
+            continue
+        by_user[int(row.linked_user_id)] = {
+            "input_tokens": int(row.input_tokens or 0),
+            "output_tokens": int(row.output_tokens or 0),
+            "total_tokens": int(row.total_tokens or 0),
+            "request_count": int(row.request_count or 0),
+        }
+    return by_user
+
+
+async def aggregate_mindbot_tokens_by_linked_user_today(
+    db: AsyncSession,
+    today_start: datetime,
+    organization_id: Optional[int] = None,
+) -> Dict[int, TokenPeriodTotals]:
+    """MindBot tokens for today keyed by linked MindGraph user id (when SSO linked)."""
+    return await aggregate_mindbot_tokens_by_linked_user(
+        db,
+        created_since=today_start,
+        organization_id=organization_id,
+    )
+
+
+async def merge_mindbot_tokens_into_top_user_rows(
+    db: AsyncSession,
+    rows: list[Dict[str, Any]],
+    mindbot_by_user: Dict[int, TokenPeriodTotals],
+    *,
+    organization_id: Optional[int] = None,
+    limit: int = 10,
+    mask_phone: bool = False,
+    include_org_name: bool = False,
+    include_io_tokens: bool = False,
+) -> list[Dict[str, Any]]:
+    """Merge linked-user MindBot totals into ranking rows; promote MindBot-only users."""
+    by_id: Dict[int, Dict[str, Any]] = {int(row["id"]): dict(row) for row in rows}
+    for user_id, extra in mindbot_by_user.items():
+        if user_id in by_id:
+            row = by_id[user_id]
+            row["input_tokens"] = int(row.get("input_tokens", 0)) + int(extra["input_tokens"])
+            row["output_tokens"] = int(row.get("output_tokens", 0)) + int(extra["output_tokens"])
+            row["total_tokens"] = int(row.get("total_tokens", 0)) + int(extra["total_tokens"])
+            continue
+        if int(extra.get("total_tokens", 0)) <= 0:
+            continue
+        user_stmt = (
+            select(
+                User.id,
+                User.phone,
+                User.name,
+                Organization.name.label("organization_name"),
+            )
+            .outerjoin(Organization, User.organization_id == Organization.id)
+            .where(User.id == user_id)
+        )
+        if organization_id is not None:
+            user_stmt = user_stmt.where(User.organization_id == organization_id)
+        user_row = (await db.execute(user_stmt)).first()
+        if user_row is None:
+            continue
+        raw_phone = user_row.phone or ""
+        phone = raw_phone
+        if mask_phone and raw_phone and len(raw_phone) == 11:
+            phone = raw_phone[:3] + "****" + raw_phone[-4:]
+        display_name = user_row.name or raw_phone or str(user_row.id)
+        if mask_phone and not user_row.name:
+            display_name = phone or str(user_row.id)
+        new_row: Dict[str, Any] = {
+            "id": int(user_row.id),
+            "phone": phone,
+            "name": display_name,
+            "total_tokens": int(extra["total_tokens"]),
+        }
+        if include_org_name:
+            new_row["organization_name"] = user_row.organization_name or ""
+        if include_io_tokens:
+            new_row["input_tokens"] = int(extra["input_tokens"])
+            new_row["output_tokens"] = int(extra["output_tokens"])
+        by_id[user_id] = new_row
+
+    merged = sorted(
+        by_id.values(),
+        key=lambda item: int(item.get("total_tokens", 0)),
+        reverse=True,
+    )
+    return merged[:limit]
+
+
 def merge_mindbot_daily_rows_into_tokens_by_date(
     tokens_by_date: MutableMapping[str, Dict[str, int]],
     mindbot_rows: list[Any],
@@ -194,13 +308,10 @@ def merge_mindbot_daily_rows_into_tokens_by_date(
     beijing_timezone: tzinfo,
 ) -> None:
     """Add MindBot daily rows into a trends ``tokens_by_date`` map (UTC date → Beijing key)."""
+    from utils.auth.token_stats_queries import utc_date_to_beijing_key
+
     for row in mindbot_rows:
-        utc_date = row.date
-        if isinstance(utc_date, str):
-            utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
-        utc_datetime = datetime.combine(utc_date, datetime.min.time())
-        beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(beijing_timezone)
-        beijing_date_str = str(beijing_datetime.date())
+        beijing_date_str = utc_date_to_beijing_key(row.date, beijing_timezone)
         if beijing_date_str not in tokens_by_date:
             tokens_by_date[beijing_date_str] = {"total": 0, "input": 0, "output": 0}
         tokens_by_date[beijing_date_str]["total"] += int(row.total_tokens or 0)
@@ -213,6 +324,7 @@ async def aggregate_mindbot_tokens_by_date(
     *,
     created_since: datetime,
     organization_id: Optional[int] = None,
+    linked_user_id: Optional[int] = None,
 ) -> list[Any]:
     """Daily MindBot token sums keyed by UTC date (same shape as token trends query)."""
     stmt = (
@@ -230,4 +342,59 @@ async def aggregate_mindbot_tokens_by_date(
         )
         .group_by(func.date(MindbotUsageEvent.created_at))
     )
+    if linked_user_id is not None:
+        stmt = stmt.where(MindbotUsageEvent.linked_user_id == linked_user_id)
     return list((await db.execute(stmt)).all())
+
+
+async def aggregate_mindbot_tokens_by_hour(
+    db: AsyncSession,
+    *,
+    created_since: datetime,
+    organization_id: Optional[int] = None,
+    linked_user_id: Optional[int] = None,
+) -> Dict[str, Dict[str, int]]:
+    """Hourly MindBot totals keyed by Beijing hour string (YYYY-MM-DD HH:00:00)."""
+    from utils.auth.token_stats_queries import BEIJING_TIMEZONE
+
+    filters = _mindbot_usage_filters(
+        created_since=created_since,
+        organization_id=organization_id,
+    )
+    stmt = (
+        select(
+            func.strftime("%Y-%m-%d %H:00:00", MindbotUsageEvent.created_at).label("datetime"),
+            sa_sum(_effective_total_expr()).label("total_tokens"),
+            sa_sum(_effective_input_expr()).label("input_tokens"),
+            sa_sum(_effective_output_expr()).label("output_tokens"),
+        )
+        .where(filters)
+        .group_by(func.strftime("%Y-%m-%d %H:00:00", MindbotUsageEvent.created_at))
+    )
+    if linked_user_id is not None:
+        stmt = stmt.where(MindbotUsageEvent.linked_user_id == linked_user_id)
+    rows = (await db.execute(stmt)).all()
+    tokens_by_hour: Dict[str, Dict[str, int]] = {}
+    for row in rows:
+        utc_datetime = datetime.strptime(row.datetime, "%Y-%m-%d %H:00:00")
+        utc_datetime = utc_datetime.replace(tzinfo=timezone.utc)
+        beijing_hour_str = utc_datetime.astimezone(BEIJING_TIMEZONE).strftime("%Y-%m-%d %H:00:00")
+        if beijing_hour_str not in tokens_by_hour:
+            tokens_by_hour[beijing_hour_str] = {"total": 0, "input": 0, "output": 0}
+        tokens_by_hour[beijing_hour_str]["total"] += int(row.total_tokens or 0)
+        tokens_by_hour[beijing_hour_str]["input"] += int(row.input_tokens or 0)
+        tokens_by_hour[beijing_hour_str]["output"] += int(row.output_tokens or 0)
+    return tokens_by_hour
+
+
+def merge_mindbot_hourly_into_tokens_by_hour(
+    tokens_by_hour: MutableMapping[str, Dict[str, int]],
+    mindbot_by_hour: Dict[str, Dict[str, int]],
+) -> None:
+    """Add MindBot hourly buckets into an existing hour map."""
+    for hour_str, extra in mindbot_by_hour.items():
+        if hour_str not in tokens_by_hour:
+            tokens_by_hour[hour_str] = {"total": 0, "input": 0, "output": 0}
+        tokens_by_hour[hour_str]["total"] += int(extra.get("total", 0))
+        tokens_by_hour[hour_str]["input"] += int(extra.get("input", 0))
+        tokens_by_hour[hour_str]["output"] += int(extra.get("output", 0))

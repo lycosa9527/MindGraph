@@ -25,6 +25,7 @@ _stamp_geo_cn_mainland_cookie = set_geo_cn_mainland_cookie
 from services.auth.geoip_country import resolve_country_iso_from_request
 from utils.auth import AUTH_MODE, is_https
 from utils.auth.config import REGISTRATION_ENABLED
+from utils.auth.overseas_registration_messages import overseas_education_email_required
 
 router = APIRouter()
 
@@ -79,10 +80,16 @@ async def get_auth_mode():
     Get current authentication mode
 
     Allows frontend to detect and adapt to different auth modes.
-    Includes ``registration_enabled`` (env ``REGISTRATION_ENABLED``, default True).
+    Includes ``registration_enabled`` (env ``REGISTRATION_ENABLED``, default True)
+    and ``overseas_education_email_required`` (env ``SWOT_ACADEMIC_EMAIL_REQUIRED``,
+    default False).
     """
     signup_open = REGISTRATION_ENABLED
-    return {"mode": AUTH_MODE, "registration_enabled": signup_open}
+    return {
+        "mode": AUTH_MODE,
+        "registration_enabled": signup_open,
+        "overseas_education_email_required": overseas_education_email_required(),
+    }
 
 
 @router.get("/organizations")

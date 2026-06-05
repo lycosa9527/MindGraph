@@ -36,6 +36,12 @@ import {
 } from '@/constants/schoolTier'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import {
+  ADMIN_TREND_CHART_MOUNT_DELAY_MS,
+  ADMIN_TREND_DAYS_MAP,
+  formatAdminTrendNumber,
+  renderAdminTrendLineChart,
+} from '@/composables/admin/useAdminTrendChart'
+import {
   clearAdminMindBotOrgSession,
   getAdminMindBotOrgSession,
 } from '@/composables/admin/useAdminMindBotConfig'
@@ -43,7 +49,6 @@ import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
-import { type ChartConfiguration, type TooltipItem, loadChartJs } from '@/utils/lazyChartJs'
 
 import AdminSchoolDifySettings from './AdminSchoolDifySettings.vue'
 import AdminSchoolMindBotTab from './AdminSchoolMindBotTab.vue'
@@ -85,6 +90,8 @@ const props = defineProps<{
   userName?: string
   userId?: number
   readOnly?: boolean
+  initialTrendPeriod?: 'today' | 'week' | 'month' | 'total'
+  orgService?: 'mindgraph' | 'mindmate' | null
 }>()
 
 const emit = defineEmits<{
@@ -198,6 +205,7 @@ function onSchoolModalVisibleChange(visible: boolean): void {
 
 const chartTitle = ref('')
 const chartLoading = ref(false)
+const chartHasData = ref(true)
 const chartRef = ref<HTMLCanvasElement | null>(null)
 const tokenUsageTabRef = ref<InstanceType<typeof AdminSchoolTokenUsageTab> | null>(null)
 const mindmateDifyRef = ref<InstanceType<typeof AdminSchoolDifySettings> | null>(null)
@@ -252,18 +260,6 @@ const tierDowngradeBlocked = computed(() => {
   return memberOverLimit || managerCount > limits.managerLimit
 })
 
-function formatNumber(num: number): string {
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
-  if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
-  return num.toLocaleString()
-}
-
-function formatChartLabel(value: number): string {
-  if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M'
-  if (value >= 1000) return (value / 1000).toFixed(1) + 'K'
-  return String(value)
-}
-
 function parseExpiresAtToDate(iso: string | null | undefined): string | null {
   if (!iso) return null
   const m = iso.match(/^(\d{4}-\d{2}-\d{2})/)
@@ -284,7 +280,7 @@ function handleClose() {
 
 async function loadOrgChart(signal: AbortSignal) {
   if (props.orgName == null) return
-  const daysMap = { today: 1, week: 7, month: 30, total: 0 }
+  const daysMap = ADMIN_TREND_DAYS_MAP
   const days = daysMap[period.value]
   const hourly = period.value === 'today'
   return fetchAdminStatsTrendsOrganization(
@@ -293,6 +289,7 @@ async function loadOrgChart(signal: AbortSignal) {
       organization_name: props.orgId == null ? props.orgName : undefined,
       days,
       hourly,
+      service: props.orgService ?? undefined,
     },
     signal
   )
@@ -300,24 +297,45 @@ async function loadOrgChart(signal: AbortSignal) {
 
 async function loadUserChart(signal: AbortSignal) {
   if (props.userId == null) return
-  const daysMap = { today: 1, week: 7, month: 30, total: 0 }
+  const daysMap = ADMIN_TREND_DAYS_MAP
   const days = daysMap[period.value]
   return fetchAdminStatsTrendsUser(
     {
       user_id: props.userId,
       days,
+      hourly: period.value === 'today',
     },
     signal
   )
 }
 
-async function loadOrgTokenCards(signal: AbortSignal) {
-  if (props.orgId == null) return
-  const data = await fetchAdminTokenStats(props.orgId, signal)
+async function loadOrgTokenCards(signal: AbortSignal, orgId: number) {
+  const data = await fetchAdminTokenStats(orgId, signal)
   const fmt = (p: { input_tokens?: number; output_tokens?: number }) => {
     const i = p?.input_tokens ?? 0
     const o = p?.output_tokens ?? 0
-    return `${formatNumber(i)}+${formatNumber(o)}`
+    return `${formatAdminTrendNumber(i)}+${formatAdminTrendNumber(o)}`
+  }
+  const service = props.orgService
+  if (service === 'mindgraph' && data.by_service?.mindgraph) {
+    const stats = data.by_service.mindgraph
+    periodCards.value = {
+      today: fmt(stats.today),
+      week: fmt(stats.week),
+      month: fmt(stats.month),
+      total: fmt(stats.total),
+    }
+    return
+  }
+  if (service === 'mindmate' && data.by_service?.mindmate) {
+    const stats = data.by_service.mindmate
+    periodCards.value = {
+      today: fmt(stats.today),
+      week: fmt(stats.week),
+      month: fmt(stats.month),
+      total: fmt(stats.total),
+    }
+    return
   }
   periodCards.value = {
     today: fmt(data.today),
@@ -334,10 +352,10 @@ async function loadUserTokenCards(signal: AbortSignal) {
   const sum = (n: number) =>
     arr.slice(-n).reduce((a: number, b: { value?: number }) => a + (b.value ?? 0), 0)
   periodCards.value = {
-    today: formatNumber(sum(1) || 0),
-    week: formatNumber(sum(7) || 0),
-    month: formatNumber(sum(30) || 0),
-    total: formatNumber(arr.reduce((a: number, b: { value?: number }) => a + (b.value ?? 0), 0)),
+    today: formatAdminTrendNumber(sum(1) || 0),
+    week: formatAdminTrendNumber(sum(7) || 0),
+    month: formatAdminTrendNumber(sum(30) || 0),
+    total: formatAdminTrendNumber(arr.reduce((a: number, b: { value?: number }) => a + (b.value ?? 0), 0)),
   }
 }
 
@@ -347,108 +365,18 @@ async function renderChart(data: {
   const canvas = chartCanvasElement()
   if (!canvas) return
   const rawData = data?.data ?? []
-  if (rawData.length === 0) return
-
-  chartInstance?.destroy()
-  chartInstance = null
-
   const intlLocale = intlLocaleForUiCode(uiStore.language)
-  const labels = rawData.map((item) => {
-    const dateStr = item.date.includes(' ') ? item.date.replace(' ', 'T') : item.date + 'T00:00:00'
-    const date = new Date(dateStr)
-    if (item.date.includes(':') && item.date.includes(' ')) {
-      return date.toLocaleString(intlLocale, {
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        hour12: false,
-        timeZone: 'Asia/Shanghai',
-      })
-    }
-    return date.toLocaleDateString(intlLocale, {
-      month: 'short',
-      day: 'numeric',
-      timeZone: 'Asia/Shanghai',
-    })
+  const result = await renderAdminTrendLineChart({
+    canvas,
+    title: chartTitle.value,
+    rawData,
+    intlLocale,
+    inputLabel: t('admin.inputTokens'),
+    outputLabel: t('admin.outputTokens'),
+    existingInstance: chartInstance,
   })
-
-  const values = rawData.map((item) => item.value)
-  const maxVal = Math.max(...values, 0)
-  const minVal = Math.min(...values, 0)
-  const range = maxVal - minVal
-  const padding = range === 0 ? maxVal * 0.1 : range * 0.1
-  const yMin = Math.max(0, minVal - padding)
-  const yMax = maxVal + padding
-
-  const hasInputOutput =
-    rawData[0] && (rawData[0].input !== undefined || rawData[0].output !== undefined)
-
-  const datasets: ChartConfiguration<'line'>['data']['datasets'] = [
-    {
-      label: chartTitle.value,
-      data: values,
-      borderColor: '#667eea',
-      backgroundColor: 'rgba(102, 126, 234, 0.1)',
-      borderWidth: 2,
-      fill: true,
-      tension: 0.4,
-      pointRadius: 3,
-      pointHoverRadius: 5,
-    },
-  ]
-  if (hasInputOutput) {
-    datasets.push({
-      label: t('admin.inputTokens'),
-      data: rawData.map((item) => item.input ?? 0),
-      borderColor: '#10b981',
-      backgroundColor: 'rgba(16, 185, 129, 0.1)',
-      borderWidth: 2,
-      fill: false,
-      tension: 0.4,
-      pointRadius: 2,
-      pointHoverRadius: 4,
-    })
-    datasets.push({
-      label: t('admin.outputTokens'),
-      data: rawData.map((item) => item.output ?? 0),
-      borderColor: '#f59e0b',
-      backgroundColor: 'rgba(245, 158, 11, 0.1)',
-      borderWidth: 2,
-      fill: false,
-      tension: 0.4,
-      pointRadius: 2,
-      pointHoverRadius: 4,
-    })
-  }
-
-  const config: ChartConfiguration<'line'> = {
-    type: 'line',
-    data: { labels, datasets },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: hasInputOutput, position: 'top' },
-        tooltip: {
-          callbacks: {
-            label: (ctx: TooltipItem<'line'>) =>
-              `${ctx.dataset.label}: ${formatChartLabel(Number(ctx.raw))}`,
-          },
-        },
-      },
-      scales: {
-        y: {
-          beginAtZero: false,
-          min: yMin,
-          max: yMax,
-          ticks: { callback: (val: string | number) => formatChartLabel(Number(val)) },
-        },
-        x: { ticks: { maxRotation: 45, minRotation: 45 } },
-      },
-    },
-  }
-  const Chart = await loadChartJs()
-  chartInstance = new Chart(canvas, config)
+  chartInstance = result.instance
+  chartHasData.value = result.hasData
 }
 
 async function load() {
@@ -462,17 +390,20 @@ async function load() {
     if (props.type === 'org') {
       chartTitle.value = `${t('admin.trendOrgTokens')}: ${props.orgName ?? ''}`
       const data = await loadOrgChart(signal)
+      const resolvedOrgId = props.orgId ?? data?.organization_id
       chartLoading.value = false
       await nextTick()
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((r) => setTimeout(r, ADMIN_TREND_CHART_MOUNT_DELAY_MS))
       if (data) await renderChart({ data: data.data ?? [] })
-      await loadOrgTokenCards(signal)
+      if (resolvedOrgId != null) {
+        await loadOrgTokenCards(signal, resolvedOrgId)
+      }
     } else {
       chartTitle.value = `${t('admin.trendUserTokens')}: ${props.userName ?? ''}`
       const data = await loadUserChart(signal)
       chartLoading.value = false
       await nextTick()
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((r) => setTimeout(r, ADMIN_TREND_CHART_MOUNT_DELAY_MS))
       if (data) await renderChart({ data: data.data ?? [] })
       await loadUserTokenCards(signal)
     }
@@ -694,6 +625,7 @@ watch(
   () => props.visible,
   (v) => {
     if (v) {
+      period.value = props.initialTrendPeriod ?? 'week'
       if (props.type === 'org') {
         schoolDialogTab.value = props.initialSchoolTab ?? 'usage'
       }
@@ -997,7 +929,16 @@ onBeforeUnmount(() => {
       </el-icon>
     </div>
     <template v-else>
-      <div class="relative h-64 min-h-[220px] sm:min-h-[256px] w-full min-w-0">
+      <div
+        v-if="!chartHasData"
+        class="flex justify-center items-center h-64 text-gray-500 dark:text-gray-400"
+      >
+        {{ t('admin.trendChartNoData') }}
+      </div>
+      <div
+        v-else
+        class="relative h-64 min-h-[220px] sm:min-h-[256px] w-full min-w-0"
+      >
         <canvas
           ref="chartRef"
           class="block w-full h-full"
@@ -1077,21 +1018,7 @@ onBeforeUnmount(() => {
   font-weight: 500;
 }
 
-.admin-org-pill-btn-muted.el-button {
-  border-radius: 9999px;
-  padding-left: 0.875rem;
-  padding-right: 0.875rem;
-  font-weight: 500;
-}
-
 .admin-org-pill-btn-ghost.el-button {
-  border-radius: 9999px;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  font-weight: 500;
-}
-
-.admin-org-pill-btn-danger.el-button--danger {
   border-radius: 9999px;
   padding-left: 1rem;
   padding-right: 1rem;

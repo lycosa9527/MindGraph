@@ -267,6 +267,19 @@ ERRORS = {
             "qeydiyyatdan keçin və ya satışla əlaqə saxlayın."
         ),
     },
+    "registration_email_not_available_in_region_any": {
+        "zh": ("当前网络环境无法使用邮箱注册。中国大陆用户请使用手机号与邀请码注册，或联系销售获取访问权限。"),
+        "en": (
+            "Email registration is not available from your network location. "
+            "If you are in mainland China, register with your phone number "
+            "and invitation code, or contact sales for access."
+        ),
+        "az": (
+            "E-poçt qeydiyyatı bu şəbəkə məkanından mövcud deyil. "
+            "Çin materikindəsinizsə, telefon və dəvət kodu ilə "
+            "qeydiyyatdan keçin və ya satışla əlaqə saxlayın."
+        ),
+    },
     "registration_geoip_unavailable": {
         "zh": ("无法验证您的网络位置，暂时无法完成教育邮箱注册。请稍后再试或联系支持。"),
         "en": (
@@ -278,6 +291,17 @@ ERRORS = {
             "Məkanınız təsdiqlənmədi. Təhsil e-poçtu qeydiyyatı müvəqqəti "
             "olaraq əlçatan deyil. Daha sonra cəhd edin və ya dəstəklə "
             "əlaqə saxlayın."
+        ),
+    },
+    "registration_geoip_unavailable_any": {
+        "zh": ("无法验证您的网络位置，暂时无法完成邮箱注册。请稍后再试或联系支持。"),
+        "en": (
+            "Your location could not be verified. Email registration is "
+            "temporarily unavailable. Try again later or contact support."
+        ),
+        "az": (
+            "Məkanınız təsdiqlənmədi. E-poçt qeydiyyatı müvəqqəti olaraq "
+            "əlçatan deyil. Daha sonra cəhd edin və ya dəstəklə əlaqə saxlayın."
         ),
     },
     "registration_email_mainland_china_domain": {
@@ -294,6 +318,22 @@ ERRORS = {
             "Bu e-poçt domeni Çin materiki ilə əlaqəlidir. Telefon və dəvət "
             "kodu ilə qeydiyyatdan keçin və ya materikdən kənar məktəb "
             "e-poçtundan istifadə edin."
+        ),
+    },
+    "registration_email_mainland_china_domain_any": {
+        "zh": (
+            "该邮箱域名属于中国大陆常用或 .cn 域名，不能使用海外邮箱注册。"
+            "请改用手机号与邀请码注册，或使用非中国大陆邮箱。"
+        ),
+        "en": (
+            "This email domain is associated with mainland China. Use phone "
+            "number and invitation code to register, or a non–mainland China "
+            "email address."
+        ),
+        "az": (
+            "Bu e-poçt domeni Çin materiki ilə əlaqəlidir. Telefon və dəvət "
+            "kodu ilə qeydiyyatdan keçin və ya materikdən kənar e-poçt "
+            "ünvanından istifadə edin."
         ),
     },
     "email_login_mainland_china_domain": {
@@ -371,6 +411,11 @@ ERRORS = {
         "zh": "请确认您了解海外教育邮箱注册的相关条款。",
         "en": "You must acknowledge the overseas education email registration terms.",
         "az": "Xarici təhsil e-poçtu qeydiyyat şərtlərini təsdiqləməlisiniz.",
+    },
+    "register_overseas_acknowledgment_required_any": {
+        "zh": "请确认您了解海外邮箱注册的相关条款。",
+        "en": "You must acknowledge the overseas email registration terms.",
+        "az": "Xarici e-poçt qeydiyyat şərtlərini təsdiqləməlisiniz.",
     },
     "login_failed_phone_not_found": {
         "zh": "登录失败。手机号未找到或密码不正确。还有 {} 次尝试机会。",

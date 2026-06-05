@@ -1,5 +1,5 @@
 """
-Overseas education email registration (GeoIP not CN, no invitation).
+Overseas email registration (GeoIP not CN, no invitation; education email optional).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -39,6 +39,7 @@ from utils.auth import (
     get_client_ip,
     hash_password,
 )
+from utils.auth.overseas_registration_messages import overseas_registration_error
 from utils.auth.registration_gate import http_forbid_if_registration_disabled
 from utils.email_mainland_china import raise_if_mainland_china_email_for_overseas_registration
 from utils.email_validation import validate_email_for_api
@@ -63,13 +64,15 @@ async def register_overseas(
     lang: Language = Depends(get_language_dependency),
 ):
     """
-    Register with education email for users outside mainland China (GeoIP not CN).
+    Register with email for users outside mainland China (GeoIP not CN).
+
+    Academic email is required only when ``SWOT_ACADEMIC_EMAIL_REQUIRED`` is true.
     No invitation code; organization_id is NULL; Simplified Chinese UI is disabled.
     """
     http_forbid_if_registration_disabled(lang)
 
     if not request.outside_mainland_acknowledged:
-        error_msg = Messages.error("register_overseas_acknowledgment_required", lang)
+        error_msg = overseas_registration_error("register_overseas_acknowledgment_required", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
     registration_metrics.record_attempt()
@@ -104,7 +107,7 @@ async def register_overseas(
     if not allowed:
         duration = time.time() - start_time
         registration_metrics.record_failure("geoip_blocked", duration)
-        detail = Messages.error(geo_err, lang)
+        detail = overseas_registration_error(geo_err, lang)
         if geo_err == "registration_email_not_available_in_region":
             return json_forbidden_cn_geo(detail, http_request, stamp_cn)
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=detail)

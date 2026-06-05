@@ -38,9 +38,15 @@ const trendModalVisible = ref(false)
 const trendUser = ref<{ name: string; id?: number } | null>(null)
 
 function openTrendModal(row: Record<string, unknown>) {
+  const rawId = row.id
+  const userId = typeof rawId === 'number' ? rawId : Number(rawId)
+  if (!Number.isFinite(userId) || userId <= 0) {
+    notify.warning(t('admin.userTrendRequiresId'))
+    return
+  }
   trendUser.value = {
     name: String(row.name ?? row.phone ?? ''),
-    id: row.id as number | undefined,
+    id: userId,
   }
   trendModalVisible.value = true
 }
@@ -114,7 +120,7 @@ async function loadUsers() {
   try {
     await usersQuery.refetch()
   } catch {
-    notify.error('Failed to load users')
+    notify.error(t('admin.usersLoadError'))
   }
 }
 
@@ -238,6 +244,9 @@ onBeforeUnmount(() => {
       shadow="never"
       class="admin-users-card"
     >
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+        {{ t('admin.usersTokensAllTimeHint') }}
+      </p>
       <AdminUsersTable
         :users="users"
         :is-loading="isLoading"
@@ -266,6 +275,7 @@ onBeforeUnmount(() => {
       type="user"
       :user-name="trendUser?.name"
       :user-id="trendUser?.id"
+      initial-trend-period="total"
     />
 
     <AdminUserEditModal

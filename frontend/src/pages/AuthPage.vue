@@ -103,7 +103,6 @@ async function hydrateAuthModeAndResolveQuickReg(): Promise<void> {
 
 onMounted(() => {
   document.documentElement.classList.remove('dark')
-  uiStore.syncGuestLocaleFromBrowser()
   void hydrateAuthModeAndResolveQuickReg()
 })
 

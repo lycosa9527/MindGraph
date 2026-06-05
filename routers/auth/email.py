@@ -42,6 +42,7 @@ from services.redis.redis_email_storage import (
 )
 from config.settings import config
 from utils.auth import AUTH_MODE, EMAIL_LOGIN_CN_BLOCK_ENABLED, get_client_ip
+from utils.auth.overseas_registration_messages import overseas_registration_error
 from utils.auth.registration_gate import http_forbid_if_registration_disabled
 from utils.email_mainland_china import (
     raise_if_mainland_china_email_for_email_login,
@@ -99,7 +100,7 @@ async def send_email_code(
             request=http_request,
         )
         if not geo_allowed:
-            detail = Messages.error(geo_err, lang)
+            detail = overseas_registration_error(geo_err, lang)
             if geo_err == "registration_email_not_available_in_region":
                 return json_forbidden_cn_geo(detail, http_request, stamp_cn)
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=detail)
@@ -257,7 +258,9 @@ async def verify_email_code(
         http_forbid_if_registration_disabled(lang)
 
     email_validated = validate_email_for_api(request.email, lang)
-    if request.purpose == "login":
+    if request.purpose == "register":
+        raise_if_mainland_china_email_for_overseas_registration(email_validated, lang)
+    elif request.purpose == "login":
         raise_if_mainland_china_email_for_email_login(email_validated, lang)
     require_academic_email_if_configured(email_validated, request.purpose, lang)
     code_validated = validate_email_code_digits(request.code, lang)
@@ -334,7 +337,9 @@ async def verify_and_consume_email_code(email: str, code: str, purpose: str, lan
     (same pattern as register_with_sms + _verify_and_consume_sms_code).
     """
     email_validated = validate_email_for_api(email, lang)
-    if purpose == "login":
+    if purpose == "register":
+        raise_if_mainland_china_email_for_overseas_registration(email_validated, lang)
+    elif purpose == "login":
         raise_if_mainland_china_email_for_email_login(email_validated, lang)
     require_academic_email_if_configured(email_validated, purpose, lang)
     validate_email_code_digits(code, lang)

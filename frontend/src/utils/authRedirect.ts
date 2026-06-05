@@ -1,5 +1,10 @@
 import type { LocationQueryValue } from 'vue-router'
 
+/** Guest sign-in routes where UI locale should follow the browser, not stored prefs. */
+export function isGuestAuthPath(pathname: string): boolean {
+  return pathname === '/auth' || pathname === '/login'
+}
+
 /**
  * Post-login redirect from `/auth?redirect=…` (and quick-reg success).
  * Only same-origin path-style targets are allowed to avoid open redirects.

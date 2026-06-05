@@ -86,9 +86,9 @@ class RegisterRequest(BaseModel):
 
 
 class RegisterOverseasRequest(BaseModel):
-    """Education email registration outside mainland China (GeoIP not CN)."""
+    """Email registration outside mainland China (GeoIP not CN)."""
 
-    email: str = Field(..., max_length=254, description="Education email address")
+    email: str = Field(..., max_length=254, description="Email address for overseas registration")
     password: str = Field(..., min_length=8, description="Password (min 8 characters)")
     name: str = Field(
         ...,

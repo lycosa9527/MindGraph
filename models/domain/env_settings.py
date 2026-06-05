@@ -333,6 +333,15 @@ class AuthSettings(BaseModel):
             "Users must use existing SSO, passkeys, or admin-created accounts."
         ),
     )
+    SWOT_ACADEMIC_EMAIL_REQUIRED: bool = Field(
+        default=False,
+        description=(
+            "When true, overseas registration (purpose=register) requires a SWOT academic "
+            "email and blocks Kikobeats free domains. When false (default), any valid "
+            "non-mainland-China email is allowed (e.g. gmail.com). GeoIP and mainland "
+            "China domain rules are unchanged."
+        ),
+    )
 
     @field_validator("ADMIN_USER_IDS")
     @classmethod

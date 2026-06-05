@@ -433,6 +433,18 @@
   color: var(--swiss-subtle);
 }
 
+.swiss-stat-card__stat-item--clickable {
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.swiss-stat-card__stat-item--clickable:hover {
+  border-color: var(--stat-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--stat-accent) 25%, transparent);
+}
+
 .swiss-stat-card-group__title {
   margin: 0 0 0.6rem;
   padding-bottom: 0.4rem;

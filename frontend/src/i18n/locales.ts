@@ -136,18 +136,27 @@ export function isRtlUiLocale(code: LocaleCode): boolean {
 }
 
 /**
- * Map navigator.language to a supported UI locale (guest / login modal).
- * Matches enabled entries in registry order; falls back to DEFAULT_UI_LOCALE.
+ * Map browser language preferences to a supported UI locale (guest / login modal).
+ * Walks `navigator.languages` in order, then `navigator.language`; falls back to DEFAULT_UI_LOCALE.
  */
 export function detectBrowserLocale(): LocaleCode {
   if (typeof navigator === 'undefined') return DEFAULT_UI_LOCALE
-  const nav = navigator.language.toLowerCase()
-  for (const entry of SUPPORTED_UI_LOCALES) {
-    if (!entry.enabled) continue
-    const prefixes = entry.browserPrefixes ?? [entry.code]
-    for (const p of prefixes) {
-      if (nav.startsWith(p.toLowerCase())) {
-        return entry.code
+  const rawList =
+    navigator.languages && navigator.languages.length > 0
+      ? navigator.languages
+      : [navigator.language]
+  for (const raw of rawList) {
+    if (!raw) {
+      continue
+    }
+    const nav = raw.toLowerCase()
+    for (const entry of SUPPORTED_UI_LOCALES) {
+      if (!entry.enabled) continue
+      const prefixes = entry.browserPrefixes ?? [entry.code]
+      for (const p of prefixes) {
+        if (nav.startsWith(p.toLowerCase())) {
+          return entry.code
+        }
       }
     }
   }

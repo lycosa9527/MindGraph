@@ -81,6 +81,8 @@ export const useAuthStore = defineStore('auth', () => {
   const mode = ref<AuthMode>('standard')
   /** From GET /api/auth/mode; signup UI gated when false. Defaults true until the server responds. */
   const registrationEnabled = ref(true)
+  /** From GET /api/auth/mode; overseas register requires education email when true. Defaults false. */
+  const overseasEducationEmailRequired = ref(false)
   const loading = ref(false)
   const sessionMonitorInterval = ref<number | null>(null)
   const showSessionExpiredModal = ref(false)
@@ -698,10 +700,15 @@ export const useAuthStore = defineStore('auth', () => {
       const data = (await response.json()) as {
         mode?: string
         registration_enabled?: boolean
+        overseas_education_email_required?: boolean
       }
       const detectedMode = (data.mode || 'standard') as AuthMode
       registrationEnabled.value =
         typeof data.registration_enabled === 'boolean' ? data.registration_enabled : true
+      overseasEducationEmailRequired.value =
+        typeof data.overseas_education_email_required === 'boolean'
+          ? data.overseas_education_email_required
+          : false
       setMode(detectedMode)
       return detectedMode
     } catch {
@@ -992,6 +999,7 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     mode,
     registrationEnabled,
+    overseasEducationEmailRequired,
     loading,
     showSessionExpiredModal,
     sessionExpiredMessage,

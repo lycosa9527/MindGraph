@@ -12,31 +12,17 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 from pathlib import Path
-from typing import FrozenSet
 
 from fastapi import HTTPException, status
 
 from models.domain.messages import Language, Messages
+from utils.auth.overseas_registration_messages import overseas_registration_message_key
+from utils.auth.swot_config import is_swot_academic_required_for_purpose
 from utils.email_mainland_china import is_mainland_china_email_domain
 
 
 logger = logging.getLogger(__name__)
-
-# When true, reject addresses that Swot does not classify as academic (for selected purposes).
-_SWOT_REQUIRED = os.getenv("SWOT_ACADEMIC_EMAIL_REQUIRED", "true").strip().lower() == "true"
-# Comma-separated purposes (e.g. register,change_email). Default: register only.
-_DEFAULT_PURPOSES = "register"
-_SWOT_PURPOSES_RAW = os.getenv("SWOT_ACADEMIC_EMAIL_PURPOSES", _DEFAULT_PURPOSES).strip()
-
-
-def _parse_purpose_set(raw: str) -> FrozenSet[str]:
-    parts = [p.strip().lower() for p in raw.split(",") if p.strip()]
-    return frozenset(parts) if parts else frozenset({"register"})
-
-
-_SWOT_ENFORCE_PURPOSES: FrozenSet[str] = _parse_purpose_set(_SWOT_PURPOSES_RAW)
 
 
 def _repo_root() -> Path:
@@ -96,6 +82,11 @@ def passes_combined_academic_policy(email: str) -> bool:
         return False
 
 
+def is_academic_email_required_for_purpose(purpose: str) -> bool:
+    """True when SWOT academic enforcement is enabled for the given purpose."""
+    return is_swot_academic_required_for_purpose(purpose)
+
+
 def is_academic_email(email: str) -> bool:
     """
     Same predicate as enforcement: Kikobeats block, mainland China domain block, then Swot.
@@ -110,9 +101,7 @@ def require_academic_email_if_configured(email: str, purpose: str, lang: Languag
     If SWOT enforcement is enabled and `purpose` is in the configured set,
     raise HTTP 400 when the email does not pass the combined academic policy.
     """
-    if not _SWOT_REQUIRED:
-        return
-    if purpose.lower() not in _SWOT_ENFORCE_PURPOSES:
+    if not is_swot_academic_required_for_purpose(purpose):
         return
 
     if _host_in_kikobeats_free(_email_host(email)):
@@ -122,9 +111,10 @@ def require_academic_email_if_configured(email: str, purpose: str, lang: Languag
         ) from None
 
     if is_mainland_china_email_domain(_email_host(email)):
+        msg_key = overseas_registration_message_key("registration_email_mainland_china_domain")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=Messages.error("registration_email_mainland_china_domain", lang),
+            detail=Messages.error(msg_key, lang),
         ) from None
 
     try:

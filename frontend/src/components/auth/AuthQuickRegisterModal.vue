@@ -139,7 +139,7 @@ async function submitQuickRegister() {
         />
 
         <div
-          class="relative min-h-full flex items-center justify-center px-4 pt-4"
+          class="relative min-h-full flex items-start sm:items-center justify-center px-4 pt-4"
           :class="
             lightBackdrop
               ? 'pb-[max(6.5rem,env(safe-area-inset-bottom,0px))] sm:pb-20 md:p-4'
@@ -270,10 +270,6 @@ async function submitQuickRegister() {
 </template>
 
 <style scoped>
-.login-modal-overlay {
-  -webkit-overflow-scrolling: touch;
-}
-
 .modal-enter-active,
 .modal-leave-active {
   transition: opacity 0.2s ease;

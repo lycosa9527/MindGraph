@@ -116,7 +116,6 @@ export default {
   'auth.resetPassword': 'Şifrənin sıfırlanması',
   'auth.sessionExpired': 'Sessiyanın vaxtı bitdi. Zəhmət olmasa yenidən daxil olun.',
   'auth.smsLogin': 'SMS Giriş',
-  'auth.sesLogin': 'E-poçt girişi',
   'auth.username': 'İstifadəçi adı',
   'auth.waitCaptchaLoad': 'Captcha yüklənənə qədər gözləyin',
   'auth.quickRegPageTitle': 'Tez qeydiyyat',

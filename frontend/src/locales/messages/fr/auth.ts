@@ -117,7 +117,6 @@ export default {
   'auth.resetPassword': 'Réinitialiser le mot de passe',
   'auth.sessionExpired': 'Session expirée. Veuillez vous reconnecter.',
   'auth.smsLogin': 'Connexion par SMS',
-  'auth.sesLogin': 'Connexion par e-mail',
   'auth.username': 'Nom d’utilisateur',
   'auth.waitCaptchaLoad': 'Veuillez patienter pendant le chargement du captcha',
   'auth.quickRegPageTitle': 'Inscription rapide',

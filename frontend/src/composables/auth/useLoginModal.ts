@@ -121,7 +121,7 @@ export function useLoginModal(
 
   const pageHeaderTitle = computed(() => {
     if (currentView.value === 'sms-login') {
-      return smsLoginUsesEmail.value ? t('auth.sesLogin') : t('auth.smsLogin')
+      return t('auth.smsLogin')
     }
     return t('auth.resetPassword')
   })
@@ -141,21 +141,54 @@ export function useLoginModal(
     return trimmed.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
   }
 
+  const overseasEducationEmailRequired = computed(
+    () => authStore.overseasEducationEmailRequired
+  )
+
+  const hybridRegisterEmailTabLabel = computed(() =>
+    overseasEducationEmailRequired.value
+      ? t('auth.modal.hybridRegisterEmailTab')
+      : t('auth.modal.hybridRegisterEmailTabAny')
+  )
+
+  const registrationEmailLabel = computed(() =>
+    overseasEducationEmailRequired.value
+      ? t('auth.modal.registrationEmailLabel')
+      : t('auth.modal.registrationEmailLabelAny')
+  )
+
+  const registrationEmailHint = computed(() => {
+    const key = overseasEducationEmailRequired.value
+      ? 'auth.modal.registrationEmailHint'
+      : 'auth.modal.registrationEmailHintAny'
+    return t(key).trim()
+  })
+
+  const registerEmailInvalidMessage = computed(() =>
+    overseasEducationEmailRequired.value
+      ? t('auth.modal.educationEmailInvalid')
+      : t('auth.modal.emailInvalid')
+  )
+
   /**
-   * Overseas email registration: education-only wording for most browsers; full SC copy when the
-   * browser language list indicates Simplified Chinese (see `isBrowserLanguageSimplifiedChinese`).
+   * Overseas email registration: SC-browser copy includes no-Simplified-Chinese notice when available.
    */
   const overseasAcknowledgeCheckboxLabel = computed(() => {
     if (!showOverseasEmailFlow.value) {
       return ''
     }
     if (isBrowserLanguageSimplifiedChinese()) {
-      const full = translateForUiLocale('auth.modal.acknowledgeOverseasScBrowser', 'zh')
+      const scKey = overseasEducationEmailRequired.value
+        ? 'auth.modal.acknowledgeOverseasScBrowser'
+        : 'auth.modal.acknowledgeOverseasAnyScBrowser'
+      const full = translateForUiLocale(scKey, 'zh')
       if (typeof full === 'string' && full.trim() !== '') {
         return full
       }
     }
-    return t('auth.modal.acknowledgeOverseas')
+    return overseasEducationEmailRequired.value
+      ? t('auth.modal.acknowledgeOverseas')
+      : t('auth.modal.acknowledgeOverseasAny')
   })
 
   function closeModal() {
@@ -267,7 +300,7 @@ export function useLoginModal(
     () => props.visible,
     (newValue) => {
       if (newValue) {
-        if (!authStore.isAuthenticated) {
+        if (!authStore.isAuthenticated && !props.persistent) {
           uiStore.syncGuestLocaleFromBrowser()
         }
         void refreshCaptcha()
@@ -379,11 +412,11 @@ export function useLoginModal(
   async function sendRegisterEmailCode() {
     const email = registerForm.value.registrationEmail.trim()
     if (!email || !showOverseasEmailFlow.value) {
-      notify.warning(t('auth.modal.educationEmailInvalid'))
+      notify.warning(registerEmailInvalidMessage.value)
       return
     }
     if (!SIMPLE_EMAIL_RE.test(email)) {
-      notify.warning(t('auth.modal.educationEmailInvalid'))
+      notify.warning(registerEmailInvalidMessage.value)
       return
     }
     if (!registerForm.value.captcha || registerForm.value.captcha.length !== 4) {
@@ -550,7 +583,7 @@ export function useLoginModal(
     const form = type === 'login' ? smsLoginForm.value : forgotForm.value
 
     if (!form.phone || !form.phone.trim()) {
-      notify.warning(t('auth.modal.phone11Digits'))
+      notify.warning(t('auth.modal.enterPhoneOrEmail'))
       return
     }
 
@@ -569,7 +602,7 @@ export function useLoginModal(
 
     if (useEmail) {
       if (!SIMPLE_EMAIL_RE.test(trimmed)) {
-        notify.warning(t('auth.modal.educationEmailInvalid'))
+        notify.warning(t('auth.modal.emailInvalid'))
         return
       }
     } else if (type === 'login' && trimmed.length !== 11) {
@@ -854,6 +887,10 @@ export function useLoginModal(
     smsLoginUsesEmail,
     maskIdentifierForCodeSent,
     overseasAcknowledgeCheckboxLabel,
+    overseasEducationEmailRequired,
+    hybridRegisterEmailTabLabel,
+    registrationEmailLabel,
+    registrationEmailHint,
     isLoading,
     showPassword,
     showConfirmPassword,

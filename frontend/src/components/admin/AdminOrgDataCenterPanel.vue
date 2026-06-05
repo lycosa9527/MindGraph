@@ -2,13 +2,20 @@
 /**
  * Org-scoped data center stats (school admin / superadmin org preview).
  */
-import { computed, toRef } from 'vue'
+import { computed, ref, toRef } from 'vue'
 
+import AdminOrgTokenTrendDialog from '@/components/admin/AdminOrgTokenTrendDialog.vue'
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
 import AdminTokenUsageByServicePanel from '@/components/admin/AdminTokenUsageByServicePanel.vue'
+import AdminTrendChartModal from '@/components/admin/AdminTrendChartModal.vue'
 import SchoolDashboardQuotaCard from '@/components/school/SchoolDashboardQuotaCard.vue'
 import { Connection, DocumentCopy, FolderOpened, Key, Loading, Stamp, User } from '@element-plus/icons-vue'
 
+import type {
+  TokenTrendPeriod,
+  TokenTrendService,
+} from '@/composables/admin/useOrgTokenTrendModal'
+import { copySchoolInvitationPayload } from '@/utils/admin/copySchoolInvitationCode'
 import { useSchoolDashboardStats } from '@/composables/admin/useSchoolDashboardStats'
 import { useSchoolDashboardQuotas } from '@/composables/school/useSchoolDashboardQuotas'
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
@@ -44,6 +51,11 @@ const {
   managerRemaining,
 } = useSchoolDashboardQuotas(computed(() => stats.value.quotas))
 
+const orgTrendDialogRef = ref<InstanceType<typeof AdminOrgTokenTrendDialog> | null>(null)
+const userTrendModalVisible = ref(false)
+const userTrendUserId = ref<number>()
+const userTrendUserName = ref<string>()
+
 const invitationCodeDisplay = computed(
   () => (stats.value.organization?.invitation_code || '').trim() || '—'
 )
@@ -54,20 +66,40 @@ function formatNumber(num: number): string {
   return num.toLocaleString()
 }
 
+function openOrgTrend(
+  period: TokenTrendPeriod = 'week',
+  service: TokenTrendService = null
+): void {
+  orgTrendDialogRef.value?.openTrend({
+    orgId: props.orgId,
+    orgName: stats.value.organization?.name ?? '',
+    period,
+    service,
+    useSchoolStatsEndpoint: false,
+  })
+}
+
+function openUserTrend(userName: string, userId: number | undefined): void {
+  if (userId == null || !Number.isFinite(userId) || userId <= 0) {
+    notify.warning(t('admin.userTrendRequiresId'))
+    return
+  }
+  userTrendUserId.value = userId
+  userTrendUserName.value = userName
+  userTrendModalVisible.value = true
+}
+
 async function copyInvitationCode(event: MouseEvent): Promise<void> {
   event.stopPropagation()
-  const code = (stats.value.organization?.invitation_code || '').trim()
-  if (!code) return
   const text = t('admin.schoolInviteCopyPayload', {
     siteUrl: publicSiteUrl.value,
-    code,
+    code: (stats.value.organization?.invitation_code || '').trim(),
   })
-  try {
-    await navigator.clipboard.writeText(text)
-    notify.success(t('notification.copied'))
-  } catch {
-    notify.error(t('notification.copyFailed'))
-  }
+  await copySchoolInvitationPayload(
+    text,
+    () => notify.success(t('notification.copied')),
+    () => notify.error(t('notification.copyFailed'))
+  )
 }
 </script>
 
@@ -157,16 +189,23 @@ async function copyInvitationCode(event: MouseEvent): Promise<void> {
       :class="{ 'mt-6': showOperations }"
     >
       <AdminSwissKpiCard
-        :title="t('admin.tokens')"
+        :title="`${t('admin.tokens')} (${t('admin.pastWeek')})`"
         :value="formatNumber(stats.totalTokens)"
         :icon="Connection"
         theme="storage"
+        clickable
+        @click="openOrgTrend('week')"
       />
     </div>
     <AdminTokenUsageByServicePanel
       v-if="showUsage"
       class="mt-6"
       :organization-id="orgId"
+      clickable
+      show-overall-summary
+      @service-click="openOrgTrend('week', $event)"
+      @overall-click="openOrgTrend('week')"
+      @period-click="(service, period) => openOrgTrend(period, service)"
     />
 
     <el-card
@@ -175,17 +214,52 @@ async function copyInvitationCode(event: MouseEvent): Promise<void> {
       class="mt-6"
     >
       <template #header>
-        <span class="font-medium">{{ t('admin.topUsersByTokens') }}</span>
+        <div>
+          <span class="font-medium">{{ t('admin.topUsersByTokens') }}</span>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 mb-0">
+            {{ t('admin.rankingBeijingTodayHint') }}
+          </p>
+        </div>
       </template>
-      <el-table :data="topUsers" stripe size="small">
-        <el-table-column prop="name" :label="t('admin.name')" />
+      <el-table
+        :data="topUsers"
+        stripe
+        size="small"
+        :empty-text="t('admin.noData')"
+      >
+        <el-table-column prop="name" :label="t('admin.name')">
+          <template #default="{ row }">
+            <span
+              class="cursor-pointer hover:text-primary-500 hover:underline"
+              @click="openUserTrend(row.name, row.id)"
+            >
+              {{ row.name }}
+            </span>
+          </template>
+        </el-table-column>
         <el-table-column prop="phone" :label="t('admin.phone')" width="140" />
         <el-table-column prop="total_tokens" :label="t('admin.tokensUsed')" width="120">
           <template #default="{ row }">
-            {{ formatNumber(row.total_tokens) }}
+            <span
+              class="cursor-pointer hover:text-primary-500"
+              @click="openUserTrend(row.name, row.id)"
+            >
+              {{ formatNumber(row.total_tokens) }}
+            </span>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
   </template>
+
+  <AdminOrgTokenTrendDialog ref="orgTrendDialogRef" />
+
+  <AdminTrendChartModal
+    v-if="userTrendUserId != null"
+    v-model:visible="userTrendModalVisible"
+    type="user"
+    :user-id="userTrendUserId"
+    :user-name="userTrendUserName"
+    initial-trend-period="today"
+  />
 </template>

@@ -114,7 +114,6 @@ export default {
   'auth.resetPassword': 'Herstel wagwoord',
   'auth.sessionExpired': 'Sessie het verval. Teken asseblief weer aan.',
   'auth.smsLogin': 'SMS-aanmelding',
-  'auth.sesLogin': 'E-pos aanmelding',
   'auth.username': 'Gebruikersnaam',
   'auth.waitCaptchaLoad': 'Wag asseblief vir die captcha om te laai',
   'auth.quickRegPageTitle': 'Vinnige registrasie',

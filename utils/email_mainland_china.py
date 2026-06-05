@@ -11,6 +11,7 @@ from __future__ import annotations
 from fastapi import HTTPException, status
 
 from models.domain.messages import Language, Messages
+from utils.auth.overseas_registration_messages import overseas_registration_message_key
 
 
 # Consumer / campus mail hosts commonly used in mainland China (not exhaustive).
@@ -67,8 +68,9 @@ def _raise_if_mainland_china_email(email: str, lang: Language, message_key: str)
 
 
 def raise_if_mainland_china_email_for_overseas_registration(email: str, lang: Language) -> None:
-    """Reject overseas education-email registration when the domain is mainland China."""
-    _raise_if_mainland_china_email(email, lang, "registration_email_mainland_china_domain")
+    """Reject overseas email registration when the domain is mainland China."""
+    msg_key = overseas_registration_message_key("registration_email_mainland_china_domain")
+    _raise_if_mainland_china_email(email, lang, msg_key)
 
 
 def raise_if_mainland_china_email_for_email_login(email: str, lang: Language) -> None:

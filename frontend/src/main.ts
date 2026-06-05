@@ -14,9 +14,11 @@ import { useAuthStore } from '@/stores/auth'
 import App from './App.vue'
 import './fonts/eagerFonts'
 import { htmlLangForLocale, i18n, loadLocaleMessages, setI18nLocale } from './i18n'
+import type { LocaleCode } from './i18n/locales'
 import { isUiLocale } from './i18n/locales'
 import router from './router'
 import { useUIStore } from './stores/ui'
+import { isGuestAuthPath } from './utils/authRedirect'
 // Styles
 import './styles/index.css'
 
@@ -29,10 +31,15 @@ async function bootstrap(): Promise<void> {
   const authStore = useAuthStore()
   const uiStore = useUIStore()
 
-  const bootstrapLang =
-    authStore.user?.uiLanguage && isUiLocale(authStore.user.uiLanguage)
-      ? authStore.user.uiLanguage
-      : uiStore.language
+  let bootstrapLang: LocaleCode
+  if (authStore.user?.uiLanguage && isUiLocale(authStore.user.uiLanguage)) {
+    bootstrapLang = authStore.user.uiLanguage
+  } else if (typeof window !== 'undefined' && isGuestAuthPath(window.location.pathname)) {
+    uiStore.syncGuestLocaleFromBrowser()
+    bootstrapLang = uiStore.language
+  } else {
+    bootstrapLang = uiStore.language
+  }
 
   await loadLocaleMessages(bootstrapLang)
   setI18nLocale(bootstrapLang)

@@ -180,7 +180,7 @@ function handleBackdropClick(event: MouseEvent) {
     <Transition name="modal">
       <div
         v-if="isVisible"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 z-50 overflow-y-auto overscroll-y-contain auth-modal-overlay flex items-start sm:items-center justify-center p-4"
         @click="handleBackdropClick"
       >
         <!-- Backdrop -->
@@ -333,7 +333,7 @@ function handleBackdropClick(event: MouseEvent) {
                 >
                   {{ t('auth.captcha') }}
                 </label>
-                <div class="flex gap-3 items-center">
+                <div class="captcha-row">
                   <input
                     id="change-password-captcha"
                     v-model="formData.captcha"
@@ -344,7 +344,7 @@ function handleBackdropClick(event: MouseEvent) {
                     autocomplete="off"
                     autocapitalize="off"
                     spellcheck="false"
-                    class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                    class="captcha-row__input px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                   />
                   <img
                     v-if="captchaImage && !captchaLoading"
@@ -410,36 +410,6 @@ function handleBackdropClick(event: MouseEvent) {
 .modal-enter-from > div:last-child,
 .modal-leave-to > div:last-child {
   transform: scale(0.95);
-}
-
-.captcha-image {
-  height: 48px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
-  flex-shrink: 0;
-}
-
-.captcha-image:hover {
-  opacity: 0.8;
-}
-
-.captcha-placeholder {
-  height: 48px;
-  width: 120px;
-  border-radius: 8px;
-  cursor: pointer;
-  background: #f5f5f4;
-  border: 1px solid #e7e5e4;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: opacity 0.2s ease;
-}
-
-.captcha-placeholder:hover {
-  opacity: 0.8;
 }
 
 /* Close button positioning and styling */

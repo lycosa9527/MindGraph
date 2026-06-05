@@ -61,6 +61,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   serviceClick: [service: 'mindgraph' | 'mindmate']
   overallClick: []
+  periodClick: [service: 'mindgraph' | 'mindmate' | null, period: 'today' | 'week' | 'month' | 'total']
 }>()
 
 const { t } = useLanguage()
@@ -97,8 +98,8 @@ const displayStats = computed(() =>
 
 const servicePeriods = [
   { key: 'today' as const, label: () => t('admin.today') },
-  { key: 'week' as const, label: () => t('admin.thisWeek') },
-  { key: 'month' as const, label: () => t('admin.thisMonth') },
+  { key: 'week' as const, label: () => t('admin.pastWeek') },
+  { key: 'month' as const, label: () => t('admin.pastMonth') },
   { key: 'total' as const, label: () => t('admin.allTime') },
 ]
 
@@ -119,14 +120,30 @@ function formatNumber(num: number): string {
   return num.toLocaleString()
 }
 
-function statsEndpoint(): string {
-  if (props.organizationId != null) {
-    if (props.useSchoolStatsEndpoint) {
-      return `/api/auth/admin/stats/school/token-stats?organization_id=${props.organizationId}`
-    }
-    return `/api/auth/admin/token-stats?organization_id=${props.organizationId}`
+function onPeriodClick(
+  service: 'mindgraph' | 'mindmate' | null,
+  period: 'today' | 'week' | 'month' | 'total',
+  event: MouseEvent
+): void {
+  if (!props.clickable) {
+    return
   }
-  return '/api/auth/admin/token-stats'
+  event.stopPropagation()
+  emit('periodClick', service, period)
+}
+
+function onServiceCardClick(service: 'mindgraph' | 'mindmate'): void {
+  if (!props.clickable) {
+    return
+  }
+  emit('serviceClick', service)
+}
+
+function onOverallCardClick(): void {
+  if (!props.clickable) {
+    return
+  }
+  emit('overallClick')
 }
 
 function serviceStats(service: 'mindgraph' | 'mindmate', period: keyof ServiceStats): TokenPeriodStats {
@@ -167,14 +184,6 @@ onMounted(() => {
 })
 
 watch(
-  () => props.stats,
-  () => {
-    /* parent-provided stats bypass internal query */
-  },
-  { immediate: true }
-)
-
-watch(
   () => [props.organizationId, props.useSchoolStatsEndpoint] as const,
   () => {
     if (usesExternalStats.value) {
@@ -200,12 +209,25 @@ watch(
       <p class="mt-4 text-gray-500">{{ t('admin.loadingTokenStats') }}</p>
     </div>
 
+    <template v-else-if="!usesExternalStats && activeQuery.isError.value">
+      <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+        <p>{{ t('admin.tokenStatsLoadError') }}</p>
+        <el-button
+          class="mt-4"
+          size="small"
+          @click="loadTokenStats()"
+        >
+          {{ t('common.refresh') }}
+        </el-button>
+      </div>
+    </template>
+
     <template v-else-if="displayStats">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <AdminSwissServiceCard
           theme="mindgraph"
           :clickable="clickable"
-          @click="emit('serviceClick', 'mindgraph')"
+          @click="onServiceCardClick('mindgraph')"
         >
           <template #header>
             <div class="flex items-center gap-3">
@@ -215,7 +237,7 @@ watch(
                 </el-icon>
               </div>
               <div>
-                <h3 class="swiss-stat-card__service-title">MindGraph</h3>
+                <h3 class="swiss-stat-card__service-title">{{ t('admin.serviceMindGraph') }}</h3>
                 <p class="text-xs text-[var(--swiss-muted)]">{{ t('admin.diagramGeneration') }}</p>
               </div>
             </div>
@@ -225,6 +247,8 @@ watch(
               v-for="period in servicePeriods"
               :key="period.key"
               class="swiss-stat-card__stat-item"
+              :class="{ 'swiss-stat-card__stat-item--clickable': clickable }"
+              @click="onPeriodClick('mindgraph', period.key, $event)"
             >
               <p class="swiss-stat-card__stat-item-k">{{ period.label() }}</p>
               <p class="swiss-stat-card__stat-item-v">
@@ -255,7 +279,7 @@ watch(
         <AdminSwissServiceCard
           theme="mindmate"
           :clickable="clickable"
-          @click="emit('serviceClick', 'mindmate')"
+          @click="onServiceCardClick('mindmate')"
         >
           <template #header>
             <div class="flex items-center gap-3">
@@ -265,7 +289,7 @@ watch(
                 </el-icon>
               </div>
               <div>
-                <h3 class="swiss-stat-card__service-title">MindMate</h3>
+                <h3 class="swiss-stat-card__service-title">{{ t('admin.serviceMindMate') }}</h3>
                 <p class="text-xs text-[var(--swiss-muted)]">{{ t('admin.aiAssistant') }}</p>
               </div>
             </div>
@@ -275,6 +299,8 @@ watch(
               v-for="period in servicePeriods"
               :key="period.key"
               class="swiss-stat-card__stat-item"
+              :class="{ 'swiss-stat-card__stat-item--clickable': clickable }"
+              @click="onPeriodClick('mindmate', period.key, $event)"
             >
               <p class="swiss-stat-card__stat-item-k">{{ period.label() }}</p>
               <p class="swiss-stat-card__stat-item-v">
@@ -308,7 +334,7 @@ watch(
         theme="platform"
         class="mb-2"
         :clickable="clickable"
-        @click="emit('overallClick')"
+        @click="onOverallCardClick"
       >
         <template #header>
           <div class="flex items-center justify-between gap-2 w-full">
@@ -328,6 +354,8 @@ watch(
             v-for="period in overallPeriods"
             :key="period.key"
             class="swiss-stat-card__stat-item text-center"
+            :class="{ 'swiss-stat-card__stat-item--clickable': clickable }"
+            @click="onPeriodClick(null, period.key, $event)"
           >
             <p class="swiss-stat-card__stat-item-k">{{ period.label() }}</p>
             <p class="swiss-stat-card__stat-item-v">

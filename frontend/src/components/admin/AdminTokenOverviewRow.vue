@@ -38,6 +38,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   overallClick: []
+  periodClick: [period: 'today' | 'week' | 'month' | 'total']
   refresh: []
 }>()
 
@@ -70,6 +71,14 @@ function formatNumber(num: number): string {
     return `${(num / 1000).toFixed(1)}K`
   }
   return num.toLocaleString()
+}
+
+function onPeriodClick(period: 'today' | 'week' | 'month' | 'total', event: MouseEvent): void {
+  if (!props.clickable) {
+    return
+  }
+  event.stopPropagation()
+  emit('periodClick', period)
 }
 
 function openDingtalkApiKeysDialog(): void {
@@ -134,6 +143,8 @@ function onDingtalkCardKeydown(e: KeyboardEvent): void {
           v-for="period in overallPeriods"
           :key="period.key"
           class="swiss-stat-card__stat-item text-center"
+          :class="{ 'swiss-stat-card__stat-item--clickable': clickable }"
+          @click="onPeriodClick(period.key, $event)"
         >
           <p class="swiss-stat-card__stat-item-k">{{ period.label() }}</p>
           <p class="swiss-stat-card__stat-item-v">

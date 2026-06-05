@@ -3,7 +3,7 @@
  * School Dashboard - Org-scoped dashboard for managers (principals)
  * Admins can use dropdown to preview any school's dashboard
  */
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import {
   Connection,
@@ -16,34 +16,31 @@ import {
   User,
 } from '@element-plus/icons-vue'
 
-import type { Chart as ChartInstance } from 'chart.js'
-
+import AdminOrgTokenTrendDialog from '@/components/admin/AdminOrgTokenTrendDialog.vue'
+import AdminTrendChartModal from '@/components/admin/AdminTrendChartModal.vue'
 import SchoolDashboardOrgPicker from '@/components/school/SchoolDashboardOrgPicker.vue'
 import SchoolDashboardQuotaCard from '@/components/school/SchoolDashboardQuotaCard.vue'
 import SchoolDashboardUsersTab from '@/components/school/SchoolDashboardUsersTab.vue'
 import SchoolAddMemberDialog from '@/components/school/SchoolAddMemberDialog.vue'
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
-import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
 import AdminTokenUsageByServicePanel from '@/components/admin/AdminTokenUsageByServicePanel.vue'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
-import { queryErrorMessage } from '@/composables/admin/useQueryErrorNotification'
+import type {
+  TokenTrendPeriod,
+  TokenTrendService,
+} from '@/composables/admin/useOrgTokenTrendModal'
+import { copySchoolInvitationPayload } from '@/utils/admin/copySchoolInvitationCode'
 import { useSchoolDashboardStats } from '@/composables/admin/useSchoolDashboardStats'
-import { useScopedAbort } from '@/composables/core/useScopedAbort'
 import { useAdminOrgScope } from '@/composables/admin/useAdminOrgScope'
 import {
   useSchoolDashboardQuotas,
 } from '@/composables/school/useSchoolDashboardQuotas'
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
-import {
-  fetchAdminSchoolTokenStats,
-  fetchAdminSchoolTrends,
-} from '@/composables/queries'
 import { useAuthStore } from '@/stores'
 import { isManagerAssignmentUnavailable, isUnlimitedMemberLimit } from '@/constants/schoolTier'
-import { type ChartConfiguration, type TooltipItem, loadChartJs } from '@/utils/lazyChartJs'
 
-const { t, isZh } = useLanguage()
+const { t } = useLanguage()
 const notify = useNotifications()
 const { publicSiteUrl } = usePublicSiteUrl()
 
@@ -59,7 +56,12 @@ const { loadCapabilities, can, isReadOnly } = useAdminAccess()
 const { effectiveOrgId, refetchOrganizations, syncSelectedOrgFromUser, showPicker, effectiveOrgName } =
   useAdminOrgScope()
 const { on: onAdminEvent, emit: emitAdminEvent } = useAdminEventBus('SchoolDashboardPage')
-const { beginRequest: beginTrendRequest, abort: abortTrendRequests } = useScopedAbort()
+
+const orgTrendDialogRef = ref<InstanceType<typeof AdminOrgTokenTrendDialog> | null>(null)
+
+const userTrendModalVisible = ref(false)
+const userTrendUserId = ref<number>()
+const userTrendUserName = ref<string>()
 
 const effectiveOrgIdRef = computed(() => effectiveOrgId.value)
 const { isLoading, stats, topUsers, loadStats } = useSchoolDashboardStats(effectiveOrgIdRef)
@@ -92,15 +94,30 @@ const {
   managerRemaining,
 } = useSchoolDashboardQuotas(computed(() => stats.value.quotas))
 
-const trendModalVisible = ref(false)
-const trendChartTitle = ref('')
-const trendChartLoading = ref(false)
-const trendChartRef = ref<HTMLCanvasElement | null>(null)
-let trendChartInstance: ChartInstance<'line'> | null = null
-const periodCards = ref({ today: '-', week: '-', month: '-', total: '-' })
-const trendPeriod = ref<'today' | 'week' | 'month' | 'total'>('week')
-
 const activeTab = ref<'overview' | 'tokens' | 'users'>('overview')
+
+function openOrgTrend(
+  period: TokenTrendPeriod = 'week',
+  service: TokenTrendService = null
+): void {
+  const orgId = effectiveOrgId.value
+  if (orgId == null) {
+    return
+  }
+  orgTrendDialogRef.value?.openTrend({
+    orgId,
+    orgName: stats.value.organization?.name ?? effectiveOrgName.value ?? '',
+    period,
+    service,
+    useSchoolStatsEndpoint: true,
+  })
+}
+
+function openUserTrend(userName: string, userId: number): void {
+  userTrendUserId.value = userId
+  userTrendUserName.value = userName
+  userTrendModalVisible.value = true
+}
 
 function formatNumber(num: number): string {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
@@ -114,187 +131,15 @@ const invitationCodeDisplay = computed(
 
 async function copyInvitationCode(event: MouseEvent) {
   event.stopPropagation()
-  const code = (stats.value.organization?.invitation_code || '').trim()
-  if (!code) return
   const text = t('admin.schoolInviteCopyPayload', {
     siteUrl: publicSiteUrl.value,
-    code,
+    code: (stats.value.organization?.invitation_code || '').trim(),
   })
-  try {
-    await navigator.clipboard.writeText(text)
-    notify.success(t('notification.copied'))
-  } catch {
-    notify.error(t('notification.copyFailed'))
-  }
-}
-
-function formatChartLabel(value: number): string {
-  if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M'
-  if (value >= 1000) return (value / 1000).toFixed(1) + 'K'
-  return String(value)
-}
-
-async function showTrendChart(period: 'today' | 'week' | 'month' | 'total' = 'week') {
-  const orgId = effectiveOrgId.value
-  if (orgId == null) return
-  trendPeriod.value = period
-  trendChartTitle.value = `${t('admin.trendOrgTokens')}: ${stats.value.organization?.name ?? ''}`
-  trendModalVisible.value = true
-  trendChartLoading.value = true
-
-  const daysMap = { today: 1, week: 7, month: 30, total: 0 }
-  const days = daysMap[period]
-  const hourly = period === 'today'
-  const signal = beginTrendRequest()
-  try {
-    const [chartData, tokenData] = await Promise.all([
-      fetchAdminSchoolTrends({ organization_id: orgId, days, hourly }, signal),
-      fetchAdminSchoolTokenStats(orgId, signal),
-    ])
-    trendChartLoading.value = false
-    await nextTick()
-    await new Promise((r) => setTimeout(r, 50))
-    await renderTrendChart({ data: chartData.data ?? [] })
-    if (tokenData) {
-      const fmt = (p: { input_tokens?: number; output_tokens?: number }) => {
-        const i = p?.input_tokens ?? 0
-        const o = p?.output_tokens ?? 0
-        return `${formatNumber(i)}+${formatNumber(o)}`
-      }
-      periodCards.value = {
-        today: fmt(tokenData.today),
-        week: fmt(tokenData.past_week),
-        month: fmt(tokenData.past_month),
-        total: fmt(tokenData.total),
-      }
-    }
-  } catch (err) {
-    const message = queryErrorMessage(err, t('admin.dashboardLoadError'))
-    if (message) {
-      notify.error(message)
-    }
-    trendChartLoading.value = false
-  }
-}
-
-async function renderTrendChart(data: {
-  data: Array<{ date: string; value: number; input?: number; output?: number }>
-}) {
-  if (!trendChartRef.value) return
-  const rawData = data?.data ?? []
-  if (rawData.length === 0) return
-
-  trendChartInstance?.destroy()
-  trendChartInstance = null
-
-  const chartLocale = isZh.value ? 'zh-CN' : 'en-US'
-  const labels = rawData.map((item) => {
-    const dateStr = item.date.includes(' ') ? item.date.replace(' ', 'T') : item.date + 'T00:00:00'
-    const date = new Date(dateStr)
-    if (item.date.includes(':') && item.date.includes(' ')) {
-      return date.toLocaleString(chartLocale, {
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        hour12: false,
-        timeZone: 'Asia/Shanghai',
-      })
-    }
-    return date.toLocaleDateString(chartLocale, {
-      month: 'short',
-      day: 'numeric',
-      timeZone: 'Asia/Shanghai',
-    })
-  })
-
-  const values = rawData.map((item) => item.value)
-  const maxVal = Math.max(...values, 0)
-  const minVal = Math.min(...values, 0)
-  const range = maxVal - minVal
-  const padding = range === 0 ? maxVal * 0.1 : range * 0.1
-  const yMin = Math.max(0, minVal - padding)
-  const yMax = maxVal + padding
-
-  const hasInputOutput =
-    rawData[0] && (rawData[0].input !== undefined || rawData[0].output !== undefined)
-
-  const datasets: ChartConfiguration<'line'>['data']['datasets'] = [
-    {
-      label: trendChartTitle.value,
-      data: values,
-      borderColor: '#667eea',
-      backgroundColor: 'rgba(102, 126, 234, 0.1)',
-      borderWidth: 2,
-      fill: true,
-      tension: 0.4,
-      pointRadius: 3,
-      pointHoverRadius: 5,
-    },
-  ]
-  if (hasInputOutput) {
-    datasets.push({
-      label: t('admin.inputTokens'),
-      data: rawData.map((item) => item.input ?? 0),
-      borderColor: '#10b981',
-      backgroundColor: 'rgba(16, 185, 129, 0.1)',
-      borderWidth: 2,
-      fill: false,
-      tension: 0.4,
-      pointRadius: 2,
-      pointHoverRadius: 4,
-    })
-    datasets.push({
-      label: t('admin.outputTokens'),
-      data: rawData.map((item) => item.output ?? 0),
-      borderColor: '#f59e0b',
-      backgroundColor: 'rgba(245, 158, 11, 0.1)',
-      borderWidth: 2,
-      fill: false,
-      tension: 0.4,
-      pointRadius: 2,
-      pointHoverRadius: 4,
-    })
-  }
-
-  const config: ChartConfiguration<'line'> = {
-    type: 'line',
-    data: { labels, datasets },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: hasInputOutput, position: 'top' },
-        tooltip: {
-          callbacks: {
-            label: (ctx: TooltipItem<'line'>) =>
-              `${ctx.dataset.label}: ${formatChartLabel(Number(ctx.raw))}`,
-          },
-        },
-      },
-      scales: {
-        y: {
-          beginAtZero: false,
-          min: yMin,
-          max: yMax,
-          ticks: { callback: (val: string | number) => formatChartLabel(Number(val)) },
-        },
-        x: { ticks: { maxRotation: 45, minRotation: 45 } },
-      },
-    },
-  }
-  const Chart = await loadChartJs()
-  trendChartInstance = new Chart(trendChartRef.value, config)
-}
-
-function switchTrendPeriod(period: 'today' | 'week' | 'month' | 'total') {
-  showTrendChart(period)
-}
-
-function closeTrendModal() {
-  abortTrendRequests()
-  trendModalVisible.value = false
-  trendChartInstance?.destroy()
-  trendChartInstance = null
+  await copySchoolInvitationPayload(
+    text,
+    () => notify.success(t('notification.copied')),
+    () => notify.error(t('notification.copyFailed'))
+  )
 }
 
 onAdminEvent('admin:toolbar_action', (payload) => {
@@ -328,11 +173,6 @@ onMounted(async () => {
   syncSelectedOrgFromUser()
   await refetchOrganizations()
   syncSelectedOrgFromUser()
-})
-
-onBeforeUnmount(() => {
-  trendChartInstance?.destroy()
-  trendChartInstance = null
 })
 </script>
 
@@ -472,7 +312,7 @@ onBeforeUnmount(() => {
               :icon="Connection"
               theme="storage"
               clickable
-              @click="showTrendChart('week')"
+              @click="openOrgTrend('week')"
             />
             <AdminSwissKpiCard
               :title="t('admin.invitationCode')"
@@ -504,7 +344,7 @@ onBeforeUnmount(() => {
             class="mt-6"
           >
             <template #header>
-              <div class="flex items-center justify-between gap-2 w-full">
+              <div class="flex flex-wrap items-start justify-between gap-2 w-full">
                 <span class="font-medium">{{ t('admin.topUsersByTokens') }}</span>
                 <el-button
                   text
@@ -514,6 +354,9 @@ onBeforeUnmount(() => {
                   {{ t('common.refresh') }}
                 </el-button>
               </div>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 mb-0">
+                {{ t('admin.rankingBeijingTodayHint') }}
+              </p>
             </template>
             <el-table
               :data="topUsers"
@@ -523,7 +366,16 @@ onBeforeUnmount(() => {
               <el-table-column
                 prop="name"
                 :label="t('admin.name')"
-              />
+              >
+                <template #default="{ row }">
+                  <span
+                    class="cursor-pointer hover:text-primary-500 hover:underline"
+                    @click="openUserTrend(row.name, row.id)"
+                  >
+                    {{ row.name }}
+                  </span>
+                </template>
+              </el-table-column>
               <el-table-column
                 prop="phone"
                 :label="t('admin.phone')"
@@ -535,7 +387,12 @@ onBeforeUnmount(() => {
                 width="120"
               >
                 <template #default="{ row }">
-                  {{ formatNumber(row.total_tokens) }}
+                  <span
+                    class="cursor-pointer hover:text-primary-500"
+                    @click="openUserTrend(row.name, row.id)"
+                  >
+                    {{ formatNumber(row.total_tokens) }}
+                  </span>
                 </template>
               </el-table-column>
             </el-table>
@@ -557,6 +414,10 @@ onBeforeUnmount(() => {
             :organization-id="effectiveOrgId"
             use-school-stats-endpoint
             show-overall-summary
+            clickable
+            @service-click="openOrgTrend('week', $event)"
+            @overall-click="openOrgTrend('week')"
+            @period-click="(service, period) => openOrgTrend(period, service)"
           />
         </template>
 
@@ -569,68 +430,16 @@ onBeforeUnmount(() => {
       </template>
     </div>
 
-    <el-dialog
-      v-model="trendModalVisible"
-      :title="trendChartTitle"
-      width="640px"
-      destroy-on-close
-      @close="closeTrendModal"
-    >
-      <div
-        v-if="trendChartLoading"
-        class="flex justify-center items-center h-64"
-      >
-        <el-icon
-          class="is-loading"
-          :size="32"
-        >
-          <Loading />
-        </el-icon>
-      </div>
-      <template v-else>
-        <div class="relative h-64 min-h-[256px] w-full">
-          <canvas
-            ref="trendChartRef"
-            class="block w-full h-full"
-          />
-        </div>
-        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <AdminSwissPeriodCard
-              :label="t('admin.today')"
-              :value="periodCards.today"
-              :active="trendPeriod === 'today'"
-              theme="storage"
-              @click="switchTrendPeriod('today')"
-            />
-            <AdminSwissPeriodCard
-              :label="t('admin.pastWeek')"
-              :value="periodCards.week"
-              :active="trendPeriod === 'week'"
-              theme="storage"
-              @click="switchTrendPeriod('week')"
-            />
-            <AdminSwissPeriodCard
-              :label="t('admin.pastMonth')"
-              :value="periodCards.month"
-              :active="trendPeriod === 'month'"
-              theme="storage"
-              @click="switchTrendPeriod('month')"
-            />
-            <AdminSwissPeriodCard
-              :label="t('admin.allTime')"
-              :value="periodCards.total"
-              :active="trendPeriod === 'total'"
-              theme="storage"
-              @click="switchTrendPeriod('total')"
-            />
-          </div>
-        </div>
-      </template>
-      <template #footer>
-        <el-button @click="closeTrendModal">{{ t('common.close') }}</el-button>
-      </template>
-    </el-dialog>
+    <AdminOrgTokenTrendDialog ref="orgTrendDialogRef" />
+
+    <AdminTrendChartModal
+      v-if="userTrendUserId != null"
+      v-model:visible="userTrendModalVisible"
+      type="user"
+      :user-id="userTrendUserId"
+      :user-name="userTrendUserName"
+      initial-trend-period="today"
+    />
 
     <SchoolAddMemberDialog
       v-if="effectiveOrgId != null"

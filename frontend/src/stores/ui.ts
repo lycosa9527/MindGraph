@@ -189,6 +189,19 @@ export const useUIStore = defineStore('ui', () => {
    */
   function syncGuestLocaleFromBrowser(): void {
     const loc = detectBrowserLocale()
+    if (!matchPromptToUi.value) {
+      const matched = matchedPromptLanguageForUiLocale(loc)
+      const pr: PromptLanguage = matched !== null ? matched : 'en'
+      if (language.value === loc && promptLanguage.value === pr) {
+        return
+      }
+      if (language.value === loc) {
+        setPromptLanguage(pr)
+        return
+      }
+    } else if (language.value === loc) {
+      return
+    }
     setLanguage(loc)
     if (!matchPromptToUi.value) {
       const matched = matchedPromptLanguageForUiLocale(loc)

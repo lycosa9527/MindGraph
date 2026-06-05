@@ -10,6 +10,7 @@ import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.
 import AdminSwissServiceCard from '@/components/admin/swiss/AdminSwissServiceCard.vue'
 import AdminTokenOverviewRow from '@/components/admin/AdminTokenOverviewRow.vue'
 import AdminTokenUsageByServicePanel from '@/components/admin/AdminTokenUsageByServicePanel.vue'
+import AdminOrgTokenTrendDialog from '@/components/admin/AdminOrgTokenTrendDialog.vue'
 import { Connection, Document, Loading, TrendCharts, User } from '@element-plus/icons-vue'
 
 import type { Chart as ChartInstance } from 'chart.js'
@@ -22,9 +23,10 @@ import {
 } from '@/composables/admin/useQueryErrorNotification'
 import { useScopedAbort } from '@/composables/core/useScopedAbort'
 import { useLanguage, useNotifications } from '@/composables'
+import { intlLocaleForUiCode } from '@/i18n/locales'
+import { useUIStore } from '@/stores/ui'
 import {
   fetchAdminStatsTrends,
-  fetchAdminStatsTrendsOrganization,
   fetchAdminStatsTrendsUser,
   fetchAdminTokenStats,
   useAdminStats,
@@ -42,11 +44,11 @@ const props = withDefaults(
 const showOperations = computed(
   () => props.section === 'all' || props.section === 'operations'
 )
-const showUsage = computed(() => props.section === 'all' || props.section === 'usage')
 const showUsageByService = computed(() => props.section === 'usage')
 const showTokenRankings = computed(() => showOperations.value || showUsageByService.value)
 
 const { t } = useLanguage()
+const uiStore = useUIStore()
 const notify = useNotifications()
 const { can } = useAdminAccess()
 const { on: onAdminEvent } = useAdminEventBus('AdminDashboardTab')
@@ -138,6 +140,7 @@ const topUsersByTokens = ref<
 const trendModalVisible = ref(false)
 const trendChartTitle = ref('')
 const trendChartLoading = ref(false)
+const trendChartHasData = ref(true)
 const trendChartRef = ref<HTMLCanvasElement | null>(null)
 let trendChartInstance: ChartInstance<'line'> | null = null
 
@@ -333,59 +336,26 @@ async function showTrendChart(
   }
 }
 
-async function showOrganizationTrendChart(
+const orgTrendDialogRef = ref<InstanceType<typeof AdminOrgTokenTrendDialog> | null>(null)
+
+function showOrganizationTrendChart(
   orgName: string,
   orgId?: number,
-  period: 'today' | 'week' | 'month' | 'total' = 'week'
+  period: 'today' | 'week' | 'month' | 'total' = 'week',
+  service: TokenTrendService = null
 ) {
-  trendContext.value = { type: 'org', orgName, orgId, period }
-  trendChartTitle.value = `${t('admin.trendOrgTokens')}: ${orgName}`
-  trendModalVisible.value = true
-  trendChartLoading.value = true
-
-  const daysMap = { today: 1, week: 7, month: 30, total: 0 }
-  const days = daysMap[period]
-  const hourly = period === 'today'
-  const signal = beginTrendRequest()
-  try {
-    const data = await fetchAdminStatsTrendsOrganization(
-      {
-        organization_id: orgId,
-        organization_name: orgId == null ? orgName : undefined,
-        days,
-        hourly,
-      },
-      signal
-    )
-    trendChartLoading.value = false
-    await nextTick()
-    await new Promise((r) => setTimeout(r, 50))
-    await renderTrendChart(data as { data: Array<{ date: string; value: number; input?: number; output?: number }> }, 'tokens')
-    if (orgId != null) {
-      const tokenData = await fetchAdminTokenStats(orgId, signal)
-      const fmt = (p: { input_tokens?: number; output_tokens?: number }) => {
-        const i = p?.input_tokens ?? 0
-        const o = p?.output_tokens ?? 0
-        return `${formatNumber(i)}+${formatNumber(o)}`
-      }
-      periodCards.value = {
-        today: fmt(tokenData.today),
-        week: fmt(tokenData.past_week),
-        month: fmt(tokenData.past_month),
-        total: fmt(tokenData.total),
-      }
-    } else {
-      periodCards.value = { today: '-', week: '-', month: '-', total: '-' }
-    }
-  } catch (err) {
-    notifyTrendFetchError(err)
-  }
+  orgTrendDialogRef.value?.openTrend({
+    orgName,
+    orgId,
+    period,
+    service,
+  })
 }
 
 function switchTrendPeriod(period: 'today' | 'week' | 'month' | 'total') {
   const ctx = trendContext.value
   if (ctx.type === 'org' && ctx.orgName) {
-    showOrganizationTrendChart(ctx.orgName, ctx.orgId, period)
+    showOrganizationTrendChart(ctx.orgName, ctx.orgId, period, ctx.service ?? null)
   } else if (ctx.type === 'user' && ctx.userId != null) {
     showUserTokenTrend(ctx.userName ?? '', ctx.userId, period)
   } else if (ctx.type === 'service') {
@@ -401,9 +371,9 @@ async function showServiceTokenTrendChart(
 ) {
   trendContext.value = { type: 'service', service, period }
   if (service === 'mindgraph') {
-    trendChartTitle.value = `MindGraph - ${t('admin.trendTokens')}`
+    trendChartTitle.value = `${t('admin.serviceMindGraph')} - ${t('admin.trendTokens')}`
   } else if (service === 'mindmate') {
-    trendChartTitle.value = `MindMate - ${t('admin.trendTokens')}`
+    trendChartTitle.value = `${t('admin.serviceMindMate')} - ${t('admin.trendTokens')}`
   } else {
     trendChartTitle.value = t('admin.trendTokens')
   }
@@ -414,14 +384,18 @@ async function showServiceTokenTrendChart(
   const signal = beginTrendRequest()
 
   try {
-    const data = await fetchAdminStatsTrends(
-      {
-        metric: 'tokens',
-        days: daysMap[period],
-        service,
-      },
-      signal
-    )
+    const [data, tokenStatsData] = await Promise.all([
+      fetchAdminStatsTrends(
+        {
+          metric: 'tokens',
+          days: daysMap[period],
+          service,
+        },
+        signal
+      ),
+      fetchAdminTokenStats(undefined, signal),
+    ])
+    platformTokenStats.value = tokenStatsData as unknown as PlatformTokenStats
     trendChartLoading.value = false
     await nextTick()
     await new Promise((r) => setTimeout(r, 50))
@@ -469,6 +443,9 @@ async function showUserTokenTrend(
   userId: number,
   period: 'today' | 'week' | 'month' | 'total' = 'week'
 ) {
+  if (!Number.isFinite(userId) || userId <= 0) {
+    return
+  }
   trendContext.value = { type: 'user', userName, userId, period }
   trendChartTitle.value = `${t('admin.trendUserTokens')}: ${userName}`
   trendModalVisible.value = true
@@ -477,12 +454,14 @@ async function showUserTokenTrend(
   const daysMap = { today: 1, week: 7, month: 30, total: 0 }
   const days = daysMap[period]
   const daysParam = days === 0 ? 0 : days
+  const hourly = period === 'today'
   const signal = beginTrendRequest()
   try {
     const data = await fetchAdminStatsTrendsUser(
       {
         user_id: userId,
         days: daysParam,
+        hourly,
       },
       signal
     )
@@ -490,7 +469,18 @@ async function showUserTokenTrend(
     await nextTick()
     await new Promise((r) => setTimeout(r, 50))
     await renderTrendChart(data as { data: Array<{ date: string; value: number; input?: number; output?: number }> }, 'tokens')
-    periodCards.value = { today: '-', week: '-', month: '-', total: '-' }
+    const cardsData = await fetchAdminStatsTrendsUser({ user_id: userId, days: 0 }, signal)
+    const arr = (cardsData as { data?: Array<{ value?: number }> }).data ?? []
+    const sum = (n: number) =>
+      arr.slice(-n).reduce((a: number, b: { value?: number }) => a + (b.value ?? 0), 0)
+    periodCards.value = {
+      today: formatNumber(sum(1) || 0),
+      week: formatNumber(sum(7) || 0),
+      month: formatNumber(sum(30) || 0),
+      total: formatNumber(
+        arr.reduce((a: number, b: { value?: number }) => a + (b.value ?? 0), 0)
+      ),
+    }
   } catch (err) {
     notifyTrendFetchError(err)
   }
@@ -503,16 +493,22 @@ async function renderTrendChart(
   if (!trendChartRef.value) return
 
   const rawData = data?.data ?? []
-  if (rawData.length === 0) return
+  trendChartHasData.value = rawData.length > 0
+  if (rawData.length === 0) {
+    trendChartInstance?.destroy()
+    trendChartInstance = null
+    return
+  }
 
   trendChartInstance?.destroy()
   trendChartInstance = null
 
+  const intlLocale = intlLocaleForUiCode(uiStore.language)
   const labels = rawData.map((item) => {
     const dateStr = item.date.includes(' ') ? item.date.replace(' ', 'T') : item.date + 'T00:00:00'
     const date = new Date(dateStr)
     if (item.date.includes(':') && item.date.includes(' ')) {
-      return date.toLocaleString('en-US', {
+      return date.toLocaleString(intlLocale, {
         month: 'short',
         day: 'numeric',
         hour: 'numeric',
@@ -520,7 +516,7 @@ async function renderTrendChart(
         timeZone: 'Asia/Shanghai',
       })
     }
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(intlLocale, {
       month: 'short',
       day: 'numeric',
       timeZone: 'Asia/Shanghai',
@@ -701,6 +697,8 @@ onBeforeUnmount(() => {
         :stats="platformTokenStats ?? undefined"
         clickable
         @service-click="showServiceTokenTrendChart($event)"
+        @overall-click="showServiceTokenTrendChart(null)"
+        @period-click="(service, period) => showServiceTokenTrendChart(service, period)"
       />
 
       <AdminTokenOverviewRow
@@ -710,6 +708,7 @@ onBeforeUnmount(() => {
         :show-dingtalk="showDingtalkOverview"
         clickable
         @overall-click="showServiceTokenTrendChart(null)"
+        @period-click="(period) => showServiceTokenTrendChart(null, period)"
         @refresh="loadPlatformTokenStats"
       />
 
@@ -753,7 +752,7 @@ onBeforeUnmount(() => {
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500 hover:underline"
-                    @click="showOrganizationTrendChart(row.name, row.orgId)"
+                    @click="showOrganizationTrendChart(row.name, row.orgId, 'today', 'mindgraph')"
                   >
                     {{ row.name }}
                   </span>
@@ -767,7 +766,7 @@ onBeforeUnmount(() => {
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500"
-                    @click="showOrganizationTrendChart(row.name, row.orgId)"
+                    @click="showOrganizationTrendChart(row.name, row.orgId, 'today', 'mindgraph')"
                   >
                     {{ formatNumber(row.tokens) }}
                   </span>
@@ -795,7 +794,7 @@ onBeforeUnmount(() => {
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500 hover:underline"
-                    @click="showOrganizationTrendChart(row.name, row.orgId)"
+                    @click="showOrganizationTrendChart(row.name, row.orgId, 'today', 'mindmate')"
                   >
                     {{ row.name }}
                   </span>
@@ -809,7 +808,7 @@ onBeforeUnmount(() => {
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500"
-                    @click="showOrganizationTrendChart(row.name, row.orgId)"
+                    @click="showOrganizationTrendChart(row.name, row.orgId, 'today', 'mindmate')"
                   >
                     {{ formatNumber(row.tokens) }}
                   </span>
@@ -839,7 +838,7 @@ onBeforeUnmount(() => {
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500 hover:underline"
-                    @click="showOrganizationTrendChart(row.name, row.orgId)"
+                    @click="showOrganizationTrendChart(row.name, row.orgId, 'today')"
                   >
                     {{ row.name }}
                   </span>
@@ -853,7 +852,7 @@ onBeforeUnmount(() => {
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500"
-                    @click="showOrganizationTrendChart(row.name, row.orgId)"
+                    @click="showOrganizationTrendChart(row.name, row.orgId, 'today')"
                   >
                     {{ formatNumber(row.tokens) }}
                   </span>
@@ -880,7 +879,7 @@ onBeforeUnmount(() => {
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500 hover:underline"
-                    @click="showUserTokenTrend(row.name, row.id)"
+                    @click="showUserTokenTrend(row.name, row.id, 'today')"
                   >
                     {{ row.name }}
                   </span>
@@ -909,7 +908,7 @@ onBeforeUnmount(() => {
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500"
-                    @click="showUserTokenTrend(row.name, row.id)"
+                    @click="showUserTokenTrend(row.name, row.id, 'today')"
                   >
                     {{ formatNumber(row.total_tokens) }}
                   </span>
@@ -940,7 +939,16 @@ onBeforeUnmount(() => {
         </el-icon>
       </div>
       <template v-else>
-        <div class="relative h-64 min-h-[256px] w-full">
+        <div
+          v-if="!trendChartHasData"
+          class="flex justify-center items-center h-64 text-gray-500 dark:text-gray-400"
+        >
+          {{ t('admin.trendChartNoData') }}
+        </div>
+        <div
+          v-else
+          class="relative h-64 min-h-[256px] w-full"
+        >
           <canvas
             ref="trendChartRef"
             class="block w-full h-full"
@@ -983,6 +991,8 @@ onBeforeUnmount(() => {
         <el-button @click="closeTrendModal">{{ t('common.close') }}</el-button>
       </template>
     </el-dialog>
+
+    <AdminOrgTokenTrendDialog ref="orgTrendDialogRef" />
   </div>
 </template>
 

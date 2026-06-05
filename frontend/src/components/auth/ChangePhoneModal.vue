@@ -274,7 +274,7 @@ async function handleSubmit() {
     <Transition name="modal">
       <div
         v-if="isVisible"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 z-50 overflow-y-auto overscroll-y-contain auth-modal-overlay flex items-start sm:items-center justify-center p-4"
         @click.self="closeModal"
       >
         <!-- Backdrop -->
@@ -329,12 +329,12 @@ async function handleSubmit() {
                 >
                   图形验证码
                 </label>
-                <div class="flex gap-3">
+                <div class="captcha-row">
                   <el-input
                     v-model="captchaCode"
                     placeholder="请输入验证码"
                     maxlength="4"
-                    class="flex-1 captcha-input"
+                    class="captcha-row__input captcha-input"
                     @input="captchaError = ''"
                     @keyup.enter="sendSmsCode"
                   />
@@ -342,7 +342,7 @@ async function handleSubmit() {
                     v-if="captchaImage"
                     :src="captchaImage"
                     alt="验证码"
-                    class="h-10 rounded cursor-pointer border border-stone-200 hover:border-stone-400 transition-colors"
+                    class="captcha-image border border-stone-200 hover:border-stone-400 transition-colors"
                     :class="{ 'opacity-50': captchaLoading }"
                     @click="fetchCaptcha"
                   />

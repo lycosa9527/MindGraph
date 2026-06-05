@@ -14,11 +14,9 @@ from typing import Optional, Dict, Any
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import and_, desc, or_, select
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.functions import (
-    count as sql_count,
     sum as sa_sum,
     coalesce as sa_coalesce,
 )
@@ -53,71 +51,18 @@ from ..dependencies import (
 )
 from ..helpers import get_beijing_now, get_beijing_today_start_utc
 
+from .stats_helpers import (
+    sql_count_column as _sql_count,
+    token_stats_by_org_today as _token_stats_by_org_today,
+    top_users_by_tokens_all_time,
+    top_users_by_tokens_today as _top_users_by_tokens_today,
+)
+
 from .school_scope import resolve_school_dashboard_org_id_scoped
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-
-def _sql_count(column: Any) -> ColumnElement:
-    """Helper function to call count for SQLAlchemy queries."""
-    return sql_count(column)
-
-
-def _token_usage_service_filter(service: Optional[str]) -> Optional[ColumnElement]:
-    """Filter TokenUsage rows by MindGraph vs MindMate (matches token-stats breakdown)."""
-    if service == "mindmate":
-        return TokenUsage.request_type == "mindmate"
-    if service == "mindgraph":
-        return or_(
-            TokenUsage.request_type != "mindmate",
-            TokenUsage.request_type.is_(None),
-        )
-    return None
-
-
-async def _token_stats_by_org_today(
-    db: AsyncSession,
-    today_start,
-    service: Optional[str] = None,
-) -> Dict[str, Dict[str, Any]]:
-    """Per-organization token usage for the current Beijing calendar day."""
-    token_join = [
-        Organization.id == TokenUsage.organization_id,
-        TokenUsage.success,
-        TokenUsage.created_at >= today_start,
-    ]
-    service_filter = _token_usage_service_filter(service)
-    if service_filter is not None:
-        token_join.append(service_filter)
-
-    org_rows = (
-        await db.execute(
-            select(
-                Organization.id,
-                Organization.name,
-                sa_coalesce(sa_sum(TokenUsage.input_tokens), 0).label("input_tokens"),
-                sa_coalesce(sa_sum(TokenUsage.output_tokens), 0).label("output_tokens"),
-                sa_coalesce(sa_sum(TokenUsage.total_tokens), 0).label("total_tokens"),
-                sa_coalesce(_sql_count(TokenUsage.id), 0).label("request_count"),
-            )
-            .outerjoin(TokenUsage, and_(*token_join))
-            .group_by(Organization.id, Organization.name)
-        )
-    ).all()
-
-    by_org: Dict[str, Dict[str, Any]] = {}
-    for org_stat in org_rows:
-        if org_stat.request_count and org_stat.request_count > 0:
-            by_org[org_stat.name] = {
-                "org_id": org_stat.id,
-                "input_tokens": int(org_stat.input_tokens or 0),
-                "output_tokens": int(org_stat.output_tokens or 0),
-                "total_tokens": int(org_stat.total_tokens or 0),
-                "request_count": int(org_stat.request_count or 0),
-            }
-    return by_org
 
 
 @router.get("/admin/status")
@@ -225,41 +170,12 @@ async def get_stats_admin(
             mindbot_orgs_today,
         )
 
-        top_user_rows = (
-            await db.execute(
-                select(
-                    User.id,
-                    User.phone,
-                    User.name,
-                    Organization.name.label("organization_name"),
-                    sa_coalesce(sa_sum(TokenUsage.total_tokens), 0).label("total_tokens"),
-                )
-                .select_from(TokenUsage)
-                .join(User, User.id == TokenUsage.user_id)
-                .outerjoin(Organization, User.organization_id == Organization.id)
-                .where(
-                    TokenUsage.success,
-                    TokenUsage.user_id.isnot(None),
-                    TokenUsage.created_at >= today_start,
-                )
-                .group_by(User.id, User.phone, User.name, Organization.id, Organization.name)
-                .order_by(desc(sa_coalesce(sa_sum(TokenUsage.total_tokens), 0)))
-                .limit(10)
-            )
-        ).all()
-        for row in top_user_rows:
-            phone = row.phone
-            if phone and len(phone) == 11:
-                phone = phone[:3] + "****" + phone[-4:]
-            top_users_by_tokens_today.append(
-                {
-                    "id": int(row.id),
-                    "phone": phone or "",
-                    "name": row.name or phone or str(row.id),
-                    "total_tokens": int(row.total_tokens or 0),
-                    "organization_name": row.organization_name or "",
-                }
-            )
+        top_users_by_tokens_today = await _top_users_by_tokens_today(
+            db,
+            today_start,
+            mask_phone=True,
+            include_org_name=True,
+        )
 
     except (ImportError, Exception) as e:
         logger.debug("TokenUsage dashboard stats not available: %s", e)
@@ -352,54 +268,59 @@ async def get_school_stats(
                 "total_tokens": int(week_token_stats.total_tokens or 0),
             }
 
-        org_token_stats = (
+        mindbot_week = await aggregate_mindbot_token_totals(
+            db,
+            created_since=week_ago,
+            organization_id=effective_org_id,
+        )
+        token_stats = add_token_period(token_stats, mindbot_week)
+
+        org_today_stats = (
             await db.execute(
                 select(
                     sa_coalesce(sa_sum(TokenUsage.input_tokens), 0).label("input_tokens"),
                     sa_coalesce(sa_sum(TokenUsage.output_tokens), 0).label("output_tokens"),
                     sa_coalesce(sa_sum(TokenUsage.total_tokens), 0).label("total_tokens"),
-                ).where(TokenUsage.organization_id == effective_org_id, TokenUsage.success)
+                    sa_coalesce(_sql_count(TokenUsage.id), 0).label("request_count"),
+                ).where(
+                    TokenUsage.organization_id == effective_org_id,
+                    TokenUsage.success,
+                    TokenUsage.created_at >= today_start,
+                )
             )
         ).first()
 
-        if org_token_stats:
+        org_bucket = {
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "total_tokens": 0,
+            "request_count": 0,
+        }
+        if org_today_stats:
+            org_bucket = {
+                "input_tokens": int(org_today_stats.input_tokens or 0),
+                "output_tokens": int(org_today_stats.output_tokens or 0),
+                "total_tokens": int(org_today_stats.total_tokens or 0),
+                "request_count": int(org_today_stats.request_count or 0),
+            }
+        mindbot_org_today = await aggregate_mindbot_token_totals(
+            db,
+            created_since=today_start,
+            organization_id=effective_org_id,
+        )
+        org_bucket = add_token_period(org_bucket, mindbot_org_today)
+        if org_bucket.get("total_tokens", 0) > 0:
             token_stats_by_org[org.name] = {
                 "org_id": org.id,
-                "input_tokens": int(org_token_stats.input_tokens or 0),
-                "output_tokens": int(org_token_stats.output_tokens or 0),
-                "total_tokens": int(org_token_stats.total_tokens or 0),
-                "request_count": 0,
+                **org_bucket,
             }
 
-        top_users_query = (
-            await db.execute(
-                select(
-                    User.id,
-                    User.phone,
-                    User.name,
-                    sa_coalesce(sa_sum(TokenUsage.total_tokens), 0).label("total_tokens"),
-                )
-                .outerjoin(TokenUsage, and_(User.id == TokenUsage.user_id, TokenUsage.success))
-                .where(User.organization_id == effective_org_id)
-                .group_by(User.id, User.phone, User.name)
-                .order_by(sa_coalesce(sa_sum(TokenUsage.total_tokens), 0).desc())
-                .limit(10)
-            )
-        ).all()
-
-        top_users = []
-        for u in top_users_query:
-            masked_phone = u.phone
-            if u.phone and len(u.phone) == 11:
-                masked_phone = u.phone[:3] + "****" + u.phone[-4:]
-            top_users.append(
-                {
-                    "id": u.id,
-                    "phone": masked_phone,
-                    "name": u.name or u.phone,
-                    "total_tokens": int(u.total_tokens or 0),
-                }
-            )
+        top_users = await _top_users_by_tokens_today(
+            db,
+            today_start,
+            organization_id=effective_org_id,
+            mask_phone=True,
+        )
     except (ImportError, Exception) as e:
         logger.debug("TokenUsage not available: %s", e)
 
@@ -728,92 +649,20 @@ async def get_token_stats_admin(
             d_row = (await db.execute(d_stmt)).scalar()
             dingtalk_generations[d_key] = int(d_row or 0)
 
-        # Top 10 users by total tokens (all time), including organization name
-        # Group by Organization.id (not name) to avoid issues with duplicate organization names
-        top_users_stmt = (
-            select(
-                User.id,
-                User.phone,
-                User.name,
-                Organization.id.label("organization_id"),
-                Organization.name.label("organization_name"),
-                sa_coalesce(sa_sum(TokenUsage.total_tokens), 0).label("total_tokens"),
-                sa_coalesce(sa_sum(TokenUsage.input_tokens), 0).label("input_tokens"),
-                sa_coalesce(sa_sum(TokenUsage.output_tokens), 0).label("output_tokens"),
-            )
-            .outerjoin(Organization, User.organization_id == Organization.id)
-            .outerjoin(TokenUsage, and_(User.id == TokenUsage.user_id, TokenUsage.success))
+        top_users = await top_users_by_tokens_all_time(
+            db,
+            organization_id=organization_id,
+            mask_phone=True,
         )
-        if org_filter:
-            top_users_stmt = top_users_stmt.where(*org_filter)
-        top_users_query = (
-            await db.execute(
-                top_users_stmt.group_by(User.id, User.phone, User.name, Organization.id, Organization.name)
-                .order_by(sa_coalesce(sa_sum(TokenUsage.total_tokens), 0).desc())
-                .limit(10)
-            )
-        ).all()
 
-        top_users = [
-            {
-                "id": user.id,
-                "phone": user.phone,
-                "name": user.name or user.phone,
-                "organization_name": user.organization_name or "",
-                "input_tokens": int(user.input_tokens or 0),
-                "output_tokens": int(user.output_tokens or 0),
-                "total_tokens": int(user.total_tokens or 0),
-            }
-            for user in top_users_query
-        ]
-
-        # Top 10 users by today's token usage, including organization name
-        # Use inner join to only include users with actual token usage today
-        # Group by Organization.id (not name) to avoid issues with duplicate organization names
-        top_users_today_stmt = (
-            select(
-                User.id,
-                User.phone,
-                User.name,
-                Organization.id.label("organization_id"),
-                Organization.name.label("organization_name"),
-                sa_sum(TokenUsage.total_tokens).label("total_tokens"),
-                sa_sum(TokenUsage.input_tokens).label("input_tokens"),
-                sa_sum(TokenUsage.output_tokens).label("output_tokens"),
-            )
-            .outerjoin(Organization, User.organization_id == Organization.id)
-            .join(
-                TokenUsage,
-                and_(
-                    User.id == TokenUsage.user_id,
-                    TokenUsage.created_at >= today_start,
-                    TokenUsage.success,
-                ),
-            )
+        top_users_today = await _top_users_by_tokens_today(
+            db,
+            today_start,
+            organization_id=organization_id,
+            mask_phone=True,
+            include_org_name=True,
+            include_io_tokens=True,
         )
-        if org_filter:
-            top_users_today_stmt = top_users_today_stmt.where(*org_filter)
-        top_users_today_query = (
-            await db.execute(
-                top_users_today_stmt.group_by(User.id, User.phone, User.name, Organization.id, Organization.name)
-                .having(sa_sum(TokenUsage.total_tokens) > 0)
-                .order_by(sa_sum(TokenUsage.total_tokens).desc())
-                .limit(10)
-            )
-        ).all()
-
-        top_users_today = [
-            {
-                "id": user.id,
-                "phone": user.phone,
-                "name": user.name or user.phone,
-                "organization_name": user.organization_name or "",
-                "input_tokens": int(user.input_tokens or 0),
-                "output_tokens": int(user.output_tokens or 0),
-                "total_tokens": int(user.total_tokens or 0),
-            }
-            for user in top_users_today_query
-        ]
 
         # Verify consistency: sum of top 10 users today should not exceed authenticated user total
         if today_user_token_stats and top_users_today:

@@ -1,0 +1,103 @@
+/**
+ * Shared captcha row layout for auth modals.
+ * SVG captcha source is 160x60; stack vertically on narrow viewports to avoid
+ * clipping inside overflow-hidden modal cards.
+ */
+
+.captcha-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+@media (min-width: 480px) {
+  .captcha-row {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.captcha-row__input {
+  width: 100%;
+  min-width: 0;
+}
+
+.captcha-row .el-input {
+  min-width: 0;
+}
+
+@media (min-width: 480px) {
+  .captcha-row__input {
+    flex: 1 1 0;
+    width: auto;
+  }
+}
+
+.captcha-image {
+  height: 48px;
+  width: auto;
+  max-width: 100%;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  object-fit: contain;
+  align-self: flex-start;
+}
+
+@media (min-width: 480px) {
+  .captcha-image {
+    max-width: 128px;
+    flex-shrink: 0;
+  }
+}
+
+.captcha-image:hover {
+  opacity: 0.8;
+}
+
+.captcha-placeholder {
+  height: 48px;
+  width: min(128px, 100%);
+  border-radius: 8px;
+  cursor: pointer;
+  background: #f5f5f4;
+  border: 1px solid #e7e5e4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  transition: opacity 0.2s ease;
+}
+
+@media (min-width: 480px) {
+  .captcha-placeholder {
+    flex-shrink: 0;
+  }
+}
+
+.captcha-placeholder:hover {
+  opacity: 0.8;
+}
+
+/* Tall auth modals: scroll inside overlay on mobile instead of center-clipping content */
+.auth-modal-overlay,
+.login-modal-overlay {
+  -webkit-overflow-scrolling: touch;
+}
+
+.auth-modal-scroll-shell {
+  position: relative;
+  min-height: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .auth-modal-scroll-shell {
+    align-items: center;
+  }
+}

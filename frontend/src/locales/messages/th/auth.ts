@@ -113,7 +113,6 @@ export default {
   'auth.resetPassword': 'รีเซ็ตรหัสผ่าน',
   'auth.sessionExpired': 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง',
   'auth.smsLogin': 'เข้าสู่ระบบด้วย SMS',
-  'auth.sesLogin': 'เข้าสู่ระบบด้วยอีเมล',
   'auth.username': 'ชื่อผู้ใช้',
   'auth.waitCaptchaLoad': 'กรุณารอให้แคปต์ชาโหลด',
   'auth.quickRegPageTitle': 'ลงทะเบียนด่วน',

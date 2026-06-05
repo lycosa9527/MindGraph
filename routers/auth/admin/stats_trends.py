@@ -15,7 +15,7 @@ from typing import Optional, Dict, Any
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import sum as sa_sum
 
@@ -27,8 +27,11 @@ from services.auth.school_dashboard_logger import school_dashboard_extra
 from utils.auth.admin_scope import AdminScope, assert_panel_org_readable, assert_panel_user_readable
 from utils.auth.mindbot_token_stats import (
     aggregate_mindbot_tokens_by_date,
+    aggregate_mindbot_tokens_by_hour,
     merge_mindbot_daily_rows_into_tokens_by_date,
+    merge_mindbot_hourly_into_tokens_by_hour,
 )
+from utils.auth.token_stats_queries import apply_token_service_filter, utc_date_to_beijing_key
 from ..dependencies import (
     get_language_dependency,
     require_admin_stats_read,
@@ -41,6 +44,11 @@ from .stats import _sql_count
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _apply_token_service_filter(stmt, service_filter: Optional[str]):
+    """Restrict TokenUsage rows to mindgraph or mindmate (matches token-stats breakdown)."""
+    return apply_token_service_filter(stmt, service_filter)
 
 
 @router.get("/admin/stats/trends")
@@ -230,15 +238,7 @@ async def get_stats_trends_admin(
                 sa_sum(TokenUsage.input_tokens).label("input_tokens"),
                 sa_sum(TokenUsage.output_tokens).label("output_tokens"),
             ).where(TokenUsage.success)
-            if service_filter == "mindmate":
-                token_counts_stmt = token_counts_stmt.where(TokenUsage.request_type == "mindmate")
-            elif service_filter == "mindgraph":
-                token_counts_stmt = token_counts_stmt.where(
-                    or_(
-                        TokenUsage.request_type != "mindmate",
-                        TokenUsage.request_type.is_(None),
-                    )
-                )
+            token_counts_stmt = _apply_token_service_filter(token_counts_stmt, service_filter)
             token_counts_stmt = token_counts_stmt.where(TokenUsage.created_at >= trends_filter_start_utc)
             token_counts = (await db.execute(token_counts_stmt.group_by(func.date(TokenUsage.created_at)))).all()
 
@@ -304,6 +304,7 @@ async def get_school_token_trends(
     organization_id: Optional[int] = None,
     days: Optional[int] = 30,
     hourly: bool = False,
+    service: Optional[str] = None,
     scope: AdminScope = Depends(require_school_dashboard_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
@@ -333,6 +334,7 @@ async def get_school_token_trends(
         organization_name=None,
         days=days,
         hourly=hourly,
+        service=service,
         scope=scope,
         db=db,
         lang=lang,
@@ -347,11 +349,13 @@ async def get_organization_token_trends_admin(
     organization_name: Optional[str] = None,
     days: Optional[int] = 30,  # Number of days to look back
     hourly: bool = False,  # If True, return hourly data (only for days=1)
+    service: Optional[str] = None,  # 'mindgraph' | 'mindmate' to filter by service
     scope: AdminScope = Depends(require_admin_stats_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """Get token usage trends for a specific organization."""
+    service_filter = service if service in ("mindgraph", "mindmate") else None
     if not organization_id and not organization_name:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -422,19 +426,16 @@ async def get_organization_token_trends_admin(
 
         try:
             # Query hourly token usage
-            token_counts = (
-                await db.execute(
-                    select(
-                        func.strftime("%Y-%m-%d %H:00:00", TokenUsage.created_at).label("datetime"),
-                        sa_sum(TokenUsage.total_tokens).label("total_tokens"),
-                        sa_sum(TokenUsage.input_tokens).label("input_tokens"),
-                        sa_sum(TokenUsage.output_tokens).label("output_tokens"),
-                    )
-                    .where(TokenUsage.organization_id == org.id, TokenUsage.success)
-                    .where(TokenUsage.created_at >= trends_filter_start_utc)
-                    .group_by(func.strftime("%Y-%m-%d %H:00:00", TokenUsage.created_at))
-                )
-            ).all()
+            hourly_stmt = select(
+                func.strftime("%Y-%m-%d %H:00:00", TokenUsage.created_at).label("datetime"),
+                sa_sum(TokenUsage.total_tokens).label("total_tokens"),
+                sa_sum(TokenUsage.input_tokens).label("input_tokens"),
+                sa_sum(TokenUsage.output_tokens).label("output_tokens"),
+            ).where(TokenUsage.organization_id == org.id, TokenUsage.success)
+            hourly_stmt = _apply_token_service_filter(hourly_stmt, service_filter)
+            hourly_stmt = hourly_stmt.where(TokenUsage.created_at >= trends_filter_start_utc)
+            hourly_stmt = hourly_stmt.group_by(func.strftime("%Y-%m-%d %H:00:00", TokenUsage.created_at))
+            token_counts = (await db.execute(hourly_stmt)).all()
 
             # Map UTC datetimes to Beijing hours
             tokens_by_hour = {}
@@ -453,6 +454,14 @@ async def get_organization_token_trends_admin(
                 tokens_by_hour[beijing_hour_str]["total"] += int(row.total_tokens or 0)
                 tokens_by_hour[beijing_hour_str]["input"] += int(row.input_tokens or 0)
                 tokens_by_hour[beijing_hour_str]["output"] += int(row.output_tokens or 0)
+
+            if service_filter != "mindgraph":
+                mindbot_hourly = await aggregate_mindbot_tokens_by_hour(
+                    db,
+                    created_since=trends_filter_start_utc,
+                    organization_id=org.id,
+                )
+                merge_mindbot_hourly_into_tokens_by_hour(tokens_by_hour, mindbot_hourly)
 
             for hour in hour_list:
                 hour_str = hour.strftime("%Y-%m-%d %H:00:00")
@@ -492,6 +501,7 @@ async def get_organization_token_trends_admin(
                 sa_sum(TokenUsage.input_tokens).label("input_tokens"),
                 sa_sum(TokenUsage.output_tokens).label("output_tokens"),
             ).where(TokenUsage.organization_id == org.id, TokenUsage.success)
+            token_counts_stmt = _apply_token_service_filter(token_counts_stmt, service_filter)
             token_counts_stmt = token_counts_stmt.where(TokenUsage.created_at >= trends_filter_start_utc)
             token_counts = (await db.execute(token_counts_stmt.group_by(func.date(TokenUsage.created_at)))).all()
 
@@ -515,16 +525,17 @@ async def get_organization_token_trends_admin(
                 tokens_by_date[beijing_date_str]["input"] += int(row.input_tokens or 0)
                 tokens_by_date[beijing_date_str]["output"] += int(row.output_tokens or 0)
 
-            mindbot_counts = await aggregate_mindbot_tokens_by_date(
-                db,
-                created_since=trends_filter_start_utc,
-                organization_id=org.id,
-            )
-            merge_mindbot_daily_rows_into_tokens_by_date(
-                tokens_by_date,
-                mindbot_counts,
-                beijing_timezone=BEIJING_TIMEZONE,
-            )
+            if service_filter != "mindgraph":
+                mindbot_counts = await aggregate_mindbot_tokens_by_date(
+                    db,
+                    created_since=trends_filter_start_utc,
+                    organization_id=org.id,
+                )
+                merge_mindbot_daily_rows_into_tokens_by_date(
+                    tokens_by_date,
+                    mindbot_counts,
+                    beijing_timezone=BEIJING_TIMEZONE,
+                )
 
             for date in date_list:
                 date_str = str(date)
@@ -555,11 +566,14 @@ async def get_user_token_trends_admin(
     _request: Request,
     user_id: Optional[int] = None,
     days: Optional[int] = 10,  # Number of days to look back, default 10
+    hourly: bool = False,  # If True, return hourly data (only for days=1)
+    service: Optional[str] = None,
     scope: AdminScope = Depends(require_admin_stats_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """Get token usage trends for a specific user."""
+    service_filter = service if service in ("mindgraph", "mindmate") else None
     if not user_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user_id must be provided")
 
@@ -603,57 +617,128 @@ async def get_user_token_trends_admin(
 
     trends_filter_start_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
 
-    # Generate all dates in range using Beijing dates (for display)
-    date_list = []
-    current = beijing_start
-    while current <= beijing_now:
-        date_list.append(current.date())
-        current += timedelta(days=1)
-
     trends_data = []
 
-    # Daily token usage for this user (non-cumulative)
-    try:
-        token_counts_stmt = select(
-            func.date(TokenUsage.created_at).label("date"),
-            sa_sum(TokenUsage.total_tokens).label("total_tokens"),
-            sa_sum(TokenUsage.input_tokens).label("input_tokens"),
-            sa_sum(TokenUsage.output_tokens).label("output_tokens"),
-        ).where(TokenUsage.user_id == user.id, TokenUsage.success)
-        token_counts_stmt = token_counts_stmt.where(TokenUsage.created_at >= trends_filter_start_utc)
-        token_counts = (await db.execute(token_counts_stmt.group_by(func.date(TokenUsage.created_at)))).all()
+    if hourly and days == 1 and not all_time:
+        hour_list = []
+        hourly_start = trends_filter_start_utc.astimezone(BEIJING_TIMEZONE)
+        current = hourly_start
+        while current <= beijing_now:
+            hour_list.append(current.replace(minute=0, second=0, microsecond=0))
+            current += timedelta(hours=1)
 
-        # Map UTC dates to Beijing dates
-        tokens_by_date = {}
-        for row in token_counts:
-            utc_date = row.date
-            # Database may return date as string, need to parse it
-            if isinstance(utc_date, str):
-                utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
-            utc_datetime = datetime.combine(utc_date, datetime.min.time())
-            beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
-            beijing_date_str = str(beijing_datetime.date())
-            if beijing_date_str not in tokens_by_date:
-                tokens_by_date[beijing_date_str] = {"total": 0, "input": 0, "output": 0}
-            tokens_by_date[beijing_date_str]["total"] += int(row.total_tokens or 0)
-            tokens_by_date[beijing_date_str]["input"] += int(row.input_tokens or 0)
-            tokens_by_date[beijing_date_str]["output"] += int(row.output_tokens or 0)
+        try:
+            hourly_stmt = select(
+                func.strftime("%Y-%m-%d %H:00:00", TokenUsage.created_at).label("datetime"),
+                sa_sum(TokenUsage.total_tokens).label("total_tokens"),
+                sa_sum(TokenUsage.input_tokens).label("input_tokens"),
+                sa_sum(TokenUsage.output_tokens).label("output_tokens"),
+            ).where(TokenUsage.user_id == user.id, TokenUsage.success)
+            hourly_stmt = _apply_token_service_filter(hourly_stmt, service_filter)
+            hourly_stmt = hourly_stmt.where(TokenUsage.created_at >= trends_filter_start_utc)
+            hourly_stmt = hourly_stmt.group_by(func.strftime("%Y-%m-%d %H:00:00", TokenUsage.created_at))
+            token_counts = (await db.execute(hourly_stmt)).all()
 
-        for date in date_list:
-            date_str = str(date)
-            tokens = tokens_by_date.get(date_str, {"total": 0, "input": 0, "output": 0})
-            trends_data.append(
-                {
-                    "date": date_str,
-                    "value": tokens["total"],
-                    "input": tokens["input"],
-                    "output": tokens["output"],
-                }
-            )
-    except Exception as e:
-        logger.error("Error fetching user token trends: %s", e)
-        for date in date_list:
-            trends_data.append({"date": str(date), "value": 0, "input": 0, "output": 0})
+            tokens_by_hour = {}
+            for row in token_counts:
+                utc_datetime_str = row.datetime
+                utc_datetime = datetime.strptime(utc_datetime_str, "%Y-%m-%d %H:00:00")
+                utc_datetime = utc_datetime.replace(tzinfo=timezone.utc)
+                beijing_datetime = utc_datetime.astimezone(BEIJING_TIMEZONE)
+                beijing_hour_str = beijing_datetime.strftime("%Y-%m-%d %H:00:00")
+                if beijing_hour_str not in tokens_by_hour:
+                    tokens_by_hour[beijing_hour_str] = {"total": 0, "input": 0, "output": 0}
+                tokens_by_hour[beijing_hour_str]["total"] += int(row.total_tokens or 0)
+                tokens_by_hour[beijing_hour_str]["input"] += int(row.input_tokens or 0)
+                tokens_by_hour[beijing_hour_str]["output"] += int(row.output_tokens or 0)
+
+            if service_filter != "mindgraph":
+                mindbot_hourly = await aggregate_mindbot_tokens_by_hour(
+                    db,
+                    created_since=trends_filter_start_utc,
+                    linked_user_id=int(user.id),
+                )
+                merge_mindbot_hourly_into_tokens_by_hour(tokens_by_hour, mindbot_hourly)
+
+            for hour in hour_list:
+                hour_str = hour.strftime("%Y-%m-%d %H:00:00")
+                tokens = tokens_by_hour.get(hour_str, {"total": 0, "input": 0, "output": 0})
+                trends_data.append(
+                    {
+                        "date": hour_str,
+                        "value": tokens["total"],
+                        "input": tokens["input"],
+                        "output": tokens["output"],
+                    }
+                )
+        except Exception as e:
+            logger.error("Error fetching hourly user token trends: %s", e)
+            for hour in hour_list:
+                trends_data.append(
+                    {
+                        "date": hour.strftime("%Y-%m-%d %H:00:00"),
+                        "value": 0,
+                        "input": 0,
+                        "output": 0,
+                    }
+                )
+    else:
+        # Generate all dates in range using Beijing dates (for display)
+        date_list = []
+        current = beijing_start
+        while current <= beijing_now:
+            date_list.append(current.date())
+            current += timedelta(days=1)
+
+        # Daily token usage for this user (non-cumulative)
+        try:
+            token_counts_stmt = select(
+                func.date(TokenUsage.created_at).label("date"),
+                sa_sum(TokenUsage.total_tokens).label("total_tokens"),
+                sa_sum(TokenUsage.input_tokens).label("input_tokens"),
+                sa_sum(TokenUsage.output_tokens).label("output_tokens"),
+            ).where(TokenUsage.user_id == user.id, TokenUsage.success)
+            token_counts_stmt = _apply_token_service_filter(token_counts_stmt, service_filter)
+            token_counts_stmt = token_counts_stmt.where(TokenUsage.created_at >= trends_filter_start_utc)
+            token_counts = (await db.execute(token_counts_stmt.group_by(func.date(TokenUsage.created_at)))).all()
+
+            # Map UTC dates to Beijing dates
+            tokens_by_date = {}
+            for row in token_counts:
+                beijing_date_str = utc_date_to_beijing_key(row.date, BEIJING_TIMEZONE)
+                if beijing_date_str not in tokens_by_date:
+                    tokens_by_date[beijing_date_str] = {"total": 0, "input": 0, "output": 0}
+                tokens_by_date[beijing_date_str]["total"] += int(row.total_tokens or 0)
+                tokens_by_date[beijing_date_str]["input"] += int(row.input_tokens or 0)
+                tokens_by_date[beijing_date_str]["output"] += int(row.output_tokens or 0)
+
+            if service_filter != "mindgraph":
+                mindbot_rows = await aggregate_mindbot_tokens_by_date(
+                    db,
+                    created_since=trends_filter_start_utc,
+                    linked_user_id=int(user.id),
+                )
+                merge_mindbot_daily_rows_into_tokens_by_date(
+                    tokens_by_date,
+                    mindbot_rows,
+                    beijing_timezone=BEIJING_TIMEZONE,
+                )
+
+            for date in date_list:
+                date_str = str(date)
+                tokens = tokens_by_date.get(date_str, {"total": 0, "input": 0, "output": 0})
+                trends_data.append(
+                    {
+                        "date": date_str,
+                        "value": tokens["total"],
+                        "input": tokens["input"],
+                        "output": tokens["output"],
+                    }
+                )
+        except Exception as e:
+            logger.error("Error fetching user token trends: %s", e)
+            for date in date_list:
+                trends_data.append({"date": str(date), "value": 0, "input": 0, "output": 0})
 
     return {
         "user_id": user.id,

@@ -36,6 +36,31 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     () => (data.value as { hiddenAnswers?: string[] } | null)?.hiddenAnswers ?? []
   )
 
+  function syncLearningSheetFlags(d: Record<string, unknown>, enabled: boolean): void {
+    d.isLearningSheet = enabled
+    if (enabled) {
+      d.is_learning_sheet = true
+    } else {
+      delete d.is_learning_sheet
+    }
+  }
+
+  function nodeHiddenAnswer(node: { data?: Record<string, unknown> }): string | undefined {
+    const answer = (node.data as { hiddenAnswer?: string } | undefined)?.hiddenAnswer
+    return typeof answer === 'string' && answer.trim() ? answer.trim() : undefined
+  }
+
+  function trackHiddenAnswer(d: Record<string, unknown>, originalText: string, prevAnswer?: string): void {
+    let answers = (d.hiddenAnswers as string[] | undefined) ?? []
+    if (prevAnswer && prevAnswer !== originalText) {
+      answers = answers.map((entry) => (entry === prevAnswer ? originalText : entry))
+    }
+    if (!answers.includes(originalText)) {
+      answers = [...answers, originalText]
+    }
+    d.hiddenAnswers = answers
+  }
+
   function emptyNodeForLearningSheet(nodeId: string): boolean {
     if (!data.value?.nodes || !isLearningSheet.value) return false
 
@@ -44,11 +69,11 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
 
     const node = data.value.nodes[nodeIndex]
     const originalText = String(node.text ?? '').trim()
-    if (!originalText || node.data?.hidden) return false
+    const nodeData = node.data as { hidden?: boolean; hiddenAnswer?: string } | undefined
+    if (!originalText || originalText === LEARNING_SHEET_PLACEHOLDER || nodeData?.hidden) return false
 
     const d = data.value as Record<string, unknown>
-    const existingAnswers = (d.hiddenAnswers as string[] | undefined) ?? []
-    d.hiddenAnswers = [...existingAnswers, originalText]
+    trackHiddenAnswer(d, originalText, nodeHiddenAnswer(node))
 
     data.value.nodes[nodeIndex] = {
       ...node,
@@ -67,7 +92,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
   function setLearningSheetMode(enabled: boolean): void {
     if (!data.value) return
     const d = data.value as Record<string, unknown>
-    d.isLearningSheet = enabled
+    syncLearningSheetFlags(d, enabled)
     if (enabled && !d.hiddenAnswers) {
       d.hiddenAnswers = []
     }
@@ -80,23 +105,21 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     const d = dv as Record<string, unknown>
 
     dv.nodes.forEach((node, idx) => {
-      const nodeData = node.data as { hidden?: boolean; hiddenAnswer?: string } | undefined
-      if (nodeData?.hidden === true && nodeData?.hiddenAnswer) {
-        const originalText = nodeData.hiddenAnswer
-        dv.nodes[idx] = {
-          ...node,
-          text: originalText,
-          data: {
-            ...mindMapEstimatedData(node.data as Record<string, unknown>, originalText),
-            hidden: true,
-            hiddenAnswer: originalText,
-          },
-        }
-        emitEvent('diagram:node_updated', { nodeId: node.id, updates: { text: originalText } })
+      const originalText = nodeHiddenAnswer(node)
+      if (!originalText) return
+      dv.nodes[idx] = {
+        ...node,
+        text: originalText,
+        data: {
+          ...mindMapEstimatedData(node.data as Record<string, unknown>, originalText),
+          hidden: false,
+          hiddenAnswer: originalText,
+        },
       }
+      emitEvent('diagram:node_updated', { nodeId: node.id, updates: { text: originalText } })
     })
 
-    d.isLearningSheet = false
+    syncLearningSheetFlags(d, false)
   }
 
   function applyLearningSheetView(): void {
@@ -106,35 +129,32 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     const d = dv as Record<string, unknown>
 
     dv.nodes.forEach((node, idx) => {
-      const nodeData = node.data as { hidden?: boolean; hiddenAnswer?: string } | undefined
-      if (nodeData?.hidden === true && nodeData?.hiddenAnswer) {
-        dv.nodes[idx] = {
-          ...node,
-          text: LEARNING_SHEET_PLACEHOLDER,
-          data: {
-            ...mindMapEstimatedData(
-              node.data as Record<string, unknown>,
-              LEARNING_SHEET_PLACEHOLDER
-            ),
-            hidden: true,
-            hiddenAnswer: nodeData.hiddenAnswer,
-          },
-        }
-        emitEvent('diagram:node_updated', {
-          nodeId: node.id,
-          updates: { text: LEARNING_SHEET_PLACEHOLDER },
-        })
+      const originalText = nodeHiddenAnswer(node)
+      if (!originalText) return
+      dv.nodes[idx] = {
+        ...node,
+        text: LEARNING_SHEET_PLACEHOLDER,
+        data: {
+          ...mindMapEstimatedData(
+            node.data as Record<string, unknown>,
+            LEARNING_SHEET_PLACEHOLDER
+          ),
+          hidden: true,
+          hiddenAnswer: originalText,
+        },
       }
+      emitEvent('diagram:node_updated', {
+        nodeId: node.id,
+        updates: { text: LEARNING_SHEET_PLACEHOLDER },
+      })
     })
 
-    d.isLearningSheet = true
+    syncLearningSheetFlags(d, true)
   }
 
   function hasPreservedLearningSheet(): boolean {
     if (!data.value?.nodes) return false
-    return data.value.nodes.some(
-      (n) => (n.data as { hidden?: boolean; hiddenAnswer?: string })?.hidden === true
-    )
+    return data.value.nodes.some((n) => nodeHiddenAnswer(n) !== undefined)
   }
 
   return {
