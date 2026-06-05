@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.31] - 2026-06-05
+
+> **RLS bootstrap reliability on managed PostgreSQL.** Fixes `sudo psql` connecting to the wrong socket and Alembic `0042` failing when `pg_stat_statements` is installed.
+
+### Fixed
+
+- **RLS role bootstrap psql host** — [`rls_roles_bootstrap.py`](scripts/db/rls_roles_bootstrap.py) resolves host/port from `DATABASE_URL` (admin URL first) instead of the distro default socket, so managed Postgres on `127.0.0.1` or `POSTGRESQL_DATA_DIR/sockets` is targeted correctly.
+- **Alembic `0042` EXECUTE grants** — [`build_grant_rls_functions_to_app_sql()`](alembic/rls_functions_sql.py) grants `EXECUTE` only on `public.rls_*` helpers to `mindgraph_app`; avoids `GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public`, which fails when `pg_stat_statements` (rev `0031`) is present. Shared SQL reused in [`rls_roles_sql.py`](alembic/rls_roles_sql.py).
+
+### Added
+
+- **Tests** — Connection-arg coverage for RLS bootstrap psql ([`test_rls_roles_bootstrap.py`](tests/scripts/test_rls_roles_bootstrap.py)) and scoped grant SQL ([`test_rls_functions_sql.py`](tests/test_rls_functions_sql.py)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.31).
+
 ## [5.117.30] - 2026-06-02
 
 > **RLS panel fixes (Alembic `0051`–`0053`) and Python dependency sweep.** Run migrations through `0053` before deploy. Upgrade Qdrant server to **1.18.1** when refreshing `qdrant-client` (`scripts/setup/update_qdrant_server.py`). Reinstall deps: `pip install -U -r requirements.txt`.
