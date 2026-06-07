@@ -5,7 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [5.117.33] - 2026-06-07
+
+> **Diagram save reliability: UUID assignment for unlimited tiers, RLS org context, and clearer API errors.**
+
+### Fixed
+
+- **Diagram save — unlimited tier UUID** — New diagrams on paid/unlimited tiers no longer skip UUID assignment (previously caused `id` NOT NULL violations). Quota check and id generation extracted to [`diagram_new_id.py`](services/redis/cache/diagram_new_id.py) ([`test_diagram_save_uuid.py`](tests/test_diagram_save_uuid.py)).
+- **Diagram save — RLS org context** — Create, update, duplicate, and quota count pass `organization_id` into `user_rls_session` so org-scoped RLS policies apply correctly ([`redis_diagram_cache.py`](services/redis/cache/redis_diagram_cache.py), [`_redis_diagram_cache_helpers.py`](services/redis/cache/_redis_diagram_cache_helpers.py), [`diagrams.py`](routers/api/diagrams.py)).
+- **Diagram save — slot limit count** — Frontend uses server `total` instead of loaded list length for remaining slots and “slots full” checks ([`savedDiagrams.ts`](frontend/src/stores/savedDiagrams.ts)).
+- **Auth — session expiry on mode check** — `GET /api/auth/mode` returning 401 triggers token-expired handling ([`auth.ts`](frontend/src/stores/auth.ts)).
+
+### Changed
+
+- **Diagram save — API error detail** — DB failures map to safe messages (RLS, field length, id assignment) via [`diagram_save_errors.py`](services/redis/cache/diagram_save_errors.py); frontend surfaces `detail` from failed save/update responses instead of generic throws ([`savedDiagrams.ts`](frontend/src/stores/savedDiagrams.ts)).
+- **Editor — auto-save backoff** — After three consecutive save failures, debounced auto-save stops until the user edits again ([`useDiagramAutoSave.ts`](frontend/src/composables/editor/useDiagramAutoSave.ts)).
+
+### Added
+
+- **Tests** — UUID assignment and DB error mapping ([`test_diagram_save_uuid.py`](tests/test_diagram_save_uuid.py), [`test_diagram_db_errors.py`](tests/test_diagram_db_errors.py)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.33).
 
 ## [5.117.32] - 2026-06-06
 

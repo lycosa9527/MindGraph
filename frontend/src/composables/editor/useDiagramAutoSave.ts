@@ -142,6 +142,8 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
   const isSaving = ref(false)
 
   let lastSavedFullFingerprint = ''
+  let consecutiveSaveFailures = 0
+  const MAX_CONSECUTIVE_SAVE_FAILURES = 3
 
   const diagramTypeForName = computed(
     () => (diagramStore.type as string) || (route.query.type as string) || null
@@ -197,6 +199,9 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
 
   async function performSave(): Promise<SaveFlushResult> {
     if (!canSave.value) return { saved: false, reason: 'skipped_guards' }
+    if (consecutiveSaveFailures >= MAX_CONSECUTIVE_SAVE_FAILURES) {
+      return { saved: false, reason: 'error' }
+    }
 
     const base = diagramStore.getSpecForSave()
     if (base) llmResultsStore.updateCurrentModelSpec(base)
@@ -218,6 +223,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
       )
 
       if (result.success) {
+        consecutiveSaveFailures = 0
         lastSavedAt.value = new Date()
         lastSavedFullFingerprint = getFullFingerprint(diagramStore.data as DiagramDataLike)
         isDirty.value = false
@@ -237,9 +243,17 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
       if (result.action === 'skipped' && result.error === 'No available slots') {
         return { saved: false, reason: 'skipped_slots_full' }
       }
+      consecutiveSaveFailures += 1
+      if (consecutiveSaveFailures >= MAX_CONSECUTIVE_SAVE_FAILURES) {
+        cancelDebounce()
+      }
       return { saved: false, reason: 'error' }
     } catch (error) {
       console.error('[useDiagramAutoSave] Save error:', error)
+      consecutiveSaveFailures += 1
+      if (consecutiveSaveFailures >= MAX_CONSECUTIVE_SAVE_FAILURES) {
+        cancelDebounce()
+      }
       return { saved: false, reason: 'error' }
     } finally {
       isSaving.value = false
@@ -248,6 +262,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
 
   function trigger(): void {
     cancelDebounce()
+    consecutiveSaveFailures = 0
     isDirty.value = true
     debounceTimer = setTimeout(performSave, SAVE.AUTO_SAVE_DEBOUNCE_MS)
   }

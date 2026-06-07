@@ -47,6 +47,25 @@ function notifyDiagramLimitReached(max: number, apiDetail?: string): void {
   notify.warning(diagramLimitMessage(max, apiDetail))
 }
 
+async function readDiagramApiErrorDetail(response: Response): Promise<string> {
+  try {
+    const payload = (await response.json()) as { detail?: unknown }
+    const detail = payload.detail
+    if (typeof detail === 'string' && detail.trim()) {
+      return detail.trim()
+    }
+    if (Array.isArray(detail) && detail.length > 0) {
+      const first = detail[0] as { msg?: string }
+      if (typeof first?.msg === 'string' && first.msg.trim()) {
+        return first.msg.trim()
+      }
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return ''
+}
+
 /**
  * Check if a diagram spec is empty/unmodified (still matches default template)
  *
@@ -167,15 +186,16 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
   const authStore = useAuthStore()
   const uiStore = useUIStore()
   const hasSaveLimit = computed(() => hasDiagramSaveLimit(maxDiagrams.value))
+  const savedDiagramCount = computed(() => total.value)
   const canSaveMore = computed(
-    () => !hasSaveLimit.value || diagrams.value.length < maxDiagrams.value
+    () => !hasSaveLimit.value || savedDiagramCount.value < maxDiagrams.value
   )
   const remainingSlots = computed(() =>
-    hasSaveLimit.value ? maxDiagrams.value - diagrams.value.length : Number.POSITIVE_INFINITY
+    hasSaveLimit.value ? maxDiagrams.value - savedDiagramCount.value : Number.POSITIVE_INFINITY
   )
   const isActiveDiagramSaved = computed(() => activeDiagramId.value !== null)
   const isSlotsFullyUsed = computed(
-    () => hasSaveLimit.value && diagrams.value.length >= maxDiagrams.value
+    () => hasSaveLimit.value && savedDiagramCount.value >= maxDiagrams.value
   )
 
   // Actions
@@ -306,20 +326,16 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
           return null
         }
         if (response.status === 403) {
-          let apiDetail = ''
-          try {
-            const payload = await response.json()
-            if (typeof payload.detail === 'string') {
-              apiDetail = payload.detail
-            }
-          } catch {
-            apiDetail = ''
-          }
+          const apiDetail = await readDiagramApiErrorDetail(response)
           error.value = diagramLimitMessage(maxDiagrams.value, apiDetail)
           notifyDiagramLimitReached(maxDiagrams.value, apiDetail)
           return null
         }
-        throw new Error(`Failed to save diagram: ${response.status}`)
+        const apiDetail = await readDiagramApiErrorDetail(response)
+        const message = apiDetail || `Failed to save diagram: ${response.status}`
+        error.value = message
+        console.error('[SavedDiagrams] Save error:', message)
+        return null
       }
 
       const saved: SavedDiagramFull = await response.json()
@@ -386,7 +402,11 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
           authStore.handleTokenExpired('您的登录已过期，请重新登录后更新图表')
           return false
         }
-        throw new Error(`Failed to update diagram: ${response.status}`)
+        const apiDetail = await readDiagramApiErrorDetail(response)
+        const message = apiDetail || `Failed to update diagram: ${response.status}`
+        error.value = message
+        console.error('[SavedDiagrams] Update error:', message)
+        return false
       }
 
       const updated: SavedDiagramFull = await response.json()

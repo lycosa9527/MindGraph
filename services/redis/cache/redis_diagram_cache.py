@@ -27,7 +27,6 @@ Proprietary License
 import json
 import logging
 import time
-import uuid
 from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -38,6 +37,8 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from services.redis.cache.redis_cache_stampede import with_stampede_lock
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
+from services.redis.cache.diagram_new_id import assign_id_for_new_diagram
+from services.redis.cache.diagram_save_errors import describe_diagram_db_error
 from services.redis.cache._redis_diagram_cache_helpers import (
     _redis_json_set_paths,
     count_diagrams_from_db,
@@ -94,7 +95,11 @@ class RedisDiagramCache:
         """Get Redis key for user's cached diagram list."""
         return USER_LIST_KEY.format(user_id=user_id)
 
-    async def count_user_diagrams(self, user_id: int) -> int:
+    async def count_user_diagrams(
+        self,
+        user_id: int,
+        organization_id: Optional[int] = None,
+    ) -> int:
         """
         Count user's diagrams (non-deleted).
 
@@ -114,12 +119,17 @@ class RedisDiagramCache:
                 except Exception as exc:
                     logger.warning("[DiagramCache] Redis count failed: %s", exc)
 
-        return await count_diagrams_from_db(user_id)
+        return await count_diagrams_from_db(user_id, organization_id)
 
-    async def _resolve_diagram_cap(self, user_id: int, max_per_user: Optional[int]) -> int:
+    async def _resolve_diagram_cap(
+        self,
+        user_id: int,
+        max_per_user: Optional[int],
+        organization_id: Optional[int] = None,
+    ) -> int:
         if max_per_user is not None:
             return int(max_per_user)
-        async with user_rls_session(user_id) as db:
+        async with user_rls_session(user_id, organization_id) as db:
             return await max_diagrams_for_user_id(db, user_id)
 
     async def save_diagram(
@@ -132,6 +142,7 @@ class RedisDiagramCache:
         language: str = "zh",
         thumbnail: Optional[str] = None,
         max_per_user: Optional[int] = None,
+        organization_id: Optional[int] = None,
     ) -> Tuple[bool, Optional[str], Optional[str]]:
         """
         Save diagram using write-through pattern: Database first, then Redis cache.
@@ -164,15 +175,15 @@ class RedisDiagramCache:
         # spec_json is not used further; SQLAlchemy handles JSONB serialization.
 
         is_new = diagram_id is None
-        diagram_cap = await self._resolve_diagram_cap(user_id, max_per_user)
+        diagram_cap = await self._resolve_diagram_cap(user_id, max_per_user, organization_id)
 
-        # Check user quota for new diagrams (trial tier only; paid tiers are unlimited)
-        if is_new and not is_unlimited_diagram_limit(diagram_cap):
-            current_count = await self.count_user_diagrams(user_id)
-            if current_count >= diagram_cap:
-                return False, None, format_diagram_save_limit_error(diagram_cap)
-            # Generate UUID for new diagram
-            diagram_id = str(uuid.uuid4())
+        if is_new:
+            current_count = 0
+            if not is_unlimited_diagram_limit(diagram_cap):
+                current_count = await self.count_user_diagrams(user_id, organization_id)
+            diagram_id, quota_error = assign_id_for_new_diagram(diagram_cap, current_count)
+            if quota_error:
+                return False, None, quota_error
 
         now = datetime.now(UTC)
         now_ts = now.timestamp()
@@ -187,14 +198,30 @@ class RedisDiagramCache:
         # Write-through: Write to database FIRST.
         # Pass the dict directly — SQLAlchemy serialises JSONB columns automatically.
         if is_new:
-            db_success = await self._create_in_database(
-                user_id, diagram_id, title, diagram_type, spec, language, thumbnail, now
+            db_success, db_error = await self._create_in_database(
+                user_id,
+                diagram_id,
+                title,
+                diagram_type,
+                spec,
+                language,
+                thumbnail,
+                now,
+                organization_id,
             )
         else:
-            db_success = await self._update_in_database(diagram_id, user_id, title, spec, thumbnail, now)
+            db_success, db_error = await self._update_in_database(
+                diagram_id,
+                user_id,
+                title,
+                spec,
+                thumbnail,
+                now,
+                organization_id,
+            )
 
         if not db_success:
-            return False, diagram_id, "Failed to save diagram to database"
+            return False, diagram_id, db_error or "Failed to save diagram to database"
 
         # Build diagram data for Redis cache
         diagram_data = {
@@ -255,10 +282,11 @@ class RedisDiagramCache:
         language: str,
         thumbnail: Optional[str],
         created_at: datetime,
-    ) -> bool:
+        organization_id: Optional[int] = None,
+    ) -> Tuple[bool, Optional[str]]:
         """Create new diagram in database using INSERT ... RETURNING to confirm in one query."""
         try:
-            async with user_rls_session(user_id) as db:
+            async with user_rls_session(user_id, organization_id) as db:
                 try:
                     stmt = (
                         pg_insert(Diagram)
@@ -278,14 +306,16 @@ class RedisDiagramCache:
                     )
                     result = await db.execute(stmt)
                     await db.commit()
-                    return result.scalar_one_or_none() == diagram_id
+                    if result.scalar_one_or_none() == diagram_id:
+                        return True, None
+                    return False, "Failed to save diagram to database"
                 except Exception as exc:
                     await db.rollback()
                     logger.error("[DiagramCache] Database create failed: %s", exc)
-                    return False
+                    return False, describe_diagram_db_error(exc)
         except Exception as exc:
             logger.error("[DiagramCache] Database connection failed: %s", exc)
-            return False
+            return False, describe_diagram_db_error(exc)
 
     async def _update_meta_only_in_database(
         self,
@@ -373,10 +403,11 @@ class RedisDiagramCache:
         spec: Dict[str, Any],
         thumbnail: Optional[str],
         updated_at: datetime,
-    ) -> bool:
+        organization_id: Optional[int] = None,
+    ) -> Tuple[bool, Optional[str]]:
         """Update diagram in database."""
         try:
-            async with user_rls_session(user_id) as db:
+            async with user_rls_session(user_id, organization_id) as db:
                 try:
                     stmt = (
                         sa_update(Diagram)
@@ -390,16 +421,16 @@ class RedisDiagramCache:
                     )
                     result = await db.execute(stmt)
                     if result.rowcount == 0:
-                        return False
+                        return False, "Diagram not found"
                     await db.commit()
-                    return True
-                except Exception as e:
+                    return True, None
+                except Exception as exc:
                     await db.rollback()
-                    logger.error("[DiagramCache] Database update failed: %s", e)
-                    return False
-        except Exception as e:
-            logger.error("[DiagramCache] Database connection failed: %s", e)
-            return False
+                    logger.error("[DiagramCache] Database update failed: %s", exc)
+                    return False, describe_diagram_db_error(exc)
+        except Exception as exc:
+            logger.error("[DiagramCache] Database connection failed: %s", exc)
+            return False, describe_diagram_db_error(exc)
 
     async def get_diagram(self, user_id: int, diagram_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -727,6 +758,7 @@ class RedisDiagramCache:
         user_id: int,
         diagram_id: str,
         max_per_user: Optional[int] = None,
+        organization_id: Optional[int] = None,
     ) -> Tuple[bool, Optional[str], Optional[str]]:
         """
         Duplicate an existing diagram.
@@ -734,9 +766,9 @@ class RedisDiagramCache:
         Returns:
             Tuple of (success, new_diagram_id, error_message)
         """
-        diagram_cap = await self._resolve_diagram_cap(user_id, max_per_user)
+        diagram_cap = await self._resolve_diagram_cap(user_id, max_per_user, organization_id)
         if not is_unlimited_diagram_limit(diagram_cap):
-            current_count = await self.count_user_diagrams(user_id)
+            current_count = await self.count_user_diagrams(user_id, organization_id)
             if current_count >= diagram_cap:
                 return False, None, format_diagram_save_limit_error(diagram_cap)
 
@@ -759,6 +791,7 @@ class RedisDiagramCache:
             language=original.get("language", "zh"),
             thumbnail=original.get("thumbnail"),
             max_per_user=diagram_cap,
+            organization_id=organization_id,
         )
 
         return success, new_id, error

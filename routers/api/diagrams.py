@@ -219,6 +219,7 @@ async def create_diagram(
     async with actor_rls_session(current_user) as tier_db:
         diagram_cap = await max_diagrams_for_user(tier_db, current_user)
 
+    user_org_id = getattr(current_user, "organization_id", None)
     success, diagram_id, error = await cache.save_diagram(
         user_id=current_user.id,
         diagram_id=None,  # New diagram
@@ -228,6 +229,7 @@ async def create_diagram(
         language=req.language,
         thumbnail=req.thumbnail,
         max_per_user=diagram_cap,
+        organization_id=user_org_id,
     )
 
     if not success:
@@ -427,6 +429,7 @@ async def update_diagram(
             spec=spec,
             language=existing.get("language", "zh"),
             thumbnail=thumbnail,
+            organization_id=getattr(current_user, "organization_id", None),
         )
 
         if not success:
@@ -518,6 +521,7 @@ async def duplicate_diagram(
         current_user.id,
         diagram_id,
         max_per_user=diagram_cap,
+        organization_id=getattr(current_user, "organization_id", None),
     )
 
     if not success:

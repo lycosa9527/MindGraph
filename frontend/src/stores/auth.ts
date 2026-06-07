@@ -730,6 +730,10 @@ export const useAuthStore = defineStore('auth', () => {
         method: 'GET',
         credentials: 'same-origin',
       })
+      if (response.status === 401) {
+        handleTokenExpired('您的登录已过期，请重新登录')
+        return false
+      }
       if (!response.ok) {
         return false
       }
