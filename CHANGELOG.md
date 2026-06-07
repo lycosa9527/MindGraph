@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.34] - 2026-06-07
+
+> **Production log fixes: RLS-safe scheduled backups, PostgreSQL hourly token trends, multi-worker startup SMS.**
+
+### Fixed
+
+- **Backup — scheduled pg_dump RLS** — [`backup_scheduler.py`](services/utils/backup_scheduler.py) now uses shared `build_pg_dump_cmd()` with `--no-policies` (matches admin export and CLI dump; fixes nightly backup failure on `api_keys` RLS).
+- **Admin — hourly token trends on PostgreSQL** — Replaced SQLite `func.strftime` with `date_trunc('hour', …)` via [`token_stats_queries.py`](utils/auth/token_stats_queries.py) in [`stats_trends.py`](routers/auth/admin/stats_trends.py) and [`mindbot_token_stats.py`](utils/auth/mindbot_token_stats.py).
+- **Startup SMS — staggered multi-worker duplicate** — Keep Redis startup SMS lock until TTL after successful send; release only on real failures, not provider rate-limit duplicates ([`lifespan.py`](services/infrastructure/lifecycle/lifespan.py), [`sms_service.py`](services/auth/sms_service.py), [`keys.py`](services/redis/keys.py) `TTL_LOCK_STARTUP` 300s).
+
+### Changed
+
+- **SMS — rate-limit log severity** — Provider duplicate/rate-limit notification failures log as WARNING ([`sms_service.py`](services/auth/sms_service.py)).
+- **pg_dump — shared command builder** — [`build_pg_dump_cmd()`](services/utils/pg_client_binaries.py) used by scheduled backup, admin export, and CLI dump.
+
+### Added
+
+- **Tests** — [`test_pg_dump_cmd.py`](tests/test_pg_dump_cmd.py), [`test_token_stats_hour_bucket.py`](tests/test_token_stats_hour_bucket.py), [`test_startup_sms_lock.py`](tests/test_startup_sms_lock.py), [`test_sms_rate_limit.py`](tests/test_sms_rate_limit.py).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.34).
+
 ## [5.117.33] - 2026-06-07
 
 > **Diagram save reliability: UUID assignment for unlimited tiers, RLS org context, and clearer API errors.**

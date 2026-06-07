@@ -12,7 +12,8 @@ All Rights Reserved -- Proprietary License
 import os
 import subprocess
 import sys
-from typing import Optional
+from pathlib import Path
+from typing import List, Optional
 
 
 def find_pg_client_binary(name: str) -> Optional[str]:
@@ -47,3 +48,22 @@ def find_pg_client_binary(name: str) -> Optional[str]:
     except (subprocess.SubprocessError, FileNotFoundError):
         pass
     return None
+
+
+def build_pg_dump_cmd(pg_dump: str, output_path: Path, db_url: str) -> List[str]:
+    """
+    Build pg_dump argv aligned with admin export and Alembic RLS backup policy.
+
+    Uses custom format, no owner/oids, and --no-policies so dumps work under RLS.
+    """
+    from config.database import libpq_database_url
+
+    return [
+        pg_dump,
+        "-Fc",
+        "--no-owner",
+        "--no-policies",
+        "-f",
+        str(output_path),
+        libpq_database_url(db_url),
+    ]

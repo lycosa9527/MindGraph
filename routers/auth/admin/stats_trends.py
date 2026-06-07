@@ -31,7 +31,12 @@ from utils.auth.mindbot_token_stats import (
     merge_mindbot_daily_rows_into_tokens_by_date,
     merge_mindbot_hourly_into_tokens_by_hour,
 )
-from utils.auth.token_stats_queries import apply_token_service_filter, utc_date_to_beijing_key
+from utils.auth.token_stats_queries import (
+    apply_token_service_filter,
+    utc_date_to_beijing_key,
+    utc_hour_bucket,
+    utc_naive_hour_to_beijing_key,
+)
 from ..dependencies import (
     get_language_dependency,
     require_admin_stats_read,
@@ -425,26 +430,21 @@ async def get_organization_token_trends_admin(
             current += timedelta(hours=1)
 
         try:
-            # Query hourly token usage
+            hour_bucket = utc_hour_bucket(TokenUsage.created_at)
             hourly_stmt = select(
-                func.strftime("%Y-%m-%d %H:00:00", TokenUsage.created_at).label("datetime"),
+                hour_bucket.label("datetime"),
                 sa_sum(TokenUsage.total_tokens).label("total_tokens"),
                 sa_sum(TokenUsage.input_tokens).label("input_tokens"),
                 sa_sum(TokenUsage.output_tokens).label("output_tokens"),
             ).where(TokenUsage.organization_id == org.id, TokenUsage.success)
             hourly_stmt = _apply_token_service_filter(hourly_stmt, service_filter)
             hourly_stmt = hourly_stmt.where(TokenUsage.created_at >= trends_filter_start_utc)
-            hourly_stmt = hourly_stmt.group_by(func.strftime("%Y-%m-%d %H:00:00", TokenUsage.created_at))
+            hourly_stmt = hourly_stmt.group_by(hour_bucket)
             token_counts = (await db.execute(hourly_stmt)).all()
 
-            # Map UTC datetimes to Beijing hours
             tokens_by_hour = {}
             for row in token_counts:
-                utc_datetime_str = row.datetime
-                utc_datetime = datetime.strptime(utc_datetime_str, "%Y-%m-%d %H:00:00")
-                utc_datetime = utc_datetime.replace(tzinfo=timezone.utc)
-                beijing_datetime = utc_datetime.astimezone(BEIJING_TIMEZONE)
-                beijing_hour_str = beijing_datetime.strftime("%Y-%m-%d %H:00:00")
+                beijing_hour_str = utc_naive_hour_to_beijing_key(row.datetime, BEIJING_TIMEZONE)
                 if beijing_hour_str not in tokens_by_hour:
                     tokens_by_hour[beijing_hour_str] = {
                         "total": 0,
@@ -628,24 +628,21 @@ async def get_user_token_trends_admin(
             current += timedelta(hours=1)
 
         try:
+            hour_bucket = utc_hour_bucket(TokenUsage.created_at)
             hourly_stmt = select(
-                func.strftime("%Y-%m-%d %H:00:00", TokenUsage.created_at).label("datetime"),
+                hour_bucket.label("datetime"),
                 sa_sum(TokenUsage.total_tokens).label("total_tokens"),
                 sa_sum(TokenUsage.input_tokens).label("input_tokens"),
                 sa_sum(TokenUsage.output_tokens).label("output_tokens"),
             ).where(TokenUsage.user_id == user.id, TokenUsage.success)
             hourly_stmt = _apply_token_service_filter(hourly_stmt, service_filter)
             hourly_stmt = hourly_stmt.where(TokenUsage.created_at >= trends_filter_start_utc)
-            hourly_stmt = hourly_stmt.group_by(func.strftime("%Y-%m-%d %H:00:00", TokenUsage.created_at))
+            hourly_stmt = hourly_stmt.group_by(hour_bucket)
             token_counts = (await db.execute(hourly_stmt)).all()
 
             tokens_by_hour = {}
             for row in token_counts:
-                utc_datetime_str = row.datetime
-                utc_datetime = datetime.strptime(utc_datetime_str, "%Y-%m-%d %H:00:00")
-                utc_datetime = utc_datetime.replace(tzinfo=timezone.utc)
-                beijing_datetime = utc_datetime.astimezone(BEIJING_TIMEZONE)
-                beijing_hour_str = beijing_datetime.strftime("%Y-%m-%d %H:00:00")
+                beijing_hour_str = utc_naive_hour_to_beijing_key(row.datetime, BEIJING_TIMEZONE)
                 if beijing_hour_str not in tokens_by_hour:
                     tokens_by_hour[beijing_hour_str] = {"total": 0, "input": 0, "output": 0}
                 tokens_by_hour[beijing_hour_str]["total"] += int(row.total_tokens or 0)

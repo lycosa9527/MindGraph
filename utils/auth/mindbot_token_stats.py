@@ -7,7 +7,7 @@ the MindMate service bucket.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone, tzinfo
+from datetime import datetime, tzinfo
 from typing import Any, Dict, MutableMapping, Optional, TypedDict
 
 from sqlalchemy import and_, func, or_, select
@@ -355,30 +355,29 @@ async def aggregate_mindbot_tokens_by_hour(
     linked_user_id: Optional[int] = None,
 ) -> Dict[str, Dict[str, int]]:
     """Hourly MindBot totals keyed by Beijing hour string (YYYY-MM-DD HH:00:00)."""
-    from utils.auth.token_stats_queries import BEIJING_TIMEZONE
+    from utils.auth.token_stats_queries import utc_hour_bucket, utc_naive_hour_to_beijing_key
 
     filters = _mindbot_usage_filters(
         created_since=created_since,
         organization_id=organization_id,
     )
+    hour_bucket = utc_hour_bucket(MindbotUsageEvent.created_at)
     stmt = (
         select(
-            func.strftime("%Y-%m-%d %H:00:00", MindbotUsageEvent.created_at).label("datetime"),
+            hour_bucket.label("datetime"),
             sa_sum(_effective_total_expr()).label("total_tokens"),
             sa_sum(_effective_input_expr()).label("input_tokens"),
             sa_sum(_effective_output_expr()).label("output_tokens"),
         )
         .where(filters)
-        .group_by(func.strftime("%Y-%m-%d %H:00:00", MindbotUsageEvent.created_at))
+        .group_by(hour_bucket)
     )
     if linked_user_id is not None:
         stmt = stmt.where(MindbotUsageEvent.linked_user_id == linked_user_id)
     rows = (await db.execute(stmt)).all()
     tokens_by_hour: Dict[str, Dict[str, int]] = {}
     for row in rows:
-        utc_datetime = datetime.strptime(row.datetime, "%Y-%m-%d %H:00:00")
-        utc_datetime = utc_datetime.replace(tzinfo=timezone.utc)
-        beijing_hour_str = utc_datetime.astimezone(BEIJING_TIMEZONE).strftime("%Y-%m-%d %H:00:00")
+        beijing_hour_str = utc_naive_hour_to_beijing_key(row.datetime)
         if beijing_hour_str not in tokens_by_hour:
             tokens_by_hour[beijing_hour_str] = {"total": 0, "input": 0, "output": 0}
         tokens_by_hour[beijing_hour_str]["total"] += int(row.total_tokens or 0)

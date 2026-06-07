@@ -66,7 +66,7 @@ try:
 except ImportError:
     RICH_AVAILABLE = False
 
-from services.utils.pg_client_binaries import find_pg_client_binary
+from services.utils.pg_client_binaries import build_pg_dump_cmd, find_pg_client_binary
 from services.utils.pg_restore_prep import wipe_public_schema_before_restore
 
 try:
@@ -544,15 +544,7 @@ def run_dump(db_url: str, backup_path: Path) -> bool:
     if backup_path.suffix != DUMP_EXT:
         backup_path = backup_path.with_suffix(DUMP_EXT)
 
-    cmd = [
-        pg_dump,
-        "-Fc",
-        "--no-owner",
-        "--no-policies",
-        "-f",
-        str(backup_path),
-        libpq_database_url(db_url),
-    ]
+    cmd = build_pg_dump_cmd(pg_dump, backup_path, db_url)
     result = subprocess.run(cmd, capture_output=True, timeout=3600, check=False, text=True)
 
     if result.returncode != 0:

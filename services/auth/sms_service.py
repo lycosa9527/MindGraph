@@ -37,6 +37,25 @@ from models.domain.messages import Messages, Language
 
 logger = logging.getLogger(__name__)
 
+
+def _is_sms_provider_rate_limit(error_code: str, error_message: str) -> bool:
+    """True when Tencent rejected send due to duplicate/rate-limit policy."""
+    code_lower = (error_code or "").lower()
+    message_lower = (error_message or "").lower()
+    if code_lower.startswith("limitexceeded"):
+        return True
+    rate_limit_phrases = (
+        "exceeds the upper limit",
+        "frequency limit",
+        "rate limit",
+        "same content",
+        "duplicate",
+    )
+    return any(phrase in message_lower for phrase in rate_limit_phrases)
+
+
+SMS_NOTIFICATION_RATE_LIMIT_MESSAGE = "SMS notification blocked by provider rate limit"
+
 # ============================================================================
 # Configuration
 # ============================================================================
@@ -646,6 +665,7 @@ class SMSService:
             send_status = resp_data.get("SendStatusSet", [])
             success_count = 0
             failed_count = 0
+            only_rate_limit_failures = True
 
             for status in send_status:
                 if status.get("Code") == "Ok":
@@ -655,7 +675,14 @@ class SMSService:
                     error_code = status.get("Code", "Unknown")
                     error_msg = status.get("Message", "Unknown error")
                     phone_number = status.get("PhoneNumber", "unknown")
-                    logger.error(
+                    if not _is_sms_provider_rate_limit(error_code, error_msg):
+                        only_rate_limit_failures = False
+                    log_fn = (
+                        logger.warning
+                        if _is_sms_provider_rate_limit(error_code, error_msg)
+                        else logger.error
+                    )
+                    log_fn(
                         "SMS notification send failed for phone: %s - %s",
                         phone_number,
                         error_msg,
@@ -669,6 +696,9 @@ class SMSService:
                 )
                 return True, f"Notification sent to {success_count} phone(s)"
 
+            if failed_count > 0 and only_rate_limit_failures:
+                logger.warning("SMS notification failed for all %d phone(s)", len(phones))
+                return False, SMS_NOTIFICATION_RATE_LIMIT_MESSAGE
             logger.error("SMS notification failed for all %d phone(s)", len(phones))
             return False, "SMS notification failed for all recipients"
 

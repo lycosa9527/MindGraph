@@ -19,7 +19,7 @@ from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 
 from config.database import libpq_database_url
-from services.utils.pg_client_binaries import find_pg_client_binary
+from services.utils.pg_client_binaries import build_pg_dump_cmd, find_pg_client_binary
 from services.utils.pg_restore_prep import wipe_public_schema_before_restore
 
 logger = logging.getLogger(__name__)
@@ -167,15 +167,7 @@ def export_postgres_dump(
     filename = f"{DUMP_PREFIX}.{timestamp}{DUMP_EXT}"
     dump_path = backup_dir / filename
 
-    cmd = [
-        pg_dump,
-        "-Fc",
-        "--no-owner",
-        "--no-policies",
-        "-f",
-        str(dump_path),
-        libpq_database_url(db_url),
-    ]
+    cmd = build_pg_dump_cmd(pg_dump, dump_path, db_url)
     result = subprocess.run(
         cmd,
         capture_output=True,

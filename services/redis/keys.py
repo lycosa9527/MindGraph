@@ -109,7 +109,7 @@ TOKENS_STATS = "tokens:stats"
 LOCK = "lock:{resource}"
 LOCK_STARTUP_SMS = "lock:mindgraph:lifespan:startup_sms"
 TTL_LOCK_DEFAULT = 10
-TTL_LOCK_STARTUP = 120
+TTL_LOCK_STARTUP = 300
 
 # ---------------------------------------------------------------------------
 # Activity tracker  (redis_activity_tracker.py)

@@ -206,7 +206,8 @@ async def acquire_startup_sms_notification_lock() -> Optional[str]:
 
     Uvicorn does not set UVICORN_WORKER_ID; all workers default to the same id,
     so each would otherwise send duplicate SMS. Uses Redis SET NX (see also
-    backup scheduler lock pattern).
+    backup scheduler lock pattern). The lock is kept until TTL expires after a
+    successful send so staggered workers skip instead of re-sending.
 
     Returns:
         Lock token to pass to release_startup_sms_notification_lock, or None
@@ -242,7 +243,7 @@ async def acquire_startup_sms_notification_lock() -> Optional[str]:
 
 
 async def release_startup_sms_notification_lock(lock_id: str) -> None:
-    """Release startup SMS lock so a quick restart can notify again."""
+    """Release startup SMS lock after a failed send so another worker may retry."""
     if not lock_id:
         return
     if not is_redis_available():

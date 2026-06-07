@@ -28,6 +28,7 @@ from services.auth.geoip_country import log_geolite_country_mmdb_startup_status
 
 _log_geolite_country_mmdb_startup_status = log_geolite_country_mmdb_startup_status
 from services.auth.sms_middleware import get_sms_middleware
+from services.auth.sms_service import SMS_NOTIFICATION_RATE_LIMIT_MESSAGE
 from services.infrastructure.lifecycle.lifespan_collab_integration import (
     start_online_collab_subsystem_async,
 )
@@ -109,8 +110,9 @@ async def _send_startup_sms_notification_once() -> None:
     """
     Notify admins via SMS at most once per process group.
 
-    Uvicorn does not set UVICORN_WORKER_ID; a Redis lock ensures only one
-    worker sends when multiple workers run the lifespan.
+    Uvicorn workers start lifespan at different times. A Redis SET NX lock with
+    TTL covers the boot window: the worker that sends keeps the lock until TTL
+    expiry so slower workers skip instead of triggering duplicate provider errors.
     """
     if not admin_sms_alerts_enabled():
         logger.debug("[LIFESPAN] Startup SMS notification skipped (admin SMS alerts disabled)")
@@ -140,6 +142,8 @@ async def _send_startup_sms_notification_once() -> None:
     if lock_token is None:
         return
 
+    success = False
+    message = ""
     try:
         success, message = await sms_middleware.send_notification(
             phones=admin_phones,
@@ -152,7 +156,8 @@ async def _send_startup_sms_notification_once() -> None:
         else:
             logger.warning("[LIFESPAN] Failed to send startup SMS notification: %s", message)
     finally:
-        await release_startup_sms_notification_lock(lock_token)
+        if not success and message != SMS_NOTIFICATION_RATE_LIMIT_MESSAGE:
+            await release_startup_sms_notification_lock(lock_token)
 
 
 @asynccontextmanager

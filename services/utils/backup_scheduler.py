@@ -43,19 +43,13 @@ from typing import Any, Dict, List, Optional
 
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import get_redis, is_redis_available
-from services.utils.pg_client_binaries import find_pg_client_binary
-
-
-def _libpq_url_identity(url: str) -> str:
-    """Fallback when config.database is unavailable (e.g. isolated tests)."""
-    return url
+from services.utils.pg_client_binaries import build_pg_dump_cmd, find_pg_client_binary
 
 
 try:
-    from config.database import DATABASE_URL, libpq_database_url
+    from config.database import DATABASE_URL
 except ImportError:
     DATABASE_URL = ""
-    libpq_database_url = _libpq_url_identity
 
 try:
     from qcloud_cos import CosConfig, CosS3Client
@@ -598,15 +592,8 @@ def backup_postgresql_database(backup_path: Path) -> bool:
             logger.error("[Backup] pg_dump binary not found. Install PostgreSQL client tools.")
             return False
 
-        # Run pg_dump (align flags with admin export: custom format, no owner oids)
-        cmd = [
-            pg_dump_binary,
-            "-Fc",
-            "--no-owner",
-            "-f",
-            str(backup_path),
-            libpq_database_url(db_url),
-        ]
+        # Run pg_dump (shared flags with admin export: custom format, no owner, no policies)
+        cmd = build_pg_dump_cmd(pg_dump_binary, backup_path, db_url)
 
         logger.debug("[Backup] Running: %s", " ".join(cmd[:3]) + " [URL]")
 
