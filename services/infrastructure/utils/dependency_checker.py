@@ -93,8 +93,14 @@ def check_redis_installed() -> tuple[bool, str]:
             redis_host = os.getenv("REDIS_HOST", "localhost")
             redis_port_str = os.getenv("REDIS_PORT", "6379")
             redis_port = int(redis_port_str)
+            use_resp3 = os.getenv("REDIS_RESP3", "true").strip().lower() in {"1", "true", "yes", "on"}
             redis_client_class = getattr(REDIS_MODULE, "Redis")
-            r = redis_client_class(host=redis_host, port=redis_port, socket_connect_timeout=1)
+            r = redis_client_class(
+                host=redis_host,
+                port=redis_port,
+                socket_connect_timeout=1,
+                protocol=3 if use_resp3 else 2,
+            )
             r.ping()
             redis_running = True
         except Exception as exc:
@@ -140,8 +146,14 @@ def check_celery_installed() -> tuple[bool, str]:
         redis_host = os.getenv("REDIS_HOST", "localhost")
         redis_port_str = os.getenv("REDIS_PORT", "6379")
         redis_port = int(redis_port_str)
+        use_resp3 = os.getenv("REDIS_RESP3", "true").strip().lower() in {"1", "true", "yes", "on"}
         redis_client_class = getattr(REDIS_MODULE, "Redis")
-        r = redis_client_class(host=redis_host, port=redis_port, socket_connect_timeout=1)
+        r = redis_client_class(
+            host=redis_host,
+            port=redis_port,
+            socket_connect_timeout=1,
+            protocol=3 if use_resp3 else 2,
+        )
         r.ping()
     except Exception as e:
         return False, (

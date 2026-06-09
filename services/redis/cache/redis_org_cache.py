@@ -75,6 +75,8 @@ class OrganizationCache:
             "display_name": str(getattr(org, "display_name", None) or ""),
             "mindmate_agent_name": str(getattr(org, "mindmate_agent_name", None) or ""),
             "mindmate_agent_avatar_url": str(getattr(org, "mindmate_agent_avatar_url", None) or ""),
+            "dify_api_base_url": str(getattr(org, "dify_api_base_url", None) or ""),
+            "dify_api_key_set": "1" if str(getattr(org, "dify_api_key", None) or "").strip() else "0",
             "invitation_code": str(getattr(org, "invitation_code", None) or ""),
             "created_at": created_at_val.isoformat() if created_at_val else "",
             "expires_at": expires_at_val.isoformat() if expires_at_val else "",
@@ -104,6 +106,10 @@ class OrganizationCache:
             setattr(org, "mindmate_agent_name", data.get("mindmate_agent_name") or None)
         if hasattr(Organization, "mindmate_agent_avatar_url"):
             setattr(org, "mindmate_agent_avatar_url", data.get("mindmate_agent_avatar_url") or None)
+        if hasattr(Organization, "dify_api_base_url"):
+            setattr(org, "dify_api_base_url", data.get("dify_api_base_url") or None)
+        if hasattr(Organization, "dify_api_key") and data.get("dify_api_key_set") == "1":
+            setattr(org, "dify_api_key", "1")
 
         # Parse datetime fields
         if data.get("created_at"):

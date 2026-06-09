@@ -99,7 +99,7 @@ def is_admin(current_user) -> bool:
 
 
 def is_platform_bd(current_user) -> bool:
-    """Operations (运营) — read-only global dashboard."""
+    """Teaching research (教研) — read-only global dashboard."""
     return role_in(current_user, frozenset({ROLE_PLATFORM_BD}))
 
 

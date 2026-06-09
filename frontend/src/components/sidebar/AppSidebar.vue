@@ -27,6 +27,7 @@ const {
   showAccountModal,
   showUpdateLogModal,
   authStore,
+  brandEditionLabel,
 } = sidebar
 </script>
 
@@ -43,7 +44,7 @@ const {
     <!-- Header: brand + collapse (expand when hidden is on the active page) -->
     <div class="p-4 flex items-center justify-between gap-2 border-b border-stone-200">
       <div
-        class="logo-link flex items-center space-x-2 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
+        class="logo-link flex items-center gap-2 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
         @click="sidebar.handleLogoClick"
       >
         <div
@@ -51,9 +52,17 @@ const {
         >
           M
         </div>
-        <span class="font-semibold text-lg text-stone-900 tracking-tight truncate">{{
-          sidebar.t('sidebar.brandTitle')
-        }}</span>
+        <div class="min-w-0 flex flex-col leading-tight">
+          <span class="font-semibold text-lg text-stone-900 tracking-tight truncate">{{
+            sidebar.t('sidebar.brandTitle')
+          }}</span>
+          <span
+            v-if="brandEditionLabel"
+            class="text-xs text-stone-500 truncate mt-0.5"
+          >
+            {{ brandEditionLabel }}
+          </span>
+        </div>
       </div>
       <el-button
         text

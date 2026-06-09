@@ -557,7 +557,7 @@ export default {
   'admin.revokeRoleConfirm': '确定要移除以下用户的角色：',
   'admin.roleControl': '角色控制',
   'admin.roleControlDesc': '管理超级管理员权限。拥有该角色的用户可访问完整管理面板。',
-  'admin.roleControlDescPlatformBd': '管理运营权限。运营可查看全局数据并管理学校邀请。',
+  'admin.roleControlDescPlatformBd': '管理教研权限。教研可查看全局数据并管理学校邀请。',
   'admin.roleControlDescExpert': '管理专家权限。专家可创建学校并管理其邀请范围内的组织。',
   'admin.roleControlDescManagers':
     '管理学校管理员。学校管理员可访问其所属组织的学校仪表盘。授予该角色前，用户须已加入学校。',

@@ -55,7 +55,7 @@ from utils.auth import (
 
 from .dependencies import get_language_dependency
 from .helpers import set_auth_cookies
-from .org_profile import organization_session_payload
+from .org_profile import organization_session_payload_async
 
 logger = logging.getLogger(__name__)
 
@@ -290,7 +290,10 @@ async def refresh_token(request: Request, response: Response):
 
 
 @router.get("/me")
-async def get_me(current_user: User = Depends(get_current_user)):
+async def get_me(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+):
     """
     Get current authenticated user profile
     """
@@ -319,7 +322,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
             "avatar": current_user.avatar or "🐈‍⬛",
             "role": role,
             "login_password_set": getattr(current_user, "login_password_set", True),
-            "organization": organization_session_payload(org),
+            "organization": await organization_session_payload_async(db, org),
             "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
             "last_login": (current_user.last_login.isoformat() if current_user.last_login else None),
             "ui_language": getattr(current_user, "ui_language", None),

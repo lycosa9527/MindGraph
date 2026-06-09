@@ -185,9 +185,15 @@ export function useAppSidebar() {
       borderClass: style.borderClass,
     }
   })
-  const userSubtitle = computed(() => {
-    const schoolName = authStore.user?.schoolName
-    return schoolName && schoolName.trim() ? schoolName : t('sidebar.userSubtitleDefault')
+  const brandEditionLabel = computed(() => {
+    if (!authStore.user?.schoolIsPrivatized) {
+      return null
+    }
+    const name = authStore.user?.schoolName?.trim()
+    if (!name) {
+      return null
+    }
+    return t('sidebar.brandEditionLabel', { name })
   })
   const userAvatar = computed(() => {
     const avatar = authStore.user?.avatar || '🐈‍⬛'
@@ -526,7 +532,7 @@ export function useAppSidebar() {
     mindMateNavLabel,
     userName,
     userRolePill,
-    userSubtitle,
+    brandEditionLabel,
     userAvatar,
     showLoginModal,
     showAccountModal,

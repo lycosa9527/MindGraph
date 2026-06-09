@@ -22,6 +22,7 @@ export default {
   'sidebar.bookmarks.title': '最近書籤',
   'sidebar.bookmarks.unknownDoc': '未知文檔',
   'sidebar.brandTitle': '邁特教研',
+  'sidebar.brandEditionLabel': '{name}專屬版',
   'sidebar.chatHistory.deleteConfirm': '確定要刪除這個對話嗎？此操作不可撤銷。',
   'sidebar.chatHistory.deleteTitle': '刪除對話',
   'sidebar.chatHistory.empty': '暫無對話記錄',

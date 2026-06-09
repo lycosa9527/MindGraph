@@ -27,7 +27,6 @@ if (!_raw) {
 }
 const s = reactive(_raw)
 const route = useRoute()
-const orgSubtitle = computed(() => s.userSubtitle as string)
 const showShareSiteModal = ref(false)
 const { triggerImport } = useDiagramImport()
 const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.path))
@@ -105,20 +104,6 @@ const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.p
                 >
                   {{ s.userRolePill.label }}
                 </span>
-              </div>
-              <div class="org-subtitle-wrapper text-xs text-stone-500 leading-tight mt-0.5">
-                <div
-                  class="org-subtitle-inner"
-                  :class="{ 'org-subtitle-marquee': orgSubtitle.length > 12 }"
-                >
-                  <span class="org-subtitle-text">{{ orgSubtitle }}</span>
-                  <span
-                    v-if="orgSubtitle.length > 12"
-                    class="org-subtitle-text org-subtitle-sep"
-                  >
-                    {{ orgSubtitle }}
-                  </span>
-                </div>
               </div>
             </div>
           </div>
@@ -285,44 +270,7 @@ const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.p
   width: 100%;
 }
 
-/* Organization name marquee for long names */
-.org-subtitle-wrapper {
-  overflow: hidden;
-  min-width: 0;
-}
-
-.org-subtitle-inner {
-  display: inline-flex;
-  white-space: nowrap;
-}
-
-.org-subtitle-text {
-  flex-shrink: 0;
-}
-
-.org-subtitle-sep {
-  padding-left: 1.5em;
-}
-
-.org-subtitle-marquee {
-  animation: org-subtitle-scroll 12s linear infinite;
-}
-
-.org-subtitle-marquee:hover {
-  animation-play-state: paused;
-}
-
-@keyframes org-subtitle-scroll {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-</style>
-
-<!-- Teleported popper — Swiss (matches MindGraphLanguageSwitcher / canvas-more-apps) -->
+/* Teleported popper — Swiss (matches MindGraphLanguageSwitcher / canvas-more-apps) */
 <style>
 .user-dropdown-popper.el-popper {
   box-sizing: border-box !important;

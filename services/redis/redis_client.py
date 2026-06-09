@@ -235,6 +235,7 @@ class _RedisCapabilities:
     """
 
     version: tuple = (0, 0, 0)
+    getdel: bool = False  # Redis 6.2+ GETDEL command for atomic get-and-delete
     delex: bool = False  # Redis 8.4+ DELEX command for compare-and-delete
     idmpauto: bool = False  # Redis 8.6+ XADD IDMPAUTO (redis-py idmpauto= + id=*)
 
@@ -248,6 +249,7 @@ def _apply_redis_startup_config(redis_client: Any, redis_version: str) -> None:
     """
     version_tuple = _parse_redis_version(redis_version)
     _RedisCapabilities.version = version_tuple
+    _RedisCapabilities.getdel = version_tuple >= (6, 2, 0)
     _RedisCapabilities.delex = version_tuple >= (8, 4, 0)
     client_idmp = _redis_py_supports_xadd_idmpauto()
     if version_tuple >= (8, 6, 0) and not client_idmp:
@@ -357,6 +359,7 @@ def init_redis_sync() -> bool:
         raise RedisStartupError("Redis package not installed") from None
 
     try:
+        use_resp3 = os.getenv("REDIS_RESP3", "true").strip().lower() in {"1", "true", "yes", "on"}
         redis_client = redis.from_url(  # type: ignore[attr-defined]
             redis_url,
             encoding="utf-8",
@@ -365,6 +368,7 @@ def init_redis_sync() -> bool:
             socket_timeout=config["socket_timeout"],
             socket_connect_timeout=config["socket_connect_timeout"],
             retry_on_timeout=config["retry_on_timeout"],
+            protocol=3 if use_resp3 else 2,
         )
 
         # Test connection
@@ -476,16 +480,24 @@ class RedisOperations:
         redis_client.delete(key)
         return True
 
+    _GET_AND_DELETE_LUA = (
+        "local v=redis.call('get',KEYS[1]); "
+        "if v then redis.call('del',KEYS[1]) end; "
+        "return v"
+    )
+
     @staticmethod
     @_with_retry("GETDEL", default_return=None)
     def get_and_delete(key: str) -> Optional[str]:
-        """Atomically get and delete a key using GETDEL (single round-trip, Redis >= 6.2)."""
+        """Atomically get and delete a key (GETDEL on Redis >= 6.2, Lua otherwise)."""
         redis_client = _RedisState.get_client()
         if not _RedisState.is_available() or not redis_client:
             logger.debug("[Redis] get_and_delete: Redis unavailable for key: %s", key)
             return None
         try:
-            return redis_client.getdel(key)
+            if _RedisCapabilities.getdel:
+                return redis_client.getdel(key)
+            return redis_client.eval(RedisOperations._GET_AND_DELETE_LUA, 1, key)
         except Exception as exc:
             logger.warning("[Redis] get_and_delete failed for key %s: %s", key, exc)
             return None

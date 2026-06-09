@@ -152,8 +152,7 @@ def _build_async_client() -> aioredis.Redis:
     }
     if keepalive_options:
         kwargs["socket_keepalive_options"] = keepalive_options
-    if _enable_resp3_default():
-        kwargs["protocol"] = 3
+    kwargs["protocol"] = 3 if _enable_resp3_default() else 2
 
     client = aioredis.from_url(url, **kwargs)
     logger.info(

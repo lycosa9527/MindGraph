@@ -82,6 +82,30 @@ def test_privatized_when_all_three_criteria_met() -> None:
     assert org_privatization_list_field(org) == {"is_privatized": True}
 
 
+def test_organization_session_payload_includes_is_privatized() -> None:
+    from routers.auth.org_profile import organization_session_payload
+
+    public = organization_session_payload(
+        _org(id=1, code="DEMO", name="Demo School")
+    )
+    assert public["is_privatized"] is False
+
+    private = organization_session_payload(
+        _org(
+            id=2,
+            code="BNU",
+            name="北京师范大学",
+            display_name="北京师范大学",
+            mindmate_agent_name="SchoolBot",
+            mindmate_agent_avatar_url="/static/org_mindmate_avatars/5/avatar.png",
+            dify_api_base_url="https://dify.example.com/v1",
+            dify_api_key="app-secret",
+        )
+    )
+    assert private["is_privatized"] is True
+    assert private["name"] == "北京师范大学"
+
+
 def test_admin_list_payload_marks_privatized_after_superadmin_configures_all_three() -> None:
     """Mirrors GET /admin/organizations field assembly for one fully configured school."""
     from routers.auth.admin.organization_dify import dify_list_fields

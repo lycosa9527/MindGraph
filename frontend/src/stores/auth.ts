@@ -220,6 +220,7 @@ export const useAuthStore = defineStore('auth', () => {
       : undefined
     const subscriptionExpired =
       orgIsObject && org.subscription_expired === true ? true : undefined
+    const schoolIsPrivatized = orgIsObject ? org.is_privatized === true : false
     const displayLabel = orgDisplayName || orgName || backendUser.schoolName || ''
 
     const allowsZh = backendUser.allows_simplified_chinese !== false
@@ -251,6 +252,7 @@ export const useAuthStore = defineStore('auth', () => {
       role: normalizeUserRole(backendUser.role),
       schoolId: orgId ? String(orgId) : backendUser.schoolId,
       schoolName: displayLabel,
+      schoolIsPrivatized,
       avatar,
       createdAt: backendUser.created_at || backendUser.createdAt,
       lastLogin: backendUser.last_login || backendUser.lastLogin,

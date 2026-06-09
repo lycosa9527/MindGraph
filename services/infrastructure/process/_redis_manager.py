@@ -69,8 +69,14 @@ def _get_redis_client(host: str, port: int, timeout: int = 2):
     """Helper function to create Redis client with proper type narrowing"""
     if redis_module is None:
         raise RuntimeError("Redis module not available")
+    use_resp3 = os.getenv("REDIS_RESP3", "true").strip().lower() in {"1", "true", "yes", "on"}
     redis_client_class = getattr(redis_module, "Redis")
-    return redis_client_class(host=host, port=port, socket_connect_timeout=timeout)
+    return redis_client_class(
+        host=host,
+        port=port,
+        socket_connect_timeout=timeout,
+        protocol=3 if use_resp3 else 2,
+    )
 
 
 def _verify_redis_on_port(host: str, port: int) -> bool:

@@ -193,12 +193,29 @@ class AsyncRedisOperations:
         await _client().delete(key)
         return True
 
+    _GET_AND_DELETE_LUA = (
+        "local v=redis.call('get',KEYS[1]); "
+        "if v then redis.call('del',KEYS[1]) end; "
+        "return v"
+    )
+
     @staticmethod
     @_with_async_retry("GETDEL", default_return=None)
     async def get_and_delete(key: str) -> Optional[str]:
-        """GETDEL key (Redis >= 6.2) — atomic get + delete in one round-trip."""
+        """Atomically get and delete a key (GETDEL on Redis >= 6.2, Lua otherwise)."""
 
-        return await _client().getdel(key)
+        client = _client()
+        try:
+            from services.redis.redis_client import (  # noqa: WPS433
+                _RedisCapabilities as _redis_capabilities,
+            )
+        except Exception:  # pylint: disable=broad-except
+            _redis_capabilities = None
+
+        getdel_enabled = bool(_redis_capabilities and _redis_capabilities.getdel)
+        if getdel_enabled:
+            return await client.getdel(key)
+        return await client.eval(AsyncRedisOperations._GET_AND_DELETE_LUA, 1, key)
 
     @staticmethod
     @_with_async_retry("INCR", default_return=None)

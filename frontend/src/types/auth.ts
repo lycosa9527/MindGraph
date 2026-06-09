@@ -7,7 +7,7 @@ export type AuthMode = 'standard' | 'bayi' | 'enterprise'
 /**
  * User roles (canonical DB slugs):
  * - superadmin: Full platform admin (超级管理员)
- * - platform_bd: Operations — read-only global dashboard (运营)
+ * - platform_bd: Teaching research — read-only global dashboard (教研)
  * - expert: Platform expert — B2B school invites (own orgs) (专家)
  * - school_admin: Organization manager — own-school dashboard + user mgmt (学校管理员)
  * - teacher: B2B school member (教师用户 / 学校版)
@@ -64,6 +64,8 @@ export interface User {
   mindmateAgentName?: string | null
   /** Per-school MindMate avatar URL when configured by admin */
   mindmateAgentAvatarUrl?: string | null
+  /** True when the school has dedicated MindMate/Dify privatization configured */
+  schoolIsPrivatized?: boolean
   /** B2B school subscription tier (trial | lite | standard | professional) */
   schoolTier?: SchoolTier | null
   /** Tier-gated feature flags from login /me organization payload */
@@ -95,6 +97,7 @@ export interface BackendUser {
         school_tier?: string | null
         school_tier_features?: SchoolTierFeatures | null
         subscription_expired?: boolean
+        is_privatized?: boolean
       }
   schoolId?: string
   schoolName?: string

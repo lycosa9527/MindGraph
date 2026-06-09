@@ -25,6 +25,7 @@ export default {
   'sidebar.bookmarks.title': 'Recent Bookmarks',
   'sidebar.bookmarks.unknownDoc': 'Unknown Document',
   'sidebar.brandTitle': '迈特教研',
+  'sidebar.brandEditionLabel': '{name} Exclusive',
   'sidebar.chatHistory.deleteConfirm':
     'Are you sure you want to delete this conversation? This cannot be undone.',
   'sidebar.chatHistory.deleteTitle': 'Delete Conversation',

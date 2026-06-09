@@ -202,6 +202,11 @@ def check_system_dependencies(exit_on_error: bool = True) -> bool:
     Returns:
         True if all dependencies are available, False otherwise
     """
+    from config.settings import config
+
+    if not config.FEATURE_KNOWLEDGE_SPACE:
+        return True
+
     all_ok = True
     errors = []
 
