@@ -18,6 +18,7 @@ import { useUIStore } from '@/stores'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
+import { diagramTypeKeyForType } from '@/utils/diagramTypeKeys'
 
 const router = useRouter()
 const uiStore = useUIStore()
@@ -43,7 +44,7 @@ function handleSelectDiagram(diagram: SavedDiagram) {
   })
 }
 
-import { diagramTypeKeyForType } from '@/utils/diagramTypeKeys' Array<{ titleKey: string; descKey: string; type: DiagramType }> = [
+const diagramTypes: Array<{ titleKey: string; descKey: string; type: DiagramType }> = [
   {
     titleKey: 'landing.diagramGrid.circle_map.title',
     descKey: 'landing.diagramGrid.circle_map.desc',
