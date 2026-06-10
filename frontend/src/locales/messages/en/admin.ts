@@ -680,6 +680,10 @@ export default {
   'admin.schoolModal.tabGeneral': 'Other settings',
   'admin.schoolModal.tabMindmate': 'MindMate auth',
   'admin.schoolVersionLabel': 'School version',
+  'admin.extraMemberSeatsLabel': 'Extra member seats',
+  'admin.extraMemberSeatsHint':
+    'Members: {current} / {effectiveLimit} (base {base} + extra {extra}).',
+  'admin.extraMemberSeatsPreset': '+{count}',
   'admin.schoolVersionHint':
     'Subscription tier sets member cap and diagram storage for this school. Members: {current} / {limit}.',
   'admin.unlimited': 'Unlimited',

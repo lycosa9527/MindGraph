@@ -169,4 +169,8 @@ function goToAccount() {
 .feature-card:active {
   transform: scale(0.99);
 }
+
+.mobile-home {
+  padding-bottom: env(safe-area-inset-bottom);
+}
 </style>

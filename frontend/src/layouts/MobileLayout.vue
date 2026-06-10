@@ -81,6 +81,7 @@ function goHome() {
         <button
           v-if="showBackButton"
           class="flex items-center justify-center w-8 h-8 rounded-lg active:bg-gray-100 transition-colors"
+          :aria-label="t('mobile.navBack', 'Back')"
           @click="goBack"
         >
           <ArrowLeft
@@ -91,6 +92,7 @@ function goHome() {
 
         <button
           class="flex items-center justify-center w-8 h-8 rounded-lg active:bg-gray-100 transition-colors"
+          :aria-label="t('mobile.navHome', 'Home')"
           @click="goHome"
         >
           <Home
@@ -122,5 +124,11 @@ function goHome() {
   -webkit-user-select: none;
   user-select: none;
   z-index: 10;
+  padding-top: env(safe-area-inset-top);
+}
+
+.mobile-layout {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 </style>

@@ -278,6 +278,7 @@ onUnmounted(() => {
       <div class="flex items-center gap-1">
         <button
           class="flex items-center justify-center w-8 h-8 rounded-lg active:bg-gray-100 transition-colors"
+          :aria-label="t('mobile.navHome', 'Home')"
           @click="goHome"
         >
           <Home
@@ -287,6 +288,7 @@ onUnmounted(() => {
         </button>
         <button
           class="flex items-center justify-center w-8 h-8 rounded-lg active:bg-gray-100 transition-colors"
+          :aria-label="t('sidebar.diagramHistory.title', 'History')"
           @click="toggleHistory"
         >
           <Menu
@@ -306,6 +308,7 @@ onUnmounted(() => {
       <button
         class="flex items-center justify-center w-8 h-8 rounded-lg active:bg-gray-100 transition-colors"
         :disabled="!authStore.isAuthenticated"
+        :aria-label="t('mindmate.newChat', 'New chat')"
         @click="startNewConversation"
       >
         <Plus
@@ -423,6 +426,7 @@ onUnmounted(() => {
   -webkit-user-select: none;
   user-select: none;
   z-index: 10;
+  padding-top: env(safe-area-inset-top);
 }
 
 .typing-cursor::after {
@@ -441,7 +445,7 @@ onUnmounted(() => {
 }
 
 .mobile-mm-input {
-  padding-bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Shrink avatars in conversation bubbles */

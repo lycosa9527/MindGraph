@@ -8,6 +8,11 @@ import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
 import { CANVAS_ENTRY_PATH_KEY } from '@/utils/canvasBackNavigation'
+import {
+  isMobileRoutePath,
+  resolveMobileRouteRedirect,
+  shouldSkipMobileRouteRedirect,
+} from '@/utils/mobileRouteRedirect'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
 
 /** Localized `document.title` via `meta.pageTitle.*` keys. */
@@ -336,28 +341,12 @@ router.beforeEach(async (to, from) => {
   }
 
   // Auto-redirect mobile users to /m/* routes (skip for auth, export, dashboard pages)
-  const isMobileRoute = to.path === '/m' || to.path.startsWith('/m/')
-  const skipMobileRedirect =
-    isMobileRoute ||
-    to.path.startsWith('/login') ||
-    to.path.startsWith('/auth') ||
-    to.path.startsWith('/bayi/passkey') ||
-    to.path.startsWith('/export-render') ||
-    to.path.startsWith('/dashboard') ||
-    to.path.startsWith('/admin')
+  const isMobileRoute = isMobileRoutePath(to.path)
+  const skipMobileRedirect = shouldSkipMobileRouteRedirect(to.path)
 
   if (isMobile.value && !skipMobileRedirect) {
-    const mobileMap: Record<string, string> = {
-      '/': '/m',
-      '/mindmate': '/m',
-      '/mindgraph': '/m/mindgraph',
-      '/canvas': '/m/canvas',
-    }
-    const mobilePath = mobileMap[to.path]
-    if (mobilePath) {
-      return { path: mobilePath, query: to.query as Record<string, string> }
-    }
-    return { path: '/m' }
+    const mobilePath = resolveMobileRouteRedirect(to.path)
+    return { path: mobilePath, query: to.query as Record<string, string> }
   }
 
   // Fetch feature flags if needed (for router guard - doesn't use vue-query)

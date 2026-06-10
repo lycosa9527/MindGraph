@@ -43,22 +43,7 @@ function handleSelectDiagram(diagram: SavedDiagram) {
   })
 }
 
-const TYPE_TO_ZH_NAME: Record<DiagramType, string> = {
-  circle_map: '圆圈图',
-  bubble_map: '气泡图',
-  double_bubble_map: '双气泡图',
-  tree_map: '树形图',
-  brace_map: '括号图',
-  flow_map: '流程图',
-  multi_flow_map: '复流程图',
-  bridge_map: '桥形图',
-  mindmap: '思维导图',
-  mind_map: '思维导图',
-  concept_map: '概念图',
-  diagram: '图表',
-}
-
-const diagramTypes: Array<{ titleKey: string; descKey: string; type: DiagramType }> = [
+import { diagramTypeKeyForType } from '@/utils/diagramTypeKeys' Array<{ titleKey: string; descKey: string; type: DiagramType }> = [
   {
     titleKey: 'landing.diagramGrid.circle_map.title',
     descKey: 'landing.diagramGrid.circle_map.desc',
@@ -112,9 +97,9 @@ const diagramTypes: Array<{ titleKey: string; descKey: string; type: DiagramType
 ]
 
 function handleSelectType(item: { type: DiagramType }) {
-  const zhName = TYPE_TO_ZH_NAME[item.type]
-  if (zhName) {
-    uiStore.setSelectedChartType(zhName)
+  const key = diagramTypeKeyForType(item.type)
+  if (key) {
+    uiStore.setSelectedChartType(key)
   }
   router.push({
     path: '/m/canvas',
@@ -140,6 +125,7 @@ function handleFreeInput() {
     >
       <button
         class="flex items-center justify-center w-8 h-8 rounded-lg active:bg-gray-100 transition-colors"
+        :aria-label="t('mobile.navHome', 'Home')"
         @click="goHome"
       >
         <Home
@@ -149,6 +135,7 @@ function handleFreeInput() {
       </button>
       <button
         class="flex items-center justify-center w-8 h-8 rounded-lg active:bg-gray-100 transition-colors ml-0.5"
+        :aria-label="t('sidebar.diagramHistory.title', 'Diagram history')"
         @click="toggleHistory"
       >
         <Menu
@@ -232,6 +219,7 @@ function handleFreeInput() {
   -webkit-user-select: none;
   user-select: none;
   z-index: 10;
+  padding-top: env(safe-area-inset-top);
 }
 
 .diagram-card {

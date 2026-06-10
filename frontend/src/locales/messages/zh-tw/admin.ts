@@ -599,6 +599,10 @@ export default {
   'admin.schoolModal.tabUsage': 'Token 使用',
   'admin.schoolModal.tabGeneral': '其他設定',
   'admin.schoolVersionLabel': '學校版本',
+  'admin.extraMemberSeatsLabel': '額外名額',
+  'admin.extraMemberSeatsHint':
+    '目前成員 {current} / {effectiveLimit} 人（基礎 {base} + 額外 {extra}）。',
+  'admin.extraMemberSeatsPreset': '+{count}',
   'admin.schoolVersionHint':
     '選擇學校訂閱版本，決定成員上限與導圖儲存空間。目前成員 {current} / {limit} 人。',
   'admin.unlimited': '不限',

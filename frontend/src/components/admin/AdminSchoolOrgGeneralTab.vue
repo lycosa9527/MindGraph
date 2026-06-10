@@ -2,10 +2,13 @@
 /**
  * School modal — General tab: display name, status, expiry, managers, school version.
  */
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 import { useLanguage } from '@/composables'
 import {
+  effectiveMemberLimit,
+  EXTRA_MEMBER_SEAT_PRESETS,
+  EXTRA_MEMBER_SEATS_MAX,
   isUnlimitedMemberLimit,
   SCHOOL_TIER_LIMITS,
   SCHOOL_TIER_OPTIONS,
@@ -15,6 +18,7 @@ import {
 const displayNameEdit = defineModel<string>('displayNameEdit', { required: true })
 const expiresAtEdit = defineModel<string | null>('expiresAtEdit', { required: true })
 const schoolTierEdit = defineModel<SchoolTier>('schoolTierEdit', { required: true })
+const extraMemberSeatsEdit = defineModel<number>('extraMemberSeatsEdit', { required: true })
 
 const props = defineProps<{
   orgName?: string
@@ -51,14 +55,38 @@ const tierLabelKey: Record<SchoolTier, string> = {
   professional: 'admin.schoolVersionTierProfessional',
 }
 
+const baseMemberLimit = computed(() => SCHOOL_TIER_LIMITS[schoolTierEdit.value].memberLimit)
+
+const effectiveMemberLimitValue = computed(() =>
+  effectiveMemberLimit(schoolTierEdit.value, extraMemberSeatsEdit.value)
+)
+
+const showExtraMemberSeats = computed(() => schoolTierEdit.value !== 'trial')
+
 const schoolTierHint = computed(() => {
-  const limits = SCHOOL_TIER_LIMITS[schoolTierEdit.value]
-  return t('admin.schoolVersionHint', {
-    current: props.orgUserCount ?? 0,
-    limit: isUnlimitedMemberLimit(limits.memberLimit)
-      ? t('admin.unlimited')
-      : limits.memberLimit,
+  const current = props.orgUserCount ?? 0
+  if (isUnlimitedMemberLimit(baseMemberLimit.value)) {
+    return t('admin.schoolVersionHint', {
+      current,
+      limit: t('admin.unlimited'),
+    })
+  }
+  return t('admin.extraMemberSeatsHint', {
+    current,
+    effectiveLimit: effectiveMemberLimitValue.value,
+    base: baseMemberLimit.value,
+    extra: extraMemberSeatsEdit.value,
   })
+})
+
+function selectExtraSeatPreset(value: number) {
+  extraMemberSeatsEdit.value = value
+}
+
+watch(schoolTierEdit, (tier) => {
+  if (tier === 'trial') {
+    extraMemberSeatsEdit.value = 0
+  }
 })
 
 const showLiteFeaturesHint = computed(
@@ -143,6 +171,38 @@ function tierOptionLabel(tier: SchoolTier): string {
           >
             {{ t('admin.schoolVersionLiteFeaturesHint') }}
           </p>
+        </div>
+      </div>
+
+      <div
+        v-if="showExtraMemberSeats"
+        class="flex flex-col gap-3 sm:flex-row sm:items-start"
+      >
+        <span :class="labelClass">{{ t('admin.extraMemberSeatsLabel') }}</span>
+        <div class="flex-1 min-w-0 max-w-2xl space-y-2">
+          <div class="flex flex-wrap gap-2">
+            <el-button
+              v-for="preset in EXTRA_MEMBER_SEAT_PRESETS"
+              :key="preset"
+              plain
+              size="small"
+              class="mindbot-pill shrink-0"
+              :class="extraMemberSeatsEdit === preset ? 'mindbot-pill--copy' : ''"
+              :disabled="props.readOnly"
+              @click="selectExtraSeatPreset(preset)"
+            >
+              {{ t('admin.extraMemberSeatsPreset', { count: preset }) }}
+            </el-button>
+          </div>
+          <el-input-number
+            v-model="extraMemberSeatsEdit"
+            :min="0"
+            :max="EXTRA_MEMBER_SEATS_MAX"
+            :step="1"
+            :disabled="props.readOnly"
+            controls-position="right"
+            class="mindbot-swiss-input w-full max-w-xs"
+          />
         </div>
       </div>
 

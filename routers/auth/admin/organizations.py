@@ -41,11 +41,13 @@ from utils.auth.role_constants import ROLE_TEACHER, SCHOOL_ADMIN_ROLES, normaliz
 from utils.auth.roles import is_superadmin
 from utils.auth.mindbot_token_stats import add_token_period, aggregate_mindbot_token_totals
 from utils.auth.school_tier import (
+    apply_extra_member_seats_on_update,
     apply_school_tier_on_create,
     apply_school_tier_on_update,
     assert_organization_has_manager_capacity,
     assert_organization_tier_allows_current_managers,
     assert_organization_tier_allows_current_members,
+    clear_extra_member_seats_if_trial,
     manager_limit_for_org,
     member_count_for_org,
     school_tier_list_fields,
@@ -507,8 +509,16 @@ async def update_organization_admin(
     if "mindmate_agent_name" in request or "mindmate_agent_avatar_url" in request:
         apply_mindmate_branding_on_update(org, request, lang)
 
+    quota_fields_changed = "school_tier" in request or "extra_member_seats" in request
+
     if "school_tier" in request:
         apply_school_tier_on_update(org, request, lang)
+
+    if "extra_member_seats" in request:
+        apply_extra_member_seats_on_update(org, request, lang)
+
+    if quota_fields_changed:
+        clear_extra_member_seats_if_trial(org)
         await assert_organization_tier_allows_current_managers(db, org, lang)
         await assert_organization_tier_allows_current_members(db, org, lang)
 

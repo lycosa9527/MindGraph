@@ -36,6 +36,7 @@ from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
 from utils.db.session_open import system_rls_session
 from models.domain.auth import Organization
+from utils.auth.school_tier_defs import EXTRA_MEMBER_SEATS_MAX
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +81,7 @@ class OrganizationCache:
             "expires_at": expires_at_val.isoformat() if expires_at_val else "",
             "is_active": "1" if is_active_val else "0",
             "school_tier": str(getattr(org, "school_tier", None) or "trial"),
+            "extra_member_seats": str(int(getattr(org, "extra_member_seats", 0) or 0)),
         }
 
     def _deserialize_org(self, data: Dict[str, str]) -> Organization:
@@ -128,6 +130,17 @@ class OrganizationCache:
 
         if hasattr(Organization, "school_tier"):
             setattr(org, "school_tier", data.get("school_tier") or "trial")
+
+        if hasattr(Organization, "extra_member_seats"):
+            try:
+                extra_seats = int(data.get("extra_member_seats") or "0")
+            except (TypeError, ValueError):
+                extra_seats = 0
+            setattr(
+                org,
+                "extra_member_seats",
+                max(0, min(extra_seats, EXTRA_MEMBER_SEATS_MAX)),
+            )
 
         return org
 

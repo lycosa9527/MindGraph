@@ -71,7 +71,8 @@ async def validate_api_key(api_key: str, db: AsyncSession) -> bool:
                 )
             quota_limit = cached.get("quota_limit")
             usage_count = cached.get("usage_count", 0)
-            if quota_limit and usage_count >= quota_limit:
+            pending = await _api_key_cache.get_pending_usage(cached["id"])
+            if quota_limit and usage_count + pending >= quota_limit:
                 logger.warning("Cached API key quota exceeded: %s", cached.get("name"))
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -92,7 +93,11 @@ async def validate_api_key(api_key: str, db: AsyncSession) -> bool:
         logger.warning("Expired API key used: %s", key_record.name)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="API key has expired")
 
-    if key_record.quota_limit and key_record.usage_count >= key_record.quota_limit:
+    pending_usage = 0
+    if _api_key_cache:
+        pending_usage = await _api_key_cache.get_pending_usage(key_record.id)
+
+    if key_record.quota_limit and key_record.usage_count + pending_usage >= key_record.quota_limit:
         logger.warning("API key quota exceeded: %s", key_record.name)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,

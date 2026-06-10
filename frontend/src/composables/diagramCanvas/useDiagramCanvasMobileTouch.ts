@@ -10,7 +10,7 @@ import type { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
 import { ZOOM } from '@/config/uiConfig'
 
 /** Panes do not always emit click after touch; dispatch pane-dismiss when the gesture was a tap, not a pan. */
-const PANE_TAP_MAX_MOVE_PX = 12
+export const PANE_TAP_MAX_MOVE_PX = 12
 
 type BranchMove = ReturnType<typeof useBranchMoveDrag>
 

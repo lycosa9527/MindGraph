@@ -43,6 +43,7 @@ class LifespanBackgroundTasks:
     abuseipdb_scheduler_task: Optional[asyncio.Task] = None
     process_monitor_task: Optional[asyncio.Task] = None
     health_monitor_task: Optional[asyncio.Task] = None
+    api_key_usage_flush_task: Optional[asyncio.Task] = None
 
 
 async def run_lifespan_shutdown(
@@ -178,6 +179,23 @@ async def run_lifespan_shutdown(
     except Exception as exc:  # pylint: disable=broad-except
         if is_main_worker:
             logger.warning("Failed to flush update notifier: %s", exc)
+
+    if holdings.api_key_usage_flush_task:
+        holdings.api_key_usage_flush_task.cancel()
+        try:
+            await holdings.api_key_usage_flush_task
+        except asyncio.CancelledError:
+            pass
+
+    try:
+        from services.redis.cache.redis_api_key_usage_flush import flush_api_key_usage_to_db
+
+        flushed = await flush_api_key_usage_to_db()
+        if is_main_worker and flushed:
+            logger.info("API key usage flushed (%s key(s))", flushed)
+    except Exception as exc:  # pylint: disable=broad-except
+        if is_main_worker:
+            logger.warning("Failed to flush API key usage: %s", exc)
 
     try:
         from services.redis.redis_token_buffer import get_token_tracker

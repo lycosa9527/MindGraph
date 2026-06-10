@@ -897,6 +897,26 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     panelsStore.saveNodePaletteSession(diagramKey)
   }
 
+  function suggestionsForPaletteMode(
+    mode: string,
+    options?: { parentId?: string; parentName?: string }
+  ): NodeSuggestion[] {
+    const all = panelsStore.nodePalettePanel.suggestions
+    const dt = diagramType.value
+    if (dt === 'double_bubble_map') {
+      return all.filter((s) => effectiveDoubleBubbleMode(s) === mode)
+    }
+    if (dt === 'multi_flow_map') {
+      return all.filter((s) => (s.mode ?? 'causes') === mode)
+    }
+    if (dt === 'concept_map') {
+      return all.filter((s) => (s.parent_id ?? s.mode ?? 'topic') === mode)
+    }
+    const parentId = options?.parentId ?? null
+    const parentNameNorm = (options?.parentName ?? '').trim()
+    return all.filter((s) => suggestionBelongsToParent(s, parentId, parentNameNorm))
+  }
+
   async function switchTab(
     mode: 'similarities' | 'differences' | 'causes' | 'effects'
   ): Promise<boolean> {
@@ -906,16 +926,26 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     if (!isDoubleBubble && !isMultiFlow) return false
     if (isDoubleBubble && mode !== 'similarities' && mode !== 'differences') return false
     if (isMultiFlow && mode !== 'causes' && mode !== 'effects') return false
+    if (panelsStore.nodePalettePanel.mode === mode) return true
+
+    const cached = suggestionsForPaletteMode(mode)
+
+    // Combined stream (mode "both"): tab clicks are a view filter while loading.
+    if (isLoading.value && (isDoubleBubble || isMultiFlow)) {
+      panelsStore.updateNodePalette({ mode })
+      errorMessage.value = null
+      return true
+    }
+
+    if (cached.length > 0) {
+      panelsStore.updateNodePalette({ mode })
+      errorMessage.value = null
+      return true
+    }
+
     abortInFlightPaletteFetchesOnly()
     panelsStore.updateNodePalette({ mode })
     errorMessage.value = null
-    const defaultMode = isDoubleBubble ? 'similarities' : 'causes'
-    const suggestionsForMode = panelsStore.nodePalettePanel.suggestions.filter((s) =>
-      isDoubleBubble ? effectiveDoubleBubbleMode(s) === mode : (s.mode ?? defaultMode) === mode
-    )
-    if (suggestionsForMode.length > 0) {
-      return true
-    }
     return startSession({ keepSessionId: true })
   }
 
@@ -946,15 +976,17 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
   async function switchConceptMapTab(tabId: string): Promise<boolean> {
     if (diagramType.value !== 'concept_map') return false
     if (panelsStore.nodePalettePanel.mode === tabId) return true
+
+    const cached = suggestionsForPaletteMode(tabId)
+    if (cached.length > 0) {
+      panelsStore.updateNodePalette({ mode: tabId })
+      errorMessage.value = null
+      return true
+    }
+
     abortInFlightPaletteFetchesOnly()
     panelsStore.updateNodePalette({ mode: tabId })
     errorMessage.value = null
-    const suggestionsForTab = panelsStore.nodePalettePanel.suggestions.filter(
-      (s) => (s.parent_id ?? s.mode ?? 'topic') === tabId
-    )
-    if (suggestionsForTab.length > 0) {
-      return true
-    }
     return startSession({ keepSessionId: true })
   }
 
@@ -963,6 +995,8 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     const dt = diagramType.value
     const stageName = stage2StageName.value
     if (!stageName) return false
+    if (panelsStore.nodePalettePanel.mode === parentName) return true
+
     const stageDataKey =
       dt === 'mindmap'
         ? 'branch_name'
@@ -985,20 +1019,36 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     if (stageDataIdKey) {
       stageData[stageDataIdKey] = parentId
     }
-    abortInFlightPaletteFetchesOnly()
-    panelsStore.updateNodePalette({
+    const paletteStageUpdate = {
       stage: stageName,
       stage_data: stageData,
       mode: parentName,
-    })
-    errorMessage.value = null
+    }
     const parentNameNorm = (parentName ?? '').trim()
-    const suggestionsForMode = panelsStore.nodePalettePanel.suggestions.filter((s) =>
-      suggestionBelongsToParent(s, parentId, parentNameNorm)
-    )
-    if (suggestionsForMode.length > 0) {
+    const cached = suggestionsForPaletteMode(parentName, {
+      parentId,
+      parentName: parentNameNorm,
+    })
+    const parents = stage2Parents.value
+    const onMultiParentStage2 =
+      (panelsStore.nodePalettePanel.stage ?? '') === stageName && parents.length > 1
+
+    // Mind map / flow / tree / brace stage-2: parallel streams per parent — filter only.
+    if (isLoading.value && onMultiParentStage2) {
+      panelsStore.updateNodePalette(paletteStageUpdate)
+      errorMessage.value = null
       return true
     }
+
+    if (cached.length > 0) {
+      panelsStore.updateNodePalette(paletteStageUpdate)
+      errorMessage.value = null
+      return true
+    }
+
+    abortInFlightPaletteFetchesOnly()
+    panelsStore.updateNodePalette(paletteStageUpdate)
+    errorMessage.value = null
     return startSession({ keepSessionId: true })
   }
 

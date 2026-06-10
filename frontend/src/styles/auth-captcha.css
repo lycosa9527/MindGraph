@@ -1,84 +1,116 @@
 /**
  * Shared captcha row layout for auth modals.
- * SVG captcha source is 160x60; stack vertically on narrow viewports to avoid
- * clipping inside overflow-hidden modal cards.
+ *
+ * Backend SVG is 160×60. Input stays on the left; captcha stays on the right at
+ * all widths. Container queries scale the captcha down proportionally so it is
+ * never clipped by modal cards (`overflow-hidden`).
  */
 
 .captcha-row {
+  --captcha-gap: 0.75rem;
+  --captcha-input-min: 4.5rem;
+  --captcha-src-w: 160;
+  --captcha-src-h: 60;
+  --captcha-max-w: 128px;
+  --captcha-w: min(
+    var(--captcha-max-w),
+    max(0px, calc(100cqw - var(--captcha-gap) - var(--captcha-input-min)))
+  );
+  --captcha-h: calc(var(--captcha-w) * var(--captcha-src-h) / var(--captcha-src-w));
+
+  container-type: inline-size;
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.75rem;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--captcha-gap);
   min-width: 0;
 }
 
-@media (min-width: 480px) {
+@container (max-width: 240px) {
   .captcha-row {
-    flex-direction: row;
-    align-items: center;
+    --captcha-input-min: 4rem;
+  }
+}
+
+@container (max-width: 200px) {
+  .captcha-row {
+    --captcha-input-min: 3.25rem;
   }
 }
 
 .captcha-row__input {
-  width: 100%;
-  min-width: 0;
+  flex: 1 1 0;
+  width: 0;
+  min-width: var(--captcha-input-min);
+}
+
+.captcha-row .el-input.captcha-row__input {
+  flex: 1 1 0;
+  width: 0;
+  min-width: var(--captcha-input-min);
 }
 
 .captcha-row .el-input {
   min-width: 0;
 }
 
-@media (min-width: 480px) {
-  .captcha-row__input {
-    flex: 1 1 0;
-    width: auto;
-  }
-}
-
-.captcha-image {
-  height: 48px;
-  width: auto;
-  max-width: 100%;
+.captcha-image,
+.captcha-placeholder {
+  box-sizing: border-box;
+  display: block;
+  flex: 0 0 var(--captcha-w);
+  width: var(--captcha-w);
+  height: var(--captcha-h);
   border-radius: 8px;
   cursor: pointer;
   transition: opacity 0.2s ease;
+}
+
+.captcha-image {
   object-fit: contain;
-  align-self: flex-start;
+  object-position: center;
 }
 
-@media (min-width: 480px) {
-  .captcha-image {
-    max-width: 128px;
-    flex-shrink: 0;
-  }
-}
-
-.captcha-image:hover {
+.captcha-image:hover,
+.captcha-placeholder:hover {
   opacity: 0.8;
 }
 
 .captcha-placeholder {
-  height: 48px;
-  width: min(128px, 100%);
-  border-radius: 8px;
-  cursor: pointer;
   background: #f5f5f4;
   border: 1px solid #e7e5e4;
   display: flex;
   align-items: center;
   justify-content: center;
-  align-self: flex-start;
-  transition: opacity 0.2s ease;
 }
 
-@media (min-width: 480px) {
-  .captcha-placeholder {
-    flex-shrink: 0;
+/* Fallback when container queries are unavailable (rare). */
+@supports not (width: 1cqw) {
+  .captcha-row {
+    --captcha-w: var(--captcha-max-w);
+    --captcha-h: 48px;
   }
-}
 
-.captcha-placeholder:hover {
-  opacity: 0.8;
+  @media (max-width: 360px) {
+    .captcha-row {
+      --captcha-w: 112px;
+      --captcha-h: 42px;
+    }
+  }
+
+  @media (max-width: 320px) {
+    .captcha-row {
+      --captcha-w: 96px;
+      --captcha-h: 36px;
+    }
+  }
+
+  @media (max-width: 280px) {
+    .captcha-row {
+      --captcha-w: 80px;
+      --captcha-h: 30px;
+    }
+  }
 }
 
 /* Tall auth modals: scroll inside overlay on mobile instead of center-clipping content */

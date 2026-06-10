@@ -22,6 +22,8 @@ DEFAULT_SCHOOL_TIER: Final[str] = SCHOOL_TIER_TRIAL
 
 # Zero member_limit means no cap (trial schools may have hundreds of teachers).
 SCHOOL_TIER_MEMBER_LIMIT_UNLIMITED: Final[int] = 0
+# Maximum bonus seats above tier base member cap (admin-assigned per org).
+EXTRA_MEMBER_SEATS_MAX: Final[int] = 500
 # Zero diagram cap means no per-user saved-diagram limit (paid / personal accounts).
 SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED: Final[int] = 0
 

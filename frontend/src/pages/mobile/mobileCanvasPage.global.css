@@ -1,0 +1,68 @@
+@property --ai-ring-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes ai-ring-spin {
+  to {
+    --ai-ring-angle: 360deg;
+  }
+}
+
+@keyframes ai-sparkle-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.85);
+  }
+}
+
+.model-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: flex-end;
+}
+
+.model-sheet-panel {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 16px 16px 0 0;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.model-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: #d1d5db;
+  border-radius: 2px;
+  margin: 10px auto 0;
+}
+
+.model-sheet-enter-active,
+.model-sheet-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.model-sheet-enter-active .model-sheet-panel,
+.model-sheet-leave-active .model-sheet-panel {
+  transition: transform 0.25s ease;
+}
+
+.model-sheet-enter-from,
+.model-sheet-leave-to {
+  opacity: 0;
+}
+
+.model-sheet-enter-from .model-sheet-panel,
+.model-sheet-leave-to .model-sheet-panel {
+  transform: translateY(100%);
+}

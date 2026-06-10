@@ -93,6 +93,19 @@ export function mergeSchoolTierFeatures(
   }
 }
 
+export const EXTRA_MEMBER_SEAT_PRESETS = [0, 10, 20, 50, 100] as const
+
+export const EXTRA_MEMBER_SEATS_MAX = 500
+
+export function effectiveMemberLimit(tier: SchoolTier, extraSeats: number): number {
+  const base = SCHOOL_TIER_LIMITS[tier].memberLimit
+  if (isUnlimitedMemberLimit(base)) {
+    return base
+  }
+  const extra = Math.max(0, Math.min(Math.trunc(extraSeats), EXTRA_MEMBER_SEATS_MAX))
+  return base + extra
+}
+
 export function normalizeSchoolTier(value: unknown): SchoolTier {
   const token = String(value ?? '').trim().toLowerCase()
   if (

@@ -25,6 +25,7 @@ from config.database import get_async_db
 from models.domain.auth import User, APIKey
 from models.domain.messages import Messages
 from models.domain.token_usage import TokenUsage
+from services.redis.cache.redis_api_key_cache import api_key_cache
 from utils.auth import generate_api_key
 
 from ..dependencies import get_language_dependency, require_admin
@@ -84,6 +85,8 @@ async def list_api_keys_admin(
     result = []
     for key in keys:
         token_stats = token_stats_by_key.get(key.id, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
+        pending_usage = await api_key_cache.get_pending_usage(key.id)
+        effective_usage = int(key.usage_count or 0) + pending_usage
 
         result.append(
             {
@@ -92,12 +95,12 @@ async def list_api_keys_admin(
                 "name": key.name,
                 "description": key.description,
                 "quota_limit": key.quota_limit,
-                "usage_count": key.usage_count,
+                "usage_count": effective_usage,
                 "is_active": key.is_active,
                 "created_at": utc_to_beijing_iso(key.created_at),
                 "last_used_at": utc_to_beijing_iso(key.last_used_at),
                 "expires_at": utc_to_beijing_iso(key.expires_at),
-                "usage_percentage": round((key.usage_count / key.quota_limit * 100), 1) if key.quota_limit else 0,
+                "usage_percentage": round((effective_usage / key.quota_limit * 100), 1) if key.quota_limit else 0,
                 "token_stats": token_stats,
             }
         )

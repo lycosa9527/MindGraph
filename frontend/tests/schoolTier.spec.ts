@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  effectiveMemberLimit,
   SCHOOL_TIER_LIMITS,
   SCHOOL_TIER_OPTIONS,
   isPaidSchoolTier,
@@ -57,5 +58,11 @@ describe('schoolTier constants', () => {
     expect(isPaidSchoolTier('lite')).toBe(true)
     expect(isPaidSchoolTier('standard')).toBe(true)
     expect(isPaidSchoolTier('professional')).toBe(true)
+  })
+
+  it('effectiveMemberLimit adds extra seats above tier base', () => {
+    expect(effectiveMemberLimit('lite', 10)).toBe(60)
+    expect(effectiveMemberLimit('standard', 50)).toBe(170)
+    expect(effectiveMemberLimit('trial', 50)).toBe(0)
   })
 })

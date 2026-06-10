@@ -17,7 +17,7 @@ from models.domain.auth import Organization, User
 from models.domain.messages import Language, Messages
 from services.auth.phone_uniqueness import any_user_id_with_phone
 from utils.auth import hash_password
-from utils.auth.role_constants import ROLE_SCHOOL_ADMIN, ROLE_TEACHER, normalize_role
+from utils.auth.role_constants import ROLE_SCHOOL_ADMIN, ROLE_SUPERADMIN, ROLE_TEACHER, normalize_role
 from utils.auth.school_tier import (
     assert_organization_has_manager_capacity,
     assert_organization_has_member_capacity,

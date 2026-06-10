@@ -162,7 +162,7 @@ async function handleLogout() {
 
 <template>
   <div class="mobile-account flex-1 overflow-y-auto">
-    <div class="px-4 pt-6 pb-8 max-w-md mx-auto space-y-5">
+    <div class="px-4 pt-6 pb-8 max-w-md mx-auto space-y-5 mobile-account-scroll">
       <!-- User profile header -->
       <div class="flex flex-col items-center gap-2 pb-4 border-b border-gray-100">
         <div class="flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 text-3xl">
@@ -429,5 +429,9 @@ async function handleLogout() {
 <style scoped>
 .settings-row + .settings-row {
   border-top: 1px solid #f3f4f6;
+}
+
+.mobile-account-scroll {
+  padding-bottom: max(2rem, env(safe-area-inset-bottom));
 }
 </style>

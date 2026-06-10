@@ -7,11 +7,14 @@ from fastapi import HTTPException
 
 from services.auth.school_user_create import (
     MAX_BATCH_MEMBERS,
+    SchoolMemberInput,
+    assert_batch_member_capacity,
     normalize_school_member_phone,
     parse_school_member_batch,
     parse_school_member_input,
     validate_school_member_phone,
 )
+from utils.auth.school_tier_defs import SCHOOL_TIER_LITE
 from utils.auth.role_constants import ROLE_SCHOOL_ADMIN, ROLE_SUPERADMIN
 
 
@@ -63,9 +66,9 @@ def test_parse_school_member_input_allows_manager_role_for_superadmin() -> None:
 def test_parse_school_member_batch_deduplicates_phones() -> None:
     members = parse_school_member_batch(
         [
-            {"phone": "13812345678", "name": "A"},
-            {"phone": "13812345678", "name": "B"},
-            {"phone": "13812345679", "name": "C"},
+            {"phone": "13812345678", "name": "Alice"},
+            {"phone": "13812345678", "name": "Bob"},
+            {"phone": "13812345679", "name": "Carol"},
         ],
         "en",
     )
@@ -79,3 +82,41 @@ def test_parse_school_member_batch_rejects_too_many_rows() -> None:
     with pytest.raises(HTTPException) as exc:
         parse_school_member_batch(payload, "en")
     assert exc.value.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_assert_batch_member_capacity_allows_extra_seats(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    org = type("Org", (), {"id": 1, "school_tier": SCHOOL_TIER_LITE, "extra_member_seats": 10})()
+    members = [SchoolMemberInput(phone="13812345678", name="New", role="teacher")]
+
+    async def _count(_db, _org_id):
+        return 50
+
+    monkeypatch.setattr(
+        "services.auth.school_user_create.member_count_for_org",
+        _count,
+    )
+
+    await assert_batch_member_capacity(None, org, members, "en")
+
+
+@pytest.mark.asyncio
+async def test_assert_batch_member_capacity_rejects_at_effective_cap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    org = type("Org", (), {"id": 1, "school_tier": SCHOOL_TIER_LITE, "extra_member_seats": 10})()
+    members = [SchoolMemberInput(phone="13812345678", name="New", role="teacher")]
+
+    async def _count(_db, _org_id):
+        return 60
+
+    monkeypatch.setattr(
+        "services.auth.school_user_create.member_count_for_org",
+        _count,
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        await assert_batch_member_capacity(None, org, members, "en")
+    assert exc.value.status_code == 403

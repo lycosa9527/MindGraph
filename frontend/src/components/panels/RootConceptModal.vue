@@ -168,15 +168,62 @@ onMounted(async () => {
 <template>
   <div class="root-concept-modal bg-white dark:bg-gray-800 flex flex-col h-full">
     <div
-      class="panel-header px-4 flex justify-between border-b border-gray-200 dark:border-gray-700 shrink-0 h-14 items-center"
+      class="panel-header px-4 flex border-b border-gray-200 dark:border-gray-700 shrink-0"
+      :class="
+        conceptMapTabs.length > 0
+          ? 'panel-header--tabbed h-auto min-h-[3.5rem] py-2 items-stretch'
+          : 'h-14 items-center justify-between'
+      "
     >
-      <div class="flex gap-3 min-w-0 flex-1 items-center">
-        <h3 class="text-sm font-semibold text-gray-800 dark:text-white truncate shrink-0">
-          {{ rootConceptModalHeading }}
-        </h3>
+      <div
+        class="panel-header-body flex min-w-0 flex-1 gap-3"
+        :class="
+          conceptMapTabs.length > 0
+            ? 'panel-header-body--tabbed flex-col'
+            : 'items-center justify-between'
+        "
+      >
+        <div
+          class="panel-header-toolbar flex items-center gap-2 min-w-0"
+          :class="conceptMapTabs.length > 0 ? 'w-full justify-between' : 'flex-1 justify-between'"
+        >
+          <h3
+            class="text-sm font-semibold text-gray-800 dark:text-white truncate shrink-0"
+            :class="conceptMapTabs.length > 0 ? 'panel-header-title--tabbed' : ''"
+          >
+            {{ rootConceptModalHeading }}
+          </h3>
+          <div class="palette-header-actions flex items-center gap-0 shrink-0">
+            <ElTooltip
+              :content="t('common.refresh')"
+              placement="bottom"
+            >
+              <ElButton
+                text
+                circle
+                size="small"
+                class="shrink-0"
+                :disabled="isLoading"
+                @click="handleRefresh"
+              >
+                <RefreshCw :class="['w-4 h-4', isLoading ? 'animate-spin' : '']" />
+              </ElButton>
+            </ElTooltip>
+            <ElButton
+              text
+              circle
+              size="small"
+              class="shrink-0"
+              @click="handleClose"
+            >
+              <X class="w-4 h-4" />
+            </ElButton>
+          </div>
+        </div>
+
         <div
           v-if="conceptMapTabs.length > 0"
-          class="palette-tab-strip-wrap flex flex-1 min-w-0 items-center gap-1"
+          class="palette-tab-strip-wrap flex w-full min-w-0 items-center gap-1"
           :class="paletteTabStripGlowClass"
         >
           <div
@@ -186,7 +233,7 @@ onMounted(async () => {
               v-for="tab in conceptMapTabs"
               :key="tab.id"
               type="button"
-              class="px-2 py-1 text-xs font-medium rounded-md transition-colors shrink-0"
+              class="palette-tab-btn px-2 py-1 text-xs font-medium rounded-md transition-colors shrink-0 touch-manipulation"
               :class="
                 panelsStore.nodePalettePanel.mode === tab.id
                   ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
@@ -204,7 +251,7 @@ onMounted(async () => {
           >
             <button
               type="button"
-              class="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-dashed border-gray-300 dark:border-gray-500 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
+              class="palette-add-tab-btn shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-dashed border-gray-300 dark:border-gray-500 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 touch-manipulation"
               :disabled="isLoading"
               :aria-label="t('rootConceptModal.addBranchAria')"
               @click="handleAddDomain"
@@ -212,34 +259,6 @@ onMounted(async () => {
               <Plus class="w-4 h-4" />
             </button>
           </ElTooltip>
-        </div>
-      </div>
-      <div class="flex items-center gap-2 shrink-0">
-        <div class="flex items-center gap-0">
-          <ElTooltip
-            :content="t('common.refresh')"
-            placement="bottom"
-          >
-            <ElButton
-              text
-              circle
-              size="small"
-              class="shrink-0"
-              :disabled="isLoading"
-              @click="handleRefresh"
-            >
-              <RefreshCw :class="['w-4 h-4', isLoading ? 'animate-spin' : '']" />
-            </ElButton>
-          </ElTooltip>
-          <ElButton
-            text
-            circle
-            size="small"
-            class="shrink-0"
-            @click="handleClose"
-          >
-            <X class="w-4 h-4" />
-          </ElButton>
         </div>
       </div>
     </div>
@@ -468,5 +487,50 @@ onMounted(async () => {
 
 .node-card {
   border-radius: 0.5rem;
+}
+
+.panel-header--tabbed {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.panel-header-body--tabbed {
+  width: 100%;
+}
+
+@media (min-width: 769px) {
+  .panel-header--tabbed .panel-header-body--tabbed {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .panel-header--tabbed .panel-header-toolbar {
+    width: auto;
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .panel-header--tabbed .panel-header-title--tabbed {
+    max-width: 8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .palette-header-actions :deep(.el-button) {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+
+  .palette-tab-btn {
+    min-height: 2.75rem;
+    font-size: 0.8125rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .palette-add-tab-btn {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
 }
 </style>

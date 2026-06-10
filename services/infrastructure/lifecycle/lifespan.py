@@ -337,6 +337,19 @@ async def lifespan(fastapi_app: FastAPI):
         except Exception as e:  # pylint: disable=broad-except
             logger.warning("Could not verify Playwright installation: %s", e)
 
+    api_key_usage_flush_task: Optional[asyncio.Task] = None
+    try:
+        from services.redis.cache.redis_api_key_usage_flush import (  # pylint: disable=import-outside-toplevel
+            start_api_key_usage_flush_scheduler,
+        )
+
+        api_key_usage_flush_task = start_api_key_usage_flush_scheduler()
+        if is_main_worker:
+            logger.debug("API key usage flush scheduler started")
+    except Exception as e:  # pylint: disable=broad-except
+        if is_main_worker:
+            logger.warning("Failed to start API key usage flush scheduler: %s", e)
+
     # Start temp image cleanup task
     cleanup_task = None
     try:
@@ -484,6 +497,7 @@ async def lifespan(fastapi_app: FastAPI):
         abuseipdb_scheduler_task=abuseipdb_scheduler_task,
         process_monitor_task=process_monitor_task,
         health_monitor_task=health_monitor_task,
+        api_key_usage_flush_task=api_key_usage_flush_task,
     )
 
     # Yield control to application

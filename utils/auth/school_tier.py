@@ -18,6 +18,7 @@ from utils.auth.roles import is_superadmin
 from utils.auth import school_tier_defs
 from utils.auth.school_tier_defs import (
     DEFAULT_SCHOOL_TIER,
+    EXTRA_MEMBER_SEATS_MAX,
     SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED,
     SCHOOL_TIER_LIMITS,
     diagram_storage_bytes_per_member_for_tier,
@@ -89,10 +90,74 @@ async def assert_user_has_school_tier_feature(
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
 
+def base_member_limit_for_tier(tier: str) -> int:
+    """Member cap from tier table only (0 = unlimited for trial)."""
+    return int(SCHOOL_TIER_LIMITS[normalize_school_tier(tier)]["member_limit"])
+
+
+def extra_member_seats_for_org(org: Organization) -> int:
+    """Stored bonus seats above tier base cap (0 when missing or invalid)."""
+    raw = getattr(org, "extra_member_seats", 0)
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        return 0
+    return max(0, min(value, EXTRA_MEMBER_SEATS_MAX))
+
+
+def effective_member_limit_for_org(org: Organization) -> int:
+    """Tier base member cap plus extra seats (0 = unlimited for trial / expired)."""
+    tier = effective_school_tier_for_org(org)
+    base = base_member_limit_for_tier(tier)
+    if is_unlimited_member_limit(base):
+        return base
+    return base + extra_member_seats_for_org(org)
+
+
 def member_limit_for_org(org: Organization) -> int:
     """Member cap for the organization's current tier (0 = unlimited)."""
-    tier = effective_school_tier_for_org(org)
-    return int(SCHOOL_TIER_LIMITS[tier]["member_limit"])
+    return effective_member_limit_for_org(org)
+
+
+def _parse_extra_member_seats_value(raw: object) -> int:
+    """Parse extra_member_seats from API input; raises ValueError when invalid."""
+    if isinstance(raw, bool):
+        raise ValueError("invalid extra_member_seats")
+    if isinstance(raw, int):
+        value = raw
+    elif isinstance(raw, str):
+        token = raw.strip()
+        if not token or not token.isdigit():
+            raise ValueError("invalid extra_member_seats")
+        value = int(token)
+    elif isinstance(raw, float):
+        if not raw.is_integer():
+            raise ValueError("invalid extra_member_seats")
+        value = int(raw)
+    else:
+        raise ValueError("invalid extra_member_seats")
+    if value < 0 or value > EXTRA_MEMBER_SEATS_MAX:
+        raise ValueError("invalid extra_member_seats")
+    return value
+
+
+def apply_extra_member_seats_on_update(org: Organization, request: dict, lang: Language) -> None:
+    """Validate and apply extra_member_seats on organization update."""
+    if "extra_member_seats" not in request:
+        return
+    raw = request.get("extra_member_seats")
+    try:
+        value = _parse_extra_member_seats_value(raw)
+    except ValueError as exc:
+        error_msg = Messages.error("invalid_extra_member_seats", lang, EXTRA_MEMBER_SEATS_MAX)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg) from exc
+    setattr(org, "extra_member_seats", value)
+
+
+def clear_extra_member_seats_if_trial(org: Organization) -> None:
+    """Clear stored bonus seats when the org is on trial tier."""
+    if normalize_school_tier(getattr(org, "school_tier", None)) == SCHOOL_TIER_TRIAL:
+        setattr(org, "extra_member_seats", 0)
 
 
 def manager_limit_for_org(org: Organization) -> int:
@@ -134,6 +199,8 @@ def school_tier_list_fields(org: Organization, member_count: int) -> dict[str, A
     return {
         "school_tier": tier,
         "school_tier_member_limit": int(limits["member_limit"]),
+        "extra_member_seats": extra_member_seats_for_org(org),
+        "member_limit_effective": member_limit_for_org(org),
         "school_tier_manager_limit": int(limits["manager_limit"]),
         "school_tier_diagram_storage_bytes_per_member": per_member_bytes,
         "school_tier_diagram_storage_bytes": diagram_storage_limit_bytes_for_org(
@@ -208,6 +275,7 @@ async def school_dashboard_quotas_payload(
     return {
         "school_tier": tier,
         "member_count": member_count,
+        "extra_member_seats": extra_member_seats_for_org(org),
         "member_limit": member_limit_for_org(org),
         "manager_count": manager_count,
         "manager_limit": manager_limit_for_org(org),

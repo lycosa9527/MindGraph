@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.35] - 2026-06-10
+
+> **School extra member seats, API-key usage flush to Postgres, and mobile canvas/Kitty refactor with router redirect fixes.**
+
+### Added
+
+- **School tier — extra member seats** — Organizations on paid tiers can receive bonus seats (0–500) above the tier base member cap via `extra_member_seats`; effective limit exposed as `member_limit_effective`; trial tier clears stored bonus seats ([`rev_0054_organization_extra_member_seats.py`](alembic/versions/rev_0054_organization_extra_member_seats.py), [`school_tier.py`](utils/auth/school_tier.py), [`school_tier_defs.py`](utils/auth/school_tier_defs.py), [`organizations.py`](routers/auth/admin/organizations.py)).
+- **Admin — extra seats UI** — Preset chips and numeric input on school General tab and org trend modal; tier downgrade blocked against effective member cap ([`AdminSchoolOrgGeneralTab.vue`](frontend/src/components/admin/AdminSchoolOrgGeneralTab.vue), [`AdminTrendChartModal.vue`](frontend/src/components/admin/AdminTrendChartModal.vue), [`schoolTier.ts`](frontend/src/constants/schoolTier.ts), locale `admin.ts`).
+- **API key usage — Redis flush worker** — Periodic drain of `apikey:usage:{id}` deltas into `api_keys.usage_count` plus shutdown flush ([`redis_api_key_usage_flush.py`](services/redis/cache/redis_api_key_usage_flush.py), [`lifespan.py`](services/infrastructure/lifecycle/lifespan.py), [`lifespan_shutdown.py`](services/infrastructure/lifecycle/lifespan_shutdown.py)).
+- **Mobile canvas — composables** — Route loader, event handlers, toolbar, inline rec bar, unsaved-leave guard, and auto-save status extracted from [`MobileCanvasPage.vue`](frontend/src/pages/mobile/MobileCanvasPage.vue); styles split to [`mobileCanvasPage.global.css`](frontend/src/pages/mobile/mobileCanvasPage.global.css) / [`mobileCanvasPage.scoped.css`](frontend/src/pages/mobile/mobileCanvasPage.scoped.css).
+- **Mobile Kitty — composables** — Mic PTT and page lifecycle logic moved to [`useMobileKittyMicPtt.ts`](frontend/src/composables/mobile/useMobileKittyMicPtt.ts) and [`useMobileKittyPageLifecycle.ts`](frontend/src/composables/mobile/useMobileKittyPageLifecycle.ts).
+- **Mobile routing helpers** — Shared redirect map and client detection ([`mobileRouteRedirect.ts`](frontend/src/utils/mobileRouteRedirect.ts), [`isMobileClient.ts`](frontend/src/utils/isMobileClient.ts), [`diagramTypeKeys.ts`](frontend/src/utils/diagramTypeKeys.ts)).
+- **Tests** — Extra member seats and org cache ([`test_school_tier.py`](tests/test_school_tier.py), [`test_school_user_create.py`](tests/auth/test_school_user_create.py)); mobile redirects and canvas back navigation ([`mobileRouterRedirects.spec.ts`](frontend/tests/mobileRouterRedirects.spec.ts), [`canvasBackNavigation.spec.ts`](frontend/tests/canvasBackNavigation.spec.ts)); mobile detect and canvas touch ([`useMobileDetect.spec.ts`](frontend/tests/useMobileDetect.spec.ts), [`useDiagramCanvasMobileTouch.spec.ts`](frontend/tests/useDiagramCanvasMobileTouch.spec.ts)).
+
+### Changed
+
+- **API keys — quota and admin counts** — Validation and admin list include pending Redis usage before enforcing quota or displaying totals ([`api_keys.py`](utils/auth/api_keys.py), [`redis_api_key_cache.py`](services/redis/cache/redis_api_key_cache.py), [`api_keys.py`](routers/auth/admin/api_keys.py)).
+- **Mobile router — MindMate redirect** — Desktop `/mindmate` now maps to `/m/mindmate` instead of the mobile hub ([`mobileRouteRedirect.ts`](frontend/src/utils/mobileRouteRedirect.ts), [`index.ts`](frontend/src/router/index.ts)).
+- **Mobile detect** — `useMobileDetect` delegates to shared `isMobileClient` helpers ([`useMobileDetect.ts`](frontend/src/composables/core/useMobileDetect.ts)).
+- **Node palette / root concept panels** — Tabbed header layout with title, refresh, and close on one toolbar row ([`NodePalettePanel.vue`](frontend/src/components/panels/NodePalettePanel.vue), [`RootConceptModal.vue`](frontend/src/components/panels/RootConceptModal.vue), [`useNodePalette.ts`](frontend/src/composables/nodePalette/useNodePalette.ts)).
+- **Admin — DingTalk card total** — Platform dashboard uses `dingtalk_generations.total` from token stats instead of summing API-key usage rows ([`AdminTokenOverviewRow.vue`](frontend/src/components/admin/AdminTokenOverviewRow.vue)).
+- **Mobile layout** — Safe-area padding and back/home `aria-label`s ([`MobileLayout.vue`](frontend/src/layouts/MobileLayout.vue)).
+- **Auth captcha row** — Responsive layout tweaks ([`auth-captcha.css`](frontend/src/styles/auth-captcha.css)).
+- **i18n** — Extra member seat admin strings (en/zh/zh-tw); mobile nav and Kitty strings for zh-tw ([`admin.ts`](frontend/src/locales/messages/en/admin.ts), [`common.ts`](frontend/src/locales/messages/zh-tw/common.ts)).
+
+### Fixed
+
+- **Org Redis cache** — `extra_member_seats` round-trips through org cache; legacy payloads default to 0 ([`redis_org_cache.py`](services/redis/cache/redis_org_cache.py)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.35).
+
 ## [5.117.34] - 2026-06-07
 
 > **Production log fixes: RLS-safe scheduled backups, PostgreSQL hourly token trends, multi-worker startup SMS.**

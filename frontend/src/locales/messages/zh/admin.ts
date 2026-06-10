@@ -647,6 +647,10 @@ export default {
   'admin.schoolModal.tabGeneral': '其他设置',
   'admin.schoolModal.tabMindmate': 'MindMate鉴权',
   'admin.schoolVersionLabel': '学校版本',
+  'admin.extraMemberSeatsLabel': '额外名额',
+  'admin.extraMemberSeatsHint':
+    '当前成员 {current} / {effectiveLimit} 人（基础 {base} + 额外 {extra}）。',
+  'admin.extraMemberSeatsPreset': '+{count}',
   'admin.schoolVersionHint':
     '选择学校订阅版本，决定成员上限与导图存储空间。当前成员 {current} / {limit} 人。',
   'admin.unlimited': '不限',

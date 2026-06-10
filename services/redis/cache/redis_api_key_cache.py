@@ -116,6 +116,21 @@ class _APIKeyCache:
             logger.debug("[APIKeyCache] incr_usage failed: %s", exc)
             return 0
 
+    async def get_pending_usage(self, key_id: int) -> int:
+        """Return the pending Redis usage increment for ``key_id`` (non-destructive)."""
+        if not is_redis_available():
+            return 0
+        redis = get_async_redis()
+        if not redis:
+            return 0
+        usage_key = _keys.API_KEY_USAGE_INCR.format(key_id=key_id)
+        try:
+            raw = await redis.get(usage_key)
+            return int(raw) if raw else 0
+        except Exception as exc:
+            logger.debug("[APIKeyCache] get_pending_usage failed: %s", exc)
+            return 0
+
     async def get_usage_delta(self, key_id: int) -> int:
         """Read and reset the pending usage delta for ``key_id``.
 

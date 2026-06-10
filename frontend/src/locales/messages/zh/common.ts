@@ -121,6 +121,8 @@ export default {
   'kitty.voiceCommand.explain_node': '解释节点：{detail}',
   'mobile.mindgraphDesc': '思维图示智能体',
   'mobile.mindmateDesc': '思维教研智能体',
+  'mobile.navHome': '首页',
+  'mobile.navBack': '返回',
   'mobile.kittyCardTitle': 'Kitty',
   'mobile.kittyCardDesc': '思维教学语音智能体',
   'mobile.accountDesc': '账号设置',

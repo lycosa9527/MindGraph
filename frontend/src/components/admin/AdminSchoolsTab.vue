@@ -212,6 +212,7 @@ const trendOrg = ref<{
   user_count?: number
   expires_at?: string | null
   school_tier?: string | null
+  extra_member_seats?: number
   dify_api_base_url?: string | null
   dify_api_key_masked?: string | null
   dify_timeout_seconds?: number
@@ -265,6 +266,7 @@ function openTrendModal(
     user_count: (row.user_count as number) ?? 0,
     expires_at: row.expires_at as string | null | undefined,
     school_tier: row.school_tier as string | null | undefined,
+    extra_member_seats: (row.extra_member_seats as number | undefined) ?? 0,
     dify_api_base_url: row.dify_api_base_url as string | null | undefined,
     dify_api_key_masked: row.dify_api_key_masked as string | null | undefined,
     dify_timeout_seconds: (row.dify_timeout_seconds as number | undefined) ?? 300,
@@ -301,6 +303,7 @@ function syncTrendOrgFromSchools() {
       user_count: (updated.user_count as number) ?? 0,
       expires_at: updated.expires_at as string | null | undefined,
       school_tier: updated.school_tier as string | null | undefined,
+      extra_member_seats: (updated.extra_member_seats as number | undefined) ?? 0,
       dify_api_base_url: updated.dify_api_base_url as string | null | undefined,
       dify_api_key_masked: updated.dify_api_key_masked as string | null | undefined,
       dify_timeout_seconds: (updated.dify_timeout_seconds as number | undefined) ?? 300,
@@ -621,6 +624,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
       :org-user-count="trendOrg?.user_count ?? 0"
       :org-expires-at="trendOrg?.expires_at"
       :org-school-tier="trendOrg?.school_tier"
+      :org-extra-member-seats="trendOrg?.extra_member_seats ?? 0"
       :org-dify-api-base-url="trendOrg?.dify_api_base_url"
       :org-dify-api-key-masked="trendOrg?.dify_api_key_masked"
       :org-dify-timeout-seconds="trendOrg?.dify_timeout_seconds"

@@ -4,7 +4,7 @@
  * Uses Pinia diagram context when the user arrived from the mobile canvas (or any route
  * that left the diagram store populated); otherwise a minimal landing stub.
  */
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
@@ -21,7 +21,6 @@ import {
   useLanguage,
   useNotifications,
 } from '@/composables'
-import { eventBus } from '@/composables/core/useEventBus'
 import { compressImageFileForKitty } from '@/composables/kitty/compressImageForKitty'
 import { hydrateMobileKittyFromLibrary } from '@/composables/kitty/hydrateMobileKittyFromLibrary'
 import { hydrateMobileKittyStoreFromBootstrap } from '@/composables/kitty/hydrateMobileKittyStoreFromBootstrap'
@@ -30,6 +29,8 @@ import { useKittyMobileHubActionBridge } from '@/composables/kitty/useKittyMobil
 import { useKittyMobileHubPersist } from '@/composables/kitty/useKittyMobileHubPersist'
 import { useKittyMobileLibraryDiagramSelect } from '@/composables/kitty/useKittyMobileLibraryDiagramSelect'
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
+import { useMobileKittyMicPtt } from '@/composables/mobile/useMobileKittyMicPtt'
+import { useMobileKittyPageLifecycle } from '@/composables/mobile/useMobileKittyPageLifecycle'
 import { useMobileKittyPairing } from '@/composables/kitty/useMobileKittyPairing'
 import { useAuthStore, useDiagramStore, useFeatureFlagsStore } from '@/stores'
 
@@ -269,205 +270,6 @@ async function handleDisconnect(): Promise<void> {
   await kitty.stopConversation()
 }
 
-/** True when typing in the draft field — Space must stay a space character. */
-function isKittyTextInputTarget(): boolean {
-  if (!showKeyboard.value || !connected.value) {
-    return false
-  }
-  const el = document.activeElement
-  if (!el) {
-    return false
-  }
-  if (el.tagName === 'TEXTAREA') {
-    return true
-  }
-  if (el.tagName !== 'INPUT') {
-    return false
-  }
-  const input = el as HTMLInputElement
-  const typ = (input.type ?? 'text').toLowerCase()
-  if (typ === 'checkbox' || typ === 'radio' || typ === 'file' || typ === 'button') {
-    return false
-  }
-  return true
-}
-
-/** When true, Space should keep its normal meaning (typing, checkbox, other buttons, etc.). */
-function shouldReserveSpaceForTarget(ev: Event): boolean {
-  const t = ev.target
-  if (!(t instanceof HTMLElement)) {
-    return false
-  }
-  if (t.isContentEditable || t.closest('[contenteditable="true"]')) {
-    return true
-  }
-  if (t.closest('[data-kitty-mic-ptt]')) {
-    return false
-  }
-  const tag = t.tagName
-  if (tag === 'TEXTAREA' || tag === 'SELECT') {
-    return true
-  }
-  if (tag === 'BUTTON') {
-    return true
-  }
-  if (tag === 'INPUT') {
-    const input = t as HTMLInputElement
-    const typ = (input.type ?? 'text').toLowerCase()
-    if (typ === 'checkbox' || typ === 'radio') {
-      return true
-    }
-    if (typ === 'file' || typ === 'hidden') {
-      return false
-    }
-    return true
-  }
-  return false
-}
-
-/**
- * Kitty mic on this page is **push-to-talk**:
- * – Hold the mic button to stream; release to stop.
- * – Hold Space when focus is not in a field that needs Space (non-repeat).
- */
-
-const voiceStartInFlight = ref(false)
-const pttPointerActive = ref(false)
-let spacePttActive = false
-
-function isKittyMicHoldActive(): boolean {
-  return pttPointerActive.value || spacePttActive
-}
-
-async function beginKittyMicFromUser(): Promise<void> {
-  if (!kittyServerEnabled.value || connecting.value || micDenied.value) {
-    return
-  }
-  if (kitty.isVoiceActive.value || voiceStartInFlight.value) {
-    return
-  }
-  voiceStartInFlight.value = true
-  try {
-    const ok = await ensureConnected()
-    if (!ok || !isKittyMicHoldActive()) {
-      return
-    }
-    await kitty.startVoiceInput()
-    if (!isKittyMicHoldActive()) {
-      kitty.stopVoiceInput()
-    } else {
-      micDenied.value = false
-    }
-  } catch {
-    micDenied.value = true
-  } finally {
-    voiceStartInFlight.value = false
-  }
-}
-
-function endKittyMicFromUser(): void {
-  pttPointerActive.value = false
-  spacePttActive = false
-  if (kitty.isVoiceActive.value) {
-    kitty.stopVoiceInput()
-  }
-}
-
-function onKittyMicPointerDown(ev: PointerEvent): void {
-  if (ev.button !== 0) {
-    return
-  }
-  if (!kittyServerEnabled.value || connecting.value || micDenied.value) {
-    return
-  }
-  pttPointerActive.value = true
-  const el = ev.currentTarget
-  if (el instanceof HTMLElement) {
-    el.setPointerCapture(ev.pointerId)
-  }
-  ev.preventDefault()
-  void beginKittyMicFromUser()
-}
-
-function onKittyMicPointerUp(ev: PointerEvent): void {
-  pttPointerActive.value = false
-  if (kitty.isVoiceActive.value) {
-    kitty.stopVoiceInput()
-  }
-  const el = ev.currentTarget
-  if (el instanceof HTMLElement && el.hasPointerCapture(ev.pointerId)) {
-    try {
-      el.releasePointerCapture(ev.pointerId)
-    } catch {
-      /* ignore */
-    }
-  }
-}
-
-function onKittySpacePttKeyDown(ev: KeyboardEvent): void {
-  if (ev.code !== 'Space' && ev.key !== ' ') {
-    return
-  }
-  if (ev.repeat || isKittyTextInputTarget()) {
-    return
-  }
-  if (shouldReserveSpaceForTarget(ev)) {
-    return
-  }
-  if (!kittyServerEnabled.value || connecting.value || micDenied.value) {
-    return
-  }
-  ev.preventDefault()
-  if (spacePttActive) {
-    return
-  }
-  spacePttActive = true
-  void beginKittyMicFromUser()
-}
-
-function onKittySpacePttKeyUp(ev: KeyboardEvent): void {
-  if (ev.code !== 'Space' && ev.key !== ' ') {
-    return
-  }
-  if (!spacePttActive) {
-    return
-  }
-  spacePttActive = false
-  if (kitty.isVoiceActive.value) {
-    kitty.stopVoiceInput()
-  }
-}
-
-/** Tab / app background: stop an open mic and cancel any in-flight start. */
-function handleKittyVisibilityForMic(): void {
-  if (!document.hidden) {
-    return
-  }
-  endKittyMicFromUser()
-}
-
-let kittyMicKbBound = false
-
-function bindKittyMicKeyboard(): void {
-  if (kittyMicKbBound || typeof window === 'undefined') {
-    return
-  }
-  kittyMicKbBound = true
-  window.addEventListener('keydown', onKittySpacePttKeyDown, true)
-  window.addEventListener('keyup', onKittySpacePttKeyUp, true)
-  document.addEventListener('visibilitychange', handleKittyVisibilityForMic)
-}
-
-function unbindKittyMicKeyboard(): void {
-  if (!kittyMicKbBound || typeof window === 'undefined') {
-    return
-  }
-  kittyMicKbBound = false
-  window.removeEventListener('keydown', onKittySpacePttKeyDown, true)
-  window.removeEventListener('keyup', onKittySpacePttKeyUp, true)
-  document.removeEventListener('visibilitychange', handleKittyVisibilityForMic)
-}
-
 async function sendDraft(): Promise<void> {
   const text = draft.value.trim()
   if (!text) return
@@ -494,54 +296,40 @@ async function onPickImage(ev: Event): Promise<void> {
   }
 }
 
-onMounted(async () => {
-  await featureFlagsStore.fetchFlags()
-  if (!authStore.isAuthenticated) {
-    router.replace('/m')
-    return
-  }
-  pushKittyDebugLine('#', 'debug log ready')
-  bindKittyMicKeyboard()
-  await ensureMobileKittyBootstrap()
-  const boot = bootstrapPayload.value
-  if (boot && boot.source !== 'empty') {
-    const libRaw =
-      boot.context?.diagram_library_id ??
-      (boot.source === 'library' ? boot.recommended_scope : null)
-    const libId = typeof libRaw === 'string' ? libRaw.trim() : ''
-    if (boot.source === 'library' && libId) {
-      await hydrateMobileKittyFromLibrary(libId)
-    } else if (boot.context) {
-      hydrateMobileKittyStoreFromBootstrap(boot.context, boot.diagram_type ?? 'circle_map')
-    }
-  }
-  eventBus.onWithOwner(
-    'voice:ws_closed',
-    (data) => {
-      if (data.wasClean) {
-        return
-      }
-      notify.warning(
-        t('mobile.kittyDisconnected', 'Voice connection lost. Hold the mic to reconnect.')
-      )
-    },
-    'MobileKittyPage_WsClosed'
-  )
+const {
+  onKittyMicPointerDown,
+  onKittyMicPointerUp,
+  bindKittyMicKeyboard,
+  teardownMicPtt,
+} = useMobileKittyMicPtt({
+  kitty,
+  kittyServerEnabled,
+  connecting,
+  micDenied,
+  showKeyboard,
+  connected,
+  ensureConnected,
+  onMicDenied: () => {
+    micDenied.value = true
+  },
+  onMicAllowed: () => {
+    micDenied.value = false
+  },
 })
 
-onUnmounted(async () => {
-  eventBus.removeAllListenersForOwner('MobileKittyPage_WsClosed')
-  unbindKittyMicKeyboard()
-  endKittyMicFromUser()
-  voiceStartInFlight.value = false
-  await kitty.stopConversation()
-  if (authStore.isAuthenticated && featureFlagsStore.getFeatureKittyAgent()) {
-    fetch(`/api/kitty/cleanup/${encodeURIComponent(kittyPairScope.value)}`, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-    }).catch(() => {})
-  }
+useMobileKittyPageLifecycle({
+  router,
+  authStore,
+  featureFlagsStore,
+  kitty,
+  kittyPairScope,
+  bootstrapPayload,
+  ensureMobileKittyBootstrap,
+  bindKittyMicKeyboard,
+  teardownMicPtt,
+  pushKittyDebugLine,
+  translate: t,
+  notifyWarning: (message) => notify.warning(message),
 })
 </script>
 
@@ -549,7 +337,7 @@ onUnmounted(async () => {
   <div
     class="mobile-kitty flex flex-col flex-1 min-h-0 w-full bg-gradient-to-b from-slate-100 via-white to-violet-50/40"
   >
-    <header class="flex items-center gap-2 h-12 px-2 bg-white/90 backdrop-blur-md shrink-0">
+    <header class="mobile-kitty-header flex items-center gap-2 h-12 px-2 bg-white/90 backdrop-blur-md shrink-0">
       <button
         type="button"
         class="flex items-center justify-center w-10 h-10 rounded-xl active:bg-gray-100 text-gray-700"
@@ -759,6 +547,10 @@ onUnmounted(async () => {
 </template>
 
 <style scoped>
+.mobile-kitty-header {
+  padding-top: env(safe-area-inset-top);
+}
+
 .safe-pb {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }

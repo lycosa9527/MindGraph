@@ -16,6 +16,7 @@ import {
   matchedPromptLanguageForUiLocale,
 } from '@/i18n/locales'
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
+import { computeIsMobileClient } from '@/utils/isMobileClient'
 
 export type Theme = 'light' | 'dark' | 'system'
 export type Language = LocaleCode
@@ -367,7 +368,7 @@ export const useUIStore = defineStore('ui', () => {
   }
 
   function checkMobile(): void {
-    isMobile.value = window.innerWidth < 768
+    isMobile.value = computeIsMobileClient()
   }
 
   function setSidebarCollapsed(collapsed: boolean): void {

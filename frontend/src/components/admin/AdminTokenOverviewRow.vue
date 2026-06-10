@@ -22,6 +22,7 @@ interface TokenStats {
   past_week: TokenPeriodStats
   past_month: TokenPeriodStats
   total: TokenPeriodStats
+  dingtalk_generations?: Record<string, number>
 }
 
 const props = withDefaults(
@@ -48,12 +49,12 @@ const dingtalkApiKeysDialogVisible = ref(false)
 
 const apiKeysQuery = useAdminApiKeys()
 
-const dingtalkKeyUsesTotal = computed(() => {
-  const list = apiKeysQuery.data.value
-  if (!list) {
+const dingtalkGenerationTotal = computed(() => {
+  const generations = props.tokenStats.dingtalk_generations
+  if (!generations) {
     return null
   }
-  return list.reduce((acc, row) => acc + (row.usage_count ?? 0), 0)
+  return generations.total ?? 0
 })
 
 const overallPeriods = [
@@ -187,8 +188,8 @@ function onDingtalkCardKeydown(e: KeyboardEvent): void {
           class="text-xl font-semibold tabular-nums sm:text-2xl"
           style="color: var(--stat-accent)"
         >
-          <template v-if="dingtalkKeyUsesTotal !== null">
-            {{ t('admin.dingtalkCardTotalUses', { count: dingtalkKeyUsesTotal }) }}
+          <template v-if="dingtalkGenerationTotal !== null">
+            {{ t('admin.dingtalkCardTotalUses', { count: dingtalkGenerationTotal }) }}
           </template>
           <template v-else>—</template>
         </p>

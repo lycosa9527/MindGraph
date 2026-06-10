@@ -21,6 +21,8 @@ import { useDebounceFn, useElementSize } from '@vueuse/core'
 import { ANIMATION, BREAKPOINTS, FIT_PADDING, PANEL, ZOOM } from '@/config/uiConfig'
 import { usePanelsStore } from '@/stores'
 
+import { computeIsMobileClient } from '@/utils/isMobileClient'
+
 import { eventBus } from '../core/useEventBus'
 
 // ============================================================================
@@ -339,10 +341,7 @@ export function useViewManager(options: UseViewManagerOptions = {}) {
   // =========================================================================
 
   function isMobileDevice(): boolean {
-    return (
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-      window.innerWidth <= BREAKPOINTS.MOBILE
-    )
+    return computeIsMobileClient()
   }
 
   // =========================================================================

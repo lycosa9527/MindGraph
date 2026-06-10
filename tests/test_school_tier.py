@@ -1,5 +1,6 @@
 """Tests for organization school tier limits."""
 
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -14,11 +15,15 @@ from utils.auth.school_tier import (
     SCHOOL_TIER_TRIAL,
     TIER_FEATURE_API_TOKEN,
     TIER_FEATURE_ONLINE_COLLAB,
+    apply_extra_member_seats_on_update,
     apply_school_tier_on_create,
     apply_school_tier_on_update,
+    assert_organization_has_member_capacity,
     assert_organization_tier_allows_current_members,
+    clear_extra_member_seats_if_trial,
     diagram_limit_reached_message,
     diagram_storage_limit_bytes_for_org,
+    extra_member_seats_for_org,
     format_diagram_save_limit_error,
     is_unlimited_member_limit,
     manager_limit_for_org,
@@ -32,13 +37,16 @@ from utils.auth.school_tier import (
     school_tier_list_fields,
     user_has_school_tier_feature,
 )
+from utils.auth.school_tier_defs import EXTRA_MEMBER_SEATS_MAX
 
 from models.domain.messages import Messages
 
 
 class _FakeOrg:
-    def __init__(self, school_tier=None):
+    def __init__(self, school_tier=None, extra_member_seats=0):
         self.school_tier = school_tier
+        self.extra_member_seats = extra_member_seats
+        self.id = 1
 
 
 def test_normalize_school_tier_defaults_to_trial():
@@ -99,16 +107,132 @@ def test_school_tier_list_fields():
     trial_fields = school_tier_list_fields(_FakeOrg(SCHOOL_TIER_TRIAL), 10)
     assert trial_fields["school_tier"] == SCHOOL_TIER_TRIAL
     assert trial_fields["school_tier_member_limit"] == 0
+    assert trial_fields["extra_member_seats"] == 0
+    assert trial_fields["member_limit_effective"] == 0
     assert trial_fields["school_tier_manager_limit"] == 0
     assert trial_fields["school_tier_features"]["online_collab"] is False
 
     fields = school_tier_list_fields(_FakeOrg(SCHOOL_TIER_STANDARD), 25)
     assert fields["school_tier"] == SCHOOL_TIER_STANDARD
     assert fields["school_tier_member_limit"] == 120
+    assert fields["extra_member_seats"] == 0
+    assert fields["member_limit_effective"] == 120
     assert fields["school_tier_manager_limit"] == 3
     assert fields["school_tier_diagram_storage_bytes_per_member"] == 2 * 1024**3
     assert fields["school_tier_diagram_storage_bytes"] == 50 * 1024**3
     assert fields["school_tier_features"]["online_collab"] is True
+
+    lite_extra = school_tier_list_fields(_FakeOrg(SCHOOL_TIER_LITE, extra_member_seats=10), 5)
+    assert lite_extra["extra_member_seats"] == 10
+    assert lite_extra["member_limit_effective"] == 60
+
+
+def test_member_limit_with_extra_seats():
+    lite = _FakeOrg(SCHOOL_TIER_LITE, extra_member_seats=10)
+    assert member_limit_for_org(lite) == 60
+    assert extra_member_seats_for_org(lite) == 10
+
+    standard = _FakeOrg(SCHOOL_TIER_STANDARD, extra_member_seats=50)
+    assert member_limit_for_org(standard) == 170
+
+    trial = _FakeOrg(SCHOOL_TIER_TRIAL, extra_member_seats=50)
+    assert member_limit_for_org(trial) == 0
+    assert is_unlimited_member_limit(member_limit_for_org(trial))
+
+
+def test_member_limit_ignores_extra_when_subscription_expired():
+    expired_lite = _FakeOrg(SCHOOL_TIER_LITE, extra_member_seats=10)
+    expired_lite.expires_at = datetime.now(UTC) - timedelta(days=1)
+    assert is_unlimited_member_limit(member_limit_for_org(expired_lite))
+
+
+def test_apply_extra_member_seats_on_update():
+    org = _FakeOrg(SCHOOL_TIER_LITE)
+    apply_extra_member_seats_on_update(org, {"extra_member_seats": 25}, "en")
+    assert org.extra_member_seats == 25
+
+    apply_extra_member_seats_on_update(org, {"extra_member_seats": "100"}, "en")
+    assert org.extra_member_seats == 100
+
+
+def test_apply_extra_member_seats_on_update_rejects_invalid():
+    org = _FakeOrg(SCHOOL_TIER_LITE)
+    with pytest.raises(HTTPException) as exc_info:
+        apply_extra_member_seats_on_update(org, {"extra_member_seats": -1}, "en")
+    assert exc_info.value.status_code == 400
+
+    with pytest.raises(HTTPException) as exc_info:
+        apply_extra_member_seats_on_update(
+            org,
+            {"extra_member_seats": EXTRA_MEMBER_SEATS_MAX + 1},
+            "en",
+        )
+    assert exc_info.value.status_code == 400
+
+    with pytest.raises(HTTPException) as exc_info:
+        apply_extra_member_seats_on_update(org, {"extra_member_seats": 1.5}, "en")
+    assert exc_info.value.status_code == 400
+
+    with pytest.raises(HTTPException) as exc_info:
+        apply_extra_member_seats_on_update(org, {"extra_member_seats": None}, "en")
+    assert exc_info.value.status_code == 400
+
+
+def test_clear_extra_member_seats_if_trial():
+    org = _FakeOrg(SCHOOL_TIER_TRIAL, extra_member_seats=50)
+    clear_extra_member_seats_if_trial(org)
+    assert org.extra_member_seats == 0
+
+    paid = _FakeOrg(SCHOOL_TIER_LITE, extra_member_seats=10)
+    clear_extra_member_seats_if_trial(paid)
+    assert paid.extra_member_seats == 10
+
+
+@pytest.mark.asyncio
+async def test_assert_organization_tier_allows_current_members_with_extra_seats(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    org = SimpleNamespace(id=1, school_tier=SCHOOL_TIER_LITE, extra_member_seats=10)
+    db = AsyncMock()
+
+    async def _count(_db, _org_id):
+        return 55
+
+    monkeypatch.setattr(
+        "utils.auth.school_tier.member_count_for_org",
+        _count,
+    )
+
+    await assert_organization_tier_allows_current_members(db, org, "en")
+
+    org.extra_member_seats = 0
+    with pytest.raises(HTTPException) as exc_info:
+        await assert_organization_tier_allows_current_members(db, org, "en")
+    assert exc_info.value.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_assert_organization_has_member_capacity_respects_extra_seats() -> None:
+    org = SimpleNamespace(id=1, school_tier=SCHOOL_TIER_LITE, extra_member_seats=10)
+    db = AsyncMock()
+
+    async def _count_59(_stmt):
+        result = AsyncMock()
+        result.scalar_one = lambda: 59
+        return result
+
+    db.execute = _count_59
+    await assert_organization_has_member_capacity(db, org, "en")
+
+    async def _count_60(_stmt):
+        result = AsyncMock()
+        result.scalar_one = lambda: 60
+        return result
+
+    db.execute = _count_60
+    with pytest.raises(HTTPException) as exc_info:
+        await assert_organization_has_member_capacity(db, org, "en")
+    assert exc_info.value.status_code == 403
 
 
 def test_school_tier_feature_gating():
@@ -228,6 +352,28 @@ def test_apply_school_tier_on_update_rejects_unknown_tier():
         apply_school_tier_on_update(org, {"school_tier": "enterprise"}, "en")
     assert exc_info.value.status_code == 400
     assert org.school_tier == SCHOOL_TIER_TRIAL
+
+
+def test_redis_org_cache_roundtrips_extra_member_seats():
+    from services.redis.cache.redis_org_cache import OrganizationCache
+
+    cache = OrganizationCache()
+    org = _FakeOrg(SCHOOL_TIER_LITE, extra_member_seats=25)
+    org.id = 42
+    org.code = "DEMO"
+    org.name = "Demo School"
+    org.invitation_code = "INVITE"
+    org.is_active = True
+
+    payload = cache._serialize_org(org)
+    assert payload["extra_member_seats"] == "25"
+
+    restored = cache._deserialize_org(payload)
+    assert restored.extra_member_seats == 25
+
+    legacy_payload = {key: value for key, value in payload.items() if key != "extra_member_seats"}
+    legacy_restored = cache._deserialize_org(legacy_payload)
+    assert legacy_restored.extra_member_seats == 0
 
 
 def test_diagram_save_limit_error_token():

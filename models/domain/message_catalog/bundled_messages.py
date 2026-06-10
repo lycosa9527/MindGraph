@@ -974,6 +974,11 @@ ERRORS = {
         "en": "Invalid school tier: {}",
         "zh-tw": "無效的學校版本：{}",
     },
+    "invalid_extra_member_seats": {
+        "zh": "额外名额无效，请输入 0 至 {} 之间的整数",
+        "en": "Invalid extra member seats; enter an integer from 0 to {}",
+        "zh-tw": "額外名額無效，請輸入 0 至 {} 之間的整數",
+    },
     "organization_member_limit_reached": {
         "zh": "该学校成员数已达上限（{} 人）",
         "en": "This school has reached its member limit ({} users)",

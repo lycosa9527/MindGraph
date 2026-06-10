@@ -29,6 +29,7 @@ import {
   useUpdateAdminOrganization,
 } from '@/composables/queries'
 import {
+  effectiveMemberLimit,
   isUnlimitedMemberLimit,
   SCHOOL_TIER_LIMITS,
   normalizeSchoolTier,
@@ -80,6 +81,7 @@ const props = defineProps<{
   orgUserCount?: number
   orgExpiresAt?: string | null
   orgSchoolTier?: string | null
+  orgExtraMemberSeats?: number
   orgDifyApiBaseUrl?: string | null
   orgDifyApiKeyMasked?: string | null
   orgDifyTimeoutSeconds?: number
@@ -245,8 +247,13 @@ const lockLoading = ref(false)
 const deleteLoading = ref(false)
 const expiresAtEdit = ref<string | null>(null)
 const schoolTierEdit = ref<SchoolTier>('trial')
+const extraMemberSeatsEdit = ref(0)
 
 const selectedTierLimits = computed(() => SCHOOL_TIER_LIMITS[schoolTierEdit.value])
+
+const effectiveMemberLimitValue = computed(() =>
+  effectiveMemberLimit(schoolTierEdit.value, extraMemberSeatsEdit.value)
+)
 
 const tierDowngradeBlocked = computed(() => {
   if (props.type !== 'org') {
@@ -255,8 +262,9 @@ const tierDowngradeBlocked = computed(() => {
   const limits = selectedTierLimits.value
   const memberCount = props.orgUserCount ?? 0
   const managerCount = managers.value.length
+  const memberCap = effectiveMemberLimitValue.value
   const memberOverLimit =
-    !isUnlimitedMemberLimit(limits.memberLimit) && memberCount > limits.memberLimit
+    !isUnlimitedMemberLimit(memberCap) && memberCount > memberCap
   return memberOverLimit || managerCount > limits.managerLimit
 })
 
@@ -508,12 +516,13 @@ async function saveGeneralSettings() {
   }
   if (tierDowngradeBlocked.value) {
     const limits = selectedTierLimits.value
+    const memberCap = effectiveMemberLimitValue.value
     notify.warning(
       t('admin.schoolTierDowngradeBlocked', {
         members: props.orgUserCount ?? 0,
-        memberLimit: isUnlimitedMemberLimit(limits.memberLimit)
+        memberLimit: isUnlimitedMemberLimit(memberCap)
           ? t('admin.unlimited')
-          : limits.memberLimit,
+          : memberCap,
         managers: managers.value.length,
         managerLimit: limits.managerLimit <= 0
           ? t('admin.noSchoolManagersShort')
@@ -532,11 +541,17 @@ async function saveGeneralSettings() {
         display_name: displayNameEdit.value.trim() || null,
         expires_at: expiresAtPayload,
         school_tier: schoolTierEdit.value,
+        extra_member_seats:
+          schoolTierEdit.value === 'trial' ? 0 : extraMemberSeatsEdit.value,
       },
     })
     const savedTier = updated.school_tier
     if (typeof savedTier === 'string' && savedTier.trim()) {
       schoolTierEdit.value = normalizeSchoolTier(savedTier)
+    }
+    const savedExtra = updated.extra_member_seats
+    if (typeof savedExtra === 'number' && Number.isFinite(savedExtra)) {
+      extraMemberSeatsEdit.value = Math.max(0, Math.trunc(savedExtra))
     }
     notify.success(t('notification.saved'))
     emit('refresh')
@@ -635,6 +650,7 @@ watch(
         orgActiveState.value = props.orgIsActive ?? true
         expiresAtEdit.value = parseExpiresAtToDate(props.orgExpiresAt)
         schoolTierEdit.value = normalizeSchoolTier(props.orgSchoolTier)
+        extraMemberSeatsEdit.value = Math.max(0, Math.trunc(props.orgExtraMemberSeats ?? 0))
         loadGeneralTabData()
       }
     } else {
@@ -670,6 +686,7 @@ watch(
       props.orgIsActive,
       props.orgExpiresAt,
       props.orgSchoolTier,
+      props.orgExtraMemberSeats,
       props.userId,
       props.userName,
     ] as const,
@@ -683,6 +700,7 @@ watch(
       orgActiveState.value = props.orgIsActive ?? true
       expiresAtEdit.value = parseExpiresAtToDate(props.orgExpiresAt)
       schoolTierEdit.value = normalizeSchoolTier(props.orgSchoolTier)
+      extraMemberSeatsEdit.value = Math.max(0, Math.trunc(props.orgExtraMemberSeats ?? 0))
       if (schoolDialogTab.value === 'general') {
         loadGeneralTabData()
       }
@@ -813,6 +831,7 @@ onBeforeUnmount(() => {
               v-model:display-name-edit="displayNameEdit"
               v-model:expires-at-edit="expiresAtEdit"
               v-model:school-tier-edit="schoolTierEdit"
+              v-model:extra-member-seats-edit="extraMemberSeatsEdit"
               v-model:pending-manager-ids="pendingManagerIds"
               :org-name="orgName"
               :org-active-state="orgActiveState"

@@ -14,9 +14,10 @@
 import { type Ref, computed, watch } from 'vue'
 
 import { useVueFlow } from '@vue-flow/core'
-import { useDebounceFn, useElementSize, useMediaQuery } from '@vueuse/core'
+import { useBreakpoints, useDebounceFn, useElementSize, useMediaQuery } from '@vueuse/core'
 
 import { ANIMATION, BREAKPOINTS, FIT_PADDING } from '@/config/uiConfig'
+import { isTouchDeviceUserAgent } from '@/utils/isMobileClient'
 
 // ============================================================================
 // Types
@@ -78,7 +79,11 @@ export function useCanvasState(
   // VueUse: Responsive Breakpoints
   // =========================================================================
 
-  const isMobile = useMediaQuery(`(max-width: ${BREAKPOINTS.MOBILE}px)`)
+  const mobileBreakpoint = useBreakpoints({ mobile: BREAKPOINTS.MOBILE })
+  const isSmallViewport = mobileBreakpoint.smaller('mobile')
+  const isMobile = computed(
+    () => isSmallViewport.value || isTouchDeviceUserAgent()
+  )
   const isTablet = useMediaQuery(`(max-width: ${BREAKPOINTS.TABLET}px)`)
   const isDesktop = computed(() => !isTablet.value)
 

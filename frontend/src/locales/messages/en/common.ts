@@ -123,6 +123,8 @@ export default {
   'kitty.voiceCommand.explain_node': 'Explain node: {detail}',
   'mobile.mindgraphDesc': 'Mind mapping agent',
   'mobile.mindmateDesc': 'Teaching research agent',
+  'mobile.navHome': 'Home',
+  'mobile.navBack': 'Back',
   'mobile.kittyCardTitle': 'Kitty',
   'mobile.kittyCardDesc': 'Voice teaching agent for diagrams',
   'mobile.accountDesc': 'Account settings',

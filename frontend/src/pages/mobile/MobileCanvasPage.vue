@@ -6,8 +6,8 @@
  * and other desktop-only features. Concept map: 启用 AI in top bar; bottom shows inline
  * rec only while active (tap canvas to dismiss, same as desktop coordinator).
  */
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
+import { computed, onUnmounted, ref, watch } from 'vue'
+import { onBeforeRouteLeave } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
 
@@ -17,7 +17,9 @@ import {
   ChevronRight,
   LayoutGrid,
   Loader2,
+  Maximize2,
   Plus,
+  RotateCcw,
   Save,
   Sparkles,
   TableProperties,
@@ -34,13 +36,10 @@ import {
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
 import { NodePalettePanel, RootConceptModal } from '@/components/panels'
 import {
-  eventBus,
-  getDefaultDiagramName,
   getDiagramOperations,
   getNodePalette,
   getPanelCoordinator,
   useCanvasToolbarApps,
-  useDiagramSpecForSave,
   useInlineRecommendations,
   useInlineRecommendationsCoordinator,
   useKittyDiagramReviewAnnotationBus,
@@ -48,22 +47,17 @@ import {
   useNodeActions,
   useNotifications,
 } from '@/composables'
-import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
+import { useCanvasAutoSaveStatus } from '@/composables/canvasPage/useCanvasAutoSaveStatus'
+import { useCanvasUnsavedLeaveGuard } from '@/composables/canvasPage/useCanvasUnsavedLeaveGuard'
 import { useCanvasPageTabRecIndicator } from '@/composables/canvasPage/useCanvasPageTabRecIndicator'
 import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
-import {
-  diagramSpecLikelyNeedsMarkdownPipeline,
-  loadDiagramMarkdownPipeline,
-} from '@/composables/core/diagramMarkdownPipeline'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
-import { handleKittyAddNodeWithRecommendationsRequest } from '@/composables/kitty/kittyAddNodeWithRecommendations'
-import { resolveKittyChildNodeId } from '@/composables/kitty/kittyDiagramChildren'
-import { replayKittyPendingCanvasAction } from '@/composables/kitty/useKittyMobileHubActionBridge'
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
-import { IMPORT_SPEC_KEY } from '@/config'
-import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
+import { useMobileCanvasEventHandlers } from '@/composables/mobile/useMobileCanvasEventHandlers'
+import { useMobileCanvasInlineRecBar } from '@/composables/mobile/useMobileCanvasInlineRecBar'
+import { useMobileCanvasRouteLoader } from '@/composables/mobile/useMobileCanvasRouteLoader'
+import { useMobileCanvasToolbar } from '@/composables/mobile/useMobileCanvasToolbar'
 import {
-  type LLMResult,
   useAuthStore,
   useConceptMapRelationshipStore,
   useDiagramStore,
@@ -77,10 +71,11 @@ import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
-import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
+import {
+  DEFAULT_CHART_TYPE_KEY,
+  diagramTypeFromKey,
+} from '@/utils/diagramTypeKeys'
 
-const route = useRoute()
-const router = useRouter()
 const diagramStore = useDiagramStore()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
@@ -104,9 +99,7 @@ const { startSession: startNodePaletteSession } = getNodePalette({
 })
 
 const { handleAIGenerate, handleConceptGeneration, isAIGenerating } = useCanvasToolbarApps()
-
 const diagramAutoSave = useDiagramAutoSave()
-
 const inlineRecCoordinator = useInlineRecommendationsCoordinator()
 useCanvasPageTabRecIndicator()
 useNodeActions()
@@ -114,83 +107,13 @@ const { startRecommendations, selectOptionByGlobalIndex, fetchNextBatch } =
   useInlineRecommendations()
 
 useConceptMapRelationshipTabFromSelection({ startRecommendations })
-
 useKittyDiagramReviewAnnotationBus('MobileCanvasPage')
 useKittyVoiceSelectionBus('MobileCanvasPage')
 
-const isSaving = ref(false)
-
-async function handleSave() {
-  if (isSaving.value) return
-  if (!authStore.isAuthenticated) {
-    notify.warning(t('notification.signInToUse'))
-    return
-  }
-  isSaving.value = true
-  try {
-    const result = await diagramAutoSave.flush()
-    if (result.saved) {
-      notify.success(t('notification.saved', '已保存'))
-    } else if (result.reason === 'skipped_slots_full') {
-      notify.warning(t('notification.slotsFull', '图示槽位已满'))
-    }
-  } finally {
-    isSaving.value = false
-  }
-}
-
-const DIAGRAM_TYPE_MAP: Record<string, DiagramType> = {
-  圆圈图: 'circle_map',
-  气泡图: 'bubble_map',
-  双气泡图: 'double_bubble_map',
-  树形图: 'tree_map',
-  括号图: 'brace_map',
-  流程图: 'flow_map',
-  复流程图: 'multi_flow_map',
-  桥形图: 'bridge_map',
-  思维导图: 'mindmap',
-  概念图: 'concept_map',
-}
-
-const DIAGRAM_TYPE_TO_ZH: Record<DiagramType, string> = {
-  circle_map: '圆圈图',
-  bubble_map: '气泡图',
-  double_bubble_map: '双气泡图',
-  tree_map: '树形图',
-  brace_map: '括号图',
-  flow_map: '流程图',
-  multi_flow_map: '复流程图',
-  bridge_map: '桥形图',
-  mindmap: '思维导图',
-  mind_map: '思维导图',
-  concept_map: '概念图',
-  diagram: '图表',
-}
-
-const VALID_TYPES: DiagramType[] = [
-  'circle_map',
-  'bubble_map',
-  'double_bubble_map',
-  'tree_map',
-  'brace_map',
-  'flow_map',
-  'multi_flow_map',
-  'bridge_map',
-  'mindmap',
-  'mind_map',
-  'concept_map',
-]
-
 const chartType = computed(() => uiStore.selectedChartType)
-const diagramType = computed<DiagramType | null>(() => {
-  if (!chartType.value) return null
-  return DIAGRAM_TYPE_MAP[chartType.value] || null
-})
-
-const showNodePalette = ref(false)
-const showModelDrawer = ref(false)
-
+const diagramType = computed<DiagramType | null>(() => diagramTypeFromKey(chartType.value))
 const isConceptMap = computed(() => diagramStore.type === 'concept_map')
+
 const tabReady = computed(() => {
   if (!authStore.isAuthenticated) return false
   if (!inlineRecStore.isReady) return false
@@ -200,175 +123,117 @@ const tabReady = computed(() => {
   return true
 })
 
-const MOBILE_REC_PER_PAGE_NON_CONCEPT = 3
-const MOBILE_REC_PER_PAGE_CONCEPT_MAP = 4
+const {
+  isSaving,
+  showNodePalette,
+  showModelDrawer,
+  handleSave,
+  handleAddNode,
+  handleDeleteSelected,
+  handleToolbarAI,
+  toggleConceptMapAiToolbar,
+  toggleNodePalette,
+  handleFitToScreen,
+  handleZoomReset,
+} = useMobileCanvasToolbar({
+  diagramStore,
+  authStore,
+  llmResultsStore,
+  panelsStore,
+  diagramAutoSave,
+  isConceptMap,
+  isAIGenerating,
+  handleAIGenerate,
+  handleConceptGeneration,
+  translate: t,
+  notifySuccess: (message) => notify.success(message),
+  notifyWarning: (message) => notify.warning(message),
+})
 
-/** Concept map: show four suggestions per “page”; other diagrams keep three. */
-const mobileRecPerPage = computed(() =>
-  isConceptMap.value ? MOBILE_REC_PER_PAGE_CONCEPT_MAP : MOBILE_REC_PER_PAGE_NON_CONCEPT
+const {
+  inlineRecActive,
+  inlineRecGenerating,
+  showMobileConceptRecBottom,
+  mobileRecOptions,
+  mobileRecPage,
+  mobileRecPerPage,
+  mobileCanPrev,
+  mobileRecFetching,
+  handleRecSelect,
+  handleRecNext,
+  handleRecPrev,
+  handleRecDismiss,
+  handleTabMode,
+} = useMobileCanvasInlineRecBar({
+  diagramStore,
+  inlineRecStore,
+  authStore,
+  llmResultsStore,
+  focusReviewStore,
+  rootConceptReviewStore,
+  isConceptMap,
+  startRecommendations,
+  selectOptionByGlobalIndex,
+  fetchNextBatch,
+  translate: t,
+  notifyWarning: (message) => notify.warning(message),
+})
+
+const { autoSavedStatusText } = useCanvasAutoSaveStatus({
+  diagramAutoSave,
+  isAuthenticated: computed(() => authStore.isAuthenticated),
+  isSlotsFullyUsed: computed(() => savedDiagramsStore.isSlotsFullyUsed),
+  activeDiagramId: computed(() => savedDiagramsStore.activeDiagramId),
+})
+
+const saveStatusDirty = computed(
+  () => diagramAutoSave.isDirty.value && !diagramAutoSave.isSaving.value
 )
 
-const inlineRecActive = computed(() => !!inlineRecStore.activeNodeId)
-const inlineRecGenerating = computed(() => {
-  const nid = inlineRecStore.activeNodeId
-  return !!nid && inlineRecStore.generatingNodeIds.has(nid)
-})
-/** Concept map: bottom bar only while inline rec is open or loading (dismiss: canvas tap via coordinator) */
-const showMobileConceptRecBottom = computed(
-  () => isConceptMap.value && (inlineRecActive.value || inlineRecGenerating.value)
-)
-
-const mobileRecPage = ref(0)
-const mobileRecOptions = computed(() => {
-  const nid = inlineRecStore.activeNodeId
-  if (!nid) return []
-  const all = inlineRecStore.allOptions[nid] ?? []
-  const per = mobileRecPerPage.value
-  const start = mobileRecPage.value * per
-  return all.slice(start, start + per)
-})
-const mobileRecTotalPages = computed(() => {
-  const nid = inlineRecStore.activeNodeId
-  if (!nid) return 0
-  const total = (inlineRecStore.allOptions[nid] ?? []).length
-  const per = mobileRecPerPage.value
-  return total <= 0 ? 0 : Math.ceil(total / per)
-})
-const mobileCanPrev = computed(() => mobileRecPage.value > 0)
-const mobileRecFetching = computed(() => {
-  const nid = inlineRecStore.activeNodeId
-  return !!nid && inlineRecStore.fetchingNextBatchNodeIds.has(nid)
+const mobileCanvasEvents = useMobileCanvasEventHandlers({
+  diagramStore,
+  authStore,
+  inlineRecStore,
+  llmResultsStore,
+  focusReviewStore,
+  rootConceptReviewStore,
+  isConceptMap,
+  isAIGenerating,
+  startNodePaletteSession,
+  startRecommendations,
+  handleAIGenerate,
+  handleConceptGeneration,
+  translate: t,
+  notifyWarning: (message) => notify.warning(message),
 })
 
-watch(
-  () => inlineRecStore.activeNodeId,
-  () => {
-    mobileRecPage.value = 0
-  }
-)
-
-watch(isConceptMap, (v) => {
-  mobileRecPage.value = 0
-  if (v) {
-    showModelDrawer.value = false
-  }
+useMobileCanvasRouteLoader({
+  diagramStore,
+  authStore,
+  uiStore,
+  llmResultsStore,
+  savedDiagramsStore,
+  featureFlagsStore,
+  inlineRecCoordinator,
+  diagramType,
+  currentLanguage,
+  promptLanguage,
+  translate: t,
+  notifySuccess: (message) => notify.success(message),
+  notifyWarning: (message) => notify.warning(message),
+  notifyError: (message) => notify.error(message),
+  onCollabClear: () => diagramStore.setCollabSessionActive(false),
 })
 
-function handleTabMode(): void {
-  if (!authStore.isAuthenticated) {
-    notify.warning(t('notification.signInToUse'))
-    return
-  }
-  if (!inlineRecStore.isReady) return
+const preserveDiagramForKittyHub = ref(false)
 
-  const selectedId = diagramStore.selectedNodes[0]
-  if (!selectedId) {
-    notify.warning(t('canvas.toolbar.selectNodesToDelete', '请先选择一个节点'))
-    return
-  }
+onBeforeRouteLeave((to) => {
+  preserveDiagramForKittyHub.value = to.path === '/m/kitty' || to.name === 'MobileKitty'
+})
 
-  if (isConceptMap.value && selectedId === 'topic') {
-    void focusReviewStore.runFocusReviewManual()
-    return
-  }
-  if (isConceptMap.value) {
-    const rootTid = getTopicRootConceptTargetId(diagramStore.data?.connections)
-    if (rootTid && selectedId === rootTid) {
-      void rootConceptReviewStore.runRootConceptManual()
-      return
-    }
-  }
-  if (isConceptMap.value && !llmResultsStore.selectedModel) {
-    notify.warning(
-      t('notification.conceptMapTabNeedsAi', '请先在顶栏启用「启动 AI」再使用 Tab 推荐')
-    )
-    return
-  }
-
-  const nodes = diagramStore.data?.nodes ?? []
-  const node = nodes.find((n) => n.id === selectedId)
-  if (
-    !node ||
-    !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
-  ) {
-    notify.warning(t('notification.nodeNotEligible', '该节点不支持推荐'))
-    return
-  }
-  void startRecommendations(selectedId)
-}
-
-function handleRecSelect(localIdx: number): void {
-  const nid = inlineRecStore.activeNodeId
-  if (!nid) return
-  const per = mobileRecPerPage.value
-  const globalIdx = mobileRecPage.value * per + localIdx
-  selectOptionByGlobalIndex(nid, globalIdx)
-}
-
-async function handleRecNext(): Promise<void> {
-  const nid = inlineRecStore.activeNodeId
-  if (!nid) return
-  const per = mobileRecPerPage.value
-  const hasMoreLocal = mobileRecPage.value < mobileRecTotalPages.value - 1
-  if (hasMoreLocal) {
-    mobileRecPage.value++
-    return
-  }
-  await fetchNextBatch(nid)
-  const newTotal = (inlineRecStore.allOptions[nid] ?? []).length
-  const newTotalPages = Math.ceil(newTotal / per)
-  if (newTotalPages > mobileRecPage.value + 1) {
-    mobileRecPage.value++
-  }
-}
-
-function handleRecPrev(): void {
-  if (mobileRecPage.value > 0) mobileRecPage.value--
-}
-
-function handleRecDismiss(): void {
-  inlineRecStore.invalidateAll()
-}
-
-function handleAddNode() {
-  if (diagramStore.type === 'concept_map') return
-  eventBus.emit('diagram:add_node_requested', {})
-}
-
-function handleDeleteSelected() {
-  eventBus.emit('diagram:delete_selected_requested', {})
-}
-
-function handleToolbarAI() {
-  if (!authStore.isAuthenticated) {
-    notify.warning(t('notification.signInToUse'))
-    return
-  }
-  if (isConceptMap.value) {
-    handleConceptGeneration()
-    return
-  }
-  if (isAIGenerating.value) return
-  void handleAIGenerate()
-}
-
-function toggleConceptMapAiToolbar(): void {
-  if (llmResultsStore.selectedModel) {
-    llmResultsStore.setSelectedModel(null)
-  } else {
-    llmResultsStore.setSelectedModel('qwen')
-  }
-}
-
-function toggleNodePalette() {
-  if (panelsStore.nodePalettePanel.isOpen) {
-    panelsStore.closeNodePalette()
-    showNodePalette.value = false
-  } else {
-    panelsStore.openNodePalette()
-    showNodePalette.value = true
-  }
-}
+useCanvasUnsavedLeaveGuard({
+  isDirty: diagramAutoSave.isDirty,
+})
 
 watch(
   () => panelsStore.nodePalettePanel.isOpen,
@@ -376,6 +241,12 @@ watch(
     showNodePalette.value = isOpen
   }
 )
+
+watch(isConceptMap, (v) => {
+  if (v) {
+    showModelDrawer.value = false
+  }
+})
 
 watch(
   () => uiStore.selectedChartType,
@@ -390,306 +261,11 @@ watch(
   { immediate: true }
 )
 
-// Concept maps are handled by RootConceptModal.onMounted → initializeConceptMapRootModal(),
-// which runs bootstrap_domains + sequential per-tab streams. Firing startSession() here in
-// parallel would launch a second concurrent NODE_PALETTE_START request on the same session
-// and topic, causing duplicate RAG initialization, flickering suggestions (each stream calls
-// setNodePaletteSuggestions([]) when append=false), and intermittent "No response returned"
-// cancellations when one of the racing streams aborts.
-eventBus.onWithOwner(
-  'nodePalette:opened',
-  (data: { hasRestoredSession?: boolean; wasPanelAlreadyOpen?: boolean }) => {
-    if (diagramStore.type === 'concept_map') return
-    if (!data.hasRestoredSession && diagramStore.data?.nodes?.length) {
-      startNodePaletteSession({ keepSessionId: data.wasPanelAlreadyOpen ?? false })
-    }
-  },
-  'MobileCanvasPage'
-)
-
-eventBus.onWithOwner(
-  'node_editor:tab_pressed',
-  (data: { nodeId?: string; draftText?: string }) => {
-    const nodeId = data?.nodeId
-    if (!nodeId) return
-
-    if (diagramStore.type === 'concept_map' && nodeId === 'topic') {
-      const draft = typeof data.draftText === 'string' ? data.draftText.trim() : ''
-      if (draft) {
-        eventBus.emit('node:text_updated', { nodeId: 'topic', text: draft })
-      }
-      void focusReviewStore.runFocusReviewManual()
-      return
-    }
-
-    if (diagramStore.type === 'concept_map') {
-      const rootTid = getTopicRootConceptTargetId(diagramStore.data?.connections)
-      if (rootTid && nodeId === rootTid) {
-        const draft = typeof data.draftText === 'string' ? data.draftText.trim() : ''
-        if (draft) {
-          eventBus.emit('node:text_updated', { nodeId: rootTid, text: draft })
-        }
-        if (!authStore.isAuthenticated) {
-          notify.warning(t('notification.signInToUse'))
-          return
-        }
-        void rootConceptReviewStore.runRootConceptManual()
-        return
-      }
-    }
-
-    const nodes = diagramStore.data?.nodes ?? []
-    const node = nodes.find((n) => n.id === nodeId) as
-      | { id?: string; type?: string; data?: { nodeType?: string } }
-      | undefined
-    if (
-      !node ||
-      !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
-    ) {
-      return
-    }
-    if (!inlineRecStore.isReady) return
-    if (diagramStore.type === 'concept_map' && !llmResultsStore.selectedModel) {
-      notify.warning(
-        t('notification.conceptMapTabNeedsAi', '请先在顶栏启用「启动 AI」再使用 Tab 推荐')
-      )
-      return
-    }
-    if (!authStore.isAuthenticated) {
-      notify.warning(t('notification.signInToUse'))
-      return
-    }
-    void startRecommendations(nodeId)
-  },
-  'MobileCanvasPage'
-)
-
-eventBus.onWithOwner(
-  'diagram:auto_complete_requested',
-  () => {
-    if (!authStore.isAuthenticated) {
-      notify.warning(t('notification.signInToUse'))
-      return
-    }
-    if (diagramStore.collabSessionActive && !isConceptMap.value) {
-      notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
-      return
-    }
-    if (isAIGenerating.value) return
-    if (isConceptMap.value) {
-      handleConceptGeneration()
-      return
-    }
-    void handleAIGenerate()
-  },
-  'MobileCanvasPage'
-)
-
-eventBus.onWithOwner(
-  'kitty:inline_recommendations_requested',
-  (data: { nodeId?: string; nodeIndex?: number }) => {
-    const nodes = diagramStore.data?.nodes ?? []
-    let nid = resolveKittyChildNodeId(diagramStore.type, nodes, {
-      nodeId: data.nodeId,
-      nodeIndex: data.nodeIndex,
-    })
-    if (!nid) nid = diagramStore.selectedNodes[0]
-    if (!nid) {
-      notify.warning(t('canvas.toolbar.selectNodesToDelete', '请先选择一个节点'))
-      return
-    }
-    const node = nodes.find((x) => x.id === nid)
-    if (
-      !node ||
-      !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
-    ) {
-      notify.warning(t('notification.nodeNotEligible', '该节点不支持推荐'))
-      return
-    }
-    if (!inlineRecStore.isReady) return
-    if (diagramStore.type === 'concept_map' && !llmResultsStore.selectedModel) {
-      notify.warning(
-        t('notification.conceptMapTabNeedsAi', '请先在顶栏启用「启动 AI」再使用 Tab 推荐')
-      )
-      return
-    }
-    if (!authStore.isAuthenticated) {
-      notify.warning(t('notification.signInToUse'))
-      return
-    }
-    void startRecommendations(nid)
-  },
-  'MobileCanvasPage'
-)
-
-eventBus.onWithOwner(
-  'kitty:add_node_with_recommendations_requested',
-  (data: { text?: string }) => {
-    void handleKittyAddNodeWithRecommendationsRequest({
-      text: data.text,
-      diagramStore,
-      startRecommendations,
-      inlineRecReady: inlineRecStore.isReady,
-      isAuthenticated: authStore.isAuthenticated,
-      conceptMapAiEnabled: Boolean(llmResultsStore.selectedModel),
-      translate: t,
-      notifyWarning: (message: string) => notify.warning(message),
-    })
-  },
-  'MobileCanvasPage'
-)
-
-onMounted(async () => {
-  await ensureFontsForLanguageCode(uiStore.promptLanguage)
-  inlineRecCoordinator.setup()
-  await nextTick()
-  replayKittyPendingCanvasAction()
-  void featureFlagsStore.fetchFlags()
-  await savedDiagramsStore.fetchDiagrams()
-
-  const diagramIdRaw = route.query.diagramId ?? route.query.diagram_id
-  const diagramId = typeof diagramIdRaw === 'string' ? diagramIdRaw : undefined
-  if (diagramId) {
-    await loadDiagramFromLibrary(diagramId)
-    return
-  }
-
-  const importFlag = route.query.import
-  if (importFlag === '1') {
-    const importJson = sessionStorage.getItem(IMPORT_SPEC_KEY)
-    if (importJson) {
-      try {
-        const spec = JSON.parse(importJson) as Record<string, unknown>
-        sessionStorage.removeItem(IMPORT_SPEC_KEY)
-        const diagramType = (spec.type as DiagramType) || null
-        if (!diagramType || !VALID_TYPES.includes(diagramType)) {
-          notify.error(t('notification.importUnsupportedType'))
-        } else {
-          const llmResults = spec.llm_results as
-            | { results?: Record<string, unknown>; selectedModel?: string }
-            | undefined
-          let specForLoad = spec
-          if (llmResults?.results && typeof llmResults.results === 'object') {
-            llmResultsStore.restoreFromSaved(
-              llmResults as { results?: Record<string, LLMResult>; selectedModel?: string },
-              diagramType
-            )
-            specForLoad = { ...spec }
-            delete (specForLoad as Record<string, unknown>).llm_results
-          } else {
-            llmResultsStore.clearCache()
-          }
-          if (diagramSpecLikelyNeedsMarkdownPipeline(specForLoad)) {
-            await loadDiagramMarkdownPipeline({ bumpLayout: false })
-          }
-          const loaded = diagramStore.loadFromSpec(specForLoad, diagramType)
-          if (loaded) {
-            const zhName = DIAGRAM_TYPE_TO_ZH[diagramType]
-            if (zhName) {
-              uiStore.setSelectedChartType(zhName)
-            }
-            router.replace({ path: '/m/canvas' })
-
-            const topicText = diagramStore.getTopicNodeText()
-            const importTitle =
-              topicText ||
-              diagramStore.effectiveTitle ||
-              getDefaultDiagramName(diagramType, currentLanguage.value)
-            diagramStore.initTitle(importTitle)
-            const getDiagramSpec = useDiagramSpecForSave()
-            const specToSave = getDiagramSpec()
-            if (specToSave && authStore.isAuthenticated) {
-              const saveResult = await savedDiagramsStore.manualSaveDiagram(
-                importTitle,
-                diagramType,
-                specToSave,
-                promptLanguage.value,
-                null
-              )
-              if (saveResult.success) {
-                notify.success(t('notification.importSuccess'))
-              } else if (saveResult.needsSlotClear) {
-                eventBus.emit('canvas:show_slot_full_modal', {})
-              } else if (!saveResult.success) {
-                notify.warning(saveResult.error || t('notification.importSavePartial'))
-              }
-            }
-            return
-          }
-          notify.error(t('notification.importLoadFailed'))
-        }
-      } catch (error) {
-        console.error('Import load failed:', error)
-        notify.error(t('notification.importInvalidData'))
-      }
-    } else {
-      notify.error(t('canvas.import.invalidFile'))
-      const restQuery = { ...route.query }
-      delete restQuery.import
-      await router.replace({ path: route.path, query: restQuery })
-    }
-  }
-
-  const typeFromUrl = route.query.type as DiagramType | undefined
-  if (typeFromUrl && VALID_TYPES.includes(typeFromUrl)) {
-    const zhName = DIAGRAM_TYPE_TO_ZH[typeFromUrl]
-    if (zhName) {
-      uiStore.setSelectedChartType(zhName)
-    }
-    diagramStore.setDiagramType(typeFromUrl)
-    if (!diagramStore.data) {
-      diagramStore.loadDefaultTemplate(typeFromUrl)
-    }
-    return
-  }
-
-  if (diagramType.value) {
-    diagramStore.setDiagramType(diagramType.value)
-    if (!diagramStore.data) {
-      diagramStore.loadDefaultTemplate(diagramType.value)
-    }
-  }
-})
-
-/** When true, leaving for `/m/kitty` keeps Pinia diagram + active library id for Kitty context. */
-const preserveDiagramForKittyHub = ref(false)
-
-onBeforeRouteLeave((to) => {
-  preserveDiagramForKittyHub.value = to.path === '/m/kitty' || to.name === 'MobileKitty'
-})
-
-async function loadDiagramFromLibrary(diagramId: string): Promise<void> {
-  const diagram = await savedDiagramsStore.getDiagram(diagramId)
-  if (!diagram) return
-
-  savedDiagramsStore.setActiveDiagram(diagramId)
-  diagramStore.clearHistory()
-
-  const spec = diagram.spec as Record<string, unknown>
-  llmResultsStore.clearCache()
-
-  eventBus.emit('diagram:loaded_from_library', {
-    diagramId,
-    diagramType: diagram.diagram_type,
-  })
-  if (diagramSpecLikelyNeedsMarkdownPipeline(spec)) {
-    await loadDiagramMarkdownPipeline({ bumpLayout: false })
-  }
-  const loaded = diagramStore.loadFromSpec(spec, diagram.diagram_type as DiagramType)
-  if (loaded) {
-    const zhName = Object.entries(DIAGRAM_TYPE_MAP).find(([, v]) => v === diagram.diagram_type)?.[0]
-    if (zhName) uiStore.setSelectedChartType(zhName)
-  }
-}
-
 onUnmounted(() => {
   inlineRecCoordinator.teardown()
+  mobileCanvasEvents.teardown()
   diagramAutoSave.flush()
   diagramAutoSave.teardown()
-  eventBus.removeAllListenersForOwner('MobileCanvasPage')
-
-  // Cancel any in-flight concept-map 3-LLM review streams and clear their state.
-  // Mirrors desktop CanvasPage cleanup so re-entry is a clean slate.
   focusReviewStore.clear()
   rootConceptReviewStore.clear()
 
@@ -699,7 +275,7 @@ onUnmounted(() => {
   }
   useLLMResultsStore().reset()
   usePanelsStore().reset()
-  uiStore.setSelectedChartType('选择具体图示')
+  uiStore.setSelectedChartType(DEFAULT_CHART_TYPE_KEY)
   uiStore.setFreeInputValue('')
 })
 </script>
@@ -709,35 +285,45 @@ onUnmounted(() => {
     <!-- Top toolbar (fixed, no zoom/pan) -->
     <div
       :class="[
-        'mobile-toolbar flex items-stretch w-full px-1.5 py-1.5 bg-white border-b border-gray-200 shrink-0 touch-none gap-1',
-        isConceptMap ? 'mobile-toolbar--concept-map' : 'justify-evenly',
+        'mobile-toolbar flex flex-col w-full bg-white border-b border-gray-200 shrink-0 touch-none',
+        isConceptMap ? 'mobile-toolbar--concept-map' : '',
       ]"
     >
-      <button
-        class="toolbar-btn"
-        :disabled="isSaving"
-        @click="handleSave"
+      <div
+        :class="[
+          'flex items-stretch w-full px-1.5 py-1.5 gap-1',
+          isConceptMap ? 'mobile-toolbar-row--concept-map' : 'justify-evenly',
+        ]"
       >
-        <Save :size="18" />
-        <span class="toolbar-label">{{ t('canvas.toolbar.save', '保存') }}</span>
-      </button>
+        <button
+          class="toolbar-btn"
+          :class="{ 'toolbar-btn--dirty': saveStatusDirty }"
+          :disabled="isSaving"
+          :aria-label="t('canvas.toolbar.save', '保存')"
+          @click="handleSave"
+        >
+          <Save :size="18" />
+          <span class="toolbar-label">{{ t('canvas.toolbar.save', '保存') }}</span>
+        </button>
 
-      <button
-        class="toolbar-btn"
-        :disabled="diagramStore.type === 'concept_map'"
-        @click="handleAddNode"
-      >
-        <Plus :size="18" />
-        <span class="toolbar-label">{{ t('canvas.toolbar.add', '添加') }}</span>
-      </button>
+        <button
+          class="toolbar-btn"
+          :disabled="diagramStore.type === 'concept_map'"
+          :aria-label="t('canvas.toolbar.add', '添加')"
+          @click="handleAddNode"
+        >
+          <Plus :size="18" />
+          <span class="toolbar-label">{{ t('canvas.toolbar.add', '添加') }}</span>
+        </button>
 
-      <button
-        class="toolbar-btn"
-        @click="handleDeleteSelected"
-      >
-        <Trash2 :size="18" />
-        <span class="toolbar-label">{{ t('canvas.toolbar.delete', '删除') }}</span>
-      </button>
+        <button
+          class="toolbar-btn"
+          :aria-label="t('canvas.toolbar.delete', '删除')"
+          @click="handleDeleteSelected"
+        >
+          <Trash2 :size="18" />
+          <span class="toolbar-label">{{ t('canvas.toolbar.delete', '删除') }}</span>
+        </button>
 
       <!-- 概念图：5 等分；生成概念 = Sparkles，启动 AI = Bot -->
       <template v-if="isConceptMap">
@@ -771,11 +357,11 @@ onUnmounted(() => {
       </template>
       <template v-else>
         <button
-          v-if="!diagramStore.collabSessionActive"
           class="toolbar-btn toolbar-btn--primary"
           :class="{
             'toolbar-btn--generating': isAIGenerating,
           }"
+          :aria-label="t('canvas.toolbar.aiGenerate', 'AI生成')"
           @click="handleToolbarAI"
         >
           <Sparkles
@@ -787,12 +373,21 @@ onUnmounted(() => {
         <button
           class="toolbar-btn toolbar-btn--purple"
           :class="{ 'toolbar-btn--active': showNodePalette }"
+          :aria-label="t('canvas.toolbar.nodePalette', '节点面板')"
           @click="toggleNodePalette"
         >
           <LayoutGrid :size="18" />
           <span class="toolbar-label">{{ t('canvas.toolbar.nodePalette', '节点面板') }}</span>
         </button>
       </template>
+      </div>
+
+      <p
+        v-if="autoSavedStatusText"
+        class="mobile-save-status px-3 pb-1 text-[10px] text-gray-500 truncate"
+      >
+        {{ autoSavedStatusText }}
+      </p>
     </div>
 
     <!-- Diagram canvas with touch support (only this area is pannable/zoomable) -->
@@ -813,6 +408,25 @@ onUnmounted(() => {
         class="flex items-center justify-center h-full text-gray-400 text-sm"
       >
         {{ t('canvas.emptyState', '选择图示类型开始创建') }}
+      </div>
+
+      <div class="mobile-zoom-controls absolute bottom-3 end-3 z-10 flex flex-col gap-1.5">
+        <button
+          type="button"
+          class="mobile-zoom-btn"
+          :aria-label="t('canvas.zoomControls.fitCanvas')"
+          @click="handleFitToScreen"
+        >
+          <Maximize2 :size="18" />
+        </button>
+        <button
+          type="button"
+          class="mobile-zoom-btn"
+          :aria-label="t('editor.zoomReset', '重置缩放')"
+          @click="handleZoomReset"
+        >
+          <RotateCcw :size="18" />
+        </button>
       </div>
     </div>
 
@@ -995,7 +609,7 @@ onUnmounted(() => {
         />
         <NodePalettePanel
           v-else
-          @close="toggleNodePalette"
+          @close="panelsStore.closeNodePalette"
         />
       </div>
     </Transition>
@@ -1020,280 +634,6 @@ onUnmounted(() => {
   </div>
 </template>
 
-<style scoped>
-.mobile-canvas {
-  overflow: hidden;
-  /* Layout header + toolbar chrome for node palette overlay */
-  --mg-mobile-palette-top: 4.75rem;
-}
+<style scoped src="./mobileCanvasPage.scoped.css"></style>
 
-.mobile-toolbar {
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  z-index: 20;
-  position: relative;
-}
-
-/* Concept map: five equal columns (save, add, delete, 生成概念, 启动 AI) */
-.mobile-toolbar--concept-map .toolbar-btn {
-  flex: 1 1 0;
-  min-width: 0;
-  padding: 6px 4px;
-  border-radius: 10px;
-}
-
-/* 启动 AI: Bot 图标 — 琥珀关 / 翠绿开（与 生成概念 的 Sparkles 区分） */
-.toolbar-btn--ai {
-  color: #92400e;
-  background: #fffbeb;
-  border: 1.5px solid #fcd34d;
-  box-sizing: border-box;
-}
-
-.toolbar-btn--ai .ai-icon {
-  color: #d97706;
-}
-
-.toolbar-btn--ai:active {
-  background: #fef3c7;
-}
-
-.toolbar-btn--ai-on {
-  color: #ffffff !important;
-  background: #059669 !important;
-  border-color: #047857 !important;
-}
-
-.toolbar-btn--ai-on .ai-icon {
-  color: #ffffff;
-  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.35));
-}
-
-.mobile-toolbar::-webkit-scrollbar {
-  display: none;
-}
-
-.toolbar-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  color: #374151;
-  background: transparent;
-  border: none;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: all 0.15s ease;
-}
-
-.toolbar-btn:active {
-  background: #f3f4f6;
-}
-
-.toolbar-btn:disabled {
-  opacity: 0.4;
-  pointer-events: none;
-}
-
-.toolbar-btn--active {
-  color: #4f46e5;
-  background: #eef2ff;
-}
-
-.toolbar-btn--primary {
-  color: #ffffff;
-  background: #4f46e5;
-  border-radius: 10px;
-}
-
-.toolbar-btn--primary:active {
-  background: #4338ca;
-}
-
-.toolbar-btn--generating {
-  position: relative;
-  background: transparent !important;
-  box-shadow: none;
-  padding: 2px 8px !important;
-}
-
-.toolbar-btn--generating::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 10px;
-  padding: 2px;
-  pointer-events: none;
-  z-index: 0;
-  mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  -webkit-mask-composite: xor;
-  animation: ai-ring-spin 2.5s linear infinite;
-  background: conic-gradient(
-    from var(--ai-ring-angle, 0deg) at 50% 50%,
-    rgba(59, 130, 246, 0.35) 0deg,
-    rgba(255, 255, 255, 0.75) 52deg,
-    #93c5fd 130deg,
-    #3b82f6 180deg,
-    #60a5fa 228deg,
-    rgba(255, 255, 255, 0.75) 308deg,
-    rgba(59, 130, 246, 0.35) 360deg
-  );
-}
-
-.toolbar-btn--generating .ai-icon {
-  animation: ai-sparkle-pulse 1.2s ease-in-out infinite;
-}
-
-.toolbar-btn--generating .toolbar-label {
-  position: relative;
-  z-index: 1;
-}
-
-.toolbar-btn--purple {
-  color: #ffffff;
-  background: #7c3aed;
-  border-radius: 10px;
-}
-
-.toolbar-btn--purple:active {
-  background: #6d28d9;
-}
-
-.toolbar-label {
-  font-size: 10px;
-  line-height: 1.2;
-}
-
-.palette-slide-enter-active,
-.palette-slide-leave-active {
-  transition: transform 0.25s ease;
-}
-
-.palette-slide-enter-from,
-.palette-slide-leave-to {
-  transform: translateY(100%);
-}
-
-.canvas-area {
-  z-index: 1;
-  touch-action: none;
-}
-
-.canvas-touch :deep(.vue-flow__viewport) {
-  touch-action: none;
-}
-
-.canvas-touch :deep(.vue-flow__node) {
-  touch-action: none;
-}
-
-.mobile-bottom-bar {
-  padding-bottom: max(8px, env(safe-area-inset-bottom));
-  z-index: 20;
-  position: relative;
-}
-
-.bottom-btn:disabled {
-  pointer-events: none;
-}
-
-.rec-scroll-area {
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.rec-scroll-area::-webkit-scrollbar {
-  display: none;
-}
-
-.rec-chip {
-  text-align: left;
-  line-height: 1.3;
-  max-width: 45vw;
-}
-
-/* Concept map: four chips, larger tap targets; keep a sane max width for long text */
-.rec-chip--concept {
-  max-width: min(40vw, 12rem);
-}
-</style>
-
-<style>
-@property --ai-ring-angle {
-  syntax: '<angle>';
-  inherits: false;
-  initial-value: 0deg;
-}
-
-@keyframes ai-ring-spin {
-  to {
-    --ai-ring-angle: 360deg;
-  }
-}
-
-@keyframes ai-sparkle-pulse {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.6;
-    transform: scale(0.85);
-  }
-}
-
-.model-sheet-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: flex-end;
-}
-
-.model-sheet-panel {
-  width: 100%;
-  background: #ffffff;
-  border-radius: 16px 16px 0 0;
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
-}
-
-.model-sheet-handle {
-  width: 36px;
-  height: 4px;
-  background: #d1d5db;
-  border-radius: 2px;
-  margin: 10px auto 0;
-}
-
-.model-sheet-enter-active,
-.model-sheet-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.model-sheet-enter-active .model-sheet-panel,
-.model-sheet-leave-active .model-sheet-panel {
-  transition: transform 0.25s ease;
-}
-
-.model-sheet-enter-from,
-.model-sheet-leave-to {
-  opacity: 0;
-}
-
-.model-sheet-enter-from .model-sheet-panel,
-.model-sheet-leave-to .model-sheet-panel {
-  transform: translateY(100%);
-}
-</style>
+<style src="./mobileCanvasPage.global.css"></style>

@@ -87,6 +87,20 @@ const showStage2Tabs = computed(
     currentStage.value === stage2StageName.value
 )
 
+const hasPaletteTabs = computed(
+  () => showStage2Tabs.value || isDoubleBubble.value || isMultiFlowMap.value
+)
+
+const panelHeaderClass = computed(() => {
+  if (showDoubleBubbleDiffLegend.value) {
+    return 'panel-header--tabbed panel-header--dbl-diff min-h-[7rem] items-start py-2'
+  }
+  if (hasPaletteTabs.value) {
+    return 'panel-header--tabbed h-auto min-h-[3.5rem] py-2 items-stretch'
+  }
+  return 'h-14 items-center'
+})
+
 /** Show paired format (one up, one down) for double bubble differences or bridge map pairs */
 const showPairedFormat = computed(
   () =>
@@ -274,36 +288,82 @@ function getDisplayText(suggestion: NodeSuggestion): string {
   <div class="node-palette-panel bg-white dark:bg-gray-800 flex flex-col h-full">
     <!-- Header (matches MindMate panel) -->
     <div
-      class="panel-header px-4 flex justify-between border-b border-gray-200 dark:border-gray-700 shrink-0"
-      :class="showDoubleBubbleDiffLegend ? 'min-h-[7rem] items-start py-2' : 'h-14 items-center'"
+      class="panel-header px-4 flex border-b border-gray-200 dark:border-gray-700 shrink-0"
+      :class="panelHeaderClass"
     >
       <div
-        class="flex gap-3 min-w-0 flex-1"
-        :class="showDoubleBubbleDiffLegend ? 'items-start' : 'items-center'"
+        class="panel-header-body flex min-w-0 flex-1 gap-3"
+        :class="[
+          hasPaletteTabs ? 'panel-header-body--tabbed flex-col' : 'items-center justify-between',
+          showDoubleBubbleDiffLegend ? 'items-start' : '',
+        ]"
       >
-        <h3 class="text-sm font-semibold text-gray-800 dark:text-white truncate shrink-0">
-          {{ t('nodePalette.panelTitle') }}
-        </h3>
+        <div
+          class="panel-header-toolbar flex items-center gap-2 min-w-0"
+          :class="hasPaletteTabs ? 'w-full justify-between' : 'flex-1 justify-between'"
+        >
+          <h3
+            class="text-sm font-semibold text-gray-800 dark:text-white truncate shrink-0"
+            :class="hasPaletteTabs ? 'panel-header-title--tabbed' : ''"
+          >
+            {{ t('nodePalette.panelTitle') }}
+          </h3>
+          <div class="flex items-center gap-2 shrink-0">
+            <span
+              v-if="selectedIds.length > 0"
+              class="text-xs text-gray-500 dark:text-gray-400"
+            >
+              {{ selectedIds.length }} {{ t('nodePalette.selected') }}
+            </span>
+            <div class="palette-header-actions flex items-center gap-0">
+              <ElTooltip
+                :content="t('nodePalette.refresh')"
+                placement="bottom"
+              >
+                <ElButton
+                  text
+                  circle
+                  size="small"
+                  class="shrink-0"
+                  :disabled="isLoading || isGuestCollab"
+                  @click="handleRefresh"
+                >
+                  <RefreshCw :class="['w-4 h-4', isLoading ? 'animate-spin' : '']" />
+                </ElButton>
+              </ElTooltip>
+              <ElButton
+                text
+                circle
+                size="small"
+                class="shrink-0"
+                @click="handleClose"
+              >
+                <X class="w-4 h-4" />
+              </ElButton>
+            </div>
+          </div>
+        </div>
+
         <!-- Staged diagram stage 2 tabs (one per parent) -->
         <div
           v-if="showStage2Tabs"
-          class="palette-tab-strip-wrap flex flex-1 min-w-0"
+          class="palette-tab-strip-wrap flex w-full min-w-0"
           :class="paletteTabStripGlowClass"
         >
           <div
-            class="palette-tab-strip-inner flex flex-1 min-w-0 rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5 overflow-x-auto"
+            class="palette-tab-strip-inner flex w-full min-w-0 rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5 overflow-x-auto"
           >
             <button
               v-for="parent in stage2Parents"
               :key="parent.id"
               type="button"
-              class="px-2 py-1 text-xs font-medium rounded-md transition-colors shrink-0"
+              class="palette-tab-btn px-2 py-1 text-xs font-medium rounded-md transition-colors shrink-0 touch-manipulation"
               :class="
                 panelsStore.nodePalettePanel.mode === parent.name
                   ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               "
-              :disabled="isLoading || isGuestCollab"
+              :disabled="isGuestCollab"
               :title="parent.name"
               @click="handleStageTabSwitch(parent.id, parent.name)"
             >
@@ -311,37 +371,37 @@ function getDisplayText(suggestion: NodeSuggestion): string {
             </button>
           </div>
         </div>
-        <!-- Double bubble map tabs: Similarities | Differences (+ stacked topic legend in differences) -->
+        <!-- Double bubble map tabs: Similarities | Differences -->
         <div
           v-else-if="isDoubleBubble"
-          class="palette-tab-strip-wrap flex flex-col flex-1 min-w-0 gap-1.5"
+          class="palette-tab-strip-wrap flex w-full min-w-0 flex-col gap-1.5"
           :class="paletteTabStripGlowClass"
         >
           <div
-            class="palette-tab-strip-inner flex flex-1 min-w-0 rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5 overflow-x-auto"
+            class="palette-tab-strip-inner palette-tab-strip-inner--segmented flex w-full min-w-0 rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5"
           >
             <button
               type="button"
-              class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors"
+              class="palette-tab-btn flex-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors touch-manipulation text-center"
               :class="
                 currentMode === 'similarities'
                   ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               "
-              :disabled="isLoading || isGuestCollab"
+              :disabled="isGuestCollab"
               @click="handleTabSwitch('similarities')"
             >
               {{ t('nodePalette.similarities') }}
             </button>
             <button
               type="button"
-              class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors"
+              class="palette-tab-btn flex-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors touch-manipulation text-center"
               :class="
                 currentMode === 'differences'
                   ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               "
-              :disabled="isLoading || isGuestCollab"
+              :disabled="isGuestCollab"
               @click="handleTabSwitch('differences')"
             >
               {{ t('nodePalette.differences') }}
@@ -374,41 +434,41 @@ function getDisplayText(suggestion: NodeSuggestion): string {
         <!-- Multi flow map tabs: Causes | Effects -->
         <div
           v-else-if="isMultiFlowMap"
-          class="palette-tab-strip-wrap flex flex-1 min-w-0"
+          class="palette-tab-strip-wrap flex w-full min-w-0"
           :class="paletteTabStripGlowClass"
         >
           <div
-            class="palette-tab-strip-inner flex flex-1 min-w-0 rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5 overflow-x-auto"
+            class="palette-tab-strip-inner palette-tab-strip-inner--segmented flex w-full min-w-0 rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5"
           >
             <button
               type="button"
-              class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors"
+              class="palette-tab-btn flex-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors touch-manipulation text-center"
               :class="
                 currentMode === 'causes'
                   ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               "
-              :disabled="isLoading || isGuestCollab"
+              :disabled="isGuestCollab"
               @click="handleTabSwitch('causes')"
             >
               {{ t('nodePalette.causes') }}
             </button>
             <button
               type="button"
-              class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors"
+              class="palette-tab-btn flex-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors touch-manipulation text-center"
               :class="
                 currentMode === 'effects'
                   ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               "
-              :disabled="isLoading || isGuestCollab"
+              :disabled="isGuestCollab"
               @click="handleTabSwitch('effects')"
             >
               {{ t('nodePalette.effects') }}
             </button>
           </div>
         </div>
-        <!-- Bridge map: dimension tab when in pairs stage -->
+        <!-- Bridge map: dimension label when in pairs stage -->
         <div
           v-else-if="isBridgeMap && bridgeMapDimension"
           class="flex flex-1 min-w-0 rounded-lg bg-gray-100 dark:bg-gray-700 px-2 py-1"
@@ -423,40 +483,6 @@ function getDisplayText(suggestion: NodeSuggestion): string {
                 : bridgeMapDimension
             }}
           </span>
-        </div>
-      </div>
-      <div class="flex items-center gap-2 shrink-0">
-        <span
-          v-if="selectedIds.length > 0"
-          class="text-xs text-gray-500 dark:text-gray-400"
-        >
-          {{ selectedIds.length }} {{ t('nodePalette.selected') }}
-        </span>
-        <div class="flex items-center gap-0">
-          <ElTooltip
-            :content="t('nodePalette.refresh')"
-            placement="bottom"
-          >
-            <ElButton
-              text
-              circle
-              size="small"
-              class="shrink-0"
-              :disabled="isLoading || isGuestCollab"
-              @click="handleRefresh"
-            >
-              <RefreshCw :class="['w-4 h-4', isLoading ? 'animate-spin' : '']" />
-            </ElButton>
-          </ElTooltip>
-          <ElButton
-            text
-            circle
-            size="small"
-            class="shrink-0"
-            @click="handleClose"
-          >
-            <X class="w-4 h-4" />
-          </ElButton>
         </div>
       </div>
     </div>
@@ -725,5 +751,77 @@ function getDisplayText(suggestion: NodeSuggestion): string {
 
 .node-card:active {
   transform: scale(0.98);
+}
+
+.panel-header--tabbed {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.panel-header-body--tabbed {
+  width: 100%;
+}
+
+.palette-tab-strip-inner--segmented .palette-tab-btn {
+  min-width: 0;
+}
+
+.palette-tab-btn:disabled {
+  opacity: 0.45;
+}
+
+@media (min-width: 769px) {
+  .panel-header:not(.panel-header--tabbed) .panel-header-body {
+    width: 100%;
+  }
+
+  .panel-header--tabbed:not(.panel-header--dbl-diff) {
+    min-height: 3.5rem;
+  }
+
+  .panel-header--tabbed .panel-header-body--tabbed {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .panel-header--tabbed .panel-header-toolbar {
+    width: auto;
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .panel-header--tabbed .panel-header-title--tabbed {
+    max-width: 5rem;
+  }
+
+  .panel-header--dbl-diff .panel-header-body--tabbed {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .panel-header--dbl-diff .panel-header-toolbar {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .palette-header-actions :deep(.el-button) {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+
+  .panel-header--tabbed .panel-header-title--tabbed {
+    font-size: 0.8125rem;
+  }
+
+  .palette-tab-btn {
+    min-height: 2.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .palette-tab-strip-inner--segmented .palette-tab-btn {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
 }
 </style>
