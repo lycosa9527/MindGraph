@@ -23,9 +23,9 @@ export interface UseMobileCanvasInlineRecBarOptions {
   focusReviewStore: ReturnType<typeof useConceptMapFocusReviewStore>
   rootConceptReviewStore: ReturnType<typeof useConceptMapRootConceptReviewStore>
   isConceptMap: ComputedRef<boolean>
-  startRecommendations: (nodeId: string) => Promise<void>
-  selectOptionByGlobalIndex: (nodeId: string, globalIndex: number) => void
-  fetchNextBatch: (nodeId: string) => Promise<void>
+  startRecommendations: (nodeId: string) => Promise<{ success: boolean; error?: string }>
+  selectOptionByGlobalIndex: (nodeId: string, globalIndex: number) => boolean
+  fetchNextBatch: (nodeId: string) => Promise<boolean>
   translate: (key: string, fallback?: string) => string
   notifyWarning: (message: string) => void
 }

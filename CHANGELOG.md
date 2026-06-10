@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.36] - 2026-06-10
+
+> **Mobile canvas/Kitty TypeScript fixes, Kitty mic hold feedback, CI Python deps, and collab test alignment.**
+
+### Changed
+
+- **Mobile canvas — inline rec types** — `startRecommendations`, `selectOptionByGlobalIndex`, and `fetchNextBatch` signatures aligned with the editor coordinator return types ([`useMobileCanvasEventHandlers.ts`](frontend/src/composables/mobile/useMobileCanvasEventHandlers.ts), [`useMobileCanvasInlineRecBar.ts`](frontend/src/composables/mobile/useMobileCanvasInlineRecBar.ts)).
+- **Mobile canvas — route loader** — Import `useInlineRecommendationsCoordinator` from the editor composables path; cast `currentLanguage` to `LocaleCode` for default diagram names ([`useMobileCanvasRouteLoader.ts`](frontend/src/composables/mobile/useMobileCanvasRouteLoader.ts)).
+- **Mobile Kitty — mic PTT hold state** — Expose `pttPointerActive` so the mic button shows hold/active styling during pointer-down PTT ([`useMobileKittyMicPtt.ts`](frontend/src/composables/mobile/useMobileKittyMicPtt.ts), [`MobileKittyPage.vue`](frontend/src/pages/mobile/MobileKittyPage.vue)).
+- **Mobile Kitty — bootstrap typing** — Page lifecycle uses shared `MobileKittyBootstrapPayload` instead of an inline payload shape ([`useMobileKittyPageLifecycle.ts`](frontend/src/composables/mobile/useMobileKittyPageLifecycle.ts)).
+
+### Fixed
+
+- **CI — backend smoke tests** — Install `requirements.txt` before Python smoke steps so `dotenv` and other imports resolve ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+- **Mobile Mind Graph page — vue-tsc** — Repair corrupted import/const line that broke TypeScript checking ([`MobileMindGraphPage.vue`](frontend/src/pages/mobile/MobileMindGraphPage.vue)).
+- **Collab tests — Redis snapshot keys** — Pin `COLLAB_REDIS_HASH_TAGS=0` in pattern assertions so hash-tag env does not skew expected key strings ([`test_online_collab_phase8.py`](tests/test_online_collab_phase8.py)).
+- **Collab tests — granular merge** — Connection merge cases include endpoint nodes; delete+patch same id expects tombstone skip (not re-add); `asyncio.run` for hexpire participant test ([`test_workshop_collab_backend.py`](tests/test_workshop_collab_backend.py)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.36).
+
 ## [5.117.35] - 2026-06-10
 
 > **School extra member seats, API-key usage flush to Postgres, and mobile canvas/Kitty refactor with router redirect fixes.**

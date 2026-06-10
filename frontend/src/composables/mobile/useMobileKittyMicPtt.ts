@@ -231,6 +231,7 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
 
   return {
     voiceStartInFlight,
+    pttPointerActive,
     onKittyMicPointerDown,
     onKittyMicPointerUp,
     bindKittyMicKeyboard,

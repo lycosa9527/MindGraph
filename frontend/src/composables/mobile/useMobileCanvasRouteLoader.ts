@@ -20,7 +20,8 @@ import type { LLMResult } from '@/stores'
 import type { useAuthStore } from '@/stores/auth'
 import type { useDiagramStore } from '@/stores/diagram'
 import type { useFeatureFlagsStore } from '@/stores/featureFlags'
-import type { useInlineRecommendationsCoordinator } from '@/composables/canvasPage/useInlineRecommendationsCoordinator'
+import type { LocaleCode } from '@/i18n/locales'
+import type { useInlineRecommendationsCoordinator } from '@/composables/editor/useInlineRecommendationsCoordinator'
 import type { useLLMResultsStore } from '@/stores/llmResults'
 import type { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { useUIStore } from '@/stores/ui'
@@ -152,7 +153,7 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
               const importTitle =
                 topicText ||
                 diagramStore.effectiveTitle ||
-                getDefaultDiagramName(loadedType, currentLanguage.value)
+                getDefaultDiagramName(loadedType, currentLanguage.value as LocaleCode)
               diagramStore.initTitle(importTitle)
               const getDiagramSpec = useDiagramSpecForSave()
               const specToSave = getDiagramSpec()

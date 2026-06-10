@@ -25,7 +25,7 @@ export interface UseMobileCanvasEventHandlersOptions {
   isConceptMap: { value: boolean }
   isAIGenerating: { value: boolean }
   startNodePaletteSession: (opts: { keepSessionId?: boolean; mode?: string }) => void
-  startRecommendations: (nodeId: string) => Promise<void>
+  startRecommendations: (nodeId: string) => Promise<{ success: boolean; error?: string }>
   handleAIGenerate: () => void | Promise<void>
   handleConceptGeneration: () => void
   translate: (key: string, fallback?: string) => string

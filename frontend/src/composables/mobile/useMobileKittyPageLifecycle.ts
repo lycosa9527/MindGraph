@@ -10,6 +10,7 @@ import { hydrateMobileKittyStoreFromBootstrap } from '@/composables/kitty/hydrat
 import type { useAuthStore } from '@/stores/auth'
 import type { useFeatureFlagsStore } from '@/stores/featureFlags'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
+import type { MobileKittyBootstrapPayload } from '@/composables/kitty/useMobileKittyPairing'
 
 export interface UseMobileKittyPageLifecycleOptions {
   router: Router
@@ -17,16 +18,7 @@ export interface UseMobileKittyPageLifecycleOptions {
   featureFlagsStore: ReturnType<typeof useFeatureFlagsStore>
   kitty: ReturnType<typeof useKittyAgent>
   kittyPairScope: Ref<string>
-  bootstrapPayload: Ref<
-    | {
-        source?: string
-        recommended_scope?: string | null
-        context?: { diagram_library_id?: string | null } | null
-        diagram_type?: string | null
-      }
-    | null
-    | undefined
-  >
+  bootstrapPayload: Ref<MobileKittyBootstrapPayload | null | undefined>
   ensureMobileKittyBootstrap: () => Promise<void>
   bindKittyMicKeyboard: () => void
   teardownMicPtt: () => void

@@ -132,10 +132,12 @@ class TestViewerEnqueuePolicy:
 class TestRedisSnapshotKeys:
     """Snapshot and snapshot_seq key helpers return expected patterns."""
 
-    def test_snapshot_key_pattern(self) -> None:
+    def test_snapshot_key_pattern(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("COLLAB_REDIS_HASH_TAGS", "0")
         assert snapshot_key("ABC123") == "workshop:snapshot:ABC123"
 
-    def test_snapshot_seq_key_pattern(self) -> None:
+    def test_snapshot_seq_key_pattern(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("COLLAB_REDIS_HASH_TAGS", "0")
         assert snapshot_seq_key("ABC123") == "workshop:snapshot_seq:ABC123"
 
     def test_snapshot_key_hash_tag(self) -> None:

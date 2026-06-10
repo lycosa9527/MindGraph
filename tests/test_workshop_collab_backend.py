@@ -75,13 +75,16 @@ class TestMergeGranularIntoSpec:
         assert spec["nodes"][0]["text"] == "new"
 
     def test_adds_connection(self) -> None:
-        spec: Dict[str, Any] = {"nodes": [], "connections": []}
+        spec: Dict[str, Any] = {
+            "nodes": [{"id": "n1"}, {"id": "n2"}],
+            "connections": [],
+        }
         merge_granular_into_spec(spec, None, [{"id": "c1", "source": "n1", "target": "n2"}])
         assert len(spec["connections"]) == 1
 
     def test_updates_connection_by_id(self) -> None:
         spec = {
-            "nodes": [],
+            "nodes": [{"id": "n1"}, {"id": "n2"}],
             "connections": [{"id": "c1", "source": "n1", "target": "n2", "label": "old"}],
         }
         merge_granular_into_spec(spec, None, [{"id": "c1", "label": "new"}])
@@ -95,15 +98,18 @@ class TestMergeGranularIntoSpec:
 
     def test_deletes_connections_by_id(self) -> None:
         spec = {
-            "nodes": [],
-            "connections": [{"id": "c1"}, {"id": "c2"}],
+            "nodes": [{"id": "n1"}, {"id": "n2"}, {"id": "n3"}],
+            "connections": [
+                {"id": "c1", "source": "n1", "target": "n2"},
+                {"id": "c2", "source": "n1", "target": "n3"},
+            ],
         }
         merge_granular_into_spec(spec, None, None, deleted_connection_ids=["c1"])
         assert len(spec["connections"]) == 1
         assert spec["connections"][0]["id"] == "c2"
 
     def test_delete_then_patch_does_not_readd(self) -> None:
-        """Deleting and patching the same node id: deletion runs first so patch adds it back."""
+        """Deleting and patching the same node id in one batch: patch is skipped."""
         spec = {"nodes": [{"id": "n1", "text": "gone"}], "connections": []}
         merge_granular_into_spec(
             spec,
@@ -111,14 +117,12 @@ class TestMergeGranularIntoSpec:
             None,
             deleted_node_ids=["n1"],
         )
-        # deletion runs before patch list, patch re-adds it (correct merge order)
-        assert len(spec["nodes"]) == 1
-        assert spec["nodes"][0]["text"] == "new"
+        assert len(spec["nodes"]) == 0
 
     def test_connection_lookup_by_id_preferred(self) -> None:
         """When id is present, id takes priority over source+target for matching."""
         spec = {
-            "nodes": [],
+            "nodes": [{"id": "n1"}, {"id": "n2"}, {"id": "n3"}],
             "connections": [
                 {"id": "c1", "source": "n1", "target": "n2", "label": "A"},
                 {"id": "c2", "source": "n1", "target": "n3", "label": "B"},
@@ -132,7 +136,7 @@ class TestMergeGranularIntoSpec:
     def test_connection_lookup_fallback_source_target(self) -> None:
         """Without an id, matching falls back to source+target pair."""
         spec = {
-            "nodes": [],
+            "nodes": [{"id": "n1"}, {"id": "n2"}],
             "connections": [{"source": "n1", "target": "n2", "label": "old"}],
         }
         merge_granular_into_spec(spec, None, [{"source": "n1", "target": "n2", "label": "new"}])
@@ -550,7 +554,7 @@ class TestHexpireParticipants:
             fake = FakeRedis()
             await _hexpire_field(fake, "participants:test", 300, "user:1")
 
-        asyncio.get_event_loop().run_until_complete(_run())
+        asyncio.run(_run())
 
     def test_redis_keys_include_participants_key(self) -> None:
         from services.online_collab.redis.online_collab_redis_keys import (

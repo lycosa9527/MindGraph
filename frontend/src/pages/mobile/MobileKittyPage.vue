@@ -297,6 +297,7 @@ async function onPickImage(ev: Event): Promise<void> {
 }
 
 const {
+  pttPointerActive,
   onKittyMicPointerDown,
   onKittyMicPointerUp,
   bindKittyMicKeyboard,
