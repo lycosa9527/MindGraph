@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Globe,
   Languages,
+  Link2,
   Lock,
   LogOut,
   Phone,
@@ -21,7 +22,7 @@ import {
 import { ChangePasswordModal, ChangePhoneModal } from '@/components/auth'
 import AvatarSelectModal from '@/components/auth/AvatarSelectModal.vue'
 import SetPasswordWithSmsModal from '@/components/auth/SetPasswordWithSmsModal.vue'
-import { useLanguage } from '@/composables'
+import { useLanguage, useNotifications } from '@/composables'
 import {
   PROMPT_LANGUAGE_OPTIONS,
   getLocalesForInterfaceLanguagePicker,
@@ -31,11 +32,17 @@ import { useAuthStore } from '@/stores'
 import type { Language, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
 import { getRolePillStyle } from '@/utils/userRoleDisplay'
+import {
+  canShowPwaInstallUi,
+  promptPwaInstall,
+  pwaInstallAvailable,
+} from '@/utils/pwaInstall'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
 const { t } = useLanguage()
+const notify = useNotifications()
 
 const user = computed(() => authStore.user)
 const userAvatar = computed(() => {
@@ -72,6 +79,10 @@ const showChangePhone = ref(false)
 const showChangePassword = ref(false)
 const showSetPasswordSms = ref(false)
 const showAvatarSelect = ref(false)
+const showPwaInstall = computed(() => {
+  void pwaInstallAvailable.value
+  return canShowPwaInstallUi()
+})
 
 const needsSetLoginPassword = computed(() => user.value?.loginPasswordSet === false)
 
@@ -157,6 +168,25 @@ function togglePromptLang() {
 async function handleLogout() {
   await authStore.logout()
   router.push('/auth')
+}
+
+async function handlePwaInstall(): Promise<void> {
+  const result = await promptPwaInstall()
+  if (result === 'installed') {
+    notify.success(t('auth.pwaInstallSuccess'))
+    return
+  }
+  if (result === 'ios-hint') {
+    notify.info(t('auth.pwaIosInstallHint'))
+    return
+  }
+  if (result === 'dev-hint') {
+    notify.info(t('auth.pwaDevInstallHint'))
+    return
+  }
+  if (result === 'desktop-hint') {
+    notify.info(t('auth.pwaDesktopInstallHint'))
+  }
 }
 </script>
 
@@ -399,6 +429,32 @@ async function handleLogout() {
         </div>
       </div>
 
+      <!-- Install app (PWA) -->
+      <button
+        v-if="showPwaInstall"
+        type="button"
+        class="desktop-shortcut-card feature-card w-full flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-200 active:bg-gray-50 transition-colors text-left"
+        @click="handlePwaInstall"
+      >
+        <div
+          class="flex items-center justify-center w-12 h-12 rounded-xl bg-amber-50 text-amber-700 shrink-0"
+        >
+          <Link2 :size="24" />
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-base font-semibold text-gray-900">
+            {{ t('auth.downloadDesktopShortcut') }}
+          </div>
+          <div class="text-sm text-gray-500 mt-0.5">
+            {{ t('mobile.desktopShortcutDesc') }}
+          </div>
+        </div>
+        <ChevronRight
+          :size="20"
+          class="text-gray-400 shrink-0"
+        />
+      </button>
+
       <!-- Logout -->
       <button
         class="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-red-200 bg-white text-red-500 font-medium text-sm active:bg-red-50 transition-colors"
@@ -433,5 +489,13 @@ async function handleLogout() {
 
 .mobile-account-scroll {
   padding-bottom: max(2rem, env(safe-area-inset-bottom));
+}
+
+.feature-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.feature-card:active {
+  transform: scale(0.99);
 }
 </style>

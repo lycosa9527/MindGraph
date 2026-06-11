@@ -122,6 +122,15 @@ export function roleHasPanelAccess(role: UserRole | null | undefined): boolean {
   return fallbackCapabilitiesForRole(role ?? null).includes('panel.access')
 }
 
+/** True when the user has full platform superadmin panel powers (Role Control or env admin). */
+export function hasSuperadminPanelAccess(caps: AdminCapability[]): boolean {
+  return (
+    caps.includes('tab.organizations.edit') &&
+    caps.includes('tab.settings.edit') &&
+    caps.includes('scope.global')
+  )
+}
+
 const TAB_EDIT_CAPABILITY: Record<string, AdminCapability> = {
   data_center: 'tab.data_center.edit',
   users: 'tab.users.edit',

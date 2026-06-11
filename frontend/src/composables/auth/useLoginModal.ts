@@ -81,7 +81,7 @@ export function useLoginModal(
     currentView
   )
 
-  /** When region is unknown (GeoIP): user picks education email vs phone + invitation. */
+  /** When region is unknown (GeoIP): user picks email vs phone + invitation. */
   const registerPath = ref<'email' | 'phone'>('email')
 
   function setRegisterPath(path: 'email' | 'phone') {
@@ -141,34 +141,13 @@ export function useLoginModal(
     return trimmed.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
   }
 
-  const overseasEducationEmailRequired = computed(
-    () => authStore.overseasEducationEmailRequired
-  )
+  const hybridRegisterEmailTabLabel = computed(() => t('auth.modal.hybridRegisterEmailTabAny'))
 
-  const hybridRegisterEmailTabLabel = computed(() =>
-    overseasEducationEmailRequired.value
-      ? t('auth.modal.hybridRegisterEmailTab')
-      : t('auth.modal.hybridRegisterEmailTabAny')
-  )
+  const registrationEmailLabel = computed(() => t('auth.modal.registrationEmailLabelAny'))
 
-  const registrationEmailLabel = computed(() =>
-    overseasEducationEmailRequired.value
-      ? t('auth.modal.registrationEmailLabel')
-      : t('auth.modal.registrationEmailLabelAny')
-  )
+  const registrationEmailHint = computed(() => t('auth.modal.registrationEmailHintAny').trim())
 
-  const registrationEmailHint = computed(() => {
-    const key = overseasEducationEmailRequired.value
-      ? 'auth.modal.registrationEmailHint'
-      : 'auth.modal.registrationEmailHintAny'
-    return t(key).trim()
-  })
-
-  const registerEmailInvalidMessage = computed(() =>
-    overseasEducationEmailRequired.value
-      ? t('auth.modal.educationEmailInvalid')
-      : t('auth.modal.emailInvalid')
-  )
+  const registerEmailInvalidMessage = computed(() => t('auth.modal.emailInvalid'))
 
   /**
    * Overseas email registration: SC-browser copy includes no-Simplified-Chinese notice when available.
@@ -178,17 +157,12 @@ export function useLoginModal(
       return ''
     }
     if (isBrowserLanguageSimplifiedChinese()) {
-      const scKey = overseasEducationEmailRequired.value
-        ? 'auth.modal.acknowledgeOverseasScBrowser'
-        : 'auth.modal.acknowledgeOverseasAnyScBrowser'
-      const full = translateForUiLocale(scKey, 'zh')
+      const full = translateForUiLocale('auth.modal.acknowledgeOverseasAnyScBrowser', 'zh')
       if (typeof full === 'string' && full.trim() !== '') {
         return full
       }
     }
-    return overseasEducationEmailRequired.value
-      ? t('auth.modal.acknowledgeOverseas')
-      : t('auth.modal.acknowledgeOverseasAny')
+    return t('auth.modal.acknowledgeOverseasAny')
   })
 
   function closeModal() {
@@ -887,7 +861,6 @@ export function useLoginModal(
     smsLoginUsesEmail,
     maskIdentifierForCodeSent,
     overseasAcknowledgeCheckboxLabel,
-    overseasEducationEmailRequired,
     hybridRegisterEmailTabLabel,
     registrationEmailLabel,
     registrationEmailHint,

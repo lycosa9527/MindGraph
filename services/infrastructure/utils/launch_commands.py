@@ -141,7 +141,8 @@ def lines_qdrant_connection_failed(
         "",
         "MindGraph requires Qdrant when Knowledge Space is enabled.",
         "",
-        "  Install (Linux):  sudo python3 scripts/setup/setup.py",
+        "  Install (Linux):  conda activate mindgraph && "
+        'sudo -E env PATH="$PATH" "$(which python)" scripts/setup/setup.py',
         "  Ubuntu service:   sudo systemctl start qdrant",
         "  Foreground:       qdrant",
         "",
@@ -169,7 +170,7 @@ def lines_fail2ban_deploy() -> list[str]:
 
 def lines_celery_recovery() -> list[str]:
     return [
-        "Start a worker from the MindGraph repo (venv active):",
+        "Start a worker from the MindGraph repo (conda env active):",
         f"  {CELERY_WORKER_CMD}",
         "",
         'Or run "python main.py" so the server launcher can start stack components.',
@@ -193,6 +194,7 @@ def lines_requirements_quickstart() -> list[str]:
     """Mirrors comments at top of requirements.txt."""
     return [
         "Recommended first-time setup (requirements.txt header):",
+        "  conda activate mindgraph",
         "  pip install -r requirements.txt",
         "  python -m playwright install chromium",
         "  cp env.example .env   # then edit .env",
@@ -217,7 +219,7 @@ def lines_optional_feature_packages() -> list[str]:
     Copy-paste for packages, data files, and scripts whose hints live in individual modules.
 
     Sweep: dependency_checker, ip_geolocation, geoip_country, bayi_mode, backup_scheduler,
-    chunk_comparator, rag_service, swot_academic, download_datasets, prompt_output_languages,
+    chunk_comparator, rag_service, download_datasets, prompt_output_languages,
     dashboard_install, provision_infra, etc.
     """
     return [
@@ -238,7 +240,6 @@ def lines_optional_feature_packages() -> list[str]:
         "Integrations:",
         "  pip install pycryptodome",
         "  pip install cos-python-sdk-v5",
-        "Academic email (pyswot): install via requirements.txt (GitHub rse-pyswot; see requirements header)",
         "",
         "RAG / knowledge / chunking:",
         "  pip install numpy",
@@ -250,7 +251,6 @@ def lines_optional_feature_packages() -> list[str]:
         "Repo / DB maintenance scripts:",
         "  python scripts/build_prompt_language_registry.py",
         "  python scripts/db/run_migrations.py",
-        "  python scripts/swot/sync_kikobeats_domains.py   # optional: refresh free-email list",
         "",
         "Frontend (production SPA):",
         "  cd frontend && npm ci && npm run build",
@@ -277,7 +277,7 @@ def lines_playwright_hint() -> list[str]:
         "  Linux system libraries (if Chromium fails to start):",
         "    sudo python -m playwright install-deps chromium",
         "  Optional (all browsers): python -m playwright install",
-        "  Conda env example: conda activate python3.13 && python -m playwright install chromium",
+        "  conda activate mindgraph && python -m playwright install chromium",
     ]
 
 

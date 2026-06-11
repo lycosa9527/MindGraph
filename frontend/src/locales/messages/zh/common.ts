@@ -126,6 +126,7 @@ export default {
   'mobile.kittyCardTitle': 'Kitty',
   'mobile.kittyCardDesc': '思维教学语音智能体',
   'mobile.accountDesc': '账号设置',
+  'mobile.desktopShortcutDesc': '安装为独立应用，使用 MindGraph 图标',
   'mobile.uiLanguage': '界面语言',
   'mobile.kittyTitle': 'Kitty 智能体',
   'mobile.kittyLive': '实时对话',

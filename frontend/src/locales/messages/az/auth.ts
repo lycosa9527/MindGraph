@@ -8,6 +8,10 @@ export default {
   'auth.updateLogLoadError':
     'Buraxılış qeydlərini yükləmək mümkün olmadı. Daha sonra yenidən cəhd edin.',
   'auth.updateLogEmpty': 'Buraxılış qeydləri mövcud deyil.',
+  'auth.downloadDesktopShortcut': 'Add to desktop',
+  'auth.pwaIosInstallHint': 'Tap the Share button in Safari, then choose “Add to Home Screen”.',
+  'auth.pwaDesktopInstallHint': 'Use the browser menu (⋮) and choose Install MindGraph, or look for the install icon in the address bar.',
+  'auth.pwaInstallSuccess': 'MindGraph has been added to your desktop.',
   'auth.backToLogin': 'Giriş səhifəsinə qayıt',
   'auth.captcha': 'Şəkilli təsdiq kodu',
   'auth.captchaLength4': '4 simvollu captcha daxil edin',

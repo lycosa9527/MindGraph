@@ -10,6 +10,10 @@ export default {
   'auth.updateLogLoadError':
     'Impossible de charger les notes de version. Veuillez réessayer plus tard.',
   'auth.updateLogEmpty': 'Aucune note de version disponible.',
+  'auth.downloadDesktopShortcut': 'Add to desktop',
+  'auth.pwaIosInstallHint': 'Tap the Share button in Safari, then choose “Add to Home Screen”.',
+  'auth.pwaDesktopInstallHint': 'Use the browser menu (⋮) and choose Install MindGraph, or look for the install icon in the address bar.',
+  'auth.pwaInstallSuccess': 'MindGraph has been added to your desktop.',
   'auth.backToLogin': 'Retour à la connexion',
   'auth.captcha': 'Captcha visuel',
   'auth.captchaLength4': 'Veuillez saisir le captcha de 4 caractères',

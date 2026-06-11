@@ -40,6 +40,7 @@ import {
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import {
   type AdminCapabilitiesPayload,
+  hasSuperadminPanelAccess,
   roleHasPanelAccess,
 } from '@/utils/adminCapabilities'
 import { clearWorkshopChatCachesForUser } from '@/utils/workshopChatLocalCache'
@@ -81,8 +82,6 @@ export const useAuthStore = defineStore('auth', () => {
   const mode = ref<AuthMode>('standard')
   /** From GET /api/auth/mode; signup UI gated when false. Defaults true until the server responds. */
   const registrationEnabled = ref(true)
-  /** From GET /api/auth/mode; overseas register requires education email when true. Defaults false. */
-  const overseasEducationEmailRequired = ref(false)
   const loading = ref(false)
   const sessionMonitorInterval = ref<number | null>(null)
   const showSessionExpiredModal = ref(false)
@@ -112,7 +111,17 @@ export const useAuthStore = defineStore('auth', () => {
   const userRole = computed((): UserRole | null =>
     user.value?.role ? normalizeUserRole(user.value.role) : null
   )
-  const isSuperAdmin = computed(() => userRole.value === 'superadmin')
+  const isSuperAdmin = computed(() => {
+    if (userRole.value === 'superadmin') {
+      return true
+    }
+    const payloadRole = adminCapabilitiesPayload.value?.role
+    if (payloadRole && normalizeUserRole(payloadRole) === 'superadmin') {
+      return true
+    }
+    const caps = adminCapabilitiesPayload.value?.capabilities
+    return caps != null && hasSuperadminPanelAccess(caps)
+  })
   const isPlatformBd = computed(() => userRole.value === 'platform_bd')
   const isExpert = computed(() => userRole.value === 'expert')
   const isSchoolAdmin = computed(() => userRole.value === 'school_admin')
@@ -540,11 +549,6 @@ export const useAuthStore = defineStore('auth', () => {
         adminCapabilitiesLoaded.value = true
         return
       }
-      if (!roleHasPanelAccess(userRole.value)) {
-        adminCapabilitiesPayload.value = null
-        adminCapabilitiesLoaded.value = true
-        return
-      }
       try {
         const response = await fetch('/api/auth/admin/capabilities', {
           credentials: 'same-origin',
@@ -553,7 +557,16 @@ export const useAuthStore = defineStore('auth', () => {
           adminCapabilitiesPayload.value = null
           return
         }
-        adminCapabilitiesPayload.value = (await response.json()) as AdminCapabilitiesPayload
+        const payload = (await response.json()) as AdminCapabilitiesPayload
+        adminCapabilitiesPayload.value = payload
+        const apiRole = payload.role
+        if (apiRole && user.value) {
+          const normalizedRole = normalizeUserRole(apiRole)
+          if (user.value.role !== normalizedRole) {
+            user.value = { ...user.value, role: normalizedRole }
+            sessionStorage.setItem(USER_KEY, JSON.stringify(user.value))
+          }
+        }
       } catch {
         adminCapabilitiesPayload.value = null
       } finally {
@@ -700,15 +713,10 @@ export const useAuthStore = defineStore('auth', () => {
       const data = (await response.json()) as {
         mode?: string
         registration_enabled?: boolean
-        overseas_education_email_required?: boolean
       }
       const detectedMode = (data.mode || 'standard') as AuthMode
       registrationEnabled.value =
         typeof data.registration_enabled === 'boolean' ? data.registration_enabled : true
-      overseasEducationEmailRequired.value =
-        typeof data.overseas_education_email_required === 'boolean'
-          ? data.overseas_education_email_required
-          : false
       setMode(detectedMode)
       return detectedMode
     } catch {
@@ -1003,7 +1011,6 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     mode,
     registrationEnabled,
-    overseasEducationEmailRequired,
     loading,
     showSessionExpiredModal,
     sessionExpiredMessage,

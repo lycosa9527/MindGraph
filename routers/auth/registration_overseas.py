@@ -1,5 +1,5 @@
 """
-Overseas email registration (GeoIP not CN, no invitation; education email optional).
+Overseas email registration (GeoIP not CN, no invitation; any non-mainland-China email).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -23,7 +23,6 @@ from models.requests.requests_auth import RegisterOverseasRequest
 from services.auth.geo_cn_mainland_cookie import json_forbidden_cn_geo
 from services.auth.geoip_country import overseas_email_registration_allowed
 from services.auth.vpn_geo_enforcement import record_vpn_login_geo
-from services.auth.swot_academic import require_academic_email_if_configured
 from services.monitoring.registration_metrics import registration_metrics
 from services.redis.cache.redis_user_cache import user_cache
 from services.redis.session.redis_session_manager import (
@@ -66,8 +65,8 @@ async def register_overseas(
     """
     Register with email for users outside mainland China (GeoIP not CN).
 
-    Academic email is required only when ``SWOT_ACADEMIC_EMAIL_REQUIRED`` is true.
-    No invitation code; organization_id is NULL; Simplified Chinese UI is disabled.
+    Any valid non-mainland-China email is allowed. No invitation code;
+    organization_id is NULL; Simplified Chinese UI is disabled.
     """
     http_forbid_if_registration_disabled(lang)
 
@@ -114,7 +113,6 @@ async def register_overseas(
 
     email_validated = validate_email_for_api(request.email, lang)
     raise_if_mainland_china_email_for_overseas_registration(email_validated, lang)
-    require_academic_email_if_configured(email_validated, "register", lang)
     email_norm = normalize_verification_email(email_validated)
 
     result = await db.execute(select(User).where(User.email == email_norm))

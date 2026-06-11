@@ -110,6 +110,7 @@ export default {
   'mobile.kittyCardTitle': 'Kitty',
   'mobile.kittyCardDesc': '思維教學語音智能體',
   'mobile.accountDesc': '帳號設定',
+  'mobile.desktopShortcutDesc': '安裝為獨立應用，使用 MindGraph 圖標',
   'mobile.uiLanguage': '介面語言',
   'mobile.kittyTitle': 'Kitty 智能體',
   'mobile.kittyLive': '即時對話',

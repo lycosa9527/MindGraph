@@ -1,7 +1,7 @@
 """
 CLI: report a banned IP to AbuseIPDB (for Fail2ban action.d).
 
-Usage (from MindGraph repo root, with PYTHONPATH=. or venv):
+Usage (from MindGraph repo root, conda env active or full path to env python):
   python -m services.infrastructure.security.fail2ban_integration.report_ban <ip>
 
 Environment:

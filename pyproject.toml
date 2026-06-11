@@ -10,7 +10,7 @@ exclude = [
     "**/*.toml",
     "pyproject.toml"
 ]
-# No venv - using system Python
+# Miniconda env (conda activate mindgraph); .venv excluded from analysis
 pythonVersion = "3.13"
 typeCheckingMode = "basic"
 # Catch broken imports in the editor (e.g. `from typing import tzinfo`).

@@ -128,6 +128,7 @@ export default {
   'mobile.kittyCardTitle': 'Kitty',
   'mobile.kittyCardDesc': 'Voice teaching agent for diagrams',
   'mobile.accountDesc': 'Account settings',
+  'mobile.desktopShortcutDesc': 'Install as an app with the MindGraph icon',
   'mobile.uiLanguage': 'Interface language',
   'mobile.kittyTitle': 'Kitty Agent',
   'mobile.kittyLive': 'Live conversation',

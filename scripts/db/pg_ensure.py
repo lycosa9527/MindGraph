@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import logging
-import os
 import re
+import socket
 import subprocess
 import sys
 import time
@@ -87,6 +87,56 @@ def _connection_error_is_password_reject(conn_err: Optional[str]) -> bool:
     if not conn_err:
         return False
     return "password authentication failed" in conn_err.lower()
+
+
+def _server_port_open(db_url: str, timeout: int = 2) -> bool:
+    """True when something accepts TCP on the URL host/port (no credentials)."""
+    host = _parse_db_host(db_url)
+    port = _parse_db_port(db_url)
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+def ensure_postgresql_server_reachable(db_url: str) -> bool:
+    """
+    Return True when PostgreSQL is listening on DATABASE_URL host/port.
+
+    Used before MindGraph RLS roles exist (fresh install). Does not require
+    mindgraph_* login credentials.
+    """
+    if not db_url or "postgresql" not in db_url.lower():
+        logger.error("DATABASE_URL must be a PostgreSQL URL")
+        return False
+
+    host = _parse_db_host(db_url)
+    port = _parse_db_port(db_url)
+    if _server_port_open(db_url):
+        logger.info("PostgreSQL server is reachable at %s:%s", host, port)
+        return True
+
+    logger.info("PostgreSQL not reachable at %s:%s. Attempting to start...", host, port)
+    _try_start_postgresql()
+    time.sleep(3)
+
+    for attempt in range(3):
+        if _server_port_open(db_url):
+            logger.info("PostgreSQL server is now reachable at %s:%s", host, port)
+            return True
+        if attempt < 2:
+            time.sleep(2)
+
+    pid = _find_process_on_port(port)
+    logger.error(
+        "PostgreSQL not reachable at %s:%s (pid on port: %s). "
+        "Start the service: sudo systemctl start postgresql",
+        host,
+        port,
+        pid,
+    )
+    return False
 
 
 def _try_start_postgresql() -> bool:

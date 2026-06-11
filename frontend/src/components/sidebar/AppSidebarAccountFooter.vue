@@ -8,6 +8,7 @@ import { useRoute } from 'vue-router'
 import {
   ChevronDown,
   Languages,
+  Link2,
   LogIn,
   LogOut,
   ScrollText,
@@ -18,8 +19,14 @@ import {
 
 import QuickRegisterModal from '@/components/mindgraph/QuickRegisterModal.vue'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
+import { useNotifications } from '@/composables'
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 import { isMindGraphLandingPath } from '@/utils/canvasBackNavigation'
+import {
+  canShowPwaInstallUi,
+  promptPwaInstall,
+  pwaInstallAvailable,
+} from '@/utils/pwaInstall'
 
 const _raw = inject(appSidebarInjectionKey)
 if (!_raw) {
@@ -31,6 +38,30 @@ const orgSubtitle = computed(() => s.userSubtitle as string)
 const showShareSiteModal = ref(false)
 const { triggerImport } = useDiagramImport()
 const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.path))
+const showPwaInstall = computed(() => {
+  void pwaInstallAvailable.value
+  return canShowPwaInstallUi()
+})
+const notify = useNotifications()
+
+async function handlePwaInstall(): Promise<void> {
+  const result = await promptPwaInstall()
+  if (result === 'installed') {
+    notify.success(s.t('auth.pwaInstallSuccess'))
+    return
+  }
+  if (result === 'ios-hint') {
+    notify.info(s.t('auth.pwaIosInstallHint'))
+    return
+  }
+  if (result === 'dev-hint') {
+    notify.info(s.t('auth.pwaDevInstallHint'))
+    return
+  }
+  if (result === 'desktop-hint') {
+    notify.info(s.t('auth.pwaDesktopInstallHint'))
+  }
+}
 </script>
 
 <template>
@@ -156,6 +187,13 @@ const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.p
               {{ s.t('auth.updateLog') }}
             </el-dropdown-item>
             <el-dropdown-item
+              v-if="showPwaInstall"
+              @click="handlePwaInstall"
+            >
+              <Link2 class="w-4 h-4 mr-2" />
+              {{ s.t('auth.downloadDesktopShortcut') }}
+            </el-dropdown-item>
+            <el-dropdown-item
               divided
               class="user-dropdown-item--logout"
               @click="s.handleLogout"
@@ -225,6 +263,13 @@ const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.p
             <el-dropdown-item @click="s.openUpdateLogModal">
               <ScrollText class="w-4 h-4 mr-2" />
               {{ s.t('auth.updateLog') }}
+            </el-dropdown-item>
+            <el-dropdown-item
+              v-if="showPwaInstall"
+              @click="handlePwaInstall"
+            >
+              <Link2 class="w-4 h-4 mr-2" />
+              {{ s.t('auth.downloadDesktopShortcut') }}
             </el-dropdown-item>
             <el-dropdown-item
               divided

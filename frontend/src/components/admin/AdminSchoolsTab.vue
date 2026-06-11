@@ -14,6 +14,7 @@ import {
   resolveSchoolMindmateAvatarUrl,
 } from '@/composables/mindmate/useMindMateBranding'
 import '@/styles/admin-schools-swiss.css'
+import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useAdminOrganizations } from '@/composables/queries'
 import { isOrgPrivatized } from '@/utils/orgPrivatization'
@@ -36,7 +37,10 @@ const props = withDefaults(
 
 const { t } = useLanguage()
 const notify = useNotifications()
+const { can } = useAdminAccess()
 const { on: onAdminEvent } = useAdminEventBus('AdminSchoolsTab')
+
+const canEditOrganizations = computed(() => can('tab.organizations.edit'))
 
 const organizationsQuery = useAdminOrganizations()
 
@@ -599,12 +603,12 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
         >
           <template #default="{ row }">
             <el-button
-              v-if="!props.readOnly"
+              v-if="canEditOrganizations"
               type="primary"
               plain
               size="small"
               class="admin-swiss-pill-btn admin-swiss-pill-btn--edit"
-              @click="openTrendModal(row)"
+              @click="openTrendModal(row, 'general')"
             >
               <el-icon class="mr-0.5"><Edit /></el-icon>
               {{ t('common.edit') }}
@@ -634,7 +638,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
       :org-mindmate-agent-avatar-url="trendOrg?.mindmate_agent_avatar_url"
       :initial-school-tab="trendOrg?.initial_tab"
       :initial-trend-period="trendOrg?.initial_trend_period ?? 'week'"
-      :read-only="props.readOnly"
+      :read-only="!canEditOrganizations"
       @refresh="() => loadSchools({ silent: true })"
     />
   </div>

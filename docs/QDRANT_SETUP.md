@@ -5,14 +5,9 @@
 Qdrant installation is built into the MindGraph setup script (Linux with systemd). From the project root:
 
 ```bash
-# Use the same Python you use for the project (conda: sudo does not inherit PATH)
-sudo $(which python3) scripts/setup/setup.py
-
-# Or system Python:
-sudo python3 scripts/setup/setup.py
+conda activate mindgraph
+sudo -E env PATH="$PATH" "$(which python)" scripts/setup/setup.py
 ```
-
-**Conda users**: Use `sudo $(which python3) scripts/setup/setup.py` so sudo resolves your conda interpreter.
 
 **Non-Linux**: Run setup for other steps; Qdrant server auto-install targets Linux with systemd. On Windows or macOS use Docker, **WSL2 Ubuntu** (same steps as Ubuntu server once systemd is enabled), or a manual/binary install (sections below).
 
@@ -46,6 +41,7 @@ Add `QDRANT_HOST=localhost:6333` to `.env` yourself if it is not already set (se
 Restart MindGraph to enable background processing:
 
 ```bash
+conda activate mindgraph
 python main.py
 ```
 
@@ -60,7 +56,8 @@ You should see:
 Bump `QDRANT_GITHUB_VERSION` in `scripts/setup/setup.py` if needed, then re-run setup as root so the new binary and service are applied:
 
 ```bash
-sudo python3 scripts/setup/setup.py
+conda activate mindgraph
+sudo -E env PATH="$PATH" "$(which python)" scripts/setup/setup.py
 ```
 
 **Standalone Qdrant** — run from repo root; the script asks interactively:
@@ -285,7 +282,8 @@ Features:
 ### Using setup (easiest on Linux)
 
 ```bash
-sudo python3 scripts/setup/setup.py
+conda activate mindgraph
+sudo -E env PATH="$PATH" "$(which python)" scripts/setup/setup.py
 ```
 
 Adjust `QDRANT_GITHUB_VERSION` in `scripts/setup/setup.py` when you want a newer upstream release.

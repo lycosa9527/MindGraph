@@ -22,8 +22,11 @@ wheels/
 *.egg
 MANIFEST
 
-# Virtual environments
+# Local Python environments (project uses miniconda; ignore accidental venv dirs)
 venv/
+.venv/
+.venv.copies/
+.venv.test/
 .venv-lint/
 env/
 ENV/
@@ -58,6 +61,7 @@ test_output.jpg
 *.log
 *.tmp
 *.temp
+.tmp/
 temp/
 tmp/
 temp_images/
@@ -68,7 +72,6 @@ logs/*.pid
 # Runtime data directory (captcha storage, database files)
 data/**
 !data/prompt_language_registry.json
-!data/kikobeats_free_email_domains.json
 !data/abuseipdb/
 !data/abuseipdb/README.md
 !data/abuseipdb/blacklist_baseline.txt

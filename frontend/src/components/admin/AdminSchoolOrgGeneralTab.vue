@@ -5,6 +5,7 @@
 import { computed, watch } from 'vue'
 
 import { useLanguage } from '@/composables'
+import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import {
   effectiveMemberLimit,
   EXTRA_MEMBER_SEAT_PRESETS,
@@ -41,6 +42,11 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
+const { can } = useAdminAccess()
+
+const canEditOrgQuota = computed(() => can('tab.organizations.edit'))
+
+const quotaFieldsReadOnly = computed(() => props.readOnly || !canEditOrgQuota.value)
 
 const MINDBOT_SWISS_SELECT_POPPER_WIDE =
   'mindbot-swiss-select-popper mindbot-swiss-select-popper--wide'
@@ -148,7 +154,7 @@ function tierOptionLabel(tier: SchoolTier): string {
         <div class="flex-1 min-w-0 max-w-2xl space-y-1.5">
           <el-select
             v-model="schoolTierEdit"
-            :disabled="props.readOnly"
+            :disabled="quotaFieldsReadOnly"
             class="mindbot-swiss-select w-full"
             teleported
             :popper-class="MINDBOT_SWISS_SELECT_POPPER_WIDE"
@@ -188,7 +194,7 @@ function tierOptionLabel(tier: SchoolTier): string {
               size="small"
               class="mindbot-pill shrink-0"
               :class="extraMemberSeatsEdit === preset ? 'mindbot-pill--copy' : ''"
-              :disabled="props.readOnly"
+              :disabled="quotaFieldsReadOnly"
               @click="selectExtraSeatPreset(preset)"
             >
               {{ t('admin.extraMemberSeatsPreset', { count: preset }) }}
@@ -199,7 +205,7 @@ function tierOptionLabel(tier: SchoolTier): string {
             :min="0"
             :max="EXTRA_MEMBER_SEATS_MAX"
             :step="1"
-            :disabled="props.readOnly"
+            :disabled="quotaFieldsReadOnly"
             controls-position="right"
             class="mindbot-swiss-input w-full max-w-xs"
           />

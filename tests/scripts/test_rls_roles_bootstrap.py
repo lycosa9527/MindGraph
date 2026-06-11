@@ -28,7 +28,12 @@ def test_psql_tcp_host_port_normalises_localhost(monkeypatch):
     assert port == "5433"
 
 
-def test_psql_host_connection_args_includes_managed_socket(tmp_path, monkeypatch):
+def test_psql_peer_auth_args_prefers_unix_socket():
+    peer = bootstrap._psql_peer_auth_args()
+    assert peer[0] == []
+
+
+def test_psql_tcp_connection_args_includes_managed_socket(tmp_path, monkeypatch):
     monkeypatch.setenv(
         "DATABASE_URL",
         "postgresql://mindgraph_user:secret@127.0.0.1:5432/mindgraph",
@@ -38,6 +43,16 @@ def test_psql_host_connection_args_includes_managed_socket(tmp_path, monkeypatch
     socket_dir.mkdir(parents=True)
     monkeypatch.setenv("POSTGRESQL_DATA_DIR", str(data_dir))
 
-    arg_lists = bootstrap._psql_host_connection_args()
+    arg_lists = bootstrap._psql_tcp_connection_args()
     assert arg_lists[0] == ["-h", "127.0.0.1", "-p", "5432"]
     assert arg_lists[1] == ["-h", str(socket_dir.resolve())]
+
+
+def test_psql_host_connection_args_peer_before_tcp(monkeypatch):
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql://mindgraph_user:secret@127.0.0.1:5432/mindgraph",
+    )
+    combined = bootstrap._psql_host_connection_args()
+    assert combined[0] == []
+    assert ["-h", "127.0.0.1", "-p", "5432"] in combined

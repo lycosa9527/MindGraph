@@ -7,6 +7,13 @@ export default {
   'auth.updateLogMaintainerNote': '嗯嗯，本平台由 Roy 认真维护中 ✨',
   'auth.updateLogLoadError': '暂时无法加载更新日志，请稍后重试。',
   'auth.updateLogEmpty': '暂无更新说明。',
+  'auth.downloadDesktopShortcut': '添加到桌面',
+  'auth.pwaIosInstallHint': '在 Safari 中点分享，再选择「添加到主屏幕」。',
+  'auth.pwaDesktopInstallHint':
+    '请打开浏览器菜单（⋮），选择安装 MindGraph，或使用地址栏旁的安装图标。',
+  'auth.pwaInstallSuccess': 'MindGraph 已添加到桌面。',
+  'auth.pwaDevInstallHint':
+    '普通开发模式未启用 PWA。请使用生产构建（npm run build 后由后端提供），或运行 npm run dev:pwa，并用 Chrome/Edge 在 HTTPS 或 localhost 下打开。',
   'auth.backToLogin': '返回登录',
   'auth.captcha': '验证码',
   'auth.captchaLength4': '请输入4位验证码',

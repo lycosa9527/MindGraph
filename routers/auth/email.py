@@ -26,7 +26,6 @@ from services.auth.geoip_country import (
     email_cn_geo_blocked,
     overseas_email_registration_allowed,
 )
-from services.auth.swot_academic import require_academic_email_if_configured
 from services.auth.ses_service import (
     EMAIL_CODE_EXPIRY_MINUTES,
     EMAIL_MAX_ATTEMPTS_PER_ADDRESS,
@@ -127,7 +126,6 @@ async def send_email_code(
         raise_if_mainland_china_email_for_overseas_registration(email_validated, lang)
     elif request.purpose == "login":
         raise_if_mainland_china_email_for_email_login(email_validated, lang)
-    require_academic_email_if_configured(email_validated, request.purpose, lang)
     email_norm = normalize_verification_email(email_validated)
     purpose = request.purpose
 
@@ -262,7 +260,6 @@ async def verify_email_code(
         raise_if_mainland_china_email_for_overseas_registration(email_validated, lang)
     elif request.purpose == "login":
         raise_if_mainland_china_email_for_email_login(email_validated, lang)
-    require_academic_email_if_configured(email_validated, request.purpose, lang)
     code_validated = validate_email_code_digits(request.code, lang)
 
     email_norm = normalize_verification_email(email_validated)
@@ -341,7 +338,6 @@ async def verify_and_consume_email_code(email: str, code: str, purpose: str, lan
         raise_if_mainland_china_email_for_overseas_registration(email_validated, lang)
     elif purpose == "login":
         raise_if_mainland_china_email_for_email_login(email_validated, lang)
-    require_academic_email_if_configured(email_validated, purpose, lang)
     validate_email_code_digits(code, lang)
     email_storage = get_email_storage()
     if await email_storage.verify_and_remove(email_validated, code, purpose):

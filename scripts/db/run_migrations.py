@@ -238,7 +238,6 @@ def _ensure_postgresql_for_migrations(db_url: str) -> bool:
     """If PostgreSQL is not reachable, try starting it (no full app import)."""
     from scripts.db.pg_ensure import ensure_postgresql_running
 
-    logger = logging.getLogger(__name__)
     return bool(ensure_postgresql_running(db_url))
 
 
@@ -367,17 +366,25 @@ def _prepare_migration_cli() -> tuple[Engine, Path] | int:
         configure_rls_migration_environment,
         create_migration_engine,
         first_connectable_database_url,
-        pick_postgresql_connect_url,
     )
 
+    logger = logging.getLogger(__name__)
     runtime_url = os.getenv("DATABASE_URL", "")
     if "postgresql" in runtime_url.lower():
         connected = first_connectable_database_url()
-        probe_url = connected[0] if connected is not None else pick_postgresql_connect_url()
-        if not _ensure_postgresql_for_migrations(probe_url):
-            return 1
+        if connected is not None:
+            if not _ensure_postgresql_for_migrations(connected[0]):
+                return 1
+        else:
+            from scripts.db.pg_ensure import ensure_postgresql_server_reachable
 
-    logger = logging.getLogger(__name__)
+            if not ensure_postgresql_server_reachable(runtime_url):
+                return 1
+            logger.info(
+                "PostgreSQL is up; MindGraph roles not connected yet "
+                "(RLS bootstrap runs next on a fresh install)"
+            )
+
     from scripts.db.rls_roles_bootstrap import ensure_rls_roles_exist
 
     roles_ok, roles_msg = ensure_rls_roles_exist()

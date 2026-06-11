@@ -371,12 +371,28 @@ def _managed_postgresql_socket_dir() -> Path | None:
     return socket_dir if socket_dir.is_dir() else None
 
 
-def _psql_host_connection_args() -> list[list[str]]:
+def _psql_peer_auth_args() -> list[list[str]]:
     """
-    ``psql`` ``-h`` targets: TCP first, then managed unix socket dir if present.
+    Unix-socket targets for ``sudo -u postgres psql`` (peer auth, no password).
 
-    Default ``psql`` uses ``/var/run/postgresql``, which is empty when only the
-    MindGraph subprocess is listening on ``127.0.0.1:POSTGRESQL_PORT``.
+    Used for distro PostgreSQL (systemd on Ubuntu/WSL). Must be tried before TCP
+    ``-h 127.0.0.1``, which requires a ``postgres`` role password.
+    """
+    args: list[list[str]] = [[]]
+    distro_socket = Path("/var/run/postgresql")
+    if distro_socket.is_dir():
+        distro_arg = ["-h", str(distro_socket.resolve())]
+        if distro_arg not in args:
+            args.append(distro_arg)
+    return args
+
+
+def _psql_tcp_connection_args() -> list[list[str]]:
+    """
+    TCP and app-managed socket targets (password or custom socket).
+
+    MindGraph's managed subprocess listens on ``127.0.0.1:POSTGRESQL_PORT``; its
+    socket lives under ``POSTGRESQL_DATA_DIR/sockets`` when set.
     """
     host, port = _psql_tcp_host_port()
     args: list[list[str]] = [["-h", host, "-p", port]]
@@ -384,6 +400,20 @@ def _psql_host_connection_args() -> list[list[str]]:
     if socket_dir is not None:
         args.append(["-h", str(socket_dir.resolve())])
     return args
+
+
+def _psql_host_connection_args() -> list[list[str]]:
+    """Peer socket first, then TCP (backward-compatible combined list)."""
+    peer = _psql_peer_auth_args()
+    tcp = _psql_tcp_connection_args()
+    combined: list[list[str]] = []
+    seen: set[tuple[str, ...]] = set()
+    for item in peer + tcp:
+        key = tuple(item)
+        if key not in seen:
+            seen.add(key)
+            combined.append(item)
+    return combined
 
 
 def _admin_url_for_database(dbname: str) -> str | None:
@@ -435,6 +465,96 @@ def _verify_roles_created(base_url: str) -> bool:
     return True
 
 
+def _valid_db_name(dbname: str) -> bool:
+    return bool(dbname) and all(ch.isalnum() or ch == "_" for ch in dbname)
+
+
+def _run_sudo_postgres_cmd(
+    cmd_tail: list[str],
+    *,
+    allow_password_prompt: bool,
+    peer_first: bool = True,
+) -> tuple[bool, str]:
+    """Run a postgres CLI command via sudo peer auth, then TCP fallbacks."""
+    if sys.platform == "win32":
+        return False, "sudo postgres bootstrap unavailable on Windows"
+
+    host_lists = (
+        _psql_peer_auth_args() + _psql_tcp_connection_args()
+        if peer_first
+        else _psql_tcp_connection_args()
+    )
+    wrapper_plans: list[tuple[list[str], bool, bool, list[list[str]]]] = [
+        (["sudo", "-n", "-u", "postgres"], True, True, host_lists),
+    ]
+    if allow_password_prompt:
+        wrapper_plans.append((["sudo", "-u", "postgres"], False, True, host_lists))
+
+    last_detail = ""
+    bin_name = cmd_tail[0]
+    rest = cmd_tail[1:]
+    for prefix, capture, needs_sudo_hint, host_arg_lists in wrapper_plans:
+        for host_args in host_arg_lists:
+            cmd = [*prefix, bin_name, *host_args, *rest]
+            try:
+                if capture:
+                    result = subprocess.run(
+                        cmd,
+                        capture_output=True,
+                        text=True,
+                        timeout=120,
+                        check=False,
+                    )
+                    last_detail = (result.stderr or result.stdout or "").strip()
+                else:
+                    if needs_sudo_hint:
+                        print("[RLS] If prompted, enter your Linux password for sudo …")
+                    result = subprocess.run(cmd, timeout=300, check=False)
+                    last_detail = f"exit code {result.returncode}"
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                last_detail = str(exc)
+                continue
+            if result.returncode == 0:
+                stdout = ""
+                if capture:
+                    stdout = (result.stdout or "").strip()
+                return True, stdout
+            if "already exists" in last_detail.lower():
+                return True, ""
+    return False, last_detail or "postgres command failed"
+
+
+def _ensure_application_database_exists(
+    dbname: str,
+    *,
+    allow_password_prompt: bool = True,
+) -> tuple[bool, str]:
+    """Create the application database when missing (distro PostgreSQL / peer auth)."""
+    if not _valid_db_name(dbname):
+        return False, f"invalid database name: {dbname}"
+    escaped = dbname.replace("'", "''")
+    check_sql = f"SELECT 1 FROM pg_database WHERE datname = '{escaped}'"
+    check_cmd = ["psql", "-d", "postgres", "-tAc", check_sql]
+    ok, detail = _run_sudo_postgres_cmd(
+        check_cmd,
+        allow_password_prompt=allow_password_prompt,
+        peer_first=True,
+    )
+    if ok and detail.strip() == "1":
+        return True, ""
+
+    ok, detail = _run_sudo_postgres_cmd(
+        ["createdb", dbname],
+        allow_password_prompt=allow_password_prompt,
+        peer_first=True,
+    )
+    if ok:
+        return True, ""
+    if "already exists" in detail.lower():
+        return True, ""
+    return False, detail or f"could not create database {dbname}"
+
+
 def _run_sudo_postgres_psql(
     dbname: str,
     sql: str,
@@ -465,27 +585,31 @@ def _run_sudo_postgres_psql(
         os.chmod(sql_path, 0o644)
 
         last_detail = admin_detail
-        for host_args in _psql_host_connection_args():
-            psql_core = [
-                "psql",
-                *host_args,
-                "-U",
-                "postgres",
-                "-d",
-                dbname,
-                "-v",
-                "ON_ERROR_STOP=1",
-                "-f",
-                sql_path,
-            ]
-            wrappers: list[tuple[list[str], bool, bool]] = [
-                ([], True, False),
-                (["sudo", "-n", "-u", "postgres"], True, True),
-            ]
-            if allow_password_prompt:
-                wrappers.append((["sudo", "-u", "postgres"], False, True))
+        tcp_args = _psql_tcp_connection_args()
+        peer_args = _psql_peer_auth_args()
+        wrapper_plans: list[tuple[list[str], bool, bool, list[list[str]]]] = [
+            ([], True, False, tcp_args),
+            (["sudo", "-n", "-u", "postgres"], True, True, peer_args + tcp_args),
+        ]
+        if allow_password_prompt:
+            wrapper_plans.append(
+                (["sudo", "-u", "postgres"], False, True, peer_args + tcp_args)
+            )
 
-            for prefix, capture, needs_sudo_hint in wrappers:
+        for prefix, capture, needs_sudo_hint, host_arg_lists in wrapper_plans:
+            for host_args in host_arg_lists:
+                psql_core = [
+                    "psql",
+                    *host_args,
+                    "-U",
+                    "postgres",
+                    "-d",
+                    dbname,
+                    "-v",
+                    "ON_ERROR_STOP=1",
+                    "-f",
+                    sql_path,
+                ]
                 cmd = [*prefix, *psql_core]
                 try:
                     if capture:
@@ -527,6 +651,13 @@ def try_bootstrap_rls_roles_via_sudo(
     runtime = normalise_db_url(runtime_url or _runtime_url())
     parsed = make_url(runtime)
     dbname = parsed.database or "mindgraph"
+    db_ok, db_msg = _ensure_application_database_exists(
+        dbname,
+        allow_password_prompt=allow_password_prompt,
+    )
+    if not db_ok:
+        return False, db_msg
+
     sql = (
         build_create_roles_sql(_app_password(), _migrate_password())
         + "\n"
@@ -599,32 +730,49 @@ def try_bootstrap_rls_roles(runtime_url: str | None = None) -> tuple[bool, str]:
 
 def ensure_rls_roles_exist(runtime_url: str | None = None) -> tuple[bool, str]:
     """Ensure mindgraph_app / mindgraph_migrate exist before Alembic (one-shot prep)."""
+    runtime = normalise_db_url(runtime_url or _runtime_url())
     probe = first_connectable_database_url(runtime_url)
+    bootstrap_msg = "RLS roles already exist"
+
     if probe is None:
-        return False, "No DATABASE_URL candidate could connect (start PostgreSQL first)"
-    base_url, _source = probe
-
-    if not _roles_missing_on_url(base_url):
-        bypass_ok, bypass_msg = ensure_migrate_role_bypassrls(base_url)
-        if not bypass_ok:
-            logger.error("%s", bypass_msg)
-            return False, bypass_msg
-        priv_ok, priv_msg = ensure_migrate_database_privileges(base_url)
-        if not priv_ok:
-            logger.error("%s", priv_msg)
-            return False, priv_msg
-        ext_ok, ext_msg = ensure_postgresql_extensions(base_url)
-        if not ext_ok:
-            logger.error("%s", ext_msg)
-            return False, ext_msg
-        return True, "RLS roles already exist"
-
-    ok, msg = try_bootstrap_rls_roles(base_url)
-    if not ok:
-        logger.error("%s", msg)
-        return False, msg
-
-    logger.info("%s", msg)
+        sudo_ok, sudo_msg = try_bootstrap_rls_roles_via_sudo(runtime)
+        if not sudo_ok:
+            return False, (
+                f"{sudo_msg}. On a fresh install create the database first: "
+                "sudo -u postgres createdb mindgraph"
+            )
+        logger.info("%s", sudo_msg)
+        bootstrap_msg = sudo_msg
+        probe = first_connectable_database_url(runtime_url)
+        if probe is None:
+            return False, (
+                "MindGraph roles were bootstrapped but login still failed. "
+                "Check MINDGRAPH_APP_PASSWORD / MINDGRAPH_MIGRATE_PASSWORD in .env"
+            )
+        base_url, _source = probe
+    else:
+        base_url, _source = probe
+        if _roles_missing_on_url(base_url):
+            ok, msg = try_bootstrap_rls_roles(base_url)
+            if not ok:
+                logger.error("%s", msg)
+                return False, msg
+            logger.info("%s", msg)
+            bootstrap_msg = msg
+        else:
+            bypass_ok, bypass_msg = ensure_migrate_role_bypassrls(base_url)
+            if not bypass_ok:
+                logger.error("%s", bypass_msg)
+                return False, bypass_msg
+            priv_ok, priv_msg = ensure_migrate_database_privileges(base_url)
+            if not priv_ok:
+                logger.error("%s", priv_msg)
+                return False, priv_msg
+            ext_ok, ext_msg = ensure_postgresql_extensions(base_url)
+            if not ext_ok:
+                logger.error("%s", ext_msg)
+                return False, ext_msg
+            return True, bootstrap_msg
     bypass_ok, bypass_msg = ensure_migrate_role_bypassrls(base_url)
     if not bypass_ok:
         logger.error("%s", bypass_msg)
@@ -637,7 +785,7 @@ def ensure_rls_roles_exist(runtime_url: str | None = None) -> tuple[bool, str]:
     if not ext_ok:
         logger.error("%s", ext_msg)
         return False, ext_msg
-    return True, msg
+    return True, bootstrap_msg
 
 
 def iter_bootstrap_guidance() -> Iterable[str]:

@@ -117,6 +117,10 @@ const removeManagerMutation = useRemoveAdminOrganizationManager()
 
 const panelReadOnly = computed(() => props.readOnly === true)
 
+const canEditOrgGeneral = computed(() => can('tab.organizations.edit'))
+
+const orgGeneralReadOnly = computed(() => !canEditOrgGeneral.value)
+
 const showMindbotSchoolTabs = computed(
   () => !panelReadOnly.value && can('tab.settings.mindbot') && featureMindbot.value
 )
@@ -841,7 +845,7 @@ onBeforeUnmount(() => {
               :managers-loading="managersLoading"
               :add-managers-loading="addManagersLoading"
               :lock-loading="lockLoading"
-              :read-only="panelReadOnly"
+              :read-only="orgGeneralReadOnly"
               @toggleLock="toggleLock"
               @addManagers="addManagers"
               @removeManager="removeManager"
@@ -865,11 +869,11 @@ onBeforeUnmount(() => {
           />
         </div>
         <div
-          v-if="!panelReadOnly"
+          v-if="!panelReadOnly || (schoolDialogTab === 'general' && canEditOrgGeneral)"
           class="flex shrink-0 flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:flex-wrap sm:ml-auto"
         >
         <el-button
-          v-if="schoolDialogTab === 'general' && orgId"
+          v-if="schoolDialogTab === 'general' && orgId && canEditOrgGeneral"
           type="primary"
           class="mindbot-pill mindbot-pill--footer-save w-full sm:w-auto"
           :loading="generalTabSaving"

@@ -5,7 +5,7 @@ AI-powered diagram generation platform. Transform natural language into professi
 [![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
 [![Vue](https://img.shields.io/badge/Vue-3.5+-42b883.svg)](https://vuejs.org/)
-[![Version](https://img.shields.io/badge/Version-5.71.0-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-5.117.37-brightgreen.svg)](CHANGELOG.md)
 
 ---
 
@@ -80,7 +80,7 @@ AI-powered diagram generation platform. Transform natural language into professi
 
 ### Prerequisites
 
-- Python 3.13+
+- Miniconda (Python 3.13+ env named `mindgraph`)
 - Node.js and npm (latest; see [docs/NODE_NVM_SETUP.md](docs/NODE_NVM_SETUP.md))
 - Redis 7.0+ (8.6+ recommended for key-memory histograms and VSET)
 - Qdrant (for Knowledge Space)
@@ -92,8 +92,13 @@ AI-powered diagram generation platform. Transform natural language into professi
 git clone https://github.com/lycosa9527/MindGraph.git
 cd MindGraph
 
-# Backend: install dependencies, Redis, PostgreSQL, Qdrant, Playwright, and Tesseract OCR
-sudo python scripts/setup/setup.py
+conda create -n mindgraph python=3.13 -y
+conda activate mindgraph
+pip install -r requirements.txt
+python -m playwright install chromium
+
+# Linux system packages: Redis, PostgreSQL, Qdrant, Playwright deps, Tesseract OCR
+sudo -E env PATH="$PATH" "$(which python)" scripts/setup/setup.py
 
 # Optional: install dashboard assets (ECharts, China GeoJSON, ip2region)
 python scripts/setup/dashboard_install.py
@@ -109,10 +114,11 @@ cp env.example .env
 ### Run
 
 ```bash
+conda activate mindgraph
 python main.py
 ```
 
-Database schema migrations (Alembic) run automatically on startup.
+Database schema migrations (Alembic) and PostgreSQL RLS role bootstrap run automatically on startup.
 
 Default: `http://localhost:9527`
 

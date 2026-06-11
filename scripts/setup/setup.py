@@ -19,13 +19,21 @@ This script handles the complete installation and setup of MindGraph, including:
   (docs/FAIL2BAN_SETUP.md).
 
 Requirements:
-- Python 3.8+
+- Miniconda with a ``mindgraph`` env (Python 3.13+ recommended)
 - pip package manager
 - Internet connection for package downloads
 - Linux: sudo/root for full setup (or answer the prompt to continue without sudo)
 
 Usage:
-    sudo python3 scripts/setup/setup.py
+    conda create -n mindgraph python=3.13 -y
+    conda activate mindgraph
+    pip install -r requirements.txt
+    python scripts/setup/setup.py
+
+Linux system packages (Redis, PostgreSQL, Qdrant) with sudo — keep conda on PATH:
+
+    conda activate mindgraph
+    sudo -E env PATH="$PATH" "$(which python)" scripts/setup/setup.py
 
 Interactive prompts ask about optional skips on Linux. For CI or pipes, set
 MINDGRAPH_NON_INTERACTIVE=1 (full install, no questions).
@@ -67,10 +75,105 @@ try:
 except ImportError:
     psutil = None
 
-try:
-    from playwright.sync_api import sync_playwright
-except ImportError:
-    sync_playwright = None
+_SETUP_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SETUP_SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, _SETUP_SCRIPT_DIR)
+
+from conda_runtime import (
+    CondaRuntimeError,
+    is_conda_env_active,
+    is_externally_managed_environment,
+    prepare_project_python,
+    run_as_project_user,
+    run_as_project_user_streaming,
+)
+
+_PIP_PYTHON: Optional[str] = None
+
+
+def active_python() -> str:
+    """Python executable for pip, Playwright, and dependency verification."""
+    return _PIP_PYTHON or sys.executable
+
+
+def _python_can_import(python_exe: str, module_name: str, project_root: str) -> bool:
+    """Return True when ``module_name`` imports in the given interpreter."""
+    result = subprocess.run(
+        [python_exe, "-c", f"import {module_name}"],
+        cwd=project_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.returncode == 0
+
+
+_PLAYWRIGHT_LAUNCH_SNIPPET = """
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as playwright:
+    browser = playwright.chromium.launch(
+        headless=True,
+        args=["--no-sandbox", "--disable-dev-shm-usage"],
+    )
+    try:
+        version_attr = getattr(browser, "version", None)
+        if callable(version_attr):
+            print("VERSION:" + str(version_attr()))
+        elif version_attr is not None:
+            print("VERSION:" + str(version_attr))
+        else:
+            print("VERSION:Working")
+    except Exception:
+        print("VERSION:Working")
+    browser.close()
+print("OK")
+"""
+
+
+def _playwright_module_importable(project_root: str) -> bool:
+    """Return True when Playwright is installed for the project interpreter."""
+    return _python_can_import(active_python(), "playwright", project_root)
+
+
+def _run_playwright_launch_check(project_root: str) -> Tuple[bool, str, str]:
+    """
+    Launch Chromium via the project interpreter.
+
+    Returns:
+        (success, version_label, error_text)
+    """
+    result = run_as_project_user(
+        [active_python(), "-c", _PLAYWRIGHT_LAUNCH_SNIPPET],
+        cwd=project_root,
+    )
+    combined = f"{result.stdout}\n{result.stderr}".strip()
+    if result.returncode != 0:
+        return False, "", combined or "Chromium launch failed"
+    version = "Working"
+    for line in (result.stdout or "").splitlines():
+        if line.startswith("VERSION:"):
+            version = line.split(":", 1)[1].strip() or version
+    return True, version, ""
+
+
+def _playwright_chromium_executable(project_root: str) -> Optional[str]:
+    """Return Playwright's Chromium executable path from the project interpreter."""
+    snippet = (
+        "from playwright.sync_api import sync_playwright\n"
+        "with sync_playwright() as p:\n"
+        "    print(p.chromium.executable_path or '')\n"
+    )
+    result = run_as_project_user(
+        [active_python(), "-c", snippet],
+        cwd=project_root,
+    )
+    if result.returncode != 0:
+        return None
+    path = (result.stdout or "").strip()
+    if path and os.path.exists(path):
+        return path
+    return None
 
 
 def _stdin_is_tty() -> bool:
@@ -283,6 +386,18 @@ class SetupError(Exception):
     """Custom exception for setup failures"""
 
 
+def prepare_pip_python(project_root: str) -> str:
+    """Resolve the active miniconda Python for pip installs."""
+    global _PIP_PYTHON
+    if _PIP_PYTHON:
+        return _PIP_PYTHON
+    try:
+        _PIP_PYTHON = prepare_project_python(project_root)
+    except CondaRuntimeError as exc:
+        raise SetupError(str(exc)) from exc
+    return _PIP_PYTHON
+
+
 def resolve_project_root(start_dir: str) -> str:
     """
     Directory containing requirements.txt / VERSION (repo root).
@@ -302,7 +417,7 @@ def resolve_project_root(start_dir: str) -> str:
 
 def get_playwright_cli_prefix() -> str:
     """Shell-safe prefix: ``<python> -m playwright`` (quoted if needed)."""
-    exe = sys.executable
+    exe = active_python()
     if " " in exe or platform.system().lower() == "windows":
         return f'"{exe}" -m playwright'
     return f"{exe} -m playwright"
@@ -356,11 +471,13 @@ def ensure_linux_elevation_or_allow(
         print(
             "[WARNING] Linux: not running as root. "
             "Skipping apt-based installs (Tesseract, Playwright --with-deps). "
-            "Run: sudo python3 scripts/setup/setup.py"
+            'Run: conda activate mindgraph && sudo -E env PATH="$PATH" '
+            '"$(which python)" scripts/setup/setup.py'
         )
         return
     print("\n[ERROR] On Linux this script must be run with sudo for system packages.")
-    print("    Example: sudo python3 scripts/setup/setup.py")
+    print('    Example: conda activate mindgraph && sudo -E env PATH="$PATH"')
+    print('              "$(which python)" scripts/setup/setup.py')
     print("    Or run again and answer yes when asked to continue without sudo.")
     raise SetupError("Re-run with sudo, or re-run and choose continue without sudo")
 
@@ -990,24 +1107,20 @@ def _qdrant_find_binary() -> Optional[str]:
     return None
 
 
-def _qdrant_client_importable() -> bool:
-    try:
-        importlib.import_module("qdrant_client")
-        return True
-    except ImportError:
-        return False
+def _qdrant_client_importable(project_root: str) -> bool:
+    return _python_can_import(active_python(), "qdrant_client", project_root)
 
 
-def _ensure_qdrant_client_pip() -> bool:
+def _ensure_qdrant_client_pip(project_root: str) -> bool:
     """Ensure qdrant-client is installed (requirements.txt should already have done this)."""
-    if _qdrant_client_importable():
+    if _qdrant_client_importable(project_root):
         return True
     print("[INFO] Installing qdrant-client via pip...")
-    result = subprocess.run(
-        [sys.executable, "-m", "pip", "install", "qdrant-client"],
-        check=False,
+    result = run_as_project_user(
+        [active_python(), "-m", "pip", "install", "qdrant-client"],
+        cwd=project_root,
     )
-    return result.returncode == 0 and _qdrant_client_importable()
+    return result.returncode == 0 and _qdrant_client_importable(project_root)
 
 
 def _qdrant_download_to_file(url: str, dest: str) -> bool:
@@ -1032,7 +1145,7 @@ def install_qdrant_linux_server() -> bool:
 
     if qdrant_api_responding():
         print("[INFO] Qdrant API already responding on port 6333")
-        return _ensure_qdrant_client_pip()
+        return _ensure_qdrant_client_pip(os.getcwd())
 
     binary_path = _qdrant_find_binary()
     binary_exists = binary_path is not None
@@ -1043,7 +1156,7 @@ def install_qdrant_linux_server() -> bool:
         run_command("systemctl start qdrant", "Starting Qdrant service", check=False)
         time.sleep(3)
         if qdrant_api_responding():
-            return _ensure_qdrant_client_pip()
+            return _ensure_qdrant_client_pip(os.getcwd())
         needs_setup = True
         print("[WARNING] Qdrant systemd unit present but API not responding; reconfiguring...")
     elif binary_exists and not systemd_unit:
@@ -1098,7 +1211,7 @@ def install_qdrant_linux_server() -> bool:
     print("[INFO] Waiting for Qdrant to listen on 6333...")
     time.sleep(5)
 
-    if not _ensure_qdrant_client_pip():
+    if not _ensure_qdrant_client_pip(os.getcwd()):
         print("[ERROR] Could not install qdrant-client; check pip / requirements.txt")
         return False
 
@@ -1136,8 +1249,8 @@ def install_qdrant_via_documented_flow(
     if allow_non_root or not is_elevated_privileges():
         print(
             "\n[INFO] Qdrant server install needs root (systemd, /usr/local/bin). "
-            "Skipping. Run: sudo python3 scripts/setup/setup.py "
-            "(see docs/QDRANT_SETUP.md)"
+            'Skipping. Run: conda activate mindgraph && sudo -E env PATH="$PATH" '
+            '"$(which python)" scripts/setup/setup.py (see docs/QDRANT_SETUP.md)'
         )
         return qdrant_api_responding()
 
@@ -1151,7 +1264,7 @@ def install_qdrant_via_documented_flow(
     return ok
 
 
-def verify_qdrant_hint() -> None:
+def verify_qdrant_hint(project_root: str) -> None:
     """Print Qdrant server and Python client status (Knowledge Space)."""
     if qdrant_api_responding():
         print("    [SUCCESS] Qdrant API http://127.0.0.1:6333/collections (docs/QDRANT_SETUP.md)")
@@ -1160,10 +1273,9 @@ def verify_qdrant_hint() -> None:
             "    [WARNING] Qdrant not listening on port 6333; "
             "configure QDRANT_HOST or run install (docs/QDRANT_SETUP.md)"
         )
-    try:
-        importlib.import_module("qdrant_client")
+    if _qdrant_client_importable(project_root):
         print("    [SUCCESS] Python package qdrant-client is importable")
-    except ImportError:
+    else:
         print("    [WARNING] qdrant-client not importable; ensure Step 4 (pip install -r requirements.txt) completed")
 
 
@@ -1369,6 +1481,8 @@ def print_system_info() -> None:
     print(f"    Architecture: {platform.machine()}")
     print(f"    Python: {sys.version}")
     print(f"    Python Executable: {sys.executable}")
+    if _PIP_PYTHON and os.path.abspath(_PIP_PYTHON) != os.path.abspath(sys.executable):
+        print(f"    Project Python: {_PIP_PYTHON}")
     print(f"    Working Directory: {os.getcwd()}")
     print(f"    Available Memory: {get_available_memory():.1f} GB")
     print()
@@ -1406,9 +1520,9 @@ def get_package_version(package_name: str) -> str:
             return "unknown"
 
 
-def check_pip() -> bool:
+def check_pip(project_root: str) -> bool:
     """
-    Verify pip package manager availability.
+    Verify pip package manager availability for the project interpreter.
 
     Returns:
         True if pip is available
@@ -1417,17 +1531,21 @@ def check_pip() -> bool:
         SetupError: If pip is not available
     """
     print("[INFO] Checking pip availability...")
+    python_executable = active_python()
+    result = run_as_project_user(
+        [python_executable, "-m", "pip", "--version"],
+        cwd=project_root,
+    )
+    if result.returncode != 0:
+        details = (result.stderr or result.stdout or "").strip()
+        raise SetupError(f"pip not found for {python_executable}. {details}")
+    version_line = (result.stdout or result.stderr or "").strip().splitlines()
+    first_line = version_line[0] if version_line else "pip available"
+    print(f"[SUCCESS] {first_line}")
+    return True
 
-    try:
-        subprocess.run([sys.executable, "-m", "pip", "--version"], check=True, capture_output=True)
-        print("[SUCCESS] pip is available")
-        return True
 
-    except (subprocess.CalledProcessError, FileNotFoundError) as exc:
-        raise SetupError("pip not found. Please install pip first") from exc
-
-
-def check_dependencies_already_installed() -> bool:
+def check_dependencies_already_installed(project_root: str) -> bool:
     """
     Check if all required dependencies are already installed.
 
@@ -1436,22 +1554,26 @@ def check_dependencies_already_installed() -> bool:
     """
     print("[INFO] Checking if dependencies are already installed...")
 
-    # Core dependencies to check (production only)
     core_dependencies = CORE_DEPENDENCIES
-
+    python_executable = active_python()
+    use_subprocess = os.path.abspath(python_executable) != os.path.abspath(sys.executable)
     missing_dependencies = []
 
     for module_name, package_name in core_dependencies.items():
         if module_name in _SKIP_IMPORT_CHECK_MODULES:
             continue
+        if use_subprocess:
+            ok, _, _ = _verify_dependency_with_python(
+                python_executable,
+                module_name,
+                package_name,
+                project_root,
+            )
+            if not ok:
+                missing_dependencies.append(package_name)
+            continue
         try:
-            if module_name == "langchain_openai":
-                importlib.import_module("langchain_openai")
-            elif module_name == "langgraph_checkpoint":
-                importlib.import_module("langgraph_checkpoint")
-            else:
-                importlib.import_module(module_name)
-
+            importlib.import_module(_dependency_import_statement(module_name))
         except ImportError:
             missing_dependencies.append(package_name)
 
@@ -1462,12 +1584,65 @@ def check_dependencies_already_installed() -> bool:
     return False
 
 
-def install_python_dependencies() -> bool:
+def _format_pip_progress_line(line: str) -> None:
+    """Print one pip output line with setup progress styling."""
+    stripped = line.strip()
+    if not stripped:
+        return
+    if "ERROR:" in stripped or "externally-managed-environment" in stripped:
+        print(f"    [ERROR] {stripped}")
+    elif "Successfully installed" in stripped:
+        print(f"    [SUCCESS] {stripped}")
+    elif "Downloading" in stripped and "%" in stripped:
+        print(f"\r    [INFO] {stripped}", end="", flush=True)
+    elif len(stripped) < MAX_LINE_LENGTH:
+        print(f"    [INFO] {stripped}")
+
+
+def _run_pip_install_requirements(project_root: str, python_executable: str) -> bool:
+    """Install requirements.txt using the project interpreter (PEP 668 safe)."""
+    command = [
+        python_executable,
+        "-m",
+        "pip",
+        "install",
+        "-r",
+        "requirements.txt",
+        "--progress-bar",
+        "on",
+    ]
+    print("[INFO] Installing packages with progress tracking...")
+    print(f"[INFO] Interpreter: {python_executable}")
+    print("    [INFO] Downloading and installing packages...")
+
+    return_code = run_as_project_user_streaming(
+        command,
+        cwd=project_root,
+        on_line=_format_pip_progress_line,
+    )
+
+    if return_code == 0:
+        print("\n[SUCCESS] Installing Python packages completed")
+        return True
+
+    print(f"\n[ERROR] Installing Python packages failed with return code {return_code}")
+    if is_externally_managed_environment() and os.path.abspath(python_executable) == os.path.abspath(
+        sys.executable
+    ):
+        print(
+            "[ERROR] System pip is blocked (PEP 668). "
+            "Activate miniconda first: conda activate mindgraph"
+        )
+    return False
+
+
+def install_python_dependencies(project_root: str) -> bool:
     """
     Install Python dependencies from requirements.txt.
 
     Always runs ``pip install -r requirements.txt``. Core-import checks alone are
     not enough: requirements.txt adds Celery, py-ip2region, DB drivers, etc.
+    Uses the active miniconda environment (``conda activate mindgraph``).
 
     Returns:
         True if installation succeeded
@@ -1475,10 +1650,13 @@ def install_python_dependencies() -> bool:
     Raises:
         SetupError: If requirements.txt not found or installation fails
     """
-    if not os.path.exists("requirements.txt"):
+    requirements_path = os.path.join(project_root, "requirements.txt")
+    if not os.path.isfile(requirements_path):
         raise SetupError("requirements.txt not found")
 
-    if check_dependencies_already_installed():
+    pip_python = prepare_pip_python(project_root)
+
+    if check_dependencies_already_installed(project_root):
         print(
             "\n[INFO] Core Python imports OK; syncing full requirements.txt "
             "(celery, ip2region, qdrant-client, DB clients, etc.)..."
@@ -1486,20 +1664,14 @@ def install_python_dependencies() -> bool:
     else:
         print("\n[INFO] Installing Python dependencies...")
 
-    print("[INFO] Installing packages with progress tracking...")
-
-    # Use pip with progress bar and verbose output
-    if not run_command_with_progress(
-        f"{sys.executable} -m pip install -r requirements.txt --progress-bar on",
-        "Installing Python packages",
-    ):
+    if not _run_pip_install_requirements(project_root, pip_python):
         raise SetupError("Failed to install Python dependencies")
 
     print("[SUCCESS] Python dependencies installed successfully")
     return True
 
 
-def check_playwright_already_installed() -> bool:
+def check_playwright_already_installed(project_root: str) -> bool:
     """
     Check if Playwright and Chromium browser are already installed.
 
@@ -1508,41 +1680,26 @@ def check_playwright_already_installed() -> bool:
     """
     print("[INFO] Checking if Playwright is already installed...")
 
-    try:
-        if sync_playwright is None:
-            print("[INFO] Playwright Python module not found")
-            return False
-
-        # Try to launch Chromium to verify browser installation
-        with sync_playwright() as p:
-            try:
-                # Try to launch with minimal options to avoid issues
-                browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
-
-                # If browser launches successfully, consider it working regardless of version check
-                print("[SUCCESS] Playwright Chromium already installed and working")
-                browser.close()
-                return True
-
-            except Exception as e:
-                error_msg = str(e).lower()
-                if "chromium" in error_msg and "not found" in error_msg:
-                    print("[INFO] Playwright module found but Chromium browser not installed")
-                elif "font" in error_msg or "library" in error_msg:
-                    print("[INFO] Playwright module found but system dependencies may be missing")
-                else:
-                    print(f"[INFO] Playwright module found but browser launch failed: {e}")
-                return False
-
-    except ImportError:
-        print("[INFO] Playwright Python module not found")
-        return False
-    except Exception as e:
-        print(f"[INFO] Playwright check failed: {e}")
+    if not _playwright_module_importable(project_root):
+        print("[INFO] Playwright Python module not found in project interpreter")
         return False
 
+    ok, _, error_text = _run_playwright_launch_check(project_root)
+    if ok:
+        print("[SUCCESS] Playwright Chromium already installed and working")
+        return True
 
-def install_playwright() -> bool:
+    error_msg = error_text.lower()
+    if "chromium" in error_msg and "not found" in error_msg:
+        print("[INFO] Playwright module found but Chromium browser not installed")
+    elif "font" in error_msg or "library" in error_msg:
+        print("[INFO] Playwright module found but system dependencies may be missing")
+    else:
+        print(f"[INFO] Playwright module found but browser launch failed: {error_text}")
+    return False
+
+
+def install_playwright(project_root: str) -> bool:
     """
     Install Playwright with Chromium browser only.
 
@@ -1555,7 +1712,7 @@ def install_playwright() -> bool:
     print("\n[INFO] Installing Playwright (Chromium only)...")
 
     # Check if Playwright is already installed
-    if check_playwright_already_installed():
+    if check_playwright_already_installed(project_root):
         print("[INFO] Skipping Playwright installation - already complete")
         return True
 
@@ -1809,7 +1966,7 @@ def extract_chromium_zip() -> bool:
         return False
 
 
-def copy_playwright_chromium_to_offline() -> bool:
+def copy_playwright_chromium_to_offline(project_root: str) -> bool:
     """
     Copy Playwright's installed Chromium to browsers/chromium/ for offline use.
     This is a fallback if zip extraction is not available.
@@ -1824,61 +1981,97 @@ def copy_playwright_chromium_to_offline() -> bool:
         print("[INFO] Offline Chromium already installed - skipping")
         return True
 
-    # Get Playwright's Chromium path
     try:
-        if sync_playwright is None:
+        if not _playwright_module_importable(project_root):
             print("[WARNING] Playwright not available - cannot copy Chromium")
             return False
 
-        with sync_playwright() as p:
-            playwright_chromium_path = p.chromium.executable_path
-            if not playwright_chromium_path or not os.path.exists(playwright_chromium_path):
-                print("[WARNING] Playwright Chromium not found - skipping offline copy")
-                return False
+        playwright_chromium_path = _playwright_chromium_executable(project_root)
+        if not playwright_chromium_path:
+            print("[WARNING] Playwright Chromium not found - skipping offline copy")
+            return False
 
-            print(f"[INFO] Found Playwright Chromium at: {playwright_chromium_path}")
+        print(f"[INFO] Found Playwright Chromium at: {playwright_chromium_path}")
 
-            # Find the Chromium directory (parent of executable)
-            chromium_source_dir = os.path.dirname(playwright_chromium_path)
+        chromium_source_dir = os.path.dirname(playwright_chromium_path)
+        if platform.system().lower() == "darwin" and chromium_source_dir.endswith(".app"):
+            chromium_source_dir = os.path.dirname(chromium_source_dir)
 
-            # On macOS, Chromium.app is a bundle
-            if platform.system().lower() == "darwin" and chromium_source_dir.endswith(".app"):
-                chromium_source_dir = os.path.dirname(chromium_source_dir)
+        browsers_path = Path(BROWSERS_DIR)
+        browsers_path.mkdir(exist_ok=True)
 
-            # Create browsers directory if it doesn't exist
-            browsers_path = Path(BROWSERS_DIR)
-            browsers_path.mkdir(exist_ok=True)
+        chromium_dest_dir = Path(CHROMIUM_DIR)
+        if chromium_dest_dir.exists():
+            print("[INFO] Removing existing Chromium installation...")
+            shutil.rmtree(chromium_dest_dir)
 
-            # Remove existing chromium directory if it exists
-            chromium_dest_dir = Path(CHROMIUM_DIR)
-            if chromium_dest_dir.exists():
-                print("[INFO] Removing existing Chromium installation...")
-                shutil.rmtree(chromium_dest_dir)
+        print(f"[INFO] Copying Chromium to {CHROMIUM_DIR}...")
+        print("    This may take a few minutes (~150MB)...")
 
-            # Copy Chromium directory
-            print(f"[INFO] Copying Chromium to {CHROMIUM_DIR}...")
-            print("    This may take a few minutes (~150MB)...")
+        shutil.copytree(chromium_source_dir, chromium_dest_dir)
 
-            shutil.copytree(chromium_source_dir, chromium_dest_dir)
-
-            # Verify installation
-            if check_offline_chromium_installed():
-                print("[SUCCESS] Offline Chromium installation complete!")
-                print(f"[INFO] Chromium is now available at: {CHROMIUM_DIR}")
-                return True
-            else:
-                print("[WARNING] Chromium copied but verification failed")
-                return False
-
-    except ImportError:
-        print("[WARNING] Playwright not available - cannot copy Chromium")
+        if check_offline_chromium_installed():
+            print("[SUCCESS] Offline Chromium installation complete!")
+            print(f"[INFO] Chromium is now available at: {CHROMIUM_DIR}")
+            return True
+        print("[WARNING] Chromium copied but verification failed")
         return False
-    except Exception as e:
-        print(f"[WARNING] Failed to copy Chromium for offline use: {e}")
+
+    except OSError as exc:
+        print(f"[WARNING] Failed to copy Chromium for offline use: {exc}")
         return False
 
 
-def verify_dependencies() -> bool:
+def _dependency_import_statement(module_name: str) -> str:
+    """Return the import target used to verify a dependency."""
+    if module_name == "Crypto":
+        return "Crypto.Cipher"
+    if module_name == "jose":
+        return "jose.jwt"
+    if module_name == "langgraph_checkpoint":
+        return "langgraph.checkpoint"
+    return module_name
+
+
+def _verify_dependency_with_python(
+    python_exe: str,
+    module_name: str,
+    package_name: str,
+    project_root: str,
+) -> Tuple[bool, str, str]:
+    """Verify one dependency import and version using the given interpreter."""
+    import_target = _dependency_import_statement(module_name)
+    import_result = subprocess.run(
+        [python_exe, "-c", f"import {import_target}"],
+        cwd=project_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if import_result.returncode != 0:
+        error_text = (import_result.stderr or import_result.stdout or "Import failed").strip()
+        return False, "", error_text
+
+    version_result = subprocess.run(
+        [
+            python_exe,
+            "-c",
+            (
+                "import importlib.metadata; "
+                f"print(importlib.metadata.version({package_name!r}))"
+            ),
+        ],
+        cwd=project_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if version_result.returncode == 0:
+        return True, version_result.stdout.strip(), ""
+    return True, "unknown", ""
+
+
+def verify_dependencies(project_root: str) -> bool:
     """
     Verify all key dependencies are properly installed.
 
@@ -1889,6 +2082,12 @@ def verify_dependencies() -> bool:
         SetupError: If dependency verification fails
     """
     print("\n[INFO] Verifying all dependencies...")
+
+    if _PIP_PYTHON is None:
+        prepare_pip_python(project_root)
+
+    python_exe = active_python()
+    use_subprocess = os.path.abspath(python_exe) != os.path.abspath(sys.executable)
 
     # Core dependencies to check (production only)
     core_dependencies = CORE_DEPENDENCIES
@@ -1902,6 +2101,21 @@ def verify_dependencies() -> bool:
         print_progress(idx, total_deps, f"Checking {package_name}")
 
         try:
+            if use_subprocess:
+                ok, version, error_text = _verify_dependency_with_python(
+                    python_exe,
+                    module_name,
+                    package_name,
+                    project_root,
+                )
+                if not ok:
+                    print(f"    [ERROR] {package_name:<20} - Import failed: {error_text}")
+                    failed_imports.append(package_name)
+                    continue
+                print(f"    [SUCCESS] {package_name:<20} - {version}")
+                successful_imports.append(package_name)
+                continue
+
             # Handle special cases for packages with different import names
             if module_name == "PIL":
                 importlib.import_module("PIL")
@@ -1934,7 +2148,7 @@ def verify_dependencies() -> bool:
                 importlib.import_module("langchain_openai")
                 version = get_package_version("langchain-openai")
             elif module_name == "langgraph_checkpoint":
-                importlib.import_module("langgraph_checkpoint")
+                importlib.import_module("langgraph.checkpoint")
                 version = get_package_version("langgraph-checkpoint")
             else:
                 importlib.import_module(module_name)
@@ -1957,14 +2171,16 @@ def verify_dependencies() -> bool:
 
     if failed_imports:
         raise SetupError(
-            f"Failed dependencies: {', '.join(failed_imports)}. Please reinstall: pip install -r requirements.txt"
+            "Failed dependencies: "
+            f"{', '.join(failed_imports)}. "
+            f"Reinstall with: {active_python()} -m pip install -r requirements.txt"
         )
 
     print("[SUCCESS] All core dependencies verified successfully!")
     return True
 
 
-def verify_playwright_browsers() -> bool:
+def verify_playwright_browsers(project_root: str) -> bool:
     """
     Verify Playwright browsers are properly installed.
 
@@ -1976,61 +2192,26 @@ def verify_playwright_browsers() -> bool:
     """
     print("\n[INFO] Verifying Playwright browsers...")
 
-    if sync_playwright is None:
-        raise SetupError("Playwright module not importable")
+    if not _playwright_module_importable(project_root):
+        python_exe = active_python()
+        raise SetupError(
+            f"Playwright module not importable in project interpreter ({python_exe}). "
+            f"Reinstall with: {python_exe} -m pip install playwright"
+        )
 
-    try:
-        with sync_playwright() as p:
-            # Check if Chromium is available
-            try:
-                browser = p.chromium.launch(headless=True)
+    ok, version, error_text = _run_playwright_launch_check(project_root)
+    if not ok:
+        print(f"    [ERROR] Chromium browser - Failed to launch: {error_text}")
+        if "font" in error_text.lower() or "library" in error_text.lower():
+            print("    [INFO] This may be a system dependency issue")
+            pfx = get_playwright_cli_prefix()
+            print(f"    [INFO] Try: sudo {pfx} install chromium --with-deps")
+        raise SetupError("Chromium browser verification failed")
 
-                # Try to get version, but don't worry if it fails
-                try:
-                    if hasattr(browser, "version") and callable(browser.version):
-                        version = browser.version()
-                        print(f"    [SUCCESS] Chromium browser - {version}")
-                    elif hasattr(browser, "version"):
-                        version = browser.version
-                        print(f"    [SUCCESS] Chromium browser - {version}")
-                    else:
-                        print("    [SUCCESS] Chromium browser - Working")
-                except Exception:
-                    print("    [SUCCESS] Chromium browser - Working")
-
-                browser.close()
-
-                # Additional verification for system dependencies
-                if platform.system().lower() != "windows":
-                    print("    [INFO] Verifying system dependencies...")
-                    try:
-                        # Test browser launch with system dependency flags
-                        browser = p.chromium.launch(
-                            headless=True,
-                            args=["--no-sandbox", "--disable-dev-shm-usage"],
-                        )
-                        browser.close()
-                        print("    [SUCCESS] System dependencies verified (fonts, libraries)")
-                    except Exception as e:
-                        print(f"    [WARNING] System dependency warning: {e}")
-                        print("    [INFO] This may affect rendering quality but browser should work")
-
-                return True
-
-            except Exception as e:
-                print(f"    [ERROR] Chromium browser - Failed to launch: {e}")
-                if "font" in str(e).lower() or "library" in str(e).lower():
-                    print("    [INFO] This may be a system dependency issue")
-                    pfx = get_playwright_cli_prefix()
-                    print(f"    [INFO] Try: sudo {pfx} install chromium --with-deps")
-                raise SetupError("Chromium browser verification failed") from e
-
-    except SetupError:
-        raise
-    except ImportError as exc:
-        raise SetupError("Playwright module not importable") from exc
-    except Exception as exc:
-        raise SetupError(f"Browser verification failed: {exc}") from exc
+    print(f"    [SUCCESS] Chromium browser - {version}")
+    if platform.system().lower() != "windows":
+        print("    [SUCCESS] System dependencies verified (fonts, libraries)")
+    return True
 
 
 def verify_file_structure() -> bool:
@@ -2429,14 +2610,34 @@ def setup_database_schema(project_root: Path) -> bool:
         return False
 
     print("    [INFO] Running Alembic migrations and seeding organizations...")
+    python_exe = active_python()
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(project_root)
     try:
-        # config.database is importable because Python deps were installed in the
-        # previous step and sys.path already contains the project root.
-        from config.database import init_db  # pylint: disable=import-outside-toplevel
-
-        init_db(seed_organizations=True)
-        print("    [SUCCESS] Database schema initialized and seeded")
-        return True
+        result = subprocess.run(
+            [
+                python_exe,
+                "-c",
+                "from config.database import init_db; init_db(seed_organizations=True)",
+            ],
+            cwd=str(project_root),
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=120,
+        )
+        if result.returncode == 0:
+            print("    [SUCCESS] Database schema initialized and seeded")
+            return True
+        details = (result.stderr or result.stdout or "unknown error").strip()
+        print(f"    [WARNING] Schema initialization failed: {details}")
+        print("    [INFO] Migrations will run automatically when 'python main.py' starts")
+        return False
+    except subprocess.TimeoutExpired:
+        print("    [WARNING] Schema initialization timed out")
+        print("    [INFO] Migrations will run automatically when 'python main.py' starts")
+        return False
     except Exception as exc:  # pylint: disable=broad-except
         print(f"    [WARNING] Schema initialization failed: {exc}")
         print("    [INFO] Migrations will run automatically when 'python main.py' starts")
@@ -2511,8 +2712,10 @@ def print_next_steps() -> None:
         "    4. Optional: python scripts/setup/dashboard_install.py — ip2region xdb, "
         "map/static assets (scripts/setup/setup_ip2region.md)"
     )
-    print("    5. Run: python main.py")
-    print("    6. Open http://localhost:9527 in your browser")
+    print("    5. Activate miniconda (Linux/macOS/WSL):")
+    print("       conda activate mindgraph")
+    print("    6. Run: python main.py")
+    print("    7. Open http://localhost:9527 in your browser")
 
     # Show platform-specific hints
     os_name = platform.system().lower()
@@ -2604,11 +2807,17 @@ def main() -> None:
     }
 
     try:
-        # Step 1: Environment checks
+        # Step 1: Environment checks and miniconda resolution
         print(f"[STEP 1/{SETUP_STEPS}] Environment validation...")
         print_system_info()
         check_python_version()
-        check_pip()
+        if not is_conda_env_active():
+            print(
+                "[INFO] Conda env not active in this shell; "
+                "setup will look for ~/miniconda3/envs/mindgraph when run via sudo"
+            )
+        prepare_pip_python(project_root)
+        check_pip(project_root)
         print("[SUCCESS] Environment validation completed")
 
         # Step 2: Tesseract OCR (system binary)
@@ -2624,7 +2833,7 @@ def main() -> None:
 
         # Step 4: Install Python dependencies
         print(f"\n[STEP 4/{SETUP_STEPS}] Python dependencies...")
-        if install_python_dependencies():
+        if install_python_dependencies(project_root):
             setup_summary["python_deps"] = True
 
         # Step 5: Database schema initialization (Alembic + seed)
@@ -2665,12 +2874,12 @@ def main() -> None:
 
         # If zip extraction didn't work, install via Playwright
         if not chromium_from_zip:
-            if install_playwright():
+            if install_playwright(project_root):
                 setup_summary["playwright"] = True
 
                 # Copy Chromium for offline use (optional, non-blocking)
                 try:
-                    if copy_playwright_chromium_to_offline():
+                    if copy_playwright_chromium_to_offline(project_root):
                         setup_summary["offline_chromium"] = True
                 except Exception as e:
                     print(f"[WARNING] Offline Chromium setup skipped: {e}")
@@ -2685,12 +2894,12 @@ def main() -> None:
 
         # Step 9: Comprehensive verification
         print(f"\n[STEP 9/{SETUP_STEPS}] System verification...")
-        verify_dependencies()
+        verify_dependencies(project_root)
         verify_tesseract_ocr()
         verify_redis_postgres_hints()
-        verify_qdrant_hint()
+        verify_qdrant_hint(project_root)
         verify_fail2ban_hint()
-        verify_playwright_browsers()
+        verify_playwright_browsers(project_root)
         verify_file_structure()
 
         # Cleanup temporary files
@@ -2718,6 +2927,11 @@ def main() -> None:
         print("\n[INFO] Troubleshooting:")
         print("    - Check your internet connection")
         print("    - Ensure you have sufficient disk space")
+        print("    - Activate miniconda: conda activate mindgraph")
+        print(
+            "    - With sudo: conda activate mindgraph && "
+            'sudo -E env PATH="$PATH" "$(which python)" scripts/setup/setup.py'
+        )
         print("    - Try running with administrator privileges if needed")
         os.chdir(original_cwd)
         sys.exit(1)

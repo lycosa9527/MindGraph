@@ -3,9 +3,10 @@
 # Python 3.8+ Required (3.13+ Recommended for Best Async Performance)
 #
 # INSTALLATION INSTRUCTIONS:
-#   1. pip install -r requirements.txt
-#   2. playwright install chromium  # Install Playwright browser binaries
-#   3. Copy .env.example to .env and configure settings
+#   1. conda create -n mindgraph python=3.13 -y && conda activate mindgraph
+#   2. pip install -r requirements.txt
+#   3. playwright install chromium  # Install Playwright browser binaries
+#   4. Copy .env.example to .env and configure settings
 #
 # PRODUCTION DEPLOYMENT NOTES:
 #   - Review and configure all environment variables in .env
@@ -27,10 +28,6 @@ pydantic>=2.13.4,<3.0  # Pin <3 until v3 is released; models use ConfigDict (v3-
 pydantic-settings>=2.14.1
 email-validator>=2.3.0  # Pydantic email validation
 geoip2>=5.2.0  # GeoLite2 Country MMDB (overseas email registration)
-# JetBrains Swot via rse-pyswot GitHub main — requires git for pip. If main moves and pip keeps an old
-# checkout, use: pip install --no-cache-dir -U -r requirements.txt (or --force-reinstall for pyswot).
-# Kikobeats free domains: data/kikobeats_free_email_domains.json (scripts/swot/sync_kikobeats_domains.py).
-pyswot @ git+https://github.com/DIAGNijmegen/rse-pyswot.git@main
 orjson>=3.11.9  # Fast JSON serialization for API responses
 
 # ============================================================================
@@ -123,7 +120,8 @@ celery>=5.6.3  # Background task processing for document uploads (REQUIRED - app
 #   - Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki
 #   - macOS: brew install tesseract
 #   - Linux: apt-get install tesseract-ocr tesseract-ocr-chi-sim (for Chinese support)
-# Note: Qdrant server is REQUIRED. On Linux: sudo python3 scripts/setup/setup.py (docs/QDRANT_SETUP.md)
+# Note: Qdrant server is REQUIRED. On Linux: conda activate mindgraph &&
+#       sudo -E env PATH="$PATH" "$(which python)" scripts/setup/setup.py (docs/QDRANT_SETUP.md)
 #       Then set QDRANT_HOST=localhost:6333 in .env
 # Note: Celery is REQUIRED and requires Redis as broker (already included above).
 #       Application will exit if Celery cannot start or Qdrant is not available.

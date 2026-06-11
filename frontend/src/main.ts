@@ -3,6 +3,7 @@
  */
 import { createApp } from 'vue'
 
+import { registerSW } from 'virtual:pwa-register'
 import { createPinia } from 'pinia'
 
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
@@ -19,8 +20,16 @@ import { isUiLocale } from './i18n/locales'
 import router from './router'
 import { useUIStore } from './stores/ui'
 import { isGuestAuthPath } from './utils/authRedirect'
+import { bindPwaInstallListeners } from './utils/pwaInstall'
 // Styles
 import './styles/index.css'
+
+const pwaDevEnabled = import.meta.env.VITE_PWA_DEV === '1'
+
+if (import.meta.env.PROD || pwaDevEnabled) {
+  registerSW({ immediate: true })
+}
+bindPwaInstallListeners()
 
 async function bootstrap(): Promise<void> {
   const app = createApp(App)

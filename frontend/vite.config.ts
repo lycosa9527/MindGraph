@@ -8,6 +8,7 @@ import { homedir } from 'os'
 import { resolve, dirname, join } from 'path'
 import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
+import { VitePWA } from 'vite-plugin-pwa'
 import { visualizer } from 'rollup-plugin-visualizer'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -75,6 +76,7 @@ function resolveWatchConfig(projectRoot: string) {
 
 const devHmr = resolveHmrConfig(devPort, devHost)
 const devWatch = resolveWatchConfig(__dirname)
+const isPwaDev = process.env.VITE_PWA_DEV === '1'
 
 // Read version from VERSION file (single source of truth)
 const version = readFileSync(resolve(__dirname, '../VERSION'), 'utf-8').trim()
@@ -155,6 +157,60 @@ export default defineConfig({
     Components({
       dts: 'src/components.d.ts',
       resolvers: [elementPlusResolver],
+    }),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'robots.txt', 'apple-touch-icon.png'],
+      manifest: {
+        name: 'MindGraph',
+        short_name: 'MindGraph',
+        description: 'AI-powered mind mapping and teaching platform',
+        theme_color: '#1c1917',
+        background_color: '#1c1917',
+        display: 'standalone',
+        orientation: 'any',
+        start_url: '/',
+        scope: '/',
+        id: '/',
+        icons: [
+          {
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: isPwaDev
+          ? []
+          : ['**/*.{js,css,html,ico,png,svg,woff2,woff,webmanifest}'],
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [
+          /^\/api/,
+          /^\/ws/,
+          /^\/static/,
+          /^\/health/,
+          /^\/thinking_mode/,
+        ],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+      },
+      devOptions: {
+        enabled: isPwaDev,
+        suppressWarnings: isPwaDev,
+      },
     }),
     ...(process.env.ANALYZE === '1'
       ? [

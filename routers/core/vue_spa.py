@@ -247,6 +247,8 @@ async def vue_catch_all(path: str):
                 media_type = "image/webp"
             elif path.endswith(".json"):
                 media_type = "application/json"
+            elif path.endswith(".webmanifest"):
+                media_type = "application/manifest+json"
             elif path.endswith(".ico"):
                 media_type = "image/x-icon"
 

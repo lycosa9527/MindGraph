@@ -4,6 +4,7 @@ import {
   canViewDataCenterTab,
   canViewUsersTab,
   fallbackCapabilitiesForRole,
+  hasSuperadminPanelAccess,
   isDataCenterTabReadOnly,
   roleHasPanelAccess,
   tabEditCapability,
@@ -12,6 +13,13 @@ import {
 import { visibleDataCenterViews } from '@/composables/admin/adminDataCenterViews'
 
 describe('adminCapabilities', () => {
+  it('superadmin can edit organizations and settings', () => {
+    const caps = fallbackCapabilitiesForRole('superadmin')
+    expect(caps).toContain('tab.organizations.view')
+    expect(caps).toContain('tab.organizations.edit')
+    expect(hasSuperadminPanelAccess(caps)).toBe(true)
+  })
+
   it('school_admin can view school dashboard and users caps only', () => {
     const caps = fallbackCapabilitiesForRole('school_admin')
     expect(caps).toContain('tab.school_dashboard.view')

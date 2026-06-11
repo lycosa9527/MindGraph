@@ -556,16 +556,6 @@ ERRORS = {
         "en": "The email address format is invalid. Please check and try again.",
         "az": "E-poçt ünvanı formatı etibarsızdır. Yoxlayın və yenidən cəhd edin.",
     },
-    "email_not_academic_domain": {
-        "zh": "请使用学校或教育机构提供的官方邮箱地址。",
-        "en": "Please use an official school or educational institution email address.",
-        "az": "Rəsmi məktəb və ya təhsil müəssisəsi e-poçt ünvanından istifadə edin.",
-    },
-    "email_swot_unavailable": {
-        "zh": "学术邮箱校验服务不可用。请联系管理员或稍后再试。",
-        "en": "Academic email verification is unavailable. Contact support or try again later.",
-        "az": "Akademik e-poçt yoxlaması əlçatan deyil. Dəstəklə əlaqə saxlayın.",
-    },
     "email_code_format_invalid": {
         "zh": "验证码必须为 6 位数字。",
         "en": "The verification code must be exactly 6 digits.",

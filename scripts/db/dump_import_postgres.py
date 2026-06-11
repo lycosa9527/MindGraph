@@ -36,6 +36,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
+from sqlalchemy import inspect, text
+
 from config.database import DATABASE_URL, engine, init_db, libpq_database_url
 
 try:

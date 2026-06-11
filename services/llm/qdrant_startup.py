@@ -105,7 +105,8 @@ def init_qdrant_sync() -> bool:
                 "  QDRANT_URL=http://localhost:6333",
                 "",
                 "Install Qdrant (Linux):",
-                "  sudo python3 scripts/setup/setup.py",
+                '  conda activate mindgraph && sudo -E env PATH="$PATH" '
+                '"$(which python)" scripts/setup/setup.py',
                 "  (see docs/QDRANT_SETUP.md)",
                 "",
                 "Or download from: https://github.com/qdrant/qdrant/releases",

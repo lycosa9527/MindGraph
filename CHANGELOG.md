@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.37] - 2026-06-11
+
+> **PWA install, miniconda setup runtime, PostgreSQL fresh-install bootstrap, admin org-edit permissions, and removal of SWOT academic-email enforcement.**
+
+### Added
+
+- **PWA — installable web app** — [`vite-plugin-pwa`](frontend/vite.config.ts) manifest, Workbox service worker (`registerType: autoUpdate`), apple-touch and maskable icons ([`generate-pwa-icons.mjs`](frontend/scripts/generate-pwa-icons.mjs)); `npm run dev:pwa` for local install testing; SPA serves `.webmanifest` as `application/manifest+json` ([`vue_spa.py`](routers/core/vue_spa.py)).
+- **PWA — install UI** — Sidebar account menu and mobile account page expose “Add to desktop”; captures `beforeinstallprompt`, iOS/desktop/dev hints ([`pwaInstall.ts`](frontend/src/utils/pwaInstall.ts), [`AppSidebarAccountFooter.vue`](frontend/src/components/sidebar/AppSidebarAccountFooter.vue), [`MobileAccountPage.vue`](frontend/src/pages/mobile/MobileAccountPage.vue)).
+- **Setup — conda runtime** — [`conda_runtime.py`](scripts/setup/conda_runtime.py) resolves the active `mindgraph` miniconda env, runs pip/Playwright as the project user under sudo, and rejects PEP 668 externally-managed system Python.
+- **PostgreSQL — server reachability probe** — [`ensure_postgresql_server_reachable()`](scripts/db/pg_ensure.py) checks host/port before MindGraph RLS roles exist (fresh install).
+- **RLS bootstrap — peer auth + database create** — Distro PostgreSQL via `sudo -u postgres` unix socket first; auto-`createdb` when the application database is missing ([`rls_roles_bootstrap.py`](scripts/db/rls_roles_bootstrap.py)).
+- **Tests** — PWA install eligibility and prompt flow ([`pwaInstall.spec.ts`](frontend/tests/pwaInstall.spec.ts)); overseas registration message keys without academic-email copy ([`test_overseas_registration_messages.py`](tests/test_overseas_registration_messages.py)).
+
+### Changed
+
+- **Setup — miniconda-first workflow** — [`setup.py`](scripts/setup/setup.py) uses project conda Python for pip, Playwright, and Qdrant client checks; README, [`requirements.txt`](requirements.txt), [`docs/QDRANT_SETUP.md`](docs/QDRANT_SETUP.md), and launch hints document `conda activate mindgraph` + `sudo -E env PATH="$PATH" "$(which python)"`.
+- **Migrations CLI — fresh install** — When roles are not connected yet, probe PostgreSQL reachability instead of failing on credential probe ([`run_migrations.py`](scripts/db/run_migrations.py)).
+- **Overseas registration — any email** — Registration and email-code flows always allow any valid non-mainland-China address; UI copy uses generic email labels ([`registration_overseas.py`](routers/auth/registration_overseas.py), [`useLoginModal.ts`](frontend/src/composables/auth/useLoginModal.ts), [`overseas_registration_messages.py`](utils/auth/overseas_registration_messages.py)).
+- **Auth mode API** — Removed `overseas_education_email_required` from `GET /api/auth/mode` ([`public.py`](routers/auth/public.py), [`auth.ts`](frontend/src/stores/auth.ts)).
+- **Admin — organization edit permissions** — School org tier/extra-seat fields and trend modal General tab honor `tab.organizations.edit` instead of a blanket read-only panel ([`AdminSchoolOrgGeneralTab.vue`](frontend/src/components/admin/AdminSchoolOrgGeneralTab.vue), [`AdminSchoolsTab.vue`](frontend/src/components/admin/AdminSchoolsTab.vue), [`AdminTrendChartModal.vue`](frontend/src/components/admin/AdminTrendChartModal.vue), [`adminCapabilities.ts`](frontend/src/utils/adminCapabilities.ts)).
+- **i18n — PWA install strings** — Add-to-desktop label and platform install hints across locales ([`auth.ts`](frontend/src/locales/messages/en/auth.ts), [`common.ts`](frontend/src/locales/messages/en/common.ts)).
+- **systemd template** — Comment clarifies miniconda env Python path ([`mindgraph.service.template`](scripts/setup/mindgraph.service.template)).
+
+### Removed
+
+- **SWOT academic email** — `pyswot` dependency, [`swot_academic.py`](services/auth/swot_academic.py), [`swot_config.py`](utils/auth/swot_config.py), Kikobeats sync scripts, `SWOT_ACADEMIC_EMAIL_REQUIRED` env setting, and related bundled error messages ([`env_settings.py`](models/domain/env_settings.py), [`bundled_messages.py`](models/domain/message_catalog/bundled_messages.py)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.37).
+
 ## [5.117.36] - 2026-06-10
 
 > **Mobile canvas/Kitty TypeScript fixes, Kitty mic hold feedback, CI Python deps, and collab test alignment.**

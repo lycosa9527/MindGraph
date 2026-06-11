@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * LoginModal - Auth modal: password login, register (phone or overseas email; education optional), OTP login
+ * LoginModal - Auth modal: password login, register (phone or overseas email), OTP login
  * (SMS code or email verification code), and password reset (SMS or email code).
  *
  * Design: Swiss Design (Modern Minimalism)
