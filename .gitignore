@@ -204,6 +204,13 @@ browsers/
 # Vue Frontend Build (v5.0.0+)
 # Ignore entire dist folder - build on server during deployment
 frontend/dist/
+# vite-plugin-pwa dev service worker output (npm run dev:pwa)
+frontend/dev-dist/
+# vitest coverage reports (npm test -- --coverage)
+frontend/coverage/
+# TypeScript / ESLint incremental caches
+*.tsbuildinfo
+.eslintcache
 
 # Runtime static files and user content
 # - announcement images, community thumbnails (.png), community specs (.json)
