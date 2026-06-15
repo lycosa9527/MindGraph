@@ -583,7 +583,7 @@ export default {
   'admin.roleControlDesc':
     'Manage superadmin access. Users with this role can access the full management panel.',
   'admin.roleControlDescPlatformBd':
-    'Manage operations access. Operations can view global data and school invite management.',
+    'Manage teaching researcher access. Teaching researchers can view global data and school invite management.',
   'admin.roleControlDescExpert':
     'Manage expert access. Experts can create schools and manage organizations in their invite scope.',
   'admin.roleControlDescManagers':
@@ -638,16 +638,22 @@ export default {
   'admin.schoolAddMemberNamePlaceholder': 'Enter name',
   'admin.schoolAddMemberPhone': 'Mobile number',
   'admin.schoolAddMemberPhonePlaceholder': 'Enter mobile number',
+  'admin.schoolAddMemberContact': 'Mobile number or email',
+  'admin.schoolAddMemberContactPlaceholder': 'Enter mobile number or email',
+  'admin.schoolAddMemberInvalidPhoneForName': "{name}'s mobile number format is invalid",
+  'admin.schoolAddMemberInvalidEmailForName': "{name}'s email format is invalid",
+  'admin.schoolAddMemberInvalidNameForName':
+    '{name} is not a valid name (at least 2 characters, no digits)',
   'admin.schoolAddMemberType': 'Type',
   'admin.schoolAddMemberBatchTitle': 'Batch import',
   'admin.schoolAddMemberBatchHint':
     'Copy rows from Excel, WPS, or Word, then click here and paste (Ctrl+V).',
   'admin.schoolAddMemberBatchPastePlaceholder':
-    'Paste spreadsheet rows here — phone and name in two columns; either order works',
+    'Paste spreadsheet rows here — mobile/email and name in two columns; either order works',
   'admin.schoolAddMemberBatchPasteHint':
-    'Tip: select rows in Excel/WPS/Word, copy, then paste here; phone and name are detected automatically.',
+    'Tip: select rows in Excel/WPS/Word, copy, then paste here; mobile numbers and emails are detected automatically.',
   'admin.schoolAddMemberBatchInvalidPaste':
-    'Could not read pasted rows. Use two columns: mobile number and name (either order).',
+    'Could not read pasted rows. Use two columns: mobile number or email, and name (either order).',
   'admin.schoolAddMemberBatchTooLarge': 'At most {max} members per batch ({count} pasted)',
   'admin.schoolAddMemberBatchDuplicatesRemoved': '({count} duplicates removed)',
   'admin.schoolAddMemberBatchEmpty': 'Paste member rows before importing',
@@ -658,9 +664,30 @@ export default {
   'admin.schoolAddMemberSubmit': 'Add',
   'admin.schoolAddMemberSuccess': 'Member added',
   'admin.schoolAddMemberBatchSuccess': 'Added {created} members',
+  'admin.schoolAddMemberBatchSuccessWithSkipped':
+    'Added {created} members ({skipped} already registered, skipped)',
+  'admin.schoolAddMemberBatchAllSkipped':
+    'All {skipped} contacts were already registered — no new members added',
   'admin.schoolAddMemberBatchPartial': 'Added {created} members; {failed} failed',
+  'admin.schoolAddMemberBatchResultTitle': 'Import results',
+  'admin.schoolAddMemberBatchResultSuccess': 'Successfully added {created} members',
+  'admin.schoolAddMemberBatchResultPartial':
+    'Added {created} members. {failed} could not be added — see details below.',
+  'admin.schoolAddMemberBatchResultAllFailed':
+    'No members were added. {failed} failed — see details below.',
+  'admin.schoolAddMemberBatchFailedListTitle': '{count} failed',
+  'admin.schoolAddMemberBatchFailedReason': 'Reason',
+  'admin.schoolAddMemberBatchResultDone': 'Done',
+  'admin.schoolAddMemberBatchInvalidPhoneForName': "{name}'s mobile number format is invalid",
+  'admin.schoolAddMemberBatchInvalidEmailForName': "{name}'s email format is invalid",
+  'admin.schoolAddMemberBatchInvalidNameForName':
+    '{name} is not a valid name (at least 2 characters, no digits)',
+  'admin.schoolAddMemberBatchInvalidContactOnLine':
+    'Row {line}: invalid mobile number or email format',
+  'admin.schoolAddMemberBatchInvalidRowsTitle': '{count} rows skipped (format errors)',
   'admin.schoolAddMemberCreateError': 'Failed to add member',
-  'admin.schoolAddMemberRequired': 'Fill in name and mobile number, or paste a batch',
+  'admin.schoolAddMemberRequired':
+    'Fill in name and mobile number or email, or paste a batch',
   'admin.schoolUserUnlock': 'Unlock',
   'admin.schoolUserUnlockConfirm':
     'Unlock this account? Failed-login lock and attempt counter will be cleared.',
@@ -781,7 +808,7 @@ export default {
   'admin.thisWeek': 'This Week',
   'admin.title': 'Admin Panel',
   'admin.dataCenter': 'Data Center',
-  'admin.dataCenterOperations': 'Operations',
+  'admin.dataCenterOperations': 'Platform Overview',
   'admin.dataCenterUsage': 'Overall Usage',
   'admin.inviteUsers': 'Invite Users',
   'admin.billing': 'Orders & Billing',

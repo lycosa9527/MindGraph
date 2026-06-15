@@ -14,13 +14,19 @@ import {
 } from '@/composables/queries'
 import { useAdminOrgScope } from '@/composables/admin/useAdminOrgScope'
 import { useAuthStore } from '@/stores'
+import type { SchoolMemberBatchFailureItem } from '@/types/api'
 import { httpErrorDetail } from '@/utils/httpErrorDetail'
 import {
   dedupeMemberRows,
+  formatMemberContact,
+  isValidMemberContact,
+  isValidMemberEmail,
   isValidMemberName,
-  isValidMemberPhone,
+  looksLikeEmail,
+  normalizeMemberEmail,
   normalizeMemberPhone,
   parseExcelMemberPaste,
+  type ParsedMemberInvalidRow,
 } from '@/utils/parseBatchMemberPaste'
 
 const visible = defineModel<boolean>('visible', { required: true })
@@ -44,7 +50,27 @@ const { effectiveOrgName } = useAdminOrgScope()
 const createSchoolUser = useCreateAdminSchoolUser()
 const createSchoolUsersBatch = useCreateAdminSchoolUsersBatch()
 
+interface BatchImportResultView {
+  createdCount: number
+  failedCount: number
+  failedItems: SchoolMemberBatchFailureItem[]
+}
+
+type BatchSubmitOutcome = 'success' | 'partial' | 'all_failed' | 'error'
+
+interface BatchSubmitResult {
+  outcome: BatchSubmitOutcome
+  createdCount: number
+}
+
+const batchImportResult = ref<BatchImportResultView | null>(null)
+
+const showingBatchResult = computed(() => batchImportResult.value !== null)
+
 const modalTitle = computed(() => {
+  if (showingBatchResult.value) {
+    return t('admin.schoolAddMemberBatchResultTitle')
+  }
   const school = (
     props.schoolName ||
     effectiveOrgName.value ||
@@ -58,7 +84,7 @@ const modalTitle = computed(() => {
 })
 
 const nameEdit = ref('')
-const phoneEdit = ref('')
+const contactEdit = ref('')
 const batchPasteText = ref('')
 const batchExpanded = ref(false)
 const batchPasteFocused = ref(false)
@@ -66,8 +92,12 @@ const pasteTextareaRef = ref<HTMLTextAreaElement | null>(null)
 const submitting = ref(false)
 
 const canSubmitSingle = computed(
-  () => isValidMemberPhone(phoneEdit.value.trim()) && isValidMemberName(nameEdit.value)
+  () => isValidMemberContact(contactEdit.value) && isValidMemberName(nameEdit.value)
 )
+
+const batchInvalidRows = computed(() => batchParseResult.value.invalidRows ?? [])
+
+const batchInvalidPreviewRows = computed(() => batchInvalidRows.value.slice(0, 8))
 
 const batchParseResult = computed(() => parseExcelMemberPaste(batchPasteText.value))
 
@@ -85,6 +115,34 @@ const batchPreviewCount = computed(() => batchRows.value.length)
 const batchParseErrorKey = computed(() => batchParseResult.value.errorKey)
 
 const batchSkippedInvalidCount = computed(() => batchParseResult.value.skippedInvalidCount ?? 0)
+
+const batchResultSummaryKey = computed(() => {
+  const result = batchImportResult.value
+  if (!result) {
+    return null
+  }
+  if (result.failedCount === 0) {
+    return 'admin.schoolAddMemberBatchResultSuccess'
+  }
+  if (result.createdCount > 0) {
+    return 'admin.schoolAddMemberBatchResultPartial'
+  }
+  return 'admin.schoolAddMemberBatchResultAllFailed'
+})
+
+const batchResultSummaryTone = computed(() => {
+  const result = batchImportResult.value
+  if (!result) {
+    return 'neutral'
+  }
+  if (result.failedCount === 0) {
+    return 'success'
+  }
+  if (result.createdCount > 0) {
+    return 'warning'
+  }
+  return 'error'
+})
 
 const canSubmitBatch = computed(
   () =>
@@ -109,10 +167,44 @@ const submitLabel = computed(() =>
 
 function resetForm(): void {
   nameEdit.value = ''
-  phoneEdit.value = ''
+  contactEdit.value = ''
   batchPasteText.value = ''
   batchExpanded.value = false
   batchPasteFocused.value = false
+  batchImportResult.value = null
+}
+
+function buildMemberBody(name: string, contact: string): Record<string, unknown> {
+  const trimmedContact = contact.trim()
+  if (isValidMemberEmail(trimmedContact)) {
+    return {
+      name: name.trim(),
+      email: normalizeMemberEmail(trimmedContact),
+      role: 'teacher',
+    }
+  }
+  return {
+    name: name.trim(),
+    phone: normalizeMemberPhone(trimmedContact),
+    role: 'teacher',
+  }
+}
+
+function formatFailureContact(item: SchoolMemberBatchFailureItem): string {
+  return item.email ?? item.phone ?? ''
+}
+
+function notifyInvalidContact(name: string, contact: string): void {
+  const displayName = name.trim() || contact.trim()
+  if (looksLikeEmail(contact)) {
+    notify.error(t('admin.schoolAddMemberInvalidEmailForName', { name: displayName }))
+    return
+  }
+  notify.error(t('admin.schoolAddMemberInvalidPhoneForName', { name: displayName }))
+}
+
+function notifyInvalidRow(row: ParsedMemberInvalidRow): void {
+  notify.error(t(row.errorKey, row.errorParams ?? {}))
 }
 
 function closeModal(): void {
@@ -144,14 +236,21 @@ function onPasteFromClipboard(event: ClipboardEvent): void {
 }
 
 async function submitSingle(): Promise<boolean> {
+  const name = nameEdit.value.trim()
+  const contact = contactEdit.value.trim()
+  if (!isValidMemberName(name)) {
+    notify.error(t('admin.schoolAddMemberInvalidNameForName', { name: name || '—' }))
+    return false
+  }
+  if (!isValidMemberContact(contact)) {
+    notifyInvalidContact(name, contact)
+    return false
+  }
+
   try {
     await createSchoolUser.mutateAsync({
       organizationId: props.orgId,
-      body: {
-        name: nameEdit.value.trim(),
-        phone: normalizeMemberPhone(phoneEdit.value),
-        role: 'teacher',
-      },
+      body: buildMemberBody(name, contact),
     })
     notify.success(t('admin.schoolAddMemberSuccess'))
     return true
@@ -162,43 +261,57 @@ async function submitSingle(): Promise<boolean> {
   }
 }
 
-async function submitBatch(): Promise<boolean> {
+async function submitBatch(): Promise<BatchSubmitResult> {
   const parseError = batchParseErrorKey.value
   if (parseError) {
     notify.error(t(parseError, batchParseResult.value.errorParams ?? {}))
-    return false
+    return { outcome: 'error', createdCount: 0 }
   }
 
-  const members = batchRows.value.map((row) => ({
-    phone: row.phone,
-    name: row.name,
-    role: 'teacher',
-  }))
+  const members = batchRows.value.map((row) => {
+    const base = { name: row.name, role: 'teacher' as const }
+    if (row.contactType === 'email' && row.email) {
+      return { ...base, email: row.email }
+    }
+    return { ...base, phone: row.phone }
+  })
 
   try {
-    const data = (await createSchoolUsersBatch.mutateAsync({
+    const data = await createSchoolUsersBatch.mutateAsync({
       organizationId: props.orgId,
       body: { members },
-    })) as {
-      message?: string
-      created_count?: number
-      failed_count?: number
-    }
+    })
     const created = data.created_count ?? 0
     const failed = data.failed_count ?? 0
-    if (failed > 0 && created > 0) {
-      notify.warning(t('admin.schoolAddMemberBatchPartial', { created, failed }))
-    } else if (failed > 0) {
-      notify.error(data.message || t('admin.schoolAddMemberCreateError'))
-      return false
-    } else {
-      notify.success(t('admin.schoolAddMemberBatchSuccess', { created }))
+    const skipped = data.skipped_count ?? 0
+    const failedItems = data.failed ?? []
+
+    if (failed > 0) {
+      batchImportResult.value = {
+        createdCount: created,
+        failedCount: failed,
+        failedItems,
+      }
+      return {
+        outcome: created > 0 ? 'partial' : 'all_failed',
+        createdCount: created,
+      }
     }
-    return true
+
+    if (created > 0 && skipped > 0) {
+      notify.success(t('admin.schoolAddMemberBatchSuccessWithSkipped', { created, skipped }))
+    } else if (created > 0) {
+      notify.success(t('admin.schoolAddMemberBatchSuccess', { created }))
+    } else if (skipped > 0) {
+      notify.success(t('admin.schoolAddMemberBatchAllSkipped', { skipped }))
+    } else {
+      notify.success(t('admin.schoolAddMemberBatchSuccess', { created: 0 }))
+    }
+    return { outcome: 'success', createdCount: created }
   } catch (err) {
     const message = err instanceof Error ? err.message : t('admin.schoolAddMemberCreateError')
     notify.error(message)
-    return false
+    return { outcome: 'error', createdCount: 0 }
   }
 }
 
@@ -208,23 +321,52 @@ async function handleSubmit(): Promise<void> {
   }
   submitting.value = true
   try {
-    let ok = false
     if (batchExpanded.value && batchPreviewCount.value > 0) {
-      ok = await submitBatch()
-    } else if (canSubmitSingle.value) {
-      ok = await submitSingle()
-    } else if (batchExpanded.value) {
-      notify.error(t('admin.schoolAddMemberBatchEmpty'))
+      if (batchInvalidRows.value.length > 0) {
+        notifyInvalidRow(batchInvalidRows.value[0]!)
+      }
+      const { outcome, createdCount } = await submitBatch()
+      if (outcome === 'success') {
+        visible.value = false
+        if (createdCount > 0) {
+          emit('created')
+        }
+      } else if (outcome === 'partial') {
+        emit('created')
+      }
+      return
+    }
+
+    if (canSubmitSingle.value) {
+      const ok = await submitSingle()
+      if (ok) {
+        visible.value = false
+        emit('created')
+      }
+      return
+    }
+
+    if (batchExpanded.value) {
+      const invalid = batchInvalidRows.value[0]
+      if (invalid) {
+        notifyInvalidRow(invalid)
+      } else {
+        notify.error(t('admin.schoolAddMemberBatchEmpty'))
+      }
+    } else if (!canSubmitSingle.value && contactEdit.value.trim() && nameEdit.value.trim()) {
+      notifyInvalidContact(nameEdit.value, contactEdit.value)
+    } else if (!canSubmitSingle.value && nameEdit.value.trim()) {
+      notify.error(t('admin.schoolAddMemberInvalidNameForName', { name: nameEdit.value.trim() }))
     } else {
       notify.error(t('admin.schoolAddMemberRequired'))
-    }
-    if (ok) {
-      visible.value = false
-      emit('created')
     }
   } finally {
     submitting.value = false
   }
+}
+
+function closeBatchResult(): void {
+  visible.value = false
 }
 
 watch(visible, (open) => {
@@ -270,6 +412,7 @@ watch(visible, (open) => {
             </div>
 
             <form
+              v-if="!showingBatchResult"
               class="p-8 space-y-5 overflow-y-auto"
               @submit.prevent="handleSubmit"
             >
@@ -295,18 +438,18 @@ watch(visible, (open) => {
                 <div>
                   <label
                     class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                    for="add-member-phone"
+                    for="add-member-contact"
                   >
-                    {{ t('admin.schoolAddMemberPhone') }}
+                    {{ t('admin.schoolAddMemberContact') }}
                     <span class="text-stone-400">*</span>
                   </label>
                   <input
-                    id="add-member-phone"
-                    v-model="phoneEdit"
-                    type="tel"
-                    inputmode="tel"
-                    autocomplete="tel"
-                    :placeholder="t('admin.schoolAddMemberPhonePlaceholder')"
+                    id="add-member-contact"
+                    v-model="contactEdit"
+                    type="text"
+                    inputmode="email"
+                    autocomplete="username"
+                    :placeholder="t('admin.schoolAddMemberContactPlaceholder')"
                     class="school-add-member-input"
                   />
                 </div>
@@ -382,15 +525,15 @@ watch(visible, (open) => {
                   class="school-add-member-preview"
                 >
                   <div class="school-add-member-preview__head">
-                    <span>{{ t('admin.schoolAddMemberPhone') }}</span>
+                    <span>{{ t('admin.schoolAddMemberContact') }}</span>
                     <span>{{ t('admin.schoolAddMemberName') }}</span>
                   </div>
                   <div
                     v-for="row in batchPreviewRows"
-                    :key="`${row.line}-${row.phone}`"
+                    :key="`${row.line}-${formatMemberContact(row)}`"
                     class="school-add-member-preview__row"
                   >
-                    <span>{{ row.phone }}</span>
+                    <span>{{ formatMemberContact(row) }}</span>
                     <span>{{ row.name }}</span>
                   </div>
                   <p
@@ -400,6 +543,51 @@ watch(visible, (open) => {
                     {{
                       t('admin.schoolAddMemberBatchPreviewMore', {
                         count: batchPreviewCount - batchPreviewRows.length,
+                      })
+                    }}
+                  </p>
+                </div>
+
+                <div
+                  v-if="batchInvalidRows.length > 0"
+                  class="school-add-member-invalid-panel"
+                >
+                  <p class="school-add-member-invalid-panel__title">
+                    {{
+                      t('admin.schoolAddMemberBatchInvalidRowsTitle', {
+                        count: batchInvalidRows.length,
+                      })
+                    }}
+                  </p>
+                  <div class="school-add-member-preview school-add-member-preview--invalid">
+                    <div
+                      class="school-add-member-preview__head school-add-member-preview__head--invalid"
+                    >
+                      <span>{{ t('admin.schoolAddMemberContact') }}</span>
+                      <span>{{ t('admin.schoolAddMemberName') }}</span>
+                      <span>{{ t('admin.schoolAddMemberBatchFailedReason') }}</span>
+                    </div>
+                    <div class="school-add-member-invalid-panel__list">
+                      <div
+                        v-for="row in batchInvalidPreviewRows"
+                        :key="`invalid-${row.line}-${row.contactRaw}`"
+                        class="school-add-member-preview__row school-add-member-preview__row--invalid"
+                      >
+                        <span>{{ row.contactRaw || '—' }}</span>
+                        <span>{{ row.name || '—' }}</span>
+                        <span class="school-add-member-preview__reason">
+                          {{ t(row.errorKey, row.errorParams ?? {}) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <p
+                    v-if="batchInvalidRows.length > batchInvalidPreviewRows.length"
+                    class="school-add-member-preview__more"
+                  >
+                    {{
+                      t('admin.schoolAddMemberBatchPreviewMore', {
+                        count: batchInvalidRows.length - batchInvalidPreviewRows.length,
                       })
                     }}
                   </p>
@@ -427,6 +615,64 @@ watch(visible, (open) => {
                 </button>
               </div>
             </form>
+
+            <div
+              v-else-if="batchImportResult"
+              class="p-8 space-y-5 overflow-y-auto"
+            >
+              <p
+                class="school-add-member-result-summary"
+                :class="`school-add-member-result-summary--${batchResultSummaryTone}`"
+              >
+                {{
+                  t(batchResultSummaryKey ?? 'admin.schoolAddMemberBatchResultSuccess', {
+                    created: batchImportResult.createdCount,
+                    failed: batchImportResult.failedCount,
+                  })
+                }}
+              </p>
+
+              <div
+                v-if="batchImportResult.failedCount > 0"
+                class="school-add-member-failed-panel"
+              >
+                <p class="school-add-member-failed-panel__title">
+                  {{
+                    t('admin.schoolAddMemberBatchFailedListTitle', {
+                      count: batchImportResult.failedCount,
+                    })
+                  }}
+                </p>
+                <div class="school-add-member-preview school-add-member-preview--failed">
+                  <div class="school-add-member-preview__head school-add-member-preview__head--failed">
+                    <span>{{ t('admin.schoolAddMemberContact') }}</span>
+                    <span>{{ t('admin.schoolAddMemberName') }}</span>
+                    <span>{{ t('admin.schoolAddMemberBatchFailedReason') }}</span>
+                  </div>
+                  <div class="school-add-member-failed-panel__list">
+                    <div
+                      v-for="item in batchImportResult.failedItems"
+                      :key="`${item.index}-${formatFailureContact(item)}`"
+                      class="school-add-member-preview__row school-add-member-preview__row--failed"
+                    >
+                      <span>{{ formatFailureContact(item) }}</span>
+                      <span>{{ item.name }}</span>
+                      <span class="school-add-member-preview__reason">{{ item.detail }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end pt-1">
+                <button
+                  type="button"
+                  class="school-add-member-btn school-add-member-btn--primary"
+                  @click="closeBatchResult"
+                >
+                  {{ t('admin.schoolAddMemberBatchResultDone') }}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -611,6 +857,99 @@ watch(visible, (open) => {
   border-top: 1px solid #f5f5f4;
   font-size: 0.75rem;
   color: #78716c;
+}
+
+.school-add-member-result-summary {
+  margin: 0;
+  padding: 0.875rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.school-add-member-result-summary--success {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.school-add-member-result-summary--warning {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.school-add-member-result-summary--error {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.school-add-member-failed-panel__title {
+  margin: 0 0 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #44403c;
+}
+
+.school-add-member-failed-panel__list {
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.school-add-member-invalid-panel {
+  margin-top: 0.75rem;
+}
+
+.school-add-member-invalid-panel__title {
+  margin: 0 0 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #b45309;
+}
+
+.school-add-member-invalid-panel__list {
+  max-height: 12rem;
+  overflow-y: auto;
+}
+
+.school-add-member-preview--invalid {
+  border-color: #fed7aa;
+}
+
+.school-add-member-preview__head--invalid,
+.school-add-member-preview__row--invalid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr);
+}
+
+.school-add-member-preview__head--invalid {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.school-add-member-preview__row--invalid {
+  align-items: start;
+}
+
+.school-add-member-preview--failed {
+  border-color: #fecaca;
+}
+
+.school-add-member-preview__head--failed,
+.school-add-member-preview__row--failed {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr);
+}
+
+.school-add-member-preview__head--failed {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.school-add-member-preview__row--failed {
+  align-items: start;
+}
+
+.school-add-member-preview__reason {
+  color: #b91c1c;
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 .school-add-member-btn {

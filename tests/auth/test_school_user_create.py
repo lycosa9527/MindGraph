@@ -12,6 +12,7 @@ from services.auth.school_user_create import (
     normalize_school_member_phone,
     parse_school_member_batch,
     parse_school_member_input,
+    try_parse_school_member_item,
     validate_school_member_phone,
 )
 from utils.auth.school_tier_defs import SCHOOL_TIER_LITE
@@ -34,14 +35,46 @@ def test_validate_school_member_phone_normalizes_before_checking() -> None:
     assert validate_school_member_phone("+86 138-0013-8000", "en") == "13800138000"
 
 
-def test_parse_school_member_input_normalizes_fields() -> None:
+def test_parse_school_member_input_normalizes_phone_fields() -> None:
     member = parse_school_member_input(
         {"phone": "13812345678", "name": "  Zhang San  ", "role": "teacher"},
         "en",
     )
     assert member.phone == "13812345678"
+    assert member.email is None
     assert member.name == "Zhang San"
     assert member.role == "teacher"
+
+
+def test_parse_school_member_input_accepts_email() -> None:
+    member = parse_school_member_input(
+        {"email": "Teacher@Example.com", "name": "Alice", "role": "teacher"},
+        "en",
+    )
+    assert member.phone is None
+    assert member.email == "teacher@example.com"
+    assert member.name == "Alice"
+
+
+def test_try_parse_school_member_item_reports_invalid_phone_for_name() -> None:
+    member, failure = try_parse_school_member_item(
+        {"phone": "123", "name": "Alice"},
+        "en",
+    )
+    assert member is None
+    assert failure is not None
+    assert "Alice" in failure.detail
+    assert failure.name == "Alice"
+
+
+def test_try_parse_school_member_item_reports_invalid_email_for_name() -> None:
+    member, failure = try_parse_school_member_item(
+        {"email": "not-an-email", "name": "Bob"},
+        "en",
+    )
+    assert member is None
+    assert failure is not None
+    assert "Bob" in failure.detail
 
 
 def test_parse_school_member_input_rejects_manager_role_for_school_admin_actor() -> None:
@@ -63,8 +96,8 @@ def test_parse_school_member_input_allows_manager_role_for_superadmin() -> None:
     assert member.role == ROLE_SCHOOL_ADMIN
 
 
-def test_parse_school_member_batch_deduplicates_phones() -> None:
-    members = parse_school_member_batch(
+def test_parse_school_member_batch_deduplicates_contacts() -> None:
+    members, failed = parse_school_member_batch(
         [
             {"phone": "13812345678", "name": "Alice"},
             {"phone": "13812345678", "name": "Bob"},
@@ -75,6 +108,20 @@ def test_parse_school_member_batch_deduplicates_phones() -> None:
     assert len(members) == 2
     assert members[0].phone == "13812345678"
     assert members[1].phone == "13812345679"
+    assert failed == []
+
+
+def test_parse_school_member_batch_collects_invalid_rows() -> None:
+    members, failed = parse_school_member_batch(
+        [
+            {"phone": "13812345678", "name": "Alice"},
+            {"phone": "123", "name": "Bob"},
+        ],
+        "en",
+    )
+    assert len(members) == 1
+    assert len(failed) == 1
+    assert failed[0].name == "Bob"
 
 
 def test_parse_school_member_batch_rejects_too_many_rows() -> None:
@@ -89,7 +136,7 @@ async def test_assert_batch_member_capacity_allows_extra_seats(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     org = type("Org", (), {"id": 1, "school_tier": SCHOOL_TIER_LITE, "extra_member_seats": 10})()
-    members = [SchoolMemberInput(phone="13812345678", name="New", role="teacher")]
+    members = [SchoolMemberInput(phone="13812345678", email=None, name="New", role="teacher")]
 
     async def _count(_db, _org_id):
         return 50
@@ -107,7 +154,7 @@ async def test_assert_batch_member_capacity_rejects_at_effective_cap(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     org = type("Org", (), {"id": 1, "school_tier": SCHOOL_TIER_LITE, "extra_member_seats": 10})()
-    members = [SchoolMemberInput(phone="13812345678", name="New", role="teacher")]
+    members = [SchoolMemberInput(phone="13812345678", email=None, name="New", role="teacher")]
 
     async def _count(_db, _org_id):
         return 60

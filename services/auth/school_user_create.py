@@ -9,13 +9,14 @@ import secrets
 import unicodedata
 from typing import Any
 
+from email_validator import EmailNotValidError, validate_email as ev_validate
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import Organization, User
 from models.domain.messages import Language, Messages
-from services.auth.phone_uniqueness import any_user_id_with_phone
+from services.auth.phone_uniqueness import any_user_id_with_email, any_user_id_with_phone
 from utils.auth import hash_password
 from utils.auth.role_constants import ROLE_SCHOOL_ADMIN, ROLE_SUPERADMIN, ROLE_TEACHER, normalize_role
 from utils.auth.school_tier import (
@@ -35,15 +36,21 @@ MAX_MEMBER_NAME_LENGTH = 200
 
 @dataclass(frozen=True)
 class SchoolMemberInput:
-    phone: str
+    phone: str | None
+    email: str | None
     name: str
     role: str
+
+    @property
+    def contact_key(self) -> str:
+        return self.phone or self.email or ""
 
 
 @dataclass(frozen=True)
 class SchoolMemberBatchFailure:
     index: int
-    phone: str
+    phone: str | None
+    email: str | None
     name: str
     detail: str
 
@@ -74,6 +81,26 @@ def validate_school_member_phone(phone: str, lang: Language) -> str:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=Messages.error("phone_format_invalid", lang=lang),
+        )
+    return normalized
+
+
+def try_normalize_school_member_email(email: str) -> str | None:
+    value = str(email or "").strip()
+    if not value:
+        return None
+    try:
+        return ev_validate(value, check_deliverability=False).normalized
+    except EmailNotValidError:
+        return None
+
+
+def validate_school_member_email(email: str, lang: Language) -> str:
+    normalized = try_normalize_school_member_email(email)
+    if not normalized:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=Messages.error("email_invalid_format", lang=lang),
         )
     return normalized
 
@@ -119,6 +146,101 @@ def validate_school_member_role(
     return role
 
 
+def _batch_failure_from_item(
+    index: int,
+    item: dict[str, Any],
+    name: str,
+    detail: str,
+) -> SchoolMemberBatchFailure:
+    raw_phone = item.get("phone")
+    raw_email = item.get("email")
+    phone = str(raw_phone).strip() if raw_phone is not None and str(raw_phone).strip() else None
+    email = str(raw_email).strip() if raw_email is not None and str(raw_email).strip() else None
+    return SchoolMemberBatchFailure(
+        index=index,
+        phone=phone,
+        email=email,
+        name=name,
+        detail=detail,
+    )
+
+
+def try_parse_school_member_item(
+    item: dict[str, Any],
+    lang: Language,
+    *,
+    actor_role: str | None = None,
+) -> tuple[SchoolMemberInput | None, SchoolMemberBatchFailure | None]:
+    name_raw = str(item.get("name", "") or "").strip()
+    raw_phone = item.get("phone")
+    raw_email = item.get("email")
+    has_phone = raw_phone is not None and str(raw_phone).strip()
+    has_email = raw_email is not None and str(raw_email).strip()
+
+    if has_phone and has_email:
+        display_name = name_raw or str(raw_phone)
+        return None, _batch_failure_from_item(
+            0,
+            item,
+            display_name,
+            Messages.error("school_user_batch_both_contact", lang, display_name),
+        )
+
+    if not has_phone and not has_email:
+        display_name = name_raw or Messages.error("school_user_batch_unknown_member", lang)
+        return None, _batch_failure_from_item(
+            0,
+            item,
+            display_name,
+            Messages.error("school_user_batch_missing_contact", lang, display_name),
+        )
+
+    try:
+        name = validate_school_member_name(name_raw, lang)
+    except HTTPException:
+        display_name = name_raw or str(raw_phone or raw_email or "")
+        return None, _batch_failure_from_item(
+            0,
+            item,
+            display_name,
+            Messages.error("school_user_batch_invalid_name_for_name", lang, display_name),
+        )
+
+    phone: str | None = None
+    email: str | None = None
+    if has_phone:
+        normalized_phone = normalize_school_member_phone(str(raw_phone))
+        if (
+            len(normalized_phone) != 11
+            or not normalized_phone.isdigit()
+            or not normalized_phone.startswith("1")
+        ):
+            return None, _batch_failure_from_item(
+                0,
+                item,
+                name,
+                Messages.error("school_user_batch_invalid_phone_for_name", lang, name),
+            )
+        phone = normalized_phone
+    else:
+        normalized_email = try_normalize_school_member_email(str(raw_email))
+        if not normalized_email:
+            return None, _batch_failure_from_item(
+                0,
+                item,
+                name,
+                Messages.error("school_user_batch_invalid_email_for_name", lang, name),
+            )
+        email = normalized_email
+
+    try:
+        role = validate_school_member_role(item.get("role"), lang, actor_role=actor_role)
+    except HTTPException as exc:
+        return None, _batch_failure_from_item(0, item, name, str(exc.detail))
+
+    return SchoolMemberInput(phone=phone, email=email, name=name, role=role), None
+
+
 def parse_school_member_input(
     raw: dict[str, Any],
     lang: Language,
@@ -130,10 +252,18 @@ def parse_school_member_input(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=Messages.error("invalid_request", lang=lang),
         )
-    phone = validate_school_member_phone(str(raw.get("phone", "")), lang)
-    name = validate_school_member_name(str(raw.get("name", "")), lang)
-    role = validate_school_member_role(raw.get("role"), lang, actor_role=actor_role)
-    return SchoolMemberInput(phone=phone, name=name, role=role)
+    member, failure = try_parse_school_member_item(raw, lang, actor_role=actor_role)
+    if failure is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=failure.detail,
+        )
+    if member is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=Messages.error("invalid_request", lang=lang),
+        )
+    return member
 
 
 def parse_school_member_batch(
@@ -141,7 +271,7 @@ def parse_school_member_batch(
     lang: Language,
     *,
     actor_role: str | None = None,
-) -> list[SchoolMemberInput]:
+) -> tuple[list[SchoolMemberInput], list[SchoolMemberBatchFailure]]:
     if not isinstance(raw_members, list) or not raw_members:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -154,24 +284,55 @@ def parse_school_member_batch(
         )
 
     parsed: list[SchoolMemberInput] = []
-    seen_phones: set[str] = set()
+    failed: list[SchoolMemberBatchFailure] = []
+    seen_contacts: set[str] = set()
     for index, item in enumerate(raw_members):
         if not isinstance(item, dict):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=Messages.error("school_user_batch_invalid_row", lang, index + 1),
+            failed.append(
+                SchoolMemberBatchFailure(
+                    index=index + 1,
+                    phone=None,
+                    email=None,
+                    name="",
+                    detail=Messages.error("school_user_batch_invalid_row", lang, index + 1),
+                )
             )
-        member = parse_school_member_input(item, lang, actor_role=actor_role)
-        if member.phone in seen_phones:
             continue
-        seen_phones.add(member.phone)
+
+        member, failure = try_parse_school_member_item(item, lang, actor_role=actor_role)
+        if failure is not None:
+            failed.append(
+                SchoolMemberBatchFailure(
+                    index=index + 1,
+                    phone=failure.phone,
+                    email=failure.email,
+                    name=failure.name,
+                    detail=failure.detail,
+                )
+            )
+            continue
+        if member is None or not member.contact_key:
+            failed.append(
+                SchoolMemberBatchFailure(
+                    index=index + 1,
+                    phone=None,
+                    email=None,
+                    name=str(item.get("name", "") or ""),
+                    detail=Messages.error("school_user_batch_invalid_row", lang, index + 1),
+                )
+            )
+            continue
+        if member.contact_key in seen_contacts:
+            continue
+        seen_contacts.add(member.contact_key)
         parsed.append(member)
-    if not parsed:
+
+    if not parsed and not failed:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=Messages.error("school_user_batch_empty", lang=lang),
         )
-    return parsed
+    return parsed, failed
 
 
 async def assert_batch_member_capacity(
@@ -207,10 +368,15 @@ async def create_school_member_user(
     member: SchoolMemberInput,
     lang: Language,
 ) -> User:
-    if await any_user_id_with_phone(member.phone) is not None:
+    if member.phone and await any_user_id_with_phone(member.phone) is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=Messages.error("phone_already_registered_other", lang, member.phone),
+        )
+    if member.email and await any_user_id_with_email(member.email) is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=Messages.error("email_already_registered_other", lang, member.email),
         )
 
     if member.role == ROLE_SCHOOL_ADMIN:
@@ -220,6 +386,7 @@ async def create_school_member_user(
     placeholder_password = hash_password(secrets.token_urlsafe(32))
     new_user = User(
         phone=member.phone,
+        email=member.email,
         password_hash=placeholder_password,
         name=member.name,
         organization_id=org.id,
@@ -237,31 +404,48 @@ async def create_school_member_batch(
     org: Organization,
     members: list[SchoolMemberInput],
     lang: Language,
-) -> tuple[list[User], list[SchoolMemberBatchFailure]]:
-    await assert_batch_member_capacity(db, org, members, lang)
+) -> tuple[list[User], list[SchoolMemberBatchFailure], int]:
+    phones = [member.phone for member in members if member.phone]
+    emails = [member.email for member in members if member.email]
+    contact_filters = []
+    if phones:
+        contact_filters.append(User.phone.in_(phones))
+    if emails:
+        contact_filters.append(User.email.in_(emails))
 
-    phones = [member.phone for member in members]
-    existing_rows = (await db.execute(select(User.phone).where(User.phone.in_(phones)))).scalars().all()
-    existing_phones = {str(phone) for phone in existing_rows if phone}
+    existing_phones: set[str] = set()
+    existing_emails: set[str] = set()
+    if contact_filters:
+        existing_rows = (
+            await db.execute(select(User.phone, User.email).where(or_(*contact_filters)))
+        ).all()
+        for phone, email in existing_rows:
+            if phone:
+                existing_phones.add(str(phone))
+            if email:
+                existing_emails.add(str(email))
+
+    skipped_count = 0
+    pending: list[SchoolMemberInput] = []
+    for member in members:
+        if member.phone and member.phone in existing_phones:
+            skipped_count += 1
+            continue
+        if member.email and member.email in existing_emails:
+            skipped_count += 1
+            continue
+        pending.append(member)
+
+    await assert_batch_member_capacity(db, org, pending, lang)
 
     created: list[User] = []
     failed: list[SchoolMemberBatchFailure] = []
     placeholder_password = hash_password(secrets.token_urlsafe(32))
 
-    for index, member in enumerate(members):
-        if member.phone in existing_phones:
-            failed.append(
-                SchoolMemberBatchFailure(
-                    index=index + 1,
-                    phone=member.phone,
-                    name=member.name,
-                    detail=Messages.error("phone_already_registered_other", lang, member.phone),
-                )
-            )
-            continue
-
+    for member in pending:
         new_user = User(
             phone=member.phone,
+            email=member.email,
             password_hash=placeholder_password,
             name=member.name,
             organization_id=org.id,
@@ -271,21 +455,28 @@ async def create_school_member_batch(
         )
         db.add(new_user)
         created.append(new_user)
-        existing_phones.add(member.phone)
+        if member.phone:
+            existing_phones.add(member.phone)
+        if member.email:
+            existing_emails.add(member.email)
 
     if created:
         await db.flush()
-    return created, failed
+    return created, failed, skipped_count
 
 
 def batch_result_payload(
     created: list[User],
     failed: list[SchoolMemberBatchFailure],
     lang: Language,
+    *,
+    skipped_count: int = 0,
 ) -> dict[str, Any]:
     created_count = len(created)
     failed_count = len(failed)
-    if failed_count == 0:
+    if failed_count == 0 and created_count == 0 and skipped_count > 0:
+        message = Messages.success("school_user_batch_all_skipped", lang, skipped_count)
+    elif failed_count == 0:
         message = Messages.success("school_user_batch_created", lang, created_count)
     elif created_count == 0:
         message = Messages.error("school_user_batch_all_failed", lang)
@@ -301,10 +492,12 @@ def batch_result_payload(
         "message": message,
         "created_count": created_count,
         "failed_count": failed_count,
+        "skipped_count": skipped_count,
         "created": [
             {
                 "id": user.id,
                 "phone": user.phone,
+                "email": user.email,
                 "name": user.name,
                 "role": normalize_role(getattr(user, "role", ROLE_TEACHER)),
             }
@@ -314,6 +507,7 @@ def batch_result_payload(
             {
                 "index": item.index,
                 "phone": item.phone,
+                "email": item.email,
                 "name": item.name,
                 "detail": item.detail,
             }

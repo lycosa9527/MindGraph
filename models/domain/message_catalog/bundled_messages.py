@@ -1175,9 +1175,49 @@ ERRORS = {
         "az": "{} üzv əlavə edildi; {} uğursuz",
     },
     "school_user_batch_all_failed": {
-        "zh": "未能添加任何成员，请检查手机号是否已注册",
-        "en": "No members were added; check whether phones are already registered",
-        "az": "Heç bir üzv əlavə edilmədi; telefonların qeydiyyatda olub-olmadığını yoxlayın",
+        "zh": "未能添加任何成员，请检查手机号/邮箱格式",
+        "en": "No members were added; check mobile/email format",
+        "az": "Heç bir üzv əlavə edilmədi; telefon/e-poçt formatını yoxlayın",
+    },
+    "school_user_batch_all_skipped": {
+        "zh": "所选 {} 个联系人均已注册，未添加新成员",
+        "en": "All {} contacts were already registered — no new members added",
+        "az": "Bütün {} əlaqə artıq qeydiyyatdadır — yeni üzv əlavə edilmədi",
+    },
+    "school_user_batch_invalid_phone_for_name": {
+        "zh": "{} 的手机号格式不正确",
+        "en": "{}'s mobile number format is invalid",
+        "az": "{} üçün telefon formatı yanlışdır",
+    },
+    "school_user_batch_invalid_email_for_name": {
+        "zh": "{} 的邮箱格式不正确",
+        "en": "{}'s email format is invalid",
+        "az": "{} üçün e-poçt formatı yanlışdır",
+    },
+    "school_user_batch_invalid_name_for_name": {
+        "zh": "{} 的姓名无效（至少2个字符且不含数字）",
+        "en": "{} is not a valid name (at least 2 characters, no digits)",
+        "az": "{} etibarlı ad deyil (ən azı 2 simvol, rəqəmsiz)",
+    },
+    "school_user_batch_missing_contact": {
+        "zh": "{} 缺少有效的手机号或邮箱",
+        "en": "{} is missing a valid mobile number or email",
+        "az": "{} üçün etibarlı telefon və ya e-poçt yoxdur",
+    },
+    "school_user_batch_both_contact": {
+        "zh": "{} 不能同时填写手机号和邮箱",
+        "en": "{} cannot include both a mobile number and an email",
+        "az": "{} eyni sətirdə telefon və e-poçt ola bilməz",
+    },
+    "school_user_batch_unknown_member": {
+        "zh": "未知成员",
+        "en": "Unknown member",
+        "az": "Naməlum üzv",
+    },
+    "email_already_registered_other": {
+        "zh": "邮箱 {} 已被其他用户注册",
+        "en": "Email {} is already registered by another user",
+        "az": "E-poçt {} artıq başqa istifadəçi tərəfindən qeydiyyatdan keçib",
     },
     "phone_cannot_be_empty": {"zh": "手机号不能为空", "en": "Phone cannot be empty", "az": "Telefon boş ola bilməz"},
     "phone_format_invalid": {

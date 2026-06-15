@@ -99,7 +99,7 @@ def is_admin(current_user) -> bool:
 
 
 def is_platform_bd(current_user) -> bool:
-    """Operations (运营) — read-only global dashboard."""
+    """Teaching researcher (教研员) — read-only global dashboard."""
     return role_in(current_user, frozenset({ROLE_PLATFORM_BD}))
 
 
@@ -109,7 +109,7 @@ def is_expert(current_user) -> bool:
 
 
 def is_platform_level(current_user) -> bool:
-    """Any platform-tier role: superadmin, operations (platform_bd), or expert."""
+    """Any platform-tier role: superadmin, teaching researcher (platform_bd), or expert."""
     if is_superadmin(current_user):
         return True
     return role_in(current_user, PLATFORM_LEVEL_ROLES)
@@ -154,7 +154,7 @@ def is_admin_or_manager(current_user) -> bool:
     """
     Elevated org/platform admin access for shared admin routes.
 
-    Superadmin and school_admin only — operations (platform_bd) and expert excluded.
+    Superadmin and school_admin only — teaching researcher (platform_bd) and expert excluded.
     """
     return is_superadmin(current_user) or is_school_admin(current_user)
 

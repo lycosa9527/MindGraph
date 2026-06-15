@@ -7,7 +7,7 @@ export type AuthMode = 'standard' | 'bayi' | 'enterprise'
 /**
  * User roles (canonical DB slugs):
  * - superadmin: Full platform admin (超级管理员)
- * - platform_bd: Operations — read-only global dashboard (运营)
+ * - platform_bd: Teaching researcher — read-only global dashboard (教研员)
  * - expert: Platform expert — B2B school invites (own orgs) (专家)
  * - school_admin: Organization manager — own-school dashboard + user mgmt (学校管理员)
  * - teacher: B2B school member (教师用户 / 学校版)

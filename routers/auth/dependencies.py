@@ -305,7 +305,7 @@ def require_global_users_read(
     scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_VIEW)),
     lang: Language = Depends(get_language_dependency),
 ) -> AdminScope:
-    """Global user list (superadmin read, operations read-only)."""
+    """Global user list (superadmin read, teaching researcher read-only)."""
     _assert_global_scope(scope, lang)
     return scope
 
@@ -371,7 +371,7 @@ def require_global_data_center_read(
     scope: AdminScope = Depends(require_panel_capability(CAP_TAB_DATA_CENTER_VIEW)),
     lang: Language = Depends(get_language_dependency),
 ) -> AdminScope:
-    """Global platform stats: superadmin or operations (read-only)."""
+    """Global platform stats: superadmin or teaching researcher (read-only)."""
     if CAP_SCOPE_GLOBAL not in scope.capabilities:
         error_msg = Messages.error("admin_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)

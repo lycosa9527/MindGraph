@@ -88,7 +88,7 @@ def is_superadmin_role_only(role: str) -> bool:
 
 
 def panel_read_only_for_user(current_user) -> bool:
-    """Whether the user has read-only panel access (operations, etc.)."""
+    """Whether the user has read-only panel access (teaching researcher, etc.)."""
     if is_superadmin(current_user):
         return False
     role = normalize_role(getattr(current_user, "role", None))
@@ -97,7 +97,7 @@ def panel_read_only_for_user(current_user) -> bool:
 
 
 async def load_expert_invited_org_ids(actor_id: int) -> frozenset[int]:
-    """Organization IDs created via invite flow by this expert or operations user."""
+    """Organization IDs created via invite flow by this expert or teaching researcher."""
     from utils.db.session_open import system_rls_session
 
     async with system_rls_session() as db:
@@ -321,7 +321,7 @@ def panel_org_table_filter(scope: AdminScope) -> ColumnElement:
 
 
 def invite_org_filter(scope: AdminScope, column: Any) -> ColumnElement:
-    """SQLAlchemy filter for invite-tab org lists (includes operations invited scope)."""
+    """SQLAlchemy filter for invite-tab org lists (includes teaching researcher invited scope)."""
     if CAP_SCOPE_INVITED_ORGS not in scope.capabilities:
         return org_filter(scope, column)
     if column is Organization.id:

@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.38] - 2026-06-15
+
+> **School member email import, PWA cross-platform install hardening, dynamic manifest, and teaching-researcher role labels.**
+
+### Added
+
+- **School members — email contact** — Single and batch school user create accept mobile number or email; uniqueness checks for both ([`school_user_create.py`](services/auth/school_user_create.py), [`phone_uniqueness.py`](services/auth/phone_uniqueness.py), [`school_users.py`](routers/auth/admin/school_users.py)).
+- **School members — batch import UX** — Paste parser detects email columns; invalid-row preview; post-import result screen with per-row failure reasons ([`parseBatchMemberPaste.ts`](frontend/src/utils/parseBatchMemberPaste.ts), [`SchoolAddMemberDialog.vue`](frontend/src/components/school/SchoolAddMemberDialog.vue)).
+- **School members — batch skip registered** — Already-registered phones/emails are skipped (not failed); `skipped_count` and all-skipped success message ([`school_user_create.py`](services/auth/school_user_create.py), [`bundled_messages.py`](models/domain/message_catalog/bundled_messages.py)).
+- **PWA — dynamic manifest** — `GET /manifest.webmanifest` serves origin-aware absolute `start_url`/`id` behind proxies ([`pwa_manifest.py`](services/infrastructure/utils/pwa_manifest.py), [`vue_spa.py`](routers/core/vue_spa.py)).
+- **PWA — cross-platform install** — Surface detection (iOS, Android, Safari macOS, Chromium, Firefox); secure-origin guard; Android/Safari macOS/insecure hints ([`pwaInstall.ts`](frontend/src/utils/pwaInstall.ts), [`usePwaInstall.ts`](frontend/src/composables/usePwaInstall.ts)).
+- **PWA — manifest metadata** — `lang`, `dir`, `display_override`, `categories`, and `prefer_related_applications` in Vite manifest ([`vite.config.ts`](frontend/vite.config.ts)).
+- **Tests** — PWA platform detection and composable ([`pwaInstall.platforms.spec.ts`](frontend/tests/pwaInstall.platforms.spec.ts), [`usePwaInstall.spec.ts`](frontend/tests/usePwaInstall.spec.ts)); backend manifest origin ([`test_pwa_manifest.py`](tests/test_pwa_manifest.py)); email batch paste and create ([`parseBatchMemberPaste.spec.ts`](frontend/tests/parseBatchMemberPaste.spec.ts), [`test_school_user_create.py`](tests/auth/test_school_user_create.py)).
+
+### Changed
+
+- **Admin — role labels** — UI copy renames “Operations” to “Teaching Researcher” (教研员); Data Center tab “Platform Overview” ([`sidebar.ts`](frontend/src/locales/messages/en/sidebar.ts), [`admin.ts`](frontend/src/locales/messages/en/admin.ts), [`roles.py`](utils/auth/roles.py)).
+- **PWA — install UI** — Sidebar and mobile account share [`usePwaInstall`](frontend/src/composables/usePwaInstall.ts); `apple-mobile-web-app-capable` meta ([`index.html`](frontend/index.html)).
+- **i18n — school add member & PWA** — Contact/email batch strings and platform install hints across en/zh/zh-tw ([`admin.ts`](frontend/src/locales/messages/en/admin.ts), [`auth.ts`](frontend/src/locales/messages/en/auth.ts)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.38).
+
 ## [5.117.37] - 2026-06-11
 
 > **PWA install, miniconda setup runtime, PostgreSQL fresh-install bootstrap, admin org-edit permissions, and removal of SWOT academic-email enforcement.**

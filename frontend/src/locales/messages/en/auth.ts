@@ -11,12 +11,18 @@ export default {
   'auth.updateLogEmpty': 'No release notes are available.',
   'auth.downloadDesktopShortcut': 'Add to desktop',
   'auth.pwaIosInstallHint':
-    'Tap the Share button in Safari, then choose “Add to Home Screen”.',
+    'Tap Share in Safari, Chrome, or Edge, then choose “Add to Home Screen”.',
+  'auth.pwaAndroidInstallHint':
+    'Open the browser menu (⋮) and tap Install app or Add to Home screen.',
+  'auth.pwaSafariMacInstallHint':
+    'In Safari, choose File → Add to Dock, or Share → Add to Dock (macOS Sonoma or later).',
   'auth.pwaDesktopInstallHint':
-    'Use the browser menu (⋮) and choose Install MindGraph, or look for the install icon in the address bar.',
+    'Use the browser menu (⋮) or the install icon in the address bar (Chrome, Edge, or Brave).',
   'auth.pwaInstallSuccess': 'MindGraph has been added to your desktop.',
   'auth.pwaDevInstallHint':
     'PWA install is off in normal dev mode. Use production build (npm run build + backend) or run npm run dev:pwa, then use Chrome/Edge on HTTPS or localhost.',
+  'auth.pwaInsecureOriginHint':
+    'Open MindGraph in the browser at its HTTPS address (not a saved HTML file) before installing to desktop.',
   'auth.backToLogin': 'Back to Login',
   'auth.captcha': 'Captcha',
   'auth.captchaLength4': 'Please enter the 4-character captcha',

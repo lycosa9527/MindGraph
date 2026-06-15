@@ -58,3 +58,14 @@ async def other_user_id_with_email(email: str, exclude_user_id: int) -> Optional
     if row is None:
         return None
     return int(row)
+
+
+async def any_user_id_with_email(email: str) -> Optional[int]:
+    """If any user has this email, return that user's id; otherwise None."""
+    async with system_rls_session() as db:
+        row = (
+            await db.execute(select(User.id).where(User.email == email).limit(1))
+        ).scalar_one_or_none()
+    if row is None:
+        return None
+    return int(row)

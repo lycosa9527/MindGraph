@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Users tab — global user management (superadmin / operations read-only).
+ * Users tab — global user management (superadmin / teaching researcher read-only).
  */
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'

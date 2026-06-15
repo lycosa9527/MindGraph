@@ -46,3 +46,19 @@ export interface SSEMessage {
   data: unknown
   id?: string
 }
+
+export interface SchoolMemberBatchFailureItem {
+  index: number
+  phone?: string | null
+  email?: string | null
+  name: string
+  detail: string
+}
+
+export interface SchoolMemberBatchImportResponse {
+  message?: string
+  created_count?: number
+  failed_count?: number
+  skipped_count?: number
+  failed?: SchoolMemberBatchFailureItem[]
+}

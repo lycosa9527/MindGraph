@@ -76,4 +76,11 @@ export default {
   'sidebar.templateResources': '模板資源',
   'sidebar.userSubtitleDefault': 'MindGraph專業版',
   'sidebar.account': '賬號設置',
+  'sidebar.roleSuperAdmin': '超級管理員',
+  'sidebar.rolePlatformAdmin': '教研員',
+  'sidebar.roleExpert': '專家',
+  'sidebar.roleSchoolAdmin': '學校管理員',
+  'sidebar.roleSchoolEdition': '學校版',
+  'sidebar.roleTrialEdition': '體驗版',
+  'sidebar.roleSuperMember': '超級會員',
 } as const

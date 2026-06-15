@@ -10,9 +10,13 @@ All Rights Reserved.
 import logging
 import os
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 
+from services.infrastructure.utils.pwa_manifest import (
+    build_pwa_manifest,
+    public_site_origin_from_request,
+)
 from services.infrastructure.utils.spa_handler import VUE_DIST_DIR
 
 
@@ -205,6 +209,16 @@ async def vue_askonce():
 async def vue_debateverse():
     """Serve Vue SPA for debateverse route."""
     return await _serve_index()
+
+
+@router.get("/manifest.webmanifest")
+async def vue_pwa_manifest(request: Request):
+    """Serve PWA manifest with absolute URLs tied to the public site origin."""
+    origin = public_site_origin_from_request(request)
+    return JSONResponse(
+        build_pwa_manifest(origin),
+        media_type="application/manifest+json",
+    )
 
 
 @router.get("/{path:path}")

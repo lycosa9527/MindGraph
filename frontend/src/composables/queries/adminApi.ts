@@ -17,6 +17,7 @@ import type {
   UserDetailData,
 } from '@/composables/teacherUsage/teacherUsageTypes'
 import type { FeatureOrgAccessEntry } from '@/stores/featureFlags'
+import type { SchoolMemberBatchImportResponse } from '@/types/api'
 import { apiRequest, apiUpload } from '@/utils/apiClient'
 import { httpErrorDetail } from '@/utils/httpErrorDetail'
 
@@ -415,7 +416,7 @@ export async function createAdminSchoolUser(
 export async function createAdminSchoolUsersBatch(
   body: Record<string, unknown>,
   organizationId: number
-): Promise<Record<string, unknown>> {
+): Promise<SchoolMemberBatchImportResponse> {
   return adminFetchJson(
     `/api/auth/admin/school/users/batch${buildQuery({ organization_id: organizationId })}`,
     { method: 'POST', body: JSON.stringify(body) }

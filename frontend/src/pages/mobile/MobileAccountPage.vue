@@ -22,7 +22,8 @@ import {
 import { ChangePasswordModal, ChangePhoneModal } from '@/components/auth'
 import AvatarSelectModal from '@/components/auth/AvatarSelectModal.vue'
 import SetPasswordWithSmsModal from '@/components/auth/SetPasswordWithSmsModal.vue'
-import { useLanguage, useNotifications } from '@/composables'
+import { useLanguage } from '@/composables'
+import { usePwaInstall } from '@/composables/usePwaInstall'
 import {
   PROMPT_LANGUAGE_OPTIONS,
   getLocalesForInterfaceLanguagePicker,
@@ -32,17 +33,12 @@ import { useAuthStore } from '@/stores'
 import type { Language, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
 import { getRolePillStyle } from '@/utils/userRoleDisplay'
-import {
-  canShowPwaInstallUi,
-  promptPwaInstall,
-  pwaInstallAvailable,
-} from '@/utils/pwaInstall'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
 const { t } = useLanguage()
-const notify = useNotifications()
+const { showPwaInstall, handlePwaInstall } = usePwaInstall(t)
 
 const user = computed(() => authStore.user)
 const userAvatar = computed(() => {
@@ -79,10 +75,6 @@ const showChangePhone = ref(false)
 const showChangePassword = ref(false)
 const showSetPasswordSms = ref(false)
 const showAvatarSelect = ref(false)
-const showPwaInstall = computed(() => {
-  void pwaInstallAvailable.value
-  return canShowPwaInstallUi()
-})
 
 const needsSetLoginPassword = computed(() => user.value?.loginPasswordSet === false)
 
@@ -168,25 +160,6 @@ function togglePromptLang() {
 async function handleLogout() {
   await authStore.logout()
   router.push('/auth')
-}
-
-async function handlePwaInstall(): Promise<void> {
-  const result = await promptPwaInstall()
-  if (result === 'installed') {
-    notify.success(t('auth.pwaInstallSuccess'))
-    return
-  }
-  if (result === 'ios-hint') {
-    notify.info(t('auth.pwaIosInstallHint'))
-    return
-  }
-  if (result === 'dev-hint') {
-    notify.info(t('auth.pwaDevInstallHint'))
-    return
-  }
-  if (result === 'desktop-hint') {
-    notify.info(t('auth.pwaDesktopInstallHint'))
-  }
 }
 </script>
 

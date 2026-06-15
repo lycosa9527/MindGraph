@@ -8,12 +8,19 @@ export default {
   'auth.updateLogLoadError': '暫時無法加載更新日誌，請稍後重試。',
   'auth.updateLogEmpty': '暫無更新說明。',
   'auth.downloadDesktopShortcut': '添加到桌面',
-  'auth.pwaIosInstallHint': '在 Safari 中點分享，再選擇「添加到主屏幕」。',
+  'auth.pwaIosInstallHint':
+    '在 Safari、Chrome 或 Edge 中點分享，再選擇「添加到主屏幕」。',
+  'auth.pwaAndroidInstallHint':
+    '打開瀏覽器選單（⋮），選擇「安裝應用」或「添加到主屏幕」。',
+  'auth.pwaSafariMacInstallHint':
+    '在 Safari 中選擇「檔案 → 加入 Dock」，或使用「共享 → 加入 Dock」（macOS Sonoma 及以上）。',
   'auth.pwaDesktopInstallHint':
-    '請打開瀏覽器選單（⋮），選擇安裝 MindGraph，或使用地址欄旁的安裝圖標。',
+    '請打開瀏覽器選單（⋮），或使用地址欄旁的安裝圖標（Chrome、Edge 或 Brave）。',
   'auth.pwaInstallSuccess': 'MindGraph 已添加到桌面。',
   'auth.pwaDevInstallHint':
     '一般開發模式未啟用 PWA。請使用生產構建（npm run build 後由後端提供），或執行 npm run dev:pwa，並用 Chrome/Edge 在 HTTPS 或 localhost 下開啟。',
+  'auth.pwaInsecureOriginHint':
+    '請先在瀏覽器中開啟 MindGraph 的 HTTPS 網址（不要開啟已保存的 HTML 檔案），再添加到桌面。',
   'auth.backToLogin': '返回登錄',
   'auth.captcha': '驗證碼',
   'auth.captchaLength4': '請輸入4位驗證碼',

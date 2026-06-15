@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-_SCHOOL_USER_ALLOWED_BODY_KEYS = frozenset({"name", "phone"})
+_SCHOOL_USER_ALLOWED_BODY_KEYS = frozenset({"name", "phone", "email"})
 
 
 async def _load_user_in_school_or_not_found(
@@ -225,6 +225,7 @@ async def create_school_user(
         "user": {
             "id": new_user.id,
             "phone": new_user.phone,
+            "email": new_user.email,
             "name": new_user.name,
             "role": new_user.role,
         },
@@ -254,7 +255,7 @@ async def create_school_users_batch(
             detail=Messages.error("organization_not_found", lang, org_id),
         )
 
-    members = parse_school_member_batch(
+    members, parse_failed = parse_school_member_batch(
         request.get("members"),
         lang,
         actor_role=getattr(current_user, "role", None),
@@ -262,7 +263,8 @@ async def create_school_users_batch(
     sd_log = get_school_dashboard_logger(logger, actor_id=current_user.id, org_id=org_id)
 
     try:
-        created, failed = await create_school_member_batch(db, org, members, lang)
+        created, create_failed, skipped_count = await create_school_member_batch(db, org, members, lang)
+        failed = parse_failed + create_failed
         if created:
             await db.commit()
             for user in created:
@@ -295,12 +297,13 @@ async def create_school_users_batch(
             )
 
     sd_log.info(
-        "[SchoolDashboard] batch created count=%s failed=%s",
+        "[SchoolDashboard] batch created count=%s failed=%s skipped=%s",
         len(created),
         len(failed),
+        skipped_count,
         extra={"sd_event": "school_user_batch_created"},
     )
-    return batch_result_payload(created, failed, lang)
+    return batch_result_payload(created, failed, lang, skipped_count=skipped_count)
 
 
 @router.get("/admin/school/users/{user_id}")
