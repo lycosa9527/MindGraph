@@ -34,7 +34,9 @@ env.bak/
 venv.bak/
 
 # IDE
-.cursor/
+.cursor/*
+!.cursor/environment.json
+!.cursor/Dockerfile
 .vscode/
 .idea/
 *.code-workspace

@@ -1,0 +1,8 @@
+{
+  "name": "MindGraph",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "install": "pip install -r requirements.txt && python -m playwright install chromium && cd frontend && npm ci && cd .."
+}
