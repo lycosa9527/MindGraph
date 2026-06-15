@@ -98,7 +98,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@tailwindcss/vite": "^4.3.0",
+    "@tailwindcss/vite": "^4.3.1",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^22.19.19",
@@ -115,7 +115,7 @@
     "prettier": "^3.4.2",
     "rollup-plugin-visualizer": "^7.0.1",
     "sharp": "^0.34.5",
-    "tailwindcss": "^4.3.0",
+    "tailwindcss": "^4.3.1",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.52.0",
     "undici": "^8.3.0",
