@@ -4,7 +4,7 @@
  * Each module can expand its history panel below; only one panel open at a time.
  * Workshop mode hides admin items and fills remaining space.
  */
-import { provide } from 'vue'
+import { onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 
 import { ElButton } from 'element-plus'
 
@@ -16,6 +16,7 @@ import { appSidebarInjectionKey, useAppSidebar } from '@/composables/sidebar/use
 
 import AppSidebarAccountFooter from './AppSidebarAccountFooter.vue'
 import AppSidebarNav from './AppSidebarNav.vue'
+import LogoQrScanModal from './LogoQrScanModal.vue'
 
 const sidebar = useAppSidebar()
 provide(appSidebarInjectionKey, sidebar)
@@ -28,6 +29,68 @@ const {
   showUpdateLogModal,
   authStore,
 } = sidebar
+
+const showLogoQrScan = ref(false)
+const prefersHover = ref(false)
+let hoverCloseTimer: ReturnType<typeof setTimeout> | null = null
+
+const HOVER_CLOSE_DELAY_MS = 250
+
+function clearHoverCloseTimer(): void {
+  if (hoverCloseTimer !== null) {
+    clearTimeout(hoverCloseTimer)
+    hoverCloseTimer = null
+  }
+}
+
+function scheduleHoverClose(): void {
+  if (!prefersHover.value) {
+    return
+  }
+  clearHoverCloseTimer()
+  hoverCloseTimer = setTimeout(() => {
+    showLogoQrScan.value = false
+    hoverCloseTimer = null
+  }, HOVER_CLOSE_DELAY_MS)
+}
+
+function onLogoPointerEnter(): void {
+  if (!prefersHover.value || isCollapsed.value) {
+    return
+  }
+  clearHoverCloseTimer()
+  showLogoQrScan.value = true
+}
+
+function onLogoPointerLeave(): void {
+  scheduleHoverClose()
+}
+
+function closeLogoQrScan(): void {
+  clearHoverCloseTimer()
+  showLogoQrScan.value = false
+}
+
+function onLogoClick(): void {
+  if (showLogoQrScan.value) {
+    return
+  }
+  sidebar.handleLogoClick()
+}
+
+onMounted(() => {
+  prefersHover.value = window.matchMedia('(hover: hover) and (pointer: fine)').matches
+})
+
+watch(isCollapsed, (collapsed) => {
+  if (collapsed) {
+    closeLogoQrScan()
+  }
+})
+
+onBeforeUnmount(() => {
+  clearHoverCloseTimer()
+})
 </script>
 
 <template>
@@ -44,7 +107,9 @@ const {
     <div class="p-4 flex items-center justify-between gap-2 border-b border-stone-200">
       <div
         class="logo-link flex items-center space-x-2 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
-        @click="sidebar.handleLogoClick"
+        @pointerenter="onLogoPointerEnter"
+        @pointerleave="onLogoPointerLeave"
+        @click="onLogoClick"
       >
         <div
           class="w-7 h-7 bg-stone-900 rounded-lg flex items-center justify-center text-white font-semibold text-sm shrink-0"
@@ -79,6 +144,12 @@ const {
       @success="authStore.checkAuth()"
     />
     <UpdateLogModal v-model:visible="showUpdateLogModal" />
+    <LogoQrScanModal
+      :visible="showLogoQrScan"
+      @close="closeLogoQrScan"
+      @hover-enter="clearHoverCloseTimer"
+      @hover-leave="scheduleHoverClose"
+    />
   </div>
 </template>
 

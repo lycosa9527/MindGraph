@@ -83,4 +83,6 @@ export default {
   'sidebar.roleSchoolEdition': '學校版',
   'sidebar.roleTrialEdition': '體驗版',
   'sidebar.roleSuperMember': '超級會員',
+  'sidebar.logoSiteQrTitle': '網站二維碼',
+  'sidebar.logoSiteQrHint': '請使用手機上的相機/微信掃描二維碼',
 } as const

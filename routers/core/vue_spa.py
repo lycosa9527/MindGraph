@@ -17,7 +17,10 @@ from services.infrastructure.utils.pwa_manifest import (
     build_pwa_manifest,
     public_site_origin_from_request,
 )
-from services.infrastructure.utils.spa_handler import VUE_DIST_DIR
+from services.infrastructure.utils.spa_handler import (
+    VUE_DIST_DIR,
+    media_type_for_vue_dist_relpath,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -221,6 +224,12 @@ async def vue_pwa_manifest(request: Request):
     )
 
 
+@router.get("/index.html", response_class=HTMLResponse)
+async def vue_index_html():
+    """Serve SPA shell for Workbox navigateFallback and direct /index.html requests."""
+    return await _serve_index()
+
+
 @router.get("/{path:path}")
 async def vue_catch_all(path: str):
     """Catch-all route for Vue SPA client-side routing.
@@ -245,27 +254,7 @@ async def vue_catch_all(path: str):
         file_path = VUE_DIST_DIR / path
         logger.info("[Catch-all] Checking file: %s (exists: %s)", file_path, file_path.exists())
         if file_path.exists() and file_path.is_file():
-            # Determine media type based on extension
-            media_type = "application/octet-stream"
-            if path.endswith(".js") or path.endswith(".mjs"):
-                media_type = "application/javascript"
-            elif path.endswith(".css"):
-                media_type = "text/css"
-            elif path.endswith(".svg"):
-                media_type = "image/svg+xml"
-            elif path.endswith(".png"):
-                media_type = "image/png"
-            elif path.endswith(".jpg") or path.endswith(".jpeg"):
-                media_type = "image/jpeg"
-            elif path.endswith(".webp"):
-                media_type = "image/webp"
-            elif path.endswith(".json"):
-                media_type = "application/json"
-            elif path.endswith(".webmanifest"):
-                media_type = "application/manifest+json"
-            elif path.endswith(".ico"):
-                media_type = "image/x-icon"
-
+            media_type = media_type_for_vue_dist_relpath(path)
             logger.info("[Catch-all] Serving file: %s", file_path)
             return FileResponse(path=str(file_path), media_type=media_type)
         # File doesn't exist, return 404

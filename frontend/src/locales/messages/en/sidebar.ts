@@ -89,4 +89,6 @@ export default {
   'sidebar.roleSchoolEdition': 'School',
   'sidebar.roleTrialEdition': 'Trial',
   'sidebar.roleSuperMember': 'Super Member',
+  'sidebar.logoSiteQrTitle': 'Site QR code',
+  'sidebar.logoSiteQrHint': 'Scan with your phone camera or WeChat',
 } as const

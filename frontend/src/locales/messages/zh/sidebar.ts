@@ -84,4 +84,6 @@ export default {
   'sidebar.roleSchoolEdition': '学校版',
   'sidebar.roleTrialEdition': '体验版',
   'sidebar.roleSuperMember': '超级会员',
+  'sidebar.logoSiteQrTitle': '网站二维码',
+  'sidebar.logoSiteQrHint': '请使用手机上的相机/微信扫描二维码',
 } as const

@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.39] - 2026-06-15
+
+> **Sidebar site QR hover modal, SPA static MIME types via mimetypes, and explicit `/index.html` for Workbox fallback.**
+
+### Added
+
+- **Sidebar — site QR on logo hover** — Pointer devices show a blurred overlay with the public site URL QR (`/api/qrcode`); click-through still opens the update log on tap ([`LogoQrScanModal.vue`](frontend/src/components/sidebar/LogoQrScanModal.vue), [`AppSidebar.vue`](frontend/src/components/sidebar/AppSidebar.vue)).
+- **Tests** — Vue dist MIME helper and `/index.html` / catch-all HTML content-type ([`test_vue_spa_static_mime.py`](tests/test_vue_spa_static_mime.py)).
+
+### Changed
+
+- **SPA — static MIME types** — Shared `media_type_for_vue_dist_relpath()` uses `mimetypes.guess_type` so `.html`, `.woff2`, and other extensions are not served as `application/octet-stream` ([`spa_handler.py`](services/infrastructure/utils/spa_handler.py), [`vue_spa.py`](routers/core/vue_spa.py)).
+- **SPA — `/index.html` route** — Dedicated handler serves the SPA shell for Workbox `navigateFallback` and direct requests ([`vue_spa.py`](routers/core/vue_spa.py)).
+- **HTTP — cache control** — `/index.html` included in no-cache HTML paths ([`middleware.py`](services/infrastructure/http/middleware.py)).
+- **i18n — sidebar QR strings** — Site QR title and scan hint across en/zh/zh-tw ([`sidebar.ts`](frontend/src/locales/messages/en/sidebar.ts)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.39).
+
 ## [5.117.38] - 2026-06-15
 
 > **School member email import, PWA cross-platform install hardening, dynamic manifest, and teaching-researcher role labels.**

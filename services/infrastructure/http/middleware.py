@@ -263,6 +263,7 @@ async def add_cache_control_headers(request: Request, call_next):
     # HTML pages: no cache
     elif path.endswith(".html") or path in [
         "/",
+        "/index.html",
         "/editor",
         "/debug",
         "/auth",

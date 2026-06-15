@@ -19,6 +19,7 @@ All Rights Reserved
 
 from pathlib import Path
 import logging
+import mimetypes
 import os
 
 from fastapi import FastAPI
@@ -31,6 +32,12 @@ logger = logging.getLogger(__name__)
 # Vue SPA dist directory
 # Path: services/infrastructure/utils/spa_handler.py -> go up 4 levels to project root
 VUE_DIST_DIR = Path(__file__).parent.parent.parent.parent / "frontend" / "dist"
+
+
+def media_type_for_vue_dist_relpath(relpath: str) -> str:
+    """Return Content-Type for a file under frontend/dist (catch-all static serving)."""
+    guessed, _encoding = mimetypes.guess_type(relpath, strict=False)
+    return guessed or 'application/octet-stream'
 
 
 def is_vue_spa_available() -> bool:

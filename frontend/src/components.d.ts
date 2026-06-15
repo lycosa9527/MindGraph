@@ -216,6 +216,7 @@ declare module 'vue' {
     LearningSheetOverlay: typeof import('./components/diagram/LearningSheetOverlay.vue')['default']
     LibraryCommentsHistory: typeof import('./components/sidebar/LibraryCommentsHistory.vue')['default']
     LoginModal: typeof import('./components/auth/LoginModal.vue')['default']
+    LogoQrScanModal: typeof import('./components/sidebar/LogoQrScanModal.vue')['default']
     ManualEvaluationModal: typeof import('./components/knowledge-space/ManualEvaluationModal.vue')['default']
     MessageActionBar: typeof import('./components/workshop-chat/MessageActionBar.vue')['default']
     MessageBubble: typeof import('./components/panels/mindmate/MessageBubble.vue')['default']
