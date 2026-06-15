@@ -185,31 +185,104 @@ async def serve_vue_spa() -> FileResponse:
     return FileResponse(path=str(index_path), media_type="text/html")
 
 
-# SPA routes that should be handled by Vue Router (not API endpoints)
-VUE_SPA_ROUTES = [
-    "/",
-    "/editor",
-    "/admin",
-    "/login",
-    "/auth",
-    "/bayi/passkey",
-    "/dashboard",
-    "/dashboard/login",
-]
+# Prefixes never handled by Vue Router (aligned with vue_spa catch-all + static mounts).
+_NON_SPA_PREFIXES = (
+    "/api",
+    "/static",
+    "/assets",
+    "/gallery",
+    "/ws",
+    "/thinking_mode",
+)
+
+_NON_SPA_EXACT_PATHS = frozenset(
+    {
+        "/health",
+        "/healthz",
+        "/ready",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+    }
+)
+
+# PWA / deploy-sensitive dist root files (extension-bearing; not SPA routes).
+_PWA_NO_CACHE_EXACT_PATHS = frozenset(
+    {
+        "/manifest.webmanifest",
+        "/sw.js",
+    }
+)
+
+
+def _path_last_segment(path: str) -> str:
+    trimmed = path.rstrip("/")
+    if not trimmed:
+        return ""
+    return trimmed.split("/")[-1]
+
+
+def _has_file_extension(path: str) -> bool:
+    return "." in _path_last_segment(path)
+
+
+def is_pwa_no_cache_path(path: str) -> bool:
+    """True for service worker and dynamic manifest paths that must revalidate after deploy."""
+    if path in _PWA_NO_CACHE_EXACT_PATHS:
+        return True
+    basename = _path_last_segment(path)
+    if basename.startswith("workbox-") and (basename.endswith(".js") or basename.endswith(".mjs")):
+        return True
+    return False
 
 
 def is_spa_route(path: str) -> bool:
     """
-    Check if a path should be handled by Vue SPA.
+    True when the path is a Vue client route (production serves index.html).
 
-    API routes (/api/*) and static files (/static/*) are NOT SPA routes.
+    Matches vue_spa catch-all: extensionless paths that are not API/static mounts.
     """
-    non_spa_prefixes = ("/api", "/static", "/assets", "/ws")
-    if any(path.startswith(p) for p in non_spa_prefixes):
+    if any(path.startswith(prefix) for prefix in _NON_SPA_PREFIXES):
         return False
-    if path in ["/health", "/healthz", "/ready", "/docs", "/redoc", "/openapi.json"]:
+    if path in _NON_SPA_EXACT_PATHS:
         return False
-    if path in VUE_SPA_ROUTES:
+    if _has_file_extension(path):
+        return False
+    return True
+
+
+def should_apply_no_cache(path: str, content_type: str | None = None) -> bool:
+    """
+    Whether to attach no-store cache headers to this response.
+
+    Covers SPA shell routes, HTML files, PWA bootstrap assets, and text/html
+    responses (safety net when index.html is served on an unexpected path).
+    """
+    if is_pwa_no_cache_path(path):
         return True
-    # Catch-all for client-side routing (paths without file extensions)
-    return "." not in path.split("/")[-1]
+    if path.endswith(".html"):
+        return True
+    if is_spa_route(path):
+        return True
+    normalized_type = (content_type or "").split(";", 1)[0].strip().lower()
+    return normalized_type == "text/html"
+
+
+def apply_no_cache_headers(response) -> None:
+    """Set standard no-store headers on a Starlette/FastAPI response."""
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+
+
+def should_apply_api_no_cache(path: str, response) -> bool:
+    """
+    Default API responses to no-cache unless the handler already set Cache-Control.
+
+    Preserves intentional caching on endpoints such as image proxy or PNG export.
+    """
+    if not path.startswith("/api/"):
+        return False
+    if response.headers.get("cache-control"):
+        return False
+    return True

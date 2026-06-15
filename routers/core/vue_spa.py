@@ -238,12 +238,14 @@ async def vue_catch_all(path: str):
     First checks if the path is a static file in dist root, then falls back to SPA routing.
     Vue Router will handle the actual routing client-side.
     """
-    # Skip API routes, static files, and other non-SPA routes
+    # Skip API routes, static files, and other non-SPA routes.
+    # Keep exclusions aligned with _NON_SPA_PREFIXES in spa_handler.py (cache-control).
     if (
         path.startswith("api/")
         or path.startswith("static/")
         or path.startswith("assets/")
         or path.startswith("gallery/")
+        or path.startswith("thinking_mode/")
         or path.startswith("ws")
         or path in ["health", "healthz", "ready", "docs", "redoc", "openapi.json"]
     ):

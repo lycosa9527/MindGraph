@@ -25,6 +25,11 @@ from config.settings import config
 from services.auth.security_logger import security_log
 from services.auth.vpn_geo_enforcement import maybe_enforce_vpn_cn_geo_async
 from services.infrastructure.http.feature_gate import feature_flag_gate
+from services.infrastructure.utils.spa_handler import (
+    apply_no_cache_headers,
+    should_apply_api_no_cache,
+    should_apply_no_cache,
+)
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR, resolve_authenticated_user_optional
 
 logger = logging.getLogger(__name__)
@@ -244,35 +249,24 @@ async def add_cache_control_headers(request: Request, call_next):
     Add cache control headers for static files.
 
     Strategy:
-    - Static files with version query string (?v=x.x.x): Cache for 1 year
-    - Static files without version: Cache for 1 hour with revalidation
-    - HTML pages: No cache (always fetch fresh)
-    - API responses: No cache
+    - /assets/* (content-hashed Vue bundles): cache 1 year, immutable
+    - SPA shell routes, HTML, PWA bootstrap (sw.js, manifest): no-store
+    - /api/* without explicit Cache-Control: no-store (SSE/image routes set their own)
 
-    This ensures users always get the latest code when we update the VERSION file.
+    SPA path detection uses ``is_spa_route()`` in spa_handler (aligned with vue_spa
+    catch-all) so new client routes do not require a manual no-cache list.
     """
     response = await call_next(request)
 
     path = request.url.path
-    # Query string available via request.url.query if needed
+    content_type = response.headers.get("content-type")
 
-    # Vue SPA assets (v5.0.0+) - served from /assets/
     if path.startswith("/assets/"):
-        # Vue build assets are content-hashed, cache aggressively
         response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-    # HTML pages: no cache
-    elif path.endswith(".html") or path in [
-        "/",
-        "/index.html",
-        "/editor",
-        "/debug",
-        "/auth",
-        "/admin",
-        "/bayi/passkey",
-    ]:
-        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-        response.headers["Pragma"] = "no-cache"
-        response.headers["Expires"] = "0"
+    elif should_apply_no_cache(path, content_type):
+        apply_no_cache_headers(response)
+    elif should_apply_api_no_cache(path, response):
+        apply_no_cache_headers(response)
 
     return response
 

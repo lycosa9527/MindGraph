@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **SPA — static MIME types** — Shared `media_type_for_vue_dist_relpath()` uses `mimetypes.guess_type` so `.html`, `.woff2`, and other extensions are not served as `application/octet-stream` ([`spa_handler.py`](services/infrastructure/utils/spa_handler.py), [`vue_spa.py`](routers/core/vue_spa.py)).
 - **SPA — `/index.html` route** — Dedicated handler serves the SPA shell for Workbox `navigateFallback` and direct requests ([`vue_spa.py`](routers/core/vue_spa.py)).
 - **HTTP — cache control** — `/index.html` included in no-cache HTML paths ([`middleware.py`](services/infrastructure/http/middleware.py)).
+- **HTTP — cache control sweep** — SPA no-cache uses shared `is_spa_route()` / `should_apply_no_cache()` ([`spa_handler.py`](services/infrastructure/utils/spa_handler.py)); covers all client routes, PWA bootstrap files, and default `/api/*` no-store when handlers omit `Cache-Control` ([`middleware.py`](services/infrastructure/http/middleware.py), [`test_spa_cache_control.py`](tests/services/test_spa_cache_control.py)).
 - **i18n — sidebar QR strings** — Site QR title and scan hint across en/zh/zh-tw ([`sidebar.ts`](frontend/src/locales/messages/en/sidebar.ts)).
 
 ### Frontend package version
