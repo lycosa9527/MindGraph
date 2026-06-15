@@ -32,9 +32,18 @@ const {
 
 const showLogoQrScan = ref(false)
 const prefersHover = ref(false)
+let hoverOpenTimer: ReturnType<typeof setTimeout> | null = null
 let hoverCloseTimer: ReturnType<typeof setTimeout> | null = null
 
+const HOVER_OPEN_DELAY_MS = 1500
 const HOVER_CLOSE_DELAY_MS = 250
+
+function clearHoverOpenTimer(): void {
+  if (hoverOpenTimer !== null) {
+    clearTimeout(hoverOpenTimer)
+    hoverOpenTimer = null
+  }
+}
 
 function clearHoverCloseTimer(): void {
   if (hoverCloseTimer !== null) {
@@ -59,14 +68,22 @@ function onLogoPointerEnter(): void {
     return
   }
   clearHoverCloseTimer()
-  showLogoQrScan.value = true
+  clearHoverOpenTimer()
+  hoverOpenTimer = setTimeout(() => {
+    showLogoQrScan.value = true
+    hoverOpenTimer = null
+  }, HOVER_OPEN_DELAY_MS)
 }
 
 function onLogoPointerLeave(): void {
-  scheduleHoverClose()
+  clearHoverOpenTimer()
+  if (showLogoQrScan.value) {
+    scheduleHoverClose()
+  }
 }
 
 function closeLogoQrScan(): void {
+  clearHoverOpenTimer()
   clearHoverCloseTimer()
   showLogoQrScan.value = false
 }
@@ -89,6 +106,7 @@ watch(isCollapsed, (collapsed) => {
 })
 
 onBeforeUnmount(() => {
+  clearHoverOpenTimer()
   clearHoverCloseTimer()
 })
 </script>

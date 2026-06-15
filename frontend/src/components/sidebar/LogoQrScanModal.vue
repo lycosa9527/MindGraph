@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Full-screen blurred overlay showing the public site URL as a QR code.
- * Opened when the sidebar logo is hovered (pointer devices).
+ * Opened when the sidebar logo is hovered for 1.5s (pointer devices).
  */
 import { computed } from 'vue'
 
