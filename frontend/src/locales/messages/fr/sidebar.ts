@@ -1,4 +1,6 @@
-/** fr UI — sidebar */
+/**
+ * fr UI �?sidebar
+ */
 
 export default {
   'sidebar.actions.delete': 'Supprimer',
@@ -8,8 +10,7 @@ export default {
   'sidebar.actions.showLess': 'Afficher moins',
   'sidebar.actions.showMore': 'Afficher plus ({n})',
   'sidebar.actions.unpin': 'Désépingler',
-  'sidebar.askOnceHistory.deleteConfirm':
-    'Êtes-vous sûr(e) de vouloir supprimer cette conversation ? Cette action est irréversible.',
+  'sidebar.askOnceHistory.deleteConfirm': 'Êtes-vous sûr(e) de vouloir supprimer cette conversation ? Cette action est irréversible.',
   'sidebar.askOnceHistory.empty': 'Aucune conversation pour le moment',
   'sidebar.askOnceHistory.renamePrompt': 'Entrez un nouveau nom pour cette conversation',
   'sidebar.askOnceHistory.renameTitle': 'Renommer la conversation',
@@ -23,11 +24,10 @@ export default {
   'sidebar.bookmarks.title': 'Signets récents',
   'sidebar.bookmarks.unknownDoc': 'Document inconnu',
   'sidebar.brandTitle': 'Maite — recherche pédagogique',
-  'sidebar.chatHistory.deleteConfirm':
-    'Êtes-vous sûr(e) de vouloir supprimer cette conversation ? Cette action est irréversible.',
+  'sidebar.chatHistory.deleteConfirm': 'Êtes-vous sûr(e) de vouloir supprimer cette conversation ? Cette action est irréversible.',
   'sidebar.chatHistory.deleteTitle': 'Supprimer la conversation',
   'sidebar.chatHistory.empty': 'Aucune conversation pour le moment',
-  'sidebar.chatHistory.loginPrompt': "Connectez-vous pour afficher l'historique",
+  'sidebar.chatHistory.loginPrompt': 'Connectez-vous pour afficher l\'historique',
   'sidebar.chatHistory.renamePrompt': 'Entrez un nouveau nom pour cette conversation',
   'sidebar.chatHistory.renameTitle': 'Renommer la conversation',
   'sidebar.chatHistory.title': 'Historique',
@@ -35,8 +35,7 @@ export default {
   'sidebar.collapseSidebar': 'Réduire la barre latérale',
   'sidebar.community': 'Communauté',
   'sidebar.courses': 'Cours de réflexion',
-  'sidebar.debateHistory.deleteConfirm':
-    'Êtes-vous sûr de vouloir supprimer ce débat ? Cette action est irréversible.',
+  'sidebar.debateHistory.deleteConfirm': 'Êtes-vous sûr de vouloir supprimer ce débat ? Cette action est irréversible.',
   'sidebar.debateHistory.empty': 'Aucun débat pour le moment',
   'sidebar.debateHistory.loginPrompt': 'Connectez-vous pour afficher les débats',
   'sidebar.debateHistory.renamePrompt': 'Saisissez un nouveau sujet pour ce débat',
@@ -72,6 +71,7 @@ export default {
   'sidebar.library': 'Bibliothèque',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
+  'sidebar.mindMateAgent': 'Agent {name}',
   'sidebar.mindbot': 'MindBot',
   'sidebar.schoolZone': 'Zone scolaire',
   'sidebar.smartResponse': 'Réponse intelligente',
@@ -79,4 +79,13 @@ export default {
   'sidebar.templateResources': 'Modèles',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': 'Compte',
+  'sidebar.roleSuperAdmin': 'Super Admin',
+  'sidebar.rolePlatformAdmin': 'Teaching Researcher',
+  'sidebar.roleExpert': 'Expert',
+  'sidebar.roleSchoolAdmin': 'School Admin',
+  'sidebar.roleSchoolEdition': 'School',
+  'sidebar.roleTrialEdition': 'Trial',
+  'sidebar.roleSuperMember': 'Super Member',
+  'sidebar.logoSiteQrTitle': 'Site QR code',
+  'sidebar.logoSiteQrHint': 'Scan with your phone camera or WeChat',
 } as const

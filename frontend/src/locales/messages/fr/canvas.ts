@@ -1,4 +1,6 @@
-/** fr UI — canvas */
+/**
+ * fr UI �?canvas
+ */
 
 export default {
   'braceMap.defaultSubpartFirst': 'Nouvelle sous-partie 1',
@@ -14,15 +16,17 @@ export default {
   'canvas.export.svgError': 'L’exportation au format SVG a échoué, veuillez réessayer',
   'canvas.export.svgSuccess': 'Exportation SVG réussie',
   'canvas.export.unknownFormat': 'Format d’exportation inconnu : {format}',
-  'canvas.import.invalidFile':
-    'Fichier de diagramme invalide. Veuillez sélectionner un fichier MG exporté depuis MindGraph.',
+  'canvas.import.invalidFile': 'Fichier de diagramme invalide. Veuillez sélectionner un fichier MG exporté depuis MindGraph.',
   'canvas.import.parseError': 'Échec de l’analyse du fichier diagramme, veuillez réessayer',
-  'canvas.reset.confirmBody':
-    'Êtes-vous sûr(e) ? Tout le contenu actuel sera perdu, y compris le diagramme et la palette de nœuds. Cette action est irréversible.',
+  'canvas.import.cmapHeuristicSemantics': 'This CmapTools file used text-order fallback for links—verify relationships against your original map.',
+  'canvas.import.cmapConnectionFallback': 'Relationships were reconstructed from IHMC graphical connections rather than proposition objects.',
+  'canvas.import.cmapEmptyLayout': 'Imported map has no recovered node coordinates; layout was regenerated.',
+  'canvas.import.cmapLayoutLabelCollision': 'Duplicate concept labels overlap in layout anchors; some imported positions may be wrong.',
+  'canvas.import.cmapLayoutFailed': 'Layout extraction hit a parse error—positions were regenerated.',
+  'canvas.reset.confirmBody': 'Êtes-vous sûr(e) ? Tout le contenu actuel sera perdu, y compris le diagramme et la palette de nœuds. Cette action est irréversible.',
   'canvas.reset.confirmButton': 'Réinitialiser',
   'canvas.reset.confirmTitle': 'Réinitialiser aux valeurs par défaut',
-  'canvas.reset.warnSelectType':
-    'Impossible de réinitialiser : veuillez d’abord sélectionner un type de diagramme',
+  'canvas.reset.warnSelectType': 'Impossible de réinitialiser : veuillez d’abord sélectionner un type de diagramme',
   'canvas.toolbar.addAnalogyPair': 'Ajouter une paire d’analogie',
   'canvas.toolbar.addAnalogyPairHistory': 'Ajouter une paire d’analogie',
   'canvas.toolbar.addAttributeHistory': 'Ajouter un attribut',
@@ -58,16 +62,12 @@ export default {
   'canvas.toolbar.cannotGenerate': 'Impossible de générer',
   'canvas.toolbar.causeAdded': 'Nœud cause ajouté',
   'canvas.toolbar.childAdded': 'Enfant ajouté',
-  'canvas.toolbar.collabAiBlocked':
-    'Seul le propriétaire du diagramme peut utiliser la génération IA pendant la collaboration',
-  'canvas.toolbar.collabLiveAiDisabled':
-    'AI generation is unavailable during live collaboration so everyone stays in sync',
-  'canvas.toolbar.collabGuestFeatureBlocked':
-    'This feature is not available while you join as a collaboration guest.',
+  'canvas.toolbar.collabAiBlocked': 'Seul le propriétaire du diagramme peut utiliser la génération IA pendant la collaboration',
+  'canvas.toolbar.collabLiveAiDisabled': 'AI generation is unavailable during live collaboration so everyone stays in sync',
+  'canvas.toolbar.collabGuestFeatureBlocked': 'This feature is not available while you join as a collaboration guest.',
   'canvas.toolbar.colorLabel': 'Couleur',
   'canvas.toolbar.conceptGeneration': 'Génération de concepts',
-  'canvas.toolbar.conceptMapModesDev':
-    'Les modes de carte conceptuelle sont en cours de développement',
+  'canvas.toolbar.conceptMapModesDev': 'Les modes de carte conceptuelle sont en cours de développement',
   'canvas.toolbar.createDiagramFirst': 'Veuillez d’abord créer un diagramme',
   'canvas.toolbar.deleteAnalogyPairHistory': 'Supprimer la paire d’analogie',
   'canvas.toolbar.deleteAttributeHistory': 'Supprimer l’attribut',
@@ -85,16 +85,14 @@ export default {
   'canvas.toolbar.exit': 'Quitter',
   'canvas.toolbar.exitFullscreen': 'Quitter le mode plein écran',
   'canvas.toolbar.highlighter': 'Surligneur',
-  'canvas.toolbar.highlighterTooltip':
-    'Dessinez sur la zone de travail comme avec un surligneur ; effacé lorsque vous quittez la présentation',
+  'canvas.toolbar.highlighterTooltip': 'Dessinez sur la zone de travail comme avec un surligneur ; effacé lorsque vous quittez la présentation',
   'canvas.toolbar.highlighterChooseColor': 'Couleur du surligneur',
   'canvas.toolbar.highlighterPaletteAria': 'Choisir la couleur du surligneur',
   'canvas.toolbar.insertEquation': 'Insérer une équation',
-  'canvas.toolbar.insertEquationTooltip':
-    'Insérez des mathématiques en ligne ($...$) au niveau du curseur, ou ajoutez-les au nœud sélectionné si vous ne les modifiez pas',
-  'canvas.toolbar.insertEquationSelectNode': "Sélectionnez d'abord un nœud",
+  'canvas.toolbar.insertEquationTooltip': 'Insérez des mathématiques en ligne ($...$) au niveau du curseur, ou ajoutez-les au nœud sélectionné si vous ne les modifiez pas',
+  'canvas.toolbar.insertEquationSelectNode': 'Sélectionnez d\'abord un nœud',
   'canvas.toolbar.insertEquationDialogTitle': 'Insérer une équation',
-  'canvas.toolbar.insertEquationLoading': "Chargement de l'éditeur mathématique…",
+  'canvas.toolbar.insertEquationLoading': 'Chargement de l\'éditeur mathématique…',
   'canvas.toolbar.insertEquationCancel': 'Annuler',
   'canvas.toolbar.insertEquationConfirm': 'Insérer',
   'canvas.toolbar.mathKeyboardTabK12': 'Mathématiques (K-12)',
@@ -125,7 +123,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqMidpoint': 'Milieu',
   'canvas.toolbar.mathKeyboardEqYmxb': 'y=mx+b',
   'canvas.toolbar.mathKeyboardEqYQuad': 'y=ax²+bx+c',
-  'canvas.toolbar.mathKeyboardEqAbsX': "{'|'}x{'|'}",
+  'canvas.toolbar.mathKeyboardEqAbsX': '{\'|\'}x{\'|\'}',
   'canvas.toolbar.mathKeyboardEqCircleArea': 'A = πr²',
   'canvas.toolbar.mathKeyboardEqCircleCircum': 'C=2πr',
   'canvas.toolbar.mathKeyboardEqTriHalfBh': 'A=½bh',
@@ -146,7 +144,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqLawSin': 'Loi des sinus',
   'canvas.toolbar.mathKeyboardEqCosSumDiff': 'cos(α±β)',
   'canvas.toolbar.mathKeyboardEqSinSumDiff': 'sin(α±β)',
-  'canvas.toolbar.mathKeyboardEqEuler': "e^{'{'}iθ{'}'}",
+  'canvas.toolbar.mathKeyboardEqEuler': 'e^{\'{\'}iθ{\'}\'}',
   'canvas.toolbar.mathKeyboardEqDoubleAngle': 'Angle double',
   'canvas.toolbar.mathKeyboardEqSum1toN': '1+2+…+n',
   'canvas.toolbar.mathKeyboardEqArithAn': 'Suite arithmétique aₙ',
@@ -220,8 +218,7 @@ export default {
   'canvas.toolbar.fontGroupChinese': 'Chinois',
   'canvas.toolbar.fontGroupEnglish': 'Anglais',
   'canvas.toolbar.fontLabel': 'Police',
-  'canvas.toolbar.formatBrushActivated':
-    'Style copié — sélectionnez d’abord les nœuds cibles, puis cliquez à nouveau pour appliquer',
+  'canvas.toolbar.formatBrushActivated': 'Style copié — sélectionnez d’abord les nœuds cibles, puis cliquez à nouveau pour appliquer',
   'canvas.toolbar.formatBrushApplied': 'Format appliqué à {count} nœud(s)',
   'canvas.toolbar.formatBrushCancelled': 'Peintre de format annulé',
   'canvas.toolbar.formatBrushDev': 'Le peintre de format est en cours de développement',
@@ -231,19 +228,16 @@ export default {
   'canvas.toolbar.layoutDirectionToggled': 'Sens de la disposition basculé',
   'canvas.toolbar.learningSheetRestored': 'Feuille d’apprentissage restaurée',
   'canvas.toolbar.moreAppConceptMapModes': 'Modes de carte conceptuelle',
-  'canvas.toolbar.moreAppConceptMapModesDesc':
-    'Mode standard actif ; d’autres modes arrivent bientôt',
+  'canvas.toolbar.moreAppConceptMapModesDesc': 'Mode standard actif ; d’autres modes arrivent bientôt',
   'canvas.toolbar.moreAppLearningSheet': 'Fiche d’apprentissage',
   'canvas.toolbar.moreAppLearningSheetDesc': 'Blancs aléatoires pour l’étude et la révision',
   'canvas.toolbar.moreAppWaterfall': 'Cascade',
-  'canvas.toolbar.moreAppWaterfallDesc':
-    'Sélectionner plusieurs nœuds simultanément ; rendre visibles les pensées divergentes et convergentes',
+  'canvas.toolbar.moreAppWaterfallDesc': 'Sélectionner plusieurs nœuds simultanément ; rendre visibles les pensées divergentes et convergentes',
   'canvas.toolbar.moreApps': 'Plus d’applications',
   'canvas.toolbar.moreAppSnapshot': 'Instantané',
   'canvas.toolbar.moreAppSnapshotDesc': 'Enregistrer une version de ce diagramme (maximum 10)',
   'canvas.toolbar.moreAppTranslateLabel': 'Translate',
-  'canvas.toolbar.moreAppTranslateLabelDesc':
-    'Translate all node and connection labels to your current interface language using AI',
+  'canvas.toolbar.moreAppTranslateLabelDesc': 'Translate all node and connection labels to your current interface language using AI',
   'canvas.toolbar.translateLabelTitle': 'Translate diagram',
   'canvas.toolbar.translateLabelSource': 'Labels to translate ({count})',
   'canvas.toolbar.translateLabelTargetLanguage': 'Target language',
@@ -254,27 +248,20 @@ export default {
   'canvas.toolbar.translateLabelDiagramEmpty': 'No text to translate in this diagram',
   'canvas.toolbar.translateLabelAndMore': '{n} more not shown…',
   'canvas.toolbar.translateLabelInProgress': 'Translating diagram…',
-  'canvas.toolbar.translateLabelFallbackEnInfo':
-    'Your interface language is not available as a translation target yet. Labels will be translated to English.',
+  'canvas.toolbar.translateLabelBannerTitle': 'Translating diagram',
+  'canvas.toolbar.translateLabelFallbackEnInfo': 'Your interface language is not available as a translation target yet. Labels will be translated to English.',
   'canvas.toolbar.translateLabelFailed': 'Translation failed. Please try again.',
   'canvas.toolbar.translateLabelDone': 'Diagram translated',
   'canvas.toolbar.moreAppVirtualKeyboard': 'Clavier virtuel',
-  'canvas.toolbar.moreAppVirtualKeyboardDesc':
-    'Clavier à l’écran synchronisé sur la langue de l’interface',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc': 'Clavier à l’écran synchronisé sur la langue de l’interface',
   'canvas.toolbar.virtualKeyboardClose': 'Fermer le clavier',
-  'canvas.toolbar.virtualKeyboardFocusHint':
-    'Double-cliquez ou appuyez deux fois sur une étiquette de nœud, puis saisissez avec le clavier',
-  'canvas.toolbar.snapshotSaveFirst':
-    'Veuillez d’abord enregistrer le diagramme avant de prendre une capture d’écran',
+  'canvas.toolbar.virtualKeyboardFocusHint': 'Double-cliquez ou appuyez deux fois sur une étiquette de nœud, puis saisissez avec le clavier',
+  'canvas.toolbar.snapshotSaveFirst': 'Veuillez d’abord enregistrer le diagramme avant de prendre une capture d’écran',
   'canvas.toolbar.snapshotTaken': 'Capture d’écran {n} enregistrée',
-  'canvas.toolbar.snapshotFailed':
-    'Échec de l’enregistrement de la capture d’écran, veuillez réessayer',
-  'canvas.toolbar.snapshotTooLarge':
-    'La capture est trop volumineuse (max {max} KB). Réduisez le contenu du diagramme et réessayez.',
-  'canvas.toolbar.snapshotRateLimited':
-    'Trop d’actions de capture. Attendez un instant et réessayez.',
-  'canvas.toolbar.snapshotDiagramNotFound':
-    'Diagramme introuvable. Rechargez la page ou ouvrez-le depuis votre bibliothèque.',
+  'canvas.toolbar.snapshotFailed': 'Échec de l’enregistrement de la capture d’écran, veuillez réessayer',
+  'canvas.toolbar.snapshotTooLarge': 'La capture est trop volumineuse (max {max} KB). Réduisez le contenu du diagramme et réessayez.',
+  'canvas.toolbar.snapshotRateLimited': 'Trop d’actions de capture. Attendez un instant et réessayez.',
+  'canvas.toolbar.snapshotDiagramNotFound': 'Diagramme introuvable. Rechargez la page ou ouvrez-le depuis votre bibliothèque.',
   'canvas.toolbar.snapshotConflict': 'Impossible d’enregistrer la capture (conflit). Réessayez.',
   'canvas.toolbar.newAssociation': 'Nouvelle association',
   'canvas.toolbar.newAttribute': 'Nouvel attribut',
@@ -295,24 +282,16 @@ export default {
   'canvas.toolbar.presetsLabel': 'Préréglages',
   'canvas.toolbar.redo': 'Refaire',
   'canvas.toolbar.selectBranchOrChild': 'Veuillez sélectionner une branche ou un nœud enfant',
-  'canvas.toolbar.selectCategoryOrLeafDelete':
-    'Veuillez sélectionner une catégorie ou des nœuds feuilles (un nœud sujet ne peut pas être supprimé)',
-  'canvas.toolbar.selectCauseOrEffectForAdd':
-    'Select a cause or effect node (not the event), then press Enter to add another in that column',
-  'canvas.toolbar.selectTreeBranchForChild':
-    'Select a category or an item under a category to add a child, or select the topic to add a category',
+  'canvas.toolbar.selectCategoryOrLeafDelete': 'Veuillez sélectionner une catégorie ou des nœuds feuilles (un nœud sujet ne peut pas être supprimé)',
+  'canvas.toolbar.selectCauseOrEffectForAdd': 'Select a cause or effect node (not the event), then press Enter to add another in that column',
+  'canvas.toolbar.selectTreeBranchForChild': 'Select a category or an item under a category to add a child, or select the topic to add a category',
   'canvas.toolbar.selectNodesFirst': 'Veuillez d’abord sélectionner un ou plusieurs nœuds',
   'canvas.toolbar.selectNodesToDelete': 'Veuillez sélectionner un ou plusieurs nœuds à supprimer',
-  'canvas.toolbar.selectPartForSubpart':
-    'Veuillez sélectionner une pièce à laquelle ajouter une sous-pièce',
-  'canvas.toolbar.selectPartThenEnter':
-    'Sélectionnez un nœud de pièce, puis appuyez sur Entrée pour ajouter une sous-pièce',
-  'canvas.toolbar.selectSimilarityOrDifferenceDelete':
-    'Veuillez sélectionner des nœuds de similarité ou de différence (les nœuds de sujet ne peuvent pas être supprimés)',
-  'canvas.toolbar.selectSimilarityOrDifferenceFirst':
-    'Veuillez d’abord sélectionner un nœud de similarité ou de différence',
-  'canvas.toolbar.selectStepForSubstep':
-    'Veuillez sélectionner une étape à laquelle ajouter une sous-étape',
+  'canvas.toolbar.selectPartForSubpart': 'Veuillez sélectionner une pièce à laquelle ajouter une sous-pièce',
+  'canvas.toolbar.selectPartThenEnter': 'Sélectionnez un nœud de pièce, puis appuyez sur Entrée pour ajouter une sous-pièce',
+  'canvas.toolbar.selectSimilarityOrDifferenceDelete': 'Veuillez sélectionner des nœuds de similarité ou de différence (les nœuds de sujet ne peuvent pas être supprimés)',
+  'canvas.toolbar.selectSimilarityOrDifferenceFirst': 'Veuillez d’abord sélectionner un nœud de similarité ou de différence',
+  'canvas.toolbar.selectStepForSubstep': 'Veuillez sélectionner une étape à laquelle ajouter une sous-étape',
   'canvas.toolbar.similarityWithIndex': 'Similarité {n}',
   'canvas.toolbar.stepAdded': 'Étape ajoutée',
   'canvas.toolbar.styleApplied': 'Style appliqué',
@@ -373,18 +352,17 @@ export default {
   'canvas.translation.stop': 'Stop translation',
   'canvas.topBar.snapshotRecallTooltip': 'Restaurer l’instantané {n}',
   'canvas.topBar.snapshotRecallTitle': 'Restaurer l’instantané',
-  'canvas.topBar.snapshotRecallConfirm':
-    'Restaurer l’instantané {n} ? Vos modifications actuelles seront remplacées.',
+  'canvas.topBar.snapshotRecallConfirm': 'Restaurer l’instantané {n} ? Vos modifications actuelles seront remplacées.',
   'canvas.topBar.snapshotRecallConfirmBtn': 'Restaurer',
   'canvas.topBar.snapshotRecallCancelBtn': 'Annuler',
   'canvas.topBar.snapshotRecallHistory': 'Avant la restauration de l’instantané {n}',
-  'canvas.topBar.snapshotRecallFailed':
-    'Échec de la restauration de l’instantané, veuillez réessayer',
+  'canvas.topBar.snapshotRecallFailed': 'Échec de la restauration de l’instantané, veuillez réessayer',
+  'canvas.topBar.snapshotRecallNoDiagram': 'Save the diagram to your library first, then restore a snapshot.',
+  'canvas.topBar.snapshotRecallNoType': 'Diagram type is not ready yet. Wait a moment and try again.',
   'canvas.topBar.snapshotDeleted': 'L’instantané {n} a été supprimé',
-  'canvas.topBar.snapshotDeleteFailed':
-    'Échec de la suppression de l’instantané, veuillez réessayer',
-  'canvas.topBar.snapshotBadgeTooltip':
-    'Cliquez pour restaurer l’instantané {n} · Ctrl+clic pour supprimer',
+  'canvas.topBar.snapshotDeleteFailed': 'Échec de la suppression de l’instantané, veuillez réessayer',
+  'canvas.topBar.snapshotBadgeTooltip': 'Cliquez pour restaurer l’instantané {n} · Ctrl+clic pour supprimer',
+  'canvas.topBar.snapshotRecallingTooltip': 'Restoring snapshot {n}…',
   'canvas.zoomControls.exitFullscreen': 'Quitter le mode plein écran',
   'canvas.zoomControls.fitCanvas': 'Ajuster la zone de dessin',
   'canvas.zoomControls.fullscreen': 'Plein écran',
@@ -396,25 +374,18 @@ export default {
   'canvas.zoomControls.collabCrossOrg': 'Collaborate with shared code',
   'canvas.zoomControls.collabTurnOff': 'Turn off online collaboration',
   'canvasPage.collaborationFooter': 'Travail collaboratif',
-  'canvasPage.collaborationFooterOwner': "{username}'s collaboration",
-  'canvasPage.collaborationFooterOwnerDiagram':
-    "{username}'s diagram «{diagramTitle}» — collaboration",
+  'canvasPage.collaborationFooterOwner': '{username}\'s collaboration',
+  'canvasPage.collaborationFooterOwnerDiagram': '{username}\'s diagram «{diagramTitle}» — collaboration',
   'canvasPage.collaborationFooterNetworkDiagramTitle': 'Collaborative diagram «{diagramTitle}»',
-  'canvasPage.collaborationFooterSchool':
-    'School collaboration in progress — join from school list.',
-  'canvasPage.collaborationFooterSchoolDiagram':
-    'School collaboration on «{diagramTitle}» — join from the school session list.',
-  'canvasPage.collabRoomIdleEnding':
-    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
+  'canvasPage.collaborationFooterSchool': 'School collaboration in progress — join from school list.',
+  'canvasPage.collaborationFooterSchoolDiagram': 'School collaboration on «{diagramTitle}» — join from the school session list.',
+  'canvasPage.collabRoomIdleEnding': 'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
   'conceptMap.focus.noResult': 'Aucun résultat',
   'conceptMap.focus.validationRequestFailed': 'Échec de la demande de validation',
   'diagram.aiGenerating': 'IA…',
-  'diagram.alternativeDimensions.braceTitle':
-    'Autres dimensions de décomposition possibles pour ce sujet :',
-  'diagram.alternativeDimensions.bridgeAnalogiesTitle':
-    'Autres schémas d’analogie possibles pour ce sujet :',
-  'diagram.alternativeDimensions.treeMapTitle':
-    'Autres dimensions de classification possibles pour ce sujet :',
+  'diagram.alternativeDimensions.braceTitle': 'Autres dimensions de décomposition possibles pour ce sujet :',
+  'diagram.alternativeDimensions.bridgeAnalogiesTitle': 'Autres schémas d’analogie possibles pour ce sujet :',
+  'diagram.alternativeDimensions.treeMapTitle': 'Autres dimensions de classification possibles pour ce sujet :',
   'diagram.bridgeMap.alternativesEmpty': '[Les alternatives apparaîtront ici]',
   'diagram.conceptMap.focusQuestionPrefix': 'Question centrale : ',
   'diagram.conceptMap.focusQuestionSuffix': 'Entrer',
@@ -437,8 +408,7 @@ export default {
   'diagram.contextMenu.infoAddNodeSoon': 'Fonctionnalité d’ajout de nœud bientôt disponible',
   'diagram.contextMenu.paste': 'Coller',
   'diagram.contextMenu.warningCreateDiagramFirst': 'Veuillez d’abord créer un diagramme',
-  'diagram.contextMenu.warningSelectSimilarityOrDiff':
-    'Veuillez d’abord sélectionner un nœud de similarité ou de différence',
+  'diagram.contextMenu.warningSelectSimilarityOrDiff': 'Veuillez d’abord sélectionner un nœud de similarité ou de différence',
   'diagram.defaultNewConcept': 'Nouveau concept',
   'diagram.dimension.classificationAz': 'Classification par',
   'diagram.dimension.classificationEn': 'Classification par',
@@ -527,8 +497,7 @@ export default {
   'editor.redo': 'Refaire',
   'editor.saveDiagram': 'Enregistrer le diagramme',
   'editor.selectDiagramType': 'Sélectionnez le type de diagramme',
-  'editor.slotsFull':
-    'Espace plein, la sauvegarde automatique n’est pas disponible pour le moment. Veuillez supprimer les diagrammes existants pour libérer de l’espace.',
+  'editor.slotsFull': 'Espace plein, la sauvegarde automatique n’est pas disponible pour le moment. Veuillez supprimer les diagrammes existants pour libérer de l’espace.',
   'editor.undo': 'Annuler',
   'editor.zoomIn': 'Zoom avant',
   'editor.zoomOut': 'Zoom arrière',
@@ -566,8 +535,7 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Créer sur la zone de travail',
   'landing.diagramGrid.tree_map.desc': 'Classer et regrouper',
   'landing.diagramGrid.tree_map.title': 'Carte arborescente',
-  'landing.template.freePlaceholder':
-    'Décrivez votre diagramme ou choisissez un modèle ci-dessous…',
+  'landing.template.freePlaceholder': 'Décrivez votre diagramme ou choisissez un modèle ci-dessous…',
   'landing.template.slot.criterion': 'Critère de classement',
   'landing.template.slot.event': 'Événement',
   'landing.template.slot.itemA': 'Élément A',
@@ -583,8 +551,7 @@ export default {
   'discovery.gallery.item3.title': 'Quadratic equation walkthrough',
   'discovery.gallery.item4.title': 'Force and field relationships',
   'mindgraphLanding.cancel': 'Annuler',
-  'mindgraphLanding.codeFormatInvalid':
-    'Format de code de présentation invalide (doit être xxx-xxx)',
+  'mindgraphLanding.codeFormatInvalid': 'Format de code de présentation invalide (doit être xxx-xxx)',
   'mindgraphLanding.codeIncomplete': 'Veuillez saisir le code de présentation complet',
   'mindgraphLanding.collaborate': 'Collaborer',
   'mindgraphLanding.dialogSchoolTitle': 'Collaboration scolaire',
@@ -600,16 +567,13 @@ export default {
   'mindgraphLanding.loadOrgSessionsFailed': 'Impossible de charger les sessions scolaires',
   'mindgraphLanding.networkError': 'Erreur réseau',
   'mindgraphLanding.networkErrorJoin': 'Erreur réseau, échec du raccordement',
-  'mindgraphLanding.orgSessionsEmpty':
-    'Aucune session scolaire disponible pour le moment. Un collègue doit démarrer la « collaboration scolaire » sur la toile.',
+  'mindgraphLanding.orgSessionsEmpty': 'Aucune session scolaire disponible pour le moment. Un collègue doit démarrer la « collaboration scolaire » sur la toile.',
   'mindgraphLanding.participantsOnline': '{n} en ligne',
   'mindgraphLanding.schoolCollab': 'Collaboration scolaire',
-  'mindgraphLanding.sharedCodeHint':
-    'Saisissez le code d’invitation (xxx-xxx) pour rejoindre leur session.',
+  'mindgraphLanding.sharedCodeHint': 'Saisissez le code d’invitation (xxx-xxx) pour rejoindre leur session.',
   'mindgraphLanding.sharedCollab': 'Collaboration partagée',
   'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
-  'mindgraphLanding.welcome':
-    'Bonjour {username}, je suis votre assistant IA pour la pensée visuelle',
+  'mindgraphLanding.welcome': 'Bonjour {username}, je suis votre assistant IA pour la pensée visuelle',
   'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
   'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
   'canvasPage.collabRetryConnection': 'Retry',

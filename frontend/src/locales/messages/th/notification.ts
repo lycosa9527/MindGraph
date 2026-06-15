@@ -1,5 +1,5 @@
 /**
- * th UI — notification
+ * th UI �?notification
  */
 
 export default {
@@ -20,8 +20,7 @@ export default {
   'notification.feedbackThanks': 'ขอบคุณสำหรับข้อเสนอแนะ',
   'notification.feedbackThanksDislike': 'ขอบคุณสำหรับข้อเสนอแนะ — เราจะปรับปรุง',
   'notification.focusQuestionTooShort': 'กรุณาใส่คำถามโฟกัสที่ยาวขึ้น',
-  'notification.geoLiteMissingIntro':
-    'ดาวน์โหลด GeoLite2 Country จาก MaxMind แยก GeoLite2-Country.mmdb และคัดลอกลงในโฟลเดอร์ข้อมูลเซิร์ฟเวอร์:',
+  'notification.geoLiteMissingIntro': 'ดาวน์โหลด GeoLite2 Country จาก MaxMind แยก GeoLite2-Country.mmdb และคัดลอกลงในโฟลเดอร์ข้อมูลเซิร์ฟเวอร์:',
   'notification.geoLiteMissingLink': 'เปิดหน้าดาวน์โหลด MaxMind GeoLite',
   'notification.geoLiteMissingPathLabel': 'เส้นทางที่คาดหวัง:',
   'notification.geoLiteMissingTitle': 'ฐานข้อมูลประเทศ GeoLite2 หายไป',

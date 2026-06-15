@@ -1,5 +1,5 @@
 /**
- * en UI — notification
+ * tr UI �?notification
  */
 
 export default {
@@ -20,8 +20,7 @@ export default {
   'notification.feedbackThanks': 'Thanks for your feedback',
   'notification.feedbackThanksDislike': 'Thanks for your feedback — we will improve',
   'notification.focusQuestionTooShort': 'Enter a longer focus question first',
-  'notification.geoLiteMissingIntro':
-    'Download GeoLite2 Country from MaxMind, extract GeoLite2-Country.mmdb, and copy it into the server data folder:',
+  'notification.geoLiteMissingIntro': 'Download GeoLite2 Country from MaxMind, extract GeoLite2-Country.mmdb, and copy it into the server data folder:',
   'notification.geoLiteMissingLink': 'Open MaxMind GeoLite download page',
   'notification.geoLiteMissingPathLabel': 'Expected path:',
   'notification.geoLiteMissingTitle': 'GeoLite2 Country database missing',
@@ -44,8 +43,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Root concept link not found',
   'notification.saved': 'Changes saved successfully',
   'notification.selectNodeToClear': 'Please select a node to clear',
-  'notification.sessionInvalidated':
-    'You have been logged out because you exceeded the maximum number of devices',
+  'notification.sessionInvalidated': 'You have been logged out because you exceeded the maximum number of devices',
   'notification.signInToUse': 'Sign in to use this',
   'notification.signInToValidateFocus': 'Sign in to validate the focus question',
 } as const

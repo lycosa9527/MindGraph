@@ -1,5 +1,5 @@
 /**
- * en UI — common
+ * en UI �?common
  */
 
 export default {
@@ -7,7 +7,7 @@ export default {
   'app.brandName': 'Mind Platform',
   'app.guestMainLoginPrompt': 'Log in to use this area',
   'app.browserLocale.body': 'Your browser prefers {name}. Switch the app interface to match?',
-  'app.browserLocale.dontAsk': "Don't ask again",
+  'app.browserLocale.dontAsk': 'Don\'t ask again',
   'app.browserLocale.keepChinese': 'Keep Chinese',
   'app.browserLocale.switch': 'Switch',
   'app.browserLocale.title': 'Switch interface language?',
@@ -55,6 +55,11 @@ export default {
   'common.success': 'Success',
   'common.unit.chars': 'chars',
   'common.warning': 'Warning',
+  'demo.enterCode': 'Please enter a demo code',
+  'demo.invalidCode': 'Invalid demo code',
+  'demo.loginOk': 'Login successful',
+  'demo.loginSuccessNamed': 'Welcome, {name}',
+  'demo.networkError': 'Network error, login failed',
   'bayiPasskey.enterCode': 'Please enter the 6-digit access code',
   'bayiPasskey.invalidCode': 'Invalid access code',
   'bayiPasskey.loginOk': 'Login successful',
@@ -86,6 +91,7 @@ export default {
   'meta.pageTitle.community': 'Community',
   'meta.pageTitle.course': 'Course',
   'meta.pageTitle.dashboardLogin': 'Dashboard login',
+  'meta.pageTitle.demoLogin': 'Demo login',
   'meta.pageTitle.debateverse': 'DebateVerse',
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.bayiPasskeyLogin': 'School access',
@@ -100,10 +106,8 @@ export default {
   'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.kitty': 'Kitty',
-  'canvas.kittyMobileIndicatorHint':
-    'A phone Kitty session (mic started) is linked to this diagram. Use your phone to talk with Kitty.',
-  'canvas.kittyMobileIndicatorAria':
-    'Status: Mobile Kitty is connected to this MindGraph canvas. Interact on your phone.',
+  'canvas.kittyMobileIndicatorHint': 'A phone Kitty session (mic started) is linked to this diagram. Use your phone to talk with Kitty.',
+  'canvas.kittyMobileIndicatorAria': 'Status: Mobile Kitty is connected to this MindGraph canvas. Interact on your phone.',
   'canvas.kittyMobileIndicatorTitle': 'Mobile Kitty',
   'canvas.kittyVoiceCommandLogTitle': 'Voice commands',
   'canvas.kittyVoiceCommandLogAria': 'Recent voice commands from mobile Kitty',
@@ -135,8 +139,7 @@ export default {
   'mobile.kittyKeyboardToggle': 'Text input',
   'mobile.kittyEnd': 'End',
   'mobile.kittyWelcomeLine': 'Share your ideas',
-  'mobile.kittyWelcomeSub':
-    'Ask by voice with photo support. Open a saved diagram on your phone or desktop so Kitty stays in sync with MindGraph.',
+  'mobile.kittyWelcomeSub': 'Ask by voice with photo support. Open a saved diagram on your phone or desktop so Kitty stays in sync with MindGraph.',
   'mobile.kittyConnecting': 'Connecting…',
   'mobile.kittyInputPlaceholder': 'Type a message…',
   'mobile.kittySend': 'Send',
@@ -147,10 +150,8 @@ export default {
   'mobile.kittyDiagramUpdated': 'Diagram updated',
   'mobile.kittyConnectFailed': 'Connection failed. Check your network and try again.',
   'mobile.kittyDisconnected': 'Voice connection lost. Hold the mic to reconnect.',
-  'mobile.kittyEnableServerHint':
-    'Enable FEATURE_KITTY_AGENT=True in server .env and restart the API.',
-  'mobile.kittyServerDisabledBanner':
-    'Kitty voice is disabled in this environment. Enable FEATURE_KITTY_AGENT in server .env and restart.',
+  'mobile.kittyEnableServerHint': 'Enable FEATURE_KITTY_AGENT=True in server .env and restart the API.',
+  'mobile.kittyServerDisabledBanner': 'Kitty voice is disabled in this environment. Enable FEATURE_KITTY_AGENT in server .env and restart.',
   'mobile.kittyDiagramPickerTitle': 'Choose diagram',
   'mobile.kittyDiagramPickerLoading': 'Loading…',
   'mobile.kittyDiagramPickerEmpty': 'No saved diagrams',
@@ -166,14 +167,10 @@ export default {
   'mobile.kittyHubSourceLive': 'Hub: live',
   'mobile.kittyHubSourceLibrary': 'Hub: library',
   'mobile.kittyHubSourceEmpty': 'Hub: empty',
-  'mobile.kittyMicPttTitle':
-    'Hold the mic to speak; release to send. Hold Space when not typing in a field.',
-  'mobile.kittyMicPttAria':
-    'Push to talk: hold the microphone button to speak, release to stop. Hold Space when not typing in the message field.',
-  'mobile.kittyMicToggleTitle':
-    'Hold the mic to speak; release to send. Hold Space when not typing in a field.',
-  'mobile.kittyMicToggleAria':
-    'Push to talk: hold the microphone button to speak, release to stop.',
+  'mobile.kittyMicPttTitle': 'Hold the mic to speak; release to send. Hold Space when not typing in a field.',
+  'mobile.kittyMicPttAria': 'Push to talk: hold the microphone button to speak, release to stop. Hold Space when not typing in the message field.',
+  'mobile.kittyMicToggleTitle': 'Hold the mic to speak; release to send. Hold Space when not typing in a field.',
+  'mobile.kittyMicToggleAria': 'Push to talk: hold the microphone button to speak, release to stop.',
   'mobile.kittyClickWheelAria': 'Spin the wheel to select a node',
   'mobile.kittyClickWheelHint': 'Drag around the outer ring to switch nodes',
   'mobile.kittyClickWheelEmptyLabel': 'Untitled node',
@@ -188,8 +185,7 @@ export default {
   'meta.pageTitle.workshopChat': 'Workshop chat',
   'publicDashboard.networkError': 'Network error, failed to load dashboard',
   'settings.language.interface': 'Interface language',
-  'settings.language.matchPrompt':
-    'Keep AI assistant, interface and virtual keyboard language in sync',
+  'settings.language.matchPrompt': 'Keep AI assistant, interface and virtual keyboard language in sync',
   'settings.language.prompt': 'AI assistant language',
   'settings.language.promptSelectPlaceholder': 'Search languages…',
   'settings.language.supportsCount': 'Supports {n} languages',
@@ -197,10 +193,8 @@ export default {
   'settings.version.title': 'UI Version',
   'settings.version.chinese': 'Professional mode',
   'settings.version.international': 'Simplified mode',
-  'landing.international.subtitle':
-    'The Most Powerful AI Thinking Diagram Software in the Universe',
-  'landing.international.promptPlaceholder':
-    'Enter a topic or short description—or pick a diagram type below…',
+  'landing.international.subtitle': 'The Most Powerful AI Thinking Diagram Software in the Universe',
+  'landing.international.promptPlaceholder': 'Enter a topic or short description—or pick a diagram type below…',
   'landing.international.sectionTitle': 'Eight Thinking Maps',
   'landing.international.advancedDiagramsTitle': 'Advanced diagrams',
   'landing.international.modules': 'Modules',

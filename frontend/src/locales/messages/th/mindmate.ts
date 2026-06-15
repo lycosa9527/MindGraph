@@ -1,4 +1,6 @@
-/** th UI — mindmate */
+/**
+ * th UI �?mindmate
+ */
 
 export default {
   'aiModel.conceptAiOff': 'คลิกเพื่อเปิดใช้งานป้ายความสัมพันธ์ AI (หลายโมเดล)',
@@ -12,15 +14,12 @@ export default {
   'aiModel.tabFocusBadge': 'โฟกัส Tab',
   'aiModel.tabFocusTooltip': 'กด Tab ขณะแก้ไขคำถามโฟกัสเพื่อตรวจสอบ แล้วเลือกทางเลือกในแถบ (− / =)',
   'aiModel.tabFocusQuestionBadge': 'Tab — คำถามโฟกัส',
-  'aiModel.conceptMapFocusQuestionTabTooltip':
-    'เมื่อเลือกหรือกำลังแก้ไขคำถามโฟกัส ให้กด Tab เพื่อตรวจ AI (โปรดใส่คำถามที่มีสาระก่อน ต้องลงชื่อเข้าใช้)',
+  'aiModel.conceptMapFocusQuestionTabTooltip': 'เมื่อเลือกหรือกำลังแก้ไขคำถามโฟกัส ให้กด Tab เพื่อตรวจ AI (โปรดใส่คำถามที่มีสาระก่อน ต้องลงชื่อเข้าใช้)',
   'aiModel.tabRecBadge': 'แนะนำ Tab',
   'aiModel.tabContentRecBadge': 'Tab — เนื้อหา',
   'aiModel.tabRelationshipRecBadge': 'Tab — ความสัมพันธ์',
-  'aiModel.conceptMapConceptTabTooltip':
-    'โหมดแก้ไข (แนวคิดเดี่ยว): กด Tab เพื่อถ้อยคำทางเลือก (ต้องตั้งหัวข้อแล้ว)',
-  'aiModel.conceptMapRelationshipTabTooltip':
-    'โหมดแก้ไขหรือเลือก (แนวคิดที่เชื่อม): กด Tab เพื่อคำแนะนำความสัมพันธ์บนลิงก์โฟกัส',
+  'aiModel.conceptMapConceptTabTooltip': 'โหมดแก้ไข (แนวคิดเดี่ยว): กด Tab เพื่อถ้อยคำทางเลือก (ต้องตั้งหัวข้อแล้ว)',
+  'aiModel.conceptMapRelationshipTabTooltip': 'โหมดแก้ไขหรือเลือก (แนวคิดที่เชื่อม): กด Tab เพื่อคำแนะนำความสัมพันธ์บนลิงก์โฟกัส',
   'aiModel.tooltip.clickDeselect': 'คลิกเพื่อยกเลิกการเลือก {name}',
   'aiModel.tooltip.clickSelect': 'คลิกเพื่อเลือก {name}',
   'aiModel.tooltip.clickSwitch': 'คลิกเพื่อเปลี่ยนเป็นผลลัพธ์ {name}',
@@ -29,10 +28,8 @@ export default {
   'aiModel.tooltip.showingResult': 'กำลังแสดงผลลัพธ์ {name}',
   'aiModel.hostPickBadgeTooltip': 'โฮสต์กำลังแก้ไขเวอร์ชันไดอะแกรมของโมเดลนี้ (มุมมองหลายโมเดล)',
   'aiModel.hostPickBadgeAria': 'โฮสต์กำลังแก้ไขด้วย {name}',
-  'autoComplete.collabOwnerOnly':
-    'เฉพาะเจ้าของไดอะแกรมเท่านั้นที่สามารถใช้การสร้าง AI ระหว่างการร่วมมือ',
-  'autoComplete.conceptMapRealtime':
-    'แผนภูมิแนวคิดใช้คำแนะนำความสัมพันธ์แบบเรียลไทม์ สร้างลิงก์เพื่อสร้าง',
+  'autoComplete.collabOwnerOnly': 'เฉพาะเจ้าของไดอะแกรมเท่านั้นที่สามารถใช้การสร้าง AI ระหว่างการร่วมมือ',
+  'autoComplete.conceptMapRealtime': 'แผนภูมิแนวคิดใช้คำแนะนำความสัมพันธ์แบบเรียลไทม์ สร้างลิงก์เพื่อสร้าง',
   'autoComplete.doubleBubbleNeedBothTopics': 'กรุณากรอกหัวข้อทั้งซ้ายและขวาก่อนสร้าง',
   'autoComplete.doubleBubbleTopicPair': '{left} เทียบกับ {right}',
   'autoComplete.enterTopicFirst': 'กรุณาใส่เนื้อหาหัวข้อก่อน',
@@ -44,18 +41,15 @@ export default {
   'conceptMapPicker.currentFocusQuestion': 'คำถามโฟกัสปัจจุบัน',
   'conceptMapPicker.currentRootConcept': 'แนวคิดหลักปัจจุบัน',
   'conceptMapPicker.focusAlternativesHint': 'ทางเลือก ({pageSize} ต่อหน้า ความสูงปรับอัตโนมัติ)',
-  'conceptMapPicker.rootAlternativesHint':
-    'ทางเลือกแนวคิดหลัก ({pageSize} ต่อหน้า ความสูงปรับอัตโนมัติ)',
+  'conceptMapPicker.rootAlternativesHint': 'ทางเลือกแนวคิดหลัก ({pageSize} ต่อหน้า ความสูงปรับอัตโนมัติ)',
   'conceptMapPicker.suggestionsEmpty': 'ยังไม่มีคำแนะนำ กด = เพื่อดูเพิ่มเติม',
   'focusQuestion.alternativesAria': 'คำถามโฟกัสทางเลือก',
   'focusQuestion.cannotReadStream': 'ไม่สามารถอ่านสตรีมคำแนะนำ',
   'focusQuestion.confirm': 'ยืนยันและเปิดแคนวาส',
   'focusQuestion.emptyOwn': '(ว่าง)',
-  'focusQuestion.help':
-    'คำถามโฟกัสคือประเด็นเฉพาะที่แผนผังของคุณจะตอบ มันกำหนดขอบเขต—สำหรับแผนผังเกี่ยวกับ "น้ำ" ตัวอย่างอาจเป็น "วงจรน้ำบนโลกเป็นอย่างไร?" หรือ "คุณสมบัติทางกายภาพของน้ำคืออะไร?"',
+  'focusQuestion.help': 'คำถามโฟกัสคือประเด็นเฉพาะที่แผนผังของคุณจะตอบ มันกำหนดขอบเขต—สำหรับแผนผังเกี่ยวกับ "น้ำ" ตัวอย่างอาจเป็น "วงจรน้ำบนโลกเป็นอย่างไร?" หรือ "คุณสมบัติทางกายภาพของน้ำคืออะไร?"',
   'focusQuestion.loadMoreFailed': 'ไม่สามารถโหลดเพิ่มเติม',
-  'focusQuestion.loginHint':
-    'เข้าสู่ระบบเพื่อตรวจสอบด้วย AI และรับคำแนะนำ คุณยังสามารถใส่คำถามและดำเนินการต่อ',
+  'focusQuestion.loginHint': 'เข้าสู่ระบบเพื่อตรวจสอบด้วย AI และรับคำแนะนำ คุณยังสามารถใส่คำถามและดำเนินการต่อ',
   'focusQuestion.needValidate': 'เรียกใช้การตรวจสอบ AI หรือข้ามก่อน',
   'focusQuestion.networkError': 'ข้อผิดพลาดของเครือข่าย',
   'focusQuestion.noResult': 'ไม่มีผลลัพธ์',
@@ -64,16 +58,14 @@ export default {
   'focusQuestion.placeholder': 'พิมพ์คำถามโฟกัสของคุณ…',
   'focusQuestion.skip': 'ข้าม',
   'focusQuestion.suggestionsEmpty': 'ยังไม่มีคำแนะนำ กด = เพื่อดึงชุดใหม่',
-  'focusQuestion.suggestionsHint':
-    'ทางเลือก (5 ต่อหน้า: − ก่อนหน้า, = ถัดไป; ที่หน้าสุดท้าย = โหลดเพิ่มเติม)',
+  'focusQuestion.suggestionsHint': 'ทางเลือก (5 ต่อหน้า: − ก่อนหน้า, = ถัดไป; ที่หน้าสุดท้าย = โหลดเพิ่มเติม)',
   'focusQuestion.suggestionsRequestFailed': 'คำร้องขอคำแนะนำล้มเหลว',
   'focusQuestion.title': 'โหมดมาตรฐาน · คำถามโฟกัสของแผนภูมิแนวคิดนี้ควรตอบอะไร?',
   'focusQuestion.tooShort': 'กรุณาใส่คำถามโฟกัสสั้น ๆ',
   'focusQuestion.validate': 'ตรวจสอบ AI',
   'focusQuestion.validationRequestFailed': 'คำร้องขอตรวจสอบล้มเหลว',
   'focusQuestion.weakLabel': 'อ่อน',
-  'mindmate.defaultSuggestion1':
-    'ฉันสามารถออกแบบความขัดแย้งทางความคิดอะไรสำหรับบทเรียนสี่เหลี่ยมด้านขนาน?',
+  'mindmate.defaultSuggestion1': 'ฉันสามารถออกแบบความขัดแย้งทางความคิดอะไรสำหรับบทเรียนสี่เหลี่ยมด้านขนาน?',
   'mindmate.defaultSuggestion10': 'จะใช้การสอนแบบสถานการณ์ในวิชาประวัติศาสตร์อย่างไร?',
   'mindmate.defaultSuggestion11': 'ควรระวังเรื่องความปลอดภัยอะไรในการทดลองฟิสิกส์?',
   'mindmate.defaultSuggestion12': 'จะออกแบบการบ้านที่ตรงกับระดับความคิดของนักเรียนอย่างไร?',
@@ -102,6 +94,7 @@ export default {
   'mindmate.tooltip.share': 'แชร์',
   'mindmate.untitled': 'ไม่มีชื่อ',
   'mindmate.welcome': 'สวัสดี {username} ฉันคือคู่หูการสอนเสมือนของคุณ',
+  'mindmate.welcomeSubtitle': 'AI virtual teaching research platform — think anywhere, anytime',
   'nodePalette.bridgeAnalogy': 'การเปรียบเทียบ',
   'nodePalette.bridgeSource': 'แหล่งที่มา',
   'nodePalette.cancel': 'ยกเลิก',
@@ -158,8 +151,7 @@ export default {
   'panels.share.title': 'แชร์บทสนทนา',
   'rootConceptModal.addBranchAria': 'เพิ่มกิ่ง',
   'rootConceptModal.addBranchTooltip': 'เพิ่มกิ่ง (หลีกเลี่ยงการซ้ำ)',
-  'rootConceptModal.helpFooter':
-    'แต่ละแท็บคือกิ่งความรู้หนึ่ง แนวคิดสามารถเชื่อมโยงกับรากและข้ามลิงก์ได้ ลากไปยังแคนวาสเพื่อเชื่อมโยงอัตโนมัติกับราก',
+  'rootConceptModal.helpFooter': 'แต่ละแท็บคือกิ่งความรู้หนึ่ง แนวคิดสามารถเชื่อมโยงกับรากและข้ามลิงก์ได้ ลากไปยังแคนวาสเพื่อเชื่อมโยงอัตโนมัติกับราก',
   'rootConceptModal.splittingLoading': 'กำลังแยกกิ่งและสร้างแนวคิด…',
   'rootConceptModal.tabTitleRoot': 'แนวคิดหลัก: {text}',
   'rootConceptModal.title': 'แนวคิดหลัก',

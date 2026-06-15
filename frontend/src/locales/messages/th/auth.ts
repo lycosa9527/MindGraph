@@ -1,4 +1,6 @@
-/** th UI — auth */
+/**
+ * th UI �?auth
+ */
 
 export default {
   'auth.accountInfo': 'บัญชี',
@@ -9,8 +11,12 @@ export default {
   'auth.updateLogEmpty': 'ไม่มีบันทึกประจำเวอร์ชัน',
   'auth.downloadDesktopShortcut': 'Add to desktop',
   'auth.pwaIosInstallHint': 'Tap the Share button in Safari, then choose “Add to Home Screen”.',
+  'auth.pwaAndroidInstallHint': 'Open the browser menu (⋮) and tap Install app or Add to Home screen.',
+  'auth.pwaSafariMacInstallHint': 'In Safari, choose File → Add to Dock, or Share → Add to Dock (macOS Sonoma or later).',
   'auth.pwaDesktopInstallHint': 'Use the browser menu (⋮) and choose Install MindGraph, or look for the install icon in the address bar.',
   'auth.pwaInstallSuccess': 'MindGraph has been added to your desktop.',
+  'auth.pwaDevInstallHint': 'PWA install is off in normal dev mode. Use production build (npm run build + backend) or run npm run dev:pwa, then use Chrome/Edge on HTTPS or localhost.',
+  'auth.pwaInsecureOriginHint': 'Open MindGraph in the browser at its HTTPS address (not a saved HTML file) before installing to desktop.',
   'auth.backToLogin': 'กลับไปเข้าสู่ระบบ',
   'auth.captcha': 'แคปต์ชา',
   'auth.captchaLength4': 'กรุณาใส่แคปต์ชา 4 ตัวอักษร',
@@ -20,6 +26,9 @@ export default {
   'auth.accountPlugin': 'ปลั๊กอิน',
   'auth.apiTokenButton': 'โทเค็น API',
   'auth.downloadChromeExtension': 'ส่วนขยาย Chrome',
+  'auth.schoolTierFeatureUnavailable': 'This feature requires the Standard or Professional school tier (Basic tier excluded).',
+  'auth.schoolSubscriptionExpiredDowngraded': 'Your school subscription has ended. Your account is now on the trial tier. Contact your platform administrator to renew.',
+  'auth.diagramLimitReached': 'Trial schools allow up to {max} saved diagrams per teacher. Delete one to save a new diagram.',
   'auth.downloadOpenclawSkill': 'สกิล OpenClaw',
   'auth.changePhoneButton': 'เปลี่ยนเบอร์โทรศัพท์',
   'auth.passwordChangeSuccess': 'เปลี่ยนรหัสผ่านสำเร็จ',
@@ -65,6 +74,7 @@ export default {
   'auth.modal.passwordMismatch': 'รหัสผ่านไม่ตรงกัน',
   'auth.modal.passwordPlaceholder': 'ใส่รหัสผ่าน',
   'auth.modal.phone11Digits': 'ใส่หมายเลขโทรศัพท์ 11 หลักที่ถูกต้อง',
+  'auth.modal.enterPhoneOrEmail': 'Enter your registered phone number or account email',
   'auth.modal.phonePlaceholder11': 'หมายเลขมือถือ 11 หลัก',
   'auth.modal.phoneRegisteredPlaceholder': 'หมายเลขโทรศัพท์ที่ลงทะเบียนแล้ว',
   'auth.modal.forgotPhoneOrEmailPlaceholder': 'หมายเลขโทรศัพท์ที่ลงทะเบียนแล้วหรืออีเมลบัญชี',
@@ -93,12 +103,15 @@ export default {
   'auth.modal.waitRegionDetection': 'โปรดรอขณะตรวจจับภูมิภาคของคุณ',
   'auth.modal.hybridRegisterGroupLabel': 'วิธีลงทะเบียน',
   'auth.modal.hybridRegisterEmailTab': 'อีเมลการศึกษา',
+  'auth.modal.hybridRegisterEmailTabAny': 'Email',
   'auth.modal.hybridRegisterPhoneTab': 'โทรศัพท์ + รหัสเชิญ',
-  'auth.modal.mainlandSalesNotice':
-    'ต้องการใช้งานในจีนแผ่นดินใหญ่? ใช้หมายเลขมือถือและรหัสเชิญ หรือติดต่อฝ่ายขาย',
+  'auth.modal.mainlandSalesNotice': 'ต้องการใช้งานในจีนแผ่นดินใหญ่? ใช้หมายเลขมือถือและรหัสเชิญ หรือติดต่อฝ่ายขาย',
   'auth.modal.registrationEmailLabel': 'อีเมลการศึกษาเท่านั้น',
+  'auth.modal.registrationEmailLabelAny': 'Email address',
   'auth.modal.registrationEmailHint': '',
+  'auth.modal.registrationEmailHintAny': 'Any email address except mainland China domains.',
   'auth.modal.educationEmailInvalid': 'กรุณาใส่ที่อยู่อีเมลการศึกษาที่ถูกต้อง',
+  'auth.modal.emailInvalid': 'Enter a valid email address.',
   'auth.modal.emailCodeLabel': 'รหัสยืนยันอีเมล',
   'auth.modal.emailCodeSent': 'ส่งรหัสยืนยันไปยังอีเมลของคุณแล้ว',
   'auth.modal.emailSendFailed': 'ส่งอีเมลยืนยันไม่สำเร็จ',
@@ -106,6 +119,8 @@ export default {
   'auth.modal.sendingEmailCode': 'กำลังส่ง…',
   'auth.modal.emailCodePlaceholder': 'รหัส 6 หลักจากอีเมล',
   'auth.modal.acknowledgeOverseas': 'ข้าพเจ้าเข้าใจและจะใช้ซอฟต์แวร์เพื่อการศึกษาเท่านั้น',
+  'auth.modal.acknowledgeOverseasAny': 'I understand and agree to the overseas registration terms.',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': 'I understand and agree to the overseas registration terms, and that Simplified Chinese is not available on this path.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'โปรดยืนยันข้อความด้านบน',
   'auth.loginPhoneOrEmail': 'โทรศัพท์หรืออีเมล',
@@ -120,17 +135,13 @@ export default {
   'auth.username': 'ชื่อผู้ใช้',
   'auth.waitCaptchaLoad': 'กรุณารอให้แคปต์ชาโหลด',
   'auth.quickRegPageTitle': 'ลงทะเบียนด่วน',
-  'auth.quickRegPageHint':
-    'เปิดหน้านี้จากลิงก์ที่โรงเรียนแชร์ กรอกเบอร์โทรและรหัสห้อง 6 หลักที่แสดงในหน้าต่างลงทะเบียนด่วนของผู้ดำเนินการ (รหัสเปลี่ยนประมาณทุก 30 วินาที) รหัสใช้แสดงว่าคุณอยู่ในเซสชัน ไม่ได้ยืนยันการเป็นเจ้าของเบอร์แบบรหัส SMS',
-  'auth.quickRegLinkInvalid':
-    'ลิงก์ลงทะเบียนนี้ไม่ใช้งานได้แล้ว (หมดอายุหรือปิด) เปิดลิงก์ล่าสุดจากผู้ดำเนินการอีกครั้ง',
-  'auth.quickRegProbeRateLimited':
-    'ตรวจสอบจากหน้านี้บ่อยเกินไป รอสักครู่แล้วรีเฟรช หรือลองใหม่ภายหลัง',
+  'auth.quickRegPageHint': 'เปิดหน้านี้จากลิงก์ที่โรงเรียนแชร์ กรอกเบอร์โทรและรหัสห้อง 6 หลักที่แสดงในหน้าต่างลงทะเบียนด่วนของผู้ดำเนินการ (รหัสเปลี่ยนประมาณทุก 30 วินาที) รหัสใช้แสดงว่าคุณอยู่ในเซสชัน ไม่ได้ยืนยันการเป็นเจ้าของเบอร์แบบรหัส SMS',
+  'auth.quickRegLinkInvalid': 'ลิงก์ลงทะเบียนนี้ไม่ใช้งานได้แล้ว (หมดอายุหรือปิด) เปิดลิงก์ล่าสุดจากผู้ดำเนินการอีกครั้ง',
+  'auth.quickRegProbeRateLimited': 'ตรวจสอบจากหน้านี้บ่อยเกินไป รอสักครู่แล้วรีเฟรช หรือลองใหม่ภายหลัง',
   'auth.quickRegSessionSignups': 'ลงทะเบียนในเซสชันนี้: {n}',
   'auth.quickRegRoomCodeLabel': 'รหัสห้อง',
   'auth.quickRegRoomCodePlaceholder': '6 หลัก',
-  'auth.quickRegRoomCodeHint':
-    'ให้ตรงกับตัวเลขใหญ่ในหน้าต่างลงทะเบียนด่วนของผู้ดำเนินการ กรอกก่อนรหัสเปลี่ยน',
+  'auth.quickRegRoomCodeHint': 'ให้ตรงกับตัวเลขใหญ่ในหน้าต่างลงทะเบียนด่วนของผู้ดำเนินการ กรอกก่อนรหัสเปลี่ยน',
   'auth.quickRegRoomCodeEnter6': 'กรอกรหัสห้อง 6 หลัก',
   'auth.quickRegMaxUses': 'จำนวนลงทะเบียนสูงสุดสำหรับลิงก์นี้',
   'auth.quickRegHeadcount': 'สูงสุด',
@@ -140,16 +151,14 @@ export default {
   'auth.quickRegSubmit': 'ลงทะเบียนให้เสร็จ',
   'auth.quickRegSubmitting': 'กำลังลงทะเบียน…',
   'auth.quickRegRegisterSuccess': 'ลงทะเบียนสำเร็จ',
-  'auth.quickRegSessionUnsure':
-    'ลงทะเบียนอาจสำเร็จแล้ว หากยังไม่ได้เข้าสู่ระบบ ให้กลับไปใช้เข้าสู่ระบบด้วย SMS หรือรีเฟรชหน้านี้',
+  'auth.quickRegSessionUnsure': 'ลงทะเบียนอาจสำเร็จแล้ว หากยังไม่ได้เข้าสู่ระบบ ให้กลับไปใช้เข้าสู่ระบบด้วย SMS หรือรีเฟรชหน้านี้',
   'auth.quickRegBackToSignIn': 'ใช้เข้าสู่ระบบ / ลงทะเบียนแบบปกติ',
   'auth.quickRegSelectOrg': 'เลือกโรงเรียน',
   'auth.quickRegOrgLoadError': 'โหลดรายชื่อโรงเรียนไม่ได้ โปรดลองอีกครั้ง',
   'auth.quickRegMintError': 'เปิดช่องทางลงทะเบียนไม่ได้ โปรดลองอีกครั้ง',
   'auth.setPasswordWithSms': 'ตั้งรหัสผ่านเข้าสู่ระบบ',
   'auth.setPasswordWithSmsTitle': 'ตั้งรหัสผ่านผ่าน SMS',
-  'auth.setPasswordWithSmsHint':
-    'เราส่งรหัสไปที่เบอร์ที่ผูกไว้ หลังตั้งรหัสผ่านแล้วคุณเข้าสู่ระบบด้วยรหัสผ่านหรือ SMS ได้',
+  'auth.setPasswordWithSmsHint': 'เราส่งรหัสไปที่เบอร์ที่ผูกไว้ หลังตั้งรหัสผ่านแล้วคุณเข้าสู่ระบบด้วยรหัสผ่านหรือ SMS ได้',
   'auth.setPasswordWithSmsSubmit': 'บันทึกรหัสผ่าน',
   'auth.setPasswordWithSmsSubmitting': 'กำลังบันทึก…',
   'auth.accountDisplayName': 'ชื่อที่แสดง',

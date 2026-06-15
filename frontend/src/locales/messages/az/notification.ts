@@ -1,5 +1,5 @@
 /**
- * az UI — notification
+ * az UI �?notification
  */
 
 export default {
@@ -8,8 +8,7 @@ export default {
   'notification.canvasClearNodes': '{count} düyün təmizləndi',
   'notification.canvasClearNodesLearning': '{count} düyün boşaldıldı, cavablara əlavə edildi',
   'notification.canvasSomeoneEditingNode': 'Bu düyünü başqa biri redaktə edir',
-  'notification.collabDeleteBlocked':
-    'Başqa istifadəçi seçilmiş düyünü redaktə edərkən silmək olmaz',
+  'notification.collabDeleteBlocked': 'Başqa istifadəçi seçilmiş düyünü redaktə edərkən silmək olmaz',
   'notification.collabRedoBlocked': 'Başqa istifadəçi redaktə edərkən təkrarlamaq olmaz',
   'notification.collabUndoBlocked': 'Başqa istifadəçi redaktə edərkən geri almaq olmaz',
   'notification.conversationDeleted': 'Söhbət silindi',
@@ -21,8 +20,7 @@ export default {
   'notification.feedbackThanks': 'Rəyiniz üçün təşəkkür',
   'notification.feedbackThanksDislike': 'Rəyiniz üçün təşəkkür — təkmilləşdirəcəyik',
   'notification.focusQuestionTooShort': 'Əvvəlcə daha uzun fokus sualı daxil edin',
-  'notification.geoLiteMissingIntro':
-    'MaxMind-dən GeoLite2 Country-ni endirin, GeoLite2-Country.mmdb-ni çıxarın və onu server məlumat qovluğuna köçürün:',
+  'notification.geoLiteMissingIntro': 'MaxMind-dən GeoLite2 Country-ni endirin, GeoLite2-Country.mmdb-ni çıxarın və onu server məlumat qovluğuna köçürün:',
   'notification.geoLiteMissingLink': 'MaxMind GeoLite yükləmə səhifəsini açın',
   'notification.geoLiteMissingPathLabel': 'Gözlənilən yol:',
   'notification.geoLiteMissingTitle': 'GeoLite2 Ölkə məlumat bazası yoxdur',
@@ -45,8 +43,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Kök konsepsiya əlaqəsi tapılmadı',
   'notification.saved': 'Dəyişikliklər uğurla yadda saxlanıldı',
   'notification.selectNodeToClear': 'Təmizləmək üçün düyün seçin',
-  'notification.sessionInvalidated':
-    'Cihazların maksimum sayını keçdiyiniz üçün sistemdən çıxdınız',
+  'notification.sessionInvalidated': 'Cihazların maksimum sayını keçdiyiniz üçün sistemdən çıxdınız',
   'notification.signInToUse': 'İstifadə üçün daxil olun',
   'notification.signInToValidateFocus': 'Fokus sualını yoxlamaq üçün daxil olun',
 } as const

@@ -1,4 +1,6 @@
-/** th UI — sidebar */
+/**
+ * th UI �?sidebar
+ */
 
 export default {
   'sidebar.actions.delete': 'ลบ',
@@ -8,8 +10,7 @@ export default {
   'sidebar.actions.showLess': 'แสดงน้อยลง',
   'sidebar.actions.showMore': 'แสดงเพิ่มเติม ({n})',
   'sidebar.actions.unpin': 'เลิกปักหมุด',
-  'sidebar.askOnceHistory.deleteConfirm':
-    'คุณแน่ใจหรือไม่ที่จะลบบทสนทนานี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
+  'sidebar.askOnceHistory.deleteConfirm': 'คุณแน่ใจหรือไม่ที่จะลบบทสนทนานี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
   'sidebar.askOnceHistory.empty': 'ยังไม่มีบทสนทนา',
   'sidebar.askOnceHistory.renamePrompt': 'ใส่ชื่อใหม่สำหรับบทสนทนานี้',
   'sidebar.askOnceHistory.renameTitle': 'เปลี่ยนชื่อบทสนทนา',
@@ -23,8 +24,7 @@ export default {
   'sidebar.bookmarks.title': 'ที่คั่นหนังสือล่าสุด',
   'sidebar.bookmarks.unknownDoc': 'เอกสารไม่ทราบ',
   'sidebar.brandTitle': '迈特教研',
-  'sidebar.chatHistory.deleteConfirm':
-    'คุณแน่ใจหรือไม่ที่จะลบบทสนทนานี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
+  'sidebar.chatHistory.deleteConfirm': 'คุณแน่ใจหรือไม่ที่จะลบบทสนทนานี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
   'sidebar.chatHistory.deleteTitle': 'ลบบทสนทนา',
   'sidebar.chatHistory.empty': 'ยังไม่มีบทสนทนา',
   'sidebar.chatHistory.loginPrompt': 'เข้าสู่ระบบเพื่อดูประวัติ',
@@ -35,8 +35,7 @@ export default {
   'sidebar.collapseSidebar': 'ย่อแถบด้านข้าง',
   'sidebar.community': 'ชุมชน',
   'sidebar.courses': 'หลักสูตรการคิด',
-  'sidebar.debateHistory.deleteConfirm':
-    'คุณแน่ใจหรือไม่ที่จะลบการดีเบตนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
+  'sidebar.debateHistory.deleteConfirm': 'คุณแน่ใจหรือไม่ที่จะลบการดีเบตนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
   'sidebar.debateHistory.empty': 'ยังไม่มีการดีเบต',
   'sidebar.debateHistory.loginPrompt': 'เข้าสู่ระบบเพื่อดูการดีเบต',
   'sidebar.debateHistory.renamePrompt': 'ใส่หัวข้อใหม่สำหรับการดีเบตนี้',
@@ -72,6 +71,7 @@ export default {
   'sidebar.library': 'ห้องสมุด',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
+  'sidebar.mindMateAgent': 'Agent {name}',
   'sidebar.mindbot': 'MindBot',
   'sidebar.schoolZone': 'โซนโรงเรียน',
   'sidebar.smartResponse': 'การตอบสนองอัจฉริยะ',
@@ -79,4 +79,13 @@ export default {
   'sidebar.templateResources': 'เทมเพลต',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': 'บัญชี',
+  'sidebar.roleSuperAdmin': 'Super Admin',
+  'sidebar.rolePlatformAdmin': 'Teaching Researcher',
+  'sidebar.roleExpert': 'Expert',
+  'sidebar.roleSchoolAdmin': 'School Admin',
+  'sidebar.roleSchoolEdition': 'School',
+  'sidebar.roleTrialEdition': 'Trial',
+  'sidebar.roleSuperMember': 'Super Member',
+  'sidebar.logoSiteQrTitle': 'Site QR code',
+  'sidebar.logoSiteQrHint': 'Scan with your phone camera or WeChat',
 } as const

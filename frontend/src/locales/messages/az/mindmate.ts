@@ -1,4 +1,6 @@
-/** az UI — mindmate */
+/**
+ * az UI �?mindmate
+ */
 
 export default {
   'aiModel.conceptAiOff': 'AI əlaqə etiketləri üçün toxunun (çoxlu model)',
@@ -10,31 +12,24 @@ export default {
   'aiModel.relationshipsBadge': 'Əlaqələr',
   'aiModel.relationshipsTooltip': 'Konseptləri birləşdirin — AI əlaqə yaradır',
   'aiModel.tabFocusBadge': 'Tab fokus',
-  'aiModel.tabFocusTooltip':
-    'Fokus sualını redaktə edərkən yoxlama üçün Tab; sonra altda − / = ilə seçin',
+  'aiModel.tabFocusTooltip': 'Fokus sualını redaktə edərkən yoxlama üçün Tab; sonra altda − / = ilə seçin',
   'aiModel.tabFocusQuestionBadge': 'Tab — fokus sualı',
-  'aiModel.conceptMapFocusQuestionTabTooltip':
-    'Fokus sualı seçilib və ya redaktə edilirken: süni intellekt yoxlaması üçün Tab sıxın (əvvəlcə konkret sual daxil edin; hesaba giriş tələb olunur).',
+  'aiModel.conceptMapFocusQuestionTabTooltip': 'Fokus sualı seçilib və ya redaktə edilirken: süni intellekt yoxlaması üçün Tab sıxın (əvvəlcə konkret sual daxil edin; hesaba giriş tələb olunur).',
   'aiModel.tabRecBadge': 'Tab tövs.',
   'aiModel.tabContentRecBadge': 'Tab — məzmun',
   'aiModel.tabRelationshipRecBadge': 'Tab — əlaqə',
-  'aiModel.conceptMapConceptTabTooltip':
-    'Redaktə rejimi (izolyasiya olunmuş konsept): alternativ ifadələr üçün Tab (mövzu təyin olunmalıdır).',
-  'aiModel.conceptMapRelationshipTabTooltip':
-    'Redaktə və ya seçim rejimi (bağlı konsept): diqqət mərkəzindəki bağ üçün əlaqə təklifləri üçün Tab.',
+  'aiModel.conceptMapConceptTabTooltip': 'Redaktə rejimi (izolyasiya olunmuş konsept): alternativ ifadələr üçün Tab (mövzu təyin olunmalıdır).',
+  'aiModel.conceptMapRelationshipTabTooltip': 'Redaktə və ya seçim rejimi (bağlı konsept): diqqət mərkəzindəki bağ üçün əlaqə təklifləri üçün Tab.',
   'aiModel.tooltip.clickDeselect': '{name} seçimini ləğv etmək üçün toxunun',
   'aiModel.tooltip.clickSelect': '{name} seçmək üçün toxunun',
   'aiModel.tooltip.clickSwitch': '{name} nəticəsinə keçmək üçün toxunun',
   'aiModel.tooltip.generating': '{name} yaradılır…',
   'aiModel.tooltip.modelFailed': '{name} yaradılması uğursuz oldu',
   'aiModel.tooltip.showingResult': 'Hazırda {name} nəticəsi göstərilir',
-  'aiModel.hostPickBadgeTooltip':
-    'Ev sahibi bu modelin diaqram versiyasını tərtib edir (çox-model görünüşü)',
+  'aiModel.hostPickBadgeTooltip': 'Ev sahibi bu modelin diaqram versiyasını tərtib edir (çox-model görünüşü)',
   'aiModel.hostPickBadgeAria': 'Ev sahibi {name} ilə düzəliş edir',
-  'autoComplete.collabOwnerOnly':
-    'Əməkdaşlıqda yalnız diaqram sahibi AI yaradıcısından istifadə edə bilər',
-  'autoComplete.conceptMapRealtime':
-    'Konsept xəritələri real vaxtda əlaqə təkliflərindən istifadə edir; əlaqə yaradın',
+  'autoComplete.collabOwnerOnly': 'Əməkdaşlıqda yalnız diaqram sahibi AI yaradıcısından istifadə edə bilər',
+  'autoComplete.conceptMapRealtime': 'Konsept xəritələri real vaxtda əlaqə təkliflərindən istifadə edir; əlaqə yaradın',
   'autoComplete.doubleBubbleNeedBothTopics': 'Yaratmazdan əvvəl hər iki mövzunu doldurun',
   'autoComplete.doubleBubbleTopicPair': '{left} və {right}',
   'autoComplete.enterTopicFirst': 'Əvvəlcə mövzu mətnini daxil edin',
@@ -45,20 +40,16 @@ export default {
   'autoComplete.selectDiagramType': 'Diaqram növünü seçin',
   'conceptMapPicker.currentFocusQuestion': 'Cari fokus sualı',
   'conceptMapPicker.currentRootConcept': 'Cari kök anlayış',
-  'conceptMapPicker.focusAlternativesHint':
-    'Alternativlər (səhifədə {pageSize}, hündürlük uyğunlaşır)',
-  'conceptMapPicker.rootAlternativesHint':
-    'Kök alternativləri (səhifədə {pageSize}, hündürlük uyğunlaşır)',
+  'conceptMapPicker.focusAlternativesHint': 'Alternativlər (səhifədə {pageSize}, hündürlük uyğunlaşır)',
+  'conceptMapPicker.rootAlternativesHint': 'Kök alternativləri (səhifədə {pageSize}, hündürlük uyğunlaşır)',
   'conceptMapPicker.suggestionsEmpty': 'Hələ alternativ yoxdur. Daha çox üçün = basın.',
   'focusQuestion.alternativesAria': 'Alternativ əsas suallar',
   'focusQuestion.cannotReadStream': 'Axını oxumaq mümkün olmadı',
   'focusQuestion.confirm': 'Təsdiqlə və kanvasa keç',
   'focusQuestion.emptyOwn': '(boş)',
-  'focusQuestion.help':
-    'Əsas sual xəritənin həll etdiyi konkret məsələdir. Əhatə dairəsini müəyyən edir — məsələn “su” haqqında xəritədə “Su Yer üzündə necə dövr edir?” və ya “Suyun fiziki xassələri hansılardır?” kimi.',
+  'focusQuestion.help': 'Əsas sual xəritənin həll etdiyi konkret məsələdir. Əhatə dairəsini müəyyən edir — məsələn “su” haqqında xəritədə “Su Yer üzündə necə dövr edir?” və ya “Suyun fiziki xassələri hansılardır?” kimi.',
   'focusQuestion.loadMoreFailed': 'Daha çox yüklənmədi',
-  'focusQuestion.loginHint':
-    'AI yoxlama və təkliflər üçün daxil olun. Sualı yazıb davam etmək mümkündür.',
+  'focusQuestion.loginHint': 'AI yoxlama və təkliflər üçün daxil olun. Sualı yazıb davam etmək mümkündür.',
   'focusQuestion.needValidate': 'Əvvəlcə AI yoxlamasını tamamlayın və ya keçin',
   'focusQuestion.networkError': 'Şəbəkə xətası',
   'focusQuestion.noResult': 'Nəticə yoxdur',
@@ -67,28 +58,21 @@ export default {
   'focusQuestion.placeholder': 'Əsas sualınızı buraya yazın…',
   'focusQuestion.skip': 'Keç',
   'focusQuestion.suggestionsEmpty': 'Hələ təklif yoxdur. = ilə yenidən çağırın.',
-  'focusQuestion.suggestionsHint':
-    'Alternativlər (səhifədə 5: − əvvəlki, = növbəti; son səhifədə daha çox yüklənir)',
+  'focusQuestion.suggestionsHint': 'Alternativlər (səhifədə 5: − əvvəlki, = növbəti; son səhifədə daha çox yüklənir)',
   'focusQuestion.suggestionsRequestFailed': 'Təklif sorğusu uğursuz oldu',
-  'focusQuestion.title':
-    'Standart rejim · Bu konsept xəritəsinin cavab verməli olduğu əsas sual nədir?',
+  'focusQuestion.title': 'Standart rejim · Bu konsept xəritəsinin cavab verməli olduğu əsas sual nədir?',
   'focusQuestion.tooShort': 'Qısa bir əsas sual daxil edin',
   'focusQuestion.validate': 'AI yoxlaması',
   'focusQuestion.validationRequestFailed': 'Yoxlama sorğusu uğursuz oldu',
   'focusQuestion.weakLabel': 'Zəif',
-  'mindmate.defaultSuggestion1':
-    'Paraleloqram dərsi üçün hansı idrak konfliktlərini tərtib edə bilərəm?',
+  'mindmate.defaultSuggestion1': 'Paraleloqram dərsi üçün hansı idrak konfliktlərini tərtib edə bilərəm?',
   'mindmate.defaultSuggestion10': 'Tarix dərsində situasiya tədrisindən necə istifadə etmək olar?',
-  'mindmate.defaultSuggestion11':
-    'Fizika təcrübələrində hansı təhlükəsizlik məsələlərinə diqqət yetirilməlidir?',
-  'mindmate.defaultSuggestion12':
-    'Şagirdin idrak səviyyəsinə uyğun ev tapşırıqlarını necə tərtib etmək olar?',
+  'mindmate.defaultSuggestion11': 'Fizika təcrübələrində hansı təhlükəsizlik məsələlərinə diqqət yetirilməlidir?',
+  'mindmate.defaultSuggestion12': 'Şagirdin idrak səviyyəsinə uyğun ev tapşırıqlarını necə tərtib etmək olar?',
   'mindmate.defaultSuggestion2': 'Hüceyrə tənəffüsü üçün dərs planı yaratmağa kömək edin.',
-  'mindmate.defaultSuggestion3':
-    'Tələbələrin cazibə qüvvəsi ilə bağlı hansı yanlış təsəvvürləri var?',
+  'mindmate.defaultSuggestion3': 'Tələbələrin cazibə qüvvəsi ilə bağlı hansı yanlış təsəvvürləri var?',
   'mindmate.defaultSuggestion4': 'Effektiv qrup öyrənmə sessiyasını necə tərtib etmək olar?',
-  'mindmate.defaultSuggestion5':
-    'Tələbələrin elmi axtarış bacarıqlarını necə təkmilləşdirmək olar?',
+  'mindmate.defaultSuggestion5': 'Tələbələrin elmi axtarış bacarıqlarını necə təkmilləşdirmək olar?',
   'mindmate.defaultSuggestion6': 'Oxu təlimatının innovativ üsulları hansılardır?',
   'mindmate.defaultSuggestion7': 'Riyaziyyat anlayışlarını real həyatla necə əlaqələndirmək olar?',
   'mindmate.defaultSuggestion8': 'Tənqidi düşünmə bacarıqlarını necə inkişaf etdirmək olar?',
@@ -110,6 +94,7 @@ export default {
   'mindmate.tooltip.share': 'Paylaş',
   'mindmate.untitled': 'Başlıqsız',
   'mindmate.welcome': 'Salam {username}, mən sizin virtual tədris partnyorunuzam',
+  'mindmate.welcomeSubtitle': 'AI virtual teaching research platform — think anywhere, anytime',
   'nodePalette.bridgeAnalogy': 'Analogiya',
   'nodePalette.bridgeSource': 'Mənbə',
   'nodePalette.cancel': 'Ləğv et',
@@ -166,8 +151,7 @@ export default {
   'panels.share.title': 'Söhbəti Paylaşın',
   'rootConceptModal.addBranchAria': 'Budaq əlavə et',
   'rootConceptModal.addBranchTooltip': 'Bilik budağı əlavə et (təkrarları əvvəlcədən çıxarın)',
-  'rootConceptModal.helpFooter':
-    'Hər tab bir bilik budağıdır; anlayışlar kökə və digər budaqlara bağlana bilər. Kanvasa sürüşdürmək kökə avtomatik bağlayır.',
+  'rootConceptModal.helpFooter': 'Hər tab bir bilik budağıdır; anlayışlar kökə və digər budaqlara bağlana bilər. Kanvasa sürüşdürmək kökə avtomatik bağlayır.',
   'rootConceptModal.splittingLoading': 'Bilik budaqları bölünür və anlayışlar yaradılır…',
   'rootConceptModal.tabTitleRoot': 'Kök anlayış: {text}',
   'rootConceptModal.title': 'Kök anlayış',

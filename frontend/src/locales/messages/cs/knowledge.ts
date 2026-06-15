@@ -1,10 +1,9 @@
 /**
- * en UI — knowledge
+ * cs UI �?knowledge
  */
 
 export default {
-  'chunkTest.history.confirmDeleteBody':
-    'Are you sure you want to delete this test? This cannot be undone.',
+  'chunkTest.history.confirmDeleteBody': 'Are you sure you want to delete this test? This cannot be undone.',
   'chunkTest.history.confirmDeleteTitle': 'Delete Test',
   'chunkTest.history.delete': 'Delete',
   'chunkTest.history.deleteFailed': 'Failed to delete test',
@@ -43,8 +42,7 @@ export default {
   'chunkTestResults.answerQuality': 'Answer Quality',
   'chunkTestResults.avgLatency': 'Avg Latency',
   'chunkTestResults.back': 'Back',
-  'chunkTestResults.cancelConfirmBody':
-    'Are you sure you want to cancel this test? The test will stop at the next checkpoint.',
+  'chunkTestResults.cancelConfirmBody': 'Are you sure you want to cancel this test? The test will stop at the next checkpoint.',
   'chunkTestResults.cancelFailed': 'Failed to cancel test',
   'chunkTestResults.cancelRequested': 'Test cancellation requested',
   'chunkTestResults.cancelTest': 'Cancel Test',
@@ -84,8 +82,7 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'Test All Datasets',
   'knowledge.chunkHeader.testUpload': 'Test Upload Documents',
   'knowledge.chunkHeader.title': 'RAG Chunk Test',
-  'knowledge.chunkHeader.waitForProcessing':
-    'Please wait for documents to finish processing before testing',
+  'knowledge.chunkHeader.waitForProcessing': 'Please wait for documents to finish processing before testing',
   'knowledge.chunkPreview.empty': 'No chunks found',
   'knowledge.chunkPreview.pageLabel': 'Page {n}',
   'knowledge.chunkPreview.title': 'Document Chunks — {fileName}',
@@ -104,8 +101,7 @@ export default {
   'knowledge.doc.colStatus': 'Status',
   'knowledge.doc.colType': 'Type',
   'knowledge.doc.colUploaded': 'Upload Date',
-  'knowledge.doc.emptyDescription':
-    'No documents yet. Upload documents to build your knowledge base.',
+  'knowledge.doc.emptyDescription': 'No documents yet. Upload documents to build your knowledge base.',
   'knowledge.doc.errorPrefix': 'Error: ',
   'knowledge.doc.noData': 'No data',
   'knowledge.doc.statusCompleted': 'Completed',
@@ -123,8 +119,7 @@ export default {
   'knowledge.manualEval.deselectAll': 'Deselect All',
   'knowledge.manualEval.dialogTitle': 'Manual Evaluation — {method}',
   'knowledge.manualEval.groundTruthLabel': 'Ground Truth Answer (Optional)',
-  'knowledge.manualEval.groundTruthPlaceholder':
-    'Enter ground truth answer for answer relevance evaluation...',
+  'knowledge.manualEval.groundTruthPlaceholder': 'Enter ground truth answer for answer relevance evaluation...',
   'knowledge.manualEval.metric.answer_coverage': 'Answer Coverage',
   'knowledge.manualEval.metric.answer_faithfulness': 'Answer Faithfulness',
   'knowledge.manualEval.metric.clarity': 'Clarity',
@@ -146,8 +141,7 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Chunk Quality Evaluation',
   'knowledge.manualEval.resultsTitle': 'Evaluation Results',
   'knowledge.manualEval.selectAll': 'Select All',
-  'knowledge.manualEval.selectChunksHeading':
-    'Select Chunks to Evaluate (leave empty to evaluate all)',
+  'knowledge.manualEval.selectChunksHeading': 'Select Chunks to Evaluate (leave empty to evaluate all)',
   'knowledge.manualEval.showingFirst20': 'Showing first 20 of {total} chunks',
   'knowledge.manualEval.startEvaluation': 'Start Evaluation',
   'knowledge.processing.chunking': 'Chunking',
@@ -202,8 +196,7 @@ export default {
   'knowledge.upload.maxDocs': 'Maximum document limit reached (5)',
   'knowledge.upload.title': 'Upload Document',
   'knowledge.upload.unsupportedType': 'Unsupported file type',
-  'knowledgeSpace.confirmDeleteBody':
-    'Are you sure you want to delete this document? This action cannot be undone.',
+  'knowledgeSpace.confirmDeleteBody': 'Are you sure you want to delete this document? This action cannot be undone.',
   'knowledgeSpace.confirmDeleteTitle': 'Confirm Delete',
   'knowledgeSpace.deleteFailed': 'Delete failed',
   'knowledgeSpace.documentDeleted': 'Document deleted',

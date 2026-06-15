@@ -1,4 +1,6 @@
-/** th UI — canvas */
+/**
+ * th UI �?canvas
+ */
 
 export default {
   'braceMap.defaultSubpartFirst': 'ส่วนย่อยใหม่ 1',
@@ -16,8 +18,12 @@ export default {
   'canvas.export.unknownFormat': 'ไม่รู้จักรูปแบบส่งออก: {format}',
   'canvas.import.invalidFile': 'ไฟล์ไดอะแกรมไม่ถูกต้อง กรุณาเลือกไฟล์ MG ที่ส่งออกจาก MindGraph',
   'canvas.import.parseError': 'ไม่สามารถแยกวิเคราะห์ไฟล์ไดอแกรม กรุณาลองอีกครั้ง',
-  'canvas.reset.confirmBody':
-    'คุณแน่ใจหรือไม่? เนื้อหาปัจจุบันทั้งหมดจะสูญหาย รวมถึงไดอะแกรมและพาเลตโหนด ไม่สามารถย้อนกลับได้',
+  'canvas.import.cmapHeuristicSemantics': 'This CmapTools file used text-order fallback for links—verify relationships against your original map.',
+  'canvas.import.cmapConnectionFallback': 'Relationships were reconstructed from IHMC graphical connections rather than proposition objects.',
+  'canvas.import.cmapEmptyLayout': 'Imported map has no recovered node coordinates; layout was regenerated.',
+  'canvas.import.cmapLayoutLabelCollision': 'Duplicate concept labels overlap in layout anchors; some imported positions may be wrong.',
+  'canvas.import.cmapLayoutFailed': 'Layout extraction hit a parse error—positions were regenerated.',
+  'canvas.reset.confirmBody': 'คุณแน่ใจหรือไม่? เนื้อหาปัจจุบันทั้งหมดจะสูญหาย รวมถึงไดอะแกรมและพาเลตโหนด ไม่สามารถย้อนกลับได้',
   'canvas.reset.confirmButton': 'รีเซ็ต',
   'canvas.reset.confirmTitle': 'รีเซ็ตเป็นค่าเริ่มต้น',
   'canvas.reset.warnSelectType': 'ไม่สามารถรีเซ็ต: กรุณาเลือกประเภทไดอะแกรมก่อน',
@@ -56,12 +62,9 @@ export default {
   'canvas.toolbar.cannotGenerate': 'ไม่สามารถสร้าง',
   'canvas.toolbar.causeAdded': 'เพิ่มโหนดสาเหตุแล้ว',
   'canvas.toolbar.childAdded': 'เพิ่มลูกแล้ว',
-  'canvas.toolbar.collabAiBlocked':
-    'เฉพาะเจ้าของไดอะแกรมเท่านั้นที่สามารถใช้การสร้าง AI ระหว่างการร่วมมือ',
-  'canvas.toolbar.collabLiveAiDisabled':
-    'AI generation is unavailable during live collaboration so everyone stays in sync',
-  'canvas.toolbar.collabGuestFeatureBlocked':
-    'This feature is not available while you join as a collaboration guest.',
+  'canvas.toolbar.collabAiBlocked': 'เฉพาะเจ้าของไดอะแกรมเท่านั้นที่สามารถใช้การสร้าง AI ระหว่างการร่วมมือ',
+  'canvas.toolbar.collabLiveAiDisabled': 'AI generation is unavailable during live collaboration so everyone stays in sync',
+  'canvas.toolbar.collabGuestFeatureBlocked': 'This feature is not available while you join as a collaboration guest.',
   'canvas.toolbar.colorLabel': 'สี',
   'canvas.toolbar.conceptGeneration': 'การสร้างแนวคิด',
   'canvas.toolbar.conceptMapModesDev': 'โหมดแผนภูมิแนวคิดอยู่ระหว่างพัฒนา',
@@ -82,13 +85,11 @@ export default {
   'canvas.toolbar.exit': 'ออก',
   'canvas.toolbar.exitFullscreen': 'ออกจากเต็มจอ',
   'canvas.toolbar.highlighter': 'ปากกาเน้นข้อความ',
-  'canvas.toolbar.highlighterTooltip':
-    'วาดบนแคนวาสเหมือนปากกาเน้นข้อความ จะถูกล้างเมื่อออกจากการนำเสนอ',
+  'canvas.toolbar.highlighterTooltip': 'วาดบนแคนวาสเหมือนปากกาเน้นข้อความ จะถูกล้างเมื่อออกจากการนำเสนอ',
   'canvas.toolbar.highlighterChooseColor': 'สีปากกาเน้นข้อความ',
   'canvas.toolbar.highlighterPaletteAria': 'เลือกสีปากกาเน้นข้อความ',
   'canvas.toolbar.insertEquation': 'แทรกสมการ',
-  'canvas.toolbar.insertEquationTooltip':
-    'แทรกคณิตศาสตร์แบบอินไลน์ ($...$) ที่เครื่องหมายรูปหมวก หรือผนวกเข้ากับโหนดที่เลือกหากไม่ได้แก้ไข',
+  'canvas.toolbar.insertEquationTooltip': 'แทรกคณิตศาสตร์แบบอินไลน์ ($...$) ที่เครื่องหมายรูปหมวก หรือผนวกเข้ากับโหนดที่เลือกหากไม่ได้แก้ไข',
   'canvas.toolbar.insertEquationSelectNode': 'เลือกโหนดก่อน',
   'canvas.toolbar.insertEquationDialogTitle': 'แทรกสมการ',
   'canvas.toolbar.insertEquationLoading': 'กำลังโหลดตัวแก้ไขคณิตศาสตร์...',
@@ -122,7 +123,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqMidpoint': 'จุดกึ่งกลาง',
   'canvas.toolbar.mathKeyboardEqYmxb': 'y=mx+ข',
   'canvas.toolbar.mathKeyboardEqYQuad': 'y=ax²+bx+c',
-  'canvas.toolbar.mathKeyboardEqAbsX': "{'|'}x{'|'}",
+  'canvas.toolbar.mathKeyboardEqAbsX': '{\'|\'}x{\'|\'}',
   'canvas.toolbar.mathKeyboardEqCircleArea': 'A=πr²',
   'canvas.toolbar.mathKeyboardEqCircleCircum': 'C=2πr',
   'canvas.toolbar.mathKeyboardEqTriHalfBh': 'A=½bh',
@@ -143,7 +144,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqLawSin': 'กฎของไซน์',
   'canvas.toolbar.mathKeyboardEqCosSumDiff': 'cos(α±β)',
   'canvas.toolbar.mathKeyboardEqSinSumDiff': 'บาป(α±β)',
-  'canvas.toolbar.mathKeyboardEqEuler': "อี^{'{'}iθ{'}'}",
+  'canvas.toolbar.mathKeyboardEqEuler': 'อี^{\'{\'}iθ{\'}\'}',
   'canvas.toolbar.mathKeyboardEqDoubleAngle': 'มุมคู่',
   'canvas.toolbar.mathKeyboardEqSum1toN': '1+2+…+น',
   'canvas.toolbar.mathKeyboardEqArithAn': 'เลขคณิต กₙ',
@@ -217,8 +218,7 @@ export default {
   'canvas.toolbar.fontGroupChinese': 'จีน',
   'canvas.toolbar.fontGroupEnglish': 'อังกฤษ',
   'canvas.toolbar.fontLabel': 'ฟอนต์',
-  'canvas.toolbar.formatBrushActivated':
-    'คัดลอกสไตล์แล้ว — เลือกโหนดเป้าหมายแล้วคลิกอีกครั้งเพื่อนำไปใช้',
+  'canvas.toolbar.formatBrushActivated': 'คัดลอกสไตล์แล้ว — เลือกโหนดเป้าหมายแล้วคลิกอีกครั้งเพื่อนำไปใช้',
   'canvas.toolbar.formatBrushApplied': 'นำรูปแบบไปใช้กับ {count} โหนด',
   'canvas.toolbar.formatBrushCancelled': 'ยกเลิกแปรงรูปแบบแล้ว',
   'canvas.toolbar.formatBrushDev': 'แปรงรูปแบบอยู่ระหว่างพัฒนา',
@@ -232,14 +232,12 @@ export default {
   'canvas.toolbar.moreAppLearningSheet': 'แผ่นการเรียนรู้',
   'canvas.toolbar.moreAppLearningSheetDesc': 'เว้นว่างแบบสุ่มเพื่อการเรียนและทบทวน',
   'canvas.toolbar.moreAppWaterfall': 'น้ำตก',
-  'canvas.toolbar.moreAppWaterfallDesc':
-    'เลือกข้ามโหนดแบบชุด ทำให้การคิดแบบแยกส่วนและรวมส่วนเห็นได้ชัด',
+  'canvas.toolbar.moreAppWaterfallDesc': 'เลือกข้ามโหนดแบบชุด ทำให้การคิดแบบแยกส่วนและรวมส่วนเห็นได้ชัด',
   'canvas.toolbar.moreApps': 'แอปเพิ่มเติม',
   'canvas.toolbar.moreAppSnapshot': 'สแนปช็อต',
   'canvas.toolbar.moreAppSnapshotDesc': 'บันทึกเวอร์ชันของไดอะแกรมนี้ (สูงสุด 10)',
   'canvas.toolbar.moreAppTranslateLabel': 'Translate',
-  'canvas.toolbar.moreAppTranslateLabelDesc':
-    'Translate all node and connection labels to your current interface language using AI',
+  'canvas.toolbar.moreAppTranslateLabelDesc': 'Translate all node and connection labels to your current interface language using AI',
   'canvas.toolbar.translateLabelTitle': 'Translate diagram',
   'canvas.toolbar.translateLabelSource': 'Labels to translate ({count})',
   'canvas.toolbar.translateLabelTargetLanguage': 'Target language',
@@ -250,20 +248,18 @@ export default {
   'canvas.toolbar.translateLabelDiagramEmpty': 'No text to translate in this diagram',
   'canvas.toolbar.translateLabelAndMore': '{n} more not shown…',
   'canvas.toolbar.translateLabelInProgress': 'Translating diagram…',
-  'canvas.toolbar.translateLabelFallbackEnInfo':
-    'Your interface language is not available as a translation target yet. Labels will be translated to English.',
+  'canvas.toolbar.translateLabelBannerTitle': 'Translating diagram',
+  'canvas.toolbar.translateLabelFallbackEnInfo': 'Your interface language is not available as a translation target yet. Labels will be translated to English.',
   'canvas.toolbar.translateLabelFailed': 'Translation failed. Please try again.',
   'canvas.toolbar.translateLabelDone': 'Diagram translated',
   'canvas.toolbar.moreAppVirtualKeyboard': 'คีย์บอร์ดเสมือน',
   'canvas.toolbar.moreAppVirtualKeyboardDesc': 'คีย์บอร์ดบนหน้าจอซิงค์กับภาษาของอินเทอร์เฟซ',
   'canvas.toolbar.virtualKeyboardClose': 'ปิดคีย์บอร์ด',
-  'canvas.toolbar.virtualKeyboardFocusHint':
-    'ดับเบิลคลิกหรือแตะป้ายโหนดสองครั้งก่อน แล้วพิมพ์ด้วยคีย์บอร์ด',
+  'canvas.toolbar.virtualKeyboardFocusHint': 'ดับเบิลคลิกหรือแตะป้ายโหนดสองครั้งก่อน แล้วพิมพ์ด้วยคีย์บอร์ด',
   'canvas.toolbar.snapshotSaveFirst': 'กรุณาบันทึกไดอะแกรมก่อนถ่ายสแนปช็อต',
   'canvas.toolbar.snapshotTaken': 'บันทึกสแนปช็อต {n} แล้ว',
   'canvas.toolbar.snapshotFailed': 'ไม่สามารถบันทึกสแนปช็อต กรุณาลองอีกครั้ง',
-  'canvas.toolbar.snapshotTooLarge':
-    'สแนปชอตใหญ่เกินไป (สูงสุด {max} KB) ลดเนื้อหาไดอะแกรมแล้วลองอีกครั้ง',
+  'canvas.toolbar.snapshotTooLarge': 'สแนปชอตใหญ่เกินไป (สูงสุด {max} KB) ลดเนื้อหาไดอะแกรมแล้วลองอีกครั้ง',
   'canvas.toolbar.snapshotRateLimited': 'การทำสแนปชอตถี่เกินไป รอสักครู่แล้วลองอีกครั้ง',
   'canvas.toolbar.snapshotDiagramNotFound': 'ไม่พบไดอะแกรม โหลดหน้าใหม่หรือเปิดจากคลัง',
   'canvas.toolbar.snapshotConflict': 'บันทึกสแนปชอตไม่ได้ (ขัดแย้ง) ลองอีกครั้ง',
@@ -286,18 +282,14 @@ export default {
   'canvas.toolbar.presetsLabel': 'ค่าตั้งล่วงหน้า',
   'canvas.toolbar.redo': 'ทำซ้ำ',
   'canvas.toolbar.selectBranchOrChild': 'กรุณาเลือกกิ่งหรือโหนดลูก',
-  'canvas.toolbar.selectCategoryOrLeafDelete':
-    'กรุณาเลือกโหนดหมวดหมู่หรือโหนดใบ (ไม่สามารถลบโหนดหัวข้อ)',
-  'canvas.toolbar.selectCauseOrEffectForAdd':
-    'Select a cause or effect node (not the event), then press Enter to add another in that column',
-  'canvas.toolbar.selectTreeBranchForChild':
-    'Select a category or an item under a category to add a child, or select the topic to add a category',
+  'canvas.toolbar.selectCategoryOrLeafDelete': 'กรุณาเลือกโหนดหมวดหมู่หรือโหนดใบ (ไม่สามารถลบโหนดหัวข้อ)',
+  'canvas.toolbar.selectCauseOrEffectForAdd': 'Select a cause or effect node (not the event), then press Enter to add another in that column',
+  'canvas.toolbar.selectTreeBranchForChild': 'Select a category or an item under a category to add a child, or select the topic to add a category',
   'canvas.toolbar.selectNodesFirst': 'กรุณาเลือกโหนดก่อน',
   'canvas.toolbar.selectNodesToDelete': 'กรุณาเลือกโหนดเพื่อลบ',
   'canvas.toolbar.selectPartForSubpart': 'กรุณาเลือกส่วนเพื่อเพิ่มส่วนย่อย',
   'canvas.toolbar.selectPartThenEnter': 'เลือกโหนดส่วน แล้วกด Enter เพื่อเพิ่มส่วนย่อย',
-  'canvas.toolbar.selectSimilarityOrDifferenceDelete':
-    'กรุณาเลือกโหนดความคล้ายหรือความแตกต่าง (ไม่สามารถลบโหนดหัวข้อ)',
+  'canvas.toolbar.selectSimilarityOrDifferenceDelete': 'กรุณาเลือกโหนดความคล้ายหรือความแตกต่าง (ไม่สามารถลบโหนดหัวข้อ)',
   'canvas.toolbar.selectSimilarityOrDifferenceFirst': 'กรุณาเลือกโหนดความคล้ายหรือความแตกต่างก่อน',
   'canvas.toolbar.selectStepForSubstep': 'กรุณาเลือกขั้นตอนเพื่อเพิ่มขั้นตอนย่อย',
   'canvas.toolbar.similarityWithIndex': 'ความคล้าย {n}',
@@ -360,15 +352,17 @@ export default {
   'canvas.translation.stop': 'Stop translation',
   'canvas.topBar.snapshotRecallTooltip': 'กู้คืนสแนปช็อต {n}',
   'canvas.topBar.snapshotRecallTitle': 'กู้คืนสแนปช็อต',
-  'canvas.topBar.snapshotRecallConfirm':
-    'กู้คืนสแนปช็อต {n}? การเปลี่ยนแปลงปัจจุบันของคุณจะถูกแทนที่',
+  'canvas.topBar.snapshotRecallConfirm': 'กู้คืนสแนปช็อต {n}? การเปลี่ยนแปลงปัจจุบันของคุณจะถูกแทนที่',
   'canvas.topBar.snapshotRecallConfirmBtn': 'กู้คืน',
   'canvas.topBar.snapshotRecallCancelBtn': 'ยกเลิก',
   'canvas.topBar.snapshotRecallHistory': 'ก่อนกู้คืนสแนปช็อต {n}',
   'canvas.topBar.snapshotRecallFailed': 'ไม่สามารถกู้คืนสแนปช็อต กรุณาลองอีกครั้ง',
+  'canvas.topBar.snapshotRecallNoDiagram': 'Save the diagram to your library first, then restore a snapshot.',
+  'canvas.topBar.snapshotRecallNoType': 'Diagram type is not ready yet. Wait a moment and try again.',
   'canvas.topBar.snapshotDeleted': 'ลบสแนปช็อต {n} แล้ว',
   'canvas.topBar.snapshotDeleteFailed': 'ไม่สามารถลบสแนปช็อต กรุณาลองอีกครั้ง',
   'canvas.topBar.snapshotBadgeTooltip': 'คลิกเพื่อกู้คืนสแนปช็อต {n} · Ctrl+คลิกเพื่อลบ',
+  'canvas.topBar.snapshotRecallingTooltip': 'Restoring snapshot {n}…',
   'canvas.zoomControls.exitFullscreen': 'ออกจากเต็มจอ',
   'canvas.zoomControls.fitCanvas': 'พอดีกับแคนวาส',
   'canvas.zoomControls.fullscreen': 'เต็มจอ',
@@ -380,22 +374,17 @@ export default {
   'canvas.zoomControls.collabCrossOrg': 'Collaborate with shared code',
   'canvas.zoomControls.collabTurnOff': 'Turn off online collaboration',
   'canvasPage.collaborationFooter': 'ร่วมมือ',
-  'canvasPage.collaborationFooterOwner': "{username}'s collaboration",
-  'canvasPage.collaborationFooterOwnerDiagram':
-    "{username}'s diagram «{diagramTitle}» — collaboration",
+  'canvasPage.collaborationFooterOwner': '{username}\'s collaboration',
+  'canvasPage.collaborationFooterOwnerDiagram': '{username}\'s diagram «{diagramTitle}» — collaboration',
   'canvasPage.collaborationFooterNetworkDiagramTitle': 'Collaborative diagram «{diagramTitle}»',
-  'canvasPage.collaborationFooterSchool':
-    'School collaboration in progress — join from school list.',
-  'canvasPage.collaborationFooterSchoolDiagram':
-    'School collaboration on «{diagramTitle}» — join from the school session list.',
-  'canvasPage.collabRoomIdleEnding':
-    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
+  'canvasPage.collaborationFooterSchool': 'School collaboration in progress — join from school list.',
+  'canvasPage.collaborationFooterSchoolDiagram': 'School collaboration on «{diagramTitle}» — join from the school session list.',
+  'canvasPage.collabRoomIdleEnding': 'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
   'conceptMap.focus.noResult': 'ไม่มีผลลัพธ์',
   'conceptMap.focus.validationRequestFailed': 'คำร้องขอตรวจสอบล้มเหลว',
   'diagram.aiGenerating': 'กำลังสร้างด้วย AI…',
   'diagram.alternativeDimensions.braceTitle': 'มิติการแยกส่วนที่เป็นไปได้อื่น ๆ สำหรับหัวข้อนี้:',
-  'diagram.alternativeDimensions.bridgeAnalogiesTitle':
-    'รูปแบบการเปรียบเทียบที่เป็นไปได้อื่น ๆ สำหรับหัวข้อนี้:',
+  'diagram.alternativeDimensions.bridgeAnalogiesTitle': 'รูปแบบการเปรียบเทียบที่เป็นไปได้อื่น ๆ สำหรับหัวข้อนี้:',
   'diagram.alternativeDimensions.treeMapTitle': 'มิติการจำแนกที่เป็นไปได้อื่น ๆ สำหรับหัวข้อนี้:',
   'diagram.bridgeMap.alternativesEmpty': '[ทางเลือกจะปรากฏที่นี่]',
   'diagram.conceptMap.focusQuestionPrefix': 'คำถามโฟกัส: ',
@@ -508,8 +497,7 @@ export default {
   'editor.redo': 'ทำซ้ำ',
   'editor.saveDiagram': 'บันทึกไดอะแกรม',
   'editor.selectDiagramType': 'เลือกประเภทไดอะแกรม',
-  'editor.slotsFull':
-    'พื้นที่เต็ม ไม่สามารถบันทึกอัตโนมัติได้ กรุณาลบไดอะแกรมที่มีอยู่เพื่อเพิ่มพื้นที่',
+  'editor.slotsFull': 'พื้นที่เต็ม ไม่สามารถบันทึกอัตโนมัติได้ กรุณาลบไดอะแกรมที่มีอยู่เพื่อเพิ่มพื้นที่',
   'editor.undo': 'เลิกทำ',
   'editor.zoomIn': 'ซูมเข้า',
   'editor.zoomOut': 'ซูมออก',
@@ -579,8 +567,7 @@ export default {
   'mindgraphLanding.loadOrgSessionsFailed': 'ไม่สามารถโหลดเซสชันโรงเรียน',
   'mindgraphLanding.networkError': 'ข้อผิดพลาดของเครือข่าย',
   'mindgraphLanding.networkErrorJoin': 'ข้อผิดพลาดของเครือข่าย เข้าร่วมล้มเหลว',
-  'mindgraphLanding.orgSessionsEmpty':
-    'ไม่มีเซสชันโรงเรียนตอนนี้ เพื่อนร่วมงานต้องเริ่ม "ร่วมมือกับโรงเรียน" บนแคนวาส',
+  'mindgraphLanding.orgSessionsEmpty': 'ไม่มีเซสชันโรงเรียนตอนนี้ เพื่อนร่วมงานต้องเริ่ม "ร่วมมือกับโรงเรียน" บนแคนวาส',
   'mindgraphLanding.participantsOnline': '{n} ออนไลน์',
   'mindgraphLanding.schoolCollab': 'ร่วมมือกับโรงเรียน',
   'mindgraphLanding.sharedCodeHint': 'ใส่รหัสเชิญ (xxx-xxx) เพื่อเข้าร่วมเซสชัน',

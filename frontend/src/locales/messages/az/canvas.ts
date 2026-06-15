@@ -1,4 +1,6 @@
-/** az UI — canvas */
+/**
+ * az UI �?canvas
+ */
 
 export default {
   'braceMap.defaultSubpartFirst': 'Yeni alt hissə 1',
@@ -14,11 +16,14 @@ export default {
   'canvas.export.svgError': 'SVG ixracı uğursuz oldu, yenidən cəhd edin',
   'canvas.export.svgSuccess': 'SVG uğurla ixrac olundu',
   'canvas.export.unknownFormat': 'Naməlum ixrac formatı: {format}',
-  'canvas.import.invalidFile':
-    'Yanlış diaqram faylı. MindGraph-dan ixrac olunmuş JSON faylını seçin.',
+  'canvas.import.invalidFile': 'Yanlış diaqram faylı. MindGraph-dan ixrac olunmuş JSON faylını seçin.',
   'canvas.import.parseError': 'JSON faylı oxunmadı, yenidən cəhd edin',
-  'canvas.reset.confirmBody':
-    'Əminsiniz? Cari diaqram və palet daxil olmaqla bütün məzmun itəcək; geri qaytarılmır.',
+  'canvas.import.cmapHeuristicSemantics': 'This CmapTools file used text-order fallback for links—verify relationships against your original map.',
+  'canvas.import.cmapConnectionFallback': 'Relationships were reconstructed from IHMC graphical connections rather than proposition objects.',
+  'canvas.import.cmapEmptyLayout': 'Imported map has no recovered node coordinates; layout was regenerated.',
+  'canvas.import.cmapLayoutLabelCollision': 'Duplicate concept labels overlap in layout anchors; some imported positions may be wrong.',
+  'canvas.import.cmapLayoutFailed': 'Layout extraction hit a parse error—positions were regenerated.',
+  'canvas.reset.confirmBody': 'Əminsiniz? Cari diaqram və palet daxil olmaqla bütün məzmun itəcək; geri qaytarılmır.',
   'canvas.reset.confirmButton': 'Sıfırla',
   'canvas.reset.confirmTitle': 'Defolt şablona sıfırla',
   'canvas.reset.warnSelectType': 'Sıfırlamaq olmaz: əvvəlcə diaqram növü seçin',
@@ -58,10 +63,8 @@ export default {
   'canvas.toolbar.causeAdded': 'Səbəb düyünü əlavə olundu',
   'canvas.toolbar.childAdded': 'Alt element əlavə olundu',
   'canvas.toolbar.collabAiBlocked': 'Əməkdaşlıqda yalnız diaqram sahibi AI yarada bilər',
-  'canvas.toolbar.collabLiveAiDisabled':
-    'AI generation is unavailable during live collaboration so everyone stays in sync',
-  'canvas.toolbar.collabGuestFeatureBlocked':
-    'Əməkdaşlıq qonağı kimi qoşulduğunuzda bu funksiya əlçatan deyil.',
+  'canvas.toolbar.collabLiveAiDisabled': 'AI generation is unavailable during live collaboration so everyone stays in sync',
+  'canvas.toolbar.collabGuestFeatureBlocked': 'Əməkdaşlıq qonağı kimi qoşulduğunuzda bu funksiya əlçatan deyil.',
   'canvas.toolbar.colorLabel': 'Rəng',
   'canvas.toolbar.conceptGeneration': 'Konsept yaradılması',
   'canvas.toolbar.conceptMapModesDev': 'Konsept xəritəsi rejimləri hazırlanır',
@@ -82,13 +85,11 @@ export default {
   'canvas.toolbar.exit': 'Çıx',
   'canvas.toolbar.exitFullscreen': 'Tam ekrandan çıx',
   'canvas.toolbar.highlighter': 'Vurğulayıcı',
-  'canvas.toolbar.highlighterTooltip':
-    'Kanvasda vurğulayıcı kimi çəkin; təqdimatdan çıxanda təmizlənir',
+  'canvas.toolbar.highlighterTooltip': 'Kanvasda vurğulayıcı kimi çəkin; təqdimatdan çıxanda təmizlənir',
   'canvas.toolbar.highlighterChooseColor': 'Vurğulayıcı rəngi',
   'canvas.toolbar.highlighterPaletteAria': 'Vurğulayıcı rəngini seçin',
   'canvas.toolbar.insertEquation': 'Tənlik daxil edin',
-  'canvas.toolbar.insertEquationTooltip':
-    'Karetaya daxil edilmiş riyaziyyatı ($...$) daxil edin və ya redaktə olunmursa, seçilmiş node əlavə edin',
+  'canvas.toolbar.insertEquationTooltip': 'Karetaya daxil edilmiş riyaziyyatı ($...$) daxil edin və ya redaktə olunmursa, seçilmiş node əlavə edin',
   'canvas.toolbar.insertEquationSelectNode': 'Əvvəlcə bir node seçin',
   'canvas.toolbar.insertEquationDialogTitle': 'Tənlik daxil edin',
   'canvas.toolbar.insertEquationLoading': 'Riyaziyyat redaktoru yüklənir...',
@@ -122,7 +123,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqMidpoint': 'Orta nöqtə',
   'canvas.toolbar.mathKeyboardEqYmxb': 'y=mx+b',
   'canvas.toolbar.mathKeyboardEqYQuad': 'y=ax²+bx+c',
-  'canvas.toolbar.mathKeyboardEqAbsX': "{'|'}x{'|'}",
+  'canvas.toolbar.mathKeyboardEqAbsX': '{\'|\'}x{\'|\'}',
   'canvas.toolbar.mathKeyboardEqCircleArea': 'A=πr²',
   'canvas.toolbar.mathKeyboardEqCircleCircum': 'C=2πr',
   'canvas.toolbar.mathKeyboardEqTriHalfBh': 'A=½ bh',
@@ -143,7 +144,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqLawSin': 'Sinuslar qanunu',
   'canvas.toolbar.mathKeyboardEqCosSumDiff': 'cos(α±β)',
   'canvas.toolbar.mathKeyboardEqSinSumDiff': 'günah(α±β)',
-  'canvas.toolbar.mathKeyboardEqEuler': "e^{'{'}iθ{'}'}",
+  'canvas.toolbar.mathKeyboardEqEuler': 'e^{\'{\'}iθ{\'}\'}',
   'canvas.toolbar.mathKeyboardEqDoubleAngle': 'İkiqat bucaq',
   'canvas.toolbar.mathKeyboardEqSum1toN': '1+2+…+n',
   'canvas.toolbar.mathKeyboardEqArithAn': 'Arifmetik aₙ',
@@ -217,8 +218,7 @@ export default {
   'canvas.toolbar.fontGroupChinese': 'Çin şriftləri',
   'canvas.toolbar.fontGroupEnglish': 'İngilis şriftləri',
   'canvas.toolbar.fontLabel': 'Şrift',
-  'canvas.toolbar.formatBrushActivated':
-    'Stil kopyalandı — hədəf nodları seçin və tətbiq etmək üçün yenidən klikləyin',
+  'canvas.toolbar.formatBrushActivated': 'Stil kopyalandı — hədəf nodları seçin və tətbiq etmək üçün yenidən klikləyin',
   'canvas.toolbar.formatBrushApplied': 'Format {count} noda tətbiq edildi',
   'canvas.toolbar.formatBrushCancelled': 'Format fırçası ləğv edildi',
   'canvas.toolbar.formatBrushDev': 'Format fırçası hazırlanır',
@@ -232,14 +232,12 @@ export default {
   'canvas.toolbar.moreAppLearningSheet': 'Öyrənmə vərəqi',
   'canvas.toolbar.moreAppLearningSheetDesc': 'Təhsil və təkrar üçün təsadüfi boşluqlar',
   'canvas.toolbar.moreAppWaterfall': 'Şəlalə',
-  'canvas.toolbar.moreAppWaterfallDesc':
-    'Toplu düyünlərdə seçim; divergent və konvergent düşüncəni göstər',
+  'canvas.toolbar.moreAppWaterfallDesc': 'Toplu düyünlərdə seçim; divergent və konvergent düşüncəni göstər',
   'canvas.toolbar.moreApps': 'Daha çox tətbiq',
   'canvas.toolbar.moreAppSnapshot': 'Anlıq görüntü',
   'canvas.toolbar.moreAppSnapshotDesc': 'Bu diaqramın versiyasını saxlayın (maks. 10)',
   'canvas.toolbar.moreAppTranslateLabel': 'Translate',
-  'canvas.toolbar.moreAppTranslateLabelDesc':
-    'Translate all node and connection labels to your current interface language using AI',
+  'canvas.toolbar.moreAppTranslateLabelDesc': 'Translate all node and connection labels to your current interface language using AI',
   'canvas.toolbar.translateLabelTitle': 'Translate diagram',
   'canvas.toolbar.translateLabelSource': 'Labels to translate ({count})',
   'canvas.toolbar.translateLabelTargetLanguage': 'Target language',
@@ -250,25 +248,20 @@ export default {
   'canvas.toolbar.translateLabelDiagramEmpty': 'No text to translate in this diagram',
   'canvas.toolbar.translateLabelAndMore': '{n} more not shown…',
   'canvas.toolbar.translateLabelInProgress': 'Translating diagram…',
-  'canvas.toolbar.translateLabelFallbackEnInfo':
-    'Your interface language is not available as a translation target yet. Labels will be translated to English.',
+  'canvas.toolbar.translateLabelBannerTitle': 'Translating diagram',
+  'canvas.toolbar.translateLabelFallbackEnInfo': 'Your interface language is not available as a translation target yet. Labels will be translated to English.',
   'canvas.toolbar.translateLabelFailed': 'Translation failed. Please try again.',
   'canvas.toolbar.translateLabelDone': 'Diagram translated',
   'canvas.toolbar.moreAppVirtualKeyboard': 'Virtual klaviatura',
-  'canvas.toolbar.moreAppVirtualKeyboardDesc':
-    'Ekran klaviaturası interfeys dilinizə sinxronlaşdırılıb',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc': 'Ekran klaviaturası interfeys dilinizə sinxronlaşdırılıb',
   'canvas.toolbar.virtualKeyboardClose': 'Klaviaturanı bağlayın',
-  'canvas.toolbar.virtualKeyboardFocusHint':
-    'Əvvəlcə node etiketinə iki dəfə klikləyin və ya iki dəfə toxunun, sonra klaviatura ilə yazın',
+  'canvas.toolbar.virtualKeyboardFocusHint': 'Əvvəlcə node etiketinə iki dəfə klikləyin və ya iki dəfə toxunun, sonra klaviatura ilə yazın',
   'canvas.toolbar.snapshotSaveFirst': 'Anlıq görüntü almazdan əvvəl diaqramı saxlayın',
   'canvas.toolbar.snapshotTaken': 'Anlıq görüntü {n} saxlanıldı',
   'canvas.toolbar.snapshotFailed': 'Anlıq görüntü saxlanmadı, yenidən cəhd edin',
-  'canvas.toolbar.snapshotTooLarge':
-    'Anlıq görüntü çox böyükdür (maks. {max} KB). Diaqram məzmununu azaldın və yenidən cəhd edin.',
-  'canvas.toolbar.snapshotRateLimited':
-    'Çox sayda anlıq görüntü əməliyyatı. Bir az gözləyin və yenidən cəhd edin.',
-  'canvas.toolbar.snapshotDiagramNotFound':
-    'Diaqram tapılmadı. Səhifəni yeniləyin və ya kitabxanadan açın.',
+  'canvas.toolbar.snapshotTooLarge': 'Anlıq görüntü çox böyükdür (maks. {max} KB). Diaqram məzmununu azaldın və yenidən cəhd edin.',
+  'canvas.toolbar.snapshotRateLimited': 'Çox sayda anlıq görüntü əməliyyatı. Bir az gözləyin və yenidən cəhd edin.',
+  'canvas.toolbar.snapshotDiagramNotFound': 'Diaqram tapılmadı. Səhifəni yeniləyin və ya kitabxanadan açın.',
   'canvas.toolbar.snapshotConflict': 'Anlıq görüntü saxlanmadı (ziddiyyət). Yenidən cəhd edin.',
   'canvas.toolbar.newAssociation': 'Yeni assosiasiya',
   'canvas.toolbar.newAttribute': 'Yeni atribut',
@@ -289,18 +282,14 @@ export default {
   'canvas.toolbar.presetsLabel': 'Ön qurğular',
   'canvas.toolbar.redo': 'Təkrarla',
   'canvas.toolbar.selectBranchOrChild': 'Budaq və ya alt düyün seçin',
-  'canvas.toolbar.selectCategoryOrLeafDelete':
-    'Kateqoriya və ya yarpaq düyünlərini seçin (mövzu silinmir)',
-  'canvas.toolbar.selectCauseOrEffectForAdd':
-    'Select a cause or effect node (not the event), then press Enter to add another in that column',
-  'canvas.toolbar.selectTreeBranchForChild':
-    'Select a category or an item under a category to add a child, or select the topic to add a category',
+  'canvas.toolbar.selectCategoryOrLeafDelete': 'Kateqoriya və ya yarpaq düyünlərini seçin (mövzu silinmir)',
+  'canvas.toolbar.selectCauseOrEffectForAdd': 'Select a cause or effect node (not the event), then press Enter to add another in that column',
+  'canvas.toolbar.selectTreeBranchForChild': 'Select a category or an item under a category to add a child, or select the topic to add a category',
   'canvas.toolbar.selectNodesFirst': 'Əvvəlcə düyün(lər)i seçin',
   'canvas.toolbar.selectNodesToDelete': 'Silmək üçün düyün(lər)i seçin',
   'canvas.toolbar.selectPartForSubpart': 'Alt hissə üçün hissə düyününü seçin',
   'canvas.toolbar.selectPartThenEnter': 'Alt hissə üçün hissə düyününü seçin, sonra Enter basın',
-  'canvas.toolbar.selectSimilarityOrDifferenceDelete':
-    'Oxşarlıq və ya fərq düyünlərini seçin (mövzu silinmir)',
+  'canvas.toolbar.selectSimilarityOrDifferenceDelete': 'Oxşarlıq və ya fərq düyünlərini seçin (mövzu silinmir)',
   'canvas.toolbar.selectSimilarityOrDifferenceFirst': 'Əvvəlcə oxşarlıq və ya fərq düyününü seçin',
   'canvas.toolbar.selectStepForSubstep': 'Alt addım üçün addım düyününü seçin',
   'canvas.toolbar.similarityWithIndex': 'Oxşarlıq {n}',
@@ -363,15 +352,17 @@ export default {
   'canvas.translation.stop': 'Stop translation',
   'canvas.topBar.snapshotRecallTooltip': 'Anlıq görüntü {n} bərpa et',
   'canvas.topBar.snapshotRecallTitle': 'Anlıq görüntünü bərpa et',
-  'canvas.topBar.snapshotRecallConfirm':
-    'Anlıq görüntü {n} bərpa olunsun? Cari dəyişikliklər əvəz olunacaq.',
+  'canvas.topBar.snapshotRecallConfirm': 'Anlıq görüntü {n} bərpa olunsun? Cari dəyişikliklər əvəz olunacaq.',
   'canvas.topBar.snapshotRecallConfirmBtn': 'Bərpa et',
   'canvas.topBar.snapshotRecallCancelBtn': 'Ləğv et',
   'canvas.topBar.snapshotRecallHistory': 'Anlıq görüntü {n} bərpa əvvəli',
   'canvas.topBar.snapshotRecallFailed': 'Anlıq görüntü bərpa olunmadı, yenidən cəhd edin',
+  'canvas.topBar.snapshotRecallNoDiagram': 'Save the diagram to your library first, then restore a snapshot.',
+  'canvas.topBar.snapshotRecallNoType': 'Diagram type is not ready yet. Wait a moment and try again.',
   'canvas.topBar.snapshotDeleted': 'Anlıq görüntü {n} silindi',
   'canvas.topBar.snapshotDeleteFailed': 'Anlıq görüntü silinmədi, yenidən cəhd edin',
   'canvas.topBar.snapshotBadgeTooltip': 'Anlıq görüntü {n} bərpa üçün klik · silmək üçün Ctrl+klik',
+  'canvas.topBar.snapshotRecallingTooltip': 'Restoring snapshot {n}…',
   'canvas.zoomControls.exitFullscreen': 'Tam ekrandan çıx',
   'canvas.zoomControls.fitCanvas': 'Kanvasa uyğunlaşdır',
   'canvas.zoomControls.fullscreen': 'Tam ekran',
@@ -386,18 +377,14 @@ export default {
   'canvasPage.collaborationFooterOwner': '{username} əməkdaşlığı',
   'canvasPage.collaborationFooterOwnerDiagram': '{username} diaqramı «{diagramTitle}» — əməkdaşlıq',
   'canvasPage.collaborationFooterNetworkDiagramTitle': '«{diagramTitle}» birgə diaqramı',
-  'canvasPage.collaborationFooterSchool':
-    'Məktəb əməkdaşlığı davam edir — məktəb siyahısından qoşulun.',
-  'canvasPage.collaborationFooterSchoolDiagram':
-    '«{diagramTitle}» üzrə məktəb əməkdaşlığı — məktəb sessiya siyahısından qoşulun.',
-  'canvasPage.collabRoomIdleEnding':
-    'Sessiya boşdayanır — təxminən {seconds} saniyə sonra əməkdaşlıq bitəcək (davam etdirmək üçün redaktə edin)',
+  'canvasPage.collaborationFooterSchool': 'Məktəb əməkdaşlığı davam edir — məktəb siyahısından qoşulun.',
+  'canvasPage.collaborationFooterSchoolDiagram': '«{diagramTitle}» üzrə məktəb əməkdaşlığı — məktəb sessiya siyahısından qoşulun.',
+  'canvasPage.collabRoomIdleEnding': 'Sessiya boşdayanır — təxminən {seconds} saniyə sonra əməkdaşlıq bitəcək (davam etdirmək üçün redaktə edin)',
   'conceptMap.focus.noResult': 'Nəticə yoxdur',
   'conceptMap.focus.validationRequestFailed': 'Yoxlama sorğusu uğursuz oldu',
   'diagram.aiGenerating': 'AI...',
   'diagram.alternativeDimensions.braceTitle': 'Bu mövzu üçün digər mümkün parçalama ölçüləri:',
-  'diagram.alternativeDimensions.bridgeAnalogiesTitle':
-    'Bu mövzu üçün digər mümkün analogiya nümunələri:',
+  'diagram.alternativeDimensions.bridgeAnalogiesTitle': 'Bu mövzu üçün digər mümkün analogiya nümunələri:',
   'diagram.alternativeDimensions.treeMapTitle': 'Bu mövzu üçün digər mümkün təsnifat ölçüləri:',
   'diagram.bridgeMap.alternativesEmpty': '[Əvəzedici əlaqələr burada görünəcək]',
   'diagram.conceptMap.focusQuestionPrefix': 'Fokus sualı: ',
@@ -510,8 +497,7 @@ export default {
   'editor.redo': 'Təkrarla',
   'editor.saveDiagram': 'Diaqramı saxla',
   'editor.selectDiagramType': 'Diaqram növünü seçin',
-  'editor.slotsFull':
-    'Yer doludur, avtomatik saxlama müvəqqəti əlçatan deyil. Yer açmaq üçün mövcud diaqramları silin.',
+  'editor.slotsFull': 'Yer doludur, avtomatik saxlama müvəqqəti əlçatan deyil. Yer açmaq üçün mövcud diaqramları silin.',
   'editor.undo': 'Geri al',
   'editor.zoomIn': 'Yaxınlaşdır',
   'editor.zoomOut': 'Uzaqlaşdır',
@@ -581,12 +567,10 @@ export default {
   'mindgraphLanding.loadOrgSessionsFailed': 'Məktəb sessiyaları yüklənmədi',
   'mindgraphLanding.networkError': 'Şəbəkə xətası',
   'mindgraphLanding.networkErrorJoin': 'Şəbəkə xətası, qoşulmaq alınmadı',
-  'mindgraphLanding.orgSessionsEmpty':
-    'Hazırda qoşula biləcəyiniz məktəb sessiyası yoxdur (həmkarınız kanvasda sessiyanı açmalıdır).',
+  'mindgraphLanding.orgSessionsEmpty': 'Hazırda qoşula biləcəyiniz məktəb sessiyası yoxdur (həmkarınız kanvasda sessiyanı açmalıdır).',
   'mindgraphLanding.participantsOnline': '{n} onlayn',
   'mindgraphLanding.schoolCollab': 'Məktəb daxilində əməkdaşlıq',
-  'mindgraphLanding.sharedCodeHint':
-    'Dəvət kodunu (xxx-xxx) daxil edin ki, onların sessiyasına qoşulasınız.',
+  'mindgraphLanding.sharedCodeHint': 'Dəvət kodunu (xxx-xxx) daxil edin ki, onların sessiyasına qoşulasınız.',
   'mindgraphLanding.sharedCollab': 'Ümumi əməkdaşlıq',
   'mindgraphLanding.joinDiagramEdit': 'Diaqram redaktəsinə qoşul',
   'mindgraphLanding.welcome': 'Salam {username}, mən sənin AI vizual düşüncə köməkçinəm',

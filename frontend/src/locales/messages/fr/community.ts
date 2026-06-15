@@ -1,4 +1,6 @@
-/** fr UI — community */
+/**
+ * fr UI �?community
+ */
 
 export default {
   'community.category.all': 'Tous',
@@ -70,16 +72,13 @@ export default {
   'debateverse.advanceStage': 'Phase avancée',
   'debateverse.affirmativePositionLabel': 'Position affirmative : ',
   'debateverse.avatar.viewer': 'Spectateur',
-  'debateverse.clickNextHint':
-    'Veuillez cliquer sur le bouton suivant pour appliquer les modifications',
+  'debateverse.clickNextHint': 'Veuillez cliquer sur le bouton suivant pour appliquer les modifications',
   'debateverse.coinTossAffirmativeFirst': 'L’affirmatif parle en premier',
   'debateverse.coinTossGotIt': 'Compris',
-  'debateverse.coinTossModalBody':
-    'Avant le débat, déterminez l’ordre de prise de parole ou choisissez les positions affirmative/négative au moyen d’un tirage à pile ou face',
+  'debateverse.coinTossModalBody': 'Avant le débat, déterminez l’ordre de prise de parole ou choisissez les positions affirmative/négative au moyen d’un tirage à pile ou face',
   'debateverse.coinTossNegativeFirst': 'Le négatif parle en premier',
   'debateverse.coinTossOrder': 'Tirage à pile ou face pour déterminer l’ordre de prise de parole',
-  'debateverse.coinTossRules':
-    'Des modèles d’IA ont été attribués aléatoirement aux rôles du débat. Avant le débat, déterminez l’ordre de prise de parole ou choisissez les positions affirmative/négative au moyen d’un tirage à pile ou face',
+  'debateverse.coinTossRules': 'Des modèles d’IA ont été attribués aléatoirement aux rôles du débat. Avant le débat, déterminez l’ordre de prise de parole ou choisissez les positions affirmative/négative au moyen d’un tirage à pile ou face',
   'debateverse.coinTossStageTitle': 'Phase du tirage à pile ou face',
   'debateverse.debateTopicLabel': 'Thème du débat : ',
   'debateverse.executeCoinToss': 'Effectuer le tirage à pile ou face',
@@ -110,19 +109,13 @@ export default {
   'debateverse.setup.roleJudge': 'Jouer en tant que juge',
   'debateverse.setup.roleViewer': 'Jouer en tant que spectateur',
   'debateverse.setup.suggestion1': 'L’IA devrait-elle bénéficier de la personnalité juridique ?',
-  'debateverse.setup.suggestion2':
-    'Les jeux vidéo sont-ils plus bénéfiques ou plus nuisibles aux adolescents ?',
-  'debateverse.setup.suggestion3':
-    'Les examens d’entrée à l’université devraient-ils être supprimés ?',
-  'debateverse.setup.suggestion4':
-    'Les plateformes de médias sociaux devraient-elles appliquer une modération de contenu plus stricte ?',
+  'debateverse.setup.suggestion2': 'Les jeux vidéo sont-ils plus bénéfiques ou plus nuisibles aux adolescents ?',
+  'debateverse.setup.suggestion3': 'Les examens d’entrée à l’université devraient-ils être supprimés ?',
+  'debateverse.setup.suggestion4': 'Les plateformes de médias sociaux devraient-elles appliquer une modération de contenu plus stricte ?',
   'debateverse.setup.suggestion5': 'Le télétravail devrait-il devenir la norme ?',
-  'debateverse.setup.suggestion6':
-    'Le contenu généré par l’IA devrait-il bénéficier de la protection du droit d’auteur ?',
-  'debateverse.setup.suggestion7':
-    'L’éducation devrait-elle privilégier davantage les connaissances ou les compétences ?',
-  'debateverse.setup.suggestion8':
-    'L’édition génétique devrait-elle être autorisée sur les embryons humains ?',
+  'debateverse.setup.suggestion6': 'Le contenu généré par l’IA devrait-il bénéficier de la protection du droit d’auteur ?',
+  'debateverse.setup.suggestion7': 'L’éducation devrait-elle privilégier davantage les connaissances ou les compétences ?',
+  'debateverse.setup.suggestion8': 'L’édition génétique devrait-elle être autorisée sur les embryons humains ?',
   'debateverse.setup.topicPlaceholder': 'Saisissez le sujet du débat…',
   'debateverse.side.affirmative': 'Affirmatif',
   'debateverse.side.judge': 'Juge',
@@ -144,8 +137,7 @@ export default {
   'library.loading': 'Chargement…',
   'library.other': 'Autre',
   'library.premiumCollection': 'Collection en vedette',
-  'library.slotFull.body':
-    'Vous avez {max} diagrammes enregistrés. Supprimez-en un pour en enregistrer un nouveau.',
+  'library.slotFull.body': 'Vous avez {max} diagrammes enregistrés. Supprimez-en un pour en enregistrer un nouveau.',
   'library.slotFull.cancel': 'Annuler',
   'library.slotFull.deleteAndSave': 'Supprimer et enregistrer',
   'library.slotFull.networkError': 'Erreur réseau, l’opération a échoué.',

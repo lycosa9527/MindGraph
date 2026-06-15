@@ -1,5 +1,5 @@
 /**
- * en UI — community
+ * no UI �?community
  */
 
 export default {
@@ -75,12 +75,10 @@ export default {
   'debateverse.clickNextHint': 'Please click the next button to take changes in effect',
   'debateverse.coinTossAffirmativeFirst': 'Affirmative speaks first',
   'debateverse.coinTossGotIt': 'Got it',
-  'debateverse.coinTossModalBody':
-    'Before the debate, determine speaking order or choose affirmative/negative positions through coin toss',
+  'debateverse.coinTossModalBody': 'Before the debate, determine speaking order or choose affirmative/negative positions through coin toss',
   'debateverse.coinTossNegativeFirst': 'Negative speaks first',
   'debateverse.coinTossOrder': 'Coin Toss to Determine Speaking Order',
-  'debateverse.coinTossRules':
-    'AI models have been randomly assigned to debate roles. Before the debate, determine speaking order or choose affirmative/negative positions through coin toss',
+  'debateverse.coinTossRules': 'AI models have been randomly assigned to debate roles. Before the debate, determine speaking order or choose affirmative/negative positions through coin toss',
   'debateverse.coinTossStageTitle': 'Coin Toss Stage',
   'debateverse.debateTopicLabel': 'Debate Topic: ',
   'debateverse.executeCoinToss': 'Execute Coin Toss',
@@ -113,8 +111,7 @@ export default {
   'debateverse.setup.suggestion1': 'Should AI be granted legal personhood?',
   'debateverse.setup.suggestion2': 'Do video games benefit or harm teenagers more?',
   'debateverse.setup.suggestion3': 'Should college entrance exams be abolished?',
-  'debateverse.setup.suggestion4':
-    'Should social media platforms have stricter content moderation?',
+  'debateverse.setup.suggestion4': 'Should social media platforms have stricter content moderation?',
   'debateverse.setup.suggestion5': 'Should remote work become the mainstream?',
   'debateverse.setup.suggestion6': 'Should AI-generated content be copyright protected?',
   'debateverse.setup.suggestion7': 'Should education focus more on knowledge or skills?',

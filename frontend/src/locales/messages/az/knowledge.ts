@@ -1,10 +1,9 @@
 /**
- * az UI — knowledge
+ * az UI �?knowledge
  */
 
 export default {
-  'chunkTest.history.confirmDeleteBody':
-    'Bu test qeydini silmək istədiyinizə əminsiniz? Bu geri qaytarıla bilməz.',
+  'chunkTest.history.confirmDeleteBody': 'Bu test qeydini silmək istədiyinizə əminsiniz? Bu geri qaytarıla bilməz.',
   'chunkTest.history.confirmDeleteTitle': 'Testi sil',
   'chunkTest.history.delete': 'Sil',
   'chunkTest.history.deleteFailed': 'Testi silmək alınmadı',
@@ -43,8 +42,7 @@ export default {
   'chunkTestResults.answerQuality': 'Cavab keyfiyyəti',
   'chunkTestResults.avgLatency': 'Ort. gecikmə (ms)',
   'chunkTestResults.back': 'Geri',
-  'chunkTestResults.cancelConfirmBody':
-    'Bu testi ləğv etmək istədiyinizə əminsiniz? Test növbəti yoxlama nöqtəsində dayanacaq.',
+  'chunkTestResults.cancelConfirmBody': 'Bu testi ləğv etmək istədiyinizə əminsiniz? Test növbəti yoxlama nöqtəsində dayanacaq.',
   'chunkTestResults.cancelFailed': 'Ləğv alınmadı',
   'chunkTestResults.cancelRequested': 'Testin ləğvi sorğusu göndərildi',
   'chunkTestResults.cancelTest': 'Testi ləğv et',
@@ -84,8 +82,7 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'Bütün datadəstlərini sınayın',
   'knowledge.chunkHeader.testUpload': 'Yüklənmiş sənədləri sınaqdan keçirin',
   'knowledge.chunkHeader.title': 'RAG parça testi',
-  'knowledge.chunkHeader.waitForProcessing':
-    'Zəhmət olmasa, sınaqdan əvvəl sənədlərin emalı bitənə qədər gözləyin',
+  'knowledge.chunkHeader.waitForProcessing': 'Zəhmət olmasa, sınaqdan əvvəl sənədlərin emalı bitənə qədər gözləyin',
   'knowledge.chunkPreview.empty': 'Parça məlumatı yoxdur',
   'knowledge.chunkPreview.pageLabel': 'Səhifə {n}',
   'knowledge.chunkPreview.title': 'Sənəd parçaları — {fileName}',
@@ -104,8 +101,7 @@ export default {
   'knowledge.doc.colStatus': 'Vəziyyət',
   'knowledge.doc.colType': 'Növ',
   'knowledge.doc.colUploaded': 'Yükləmə tarixi',
-  'knowledge.doc.emptyDescription':
-    'Hələ sənəd yoxdur. Bilik bazanızı yaratmaq üçün sənədləri yükləyin.',
+  'knowledge.doc.emptyDescription': 'Hələ sənəd yoxdur. Bilik bazanızı yaratmaq üçün sənədləri yükləyin.',
   'knowledge.doc.errorPrefix': 'Xəta:',
   'knowledge.doc.noData': 'Məlumat yoxdur',
   'knowledge.doc.statusCompleted': 'Tamamlandı',
@@ -123,8 +119,7 @@ export default {
   'knowledge.manualEval.deselectAll': 'Seçimi ləğv et',
   'knowledge.manualEval.dialogTitle': 'Əl ilə qiymətləndirmə — {method}',
   'knowledge.manualEval.groundTruthLabel': 'Standart cavab (istəyə bağlı)',
-  'knowledge.manualEval.groundTruthPlaceholder':
-    'Cavab uyğunluğu üçün standart cavabı daxil edin...',
+  'knowledge.manualEval.groundTruthPlaceholder': 'Cavab uyğunluğu üçün standart cavabı daxil edin...',
   'knowledge.manualEval.metric.answer_coverage': 'Cavab əhatəsi',
   'knowledge.manualEval.metric.answer_faithfulness': 'Cavab sədaqəti',
   'knowledge.manualEval.metric.clarity': 'Aydınlıq',
@@ -146,8 +141,7 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Parça keyfiyyəti qiymətləndirməsi',
   'knowledge.manualEval.resultsTitle': 'Qiymətləndirmə nəticələri',
   'knowledge.manualEval.selectAll': 'Hamısını seç',
-  'knowledge.manualEval.selectChunksHeading':
-    'Qiymətləndirmə üçün parçaları seçin (hamısı üçün boş buraxın)',
+  'knowledge.manualEval.selectChunksHeading': 'Qiymətləndirmə üçün parçaları seçin (hamısı üçün boş buraxın)',
   'knowledge.manualEval.showingFirst20': 'İlk 20 göstərilir, ümumi {total} parça',
   'knowledge.manualEval.startEvaluation': 'Qiymətləndirməyə başla',
   'knowledge.processing.chunking': 'Parçalanma',
@@ -202,8 +196,7 @@ export default {
   'knowledge.upload.maxDocs': 'Maksimum sənəd limitinə çatıldı (5)',
   'knowledge.upload.title': 'Sənədi Yüklə',
   'knowledge.upload.unsupportedType': 'Dəstəklənməyən fayl növü',
-  'knowledgeSpace.confirmDeleteBody':
-    'Bu sənədi silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.',
+  'knowledgeSpace.confirmDeleteBody': 'Bu sənədi silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.',
   'knowledgeSpace.confirmDeleteTitle': 'Silməni təsdiqlə',
   'knowledgeSpace.deleteFailed': 'Silmə uğursuz oldu',
   'knowledgeSpace.documentDeleted': 'Sənəd silindi',

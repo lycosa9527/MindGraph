@@ -1,5 +1,5 @@
 /**
- * az UI — workshop
+ * az UI �?workshop
  */
 
 export default {
@@ -29,20 +29,16 @@ export default {
   'collab.noDiagramToSave': 'Saxlanacaq diaqram yoxdur',
   'collab.nodeLocked': 'Başqa istifadəçi bu düyünü redaktə edir',
   'collab.participants': '{n} iştirakçı',
-  'collab.previousSessionsStopped':
-    'Digər diaqramlarınızdakı {n} əvvəlki əməkdaşlıq sessiyası bitirildi.',
+  'collab.previousSessionsStopped': 'Digər diaqramlarınızdakı {n} əvvəlki əməkdaşlıq sessiyası bitirildi.',
   'collab.saveFailed': 'Saxlama uğursuz oldu',
   'collab.scanToJoin': 'Qoşulmaq üçün skan edin',
-  'collab.schoolDescActive':
-    'Məktəb əməkdaşlığı aktivdir. Həmkarlar: əsas səhifədə Əməkdaşlıq → Məktəb keçidindən bu diaqramı seçin — kod lazım deyil.',
-  'collab.schoolStarted':
-    'Məktəb əməkdaşlığı aktivdir — həmkarlar Əməkdaşlıq → Məktəb bölməsindən qoşula bilər.',
+  'collab.schoolDescActive': 'Məktəb əməkdaşlığı aktivdir. Həmkarlar: əsas səhifədə Əməkdaşlıq → Məktəb keçidindən bu diaqramı seçin — kod lazım deyil.',
+  'collab.schoolStarted': 'Məktəb əməkdaşlığı aktivdir — həmkarlar Əməkdaşlıq → Məktəb bölməsindən qoşula bilər.',
   'collab.sectionNetwork': 'Ümumi əməkdaşlıq (kod)',
   'collab.sectionSchool': 'Məktəb daxilində əməkdaşlıq',
   'collab.sessionDuration': 'Sessiya müddəti',
   'collab.sessionRemaining': 'Sessiyanın bitməsinə qalan',
-  'collab.shareDescNetwork':
-    'Kodu və ya linki paylaşın — digərləri əsas səhifədə Əməkdaşlıq → Ümumi altında daxil edə bilər.',
+  'collab.shareDescNetwork': 'Kodu və ya linki paylaşın — digərləri əsas səhifədə Əməkdaşlıq → Ümumi altında daxil edə bilər.',
   'collab.start': 'Başlat',
   'collab.startFailed': 'Başlatmaq alınmadı: {msg}',
   'collab.title': 'Onlayn əməkdaşlıq',
@@ -55,11 +51,9 @@ export default {
   'workshop.announceChannels': 'Elanlar',
   'workshop.announceReadOnlyHint': 'Bu elan kanalına yalnız administratorlar yazı yaza bilər.',
   'workshop.archiveLessonStudy': 'Dərs tədqiqatını arxivlə',
-  'workshop.archiveLessonStudyConfirm':
-    'Bu dərs tədqiqatı arxivlənsin? Üzvlər artıq siyahıda görməyəcəklər.',
+  'workshop.archiveLessonStudyConfirm': 'Bu dərs tədqiqatı arxivlənsin? Üzvlər artıq siyahıda görməyəcəklər.',
   'workshop.archiveTeachingGroup': 'Tədris qrupunu arxivlə',
-  'workshop.archiveTeachingGroupConfirm':
-    'Bu tədris qrupu arxivlənsin? Qrup siyahısından silinəcək.',
+  'workshop.archiveTeachingGroupConfirm': 'Bu tədris qrupu arxivlənsin? Qrup siyahısından silinəcək.',
   'workshop.backToConversations': 'Söhbətlər',
   'workshop.bold': 'Qalın',
   'workshop.browseChannels': 'Tədris qruplarına bax',
@@ -69,8 +63,7 @@ export default {
   'workshop.channelAvatarEmoji': 'İkon (istəyə bağlı)',
   'workshop.channelAvatarPlaceholder': 'Emoji və ya qısa etiket',
   'workshop.channelColor': 'Kanal rəngi',
-  'workshop.channelInviteReceived':
-    'Siz «{name}» qrupuna əlavə olundunuz. Görmək üçün Emalatxananı açın.',
+  'workshop.channelInviteReceived': 'Siz «{name}» qrupuna əlavə olundunuz. Görmək üçün Emalatxananı açın.',
   'workshop.channelKindGroup': 'Tədris qrupu (üst səviyyə, məs. 教研',
   'workshop.channelKindLessonStudy': 'Qrup altında dərs tədqiqatı (课例)',
   'workshop.channelNameLabel': 'Ad',
@@ -106,8 +99,7 @@ export default {
   'workshop.create': 'Yarat',
   'workshop.createChannelFailed': 'Kanal yaradılmadı',
   'workshop.createChannelNeedParent': 'Əvvəlcə üst tədris qrupunu seçin.',
-  'workshop.createChannelNoGroupsYet':
-    'Əvvəlcə tədris qrupu yaradın, sonra altında dərs tədqiqatları əlavə edin.',
+  'workshop.createChannelNoGroupsYet': 'Əvvəlcə tədris qrupu yaradın, sonra altında dərs tədqiqatları əlavə edin.',
   'workshop.createChannelSuccess': 'Kanal yaradıldı',
   'workshop.createStudyCaseHint': 'Başlamaq üçün söhbətə başlayın',
   'workshop.cycleStudyStatus': 'Dövr tədqiqatı statusu',
@@ -140,8 +132,7 @@ export default {
   'workshop.gearMenu': 'Seçimlər',
   'workshop.generalChat': 'Ümumi söhbət',
   'workshop.inbox': 'Gələn qutu',
-  'workshop.inboxHintPickChannel':
-    'Oxumaq və cavab yazmaq üçün yan paneldə kanal və ya birbaşa mesaj açın. Baxışlar Gələn qutudan istənilən vaxt qayıda bilərsiniz.',
+  'workshop.inboxHintPickChannel': 'Oxumaq və cavab yazmaq üçün yan paneldə kanal və ya birbaşa mesaj açın. Baxışlar Gələn qutudan istənilən vaxt qayıda bilərsiniz.',
   'workshop.inboxSummaryTitle': 'Gələn qutunuz',
   'workshop.inboxUnreadChannels': 'Kanallarda oxunmamış',
   'workshop.inboxUnreadDms': 'Oxunmamış birbaşa mesajlar',
@@ -166,16 +157,14 @@ export default {
   'workshop.loadMore': 'Daha çox yüklə',
   'workshop.mainChannelStream': 'əsas kanal',
   'workshop.manageTeachingGroups': 'Tədris qruplarını idarə et',
-  'workshop.manageTeachingGroupsBlurb':
-    'Qrup əlavə edin və ya silin, ictimai və ya şəxsi təyin edin, ad və təsviri redaktə edin, siyahını yenidən sıralayın, şablon kimi qrupu çoxaldın və həmkarları dəvət edin. Yazı qaydaları və bildirişlər üçün Qabaqcıl bölməsindən istifadə edin. Arxivləmə qrupu hər kəs üçün çıxarır.',
+  'workshop.manageTeachingGroupsBlurb': 'Qrup əlavə edin və ya silin, ictimai və ya şəxsi təyin edin, ad və təsviri redaktə edin, siyahını yenidən sıralayın, şablon kimi qrupu çoxaldın və həmkarları dəvət edin. Yazı qaydaları və bildirişlər üçün Qabaqcıl bölməsindən istifadə edin. Arxivləmə qrupu hər kəs üçün çıxarır.',
   'workshop.manageUser': 'Bu istifadəçini idarə et',
   'workshop.markAllReadChannel': 'Bütün mesajları oxunmuş işarələ',
   'workshop.markAsRead': 'Oxunmuş işarələ',
   'workshop.markStudyResolved': 'Tədqiqatı həll olunmuş işarələ',
   'workshop.members': 'üzv',
   'workshop.mentionAmbiguous': 'Naməlum adlar unikal göstərilən adı olan birini seçin: {0}',
-  'workshop.mentionUnknown':
-    'Naməlum oxşatmalar (yalnız eyni təşkilat istifadəçiləri və heyət): {0}',
+  'workshop.mentionUnknown': 'Naməlum oxşatmalar (yalnız eyni təşkilat istifadəçiləri və heyət): {0}',
   'workshop.mentionedInChannel': 'Sizi #{0} kanalında qeyd etdilər',
   'workshop.mentionedInTopic': 'Sizi {0} söhbətində qeyd etdilər',
   'workshop.mentions': 'Qeydlər',
@@ -206,20 +195,16 @@ export default {
   'workshop.noTeachingGroupsListed': 'Hələ tədris qrupu yoxdur.',
   'workshop.noTopicsYet': 'Hələ söhbət yoxdur',
   'workshop.notifications': 'Bildirişlər',
-  'workshop.notificationsSettingsBlurb':
-    'Qeyd və yeni mesajlar üçün brauzer bildirişləri sistem parametrlərinizdən istifadə edir. İş masası və e-poqt bildirişlərini kanal parametrlərində tənzimləyə bilərsiniz.',
+  'workshop.notificationsSettingsBlurb': 'Qeyd və yeni mesajlar üçün brauzer bildirişləri sistem parametrlərinizdən istifadə edir. İş masası və e-poqt bildirişlərini kanal parametrlərində tənzimləyə bilərsiniz.',
   'workshop.offline': 'oflayn',
   'workshop.online': 'onlayn',
   'workshop.openMainChannelStream': 'əsas kanal',
   'workshop.others': 'DİGƏRLƏRİ',
   'workshop.permissions': 'İcazələr',
   'workshop.personalMenu': 'Şəxsi menyu',
-  'workshop.phase2RoadmapGroupsAlerts':
-    'Sonra: @qrup qeydləri, xəbərdarlıq sözləri və mesaj redaktə tarixçəsi siyasəti.',
-  'workshop.phase2RoadmapMovePreview':
-    'Sonra: tək mesaj köçürmə, URL önizləmələri və daha zəngin kanallararası fəaliyyət.',
-  'workshop.phase2RoadmapPlatform':
-    'Platforma növbəsi: artan sinxronizasiya, mobil push, e-poqt xülasələri, botlar/webhooklar.',
+  'workshop.phase2RoadmapGroupsAlerts': 'Sonra: @qrup qeydləri, xəbərdarlıq sözləri və mesaj redaktə tarixçəsi siyasəti.',
+  'workshop.phase2RoadmapMovePreview': 'Sonra: tək mesaj köçürmə, URL önizləmələri və daha zəngin kanallararası fəaliyyət.',
+  'workshop.phase2RoadmapPlatform': 'Platforma növbəsi: artan sinxronizasiya, mobil push, e-poqt xülasələri, botlar/webhooklar.',
   'workshop.pickColleagueToInvite': 'Dəvət etmək üçün həmkar seçin.',
   'workshop.pinChannel': 'Yuxarıya sanc',
   'workshop.policyEveryone': 'Hamı',
@@ -227,8 +212,7 @@ export default {
   'workshop.policyMembersOnly': 'Yalnız üzvlərə',
   'workshop.postingPolicy': 'Yazı siyasəti',
   'workshop.preferences': 'Üstünlüklər',
-  'workshop.preferencesSettingsBlurb':
-    'Dil və görüntü üstünlükləri tətbiqdə keçərlidir. Daha çox Emalatxana çat seçimləri zamanla burada görünəcək.',
+  'workshop.preferencesSettingsBlurb': 'Dil və görüntü üstünlükləri tətbiqdə keçərlidir. Daha çox Emalatxana çat seçimləri zamanla burada görünəcək.',
   'workshop.presenceActive': 'Aktiv',
   'workshop.presenceIdle': 'Boşdayan',
   'workshop.presenceOffline': 'Oflayn',
@@ -236,8 +220,7 @@ export default {
   'workshop.profile': 'Profil',
   'workshop.publicChannels': 'İctimai kanallar',
   'workshop.quoteMessage': 'Mesajı sitat gətir',
-  'workshop.readOnlyProfileBlurb':
-    'Həmkarlar üçün profil məlumatları sadələşdirilmiş görünüşdə göstərilir. Admin kataloqu üçün İstifadəçini idarə et (adminlər) istifadə edin.',
+  'workshop.readOnlyProfileBlurb': 'Həmkarlar üçün profil məlumatları sadələşdirilmiş görünüşdə göstərilir. Admin kataloqu üçün İstifadəçini idarə et (adminlər) istifadə edin.',
   'workshop.recentDmActivity': 'Son birbaşa mesajlar',
   'workshop.recentTopics': 'Son söhbətlər',
   'workshop.renameTopic': 'Söhbətin adını dəyiş',
@@ -248,8 +231,7 @@ export default {
   'workshop.roleOwner': 'Sahibi',
   'workshop.searchMembers': 'Üzvləri axtar...',
   'workshop.searchMessages': 'Mesajları axtar...',
-  'workshop.selectChannelForSettings':
-    'Əvvəlcə tədris qrupu və ya dərs tədqiqatı seçin, sonra parametrləri burada açın.',
+  'workshop.selectChannelForSettings': 'Əvvəlcə tədris qrupu və ya dərs tədqiqatı seçin, sonra parametrləri burada açın.',
   'workshop.selectConversation': 'Söhbət seçin',
   'workshop.selectParentGroup': 'Üst tədris qrupu',
   'workshop.selectTopic': 'Söhbət seçin',
@@ -273,8 +255,7 @@ export default {
   'workshop.streamMenu': 'Tədris qrupu menyusu',
   'workshop.strikethrough': 'Üstündən xətt',
   'workshop.switchSchool': 'Məktəbi dəyiş',
-  'workshop.teachingGroupLandingHint':
-    'Bu tədris qrupundakı dərs tədqiqatları və söhbətlər. Kanal və ya mövzunu açmaq üçün sətir seçin.',
+  'workshop.teachingGroupLandingHint': 'Bu tədris qrupundakı dərs tədqiqatları və söhbətlər. Kanal və ya mövzunu açmaq üçün sətir seçin.',
   'workshop.teachingGroupMembers': 'Üzvlər',
   'workshop.teachingGroupNameRequired': 'Zəhmət olmasa tədris qrupu adı daxil edin.',
   'workshop.teachingGroupNoLessons': 'Bu qrupda hələ dərs tədqiqatı yoxdur.',
@@ -289,8 +270,7 @@ export default {
   'workshop.topicTitle': 'Başlıq',
   'workshop.topicTitlePlaceholder': 'məs. 3-cü fəsil üçün dizayn düşüncə xəritəsi',
   'workshop.topics': 'Söhbətlər',
-  'workshop.typeMessagePlaceholder':
-    'Mesaj yazın(göndərmək üçün Enter, yeni sətir üçün Shift+Enter)',
+  'workshop.typeMessagePlaceholder': 'Mesaj yazın(göndərmək üçün Enter, yeni sətir üçün Shift+Enter)',
   'workshop.unfollowTopic': 'Söhbəti izləmə',
   'workshop.unknown': 'Naməlum',
   'workshop.unmuteChannel': 'Kanalın səsini aç',
@@ -306,14 +286,11 @@ export default {
   'workshop.viewProfile': 'Profilə bax',
   'workshop.viewingSchool': 'Baxılır: {0}',
   'workshop.views': 'Baxışlar',
-  'workshop.welcomeChannelsBody':
-    'Burada «kanal» çox vaxt tədris-tədqiqat qrupuna (教研 və ya PLC-yə uyğun gəlir: komanda başına bir ümumi məkan (məs. riyaziyyat PLC, ingilis PLC). Kimin iştirak etdiyini və məkanın necə qruplaşdığını müəyyən edir.',
+  'workshop.welcomeChannelsBody': 'Burada «kanal» çox vaxt tədris-tədqiqat qrupuna (教研 və ya PLC-yə uyğun gəlir: komanda başına bir ümumi məkan (məs. riyaziyyat PLC, ingilis PLC). Kimin iştirak etdiyini və məkanın necə qruplaşdığını müəyyən edir.',
   'workshop.welcomeChannelsTitle': 'PLC / fənn qrupları',
-  'workshop.welcomeConversationsBody':
-    'Dərs tədqiqatı daxilində başlıqlı söhbətlər açırsınız məs. tədris dizaynı, əks və ya davamlı tapşırıqlar ki, mövzular izlənməsi asan olsun.',
+  'workshop.welcomeConversationsBody': 'Dərs tədqiqatı daxilində başlıqlı söhbətlər açırsınız məs. tədris dizaynı, əks və ya davamlı tapşırıqlar ki, mövzular izlənməsi asan olsun.',
   'workshop.welcomeConversationsTitle': 'Söhbətlər',
-  'workshop.welcomeExampleCaption':
-    'Nümunə (xəyali məktəb) riyaziyyat və ingilis PLC, hər birində dərs tədqiqatları və nümunəvi söhbətlər.',
+  'workshop.welcomeExampleCaption': 'Nümunə (xəyali məktəb) riyaziyyat və ingilis PLC, hər birində dərs tədqiqatları və nümunəvi söhbətlər.',
   'workshop.welcomeExampleConvLabel': 'Söhbətlər',
   'workshop.welcomeExampleGroupEnglish': 'İngilis PLC',
   'workshop.welcomeExampleGroupMath': 'Riyaziyyat PLC',
@@ -332,51 +309,38 @@ export default {
   'workshop.welcomeExampleMsgLabel': 'Mesajlar hər söhbətin içindədir',
   'workshop.welcomeExampleOrg': 'Çenci orta məktəbi',
   'workshop.welcomeHowTitle': 'Necə birləşir',
-  'workshop.welcomeIntro':
-    'Emalatxana məktəbinizin strukturlu müzakirə məkanıdır: elanlar paylaşın, dərs tədqiqatları aparın və tədris işinizlə yanaşı söhbətləri səliqəli saxlayın.',
-  'workshop.welcomeLessonStudyBody':
-    'Dərs tədqiqatı kanalları adətən həmin qrupun altındadır. Hər biri bir dərs dövrü planlaşdırma, müşahidə və əks üçün məkandır və diaqramlara və ya statuslara keçid verə bilər.',
+  'workshop.welcomeIntro': 'Emalatxana məktəbinizin strukturlu müzakirə məkanıdır: elanlar paylaşın, dərs tədqiqatları aparın və tədris işinizlə yanaşı söhbətləri səliqəli saxlayın.',
+  'workshop.welcomeLessonStudyBody': 'Dərs tədqiqatı kanalları adətən həmin qrupun altındadır. Hər biri bir dərs dövrü planlaşdırma, müşahidə və əks üçün məkandır və diaqramlara və ya statuslara keçid verə bilər.',
   'workshop.welcomeLessonStudyTitle': 'Dərs tədqiqatları',
-  'workshop.welcomeMessagesBody':
-    'Mesajlar əsas kanal axınında və ya söhbət daxilində ayrıca yazılardır. Cavablar, qeydlər və fayllar mesajlar üzərindədir.',
+  'workshop.welcomeMessagesBody': 'Mesajlar əsas kanal axınında və ya söhbət daxilində ayrıca yazılardır. Cavablar, qeydlər və fayllar mesajlar üzərindədir.',
   'workshop.welcomeMessagesTitle': 'Mesajlar',
   'workshop.welcomeSubtitle': 'MindGraph-da məktəbinizlə əməkdaşlıq edin',
   'workshop.welcomeTitle': 'Emalatxanaya xoş gəlmisiniz',
   'workshop.you': '(siz)',
   'workshop.youAnd': 'Siz və',
   'workshopCanvas.connectFailed': 'Əməkdaşlığa qoşulmaq alınmadı',
-  'workshopCanvas.sessionExpiredReconnect':
-    'Sessiyanızın müddəti bitdi. Əməkdaşlığa yenidən qoşulmaq üçün səhifəni yeniləyin.',
-  'workshopCanvas.sessionRefreshFailed':
-    'Əməkdaşlıq sessiyasını yeniləmək alınmadı. Zəhmət olmasa işi saxlayın və yenidən daxil olun.',
-  'workshopCanvas.outboundQueueDegraded':
-    'Əməkdaşlıq sinxronizasiyası geri qalır. Bəzi göndərilməmiş redaktələr saxlanıla bilmədi.',
+  'workshopCanvas.sessionExpiredReconnect': 'Sessiyanızın müddəti bitdi. Əməkdaşlığa yenidən qoşulmaq üçün səhifəni yeniləyin.',
+  'workshopCanvas.sessionRefreshFailed': 'Əməkdaşlıq sessiyasını yeniləmək alınmadı. Zəhmət olmasa işi saxlayın və yenidən daxil olun.',
+  'workshopCanvas.outboundQueueDegraded': 'Əməkdaşlıq sinxronizasiyası geri qalır. Bəzi göndərilməmiş redaktələr saxlanıla bilmədi.',
   'workshopCanvas.connectionClosed': 'Bağlantı kəsildi',
-  'workshopCanvas.connectionClosedSlow':
-    'Bağlantı kəsildi: əlaqəniz əməkdaşlıq sessiyasına uyğun gəlmək üçün çox yavaş idi.',
+  'workshopCanvas.connectionClosedSlow': 'Bağlantı kəsildi: əlaqəniz əməkdaşlıq sessiyasına uyğun gəlmək üçün çox yavaş idi.',
   'workshopCanvas.sessionEndedByHost': 'Ev sahibi əməkdaşlıq sessiyasını bitirdi.',
   'workshopCanvas.editingNodeLabel': '{username} redaktə edir…',
   'workshopCanvas.collabEditorDisplayNameFallback': 'Başqa iştirakçı',
   'workshopCanvas.connectionClosedReason': 'Əməkdaşlıq bağlantısı kəsildi: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} bu düyünü redaktə edir',
   'workshopCanvas.errorGeneric': 'Əməkdaşlıq xətası',
-  'workshopCanvas.updatePartialFiltered':
-    'Bəzi redaktələr atlandı ({count} düyün), çünki başqa iştirakçı həmin düyünləri redaktə edir.',
+  'workshopCanvas.updatePartialFiltered': 'Bəzi redaktələr atlandı ({count} düyün), çünki başqa iştirakçı həmin düyünləri redaktə edir.',
   'workshopCanvas.reconnectFailed': 'Əməkdaşlığa yenidən qoşulmaq alınmadı, səhifəni yeniləyin',
-  'workshopCanvas.resyncWaiting':
-    'Canlı diaqram sinxronizasiyası gözləniləndən uzun çəkir. Yenidən cəhd edilir; redaktə ilişibsə səhifəni yeniləyə bilərsiniz.',
-  'workshopCanvas.returnedHomeIdle':
-    'Uzun müddət işləmədiyiniz üçün bağlantı kəsildi və əsas səhifəyə qayıdıldı.',
+  'workshopCanvas.resyncWaiting': 'Canlı diaqram sinxronizasiyası gözləniləndən uzun çəkir. Yenidən cəhd edilir; redaktə ilişibsə səhifəni yeniləyə bilərsiniz.',
+  'workshopCanvas.returnedHomeIdle': 'Uzun müddət işləmədiyiniz üçün bağlantı kəsildi və əsas səhifəyə qayıdıldı.',
   'workshopCanvas.userJoined': 'İstifadəçi {username} qoşuldu',
   'workshopCanvas.usersJoined': '{count} istifadəçi qoşuldu',
   'workshopCanvas.userLeft': 'İstifadəçi {username} ayrıldı',
   'workshopCanvas.usersLeft': '{count} istifadəçi ayrıldı',
   'workshopCanvas.wsError': 'Əməkdaşlıq bağlantısı xətası, şəbəkəni yoxlayın',
-  'workshopCanvas.returnedHomeRoomIdle':
-    'Əməkdaşlıq bitdi: bu sessiyada bir müddətdir diaqramda redaktə olunmayıb.',
-  'workshopCanvas.roomIdleWarningToast':
-    'Son vaxtlar diaqramda redaktə yoxdur — kim redaktə etməsə, geri sayım sıfıra çatanda əməkdaşlıq bitər.',
-  'workshopCanvas.otherTabCollaborationActive':
-    'Əməkdaşlıq bu hesab üçün başqa vərəqədə və ya pəncərədə davam edir.',
+  'workshopCanvas.returnedHomeRoomIdle': 'Əməkdaşlıq bitdi: bu sessiyada bir müddətdir diaqramda redaktə olunmayıb.',
+  'workshopCanvas.roomIdleWarningToast': 'Son vaxtlar diaqramda redaktə yoxdur — kim redaktə etməsə, geri sayım sıfıra çatanda əməkdaşlıq bitər.',
+  'workshopCanvas.otherTabCollaborationActive': 'Əməkdaşlıq bu hesab üçün başqa vərəqədə və ya pəncərədə davam edir.',
   'workshopCanvas.joinQrAlt': 'Əməkdaşlığa qoşulmaq üçün QR kodu',
 } as const

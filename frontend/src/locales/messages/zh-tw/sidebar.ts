@@ -1,4 +1,6 @@
-/** zh-tw UI — sidebar */
+/**
+ * zh-tw UI �?sidebar
+ */
 
 export default {
   'sidebar.actions.delete': '刪除',
@@ -69,6 +71,7 @@ export default {
   'sidebar.library': '圖書館',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
+  'sidebar.mindMateAgent': 'Agent {name}',
   'sidebar.mindbot': 'MindBot',
   'sidebar.schoolZone': '學校專區',
   'sidebar.smartResponse': 'Smart Response 智回',

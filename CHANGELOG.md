@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.40] - 2026-06-16
+
+> **CI Node 26, GitHub Actions v6, and i18n key parity restored across all UI locales.**
+
+### Changed
+
+- **CI — Node 26** — Frontend job pins Node via [`frontend/.nvmrc`](frontend/.nvmrc); `engines.node` raised to `>=26.0.0` ([`package.json`](frontend/package.json)).
+- **CI — GitHub Actions** — `actions/checkout@v6`, `actions/setup-node@v6`, and `actions/setup-python@v6` in [`ci.yml`](.github/workflows/ci.yml) and [`nightly-collab.yml`](.github/workflows/nightly-collab.yml) (Node 24 action runtime; clears Node 20 deprecation warnings).
+- **i18n — zh canonical keys** — Added missing `admin.displayNameHint`, `admin.schoolManagersTab`, `admin.invitationCodeMaskedHint`, and demo login strings to zh/en ([`zh/admin.ts`](frontend/src/locales/messages/zh/admin.ts), [`zh/common.ts`](frontend/src/locales/messages/zh/common.ts)).
+- **i18n — locale sync** — Re-aligned all non-zh UI bundles to zh key parity via [`sync-messages-keys-from-reference.ts`](frontend/scripts/sync-messages-keys-from-reference.ts); `check-i18n-keys.ts` passes (2832 keys × 77 locales).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.40).
+
 ## [5.117.39] - 2026-06-15
 
 > **Sidebar site QR hover modal, SPA static MIME types via mimetypes, and explicit `/index.html` for Workbox fallback.**

@@ -1,4 +1,6 @@
-/** zh-tw UI — auth */
+/**
+ * zh-tw UI �?auth
+ */
 
 export default {
   'auth.accountInfo': '賬戶信息',
@@ -8,19 +10,13 @@ export default {
   'auth.updateLogLoadError': '暫時無法加載更新日誌，請稍後重試。',
   'auth.updateLogEmpty': '暫無更新說明。',
   'auth.downloadDesktopShortcut': '添加到桌面',
-  'auth.pwaIosInstallHint':
-    '在 Safari、Chrome 或 Edge 中點分享，再選擇「添加到主屏幕」。',
-  'auth.pwaAndroidInstallHint':
-    '打開瀏覽器選單（⋮），選擇「安裝應用」或「添加到主屏幕」。',
-  'auth.pwaSafariMacInstallHint':
-    '在 Safari 中選擇「檔案 → 加入 Dock」，或使用「共享 → 加入 Dock」（macOS Sonoma 及以上）。',
-  'auth.pwaDesktopInstallHint':
-    '請打開瀏覽器選單（⋮），或使用地址欄旁的安裝圖標（Chrome、Edge 或 Brave）。',
+  'auth.pwaIosInstallHint': '在 Safari、Chrome 或 Edge 中點分享，再選擇「添加到主屏幕」。',
+  'auth.pwaAndroidInstallHint': '打開瀏覽器選單（⋮），選擇「安裝應用」或「添加到主屏幕」。',
+  'auth.pwaSafariMacInstallHint': '在 Safari 中選擇「檔案 → 加入 Dock」，或使用「共享 → 加入 Dock」（macOS Sonoma 及以上）。',
+  'auth.pwaDesktopInstallHint': '請打開瀏覽器選單（⋮），或使用地址欄旁的安裝圖標（Chrome、Edge 或 Brave）。',
   'auth.pwaInstallSuccess': 'MindGraph 已添加到桌面。',
-  'auth.pwaDevInstallHint':
-    '一般開發模式未啟用 PWA。請使用生產構建（npm run build 後由後端提供），或執行 npm run dev:pwa，並用 Chrome/Edge 在 HTTPS 或 localhost 下開啟。',
-  'auth.pwaInsecureOriginHint':
-    '請先在瀏覽器中開啟 MindGraph 的 HTTPS 網址（不要開啟已保存的 HTML 檔案），再添加到桌面。',
+  'auth.pwaDevInstallHint': '一般開發模式未啟用 PWA。請使用生產構建（npm run build 後由後端提供），或執行 npm run dev:pwa，並用 Chrome/Edge 在 HTTPS 或 localhost 下開啟。',
+  'auth.pwaInsecureOriginHint': '請先在瀏覽器中開啟 MindGraph 的 HTTPS 網址（不要開啟已保存的 HTML 檔案），再添加到桌面。',
   'auth.backToLogin': '返回登錄',
   'auth.captcha': '驗證碼',
   'auth.captchaLength4': '請輸入4位驗證碼',
@@ -30,12 +26,9 @@ export default {
   'auth.accountPlugin': '插件',
   'auth.apiTokenButton': 'API令牌',
   'auth.downloadChromeExtension': 'Chrome 擴展',
-  'auth.schoolTierFeatureUnavailable':
-    '目前學校版本不支援此功能，請升級至標準教研版或校本共建版（基礎教研版不含此功能）',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    '學校訂閱已到期，已自動切換為體驗版。如需續訂請聯絡平台管理員。',
-  'auth.diagramLimitReached':
-    '體驗版每位教師最多保存 {max} 張導圖，請刪除後再保存。',
+  'auth.schoolTierFeatureUnavailable': '目前學校版本不支援此功能，請升級至標準教研版或校本共建版（基礎教研版不含此功能）',
+  'auth.schoolSubscriptionExpiredDowngraded': '學校訂閱已到期，已自動切換為體驗版。如需續訂請聯絡平台管理員。',
+  'auth.diagramLimitReached': '體驗版每位教師最多保存 {max} 張導圖，請刪除後再保存。',
   'auth.downloadOpenclawSkill': 'OpenClaw 技能包',
   'auth.changePhoneButton': '更換手機',
   'auth.passwordChangeSuccess': '密碼修改成功',
@@ -112,8 +105,7 @@ export default {
   'auth.modal.hybridRegisterEmailTab': '教育郵箱',
   'auth.modal.hybridRegisterEmailTabAny': '郵箱',
   'auth.modal.hybridRegisterPhoneTab': '手機號與邀請碼',
-  'auth.modal.mainlandSalesNotice':
-    '中国大陆用户请使用手机号与邀请码注册；如需帮助请联系客服人员。',
+  'auth.modal.mainlandSalesNotice': '中国大陆用户请使用手机号与邀请码注册；如需帮助请联系客服人员。',
   'auth.modal.registrationEmailLabel': '僅限教育郵箱',
   'auth.modal.registrationEmailLabelAny': '郵箱地址',
   'auth.modal.registrationEmailHint': '',
@@ -128,10 +120,8 @@ export default {
   'auth.modal.emailCodePlaceholder': '6位郵箱驗證碼',
   'auth.modal.acknowledgeOverseas': '我理解並僅將軟件用於教育用途。',
   'auth.modal.acknowledgeOverseasAny': '我理解並同意海外註冊相關條款。',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    '我理解並同意海外註冊相關條款，並知曉該註冊路徑不提供簡體中文支持。',
-  'auth.modal.acknowledgeOverseasScBrowser':
-    '我理解并仅将软件用于教育用途，并知晓该注册路径不提供简体中文支持。',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': '我理解並同意海外註冊相關條款，並知曉該註冊路徑不提供簡體中文支持。',
+  'auth.modal.acknowledgeOverseasScBrowser': '我理解并仅将软件用于教育用途，并知晓该注册路径不提供简体中文支持。',
   'auth.modal.acknowledgeOverseasRequired': '請勾選確認上述說明。',
   'auth.loginPhoneOrEmail': '手機號或郵箱',
   'auth.name': '姓名',
@@ -145,15 +135,13 @@ export default {
   'auth.username': '用戶名',
   'auth.waitCaptchaLoad': '請等待驗證碼加載',
   'auth.quickRegPageTitle': '快速註冊',
-  'auth.quickRegPageHint':
-    '请使用学校分享的链接进入本页。输入手机号，并输入老师快速注册窗口上显示的 6 位数字码（每约 30 秒变化一次）后完成加入。房间码用于确认你在场，不会像短信验证码那样单独验证机主身份。',
+  'auth.quickRegPageHint': '请使用学校分享的链接进入本页。输入手机号，并输入老师快速注册窗口上显示的 6 位数字码（每约 30 秒变化一次）后完成加入。房间码用于确认你在场，不会像短信验证码那样单独验证机主身份。',
   'auth.quickRegLinkInvalid': '本註冊鏈接已失效或已結束，請讓主持人重新分享當前鏈接後再試。',
   'auth.quickRegProbeRateLimited': '本頁請求過於頻繁，請稍候再刷新或稍後再試。',
   'auth.quickRegSessionSignups': '本場次已報名：{n} 人',
   'auth.quickRegRoomCodeLabel': '房間碼',
   'auth.quickRegRoomCodePlaceholder': '6 位數字',
-  'auth.quickRegRoomCodeHint':
-    '请对照老师/主持人屏幕上「快速注册」弹窗中显示的大号数字，确保在下一轮换码前完成输入。',
+  'auth.quickRegRoomCodeHint': '请对照老师/主持人屏幕上「快速注册」弹窗中显示的大号数字，确保在下一轮换码前完成输入。',
   'auth.quickRegRoomCodeEnter6': '請輸入 6 位房間碼',
   'auth.quickRegMaxUses': '本鏈接最多註冊人數',
   'auth.quickRegHeadcount': '人數',
@@ -163,8 +151,7 @@ export default {
   'auth.quickRegSubmit': '完成註冊',
   'auth.quickRegSubmitting': '註冊中…',
   'auth.quickRegRegisterSuccess': '註冊成功',
-  'auth.quickRegSessionUnsure':
-    '註冊可能已成功。若未自動進入，請返回使用驗證碼登錄，或重新打開本頁。',
+  'auth.quickRegSessionUnsure': '註冊可能已成功。若未自動進入，請返回使用驗證碼登錄，或重新打開本頁。',
   'auth.quickRegBackToSignIn': '使用常規登錄 / 註冊',
   'auth.quickRegSelectOrg': '選擇學校',
   'auth.quickRegOrgLoadError': '無法加載學校列表，請稍後重試。',

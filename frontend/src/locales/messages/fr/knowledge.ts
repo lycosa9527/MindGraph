@@ -1,8 +1,9 @@
-/** fr UI — knowledge */
+/**
+ * fr UI �?knowledge
+ */
 
 export default {
-  'chunkTest.history.confirmDeleteBody':
-    'Êtes-vous sûr de vouloir supprimer ce test ? Cette action est irréversible.',
+  'chunkTest.history.confirmDeleteBody': 'Êtes-vous sûr de vouloir supprimer ce test ? Cette action est irréversible.',
   'chunkTest.history.confirmDeleteTitle': 'Supprimer le test',
   'chunkTest.history.delete': 'Supprimer',
   'chunkTest.history.deleteFailed': 'Échec de la suppression du test',
@@ -24,8 +25,7 @@ export default {
   'chunkTest.page.myDocuments': 'Mes documents',
   'chunkTest.page.noDatasets': 'Aucun jeu de données disponible',
   'chunkTest.page.noDocsToTest': 'Aucun document terminé n’est disponible pour les tests',
-  'chunkTest.page.selectCompletedDocs':
-    'Veuillez sélectionner des documents terminés pour les tests',
+  'chunkTest.page.selectCompletedDocs': 'Veuillez sélectionner des documents terminés pour les tests',
   'chunkTest.page.startingDatasetTest': 'Démarrage du test pour le jeu de données : {name}…',
   'chunkTest.page.startingUserDocTest': 'Démarrage du test pour les documents téléchargés…',
   'chunkTest.page.testFailed': 'Test échoué',
@@ -42,8 +42,7 @@ export default {
   'chunkTestResults.answerQuality': 'Qualité de la réponse',
   'chunkTestResults.avgLatency': 'Latence moyenne',
   'chunkTestResults.back': 'Retour',
-  'chunkTestResults.cancelConfirmBody':
-    'Êtes-vous sûr de vouloir annuler ce test ? Le test s’arrêtera au prochain point de contrôle.',
+  'chunkTestResults.cancelConfirmBody': 'Êtes-vous sûr de vouloir annuler ce test ? Le test s’arrêtera au prochain point de contrôle.',
   'chunkTestResults.cancelFailed': 'Échec de l’annulation du test',
   'chunkTestResults.cancelRequested': 'Demande d’annulation du test envoyée',
   'chunkTestResults.cancelTest': 'Annuler le test',
@@ -60,7 +59,7 @@ export default {
   'chunkTestResults.diversity': 'Diversité',
   'chunkTestResults.diversityEfficiency': 'Diversité et efficacité',
   'chunkTestResults.evaluate': 'Évaluer',
-  'chunkTestResults.evaluationMetrics': "Métriques d'évaluation",
+  'chunkTestResults.evaluationMetrics': 'Métriques d\'évaluation',
   'chunkTestResults.generatingChunks': 'Génération des fragments...',
   'chunkTestResults.loading': 'Chargement...',
   'chunkTestResults.method': 'Méthode',
@@ -73,8 +72,7 @@ export default {
   'chunkTestResults.standardIrMetrics': 'Métriques IR standard',
   'chunkTestResults.storageEff': 'Efficacité du stockage',
   'chunkTestResults.testFailed': 'Échec du test',
-  'chunkTestResults.testFailedHint':
-    "Une erreur s'est produite lors de l'exécution du test. Veuillez réessayer.",
+  'chunkTestResults.testFailedHint': 'Une erreur s\'est produite lors de l\'exécution du test. Veuillez réessayer.',
   'chunkTestResults.testingInProgress': 'Test en cours...',
   'chunkTestResults.totalChunks': 'Total de {n} fragments',
   'chunkTestResults.viewChunks': 'Afficher les fragments',
@@ -84,8 +82,7 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'Tester tous les jeux de données',
   'knowledge.chunkHeader.testUpload': 'Tester les documents téléchargés',
   'knowledge.chunkHeader.title': 'Test des fragments RAG',
-  'knowledge.chunkHeader.waitForProcessing':
-    "Veuillez patienter jusqu'à la fin du traitement des documents avant de lancer le test",
+  'knowledge.chunkHeader.waitForProcessing': 'Veuillez patienter jusqu\'à la fin du traitement des documents avant de lancer le test',
   'knowledge.chunkPreview.empty': 'Aucun fragment trouvé',
   'knowledge.chunkPreview.pageLabel': 'Page n° {n}',
   'knowledge.chunkPreview.title': 'Fragments de document — {fileName}',
@@ -104,8 +101,7 @@ export default {
   'knowledge.doc.colStatus': 'Statut',
   'knowledge.doc.colType': 'Nature',
   'knowledge.doc.colUploaded': 'Date de téléchargement',
-  'knowledge.doc.emptyDescription':
-    'Aucun document pour le moment. Téléversez des documents pour constituer votre base de connaissances.',
+  'knowledge.doc.emptyDescription': 'Aucun document pour le moment. Téléversez des documents pour constituer votre base de connaissances.',
   'knowledge.doc.errorPrefix': 'Erreur : ',
   'knowledge.doc.noData': 'Aucune donnée',
   'knowledge.doc.statusCompleted': 'Terminé',
@@ -123,8 +119,7 @@ export default {
   'knowledge.manualEval.deselectAll': 'Désélectionner tout',
   'knowledge.manualEval.dialogTitle': 'Évaluation manuelle — {method}',
   'knowledge.manualEval.groundTruthLabel': 'Réponse de référence (facultatif)',
-  'knowledge.manualEval.groundTruthPlaceholder':
-    'Saisissez la réponse de référence pour l’évaluation de la pertinence de la réponse…',
+  'knowledge.manualEval.groundTruthPlaceholder': 'Saisissez la réponse de référence pour l’évaluation de la pertinence de la réponse…',
   'knowledge.manualEval.metric.answer_coverage': 'Couverture de la réponse',
   'knowledge.manualEval.metric.answer_faithfulness': 'Fidélité de la réponse',
   'knowledge.manualEval.metric.clarity': 'Clarté',
@@ -146,8 +141,7 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Évaluation de la qualité des fragments',
   'knowledge.manualEval.resultsTitle': 'Résultats de l’évaluation',
   'knowledge.manualEval.selectAll': 'Sélectionner tout',
-  'knowledge.manualEval.selectChunksHeading':
-    'Sélectionnez les fragments à évaluer (laissez vide pour évaluer tous les fragments)',
+  'knowledge.manualEval.selectChunksHeading': 'Sélectionnez les fragments à évaluer (laissez vide pour évaluer tous les fragments)',
   'knowledge.manualEval.showingFirst20': 'Affichage des 20 premiers fragments sur {total}',
   'knowledge.manualEval.startEvaluation': 'Démarrer l’évaluation',
   'knowledge.processing.chunking': 'Découpage',
@@ -198,13 +192,11 @@ export default {
   'knowledge.upload.click': 'Cliquez pour télécharger',
   'knowledge.upload.drag': 'ou faites glisser un fichier ici',
   'knowledge.upload.fileTooLarge': 'La taille du fichier ne doit pas dépasser 10 Mo',
-  'knowledge.upload.hintFormats':
-    'Formats pris en charge : PDF, DOCX, TXT, MD, images (max. 10 Mo)',
+  'knowledge.upload.hintFormats': 'Formats pris en charge : PDF, DOCX, TXT, MD, images (max. 10 Mo)',
   'knowledge.upload.maxDocs': 'Limite maximale de documents atteinte (5)',
   'knowledge.upload.title': 'Télécharger un document',
   'knowledge.upload.unsupportedType': 'Type de fichier non pris en charge',
-  'knowledgeSpace.confirmDeleteBody':
-    'Êtes-vous sûr de vouloir supprimer ce document ? Cette action est irréversible.',
+  'knowledgeSpace.confirmDeleteBody': 'Êtes-vous sûr de vouloir supprimer ce document ? Cette action est irréversible.',
   'knowledgeSpace.confirmDeleteTitle': 'Confirmer la suppression',
   'knowledgeSpace.deleteFailed': 'Échec de la suppression',
   'knowledgeSpace.documentDeleted': 'Document supprimé',

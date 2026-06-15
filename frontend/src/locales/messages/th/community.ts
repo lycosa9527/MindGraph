@@ -1,4 +1,6 @@
-/** th UI — community */
+/**
+ * th UI �?community
+ */
 
 export default {
   'community.category.all': 'ทั้งหมด',
@@ -73,12 +75,10 @@ export default {
   'debateverse.clickNextHint': 'กรุณาคลิกปุ่มถัดไปเพื่อให้การเปลี่ยนแปลงมีผล',
   'debateverse.coinTossAffirmativeFirst': 'ฝ่ายเห็นด้วยพูดก่อน',
   'debateverse.coinTossGotIt': 'เข้าใจแล้ว',
-  'debateverse.coinTossModalBody':
-    'ก่อนการดีเบต กำหนดลำดับการพูดหรือเลือกตำแหน่งฝ่ายเห็นด้วย/ไม่เห็นด้วยด้วยการโยนเหรียญ',
+  'debateverse.coinTossModalBody': 'ก่อนการดีเบต กำหนดลำดับการพูดหรือเลือกตำแหน่งฝ่ายเห็นด้วย/ไม่เห็นด้วยด้วยการโยนเหรียญ',
   'debateverse.coinTossNegativeFirst': 'ฝ่ายไม่เห็นด้วยพูดก่อน',
   'debateverse.coinTossOrder': 'โยนเหรียญเพื่อกำหนดลำดับการพูด',
-  'debateverse.coinTossRules':
-    'โมเดล AI ถูกสุ่มกำหนดบทบาทการดีเบต ก่อนการดีเบต กำหนดลำดับการพูดหรือเลือกตำแหน่งด้วยการโยนเหรียญ',
+  'debateverse.coinTossRules': 'โมเดล AI ถูกสุ่มกำหนดบทบาทการดีเบต ก่อนการดีเบต กำหนดลำดับการพูดหรือเลือกตำแหน่งด้วยการโยนเหรียญ',
   'debateverse.coinTossStageTitle': 'ขั้นตอนโยนเหรียญ',
   'debateverse.debateTopicLabel': 'หัวข้อดีเบต: ',
   'debateverse.executeCoinToss': 'โยนเหรียญ',
@@ -111,8 +111,7 @@ export default {
   'debateverse.setup.suggestion1': 'AI ควรได้รับสถานะบุคคลตามกฎหมายหรือไม่?',
   'debateverse.setup.suggestion2': 'วิดีโอเกมมีประโยชน์หรือเป็นอันตรายต่อวัยรุ่นมากกว่า?',
   'debateverse.setup.suggestion3': 'ควรยกเลิกการสอบเข้ามหาวิทยาลัยหรือไม่?',
-  'debateverse.setup.suggestion4':
-    'แพลตฟอร์มโซเชียลมีเดียควรมีการกลั่นกรองเนื้อหาที่เข้มงวดขึ้นหรือไม่?',
+  'debateverse.setup.suggestion4': 'แพลตฟอร์มโซเชียลมีเดียควรมีการกลั่นกรองเนื้อหาที่เข้มงวดขึ้นหรือไม่?',
   'debateverse.setup.suggestion5': 'การทำงานจากระยะไกลควรเป็นกระแสหลักหรือไม่?',
   'debateverse.setup.suggestion6': 'เนื้อหาที่สร้างโดย AI ควรได้รับการคุ้มครองลิขสิทธิ์หรือไม่?',
   'debateverse.setup.suggestion7': 'การศึกษาควรเน้นที่ความรู้หรือทักษะมากกว่า?',

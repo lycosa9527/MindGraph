@@ -1,45 +1,36 @@
-/** fr UI — mindmate */
+/**
+ * fr UI �?mindmate
+ */
 
 export default {
   'aiModel.conceptAiOff': 'Cliquez pour activer les étiquettes de relation IA (multi-modèle)',
-  'aiModel.conceptAiOn':
-    'Activé : faites glisser les liens pour générer des étiquettes de relation',
-  'aiModel.enableAi': "Activer l'IA",
-  'aiModel.inlineRecTooltip':
-    "Appuyez sur Tab pendant la modification d'un nœud pour obtenir des recommandations IA",
+  'aiModel.conceptAiOn': 'Activé : faites glisser les liens pour générer des étiquettes de relation',
+  'aiModel.enableAi': 'Activer l\'IA',
+  'aiModel.inlineRecTooltip': 'Appuyez sur Tab pendant la modification d\'un nœud pour obtenir des recommandations IA',
   'aiModel.label': 'Modèle IA',
   'aiModel.readyCount': '{count} prêt',
   'aiModel.relationshipsBadge': 'Relations',
-  'aiModel.relationshipsTooltip':
-    "Faites glisser pour relier des concepts — l'IA générera les relations",
+  'aiModel.relationshipsTooltip': 'Faites glisser pour relier des concepts — l\'IA générera les relations',
   'aiModel.tabFocusBadge': 'Focus sur Tab',
-  'aiModel.tabFocusTooltip':
-    'Appuyez sur Tab pendant la modification de la question cible pour valider ; puis sélectionnez des alternatives dans la barre (− / =)',
+  'aiModel.tabFocusTooltip': 'Appuyez sur Tab pendant la modification de la question cible pour valider ; puis sélectionnez des alternatives dans la barre (− / =)',
   'aiModel.tabFocusQuestionBadge': 'Tab — question cible',
-  'aiModel.conceptMapFocusQuestionTabTooltip':
-    'Lorsque la question cible est sélectionnée ou en cours d’édition : appuyez sur Tab pour lancer la vérification IA (saisissez d’abord une question précise ; connexion requise).',
+  'aiModel.conceptMapFocusQuestionTabTooltip': 'Lorsque la question cible est sélectionnée ou en cours d’édition : appuyez sur Tab pour lancer la vérification IA (saisissez d’abord une question précise ; connexion requise).',
   'aiModel.tabRecBadge': 'Recommandations Tab',
   'aiModel.tabContentRecBadge': 'Tab — contenu',
   'aiModel.tabRelationshipRecBadge': 'Tab — relation',
-  'aiModel.conceptMapConceptTabTooltip':
-    'Mode édition (concept isolé) : Tab pour formuler différemment (le sujet doit être renseigné).',
-  'aiModel.conceptMapRelationshipTabTooltip':
-    'Mode édition ou sélection (concept relié) : Tab pour des suggestions de relation sur la liaison mise au focus.',
+  'aiModel.conceptMapConceptTabTooltip': 'Mode édition (concept isolé) : Tab pour formuler différemment (le sujet doit être renseigné).',
+  'aiModel.conceptMapRelationshipTabTooltip': 'Mode édition ou sélection (concept relié) : Tab pour des suggestions de relation sur la liaison mise au focus.',
   'aiModel.tooltip.clickDeselect': 'Cliquez pour désélectionner {name}',
   'aiModel.tooltip.clickSelect': 'Cliquez pour sélectionner {name}',
   'aiModel.tooltip.clickSwitch': 'Cliquez pour basculer vers le résultat {name}',
   'aiModel.tooltip.generating': '{name} en cours de génération…',
   'aiModel.tooltip.modelFailed': 'Échec de la génération de {name}',
   'aiModel.tooltip.showingResult': 'Résultat {name} actuellement affiché',
-  'aiModel.hostPickBadgeTooltip':
-    'L’hôte modifie la version du diagramme pour ce modèle (vue multi-modèles).',
+  'aiModel.hostPickBadgeTooltip': 'L’hôte modifie la version du diagramme pour ce modèle (vue multi-modèles).',
   'aiModel.hostPickBadgeAria': 'L’hôte modifie le diagramme avec {name}',
-  'autoComplete.collabOwnerOnly':
-    'Seul le propriétaire du diagramme peut utiliser la génération IA pendant la collaboration',
-  'autoComplete.conceptMapRealtime':
-    'Les cartes conceptuelles utilisent des suggestions de relations en temps réel ; créez des liens pour générer',
-  'autoComplete.doubleBubbleNeedBothTopics':
-    'Veuillez remplir les deux sujets, gauche et droit, avant de générer',
+  'autoComplete.collabOwnerOnly': 'Seul le propriétaire du diagramme peut utiliser la génération IA pendant la collaboration',
+  'autoComplete.conceptMapRealtime': 'Les cartes conceptuelles utilisent des suggestions de relations en temps réel ; créez des liens pour générer',
+  'autoComplete.doubleBubbleNeedBothTopics': 'Veuillez remplir les deux sujets, gauche et droit, avant de générer',
   'autoComplete.doubleBubbleTopicPair': '{left} contre {right}',
   'autoComplete.enterTopicFirst': 'Veuillez d’abord saisir le contenu du sujet',
   'autoComplete.generationFailedRetry': 'Échec de la génération, veuillez réessayer',
@@ -49,21 +40,16 @@ export default {
   'autoComplete.selectDiagramType': 'Veuillez sélectionner le type de diagramme',
   'conceptMapPicker.currentFocusQuestion': 'Question cible actuelle',
   'conceptMapPicker.currentRootConcept': 'Concept racine actuel',
-  'conceptMapPicker.focusAlternativesHint':
-    'Alternatives ({pageSize} par page, hauteur adaptative)',
-  'conceptMapPicker.rootAlternativesHint':
-    'Alternatives racines ({pageSize} par page, hauteur adaptative)',
-  'conceptMapPicker.suggestionsEmpty':
-    'Aucune suggestion pour l’instant. Appuyez sur = pour en obtenir davantage.',
+  'conceptMapPicker.focusAlternativesHint': 'Alternatives ({pageSize} par page, hauteur adaptative)',
+  'conceptMapPicker.rootAlternativesHint': 'Alternatives racines ({pageSize} par page, hauteur adaptative)',
+  'conceptMapPicker.suggestionsEmpty': 'Aucune suggestion pour l’instant. Appuyez sur = pour en obtenir davantage.',
   'focusQuestion.alternativesAria': 'Questions focales alternatives',
   'focusQuestion.cannotReadStream': 'Impossible de lire le flux de suggestions',
   'focusQuestion.confirm': 'Confirmer et ouvrir le canevas',
   'focusQuestion.emptyOwn': '(vide)',
-  'focusQuestion.help':
-    'Une question focale est le problème spécifique traité par votre carte conceptuelle. Elle définit la portée : pour une carte sur « l’eau », des exemples pourraient être « Comment l’eau circule-t-elle sur Terre ? » ou « Quelles sont les propriétés physiques de l’eau ? »',
+  'focusQuestion.help': 'Une question focale est le problème spécifique traité par votre carte conceptuelle. Elle définit la portée : pour une carte sur « l’eau », des exemples pourraient être « Comment l’eau circule-t-elle sur Terre ? » ou « Quelles sont les propriétés physiques de l’eau ? »',
   'focusQuestion.loadMoreFailed': 'Impossible de charger davantage',
-  'focusQuestion.loginHint':
-    'Connectez-vous pour valider avec l’IA et obtenir des suggestions. Vous pouvez toutefois saisir une question et poursuivre.',
+  'focusQuestion.loginHint': 'Connectez-vous pour valider avec l’IA et obtenir des suggestions. Vous pouvez toutefois saisir une question et poursuivre.',
   'focusQuestion.needValidate': 'Lancer la vérification IA ou ignorer l’IA d’abord',
   'focusQuestion.networkError': 'Erreur réseau',
   'focusQuestion.noResult': 'Aucun résultat',
@@ -71,38 +57,26 @@ export default {
   'focusQuestion.passLabel': 'D’accord',
   'focusQuestion.placeholder': 'Saisissez votre question focale…',
   'focusQuestion.skip': 'Ignorer',
-  'focusQuestion.suggestionsEmpty':
-    'Aucune suggestion pour l’instant. Appuyez sur = pour récupérer un autre lot.',
-  'focusQuestion.suggestionsHint':
-    'Alternatives (5 par page : − précédent, = suivant ; à la dernière page, = charge davantage)',
+  'focusQuestion.suggestionsEmpty': 'Aucune suggestion pour l’instant. Appuyez sur = pour récupérer un autre lot.',
+  'focusQuestion.suggestionsHint': 'Alternatives (5 par page : − précédent, = suivant ; à la dernière page, = charge davantage)',
   'focusQuestion.suggestionsRequestFailed': 'Échec de la demande de suggestions',
-  'focusQuestion.title':
-    'Mode standard · Quelle question focale cette carte conceptuelle doit-elle répondre ?',
+  'focusQuestion.title': 'Mode standard · Quelle question focale cette carte conceptuelle doit-elle répondre ?',
   'focusQuestion.tooShort': 'Veuillez saisir une question focale courte',
   'focusQuestion.validate': 'Vérification IA',
   'focusQuestion.validationRequestFailed': 'Échec de la demande de validation',
   'focusQuestion.weakLabel': 'Faible',
-  'mindmate.defaultSuggestion1':
-    'Quels conflits cognitifs puis-je concevoir pour une leçon sur le parallélogramme ?',
-  'mindmate.defaultSuggestion10':
-    'Comment utiliser l’enseignement situationnel en cours d’histoire ?',
-  'mindmate.defaultSuggestion11':
-    'Quels problèmes de sécurité doivent être pris en compte lors des expériences de physique ?',
-  'mindmate.defaultSuggestion12':
-    'Comment concevoir des devoirs adaptés au niveau cognitif des élèves ?',
-  'mindmate.defaultSuggestion2':
-    'Aidez-moi à créer un plan de leçon sur la respiration cellulaire.',
+  'mindmate.defaultSuggestion1': 'Quels conflits cognitifs puis-je concevoir pour une leçon sur le parallélogramme ?',
+  'mindmate.defaultSuggestion10': 'Comment utiliser l’enseignement situationnel en cours d’histoire ?',
+  'mindmate.defaultSuggestion11': 'Quels problèmes de sécurité doivent être pris en compte lors des expériences de physique ?',
+  'mindmate.defaultSuggestion12': 'Comment concevoir des devoirs adaptés au niveau cognitif des élèves ?',
+  'mindmate.defaultSuggestion2': 'Aidez-moi à créer un plan de leçon sur la respiration cellulaire.',
   'mindmate.defaultSuggestion3': 'Quelles sont les idées reçues des élèves concernant la gravité ?',
-  'mindmate.defaultSuggestion4':
-    'Comment organiser une séance d’apprentissage collaboratif efficace ?',
-  'mindmate.defaultSuggestion5':
-    'Comment améliorer les compétences d’investigation scientifique des élèves ?',
-  'mindmate.defaultSuggestion6':
-    'Quelles sont les méthodes innovantes pour l’enseignement de la lecture ?',
+  'mindmate.defaultSuggestion4': 'Comment organiser une séance d’apprentissage collaboratif efficace ?',
+  'mindmate.defaultSuggestion5': 'Comment améliorer les compétences d’investigation scientifique des élèves ?',
+  'mindmate.defaultSuggestion6': 'Quelles sont les méthodes innovantes pour l’enseignement de la lecture ?',
   'mindmate.defaultSuggestion7': 'Comment relier les concepts mathématiques à la vie réelle ?',
   'mindmate.defaultSuggestion8': 'Comment développer les compétences de pensée critique ?',
-  'mindmate.defaultSuggestion9':
-    'Quelles sont les stratégies efficaces pour l’enseignement de la compréhension orale ?',
+  'mindmate.defaultSuggestion9': 'Quelles sont les stratégies efficaces pour l’enseignement de la compréhension orale ?',
   'mindmate.historyTitle': 'Historique des conversations',
   'mindmate.imagePreview': 'Aperçu de l’image',
   'mindmate.input.attachFile': 'Joindre un fichier',
@@ -120,6 +94,7 @@ export default {
   'mindmate.tooltip.share': 'Partager',
   'mindmate.untitled': 'Sans titre',
   'mindmate.welcome': 'Bonjour {username}, je suis votre partenaire virtuel pour l’enseignement',
+  'mindmate.welcomeSubtitle': 'AI virtual teaching research platform — think anywhere, anytime',
   'nodePalette.bridgeAnalogy': 'Analogie',
   'nodePalette.bridgeSource': 'Source (gauche)',
   'nodePalette.cancel': 'Annuler',
@@ -130,19 +105,15 @@ export default {
   'nodePalette.error.couldNotGenerateBranches': 'Impossible de générer des branches',
   'nodePalette.error.createDiagramFirst': 'Veuillez d’abord créer un diagramme',
   'nodePalette.error.enterTopicText': 'Veuillez saisir du texte pour le nœud sujet',
-  'nodePalette.error.replacePlaceholder':
-    'Veuillez saisir un sujet réel et remplacer l’espace réservé par défaut',
+  'nodePalette.error.replacePlaceholder': 'Veuillez saisir un sujet réel et remplacer l’espace réservé par défaut',
   'nodePalette.fallbackTopicA': 'Sujet A',
   'nodePalette.fallbackTopicB': 'Sujet B',
   'nodePalette.finish': 'Terminer',
   'nodePalette.generatingIdeas': 'Génération d’idées…',
   'nodePalette.generatingProgress': 'Génération en cours… {count} reçu',
-  'nodePalette.helpDimension':
-    'Sélectionnez exactement 1 dimension, puis cliquez sur Suivant pour continuer.',
-  'nodePalette.helpFinish':
-    'Cliquez pour sélectionner les nœuds, puis cliquez sur Terminer pour les ajouter au diagramme.',
-  'nodePalette.helpNext':
-    'Sélectionnez les nœuds, puis cliquez sur Suivant pour générer les nœuds de deuxième niveau.',
+  'nodePalette.helpDimension': 'Sélectionnez exactement 1 dimension, puis cliquez sur Suivant pour continuer.',
+  'nodePalette.helpFinish': 'Cliquez pour sélectionner les nœuds, puis cliquez sur Terminer pour les ajouter au diagramme.',
+  'nodePalette.helpNext': 'Sélectionnez les nœuds, puis cliquez sur Suivant pour générer les nœuds de deuxième niveau.',
   'nodePalette.history.replaceAddNodes': 'Remplacer/ajouter des nœuds',
   'nodePalette.loadMore': 'Charger plus',
   'nodePalette.next': 'Suivant',
@@ -180,8 +151,7 @@ export default {
   'panels.share.title': 'Partager la conversation',
   'rootConceptModal.addBranchAria': 'Ajouter une branche',
   'rootConceptModal.addBranchTooltip': 'Ajouter une branche (éviter les doublons)',
-  'rootConceptModal.helpFooter':
-    'Chaque onglet correspond à une branche de connaissances ; les concepts peuvent être liés à la racine et établir des liens croisés ultérieurement. Glissez-les sur le canevas pour créer automatiquement un lien avec la racine.',
+  'rootConceptModal.helpFooter': 'Chaque onglet correspond à une branche de connaissances ; les concepts peuvent être liés à la racine et établir des liens croisés ultérieurement. Glissez-les sur le canevas pour créer automatiquement un lien avec la racine.',
   'rootConceptModal.splittingLoading': 'Fractionnement des branches et génération des concepts…',
   'rootConceptModal.tabTitleRoot': 'Concept racine : {text}',
   'rootConceptModal.title': 'Concept racine',

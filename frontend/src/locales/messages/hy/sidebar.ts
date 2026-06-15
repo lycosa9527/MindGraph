@@ -1,5 +1,5 @@
 /**
- * en UI — sidebar
+ * hy UI �?sidebar
  */
 
 export default {
@@ -10,8 +10,7 @@ export default {
   'sidebar.actions.showLess': 'Show less',
   'sidebar.actions.showMore': 'Show more ({n})',
   'sidebar.actions.unpin': 'Unpin',
-  'sidebar.askOnceHistory.deleteConfirm':
-    'Are you sure you want to delete this conversation? This cannot be undone.',
+  'sidebar.askOnceHistory.deleteConfirm': 'Are you sure you want to delete this conversation? This cannot be undone.',
   'sidebar.askOnceHistory.empty': 'No conversations yet',
   'sidebar.askOnceHistory.renamePrompt': 'Enter a new name for this conversation',
   'sidebar.askOnceHistory.renameTitle': 'Rename Conversation',
@@ -25,8 +24,7 @@ export default {
   'sidebar.bookmarks.title': 'Recent Bookmarks',
   'sidebar.bookmarks.unknownDoc': 'Unknown Document',
   'sidebar.brandTitle': '迈特教研',
-  'sidebar.chatHistory.deleteConfirm':
-    'Are you sure you want to delete this conversation? This cannot be undone.',
+  'sidebar.chatHistory.deleteConfirm': 'Are you sure you want to delete this conversation? This cannot be undone.',
   'sidebar.chatHistory.deleteTitle': 'Delete Conversation',
   'sidebar.chatHistory.empty': 'No conversations yet',
   'sidebar.chatHistory.loginPrompt': 'Login to view history',
@@ -37,8 +35,7 @@ export default {
   'sidebar.collapseSidebar': 'Collapse sidebar',
   'sidebar.community': 'Community',
   'sidebar.courses': 'Thinking courses',
-  'sidebar.debateHistory.deleteConfirm':
-    'Are you sure you want to delete this debate? This cannot be undone.',
+  'sidebar.debateHistory.deleteConfirm': 'Are you sure you want to delete this debate? This cannot be undone.',
   'sidebar.debateHistory.empty': 'No debates yet',
   'sidebar.debateHistory.loginPrompt': 'Login to view debates',
   'sidebar.debateHistory.renamePrompt': 'Enter a new topic for this debate',
@@ -82,4 +79,13 @@ export default {
   'sidebar.templateResources': 'Templates',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': 'Account',
+  'sidebar.roleSuperAdmin': 'Super Admin',
+  'sidebar.rolePlatformAdmin': 'Teaching Researcher',
+  'sidebar.roleExpert': 'Expert',
+  'sidebar.roleSchoolAdmin': 'School Admin',
+  'sidebar.roleSchoolEdition': 'School',
+  'sidebar.roleTrialEdition': 'Trial',
+  'sidebar.roleSuperMember': 'Super Member',
+  'sidebar.logoSiteQrTitle': 'Site QR code',
+  'sidebar.logoSiteQrHint': 'Scan with your phone camera or WeChat',
 } as const

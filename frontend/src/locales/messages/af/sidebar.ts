@@ -1,4 +1,6 @@
-/** af UI — sidebar */
+/**
+ * af UI �?sidebar
+ */
 
 export default {
   'sidebar.actions.delete': 'Verwyder',
@@ -8,10 +10,9 @@ export default {
   'sidebar.actions.showLess': 'Wys minder',
   'sidebar.actions.showMore': 'Wys meer ({n})',
   'sidebar.actions.unpin': 'Ontvas',
-  'sidebar.askOnceHistory.deleteConfirm':
-    'Is u seker dat u hierdie gesprek wil verwyder? Dit kan nie ongedaan gemaak word nie.',
+  'sidebar.askOnceHistory.deleteConfirm': 'Is u seker dat u hierdie gesprek wil verwyder? Dit kan nie ongedaan gemaak word nie.',
   'sidebar.askOnceHistory.empty': 'Nog geen gesprekke nie',
-  'sidebar.askOnceHistory.renamePrompt': "Voer 'n nuwe naam vir hierdie gesprek in",
+  'sidebar.askOnceHistory.renamePrompt': 'Voer \'n nuwe naam vir hierdie gesprek in',
   'sidebar.askOnceHistory.renameTitle': 'Hernoem gesprek',
   'sidebar.askOnceHistory.title': 'Geskiedenis',
   'sidebar.bookmarks.deleteFailed': 'Kon nie bladsymerk verwyder nie',
@@ -23,23 +24,21 @@ export default {
   'sidebar.bookmarks.title': 'Onlangse bladsymerke',
   'sidebar.bookmarks.unknownDoc': 'Onbekende dokument',
   'sidebar.brandTitle': 'Mit — navorsing en onderrig',
-  'sidebar.chatHistory.deleteConfirm':
-    'Is u seker dat u hierdie gesprek wil verwyder? Dit kan nie ongedaan gemaak word nie.',
+  'sidebar.chatHistory.deleteConfirm': 'Is u seker dat u hierdie gesprek wil verwyder? Dit kan nie ongedaan gemaak word nie.',
   'sidebar.chatHistory.deleteTitle': 'Verwyder gesprek',
   'sidebar.chatHistory.empty': 'Nog geen gesprekke nie',
   'sidebar.chatHistory.loginPrompt': 'Teken aan om geskiedenis te sien',
-  'sidebar.chatHistory.renamePrompt': "Voer 'n nuwe naam vir hierdie gesprek in",
+  'sidebar.chatHistory.renamePrompt': 'Voer \'n nuwe naam vir hierdie gesprek in',
   'sidebar.chatHistory.renameTitle': 'Hernoem gesprek',
   'sidebar.chatHistory.title': 'Geskiedenis',
   'sidebar.chunkTest': 'RAG-stuk-toets',
   'sidebar.collapseSidebar': 'Vou sybalk saam',
   'sidebar.community': 'Gemeenskap',
   'sidebar.courses': 'Dink-kursusse',
-  'sidebar.debateHistory.deleteConfirm':
-    'Is u seker dat u hierdie debat wil skrap? Hierdie aksie kan nie ongedaan gemaak word nie.',
+  'sidebar.debateHistory.deleteConfirm': 'Is u seker dat u hierdie debat wil skrap? Hierdie aksie kan nie ongedaan gemaak word nie.',
   'sidebar.debateHistory.empty': 'Nog geen debatte nie',
   'sidebar.debateHistory.loginPrompt': 'Teken aan om debatte te sien',
-  'sidebar.debateHistory.renamePrompt': "Voer 'n nuwe onderwerp vir hierdie debat in",
+  'sidebar.debateHistory.renamePrompt': 'Voer \'n nuwe onderwerp vir hierdie debat in',
   'sidebar.debateHistory.renameTitle': 'Hernoem Debat',
   'sidebar.debateHistory.title': 'Onlangse Debatter',
   'sidebar.debateverse': 'Debatwereld',
@@ -50,7 +49,7 @@ export default {
   'sidebar.diagramHistory.empty': 'Geen gestoorde diagramme nie',
   'sidebar.diagramHistory.loginPrompt': 'Teken aan om diagramme te sien',
   'sidebar.diagramHistory.nameRequired': 'Naam mag nie leeg wees nie',
-  'sidebar.diagramHistory.renamePrompt': "Voer 'n nuwe naam vir hierdie diagram in",
+  'sidebar.diagramHistory.renamePrompt': 'Voer \'n nuwe naam vir hierdie diagram in',
   'sidebar.diagramHistory.renameTitle': 'Hernoem Diagram',
   'sidebar.diagramHistory.title': 'Gestoorde diagramme',
   'sidebar.diagramType.brace_map': 'Klammertjiekaart',
@@ -72,6 +71,7 @@ export default {
   'sidebar.library': 'Biblioteek',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
+  'sidebar.mindMateAgent': 'Agent {name}',
   'sidebar.mindbot': 'MindBot',
   'sidebar.schoolZone': 'Skoolgebied',
   'sidebar.smartResponse': 'Slim reaksie',
@@ -79,4 +79,13 @@ export default {
   'sidebar.templateResources': 'Sjablone',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': 'Rekening',
+  'sidebar.roleSuperAdmin': 'Super Admin',
+  'sidebar.rolePlatformAdmin': 'Teaching Researcher',
+  'sidebar.roleExpert': 'Expert',
+  'sidebar.roleSchoolAdmin': 'School Admin',
+  'sidebar.roleSchoolEdition': 'School',
+  'sidebar.roleTrialEdition': 'Trial',
+  'sidebar.roleSuperMember': 'Super Member',
+  'sidebar.logoSiteQrTitle': 'Site QR code',
+  'sidebar.logoSiteQrHint': 'Scan with your phone camera or WeChat',
 } as const

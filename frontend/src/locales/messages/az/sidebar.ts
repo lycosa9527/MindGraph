@@ -1,4 +1,6 @@
-/** az UI — sidebar */
+/**
+ * az UI �?sidebar
+ */
 
 export default {
   'sidebar.actions.delete': 'Sil',
@@ -8,8 +10,7 @@ export default {
   'sidebar.actions.showLess': 'Daha az göstər',
   'sidebar.actions.showMore': 'Daha çox göstər ({n})',
   'sidebar.actions.unpin': 'Sancağı çıxarın',
-  'sidebar.askOnceHistory.deleteConfirm':
-    'Bu söhbəti silmək istədiyinizə əminsiniz? Bu geri qaytarıla bilməz.',
+  'sidebar.askOnceHistory.deleteConfirm': 'Bu söhbəti silmək istədiyinizə əminsiniz? Bu geri qaytarıla bilməz.',
   'sidebar.askOnceHistory.empty': 'Hələ söhbət yoxdur',
   'sidebar.askOnceHistory.renamePrompt': 'Bu söhbət üçün yeni ad daxil edin',
   'sidebar.askOnceHistory.renameTitle': 'Söhbətin adını dəyişdirin',
@@ -23,8 +24,7 @@ export default {
   'sidebar.bookmarks.title': 'Son Əlfəcinlər',
   'sidebar.bookmarks.unknownDoc': 'Naməlum Sənəd',
   'sidebar.brandTitle': 'Maite tədris araşdırmaları',
-  'sidebar.chatHistory.deleteConfirm':
-    'Bu söhbəti silmək istədiyinizə əminsiniz? Bu geri qaytarıla bilməz.',
+  'sidebar.chatHistory.deleteConfirm': 'Bu söhbəti silmək istədiyinizə əminsiniz? Bu geri qaytarıla bilməz.',
   'sidebar.chatHistory.deleteTitle': 'Söhbəti silin',
   'sidebar.chatHistory.empty': 'Hələ söhbət yoxdur',
   'sidebar.chatHistory.loginPrompt': 'Tarixçəyə baxmaq üçün daxil olun',
@@ -35,8 +35,7 @@ export default {
   'sidebar.collapseSidebar': 'Yan paneli bağla',
   'sidebar.community': 'İcma',
   'sidebar.courses': 'Düşünmə kursları',
-  'sidebar.debateHistory.deleteConfirm':
-    'Bu debatı silmək istədiyinizə əminsiniz? Bu geri qaytarıla bilməz.',
+  'sidebar.debateHistory.deleteConfirm': 'Bu debatı silmək istədiyinizə əminsiniz? Bu geri qaytarıla bilməz.',
   'sidebar.debateHistory.empty': 'Hələ müzakirələr yoxdur',
   'sidebar.debateHistory.loginPrompt': 'Müzakirələrə baxmaq üçün daxil olun',
   'sidebar.debateHistory.renamePrompt': 'Bu müzakirə üçün yeni mövzu daxil edin',
@@ -72,6 +71,7 @@ export default {
   'sidebar.library': 'Kitabxana',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
+  'sidebar.mindMateAgent': 'Agent {name}',
   'sidebar.mindbot': 'MindBot',
   'sidebar.schoolZone': 'Məktəb zonası',
   'sidebar.smartResponse': 'Ağıllı Cavab',
@@ -79,4 +79,13 @@ export default {
   'sidebar.templateResources': 'Şablonlar',
   'sidebar.userSubtitleDefault': 'MindGraph Pro paketi',
   'sidebar.account': 'Hesab',
+  'sidebar.roleSuperAdmin': 'Super Admin',
+  'sidebar.rolePlatformAdmin': 'Teaching Researcher',
+  'sidebar.roleExpert': 'Expert',
+  'sidebar.roleSchoolAdmin': 'School Admin',
+  'sidebar.roleSchoolEdition': 'School',
+  'sidebar.roleTrialEdition': 'Trial',
+  'sidebar.roleSuperMember': 'Super Member',
+  'sidebar.logoSiteQrTitle': 'Site QR code',
+  'sidebar.logoSiteQrHint': 'Scan with your phone camera or WeChat',
 } as const

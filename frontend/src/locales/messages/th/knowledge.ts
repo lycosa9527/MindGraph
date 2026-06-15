@@ -1,10 +1,9 @@
 /**
- * th UI — knowledge
+ * th UI �?knowledge
  */
 
 export default {
-  'chunkTest.history.confirmDeleteBody':
-    'คุณแน่ใจหรือไม่ที่จะลบการทดสอบนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
+  'chunkTest.history.confirmDeleteBody': 'คุณแน่ใจหรือไม่ที่จะลบการทดสอบนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
   'chunkTest.history.confirmDeleteTitle': 'ลบการทดสอบ',
   'chunkTest.history.delete': 'ลบ',
   'chunkTest.history.deleteFailed': 'ไม่สามารถลบการทดสอบ',
@@ -43,8 +42,7 @@ export default {
   'chunkTestResults.answerQuality': 'คุณภาพคำตอบ',
   'chunkTestResults.avgLatency': 'เวลาแฝงเฉลี่ย',
   'chunkTestResults.back': 'กลับ',
-  'chunkTestResults.cancelConfirmBody':
-    'คุณแน่ใจหรือไม่ที่จะยกเลิกการทดสอบนี้? การทดสอบจะหยุดที่จุดตรวจถัดไป',
+  'chunkTestResults.cancelConfirmBody': 'คุณแน่ใจหรือไม่ที่จะยกเลิกการทดสอบนี้? การทดสอบจะหยุดที่จุดตรวจถัดไป',
   'chunkTestResults.cancelFailed': 'ไม่สามารถยกเลิกการทดสอบ',
   'chunkTestResults.cancelRequested': 'ร้องขอยกเลิกการทดสอบแล้ว',
   'chunkTestResults.cancelTest': 'ยกเลิกการทดสอบ',
@@ -121,8 +119,7 @@ export default {
   'knowledge.manualEval.deselectAll': 'ยกเลิกการเลือกทั้งหมด',
   'knowledge.manualEval.dialogTitle': 'การประเมินด้วยตนเอง — {method}',
   'knowledge.manualEval.groundTruthLabel': 'คำตอบที่ถูกต้อง (ไม่บังคับ)',
-  'knowledge.manualEval.groundTruthPlaceholder':
-    'ใส่คำตอบที่ถูกต้องสำหรับการประเมินความเกี่ยวข้องของคำตอบ...',
+  'knowledge.manualEval.groundTruthPlaceholder': 'ใส่คำตอบที่ถูกต้องสำหรับการประเมินความเกี่ยวข้องของคำตอบ...',
   'knowledge.manualEval.metric.answer_coverage': 'ความครอบคลุมของคำตอบ',
   'knowledge.manualEval.metric.answer_faithfulness': 'ความซื่อสัตย์ของคำตอบ',
   'knowledge.manualEval.metric.clarity': 'ความชัดเจน',
@@ -144,8 +141,7 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'การประเมินคุณภาพ Chunk',
   'knowledge.manualEval.resultsTitle': 'ผลการประเมิน',
   'knowledge.manualEval.selectAll': 'เลือกทั้งหมด',
-  'knowledge.manualEval.selectChunksHeading':
-    'เลือก Chunk เพื่อประเมิน (เว้นว่างเพื่อประเมินทั้งหมด)',
+  'knowledge.manualEval.selectChunksHeading': 'เลือก Chunk เพื่อประเมิน (เว้นว่างเพื่อประเมินทั้งหมด)',
   'knowledge.manualEval.showingFirst20': 'แสดง 20 รายการแรกจาก {total} chunk',
   'knowledge.manualEval.startEvaluation': 'เริ่มการประเมิน',
   'knowledge.processing.chunking': 'การแบ่ง Chunk',
@@ -200,8 +196,7 @@ export default {
   'knowledge.upload.maxDocs': 'ถึงจำนวนเอกสารสูงสุดแล้ว (5)',
   'knowledge.upload.title': 'อัปโหลดเอกสาร',
   'knowledge.upload.unsupportedType': 'ประเภทไฟล์ไม่รองรับ',
-  'knowledgeSpace.confirmDeleteBody':
-    'คุณแน่ใจหรือไม่ที่จะลบเอกสารนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
+  'knowledgeSpace.confirmDeleteBody': 'คุณแน่ใจหรือไม่ที่จะลบเอกสารนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
   'knowledgeSpace.confirmDeleteTitle': 'ยืนยันการลบ',
   'knowledgeSpace.deleteFailed': 'ลบล้มเหลว',
   'knowledgeSpace.documentDeleted': 'ลบเอกสารแล้ว',

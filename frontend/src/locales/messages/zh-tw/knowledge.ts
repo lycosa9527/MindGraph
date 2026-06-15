@@ -1,5 +1,5 @@
 /**
- * zh UI — knowledge
+ * zh-tw UI �?knowledge
  */
 
 export default {
@@ -208,4 +208,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': '文檔上傳成功，正在處理中...',
   'rag.retrievalTest.failed': '檢索測試失敗',
   'rag.retrievalTest.success': '檢索測試完成',
-}
+} as const

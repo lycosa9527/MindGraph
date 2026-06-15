@@ -1,5 +1,5 @@
 /**
- * en UI — auth
+ * en UI �?auth
  */
 
 export default {
@@ -10,19 +10,13 @@ export default {
   'auth.updateLogLoadError': 'Could not load release notes. Please try again later.',
   'auth.updateLogEmpty': 'No release notes are available.',
   'auth.downloadDesktopShortcut': 'Add to desktop',
-  'auth.pwaIosInstallHint':
-    'Tap Share in Safari, Chrome, or Edge, then choose “Add to Home Screen”.',
-  'auth.pwaAndroidInstallHint':
-    'Open the browser menu (⋮) and tap Install app or Add to Home screen.',
-  'auth.pwaSafariMacInstallHint':
-    'In Safari, choose File → Add to Dock, or Share → Add to Dock (macOS Sonoma or later).',
-  'auth.pwaDesktopInstallHint':
-    'Use the browser menu (⋮) or the install icon in the address bar (Chrome, Edge, or Brave).',
+  'auth.pwaIosInstallHint': 'Tap Share in Safari, Chrome, or Edge, then choose “Add to Home Screen”.',
+  'auth.pwaAndroidInstallHint': 'Open the browser menu (⋮) and tap Install app or Add to Home screen.',
+  'auth.pwaSafariMacInstallHint': 'In Safari, choose File → Add to Dock, or Share → Add to Dock (macOS Sonoma or later).',
+  'auth.pwaDesktopInstallHint': 'Use the browser menu (⋮) or the install icon in the address bar (Chrome, Edge, or Brave).',
   'auth.pwaInstallSuccess': 'MindGraph has been added to your desktop.',
-  'auth.pwaDevInstallHint':
-    'PWA install is off in normal dev mode. Use production build (npm run build + backend) or run npm run dev:pwa, then use Chrome/Edge on HTTPS or localhost.',
-  'auth.pwaInsecureOriginHint':
-    'Open MindGraph in the browser at its HTTPS address (not a saved HTML file) before installing to desktop.',
+  'auth.pwaDevInstallHint': 'PWA install is off in normal dev mode. Use production build (npm run build + backend) or run npm run dev:pwa, then use Chrome/Edge on HTTPS or localhost.',
+  'auth.pwaInsecureOriginHint': 'Open MindGraph in the browser at its HTTPS address (not a saved HTML file) before installing to desktop.',
   'auth.backToLogin': 'Back to Login',
   'auth.captcha': 'Captcha',
   'auth.captchaLength4': 'Please enter the 4-character captcha',
@@ -32,12 +26,9 @@ export default {
   'auth.accountPlugin': 'Plugin',
   'auth.apiTokenButton': 'API Token',
   'auth.downloadChromeExtension': 'Chrome extension',
-  'auth.schoolTierFeatureUnavailable':
-    'This feature requires the Standard or Professional school tier (Basic tier excluded).',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    'Your school subscription has ended. Your account is now on the trial tier. Contact your platform administrator to renew.',
-  'auth.diagramLimitReached':
-    'Trial schools allow up to {max} saved diagrams per teacher. Delete one to save a new diagram.',
+  'auth.schoolTierFeatureUnavailable': 'This feature requires the Standard or Professional school tier (Basic tier excluded).',
+  'auth.schoolSubscriptionExpiredDowngraded': 'Your school subscription has ended. Your account is now on the trial tier. Contact your platform administrator to renew.',
+  'auth.diagramLimitReached': 'Trial schools allow up to {max} saved diagrams per teacher. Delete one to save a new diagram.',
   'auth.downloadOpenclawSkill': 'OpenClaw skill',
   'auth.changePhoneButton': 'Change phone',
   'auth.passwordChangeSuccess': 'Password changed successfully',
@@ -114,8 +105,7 @@ export default {
   'auth.modal.hybridRegisterEmailTab': 'Education email',
   'auth.modal.hybridRegisterEmailTabAny': 'Email',
   'auth.modal.hybridRegisterPhoneTab': 'Phone + invitation code',
-  'auth.modal.mainlandSalesNotice':
-    'Need access in mainland China? Use your mobile number and invitation code, or contact customer support.',
+  'auth.modal.mainlandSalesNotice': 'Need access in mainland China? Use your mobile number and invitation code, or contact customer support.',
   'auth.modal.registrationEmailLabel': 'Educational email only',
   'auth.modal.registrationEmailLabelAny': 'Email address',
   'auth.modal.registrationEmailHint': '',
@@ -128,12 +118,9 @@ export default {
   'auth.modal.sendEmailCode': 'Send email code',
   'auth.modal.sendingEmailCode': 'Sending...',
   'auth.modal.emailCodePlaceholder': '6-digit code from email',
-  'auth.modal.acknowledgeOverseas':
-    'I understand and will use the software for educational purposes only.',
-  'auth.modal.acknowledgeOverseasAny':
-    'I understand and agree to the overseas registration terms.',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    'I understand and agree to the overseas registration terms, and that Simplified Chinese is not available on this path.',
+  'auth.modal.acknowledgeOverseas': 'I understand and will use the software for educational purposes only.',
+  'auth.modal.acknowledgeOverseasAny': 'I understand and agree to the overseas registration terms.',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': 'I understand and agree to the overseas registration terms, and that Simplified Chinese is not available on this path.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'Please confirm the notice above.',
   'auth.loginPhoneOrEmail': 'Phone or email',
@@ -148,17 +135,13 @@ export default {
   'auth.username': 'Username',
   'auth.waitCaptchaLoad': 'Please wait for captcha to load',
   'auth.quickRegPageTitle': 'Quick registration',
-  'auth.quickRegPageHint':
-    'Open this page from the link your school shared. Enter your phone and the 6-digit room code shown in the facilitator’s quick registration window (it refreshes about every 30 seconds). The code shows you are in the session; it does not verify phone ownership the way an SMS code would.',
-  'auth.quickRegLinkInvalid':
-    'This registration link is not active (expired or closed). Open the current link from the facilitator again.',
-  'auth.quickRegProbeRateLimited':
-    'Too many checks from this page. Wait a moment and refresh, or try again later.',
+  'auth.quickRegPageHint': 'Open this page from the link your school shared. Enter your phone and the 6-digit room code shown in the facilitator’s quick registration window (it refreshes about every 30 seconds). The code shows you are in the session; it does not verify phone ownership the way an SMS code would.',
+  'auth.quickRegLinkInvalid': 'This registration link is not active (expired or closed). Open the current link from the facilitator again.',
+  'auth.quickRegProbeRateLimited': 'Too many checks from this page. Wait a moment and refresh, or try again later.',
   'auth.quickRegSessionSignups': 'Signed up this session: {n}',
   'auth.quickRegRoomCodeLabel': 'Room code',
   'auth.quickRegRoomCodePlaceholder': '6 digits',
-  'auth.quickRegRoomCodeHint':
-    'Match the large digits on the facilitator’s quick registration dialog; enter the code before it changes.',
+  'auth.quickRegRoomCodeHint': 'Match the large digits on the facilitator’s quick registration dialog; enter the code before it changes.',
   'auth.quickRegRoomCodeEnter6': 'Enter the 6-digit room code',
   'auth.quickRegMaxUses': 'Max signups for this link',
   'auth.quickRegHeadcount': 'Max',
@@ -168,16 +151,14 @@ export default {
   'auth.quickRegSubmit': 'Complete registration',
   'auth.quickRegSubmitting': 'Registering…',
   'auth.quickRegRegisterSuccess': 'Registration successful',
-  'auth.quickRegSessionUnsure':
-    'Registration may have succeeded. If you are not signed in, go back and use verification code login, or refresh this page.',
+  'auth.quickRegSessionUnsure': 'Registration may have succeeded. If you are not signed in, go back and use verification code login, or refresh this page.',
   'auth.quickRegBackToSignIn': 'Use standard login / register',
   'auth.quickRegSelectOrg': 'Select school',
   'auth.quickRegOrgLoadError': 'Could not load schools. Please try again.',
   'auth.quickRegMintError': 'Could not open the registration channel. Please try again.',
   'auth.setPasswordWithSms': 'Set login password',
   'auth.setPasswordWithSmsTitle': 'Set password via SMS',
-  'auth.setPasswordWithSmsHint':
-    'We send a code to your bound phone. After setting a password you can sign in with password or a verification code.',
+  'auth.setPasswordWithSmsHint': 'We send a code to your bound phone. After setting a password you can sign in with password or a verification code.',
   'auth.setPasswordWithSmsSubmit': 'Save password',
   'auth.setPasswordWithSmsSubmitting': 'Saving…',
   'auth.accountDisplayName': 'Display name',

@@ -1,10 +1,9 @@
 /**
- * af UI — knowledge
+ * af UI �?knowledge
  */
 
 export default {
-  'chunkTest.history.confirmDeleteBody':
-    'Is u seker dat u hierdie toets wil skrap? Hierdie kan nie ongedaan gemaak word nie.',
+  'chunkTest.history.confirmDeleteBody': 'Is u seker dat u hierdie toets wil skrap? Hierdie kan nie ongedaan gemaak word nie.',
   'chunkTest.history.confirmDeleteTitle': 'Skrap Toets',
   'chunkTest.history.delete': 'Skrap',
   'chunkTest.history.deleteFailed': 'Kon nie toets skrap nie',
@@ -43,8 +42,7 @@ export default {
   'chunkTestResults.answerQuality': 'Antwoordkwaliteit',
   'chunkTestResults.avgLatency': 'Gemiddelde vertragingsduur',
   'chunkTestResults.back': 'Terug',
-  'chunkTestResults.cancelConfirmBody':
-    'Is u seker dat u hierdie toets wil kanselleer? Die toets sal by die volgende kontrolpunt stop.',
+  'chunkTestResults.cancelConfirmBody': 'Is u seker dat u hierdie toets wil kanselleer? Die toets sal by die volgende kontrolpunt stop.',
   'chunkTestResults.cancelFailed': 'Kon nie toets kanselleer nie',
   'chunkTestResults.cancelRequested': 'Toetskansellasie versoek',
   'chunkTestResults.cancelTest': 'Kanselleer toets',
@@ -74,8 +72,7 @@ export default {
   'chunkTestResults.standardIrMetrics': 'Standaard IR-metriek',
   'chunkTestResults.storageEff': 'Bergingseff.',
   'chunkTestResults.testFailed': 'Toets misluk',
-  'chunkTestResults.testFailedHint':
-    "'n Fout het tydens die uitvoering van die toets voorgekom. Probeer asseblief weer.",
+  'chunkTestResults.testFailedHint': '\'n Fout het tydens die uitvoering van die toets voorgekom. Probeer asseblief weer.',
   'chunkTestResults.testingInProgress': 'Toetsing aan die gang...',
   'chunkTestResults.totalChunks': 'Totaal {n} stukke',
   'chunkTestResults.viewChunks': 'Bekyk Stukke',
@@ -85,8 +82,7 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'Toets Alle Steldata',
   'knowledge.chunkHeader.testUpload': 'Toets Laai Dokumente Op',
   'knowledge.chunkHeader.title': 'RAG-stuktoets',
-  'knowledge.chunkHeader.waitForProcessing':
-    'Wag asseblief dat die dokumente volledig verwerk word voor toetsing',
+  'knowledge.chunkHeader.waitForProcessing': 'Wag asseblief dat die dokumente volledig verwerk word voor toetsing',
   'knowledge.chunkPreview.empty': 'Geen stukke gevind nie',
   'knowledge.chunkPreview.pageLabel': 'Bladsy {n}',
   'knowledge.chunkPreview.title': 'Dokumentstukke — {fileName}',
@@ -105,8 +101,7 @@ export default {
   'knowledge.doc.colStatus': 'Toestand',
   'knowledge.doc.colType': 'Tipe',
   'knowledge.doc.colUploaded': 'Laai datum op',
-  'knowledge.doc.emptyDescription':
-    'Nog geen dokumente nie. Laai dokumente op om u kennisbasis te bou.',
+  'knowledge.doc.emptyDescription': 'Nog geen dokumente nie. Laai dokumente op om u kennisbasis te bou.',
   'knowledge.doc.errorPrefix': 'Fout: ',
   'knowledge.doc.noData': 'Geen data nie',
   'knowledge.doc.statusCompleted': 'Voltooi',
@@ -124,8 +119,7 @@ export default {
   'knowledge.manualEval.deselectAll': 'Dien alle keuses uit',
   'knowledge.manualEval.dialogTitle': 'Handmatige evaluasie — {method}',
   'knowledge.manualEval.groundTruthLabel': 'Grondwaarheid-antwoord (opsioneel)',
-  'knowledge.manualEval.groundTruthPlaceholder':
-    'Voer die grondwaarheid-antwoord in vir antwoord-relevansie-evaluasie...',
+  'knowledge.manualEval.groundTruthPlaceholder': 'Voer die grondwaarheid-antwoord in vir antwoord-relevansie-evaluasie...',
   'knowledge.manualEval.metric.answer_coverage': 'Antwoorddekking',
   'knowledge.manualEval.metric.answer_faithfulness': 'Antwoordgetrouheid',
   'knowledge.manualEval.metric.clarity': 'Duidelikheid',
@@ -139,7 +133,7 @@ export default {
   'knowledge.manualEval.modelLabel': 'KI-model',
   'knowledge.manualEval.noChunks': 'Geen stukke gevind nie',
   'knowledge.manualEval.notify.completed': 'Evaluering voltooi',
-  'knowledge.manualEval.notify.enterQuery': "Voer asseblief 'n navraag in",
+  'knowledge.manualEval.notify.enterQuery': 'Voer asseblief \'n navraag in',
   'knowledge.manualEval.notify.failed': 'Evaluering het misluk',
   'knowledge.manualEval.queryLabel': 'Navraag',
   'knowledge.manualEval.queryPlaceholder': 'Voer die navraag in om te evalueer...',
@@ -147,8 +141,7 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Stukkwaliteit-Evaluering',
   'knowledge.manualEval.resultsTitle': 'Evalueringresultate',
   'knowledge.manualEval.selectAll': 'Kies alles',
-  'knowledge.manualEval.selectChunksHeading':
-    'Kies stukke om te evalueer (laat leeg om almal te evalueer)',
+  'knowledge.manualEval.selectChunksHeading': 'Kies stukke om te evalueer (laat leeg om almal te evalueer)',
   'knowledge.manualEval.showingFirst20': 'Wys eerste 20 van {total} stukke',
   'knowledge.manualEval.startEvaluation': 'Begin evaluering',
   'knowledge.processing.chunking': 'Stukkering',
@@ -167,7 +160,7 @@ export default {
   'knowledge.retrieval.colContent': 'Inhoud',
   'knowledge.retrieval.colDocument': 'Dokument',
   'knowledge.retrieval.colScore': 'Telling',
-  'knowledge.retrieval.enterQuery': "Voer asseblief 'n toetsnavraag in",
+  'knowledge.retrieval.enterQuery': 'Voer asseblief \'n toetsnavraag in',
   'knowledge.retrieval.hybrid': 'Hibriede soektog',
   'knowledge.retrieval.keyword': ' Sleutelwoordsoektog',
   'knowledge.retrieval.method': 'Ophalingmetode',
@@ -203,8 +196,7 @@ export default {
   'knowledge.upload.maxDocs': 'Maksimum dokumentlimiet bereik (5)',
   'knowledge.upload.title': 'Laai dokument op',
   'knowledge.upload.unsupportedType': 'Nie-ondersteunde lêertipe nie',
-  'knowledgeSpace.confirmDeleteBody':
-    'Is u seker dat u hierdie dokument wil verwyder? Hierdie aksie kan nie ongedaan gemaak word nie.',
+  'knowledgeSpace.confirmDeleteBody': 'Is u seker dat u hierdie dokument wil verwyder? Hierdie aksie kan nie ongedaan gemaak word nie.',
   'knowledgeSpace.confirmDeleteTitle': 'Bevestig Verwydering',
   'knowledgeSpace.deleteFailed': 'Verwydering het misluk',
   'knowledgeSpace.documentDeleted': 'Dokument is verwyder',
@@ -213,8 +205,7 @@ export default {
   'knowledgeSpace.startProcessingFailed': 'Kon nie begin verwerk nie',
   'knowledgeSpace.uploadFailed': 'Dokumentoplaai het misluk',
   'knowledgeSpace.uploadSuccess': 'Dokument is suksesvol opgelaai',
-  'knowledgeSpace.uploadSuccessProcessing':
-    'Dokument is suksesvol opgelaai, besig met verwerking...',
+  'knowledgeSpace.uploadSuccessProcessing': 'Dokument is suksesvol opgelaai, besig met verwerking...',
   'rag.retrievalTest.failed': 'Oproep-toets het misluk',
   'rag.retrievalTest.success': 'Oproep-toets is voltooi',
 } as const

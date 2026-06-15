@@ -1,4 +1,6 @@
-/** az UI — community */
+/**
+ * az UI �?community
+ */
 
 export default {
   'community.category.all': 'Hamısı',
@@ -73,12 +75,10 @@ export default {
   'debateverse.clickNextHint': 'Dəyişiklikləri qüvvəyə minmək üçün növbəti düyməni klikləyin',
   'debateverse.coinTossAffirmativeFirst': 'Müsbət tərəf əvvəl danışır',
   'debateverse.coinTossGotIt': 'Anladım',
-  'debateverse.coinTossModalBody':
-    'Müzakirədən əvvəl danışıq qaydasını müəyyənləşdirin və ya sikkə atmaqla müsbət/mənfi mövqeləri seçin',
+  'debateverse.coinTossModalBody': 'Müzakirədən əvvəl danışıq qaydasını müəyyənləşdirin və ya sikkə atmaqla müsbət/mənfi mövqeləri seçin',
   'debateverse.coinTossNegativeFirst': 'Mənfi tərəf əvvəl danışır',
   'debateverse.coinTossOrder': 'Danışma qaydasını müəyyən etmək üçün sikkə atma',
-  'debateverse.coinTossRules':
-    'Süni intellekt modelləri mübahisə rollarına təsadüfi olaraq təyin edilib. Müzakirədən əvvəl danışıq qaydasını müəyyənləşdirin və ya sikkə atmaqla müsbət/mənfi mövqeləri seçin',
+  'debateverse.coinTossRules': 'Süni intellekt modelləri mübahisə rollarına təsadüfi olaraq təyin edilib. Müzakirədən əvvəl danışıq qaydasını müəyyənləşdirin və ya sikkə atmaqla müsbət/mənfi mövqeləri seçin',
   'debateverse.coinTossStageTitle': 'Sikkə atma mərhələsi',
   'debateverse.debateTopicLabel': 'Debat mövzusu: ',
   'debateverse.executeCoinToss': 'Sikkəni at',
@@ -109,14 +109,11 @@ export default {
   'debateverse.setup.roleJudge': 'Hakim kimi oynayın',
   'debateverse.setup.roleViewer': 'İzləyici kimi oynayın',
   'debateverse.setup.suggestion1': 'Süni intellektə hüquqi şəxs statusu verilməlidirmi?',
-  'debateverse.setup.suggestion2':
-    'Video oyunları yeniyetmələrə daha çox fayda gətirir, yoxsa zərər verir?',
+  'debateverse.setup.suggestion2': 'Video oyunları yeniyetmələrə daha çox fayda gətirir, yoxsa zərər verir?',
   'debateverse.setup.suggestion3': 'Kolleclərə qəbul imtahanları ləğv edilməlidirmi?',
-  'debateverse.setup.suggestion4':
-    'Sosial media platformalarında məzmun moderasiyası daha sərt olmalıdır?',
+  'debateverse.setup.suggestion4': 'Sosial media platformalarında məzmun moderasiyası daha sərt olmalıdır?',
   'debateverse.setup.suggestion5': 'Uzaqdan iş əsas istiqamətə çevrilməlidirmi?',
-  'debateverse.setup.suggestion6':
-    'Süni intellekt tərəfindən yaradılan məzmun müəllif hüquqları ilə qorunmalıdırmı?',
+  'debateverse.setup.suggestion6': 'Süni intellekt tərəfindən yaradılan məzmun müəllif hüquqları ilə qorunmalıdırmı?',
   'debateverse.setup.suggestion7': 'Təhsil daha çox biliyə və ya bacarıqlara diqqət yetirməlidir?',
   'debateverse.setup.suggestion8': 'İnsan embrionları üçün gen redaktəsinə icazə verilməlidirmi?',
   'debateverse.setup.topicPlaceholder': 'Müzakirə mövzusunu daxil edin...',

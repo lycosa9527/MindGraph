@@ -1,4 +1,6 @@
-/** zh-tw UI — canvas */
+/**
+ * zh-tw UI �?canvas
+ */
 
 export default {
   'braceMap.defaultSubpartFirst': '新子部分 1',
@@ -14,11 +16,9 @@ export default {
   'canvas.export.svgError': 'SVG導出失敗，請重試',
   'canvas.export.svgSuccess': 'SVG導出成功',
   'canvas.export.unknownFormat': '未知導出格式: {format}',
-  'canvas.import.invalidFile':
-    '无效的图示文件，请选择 MindGraph 导出的 MG 文件或 CmapTools 的 CMAP 文件',
+  'canvas.import.invalidFile': '无效的图示文件，请选择 MindGraph 导出的 MG 文件或 CmapTools 的 CMAP 文件',
   'canvas.import.parseError': '無法解析圖示文件，請重試',
-  'canvas.import.cmapHeuristicSemantics':
-    '該 CmapTools 文件使用文本順序回退推導連線關係，請在畫布上對照原圖核驗。',
+  'canvas.import.cmapHeuristicSemantics': '該 CmapTools 文件使用文本順序回退推導連線關係，請在畫布上對照原圖核驗。',
   'canvas.import.cmapConnectionFallback': '語義關係是根據 IHMC 圖形連接恢復的，而非命題對象。',
   'canvas.import.cmapEmptyLayout': '未恢復到節點座標，已重新自動生成佈局。',
   'canvas.import.cmapLayoutLabelCollision': '重複的概念標籤共享佈局錨點，部分導入位置可能不準。',
@@ -89,8 +89,7 @@ export default {
   'canvas.toolbar.highlighterChooseColor': '熒光筆顏色',
   'canvas.toolbar.highlighterPaletteAria': '選擇熒光筆顏色',
   'canvas.toolbar.insertEquation': '插入公式',
-  'canvas.toolbar.insertEquationTooltip':
-    '在光标处插入行内公式（$...$）；若未在编辑，则追加到所选节点',
+  'canvas.toolbar.insertEquationTooltip': '在光标处插入行内公式（$...$）；若未在编辑，则追加到所选节点',
   'canvas.toolbar.insertEquationSelectNode': '請先選擇一個節點',
   'canvas.toolbar.insertEquationDialogTitle': '插入公式',
   'canvas.toolbar.insertEquationLoading': '正在加載公式編輯器…',
@@ -124,7 +123,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqMidpoint': '中點',
   'canvas.toolbar.mathKeyboardEqYmxb': 'y=mx+b',
   'canvas.toolbar.mathKeyboardEqYQuad': 'y=ax²+bx+c',
-  'canvas.toolbar.mathKeyboardEqAbsX': "{'|'}x{'|'}",
+  'canvas.toolbar.mathKeyboardEqAbsX': '{\'|\'}x{\'|\'}',
   'canvas.toolbar.mathKeyboardEqCircleArea': 'A=πr²',
   'canvas.toolbar.mathKeyboardEqCircleCircum': 'C=2πr',
   'canvas.toolbar.mathKeyboardEqTriHalfBh': 'A=1/2bh',
@@ -145,7 +144,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqLawSin': '正弦定理',
   'canvas.toolbar.mathKeyboardEqCosSumDiff': '餘弦(α±β)',
   'canvas.toolbar.mathKeyboardEqSinSumDiff': '正弦(α±β)',
-  'canvas.toolbar.mathKeyboardEqEuler': "e^{'{'}iθ{'}'}",
+  'canvas.toolbar.mathKeyboardEqEuler': 'e^{\'{\'}iθ{\'}\'}',
   'canvas.toolbar.mathKeyboardEqDoubleAngle': '倍角',
   'canvas.toolbar.mathKeyboardEqSum1toN': '1+2+…+n',
   'canvas.toolbar.mathKeyboardEqArithAn': '等差通項',
@@ -284,16 +283,13 @@ export default {
   'canvas.toolbar.redo': '重做',
   'canvas.toolbar.selectBranchOrChild': '請先選擇分支或子節點',
   'canvas.toolbar.selectCategoryOrLeafDelete': '請選擇分類或子項節點（主題節點不可刪除）',
-  'canvas.toolbar.selectCauseOrEffectForAdd':
-    '请先选择原因或结果节点（不要选中间事件），再按 Enter 在同一列添加',
-  'canvas.toolbar.selectTreeBranchForChild':
-    '请选择分类或分类下的条目以添加子项，或选择主题以添加新分类',
+  'canvas.toolbar.selectCauseOrEffectForAdd': '请先选择原因或结果节点（不要选中间事件），再按 Enter 在同一列添加',
+  'canvas.toolbar.selectTreeBranchForChild': '请选择分类或分类下的条目以添加子项，或选择主题以添加新分类',
   'canvas.toolbar.selectNodesFirst': '請先選擇節點',
   'canvas.toolbar.selectNodesToDelete': '請先選擇要刪除的節點',
   'canvas.toolbar.selectPartForSubpart': '請先選擇要添加子部分的節點',
   'canvas.toolbar.selectPartThenEnter': '請選擇部分節點後按 Enter 添加子部分',
-  'canvas.toolbar.selectSimilarityOrDifferenceDelete':
-    '请选择相似点或不同点节点（主题节点不可删除）',
+  'canvas.toolbar.selectSimilarityOrDifferenceDelete': '请选择相似点或不同点节点（主题节点不可删除）',
   'canvas.toolbar.selectSimilarityOrDifferenceFirst': '請先選擇相似點或不同點節點',
   'canvas.toolbar.selectStepForSubstep': '請先選擇要添加子步驟的步驟節點',
   'canvas.toolbar.similarityWithIndex': '相似點 {n}',
@@ -361,9 +357,12 @@ export default {
   'canvas.topBar.snapshotRecallCancelBtn': '取消',
   'canvas.topBar.snapshotRecallHistory': '快照 {n} 恢復前',
   'canvas.topBar.snapshotRecallFailed': '快照恢復失敗，請重試',
+  'canvas.topBar.snapshotRecallNoDiagram': 'Save the diagram to your library first, then restore a snapshot.',
+  'canvas.topBar.snapshotRecallNoType': 'Diagram type is not ready yet. Wait a moment and try again.',
   'canvas.topBar.snapshotDeleted': '已刪除快照 {n}',
   'canvas.topBar.snapshotDeleteFailed': '刪除快照失敗，請重試',
   'canvas.topBar.snapshotBadgeTooltip': '點擊恢復快照 {n} · Ctrl+點擊刪除',
+  'canvas.topBar.snapshotRecallingTooltip': 'Restoring snapshot {n}…',
   'canvas.zoomControls.exitFullscreen': '退出全屏',
   'canvas.zoomControls.fitCanvas': '適應畫布',
   'canvas.zoomControls.fullscreen': '全屏',
@@ -379,8 +378,7 @@ export default {
   'canvasPage.collaborationFooterOwnerDiagram': '{username} 的「{diagramTitle}」協同圖示',
   'canvasPage.collaborationFooterNetworkDiagramTitle': '「{diagramTitle}」在線協作',
   'canvasPage.collaborationFooterSchool': '校內協同進行中——同事可從會話列表加入。',
-  'canvasPage.collaborationFooterSchoolDiagram':
-    '校内协同「{diagramTitle}」进行中——同事可从会话列表加入。',
+  'canvasPage.collaborationFooterSchoolDiagram': '校内协同「{diagramTitle}」进行中——同事可从会话列表加入。',
   'canvasPage.collabRoomIdleEnding': '圖示協作空閒約 {seconds} 秒後自動結束——編輯圖示可延時',
   'conceptMap.focus.noResult': '無結果',
   'conceptMap.focus.validationRequestFailed': '檢驗請求失敗',
