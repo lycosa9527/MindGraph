@@ -2,6 +2,8 @@
  * Workshop org members store avatar as either an image URL or a single emoji / glyph.
  */
 
+import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
+
 export type WorkshopAvatarDisplay =
   | { kind: 'image'; src: string }
   | { kind: 'emoji'; text: string }
@@ -35,5 +37,5 @@ export function resolveWorkshopAvatarDisplay(
   if (raw.startsWith('/static/') || raw.startsWith('/uploads/') || raw.startsWith('/api/')) {
     return { kind: 'image', src: raw }
   }
-  return { kind: 'emoji', text: raw }
+  return { kind: 'emoji', text: resolveUserAvatarEmoji(raw) }
 }

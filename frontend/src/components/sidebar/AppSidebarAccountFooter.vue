@@ -89,7 +89,7 @@ const { quote } = useSidebarPhilosophyQuote()
             >
               <el-avatar
                 :size="40"
-                class="bg-stone-200 text-2xl"
+                class="bg-stone-200 text-2xl mg-user-avatar-emoji"
               >
                 {{ s.userAvatar }}
               </el-avatar>
@@ -192,7 +192,7 @@ const { quote } = useSidebarPhilosophyQuote()
           >
             <el-avatar
               :size="32"
-              class="bg-stone-200 text-xl"
+              class="bg-stone-200 text-xl mg-user-avatar-emoji"
             >
               {{ s.userAvatar }}
             </el-avatar>

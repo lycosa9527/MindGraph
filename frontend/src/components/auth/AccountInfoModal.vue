@@ -14,6 +14,7 @@ import { useLanguage, useNotifications } from '@/composables'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
+import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 import ApiTokenModal from './ApiTokenModal.vue'
 import AvatarSelectModal from './AvatarSelectModal.vue'
@@ -63,14 +64,7 @@ const userPhone = computed(() => {
   return phone
 })
 const userOrg = computed(() => authStore.user?.schoolName || '')
-const currentAvatar = computed(() => {
-  const avatar = authStore.user?.avatar || '🐈‍⬛'
-  // Handle legacy avatar_01 format
-  if (avatar.startsWith('avatar_')) {
-    return '🐈‍⬛'
-  }
-  return avatar
-})
+const currentAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
 
 /** Quick registration: server-only password until user sets one via SMS. */
 const needsSetLoginPassword = computed(() => authStore.user?.loginPasswordSet === false)
@@ -184,7 +178,7 @@ watch(
                   头像
                 </label>
                 <div class="flex flex-wrap items-center gap-4">
-                  <div class="text-5xl shrink-0">{{ currentAvatar }}</div>
+                  <div class="text-5xl shrink-0 mg-user-avatar-emoji">{{ currentAvatar }}</div>
                   <el-button
                     round
                     size="small"

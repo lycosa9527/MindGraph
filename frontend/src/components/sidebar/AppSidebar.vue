@@ -125,29 +125,32 @@ onBeforeUnmount(() => {
     :aria-hidden="isCollapsed"
   >
     <!-- Header: brand + collapse (expand when hidden is on the active page) -->
-    <div class="sidebar-header px-4 py-2 flex items-center justify-between gap-2 border-b border-stone-200 min-w-0">
+    <div class="sidebar-header px-4 py-2.5 flex items-center justify-between gap-2 border-b border-stone-200 min-w-0">
       <div class="brand-block min-w-0 flex-1">
         <div
-          class="logo-link flex items-center space-x-2 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
+          class="logo-link flex items-center gap-2.5 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
           @pointerenter="onLogoPointerEnter"
           @pointerleave="onLogoPointerLeave"
           @click="onLogoClick"
         >
           <div
-            class="w-7 h-7 bg-stone-900 rounded-lg flex items-center justify-center text-white font-semibold text-sm shrink-0"
+            class="brand-logo w-10 h-10 bg-stone-900 rounded-xl flex items-center justify-center text-white font-semibold text-lg shrink-0"
+            aria-hidden="true"
           >
             M
           </div>
-          <span class="font-semibold text-lg text-stone-900 tracking-tight truncate">{{
-            sidebar.t('sidebar.brandTitle')
-          }}</span>
-        </div>
-        <div
-          v-if="isAuthenticated && orgEditionLabel"
-          class="org-edition-label text-xs text-stone-500 leading-tight mt-1.5 truncate max-w-full"
-          :title="orgEditionTooltip || undefined"
-        >
-          {{ orgEditionLabel }}
+          <div class="brand-text flex flex-col items-start justify-center min-w-0 flex-1 text-left leading-none gap-0">
+            <span class="brand-title font-semibold text-lg text-stone-900 tracking-tight truncate max-w-full">{{
+              sidebar.t('sidebar.brandTitle')
+            }}</span>
+            <span
+              v-if="isAuthenticated && orgEditionLabel"
+              class="brand-subtitle text-xs text-stone-500 truncate max-w-full -mt-px"
+              :title="orgEditionTooltip || undefined"
+            >
+              {{ orgEditionLabel }}
+            </span>
+          </div>
         </div>
       </div>
       <el-button
@@ -206,7 +209,8 @@ onBeforeUnmount(() => {
   --el-button-hover-bg-color: #f5f5f4;
 }
 
-.org-edition-label {
+.brand-title,
+.brand-subtitle {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

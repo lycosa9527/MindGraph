@@ -300,6 +300,15 @@ export default { name: 'UserCardPopover' }
   background: hsl(228deg 30% 96%);
   font-size: 22px;
   line-height: 1;
+  font-family:
+    'Apple Color Emoji',
+    'Segoe UI Emoji',
+    'Segoe UI Symbol',
+    'Noto Color Emoji',
+    emoji,
+    sans-serif;
+  font-weight: normal;
+  font-style: normal;
 }
 
 .user-card__presence-dot {

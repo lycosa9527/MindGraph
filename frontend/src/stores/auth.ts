@@ -45,6 +45,7 @@ import {
 } from '@/utils/adminCapabilities'
 import { clearWorkshopChatCachesForUser } from '@/utils/workshopChatLocalCache'
 import { normalizeUserRole } from '@/utils/userRoleDisplay'
+import { DEFAULT_USER_AVATAR_EMOJI } from '@/utils/userAvatarEmoji'
 import {
   disconnectWorkshopChatWsIfAny,
   resetWorkshopChatOnAuthClear,
@@ -198,10 +199,10 @@ export const useAuthStore = defineStore('auth', () => {
   function normalizeUser(backendUser: BackendUser): User {
     // Backend returns: id, phone, name, organization (string or object), avatar
     // Frontend expects: id, username, phone, schoolName, avatar, etc.
-    let avatar = backendUser.avatar || '🐈‍⬛'
+    let avatar = backendUser.avatar || DEFAULT_USER_AVATAR_EMOJI
     // Handle legacy avatar_01 format - convert to emoji
     if (avatar.startsWith('avatar_')) {
-      avatar = '🐈‍⬛'
+      avatar = DEFAULT_USER_AVATAR_EMOJI
     }
     // Handle organization which can be string or object
     const org = backendUser.organization

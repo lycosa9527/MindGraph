@@ -11,6 +11,7 @@ from models.domain.auth import User
 from models.domain.messages import Messages, Language
 from services.redis.cache.redis_user_cache import user_cache
 from utils.auth import get_current_user
+from utils.auth.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 
 from .dependencies import get_language_dependency
 
@@ -35,7 +36,7 @@ router = APIRouter()
 # Available emoji avatars (matches frontend list - 200+ emojis)
 AVAILABLE_AVATARS = [
     # Smileys & Faces
-    "🐈‍⬛",
+    DEFAULT_USER_AVATAR_EMOJI,
     "😀",
     "😃",
     "😄",

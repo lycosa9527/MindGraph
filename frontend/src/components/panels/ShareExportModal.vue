@@ -18,6 +18,7 @@ import {
 import type { MindMateMessage } from '@/composables/mindmate/useMindMate'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useAuthStore } from '@/stores'
+import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 const props = defineProps<{
   visible: boolean
@@ -29,7 +30,7 @@ const props = defineProps<{
 const authStore = useAuthStore()
 
 const displayName = computed(() => authStore.user?.username || 'You')
-const userAvatar = computed(() => authStore.user?.avatar || '👤')
+const userAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
 const { displayName: mindMateLabel, avatarUrl: mindMateAvatarUrl } = useMindMateBranding('md')
 
 const emit = defineEmits<{
@@ -277,7 +278,7 @@ async function exportAsPng() {
               <div class="message-avatar">
                 <span
                   v-if="message.role === 'user'"
-                  class="avatar-emoji"
+                  class="avatar-emoji mg-user-avatar-emoji"
                   >{{ userAvatar }}</span
                 >
                 <img
@@ -362,7 +363,7 @@ async function exportAsPng() {
                     <div class="plain-content">{{ message.content }}</div>
                   </div>
                 </div>
-                <div class="export-avatar export-avatar-user">
+                <div class="export-avatar export-avatar-user mg-user-avatar-emoji">
                   {{ userAvatar }}
                 </div>
               </template>

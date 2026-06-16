@@ -13,6 +13,7 @@ import { Close } from '@element-plus/icons-vue'
 
 import { useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
+import { DEFAULT_USER_AVATAR_EMOJI, resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 const notify = useNotifications()
 
@@ -35,7 +36,7 @@ const isVisible = computed({
 // Curated emoji avatars collection (200+ interesting emojis - no signs/symbols)
 const allAvatars = [
   // Smileys & Faces
-  '🐈‍⬛',
+  DEFAULT_USER_AVATAR_EMOJI,
   '😀',
   '😃',
   '😄',
@@ -608,14 +609,7 @@ const scrollbarRef = ref()
 
 const displayedAvatars = computed(() => allAvatars.slice(0, displayedCount.value))
 
-const currentAvatar = computed(() => {
-  const avatar = authStore.user?.avatar || '🐈‍⬛'
-  // Handle legacy avatar_01 format
-  if (avatar.startsWith('avatar_')) {
-    return '🐈‍⬛'
-  }
-  return avatar
-})
+const currentAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
 
 const hasMore = computed(() => displayedCount.value < allAvatars.length)
 
@@ -741,7 +735,7 @@ async function saveAvatar() {
                   <button
                     v-for="emoji in displayedAvatars"
                     :key="emoji"
-                    class="w-full aspect-square rounded-lg border-2 transition-all duration-200 flex items-center justify-center text-4xl hover:scale-105"
+                    class="w-full aspect-square rounded-lg border-2 transition-all duration-200 flex items-center justify-center text-4xl hover:scale-105 mg-user-avatar-emoji"
                     :class="
                       selectedEmoji === emoji
                         ? 'border-stone-900 bg-stone-50 ring-2 ring-stone-900 ring-offset-2'
@@ -749,7 +743,7 @@ async function saveAvatar() {
                     "
                     @click="selectAvatar(emoji)"
                   >
-                    <span class="block">{{ emoji }}</span>
+                    <span class="block mg-user-avatar-emoji">{{ emoji }}</span>
                   </button>
                 </div>
 

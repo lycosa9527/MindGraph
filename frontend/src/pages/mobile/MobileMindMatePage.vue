@@ -20,6 +20,7 @@ import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
 import { useAuthStore, useMindMateStore, useVoiceStore } from '@/stores'
+import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 const router = useRouter()
 const { promptLanguage, t } = useLanguage()
@@ -61,10 +62,7 @@ const showShareModal = ref(false)
 
 const isLoading = computed(() => mindMate.isLoading.value || mindMate.isStreaming.value)
 
-const userAvatar = computed(() => {
-  const avatar = authStore.user?.avatar || '👤'
-  return avatar.startsWith('avatar_') ? '👤' : avatar
-})
+const userAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
 
 const showWelcome = computed(
   () => !mindMate.hasMessages.value && !mindMate.isLoading.value && !mindMate.isStreaming.value

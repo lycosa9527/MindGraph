@@ -27,6 +27,7 @@ import type { SavedDiagram } from '@/stores/savedDiagrams'
 import { userCanAccessMindbotAdmin } from '@/utils/mindbotAccess'
 import { getRolePillStyle } from '@/utils/userRoleDisplay'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
+import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 /** Max graphemes for org name in sidebar header (total label ≈ 10 incl. 专属版). */
 const ORG_EDITION_MAX_ORG_NAME_LENGTH = 7
@@ -211,13 +212,7 @@ export function useAppSidebar() {
     }
     return t('sidebar.orgEdition', { org: schoolName })
   })
-  const userAvatar = computed(() => {
-    const avatar = authStore.user?.avatar || '🐈‍⬛'
-    if (avatar.startsWith('avatar_')) {
-      return '🐈‍⬛'
-    }
-    return avatar
-  })
+  const userAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
 
   const showLoginModal = ref(false)
   const showAccountModal = ref(false)

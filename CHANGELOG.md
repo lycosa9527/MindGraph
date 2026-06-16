@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.42] - 2026-06-16
+
+> **Sidebar brand header layout, user emoji avatar rendering on Edge, and centralized avatar defaults.**
+
+### Changed
+
+- **Sidebar — brand header** — Larger M logo with two-line left-aligned text beside it: 迈特教研 on top and truncated “{org}专属版” beneath when signed in; tighter line spacing and `text-xs` org subtitle ([`AppSidebar.vue`](frontend/src/components/sidebar/AppSidebar.vue), [`useAppSidebar.ts`](frontend/src/composables/sidebar/useAppSidebar.ts)).
+
+### Fixed
+
+- **Auth — user emoji avatars on Edge** — Sidebar and chat showed a black square when the default black-cat ZWJ emoji (`🐈‍⬛`) or other composite picker glyphs rendered without a color-emoji font. Centralized display via [`resolveUserAvatarEmoji()`](frontend/src/utils/userAvatarEmoji.ts) (shared default in [`user_avatar_defaults.py`](utils/auth/user_avatar_defaults.py)); `.mg-user-avatar-emoji` font stack on sidebar, MindMate, account/avatar modals, mobile, workshop, and share export ([`index.css`](frontend/src/styles/index.css)); non-default ZWJ picker choices fall back to their leading emoji for safe display; black cat stays the stored and displayed default. Tests: [`userAvatarEmoji.spec.ts`](frontend/tests/userAvatarEmoji.spec.ts).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.42).
+
 ## [5.117.41] - 2026-06-16
 
 > **Sidebar philosophy quotes for signed-in users, org edition label in the header, offline quote import pipeline, and static-asset load optimizations.**

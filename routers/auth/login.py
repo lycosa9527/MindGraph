@@ -51,6 +51,7 @@ from services.redis.cache.redis_user_cache import user_cache
 from services.infrastructure.security.abuseipdb_service import (
     schedule_abuseipdb_report_on_lockout,
 )
+from utils.auth.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 from utils.email_mainland_china import raise_if_mainland_china_email_for_email_login
 from utils.email_validation import validate_email_for_api
 from utils.auth.org_subscription import enforce_org_accessible_or_raise, ensure_org_subscription_current
@@ -233,7 +234,7 @@ async def _complete_login_after_otp_verified(
             "email": getattr(user, "email", None),
             "name": user.name,
             "organization": organization_session_payload(org),
-            "avatar": user.avatar or "🐈‍⬛",
+            "avatar": user.avatar or DEFAULT_USER_AVATAR_EMOJI,
             "role": get_user_role(user),
             "ui_language": getattr(user, "ui_language", None),
             "prompt_language": getattr(user, "prompt_language", None),
@@ -482,7 +483,7 @@ async def login(
             "email": getattr(user, "email", None),
             "name": user.name,
             "organization": organization_session_payload(org),
-            "avatar": user.avatar or "🐈‍⬛",
+            "avatar": user.avatar or DEFAULT_USER_AVATAR_EMOJI,
             "role": get_user_role(user),
             "ui_language": getattr(user, "ui_language", None),
             "prompt_language": getattr(user, "prompt_language", None),

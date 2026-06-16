@@ -33,6 +33,7 @@ import { useAuthStore } from '@/stores'
 import type { Language, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
 import { getRolePillStyle } from '@/utils/userRoleDisplay'
+import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -41,10 +42,7 @@ const { t } = useLanguage()
 const { showPwaInstall, handlePwaInstall } = usePwaInstall(t)
 
 const user = computed(() => authStore.user)
-const userAvatar = computed(() => {
-  const avatar = user.value?.avatar || '👤'
-  return avatar.startsWith('avatar_') ? '👤' : avatar
-})
+const userAvatar = computed(() => resolveUserAvatarEmoji(user.value?.avatar))
 const displayName = computed(() => user.value?.username || '')
 const orgName = computed(() => user.value?.schoolName || '')
 const userRolePill = computed(() => {
@@ -168,7 +166,9 @@ async function handleLogout() {
     <div class="px-4 pt-6 pb-8 max-w-md mx-auto space-y-5 mobile-account-scroll">
       <!-- User profile header -->
       <div class="flex flex-col items-center gap-2 pb-4 border-b border-gray-100">
-        <div class="flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 text-3xl">
+        <div
+          class="flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 text-3xl mg-user-avatar-emoji"
+        >
           {{ userAvatar }}
         </div>
         <div class="flex items-center gap-2">

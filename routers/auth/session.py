@@ -39,6 +39,7 @@ from services.redis.session.redis_session_manager import (
     get_refresh_token_manager,
 )
 from services.redis.cache.redis_user_cache import user_cache
+from utils.auth.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 from utils.auth import (
     get_current_user,
     get_user_role,
@@ -316,7 +317,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
             "phone": current_user.phone,
             "email": getattr(current_user, "email", None),
             "name": current_user.name,
-            "avatar": current_user.avatar or "🐈‍⬛",
+            "avatar": current_user.avatar or DEFAULT_USER_AVATAR_EMOJI,
             "role": role,
             "login_password_set": getattr(current_user, "login_password_set", True),
             "organization": organization_session_payload(org),

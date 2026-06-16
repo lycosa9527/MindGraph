@@ -5,6 +5,7 @@ import { LogOut, ScrollText, User } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
+import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 const emit = defineEmits<{
   (e: 'navigate', page: string): void
@@ -17,7 +18,7 @@ const { t } = useLanguage()
 const visible = ref(false)
 
 const displayName = computed(() => authStore.user?.username || authStore.user?.phone || 'User')
-const displayAvatar = computed(() => authStore.user?.avatar || '👤')
+const displayAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
 
 function go(page: string): void {
   visible.value = false
@@ -55,7 +56,7 @@ function handleSignOut(): void {
 
     <div class="ws-popover-menu">
       <div class="ws-popover-user-info">
-        <div class="ws-popover-user-avatar">{{ displayAvatar }}</div>
+        <div class="ws-popover-user-avatar mg-user-avatar-emoji">{{ displayAvatar }}</div>
         <div class="ws-popover-user-meta">
           <div class="ws-popover-user-name">{{ displayName }}</div>
           <div class="ws-popover-user-phone">{{ authStore.user?.phone }}</div>

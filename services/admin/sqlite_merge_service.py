@@ -26,6 +26,8 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
+from utils.auth.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
+
 logger = logging.getLogger(__name__)
 
 SKIP_TABLES: Set[str] = {"captchas", "sms_verifications"}
@@ -49,7 +51,7 @@ _USER_MERGE_NON_NULL_BOOL_DEFAULTS: Dict[str, bool] = {
 
 _USER_DEFAULT_COLUMNS: Dict[str, Any] = {
     "role": "user",
-    "avatar": "🐈‍⬛",
+    "avatar": DEFAULT_USER_AVATAR_EMOJI,
     "email": None,
     "ui_language": None,
     "prompt_language": None,

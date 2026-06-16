@@ -140,6 +140,20 @@ body {
   transform: scaleX(-1);
 }
 
+/* User emoji avatars — explicit color-emoji fonts for Windows / Edge */
+.mg-user-avatar-emoji {
+  font-family:
+    'Apple Color Emoji',
+    'Segoe UI Emoji',
+    'Segoe UI Symbol',
+    'Noto Color Emoji',
+    emoji,
+    sans-serif;
+  line-height: 1;
+  font-weight: normal;
+  font-style: normal;
+}
+
 /* Focus styles */
 :focus-visible {
   outline: 2px solid var(--mg-primary);

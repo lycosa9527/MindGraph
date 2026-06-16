@@ -112,7 +112,7 @@ function handleMarkdownClick(event: MouseEvent) {
       <template v-if="message.role === 'user'">
         <ElAvatar
           :size="40"
-          class="flex-shrink-0 bg-[#FAFAFA] border-2 border-[#303133]"
+          class="flex-shrink-0 bg-[#FAFAFA] border-2 border-[#303133] mg-user-avatar-emoji"
         >
           {{ userAvatar }}
         </ElAvatar>

@@ -19,6 +19,7 @@ import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
 import { useAuthStore, useMindMateStore } from '@/stores'
 import { useUIStore } from '@/stores/ui'
+import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 import ShareExportModal from './ShareExportModal.vue'
 import MindmateHeader from './mindmate/MindmateHeader.vue'
@@ -76,13 +77,7 @@ const showShareModal = ref(false)
 const isLoading = computed(() => mindMate.isLoading.value || mindMate.isStreaming.value)
 
 // User avatar from auth store
-const userAvatar = computed(() => {
-  const avatar = authStore.user?.avatar || '👤'
-  if (avatar.startsWith('avatar_')) {
-    return '👤'
-  }
-  return avatar
-})
+const userAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
 
 // Check if welcome message should be shown
 const showWelcome = computed(() => {
