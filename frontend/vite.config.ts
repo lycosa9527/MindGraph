@@ -78,6 +78,48 @@ const devHmr = resolveHmrConfig(devPort, devHost)
 const devWatch = resolveWatchConfig(__dirname)
 const isPwaDev = process.env.VITE_PWA_DEV === '1'
 
+/** Precache shell + icons only; lazy chunks/fonts load on demand (runtime cache below). */
+const PWA_PRECACHE_GLOB_PATTERNS = [
+  'index.html',
+  '**/*.{ico,png,svg,webmanifest}',
+  'favicon.svg',
+  'robots.txt',
+  'apple-touch-icon.png',
+  'pwa-*.png',
+]
+
+/** Cache hashed bundles after first network fetch (offline repeat visits). */
+const PWA_RUNTIME_CACHING = [
+  {
+    urlPattern: /^\/assets\//,
+    handler: 'CacheFirst' as const,
+    options: {
+      cacheName: 'mindgraph-assets',
+      expiration: {
+        maxEntries: 500,
+        maxAgeSeconds: 60 * 60 * 24 * 365,
+      },
+      cacheableResponse: {
+        statuses: [0, 200],
+      },
+    },
+  },
+  {
+    urlPattern: /^\/gallery\//,
+    handler: 'CacheFirst' as const,
+    options: {
+      cacheName: 'mindgraph-gallery',
+      expiration: {
+        maxEntries: 100,
+        maxAgeSeconds: 60 * 60 * 24 * 30,
+      },
+      cacheableResponse: {
+        statuses: [0, 200],
+      },
+    },
+  },
+]
+
 // Read version from VERSION file (single source of truth)
 const version = readFileSync(resolve(__dirname, '../VERSION'), 'utf-8').trim()
 
@@ -199,11 +241,9 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: isPwaDev
-          ? []
-          : ['**/*.{js,css,html,ico,png,svg,woff2,woff,webmanifest}'],
+        globPatterns: isPwaDev ? [] : PWA_PRECACHE_GLOB_PATTERNS,
         // Sidebar quote pools are fetched on demand after login (locale-specific).
-        globIgnores: ['**/sidebar-quotes-*'],
+        globIgnores: ['**/sidebar-quotes-*', '**/stats.html'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [
           /^\/api/,
@@ -213,6 +253,7 @@ export default defineConfig({
           /^\/thinking_mode/,
         ],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        runtimeCaching: isPwaDev ? undefined : PWA_RUNTIME_CACHING,
       },
       devOptions: {
         enabled: isPwaDev,

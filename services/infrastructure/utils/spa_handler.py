@@ -214,6 +214,24 @@ _PWA_NO_CACHE_EXACT_PATHS = frozenset(
     }
 )
 
+# Hashed bundles, runtime uploads, and PWA icons — no session/auth middleware.
+_PUBLIC_STATIC_PREFIXES = (
+    "/assets/",
+    "/static/",
+    "/gallery/",
+)
+
+_PUBLIC_STATIC_EXACT_PATHS = frozenset(
+    {
+        "/favicon.ico",
+        "/favicon.svg",
+        "/robots.txt",
+        "/apple-touch-icon.png",
+        "/pwa-192x192.png",
+        "/pwa-512x512.png",
+    }
+)
+
 
 def _path_last_segment(path: str) -> str:
     trimmed = path.rstrip("/")
@@ -232,6 +250,24 @@ def is_pwa_no_cache_path(path: str) -> bool:
         return True
     basename = _path_last_segment(path)
     if basename.startswith("workbox-") and (basename.endswith(".js") or basename.endswith(".mjs")):
+        return True
+    return False
+
+
+def is_public_static_path(path: str) -> bool:
+    """
+    True for immutable or public static responses that must not run session/auth middleware.
+
+    Covers Vue ``/assets/*``, runtime ``/static/*``, gallery images, PWA bootstrap files,
+    health probes, and root icons. Aligned with abuseipdb static skip paths.
+    """
+    if any(path.startswith(prefix) for prefix in _PUBLIC_STATIC_PREFIXES):
+        return True
+    if path in _PUBLIC_STATIC_EXACT_PATHS:
+        return True
+    if is_pwa_no_cache_path(path):
+        return True
+    if path.startswith("/health"):
         return True
     return False
 

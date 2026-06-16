@@ -27,6 +27,7 @@ from services.auth.vpn_geo_enforcement import maybe_enforce_vpn_cn_geo_async
 from services.infrastructure.http.feature_gate import feature_flag_gate
 from services.infrastructure.utils.spa_handler import (
     apply_no_cache_headers,
+    is_public_static_path,
     should_apply_api_no_cache,
     should_apply_no_cache,
 )
@@ -344,11 +345,21 @@ async def ensure_pdf_range_support(request: Request, call_next):
 async def auth_context_middleware(request: Request, call_next):
     """
     Resolve JWT/mgat_ User once per request so geo middleware and Depends() reuse it.
+
+    Public static paths (``/assets/*``, ``/static/*``, PWA icons, etc.) skip session
+    validation — browsers send auth cookies on same-origin asset requests, which would
+    otherwise trigger hundreds of redundant Redis session checks on cold loads.
     """
     from utils.db.rls_context import RlsContext, reset_rls_context, set_rls_context
 
     if request.method == "OPTIONS":
         return await call_next(request)
+    if is_public_static_path(request.url.path):
+        token = set_rls_context(RlsContext.deny_default())
+        try:
+            return await call_next(request)
+        finally:
+            reset_rls_context(token)
     user = await resolve_authenticated_user_optional(request)
     if user is not None:
         setattr(request.state, AUTH_CONTEXT_USER_ATTR, user)
@@ -411,16 +422,17 @@ async def log_requests(request: Request, call_next):
     # Process request
     response = await call_next(request)
 
-    # Log combined request/response to save space
+    # Log combined request/response to save space (skip noisy immutable asset traffic)
     response_time = time.time() - start_time
-    logger.debug(
-        "Request: %s %s from %s Response: %s in %.3fs",
-        request.method,
-        log_path,
-        request.client.host,
-        response.status_code,
-        response_time,
-    )
+    if not is_public_static_path(request.url.path):
+        logger.debug(
+            "Request: %s %s from %s Response: %s in %.3fs",
+            request.method,
+            log_path,
+            request.client.host,
+            response.status_code,
+            response_time,
+        )
 
     # Monitor slow requests (thresholds based on endpoint type)
     if "generate_png" in request.url.path and response_time > 20:

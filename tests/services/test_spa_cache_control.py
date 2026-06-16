@@ -75,6 +75,24 @@ def test_is_spa_route_false_for_non_client_routes(path: str) -> None:
 @pytest.mark.parametrize(
     'path',
     [
+        '/assets/index-abc123.js',
+        '/static/community/thumb.png',
+        '/gallery/featured/foo.png',
+        '/favicon.svg',
+        '/sw.js',
+        '/manifest.webmanifest',
+        '/health',
+    ],
+)
+def test_is_public_static_path_for_middleware_skip(path: str) -> None:
+    from services.infrastructure.utils.spa_handler import is_public_static_path
+
+    assert is_public_static_path(path) is True
+
+
+@pytest.mark.parametrize(
+    'path',
+    [
         '/manifest.webmanifest',
         '/sw.js',
         '/workbox-abc123.js',

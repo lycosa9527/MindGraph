@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [5.117.41] - 2026-06-16
 
-> **Sidebar philosophy quotes for signed-in users, org edition label in the header, and offline quote import pipeline with lazy-loaded locale assets.**
+> **Sidebar philosophy quotes for signed-in users, org edition label in the header, offline quote import pipeline, and static-asset load optimizations.**
 
 ### Added
 
@@ -15,13 +15,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Sidebar — quote libraries** — Shipped zh/en JSON assets (~2.2 MB) merged from wisdom-quotes and frozen echoes extracts ([`sidebar-quotes-zh.json`](frontend/src/assets/sidebar-quotes-zh.json), [`sidebar-quotes-en.json`](frontend/src/assets/sidebar-quotes-en.json), [`import-sidebar-quotes/`](frontend/scripts/import-sidebar-quotes/), [`ATTRIBUTIONS.md`](frontend/scripts/vendor/sidebar-quotes/ATTRIBUTIONS.md)).
 - **Sidebar — lazy load** — Locale bucket fetched via dynamic `import('…json?url')` + `fetch()` after login; not bundled into main JS chunks ([`sidebarQuotePicker.ts`](frontend/src/composables/sidebar/sidebarQuotePicker.ts)).
 - **Scripts — import & verify** — `npm run import:sidebar-quotes` and `check:sidebar-quotes` in prebuild/CI ([`check-sidebar-quotes-shipped.ts`](frontend/scripts/check-sidebar-quotes-shipped.ts), [`package.json`](frontend/package.json)).
-- **Tests** — Quote picker, pool loader, and import pipeline ([`useSidebarPhilosophyQuote.spec.ts`](frontend/tests/useSidebarPhilosophyQuote.spec.ts), [`loadSidebarQuotePool.spec.ts`](frontend/tests/loadSidebarQuotePool.spec.ts), [`import-sidebar-quotes.spec.ts`](frontend/tests/import-sidebar-quotes.spec.ts)).
+- **Scripts — PWA workbox guard** — `check:pwa-workbox` ensures shell-only precache plus runtime `/assets/*` caching ([`check-pwa-workbox.ts`](frontend/scripts/check-pwa-workbox.ts)).
+- **Tests** — Quote picker, pool loader, import pipeline, and public-static middleware skip ([`useSidebarPhilosophyQuote.spec.ts`](frontend/tests/useSidebarPhilosophyQuote.spec.ts), [`loadSidebarQuotePool.spec.ts`](frontend/tests/loadSidebarQuotePool.spec.ts), [`import-sidebar-quotes.spec.ts`](frontend/tests/import-sidebar-quotes.spec.ts), [`test_public_static_middleware.py`](tests/services/test_public_static_middleware.py)).
 
 ### Changed
 
 - **Sidebar — org edition label** — School/org name moves to a truncated “{org} 专属版” line under the brand logo; full name on hover ([`AppSidebar.vue`](frontend/src/components/sidebar/AppSidebar.vue), [`useAppSidebar.ts`](frontend/src/composables/sidebar/useAppSidebar.ts), [`sidebar.ts`](frontend/src/locales/messages/en/sidebar.ts)).
 - **Sidebar — account footer** — Replaces static school subtitle with scrolling quote marquee when text overflows ([`AppSidebarAccountFooter.vue`](frontend/src/components/sidebar/AppSidebarAccountFooter.vue)).
-- **PWA — Workbox** — Excludes `sidebar-quotes-*` from precache; fetched on demand per locale ([`vite.config.ts`](frontend/vite.config.ts)).
+- **Backend — static asset middleware** — `auth_context_middleware` and request debug logs skip `/assets/*`, `/static/*`, `/gallery/*`, PWA bootstrap, and health paths so cold loads no longer trigger hundreds of Redis session checks ([`spa_handler.py`](services/infrastructure/utils/spa_handler.py), [`middleware.py`](services/infrastructure/http/middleware.py)).
+- **PWA — Workbox** — Precache shell + icons only; lazy JS/CSS/fonts load on demand and cache at runtime via CacheFirst on `/assets/*` and `/gallery/*` ([`vite.config.ts`](frontend/vite.config.ts)); sidebar quote JSON still excluded from precache.
 - **Docs — AGENTS.md** — Sidebar quote asset paths, rotation rules, and import refresh commands.
 
 ### Frontend package version

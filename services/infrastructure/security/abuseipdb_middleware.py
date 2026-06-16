@@ -10,6 +10,7 @@ import os
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
+from services.infrastructure.utils.spa_handler import is_public_static_path
 from services.infrastructure.security import abuseipdb_service
 from services.infrastructure.security import ip_reputation_env_snapshot
 from utils.auth.request_helpers import get_client_ip
@@ -62,17 +63,11 @@ def _log_vetting_allowed(
 
 
 def _should_skip_abuseipdb_path(path: str) -> bool:
-    if path.startswith("/health"):
-        return True
-    if path.startswith("/static"):
-        return True
-    if path.startswith("/assets/"):
+    if is_public_static_path(path):
         return True
     # External webhooks (DingTalk MindBot, etc.): third-party egress must not be
     # blocked by shared-IP / datacenter AbuseIPDB scores.
     if path.startswith("/api/mindbot"):
-        return True
-    if path in ("/favicon.ico", "/robots.txt"):
         return True
     return False
 
