@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
+
+from tests.typing_helpers import mock_await_args
 
 from services.kitty.diagram.diagram_utils import resolve_voice_node_reference
 from services.kitty.omni.tools import omni_function_call_to_command
@@ -30,7 +34,7 @@ def test_resolve_voice_node_by_text_match() -> None:
             "children": [{"id": "context-0", "text": "Wheels"}],
         },
     }
-    out = resolve_voice_node_reference(ctx, "circle_map", node_identifier="Wheel")
+    out = resolve_voice_node_reference(cast(dict[str, object], ctx), "circle_map", node_identifier="Wheel")
     assert out is not None
     assert out["node_id"] == "context-0"
     assert out["node_index"] == 0
@@ -123,7 +127,7 @@ async def test_route_omni_add_node_with_recommendations() -> None:
                 dict(voice_sessions[vid]["context"]),
             )
         assert result.outcome == RouteOutcome.EXECUTED
-        payload = send_mock.await_args.args[1]
+        payload = mock_await_args(send_mock)[1]
         assert payload["action"] == "add_node_with_recommendations"
         omni_mock.create_response.assert_awaited()
     finally:

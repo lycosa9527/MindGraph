@@ -537,11 +537,12 @@ class TestHexpireParticipants:
                 self,
                 key: str,
                 ttl: int,
-                field: str,  # pylint: disable=unused-argument
+                _field: str,
             ) -> None:
+                _ = (key, ttl)
                 raise ResponseError("ERR unknown command 'hexpire'")
 
-            async def expire(self, key: str, ttl: int) -> bool:  # pylint: disable=unused-argument
+            async def expire(self, _key: str, _ttl: int) -> bool:
                 return True
 
         import asyncio

@@ -60,6 +60,8 @@ class _AsyncSlidingWindowLimiter:
     def __init__(self, max_calls: int, window_seconds: float) -> None:
         self._max_calls = max(1, max_calls)
         self._window = max(0.001, window_seconds)
+        self._cfg_max_calls = max_calls
+        self._cfg_window_ms = int(window_seconds * 1000)
         self._lock = asyncio.Lock()
         self._times: list[float] = []
         self._waiters: collections.deque[asyncio.Event] = collections.deque()
@@ -180,8 +182,8 @@ async def acquire_dingtalk_streaming_qps_slot(app_key: str) -> None:
                     max_keys,
                 )
             _limiters[key] = _AsyncSlidingWindowLimiter(max_calls, window_s)
-            _limiters[key]._cfg_max_calls = max_calls  # type: ignore[attr-defined]
-            _limiters[key]._cfg_window_ms = window_ms  # type: ignore[attr-defined]
+            _limiters[key]._cfg_max_calls = max_calls
+            _limiters[key]._cfg_window_ms = window_ms
             logger.debug(
                 "[MindBot] dingtalk_streaming_qps_limiter_created app_key_tail=%s max=%s window_ms=%s",
                 key[-6:] if len(key) > 6 else key,

@@ -48,10 +48,8 @@ verifies RLS through 0053, can patch `.env`, and optionally flush Redis (option 
 Shortcut: `PYTHONPATH=. python scripts/db/check_migration_status.py`. `main.py` also auto-resolves
 `DATABASE_MIGRATION_URL` on startup when only `mindgraph_app` is configured.
 
-RLS SQL helpers live in `alembic/rls_functions_sql.py` and `alembic/rls_policy_builder.py`.
-They are registered via [`alembic/migration_support.py`](migration_support.py) (PyPI `alembic`
-name clash). `alembic/env.py` loads that module directly — not via `utils.db` — to avoid
-importing the FastAPI/RLS stack during CLI migrations.
+RLS SQL helpers live in [`db_rls/`](../db_rls/) (`functions_sql.py`, `policy_builder.py`, `roles_sql.py`).
+Migrations import them directly — no PyPI ``alembic`` namespace shim.
 
 Never enable RLS without policies in the same migration. See [`docs/db-rls-rollout.md`](../docs/db-rls-rollout.md).
 

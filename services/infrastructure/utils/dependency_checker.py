@@ -272,10 +272,12 @@ def check_postgresql_installed() -> tuple[bool, str]:
     ]
 
     postgres_binary_found = False
+    postgres_binary_path: str | None = None
     postgres_version = None
     for path in postgres_paths:
         if os.path.exists(path) and os.access(path, os.X_OK):
             postgres_binary_found = True
+            postgres_binary_path = path
             # Try to extract version from path or binary
             if "18" in path:
                 postgres_version = "18"
@@ -306,9 +308,9 @@ def check_postgresql_installed() -> tuple[bool, str]:
 
     # Check for initdb binary (same directory as postgres)
     initdb_binary_found = False
-    if postgres_binary_found:
+    if postgres_binary_found and postgres_binary_path:
         # Check initdb in same directory as postgres
-        postgres_dir = os.path.dirname(path)
+        postgres_dir = os.path.dirname(postgres_binary_path)
         initdb_path = os.path.join(postgres_dir, "initdb")
         if os.path.exists(initdb_path) and os.access(initdb_path, os.X_OK):
             initdb_binary_found = True

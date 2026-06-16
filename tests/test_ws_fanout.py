@@ -5,10 +5,12 @@ from __future__ import annotations
 import asyncio
 import json
 from types import SimpleNamespace
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 import pytest
 from redis.exceptions import RedisError
+
+from services.features.workshop_ws_connection_state import AnyHandle
 
 
 def _truthy() -> bool:
@@ -182,7 +184,7 @@ async def test_deliver_local_drop_second_identical_msg_id(monkeypatch):
     queue: asyncio.Queue[object] = asyncio.Queue()
     dummy = SimpleNamespace(send_queue=queue, qsize_high_water=0)
 
-    ACTIVE_CONNECTIONS["Z"] = {1: dummy}
+    ACTIVE_CONNECTIONS["Z"] = {1: cast(AnyHandle, dummy)}
     frame = json.dumps({"type": "x", "msg_id": "dupid", "v": 1})
 
     await wfd.deliver_local_workshop_broadcast("Z", "all", None, frame)

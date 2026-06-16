@@ -29,9 +29,7 @@ _roles_sql = load_rls_roles_sql()
 build_create_roles_sql = _roles_sql.build_create_roles_sql
 build_grants_sql = _roles_sql.build_grants_sql
 build_migrate_database_privileges_sql = _roles_sql.build_migrate_database_privileges_sql
-build_reassign_public_objects_to_migrate_sql = (
-    _roles_sql.build_reassign_public_objects_to_migrate_sql
-)
+build_reassign_public_objects_to_migrate_sql = _roles_sql.build_reassign_public_objects_to_migrate_sql
 build_ensure_migrate_bypassrls_sql = _roles_sql.build_ensure_migrate_bypassrls_sql
 build_ensure_postgresql_extensions_sql = _roles_sql.build_ensure_postgresql_extensions_sql
 
@@ -64,9 +62,7 @@ def admin_url_candidates(runtime_url: str | None = None) -> list[str]:
 
     postgres_pw = os.getenv("POSTGRESQL_PASSWORD") or os.getenv("PGPASSWORD") or ""
     if postgres_pw:
-        candidates.append(
-            f"postgresql+psycopg://postgres:{postgres_pw}@{host}:{port}/postgres"
-        )
+        candidates.append(f"postgresql+psycopg://postgres:{postgres_pw}@{host}:{port}/postgres")
 
     candidates.append(f"postgresql+psycopg://postgres@{host}:{port}/postgres")
 
@@ -295,9 +291,7 @@ def ensure_migrate_owns_public_objects(
 
     if _migrate_can_enable_rls_on_diagrams(migrate_url):
         return True, f"Reassigned public objects to {ROLE_MIGRATE}"
-    return False, (
-        f"{ROLE_MIGRATE} still cannot ENABLE ROW LEVEL SECURITY on diagrams after REASSIGN"
-    )
+    return False, (f"{ROLE_MIGRATE} still cannot ENABLE ROW LEVEL SECURITY on diagrams after REASSIGN")
 
 
 def _migrate_role_lacks_bypassrls(connect_url: str) -> bool:
@@ -306,10 +300,7 @@ def _migrate_role_lacks_bypassrls(connect_url: str) -> bool:
     try:
         with engine.connect() as conn:
             row = conn.execute(
-                text(
-                    "SELECT COALESCE(rolbypassrls, false) FROM pg_roles "
-                    "WHERE rolname = 'mindgraph_migrate'"
-                )
+                text("SELECT COALESCE(rolbypassrls, false) FROM pg_roles WHERE rolname = 'mindgraph_migrate'")
             ).scalar()
         if row is None:
             return False
@@ -344,9 +335,7 @@ def ensure_migrate_role_bypassrls(
 def _roles_missing_on_url(database_url: str) -> bool:
     engine = create_engine(normalise_db_url(database_url), poolclass=NullPool)
     try:
-        return not (
-            _role_exists(engine, ROLE_APP) and _role_exists(engine, ROLE_MIGRATE)
-        )
+        return not (_role_exists(engine, ROLE_APP) and _role_exists(engine, ROLE_MIGRATE))
     finally:
         engine.dispose()
 
@@ -479,11 +468,7 @@ def _run_sudo_postgres_cmd(
     if sys.platform == "win32":
         return False, "sudo postgres bootstrap unavailable on Windows"
 
-    host_lists = (
-        _psql_peer_auth_args() + _psql_tcp_connection_args()
-        if peer_first
-        else _psql_tcp_connection_args()
-    )
+    host_lists = _psql_peer_auth_args() + _psql_tcp_connection_args() if peer_first else _psql_tcp_connection_args()
     wrapper_plans: list[tuple[list[str], bool, bool, list[list[str]]]] = [
         (["sudo", "-n", "-u", "postgres"], True, True, host_lists),
     ]
@@ -509,7 +494,7 @@ def _run_sudo_postgres_cmd(
                 else:
                     if needs_sudo_hint:
                         print("[RLS] If prompted, enter your Linux password for sudo …")
-                    result = subprocess.run(cmd, timeout=300, check=False)
+                    result = subprocess.run(cmd, timeout=300, text=True, check=False)
                     last_detail = f"exit code {result.returncode}"
             except (OSError, subprocess.TimeoutExpired) as exc:
                 last_detail = str(exc)
@@ -592,9 +577,7 @@ def _run_sudo_postgres_psql(
             (["sudo", "-n", "-u", "postgres"], True, True, peer_args + tcp_args),
         ]
         if allow_password_prompt:
-            wrapper_plans.append(
-                (["sudo", "-u", "postgres"], False, True, peer_args + tcp_args)
-            )
+            wrapper_plans.append((["sudo", "-u", "postgres"], False, True, peer_args + tcp_args))
 
         for prefix, capture, needs_sudo_hint, host_arg_lists in wrapper_plans:
             for host_args in host_arg_lists:
@@ -738,8 +721,7 @@ def ensure_rls_roles_exist(runtime_url: str | None = None) -> tuple[bool, str]:
         sudo_ok, sudo_msg = try_bootstrap_rls_roles_via_sudo(runtime)
         if not sudo_ok:
             return False, (
-                f"{sudo_msg}. On a fresh install create the database first: "
-                "sudo -u postgres createdb mindgraph"
+                f"{sudo_msg}. On a fresh install create the database first: sudo -u postgres createdb mindgraph"
             )
         logger.info("%s", sudo_msg)
         bootstrap_msg = sudo_msg

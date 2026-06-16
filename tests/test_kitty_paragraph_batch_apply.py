@@ -2,28 +2,13 @@
 
 from __future__ import annotations
 
-import sys
-import types
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-online_collab_pkg = types.ModuleType("services.online_collab")
-online_collab_pkg.__path__ = []  # type: ignore[attr-defined]
-online_collab_redis_pkg = types.ModuleType("services.online_collab.redis")
-online_collab_redis_pkg.__path__ = []  # type: ignore[attr-defined]
-redis8_features_stub = types.ModuleType("services.online_collab.redis.redis8_features")
-redis8_features_stub.timeseries_enabled = lambda: False
+from tests.stubs.redis8_features import install_redis8_features_stub
 
-
-async def _ts_record_counter(_key: str, _delta: float) -> None:
-    return None
-
-
-redis8_features_stub.ts_record_counter = _ts_record_counter
-sys.modules.setdefault("services.online_collab", online_collab_pkg)
-sys.modules.setdefault("services.online_collab.redis", online_collab_redis_pkg)
-sys.modules.setdefault("services.online_collab.redis.redis8_features", redis8_features_stub)
+install_redis8_features_stub()
 
 from services.kitty.content.paragraph_batch_apply import apply_paragraph_batch_add_nodes
 from services.kitty.session.runtime_state import voice_sessions

@@ -308,63 +308,6 @@ def package_chromium():
         # Package this platform
         package_platform_chromium(zip_path, platform_name, chromium_source_dir)
 
-    # Check if zip already exists and what platforms it contains
-    existing_platforms = []
-    if zip_path.exists():
-        print(f"[INFO] Existing zip file found, updating with {platform_name} platform...")
-        with zipfile.ZipFile(zip_path, "r") as existing_zip:
-            # Check what platforms are already in the zip
-            for name in existing_zip.namelist():
-                if name.startswith("windows/") or name.startswith("linux/") or name.startswith("mac/"):
-                    platform_in_zip = name.split("/")[0]
-                    if platform_in_zip not in existing_platforms:
-                        existing_platforms.append(platform_in_zip)
-
-        if existing_platforms:
-            print(f"[INFO] Zip already contains: {', '.join(existing_platforms)}")
-            if platform_name in existing_platforms:
-                print(f"[INFO] {platform_name} platform already exists, will be replaced")
-    else:
-        print("[INFO] Creating new multi-platform zip file...")
-
-    # Create/update zip file
-    print(f"[INFO] Packaging {platform_name} Chromium into zip...")
-    print(f"    Source: {chromium_source_dir}")
-    print("    This may take a few minutes (~150MB per platform)...")
-
-    total_files = sum(1 for _ in chromium_source_dir.rglob("*") if _.is_file())
-    processed = 0
-
-    # Handle existing zip: remove old platform folder if updating
-    if zip_path.exists() and platform_name in existing_platforms:
-        print(f"[INFO] Removing existing {platform_name} platform from zip...")
-        temp_zip = zip_path.with_suffix(".zip.tmp")
-        with zipfile.ZipFile(temp_zip, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as new_zip:
-            with zipfile.ZipFile(zip_path, "r") as old_zip:
-                for item in old_zip.infolist():
-                    if not item.filename.startswith(f"{platform_name}/"):
-                        new_zip.writestr(item, old_zip.read(item.filename))
-        zip_path.unlink()
-        temp_zip.rename(zip_path)
-        # After removing old platform, use append mode to add new one
-        mode = "a"
-    else:
-        # New zip or platform doesn't exist yet
-        mode = "a" if zip_path.exists() else "w"
-
-    # Add/update platform folder in zip
-    with zipfile.ZipFile(zip_path, mode, zipfile.ZIP_DEFLATED, compresslevel=6) as zipf:
-        for root, _dirs, files in os.walk(chromium_source_dir):
-            for file in files:
-                file_path = Path(root) / file
-                # Use platform-specific path: {platform_name}/...
-                relative_path = file_path.relative_to(chromium_source_dir)
-                arcname = f"{platform_name}/{relative_path}"
-                zipf.write(file_path, arcname)
-                processed += 1
-                if processed % 100 == 0:
-                    print(f"    Progress: {processed}/{total_files} files...", end="\r")
-
     # Final summary
     if zip_path.exists():
         zip_size_mb = zip_path.stat().st_size / (1024 * 1024)

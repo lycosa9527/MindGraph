@@ -199,6 +199,7 @@ class LLMService:
             )
         """
         start_time = time.time()
+        provider: str | None = None
 
         # Build messages with RAG context injection
         chat_messages = await self.message_builder.build_with_rag(
@@ -358,6 +359,7 @@ class LLMService:
             usage_data contains: prompt_tokens, completion_tokens, total_tokens
         """
         start_time = time.time()
+        provider: str | None = None
 
         # Build messages (no RAG for chat_with_usage - caller handles tracking)
         chat_messages = self.message_builder.build_chat_messages(
@@ -526,6 +528,7 @@ class LLMService:
                 - {'type': 'usage', 'usage': {...}} - Token usage stats
         """
         start_time = time.time()
+        provider: str | None = None
 
         # Enhance prompt with RAG for streaming (if enabled)
         if use_knowledge_base and user_id and messages is None:

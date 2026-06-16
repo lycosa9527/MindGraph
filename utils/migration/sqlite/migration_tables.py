@@ -13,13 +13,23 @@ Proprietary License
 
 import sqlite3
 import logging
-from typing import Optional, Tuple, Any
+from typing import Any, Callable, Optional, Tuple
 
+ExecuteValuesFn = Callable[..., list[Any] | None]
+
+
+def _execute_values_unavailable(*_args: Any, **_kwargs: Any) -> list[Any] | None:
+    raise RuntimeError("psycopg2 is required for PostgreSQL migration")
+
+
+execute_values: ExecuteValuesFn
 try:
-    from psycopg2.extras import execute_values
+    from psycopg2.extras import execute_values as _execute_values_impl
 
+    execute_values = _execute_values_impl
     PSYCOPG2_AVAILABLE = True
 except ImportError:
+    execute_values = _execute_values_unavailable
     PSYCOPG2_AVAILABLE = False
 
 from sqlalchemy import inspect
@@ -386,6 +396,10 @@ def migrate_table(
                 safe_table_name = "".join(c if c.isalnum() or c == "_" else "_" for c in table_name)
                 savepoint_name = f"sp_{safe_table_name}_{batch_num}"
 
+                batch_data = [
+                    convert_row_data(row, columns, common_columns, pg_column_types, table_name) for row in batch
+                ]
+
                 try:
                     # Check if transaction is in a bad state and rollback if needed
                     # This handles cases where FK disabling failed and aborted the transaction
@@ -402,12 +416,6 @@ def migrate_table(
 
                     # Create savepoint for this batch (allows rollback of just this batch)
                     pg_cursor.execute(f"SAVEPOINT {savepoint_name}")
-
-                    # Prepare batch data: only include columns that exist in both databases
-                    # Convert data types as needed (SQLite INTEGER booleans -> PostgreSQL BOOLEAN)
-                    batch_data = [
-                        convert_row_data(row, columns, common_columns, pg_column_types, table_name) for row in batch
-                    ]
 
                     # Insert batch into PostgreSQL
                     execute_values(pg_cursor, insert_sql, batch_data, page_size=INSERT_PAGE_SIZE)

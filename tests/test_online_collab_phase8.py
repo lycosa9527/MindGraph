@@ -20,10 +20,12 @@ from __future__ import annotations
 
 import asyncio
 import json
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from tests.typing_helpers import mock_await_args
 from services.features.workshop_ws_connection_state import (
     ACTIVE_CONNECTIONS,
     ConnectionHandle,
@@ -301,10 +303,10 @@ class TestInPlacePromotion:
                 await promote_to_editor(code, 303, promoted_by=302)
 
             mock_broadcast.assert_awaited_once()
-            await_args = mock_broadcast.await_args
-            assert await_args.args[0] == code
-            assert await_args.args[1] == 303
-            payload = await_args.args[2]
+            broadcast_args = mock_await_args(mock_broadcast)
+            assert broadcast_args[0] == code
+            assert broadcast_args[1] == 303
+            payload = broadcast_args[2]
             assert payload["type"] == "role_changed"
             assert payload["user_id"] == 303
             assert payload["role"] == "editor"
@@ -312,10 +314,10 @@ class TestInPlacePromotion:
 
             handle_promoted = ACTIVE_CONNECTIONS.get(code, {}).get(303)
             assert handle_promoted is not None
-
+            promoted = cast(ConnectionHandle, handle_promoted)
             drained_target = []
-            while not handle_promoted.send_queue.empty():  # type: ignore[attr-defined]
-                drained_target.append(handle_promoted.send_queue.get_nowait())
+            while not promoted.send_queue.empty():
+                drained_target.append(promoted.send_queue.get_nowait())
 
             decoded_self = [json.loads(body) for kind, body in drained_target if kind == "text"]
             assert any(f.get("type") == "role_changed" for f in decoded_self)
@@ -437,8 +439,8 @@ class TestViewerSnapshotRefreshTask:
         _SNAPSHOT_TASKS.pop(code, None)
 
         loop = asyncio.new_event_loop()
+        task_ref: dict[str, asyncio.Task[None] | None] = {"task": None}
         try:
-            task_ref = {}
 
             async def _run() -> None:
                 ensure_snapshot_task(code)
@@ -504,6 +506,7 @@ class TestSeqTracking:
         code = "SEQTRACK1"
         ws = _make_ws()
         viewer = await register_connection(code, 50, ws, role="viewer")
+        assert isinstance(viewer, ViewerHandle)
         assert viewer.last_seen_seq == 0
         try:
             shard = [(50, viewer)]

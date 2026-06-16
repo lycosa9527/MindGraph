@@ -6,9 +6,7 @@ _roles_sql = load_rls_roles_sql()
 build_create_roles_sql = _roles_sql.build_create_roles_sql
 build_grants_sql = _roles_sql.build_grants_sql
 build_migrate_database_privileges_sql = _roles_sql.build_migrate_database_privileges_sql
-build_reassign_public_objects_to_migrate_sql = (
-    _roles_sql.build_reassign_public_objects_to_migrate_sql
-)
+build_reassign_public_objects_to_migrate_sql = _roles_sql.build_reassign_public_objects_to_migrate_sql
 build_ensure_postgresql_extensions_sql = _roles_sql.build_ensure_postgresql_extensions_sql
 
 

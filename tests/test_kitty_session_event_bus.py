@@ -7,6 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from tests.typing_helpers import mock_await_args, mock_await_kwargs
+
 from services.kitty.session.runtime_state import voice_sessions
 from services.kitty.session.event_handlers import (
     KittySessionRuntime,
@@ -67,7 +69,7 @@ async def test_function_call_event_routes_omni_call() -> None:
             await _drain_bus()
 
         route_mock.assert_awaited_once()
-        assert route_mock.await_args.args[2] == "add_node"
+        assert mock_await_args(route_mock)[2] == "add_node"
     finally:
         await _cleanup_event_runtime(voice_session_id)
 
@@ -128,8 +130,9 @@ async def test_text_inbound_routes_with_from_voice_false() -> None:
             await _drain_bus()
 
         route_mock.assert_awaited_once()
-        assert route_mock.await_args.kwargs["from_voice"] is False
-        assert route_mock.await_args.kwargs["is_text_message"] is True
+        kwargs = mock_await_kwargs(route_mock)
+        assert kwargs["from_voice"] is False
+        assert kwargs["is_text_message"] is True
     finally:
         await _cleanup_event_runtime(voice_session_id)
 
@@ -178,8 +181,9 @@ async def test_diagram_mutated_schedules_single_debounced_refresh() -> None:
             await _drain_bus()
 
         schedule_mock.assert_awaited_once()
-        assert schedule_mock.await_args.kwargs["reason"] == "diagram_mutation"
-        assert schedule_mock.await_args.kwargs["delta"] == "add_node applied"
+        schedule_kwargs = mock_await_kwargs(schedule_mock)
+        assert schedule_kwargs["reason"] == "diagram_mutation"
+        assert schedule_kwargs["delta"] == "add_node applied"
     finally:
         await _cleanup_event_runtime(voice_session_id)
 
@@ -203,7 +207,7 @@ async def test_context_update_schedules_refresh_once() -> None:
             await _drain_bus()
 
         schedule_mock.assert_awaited_once()
-        assert schedule_mock.await_args.kwargs["reason"] == "context_update"
+        assert mock_await_kwargs(schedule_mock)["reason"] == "context_update"
         assert voice_sessions[voice_session_id].get("_last_context_update_mono") is not None
     finally:
         await _cleanup_event_runtime(voice_session_id)

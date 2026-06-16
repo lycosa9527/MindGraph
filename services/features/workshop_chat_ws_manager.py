@@ -113,7 +113,7 @@ class ChatConnectionManager:
                     presence_org,
                     user_id,
                 )
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 logger.debug("Presence org user removal failed: %s", exc)
         self._remove_subscriptions(user_id)
         self._connections.pop(user_id, None)
@@ -131,7 +131,7 @@ class ChatConnectionManager:
                     org_id,
                     user_id,
                 )
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 logger.debug("Presence org user touch failed: %s", exc)
 
     def get_presence_org_id(self, user_id: int) -> Optional[int]:
@@ -151,7 +151,7 @@ class ChatConnectionManager:
                 conn.presence_org_id,
                 user_id,
             )
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             logger.debug("Presence heartbeat refresh failed: %s", exc)
 
     async def presence_org_online_ids(self, org_id: int) -> Set[int]:
@@ -161,7 +161,7 @@ class ChatConnectionManager:
                 return await workshop_chat_presence_store.online_user_ids_for_org(
                     org_id,
                 )
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 logger.debug("Presence org online users lookup failed: %s", exc)
         return {uid for uid, conn in self._connections.items() if conn.presence_org_id == org_id}
 

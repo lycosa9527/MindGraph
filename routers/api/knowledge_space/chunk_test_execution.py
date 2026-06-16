@@ -50,7 +50,7 @@ async def test_benchmark_dataset(
     service = get_rag_chunk_test_service()
 
     try:
-        results = service.test_benchmark_dataset(
+        results = await service.test_benchmark_dataset(
             db=db,
             user_id=current_user.id,
             dataset_name=request.dataset_name,

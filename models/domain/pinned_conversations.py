@@ -12,12 +12,18 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import UTC, datetime
+from __future__ import annotations
 
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Index
-from sqlalchemy.orm import relationship
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
+
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.domain.auth import Base
+
+if TYPE_CHECKING:
+    from models.domain.auth import User
 
 
 class PinnedConversation(Base):
@@ -30,13 +36,11 @@ class PinnedConversation(Base):
 
     __tablename__ = "pinned_conversations"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    conversation_id = Column(String(36), nullable=False, index=True)
-    pinned_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    conversation_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    pinned_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
-    # Relationship
-    user = relationship("User", backref="pinned_conversations", lazy="selectin")
+    user: Mapped["User"] = relationship("User", backref="pinned_conversations", lazy="selectin")
 
-    # Composite unique constraint: one pin per user per conversation
     __table_args__ = (Index("ix_pinned_conv_user_conv", "user_id", "conversation_id", unique=True),)

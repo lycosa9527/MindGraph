@@ -251,20 +251,16 @@ async def capture_diagram_screenshot(
         page.set_default_navigation_timeout(30000)
         await page.set_viewport_size({"width": vw, "height": vh})
 
-        page.on(
-            "console",
-            lambda msg: (
-                console_messages.append(f"{msg.type}: {msg.text}"),
-                logger.debug("[VueFlowScreenshot] CONSOLE: %s: %s", msg.type, msg.text),
-            ),
-        )
-        page.on(
-            "pageerror",
-            lambda err: (
-                page_errors.append(str(err)),
-                logger.error("[VueFlowScreenshot] PAGE ERROR: %s", err),
-            ),
-        )
+        def _on_console(msg) -> None:
+            console_messages.append(f"{msg.type}: {msg.text}")
+            logger.debug("[VueFlowScreenshot] CONSOLE: %s: %s", msg.type, msg.text)
+
+        def _on_page_error(err) -> None:
+            page_errors.append(str(err))
+            logger.error("[VueFlowScreenshot] PAGE ERROR: %s", err)
+
+        page.on("console", _on_console)
+        page.on("pageerror", _on_page_error)
 
         try:
             await _inject_spec_and_navigate(page, base_url, spec_json)

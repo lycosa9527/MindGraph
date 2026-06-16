@@ -21,6 +21,7 @@ class _User:
         self.role = role
         self.id = user_id
         self.organization_id = organization_id
+        self.phone: str | None = None
 
 
 def test_expert_with_invited_orgs_scoped():
@@ -45,7 +46,9 @@ def test_platform_bd_org_filter_global_read():
 
     user = _User("platform_bd", user_id=9)
     scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset({10, 20}))
-    assert org_filter(scope, Organization.id) == sql_true()
+    clause = org_filter(scope, Organization.id)
+    assert clause is not None
+    assert clause.compare(sql_true())
 
 
 def test_expert_org_filter_still_scoped_without_global():
@@ -66,7 +69,7 @@ def test_invite_org_filter_excludes_all_orgs_when_expert_has_no_invited_ids():
     user = _User("expert", user_id=5)
     scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset())
     clause = invite_org_filter(scope, Organization.id)
-    assert clause == sql_false()
+    assert clause.compare(sql_false())
 
 
 def test_legacy_null_org_not_readable_for_expert():
@@ -83,7 +86,7 @@ def test_expert_org_filter_excludes_legacy_null_orgs():
     scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset({10}))
     clause = org_filter(scope, Organization.id)
     assert clause is not None
-    assert clause != sql_false()
+    assert not clause.compare(sql_false())
     assert org_id_readable_in_panel_scope(scope, 999, None) is False
 
 
@@ -106,7 +109,7 @@ def test_panel_org_table_filter_global_bd_sees_all_orgs():
 
     user = _User("platform_bd", user_id=9)
     scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset({10, 20}))
-    assert panel_org_table_filter(scope) == sql_true()
+    assert panel_org_table_filter(scope).compare(sql_true())
 
 
 def test_panel_org_table_filter_allows_legacy_null_only_when_no_invited_ids():
@@ -114,7 +117,7 @@ def test_panel_org_table_filter_allows_legacy_null_only_when_no_invited_ids():
     scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset())
     clause = panel_org_table_filter(scope)
     assert clause is not None
-    assert clause != sql_false()
+    assert not clause.compare(sql_false())
 
 
 def test_org_id_readable_blocks_foreign_owned_org():

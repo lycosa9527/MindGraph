@@ -39,7 +39,7 @@ async def extract_central_topic_llm(user_prompt: str, language: str = "zh") -> s
 
         return central_topic
 
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         logger.error("LLM topic extraction error: %s, using original prompt", e)
         return user_prompt.strip()
 
@@ -91,7 +91,7 @@ Your output:"""
 
         return topics
 
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         logger.error("LLM double bubble topic extraction error: %s, using original prompt", e)
         return user_prompt.strip()
 

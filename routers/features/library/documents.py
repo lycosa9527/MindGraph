@@ -504,6 +504,9 @@ async def upload_cover_image(
     if not document:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
 
+    if not file.filename:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Filename is required")
+
     file_ext = os.path.splitext(file.filename)[1].lower()
 
     if file_ext not in _MIME_TYPE_MAP:

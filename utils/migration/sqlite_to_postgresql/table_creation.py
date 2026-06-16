@@ -15,7 +15,7 @@ Proprietary License
 import logging
 from typing import Optional, Set, Any, Tuple
 
-from sqlalchemy import inspect, text
+from sqlalchemy import Enum as SAEnum, inspect, text
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
@@ -42,7 +42,7 @@ def create_enum_types(pg_engine: Any) -> None:
             for column in table.columns:
                 # Check if column type is an Enum
                 col_type = column.type
-                if hasattr(col_type, "name") and hasattr(col_type, "enums"):
+                if isinstance(col_type, SAEnum):
                     enum_name = col_type.name
                     enum_values = col_type.enums
                     if enum_name and enum_values:

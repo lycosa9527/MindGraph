@@ -6,14 +6,19 @@ All Rights Reserved
 Proprietary License
 """
 
+from __future__ import annotations
+
 from datetime import UTC, datetime
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.domain.auth import Base
+
+if TYPE_CHECKING:
+    from models.domain.auth import User
 
 
 class MarketListing(Base):

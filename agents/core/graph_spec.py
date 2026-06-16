@@ -67,7 +67,7 @@ async def generate_graph_spec(user_prompt: str, graph_type: str, language: str =
         # Some LLM clients return dict-like objects; ensure string
         try:
             raw_text = yaml_text if isinstance(yaml_text, str) else str(yaml_text)
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             raw_text = f"{yaml_text}"
         yaml_text_clean = extract_yaml_from_code_block(raw_text)
 
@@ -86,13 +86,13 @@ async def generate_graph_spec(user_prompt: str, graph_type: str, language: str =
                 cleaned = yaml_text_clean.strip().rstrip("`").strip()
                 try:
                     spec = json.loads(cleaned)
-                except Exception:  # pylint: disable=broad-except
+                except Exception:
                     # Attempt to salvage a JSON object from messy output
                     salvaged = _salvage_json_string(raw_text)
                     if salvaged:
                         try:
                             spec = json.loads(salvaged)
-                        except Exception:  # pylint: disable=broad-except
+                        except Exception:
                             spec = yaml.safe_load(yaml_text_clean)
                     else:
                         spec = yaml.safe_load(yaml_text_clean)
@@ -111,7 +111,7 @@ async def generate_graph_spec(user_prompt: str, graph_type: str, language: str =
                 )
             return spec
 
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.error("%s JSON generation failed: %s", graph_type, e)
             return create_error_response(
                 f"Failed to generate valid {graph_type} JSON",
@@ -122,7 +122,7 @@ async def generate_graph_spec(user_prompt: str, graph_type: str, language: str =
     except ImportError:
         logger.error("Failed to import centralized prompt registry")
         return create_error_response("Prompt registry not available", "import", {"graph_type": graph_type})
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         logger.error("Unexpected error in generate_graph_spec: %s", e)
         return create_error_response(
             f"Unexpected error generating {graph_type}",
@@ -155,7 +155,7 @@ async def validate_agent_setup() -> bool:
         bool: True if agent is ready, False otherwise
     """
     try:
-        import asyncio  # pylint: disable=import-outside-toplevel
+        import asyncio
 
         await asyncio.wait_for(
             llm_classification.invoke("Test"),
@@ -166,6 +166,6 @@ async def validate_agent_setup() -> bool:
     except TimeoutError:
         logger.error("LLM validation timed out")
         return False
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         logger.error("LLM connection failed: %s", e)
         return False

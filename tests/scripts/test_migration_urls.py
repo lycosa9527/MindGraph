@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
+from sqlalchemy.engine import Engine
 
 from scripts.db import migration_urls as urls
 
@@ -79,7 +82,7 @@ def test_env_rls_database_urls_match(tmp_path, monkeypatch):
         return role in (urls.ROLE_APP, urls.ROLE_MIGRATE)
 
     monkeypatch.setattr(urls, "_role_exists", fake_role_exists)
-    assert urls.env_rls_database_urls_match(env_path, FakeEngine())
+    assert urls.env_rls_database_urls_match(env_path, cast(Engine, FakeEngine()))
 
 
 def test_env_rls_database_urls_mismatch(tmp_path, monkeypatch):
@@ -94,7 +97,7 @@ def test_env_rls_database_urls_mismatch(tmp_path, monkeypatch):
         dialect = type("D", (), {"name": "postgresql"})()
 
     monkeypatch.setattr(urls, "_role_exists", lambda _e, role: role == urls.ROLE_APP)
-    assert not urls.env_rls_database_urls_match(env_path, FakeEngine())
+    assert not urls.env_rls_database_urls_match(env_path, cast(Engine, FakeEngine()))
 
 
 def test_apply_env_database_patches_inserts_migration_url_after_database_url():
@@ -103,9 +106,7 @@ def test_apply_env_database_patches_inserts_migration_url_after_database_url():
         lines,
         {
             "DATABASE_URL": "postgresql://mindgraph_app:secret@localhost:5432/mindgraph",
-            "DATABASE_MIGRATION_URL": (
-                "postgresql://mindgraph_migrate:secret@localhost:5432/mindgraph"
-            ),
+            "DATABASE_MIGRATION_URL": ("postgresql://mindgraph_migrate:secret@localhost:5432/mindgraph"),
         },
     )
     text = "".join(patched)

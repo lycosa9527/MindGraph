@@ -27,10 +27,13 @@ Proprietary License
 
 import logging
 from datetime import UTC, datetime
-from typing import Optional, Dict, List
+from typing import Any, Dict, List, Optional, cast
+
+from collections.abc import Mapping
 
 from sqlalchemy import select
 
+from services.utils.typing_helpers import redis_hash_to_str
 from services.redis.cache.redis_cache_stampede import with_stampede_lock
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
@@ -84,7 +87,7 @@ class OrganizationCache:
             "extra_member_seats": str(int(getattr(org, "extra_member_seats", 0) or 0)),
         }
 
-    def _deserialize_org(self, data: Dict[str, str]) -> Organization:
+    def _deserialize_org(self, data: dict[bytes | str, bytes | str]) -> Organization:
         """
         Deserialize dict from Redis hash to Organization object.
 
@@ -94,31 +97,32 @@ class OrganizationCache:
         Returns:
             Organization SQLAlchemy model instance (detached from session)
         """
+        normalized = redis_hash_to_str(data)
         org = Organization()
-        setattr(org, "id", int(data.get("id", "0")))
-        setattr(org, "code", data.get("code") or None)
-        setattr(org, "name", data.get("name") or None)
-        setattr(org, "invitation_code", data.get("invitation_code") or None)
-        display_name_val = data.get("display_name") or None
+        setattr(org, "id", int(normalized.get("id", "0")))
+        setattr(org, "code", normalized.get("code") or None)
+        setattr(org, "name", normalized.get("name") or None)
+        setattr(org, "invitation_code", normalized.get("invitation_code") or None)
+        display_name_val = normalized.get("display_name") or None
         if hasattr(Organization, "display_name"):
             setattr(org, "display_name", display_name_val)
         if hasattr(Organization, "mindmate_agent_name"):
-            setattr(org, "mindmate_agent_name", data.get("mindmate_agent_name") or None)
+            setattr(org, "mindmate_agent_name", normalized.get("mindmate_agent_name") or None)
         if hasattr(Organization, "mindmate_agent_avatar_url"):
-            setattr(org, "mindmate_agent_avatar_url", data.get("mindmate_agent_avatar_url") or None)
+            setattr(org, "mindmate_agent_avatar_url", normalized.get("mindmate_agent_avatar_url") or None)
 
         # Parse datetime fields
-        if data.get("created_at"):
+        if normalized.get("created_at"):
             try:
-                setattr(org, "created_at", datetime.fromisoformat(data["created_at"]))
+                setattr(org, "created_at", datetime.fromisoformat(normalized["created_at"]))
             except (ValueError, TypeError):
                 setattr(org, "created_at", datetime.now(UTC))
         else:
             setattr(org, "created_at", datetime.now(UTC))
 
-        if data.get("expires_at"):
+        if normalized.get("expires_at"):
             try:
-                setattr(org, "expires_at", datetime.fromisoformat(data["expires_at"]))
+                setattr(org, "expires_at", datetime.fromisoformat(normalized["expires_at"]))
             except (ValueError, TypeError):
                 setattr(org, "expires_at", None)
         else:
@@ -126,14 +130,14 @@ class OrganizationCache:
 
         # Parse boolean
         if hasattr(Organization, "is_active"):
-            setattr(org, "is_active", data.get("is_active", "0") == "1")
+            setattr(org, "is_active", normalized.get("is_active", "0") == "1")
 
         if hasattr(Organization, "school_tier"):
-            setattr(org, "school_tier", data.get("school_tier") or "trial")
+            setattr(org, "school_tier", normalized.get("school_tier") or "trial")
 
         if hasattr(Organization, "extra_member_seats"):
             try:
-                extra_seats = int(data.get("extra_member_seats") or "0")
+                extra_seats = int(normalized.get("extra_member_seats") or "0")
             except (TypeError, ValueError):
                 extra_seats = 0
             setattr(
@@ -151,13 +155,13 @@ class OrganizationCache:
             return None
         try:
             cached = await redis.hgetall(_keys.ORG_BY_ID.format(org_id=org_id))
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             return None
         if not cached:
             return None
         try:
             return self._deserialize_org(cached)
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             return None
 
     async def _read_cached_by_code(self, code: str) -> Optional[Organization]:
@@ -167,7 +171,7 @@ class OrganizationCache:
             return None
         try:
             org_id_str = await redis.get(_keys.ORG_BY_CODE.format(code=code))
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             return None
         if not org_id_str:
             return None
@@ -183,7 +187,7 @@ class OrganizationCache:
             return None
         try:
             org_id_str = await redis.get(_keys.ORG_BY_INVITE.format(invite_code=invite_code))
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             return None
         if not org_id_str:
             return None
@@ -464,7 +468,7 @@ class OrganizationCache:
             async with redis_client.pipeline(transaction=False) as pipe:
                 # DELETE before HSET to clear any stale key with wrong type.
                 pipe.delete(org_key)
-                pipe.hset(org_key, mapping=org_dict)
+                pipe.hset(org_key, mapping=cast(Mapping[Any, Any], org_dict))
                 pipe.expire(org_key, ORG_CACHE_TTL)
                 if org_code:
                     pipe.set(_keys.ORG_BY_CODE.format(code=org_code), str(org_id), ex=ORG_CACHE_TTL)
@@ -521,7 +525,7 @@ class OrganizationCache:
                         getattr(org, "invitation_code", None),
                     )
                 )
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 logger.warning(
                     "[OrgCache] Skipping org %s in bulk write: %s",
                     getattr(org, "id", "?"),
@@ -536,7 +540,7 @@ class OrganizationCache:
                 for org_id, org_dict, code, invite in prepared:
                     org_key = _keys.ORG_BY_ID.format(org_id=org_id)
                     pipe.delete(org_key)
-                    pipe.hset(org_key, mapping=org_dict)
+                    pipe.hset(org_key, mapping=cast(Mapping[Any, Any], org_dict))
                     pipe.expire(org_key, ORG_CACHE_TTL)
                     if code:
                         pipe.set(
@@ -551,7 +555,7 @@ class OrganizationCache:
                             ex=ORG_CACHE_TTL,
                         )
                 await pipe.execute()
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             logger.warning("[OrgCache] Bulk pipeline execute failed: %s", exc)
             return 0
 

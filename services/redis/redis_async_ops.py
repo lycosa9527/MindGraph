@@ -36,6 +36,7 @@ import asyncio
 import logging
 import warnings
 from functools import wraps
+from collections.abc import Mapping
 from typing import Any, Awaitable, Callable, Dict, List, Optional, TypeVar, cast
 
 import redis.asyncio as aioredis
@@ -44,6 +45,8 @@ from redis.exceptions import ResponseError as RedisResponseError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import redis_delex_enabled, set_redis_delex_enabled
+from services.utils.typing_helpers import redis_decode, redis_hash_to_str, redis_list_to_str
 from services.redis.redis_circuit_breaker import (
     get_breaker as _get_breaker,
     is_breaker_enabled as _breaker_enabled,
@@ -67,11 +70,11 @@ def _is_redis_available() -> bool:
     """
     try:
         from services.redis.redis_client import is_redis_available as _check
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         return True
     try:
         return bool(_check())
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         return True
 
 
@@ -118,7 +121,7 @@ def _with_async_retry(operation_name: str, default_return: Any = None):
                             _RETRY_MAX_ATTEMPTS,
                             delay,
                         )
-                except Exception as exc:  # pylint: disable=broad-except
+                except Exception as exc:
                     logger.warning("[RedisAsync] %s failed: %s", operation_name, exc)
                     return default_return
 
@@ -183,7 +186,7 @@ class AsyncRedisOperations:
     async def get(key: str) -> Optional[str]:
         """GET key. None on miss or transient error."""
 
-        return await _client().get(key)
+        return redis_decode(await _client().get(key))
 
     @staticmethod
     @_with_async_retry("DELETE", default_return=False)
@@ -198,7 +201,7 @@ class AsyncRedisOperations:
     async def get_and_delete(key: str) -> Optional[str]:
         """GETDEL key (Redis >= 6.2) — atomic get + delete in one round-trip."""
 
-        return await _client().getdel(key)
+        return redis_decode(await _client().getdel(key))
 
     @staticmethod
     @_with_async_retry("INCR", default_return=None)
@@ -273,7 +276,7 @@ class AsyncRedisOperations:
             pipe.lrange(key, 0, count - 1)
             pipe.ltrim(key, count, -1)
             results = await pipe.execute()
-        return list(results[0] or [])
+        return redis_list_to_str(list(results[0] or []))
 
     @staticmethod
     @_with_async_retry("LLEN", default_return=0)
@@ -288,7 +291,8 @@ class AsyncRedisOperations:
     async def list_range(key: str, start: int, end: int) -> List[str]:
         """LRANGE key start end."""
 
-        return list(await _client().lrange(key, start, end) or [])
+        raw_items = await _client().lrange(key, start, end) or []
+        return redis_list_to_str(list(raw_items))
 
     # ---------- Sorted sets ----------
     @staticmethod
@@ -329,7 +333,7 @@ class AsyncRedisOperations:
     async def hash_set(key: str, mapping: Dict[str, str]) -> bool:
         """HSET key field1 value1 ..."""
 
-        await _client().hset(key, mapping=mapping)
+        await _client().hset(key, mapping=cast(Mapping[Any, Any], mapping))
         return True
 
     @staticmethod
@@ -337,7 +341,8 @@ class AsyncRedisOperations:
     async def hash_get_all(key: str) -> Dict[str, str]:
         """HGETALL key — empty dict on miss/error."""
 
-        return dict(await _client().hgetall(key) or {})
+        raw_hash = await _client().hgetall(key) or {}
+        return redis_hash_to_str(dict(raw_hash))
 
     @staticmethod
     @_with_async_retry("HDEL", default_return=0)
@@ -358,14 +363,7 @@ class AsyncRedisOperations:
         """
 
         client = _client()
-        try:
-            from services.redis.redis_client import (  # noqa: WPS433
-                _RedisCapabilities as _redis_capabilities,
-            )
-        except Exception:  # pylint: disable=broad-except
-            _redis_capabilities = None
-
-        delex_enabled = bool(_redis_capabilities and _redis_capabilities.delex)
+        delex_enabled = redis_delex_enabled()
 
         if delex_enabled:
             try:
@@ -386,9 +384,8 @@ class AsyncRedisOperations:
                     "[RedisAsync] DELEX rejected by server (%s); disabling for this process",
                     exc,
                 )
-                if _redis_capabilities is not None:
-                    _redis_capabilities.delex = False
-            except Exception as exc:  # pylint: disable=broad-except
+                set_redis_delex_enabled(False)
+            except Exception as exc:
                 logger.warning(
                     "[RedisAsync] compare_and_delete unexpected error for %s: %s",
                     key[:20],
@@ -403,7 +400,7 @@ class AsyncRedisOperations:
                 expected_value,
             )
             return bool(result)
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             logger.warning(
                 "[RedisAsync] compare_and_delete fallback failed for %s: %s",
                 key[:20],
@@ -423,7 +420,7 @@ class AsyncRedisOperations:
                 keys.append(key)
                 if len(keys) >= count:
                     break
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             logger.warning("[RedisAsync] SCAN failed for %s: %s", pattern[:20], exc)
         return keys[:count]
 
@@ -441,7 +438,7 @@ class AsyncRedisOperations:
         try:
             client = _client()
             return dict(await (client.info(section) if section else client.info()) or {})
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             logger.warning("[RedisAsync] INFO failed: %s", exc)
             return {}
 

@@ -20,6 +20,7 @@ from typing import Awaitable, Optional, cast
 
 import redis.asyncio as aioredis
 
+from services.utils.typing_helpers import redis_decode
 from services.redis.redis_async_client import (
     close_async_redis as _shared_close_async_redis,
 )
@@ -42,7 +43,7 @@ def _get_client() -> aioredis.Redis:
 async def redis_get(key: str) -> Optional[str]:
     """Return the string value for ``key``, or ``None`` on miss or error."""
     try:
-        return await _get_client().get(key)
+        return redis_decode(await _get_client().get(key))
     except Exception as exc:
         logger.warning("[MindBot] redis_get error key=%s: %s", key, exc)
         return None

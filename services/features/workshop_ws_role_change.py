@@ -61,7 +61,7 @@ async def _publish_role_control(
     try:
         await publish_workshop_fanout_async(envelope)
         return True
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.warning("[RoleChange] publish role control failed room=%s: %s", code, exc)
         return False
 

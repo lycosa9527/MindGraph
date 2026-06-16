@@ -165,7 +165,7 @@ def _extract_balanced_json_object(content: str, first_brace: int) -> Optional[st
     return None
 
 
-def _extract_json_fallback(content: str, first_brace: int) -> Optional[str]:  # pylint: disable=unused-argument
+def _extract_json_fallback(content: str, _first_brace: int) -> Optional[str]:
     """
     Fallback JSON extraction using regex patterns.
 

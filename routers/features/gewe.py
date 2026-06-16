@@ -32,7 +32,6 @@ from models.domain.gewe_responses import (
 from clients.gewe import GeweAPIError
 from services.gewe import GeweService
 from routers.auth.dependencies import require_admin
-from utils.auth import get_current_user
 from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 
 
@@ -225,7 +224,7 @@ async def get_gewe_login_qrcode(
             )
             try:
                 # Clear saved login info since device doesn't exist
-                await service.reset_device_id()
+                service.reset_device_id()
 
                 # Retry with empty app_id
                 result = await service.get_login_qr_code(
@@ -416,7 +415,7 @@ async def get_gewe_login_info(_current_user: User = Depends(require_admin), db: 
     """
     service = GeweService(db)
     try:
-        login_info = await service.get_saved_login_info()
+        login_info = service.get_saved_login_info()
         if login_info:
             return login_info
         return {"app_id": None, "wxid": None}
@@ -451,7 +450,7 @@ async def get_gewe_config_status(
     app_id_masked = ""
     service = GeweService(db)
     try:
-        login_info = await service.get_saved_login_info()
+        login_info = service.get_saved_login_info()
         if login_info:
             app_id_value = login_info.get("app_id")
             if app_id_value:
@@ -484,7 +483,7 @@ async def save_gewe_preferences(
     """
     service = GeweService(db)
     try:
-        await service.save_preferences(
+        service.save_preferences(
             region_id=data.region_id,
             device_type=data.device_type,
             auto_sliding=data.auto_sliding,
@@ -507,7 +506,7 @@ async def get_gewe_preferences(_current_user: User = Depends(require_admin), db:
     """
     service = GeweService(db)
     try:
-        preferences = await service.get_preferences()
+        preferences = service.get_preferences()
         return preferences
     except Exception as e:
         logger.error("Error getting preferences: %s", e, exc_info=True)
@@ -527,7 +526,7 @@ async def reset_gewe_device_id(_current_user: User = Depends(require_admin), db:
     """
     service = GeweService(db)
     try:
-        await service.reset_device_id()
+        service.reset_device_id()
         return {"status": "success", "message": "Device ID reset successfully"}
     except Exception as e:
         logger.error("Error resetting device ID: %s", e, exc_info=True)

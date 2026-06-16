@@ -29,6 +29,8 @@ from models.domain.workshop_chat import (
     UserTopicPreference,
 )
 
+from services.utils.typing_helpers import count_pairs_by_key
+
 logger = logging.getLogger(__name__)
 
 MAX_TOPIC_TITLE_LENGTH = 200
@@ -122,7 +124,7 @@ class TopicService:
             )
             .group_by(ChatMessage.topic_id)
         )
-        msg_counts = dict(mc_result.all())
+        msg_counts = count_pairs_by_key(mc_result.all())
 
         prefs: Dict[int, UserTopicPreference] = {}
         if user_id:
@@ -156,7 +158,7 @@ class TopicService:
                 )
                 .group_by(ChatMessage.topic_id)
             )
-            unread_pref_map = dict(unread_pref_result.all())
+            unread_pref_map = count_pairs_by_key(unread_pref_result.all())
 
         topic_ids_no_pref = [tid for tid in topic_ids if tid not in prefs]
         unread_no_pref_map: Dict[int, int] = {}
@@ -170,7 +172,7 @@ class TopicService:
                 )
                 .group_by(ChatMessage.topic_id)
             )
-            unread_no_pref_map = dict(no_pref_result.all())
+            unread_no_pref_map = count_pairs_by_key(no_pref_result.all())
 
         return (
             waterline,

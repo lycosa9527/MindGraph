@@ -329,7 +329,7 @@ def _run_alembic_after_pg_restore() -> None:
     dump: we do not inject demo organizations when the restored ``organizations``
     table happens to be empty.
     """
-    from config.database import init_db  # pylint: disable=import-outside-toplevel
+    from config.database import init_db
 
     init_db(seed_organizations=False)
 

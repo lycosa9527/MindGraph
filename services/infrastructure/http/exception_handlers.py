@@ -14,7 +14,10 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi import HTTPException
+from typing import cast
+
 from starlette.requests import ClientDisconnect
+from starlette.types import ExceptionHandler
 from config.settings import config
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 
@@ -152,7 +155,7 @@ async def general_exception_handler(request: Request, exc: Exception):
                 stack_trace=stack_trace,
                 request_path=request_path,
             )
-        except Exception as alert_error:  # pylint: disable=broad-except
+        except Exception as alert_error:
             logger.error(
                 "Failed to send unhandled exception alert: %s",
                 alert_error,
@@ -210,7 +213,7 @@ def setup_exception_handlers(app: FastAPI):
     """
     Register all exception handlers with the FastAPI application.
     """
-    app.add_exception_handler(RequestValidationError, validation_exception_handler)
-    app.add_exception_handler(ClientDisconnect, client_disconnect_handler)
-    app.add_exception_handler(HTTPException, http_exception_handler)
-    app.add_exception_handler(Exception, general_exception_handler)
+    app.add_exception_handler(RequestValidationError, cast(ExceptionHandler, validation_exception_handler))
+    app.add_exception_handler(ClientDisconnect, cast(ExceptionHandler, client_disconnect_handler))
+    app.add_exception_handler(HTTPException, cast(ExceptionHandler, http_exception_handler))
+    app.add_exception_handler(Exception, cast(ExceptionHandler, general_exception_handler))

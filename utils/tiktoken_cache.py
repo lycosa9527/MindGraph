@@ -118,7 +118,7 @@ def _is_tiktoken_cache_check_in_progress() -> bool:
             return False
 
         return redis.exists(TIKTOKEN_CACHE_LOCK_KEY) > 0
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         # If Redis is not available or not initialized yet, assume single worker mode
         return False
 
@@ -154,17 +154,17 @@ def _acquire_tiktoken_cache_lock() -> bool:
                     "[TiktokenCache] Lock acquired for cache check (id=%s)",
                     worker_lock_id,
                 )
-            except Exception:  # pylint: disable=broad-except
+            except Exception:
                 pass
             return True
 
         try:
             logger.debug("[TiktokenCache] Another worker is checking cache, skipping")
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             pass
         return False
 
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         return True
 
 
@@ -195,7 +195,7 @@ def _release_tiktoken_cache_lock() -> None:
         """
 
         redis.eval(lua_script, 1, TIKTOKEN_CACHE_LOCK_KEY, worker_lock_id)
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         # Ignore errors during lock release (non-critical)
         pass
 
@@ -210,7 +210,7 @@ def _log_http_debug_cached_up_to_date(encoding_name: str, encoding_file: Path) -
             encoding_name,
             encoding_file,
         )
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         pass
 
 
@@ -243,7 +243,7 @@ def _encoding_requires_download(
             encoding_name,
         )
         return True
-    except Exception as network_error:  # pylint: disable=broad-except
+    except Exception as network_error:
         logger.debug(
             "[Startup] Network check failed for tiktoken encoding %s, using existing cache: %s",
             encoding_name,
@@ -273,7 +273,7 @@ def _sync_one_encoding_if_needed(
             file_size_mb,
             encoding_file,
         )
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.warning(
             "[Startup] Failed to download tiktoken encoding %s: %s. "
             "Tiktoken will download it automatically on first use.",
@@ -319,7 +319,7 @@ def ensure_tiktoken_cache():
         cache_dir = _default_cache_dir_path()
         try:
             cache_dir.mkdir(parents=True, exist_ok=True)
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             logger.debug("[Startup] Could not create tiktoken cache directory: %s", exc)
             return
 

@@ -51,7 +51,7 @@ from services.redis.cache.redis_user_cache import user_cache
 from services.infrastructure.security.abuseipdb_service import (
     schedule_abuseipdb_report_on_lockout,
 )
-from utils.auth.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
+from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 from utils.email_mainland_china import raise_if_mainland_china_email_for_email_login
 from utils.email_validation import validate_email_for_api
 from utils.auth.org_subscription import enforce_org_accessible_or_raise, ensure_org_subscription_current

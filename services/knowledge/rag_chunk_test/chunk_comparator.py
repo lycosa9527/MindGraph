@@ -12,52 +12,69 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 import logging
 import time
 
+np: Any = None
+HAS_NUMPY = False
 try:
-    import numpy as np
+    import numpy as _np
 
+    np = _np
     HAS_NUMPY = True
 except ImportError:
-    HAS_NUMPY = False
+    pass
 
+get_embedding_client: Any = None
+HAS_EMBEDDING = False
 try:
-    from clients.dashscope_embedding import get_embedding_client
+    from clients.dashscope_embedding import get_embedding_client as _get_embedding_client
 
+    get_embedding_client = _get_embedding_client
     HAS_EMBEDDING = True
 except ImportError:
-    HAS_EMBEDDING = False
+    pass
 
+spacy: Any = None
+HAS_SPACY = False
 try:
-    import spacy
+    import spacy as _spacy
 
+    spacy = _spacy
     HAS_SPACY = True
 except ImportError:
-    HAS_SPACY = False
+    pass
 
+TokenChunker: Any = None
+HAS_CHONKIE = False
 try:
-    from chonkie import TokenChunker
+    from chonkie import TokenChunker as _TokenChunker
 
+    TokenChunker = _TokenChunker
     HAS_CHONKIE = True
 except ImportError:
-    HAS_CHONKIE = False
+    pass
 
+RecursiveCharacterTextSplitter: Any = None
+HAS_LANGCHAIN = False
 try:
-    from langchain_text_splitters import RecursiveCharacterTextSplitter
+    from langchain_text_splitters import RecursiveCharacterTextSplitter as _RecursiveCharacterTextSplitter
 
+    RecursiveCharacterTextSplitter = _RecursiveCharacterTextSplitter
     HAS_LANGCHAIN = True
 except ImportError:
-    HAS_LANGCHAIN = False
+    pass
 
+LLMSemanticChunker: Any = None
+HAS_LLM_CHUNKING = False
 try:
-    from llm_chunking.chunker import LLMSemanticChunker
+    from llm_chunking.chunker import LLMSemanticChunker as _LLMSemanticChunker
 
+    LLMSemanticChunker = _LLMSemanticChunker
     HAS_LLM_CHUNKING = True
 except ImportError:
-    HAS_LLM_CHUNKING = False
-    LLMSemanticChunker = None  # type: ignore
+    pass
 
 import tiktoken
 
@@ -112,7 +129,7 @@ class ChunkComparator:
 
         # Handle spaCy chunking
         if method == "spacy":
-            if not HAS_SPACY:
+            if not HAS_SPACY or spacy is None:
                 raise ValueError("spaCy chunking requires spacy library. Install with: pip install spacy")
 
             # Lazy load spaCy model (cache it)
@@ -204,7 +221,7 @@ class ChunkComparator:
 
         # Handle Chonkie chunking
         if method == "chonkie":
-            if not HAS_CHONKIE:
+            if not HAS_CHONKIE or TokenChunker is None:
                 raise ValueError("Chonkie chunking requires chonkie library. Install with: pip install chonkie")
 
             # Chonkie TokenChunker uses tokenizer= (tiktoken encoding name) in current chonkie releases.
@@ -221,16 +238,20 @@ class ChunkComparator:
             chunks = []
             current_pos = 0
 
-            for i, chunk_text in enumerate(chunk_texts):
-                chunk_start = text.find(chunk_text, current_pos)
+            for i, chunk_item in enumerate(chunk_texts):
+                if isinstance(chunk_item, str):
+                    chunk_text_str = chunk_item
+                else:
+                    chunk_text_str = getattr(chunk_item, "text", str(chunk_item))
+                chunk_start = text.find(chunk_text_str, current_pos)
                 if chunk_start == -1:
                     chunk_start = current_pos
-                chunk_end = chunk_start + len(chunk_text)
+                chunk_end = chunk_start + len(chunk_text_str)
                 current_pos = chunk_end
 
                 chunks.append(
                     Chunk(
-                        text=chunk_text.strip(),
+                        text=chunk_text_str.strip(),
                         start_char=chunk_start,
                         end_char=chunk_end,
                         chunk_index=i,
@@ -249,7 +270,7 @@ class ChunkComparator:
 
         # Handle LangChain RecursiveCharacterTextSplitter
         if method == "langchain":
-            if not HAS_LANGCHAIN:
+            if not HAS_LANGCHAIN or RecursiveCharacterTextSplitter is None:
                 raise ValueError(
                     "LangChain chunking requires langchain-text-splitters library. "
                     "Install with: pip install langchain-text-splitters"
@@ -306,7 +327,7 @@ class ChunkComparator:
         elif method == "mindchunk":
             # Create mindchunk service instance directly (thread-safe)
             # Need to create LLMSemanticChunker first, then wrap it
-            if not HAS_LLM_CHUNKING:
+            if not HAS_LLM_CHUNKING or LLMSemanticChunker is None:
                 raise ValueError(
                     "MindChunk chunking requires llm_chunking library. Install with: pip install llm-chunking"
                 )
@@ -489,7 +510,7 @@ class ChunkComparator:
         if len(chunks) < 2:
             return 1.0
 
-        if not HAS_EMBEDDING or not HAS_NUMPY:
+        if not HAS_EMBEDDING or not HAS_NUMPY or get_embedding_client is None or np is None:
             logger.warning("[ChunkComparator] Embedding client or numpy not available for coherence calculation")
             return 0.0
 

@@ -49,11 +49,21 @@ class LLMProviderError(LLMServiceError):
         message: str,
         provider: Optional[str] = None,
         error_code: Optional[str] = None,
+        user_message: Optional[str] = None,
     ):
         super().__init__(message)
         self.provider = provider
         self.error_code = error_code
-        self.user_message: Optional[str] = None  # User-friendly error message
+        self.user_message = user_message
+
+
+def attach_llm_user_message(exception: Exception, user_message: str) -> LLMProviderError:
+    """Set user-facing text on provider errors before re-raising."""
+    if isinstance(exception, LLMProviderError):
+        exception.user_message = user_message
+        return exception
+    wrapped = LLMProviderError(str(exception), user_message=user_message)
+    return wrapped
 
 
 class LLMInvalidParameterError(LLMProviderError):

@@ -167,4 +167,5 @@ pytest>=9.0.3
 pytest-asyncio>=1.4.0
 pytest-cov>=7.1.0  # Code coverage
 pylint>=4.0.5  # Static analysis and PEP8 linting
+basedpyright>=1.29.0  # Strict static typing (pyproject.toml [tool.basedpyright])
 ruff>=0.15.15  # Fast formatter + linter (ruff format / ruff check); aligns with frontend ESLint+Prettier workflow

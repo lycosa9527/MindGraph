@@ -10,10 +10,13 @@ All Rights Reserved
 Proprietary License
 """
 
+from __future__ import annotations
+
 from datetime import UTC, datetime
 
-from sqlalchemy import Column, Integer, String, DateTime, Text, Index
+from sqlalchemy import DateTime, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column
 
 from .auth import Base
 
@@ -28,28 +31,28 @@ class GeweContact(Base):
 
     __tablename__ = "gewe_contacts"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    app_id = Column(String(40), index=True, nullable=False, comment="Gewe app ID")
-    wxid = Column(String(40), index=True, nullable=False, comment="Contact wxid (unique per app)")
-    nickname = Column(String(200), nullable=True, comment="Contact nickname")
-    remark = Column(String(200), nullable=True, comment="Contact remark")
-    avatar = Column(Text, nullable=True, comment="Avatar URL")
-    alias = Column(String(100), nullable=True, comment="WeChat alias")
-    contact_type = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    app_id: Mapped[str] = mapped_column(String(40), index=True, nullable=False, comment="Gewe app ID")
+    wxid: Mapped[str] = mapped_column(String(40), index=True, nullable=False, comment="Contact wxid (unique per app)")
+    nickname: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="Contact nickname")
+    remark: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="Contact remark")
+    avatar: Mapped[str | None] = mapped_column(Text, nullable=True, comment="Avatar URL")
+    alias: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="WeChat alias")
+    contact_type: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
         default="friend",
         comment="Type: friend, group, official",
     )
-    region = Column(String(100), nullable=True, comment="Region/location")
-    last_updated = Column(
+    region: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="Region/location")
+    last_updated: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(UTC),
         nullable=False,
         index=True,
         comment="Last update timestamp",
     )
-    extra_data = Column(JSONB, nullable=True, comment="Additional structured data")
+    extra_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True, comment="Additional structured data")
 
     # Composite unique constraint: same wxid can exist for different apps
     __table_args__ = (

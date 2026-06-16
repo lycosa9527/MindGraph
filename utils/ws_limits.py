@@ -61,8 +61,12 @@ def text_payload_from_websocket_receive(message: Mapping[str, object]) -> str:
     if val is not None:
         return str(val)
     raw = message.get("bytes")
+    if isinstance(raw, (bytes, bytearray)):
+        return bytes(raw).decode("utf-8", errors="replace")
+    if isinstance(raw, memoryview):
+        return raw.tobytes().decode("utf-8", errors="replace")
     if raw is not None:
-        return raw.decode("utf-8", errors="replace")
+        return str(raw)
     return ""
 
 

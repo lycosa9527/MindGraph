@@ -91,7 +91,9 @@ def _print_table(title: str, columns: Sequence[str], rows: Sequence[tuple]) -> N
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.split("\n")[1])
+    doc_lines = (__doc__ or "Database stats").splitlines()
+    description = doc_lines[1] if len(doc_lines) > 1 else doc_lines[0]
+    parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--limit", type=int, default=20, help="Rows per section (default 20).")
     parser.add_argument(
         "--dsn",
@@ -101,10 +103,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        import psycopg  # type: ignore[import-not-found]
+        import psycopg
     except ImportError:
         try:
-            import psycopg2 as psycopg  # type: ignore[import-not-found, no-redef]
+            import psycopg2 as psycopg
         except ImportError:
             print(
                 "[db_stats] Neither psycopg nor psycopg2 is installed; install one to run this helper.",
@@ -114,7 +116,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     try:
         conn = psycopg.connect(args.dsn)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         print(f"[db_stats] Could not connect to {args.dsn!r}: {exc}", file=sys.stderr)
         return 1
 
@@ -127,7 +129,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     ["calls", "total_ms", "mean_ms", "rows", "query"],
                     cur.fetchall(),
                 )
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 print(f"[db_stats] pg_stat_statements unavailable: {exc}", file=sys.stderr)
 
             cur.execute(_TOP_SEQ_SCAN_TABLES_SQL, (args.limit,))

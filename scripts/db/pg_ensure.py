@@ -130,8 +130,7 @@ def ensure_postgresql_server_reachable(db_url: str) -> bool:
 
     pid = _find_process_on_port(port)
     logger.error(
-        "PostgreSQL not reachable at %s:%s (pid on port: %s). "
-        "Start the service: sudo systemctl start postgresql",
+        "PostgreSQL not reachable at %s:%s (pid on port: %s). Start the service: sudo systemctl start postgresql",
         host,
         port,
         pid,

@@ -108,7 +108,7 @@ async def abuseipdb_middleware(request: Request, call_next):
     if check_enabled:
         try:
             score, provenance = await abuseipdb_service.check_ip_score_cached_with_provenance(client_ip)
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             logger.debug("[AbuseIPDB] check failed open: %s", exc)
             return await call_next(request)
 

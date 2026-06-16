@@ -39,7 +39,7 @@ from services.redis.session.redis_session_manager import (
     get_refresh_token_manager,
 )
 from services.redis.cache.redis_user_cache import user_cache
-from utils.auth.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
+from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 from utils.auth import (
     get_current_user,
     get_user_role,
@@ -357,7 +357,7 @@ async def patch_profile(
     user.name = body.name
     try:
         await db.commit()
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         await db.rollback()
         logger.error("[Auth] profile patch commit failed: %s", exc, exc_info=True)
         raise HTTPException(
@@ -369,7 +369,7 @@ async def patch_profile(
         await user_cache.invalidate(
             int(user.id), phone=str(user.phone) if user.phone else None, email=str(user.email) if user.email else None
         )
-    except Exception as inv_exc:  # pylint: disable=broad-except
+    except Exception as inv_exc:
         logger.warning("[Auth] user cache invalidation after profile: %s", inv_exc)
     return {"ok": True, "name": user.name}
 

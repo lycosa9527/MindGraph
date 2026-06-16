@@ -6,6 +6,7 @@ import logging
 import re
 
 from services.redis.redis_async_client import get_async_redis
+from services.utils.typing_helpers import redis_decode_required
 from services.redis.redis_client import is_redis_available
 
 """
@@ -135,7 +136,7 @@ class ActivityStreamService:
                     anon_key = f"{ANON_USER_PREFIX}{user_id}"
                     cached_username = await redis.get(anon_key)
                     if cached_username:
-                        return cached_username
+                        return redis_decode_required(cached_username)
 
                     # Generate new anonymized username
                     # Use atomic Redis counter for consistent mapping across workers

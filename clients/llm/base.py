@@ -8,11 +8,18 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Dict, List, Optional, Any, AsyncGenerator
 from abc import ABC, abstractmethod
 import logging
+from typing import Any, AsyncGenerator, Dict, Iterable, List, Optional, cast
+
+from openai.types.chat import ChatCompletionMessageParam
 
 logger = logging.getLogger(__name__)
+
+
+def as_openai_chat_messages(messages: List[Dict]) -> Iterable[ChatCompletionMessageParam]:
+    """Cast generic message dicts for OpenAI SDK typing."""
+    return cast(Iterable[ChatCompletionMessageParam], messages)
 
 
 class BaseLLMClient(ABC):

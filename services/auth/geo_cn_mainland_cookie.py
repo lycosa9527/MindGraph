@@ -20,6 +20,7 @@ from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 
 from utils.auth import is_https
+from utils.auth.connection_types import HttpOrWebSocket
 from utils.auth.jwt_secret import get_jwt_secret
 
 logger = logging.getLogger(__name__)
@@ -65,16 +66,16 @@ def set_geo_cn_mainland_cookie(response: Response, request: Request) -> None:
 
 def json_forbidden_cn_geo(
     detail: str,
-    http_request: Request,
+    connection: HttpOrWebSocket,
     stamp_cn_cookie: bool,
 ) -> JSONResponse:
     """
     403 when email registration, email login, or email reset is blocked by GeoIP/cookie.
 
     When ``stamp_cn_cookie`` is True, attaches the signed CN-observation cookie so a
-    later VPN session is still blocked.
+    later VPN session is still blocked (HTTP responses only).
     """
     resp = JSONResponse(status_code=403, content={"detail": detail})
-    if stamp_cn_cookie:
-        set_geo_cn_mainland_cookie(resp, http_request)
+    if stamp_cn_cookie and isinstance(connection, Request):
+        set_geo_cn_mainland_cookie(resp, connection)
     return resp

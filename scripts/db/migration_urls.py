@@ -40,20 +40,12 @@ def _password_for_role(role: str, fallback: str) -> str:
         fallback = _DEFAULT_PASSWORD
     if role == ROLE_MIGRATE:
         return (
-            os.getenv("MINDGRAPH_MIGRATE_PASSWORD")
-            or os.getenv("POSTGRESQL_PASSWORD")
-            or fallback
-            or _DEFAULT_PASSWORD
+            os.getenv("MINDGRAPH_MIGRATE_PASSWORD") or os.getenv("POSTGRESQL_PASSWORD") or fallback or _DEFAULT_PASSWORD
         )
     if role == ROLE_LEGACY:
         return os.getenv("POSTGRESQL_PASSWORD") or fallback or _DEFAULT_PASSWORD
     if role == ROLE_APP:
-        return (
-            os.getenv("MINDGRAPH_APP_PASSWORD")
-            or os.getenv("POSTGRESQL_PASSWORD")
-            or fallback
-            or _DEFAULT_PASSWORD
-        )
+        return os.getenv("MINDGRAPH_APP_PASSWORD") or os.getenv("POSTGRESQL_PASSWORD") or fallback or _DEFAULT_PASSWORD
     return fallback or _DEFAULT_PASSWORD
 
 
@@ -203,8 +195,7 @@ def configure_rls_migration_environment() -> dict[str, str]:
     runtime_user = make_url(runtime).username or ""
     if _explicit_migration_url() is None and runtime_user == ROLE_APP:
         logger.warning(
-            "DATABASE_MIGRATION_URL is unset while DATABASE_URL uses %s; "
-            "resolving a migrate-capable role for Alembic",
+            "DATABASE_MIGRATION_URL is unset while DATABASE_URL uses %s; resolving a migrate-capable role for Alembic",
             ROLE_APP,
         )
     migration_url, source = resolve_migration_database_url()
@@ -278,19 +269,13 @@ def verify_rls_migration_complete(engine: Engine) -> tuple[bool, list[str]]:
     if revision is None:
         issues.append("alembic_version is empty — migrations did not run")
     elif _revision_number(revision) < _revision_number(RLS_HEAD_REVISION):
-        issues.append(
-            f"Alembic at {revision}; expected {RLS_HEAD_REVISION} or newer for mandatory RLS"
-        )
+        issues.append(f"Alembic at {revision}; expected {RLS_HEAD_REVISION} or newer for mandatory RLS")
 
     if not _role_exists(engine, ROLE_APP):
-        issues.append(
-            f"PostgreSQL role {ROLE_APP} missing "
-            "(run scripts/db/run_migrations.py option 3 to bootstrap)"
-        )
+        issues.append(f"PostgreSQL role {ROLE_APP} missing (run scripts/db/run_migrations.py option 3 to bootstrap)")
     if not _role_exists(engine, ROLE_MIGRATE):
         issues.append(
-            f"PostgreSQL role {ROLE_MIGRATE} missing "
-            "(run scripts/db/run_migrations.py option 3 to bootstrap)"
+            f"PostgreSQL role {ROLE_MIGRATE} missing (run scripts/db/run_migrations.py option 3 to bootstrap)"
         )
 
     with engine.connect() as conn:
@@ -324,9 +309,7 @@ def rls_env_database_lines(runtime_url: str, migration_engine: Engine) -> list[s
     if _role_exists(migration_engine, ROLE_APP):
         lines.append(f"DATABASE_URL={url_for_dotenv(build_role_url(runtime_url, ROLE_APP))}")
     if _role_exists(migration_engine, ROLE_MIGRATE):
-        lines.append(
-            f"DATABASE_MIGRATION_URL={url_for_dotenv(build_role_url(runtime_url, ROLE_MIGRATE))}"
-        )
+        lines.append(f"DATABASE_MIGRATION_URL={url_for_dotenv(build_role_url(runtime_url, ROLE_MIGRATE))}")
     return lines
 
 
@@ -429,44 +412,6 @@ def _apply_env_database_patches(lines: list[str], patches: dict[str, str]) -> li
     return lines
 
 
-def _read_env_keys_from_file(env_path: Path, keys: set[str]) -> dict[str, str]:
-    """Parse selected keys from ``.env`` without mutating ``os.environ``."""
-    values: dict[str, str] = {}
-    if not env_path.is_file() or not keys:
-        return values
-    try:
-        raw = env_path.read_text(encoding="utf-8")
-    except OSError:
-        return values
-    for raw_line in raw.splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, _, val = line.partition("=")
-        key = key.strip()
-        if key in keys:
-            values[key] = val.strip().strip("'").strip('"')
-    return values
-
-
-def env_rls_database_urls_match(env_path: Path, migration_engine: Engine) -> bool:
-    """True when ``.env`` already has the recommended RLS database URLs."""
-    runtime = _runtime_url()
-    expected_lines = rls_env_database_lines(runtime, migration_engine)
-    if not expected_lines:
-        return False
-    expected: dict[str, str] = {}
-    for env_line in expected_lines:
-        key, _, value = env_line.partition("=")
-        expected[key] = value
-    actual = _read_env_keys_from_file(env_path, set(expected.keys()))
-    return actual == expected
-
-
-def runtime_database_role() -> str:
-    return make_url(_runtime_url()).username or ""
-
-
 def update_env_rls_database_urls(env_path: Path, migration_engine: Engine) -> bool:
     """Patch ``.env`` with ``DATABASE_URL`` / ``DATABASE_MIGRATION_URL`` for mandatory RLS."""
     runtime = _runtime_url()
@@ -526,9 +471,7 @@ def print_rls_post_migration_guidance(migration_engine: Engine, env_path: Path) 
     if runtime_user == ROLE_APP and has_app:
         print("  Runtime URL already uses mindgraph_app — OK for python main.py")
     elif has_app and runtime_user != ROLE_APP:
-        print(
-            f"  DATABASE_URL user is {runtime_user!r}; app runtime should use {ROLE_APP!r}"
-        )
+        print(f"  DATABASE_URL user is {runtime_user!r}; app runtime should use {ROLE_APP!r}")
     elif has_app:
         print(f"  Update {env_path.name}: set DATABASE_URL to mindgraph_app, then restart the app")
     print("  Next: optional Redis FLUSHDB (prompt follows) to clear stale user/org/diagram cache")

@@ -228,7 +228,7 @@ async def _handle_resync(ctx: CollabWsContext, message: Dict[str, Any]) -> None:
             logger.warning("[CanvasCollabWS] resync rate limit check failed (allowing): %s", exc)
             try:
                 record_ws_resync_rate_limit_check_failure()
-            except Exception:  # pylint: disable=broad-except
+            except Exception:
                 pass
     try:
         record_ws_collab_resync()
@@ -364,7 +364,10 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
             )
             continue
 
-        msg_type = message.get("type")
+        msg_type_raw = message.get("type")
+        if not isinstance(msg_type_raw, str):
+            continue
+        msg_type = msg_type_raw
         _refresh_ctx_handle(ctx)
         is_viewer = isinstance(ctx.handle, ViewerHandle)
         handlers = _VIEWER_HANDLERS if is_viewer else _EDITOR_HANDLERS
@@ -373,7 +376,7 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
             _t0 = time.perf_counter()
             try:
                 await handler(ctx, message)
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 logger.exception("[CanvasCollabWS] handler %s raised: %s", msg_type, exc)
                 await _ctx_send(
                     ctx,

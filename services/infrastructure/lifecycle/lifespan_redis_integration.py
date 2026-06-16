@@ -95,7 +95,7 @@ async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
         loop = asyncio.get_running_loop()
         try:
             start_ws_fanout_listener(loop)
-        except Exception as ws_fan_exc:  # pylint: disable=broad-except
+        except Exception as ws_fan_exc:
             if is_main_worker:
                 logger.warning(
                     "[LIFESPAN] WebSocket Redis fan-out listener: %s",
@@ -103,7 +103,7 @@ async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
                 )
         try:
             start_kitty_control_listener(loop)
-        except Exception as kitty_fan_exc:  # pylint: disable=broad-except
+        except Exception as kitty_fan_exc:
             if is_main_worker:
                 logger.warning(
                     "[LIFESPAN] Kitty control Redis listener: %s",
@@ -111,7 +111,7 @@ async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
                 )
         if is_main_worker:
             try:
-                from services.redis.redis_async_client import get_async_redis  # pylint: disable=import-outside-toplevel
+                from services.redis.redis_async_client import get_async_redis
                 from services.online_collab.redis import (
                     online_collab_redis_health as collab_redis_health,
                 )
@@ -119,7 +119,7 @@ async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
                 redis_async = get_async_redis()
                 await collab_redis_health.check_online_collab_redis_version(redis_async)
                 await collab_redis_health.check_online_collab_redis_durability(redis_async)
-            except Exception as health_exc:  # pylint: disable=broad-except
+            except Exception as health_exc:
                 logger.warning(
                     "[LIFESPAN] Workshop Redis durability check skipped: %s",
                     health_exc,
@@ -141,10 +141,10 @@ async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
                     else "Application cannot start without Redis. Check Redis connection and configuration."
                 ),
             )
-        except Exception as alert_error:  # pylint: disable=broad-except
+        except Exception as alert_error:
             logger.error("Failed to send startup failure alert: %s", alert_error)
         logger.error("Application startup failed. Exiting.")
-        os._exit(1)  # pylint: disable=protected-access
+        os._exit(1)
 
 
 async def stop_fanout_listeners(is_main_worker: bool) -> None:
@@ -152,22 +152,22 @@ async def stop_fanout_listeners(is_main_worker: bool) -> None:
     try:
         stop_ws_fanout_listener()
         await await_ws_fanout_listener_stopped(timeout=5.0)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.warning("Failed to stop WebSocket fan-out listener: %s", exc)
     try:
         stop_kitty_control_listener()
         await await_kitty_control_listener_stopped(timeout=5.0)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.warning("Failed to stop Kitty control listener: %s", exc)
     try:
-        from services.features.ws_pg_notify_fanout import (  # pylint: disable=import-outside-toplevel
+        from services.features.ws_pg_notify_fanout import (
             stop_pg_notify_listener,
         )
 
         stop_pg_notify_listener()
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.warning("Failed to stop PG NOTIFY listener: %s", exc)
 
@@ -178,6 +178,6 @@ def close_redis_connection(is_main_worker: bool) -> None:
         close_redis_sync()
         if is_main_worker:
             logger.info("Redis connection closed")
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.warning("Failed to close Redis: %s", exc)

@@ -5,6 +5,7 @@ import logging
 
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
+from services.utils.typing_helpers import redis_decode_required
 
 """
 City Flag Tracker Service
@@ -154,12 +155,12 @@ class CityFlagTracker:
                         cursor, keys = await redis.scan(cursor, match=pattern, count=100)
                         for key in keys:
                             try:
-                                city_name = key.decode("utf-8").replace(CITY_FLAG_PREFIX, "")
+                                city_name = redis_decode_required(key).replace(CITY_FLAG_PREFIX, "")
                                 flag_data_str = await redis.get(key)
                                 if flag_data_str:
                                     # Try to parse as JSON (new format with coordinates)
                                     try:
-                                        flag_data = json.loads(flag_data_str.decode("utf-8"))
+                                        flag_data = json.loads(redis_decode_required(flag_data_str))
                                         timestamp_str = flag_data.get("timestamp", "")
                                         if timestamp_str:
                                             timestamp = datetime.fromisoformat(timestamp_str)
@@ -175,7 +176,7 @@ class CityFlagTracker:
                                                 )
                                     except (json.JSONDecodeError, ValueError):
                                         # Fallback: old format (timestamp string only)
-                                        timestamp = datetime.fromisoformat(flag_data_str.decode("utf-8"))
+                                        timestamp = datetime.fromisoformat(redis_decode_required(flag_data_str))
                                         if (now - timestamp).total_seconds() < FLAG_DURATION_SECONDS:
                                             flags.append(
                                                 {

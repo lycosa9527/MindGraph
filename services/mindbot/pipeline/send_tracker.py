@@ -6,6 +6,7 @@ import logging
 import time
 
 from services.mindbot.core.redis_keys import SEND_TRACKER_PREFIX, SEND_TRACKER_TTL
+from services.utils.typing_helpers import redis_hset_mapping
 from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ async def _hset_expire(
     try:
         client = get_async_redis()
         async with client.pipeline(transaction=False) as pipe:
-            pipe.hset(key, mapping=mapping)
+            pipe.hset(key, mapping=redis_hset_mapping(mapping))
             pipe.expire(key, SEND_TRACKER_TTL)
             await pipe.execute()
     except Exception as exc:

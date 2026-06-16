@@ -116,7 +116,7 @@ async def with_stampede_lock(
 
     try:
         acquired = await redis.set(lock_key, lock_id, nx=True, ex=lock_ttl)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         # Lock acquisition itself failed — skip protection and just load.
         logger.debug("[Stampede] SETNX failed for %s: %s", cache_key[:40], exc)
         return await loader()
@@ -127,7 +127,7 @@ async def with_stampede_lock(
         finally:
             try:
                 await AsyncRedisOps.compare_and_delete(lock_key, lock_id)
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 logger.debug(
                     "[Stampede] lock release failed for %s: %s",
                     cache_key[:40],
@@ -140,7 +140,7 @@ async def with_stampede_lock(
         await asyncio.sleep(poll_interval)
         try:
             still_locked = await redis.exists(lock_key)
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             break
         if not still_locked:
             break
@@ -150,7 +150,7 @@ async def with_stampede_lock(
             value = await cache_reader()
             if value is not None:
                 return value
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             logger.debug(
                 "[Stampede] cache_reader failed for %s: %s",
                 cache_key[:40],

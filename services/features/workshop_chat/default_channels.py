@@ -206,7 +206,7 @@ async def _backfill_empty_announce_topic_messages(
             )
         )
         msg_count = count_result.scalar()
-        if msg_count > 0:
+        if (msg_count or 0) > 0:
             continue
         topic_messages = data.get("messages", [])
         if not topic_messages:
@@ -249,7 +249,7 @@ async def seed_announce_channel(
             )
         )
         topic_count = count_result.scalar()
-        if topic_count < len(ANNOUNCE_CHANNEL.get("topics", [])):
+        if (topic_count or 0) < len(ANNOUNCE_CHANNEL.get("topics", [])):
             await _ensure_announce_topics_and_messages(
                 db,
                 existing,
@@ -464,7 +464,7 @@ async def seed_default_channels(
         )
     )
     existing_children_count = count_result.scalar()
-    if existing_children_count > 0:
+    if (existing_children_count or 0) > 0:
         logger.info(
             "[WorkshopChat] Org %d already has %d lesson-study channels — skipping seed",
             organization_id,

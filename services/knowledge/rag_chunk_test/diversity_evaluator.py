@@ -12,23 +12,29 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import List, Dict
+from typing import Any, Dict, List
 import logging
 import statistics
 
+np: Any = None
+HAS_NUMPY = False
 try:
-    import numpy as np
+    import numpy as _np
 
+    np = _np
     HAS_NUMPY = True
 except ImportError:
-    HAS_NUMPY = False
+    pass
 
+get_embedding_client: Any = None
+HAS_EMBEDDING = False
 try:
-    from clients.dashscope_embedding import get_embedding_client
+    from clients.dashscope_embedding import get_embedding_client as _get_embedding_client
 
+    get_embedding_client = _get_embedding_client
     HAS_EMBEDDING = True
 except ImportError:
-    HAS_EMBEDDING = False
+    pass
 
 from services.knowledge.chunking_service import Chunk
 
@@ -57,7 +63,7 @@ class DiversityEvaluator:
         if len(retrieved_chunks) < 2:
             return 1.0
 
-        if not HAS_EMBEDDING or not HAS_NUMPY:
+        if not HAS_EMBEDDING or not HAS_NUMPY or get_embedding_client is None or np is None:
             logger.warning("[DiversityEvaluator] Embedding client or numpy not available")
             return 0.0
 

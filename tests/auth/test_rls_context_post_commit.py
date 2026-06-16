@@ -28,12 +28,8 @@ async def test_panel_mode_persists_after_commit():
     set_rls_context(ctx)
 
     async with rls_async_session(ctx) as session:
-        mode = (
-            await session.execute(text("SELECT current_setting('app.rls_mode', true)"))
-        ).scalar_one()
+        mode = (await session.execute(text("SELECT current_setting('app.rls_mode', true)"))).scalar_one()
         assert mode == "panel"
         await session.commit()
-        mode_after = (
-            await session.execute(text("SELECT current_setting('app.rls_mode', true)"))
-        ).scalar_one()
+        mode_after = (await session.execute(text("SELECT current_setting('app.rls_mode', true)"))).scalar_one()
         assert mode_after == "panel"

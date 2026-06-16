@@ -204,7 +204,7 @@ def _salvage_truncated_json(text: str) -> str | None:
         json.loads(salvaged_text)
         return salvaged_text
 
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         logger.error("JSON salvage failed: %s", e)
         return None
 
@@ -229,7 +229,7 @@ def _parse_strict_json(text: str) -> dict:
     cleaned = re.sub(r",\s*(\]|\})", r"\1", cleaned)
     try:
         return json.loads(cleaned)
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         # Try salvage
         candidate = _salvage_json_string(cleaned)
         if candidate:

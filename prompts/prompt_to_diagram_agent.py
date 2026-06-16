@@ -45,10 +45,9 @@ def _escape_braces_for_format(text: str, preserve_user_prompt: bool = False) -> 
     if preserve_user_prompt:
         placeholder = "\x00USER_PROMPT_PLACEHOLDER\x00"
         text = text.replace("{user_prompt}", placeholder)
-    text = text.replace("{", "{{").replace("}", "}}")
-    if preserve_user_prompt:
-        text = text.replace(placeholder, "{user_prompt}")
-    return text
+        text = text.replace("{", "{{").replace("}", "}}")
+        return text.replace(placeholder, "{user_prompt}")
+    return text.replace("{", "{{").replace("}", "}}")
 
 
 # ============================================================================

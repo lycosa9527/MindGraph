@@ -28,6 +28,8 @@ from routers.api.mindbot_helpers import (
     _usage_event_for_user,
     _usage_events_for_user,
 )
+from services.mindbot.dify.service_health import check_dify_app_api_reachable
+from services.utils.typing_helpers import mapping_int
 from routers.api.mindbot_models import (
     DifyServiceStatusResponse,
     DingtalkAiCardStreamingStatusResponse,
@@ -220,14 +222,14 @@ async def admin_create_mindbot_config(
         dify_api_base_url=str(dify_settings["dify_api_base_url"]),
         dify_api_key=str(dify_settings["dify_api_key"]),
         dify_inputs_json=(payload.dify_inputs_json or "").strip() or None,
-        dify_timeout_seconds=int(dify_settings["dify_timeout_seconds"]),
+        dify_timeout_seconds=mapping_int(dify_settings, "dify_timeout_seconds"),
         show_chain_of_thought_oto=bool(dify_settings["show_chain_of_thought_oto"]),
         show_chain_of_thought_internal_group=bool(dify_settings["show_chain_of_thought_internal_group"]),
         show_chain_of_thought_cross_org_group=bool(dify_settings["show_chain_of_thought_cross_org_group"]),
-        chain_of_thought_max_chars=int(dify_settings["chain_of_thought_max_chars"]),
+        chain_of_thought_max_chars=mapping_int(dify_settings, "chain_of_thought_max_chars"),
         dingtalk_ai_card_template_id=(payload.dingtalk_ai_card_template_id or "").strip() or None,
         dingtalk_ai_card_param_key=(payload.dingtalk_ai_card_param_key or "").strip() or None,
-        dingtalk_ai_card_streaming_max_chars=int(dify_settings["dingtalk_ai_card_streaming_max_chars"]),
+        dingtalk_ai_card_streaming_max_chars=mapping_int(dify_settings, "dingtalk_ai_card_streaming_max_chars"),
         use_org_dify_settings=payload.use_org_dify_settings,
         is_enabled=payload.is_enabled,
     )
@@ -332,16 +334,19 @@ async def admin_update_mindbot_config(
     existing.dify_api_key = str(dify_settings["dify_api_key"])
     if "dify_inputs_json" in payload.model_fields_set:
         existing.dify_inputs_json = (payload.dify_inputs_json or "").strip() or None
-    existing.dify_timeout_seconds = int(dify_settings["dify_timeout_seconds"])
+    existing.dify_timeout_seconds = mapping_int(dify_settings, "dify_timeout_seconds")
     existing.show_chain_of_thought_oto = bool(dify_settings["show_chain_of_thought_oto"])
     existing.show_chain_of_thought_internal_group = bool(dify_settings["show_chain_of_thought_internal_group"])
     existing.show_chain_of_thought_cross_org_group = bool(dify_settings["show_chain_of_thought_cross_org_group"])
-    existing.chain_of_thought_max_chars = int(dify_settings["chain_of_thought_max_chars"])
+    existing.chain_of_thought_max_chars = mapping_int(dify_settings, "chain_of_thought_max_chars")
     if "dingtalk_ai_card_template_id" in payload.model_fields_set:
         existing.dingtalk_ai_card_template_id = (payload.dingtalk_ai_card_template_id or "").strip() or None
     if "dingtalk_ai_card_param_key" in payload.model_fields_set:
         existing.dingtalk_ai_card_param_key = (payload.dingtalk_ai_card_param_key or "").strip() or None
-    existing.dingtalk_ai_card_streaming_max_chars = int(dify_settings["dingtalk_ai_card_streaming_max_chars"])
+    existing.dingtalk_ai_card_streaming_max_chars = mapping_int(
+        dify_settings,
+        "dingtalk_ai_card_streaming_max_chars",
+    )
     if "use_org_dify_settings" in payload.model_fields_set and payload.use_org_dify_settings is not None:
         existing.use_org_dify_settings = bool(payload.use_org_dify_settings)
     existing.is_enabled = payload.is_enabled

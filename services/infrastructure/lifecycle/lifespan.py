@@ -200,7 +200,7 @@ async def lifespan(fastapi_app: FastAPI):
     if crowdsec_blocklist_sync_enabled():
         try:
             await merge_crowdsec_blocklist_from_network()
-        except Exception as crowdsec_exc:  # pylint: disable=broad-except
+        except Exception as crowdsec_exc:
             if is_main_worker:
                 logger.warning("[CrowdSec] Startup blocklist merge failed: %s", crowdsec_exc)
 
@@ -212,7 +212,7 @@ async def lifespan(fastapi_app: FastAPI):
         await warmup_jwt_secret_async()
         if is_main_worker:
             logger.debug("[LIFESPAN] JWT secret cache warmed via async Redis client")
-    except Exception as jwt_warm_exc:  # pylint: disable=broad-except
+    except Exception as jwt_warm_exc:
         if is_main_worker:
             logger.warning(
                 "[LIFESPAN] JWT secret async warmup failed (sync fallback will be used on first call): %s",
@@ -240,10 +240,10 @@ async def lifespan(fastapi_app: FastAPI):
                         "Check Qdrant connection and configuration."
                     ),
                 )
-            except Exception as alert_error:  # pylint: disable=broad-except
+            except Exception as alert_error:
                 logger.error("Failed to send startup failure alert: %s", alert_error)
             logger.error("Application startup failed. Exiting.")
-            os._exit(1)  # pylint: disable=protected-access
+            os._exit(1)
     else:
         if is_main_worker:
             logger.debug("[LIFESPAN] Skipping Qdrant initialization (Knowledge Space feature is disabled)")
@@ -268,10 +268,10 @@ async def lifespan(fastapi_app: FastAPI):
                         "Start Celery worker: celery -A config.celery worker --loglevel=info"
                     ),
                 )
-            except Exception as alert_error:  # pylint: disable=broad-except
+            except Exception as alert_error:
                 logger.error("Failed to send startup failure alert: %s", alert_error)
             logger.error("Application startup failed. Exiting.")
-            os._exit(1)  # pylint: disable=protected-access
+            os._exit(1)
     else:
         if is_main_worker:
             logger.debug("[LIFESPAN] Skipping Celery worker check (Knowledge Space feature is disabled)")
@@ -284,7 +284,7 @@ async def lifespan(fastapi_app: FastAPI):
         if not check_system_dependencies(exit_on_error=True):
             # check_system_dependencies already exits, but this is a safety check
             logger.error("System dependency check failed. Exiting.")
-            os._exit(1)  # pylint: disable=protected-access
+            os._exit(1)
         if is_main_worker:
             logger.debug("System dependencies check passed")
     except DependencyError as e:
@@ -296,11 +296,11 @@ async def lifespan(fastapi_app: FastAPI):
                 error_message=f"System dependency check failed: {str(e)}",
                 details=("Required system dependencies are missing. Check Tesseract OCR installation."),
             )
-        except Exception as alert_error:  # pylint: disable=broad-except
+        except Exception as alert_error:
             if is_main_worker:
                 logger.error("Failed to send startup failure alert: %s", alert_error)
-        os._exit(1)  # pylint: disable=protected-access
-    except Exception as e:  # pylint: disable=broad-except
+        os._exit(1)
+    except Exception as e:
         # Log but don't exit on unexpected errors during dependency check
         # This allows the app to start even if dependency check has issues
         if is_main_worker:
@@ -323,7 +323,7 @@ async def lifespan(fastapi_app: FastAPI):
         llm_service.initialize()
         if is_main_worker:
             logger.debug("LLM Service initialized")
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         if is_main_worker:
             logger.warning("Failed to initialize LLM Service: %s", e)
 
@@ -334,19 +334,19 @@ async def lifespan(fastapi_app: FastAPI):
         except NotImplementedError:
             for line in lines_playwright_startup_critical():
                 logger.error(line)
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.warning("Could not verify Playwright installation: %s", e)
 
     api_key_usage_flush_task: Optional[asyncio.Task] = None
     try:
-        from services.redis.cache.redis_api_key_usage_flush import (  # pylint: disable=import-outside-toplevel
+        from services.redis.cache.redis_api_key_usage_flush import (
             start_api_key_usage_flush_scheduler,
         )
 
         api_key_usage_flush_task = start_api_key_usage_flush_scheduler()
         if is_main_worker:
             logger.debug("API key usage flush scheduler started")
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         if is_main_worker:
             logger.warning("Failed to start API key usage flush scheduler: %s", e)
 
@@ -356,7 +356,7 @@ async def lifespan(fastapi_app: FastAPI):
         cleanup_task = asyncio.create_task(start_cleanup_scheduler(interval_hours=1))
         if is_main_worker:
             logger.debug("Temp image cleanup scheduler started")
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         if is_main_worker:
             logger.warning("Failed to start cleanup scheduler: %s", e)
 
@@ -366,12 +366,12 @@ async def lifespan(fastapi_app: FastAPI):
     worker_perf_task: Optional[asyncio.Task[None]] = None
     worker_perf_stop: Optional[asyncio.Event] = None
     try:
-        from services.infrastructure.monitoring.worker_perf_heartbeat import (  # pylint: disable=import-outside-toplevel
+        from services.infrastructure.monitoring.worker_perf_heartbeat import (
             start_worker_perf_heartbeat,
         )
 
         worker_perf_task, worker_perf_stop = start_worker_perf_heartbeat()
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         if is_main_worker:
             logger.warning("Failed to start admin worker perf heartbeat: %s", e)
 
@@ -380,7 +380,7 @@ async def lifespan(fastapi_app: FastAPI):
         asyncio.create_task(start_inline_rec_cleanup_scheduler(interval_minutes=30))
         if is_main_worker:
             logger.debug("Inline recommendations cleanup scheduler started")
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         if is_main_worker:
             logger.warning("Failed to start inline rec cleanup scheduler: %s", e)
 
@@ -392,14 +392,14 @@ async def lifespan(fastapi_app: FastAPI):
     try:
         backup_scheduler_task = asyncio.create_task(start_backup_scheduler())
         # Don't log here - the scheduler will log whether it acquired the lock
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         if worker_id == "0" or not worker_id:
             logger.warning("Failed to start backup scheduler: %s", e)
 
     abuseipdb_scheduler_task: Optional[asyncio.Task] = None
     try:
         abuseipdb_scheduler_task = asyncio.create_task(start_abuseipdb_blacklist_scheduler())
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         if worker_id == "0" or not worker_id:
             logger.warning("Failed to start AbuseIPDB blacklist scheduler: %s", e)
 
@@ -416,7 +416,7 @@ async def lifespan(fastapi_app: FastAPI):
         process_monitor_task = asyncio.create_task(process_monitor.start())
         if is_main_worker:
             logger.debug("Process monitor started")
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         if is_main_worker:
             logger.warning("Failed to start process monitor: %s", e)
         process_monitor_task = None  # Ensure it's None if initialization failed
@@ -430,7 +430,7 @@ async def lifespan(fastapi_app: FastAPI):
         health_monitor_task = asyncio.create_task(health_monitor.start())
         if is_main_worker:
             logger.debug("Health monitor started")
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         if is_main_worker:
             logger.warning("Failed to start health monitor: %s", e)
         health_monitor_task = None  # Ensure it's None if initialization failed
@@ -443,14 +443,14 @@ async def lifespan(fastapi_app: FastAPI):
         get_diagram_cache()
         if is_main_worker:
             logger.debug("Diagram cache initialized")
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         if is_main_worker:
             logger.warning("Failed to initialize diagram cache: %s", e)
 
     # Send startup notification SMS (Redis lock — once per cluster; not gated on worker id)
     try:
         await _send_startup_sms_notification_once()
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         logger.warning(
             "[LIFESPAN] Failed to send startup SMS notification (non-critical): %s",
             e,

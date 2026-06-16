@@ -210,11 +210,7 @@ def try_parse_school_member_item(
     email: str | None = None
     if has_phone:
         normalized_phone = normalize_school_member_phone(str(raw_phone))
-        if (
-            len(normalized_phone) != 11
-            or not normalized_phone.isdigit()
-            or not normalized_phone.startswith("1")
-        ):
+        if len(normalized_phone) != 11 or not normalized_phone.isdigit() or not normalized_phone.startswith("1"):
             return None, _batch_failure_from_item(
                 0,
                 item,
@@ -416,9 +412,7 @@ async def create_school_member_batch(
     existing_phones: set[str] = set()
     existing_emails: set[str] = set()
     if contact_filters:
-        existing_rows = (
-            await db.execute(select(User.phone, User.email).where(or_(*contact_filters)))
-        ).all()
+        existing_rows = (await db.execute(select(User.phone, User.email).where(or_(*contact_filters)))).all()
         for phone, email in existing_rows:
             if phone:
                 existing_phones.add(str(phone))

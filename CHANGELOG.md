@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.43] - 2026-06-16
+
+> **basedpyright strict typing, CI lint gates, ORM Mapped migration, db_rls extraction, and repo-wide inline-suppression cleanup.**
+
+### Added
+
+- **CI — Ruff** — `ruff check` and `ruff format --check` in the Python job ([`ci.yml`](.github/workflows/ci.yml)).
+- **CI — basedpyright** — Strict static typing gate via `[tool.basedpyright]` in [`pyproject.toml`](pyproject.toml); added to [`requirements.txt`](requirements.txt).
+- **CI — no inline suppressions** — [`lint_no_inline_disables.py`](scripts/lint/lint_no_inline_disables.py) fails on `# pylint: disable`, `# noqa`, and `# type: ignore` outside allowed paths (typings, alembic versions).
+- **Typings — third-party stubs** — [`typings/`](typings/) for Alembic RLS helpers, `psycopg`, `locust`, and `websocket` so basedpyright resolves optional/runtime imports.
+- **db_rls — PostgreSQL RLS package** — RLS SQL and policy builders moved out of [`alembic/`](alembic/) into [`db_rls/`](db_rls/); migration revisions import from the new package.
+- **Utils — typing helpers** — [`typing_helpers.py`](services/utils/typing_helpers.py), [`connection_types.py`](utils/auth/connection_types.py), and [`user_avatar_defaults.py`](utils/user_avatar_defaults.py) for shared typing and avatar defaults.
+
+### Changed
+
+- **pyproject.toml — pyright → basedpyright** — Renamed config section, tightened diagnostics (`reportPossiblyUnboundVariable`, `reportUndefinedVariable`), WSL conda `extraPaths`, and `stubPath = "typings"`.
+- **Pylint — policy docs** — Documented pattern-level disables only (no inline `# pylint: disable`); removed `broad-except` from the main disable list; added `typings/` to ignore paths.
+- **ORM — domain models** — Seventeen [`models/domain/`](models/domain/) modules migrated from legacy `Column` to SQLAlchemy 2.0 `Mapped` / `mapped_column` with `TYPE_CHECKING` relationship imports.
+- **Repo — inline suppressions stripped** — ~280 Python files cleaned of inline `# pylint: disable`, `# noqa`, and `# type: ignore` comments; structural fixes applied instead (narrower imports, null checks, typed helpers).
+- **Docs — AGENTS.md** — Documents `python -m basedpyright .` and the no-project-wide-suppression policy.
+
+### Fixed
+
+- **HTTP — request logging** — Guard `request.client.host` when the client is absent ([`middleware.py`](services/infrastructure/http/middleware.py)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.43).
+
 ## [5.117.42] - 2026-06-16
 
 > **Sidebar brand header layout, user emoji avatar rendering on Edge, and centralized avatar defaults.**

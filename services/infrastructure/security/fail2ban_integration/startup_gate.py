@@ -130,4 +130,4 @@ def enforce_fail2ban_startup_or_exit(etc_dir: Optional[Path] = None) -> None:
     print(body)
     print()
 
-    os._exit(1)  # pylint: disable=protected-access
+    os._exit(1)

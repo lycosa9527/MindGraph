@@ -34,6 +34,7 @@ import uuid
 from services.auth.ip_geolocation import get_geolocation_service
 from services.monitoring.city_flag_tracker import get_city_flag_tracker
 from services.redis import keys as _keys
+from services.utils.typing_helpers import redis_decode, redis_decode_required, redis_hash_to_str
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
 
@@ -545,22 +546,24 @@ class RedisActivityTracker:
     async def _log_activity(
         self,
         user_id: int,
-        user_phone: str,
+        user_phone: bytes | str,
         activity_type: str,
         details: Optional[Dict] = None,
-        session_id: Optional[str] = None,
+        session_id: Optional[bytes | str] = None,
     ):
         """Log activity to history."""
+        phone_text = redis_decode_required(user_phone)
+        session_text = redis_decode(session_id)
         activity_label = self.ACTIVITY_TYPES.get(activity_type, activity_type)
 
         entry = {
             "timestamp": get_beijing_now().isoformat(),
             "user_id": user_id,
-            "user_phone": user_phone,
+            "user_phone": phone_text,
             "activity_type": activity_type,
             "activity_label": activity_label,
             "details": details or {},
-            "session_id": session_id,
+            "session_id": session_text,
         }
 
         if self._use_redis():
@@ -613,7 +616,7 @@ class RedisActivityTracker:
                 cursor, keys = await redis.scan(cursor, match=_keys.ACTIVITY_SESSION_PATTERN, count=100)
 
                 for key in keys:
-                    session_data = await redis.hgetall(key)
+                    session_data = redis_hash_to_str(dict(await redis.hgetall(key)))
                     if not session_data:
                         continue
                     try:

@@ -74,9 +74,7 @@ def admin_scope_to_session_vars(scope: AdminScope) -> dict[str, Any]:
         return {
             "mode": MODE_PANEL,
             "user_id": int(actor_id) if actor_id is not None else None,
-            "organization_id": (
-                int(scope.effective_org_id) if scope.effective_org_id is not None else None
-            ),
+            "organization_id": (int(scope.effective_org_id) if scope.effective_org_id is not None else None),
             "role": role,
             "readable_org_ids": _comma_join_org_ids(invited),
             "actor_user_id": int(actor_id) if actor_id is not None else None,

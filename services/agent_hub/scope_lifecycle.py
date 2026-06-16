@@ -141,7 +141,7 @@ class MindGraphAgentHub:
     @property
     def session_lock(self):
         if self._session_lock is None:
-            import asyncio  # pylint: disable=import-outside-toplevel
+            import asyncio
 
             self._session_lock = asyncio.Lock()
         return self._session_lock
@@ -402,10 +402,10 @@ class MindGraphAgentHub:
             if not isinstance(base_ctx, dict):
                 base_ctx = {}
             merged = {**base_ctx, **context_payload}
-            base_dd = base_ctx.get("diagram_data") if isinstance(base_ctx.get("diagram_data"), dict) else {}
-            delta_dd = (
-                context_payload.get("diagram_data") if isinstance(context_payload.get("diagram_data"), dict) else {}
-            )
+            raw_base_dd = base_ctx.get("diagram_data")
+            base_dd: Dict[str, Any] = raw_base_dd if isinstance(raw_base_dd, dict) else {}
+            raw_delta_dd = context_payload.get("diagram_data")
+            delta_dd: Dict[str, Any] = raw_delta_dd if isinstance(raw_delta_dd, dict) else {}
             merged["diagram_data"] = {**base_dd, **delta_dd}
             context_payload = merged
             lib_id = context_payload.get("diagram_library_id")

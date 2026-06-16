@@ -174,7 +174,7 @@ async def start_node_palette(
             tracker = get_activity_tracker()
             await tracker.record_activity(
                 user_id=current_user.id,
-                user_phone=current_user.phone,
+                user_phone=current_user.phone or "",
                 activity_type="node_palette",
                 details={"diagram_type": req.diagram_type, "session_id": session_id},
                 user_name=getattr(current_user, "name", None),

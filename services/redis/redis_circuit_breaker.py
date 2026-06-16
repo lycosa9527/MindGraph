@@ -215,7 +215,7 @@ def get_breaker() -> RedisCircuitBreaker:
     ``REDIS_CIRCUIT_BREAKER_*`` env vars are set; the values are captured
     at first access.
     """
-    global _BREAKER  # pylint: disable=global-statement
+    global _BREAKER
     if _BREAKER is not None:
         return _BREAKER
     with _BREAKER_INIT_LOCK:

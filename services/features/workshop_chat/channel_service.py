@@ -88,7 +88,7 @@ class ChannelService:
         )
         channels = result.scalars().all()
 
-        member_map = await ChannelService._build_member_map(db, user_id, channels)
+        member_map = await ChannelService._build_member_map(db, user_id, list(channels))
         user_is_admin = is_admin(current_user) if current_user else False
         member_counts, topic_counts, unread_counts = await ChannelService._batch_channel_list_metrics(
             db,
@@ -331,7 +331,7 @@ class ChannelService:
                 )
             )
             max_order = max_result.scalar()
-            display_order = int(max_order) + 1
+            display_order = int(max_order or -1) + 1
 
         channel = ChatChannel(
             name=name,
@@ -823,7 +823,7 @@ class ChannelService:
             channel_type=src.channel_type,
             is_default=False,
             posting_policy=src.posting_policy,
-            display_order=int(max_order) + 1,
+            display_order=int(max_order or -1) + 1,
         )
         db.add(channel)
         await db.flush()

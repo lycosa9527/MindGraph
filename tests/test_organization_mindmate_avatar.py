@@ -9,8 +9,11 @@ from types import SimpleNamespace
 import pytest
 from fastapi import HTTPException, UploadFile
 from PIL import Image
+from starlette.datastructures import Headers
 
+from models.domain.auth import Organization
 from routers.auth.admin import organization_mindmate_branding as branding
+from tests.typing_helpers import as_organization
 
 
 def _jpeg_bytes(width: int, height: int, color: str = "red") -> bytes:
@@ -51,8 +54,14 @@ def _upload_file(contents: bytes, *, content_type: str = "image/png") -> UploadF
     return UploadFile(
         filename="avatar.bin",
         file=BytesIO(contents),
-        headers={"content-type": content_type},
+        headers=Headers({"content-type": content_type}),
     )
+
+
+def _test_org(org_id: int, **fields: object) -> Organization:
+    payload: dict[str, object] = {"id": org_id, "mindmate_agent_avatar_url": None}
+    payload.update(fields)
+    return as_organization(SimpleNamespace(**payload))
 
 
 @pytest.fixture(name="isolated_avatar_storage")
@@ -110,7 +119,7 @@ def test_process_animated_gif_rejects_too_many_frames() -> None:
 async def test_save_mindmate_agent_avatar_rejects_invalid_bytes(
     isolated_avatar_storage: Path,
 ) -> None:
-    org = SimpleNamespace(id=7, mindmate_agent_avatar_url=None)
+    org = _test_org(7)
     upload = _upload_file(b"not-an-image", content_type="image/png")
 
     with pytest.raises(HTTPException) as exc_info:
@@ -124,7 +133,7 @@ async def test_save_mindmate_agent_avatar_rejects_invalid_bytes(
 async def test_save_mindmate_agent_avatar_rejects_oversized_dimensions(
     isolated_avatar_storage: Path,
 ) -> None:
-    org = SimpleNamespace(id=9, mindmate_agent_avatar_url=None)
+    org = _test_org(9)
     upload = _upload_file(
         _png_bytes(branding.MAX_AVATAR_DECODE_PX + 1, 128),
         content_type="image/png",
@@ -141,7 +150,7 @@ async def test_save_mindmate_agent_avatar_rejects_oversized_dimensions(
 async def test_save_mindmate_agent_avatar_writes_png_with_cache_bust(
     isolated_avatar_storage: Path,
 ) -> None:
-    org = SimpleNamespace(id=11, mindmate_agent_avatar_url=None)
+    org = _test_org(11)
     upload = _upload_file(_jpeg_bytes(300, 300), content_type="image/jpeg")
 
     url = await branding.save_mindmate_agent_avatar(org, upload)
@@ -157,7 +166,7 @@ async def test_save_mindmate_agent_avatar_writes_png_with_cache_bust(
 async def test_save_mindmate_agent_avatar_writes_animated_gif(
     isolated_avatar_storage: Path,
 ) -> None:
-    org = SimpleNamespace(id=12, mindmate_agent_avatar_url=None)
+    org = _test_org(12)
     upload = _upload_file(_animated_gif_bytes((160, 160), 2), content_type="image/gif")
 
     url = await branding.save_mindmate_agent_avatar(org, upload)
@@ -175,7 +184,7 @@ async def test_save_mindmate_agent_avatar_writes_animated_gif(
 async def test_save_mindmate_agent_avatar_keeps_old_file_until_finalize(
     isolated_avatar_storage: Path,
 ) -> None:
-    org = SimpleNamespace(id=13, mindmate_agent_avatar_url=None)
+    org = _test_org(13)
     png_upload = _upload_file(_png_bytes(128, 128), content_type="image/png")
     org.mindmate_agent_avatar_url = await branding.save_mindmate_agent_avatar(org, png_upload)
 

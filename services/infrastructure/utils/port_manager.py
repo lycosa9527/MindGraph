@@ -88,7 +88,7 @@ def find_process_on_port(port: int):
                     candidate = line.strip()
                     if candidate.isdigit():
                         return int(candidate)
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         logger.warning("Could not detect process on port %s: %s", port, e)
 
     return None
@@ -143,7 +143,7 @@ def cleanup_stale_process(pid: int, port: int) -> bool:
             time.sleep(0.5)
             try:
                 if hasattr(signal, "SIGKILL"):
-                    sigkill = getattr(signal, "SIGKILL")  # pylint: disable=no-member
+                    sigkill = getattr(signal, "SIGKILL")
                     os.kill(pid, sigkill)
                 else:
                     # Fallback for systems without SIGKILL
@@ -162,7 +162,7 @@ def cleanup_stale_process(pid: int, port: int) -> bool:
             logger.error("❌ Port %s still in use after cleanup attempt", port)
             return False
 
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         logger.error("Failed to cleanup process %s: %s", pid, e)
         return False
 

@@ -44,12 +44,8 @@ def beijing_period_starts(beijing_now: datetime) -> BeijingPeriodStarts:
     """UTC cutoffs aligned with Beijing calendar day boundaries."""
     beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
     today_start = beijing_today_start.astimezone(timezone.utc).replace(tzinfo=None)
-    week_ago = (beijing_today_start - timedelta(days=7)).astimezone(timezone.utc).replace(
-        tzinfo=None
-    )
-    month_ago = (beijing_today_start - timedelta(days=30)).astimezone(timezone.utc).replace(
-        tzinfo=None
-    )
+    week_ago = (beijing_today_start - timedelta(days=7)).astimezone(timezone.utc).replace(tzinfo=None)
+    month_ago = (beijing_today_start - timedelta(days=30)).astimezone(timezone.utc).replace(tzinfo=None)
     return {
         "today_start": today_start,
         "week_ago": week_ago,

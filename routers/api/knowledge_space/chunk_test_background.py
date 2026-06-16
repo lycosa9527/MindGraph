@@ -4,17 +4,18 @@ Background processing for chunk tests.
 Handles background thread execution, cancellation, and cleanup.
 """
 
+import asyncio
 import atexit
 import logging
 import threading
 from datetime import UTC, datetime, timedelta
-from typing import List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Set
 
 from sqlalchemy import select, update
 
 from config.database import SyncSessionLocal
 from utils.db.rls_context import RlsContext, reset_rls_context, rls_sync_session, set_rls_context
-from utils.db.session_open import system_rls_session
+from utils.db.session_open import system_rls_session, user_rls_session
 from models.domain.knowledge_space import ChunkTestResult
 from services.knowledge.rag_chunk_test import get_rag_chunk_test_service
 
@@ -184,6 +185,46 @@ async def detect_and_mark_stuck_tests_async() -> int:
     return stuck_count
 
 
+async def _run_user_documents_test_async(
+    user_id: int,
+    document_ids: List[int],
+    queries: List[str],
+    modes: Optional[List[str]],
+    progress_callback: Callable[..., Optional[bool]],
+) -> Dict[str, Any]:
+    """Execute user-documents chunk test on the asyncio loop for this thread."""
+    service = get_rag_chunk_test_service()
+    async with user_rls_session(user_id) as async_db:
+        return await service.test_user_documents(
+            db=async_db,
+            user_id=user_id,
+            document_ids=document_ids,
+            queries=queries,
+            modes=modes,
+            progress_callback=progress_callback,
+        )
+
+
+async def _run_benchmark_test_async(
+    user_id: int,
+    dataset_name: str,
+    queries: Optional[List[str]],
+    modes: Optional[List[str]],
+    progress_callback: Callable[..., Optional[bool]],
+) -> Dict[str, Any]:
+    """Execute benchmark chunk test on the asyncio loop for this thread."""
+    service = get_rag_chunk_test_service()
+    async with user_rls_session(user_id) as async_db:
+        return await service.test_benchmark_dataset(
+            db=async_db,
+            user_id=user_id,
+            dataset_name=dataset_name,
+            custom_queries=queries,
+            modes=modes,
+            progress_callback=progress_callback,
+        )
+
+
 def run_test_in_background(
     test_id: int,
     user_id: int,
@@ -204,7 +245,6 @@ def run_test_in_background(
     register_active_test(test_id)
 
     db = None
-    service = get_rag_chunk_test_service()
     test_result = None
 
     rls_token = set_rls_context(RlsContext.for_celery_user(user_id))
@@ -212,17 +252,21 @@ def run_test_in_background(
         # Create database session with proper error handling
         db = SyncSessionLocal()
         logger.debug("[ChunkTestBackground] Querying test result %s from database", test_id)
-        test_result = db.execute(select(ChunkTestResult).where(ChunkTestResult.id == test_id)).scalar_one_or_none()
-        if not test_result:
+        loaded = db.execute(select(ChunkTestResult).where(ChunkTestResult.id == test_id)).scalar_one_or_none()
+        if not loaded:
             logger.error("[ChunkTestBackground] Test result %s not found in database", test_id)
             return
+
+        test_result = loaded
+        result_row: ChunkTestResult = test_result
+        sync_db = db
 
         logger.info(
             "[ChunkTestBackground] Test result found: test_id=%s, current_status=%s, current_stage=%s, progress=%s%%",
             test_id,
-            test_result.status,
-            test_result.current_stage,
-            test_result.progress_percent,
+            result_row.status,
+            result_row.current_stage,
+            result_row.progress_percent,
         )
 
         def progress_callback(status, method, stage, progress, completed_methods):
@@ -246,12 +290,12 @@ def run_test_in_background(
                 return False
 
             try:
-                test_result.status = status
-                test_result.current_method = method
-                test_result.current_stage = stage
-                test_result.progress_percent = progress
-                test_result.completed_methods = completed_methods
-                db.commit()
+                result_row.status = status
+                result_row.current_method = method
+                result_row.current_stage = stage
+                result_row.progress_percent = progress
+                result_row.completed_methods = completed_methods
+                sync_db.commit()
                 logger.debug(
                     "[ChunkTestBackground] Progress updated successfully: test_id=%s, "
                     "status=%s, stage=%s, progress=%s%%",
@@ -268,7 +312,7 @@ def run_test_in_background(
                     e,
                     exc_info=True,
                 )
-                db.rollback()
+                sync_db.rollback()
                 return True
 
         if is_cancelled(test_id):
@@ -276,9 +320,9 @@ def run_test_in_background(
                 "[ChunkTestBackground] Test %s was cancelled before starting execution",
                 test_id,
             )
-            test_result.status = "failed"
-            test_result.current_stage = "cancelled"
-            db.commit()
+            result_row.status = "failed"
+            result_row.current_stage = "cancelled"
+            sync_db.commit()
             return
 
         logger.info(
@@ -290,13 +334,14 @@ def run_test_in_background(
         )
 
         try:
-            results = service.test_user_documents(
-                db=db,
-                user_id=user_id,
-                document_ids=document_ids,
-                queries=queries,
-                modes=modes,
-                progress_callback=progress_callback,
+            results = asyncio.run(
+                _run_user_documents_test_async(
+                    user_id=user_id,
+                    document_ids=document_ids,
+                    queries=queries,
+                    modes=modes,
+                    progress_callback=progress_callback,
+                )
             )
 
             logger.info(
@@ -312,46 +357,45 @@ def run_test_in_background(
                     "[ChunkTestBackground] Test %s was cancelled during execution",
                     test_id,
                 )
-                test_result.status = "failed"
-                test_result.current_stage = "cancelled"
-                db.commit()
+                result_row.status = "failed"
+                result_row.current_stage = "cancelled"
+                sync_db.commit()
                 return
 
             logger.debug(
                 "[ChunkTestBackground] Updating test result with final data: test_id=%s",
                 test_id,
             )
-            test_result.status = "completed"
-            test_result.current_stage = "completed"
-            test_result.progress_percent = 100
-            test_result.semchunk_chunk_count = results["chunking_comparison"].get("semchunk", {}).get("count", 0)
-            test_result.mindchunk_chunk_count = results["chunking_comparison"].get("mindchunk", {}).get("count", 0)
-            test_result.chunk_stats = results["chunking_comparison"]
-            test_result.retrieval_metrics = results.get("retrieval_comparison", {})
-            test_result.comparison_summary = results.get("summary", {})
-            test_result.evaluation_results = results.get("evaluation_results", {})
-            test_result.completed_methods = modes or [
+            result_row.status = "completed"
+            result_row.current_stage = "completed"
+            result_row.progress_percent = 100
+            result_row.semchunk_chunk_count = results["chunking_comparison"].get("semchunk", {}).get("count", 0)
+            result_row.mindchunk_chunk_count = results["chunking_comparison"].get("mindchunk", {}).get("count", 0)
+            result_row.chunk_stats = results["chunking_comparison"]
+            result_row.retrieval_metrics = results.get("retrieval_comparison", {})
+            result_row.comparison_summary = results.get("summary", {})
+            result_row.evaluation_results = results.get("evaluation_results", {})
+            result_row.completed_methods = modes or [
                 "spacy",
                 "semchunk",
                 "chonkie",
                 "langchain",
                 "mindchunk",
             ]
-            db.commit()
+            sync_db.commit()
 
             logger.info(
                 "[ChunkTestBackground] Test %s completed successfully: semchunk_chunks=%s, mindchunk_chunks=%s",
                 test_id,
-                test_result.semchunk_chunk_count,
-                test_result.mindchunk_chunk_count,
+                result_row.semchunk_chunk_count,
+                result_row.mindchunk_chunk_count,
             )
         except RuntimeError as e:
             if "cancelled" in str(e).lower() or is_cancelled(test_id):
                 logger.info("[ChunkTestBackground] Test %s cancelled: %s", test_id, e)
-                if test_result:
-                    test_result.status = "failed"
-                    test_result.current_stage = "cancelled"
-                    db.commit()
+                result_row.status = "failed"
+                result_row.current_stage = "cancelled"
+                sync_db.commit()
                 return
             logger.error(
                 "[ChunkTestBackground] RuntimeError during test execution for test %s: %s",
@@ -363,10 +407,9 @@ def run_test_in_background(
         except Exception as e:
             if is_cancelled(test_id):
                 logger.info("[ChunkTestBackground] Test %s cancelled: %s", test_id, e)
-                if test_result:
-                    test_result.status = "failed"
-                    test_result.current_stage = "cancelled"
-                    db.commit()
+                result_row.status = "failed"
+                result_row.current_stage = "cancelled"
+                sync_db.commit()
                 return
             logger.error(
                 "[ChunkTestBackground] Exception during test execution for test %s: %s",
@@ -388,7 +431,7 @@ def run_test_in_background(
                 test_result = db.execute(
                     select(ChunkTestResult).where(ChunkTestResult.id == test_id)
                 ).scalar_one_or_none()
-            if test_result:
+            if test_result is not None and db is not None:
                 test_result.status = "failed"
                 test_result.current_stage = "failed"
                 db.commit()
@@ -452,7 +495,6 @@ def run_benchmark_in_background(
     register_active_test(test_id)
 
     db = None
-    service = get_rag_chunk_test_service()
     test_result = None
 
     rls_token = set_rls_context(RlsContext.for_celery_user(user_id))
@@ -460,17 +502,21 @@ def run_benchmark_in_background(
         # Create database session with proper error handling
         db = SyncSessionLocal()
         logger.debug("[ChunkTestBackground] Querying test result %s from database", test_id)
-        test_result = db.execute(select(ChunkTestResult).where(ChunkTestResult.id == test_id)).scalar_one_or_none()
-        if not test_result:
+        loaded = db.execute(select(ChunkTestResult).where(ChunkTestResult.id == test_id)).scalar_one_or_none()
+        if not loaded:
             logger.error("[ChunkTestBackground] Test result %s not found in database", test_id)
             return
+
+        test_result = loaded
+        result_row: ChunkTestResult = test_result
+        sync_db = db
 
         logger.info(
             "[ChunkTestBackground] Test result found: test_id=%s, current_status=%s, current_stage=%s, progress=%s%%",
             test_id,
-            test_result.status,
-            test_result.current_stage,
-            test_result.progress_percent,
+            result_row.status,
+            result_row.current_stage,
+            result_row.progress_percent,
         )
 
         def progress_callback(status, method, stage, progress, completed_methods):
@@ -494,12 +540,12 @@ def run_benchmark_in_background(
                 return False
 
             try:
-                test_result.status = status
-                test_result.current_method = method
-                test_result.current_stage = stage
-                test_result.progress_percent = progress
-                test_result.completed_methods = completed_methods
-                db.commit()
+                result_row.status = status
+                result_row.current_method = method
+                result_row.current_stage = stage
+                result_row.progress_percent = progress
+                result_row.completed_methods = completed_methods
+                sync_db.commit()
                 logger.debug(
                     "[ChunkTestBackground] Progress updated successfully: test_id=%s, "
                     "status=%s, stage=%s, progress=%s%%",
@@ -516,7 +562,7 @@ def run_benchmark_in_background(
                     e,
                     exc_info=True,
                 )
-                db.rollback()
+                sync_db.rollback()
                 return True
 
         if is_cancelled(test_id):
@@ -524,9 +570,9 @@ def run_benchmark_in_background(
                 "[ChunkTestBackground] Test %s was cancelled before starting execution",
                 test_id,
             )
-            test_result.status = "failed"
-            test_result.current_stage = "cancelled"
-            db.commit()
+            result_row.status = "failed"
+            result_row.current_stage = "cancelled"
+            sync_db.commit()
             return
 
         logger.info(
@@ -539,13 +585,14 @@ def run_benchmark_in_background(
         )
 
         try:
-            results = service.test_benchmark_dataset(
-                db=db,
-                user_id=user_id,
-                dataset_name=dataset_name,
-                custom_queries=queries,
-                modes=modes,
-                progress_callback=progress_callback,
+            results = asyncio.run(
+                _run_benchmark_test_async(
+                    user_id=user_id,
+                    dataset_name=dataset_name,
+                    queries=queries,
+                    modes=modes,
+                    progress_callback=progress_callback,
+                )
             )
 
             logger.info(
@@ -561,47 +608,46 @@ def run_benchmark_in_background(
                     "[ChunkTestBackground] Test %s was cancelled during execution",
                     test_id,
                 )
-                test_result.status = "failed"
-                test_result.current_stage = "cancelled"
-                db.commit()
+                result_row.status = "failed"
+                result_row.current_stage = "cancelled"
+                sync_db.commit()
                 return
 
             logger.debug(
                 "[ChunkTestBackground] Updating test result with final data: test_id=%s",
                 test_id,
             )
-            test_result.status = "completed"
-            test_result.current_stage = "completed"
-            test_result.progress_percent = 100
-            test_result.semchunk_chunk_count = results["chunking_comparison"].get("semchunk", {}).get("count", 0)
-            test_result.mindchunk_chunk_count = results["chunking_comparison"].get("mindchunk", {}).get("count", 0)
-            test_result.chunk_stats = results["chunking_comparison"]
-            test_result.retrieval_metrics = results.get("retrieval_comparison", {})
-            test_result.comparison_summary = results.get("summary", {})
-            test_result.evaluation_results = results.get("evaluation_results", {})
-            test_result.completed_methods = modes or [
+            result_row.status = "completed"
+            result_row.current_stage = "completed"
+            result_row.progress_percent = 100
+            result_row.semchunk_chunk_count = results["chunking_comparison"].get("semchunk", {}).get("count", 0)
+            result_row.mindchunk_chunk_count = results["chunking_comparison"].get("mindchunk", {}).get("count", 0)
+            result_row.chunk_stats = results["chunking_comparison"]
+            result_row.retrieval_metrics = results.get("retrieval_comparison", {})
+            result_row.comparison_summary = results.get("summary", {})
+            result_row.evaluation_results = results.get("evaluation_results", {})
+            result_row.completed_methods = modes or [
                 "spacy",
                 "semchunk",
                 "chonkie",
                 "langchain",
                 "mindchunk",
             ]
-            db.commit()
+            sync_db.commit()
 
             logger.info(
                 "[ChunkTestBackground] Benchmark test %s completed successfully: "
                 "semchunk_chunks=%s, mindchunk_chunks=%s",
                 test_id,
-                test_result.semchunk_chunk_count,
-                test_result.mindchunk_chunk_count,
+                result_row.semchunk_chunk_count,
+                result_row.mindchunk_chunk_count,
             )
         except RuntimeError as e:
             if "cancelled" in str(e).lower() or is_cancelled(test_id):
                 logger.info("[ChunkTestBackground] Test %s cancelled: %s", test_id, e)
-                if test_result:
-                    test_result.status = "failed"
-                    test_result.current_stage = "cancelled"
-                    db.commit()
+                result_row.status = "failed"
+                result_row.current_stage = "cancelled"
+                sync_db.commit()
                 return
             logger.error(
                 "[ChunkTestBackground] RuntimeError during benchmark test execution for test %s: %s",
@@ -613,10 +659,9 @@ def run_benchmark_in_background(
         except Exception as e:
             if is_cancelled(test_id):
                 logger.info("[ChunkTestBackground] Test %s cancelled: %s", test_id, e)
-                if test_result:
-                    test_result.status = "failed"
-                    test_result.current_stage = "cancelled"
-                    db.commit()
+                result_row.status = "failed"
+                result_row.current_stage = "cancelled"
+                sync_db.commit()
                 return
             logger.error(
                 "[ChunkTestBackground] Exception during benchmark test execution for test %s: %s",
@@ -638,7 +683,7 @@ def run_benchmark_in_background(
                 test_result = db.execute(
                     select(ChunkTestResult).where(ChunkTestResult.id == test_id)
                 ).scalar_one_or_none()
-            if test_result:
+            if test_result is not None and db is not None:
                 test_result.status = "failed"
                 test_result.current_stage = "failed"
                 db.commit()

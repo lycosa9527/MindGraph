@@ -159,15 +159,11 @@ __all__ = [
     "FeatureAccessOrgGrant",
     "FeatureAccessUserGrant",
     "Device",
+    "MarketEntitlement",
+    "MarketListing",
+    "MarketOrder",
+    "MarketPayment",
+    "MarketSubscription",
+    "OrganizationMindbotConfig",
+    "MindbotUsageEvent",
 ]
-__all__.extend(
-    [
-        MarketEntitlement.__name__,
-        MarketListing.__name__,
-        MarketOrder.__name__,
-        MarketPayment.__name__,
-        MarketSubscription.__name__,
-        OrganizationMindbotConfig.__name__,
-        MindbotUsageEvent.__name__,
-    ]
-)

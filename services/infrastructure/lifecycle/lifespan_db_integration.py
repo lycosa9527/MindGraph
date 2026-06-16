@@ -46,7 +46,7 @@ async def lifespan_startup_database_phase(is_main_worker: bool) -> None:
                     "Database integrity check failed and recovery was not successful. Manual intervention required."
                 ),
             )
-        except Exception as alert_error:  # pylint: disable=broad-except
+        except Exception as alert_error:
             if is_main_worker:
                 logger.error("Failed to send startup failure alert: %s", alert_error)
         raise SystemExit(1)
@@ -71,7 +71,7 @@ async def lifespan_startup_database_phase(is_main_worker: bool) -> None:
                     "intended database."
                 ),
             )
-        except Exception as alert_error:  # pylint: disable=broad-except
+        except Exception as alert_error:
             if is_main_worker:
                 logger.error("Failed to send startup failure alert: %s", alert_error)
         raise SystemExit(1) from init_exc
@@ -94,7 +94,7 @@ async def lifespan_startup_database_phase(is_main_worker: bool) -> None:
             (library_dir / "covers").mkdir(parents=True, exist_ok=True)
             if is_main_worker:
                 logger.debug("[LIFESPAN] Library storage ready: %s", library_dir.resolve())
-        except Exception as lib_dir_exc:  # pylint: disable=broad-except
+        except Exception as lib_dir_exc:
             if is_main_worker:
                 logger.warning(
                     "[LIFESPAN] Could not create library storage directory: %s",
@@ -121,7 +121,7 @@ async def lifespan_startup_database_phase(is_main_worker: bool) -> None:
             try:
                 result = await reload_cache_from_database()
                 return result
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 logger.error("Failed to load cache from database: %s", exc, exc_info=True)
                 return False
 
@@ -135,7 +135,7 @@ async def lifespan_startup_database_phase(is_main_worker: bool) -> None:
                 if is_main_worker:
                     logger.warning("IP Geolocation database not available (database file missing or failed to load)")
                 return False
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 if is_main_worker:
                     logger.warning("Failed to initialize IP Geolocation Service: %s", exc)
                 return False
@@ -165,7 +165,7 @@ async def lifespan_startup_database_phase(is_main_worker: bool) -> None:
             if is_main_worker:
                 logger.warning("Failed to initialize IP Geolocation Service: %s", ip_db_result)
 
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.error(
                 "Failed during post-DB startup (library dirs, cache preload, etc.): %s",

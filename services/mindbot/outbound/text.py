@@ -104,6 +104,7 @@ async def reply_via_openapi(
         return False, False
 
     effective_token = token
+    status = 0
     for attempt in range(2):
         if is_group:
             payload = {

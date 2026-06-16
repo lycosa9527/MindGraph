@@ -34,6 +34,7 @@ import orjson
 from sqlalchemy import desc, select, update as sa_update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
+from services.utils.typing_helpers import result_rowcount
 from services.redis.cache.redis_cache_stampede import with_stampede_lock
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
@@ -184,6 +185,8 @@ class RedisDiagramCache:
             diagram_id, quota_error = assign_id_for_new_diagram(diagram_cap, current_count)
             if quota_error:
                 return False, None, quota_error
+            if diagram_id is None:
+                return False, None, "Failed to assign diagram id"
 
         now = datetime.now(UTC)
         now_ts = now.timestamp()
@@ -339,7 +342,7 @@ class RedisDiagramCache:
                         )
                     )
                     result = await db.execute(stmt)
-                    if result.rowcount == 0:
+                    if result_rowcount(result) == 0:
                         return False
                     await db.commit()
                     return True
@@ -420,7 +423,7 @@ class RedisDiagramCache:
                         )
                     )
                     result = await db.execute(stmt)
-                    if result.rowcount == 0:
+                    if result_rowcount(result) == 0:
                         return False, "Diagram not found"
                     await db.commit()
                     return True, None
@@ -480,12 +483,14 @@ class RedisDiagramCache:
         diagram_key = self._get_diagram_key(user_id, diagram_id)
         try:
             json_result = await redis.json().get(diagram_key, "$")
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             return None
         if not json_result:
             return None
         diagram = json_result[0] if isinstance(json_result, list) else json_result
-        if diagram is None or diagram.get("is_deleted", False):
+        if not isinstance(diagram, dict):
+            return None
+        if diagram.get("is_deleted", False):
             return None
         return diagram
 
@@ -823,7 +828,7 @@ class RedisDiagramCache:
                         .values(is_pinned=pinned, updated_at=now)
                     )
                     result = await db.execute(stmt)
-                    if result.rowcount == 0:
+                    if result_rowcount(result) == 0:
                         return False, "Diagram not found"
                     await db.commit()
                 except Exception as e:

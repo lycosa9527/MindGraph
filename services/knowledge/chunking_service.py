@@ -13,7 +13,7 @@ Proprietary License
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional, Callable, Union
+from typing import List, Dict, Any, Optional, Callable, Union, cast
 import logging
 import os
 import asyncio
@@ -32,9 +32,9 @@ try:
     HAS_LLM_CHUNKING = True
 except ImportError:
     HAS_LLM_CHUNKING = False
-    LLMSemanticChunker = None  # type: ignore
-    ParentChunk = None  # type: ignore
-    QAChunk = None  # type: ignore
+    LLMSemanticChunker = None
+    ParentChunk = None
+    QAChunk = None
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +132,8 @@ class ChunkingService(BaseChunkingService):
 
         # Create semchunk chunker
         # semchunk automatically handles Chinese punctuation (。！？) as sentence boundaries
-        self._chunker = semchunk.chunkerify(
+        chunkerify = getattr(semchunk, "chunkerify")
+        self._chunker = chunkerify(
             self._token_counter,
             chunk_size=self.chunk_size,
         )
@@ -551,8 +552,9 @@ class MindChunkAdapter(BaseChunkingService):
                     len(llm_chunks),
                     document_id,
                 )
-                for parent in llm_chunks:
-                    for child in parent.children:  # type: ignore[attr-defined]
+                for parent_item in llm_chunks:
+                    parent = cast(Any, parent_item)
+                    for child in parent.children:
                         chunk = Chunk(
                             text=child.text,
                             start_char=child.start_char,
@@ -573,7 +575,8 @@ class MindChunkAdapter(BaseChunkingService):
                     len(llm_chunks),
                     document_id,
                 )
-                for qa in llm_chunks:
+                for qa_item in llm_chunks:
+                    qa = cast(Any, qa_item)
                     chunk = Chunk(
                         text=qa.text,
                         start_char=qa.start_char,
@@ -582,8 +585,8 @@ class MindChunkAdapter(BaseChunkingService):
                         metadata={
                             **(metadata or {}),
                             **(qa.metadata or {}),
-                            "question": qa.question,  # type: ignore[attr-defined]
-                            "answer": qa.answer,  # type: ignore[attr-defined]
+                            "question": qa.question,
+                            "answer": qa.answer,
                             "structure_type": "qa",
                         },
                     )

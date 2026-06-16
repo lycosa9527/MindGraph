@@ -15,6 +15,8 @@ import os
 
 from fastapi import Request
 
+from utils.auth.connection_types import HttpOrWebSocket
+
 logger = logging.getLogger(__name__)
 
 
@@ -49,17 +51,17 @@ def is_https(request: Request) -> bool:
     return False
 
 
-def get_client_ip(request: Request) -> str:
+def get_client_ip(connection: HttpOrWebSocket) -> str:
     """
     Get real client IP address, even behind reverse proxy (nginx, etc.)
 
     Checks headers in order:
     1. X-Forwarded-For (most common, can be comma-separated)
     2. X-Real-IP (nginx specific)
-    3. request.client.host (fallback, direct connection)
+    3. connection.client.host (fallback, direct connection)
 
     Args:
-        request: FastAPI Request object
+        connection: FastAPI Request or WebSocket
 
     Returns:
         Client IP address string
@@ -70,7 +72,7 @@ def get_client_ip(request: Request) -> str:
         Returns: 203.0.113.45 (leftmost = original client)
     """
     # Check X-Forwarded-For header (most common with reverse proxies)
-    forwarded_for = request.headers.get("X-Forwarded-For")
+    forwarded_for = connection.headers.get("X-Forwarded-For")
     if forwarded_for:
         # X-Forwarded-For can contain multiple IPs: "client, proxy1, proxy2"
         # The leftmost is the original client IP
@@ -79,12 +81,12 @@ def get_client_ip(request: Request) -> str:
         return client_ip
 
     # Check X-Real-IP header (nginx-specific)
-    real_ip = request.headers.get("X-Real-IP")
+    real_ip = connection.headers.get("X-Real-IP")
     if real_ip:
         logger.debug("Client IP from X-Real-IP: %s", real_ip)
         return real_ip
 
     # Fallback to direct connection IP
-    direct_ip = request.client.host if request.client else "unknown"
-    logger.debug("Client IP from request.client.host: %s", direct_ip)
+    direct_ip = connection.client.host if connection.client else "unknown"
+    logger.debug("Client IP from connection.client.host: %s", direct_ip)
     return direct_ip

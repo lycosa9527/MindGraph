@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 
 from services.kitty.session.runtime_state import logger
 
@@ -137,14 +138,15 @@ def resolve_voice_node_reference(
 
     Falls back to the first ``selected_nodes`` entry when no explicit target is given.
     """
-    diagram_data = session_context.get("diagram_data") or {}
-    children = diagram_data.get("children") or []
-    if not isinstance(children, list):
-        children = []
+    diagram_data_raw = session_context.get("diagram_data")
+    diagram_data: dict[str, Any] = diagram_data_raw if isinstance(diagram_data_raw, dict) else {}
+    children_raw = diagram_data.get("children")
+    children: list[Any] = children_raw if isinstance(children_raw, list) else []
 
     selected_raw = session_context.get("selected_nodes")
     if not isinstance(selected_raw, list):
-        selected_raw = diagram_data.get("selected_nodes")
+        selected_nodes_raw = diagram_data.get("selected_nodes")
+        selected_raw = selected_nodes_raw if isinstance(selected_nodes_raw, list) else []
     selected: list[str] = []
     if isinstance(selected_raw, list):
         selected = [str(item) for item in selected_raw if isinstance(item, str) and item.strip()]

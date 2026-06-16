@@ -289,7 +289,7 @@ class DashScopeEmbeddingClient:
                     else:
                         logger.error("[DashScopeEmbedding] HTTP error: %s", e)
                         raise
-                except Exception as e:  # pylint: disable=broad-except
+                except Exception as e:
                     logger.error("[DashScopeEmbedding] Error embedding texts: %s", e)
                     raise
 
@@ -340,7 +340,7 @@ class DashScopeEmbeddingClient:
                     i // self.batch_size + 1,
                     len(batch),
                 )
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception as e:
                 logger.error(
                     "[DashScopeEmbedding] Failed to embed batch starting at index %d: %s",
                     i,
@@ -388,7 +388,7 @@ class DashScopeEmbeddingClient:
                 return embeddings[0]
             else:
                 raise ValueError("Empty embedding response")
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.error("[DashScopeEmbedding] Failed to embed query: %s", e)
             raise
 
@@ -417,7 +417,7 @@ class DashScopeEmbeddingClient:
                 return embeddings[0]
             else:
                 raise ValueError("Empty embedding response")
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.error("[DashScopeEmbedding] Failed to embed image: %s", e)
             raise
 
@@ -500,7 +500,7 @@ class DashScopeEmbeddingClient:
                         "[DashScopeEmbedding] Zero-norm embedding at index %d, skipping",
                         i,
                     )
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception as e:
                 logger.error(
                     "[DashScopeEmbedding] Failed to normalize embedding at index %d: %s",
                     i,
@@ -622,7 +622,7 @@ class DashScopeEmbeddingClient:
                     else:
                         logger.error("[DashScopeEmbedding] HTTP error: %s", e)
                         raise
-                except Exception as e:  # pylint: disable=broad-except
+                except Exception as e:
                     logger.error("[DashScopeEmbedding] Error embedding multimodal content: %s", e)
                     raise
 
@@ -637,7 +637,7 @@ _embedding_client: Optional[DashScopeEmbeddingClient] = None
 
 def get_embedding_client() -> DashScopeEmbeddingClient:
     """Get global embedding client instance."""
-    global _embedding_client  # pylint: disable=global-statement
+    global _embedding_client
     if _embedding_client is None:
         _embedding_client = DashScopeEmbeddingClient()
     return _embedding_client

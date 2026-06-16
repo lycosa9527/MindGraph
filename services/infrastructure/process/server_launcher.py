@@ -209,14 +209,8 @@ def run_server() -> None:
             if not rls_ready:
                 print("[ERROR] PostgreSQL RLS roles are not ready.")
                 print(f"        {rls_message}")
-                print(
-                    "        Run: PYTHONPATH=. python scripts/db/run_migrations.py"
-                    "  → option 4 (full local setup)"
-                )
-                print(
-                    "        Or set PG_ADMIN_URL to a superuser URL in .env,"
-                    " then retry."
-                )
+                print("        Run: PYTHONPATH=. python scripts/db/run_migrations.py  → option 4 (full local setup)")
+                print("        Or set PG_ADMIN_URL to a superuser URL in .env, then retry.")
                 sys.exit(1)
             logger.debug("[POSTGRESQL] RLS runtime ready: %s", rls_message)
 

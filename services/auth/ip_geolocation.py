@@ -539,14 +539,11 @@ class IPGeolocationService:
                 # New API: searcher.search(ip)
                 result = searcher.search(ip)
             elif hasattr(searcher, "memorySearch"):
-                # Old API: searcher.memorySearch(ip)
-                result = searcher.memorySearch(ip)  # type: ignore[attr-defined]
+                result = getattr(searcher, "memorySearch")(ip)
             elif hasattr(searcher, "binarySearch"):
-                # Old API: searcher.binarySearch(ip)
-                result = searcher.binarySearch(ip)  # type: ignore[attr-defined]
+                result = getattr(searcher, "binarySearch")(ip)
             elif hasattr(searcher, "btreeSearch"):
-                # Old API: searcher.btreeSearch(ip)
-                result = searcher.btreeSearch(ip)  # type: ignore[attr-defined]
+                result = getattr(searcher, "btreeSearch")(ip)
             else:
                 logger.warning("[IPGeo] Unknown ip2region API for IP %s", ip)
                 return None

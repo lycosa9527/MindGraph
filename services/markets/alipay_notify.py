@@ -7,6 +7,7 @@ from typing import Any, Mapping
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,9 @@ def verify_async_notify(params: Mapping[str, Any], alipay_public_key_material: s
     try:
         signature = base64.b64decode(sign)
         public_key = _load_public_key(alipay_public_key_material)
+        if not isinstance(public_key, RSAPublicKey):
+            logger.warning("[Markets] Alipay public key is not RSA")
+            return False
         public_key.verify(
             signature,
             message,

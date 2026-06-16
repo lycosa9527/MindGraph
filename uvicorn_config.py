@@ -40,7 +40,11 @@ class SafeStreamHandler(logging.StreamHandler):
             return
         try:
             super().emit(record)
-        except (ValueError, OSError, AttributeError, RuntimeError) as exc:
+        except (ValueError, OSError, AttributeError, RuntimeError, TypeError) as exc:
+            if isinstance(exc, RecursionError):
+                return
+            if isinstance(exc, TypeError):
+                return
             msg = str(exc).lower()
             if any(
                 phrase in msg
@@ -54,8 +58,6 @@ class SafeStreamHandler(logging.StreamHandler):
             ):
                 return
             raise
-        except Exception:  # pylint: disable=broad-exception-caught
-            return
 
 
 class SafeStdoutHandler(SafeStreamHandler):

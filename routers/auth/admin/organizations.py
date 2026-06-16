@@ -104,12 +104,10 @@ async def list_organizations_admin(
 ):
     """List all organizations (ADMIN ONLY)"""
     orgs = (
-        await db.execute(
-            select(Organization)
-            .where(panel_org_table_filter(scope))
-            .order_by(Organization.id)
-        )
-    ).scalars().all()
+        (await db.execute(select(Organization).where(panel_org_table_filter(scope)).order_by(Organization.id)))
+        .scalars()
+        .all()
+    )
     result = []
 
     user_counts_by_org = {}

@@ -58,14 +58,14 @@ class ClientManager:
             logger.debug("[ClientManager] Initializing LLM clients...")
 
             # Lazy imports to avoid circular dependency
-            from clients.llm import (  # pylint: disable=import-outside-toplevel
+            from clients.llm import (
                 QwenClient,
                 DeepSeekClient,
                 KimiClient,
                 HunyuanClient,
                 VolcengineClient,
             )
-            from clients.omni_client import OmniClient  # pylint: disable=import-outside-toplevel
+            from clients.omni_client import OmniClient
 
             try:
                 # Initialize Qwen clients (two instances: classification vs generation model ids)

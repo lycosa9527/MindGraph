@@ -37,7 +37,7 @@ VUE_DIST_DIR = Path(__file__).parent.parent.parent.parent / "frontend" / "dist"
 def media_type_for_vue_dist_relpath(relpath: str) -> str:
     """Return Content-Type for a file under frontend/dist (catch-all static serving)."""
     guessed, _encoding = mimetypes.guess_type(relpath, strict=False)
-    return guessed or 'application/octet-stream'
+    return guessed or "application/octet-stream"
 
 
 def is_vue_spa_available() -> bool:
@@ -166,7 +166,7 @@ def setup_vue_spa(app: FastAPI) -> bool:
     return True
 
 
-async def serve_vue_spa() -> FileResponse:
+async def serve_vue_spa() -> FileResponse | HTMLResponse:
     """
     Serve Vue SPA index.html for client-side routing.
 

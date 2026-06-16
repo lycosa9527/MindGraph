@@ -302,7 +302,7 @@ async def _generate_spec_with_agent(
         logger.debug("Returning raw result")
         return result
 
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         logger.error("Agent instantiation/generation failed for %s: %s", diagram_type, e)
         return {"error": f"Failed to generate {diagram_type}: {str(e)}"}
 
@@ -508,7 +508,7 @@ auto-complete - user has dimension but no topic (generate topic and children)
                             )
                     else:
                         logger.debug("[RAG] User %d has no knowledge base, skipping RAG", user_id)
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception as e:
                 logger.warning("[RAG] Failed to retrieve context: %s", e, exc_info=True)
 
         # Enhance prompt with RAG context if available
@@ -623,7 +623,7 @@ Please generate a more accurate and detailed diagram based on the above context.
             "style_preferences": {},
             "language": language,
         }
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         logger.error("Simplified workflow failed: %s", e)
         return {
             "success": False,

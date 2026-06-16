@@ -25,6 +25,8 @@ from models.domain.library import (
     LibraryDocument,
 )
 
+from services.utils.typing_helpers import count_pairs_by_key
+
 logger = logging.getLogger(__name__)
 
 
@@ -101,7 +103,7 @@ class LibraryDanmakuMixin:
             .where(LibraryDanmakuLike.danmaku_id.in_(danmaku_ids))
             .group_by(LibraryDanmakuLike.danmaku_id)
         )
-        likes_counts = dict(likes_result.all())
+        likes_counts = count_pairs_by_key(likes_result.all())
 
         user_liked_ids: set = set()
         if self.user_id:
@@ -124,7 +126,7 @@ class LibraryDanmakuMixin:
             )
             .group_by(LibraryDanmakuReply.danmaku_id)
         )
-        replies_counts = dict(replies_result.all())
+        replies_counts = count_pairs_by_key(replies_result.all())
 
         result_list = [
             {
@@ -201,7 +203,7 @@ class LibraryDanmakuMixin:
             .where(LibraryDanmakuLike.danmaku_id.in_(danmaku_ids))
             .group_by(LibraryDanmakuLike.danmaku_id)
         )
-        likes_counts = dict(likes_result.all())
+        likes_counts = count_pairs_by_key(likes_result.all())
 
         user_liked_ids: set = set()
         if self.user_id:
@@ -224,7 +226,7 @@ class LibraryDanmakuMixin:
             )
             .group_by(LibraryDanmakuReply.danmaku_id)
         )
-        replies_counts = dict(replies_result.all())
+        replies_counts = count_pairs_by_key(replies_result.all())
 
         result_list = [
             {

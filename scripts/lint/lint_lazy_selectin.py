@@ -124,7 +124,9 @@ def _write_baseline(baseline_path: Path, findings: List[Tuple[str, int, str]]) -
 
 
 def main(argv: List[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.split("\n")[1])
+    doc_lines = (__doc__ or "Lazy selectin lint").splitlines()
+    description = doc_lines[1] if len(doc_lines) > 1 else doc_lines[0]
+    parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
         "paths",
         nargs="*",

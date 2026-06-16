@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 
 from models.domain.api_locale import (
     API_MESSAGE_LOCALE_SET,
     resolve_request_locale,
 )
-from models.domain.messages import Messages, get_request_language
+from models.domain.messages import Language, Messages, get_request_language
 
 
 @pytest.mark.parametrize(
@@ -41,7 +43,7 @@ def test_messages_error_falls_back_en_for_generated_locales() -> None:
     """Locales whose catalog values were filled from ``en`` return English for this key."""
     msg_en = Messages.error("invalid_request", lang="en")
     for code in sorted(API_MESSAGE_LOCALE_SET - {"zh", "zh-tw", "az"}):
-        got = Messages.error("invalid_request", lang=code)
+        got = Messages.error("invalid_request", lang=cast(Language, code))
         assert got == msg_en
 
 

@@ -2,32 +2,15 @@
 
 from __future__ import annotations
 
-import sys
-import types
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
-# ``ws_metrics`` imports ``services.online_collab.redis.redis8_features``. The package
-# initializer pulls many online-collab modules and creates a test-only circular import.
-# Stub the redis8_features branch so agent-hub tests stay focused and isolated.
-online_collab_pkg = types.ModuleType("services.online_collab")
-online_collab_pkg.__path__ = []  # type: ignore[attr-defined]
-online_collab_redis_pkg = types.ModuleType("services.online_collab.redis")
-online_collab_redis_pkg.__path__ = []  # type: ignore[attr-defined]
-redis8_features_stub = types.ModuleType("services.online_collab.redis.redis8_features")
-redis8_features_stub.timeseries_enabled = lambda: False
+from tests.stubs.redis8_features import install_redis8_features_stub
 
+install_redis8_features_stub()
 
-async def _ts_record_counter(_key: str, _delta: float) -> None:
-    return None
-
-
-redis8_features_stub.ts_record_counter = _ts_record_counter
-sys.modules.setdefault("services.online_collab", online_collab_pkg)
-sys.modules.setdefault("services.online_collab.redis", online_collab_redis_pkg)
-sys.modules.setdefault("services.online_collab.redis.redis8_features", redis8_features_stub)
-
+from tests.typing_helpers import mock_await_kwargs
 from services.agent_hub.scope_lifecycle import MindGraphAgentHub
 from services.kitty.infra.bootstrap.kitty_context_hydrate import resolve_mobile_open_bootstrap
 
@@ -190,6 +173,6 @@ async def test_hub_persist_library_from_mutation_cmd() -> None:
     assert out["ok"] is True
     assert out.get("library_snapshot_saved") is True
     save_mock.assert_awaited_once()
-    save_args = save_mock.await_args.kwargs
+    save_args = mock_await_kwargs(save_mock)
     assert save_args["diagram_id"] == "lib-persist-1"
     assert save_args["title"] == "Voice save"

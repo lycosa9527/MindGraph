@@ -8,7 +8,7 @@ from typing import Sequence, Union
 
 from alembic import op
 
-from alembic.rls_functions_sql import rls_functions_upgrade_statements
+from db_rls.functions_sql import rls_functions_upgrade_statements
 
 revision: str = "0052"
 down_revision: Union[str, None] = "0051"

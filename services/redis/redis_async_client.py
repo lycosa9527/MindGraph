@@ -192,7 +192,7 @@ async def async_ping(timeout: float = 1.0) -> bool:
     except (asyncio.TimeoutError, RedisConnectionError, RedisTimeoutError) as exc:
         logger.warning("[RedisAsync] ping failed: %s", exc)
         return False
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.warning("[RedisAsync] unexpected ping error: %s", exc)
         return False
 
@@ -205,7 +205,7 @@ async def close_async_redis() -> None:
         return
     try:
         await client.aclose()
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.warning("[RedisAsync] close error: %s", exc)
     finally:
         _AsyncRedisState.client = None

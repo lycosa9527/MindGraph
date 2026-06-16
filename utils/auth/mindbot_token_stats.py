@@ -54,8 +54,7 @@ def _effective_output_expr() -> ColumnElement:
 def _effective_total_expr() -> ColumnElement:
     return sa_coalesce(
         MindbotUsageEvent.total_tokens,
-        sa_coalesce(MindbotUsageEvent.prompt_tokens, 0)
-        + sa_coalesce(MindbotUsageEvent.completion_tokens, 0),
+        sa_coalesce(MindbotUsageEvent.prompt_tokens, 0) + sa_coalesce(MindbotUsageEvent.completion_tokens, 0),
         0,
     )
 

@@ -13,7 +13,7 @@ Proprietary License
 from typing import Optional, List
 import re
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class DocumentResponse(BaseModel):

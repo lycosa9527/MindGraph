@@ -145,7 +145,7 @@ async def csrf_protection(request: Request, call_next):
                         request_host,
                     )
                     # Don't block - SameSite cookies will prevent CSRF
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception as e:
                 logger.debug("Origin validation error (non-critical): %s", e)
 
         # Check for CSRF token in header (optional - for additional protection)
@@ -415,7 +415,7 @@ async def log_requests(request: Request, call_next):
                 async def _receive_body():
                     return {"type": "http.request", "body": body}
 
-                request._receive = _receive_body  # pylint: disable=protected-access
+                request._receive = _receive_body
         except (json.JSONDecodeError, AttributeError, TypeError):
             pass
 
@@ -429,7 +429,7 @@ async def log_requests(request: Request, call_next):
             "Request: %s %s from %s Response: %s in %.3fs",
             request.method,
             log_path,
-            request.client.host,
+            request.client.host if request.client else "unknown",
             response.status_code,
             response_time,
         )

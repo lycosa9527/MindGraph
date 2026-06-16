@@ -53,13 +53,22 @@ _NET_RATE = _NetworkRateState()
 
 
 def _compute_network_rates() -> Dict[str, Any]:
+    unavailable = {
+        "error": "network counters unavailable",
+        "bytes_sent_per_sec": None,
+        "bytes_recv_per_sec": None,
+    }
     try:
-        counters = psutil.net_io_counters()
+        counters = psutil.net_io_counters(pernic=False)
     except (OSError, RuntimeError, TypeError) as exc:
         return {"error": str(exc), "bytes_sent_per_sec": None, "bytes_recv_per_sec": None}
+    bytes_sent = getattr(counters, "bytes_sent", None)
+    bytes_recv = getattr(counters, "bytes_recv", None)
+    if bytes_sent is None or bytes_recv is None:
+        return unavailable
     now = time.monotonic()
-    sent = int(counters.bytes_sent)
-    recv = int(counters.bytes_recv)
+    sent = int(bytes_sent)
+    recv = int(bytes_recv)
     prev_t = _NET_RATE.t_mono
     prev_s = _NET_RATE.bytes_sent
     prev_r = _NET_RATE.bytes_recv
@@ -128,7 +137,8 @@ def _collect_disk_volumes() -> List[Dict[str, Any]]:
 
 def _host_snapshot() -> Dict[str, Any]:
     try:
-        cpu_percent = float(psutil.cpu_percent(interval=None))
+        raw_cpu = psutil.cpu_percent(interval=None, percpu=False)
+        cpu_percent = float(raw_cpu[0]) if isinstance(raw_cpu, list) else float(raw_cpu)
         vm = psutil.virtual_memory()
         mount = _primary_disk_mount()
         disk_primary = _disk_usage_one(mount)
@@ -175,7 +185,7 @@ def _llm_snapshot() -> Dict[str, Any]:
                 continue
             row = dict(data)
             circuit = row.get("circuit_state")
-            if hasattr(circuit, "value"):
+            if circuit is not None and hasattr(circuit, "value"):
                 row["circuit_state"] = circuit.value
             elif circuit is not None:
                 row["circuit_state"] = str(circuit)

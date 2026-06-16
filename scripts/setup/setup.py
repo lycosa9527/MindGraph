@@ -66,11 +66,6 @@ from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 
 try:
-    import pkg_resources
-except ImportError:
-    pkg_resources = None
-
-try:
     import psutil
 except ImportError:
     psutil = None
@@ -1512,12 +1507,7 @@ def get_package_version(package_name: str) -> str:
     try:
         return importlib.metadata.version(package_name)
     except Exception:
-        if pkg_resources is None:
-            return "unknown"
-        try:
-            return pkg_resources.get_distribution(package_name).version
-        except Exception:
-            return "unknown"
+        return "unknown"
 
 
 def check_pip(project_root: str) -> bool:
@@ -1626,13 +1616,8 @@ def _run_pip_install_requirements(project_root: str, python_executable: str) -> 
         return True
 
     print(f"\n[ERROR] Installing Python packages failed with return code {return_code}")
-    if is_externally_managed_environment() and os.path.abspath(python_executable) == os.path.abspath(
-        sys.executable
-    ):
-        print(
-            "[ERROR] System pip is blocked (PEP 668). "
-            "Activate miniconda first: conda activate mindgraph"
-        )
+    if is_externally_managed_environment() and os.path.abspath(python_executable) == os.path.abspath(sys.executable):
+        print("[ERROR] System pip is blocked (PEP 668). Activate miniconda first: conda activate mindgraph")
     return False
 
 
@@ -2056,10 +2041,7 @@ def _verify_dependency_with_python(
         [
             python_exe,
             "-c",
-            (
-                "import importlib.metadata; "
-                f"print(importlib.metadata.version({package_name!r}))"
-            ),
+            (f"import importlib.metadata; print(importlib.metadata.version({package_name!r}))"),
         ],
         cwd=project_root,
         capture_output=True,
@@ -2638,7 +2620,7 @@ def setup_database_schema(project_root: Path) -> bool:
         print("    [WARNING] Schema initialization timed out")
         print("    [INFO] Migrations will run automatically when 'python main.py' starts")
         return False
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         print(f"    [WARNING] Schema initialization failed: {exc}")
         print("    [INFO] Migrations will run automatically when 'python main.py' starts")
         return False

@@ -38,7 +38,7 @@ async def touch_presence_org_user(org_id: int, user_id: int) -> None:
             pipe.zadd(key, {str(user_id): now})
             pipe.expire(key, int(_PRESENCE_TTL_SECONDS * 3))
             await pipe.execute()
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.debug("[PresenceStore] touch failed: %s", exc)
 
 
@@ -49,7 +49,7 @@ async def remove_presence_org_user(org_id: int, user_id: int) -> None:
         if not r:
             return
         await r.zrem(_key(org_id), str(user_id))
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.debug("[PresenceStore] remove failed: %s", exc)
 
 
@@ -74,6 +74,6 @@ async def online_user_ids_for_org(org_id: int) -> Set[int]:
             except (ValueError, TypeError):
                 continue
         return out
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.debug("[PresenceStore] online_user_ids failed: %s", exc)
         return set()

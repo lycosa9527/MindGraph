@@ -13,19 +13,6 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-import importlib.util
-
-_MIGRATION_SUPPORT_PATH = Path(__file__).resolve().parent / "migration_support.py"
-_support_spec = importlib.util.spec_from_file_location(
-    "mindgraph_alembic_migration_support",
-    _MIGRATION_SUPPORT_PATH,
-)
-if _support_spec is None or _support_spec.loader is None:
-    raise ImportError(f"Cannot load Alembic migration support: {_MIGRATION_SUPPORT_PATH}")
-_migration_support = importlib.util.module_from_spec(_support_spec)
-_support_spec.loader.exec_module(_migration_support)
-_migration_support.ensure_rls_migration_modules_loaded()
-
 from logging.config import fileConfig
 
 from sqlalchemy import create_engine, pool
@@ -79,8 +66,11 @@ def run_migrations_online() -> None:
     application's connection pool and works regardless of whether an async
     event loop is already running.
     """
+    database_url = config.get_main_option("sqlalchemy.url")
+    if database_url is None:
+        raise RuntimeError("sqlalchemy.url is not configured for Alembic migrations")
     connectable = create_engine(
-        config.get_main_option("sqlalchemy.url"),
+        database_url,
         poolclass=pool.NullPool,
     )
 

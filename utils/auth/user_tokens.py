@@ -13,7 +13,7 @@ from sqlalchemy import select
 
 from utils.db.session_open import system_rls_session, user_rls_session
 from models.domain.auth import User
-from models.domain.messages import Language, Messages, get_request_language
+from models.domain.messages import Messages, get_request_language
 from models.domain.user_api_token import UserAPIToken
 from services.redis.cache.redis_user_token_cache import user_token_cache
 from utils.auth.org_subscription import ensure_org_subscription_current
@@ -146,7 +146,7 @@ async def validate_user_token(
     async with user_rls_session(int(user.id), getattr(user, "organization_id", None)) as db:
         allowed = await user_has_school_tier_feature(db, user, TIER_FEATURE_API_TOKEN)
     if not allowed:
-        lang = Language.ZH
+        lang = "zh"
         if request is not None:
             lang = get_request_language(
                 request.headers.get("X-Language"),

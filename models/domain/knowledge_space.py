@@ -10,32 +10,36 @@ All Rights Reserved
 Proprietary License
 """
 
+from __future__ import annotations
+
 from datetime import UTC, datetime
-from typing import Optional
+from typing import TYPE_CHECKING
 import pickle
 import uuid
 
 from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    DateTime,
-    ForeignKey,
-    Text,
-    Enum,
-    Index,
     CheckConstraint,
-    UniqueConstraint,
-    LargeBinary,
+    DateTime,
+    Enum,
     Float,
+    ForeignKey,
+    Index,
+    Integer,
+    LargeBinary,
+    String,
+    Text,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.domain.auth import Base
 
+if TYPE_CHECKING:
+    from models.domain.auth import User
 
-def generate_uuid():
+
+def generate_uuid() -> str:
     """Generate a UUID string for session IDs."""
     return str(uuid.uuid4())
 
@@ -49,8 +53,8 @@ class KnowledgeSpace(Base):
 
     __tablename__ = "knowledge_spaces"
 
-    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    user_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, index=True)
+    user_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("users.id", ondelete="CASCADE"),
         unique=True,
@@ -58,39 +62,31 @@ class KnowledgeSpace(Base):
         index=True,
     )
 
-    # Processing rules configuration (JSON)
-    # Format: {
-    #   "mode": "automatic" | "custom",
-    #   "chunking_strategy": "recursive" | "semantic" | "sentence" | "table" | "code" | "hybrid",
-    #   "rules": {
-    #     "segmentation": {
-    #       "max_tokens": 500,
-    #       "chunk_overlap": 50,
-    #       "separator": "\n\n"
-    #     },
-    #     "pre_processing_rules": [
-    #       {"id": "remove_extra_spaces", "enabled": true},
-    #       {"id": "remove_urls_emails", "enabled": false}
-    #     ]
-    #   }
-    # }
-    processing_rules = Column(JSONB, nullable=True)
+    processing_rules: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
-    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
 
-    # Relationships
-    documents = relationship(
+    documents: Mapped[list["KnowledgeDocument"]] = relationship(
         "KnowledgeDocument",
         back_populates="space",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    queries = relationship("KnowledgeQuery", back_populates="space", lazy="selectin")
-    query_templates = relationship("QueryTemplate", back_populates="space", lazy="selectin")
-    evaluation_datasets = relationship("EvaluationDataset", back_populates="space", lazy="selectin")
+    queries: Mapped[list["KnowledgeQuery"]] = relationship("KnowledgeQuery", back_populates="space", lazy="selectin")
+    query_templates: Mapped[list["QueryTemplate"]] = relationship(
+        "QueryTemplate", back_populates="space", lazy="selectin"
+    )
+    evaluation_datasets: Mapped[list["EvaluationDataset"]] = relationship(
+        "EvaluationDataset", back_populates="space", lazy="selectin"
+    )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<KnowledgeSpace user_id={self.user_id}>"
 
 
@@ -103,88 +99,85 @@ class KnowledgeDocument(Base):
 
     __tablename__ = "knowledge_documents"
 
-    id = Column(Integer, primary_key=True, index=True)
-    space_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    space_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("knowledge_spaces.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    file_name = Column(String(255), nullable=False)
-    file_path = Column(String(500), nullable=False)  # Storage path
-    file_type = Column(String(100), nullable=False)  # MIME type
-    file_size = Column(Integer, nullable=False)  # Bytes
+    file_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    file_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    file_size: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    # Processing status
-    status = Column(
+    status: Mapped[str] = mapped_column(
         Enum("pending", "processing", "completed", "failed", name="document_status"),
         default="pending",
         nullable=False,
         index=True,
     )
-    error_message = Column(Text, nullable=True)  # Error details if failed
-    processing_task_id = Column(String(255), nullable=True)  # Celery task ID
-    # Current processing stage: 'extracting', 'cleaning', 'chunking', 'embedding', 'indexing'
-    processing_progress = Column(String(50), nullable=True)
-    processing_progress_percent = Column(Integer, default=0, nullable=False)  # Progress percentage 0-100
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    processing_task_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    processing_progress: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    processing_progress_percent: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
-    # Processing results
-    chunk_count = Column(Integer, default=0, nullable=False)
+    chunk_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
-    # Version tracking (for future versioning feature)
-    version = Column(Integer, default=1, nullable=False)  # Document version number
-    last_updated_hash = Column(String(64), nullable=True)  # Hash of last updated content for change detection
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    last_updated_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
-    # Batch processing
-    batch_id = Column(
+    batch_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("document_batches.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
 
-    # Advanced metadata
-    # Custom metadata dict (renamed from 'metadata' - reserved in SQLAlchemy)
-    doc_metadata = Column(JSONB, nullable=True)
-    tags = Column(JSONB, nullable=True)  # Array of tag strings
-    category = Column(String(100), nullable=True, index=True)  # Document category
-    custom_fields = Column(JSONB, nullable=True)  # User-defined custom fields
+    doc_metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    tags: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    category: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    custom_fields: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
-    # Language detection
-    language = Column(String(10), nullable=True, index=True)  # Detected language code (e.g., 'zh', 'en', 'ja')
+    language: Mapped[str | None] = mapped_column(String(10), nullable=True, index=True)
 
-    # Timestamps
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
-    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
 
-    # Relationships
-    space = relationship("KnowledgeSpace", back_populates="documents", lazy="selectin")
-    chunks = relationship(
+    space: Mapped["KnowledgeSpace"] = relationship("KnowledgeSpace", back_populates="documents", lazy="selectin")
+    chunks: Mapped[list["DocumentChunk"]] = relationship(
         "DocumentChunk",
         back_populates="document",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    batch = relationship(
+    batch: Mapped["DocumentBatch | None"] = relationship(
         "DocumentBatch",
         back_populates="documents",
         foreign_keys="[KnowledgeDocument.batch_id]",
         lazy="selectin",
     )
-    versions = relationship(
+    versions: Mapped[list["DocumentVersion"]] = relationship(
         "DocumentVersion",
         back_populates="document",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    outgoing_relationships = relationship(
+    outgoing_relationships: Mapped[list["DocumentRelationship"]] = relationship(
         "DocumentRelationship",
         back_populates="source_document",
         foreign_keys="[DocumentRelationship.source_document_id]",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    incoming_relationships = relationship(
+    incoming_relationships: Mapped[list["DocumentRelationship"]] = relationship(
         "DocumentRelationship",
         back_populates="target_document",
         foreign_keys="[DocumentRelationship.target_document_id]",
@@ -201,7 +194,7 @@ class KnowledgeDocument(Base):
         ),
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<KnowledgeDocument id={self.id} file_name={self.file_name} status={self.status}>"
 
 
@@ -217,32 +210,29 @@ class DocumentChunk(Base):
 
     __tablename__ = "document_chunks"
 
-    id = Column(Integer, primary_key=True, index=True)
-    document_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    document_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("knowledge_documents.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    chunk_index = Column(Integer, nullable=False)  # Order within document
-    text = Column(Text, nullable=False)  # Chunk content - stored in main database only
+    chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
 
-    # Position in original document
-    start_char = Column(Integer, nullable=False)
-    end_char = Column(Integer, nullable=False)
+    start_char: Mapped[int] = mapped_column(Integer, nullable=False)
+    end_char: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    # Timestamp
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
 
-    # Relationships
-    document = relationship("KnowledgeDocument", back_populates="chunks", lazy="selectin")
-    attachments = relationship(
+    document: Mapped["KnowledgeDocument"] = relationship("KnowledgeDocument", back_populates="chunks", lazy="selectin")
+    attachments: Mapped[list["ChunkAttachment"]] = relationship(
         "ChunkAttachment",
         back_populates="chunk",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    child_chunks = relationship(
+    child_chunks: Mapped[list["ChildChunk"]] = relationship(
         "ChildChunk",
         back_populates="parent_chunk",
         cascade="all, delete-orphan",
@@ -252,7 +242,7 @@ class DocumentChunk(Base):
     # Indexes for efficient queries (id index from index=True; used for Qdrant lookup)
     __table_args__ = (Index("ix_document_chunks_document_id_chunk_index", "document_id", "chunk_index"),)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<DocumentChunk id={self.id} document_id={self.document_id} chunk_index={self.chunk_index}>"
 
 
@@ -266,14 +256,15 @@ class Embedding(Base):
 
     __tablename__ = "embeddings"
 
-    id = Column(Integer, primary_key=True, index=True)
-    model_name = Column(String(255), nullable=False, default="text-embedding-v4", index=True)
-    provider_name = Column(String(255), nullable=False, default="dashscope", index=True)
-    hash = Column(String(64), nullable=False, index=True)  # MD5 hash of text
-    embedding = Column(LargeBinary, nullable=False)  # Pickled embedding vector
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    model_name: Mapped[str] = mapped_column(String(255), nullable=False, default="text-embedding-v4", index=True)
+    provider_name: Mapped[str] = mapped_column(String(255), nullable=False, default="dashscope", index=True)
+    hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    embedding: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
 
-    # Timestamps
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
 
     # Unique constraint: same model + provider + hash = same embedding
     __table_args__ = (
@@ -293,7 +284,7 @@ class Embedding(Base):
         """Retrieve embedding vector (unpickled)."""
         return pickle.loads(self.embedding)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Embedding model={self.model_name} provider={self.provider_name} hash={self.hash[:8]}...>"
 
 
@@ -306,46 +297,46 @@ class KnowledgeQuery(Base):
 
     __tablename__ = "knowledge_queries"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    space_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    space_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("knowledge_spaces.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
 
-    # Query details
-    query = Column(Text, nullable=False)  # User's query text
-    method = Column(String(50), nullable=False)  # semantic, keyword, hybrid
-    top_k = Column(Integer, nullable=False)  # Requested top_k
-    score_threshold = Column(Float, nullable=False, default=0.0)  # Score threshold used
+    query: Mapped[str] = mapped_column(Text, nullable=False)
+    method: Mapped[str] = mapped_column(String(50), nullable=False)
+    top_k: Mapped[int] = mapped_column(Integer, nullable=False)
+    score_threshold: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
 
-    # Results
-    result_count = Column(Integer, nullable=False, default=0)  # Number of results returned
+    result_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    # Timing metrics (in milliseconds)
-    embedding_ms = Column(Float, nullable=True)  # Embedding generation time
-    search_ms = Column(Float, nullable=True)  # Search execution time
-    rerank_ms = Column(Float, nullable=True)  # Reranking time
-    total_ms = Column(Float, nullable=True)  # Total query time
+    embedding_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
+    search_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
+    rerank_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
+    total_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
 
-    # Source tracking
-    source = Column(String(100), nullable=False, default="api")  # api, diagram_generation, etc.
-    source_context = Column(JSONB, nullable=True)  # Additional context (e.g., diagram_type)
+    source: Mapped[str] = mapped_column(String(100), nullable=False, default="api")
+    source_context: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
-    # Timestamp
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
 
-    # Relationships
-    space = relationship("KnowledgeSpace", back_populates="queries", lazy="selectin")
-    feedbacks = relationship(
+    space: Mapped["KnowledgeSpace"] = relationship("KnowledgeSpace", back_populates="queries", lazy="selectin")
+    feedbacks: Mapped[list["QueryFeedback"]] = relationship(
         "QueryFeedback",
         back_populates="query",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    evaluation_results = relationship("EvaluationResult", back_populates="query", lazy="selectin")
+    evaluation_results: Mapped[list["EvaluationResult"]] = relationship(
+        "EvaluationResult", back_populates="query", lazy="selectin"
+    )
 
     # Indexes for analytics queries
     __table_args__ = (
@@ -354,7 +345,7 @@ class KnowledgeQuery(Base):
         Index("ix_knowledge_queries_source", "source"),
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<KnowledgeQuery id={self.id} user_id={self.user_id} query={self.query[:30]}... method={self.method}>"
 
 
@@ -368,34 +359,30 @@ class ChunkAttachment(Base):
 
     __tablename__ = "chunk_attachments"
 
-    id = Column(Integer, primary_key=True, index=True)
-    chunk_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    chunk_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("document_chunks.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
 
-    # File information (stored directly, not as foreign key to keep it simple)
-    file_name = Column(String(255), nullable=False)
-    file_path = Column(String(500), nullable=False)  # Storage path
-    file_type = Column(String(100), nullable=False)  # MIME type
-    file_size = Column(Integer, nullable=False)  # Bytes
+    file_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    file_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    file_size: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    # Attachment metadata
-    attachment_type = Column(String(50), nullable=False, default="file")  # 'image', 'file', 'document'
-    position = Column(Integer, nullable=False, default=0)  # Order within chunk
+    attachment_type: Mapped[str] = mapped_column(String(50), nullable=False, default="file")
+    position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    # Timestamp
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
 
-    # Relationships
-    chunk = relationship("DocumentChunk", back_populates="attachments", lazy="selectin")
+    chunk: Mapped["DocumentChunk"] = relationship("DocumentChunk", back_populates="attachments", lazy="selectin")
 
     # Indexes
     __table_args__ = (Index("ix_chunk_attachments_chunk_id_position", "chunk_id", "position"),)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"<ChunkAttachment id={self.id} chunk_id={self.chunk_id} "
             f"file_name={self.file_name} type={self.attachment_type}>"
@@ -412,37 +399,33 @@ class ChildChunk(Base):
 
     __tablename__ = "child_chunks"
 
-    id = Column(Integer, primary_key=True, index=True)
-    parent_chunk_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    parent_chunk_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("document_chunks.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
 
-    # Content
-    content = Column(Text, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
 
-    # Position within parent chunk
-    position = Column(Integer, nullable=False, default=0)
+    position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    # Character positions in original document
-    start_char = Column(Integer, nullable=False)
-    end_char = Column(Integer, nullable=False)
+    start_char: Mapped[int] = mapped_column(Integer, nullable=False)
+    end_char: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    # Metadata
-    meta_data = Column(JSONB, nullable=True)  # Renamed from metadata to avoid SQLAlchemy reserved name
+    meta_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
-    # Timestamp
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
 
-    # Relationships
-    parent_chunk = relationship("DocumentChunk", back_populates="child_chunks", lazy="selectin")
+    parent_chunk: Mapped["DocumentChunk"] = relationship(
+        "DocumentChunk", back_populates="child_chunks", lazy="selectin"
+    )
 
     # Indexes
     __table_args__ = (Index("ix_child_chunks_parent_position", "parent_chunk_id", "position"),)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<ChildChunk id={self.id} parent_chunk_id={self.parent_chunk_id} position={self.position}>"
 
 
@@ -455,38 +438,42 @@ class DocumentBatch(Base):
 
     __tablename__ = "document_batches"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
 
-    # Batch status
-    status = Column(
+    status: Mapped[str] = mapped_column(
         Enum("pending", "processing", "completed", "failed", name="batch_status"),
         default="pending",
         nullable=False,
         index=True,
     )
 
-    # Progress tracking
-    total_count = Column(Integer, nullable=False, default=0)
-    completed_count = Column(Integer, nullable=False, default=0)
-    failed_count = Column(Integer, nullable=False, default=0)
+    total_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    completed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    failed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    # Error information
-    error_message = Column(Text, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    # Timestamps
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
-    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
 
-    # Relationships
-    documents = relationship(
+    documents: Mapped[list["KnowledgeDocument"]] = relationship(
         "KnowledgeDocument",
         back_populates="batch",
         foreign_keys="[KnowledgeDocument.batch_id]",
         lazy="selectin",
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"<DocumentBatch id={self.id} user_id={self.user_id} "
             f"status={self.status} progress={self.completed_count}/{self.total_count}>"
@@ -502,31 +489,30 @@ class DocumentVersion(Base):
 
     __tablename__ = "document_versions"
 
-    id = Column(Integer, primary_key=True, index=True)
-    document_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    document_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("knowledge_documents.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    version_number = Column(Integer, nullable=False, index=True)
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
 
-    # Version file information
-    file_path = Column(String(500), nullable=False)  # Path to version file
-    file_hash = Column(String(64), nullable=False)  # Hash of file content
+    file_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    file_hash: Mapped[str] = mapped_column(String(64), nullable=False)
 
-    # Version metadata
-    chunk_count = Column(Integer, nullable=False, default=0)
-    change_summary = Column(JSONB, nullable=True)  # Summary of changes: {"added": 5, "updated": 3, "deleted": 2}
+    chunk_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    change_summary: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
-    # Version creator
-    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_by: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
-    # Timestamps
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
 
-    # Relationships
-    document = relationship("KnowledgeDocument", back_populates="versions", lazy="selectin")
+    document: Mapped["KnowledgeDocument"] = relationship(
+        "KnowledgeDocument", back_populates="versions", lazy="selectin"
+    )
 
     # Constraints
     __table_args__ = (
@@ -534,7 +520,7 @@ class DocumentVersion(Base):
         Index("ix_document_versions_document_id_version", "document_id", "version_number"),
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<DocumentVersion id={self.id} document_id={self.document_id} version={self.version_number}>"
 
 
@@ -547,40 +533,40 @@ class QueryFeedback(Base):
 
     __tablename__ = "query_feedback"
 
-    id = Column(Integer, primary_key=True, index=True)
-    query_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    query_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("knowledge_queries.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    space_id = Column(
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    space_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("knowledge_spaces.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
 
-    # Feedback details
-    feedback_type = Column(
+    feedback_type: Mapped[str] = mapped_column(
         Enum("positive", "negative", "neutral", name="feedback_type"),
         nullable=False,
         index=True,
     )
-    feedback_score = Column(Integer, nullable=True)  # 1-5 rating
+    feedback_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
-    # Relevant and irrelevant chunks
-    relevant_chunk_ids = Column(JSONB, nullable=True)  # Array of chunk IDs that were relevant
-    irrelevant_chunk_ids = Column(JSONB, nullable=True)  # Array of chunk IDs that were irrelevant
+    relevant_chunk_ids: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    irrelevant_chunk_ids: Mapped[list | None] = mapped_column(JSONB, nullable=True)
 
-    # Timestamp
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
 
-    # Relationships
-    query = relationship("KnowledgeQuery", back_populates="feedbacks", lazy="selectin")
+    query: Mapped["KnowledgeQuery"] = relationship("KnowledgeQuery", back_populates="feedbacks", lazy="selectin")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<QueryFeedback id={self.id} query_id={self.query_id} type={self.feedback_type}>"
 
 
@@ -593,32 +579,39 @@ class QueryTemplate(Base):
 
     __tablename__ = "query_templates"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    space_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    space_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("knowledge_spaces.id", ondelete="CASCADE"),
         nullable=True,
         index=True,
     )
 
-    # Template details
-    name = Column(String(255), nullable=False)
-    template_text = Column(Text, nullable=False)  # Query template with parameters
-    parameters = Column(JSONB, nullable=True)  # Template parameters: {"param1": "default_value"}
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    template_text: Mapped[str] = mapped_column(Text, nullable=False)
+    parameters: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
-    # Usage statistics
-    usage_count = Column(Integer, default=0, nullable=False)
-    success_rate = Column(Float, default=0.0, nullable=False)  # Average feedback score
+    usage_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    success_rate: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
 
-    # Timestamps
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
-    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
 
-    # Relationships
-    space = relationship("KnowledgeSpace", back_populates="query_templates", lazy="selectin")
+    space: Mapped["KnowledgeSpace | None"] = relationship(
+        "KnowledgeSpace", back_populates="query_templates", lazy="selectin"
+    )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<QueryTemplate id={self.id} name={self.name} usage={self.usage_count}>"
 
 
@@ -631,43 +624,38 @@ class DocumentRelationship(Base):
 
     __tablename__ = "document_relationships"
 
-    id = Column(Integer, primary_key=True, index=True)
-    source_document_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    source_document_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("knowledge_documents.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    target_document_id = Column(
+    target_document_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("knowledge_documents.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
 
-    # Relationship type
-    relationship_type = Column(
-        String(50), nullable=False, index=True
-    )  # 'reference', 'citation', 'related', 'parent', 'child', 'similar'
+    relationship_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
 
-    # Relationship metadata
-    context = Column(Text, nullable=True)  # Context where relationship was found
-    confidence = Column(Float, nullable=True)  # Confidence score (0-1) for auto-detected relationships
+    context: Mapped[str | None] = mapped_column(Text, nullable=True)
+    confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
 
-    # Creator
-    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_by: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
-    # Timestamps
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
 
-    # Relationships
-    source_document = relationship(
+    source_document: Mapped["KnowledgeDocument"] = relationship(
         "KnowledgeDocument",
         foreign_keys=[source_document_id],
         back_populates="outgoing_relationships",
         lazy="selectin",
     )
-    target_document = relationship(
+    target_document: Mapped["KnowledgeDocument"] = relationship(
         "KnowledgeDocument",
         foreign_keys=[target_document_id],
         back_populates="incoming_relationships",
@@ -689,7 +677,7 @@ class DocumentRelationship(Base):
         ),
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"<DocumentRelationship id={self.id} "
             f"source={self.source_document_id} -> target={self.target_document_id} "
@@ -706,38 +694,45 @@ class EvaluationDataset(Base):
 
     __tablename__ = "evaluation_datasets"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    space_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    space_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("knowledge_spaces.id", ondelete="CASCADE"),
         nullable=True,
         index=True,
     )
 
-    # Dataset details
-    name = Column(String(255), nullable=False)
-    description = Column(Text, nullable=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    # Queries with expected results (JSON)
-    # Format: [{"query": "...", "expected_chunk_ids": [1, 2, 3], "relevance_scores": [1.0, 0.8, 0.6]}]
-    queries = Column(JSONB, nullable=False)
+    queries: Mapped[list] = mapped_column(JSONB, nullable=False)
 
-    # Timestamps
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
-    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
 
-    # Relationships
-    space = relationship("KnowledgeSpace", back_populates="evaluation_datasets", lazy="selectin")
-    results = relationship(
+    space: Mapped["KnowledgeSpace | None"] = relationship(
+        "KnowledgeSpace", back_populates="evaluation_datasets", lazy="selectin"
+    )
+    results: Mapped[list["EvaluationResult"]] = relationship(
         "EvaluationResult",
         back_populates="dataset",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
 
-    def __repr__(self):
-        return f"<EvaluationDataset id={self.id} name={self.name} queries={len(self.queries) if self.queries else 0}>"
+    def __repr__(self) -> str:
+        query_count = len(self.queries) if self.queries is not None else 0
+        return f"<EvaluationDataset id={self.id} name={self.name} queries={query_count}>"
 
 
 class EvaluationResult(Base):
@@ -749,35 +744,34 @@ class EvaluationResult(Base):
 
     __tablename__ = "evaluation_results"
 
-    id = Column(Integer, primary_key=True, index=True)
-    dataset_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    dataset_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("evaluation_datasets.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    query_id = Column(
+    query_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("knowledge_queries.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
 
-    # Quality metrics (JSON)
-    # Format: {"precision": 0.8, "recall": 0.6, "mrr": 0.75, "ndcg": 0.82}
-    metrics = Column(JSONB, nullable=False)
+    metrics: Mapped[dict] = mapped_column(JSONB, nullable=False)
 
-    # Retrieval method used
-    method = Column(String(50), nullable=False, index=True)
+    method: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
 
-    # Timestamps
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
 
-    # Relationships
-    dataset = relationship("EvaluationDataset", back_populates="results", lazy="selectin")
-    query = relationship("KnowledgeQuery", back_populates="evaluation_results", lazy="selectin")
+    dataset: Mapped["EvaluationDataset"] = relationship("EvaluationDataset", back_populates="results", lazy="selectin")
+    query: Mapped["KnowledgeQuery | None"] = relationship(
+        "KnowledgeQuery", back_populates="evaluation_results", lazy="selectin"
+    )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<EvaluationResult id={self.id} dataset_id={self.dataset_id} method={self.method}>"
 
 
@@ -791,55 +785,52 @@ class ChunkTestResult(Base):
 
     __tablename__ = "chunk_test_results"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    session_id = Column(String(36), nullable=True, index=True, default=generate_uuid)  # UUID for session tracking
-    dataset_name = Column(String(100), nullable=False, index=True)  # 'FinanceBench', 'user_documents', etc.
-    document_ids = Column(JSONB, nullable=True)  # List of document IDs tested (for user documents)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    session_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True, default=generate_uuid)
+    dataset_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    document_ids: Mapped[list | None] = mapped_column(JSONB, nullable=True)
 
-    # Chunking comparison
-    semchunk_chunk_count = Column(Integer, nullable=False, default=0)
-    mindchunk_chunk_count = Column(Integer, nullable=False, default=0)
-    chunk_stats = Column(JSONB, nullable=True)  # Detailed chunk statistics
+    semchunk_chunk_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    mindchunk_chunk_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    chunk_stats: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
-    # Retrieval comparison
-    retrieval_metrics = Column(JSONB, nullable=True)  # {semchunk: {...}, mindchunk: {...}}
-    comparison_summary = Column(JSONB, nullable=True)  # Winner, differences, recommendations
+    retrieval_metrics: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    comparison_summary: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
-    # Evaluation results
-    evaluation_results = Column(JSONB, nullable=True)  # Comprehensive metrics organized by dimension
+    evaluation_results: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
-    # Progress tracking
-    status = Column(
+    status: Mapped[str] = mapped_column(
         Enum("pending", "processing", "completed", "failed", name="chunk_test_status"),
         default="pending",
         nullable=False,
         index=True,
     )
-    current_method = Column(String(50), nullable=True)  # Currently processing chunking method
-    # Current stage: 'chunking', 'retrieval', 'evaluation', 'completed'
-    current_stage = Column(String(50), nullable=True)
-    progress_percent = Column(Integer, default=0, nullable=False)  # Overall progress (0-100)
-    completed_methods = Column(JSONB, nullable=True)  # List of completed methods: ['spacy', 'semchunk', ...]
+    current_method: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    current_stage: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    progress_percent: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    completed_methods: Mapped[list | None] = mapped_column(JSONB, nullable=True)
 
-    # Timestamp
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
 
-    # Relationships
-    user = relationship("User", backref="chunk_test_results", lazy="selectin")
+    user: Mapped["User"] = relationship("User", backref="chunk_test_results", lazy="selectin")
 
     @property
-    def processing_progress(self) -> Optional[str]:
+    def processing_progress(self) -> str | None:
         """
         Get standardized progress string format compatible with ChunkTestDocument.
 
         Returns:
             Progress string in format "stage (method)" or "stage"
         """
-        if not self.current_stage:
+        if self.current_stage is None:
             return None
 
-        if self.current_method:
+        if self.current_method is not None:
             return f"{self.current_stage} ({self.current_method})"
         return self.current_stage
 
@@ -853,7 +844,7 @@ class ChunkTestResult(Base):
         """
         return self.progress_percent
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<ChunkTestResult id={self.id} user_id={self.user_id} dataset_name={self.dataset_name}>"
 
 
@@ -868,15 +859,16 @@ class ChunkTestDocument(Base):
 
     __tablename__ = "chunk_test_documents"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    file_name = Column(String(255), nullable=False)
-    file_path = Column(String(500), nullable=False)  # Storage path
-    file_type = Column(String(100), nullable=False)  # MIME type
-    file_size = Column(Integer, nullable=False)  # Bytes
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    file_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    file_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    file_size: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    # Processing status
-    status = Column(
+    status: Mapped[str] = mapped_column(
         Enum(
             "pending",
             "processing",
@@ -888,23 +880,26 @@ class ChunkTestDocument(Base):
         nullable=False,
         index=True,
     )
-    error_message = Column(Text, nullable=True)  # Error details if failed
-    processing_task_id = Column(String(255), nullable=True)  # Celery task ID
-    # Current processing stage: 'extracting', 'cleaning', 'chunking', 'embedding', 'indexing'
-    processing_progress = Column(String(50), nullable=True)
-    processing_progress_percent = Column(Integer, default=0, nullable=False)  # Progress percentage 0-100
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    processing_task_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    processing_progress: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    processing_progress_percent: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
-    # Processing results
-    chunk_count = Column(Integer, default=0, nullable=False)
-    meta_data = Column(JSONB, nullable=True)  # Store processing results and metadata
+    chunk_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    meta_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
-    # Timestamps
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
-    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
 
-    # Relationships
-    user = relationship("User", backref="chunk_test_documents", lazy="selectin")
-    chunks = relationship(
+    user: Mapped["User"] = relationship("User", backref="chunk_test_documents", lazy="selectin")
+    chunks: Mapped[list["ChunkTestDocumentChunk"]] = relationship(
         "ChunkTestDocumentChunk",
         back_populates="document",
         cascade="all, delete-orphan",
@@ -930,7 +925,7 @@ class ChunkTestDocument(Base):
         """
         return self.processing_progress_percent
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<ChunkTestDocument id={self.id} file_name={self.file_name} status={self.status}>"
 
 
@@ -943,31 +938,26 @@ class ChunkTestDocumentChunk(Base):
 
     __tablename__ = "chunk_test_document_chunks"
 
-    id = Column(Integer, primary_key=True, index=True)
-    document_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    document_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("chunk_test_documents.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    chunk_index = Column(Integer, nullable=False)  # Order within document
-    text = Column(Text, nullable=False)  # Chunk content
+    chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
 
-    # Position in original document
-    start_char = Column(Integer, nullable=False)
-    end_char = Column(Integer, nullable=False)
+    start_char: Mapped[int] = mapped_column(Integer, nullable=False)
+    end_char: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    # Chunking method used (spacy, semchunk, chonkie, langchain, mindchunk)
-    chunking_method = Column(String(50), nullable=True, index=True)
+    chunking_method: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
 
-    # Additional metadata
-    meta_data = Column(JSONB, nullable=True)
+    meta_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
-    # Timestamp
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
 
-    # Relationships
-    document = relationship("ChunkTestDocument", back_populates="chunks", lazy="selectin")
+    document: Mapped["ChunkTestDocument"] = relationship("ChunkTestDocument", back_populates="chunks", lazy="selectin")
 
     # Indexes for efficient queries (chunking_method single-column index from index=True)
     __table_args__ = (
@@ -983,5 +973,5 @@ class ChunkTestDocumentChunk(Base):
         ),
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<ChunkTestDocumentChunk id={self.id} document_id={self.document_id} chunk_index={self.chunk_index}>"

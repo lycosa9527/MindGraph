@@ -24,9 +24,7 @@ async def any_user_id_with_phone(phone: str) -> Optional[int]:
     If any user has this phone, return that user's id; otherwise None.
     """
     async with system_rls_session() as db:
-        row = (
-            await db.execute(select(User.id).where(User.phone == phone).limit(1))
-        ).scalar_one_or_none()
+        row = (await db.execute(select(User.id).where(User.phone == phone).limit(1))).scalar_one_or_none()
     if row is None:
         return None
     return int(row)
@@ -38,9 +36,7 @@ async def other_user_id_with_phone(phone: str, exclude_user_id: int) -> Optional
     """
     async with system_rls_session() as db:
         row = (
-            await db.execute(
-                select(User.id).where(User.phone == phone, User.id != exclude_user_id).limit(1)
-            )
+            await db.execute(select(User.id).where(User.phone == phone, User.id != exclude_user_id).limit(1))
         ).scalar_one_or_none()
     if row is None:
         return None
@@ -51,9 +47,7 @@ async def other_user_id_with_email(email: str, exclude_user_id: int) -> Optional
     """If another user already has this email, return that user's id; otherwise None."""
     async with system_rls_session() as db:
         row = (
-            await db.execute(
-                select(User.id).where(User.email == email, User.id != exclude_user_id).limit(1)
-            )
+            await db.execute(select(User.id).where(User.email == email, User.id != exclude_user_id).limit(1))
         ).scalar_one_or_none()
     if row is None:
         return None
@@ -63,9 +57,7 @@ async def other_user_id_with_email(email: str, exclude_user_id: int) -> Optional
 async def any_user_id_with_email(email: str) -> Optional[int]:
     """If any user has this email, return that user's id; otherwise None."""
     async with system_rls_session() as db:
-        row = (
-            await db.execute(select(User.id).where(User.email == email).limit(1))
-        ).scalar_one_or_none()
+        row = (await db.execute(select(User.id).where(User.email == email).limit(1))).scalar_one_or_none()
     if row is None:
         return None
     return int(row)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from tests.typing_helpers import mock_await_args
 from services.kitty.diagram.diagram_spec_sync import sync_diagram_data_to_spec_shape
 from services.kitty.omni.tools import omni_function_call_to_command
 
@@ -170,7 +171,7 @@ async def test_route_omni_function_call_open_desktop_canvas() -> None:
             )
         assert result.outcome == RouteOutcome.EXECUTED
         enqueue_mock.assert_awaited_once()
-        payload = enqueue_mock.await_args.args[1]
+        payload = mock_await_args(enqueue_mock)[1]
         assert payload["kind"] == "open_canvas"
         assert payload["diagram_type"] == "mindmap"
         assert payload["topic"] == "运动会"
@@ -232,7 +233,7 @@ async def test_route_omni_function_call_inline_recommendations_selected() -> Non
             )
         assert result.outcome == RouteOutcome.EXECUTED
         send_mock.assert_awaited()
-        payload = send_mock.await_args.args[1]
+        payload = mock_await_args(send_mock)[1]
         assert payload["action"] == "start_inline_recommendations"
         assert payload["params"]["node_id"] == "branch-l-1-0"
         omni_mock.create_response.assert_awaited()
@@ -319,7 +320,7 @@ async def test_route_voice_select_node_syncs_hub_and_fanout() -> None:
         fanout.assert_awaited_once_with(42, "lib-uuid-sel", ["context-0"])
         assert voice_sessions[vid]["context"]["selected_nodes"] == ["context-0"]
         send_mock.assert_awaited()
-        payload = send_mock.await_args.args[1]
+        payload = mock_await_args(send_mock)[1]
         assert payload["action"] == "select_node"
         assert payload["params"]["node_id"] == "context-0"
     finally:

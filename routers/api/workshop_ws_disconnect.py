@@ -4,6 +4,7 @@ import asyncio
 import logging
 from typing import Optional
 
+from models.domain.auth import User
 from services.features.ws_redis_fanout_config import is_ws_fanout_enabled
 from services.features.workshop_ws_connection_state import (
     ACTIVE_CONNECTIONS as active_connections,
@@ -27,7 +28,7 @@ from services.online_collab.participant.collab_display_name import (
 logger = logging.getLogger(__name__)
 
 
-async def _finalize_editors_fanout_disconnect(code: str, user: object) -> None:
+async def _finalize_editors_fanout_disconnect(code: str, user: User) -> None:
     """Clear editor state when multi-worker Redis fan-out is enabled."""
     um_leave = workshop_collab_member_display_name(user)
     nodes_cleared, atomic_ok = await purge_user_from_all_nodes_redis_watched(
@@ -82,7 +83,7 @@ async def _finalize_editors_fanout_disconnect(code: str, user: object) -> None:
         del active_editors[code]
 
 
-async def _finalize_editors_local_disconnect(code: str, user: object) -> None:
+async def _finalize_editors_local_disconnect(code: str, user: User) -> None:
     """Clear editor state for in-memory single-worker mode."""
     um_leave = workshop_collab_member_display_name(user)
     if code not in active_editors:
@@ -125,7 +126,7 @@ async def _finalize_editors_local_disconnect(code: str, user: object) -> None:
         del active_editors[code]
 
 
-async def clear_editor_state_for_superseded_session(code: str, user: object) -> None:
+async def clear_editor_state_for_superseded_session(code: str, user: User) -> None:
     """
     When the same user opens a new tab, clear editing locks for the prior
     in-process / Redis state and notify peers (before the new handle registers).
@@ -139,7 +140,7 @@ async def clear_editor_state_for_superseded_session(code: str, user: object) -> 
 async def _protected_disconnect_cleanup(
     *,
     code: str,
-    user: object,
+    user: User,
     handle: AnyHandle,
     workshop_owner_id: Optional[int],
 ) -> None:
@@ -198,7 +199,7 @@ async def _protected_disconnect_cleanup(
 async def finalize_canvas_collab_disconnect(
     *,
     code: str,
-    user: object,
+    user: User,
     handle: AnyHandle,
     workshop_owner_id: Optional[int] = None,
 ) -> None:

@@ -79,7 +79,7 @@ async def _check_application_health() -> Dict[str, Any]:
     """Check application health status."""
     try:
         # Import app lazily to avoid circular import
-        import main  # pylint: disable=import-outside-toplevel
+        import main
 
         app = main.app
         uptime = time.time() - app.state.start_time if hasattr(app.state, "start_time") else 0
@@ -88,7 +88,7 @@ async def _check_application_health() -> Dict[str, Any]:
             "version": config.version,
             "uptime_seconds": round(uptime, 1),
         }
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         logger.error("Application health check failed: %s", e, exc_info=True)
         return {"status": "error", "error": str(e)}
 
@@ -118,7 +118,7 @@ async def _cached_redis_info(redis_client: Any, section: str) -> Dict[str, Any]:
             return cached[1]
         try:
             data = await redis_client.info(section)
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             logger.debug("Redis INFO(%s) fetch failed: %s", section, exc)
             data = {}
         _redis_info_cache[section] = (time.monotonic(), data or {})
@@ -141,7 +141,7 @@ async def _fetch_redis_hotkeys(redis_client: Any) -> Any:
     """Fetch hot keys using HOTKEYS (Redis >= 8.6). Returns None on older versions."""
     try:
         return await redis_client.execute_command("HOTKEYS")
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         return None
 
 
@@ -188,7 +188,7 @@ async def _check_redis_health() -> Dict[str, Any]:
     except asyncio.TimeoutError:
         logger.warning("Redis health check timed out")
         return {"status": "error", "error": "Health check timed out"}
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         logger.error("Redis health check failed: %s", e, exc_info=True)
         return {"status": "error", "error": str(e)}
 
@@ -242,7 +242,7 @@ async def _check_database_health() -> Dict[str, Any]:
                         size_row = result.fetchone()
                         if size_row:
                             current_stats["size"] = size_row[0] if size_row else "unknown"
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception as e:
                 logger.debug("Failed to get database stats: %s", e)
 
             current_stats["pool"] = _collect_pool_stats(async_engine.pool)
@@ -286,7 +286,7 @@ async def _check_database_health() -> Dict[str, Any]:
             "status": "unavailable",
             "message": "Database check module not available",
         }
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         logger.error("Database health check failed: %s", e, exc_info=True)
         if check_started:
             await state_manager.complete_check(success=False)
@@ -296,7 +296,6 @@ async def _check_database_health() -> Dict[str, Any]:
 async def _check_processes_health() -> Dict[str, Any]:
     """Check process monitor health status."""
     try:
-        # pylint: disable=import-outside-toplevel
         from services.infrastructure.monitoring.process_monitor import (
             get_process_monitor,
         )
@@ -323,7 +322,7 @@ async def _check_processes_health() -> Dict[str, Any]:
         }
     except ImportError:
         return {"status": "unavailable", "message": "Process monitor not available"}
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         logger.error("Process health check failed: %s", e, exc_info=True)
         return {"status": "error", "error": str(e)}
 
@@ -364,7 +363,7 @@ async def _check_llm_health() -> Dict[str, Any]:
             "status": "error",
             "error": "Health check timed out (exceeded 30 seconds)",
         }
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         logger.error("LLM health check failed: %s", e, exc_info=True)
         return {"status": "error", "error": str(e)}
 
@@ -470,7 +469,7 @@ async def redis_health_check(_current_user: User = Depends(get_current_user)):
 
     except asyncio.TimeoutError:
         return {"status": "unhealthy", "message": "Redis health check timed out"}
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         return {"status": "error", "error": str(exc)}
 
 
@@ -487,7 +486,7 @@ def _collect_pool_stats(pool_obj: Any) -> Dict[str, Any]:
         checked_in = pool_obj.checkedin()
         checked_out = pool_obj.checkedout()
         overflow = pool_obj.overflow()
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.debug("[health] pool stats unavailable: %s", exc)
         return {}
 
@@ -517,7 +516,7 @@ async def _async_database_health_check() -> Dict[str, Any]:
                 size_row = result.fetchone()
                 if size_row:
                     current_stats["size"] = size_row[0] if size_row else "unknown"
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.debug("Failed to get database stats: %s", exc)
 
     current_stats["pool"] = _collect_pool_stats(async_engine.pool)
@@ -573,7 +572,7 @@ async def database_health_check(_current_user: User = Depends(get_current_user))
             status_code=503,
             detail="Database health check unavailable",
         ) from exc
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.error("Database health check error: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=500,
@@ -732,7 +731,6 @@ async def processes_health_check(_current_user: User = Depends(get_current_user)
         - 500 Internal Server Error: Health check failed
     """
     try:
-        # pylint: disable=import-outside-toplevel
         from services.infrastructure.monitoring.process_monitor import (
             get_process_monitor,
         )
@@ -771,7 +769,7 @@ async def processes_health_check(_current_user: User = Depends(get_current_user)
             },
             status_code=503,
         )
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         logger.error("Process health check error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Process health check failed: {str(e)}") from e
 
@@ -780,7 +778,7 @@ async def processes_health_check(_current_user: User = Depends(get_current_user)
 async def get_status():
     """Application status endpoint with metrics"""
     # Import app lazily to avoid circular import
-    import main  # pylint: disable=import-outside-toplevel
+    import main
 
     app = main.app
 

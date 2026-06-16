@@ -64,7 +64,7 @@ async def run_lifespan_shutdown(
         )
         if is_main_worker:
             logger.info("MindBot pipeline background tasks drained")
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.warning("MindBot task drain error: %s", exc)
 
     try:
@@ -73,7 +73,7 @@ async def run_lifespan_shutdown(
         await close_async_dify_shared_sessions()
         if is_main_worker:
             logger.info("Async Dify shared HTTP sessions closed")
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.warning("Async Dify session close error: %s", exc)
 
     if holdings.cleanup_task:
@@ -132,7 +132,7 @@ async def run_lifespan_shutdown(
 
             proc_mon = get_process_monitor()
             await proc_mon.stop()
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             if is_main_worker:
                 logger.warning("Failed to stop process monitor: %s", exc)
         holdings.process_monitor_task.cancel()
@@ -149,7 +149,7 @@ async def run_lifespan_shutdown(
 
             health_monitor = get_health_monitor()
             await health_monitor.stop()
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             if is_main_worker:
                 logger.warning("Failed to stop health monitor: %s", exc)
         holdings.health_monitor_task.cancel()
@@ -166,7 +166,7 @@ async def run_lifespan_shutdown(
         llm_service.cleanup()
         if is_main_worker:
             logger.info("LLM Service cleaned up")
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.warning("Failed to cleanup LLM Service: %s", exc)
 
@@ -176,7 +176,7 @@ async def run_lifespan_shutdown(
         update_notifier.shutdown()
         if is_main_worker:
             logger.info("Update notifier flushed")
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.warning("Failed to flush update notifier: %s", exc)
 
@@ -193,7 +193,7 @@ async def run_lifespan_shutdown(
         flushed = await flush_api_key_usage_to_db()
         if is_main_worker and flushed:
             logger.info("API key usage flushed (%s key(s))", flushed)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.warning("Failed to flush API key usage: %s", exc)
 
@@ -204,7 +204,7 @@ async def run_lifespan_shutdown(
         await token_tracker.flush()
         if is_main_worker:
             logger.info("TokenTracker flushed")
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.warning("Failed to flush TokenTracker: %s", exc)
 
@@ -215,7 +215,7 @@ async def run_lifespan_shutdown(
         await diagram_cache.flush()
         if is_main_worker:
             logger.info("Diagram cache flushed")
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.warning("Failed to flush diagram cache: %s", exc)
 
@@ -225,7 +225,7 @@ async def run_lifespan_shutdown(
         await shutdown_sms_service()
         if is_main_worker:
             logger.info("SMS service shut down")
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.warning("Failed to shutdown SMS service: %s", exc)
 
@@ -233,21 +233,21 @@ async def run_lifespan_shutdown(
         await close_httpx_clients()
         if is_main_worker:
             logger.info("LLM httpx clients closed")
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.warning("Failed to close httpx clients: %s", exc)
 
     try:
-        from services.online_collab.spec.online_collab_live_flush import (  # pylint: disable=import-outside-toplevel
+        from services.online_collab.spec.online_collab_live_flush import (
             cancel_all_pending_live_spec_db_flushes,
         )
-        from services.online_collab.spec.online_collab_live_spec_shutdown import (  # pylint: disable=import-outside-toplevel
+        from services.online_collab.spec.online_collab_live_spec_shutdown import (
             flush_all_live_specs_on_shutdown,
         )
 
         await cancel_all_pending_live_spec_db_flushes()
         await flush_all_live_specs_on_shutdown()
-    except Exception as live_flush_exc:  # pylint: disable=broad-except
+    except Exception as live_flush_exc:
         if is_main_worker:
             logger.warning(
                 "[LiveSpec] Shutdown flush skipped or partial: %s",
@@ -260,20 +260,20 @@ async def run_lifespan_shutdown(
         await close_db()
         if is_main_worker:
             logger.info("Database connections closed")
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.warning("Failed to close database: %s", exc)
 
     await stop_fanout_listeners(is_main_worker)
 
     try:
-        from utils.ws_session_registry import _registry as _ws_registry  # pylint: disable=import-outside-toplevel
+        from utils.ws_session_registry import _registry as _ws_registry
 
         await _ws_registry.close_all(code=1001, reason="Server shutting down")
         await asyncio.sleep(0.5)
         if is_main_worker:
             logger.info("WebSocket sessions drained")
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.warning("WebSocket graceful drain failed: %s", exc)
 
@@ -285,7 +285,7 @@ async def run_lifespan_shutdown(
         await get_stream_manager().stop_all()
         if is_main_worker:
             logger.info("DingTalk Stream SDK clients stopped")
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.warning("Failed to stop DingTalk Stream SDK clients: %s", exc)
 
@@ -295,7 +295,7 @@ async def run_lifespan_shutdown(
         await close_mindbot_http_sessions()
         if is_main_worker:
             logger.info("MindBot HTTP sessions closed")
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.warning("Failed to close MindBot HTTP sessions: %s", exc)
 
@@ -305,6 +305,6 @@ async def run_lifespan_shutdown(
         await close_async_redis()
         if is_main_worker:
             logger.info("MindBot async Redis client closed")
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.warning("Failed to close MindBot async Redis client: %s", exc)

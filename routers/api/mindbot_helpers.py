@@ -11,6 +11,7 @@ from fastapi import HTTPException, status
 from config.settings import config
 from models.domain.auth import Organization, User
 from models.domain.mindbot_config import OrganizationMindbotConfig
+from models.domain.mindbot_usage import MindbotUsageEvent
 from routers.api.mindbot_models import (
     MindbotConfigCreatePayload,
     MindbotConfigPayload,
@@ -71,14 +72,14 @@ def _dify_probe_error_for_user(err: Optional[str], *, is_platform_admin: bool) -
     return "unavailable"
 
 
-def _usage_event_for_user(user: User, row: object) -> MindbotUsageEventItem:
+def _usage_event_for_user(user: User, row: MindbotUsageEvent) -> MindbotUsageEventItem:
     item = MindbotUsageEventItem.model_validate(row)
     if is_admin(user):
         return item
     return item.model_copy(update={"dify_user_key": "—"})
 
 
-def _usage_events_for_user(user: User, rows: list[object]) -> list[MindbotUsageEventItem]:
+def _usage_events_for_user(user: User, rows: list[MindbotUsageEvent]) -> list[MindbotUsageEventItem]:
     return [_usage_event_for_user(user, r) for r in rows]
 
 
@@ -238,7 +239,7 @@ def _resolved_dify_settings(
     existing: Optional[OrganizationMindbotConfig],
     *,
     resolved_dify_key: str,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     if _effective_use_org_dify_settings(payload, existing):
         api_key, api_url = resolve_organization_dify_credentials(org)
         if not api_key or not api_url:

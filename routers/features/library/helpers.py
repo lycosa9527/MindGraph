@@ -12,13 +12,15 @@ Proprietary License
 
 from typing import Optional
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials
 
 from models.domain.auth import User
 from routers.auth.dependencies import require_admin
 from utils.auth import get_current_user
 from utils.auth.tokens import security
+
+__all__ = ["serialize_document", "require_admin", "get_optional_user"]
 
 
 def serialize_document(document) -> dict:
@@ -46,7 +48,7 @@ def serialize_document(document) -> dict:
     }
 
 
-def get_optional_user(
+async def get_optional_user(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> Optional[User]:
@@ -59,7 +61,15 @@ def get_optional_user(
         return None
 
     try:
-        return get_current_user(request, credentials)
+        if credentials is not None:
+            return await get_current_user(request, credentials)
+        cookie_token = request.cookies.get("access_token")
+        if not cookie_token:
+            return None
+        return await get_current_user(
+            request,
+            HTTPAuthorizationCredentials(scheme="Bearer", credentials=cookie_token),
+        )
     except HTTPException:
         # Authentication failed - return None for public access
         return None

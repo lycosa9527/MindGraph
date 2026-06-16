@@ -7,9 +7,10 @@ to 'failed' or 'pending' so they can be cleaned up or reprocessed.
 Run with: python scripts/cleanup_stuck_chunk_test_documents.py
 """
 
+import asyncio
 import importlib
-import sys
 import os
+import sys
 import traceback
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -27,7 +28,7 @@ try:
 
     # Now import database session - this triggers model imports in config.database
     # which handles the correct import order for other models
-    from config.database import SyncSessionLocal
+    from config.database import AsyncSessionLocal, SyncSessionLocal
 
     # Now import the specific model we need
     # config.database already imported all necessary models in correct order
@@ -44,7 +45,7 @@ except Exception as e:
     sys.exit(1)
 
 
-def cleanup_stuck_documents(user_id: int = None, reset_to: str = "failed", older_than_minutes: int = 30):
+def cleanup_stuck_documents(user_id: int | None = None, reset_to: str = "failed", older_than_minutes: int = 30):
     """
     Find and reset stuck documents.
 
@@ -131,11 +132,15 @@ def cleanup_stuck_documents(user_id: int = None, reset_to: str = "failed", older
             )
 
             cleaned_qdrant_count = 0
+
+            async def _cleanup_document(user_id: int, document_id: int) -> None:
+                async with AsyncSessionLocal() as async_db:
+                    service = ChunkTestDocumentService(async_db, user_id)
+                    await service.cleanup_incomplete_processing(document_id)
+
             for doc, age_minutes in reset_docs:
                 try:
-                    # Clean up incomplete Qdrant operations
-                    service = ChunkTestDocumentService(db, doc.user_id)
-                    service.cleanup_incomplete_processing(doc.id)
+                    asyncio.run(_cleanup_document(doc.user_id, doc.id))
                     cleaned_qdrant_count += 1
 
                     # Update status

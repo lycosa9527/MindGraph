@@ -17,6 +17,7 @@ import logging
 import inspect
 import uuid
 from pathlib import Path
+from typing import Any
 from dotenv import load_dotenv
 from utils.env_utils import ensure_utf8_env_file
 from utils.tiktoken_cache import ensure_tiktoken_cache
@@ -27,12 +28,15 @@ from services.redis.redis_client import get_redis, is_redis_available
 
 logger = logging.getLogger(__name__)
 
+psutil: Any = None
+_PSUTIL_AVAILABLE = False
 try:
-    import psutil
+    import psutil as _psutil
 
+    psutil = _psutil
     _PSUTIL_AVAILABLE = True
 except ImportError:
-    _PSUTIL_AVAILABLE = False
+    pass
 
 # ============================================================================
 # DISTRIBUTED LOCK FOR BANNER PRINTING
@@ -117,7 +121,7 @@ def _acquire_banner_lock() -> bool:
 
         return bool(acquired)
 
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         # If Redis is not available or not initialized yet, assume single worker mode
         return True
 
@@ -146,7 +150,7 @@ def _release_banner_lock() -> None:
         """
 
         redis.eval(lua_script, 1, BANNER_LOCK_KEY, worker_lock_id)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.debug("Banner lock release failed: %s", exc)
 
 
@@ -198,7 +202,7 @@ def _is_uvicorn_reloader_process() -> bool:
     if os.getenv("UVICORN_WORKER_ID") is not None:
         return False
 
-    if _PSUTIL_AVAILABLE:
+    if _PSUTIL_AVAILABLE and psutil is not None:
         try:
             current_process = psutil.Process()
             process_name = current_process.name().lower()
@@ -216,7 +220,7 @@ def _is_uvicorn_reloader_process() -> bool:
                         return True
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             logger.debug("Uvicorn reloader process detection failed: %s", exc)
 
     # Check if we're being imported (not run directly)
@@ -302,7 +306,7 @@ class _BannerManager:
             try:
                 version_file = Path(__file__).parent.parent.parent.parent / "VERSION"
                 version = version_file.read_text().strip()
-            except Exception:  # pylint: disable=broad-except
+            except Exception:
                 version = "0.0.0"
 
             # Print banner using direct print() to bypass logging system
@@ -362,13 +366,13 @@ def setup_early_configuration():
                     logging.debug(
                         "Windows: Set event loop policy to WindowsProactorEventLoopPolicy for Playwright support"
                     )
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             # If we can't check/set, try to set it anyway
             try:
                 asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
                 if should_log_startup:
                     logging.debug("Windows: Set event loop policy to WindowsProactorEventLoopPolicy (unconditional)")
-            except Exception as e2:  # pylint: disable=broad-except
+            except Exception as e2:
                 if should_log_startup:
                     logging.warning("Windows: Could not set event loop policy: %s", e2)
 
@@ -407,7 +411,7 @@ def setup_early_configuration():
     # Uses Redis lock internally to ensure only one worker checks/updates cache
     try:
         ensure_tiktoken_cache()
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         # Non-critical: tiktoken will download files automatically if cache fails
         if should_log_startup:
             logging.warning("[Startup] Could not setup tiktoken cache: %s", e)

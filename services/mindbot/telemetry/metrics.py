@@ -26,7 +26,7 @@ def _metrics_max_keys() -> int:
 
 
 def _bounded_incr(
-    mapping: collections.OrderedDict,  # type: ignore[type-arg]
+    mapping: collections.OrderedDict[Any, int],
     key: Any,
     max_keys: int,
 ) -> None:

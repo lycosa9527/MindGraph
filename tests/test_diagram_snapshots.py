@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from typing import cast
+
+from sqlalchemy import Table
+
 from models.domain.diagram_snapshots import DiagramSnapshot
 from models.requests.requests_diagram import SnapshotTakeRequest
 from models.responses import SnapshotListResponse, SnapshotMetadata
@@ -16,7 +20,8 @@ def test_diagram_snapshot_table_name() -> None:
 
 def test_diagram_snapshot_unique_version_constraint_registered() -> None:
     """Unique (diagram_id, version_number) matches production DDL."""
-    names = {c.name for c in DiagramSnapshot.__table__.constraints}
+    table = cast(Table, DiagramSnapshot.__table__)
+    names = {c.name for c in table.constraints}
     assert "uq_diagram_snapshot_version" in names
 
 

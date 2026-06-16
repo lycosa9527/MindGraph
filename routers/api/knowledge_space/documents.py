@@ -54,6 +54,11 @@ async def upload_document(
     service = KnowledgeSpaceService(db, current_user.id)
 
     try:
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="Filename is required")
+
+        file_name = file.filename
+
         # Save uploaded file temporarily
         with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
             content = await file.read()
@@ -61,11 +66,11 @@ async def upload_document(
             tmp_path = tmp_file.name
 
         # Get file type
-        file_type = service.processor.get_file_type(file.filename)
+        file_type = service.processor.get_file_type(file_name)
 
         # Upload document
         document = await service.upload_document(
-            file_name=file.filename,
+            file_name=file_name,
             file_path=tmp_path,
             file_type=file_type,
             file_size=len(content),
@@ -114,16 +119,21 @@ async def batch_upload_documents(
         tmp_paths = []
 
         for file in files:
+            if not file.filename:
+                raise HTTPException(status_code=400, detail="Filename is required")
+
+            file_name = file.filename
+
             with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
                 content = await file.read()
                 tmp_file.write(content)
                 tmp_path = tmp_file.name
                 tmp_paths.append(tmp_path)
 
-            file_type = service.processor.get_file_type(file.filename)
+            file_type = service.processor.get_file_type(file_name)
             file_infos.append(
                 {
-                    "file_name": file.filename,
+                    "file_name": file_name,
                     "file_path": tmp_path,
                     "file_type": file_type,
                     "file_size": len(content),
@@ -404,7 +414,7 @@ async def get_document_chunks(
                 "text": chunk.text,
                 "start_char": chunk.start_char,
                 "end_char": chunk.end_char,
-                "metadata": chunk.meta_data,
+                "metadata": {},
             }
             for chunk in chunks
         ],

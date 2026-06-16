@@ -9,7 +9,7 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 from alembic import op
 
-from alembic.rls_functions_sql import (
+from db_rls.functions_sql import (
     RLS_FUNCTIONS_DOWNGRADE,
     build_grant_rls_functions_to_app_sql,
     rls_functions_upgrade_statements,

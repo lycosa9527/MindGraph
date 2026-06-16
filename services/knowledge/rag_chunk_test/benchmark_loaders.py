@@ -15,25 +15,33 @@ Proprietary License
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 import csv
 import json
 import logging
 
+load_dataset: Any = None
+HAS_DATASETS = False
 try:
-    from datasets import load_dataset
+    from datasets import load_dataset as _load_dataset
 
+    load_dataset = _load_dataset
     HAS_DATASETS = True
 except ImportError:
-    HAS_DATASETS = False
     logging.warning("[BenchmarkLoaders] datasets library not installed. Hugging Face fallback disabled.")
 
+ChunkTestDocument: Any = None
+ChunkTestDocumentChunk: Any = None
+HAS_CHUNK_TEST_MODELS = False
 try:
-    from models.domain.knowledge_space import ChunkTestDocument, ChunkTestDocumentChunk
+    from models.domain.knowledge_space import ChunkTestDocument as _ChunkTestDocument
+    from models.domain.knowledge_space import ChunkTestDocumentChunk as _ChunkTestDocumentChunk
 
+    ChunkTestDocument = _ChunkTestDocument
+    ChunkTestDocumentChunk = _ChunkTestDocumentChunk
     HAS_CHUNK_TEST_MODELS = True
 except ImportError:
-    HAS_CHUNK_TEST_MODELS = False
+    pass
 
 
 logger = logging.getLogger(__name__)
@@ -127,7 +135,7 @@ class BenchmarkLoader(ABC):
         Returns:
             Dataset object or None if failed
         """
-        if not HAS_DATASETS:
+        if not HAS_DATASETS or load_dataset is None:
             logger.warning("[BenchmarkLoaders] Cannot load from Hugging Face: datasets library not installed")
             return None
 
@@ -627,7 +635,7 @@ class UserDocumentLoader(BenchmarkLoader):
 
     async def load_documents(self) -> List[Dict[str, Any]]:
         """Load chunk test documents from database."""
-        if not HAS_CHUNK_TEST_MODELS:
+        if not HAS_CHUNK_TEST_MODELS or ChunkTestDocument is None or ChunkTestDocumentChunk is None:
             raise ImportError("Chunk test document models not available. Cannot load user documents.")
 
         from sqlalchemy import select, func

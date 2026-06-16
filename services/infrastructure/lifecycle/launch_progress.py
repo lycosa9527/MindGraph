@@ -16,27 +16,47 @@ import sys
 import time
 import logging
 import threading
-from typing import Optional, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from types import TracebackType
 
+Console: Any = None
+Progress: Any = None
+SpinnerColumn: Any = None
+BarColumn: Any = None
+TextColumn: Any = None
+TimeElapsedColumn: Any = None
+TimeRemainingColumn: Any = None
+Rule: Any = None
+Panel: Any = None
+RICH_AVAILABLE = False
+
 try:
     from rich.progress import (
-        Progress,
-        SpinnerColumn,
-        BarColumn,
-        TextColumn,
-        TimeElapsedColumn,
-        TimeRemainingColumn,
+        Progress as _Progress,
+        SpinnerColumn as _SpinnerColumn,
+        BarColumn as _BarColumn,
+        TextColumn as _TextColumn,
+        TimeElapsedColumn as _TimeElapsedColumn,
+        TimeRemainingColumn as _TimeRemainingColumn,
     )
-    from rich.console import Console
-    from rich.rule import Rule
-    from rich.panel import Panel
+    from rich.console import Console as _Console
+    from rich.rule import Rule as _Rule
+    from rich.panel import Panel as _Panel
 
+    Console = _Console
+    Progress = _Progress
+    SpinnerColumn = _SpinnerColumn
+    BarColumn = _BarColumn
+    TextColumn = _TextColumn
+    TimeElapsedColumn = _TimeElapsedColumn
+    TimeRemainingColumn = _TimeRemainingColumn
+    Rule = _Rule
+    Panel = _Panel
     RICH_AVAILABLE = True
 except ImportError:
-    RICH_AVAILABLE = False
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -193,7 +213,7 @@ class ApplicationLaunchProgressTracker:
                 )
                 self.console.print()
                 self._header_printed = True
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception as e:
                 # Log error but don't fail - fall back to logging mode
                 logger.warning(
                     "[LaunchProgress] Failed to initialize Rich progress bar: %s",
@@ -251,14 +271,14 @@ class ApplicationLaunchProgressTracker:
                 # Forcefully exit the progress context
                 try:
                     progress_ref.__exit__(None, None, None)
-                except Exception as e:  # pylint: disable=broad-except
+                except Exception as e:
                     # Log errors during forced exit for debugging
                     logger.debug(
                         "[LaunchProgress] Error during progress context exit: %s",
                         e,
                         exc_info=True,
                     )
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception as e:
                 # Log errors during kill for debugging (non-critical but should be visible)
                 logger.warning(
                     "[LaunchProgress] Error during progress bar kill: %s",
@@ -274,7 +294,7 @@ class ApplicationLaunchProgressTracker:
                         console_file = getattr(console_ref, "_file", None)
                         if console_file is not None and hasattr(console_file, "flush"):
                             console_file.flush()
-                    except Exception as exc:  # pylint: disable=broad-except
+                    except Exception as exc:
                         logger.debug("Console flush during cleanup failed: %s", exc)
 
     def __exit__(
@@ -370,7 +390,7 @@ class ApplicationLaunchProgressTracker:
                     "[LaunchProgress] Progress update failed (task removed/closed): %s",
                     e,
                 )
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception as e:
                 # Log other exceptions but don't fail - progress bar is non-critical
                 logger.warning(
                     "[LaunchProgress] Progress update failed (non-critical): %s",
@@ -516,7 +536,7 @@ def kill_global_progress_bar() -> bool:
                 GlobalTrackerManager._instance.kill()
                 GlobalTrackerManager._instance = None
                 return True
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception as e:
                 logger.warning(
                     "[LaunchProgress] Failed to kill global progress bar: %s",
                     e,

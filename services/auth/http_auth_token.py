@@ -17,6 +17,7 @@ from fastapi import Request, WebSocket
 from jose import JWTError, jwt
 
 from utils.auth.config import JWT_ALGORITHM
+from utils.auth.connection_types import HttpOrWebSocket
 from utils.auth.jwt_secret import get_jwt_secret
 
 
@@ -31,6 +32,13 @@ def _query_token_looks_like_session_credential(s: str) -> bool:
     if t.startswith("mgat_"):
         return True
     return t.count(".") >= 2
+
+
+def extract_session_token(connection: HttpOrWebSocket) -> Optional[str]:
+    """Session token from HTTP request or WebSocket (Bearer, cookie, shaped ?token=)."""
+    if isinstance(connection, WebSocket):
+        return extract_bearer_token_from_websocket(connection)
+    return extract_bearer_token(connection)
 
 
 def extract_bearer_token(request: Request) -> Optional[str]:
@@ -79,9 +87,14 @@ def extract_bearer_token_from_websocket(websocket: WebSocket) -> Optional[str]:
 
 
 def try_decode_access_token_payload(request: Request) -> Optional[dict]:
-    """Decode JWT access payload, or None for mgat_ / invalid / missing."""
+    """Decode JWT access payload from HTTP request, or None for mgat_ / invalid / missing."""
+    return try_decode_access_token_payload_from_connection(request)
+
+
+def try_decode_access_token_payload_from_connection(connection: HttpOrWebSocket) -> Optional[dict]:
+    """Decode JWT access payload from HTTP or WebSocket, or None for mgat_ / invalid / missing."""
     try:
-        token = extract_bearer_token(request)
+        token = extract_session_token(connection)
         if not token or token.startswith("mgat_"):
             return None
         payload = jwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])

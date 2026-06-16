@@ -315,7 +315,7 @@ class RedisTokenBuffer:
                     # RESP2: [next_id, [(id, fields), ...], [deleted_ids]]
                     # With RESP3, parse_xautoclaim raises KeyError inside redis-py
                     # before returning, so that case is caught by the except below.
-                    raw_entries = pending[1] if pending and len(pending) > 1 else []
+                    raw_entries: list[tuple[Any, Any]] = pending[1] if pending and len(pending) > 1 else []
                 except Exception:
                     raw_entries = []
 
@@ -328,7 +328,12 @@ class RedisTokenBuffer:
                             max="+",
                             count=len(raw_entries),
                         )
-                        delivery_counts = {entry["message_id"]: entry["times_delivered"] for entry in pending_info}
+                        delivery_counts: dict[Any, int] = {}
+                        for entry in pending_info:
+                            message_id = entry.get("message_id")
+                            times_delivered = entry.get("times_delivered", 0)
+                            if message_id is not None:
+                                delivery_counts[message_id] = int(times_delivered)
                         dead_letters = [
                             eid for eid, _ in raw_entries if delivery_counts.get(eid, 0) > MAX_STREAM_DELIVERY_COUNT
                         ]
@@ -359,7 +364,10 @@ class RedisTokenBuffer:
                             # The entries list is wrapped in an extra outer list.
                             for entries_wrapper in new_entries.values():
                                 for entries in entries_wrapper:
-                                    raw_entries.extend(entries)
+                                    if isinstance(entries, list):
+                                        for item in entries:
+                                            if isinstance(item, tuple) and len(item) >= 2:
+                                                raw_entries.append((item[0], item[1]))
                         else:
                             # RESP2: [[stream_name, [(id, fields), ...]]]
                             raw_entries.extend(new_entries[0][1])

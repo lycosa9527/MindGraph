@@ -677,11 +677,7 @@ class SMSService:
                     phone_number = status.get("PhoneNumber", "unknown")
                     if not _is_sms_provider_rate_limit(error_code, error_msg):
                         only_rate_limit_failures = False
-                    log_fn = (
-                        logger.warning
-                        if _is_sms_provider_rate_limit(error_code, error_msg)
-                        else logger.error
-                    )
+                    log_fn = logger.warning if _is_sms_provider_rate_limit(error_code, error_msg) else logger.error
                     log_fn(
                         "SMS notification send failed for phone: %s - %s",
                         phone_number,

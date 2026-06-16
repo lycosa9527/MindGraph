@@ -5,10 +5,13 @@ from __future__ import annotations
 import asyncio
 import json
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
+from starlette.websockets import WebSocket as StarletteWebSocket
+
+from tests.typing_helpers import mock_call_args
 
 
 @dataclass
@@ -64,7 +67,7 @@ async def test_origin_rejected_before_join_mutates_workshop_state() -> None:
         patch.object(workshop_ws, "record_ws_collab_origin_reject"),
         patch.object(workshop_ws, "resolve_canvas_collab_join", resolve_join),
     ):
-        await workshop_ws.canvas_collab_websocket(websocket, "ABC-234")
+        await workshop_ws.canvas_collab_websocket(cast(StarletteWebSocket, websocket), "ABC-234")
 
     resolve_join.assert_not_awaited()
     assert websocket.closed == [
@@ -93,7 +96,7 @@ async def test_resume_rate_limit_bypass_requires_current_diagram_match() -> None
         patch.object(auth, "get_async_redis", return_value=_ResumeRedis("new-diagram")),
     ):
         verified = await auth._has_verified_resume_for_rate_limit(
-            websocket,
+            cast(StarletteWebSocket, websocket),
             user,
             "ABC-123",
         )
@@ -283,7 +286,7 @@ async def test_full_spec_update_rejects_when_foreign_node_lock_exists() -> None:
 
     mutate_mock.assert_not_awaited()
     websocket.send_json.assert_awaited_once()
-    payload = websocket.send_json.await_args.args[0]
+    payload = mock_call_args(websocket.send_json)[0]
     assert payload["code"] == "update_rejected"
 
 
@@ -328,8 +331,10 @@ async def test_role_change_publishes_cross_worker_control() -> None:
 
 def test_diagram_model_enforces_unique_active_workshop_code() -> None:
     from models.domain.diagrams import Diagram
+    from sqlalchemy import Table
 
-    indexes = {index.name: index for index in Diagram.__table__.indexes}
+    table = cast(Table, Diagram.__table__)
+    indexes = {str(index.name): index for index in table.indexes if index.name is not None}
     index = indexes["ix_diagrams_workshop_code_unique_active"]
 
     assert index.unique is True

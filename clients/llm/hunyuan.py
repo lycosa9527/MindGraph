@@ -29,6 +29,7 @@ from services.llm.error_parsers.hunyuan_error_parser import (
     parse_and_raise_hunyuan_error,
 )
 from clients.llm.base import (
+    as_openai_chat_messages,
     extract_usage_from_openai_completion,
     extract_usage_from_stream_chunk,
 )
@@ -84,7 +85,7 @@ class HunyuanClient:
             # Call OpenAI-compatible API
             completion = await self.client.chat.completions.create(
                 model=self.model_name,
-                messages=messages,
+                messages=as_openai_chat_messages(messages),
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
@@ -213,7 +214,7 @@ class HunyuanClient:
             _ = enable_thinking
             stream = await self.client.chat.completions.create(
                 model=self.model_name,
-                messages=messages,
+                messages=as_openai_chat_messages(messages),
                 temperature=temperature,
                 max_tokens=max_tokens,
                 stream=True,  # Enable streaming

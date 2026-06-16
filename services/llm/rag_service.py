@@ -117,7 +117,7 @@ class RAGService:
                 )
             )
             count = result.scalar()
-            return count > 0
+            return (count or 0) > 0
         except Exception as e:
             logger.error(
                 "[RAGService] Failed to check knowledge base for user %s: %s",
@@ -603,7 +603,7 @@ class RAGService:
             List of chunk IDs
         """
         try:
-            results = self.keyword_search.keyword_search(
+            results = await self.keyword_search.keyword_search(
                 db=db,
                 user_id=user_id,
                 query=query,
@@ -728,7 +728,7 @@ class RAGService:
     ) -> List[Dict[str, Any]]:
         """Keyword search returning results with scores."""
         try:
-            results = self.keyword_search.keyword_search(
+            results = await self.keyword_search.keyword_search(
                 db=db,
                 user_id=user_id,
                 query=query,
@@ -839,7 +839,7 @@ class RAGService:
             # Search using image embedding
             qdrant_service = get_qdrant_service()
 
-            results = qdrant_service.search(
+            results = await qdrant_service.search(
                 user_id=user_id,
                 query_embedding=avg_embedding,
                 top_k=top_k,

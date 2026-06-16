@@ -47,7 +47,7 @@ async def _finalize_collab_writer_before_close(session: WsSession) -> None:
         code_val = session.meta.get("code")
         if not isinstance(code_val, str) or not code_val:
             return
-        from services.features.workshop_ws_connection_state import (  # pylint: disable=import-outside-toplevel
+        from services.features.workshop_ws_connection_state import (
             ACTIVE_CONNECTIONS,
             finalize_handle_writer_shutdown,
         )

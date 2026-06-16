@@ -2,11 +2,18 @@
 Device Model for ESP32 Smart Response Watches
 """
 
+from __future__ import annotations
+
 from datetime import UTC, datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
+from typing import TYPE_CHECKING
+
+from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.domain.auth import Base
+
+if TYPE_CHECKING:
+    from models.domain.auth import User
 
 
 class Device(Base):
@@ -14,25 +21,25 @@ class Device(Base):
 
     __tablename__ = "devices"
 
-    id = Column(Integer, primary_key=True, index=True)
-    watch_id = Column(String, unique=True, index=True, nullable=False)
-    mac_address = Column(String, unique=True, nullable=True)
-    student_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    status = Column(String, default="unassigned")
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
-    updated_at = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    watch_id: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
+    mac_address: Mapped[str | None] = mapped_column(String, unique=True, nullable=True)
+    student_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    status: Mapped[str] = mapped_column(String, default="unassigned")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC),
     )
-    last_seen = Column(DateTime, nullable=True)
+    last_seen: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
-    student = relationship(
+    student: Mapped["User | None"] = relationship(
         "User",
         foreign_keys=[student_id],
         backref="devices",
         lazy="selectin",
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Device(watch_id='{self.watch_id}', status='{self.status}')>"

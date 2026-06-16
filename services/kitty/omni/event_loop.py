@@ -127,9 +127,10 @@ async def run_kitty_omni_event_loop(
                 )
                 continue
 
-            forwarded = await _forward_informational_event(websocket, event_type, event)
-            if forwarded:
-                continue
+            if event_type is not None:
+                forwarded = await _forward_informational_event(websocket, event_type, event)
+                if forwarded:
+                    continue
 
     except (RuntimeError, ConnectionError, AttributeError, ValueError) as exc:
         logger.error("Omni event error: %s", exc, exc_info=True)

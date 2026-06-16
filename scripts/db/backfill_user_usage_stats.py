@@ -19,7 +19,7 @@ from typing import cast
 _project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 
-from sqlalchemy import select
+from sqlalchemy import Table, select
 
 from config.database import AsyncSessionLocal, async_engine
 from models.domain.auth import Base, User
@@ -35,11 +35,14 @@ async def _create_tables() -> None:
     async with async_engine.begin() as conn:
         await conn.run_sync(
             Base.metadata.create_all,
-            tables=[
-                UserActivityLog.__table__,
-                UserUsageStats.__table__,
-                TeacherUsageConfig.__table__,
-            ],
+            tables=cast(
+                list[Table],
+                [
+                    UserActivityLog.__table__,
+                    UserUsageStats.__table__,
+                    TeacherUsageConfig.__table__,
+                ],
+            ),
             checkfirst=True,
         )
 

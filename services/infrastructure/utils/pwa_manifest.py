@@ -25,9 +25,7 @@ def public_site_origin_from_request(request: Request) -> str:
             return f"{forwarded_proto}://{host_only}"
 
     scheme = "https" if is_https(request) else request.url.scheme
-    raw_host = strip_leading_http_schemes(
-        request.headers.get("Host") or request.url.netloc or "localhost"
-    )
+    raw_host = strip_leading_http_schemes(request.headers.get("Host") or request.url.netloc or "localhost")
     host = raw_host.split(",")[0].strip().rstrip("/")
     return f"{scheme}://{host}".rstrip("/")
 

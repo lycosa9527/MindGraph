@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from alembic.rls_functions_sql import build_grant_rls_functions_to_app_sql
+from db_rls.functions_sql import build_grant_rls_functions_to_app_sql
 
 
 def _sql_escape(value: str) -> str:

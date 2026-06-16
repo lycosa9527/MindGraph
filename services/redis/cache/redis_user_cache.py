@@ -25,8 +25,12 @@ Proprietary License
 """
 
 from datetime import UTC, datetime
-from typing import Optional, Dict, List
+from typing import Any, Dict, List, Optional, cast
 import logging
+
+from collections.abc import Mapping
+
+from services.utils.typing_helpers import redis_hash_to_str
 
 from sqlalchemy import select
 
@@ -87,7 +91,7 @@ class UserCache:
             "login_password_set": "1" if getattr(user, "login_password_set", True) else "0",
         }
 
-    def _deserialize_user(self, data: Dict[str, str]) -> User:
+    def _deserialize_user(self, data: dict[bytes | str, bytes | str]) -> User:
         """
         Deserialize dict from Redis hash to User object.
 
@@ -97,58 +101,59 @@ class UserCache:
         Returns:
             User SQLAlchemy model instance (detached from session)
         """
+        normalized = redis_hash_to_str(data)
         user = User()
-        user.id = int(data.get("id", "0"))
-        user.phone = data.get("phone") or None
+        user.id = int(normalized.get("id", "0"))
+        user.phone = normalized.get("phone") or None
         if user.phone == "":
             user.phone = None
-        user.email = data.get("email") or None
+        user.email = normalized.get("email") or None
         if user.email == "":
             user.email = None
-        user.password_hash = data.get("password_hash") or ""
-        user.name = data.get("name") or None
-        org_id_val = data.get("organization_id")
+        user.password_hash = normalized.get("password_hash") or ""
+        user.name = normalized.get("name") or None
+        org_id_val = normalized.get("organization_id")
         user.organization_id = int(org_id_val) if org_id_val else None
-        user.avatar = data.get("avatar") or None
-        user.role = normalize_role(data.get("role"))
-        user.failed_login_attempts = int(data.get("failed_login_attempts", "0"))
+        user.avatar = normalized.get("avatar") or None
+        user.role = normalize_role(normalized.get("role"))
+        user.failed_login_attempts = int(normalized.get("failed_login_attempts", "0"))
 
         # Parse datetime fields
-        if data.get("locked_until"):
+        if normalized.get("locked_until"):
             try:
-                user.locked_until = datetime.fromisoformat(data["locked_until"])
+                user.locked_until = datetime.fromisoformat(normalized["locked_until"])
             except (ValueError, TypeError):
                 user.locked_until = None
         else:
             user.locked_until = None
 
-        if data.get("created_at"):
+        if normalized.get("created_at"):
             try:
-                user.created_at = datetime.fromisoformat(data["created_at"])
+                user.created_at = datetime.fromisoformat(normalized["created_at"])
             except (ValueError, TypeError):
                 user.created_at = datetime.now(UTC)
         else:
             user.created_at = datetime.now(UTC)
 
-        if data.get("last_login"):
+        if normalized.get("last_login"):
             try:
-                user.last_login = datetime.fromisoformat(data["last_login"])
+                user.last_login = datetime.fromisoformat(normalized["last_login"])
             except (ValueError, TypeError):
                 user.last_login = None
         else:
             user.last_login = None
 
-        user.ui_language = data.get("ui_language") or None
-        user.prompt_language = data.get("prompt_language") or None
-        mp = data.get("match_prompt_to_ui", "1")
+        user.ui_language = normalized.get("ui_language") or None
+        user.prompt_language = normalized.get("prompt_language") or None
+        mp = normalized.get("match_prompt_to_ui", "1")
         user.match_prompt_to_ui = mp not in ("0", "false", "False")
-        asc = data.get("allows_simplified_chinese", "1")
+        asc = normalized.get("allows_simplified_chinese", "1")
         user.allows_simplified_chinese = asc not in ("0", "false", "False")
 
-        wl = data.get("email_login_whitelisted_from_cn", "0")
+        wl = normalized.get("email_login_whitelisted_from_cn", "0")
         user.email_login_whitelisted_from_cn = wl in ("1", "true", "True")
 
-        lp = data.get("login_password_set", "1")
+        lp = normalized.get("login_password_set", "1")
         user.login_password_set = lp not in ("0", "false", "False")
 
         return user
@@ -160,13 +165,13 @@ class UserCache:
             return None
         try:
             cached = await redis.hgetall(_keys.USER_BY_ID.format(user_id=user_id))
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             return None
         if not cached:
             return None
         try:
             return self._deserialize_user(cached)
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             return None
 
     async def _read_cached_by_phone(self, phone: str) -> Optional[User]:
@@ -176,7 +181,7 @@ class UserCache:
             return None
         try:
             user_id_str = await redis.get(_keys.USER_BY_PHONE.format(phone=phone))
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             return None
         if not user_id_str:
             return None
@@ -192,7 +197,7 @@ class UserCache:
             return None
         try:
             user_id_str = await redis.get(_keys.USER_BY_EMAIL.format(email=email))
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             return None
         if not user_id_str:
             return None
@@ -458,7 +463,7 @@ class UserCache:
             async with redis_client.pipeline(transaction=False) as pipe:
                 # DELETE before HSET to clear any stale key with wrong type.
                 pipe.delete(user_key)
-                pipe.hset(user_key, mapping=user_dict)
+                pipe.hset(user_key, mapping=cast(Mapping[Any, Any], user_dict))
                 pipe.expire(user_key, USER_CACHE_TTL)
                 if user.phone:
                     phone_index_key = _keys.USER_BY_PHONE.format(phone=user.phone)
@@ -513,7 +518,7 @@ class UserCache:
                         getattr(user, "email", None),
                     )
                 )
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 logger.warning(
                     "[UserCache] Skipping user %s in bulk write: %s",
                     getattr(user, "id", "?"),
@@ -528,7 +533,7 @@ class UserCache:
                 for user_id, user_dict, phone, email in prepared:
                     user_key = _keys.USER_BY_ID.format(user_id=user_id)
                     pipe.delete(user_key)
-                    pipe.hset(user_key, mapping=user_dict)
+                    pipe.hset(user_key, mapping=cast(Mapping[Any, Any], user_dict))
                     pipe.expire(user_key, USER_CACHE_TTL)
                     if phone:
                         pipe.set(
@@ -543,7 +548,7 @@ class UserCache:
                             ex=USER_CACHE_TTL,
                         )
                 await pipe.execute()
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             logger.warning("[UserCache] Bulk pipeline execute failed: %s", exc)
             return 0
 

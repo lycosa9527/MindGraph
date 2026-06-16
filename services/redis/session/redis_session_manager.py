@@ -35,6 +35,7 @@ from services.redis import keys as _keys
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_async_ops import AsyncRedisOps
 from services.redis.redis_client import is_redis_available
+from services.utils.typing_helpers import redis_decode_required
 
 logger = logging.getLogger(__name__)
 
@@ -163,7 +164,7 @@ class RedisSessionManager:
         """Check if Redis should be used."""
         return is_redis_available()
 
-    def _parse_session_entry(self, session_entry: str) -> tuple[float, str, str]:
+    def _parse_session_entry(self, session_entry: bytes | str) -> tuple[float, str, str]:
         """
         Parse a session entry string into its components.
 
@@ -177,7 +178,8 @@ class RedisSessionManager:
         Returns:
             Tuple of (timestamp, device_hash, token_hash)
         """
-        parts = session_entry.split(":")
+        session_text = redis_decode_required(session_entry)
+        parts = session_text.split(":")
         if len(parts) >= 3:
             # New format: timestamp:device_hash:token_hash
             try:
@@ -193,13 +195,13 @@ class RedisSessionManager:
             # Legacy format: timestamp:token_hash
             try:
                 timestamp = float(parts[0])
-                return timestamp, "", parts[1]
+                return timestamp, "", redis_decode_required(parts[1])
             except ValueError:
                 # Invalid timestamp
-                return 0.0, "", session_entry
+                return 0.0, "", session_text
 
         # Unknown format
-        return 0.0, "", session_entry
+        return 0.0, "", session_text
 
     async def store_session(
         self,
@@ -796,14 +798,14 @@ class RefreshTokenManager:
         """Check if Redis should be used."""
         return is_redis_available()
 
-    def _get_token_key(self, user_id: int, token_hash: str) -> str:
-        return _keys.REFRESH_TOKEN.format(user_id=user_id, token_hash=token_hash)
+    def _get_token_key(self, user_id: int, token_hash: bytes | str) -> str:
+        return _keys.REFRESH_TOKEN.format(user_id=user_id, token_hash=redis_decode_required(token_hash))
 
     def _get_user_tokens_key(self, user_id: int) -> str:
         return _keys.REFRESH_USER_SET.format(user_id=user_id)
 
-    def _get_lookup_key(self, token_hash: str) -> str:
-        return _keys.REFRESH_LOOKUP.format(token_hash=token_hash)
+    def _get_lookup_key(self, token_hash: bytes | str) -> str:
+        return _keys.REFRESH_LOOKUP.format(token_hash=redis_decode_required(token_hash))
 
     async def find_user_id_from_token(self, token_hash: str) -> Optional[int]:
         """
@@ -1056,7 +1058,7 @@ class RefreshTokenManager:
             )
             return False, None, "Validation error"
 
-    async def revoke_refresh_token(self, user_id: int, token_hash: str, reason: str = "logout") -> bool:
+    async def revoke_refresh_token(self, user_id: int, token_hash: bytes | str, reason: str = "logout") -> bool:
         """
         Revoke a single refresh token.
 

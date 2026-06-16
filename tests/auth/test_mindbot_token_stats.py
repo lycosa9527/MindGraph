@@ -6,6 +6,7 @@ import pytest
 
 from utils.auth.mindbot_token_stats import (
     MINDBOT_USAGE_SUCCESS_CODES,
+    TokenPeriodTotals,
     add_service_period,
     add_token_period,
     empty_token_period,
@@ -23,7 +24,12 @@ def test_success_codes_match_mindbot_ok_and_accepted():
 
 def test_add_token_period_sums_fields():
     base = {"input_tokens": 10, "output_tokens": 20, "total_tokens": 30}
-    extra = {"input_tokens": 1, "output_tokens": 2, "total_tokens": 3, "request_count": 1}
+    extra: TokenPeriodTotals = {
+        "input_tokens": 1,
+        "output_tokens": 2,
+        "total_tokens": 3,
+        "request_count": 1,
+    }
     merged = add_token_period(base, extra)
     assert merged == {"input_tokens": 11, "output_tokens": 22, "total_tokens": 33}
 
@@ -86,7 +92,7 @@ async def test_merge_mindbot_tokens_into_top_user_rows_reorders_by_total():
         {"id": 1, "name": "A", "total_tokens": 100, "input_tokens": 0, "output_tokens": 0},
         {"id": 2, "name": "B", "total_tokens": 50, "input_tokens": 0, "output_tokens": 0},
     ]
-    mindbot = {
+    mindbot: dict[int, TokenPeriodTotals] = {
         2: {
             "input_tokens": 10,
             "output_tokens": 70,
@@ -112,7 +118,7 @@ async def test_merge_mindbot_tokens_into_top_user_rows_reorders_by_total():
 @pytest.mark.asyncio
 async def test_merge_mindbot_tokens_promotes_linked_user():
     rows = [{"id": 1, "name": "A", "total_tokens": 10}]
-    mindbot = {
+    mindbot: dict[int, TokenPeriodTotals] = {
         99: {
             "input_tokens": 1,
             "output_tokens": 499,

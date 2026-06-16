@@ -3,19 +3,21 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import cast
 
+from models.domain.auth import Organization
 from utils.auth.org_privatization import organization_is_privatized, org_privatization_list_field
 
 
-def _org(**fields: object) -> SimpleNamespace:
-    defaults = {
+def _org(**fields: object) -> Organization:
+    defaults: dict[str, object] = {
         "mindmate_agent_name": None,
         "mindmate_agent_avatar_url": None,
         "dify_api_base_url": None,
         "dify_api_key": None,
     }
     defaults.update(fields)
-    return SimpleNamespace(**defaults)
+    return cast(Organization, SimpleNamespace(**defaults))
 
 
 def test_not_privatized_when_all_empty() -> None:

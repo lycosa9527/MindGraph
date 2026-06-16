@@ -32,6 +32,8 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from utils.db.session_open import system_rls_session
+from services.utils.typing_helpers import result_rowcount
+
 from models.domain.auth import UpdateNotification, UpdateNotificationDismissed
 
 logger = logging.getLogger(__name__)
@@ -53,7 +55,7 @@ class UpdateNotifier:
         """Ensure a notification record exists in the database (race-condition safe)."""
         result = await db.execute(select(UpdateNotification).where(UpdateNotification.id == 1))
         notification = result.scalar_one_or_none()
-        if not notification:
+        if notification is None:
             try:
                 notification = UpdateNotification(id=1, enabled=False, version="", title="", message="")
                 db.add(notification)
@@ -63,6 +65,8 @@ class UpdateNotifier:
                 await db.rollback()
                 result = await db.execute(select(UpdateNotification).where(UpdateNotification.id == 1))
                 notification = result.scalar_one_or_none()
+        if notification is None:
+            raise RuntimeError("Failed to initialize update notification record")
         return notification
 
     async def get_notification(self) -> Dict:
@@ -132,7 +136,7 @@ class UpdateNotifier:
                     result = await db.execute(
                         delete(UpdateNotificationDismissed).where(UpdateNotificationDismissed.version != version)
                     )
-                    deleted = result.rowcount
+                    deleted = result_rowcount(result)
                     await db.commit()
                     logger.info(
                         "Version changed from %s to %s, cleaned up %s old dismissed records",
@@ -303,7 +307,7 @@ class UpdateNotifier:
         async with system_rls_session() as db:
             try:
                 result = await db.execute(delete(UpdateNotificationDismissed))
-                deleted = result.rowcount
+                deleted = result_rowcount(result)
                 await db.commit()
 
                 logger.info("Cleared %s dismissed states", deleted)

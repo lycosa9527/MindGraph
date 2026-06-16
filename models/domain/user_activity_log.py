@@ -10,9 +10,12 @@ All Rights Reserved
 Proprietary License
 """
 
+from __future__ import annotations
+
 from datetime import UTC, datetime
 
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Index
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
 
 from models.domain.auth import Base
 
@@ -27,11 +30,13 @@ class UserActivityLog(Base):
 
     __tablename__ = "user_activity_log"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    activity_type = Column(String(50), nullable=False, default="login")
-    # BRIN index ix_user_activity_created_brin replaces a standalone btree on
-    # ``created_at``; the composite below still covers per-user lookups.
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    activity_type: Mapped[str] = mapped_column(String(50), nullable=False, default="login")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        nullable=False,
+    )
 
     __table_args__ = (Index("idx_user_activity_log_user_date", "user_id", "created_at"),)

@@ -11,7 +11,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, cast
 import logging
 import os
 
@@ -19,12 +19,8 @@ from qdrant_client import AsyncQdrantClient
 from qdrant_client.http import models as rest
 from qdrant_client.http.models import Distance
 
-# Try to import QuantizationType, fallback to string literal if not available
-try:
-    from qdrant_client.http.models import QuantizationType
-except ImportError:
-    # QuantizationType not available in this version, use string literal instead
-    QuantizationType = None
+# QuantizationType availability varies by qdrant-client version; resolve at runtime.
+_QUANTIZATION_TYPE = getattr(rest, "QuantizationType", None)
 
 from config.settings import config
 
@@ -131,6 +127,7 @@ class QdrantService(QdrantDiagnosticsMixin):
         Raises:
             ValueError: If neither QDRANT_URL nor QDRANT_HOST is configured
         """
+        super().__init__()
         qdrant_host = os.getenv("QDRANT_HOST", "")
         qdrant_url = os.getenv("QDRANT_URL", "")
 
@@ -221,10 +218,10 @@ class QdrantService(QdrantDiagnosticsMixin):
 
             quantization_config = None
             if self.use_compression:
-                if QuantizationType is not None:
-                    quantization_type = QuantizationType.INT8
+                if _QUANTIZATION_TYPE is not None:
+                    quantization_type = cast(rest.ScalarType, _QUANTIZATION_TYPE.INT8)
                 else:
-                    quantization_type = "int8"
+                    quantization_type = cast(rest.ScalarType, "int8")
 
                 if self.compression_type in ("SQ8", "IVF_SQ8"):
                     quantization_config = rest.ScalarQuantization(
@@ -416,7 +413,7 @@ class QdrantService(QdrantDiagnosticsMixin):
         if metadata_filter:
             _append_metadata_filter_conditions(metadata_filter, filter_conditions)
 
-        query_filter = rest.Filter(must=filter_conditions) if filter_conditions else None
+        query_filter = rest.Filter(must=cast(List[rest.Condition], filter_conditions)) if filter_conditions else None
 
         logger.debug(
             "[Qdrant] search: collection=%s, top_k=%s, score_threshold=%s, filter_conditions=%s",
@@ -481,7 +478,7 @@ class QdrantService(QdrantDiagnosticsMixin):
         try:
             await self.client.delete(
                 collection_name=collection_name,
-                points_selector=rest.PointIdsList(points=chunk_ids),
+                points_selector=rest.PointIdsList(points=cast(List[rest.ExtendedPointId], chunk_ids)),
             )
             logger.info("[Qdrant] Deleted %s chunks for user %s", len(chunk_ids), user_id)
         except Exception as exc:
@@ -621,7 +618,7 @@ class QdrantService(QdrantDiagnosticsMixin):
 
         try:
             info = await self.client.get_collection(collection_name)
-            return info.points_count
+            return info.points_count or 0
         except Exception as exc:
             logger.error("[Qdrant] Failed to get collection size for user %s: %s", user_id, exc)
             return 0

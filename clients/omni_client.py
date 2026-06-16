@@ -185,7 +185,7 @@ class OmniRealtimeClient:
             # Start message handler
             self._message_handler_task = asyncio.create_task(self._handle_messages())
 
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             self._connected = False
             logger.error("Failed to connect: %s", e, exc_info=True)
             raise
@@ -302,7 +302,7 @@ class OmniRealtimeClient:
                     logger.error("Failed to parse message: %s", e)
                     if self.on_error:
                         self.on_error({"type": "parse_error", "message": str(e)})
-                except Exception as e:  # pylint: disable=broad-except
+                except Exception as e:
                     logger.error("Error processing event: %s", e, exc_info=True)
                     if self.on_error:
                         self.on_error({"type": "processing_error", "message": str(e)})
@@ -310,7 +310,7 @@ class OmniRealtimeClient:
         except ConnectionClosed:
             logger.debug("WebSocket connection closed")
             self._connected = False
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.error("Error in message handler: %s", e, exc_info=True)
             self._connected = False
             if self.on_error:
@@ -468,7 +468,7 @@ class OmniRealtimeClient:
                         result = self.on_audio_chunk(audio_bytes)
                         if result is not None and asyncio.iscoroutine(result):
                             await cast(Coroutine[Any, Any, None], result)
-                except Exception as e:  # pylint: disable=broad-except
+                except Exception as e:
                     logger.error("Failed to decode audio: %s", e)
 
             elif event_type == "response.audio.done":
@@ -548,7 +548,7 @@ class OmniRealtimeClient:
             else:
                 logger.debug("Unhandled event type: %s", event_type)
 
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.error("Error processing event %s: %s", event_type, e, exc_info=True)
             if self.on_error:
                 self.on_error(
@@ -573,7 +573,7 @@ class OmniRealtimeClient:
         if self.ws:
             try:
                 await self.ws.close()
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception as e:
                 logger.debug("Error closing WebSocket: %s", e)
             self.ws = None
 
@@ -734,7 +734,7 @@ class OmniClient:
             await self.register_diagram_tools()
             # Signal session ready
             await self.event_queue.put({"type": "session_ready"})
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.error("Failed to connect: %s", e, exc_info=True)
             await self.event_queue.put({"type": "error", "error": str(e)})
             return
@@ -751,7 +751,7 @@ class OmniClient:
 
                 if event["type"] in ("error", "conversation_end"):
                     break
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.error("Event yielding error: %s", e, exc_info=True)
             yield {"type": "error", "error": str(e)}
         finally:
@@ -784,7 +784,7 @@ class OmniClient:
         try:
             await self._native_client.interrupt_assistant_for_user_speech()
             await self._native_client.append_audio(audio_base64)
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.error("Failed to send audio: %s", e)
 
     async def update_instructions(self, new_instructions: str):
@@ -818,7 +818,7 @@ class OmniClient:
             await self._native_client.update_session(session_config)
             logger.debug("Instructions updated: %s...", new_instructions[:50])
 
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.error("Failed to update instructions: %s", e, exc_info=True)
 
     async def create_greeting(self, greeting_text: str = "Hello! How can I help you today?"):
@@ -830,7 +830,7 @@ class OmniClient:
         try:
             await self._native_client.create_response(instructions=greeting_text)
             logger.debug("Greeting created: %s", greeting_text)
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.error("Failed to create greeting: %s", e, exc_info=True)
 
     async def send_text_message(self, text: str):
@@ -843,7 +843,7 @@ class OmniClient:
             instructions = f'The user typed this message: "{text}". Please respond helpfully and naturally.'
             await self._native_client.create_response(instructions=instructions)
             logger.debug("Text message sent: %s...", text[:50])
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.error("Failed to send text message: %s", e, exc_info=True)
 
     async def cancel_response(self):
@@ -855,7 +855,7 @@ class OmniClient:
         try:
             await self._native_client.cancel_response()
             logger.debug("Response cancelled")
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.error("Failed to cancel response: %s", e, exc_info=True)
 
     async def clear_audio_buffer(self):
@@ -867,7 +867,7 @@ class OmniClient:
         try:
             await self._native_client.clear_audio_buffer()
             logger.debug("Audio buffer cleared")
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.error("Failed to clear audio buffer: %s", e, exc_info=True)
 
     async def commit_audio_buffer(self):
@@ -879,7 +879,7 @@ class OmniClient:
         try:
             await self._native_client.commit_audio_buffer()
             logger.debug("Audio buffer committed")
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.error("Failed to commit audio buffer: %s", e, exc_info=True)
 
     async def append_image(self, image_bytes: bytes, image_format: str = "jpeg"):
@@ -891,7 +891,7 @@ class OmniClient:
         try:
             await self._native_client.append_image(image_bytes, image_format)
             logger.debug("Image appended: %s bytes (%s)", len(image_bytes), image_format)
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.error("Failed to append image: %s", e, exc_info=True)
 
     async def chat_completion(
@@ -959,7 +959,7 @@ class OmniClient:
         except httpx.TimeoutException as e:
             logger.error("Chat completion timeout for Omni: %s", e)
             raise
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.error("Chat completion failed for Omni: %s", e)
             raise
 

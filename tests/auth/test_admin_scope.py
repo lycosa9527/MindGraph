@@ -27,6 +27,7 @@ class _User:
         self.role = role
         self.organization_id = organization_id
         self.id = user_id
+        self.phone: str | None = None
 
 
 def test_teacher_has_no_panel_access():
@@ -172,7 +173,7 @@ def test_superadmin_not_read_only():
 
 
 def test_env_superadmin_with_teacher_role_gets_full_caps(monkeypatch):
-    from utils.auth.admin_panel_permissions import CAP_SCOPE_GLOBAL, user_panel_capabilities
+    from utils.auth.admin_panel_permissions import user_panel_capabilities
 
     user = _User("teacher")
     user.phone = "13800138000"

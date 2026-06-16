@@ -57,7 +57,7 @@ async def generate_characteristics_with_agent(topic1: str, topic2: str, language
 
     logger.debug("Agent: Generating characteristics for %s vs %s", topic1, topic2)
     # Create the characteristics generation function
-    from .prompt_helpers import create_characteristics_chain  # pylint: disable=import-outside-toplevel
+    from .prompt_helpers import create_characteristics_chain
 
     char_func = create_characteristics_chain(registry_lang)
     try:

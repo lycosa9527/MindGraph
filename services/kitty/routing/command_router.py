@@ -592,28 +592,28 @@ async def route_voice_command(
                 session_context,
                 prefer_selected=True,
             )
-            params: Dict[str, Any] = {}
+            inline_rec_params: Dict[str, Any] = {}
             if resolved and resolved.get("node_id"):
-                params["node_id"] = resolved["node_id"]
+                inline_rec_params["node_id"] = resolved["node_id"]
                 if resolved.get("node_index") is not None:
-                    params["node_index"] = resolved["node_index"]
+                    inline_rec_params["node_index"] = resolved["node_index"]
             await safe_websocket_send(
                 websocket,
                 {
                     "type": "action",
                     "action": "start_inline_recommendations",
-                    "params": params,
+                    "params": inline_rec_params,
                 },
             )
             await fanout_voice_command_from_session(
                 voice_session_id,
                 "start_inline_recommendations",
-                params=params,
+                params=inline_rec_params,
             )
             try:
                 omni_client = get_session_omni_client(voice_session_id)
                 if omni_client:
-                    if params.get("node_id"):
+                    if inline_rec_params.get("node_id"):
                         await omni_client.create_response(instructions="好，打开联想建议。")
                     else:
                         await omni_client.create_response(instructions="请先在画布上选中一个节点，再说要推荐的内容。")
@@ -623,22 +623,22 @@ async def route_voice_command(
 
         elif action == "add_node_with_recommendations":
             logger.info("Kitty: add node with inline recommendations")
-            params: Dict[str, Any] = {}
+            add_node_params: Dict[str, Any] = {}
             seed = command.get("target")
             if isinstance(seed, str) and seed.strip():
-                params["text"] = seed.strip()
+                add_node_params["text"] = seed.strip()
             await safe_websocket_send(
                 websocket,
                 {
                     "type": "action",
                     "action": "add_node_with_recommendations",
-                    "params": params,
+                    "params": add_node_params,
                 },
             )
             await fanout_voice_command_from_session(
                 voice_session_id,
                 "add_node_with_recommendations",
-                params=params,
+                params=add_node_params,
             )
             try:
                 omni_client = get_session_omni_client(voice_session_id)

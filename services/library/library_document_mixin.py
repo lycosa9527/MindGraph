@@ -63,7 +63,7 @@ class LibraryDocumentMixin:
         Returns:
             Dict with documents list and pagination info
         """
-        conditions = [LibraryDocument.is_active]
+        conditions: list[Any] = [LibraryDocument.is_active]
 
         if search:
             search_term = f"%{search}%"
@@ -419,7 +419,10 @@ class LibraryDocumentMixin:
         if not document:
             raise ValueError(f"Document not found: {document_id}")
 
-        folder_path = resolve_library_path(document.pages_dir_path, self.storage_dir, Path.cwd())
+        pages_dir_path = document.pages_dir_path
+        if not pages_dir_path:
+            raise ValueError(f"Document {document_id} has no pages directory path")
+        folder_path = resolve_library_path(pages_dir_path, self.storage_dir, Path.cwd())
         if not folder_path or not folder_path.exists():
             raise ValueError(f"Book folder not found for document {document_id}")
 

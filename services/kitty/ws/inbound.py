@@ -145,9 +145,10 @@ async def dispatch_kitty_ws_inbound_message(
             voice_sessions[voice_session_id].get("diagram_type") or new_context_in.get("diagram_type") or "circle_map"
         )
         client_lane = voice_sessions[voice_session_id].get("_kitty_client_lane")
-        delta_dd = new_context_in.get("diagram_data") if isinstance(new_context_in.get("diagram_data"), dict) else {}
+        delta_dd_raw = new_context_in.get("diagram_data")
+        delta_dd: dict[str, Any] = delta_dd_raw if isinstance(delta_dd_raw, dict) else {}
         lib_raw = new_context_in.get("diagram_library_id")
-        prefer_server = (
+        prefer_server = bool(
             client_lane == "mobile"
             and isinstance(lib_raw, str)
             and lib_raw.strip()

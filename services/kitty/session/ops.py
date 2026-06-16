@@ -1,7 +1,7 @@
 """Voice session lifecycle and Omni client accessors."""
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Awaitable, Callable, Dict, Optional, cast
 import asyncio
 import copy
 import uuid
@@ -165,7 +165,7 @@ async def _close_omni_generator_for_session(session: Dict[str, Any], session_id:
     if not callable(aclose):
         return
     try:
-        await aclose()
+        await cast(Callable[[], Awaitable[Any]], aclose)()
     except (RuntimeError, AttributeError, GeneratorExit, StopAsyncIteration) as exc:
         logger.debug(
             "VOIC | Omni generator close skipped for session %s: %s",

@@ -21,6 +21,7 @@ from sqlalchemy.sql.functions import count as sql_count
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.gewe_contact import GeweContact
+from services.utils.typing_helpers import result_rowcount
 from services.redis.redis_async_ops import AsyncRedisOperations
 from services.redis.redis_client import is_redis_available
 
@@ -400,7 +401,7 @@ class GeweContactDB:
                 except Exception as e:
                     logger.debug("Failed to invalidate contact cache %s:%s: %s", app_id, wxid, e)
 
-            return result.rowcount > 0
+            return result_rowcount(result) > 0
         except Exception as e:
             logger.error("Failed to delete contact: %s", e, exc_info=True)
             await self.db.rollback()

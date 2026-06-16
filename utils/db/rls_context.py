@@ -18,8 +18,6 @@ from sqlalchemy import event, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from utils.auth.role_constants import normalize_role
-
 _logger = logging.getLogger(__name__)
 
 _rls_context_var: ContextVar[Optional["RlsContext"]] = ContextVar("rls_context", default=None)
@@ -27,6 +25,7 @@ _rls_context_var: ContextVar[Optional["RlsContext"]] = ContextVar("rls_context",
 
 def _rls_strict_enabled() -> bool:
     return os.getenv("RLS_CONTEXT_STRICT", "0").lower() in ("1", "true", "yes")
+
 
 MODE_AUTHENTICATED = "authenticated"
 MODE_PANEL = "panel"
@@ -86,6 +85,8 @@ class RlsContext:
 
     @classmethod
     def from_user(cls, user: Any, *, allow_global_channels: bool = False) -> "RlsContext":
+        from utils.auth.role_constants import normalize_role
+
         uid = getattr(user, "id", None)
         org_id = getattr(user, "organization_id", None)
         role = normalize_role(getattr(user, "role", None))
@@ -106,6 +107,8 @@ class RlsContext:
 
     @classmethod
     def panel_superadmin(cls, user: Any) -> "RlsContext":
+        from utils.auth.role_constants import normalize_role
+
         uid = getattr(user, "id", None)
         return cls(
             mode=MODE_PANEL_SUPERADMIN,
@@ -174,9 +177,7 @@ def resolve_rls_context_for_transaction() -> RlsContext:
     return RlsContext.deny_default()
 
 
-_SET_CONFIG_SQL = text(
-    "SELECT set_config(:key, :value, true)"
-)
+_SET_CONFIG_SQL = text("SELECT set_config(:key, :value, true)")
 
 
 async def apply_rls_context_async(session: AsyncSession, ctx: Optional[RlsContext] = None) -> None:
@@ -198,7 +199,7 @@ def apply_rls_context_sync(connection: Any, ctx: Optional[RlsContext] = None) ->
         )
 
 
-def _after_begin_apply_rls(session: Session, _transaction, connection) -> None:
+def _after_begin_apply_rls(_session: Session, _transaction, connection) -> None:
     apply_rls_context_sync(connection)
 
 

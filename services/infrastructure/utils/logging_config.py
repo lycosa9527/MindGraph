@@ -61,10 +61,10 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
         self.interval_seconds = interval_hours * 3600
 
         # Calculate the start of the current 72-hour period
-        self.current_period_start = self._get_period_start()  # pylint: disable=protected-access
+        self.current_period_start = self._get_period_start()
 
         # Generate the filename for the current period
-        current_filename = self._get_current_filename()  # pylint: disable=protected-access
+        current_filename = self._get_current_filename()
 
         # Ensure directory exists
         log_dir = os.path.dirname(current_filename)
@@ -110,16 +110,16 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
             self.stream.close()
 
         # Clean up old files
-        self._cleanup_old_files()  # pylint: disable=protected-access
+        self._cleanup_old_files()
 
         # Calculate new period start
-        self.current_period_start = self._get_period_start()  # pylint: disable=protected-access
+        self.current_period_start = self._get_period_start()
         self.next_rotation_time = self.current_period_start + timedelta(hours=self.interval_hours)
 
         # Open new file
-        new_filename = self._get_current_filename()  # pylint: disable=protected-access
+        new_filename = self._get_current_filename()
         self.baseFilename = new_filename
-        self.stream = self._open()  # pylint: disable=protected-access
+        self.stream = self._open()
 
     def __getattr__(self, name):
         """Handle camelCase method calls from Python logging framework."""
@@ -467,8 +467,8 @@ class OpenAIHTTPLogFilter(logging.Filter):
         match = re.match(pattern, message)
         if match:
             method, url, status_code, status_text = match.groups()
-            api_name = self._extract_api_name(url)  # pylint: disable=protected-access
-            endpoint = self._extract_endpoint(url)  # pylint: disable=protected-access
+            api_name = self._extract_api_name(url)
+            endpoint = self._extract_endpoint(url)
             return f"{api_name} API: {method} {endpoint} → {status_code} {status_text}"
         return message  # Return original if pattern doesn't match
 
@@ -479,8 +479,8 @@ class OpenAIHTTPLogFilter(logging.Filter):
         match = re.match(pattern, message)
         if match:
             method, url = match.groups()
-            api_name = self._extract_api_name(url)  # pylint: disable=protected-access
-            endpoint = self._extract_endpoint(url)  # pylint: disable=protected-access
+            api_name = self._extract_api_name(url)
+            endpoint = self._extract_endpoint(url)
             return f"{api_name} API: {method} {endpoint}"
         return message  # Return original if pattern doesn't match
 
@@ -501,17 +501,17 @@ class OpenAIHTTPLogFilter(logging.Filter):
 
         # Reformat HTTP Response messages
         if message.startswith("HTTP Response:"):
-            reformatted = self._reformat_response(message)  # pylint: disable=protected-access
+            reformatted = self._reformat_response(message)
             record.msg = reformatted
             record.args = ()
-            record._openai_reformatted = True  # pylint: disable=protected-access
+            record._openai_reformatted = True
 
         # Reformat HTTP Request messages
         elif message.startswith("HTTP Request:"):
-            reformatted = self._reformat_request(message)  # pylint: disable=protected-access
+            reformatted = self._reformat_request(message)
             record.msg = reformatted
             record.args = ()
-            record._openai_reformatted = True  # pylint: disable=protected-access
+            record._openai_reformatted = True
 
         return True
 

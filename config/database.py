@@ -376,16 +376,13 @@ def _run_alembic_upgrade() -> None:
     from alembic.script import ScriptDirectory
 
     from scripts.db.migration_urls import configure_rls_migration_environment
-    from utils.db.alembic_migration import ensure_rls_migration_modules_loaded
 
     if "postgresql" in DATABASE_URL:
         from scripts.db.rls_roles_bootstrap import ensure_rls_roles_exist
 
         roles_ok, roles_msg = ensure_rls_roles_exist()
         if not roles_ok:
-            raise RuntimeError(
-                f"RLS PostgreSQL bootstrap failed before Alembic: {roles_msg}"
-            )
+            raise RuntimeError(f"RLS PostgreSQL bootstrap failed before Alembic: {roles_msg}")
         if roles_msg != "RLS roles already exist":
             logger.info("[Database] %s", roles_msg)
         try:
@@ -395,7 +392,6 @@ def _run_alembic_upgrade() -> None:
                 "[Database] Could not auto-resolve DATABASE_MIGRATION_URL for Alembic: %s",
                 exc,
             )
-        ensure_rls_migration_modules_loaded()
 
     alembic_cfg = AlembicConfig(_ALEMBIC_INI)
     alembic_cfg.set_main_option("script_location", _ALEMBIC_SCRIPT_DIR)

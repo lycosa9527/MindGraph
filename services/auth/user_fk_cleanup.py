@@ -39,32 +39,19 @@ from models.domain.user_api_token import UserAPIToken
 from models.domain.user_usage_stats import UserUsageStats
 from models.domain.workshop_chat import ChatTopic
 
-try:
-    from models.domain.token_usage import TokenUsage
-except ImportError:  # pragma: no cover
-    TokenUsage = None  # type: ignore[misc, assignment]
-
-try:
-    from models.domain.mindbot_usage import MindbotUsageEvent
-except ImportError:  # pragma: no cover
-    MindbotUsageEvent = None  # type: ignore[misc, assignment]
+from models.domain.token_usage import TokenUsage
+from models.domain.mindbot_usage import MindbotUsageEvent
 
 logger = logging.getLogger(__name__)
 
 
 async def _null_token_usage_user_id(db: AsyncSession, user_id: int) -> None:
-    if TokenUsage is None:
-        return
     await db.execute(update(TokenUsage).where(TokenUsage.user_id == user_id).values(user_id=None))
 
 
 async def _null_mindbot_linked_user(db: AsyncSession, user_id: int) -> None:
-    if MindbotUsageEvent is None:
-        return
     await db.execute(
-        update(MindbotUsageEvent)
-        .where(MindbotUsageEvent.linked_user_id == user_id)  # type: ignore[attr-defined]
-        .values(linked_user_id=None)
+        update(MindbotUsageEvent).where(MindbotUsageEvent.linked_user_id == user_id).values(linked_user_id=None)
     )
 
 
@@ -195,7 +182,7 @@ async def delete_user_fk_dependent_rows(db: AsyncSession, user_id: int) -> None:
     Delete child rows and null FKs that would block ``DELETE FROM users`` for this id.
     """
     try:
-        from services.online_collab.core.purge_user_collab import (  # pylint: disable=import-outside-toplevel
+        from services.online_collab.core.purge_user_collab import (
             purge_user_from_active_collab,
         )
 

@@ -9,7 +9,7 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 from alembic import op
 
-from alembic.rls_policy_builder import DEVICE_EXPR, _drop_policy, _create_all_policy
+from db_rls.policy_builder import DEVICE_EXPR, _drop_policy, _create_all_policy
 
 revision: str = "0049"
 down_revision: Union[str, None] = "0048"

@@ -17,7 +17,6 @@ import uuid
 from typing import Optional, TYPE_CHECKING
 
 from sqlalchemy import (
-    Column,
     Integer,
     String,
     DateTime,
@@ -36,7 +35,7 @@ if TYPE_CHECKING:
     from models.domain.auth import User
 
 
-def generate_uuid():
+def generate_uuid() -> str:
     """Generate a UUID string for bookmark IDs."""
     return str(uuid.uuid4())
 
@@ -112,7 +111,7 @@ class LibraryDocument(Base):
         Index("ix_library_documents_pages_dir", "pages_dir_path"),
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<LibraryDocument id={self.id} title={self.title[:30]}>"
 
 
@@ -127,53 +126,48 @@ class LibraryDanmaku(Base):
 
     __tablename__ = "library_danmaku"
 
-    id = Column(Integer, primary_key=True, index=True)
-    document_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    document_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("library_documents.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
-    # Page info
-    page_number = Column(Integer, nullable=False, index=True)  # 1-indexed
+    page_number: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
 
-    # Position mode (fallback)
-    position_x = Column(Integer, nullable=True)  # X coordinate or percentage
-    position_y = Column(Integer, nullable=True)  # Y coordinate or percentage
+    position_x: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    position_y: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
-    # Text selection mode (for OCRed PDFs)
-    selected_text = Column(Text, nullable=True)  # The actual text content selected
-    text_bbox = Column(pg.JSONB, nullable=True)  # Bounding box: {x, y, width, height} relative to page
+    selected_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    text_bbox: Mapped[dict | None] = mapped_column(pg.JSONB, nullable=True)
 
-    # Comment content
-    content = Column(Text, nullable=False)
-    color = Column(String(20), nullable=True)  # Danmaku color
-    highlight_color = Column(String(20), nullable=True)  # Highlight color for text selections
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    color: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    highlight_color: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
-    # Status
-    is_active = Column(Boolean, default=True, nullable=False, index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
 
-    # Timestamps
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
-    updated_at = Column(
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )
 
-    # Relationships
-    document = relationship("LibraryDocument", back_populates="danmaku", lazy="selectin")
-    user = relationship("User", lazy="selectin")
-    likes = relationship(
+    document: Mapped["LibraryDocument"] = relationship("LibraryDocument", back_populates="danmaku", lazy="selectin")
+    user: Mapped["User"] = relationship("User", lazy="selectin")
+    likes: Mapped[list["LibraryDanmakuLike"]] = relationship(
         "LibraryDanmakuLike",
         back_populates="danmaku",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    replies = relationship(
+    replies: Mapped[list["LibraryDanmakuReply"]] = relationship(
         "LibraryDanmakuReply",
         back_populates="danmaku",
         cascade="all, delete-orphan",
@@ -191,7 +185,7 @@ class LibraryDanmaku(Base):
         ),
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<LibraryDanmaku id={self.id} document_id={self.document_id} page={self.page_number}>"
 
 
@@ -204,24 +198,23 @@ class LibraryDanmakuLike(Base):
 
     __tablename__ = "library_danmaku_likes"
 
-    id = Column(Integer, primary_key=True, index=True)
-    danmaku_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    danmaku_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("library_danmaku.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
 
-    # Relationships
-    danmaku = relationship("LibraryDanmaku", back_populates="likes", lazy="selectin")
-    user = relationship("User", lazy="selectin")
+    danmaku: Mapped["LibraryDanmaku"] = relationship("LibraryDanmaku", back_populates="likes", lazy="selectin")
+    user: Mapped["User"] = relationship("User", lazy="selectin")
 
     # Unique constraint: one like per user per danmaku
     __table_args__ = (Index("ix_library_danmaku_likes_unique", "danmaku_id", "user_id", unique=True),)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<LibraryDanmakuLike danmaku_id={self.danmaku_id} user_id={self.user_id}>"
 
 
@@ -234,38 +227,37 @@ class LibraryDanmakuReply(Base):
 
     __tablename__ = "library_danmaku_replies"
 
-    id = Column(Integer, primary_key=True, index=True)
-    danmaku_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    danmaku_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("library_danmaku.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    parent_reply_id = Column(
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    parent_reply_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("library_danmaku_replies.id", ondelete="CASCADE"),
         nullable=True,
         index=True,
-    )  # For nested replies
-    content = Column(Text, nullable=False)
+    )
+    content: Mapped[str] = mapped_column(Text, nullable=False)
 
-    # Status
-    is_active = Column(Boolean, default=True, nullable=False, index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
 
-    # Timestamps
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
-    updated_at = Column(
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )
 
-    # Relationships
-    danmaku = relationship("LibraryDanmaku", back_populates="replies", lazy="selectin")
-    user = relationship("User", lazy="selectin")
-    parent_reply = relationship(
+    danmaku: Mapped["LibraryDanmaku"] = relationship("LibraryDanmaku", back_populates="replies", lazy="selectin")
+    user: Mapped["User"] = relationship("User", lazy="selectin")
+    parent_reply: Mapped["LibraryDanmakuReply | None"] = relationship(
         "LibraryDanmakuReply",
         remote_side=[id],
         backref="child_replies",
@@ -278,7 +270,7 @@ class LibraryDanmakuReply(Base):
         Index("ix_library_danmaku_replies_parent", "parent_reply_id"),
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<LibraryDanmakuReply id={self.id} danmaku_id={self.danmaku_id}>"
 
 
@@ -292,36 +284,32 @@ class LibraryBookmark(Base):
 
     __tablename__ = "library_bookmarks"
 
-    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    # uuid has unique=True which creates a UNIQUE constraint (implemented as UNIQUE INDEX)
-    # No need for index=True or explicit Index - unique=True already creates the index
-    uuid = Column(String(36), nullable=False, unique=True, default=generate_uuid)  # UUID for tracking/sharing
-    document_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, index=True)
+    uuid: Mapped[str] = mapped_column(String(36), nullable=False, unique=True, default=generate_uuid)
+    document_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("library_documents.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
-    # Page info
-    page_number = Column(Integer, nullable=False, index=True)  # 1-indexed
+    page_number: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
 
-    # Optional note/description
-    note = Column(Text, nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    # Timestamps
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
-    updated_at = Column(
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )
 
-    # Relationships
-    document = relationship("LibraryDocument", lazy="selectin")
-    user = relationship("User", lazy="selectin")
+    document: Mapped["LibraryDocument"] = relationship("LibraryDocument", lazy="selectin")
+    user: Mapped["User"] = relationship("User", lazy="selectin")
 
     # Unique constraint: one bookmark per user per document per page
     __table_args__ = (
@@ -336,5 +324,5 @@ class LibraryBookmark(Base):
         # Removed Index('ix_library_bookmarks_uuid', 'uuid') - redundant with unique=True on uuid column
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<LibraryBookmark id={self.id} uuid={self.uuid} document_id={self.document_id} page={self.page_number}>"

@@ -268,7 +268,7 @@ async def repair_library_paths(
             doc.pages_dir_path = desired
             doc.updated_at = datetime.now(UTC)
             updated += 1
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             logger.error("[Library] Repair failed for document %s: %s", doc.id, exc)
             errors += 1
 

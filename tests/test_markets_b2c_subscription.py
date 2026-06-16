@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
+from typing import cast
 
+from models.domain.markets import MarketListing
 from services.markets.alipay_common import (
     add_billing_period,
     listing_billing_interval,
@@ -70,6 +72,6 @@ def test_listing_billing_interval_defaults_month() -> None:
 
 def test_entitlement_expires_from_listing_access_days() -> None:
     paid_at = datetime(2026, 5, 1, tzinfo=UTC).replace(tzinfo=None)
-    listing = SimpleNamespace(extra_json={"access_days": 30})
+    listing = cast(MarketListing, SimpleNamespace(extra_json={"access_days": 30}))
     expires = entitlement_expires_from_listing(listing, paid_at=paid_at)
     assert expires == paid_at + timedelta(days=30)

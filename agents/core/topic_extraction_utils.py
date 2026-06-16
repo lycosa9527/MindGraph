@@ -244,7 +244,7 @@ async def extract_topics_with_agent(user_prompt: str, language: str = "zh") -> T
 
     logger.debug("Agent: Extracting topics from prompt: %s", user_prompt)
     # Create the topic extraction function
-    from .prompt_helpers import create_topic_extraction_chain  # pylint: disable=import-outside-toplevel
+    from .prompt_helpers import create_topic_extraction_chain
 
     topic_func = create_topic_extraction_chain(registry_lang)
     try:

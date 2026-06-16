@@ -21,16 +21,18 @@ import json
 import os
 import random
 import time
-from typing import List, Mapping, Tuple
+from typing import Any, Callable, List, Mapping, Tuple, cast
 from urllib.parse import quote, urlencode, urlparse
 
-try:
-    from locust import User, between, events, tag, task  # pylint: disable=import-error
-except ImportError:  # pragma: no cover
-    raise SystemExit("Install Locust first: pip install locust websocket-client") from None
+_locust = __import__("locust")
+User = cast(Any, _locust.User)
+between = cast(Callable[..., Any], _locust.between)
+events = cast(Any, _locust.events)
+tag = cast(Callable[..., Any], _locust.tag)
+task = cast(Callable[..., Any], _locust.task)
 
 try:
-    import websocket  # type: ignore  # pip package websocket-client
+    import websocket
 except ImportError:  # pragma: no cover
     raise SystemExit("Install websocket-client: pip install websocket-client") from None
 
@@ -157,8 +159,9 @@ class CanvasCollabWsUser(User):
 
         self._sock: websocket.WebSocket | None = None
         try:
-            self._sock = websocket.create_connection(self._uri, timeout=45)
-            self._sock.send(json.dumps({"type": "join"}))
+            sock = websocket.create_connection(self._uri, timeout=45)
+            sock.send(json.dumps({"type": "join"}))
+            self._sock = sock
         except (OSError, ValueError, websocket.WebSocketException) as exc:
             self._abort_start(str(exc))
 

@@ -25,18 +25,18 @@ Proprietary License
 
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 import logging
 import os
 import shutil
 
 from dotenv import dotenv_values
 
-
-# File locking for Unix-like systems (not available on Windows)
+fcntl: Any = None
 try:
-    import fcntl
+    import fcntl as _fcntl
 
+    fcntl = _fcntl
     HAS_FCNTL = True
 except ImportError:
     HAS_FCNTL = False
@@ -144,6 +144,7 @@ class EnvManager:
         Raises:
             ValueError: If write operation fails
         """
+        temp_path: Path | None = None
         try:
             # Read existing lines to preserve comments
             lines = self.read_env_with_comments()
@@ -187,7 +188,7 @@ class EnvManager:
 
             with open(temp_path, "w", encoding="utf-8") as f:
                 # Use file locking if available (Unix-like systems)
-                if HAS_FCNTL:
+                if HAS_FCNTL and fcntl is not None:
                     try:
                         fcntl.flock(f.fileno(), fcntl.LOCK_EX)
                     except OSError:
@@ -211,7 +212,7 @@ class EnvManager:
         except Exception as e:
             logger.error("Failed to write .env file: %s", e)
             # Clean up temp file if it exists
-            if temp_path.exists():
+            if temp_path is not None and temp_path.exists():
                 temp_path.unlink()
             raise ValueError(f"Failed to write .env file: {e}") from e
 

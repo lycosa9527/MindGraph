@@ -123,10 +123,14 @@ async def upload_chunk_test_document(
             tmp_file.write(content)
             tmp_path = tmp_file.name
 
-        file_type = service.processor.get_file_type(file.filename)
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="Filename is required")
+
+        file_name = file.filename
+        file_type = service.processor.get_file_type(file_name)
 
         document = await service.upload_document(
-            file_name=file.filename,
+            file_name=file_name,
             file_path=tmp_path,
             file_type=file_type,
             file_size=len(content),

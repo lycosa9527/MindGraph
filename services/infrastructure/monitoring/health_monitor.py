@@ -381,7 +381,6 @@ class HealthMonitor:
             response_data: Parsed JSON response if available, None otherwise
         """
         try:
-            # pylint: disable=import-outside-toplevel
             from routers.core.health import (
                 _check_application_health,
                 _check_redis_health,
@@ -475,7 +474,7 @@ class HealthMonitor:
                 return "degraded", None, response_data
             return "unhealthy", f"Status: {overall_status}", response_data
 
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             return "error", f"Unexpected error: {exc}", None
 
     async def _monitor_loop(self) -> None:

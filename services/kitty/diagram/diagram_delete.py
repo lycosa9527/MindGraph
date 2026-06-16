@@ -226,7 +226,7 @@ async def voice_apply_delete_node_action(
     if not resolved_node_id and target:
         for idx, node in enumerate(nodes):
             node_text = node.get("text") if isinstance(node, dict) else str(node)
-            if target in node_text or node_text in target:
+            if node_text and target and (target in node_text or node_text in target):
                 diagram_type = voice_sessions[voice_session_id].get("diagram_type", "circle_map")
                 prefix_map = get_diagram_prefix_map()
                 prefix = prefix_map.get(diagram_type, "node")

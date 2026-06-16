@@ -235,10 +235,10 @@ def _integer_max_for_serial_setval(max_id: object) -> Optional[int]:
     try:
         if isinstance(max_id, int):
             val = max_id
-        elif isinstance(max_id, Decimal):
+        elif isinstance(max_id, (int, float, Decimal)):
             val = int(max_id)
         else:
-            val = int(max_id)
+            val = int(str(max_id))
     except (TypeError, ValueError, OverflowError):
         return None
     return val if val > 0 else None

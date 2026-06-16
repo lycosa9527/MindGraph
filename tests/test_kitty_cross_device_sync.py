@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from tests.typing_helpers import mock_await_args, mock_await_kwargs
 from services.kitty.context.messaging import send_kitty_diagram_update
 from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
     publish_kitty_diagram_update,
@@ -33,7 +34,7 @@ async def test_publish_kitty_diagram_update_payload_shape() -> None:
         )
 
     fake_redis.publish.assert_awaited_once()
-    channel, raw = fake_redis.publish.await_args.args
+    channel, raw = mock_await_args(fake_redis.publish)
     assert "7" in channel
     body = json.loads(raw)
     assert body["type"] == "diagram_update"
@@ -57,7 +58,7 @@ async def test_publish_kitty_selection_update_payload_shape() -> None:
         )
 
     fake_redis.publish.assert_awaited_once()
-    channel, raw = fake_redis.publish.await_args.args
+    channel, raw = mock_await_args(fake_redis.publish)
     assert "9" in channel
     body = json.loads(raw)
     assert body["type"] == "selection_update"
@@ -158,4 +159,4 @@ async def test_mobile_patch_context_prefers_library_when_delta_empty() -> None:
 
     assert out["ok"] is True
     merge_lib.assert_awaited_once()
-    assert merge_lib.await_args.kwargs["prefer_server_diagram_nodes"] is True
+    assert mock_await_kwargs(merge_lib)["prefer_server_diagram_nodes"] is True

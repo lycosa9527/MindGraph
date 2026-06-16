@@ -317,7 +317,7 @@ async def upload_announcement_image(
         # Return URL path
         image_url = f"/static/announcement_images/{filename}"
 
-        logger.info("Admin %s uploaded announcement image: %s", current_user.phone, filename)
+        logger.info("Admin %s uploaded announcement image: %s", _current_user.phone, filename)
 
         return {"url": image_url, "filename": filename}
 

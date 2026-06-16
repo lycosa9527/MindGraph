@@ -76,16 +76,16 @@ async def _listener_loop(stop: asyncio.Event) -> None:
 
     Reconnects on any error after ``_RECONNECT_DELAY_SEC`` seconds.
     """
-    from services.features.workshop_ws_fanout_delivery import (  # pylint: disable=import-outside-toplevel
+    from services.features.workshop_ws_fanout_delivery import (
         deliver_local_workshop_broadcast,
     )
 
     while not stop.is_set():
         conn = None
         try:
-            import psycopg  # pylint: disable=import-outside-toplevel
-            from psycopg import sql  # pylint: disable=import-outside-toplevel
-            from config.database import DATABASE_URL  # pylint: disable=import-outside-toplevel
+            import psycopg
+            from psycopg import sql
+            from config.database import DATABASE_URL
 
             dsn = str(DATABASE_URL).replace("+asyncpg", "").replace("+psycopg", "")
             conn = await psycopg.AsyncConnection.connect(dsn, autocommit=True)
@@ -108,12 +108,12 @@ async def _listener_loop(stop: asyncio.Event) -> None:
                     inner = env.get("payload")
                     if isinstance(inner, str):
                         try:
-                            from services.features.ws_redis_fanout_listener import (  # pylint: disable=import-outside-toplevel
+                            from services.features.ws_redis_fanout_listener import (
                                 dispatch_chat_fanout_raw,
                             )
 
                             await dispatch_chat_fanout_raw(inner)
-                        except Exception as exc:  # pylint: disable=broad-except
+                        except Exception as exc:
                             logger.debug("[PgNotify] chat deliver error: %s", exc)
                     continue
                 if _FANOUT_ORIGIN_SECRET and env.get("origin") != _FANOUT_ORIGIN_SECRET:
@@ -130,15 +130,15 @@ async def _listener_loop(stop: asyncio.Event) -> None:
                 exclude = ex if isinstance(ex, int) else None
                 try:
                     await deliver_local_workshop_broadcast(code, mode, exclude, data_str)
-                except Exception as exc:  # pylint: disable=broad-except
+                except Exception as exc:
                     logger.debug("[PgNotify] deliver error: %s", exc)
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             logger.warning("[PgNotify] listener error: %s — reconnecting", exc)
         finally:
             if conn is not None:
                 try:
                     await conn.close()
-                except Exception:  # pylint: disable=broad-except
+                except Exception:
                     pass
         if not stop.is_set():
             await asyncio.sleep(_RECONNECT_DELAY_SEC)
@@ -197,9 +197,9 @@ async def publish_pg_notify_fanout_async(envelope: Dict[str, Any]) -> None:
         )
         return
     try:
-        import psycopg  # pylint: disable=import-outside-toplevel
-        from psycopg import sql  # pylint: disable=import-outside-toplevel
-        from config.database import DATABASE_URL  # pylint: disable=import-outside-toplevel
+        import psycopg
+        from psycopg import sql
+        from config.database import DATABASE_URL
 
         dsn = str(DATABASE_URL).replace("+asyncpg", "").replace("+psycopg", "")
         # We NOTIFY the shared channel so all workers receive the message,
@@ -209,5 +209,5 @@ async def publish_pg_notify_fanout_async(envelope: Dict[str, Any]) -> None:
         async with await psycopg.AsyncConnection.connect(dsn, autocommit=True) as conn:
             await conn.execute(notify_query, (body,))
         logger.debug("[PgNotify] NOTIFY %s sent", _SHARED_CHANNEL)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.debug("[PgNotify] publish failed: %s", exc)

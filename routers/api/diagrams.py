@@ -176,8 +176,8 @@ async def _diagram_spec_with_live_collab_overlay(
     )
     if not active_code:
         return spec
-    from services.redis.redis_async_client import get_async_redis  # pylint: disable=import-outside-toplevel
-    from services.online_collab.spec.online_collab_live_spec import (  # pylint: disable=import-outside-toplevel
+    from services.redis.redis_async_client import get_async_redis
+    from services.online_collab.spec.online_collab_live_spec import (
         read_live_spec,
         spec_for_snapshot,
     )
@@ -189,7 +189,7 @@ async def _diagram_spec_with_live_collab_overlay(
         live_doc = await read_live_spec(redis_client, active_code)
         if live_doc:
             return spec_for_snapshot(live_doc)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.warning(
             "[Diagrams] live spec overlay failed diagram_id=%s: %s",
             diagram_id,

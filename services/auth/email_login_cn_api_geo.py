@@ -20,7 +20,11 @@ from models.domain.auth import User
 from models.domain.messages import Messages, get_request_language
 from services.auth.geo_cn_mainland_cookie import json_forbidden_cn_geo
 from services.auth.geoip_country import email_cn_geo_blocked
-from services.auth.http_auth_token import extract_bearer_token, try_decode_access_token_payload
+from services.auth.http_auth_token import (
+    extract_session_token,
+    try_decode_access_token_payload_from_connection,
+)
+from utils.auth.connection_types import HttpOrWebSocket
 from services.redis.cache.redis_user_cache import user_cache
 from utils.auth import get_client_ip
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR
@@ -43,23 +47,23 @@ def _email_cn_geo_api_path_matches(request_path: str) -> bool:
     return False
 
 
-def _email_cn_geo_prereqs_ok(request: Request) -> bool:
+def _email_cn_geo_prereqs_ok(connection: HttpOrWebSocket) -> bool:
     if not EMAIL_LOGIN_CN_BLOCK_ENABLED:
         return False
     if AUTH_MODE in ("bayi", "enterprise"):
         return False
-    if request.headers.get("X-API-Key", "").strip():
+    if connection.headers.get("X-API-Key", "").strip():
         return False
-    if not _email_cn_geo_api_path_matches(request.url.path):
+    if not _email_cn_geo_api_path_matches(connection.url.path):
         return False
     return True
 
 
-async def _resolve_user_for_email_cn_geo(request: Request) -> Optional[User]:
-    cached = getattr(request.state, AUTH_CONTEXT_USER_ATTR, None)
+async def _resolve_user_for_email_cn_geo(connection: HttpOrWebSocket) -> Optional[User]:
+    cached = getattr(connection.state, AUTH_CONTEXT_USER_ATTR, None)
     if cached is not None:
         return cached
-    payload = try_decode_access_token_payload(request)
+    payload = try_decode_access_token_payload_from_connection(connection)
     if payload:
         if payload.get("type") not in (None, "access"):
             return None
@@ -69,24 +73,25 @@ async def _resolve_user_for_email_cn_geo(request: Request) -> Optional[User]:
             return None
         return await user_cache.get_by_id(user_id)
 
-    token = extract_bearer_token(request)
+    token = extract_session_token(connection)
     if not token or not token.startswith("mgat_"):
         return None
-    account = (request.headers.get("X-MG-Account") or "").strip()
+    account = (connection.headers.get("X-MG-Account") or "").strip()
     if not account:
         return None
-    return await validate_user_token(token, account, request=request)
+    http_request = connection if isinstance(connection, Request) else None
+    return await validate_user_token(token, account, request=http_request)
 
 
-async def maybe_enforce_email_login_cn_geo_api_async(request: Request) -> Optional[JSONResponse]:
+async def maybe_enforce_email_login_cn_geo_api_async(connection: HttpOrWebSocket) -> Optional[JSONResponse]:
     """
     Block overseas email accounts from CN IPs on API usage (JWT or mgat_), matching
     browser email login behavior.
     """
-    if not _email_cn_geo_prereqs_ok(request):
+    if not _email_cn_geo_prereqs_ok(connection):
         return None
 
-    user = await _resolve_user_for_email_cn_geo(request)
+    user = await _resolve_user_for_email_cn_geo(connection)
     if user is None:
         return None
 
@@ -94,12 +99,12 @@ async def maybe_enforce_email_login_cn_geo_api_async(request: Request) -> Option
         return None
 
     lang = get_request_language(
-        request.headers.get("X-Language"),
-        request.headers.get("Accept-Language"),
+        connection.headers.get("X-Language"),
+        connection.headers.get("Accept-Language"),
     )
     must_deny, geo_msg_key, stamp_cn = email_cn_geo_blocked(
-        get_client_ip(request),
-        request,
+        get_client_ip(connection),
+        connection,
         whitelisted_from_cn=getattr(user, "email_login_whitelisted_from_cn", False),
     )
     if not must_deny:
@@ -107,5 +112,5 @@ async def maybe_enforce_email_login_cn_geo_api_async(request: Request) -> Option
 
     detail = Messages.error(geo_msg_key, lang=lang)
     if geo_msg_key == "email_login_blocked_in_mainland_china":
-        return json_forbidden_cn_geo(detail, request, stamp_cn)
+        return json_forbidden_cn_geo(detail, connection, stamp_cn)
     return JSONResponse(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, content={"detail": detail})

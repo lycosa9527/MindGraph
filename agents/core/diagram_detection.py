@@ -129,7 +129,7 @@ async def _detect_diagram_type_from_prompt(
             "clarity": "very_unclear",
             "has_topic": False,
         }
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         logger.error("LLM classification failed: %s", e)
         return {
             "diagram_type": "mind_map",

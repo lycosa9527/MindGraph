@@ -17,6 +17,14 @@ jobs:
           python-version: "3.13"
       - name: Install dependencies
         run: pip install -r requirements.txt
+      - name: Ruff (lint + format)
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: No inline lint suppressions
+        run: python scripts/lint/lint_no_inline_disables.py
+      - name: basedpyright (strict; see pyproject.toml)
+        run: python -m basedpyright .
       - name: App import smoke
         run: python -c "from main import app; assert app.title"
       - name: Pylint (collab / WS paths + auth tier split)

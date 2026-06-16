@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count as sql_count
 
 from models.domain.gewe_message import GeweMessage
+from services.utils.typing_helpers import result_rowcount
 from services.redis.redis_async_ops import AsyncRedisOperations
 
 logger = logging.getLogger(__name__)
@@ -173,7 +174,7 @@ class GeweMessageDB:
             cutoff_time = datetime.now(UTC) - timedelta(days=days)
             result = await self.db.execute(delete(GeweMessage).where(GeweMessage.timestamp < cutoff_time))
             await self.db.commit()
-            deleted_count = result.rowcount
+            deleted_count = result_rowcount(result)
             logger.info("Cleaned up %d old messages (older than %d days)", deleted_count, days)
             return deleted_count
         except Exception as e:

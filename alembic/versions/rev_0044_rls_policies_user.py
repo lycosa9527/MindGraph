@@ -6,7 +6,7 @@ Revises: 0043
 
 from typing import Sequence, Union
 
-from alembic.rls_policy_builder import (
+from db_rls.policy_builder import (
     all_rls_tables,
     downgrade_policies_for_tables,
     upgrade_group_a,

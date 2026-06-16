@@ -12,7 +12,7 @@ Proprietary License
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Sequence
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -80,7 +80,7 @@ class ReactionService:
         """Get grouped reactions for a single message."""
         result = await db.execute(select(MessageReaction).where(MessageReaction.message_id == message_id))
         rows = result.scalars().all()
-        return ReactionService._group_reactions(rows)
+        return ReactionService._group_reactions(list(rows))
 
     @staticmethod
     async def get_reactions_batch(
@@ -99,7 +99,7 @@ class ReactionService:
 
     @staticmethod
     def _group_reactions(
-        rows: List[MessageReaction],
+        rows: Sequence[MessageReaction],
     ) -> List[Dict[str, Any]]:
         """Collapse individual reaction rows into grouped pills."""
         groups: Dict[str, Dict[str, Any]] = {}

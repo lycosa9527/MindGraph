@@ -264,8 +264,9 @@ async def stream_realtime_updates(current_user: User = Depends(get_current_user)
 
         try:
             stats, active_users, error_msg = await _get_initial_state(tracker)
-            if error_msg:
-                yield error_msg
+            if error_msg or stats is None or active_users is None:
+                if error_msg:
+                    yield error_msg
                 return
 
             initial_data = json.dumps({"type": "initial", "stats": stats, "users": active_users})
@@ -295,10 +296,12 @@ async def stream_realtime_updates(current_user: User = Depends(get_current_user)
                 if should_break:
                     break
 
-                for event in events:
-                    yield event
+                if events:
+                    for event in events:
+                        yield event
 
-                last_session_ids = current_session_ids
+                if current_session_ids is not None:
+                    last_session_ids = current_session_ids
                 heartbeat_counter += 1
 
         except asyncio.CancelledError:

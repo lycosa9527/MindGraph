@@ -69,6 +69,7 @@ from services.online_collab.participant.online_collab_participant_ops import (
 )
 
 from services.redis.redis_async_client import get_async_redis
+from services.utils.typing_helpers import redis_hset_mapping
 from services.online_collab.lifecycle.session_meta_cache import (
     get_session_meta_cached,
     invalidate_session_meta,
@@ -201,7 +202,7 @@ class OnlineCollabManager:
         }
         try:
             async with redis.pipeline(transaction=False) as pipe:
-                pipe.hset(session_meta_key(code), mapping=meta)
+                pipe.hset(session_meta_key(code), mapping=redis_hset_mapping(meta))
                 pipe.expire(session_meta_key(code), ttl_sec)
                 if org_id is not None:
                     pipe.sadd(registry_org_key(org_id), code)
@@ -678,7 +679,7 @@ def get_online_collab_manager() -> OnlineCollabManager:
     return _OnlineCollabManagerSingleton.instance
 
 
-def start_online_collab_manager() -> asyncio.Task:  # type: ignore[type-arg]
+def start_online_collab_manager() -> asyncio.Task[None]:
     """
     Launch the idle monitor background task.
 
@@ -687,7 +688,7 @@ def start_online_collab_manager() -> asyncio.Task:  # type: ignore[type-arg]
     Call once from the FastAPI lifespan. Cancel the returned Task on shutdown.
     """
     mgr = get_online_collab_manager()
-    task: asyncio.Task = asyncio.create_task(  # type: ignore[type-arg]
+    task: asyncio.Task[None] = asyncio.create_task(
         mgr._idle_monitor_loop(),
         name="workshop_idle_monitor",
     )

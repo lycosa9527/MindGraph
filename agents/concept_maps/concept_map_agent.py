@@ -14,7 +14,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, cast
 import json
 import logging
 import math
@@ -147,7 +147,7 @@ class ConceptMapAgent(BaseAgent):
                 # Map canonical back to display
                 frm = canon_to_display.get(frm_c, frm_raw)
                 to = canon_to_display.get(to_c, to_raw)
-                key: Tuple[str, str] = tuple(sorted((frm_c, to_c)))  # type: ignore
+                key = cast(Tuple[str, str], tuple(sorted((frm_c, to_c))))
                 if key in pair_seen_unordered:
                     continue
                 pair_seen_unordered.add(key)
@@ -472,9 +472,9 @@ class ConceptMapAgent(BaseAgent):
         5. Create fallback responses from partial content
         6. Generate generic fallback if all else fails
         """
+        cleaned = response.strip()
         try:
             # Remove markdown code blocks if present
-            cleaned = response.strip()
             if cleaned.startswith("```json"):
                 cleaned = cleaned[7:]
             if cleaned.startswith("```"):

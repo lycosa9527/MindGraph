@@ -9,21 +9,18 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import UTC, datetime
+from __future__ import annotations
 
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    Float,
-    DateTime,
-    ForeignKey,
-    Index,
-    Boolean,
-)
-from sqlalchemy.orm import relationship
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
+
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.domain.auth import Base
+
+if TYPE_CHECKING:
+    from models.domain.auth import APIKey, Organization, User
 
 
 class TokenUsage(Base):
@@ -31,60 +28,47 @@ class TokenUsage(Base):
 
     __tablename__ = "token_usage"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
 
-    # Request metadata - CAN TRACK PER USER!
-    # Single-column FK indexes are covered by the leading column of the
-    # ``idx_token_usage_*_date`` composite indexes below.
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
-    api_key_id = Column(Integer, ForeignKey("api_keys.id"), nullable=True)
-    session_id = Column(String(100), index=True)  # For grouping multi-LLM requests (e.g., node palette batch)
-    conversation_id = Column(String(100), index=True)  # For multi-turn conversations (e.g., mindmate)
+    user_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    organization_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("organizations.id"), nullable=True)
+    api_key_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("api_keys.id"), nullable=True)
+    session_id: Mapped[str | None] = mapped_column(String(100), index=True)
+    conversation_id: Mapped[str | None] = mapped_column(String(100), index=True)
 
-    # LLM details
-    model_provider = Column(String(50), index=True)  # 'dashscope', 'tencent'
-    model_name = Column(String(100), index=True)  # 'qwen-plus', 'deepseek-v3.1', etc.
-    model_alias = Column(String(50), index=True)  # 'qwen', 'deepseek', 'kimi', 'hunyuan'
+    model_provider: Mapped[str | None] = mapped_column(String(50), index=True)
+    model_name: Mapped[str | None] = mapped_column(String(100), index=True)
+    model_alias: Mapped[str | None] = mapped_column(String(50), index=True)
 
-    # Token counts (ACTUAL from API)
-    input_tokens = Column(Integer, default=0)
-    output_tokens = Column(Integer, default=0)
-    total_tokens = Column(Integer, default=0)
+    input_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    output_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    total_tokens: Mapped[int] = mapped_column(Integer, default=0)
 
-    # Cost (in CNY)
-    input_cost = Column(Float, default=0.0)
-    output_cost = Column(Float, default=0.0)
-    total_cost = Column(Float, default=0.0)
+    input_cost: Mapped[float] = mapped_column(Float, default=0.0)
+    output_cost: Mapped[float] = mapped_column(Float, default=0.0)
+    total_cost: Mapped[float] = mapped_column(Float, default=0.0)
 
-    # Request details
-    request_type = Column(
-        String(50), index=True
-    )  # Feature type: 'diagram_generation', 'node_palette', 'mindmate', 'autocomplete'
-    diagram_type = Column(String(50))  # 'mind_map', 'concept_map', etc.
-    endpoint_path = Column(
-        String(200)
-    )  # API endpoint used: '/api/generate_graph', '/thinking_mode/node_palette/start', etc.
-    success = Column(Boolean, default=True)
+    request_type: Mapped[str | None] = mapped_column(String(50), index=True)
+    diagram_type: Mapped[str | None] = mapped_column(String(50))
+    endpoint_path: Mapped[str | None] = mapped_column(String(200))
+    success: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    # Timing
-    response_time = Column(Float)  # seconds
-    # BRIN index ix_token_usage_created_brin replaces the standalone btree.
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    response_time: Mapped[float | None] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
-    # Relationships — token_usage is high-volume; avoid eager-loading the
-    # parent rows on every analytics scan. Admin views that render usernames
-    # / org names should use ``selectinload(TokenUsage.user)`` etc.
-    user = relationship("User", foreign_keys=[user_id], lazy="select")
-    organization = relationship("Organization", foreign_keys=[organization_id], lazy="select")
-    api_key = relationship("APIKey", foreign_keys=[api_key_id], lazy="select")
+    user: Mapped["User | None"] = relationship("User", foreign_keys=[user_id], lazy="select")
+    organization: Mapped["Organization | None"] = relationship(
+        "Organization",
+        foreign_keys=[organization_id],
+        lazy="select",
+    )
+    api_key: Mapped["APIKey | None"] = relationship("APIKey", foreign_keys=[api_key_id], lazy="select")
 
-    # Indexes for fast queries (BRIN on created_at is created by migration 0022).
     __table_args__ = (
         Index("idx_token_usage_user_date", "user_id", "created_at"),
         Index("idx_token_usage_org_date", "organization_id", "created_at"),
         Index("idx_token_usage_api_key_date", "api_key_id", "created_at"),
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<TokenUsage(user_id={self.user_id}, model={self.model_alias}, tokens={self.total_tokens})>"

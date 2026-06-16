@@ -39,7 +39,7 @@ import ssl
 from typing import Optional
 
 import aiohttp
-import aiohttp.resolver
+from aiohttp.abc import AbstractResolver
 
 from utils.env_helpers import env_int
 
@@ -58,7 +58,7 @@ def _pinned_max() -> int:
     return max(8, env_int("MINDBOT_PINNED_SESSION_MAX", _PINNED_DEFAULT_MAX))
 
 
-class _PinnedIPResolver(aiohttp.resolver.AbstractResolver):
+class _PinnedIPResolver(AbstractResolver):
     """aiohttp resolver that always returns a pre-resolved IP for any host.
 
     Bound to a single ``(host, pinned_ip)`` cache entry so DNS rebinding cannot

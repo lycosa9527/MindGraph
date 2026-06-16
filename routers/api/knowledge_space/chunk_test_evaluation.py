@@ -66,7 +66,9 @@ async def get_chunk_test_chunks(
 
     try:
         service = get_rag_chunk_test_service()
-        chunks = service.get_chunks_for_test(db=db, user_id=current_user.id, test_result=test_result, method=method)
+        chunks = await service.get_chunks_for_test(
+            db=db, user_id=current_user.id, test_result=test_result, method=method
+        )
 
         return {
             "chunks": chunks,
@@ -138,7 +140,7 @@ async def manual_evaluate_chunks(
 
     try:
         service = get_rag_chunk_test_service()
-        chunks_data = service.get_chunks_for_test(
+        chunks_data = await service.get_chunks_for_test(
             db=db, user_id=current_user.id, test_result=test_result, method=method
         )
 

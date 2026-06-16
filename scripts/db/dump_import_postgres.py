@@ -31,6 +31,7 @@ import socket
 import subprocess
 import sys
 import time
+import importlib
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -55,15 +56,7 @@ except ImportError:
     psycopg2 = None
 
 try:
-    from rich.progress import (
-        Progress,
-        SpinnerColumn,
-        BarColumn,
-        TextColumn,
-        TimeElapsedColumn,
-    )
-    from rich.console import Console
-
+    importlib.import_module("rich")
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
@@ -498,6 +491,15 @@ class DumpImportProgress:
         self.console: Any = None
 
         if self.use_rich:
+            from rich.console import Console
+            from rich.progress import (
+                BarColumn,
+                Progress,
+                SpinnerColumn,
+                TextColumn,
+                TimeElapsedColumn,
+            )
+
             self.console = Console()
             self.progress = Progress(
                 SpinnerColumn(),
@@ -885,7 +887,8 @@ def import_command(
         prog.update(1, "Schema checked")
         if not run_restore(db_url, dump_path, db_engine):
             return 1
-        db_engine.dispose()
+        if db_engine is not None:
+            db_engine.dispose()
         prog.update(2, "pg_restore done")
 
         try:

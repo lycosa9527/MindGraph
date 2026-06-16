@@ -28,9 +28,11 @@ import logging
 import os
 from dataclasses import dataclass, field
 from types import SimpleNamespace
-from typing import Callable, Dict, Literal, Optional, Tuple, Union
+from typing import Callable, Dict, Literal, Optional, Tuple, Union, cast
 
 from fastapi import WebSocket
+
+from models.domain.auth import User
 
 logger = logging.getLogger(__name__)
 
@@ -260,7 +262,7 @@ async def _evict_slow_consumer(handle: AnyHandle, reason: str) -> None:
             finalize_canvas_collab_disconnect,
         )
 
-        user_stub = SimpleNamespace(id=handle.user_id)
+        user_stub = cast(User, SimpleNamespace(id=handle.user_id))
         owner_id = handle.user_id if handle.role == "host" else None
         await finalize_canvas_collab_disconnect(
             code=handle.code,
@@ -418,7 +420,7 @@ def create_connection_handle(
                 exc,
             )
             try:
-                from services.infrastructure.monitoring.ws_metrics import (  # pylint: disable=import-outside-toplevel
+                from services.infrastructure.monitoring.ws_metrics import (
                     record_ws_writer_task_failed,
                 )
 

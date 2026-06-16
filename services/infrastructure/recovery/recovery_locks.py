@@ -35,13 +35,9 @@ _integrity_check_lock_id: Optional[str] = None
 # Other workers skip via lock acquisition failure
 _integrity_check_cache: Optional[Tuple[bool, float]] = None  # Unused, kept for API compatibility
 
-# Import Redis client (optional dependency)
-try:
-    from services.redis.redis_async_client import get_async_redis
-    from services.redis.redis_client import is_redis_available
-except ImportError:
-    get_async_redis = None  # type: ignore
-    is_redis_available = None  # type: ignore
+# Import Redis client (required dependency)
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 
 
 def _generate_integrity_check_lock_id() -> str:
@@ -60,7 +56,7 @@ async def acquire_integrity_check_lock() -> bool:
         True if lock acquired (this worker should check integrity)
         False if lock held by another worker
     """
-    global _integrity_check_lock_id  # pylint: disable=global-statement
+    global _integrity_check_lock_id
 
     if get_async_redis is None or is_redis_available is None:
         return True

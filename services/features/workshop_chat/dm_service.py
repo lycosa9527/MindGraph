@@ -19,6 +19,7 @@ from typing import Any, Dict, List
 from sqlalchemy import and_, case, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from services.utils.typing_helpers import result_rowcount
 from models.domain.auth import User
 from models.domain.workshop_chat import DirectMessage
 from services.features.workshop_chat.mention_resolution import (
@@ -289,7 +290,7 @@ class DirectMessageService:
             .values(is_read=True)
         )
         await db.commit()
-        return result.rowcount
+        return result_rowcount(result)
 
 
 dm_service = DirectMessageService()

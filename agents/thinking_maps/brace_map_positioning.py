@@ -566,6 +566,7 @@ class FlexibleLayoutCalculator:
                 else:
                     unit_height = part_node.height
                     unit_y = current_y
+                    last_bottom = unit_y + unit_height
 
                 # Calculate unit spacing - pass all units for better context
                 temp_units = []

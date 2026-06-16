@@ -31,6 +31,7 @@ from services.infrastructure.http.error_handler import (
 )
 from services.llm.error_parsers.doubao_error_parser import parse_and_raise_doubao_error
 from clients.llm.base import (
+    as_openai_chat_messages,
     extract_usage_from_openai_completion,
     extract_usage_from_stream_chunk,
 )
@@ -94,7 +95,7 @@ class DoubaoClient:
             # Call OpenAI-compatible API
             completion = await self.client.chat.completions.create(
                 model=self.model_name,
-                messages=messages,
+                messages=as_openai_chat_messages(messages),
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
@@ -216,7 +217,7 @@ class DoubaoClient:
             # Use OpenAI SDK's streaming with usage tracking
             stream = await self.client.chat.completions.create(
                 model=self.model_name,
-                messages=messages,
+                messages=as_openai_chat_messages(messages),
                 temperature=temperature,
                 max_tokens=max_tokens,
                 stream=True,  # Enable streaming
@@ -408,7 +409,7 @@ class VolcengineClient:
 
             completion = await self.client.chat.completions.create(
                 model=self.endpoint_id,  # Use endpoint ID for higher RPM!
-                messages=messages,
+                messages=as_openai_chat_messages(messages),
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
@@ -513,7 +514,7 @@ class VolcengineClient:
 
             stream = await self.client.chat.completions.create(
                 model=self.endpoint_id,  # Use endpoint ID for higher RPM!
-                messages=messages,
+                messages=as_openai_chat_messages(messages),
                 temperature=temperature,
                 max_tokens=max_tokens,
                 stream=True,
@@ -532,8 +533,9 @@ class VolcengineClient:
                     delta = chunk.choices[0].delta
 
                     # Check for thinking/reasoning content (DeepSeek R1, Kimi K2 via Volcengine)
-                    if hasattr(delta, "reasoning_content") and delta.reasoning_content:
-                        yield {"type": "thinking", "content": delta.reasoning_content}
+                    reasoning_content = getattr(delta, "reasoning_content", None)
+                    if reasoning_content:
+                        yield {"type": "thinking", "content": reasoning_content}
 
                     # Check for regular content
                     if delta.content:

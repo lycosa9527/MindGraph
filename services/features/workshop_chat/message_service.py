@@ -288,6 +288,8 @@ class MessageService:
             select(ChatMessage).options(joinedload(ChatMessage.sender)).where(ChatMessage.id == message_id)
         )
         msg = refreshed.unique().scalar_one_or_none()
+        if msg is None:
+            raise ValueError(f"Message {message_id} not found after edit")
         return _format_message(msg)
 
     @staticmethod

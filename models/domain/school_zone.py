@@ -10,13 +10,14 @@ All Rights Reserved
 Proprietary License
 """
 
+from __future__ import annotations
+
 import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
     Boolean,
-    Column,
     DateTime,
     ForeignKey,
     Index,
@@ -105,16 +106,14 @@ class SharedDiagramLike(Base):
 
     __tablename__ = "shared_diagram_likes"
 
-    id = Column(Integer, primary_key=True, index=True)
-    diagram_id = Column(String(36), ForeignKey("shared_diagrams.id"), nullable=False, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    diagram_id: Mapped[str] = mapped_column(String(36), ForeignKey("shared_diagrams.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
-    # Relationships
-    diagram = relationship("SharedDiagram", lazy="selectin")
-    user = relationship("User", lazy="selectin")
+    diagram: Mapped["SharedDiagram"] = relationship("SharedDiagram", lazy="selectin")
+    user: Mapped["User"] = relationship("User", lazy="selectin")
 
-    # Unique constraint: one like per user per diagram
     __table_args__ = (Index("ix_shared_diagram_likes_unique", "diagram_id", "user_id", unique=True),)
 
 
@@ -125,22 +124,19 @@ class SharedDiagramComment(Base):
 
     __tablename__ = "shared_diagram_comments"
 
-    id = Column(Integer, primary_key=True, index=True)
-    diagram_id = Column(String(36), ForeignKey("shared_diagrams.id"), nullable=False, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    content = Column(Text, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    diagram_id: Mapped[str] = mapped_column(String(36), ForeignKey("shared_diagrams.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
 
-    # Timestamps
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
-    updated_at = Column(
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC),
     )
 
-    # Status
-    is_active = Column(Boolean, default=True)  # Soft delete support
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    # Relationships
-    diagram = relationship("SharedDiagram", lazy="selectin")
-    user = relationship("User", lazy="selectin")
+    diagram: Mapped["SharedDiagram"] = relationship("SharedDiagram", lazy="selectin")
+    user: Mapped["User"] = relationship("User", lazy="selectin")

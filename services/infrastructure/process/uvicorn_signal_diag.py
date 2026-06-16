@@ -12,7 +12,7 @@ import logging
 import os
 import signal
 from types import FrameType
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional, Union, cast
 
 logger = logging.getLogger(__name__)
 
@@ -112,5 +112,5 @@ def patch_signal_for_uvicorn_sighup_trace() -> None:
             return original_signal(sig, wrapped)
         return original_signal(sig, handler)
 
-    signal.signal = patched  # type: ignore[assignment]
+    signal.signal = cast(Any, patched)
     _signal_patch_installed[0] = True

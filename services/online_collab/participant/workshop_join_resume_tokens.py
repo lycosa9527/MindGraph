@@ -86,6 +86,8 @@ def join_resume_claims_match_user_room(
     """Cheap match on user + normalized room token before trusting bypass."""
     code_val = claims.get("c")
     raw_uid = claims.get("u")
+    if raw_uid is None:
+        return False
     try:
         record_uid = int(raw_uid)
     except (TypeError, ValueError):

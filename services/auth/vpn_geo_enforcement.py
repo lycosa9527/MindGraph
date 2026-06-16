@@ -12,19 +12,25 @@ import json
 import logging
 from typing import Optional
 
+import redis.asyncio as aioredis
 from fastapi import Request, WebSocket
 from fastapi.responses import JSONResponse
 
 from models.domain.messages import Messages, get_request_language
 from services.auth.email_login_cn_api_geo import maybe_enforce_email_login_cn_geo_api_async
 from services.auth.geo_cn_mainland_cookie import json_forbidden_cn_geo
-from services.auth.geoip_country import resolve_country_iso_from_request
-from services.auth.http_auth_token import extract_bearer_token, try_decode_access_token_payload
+from services.auth.geoip_country import resolve_country_iso_from_connection
+from services.auth.http_auth_token import (
+    extract_session_token,
+    try_decode_access_token_payload,
+    try_decode_access_token_payload_from_connection,
+)
 from services.redis import keys as redis_keys
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
 from services.redis.session.redis_session_manager import get_refresh_token_manager, get_session_manager
 from utils.auth import get_client_ip
+from utils.auth.connection_types import HttpOrWebSocket
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR
 from utils.auth.config import (
     AUTH_MODE,
@@ -72,7 +78,7 @@ def _vpn_geo_path_matches(request_path: str) -> bool:
     return False
 
 
-async def _refresh_geo_keys_ttl(redis: object, user_id: int, ttl: int) -> None:
+async def _refresh_geo_keys_ttl(redis: aioredis.Redis, user_id: int, ttl: int) -> None:
     login_key = redis_keys.GEO_VPN_LOGIN_CC.format(user_id=user_id)
     last_ip_key = redis_keys.GEO_VPN_LAST_IP.format(user_id=user_id)
     async with redis.pipeline(transaction=False) as pipe:
@@ -92,7 +98,7 @@ async def record_vpn_login_geo(user_id: int, request: Request) -> None:
     if not redis:
         return
     client_ip = get_client_ip(request)
-    country = resolve_country_iso_from_request(request)
+    country = resolve_country_iso_from_connection(request)
     login_val = country if country else ""
     ttl = redis_keys.TTL_GEO_VPN
     login_key = redis_keys.GEO_VPN_LOGIN_CC.format(user_id=user_id)
@@ -124,20 +130,20 @@ async def record_vpn_refresh_last_ip(user_id: int, request: Request) -> None:
         await pipe.execute()
 
 
-def _vpn_geo_prereqs_ok(request: Request) -> bool:
+def _vpn_geo_prereqs_ok(connection: HttpOrWebSocket) -> bool:
     if not VPN_CN_KICKOUT_ENABLED:
         return False
     if AUTH_MODE in ("bayi", "enterprise"):
         return False
-    if request.headers.get("X-API-Key", "").strip():
+    if connection.headers.get("X-API-Key", "").strip():
         return False
-    if not _vpn_geo_path_matches(request.url.path):
+    if not _vpn_geo_path_matches(connection.url.path):
         return False
     return True
 
 
 async def maybe_enforce_vpn_cn_geo_for_user(
-    request: Request,
+    connection: HttpOrWebSocket,
     user_id: int,
     phone_str: Optional[str],
 ) -> Optional[JSONResponse]:
@@ -156,7 +162,7 @@ async def maybe_enforce_vpn_cn_geo_for_user(
     if not redis:
         return None
 
-    client_ip = get_client_ip(request)
+    client_ip = get_client_ip(connection)
     ttl = redis_keys.TTL_GEO_VPN
     login_key = redis_keys.GEO_VPN_LOGIN_CC.format(user_id=user_id)
     last_ip_key = redis_keys.GEO_VPN_LAST_IP.format(user_id=user_id)
@@ -169,7 +175,7 @@ async def maybe_enforce_vpn_cn_geo_for_user(
     last_ip = _decode_redis_value(last_ip_raw)
 
     if login_raw is None:
-        current = resolve_country_iso_from_request(request)
+        current = resolve_country_iso_from_connection(connection)
         login_val = current if current else ""
         async with redis.pipeline(transaction=False) as write_pipe:
             write_pipe.setex(login_key, ttl, login_val)
@@ -184,7 +190,7 @@ async def maybe_enforce_vpn_cn_geo_for_user(
             await ttl_pipe.execute()
         return None
 
-    current_cc = resolve_country_iso_from_request(request)
+    current_cc = resolve_country_iso_from_connection(connection)
     await redis.setex(last_ip_key, ttl, client_ip)
 
     if should_kick_vpn_transition(login_cc, current_cc):
@@ -202,11 +208,11 @@ async def maybe_enforce_vpn_cn_geo_for_user(
             revoked,
         )
         lang = get_request_language(
-            request.headers.get("X-Language"),
-            request.headers.get("Accept-Language"),
+            connection.headers.get("X-Language"),
+            connection.headers.get("Accept-Language"),
         )
         detail = Messages.error("vpn_cn_session_terminated", lang=lang)
-        return json_forbidden_cn_geo(detail, request, stamp_cn_cookie=True)
+        return json_forbidden_cn_geo(detail, connection, stamp_cn_cookie=True)
 
     return None
 
@@ -231,23 +237,23 @@ async def maybe_enforce_vpn_cn_geo(request: Request) -> Optional[JSONResponse]:
     return await maybe_enforce_vpn_cn_geo_for_user(request, user_id, phone_str)
 
 
-async def maybe_enforce_vpn_cn_geo_async(request: Request) -> Optional[JSONResponse]:
+async def maybe_enforce_vpn_cn_geo_async(connection: HttpOrWebSocket) -> Optional[JSONResponse]:
     """
     Email-login CN GeoIP on API (JWT/mgat_), then VPN/CN transition (JWT/mgat_).
     """
-    blocked = await maybe_enforce_email_login_cn_geo_api_async(request)
+    blocked = await maybe_enforce_email_login_cn_geo_api_async(connection)
     if blocked is not None:
         return blocked
 
-    if not _vpn_geo_prereqs_ok(request):
+    if not _vpn_geo_prereqs_ok(connection):
         return None
 
-    state_user = getattr(request.state, AUTH_CONTEXT_USER_ATTR, None)
+    state_user = getattr(connection.state, AUTH_CONTEXT_USER_ATTR, None)
     if state_user is not None:
         phone_str = state_user.phone if isinstance(state_user.phone, str) else None
-        return await maybe_enforce_vpn_cn_geo_for_user(request, state_user.id, phone_str)
+        return await maybe_enforce_vpn_cn_geo_for_user(connection, state_user.id, phone_str)
 
-    payload = try_decode_access_token_payload(request)
+    payload = try_decode_access_token_payload_from_connection(connection)
     if payload:
         if payload.get("type") not in (None, "access"):
             return None
@@ -257,17 +263,17 @@ async def maybe_enforce_vpn_cn_geo_async(request: Request) -> Optional[JSONRespo
             return None
         raw_phone = payload.get("phone")
         phone_str = raw_phone if isinstance(raw_phone, str) else None
-        return await maybe_enforce_vpn_cn_geo_for_user(request, user_id, phone_str)
+        return await maybe_enforce_vpn_cn_geo_for_user(connection, user_id, phone_str)
 
-    token = extract_bearer_token(request)
+    token = extract_session_token(connection)
     if not token or not token.startswith("mgat_"):
         return None
-    account = (request.headers.get("X-MG-Account") or "").strip()
+    account = (connection.headers.get("X-MG-Account") or "").strip()
     if not account:
         return None
 
-    user = await validate_user_token(token, account, request=request)
-    return await maybe_enforce_vpn_cn_geo_for_user(request, user.id, user.phone)
+    user = await validate_user_token(token, account, request=connection if isinstance(connection, Request) else None)
+    return await maybe_enforce_vpn_cn_geo_for_user(connection, user.id, user.phone)
 
 
 def _close_reason_from_geo_json_response(resp: JSONResponse) -> Optional[str]:
@@ -299,7 +305,7 @@ async def maybe_close_websocket_for_vpn_cn_geo(websocket: WebSocket) -> bool:
     # WebSocket is an HTTPConnection subclass with the same headers/url/state interface
     # as Request. Constructing Request(websocket.scope) fails because Request.__init__
     # asserts scope["type"] == "http", but WebSocket scopes carry type="websocket".
-    resp = await maybe_enforce_vpn_cn_geo_async(websocket)  # type: ignore[arg-type]
+    resp = await maybe_enforce_vpn_cn_geo_async(websocket)
     if resp is None:
         return False
     lang = get_request_language(

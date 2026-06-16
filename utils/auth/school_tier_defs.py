@@ -128,7 +128,7 @@ def parse_diagram_save_limit_error(error: str | None) -> int | None:
     """Return the diagram cap from a quota error token, or None if not a limit error."""
     if not error or not error.startswith(DIAGRAM_SAVE_LIMIT_ERROR_PREFIX):
         return None
-    token = error[len(DIAGRAM_SAVE_LIMIT_ERROR_PREFIX):]
+    token = error[len(DIAGRAM_SAVE_LIMIT_ERROR_PREFIX) :]
     try:
         return int(token)
     except ValueError:

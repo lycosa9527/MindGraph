@@ -407,18 +407,23 @@ class PatternMatcher:
             List of (start_pos, end_pos) tuples
         """
         # Use provided token_counter or instance token_counter
-        counter = token_counter or self.token_counter
-        if not counter:
-            # Fallback: use character-based estimation
-            def counter(t):
-                return len(t) // 4
+        if token_counter is not None:
+            resolved_counter = token_counter
+        elif self.token_counter is not None:
+            resolved_counter = self.token_counter
+        else:
+
+            def _char_estimate(text_value: str) -> int:
+                return len(text_value) // 4
+
+            resolved_counter = _char_estimate
 
         # Phase 2: Fixed separator first strategy (from Dify)
         fixed_sep = fixed_separator or self.fixed_separator
         if fixed_sep and fixed_sep in text:
             # Split by fixed separator first
             chunks = text.split(fixed_sep)
-            chunk_lengths = [counter(c) for c in chunks]
+            chunk_lengths = [resolved_counter(chunk_text) for chunk_text in chunks]
 
             boundaries = []
             current_pos = 0
@@ -429,7 +434,9 @@ class PatternMatcher:
 
                 if length > max_tokens:
                     # Phase 2: Recursively chunk oversized chunks
-                    _sub_chunks, sub_offsets = self._chunk_recursive(chunk, max_tokens, counter, _start=chunk_start)
+                    _sub_chunks, sub_offsets = self._chunk_recursive(
+                        chunk, max_tokens, resolved_counter, _start=chunk_start
+                    )
                     boundaries.extend(sub_offsets)
                 else:
                     boundaries.append((chunk_start, chunk_end))
@@ -446,7 +453,7 @@ class PatternMatcher:
             paragraphs = self.split_by_paragraphs(text)
 
             # Phase 1: Pre-compute token counts for all paragraphs (length caching)
-            paragraph_lengths = [counter(p) for p in paragraphs]
+            paragraph_lengths = [resolved_counter(paragraph) for paragraph in paragraphs]
 
             # Phase 2: Pre-calculate positions using accumulate
             current_pos = 0
@@ -465,7 +472,9 @@ class PatternMatcher:
             for paragraph, length, start_pos in zip(paragraphs, paragraph_lengths, paragraph_positions):
                 if length > max_tokens:
                     # Recursively chunk oversized paragraph
-                    _sub_chunks, sub_offsets = self._chunk_recursive(paragraph, max_tokens, counter, _start=start_pos)
+                    _sub_chunks, sub_offsets = self._chunk_recursive(
+                        paragraph, max_tokens, resolved_counter, _start=start_pos
+                    )
                     boundaries.extend(sub_offsets)
                 else:
                     end_pos = start_pos + len(paragraph)
@@ -475,7 +484,7 @@ class PatternMatcher:
             sentences = self.split_by_sentences(text)
 
             # Phase 1: Pre-compute token counts for all sentences (length caching)
-            sentence_lengths = [counter(s) for s in sentences]
+            sentence_lengths = [resolved_counter(sentence) for sentence in sentences]
 
             # Phase 2: Pre-calculate positions
             current_pos = 0
@@ -491,7 +500,9 @@ class PatternMatcher:
             for sentence, length, start_pos in zip(sentences, sentence_lengths, sentence_positions):
                 if length > max_tokens:
                     # Recursively chunk oversized sentence
-                    _sub_chunks, sub_offsets = self._chunk_recursive(sentence, max_tokens, counter, _start=start_pos)
+                    _sub_chunks, sub_offsets = self._chunk_recursive(
+                        sentence, max_tokens, resolved_counter, _start=start_pos
+                    )
                     boundaries.extend(sub_offsets)
                 else:
                     end_pos = start_pos + len(sentence)

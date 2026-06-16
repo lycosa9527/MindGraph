@@ -26,6 +26,7 @@ from services.infrastructure.http.error_handler import (
     LLMRateLimitError,
     LLMContentFilterError,
     LLMProviderError,
+    attach_llm_user_message,
     LLMInvalidParameterError,
     LLMQuotaExhaustedError,
     LLMModelNotFoundError,
@@ -529,7 +530,4 @@ def parse_and_raise_hunyuan_error(error_code: str, error_message: str, status_co
         },
     )
 
-    # Attach user-friendly message to exception
-    exception.user_message = user_message  # type: ignore[attr-defined]
-
-    raise exception
+    raise attach_llm_user_message(exception, user_message)

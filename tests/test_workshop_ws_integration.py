@@ -18,10 +18,11 @@ Also covers:
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import pytest
 from fastapi.websockets import WebSocketState
+from starlette.websockets import WebSocket as StarletteWebSocket
 
 from routers.api.workshop_ws_handlers import (
     CollabWsContext,
@@ -36,6 +37,7 @@ from routers.api.workshop_ws_handlers_update import (
     _MAX_COLLAB_UPDATE_CONNECTIONS,
     _MAX_COLLAB_UPDATE_NODES,
 )
+from utils.ws_limits import WebsocketMessageRateLimiter
 
 
 # ---------------------------------------------------------------------------
@@ -81,8 +83,8 @@ def _make_ctx(
         diagram_id=diagram_id,
         owner_id=owner_id,
         user=_FakeUser(user_id, username),
-        rate_limiter=_FakeRateLimiter(),
-        websocket=ws,
+        rate_limiter=cast(WebsocketMessageRateLimiter, _FakeRateLimiter()),
+        websocket=cast(StarletteWebSocket, ws),
         user_colors=["#aaaaaa", "#bbbbbb", "#cccccc"],
         user_emojis=["A", "B", "C"],
     )
@@ -231,10 +233,11 @@ class TestBuildParticipantsWithNames:
 
     @pytest.mark.asyncio
     async def test_cached_user_prefers_profile_name_over_username_slug(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        class _UserWithBoth:
+        class _UserWithBoth(_StubUser):
             """ORM-shaped user: promotional ``username`` slug must lose to ``name``."""
 
             def __init__(self) -> None:
+                super().__init__("Chen Laoshi")
                 self.id = 77
                 self.name = "Chen Laoshi"
                 self.username = "user_abc"

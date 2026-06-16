@@ -57,7 +57,7 @@ def _find_mindmap_branch_context(
         if conn.get("target") == current_node_id:
             pid = conn.get("source")
             parent = next((n for n in nodes if n.get("id") == pid), None)
-            if parent and ((pid or "").startswith("branch-l-1-") or (pid or "").startswith("branch-r-1-")):
+            if isinstance(pid, str) and parent and (pid.startswith("branch-l-1-") or pid.startswith("branch-r-1-")):
                 return (
                     pid,
                     _get_node_text(parent),
@@ -126,7 +126,7 @@ def _find_flow_step_context(
             if conn.get("target") == current_node_id:
                 pid = conn.get("source")
                 parent = next((n for n in nodes if n.get("id") == pid), None)
-                if parent and (pid or "").startswith("flow-step-"):
+                if isinstance(pid, str) and parent and pid.startswith("flow-step-"):
                     return (
                         pid,
                         _get_node_text(parent),
@@ -190,7 +190,7 @@ def _find_tree_category_context(
         if conn.get("target") == current_node_id:
             pid = conn.get("source")
             parent = next((n for n in nodes if n.get("id") == pid), None)
-            if parent and (pid or "").startswith("tree-cat-"):
+            if isinstance(pid, str) and parent and pid.startswith("tree-cat-"):
                 return (
                     pid,
                     _get_node_text(parent),
@@ -267,7 +267,7 @@ def _find_brace_part_context(
         if conn.get("target") == current_node_id:
             pid = conn.get("source")
             parent = next((n for n in nodes if n.get("id") == pid), None)
-            if parent and parent.get("type") == "brace":
+            if isinstance(pid, str) and parent and parent.get("type") == "brace":
                 return (
                     pid,
                     _get_node_text(parent),
@@ -396,7 +396,8 @@ def extract_concept_map_context(
         nid = n.get("id")
         if not nid or nid in seen:
             continue
-        data = n.get("data") if isinstance(n.get("data"), dict) else {}
+        raw_data = n.get("data")
+        data: Dict[str, Any] = raw_data if isinstance(raw_data, dict) else {}
         if (
             data.get("nodeType") == "topic"
             or n.get("type") in ("topic", "center")

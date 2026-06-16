@@ -217,7 +217,7 @@ async def load_all_users_to_cache() -> Tuple[int, int]:
             written = 0
             try:
                 written = await user_cache.bulk_cache_users(list(batch))
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 logger.error(
                     "[CacheLoader] Bulk cache_user pipeline failed for batch ending at id %s: %s",
                     batch[-1].id,
@@ -283,7 +283,7 @@ async def load_all_orgs_to_cache() -> Tuple[int, int]:
             written = 0
             try:
                 written = await org_cache.bulk_cache_orgs(list(batch))
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 logger.error(
                     "[CacheLoader] Bulk cache_org pipeline failed for batch ending at id %s: %s",
                     batch[-1].id,

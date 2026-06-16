@@ -50,10 +50,7 @@ def _running_as_root() -> bool:
 
 
 def _conda_install_roots(home: str) -> List[str]:
-    return [
-        os.path.join(home, name)
-        for name in ("miniconda3", "anaconda3", "miniforge3", "mambaforge")
-    ]
+    return [os.path.join(home, name) for name in ("miniconda3", "anaconda3", "miniforge3", "mambaforge")]
 
 
 def find_conda_python(home: str, env_name: str) -> Optional[str]:
@@ -122,9 +119,7 @@ def _externally_managed_marker_paths() -> List[str]:
     markers: List[str] = []
     version_dir = f"python{sys.version_info.major}.{sys.version_info.minor}"
     for prefix in (sys.prefix, sys.base_prefix):
-        markers.append(
-            os.path.join(prefix, "lib", version_dir, "EXTERNALLY-MANAGED")
-        )
+        markers.append(os.path.join(prefix, "lib", version_dir, "EXTERNALLY-MANAGED"))
     stdlib = sysconfig.get_path("stdlib", vars=sysconfig.get_config_vars())
     if stdlib:
         markers.append(os.path.join(stdlib, "EXTERNALLY-MANAGED"))
@@ -181,9 +176,7 @@ def ensure_pip_available(python_executable: str, project_root: str) -> None:
     )
     if result.returncode != 0:
         details = (result.stderr or result.stdout or "").strip()
-        raise CondaRuntimeError(
-            f"pip is not available for {python_executable}. {details}"
-        )
+        raise CondaRuntimeError(f"pip is not available for {python_executable}. {details}")
 
 
 def prepare_project_python(project_root: str) -> str:

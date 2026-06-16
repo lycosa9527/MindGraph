@@ -8,13 +8,16 @@ from unittest.mock import AsyncMock
 import pytest
 from fastapi import HTTPException
 
+from models.domain.auth import Organization
+from models.domain.mindbot_config import OrganizationMindbotConfig
 from routers.api import mindbot_helpers as mindbot_helpers_mod
 from routers.api.mindbot_models import MindbotConfigCreatePayload
 from routers.auth.admin import organization_dify as org_dify_mod
 from services.dify import org_mindmate_client as mindmate_client_mod
+from tests.typing_helpers import as_organization, as_type
 
 
-def _org(**overrides: object) -> SimpleNamespace:
+def _org(**overrides: object) -> Organization:
     base = {
         "id": 1,
         "dify_api_base_url": None,
@@ -27,10 +30,10 @@ def _org(**overrides: object) -> SimpleNamespace:
         "dingtalk_ai_card_streaming_max_chars": 7000,
     }
     base.update(overrides)
-    return SimpleNamespace(**base)
+    return as_organization(SimpleNamespace(**base))
 
 
-def _mindbot_row(**overrides: object) -> SimpleNamespace:
+def _mindbot_row(**overrides: object) -> OrganizationMindbotConfig:
     base = {
         "dify_api_base_url": "https://old.example/v1",
         "dify_api_key": "old-key",
@@ -42,7 +45,7 @@ def _mindbot_row(**overrides: object) -> SimpleNamespace:
         "dingtalk_ai_card_streaming_max_chars": 6500,
     }
     base.update(overrides)
-    return SimpleNamespace(**base)
+    return as_type(SimpleNamespace(**base), OrganizationMindbotConfig)
 
 
 @pytest.mark.asyncio
@@ -63,7 +66,7 @@ async def test_propagate_org_dify_skips_custom_bots(
     )
 
     class _Scalars:
-        def all(self) -> list[SimpleNamespace]:
+        def all(self) -> list[OrganizationMindbotConfig]:
             return [linked, custom]
 
     class _Result:
@@ -129,11 +132,13 @@ def test_resolved_dify_settings_use_org_when_flag_set(
         lambda _org: ("org-key", "https://org.example/v1"),
     )
     org = _org()
-    payload = MindbotConfigCreatePayload(
-        organization_id=1,
-        dingtalk_robot_code="robot-a",
-        dingtalk_app_secret="secret",
-        use_org_dify_settings=True,
+    payload = MindbotConfigCreatePayload.model_validate(
+        {
+            "organization_id": 1,
+            "dingtalk_robot_code": "robot-a",
+            "dingtalk_app_secret": "secret",
+            "use_org_dify_settings": True,
+        }
     )
     settings = mindbot_helpers_mod._resolved_dify_settings(
         payload,
@@ -156,11 +161,13 @@ def test_resolved_dify_settings_requires_org_credentials_when_flag_set(
         lambda _org: ("", ""),
     )
     org = _org()
-    payload = MindbotConfigCreatePayload(
-        organization_id=1,
-        dingtalk_robot_code="robot-a",
-        dingtalk_app_secret="secret",
-        use_org_dify_settings=True,
+    payload = MindbotConfigCreatePayload.model_validate(
+        {
+            "organization_id": 1,
+            "dingtalk_robot_code": "robot-a",
+            "dingtalk_app_secret": "secret",
+            "use_org_dify_settings": True,
+        }
     )
     with pytest.raises(HTTPException) as exc_info:
         mindbot_helpers_mod._resolved_dify_settings(
@@ -179,7 +186,7 @@ async def test_mindmate_client_keeps_org_timeout_with_global_credentials(
     org = _org(dify_api_base_url=None, dify_api_key=None, dify_timeout_seconds=120)
 
     class _Result:
-        def scalar_one_or_none(self) -> SimpleNamespace:
+        def scalar_one_or_none(self) -> Organization:
             return org
 
     db = AsyncMock()

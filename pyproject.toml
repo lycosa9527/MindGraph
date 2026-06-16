@@ -1,4 +1,4 @@
-[tool.pyright]
+[tool.basedpyright]
 include = ["**/*.py"]
 exclude = [
     "**/__pycache__",
@@ -8,19 +8,24 @@ exclude = [
     "**/dist",
     "**/build",
     "**/*.toml",
-    "pyproject.toml"
+    "pyproject.toml",
 ]
-# Miniconda env (conda activate mindgraph); .venv excluded from analysis
+stubPath = "typings"
+# Miniconda env (conda activate python313 or mindgraph); .venv excluded from analysis
 pythonVersion = "3.13"
 typeCheckingMode = "basic"
-# Catch broken imports in the editor (e.g. `from typing import tzinfo`).
 reportMissingImports = "error"
-reportGeneralTypeIssues = "error"  # unknown import symbol, invalid type forms
-reportMissingModuleSource = "warning"  # installed package but no resolvable .py/.pyi
-reportMissingTypeStubs = false  # keep off: third-party stub noise, not runtime import bugs
+reportUndefinedVariable = "error"
+reportGeneralTypeIssues = "error"
+reportPossiblyUnboundVariable = "error"
+reportMissingTypeStubs = false
 pythonPlatform = "Linux"
+# Windows Cursor + WSL conda: basedpyright reads site-packages via UNC (adjust distro/user if needed).
+# Prefer selecting the WSL interpreter in the IDE when possible:
+#   \\wsl.localhost\Ubuntu-24.04\home\<user>\miniconda3\envs\python313\bin\python
 extraPaths = [
-    "C:\\Users\\roywang\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\site-packages"
+    ".",
+    "\\\\wsl.localhost\\Ubuntu-24.04\\home\\roywa\\miniconda3\\envs\\python313\\lib\\python3.13\\site-packages",
 ]
 
 [tool.pylint.main]
@@ -51,11 +56,13 @@ ignore-patterns = [
     "^.*\\.toml$",
     "^pyproject\\.toml$",
     "^alembic/versions/",
+    ".*/typings/",
 ]
 # Pylint 3+: directory paths to skip (ensures migration files are not linted when ignore-patterns is ignored)
 ignore-paths = [
     "alembic/versions",
     "frontend/node_modules",
+    "typings",
     # Mostly long prompt strings; line length is enforced elsewhere (editors, ruff where applicable).
     "prompts",
     # @generated bundled API strings; wrapping would churn large dict literals on regen.
@@ -68,10 +75,11 @@ output-format = "text"
 # Maximum line length
 max-line-length = 120
 
-# Disable checks that are structural / intentional for this codebase
+# Disable checks that are structural / intentional for this codebase.
+# Inline `# pylint: disable`, `# noqa`, and `# type: ignore` are forbidden —
+# see scripts/lint/lint_no_inline_disables.py. Pattern-level exceptions live here only.
 disable = [
     "too-few-public-methods",  # Common for data classes and utilities
-    "broad-except",  # Exception handling often needs to catch all exceptions for error recovery
     "duplicate-code",  # Large codebase shares similar patterns; refactor is tracked separately
     "arguments-renamed",  # Subclasses intentionally align API with different parameter names
     "global-statement",  # Singleton and lazy-init patterns use module-level globals
@@ -169,7 +177,10 @@ attr-rgx = "^[A-Z][A-Z0-9_]*$|^[a-z_][a-z0-9_]*$"
 method-rgx = "^(?:[a-z_][a-z0-9_]{2,40}|test_[a-z0-9_]{2,80}|visit_[A-Za-z][a-zA-Z0-9_]*|validate_[a-z0-9_]{2,80})$"
 
 [tool.pylint.messages_control]
-# Merged with [tool.pylint.main] disable list by pylint
+# Merged with [tool.pylint.main] disable list by pylint.
+# Pattern-level policy (no inline disables — see lint_no_inline_disables.py):
+#   broad-except, import-outside-toplevel, protected-access — error recovery,
+#   import cycles, and framework internals (Starlette/FastAPI/logging handlers).
 disable = [
     "broad-except",
     "too-many-positional-arguments",  # Palette generators must match BasePaletteGenerator API

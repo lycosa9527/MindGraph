@@ -6,7 +6,7 @@ import time
 
 from config.settings import config
 from services.infrastructure.http.error_handler import LLMServiceError
-from services.infrastructure.rate_limiting.rate_limiter import get_rate_limiter
+from services.infrastructure.rate_limiting.rate_limiter import DashscopeRateLimiter, get_rate_limiter
 from services.monitoring.performance_tracker import performance_tracker
 from services.redis.redis_token_buffer import get_token_tracker
 
@@ -32,6 +32,15 @@ Proprietary License
 
 
 logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def _optional_rate_limit(limiter: Optional[DashscopeRateLimiter]) -> AsyncGenerator[None, None]:
+    if limiter is not None:
+        async with limiter:
+            yield
+    else:
+        yield
 
 
 class WebSocketLLMMiddleware:
@@ -74,7 +83,7 @@ class WebSocketLLMMiddleware:
         self._connection_lock = asyncio.Lock()
 
         # Get rate limiter if available
-        self.rate_limiter = None
+        self.rate_limiter: Optional[DashscopeRateLimiter] = None
         if self.enable_rate_limiting:
             try:
                 self.rate_limiter = get_rate_limiter()
@@ -140,75 +149,63 @@ class WebSocketLLMMiddleware:
                 self.max_concurrent_connections,
             )
 
-        # Apply rate limiting if enabled
-        rate_limit_context = None
-        if self.enable_rate_limiting and self.rate_limiter:
-            rate_limit_context = await self.rate_limiter.__aenter__()  # type: ignore[attr-defined]
+        async with _optional_rate_limit(self.rate_limiter if self.enable_rate_limiting else None):
+            try:
+                # Prepare context for connection
+                ctx = {
+                    "connection_id": connection_id,
+                    "model_alias": self.model_alias,
+                    "user_id": user_id,
+                    "organization_id": organization_id,
+                    "session_id": session_id,
+                    "request_type": request_type,
+                    "endpoint_path": endpoint_path,
+                    "start_time": connection_start_time,
+                }
 
-        try:
-            # Prepare context for connection
-            ctx = {
-                "connection_id": connection_id,
-                "model_alias": self.model_alias,
-                "user_id": user_id,
-                "organization_id": organization_id,
-                "session_id": session_id,
-                "request_type": request_type,
-                "endpoint_path": endpoint_path,
-                "start_time": connection_start_time,
-            }
+                yield ctx
 
-            yield ctx
+                # Track successful connection
+                duration = time.time() - connection_start_time
+                if self.enable_performance_tracking:
+                    self._track_performance(duration=duration, success=True, error=None)
 
-            # Track successful connection
-            duration = time.time() - connection_start_time
-            if self.enable_performance_tracking:
-                self._track_performance(duration=duration, success=True, error=None)
+                logger.debug(
+                    "[WebSocketLLMMiddleware] Connection %s completed successfully in %.2fs",
+                    connection_id,
+                    duration,
+                )
 
-            logger.debug(
-                "[WebSocketLLMMiddleware] Connection %s completed successfully in %.2fs",
-                connection_id,
-                duration,
-            )
+            except Exception as e:
+                # Track failed connection
+                duration = time.time() - connection_start_time
+                if self.enable_performance_tracking:
+                    self._track_performance(duration=duration, success=False, error=str(e))
 
-        except Exception as e:
-            # Track failed connection
-            duration = time.time() - connection_start_time
-            if self.enable_performance_tracking:
-                self._track_performance(duration=duration, success=False, error=str(e))
+                logger.error(
+                    "[WebSocketLLMMiddleware] Connection %s failed after %.2fs: %s",
+                    connection_id,
+                    duration,
+                    e,
+                    exc_info=True,
+                )
 
-            logger.error(
-                "[WebSocketLLMMiddleware] Connection %s failed after %.2fs: %s",
-                connection_id,
-                duration,
-                e,
-                exc_info=True,
-            )
-
-            # Apply error handling if enabled
-            if self.enable_error_handling:
-                # Re-raise with error handler context
-                raise LLMServiceError(f"WebSocket connection failed: {e}") from e
-            else:
+                # Apply error handling if enabled
+                if self.enable_error_handling:
+                    # Re-raise with error handler context
+                    raise LLMServiceError(f"WebSocket connection failed: {e}") from e
                 raise
 
-        finally:
-            # Release rate limiter
-            if rate_limit_context:
-                try:
-                    await rate_limit_context.__aexit__(None, None, None)  # type: ignore[attr-defined]
-                except Exception as e:
-                    logger.debug("Error releasing rate limiter: %s", e)
-
-            # Decrement active connections
-            async with self._connection_lock:
-                self._active_connections -= 1
-                logger.debug(
-                    "[WebSocketLLMMiddleware] Connection %s closed (%s/%s active)",
-                    connection_id,
-                    self._active_connections,
-                    self.max_concurrent_connections,
-                )
+            finally:
+                # Decrement active connections
+                async with self._connection_lock:
+                    self._active_connections -= 1
+                    logger.debug(
+                        "[WebSocketLLMMiddleware] Connection %s closed (%s/%s active)",
+                        connection_id,
+                        self._active_connections,
+                        self.max_concurrent_connections,
+                    )
 
     async def wrap_start_conversation(
         self,

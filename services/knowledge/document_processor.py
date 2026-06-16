@@ -11,7 +11,7 @@ Proprietary License
 """
 
 from pathlib import Path
-from typing import Optional, Dict, Any, Tuple, List
+from typing import Any, Dict, List, Optional, Tuple
 import logging
 import re
 import mimetypes
@@ -21,71 +21,99 @@ import base64
 logger = logging.getLogger(__name__)
 
 # Try to import language detection library
+_langdetect_fn: Any = None
+_langdetect_available = False
 try:
-    from langdetect import detect, LangDetectException
+    from langdetect import detect as _langdetect_detect
 
-    LANGDETECT_AVAILABLE = True
+    _langdetect_fn = _langdetect_detect
+    _langdetect_available = True
 except ImportError:
-    LANGDETECT_AVAILABLE = False
     logger.warning("[DocumentProcessor] langdetect not available, language detection disabled")
 
 # Try to import optional dependencies
+_pypdf_mod: Any = None
+_pypdf_available = False
 try:
-    import pypdf
+    import pypdf as _pypdf_import
 
-    PYPDF_AVAILABLE = True
+    _pypdf_mod = _pypdf_import
+    _pypdf_available = True
 except ImportError:
-    PYPDF_AVAILABLE = False
+    pass
 
+_pdfplumber_mod: Any = None
+_pdfplumber_available = False
 try:
-    import pdfplumber
+    import pdfplumber as _pdfplumber_import
 
-    PDFPLUMBER_AVAILABLE = True
+    _pdfplumber_mod = _pdfplumber_import
+    _pdfplumber_available = True
 except ImportError:
-    PDFPLUMBER_AVAILABLE = False
+    pass
 
+_docx_document_cls: Any = None
+_docx_available = False
 try:
-    from docx import Document
+    from docx import Document as _docx_document_import
 
-    DOCX_AVAILABLE = True
+    _docx_document_cls = _docx_document_import
+    _docx_available = True
 except ImportError:
-    DOCX_AVAILABLE = False
+    pass
 
+_httpx_mod: Any = None
+_httpx_available = False
 try:
-    import httpx
+    import httpx as _httpx_import
 
-    HTTPX_AVAILABLE = True
+    _httpx_mod = _httpx_import
+    _httpx_available = True
 except ImportError:
-    HTTPX_AVAILABLE = False
+    pass
 
+_settings_config: Any = None
+_config_available = False
 try:
-    from config.settings import config
+    from config.settings import config as _settings_config_import
 
-    CONFIG_AVAILABLE = True
+    _settings_config = _settings_config_import
+    _config_available = True
 except ImportError:
-    CONFIG_AVAILABLE = False
+    pass
 
+_pytesseract_mod: Any = None
+_pil_image_cls: Any = None
+_tesseract_available = False
 try:
-    import pytesseract
-    from PIL import Image
+    import pytesseract as _pytesseract_import
+    from PIL import Image as _pil_image_import
 
-    TESSERACT_AVAILABLE = True
+    _pytesseract_mod = _pytesseract_import
+    _pil_image_cls = _pil_image_import
+    _tesseract_available = True
 except ImportError:
-    TESSERACT_AVAILABLE = False
+    pass
 
+_pptx_presentation_cls: Any = None
+_pptx_available = False
 try:
-    from pptx import Presentation
+    from pptx import Presentation as _pptx_presentation_import
 
-    PPTX_AVAILABLE = True
+    _pptx_presentation_cls = _pptx_presentation_import
+    _pptx_available = True
 except ImportError:
-    PPTX_AVAILABLE = False
+    pass
 
+_openpyxl_load_workbook: Any = None
+_openpyxl_available = False
 try:
-    from openpyxl import load_workbook
+    from openpyxl import load_workbook as _openpyxl_load_workbook_import
 
-    OPENPYXL_AVAILABLE = True
+    _openpyxl_load_workbook = _openpyxl_load_workbook_import
+    _openpyxl_available = True
 except ImportError:
-    OPENPYXL_AVAILABLE = False
+    pass
 
 
 class DocumentProcessor:
@@ -328,11 +356,11 @@ class DocumentProcessor:
     def _extract_pdf_metadata(self, file_path: str) -> Dict[str, Any]:
         """Extract metadata from PDF."""
         metadata = {}
-        if not PYPDF_AVAILABLE:
+        if not _pypdf_available or _pypdf_mod is None:
             return metadata
         try:
             with open(file_path, "rb") as file:
-                pdf_reader = pypdf.PdfReader(file)
+                pdf_reader = _pypdf_mod.PdfReader(file)
                 if pdf_reader.metadata:
                     pdf_meta = pdf_reader.metadata
                     if pdf_meta.get("/Title"):
@@ -350,10 +378,10 @@ class DocumentProcessor:
     def _extract_docx_metadata(self, file_path: str) -> Dict[str, Any]:
         """Extract metadata from DOCX."""
         metadata = {}
-        if not DOCX_AVAILABLE:
+        if not _docx_available or _docx_document_cls is None:
             return metadata
         try:
-            doc = Document(file_path)
+            doc = _docx_document_cls(file_path)
             core_props = doc.core_properties
             if core_props.title:
                 metadata["title"] = core_props.title
@@ -386,19 +414,17 @@ class DocumentProcessor:
         if not isinstance(text, str):
             text = str(text) if text else ""
 
-        if not LANGDETECT_AVAILABLE or not text or len(text.strip()) < 10:
+        if not _langdetect_available or _langdetect_fn is None or not text or len(text.strip()) < 10:
             return None
 
         try:
             # Use first 1000 characters for faster detection
             sample = text[:1000] if len(text) > 1000 else text
-            lang_code = detect(sample)
+            lang_code = _langdetect_fn(sample)
             logger.debug("[DocumentProcessor] Detected language: %s", lang_code)
             return lang_code
-        except LangDetectException:
-            return None
-        except Exception as e:
-            logger.debug("[DocumentProcessor] Language detection failed: %s", e)
+        except Exception as exc:
+            logger.debug("[DocumentProcessor] Language detection failed: %s", exc)
             return None
 
     def extract_text(self, file_path: str, file_type: str) -> str:
@@ -449,15 +475,15 @@ class DocumentProcessor:
 
     def _extract_pdf(self, file_path: str) -> str:
         """Extract text from PDF."""
-        if not PYPDF_AVAILABLE and not PDFPLUMBER_AVAILABLE:
+        if not _pypdf_available and (not _pdfplumber_available or _pdfplumber_mod is None):
             raise ImportError("pypdf or pdfplumber required for PDF extraction")
 
         # Try pypdf first if available
-        if PYPDF_AVAILABLE:
+        if _pypdf_available and _pypdf_mod is not None:
             try:
                 text_parts = []
                 with open(file_path, "rb") as file:
-                    pdf_reader = pypdf.PdfReader(file)
+                    pdf_reader = _pypdf_mod.PdfReader(file)
                     for page in pdf_reader.pages:
                         text = page.extract_text()
                         if text:
@@ -465,8 +491,8 @@ class DocumentProcessor:
                 return "\n\n".join(text_parts)
             except Exception as e:
                 logger.warning("[DocumentProcessor] pypdf failed, trying pdfplumber: %s", e)
-                if PDFPLUMBER_AVAILABLE:
-                    with pdfplumber.open(file_path) as pdf:
+                if _pdfplumber_available and _pdfplumber_mod is not None:
+                    with _pdfplumber_mod.open(file_path) as pdf:
                         text_parts = []
                         for page in pdf.pages:
                             text = page.extract_text()
@@ -475,8 +501,8 @@ class DocumentProcessor:
                         return "\n\n".join(text_parts)
                 raise
 
-        if PDFPLUMBER_AVAILABLE:
-            with pdfplumber.open(file_path) as pdf:
+        if _pdfplumber_available and _pdfplumber_mod is not None:
+            with _pdfplumber_mod.open(file_path) as pdf:
                 text_parts = []
                 for page in pdf.pages:
                     text = page.extract_text()
@@ -498,12 +524,12 @@ class DocumentProcessor:
             Tuple of (text, page_info) where page_info is list of page boundaries
         """
         if file_type == "application/pdf":
-            if not PDFPLUMBER_AVAILABLE:
+            if not _pdfplumber_available or _pdfplumber_mod is None:
                 # Fallback: extract text without page info
                 text = self._extract_pdf(file_path)
                 return text, []
             try:
-                with pdfplumber.open(file_path) as pdf:
+                with _pdfplumber_mod.open(file_path) as pdf:
                     text_parts = []
                     page_info = []
                     current_pos = 0
@@ -532,10 +558,10 @@ class DocumentProcessor:
 
     def _extract_docx(self, file_path: str) -> str:
         """Extract text from DOCX."""
-        if not DOCX_AVAILABLE:
+        if not _docx_available or _docx_document_cls is None:
             raise ImportError("python-docx required for DOCX extraction")
 
-        doc = Document(file_path)
+        doc = _docx_document_cls(file_path)
         text_parts = []
         for paragraph in doc.paragraphs:
             if paragraph.text.strip():
@@ -573,10 +599,10 @@ class DocumentProcessor:
 
     def _extract_image_dashscope(self, file_path: str) -> str:
         """Extract text using DashScope OCR API."""
-        if not HTTPX_AVAILABLE or not CONFIG_AVAILABLE:
+        if not _httpx_available or not _config_available or _httpx_mod is None or _settings_config is None:
             raise ValueError("httpx and config required for DashScope OCR")
 
-        api_key = config.QWEN_API_KEY
+        api_key = _settings_config.QWEN_API_KEY
         if not api_key:
             raise ValueError("DashScope API key required for OCR")
 
@@ -607,10 +633,10 @@ class DocumentProcessor:
             "parameters": {},
         }
 
-        base_url = config.DASHSCOPE_API_URL or "https://dashscope.aliyuncs.com/api/v1/"
+        base_url = _settings_config.DASHSCOPE_API_URL or "https://dashscope.aliyuncs.com/api/v1/"
         ocr_url = f"{base_url}services/aigc/multimodal-generation/generation"
 
-        with httpx.Client(timeout=60.0) as client:
+        with _httpx_mod.Client(timeout=60.0) as client:
             response = client.post(ocr_url, headers=headers, json=payload)
             response.raise_for_status()
             result = response.json()
@@ -645,14 +671,14 @@ class DocumentProcessor:
 
     def _extract_image_tesseract(self, file_path: str) -> str:
         """Extract text using pytesseract OCR."""
-        if not TESSERACT_AVAILABLE:
+        if not _tesseract_available or _pil_image_cls is None or _pytesseract_mod is None:
             raise ImportError(
                 "pytesseract and PIL required for Tesseract OCR. Install with: pip install pytesseract Pillow"
             )
 
         try:
-            image = Image.open(file_path)
-            text = pytesseract.image_to_string(image, lang="chi_sim+eng")  # Chinese + English
+            image = _pil_image_cls.open(file_path)
+            text = _pytesseract_mod.image_to_string(image, lang="chi_sim+eng")  # Chinese + English
             return text
         except Exception as e:
             # Check if this is a TesseractNotFoundError
@@ -678,23 +704,24 @@ class DocumentProcessor:
 
     def _extract_pptx(self, file_path: str) -> str:
         """Extract text from PPTX."""
-        if not PPTX_AVAILABLE:
+        if not _pptx_available or _pptx_presentation_cls is None:
             raise ImportError("python-pptx required for PPTX extraction")
 
-        prs = Presentation(file_path)
+        prs = _pptx_presentation_cls(file_path)
         text_parts = []
         for slide in prs.slides:
             for shape in slide.shapes:
-                if hasattr(shape, "text") and shape.text.strip():
-                    text_parts.append(shape.text)
+                shape_text = getattr(shape, "text", None)
+                if shape_text and str(shape_text).strip():
+                    text_parts.append(str(shape_text))
         return "\n\n".join(text_parts)
 
     def _extract_xlsx(self, file_path: str) -> str:
         """Extract text from XLSX."""
-        if not OPENPYXL_AVAILABLE:
+        if not _openpyxl_available or _openpyxl_load_workbook is None:
             raise ImportError("openpyxl required for XLSX extraction")
 
-        wb = load_workbook(file_path, read_only=True)
+        wb = _openpyxl_load_workbook(file_path, read_only=True)
         text_parts = []
         for sheet_name in wb.sheetnames:
             sheet = wb[sheet_name]

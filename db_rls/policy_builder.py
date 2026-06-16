@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 
 def _enable_force(table: str) -> None:
@@ -17,19 +17,13 @@ def _drop_policy(table: str, name: str) -> None:
 
 def _create_all_policy(table: str, name: str, using_expr: str, check_expr: str | None = None) -> None:
     check_sql = check_expr if check_expr is not None else using_expr
-    op.execute(
-        sa.text(
-            f'CREATE POLICY "{name}" ON "{table}" FOR ALL '
-            f"USING ({using_expr}) WITH CHECK ({check_sql})"
-        )
-    )
+    op.execute(sa.text(f'CREATE POLICY "{name}" ON "{table}" FOR ALL USING ({using_expr}) WITH CHECK ({check_sql})'))
 
 
 # Group A — user_id column (or diagram/knowledge helpers)
 USER_OWNED_EXPR = "rls_diagram_visible(user_id)"
 DEVICE_EXPR = (
-    "(student_id IS NULL AND (rls_is_panel_mode() OR rls_is_system_mode())) "
-    "OR rls_diagram_visible(student_id)"
+    "(student_id IS NULL AND (rls_is_panel_mode() OR rls_is_system_mode())) OR rls_diagram_visible(student_id)"
 )
 USER_OWNED_TABLES = [
     "diagrams",
@@ -49,10 +43,7 @@ USER_OWNED_TABLES = [
 MARKET_CHILD_TABLES = [
     (
         "market_payments",
-        (
-            "EXISTS (SELECT 1 FROM market_orders mo "
-            "WHERE mo.id = order_id AND rls_diagram_visible(mo.user_id))"
-        ),
+        ("EXISTS (SELECT 1 FROM market_orders mo WHERE mo.id = order_id AND rls_diagram_visible(mo.user_id))"),
     ),
 ]
 
@@ -97,10 +88,7 @@ KNOWLEDGE_SPACE_CHILD_TABLES = [
     ("query_templates", USER_OR_SPACE_VISIBLE),
     (
         "document_relationships",
-        (
-            "rls_knowledge_document_visible(source_document_id) "
-            "OR rls_knowledge_document_visible(target_document_id)"
-        ),
+        ("rls_knowledge_document_visible(source_document_id) OR rls_knowledge_document_visible(target_document_id)"),
     ),
     ("evaluation_datasets", USER_OR_SPACE_VISIBLE),
     (
@@ -123,18 +111,18 @@ KNOWLEDGE_SPACE_CHILD_TABLES = [
 ]
 
 DEBATE_CHILD_TABLES = [
-    ("debate_participants", (
-        "EXISTS (SELECT 1 FROM debate_sessions ds "
-        "WHERE ds.id = session_id AND rls_diagram_visible(ds.user_id))"
-    )),
-    ("debate_messages", (
-        "EXISTS (SELECT 1 FROM debate_sessions ds "
-        "WHERE ds.id = session_id AND rls_diagram_visible(ds.user_id))"
-    )),
-    ("debate_judgments", (
-        "EXISTS (SELECT 1 FROM debate_sessions ds "
-        "WHERE ds.id = session_id AND rls_diagram_visible(ds.user_id))"
-    )),
+    (
+        "debate_participants",
+        ("EXISTS (SELECT 1 FROM debate_sessions ds WHERE ds.id = session_id AND rls_diagram_visible(ds.user_id))"),
+    ),
+    (
+        "debate_messages",
+        ("EXISTS (SELECT 1 FROM debate_sessions ds WHERE ds.id = session_id AND rls_diagram_visible(ds.user_id))"),
+    ),
+    (
+        "debate_judgments",
+        ("EXISTS (SELECT 1 FROM debate_sessions ds WHERE ds.id = session_id AND rls_diagram_visible(ds.user_id))"),
+    ),
 ]
 
 # Group B — organization_id
@@ -149,53 +137,63 @@ ORG_TABLES = [
 SHARED_DIAGRAM_CHILD = [
     (
         "shared_diagram_likes",
-        "EXISTS (SELECT 1 FROM shared_diagrams sd "
-        "WHERE sd.id = diagram_id AND rls_org_visible(sd.organization_id))",
+        "EXISTS (SELECT 1 FROM shared_diagrams sd WHERE sd.id = diagram_id AND rls_org_visible(sd.organization_id))",
     ),
     (
         "shared_diagram_comments",
-        "EXISTS (SELECT 1 FROM shared_diagrams sd "
-        "WHERE sd.id = diagram_id AND rls_org_visible(sd.organization_id))",
+        "EXISTS (SELECT 1 FROM shared_diagrams sd WHERE sd.id = diagram_id AND rls_org_visible(sd.organization_id))",
     ),
 ]
 
 ORG_EXPR = "rls_org_visible(organization_id)"
-MINDBOT_CONFIG_EXPR = (
-    "rls_org_visible(organization_id) "
-    "OR rls_mindbot_callback_token_visible(public_callback_token)"
-)
+MINDBOT_CONFIG_EXPR = "rls_org_visible(organization_id) OR rls_mindbot_callback_token_visible(public_callback_token)"
 MINDBOT_USAGE_EXPR = "rls_org_visible(organization_id)"
 
 WORKSHOP_ROOT = "chat_channels"
 WORKSHOP_CHANNEL_EXPR = "rls_chat_channel_visible(organization_id)"
 WORKSHOP_CHILD = [
-    ("channel_members", (
-        "EXISTS (SELECT 1 FROM chat_channels c "
-        "WHERE c.id = channel_id AND rls_chat_channel_visible(c.organization_id))"
-    )),
-    ("chat_topics", (
-        "EXISTS (SELECT 1 FROM chat_channels c "
-        "WHERE c.id = channel_id AND rls_chat_channel_visible(c.organization_id))"
-    )),
-    ("chat_messages", (
-        "EXISTS (SELECT 1 FROM chat_topics t "
-        "JOIN chat_channels c ON c.id = t.channel_id "
-        "WHERE t.id = topic_id AND rls_chat_channel_visible(c.organization_id))"
-    )),
+    (
+        "channel_members",
+        (
+            "EXISTS (SELECT 1 FROM chat_channels c "
+            "WHERE c.id = channel_id AND rls_chat_channel_visible(c.organization_id))"
+        ),
+    ),
+    (
+        "chat_topics",
+        (
+            "EXISTS (SELECT 1 FROM chat_channels c "
+            "WHERE c.id = channel_id AND rls_chat_channel_visible(c.organization_id))"
+        ),
+    ),
+    (
+        "chat_messages",
+        (
+            "EXISTS (SELECT 1 FROM chat_topics t "
+            "JOIN chat_channels c ON c.id = t.channel_id "
+            "WHERE t.id = topic_id AND rls_chat_channel_visible(c.organization_id))"
+        ),
+    ),
     ("direct_messages", DIRECT_MESSAGE_EXPR),
-    ("message_reactions", (
-        "EXISTS (SELECT 1 FROM chat_messages m "
-        "JOIN chat_topics t ON t.id = m.topic_id "
-        "JOIN chat_channels c ON c.id = t.channel_id "
-        "WHERE m.id = message_id AND rls_chat_channel_visible(c.organization_id))"
-    )),
+    (
+        "message_reactions",
+        (
+            "EXISTS (SELECT 1 FROM chat_messages m "
+            "JOIN chat_topics t ON t.id = m.topic_id "
+            "JOIN chat_channels c ON c.id = t.channel_id "
+            "WHERE m.id = message_id AND rls_chat_channel_visible(c.organization_id))"
+        ),
+    ),
     ("starred_messages", "rls_user_visible(user_id)"),
-    ("file_attachments", (
-        "EXISTS (SELECT 1 FROM chat_messages m "
-        "JOIN chat_topics t ON t.id = m.topic_id "
-        "JOIN chat_channels c ON c.id = t.channel_id "
-        "WHERE m.id = message_id AND rls_chat_channel_visible(c.organization_id))"
-    )),
+    (
+        "file_attachments",
+        (
+            "EXISTS (SELECT 1 FROM chat_messages m "
+            "JOIN chat_topics t ON t.id = m.topic_id "
+            "JOIN chat_channels c ON c.id = t.channel_id "
+            "WHERE m.id = message_id AND rls_chat_channel_visible(c.organization_id))"
+        ),
+    ),
     ("user_topic_preferences", "rls_user_visible(user_id)"),
 ]
 
@@ -275,28 +273,14 @@ def upgrade_group_cde() -> None:
     ]
     for table, read_expr, write_expr in community_tables:
         _enable_force(table)
+        op.execute(sa.text(f'CREATE POLICY "{table}_select" ON "{table}" FOR SELECT USING ({read_expr})'))
+        op.execute(sa.text(f'CREATE POLICY "{table}_write" ON "{table}" FOR INSERT WITH CHECK ({write_expr})'))
         op.execute(
             sa.text(
-                f'CREATE POLICY "{table}_select" ON "{table}" FOR SELECT USING ({read_expr})'
+                f'CREATE POLICY "{table}_update" ON "{table}" FOR UPDATE USING ({write_expr}) WITH CHECK ({write_expr})'
             )
         )
-        op.execute(
-            sa.text(
-                f'CREATE POLICY "{table}_write" ON "{table}" FOR INSERT '
-                f"WITH CHECK ({write_expr})"
-            )
-        )
-        op.execute(
-            sa.text(
-                f'CREATE POLICY "{table}_update" ON "{table}" FOR UPDATE '
-                f"USING ({write_expr}) WITH CHECK ({write_expr})"
-            )
-        )
-        op.execute(
-            sa.text(
-                f'CREATE POLICY "{table}_delete" ON "{table}" FOR DELETE USING ({write_expr})'
-            )
-        )
+        op.execute(sa.text(f'CREATE POLICY "{table}_delete" ON "{table}" FOR DELETE USING ({write_expr})'))
 
     library_tables = [
         ("library_documents", LIBRARY_DOC_READ, LIBRARY_DOC_WRITE),
@@ -306,13 +290,10 @@ def upgrade_group_cde() -> None:
     ]
     for table, read_expr, write_expr in library_tables:
         _enable_force(table)
-        op.execute(
-            sa.text(f'CREATE POLICY "{table}_select" ON "{table}" FOR SELECT USING ({read_expr})')
-        )
+        op.execute(sa.text(f'CREATE POLICY "{table}_select" ON "{table}" FOR SELECT USING ({read_expr})'))
         op.execute(
             sa.text(
-                f'CREATE POLICY "{table}_mutate" ON "{table}" FOR ALL '
-                f"USING ({write_expr}) WITH CHECK ({write_expr})"
+                f'CREATE POLICY "{table}_mutate" ON "{table}" FOR ALL USING ({write_expr}) WITH CHECK ({write_expr})'
             )
         )
 

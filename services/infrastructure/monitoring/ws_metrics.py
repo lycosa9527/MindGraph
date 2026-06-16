@@ -559,14 +559,14 @@ async def get_ws_metrics_snapshot() -> Dict[str, Any]:
 
     # Room-size gauge: snapshot from in-process ACTIVE_CONNECTIONS.
     try:
-        from services.features.workshop_ws_connection_state import (  # pylint: disable=import-outside-toplevel
+        from services.features.workshop_ws_connection_state import (
             ACTIVE_CONNECTIONS,
         )
 
         snap["ws_room_sizes"] = {code: len(handles) for code, handles in ACTIVE_CONNECTIONS.items()}
         snap["ws_rooms_total"] = len(ACTIVE_CONNECTIONS)
         snap["ws_total_connections_local"] = sum(len(h) for h in ACTIVE_CONNECTIONS.values())
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         pass
 
     return snap

@@ -20,21 +20,13 @@ def _create_index_if_table_exists(name: str, table: str, columns: str, *, where:
     if not sa.inspect(bind).has_table(table):
         return
     where_clause = f" WHERE {where}" if where else ""
-    op.execute(
-        sa.text(
-            f'CREATE INDEX IF NOT EXISTS "{name}" ON "{table}" ({columns}){where_clause}'
-        )
-    )
+    op.execute(sa.text(f'CREATE INDEX IF NOT EXISTS "{name}" ON "{table}" ({columns}){where_clause}'))
 
 
 def upgrade() -> None:
     _create_index_if_table_exists("ix_rls_diagrams_user_id_id", "diagrams", "user_id, id")
-    _create_index_if_table_exists(
-        "ix_rls_knowledge_documents_space_id", "knowledge_documents", "space_id"
-    )
-    _create_index_if_table_exists(
-        "ix_rls_document_chunks_document_id", "document_chunks", "document_id"
-    )
+    _create_index_if_table_exists("ix_rls_knowledge_documents_space_id", "knowledge_documents", "space_id")
+    _create_index_if_table_exists("ix_rls_document_chunks_document_id", "document_chunks", "document_id")
     _create_index_if_table_exists(
         "ix_rls_token_usage_org_created",
         "token_usage",

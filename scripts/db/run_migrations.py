@@ -158,9 +158,7 @@ def _log_database_connection_failure(logger: logging.Logger, exc: Exception) -> 
         )
         return
     if "does not exist" in msg_lower and "role" in msg_lower:
-        logger.error(
-            "Login role missing. Run option 3 (status) to bootstrap mindgraph_app / mindgraph_migrate."
-        )
+        logger.error("Login role missing. Run option 3 (status) to bootstrap mindgraph_app / mindgraph_migrate.")
         return
     if "connection refused" in msg_lower:
         logger.error(
@@ -381,8 +379,7 @@ def _prepare_migration_cli() -> tuple[Engine, Path] | int:
             if not ensure_postgresql_server_reachable(runtime_url):
                 return 1
             logger.info(
-                "PostgreSQL is up; MindGraph roles not connected yet "
-                "(RLS bootstrap runs next on a fresh install)"
+                "PostgreSQL is up; MindGraph roles not connected yet (RLS bootstrap runs next on a fresh install)"
             )
 
     from scripts.db.rls_roles_bootstrap import ensure_rls_roles_exist
@@ -476,9 +473,7 @@ def _prompt_primary_mode() -> str:
     print("  1) Run Alembic migrations (alembic upgrade head)")
     print("  2) Import backup into PostgreSQL (mindgraph.postgresql.*.dump)")
     print("  3) Check migration / RLS status (patch .env, flush Redis)")
-    print(
-        "  4) Full local setup (RLS roles if missing, migrate to head, patch .env, Redis)"
-    )
+    print("  4) Full local setup (RLS roles if missing, migrate to head, patch .env, Redis)")
     print("  5) Quit")
     while True:
         choice = input("Enter 1, 2, 3, 4, or 5: ").strip()
@@ -581,9 +576,7 @@ def _run_apply_flow(mods: Dict[str, Any]) -> int:
         if not rls_ok:
             for issue in issues:
                 logger.error("RLS verification: %s", issue)
-            logger.error(
-                "Mandatory RLS rollout incomplete. Use menu option 3 (status) after fixing roles."
-            )
+            logger.error("Mandatory RLS rollout incomplete. Use menu option 3 (status) after fixing roles.")
             return 1
         _offer_env_rls_patch(mods["migration_engine"], env_path)
 

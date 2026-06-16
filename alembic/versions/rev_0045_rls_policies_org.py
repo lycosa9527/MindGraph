@@ -6,7 +6,7 @@ Revises: 0044
 
 from typing import Sequence, Union
 
-from alembic.rls_policy_builder import downgrade_policies_for_tables, upgrade_group_b
+from db_rls.policy_builder import downgrade_policies_for_tables, upgrade_group_b
 
 revision: str = "0045"
 down_revision: Union[str, None] = "0044"

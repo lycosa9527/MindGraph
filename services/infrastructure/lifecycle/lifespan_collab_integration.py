@@ -36,31 +36,31 @@ async def start_online_collab_subsystem_async(
         )
         if is_main_worker:
             logger.debug("Workshop cleanup scheduler started")
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.warning("Failed to start workshop cleanup scheduler: %s", exc)
 
     await load_collab_scripts()
 
     try:
-        from services.online_collab.redis.online_collab_redis_locks import (  # pylint: disable=import-outside-toplevel
+        from services.online_collab.redis.online_collab_redis_locks import (
             ensure_online_collab_functions_loaded,
         )
-        from services.redis.redis_async_client import get_async_redis  # pylint: disable=import-outside-toplevel
+        from services.redis.redis_async_client import get_async_redis
 
         await ensure_online_collab_functions_loaded(get_async_redis())
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.debug("Redis workshop FUNCTION preload skipped: %s", exc)
 
     try:
-        from services.online_collab.redis.redis8_features import (  # pylint: disable=import-outside-toplevel
+        from services.online_collab.redis.redis8_features import (
             enable_client_tracking,
         )
-        from services.redis.redis_async_client import get_async_redis  # pylint: disable=import-outside-toplevel
+        from services.redis.redis_async_client import get_async_redis
 
         await enable_client_tracking(get_async_redis())
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.debug("CLIENT TRACKING opt-in skipped: %s", exc)
 
@@ -69,17 +69,17 @@ async def start_online_collab_subsystem_async(
         session_manager_task = start_online_collab_manager()
         if is_main_worker:
             logger.debug("Workshop session manager idle monitor started")
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.warning("Failed to start workshop session manager: %s", exc)
 
     try:
-        from services.features.ws_pg_notify_fanout import (  # pylint: disable=import-outside-toplevel
+        from services.features.ws_pg_notify_fanout import (
             start_pg_notify_listener,
         )
 
         start_pg_notify_listener()
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if is_main_worker:
             logger.warning("Failed to start PG NOTIFY listener: %s", exc)
 

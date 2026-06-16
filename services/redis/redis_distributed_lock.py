@@ -142,7 +142,7 @@ class DistributedLock:
                 )
                 return False
 
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 logger.warning(
                     "[DistributedLock] Lock acquisition error for %s: %s",
                     self.resource,
@@ -179,7 +179,7 @@ class DistributedLock:
             )
             return False
 
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             logger.warning("[DistributedLock] Lock release error for %s: %s", self.resource, exc)
             return False
 
@@ -234,7 +234,7 @@ async def acquire_startup_sms_notification_lock() -> Optional[str]:
             holder,
         )
         return None
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.warning(
             "[LIFESPAN] Startup SMS lock acquisition failed (skipping send): %s",
             exc,
@@ -250,7 +250,7 @@ async def release_startup_sms_notification_lock(lock_id: str) -> None:
         return
     try:
         await AsyncRedisOps.compare_and_delete(STARTUP_SMS_NOTIFICATION_LOCK_KEY, lock_id)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.debug(
             "[LIFESPAN] Startup SMS lock release (non-critical): %s",
             exc,

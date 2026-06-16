@@ -31,11 +31,11 @@ except ImportError:
     PSUTIL_AVAILABLE = False
 
 try:
-    import fcntl
-
-    FCNTL_AVAILABLE = True
+    import fcntl as _fcntl_mod
 except ImportError:
-    FCNTL_AVAILABLE = False
+    _fcntl_mod = None
+
+FCNTL_AVAILABLE = _fcntl_mod is not None
 
 from sqlalchemy import create_engine, inspect, text
 
@@ -284,9 +284,9 @@ def acquire_migration_lock() -> Optional[Any]:
 
         # Try to acquire exclusive lock (non-blocking)
         if sys.platform != "win32":
-            if FCNTL_AVAILABLE:
+            if FCNTL_AVAILABLE and _fcntl_mod is not None:
                 try:
-                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    _fcntl_mod.flock(lock_file.fileno(), _fcntl_mod.LOCK_EX | _fcntl_mod.LOCK_NB)
                     # Write PID to lock file for debugging
                     lock_file.write(str(os.getpid()))
                     lock_file.flush()
@@ -323,8 +323,8 @@ def release_migration_lock(lock_file: Optional[Any]) -> None:
     """
     if lock_file:
         try:
-            if sys.platform != "win32" and FCNTL_AVAILABLE:
-                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+            if sys.platform != "win32" and FCNTL_AVAILABLE and _fcntl_mod is not None:
+                _fcntl_mod.flock(lock_file.fileno(), _fcntl_mod.LOCK_UN)
             lock_file.close()
             if MIGRATION_LOCK_FILE.exists():
                 MIGRATION_LOCK_FILE.unlink()

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from unittest.mock import AsyncMock
+
 import pytest
 from fastapi import HTTPException
 
@@ -17,6 +19,7 @@ from services.auth.school_user_create import (
 )
 from utils.auth.school_tier_defs import SCHOOL_TIER_LITE
 from utils.auth.role_constants import ROLE_SCHOOL_ADMIN, ROLE_SUPERADMIN
+from tests.typing_helpers import as_organization
 
 
 def test_validate_school_member_phone_rejects_invalid() -> None:
@@ -108,7 +111,7 @@ def test_parse_school_member_batch_deduplicates_contacts() -> None:
     assert len(members) == 2
     assert members[0].phone == "13812345678"
     assert members[1].phone == "13812345679"
-    assert failed == []
+    assert not failed
 
 
 def test_parse_school_member_batch_collects_invalid_rows() -> None:
@@ -135,8 +138,9 @@ def test_parse_school_member_batch_rejects_too_many_rows() -> None:
 async def test_assert_batch_member_capacity_allows_extra_seats(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    org = type("Org", (), {"id": 1, "school_tier": SCHOOL_TIER_LITE, "extra_member_seats": 10})()
+    org = as_organization(type("Org", (), {"id": 1, "school_tier": SCHOOL_TIER_LITE, "extra_member_seats": 10})())
     members = [SchoolMemberInput(phone="13812345678", email=None, name="New", role="teacher")]
+    db = AsyncMock()
 
     async def _count(_db, _org_id):
         return 50
@@ -146,15 +150,16 @@ async def test_assert_batch_member_capacity_allows_extra_seats(
         _count,
     )
 
-    await assert_batch_member_capacity(None, org, members, "en")
+    await assert_batch_member_capacity(db, org, members, "en")
 
 
 @pytest.mark.asyncio
 async def test_assert_batch_member_capacity_rejects_at_effective_cap(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    org = type("Org", (), {"id": 1, "school_tier": SCHOOL_TIER_LITE, "extra_member_seats": 10})()
+    org = as_organization(type("Org", (), {"id": 1, "school_tier": SCHOOL_TIER_LITE, "extra_member_seats": 10})())
     members = [SchoolMemberInput(phone="13812345678", email=None, name="New", role="teacher")]
+    db = AsyncMock()
 
     async def _count(_db, _org_id):
         return 60
@@ -165,5 +170,5 @@ async def test_assert_batch_member_capacity_rejects_at_effective_cap(
     )
 
     with pytest.raises(HTTPException) as exc:
-        await assert_batch_member_capacity(None, org, members, "en")
+        await assert_batch_member_capacity(db, org, members, "en")
     assert exc.value.status_code == 403

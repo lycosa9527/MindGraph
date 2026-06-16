@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
 from models.domain.auth import Base
+from services.utils.typing_helpers import result_rowcount
 
 ModelT = TypeVar("ModelT", bound=Base)
 
@@ -94,14 +95,8 @@ class BaseRepository(Generic[ModelT]):
         return objects
 
     async def update_by_id(self, record_id: int, *, commit: bool = False, **values: Any) -> Optional[ModelT]:
-        stmt = (
-            update(self.model)
-            .where(self.model.id == record_id)
-            .values(**values)
-            .returning(
-                self.model  # type: ignore[attr-defined]
-            )
-        )
+        id_column = getattr(self.model, "id")
+        stmt = update(self.model).where(id_column == record_id).values(**values).returning(self.model)
         result = await self.session.execute(stmt)
         obj = result.scalars().one_or_none()
         if commit:
@@ -117,16 +112,17 @@ class BaseRepository(Generic[ModelT]):
             await self.session.commit()
         else:
             await self.session.flush()
-        return result.rowcount  # type: ignore[return-value]
+        return result_rowcount(result)
 
     async def delete_by_id(self, record_id: int, *, commit: bool = False) -> bool:
-        stmt = delete(self.model).where(self.model.id == record_id)
+        id_column = getattr(self.model, "id")
+        stmt = delete(self.model).where(id_column == record_id)
         result = await self.session.execute(stmt)
         if commit:
             await self.session.commit()
         else:
             await self.session.flush()
-        return result.rowcount > 0  # type: ignore[operator]
+        return result_rowcount(result) > 0
 
     async def bulk_delete(self, *filters: Any, commit: bool = False) -> int:
         stmt = delete(self.model).where(*filters)
@@ -135,7 +131,7 @@ class BaseRepository(Generic[ModelT]):
             await self.session.commit()
         else:
             await self.session.flush()
-        return result.rowcount  # type: ignore[return-value]
+        return result_rowcount(result)
 
     # -- helpers -------------------------------------------------------------
 

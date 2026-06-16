@@ -26,7 +26,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
-from utils.auth.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
+from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 
 logger = logging.getLogger(__name__)
 

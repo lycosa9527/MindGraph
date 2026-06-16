@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 LIVE_FLUSH_DEBOUNCE_SEC = 8.0
 LIVE_FLUSH_MAX_INTERVAL_SEC = 10.0
 
-_pending: Dict[str, asyncio.Task] = {}  # type: ignore[type-arg]
+_pending: Dict[str, asyncio.Task[None]] = {}
 _lock = asyncio.Lock()
 
 
@@ -107,7 +107,7 @@ async def schedule_live_spec_db_flush(code: str, diagram_id: str) -> None:
             return
         _pending[code] = task
 
-        def _cleanup(t: asyncio.Task) -> None:  # type: ignore[type-arg]
+        def _cleanup(t: asyncio.Task[None]) -> None:
             if _pending.get(code) is t:
                 _pending.pop(code, None)
             if t.cancelled():

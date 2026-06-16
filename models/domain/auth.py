@@ -10,28 +10,31 @@ All Rights Reserved
 Proprietary License
 """
 
+from __future__ import annotations
+
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
-    Column,
+    DateTime,
+    ForeignKey,
     Integer,
     String,
     Text,
-    DateTime,
-    ForeignKey,
-    Boolean,
     UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from utils.auth.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
+from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
+
+if TYPE_CHECKING:
+    from models.domain.diagrams import Diagram
 
 
 class Base(DeclarativeBase):
     """Shared declarative base for all MindGraph ORM models."""
-
-    id: object
 
 
 MINDMATE_AGENT_NAME_MAX_LENGTH = 10
@@ -48,27 +51,25 @@ class Organization(Base):
     __tablename__ = "organizations"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    code = Column(String(50), unique=True, nullable=False)  # e.g., "DEMO-001"
-    name = Column(String(200), nullable=False)  # e.g., "Demo School for Testing"
-    display_name = Column(String(200), nullable=True)  # Custom text shown in sidebar (e.g. "MindGraph专业版")
-    invitation_code = Column(String(50), unique=True, nullable=True)  # For controlled registration
+    code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    display_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    invitation_code: Mapped[str | None] = mapped_column(String(50), unique=True, nullable=True)
     invited_by_user_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("users.id", ondelete="SET NULL"),
         index=True,
         nullable=True,
     )
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
-    # Service subscription management
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     school_tier: Mapped[str] = mapped_column(String(32), nullable=False, default="trial")
     extra_member_seats: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    # Per-org MindMate Dify override (optional; falls back to global DIFY_* env)
-    dify_api_base_url = Column(String(512), nullable=True)
-    dify_api_key = Column(Text, nullable=True)
+    dify_api_base_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    dify_api_key: Mapped[str | None] = mapped_column(Text, nullable=True)
     dify_timeout_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=300)
     show_chain_of_thought_oto: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     show_chain_of_thought_internal_group: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -76,14 +77,10 @@ class Organization(Base):
     chain_of_thought_max_chars: Mapped[int] = mapped_column(Integer, nullable=False, default=4000)
     dingtalk_ai_card_streaming_max_chars: Mapped[int] = mapped_column(Integer, nullable=False, default=6500)
 
-    # Per-org MindMate branding (optional sidebar label + avatar)
-    mindmate_agent_name = Column(String(MINDMATE_AGENT_NAME_MAX_LENGTH), nullable=True)
-    mindmate_agent_avatar_url = Column(String(512), nullable=True)
+    mindmate_agent_name: Mapped[str | None] = mapped_column(String(MINDMATE_AGENT_NAME_MAX_LENGTH), nullable=True)
+    mindmate_agent_avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
-    # Relationship — large collection. Use ``selectinload(Organization.users)``
-    # explicitly in the few queries that actually need eager loading.
-    # ``foreign_keys`` required: ``invited_by_user_id`` also references ``users``.
-    users = relationship(
+    users: Mapped[list["User"]] = relationship(
         "User",
         back_populates="organization",
         lazy="select",
@@ -127,11 +124,9 @@ class User(Base):
     avatar: Mapped[str | None] = mapped_column(String(50), nullable=True, default=DEFAULT_USER_AVATAR_EMOJI)
     role: Mapped[str] = mapped_column(String(30), nullable=False, default="teacher")
 
-    # Security fields
     failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
-    # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     workshop_last_seen_at: Mapped[datetime | None] = mapped_column(
@@ -139,38 +134,22 @@ class User(Base):
         nullable=True,
     )
 
-    # Client preferences (interface + LLM prompt language); persisted for signed-in users
     ui_language: Mapped[str | None] = mapped_column(String(32), nullable=True)
     prompt_language: Mapped[str | None] = mapped_column(String(32), nullable=True)
-    # When True, prompt_language tracks interface locale (resolved to API codes, e.g. zh-tw → zh-hant)
     match_prompt_to_ui: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     ui_version: Mapped[str | None] = mapped_column(String(32), nullable=True, default="international")
-    # False for overseas (email) accounts: Simplified Chinese UI locale (`zh`) is not allowed
     allows_simplified_chinese: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
-    # Sales whitelist: allow email/password login from mainland China (GeoIP CN) for this account
     email_login_whitelisted_from_cn: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    # False when the user was created with a server-only password (e.g. quick registration) until
-    # they set a known password (SMS flow). For all other signups, True.
     login_password_set: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
-    # Relationships
-    # ``organization`` is M:1, but no production call path actually accesses
-    # the relationship attribute — every caller uses ``user.organization_id``
-    # plus ``org_cache.get_by_id(...)`` (the canonical Redis-backed lookup).
-    # Default-eager (selectin) therefore issued one wasted SELECT per User
-    # load on the auth hot path. Use ``select`` so the relationship is only
-    # materialised when explicitly requested via ``selectinload`` (G11).
-    organization = relationship(
+    organization: Mapped["Organization | None"] = relationship(
         "Organization",
         back_populates="users",
         lazy="select",
         foreign_keys="User.organization_id",
     )
-    # ``diagrams`` is a large 1:N collection. Default to ``select`` so the auth
-    # hot path does not pull every user's full diagram set on every login;
-    # callers that genuinely need them must use ``selectinload(User.diagrams)``.
-    diagrams = relationship(
+    diagrams: Mapped[list["Diagram"]] = relationship(
         "Diagram",
         back_populates="user",
         cascade="all, delete-orphan",
@@ -195,27 +174,23 @@ class APIKey(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     key: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-    name: Mapped[str] = mapped_column(String, nullable=False)  # e.g., "Dify Integration"
+    name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str | None] = mapped_column(String, nullable=True)
 
-    # Quota & Usage Tracking
-    quota_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)  # null = unlimited
+    quota_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
     usage_count: Mapped[int] = mapped_column(Integer, default=0)
 
-    # Status
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
-    # Optional: Link to organization
     organization_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("organizations.id", ondelete="SET NULL"), index=True, nullable=True
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<APIKey {self.name}: {self.key[:12]}...>"
 
 
@@ -229,20 +204,18 @@ class UpdateNotification(Base):
 
     __tablename__ = "update_notifications"
 
-    id = Column(Integer, primary_key=True, index=True)
-    enabled = Column(Boolean, default=False)
-    version = Column(String(50), default="")
-    title = Column(String(200), default="")
-    message = Column(String(10000), default="")  # Rich text content
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    version: Mapped[str] = mapped_column(String(50), default="")
+    title: Mapped[str] = mapped_column(String(200), default="")
+    message: Mapped[str] = mapped_column(String(10000), default="")
 
-    # Scheduling - optional start/end dates
-    start_date = Column(DateTime, nullable=True)  # Show after this date
-    end_date = Column(DateTime, nullable=True)  # Hide after this date
+    start_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    end_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
-    # Targeting - optional organization filter
-    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    organization_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("organizations.id"), nullable=True)
 
-    updated_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
 
 class UpdateNotificationDismissed(Base):
@@ -255,12 +228,11 @@ class UpdateNotificationDismissed(Base):
 
     __tablename__ = "update_notification_dismissed"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    version = Column(String(50), nullable=False, index=True)
-    dismissed_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    version: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    dismissed_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
-    # Unique constraint: one dismiss record per user per version (prevents duplicates)
     __table_args__ = (UniqueConstraint("user_id", "version", name="uq_user_version_dismissed"),)
 
 

@@ -17,6 +17,8 @@ import geoip2.database
 import geoip2.errors
 from fastapi import Request
 
+from utils.auth.connection_types import HttpOrWebSocket
+
 from services.auth.geo_cn_mainland_cookie import GEO_CN_MAINLAND_COOKIE_NAME, verify_geo_cn_mainland_cookie
 
 logger = logging.getLogger(__name__)
@@ -96,25 +98,30 @@ def get_geoip_country_reader() -> Optional[geoip2.database.Reader]:
     return _STATE.reader
 
 
-def resolve_country_iso_from_request(request: Request) -> Optional[str]:
+def resolve_country_iso_from_connection(connection: HttpOrWebSocket) -> Optional[str]:
     """
     Prefer Cloudflare CF-IPCountry when present; otherwise GeoIP lookup on client IP.
 
     Args:
-        request: FastAPI request (must be imported at runtime, not only TYPE_CHECKING).
+        connection: FastAPI Request or WebSocket.
 
     Returns:
         ISO 3166-1 alpha-2 country code, or None if indeterminate.
     """
     from utils.auth import get_client_ip
 
-    cf_raw = request.headers.get("CF-IPCountry") or request.headers.get("cf-ipcountry")
+    cf_raw = connection.headers.get("CF-IPCountry") or connection.headers.get("cf-ipcountry")
     if cf_raw:
         candidate = cf_raw.strip().upper()
         if len(candidate) == 2 and candidate.isalpha():
             return candidate
 
-    return lookup_country_iso_code(get_client_ip(request))
+    return lookup_country_iso_code(get_client_ip(connection))
+
+
+def resolve_country_iso_from_request(request: Request) -> Optional[str]:
+    """Backward-compatible alias for HTTP-only call sites."""
+    return resolve_country_iso_from_connection(request)
 
 
 def lookup_country_iso_code(client_ip: str) -> Optional[str]:
@@ -177,7 +184,7 @@ def overseas_email_registration_allowed(
 
 def email_cn_geo_blocked(
     client_ip: str,
-    request: Optional[Request],
+    connection: Optional[HttpOrWebSocket],
     *,
     whitelisted_from_cn: bool,
 ) -> tuple[bool, str, bool]:
@@ -196,16 +203,16 @@ def email_cn_geo_blocked(
     ``Messages.error`` for ``email_login_blocked_in_mainland_china`` or
     ``login_email_geoip_unavailable``.
     """
-    if request is not None:
-        raw = request.cookies.get(GEO_CN_MAINLAND_COOKIE_NAME)
+    if connection is not None:
+        raw = connection.cookies.get(GEO_CN_MAINLAND_COOKIE_NAME)
         if verify_geo_cn_mainland_cookie(raw):
             return True, "email_login_blocked_in_mainland_china", False
 
     if whitelisted_from_cn:
         return False, "", False
 
-    if request is not None:
-        code = resolve_country_iso_from_request(request)
+    if connection is not None:
+        code = resolve_country_iso_from_connection(connection)
     else:
         code = lookup_country_iso_code(client_ip)
     if code is None:

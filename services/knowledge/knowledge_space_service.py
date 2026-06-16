@@ -422,7 +422,7 @@ class KnowledgeSpaceService:
                 )
                 try:
                     await self.db.rollback()
-                    self.qdrant.delete_document(self.user_id, document.id)
+                    await self.qdrant.delete_document(self.user_id, document.id)
                     logger.info(
                         "[KnowledgeSpace] Cleaned up orphaned Qdrant vectors for document %s",
                         document_id,
@@ -700,6 +700,7 @@ class KnowledgeSpaceService:
             document.file_path = str(final_path)
             await self.db.commit()
 
+            version: DocumentVersion | None = None
             try:
                 version_dir = self.storage_dir / str(self.user_id) / "versions" / str(document.id)
                 version_dir.mkdir(parents=True, exist_ok=True)
@@ -744,7 +745,7 @@ class KnowledgeSpaceService:
 
             change_summary = await self._reindex_chunks(document, new_content_hash)
 
-            if "version" in locals() and change_summary:
+            if version is not None and change_summary:
                 version.change_summary = change_summary
                 await self.db.commit()
 

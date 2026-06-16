@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from typing import FrozenSet
 
-from starlette.requests import Headers
+from starlette.datastructures import Headers
 
 
 def normalize_origin_header(origin: str) -> str:

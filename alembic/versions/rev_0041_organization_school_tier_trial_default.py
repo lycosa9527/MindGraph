@@ -25,11 +25,7 @@ def upgrade() -> None:
     columns = {column["name"] for column in sa.inspect(bind).get_columns("organizations")}
     if "school_tier" not in columns:
         return
-    op.execute(
-        sa.text(
-            "UPDATE organizations SET school_tier = 'trial' WHERE school_tier = 'standard'"
-        )
-    )
+    op.execute(sa.text("UPDATE organizations SET school_tier = 'trial' WHERE school_tier = 'standard'"))
     op.alter_column(
         "organizations",
         "school_tier",

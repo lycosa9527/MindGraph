@@ -157,7 +157,7 @@ class GeweService(
     def save_preferences(self, region_id: str, device_type: str, auto_sliding: Optional[bool] = None) -> None:
         """Save user preferences (region_id, device_type, auto_sliding) to JSON file."""
         try:
-            preferences = {"region_id": region_id, "device_type": device_type}
+            preferences: dict[str, object] = {"region_id": region_id, "device_type": device_type}
             if auto_sliding is not None:
                 preferences["auto_sliding"] = auto_sliding
             with open(GEWE_PREFERENCES_PATH, "w", encoding="utf-8") as f:

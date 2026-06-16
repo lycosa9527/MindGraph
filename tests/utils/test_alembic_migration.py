@@ -1,4 +1,4 @@
-"""Tests for Alembic RLS module loader (no live PostgreSQL)."""
+"""Tests for ``db_rls`` loader helpers (no live PostgreSQL)."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from utils.db import alembic_migration
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
-def test_migration_support_file_lives_under_alembic():
-    path = _PROJECT_ROOT / "alembic" / "migration_support.py"
+def test_db_rls_package_exists():
+    path = _PROJECT_ROOT / "db_rls" / "policy_builder.py"
     assert path.is_file()
 
 

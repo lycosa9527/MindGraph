@@ -205,9 +205,7 @@ async def get_school_stats(
     Managers: organization_id must be their own org (or omitted to use their org).
     Admins: organization_id required to select which school to view.
     """
-    effective_org_id = await resolve_school_dashboard_org_id_scoped(
-        scope, organization_id, db, lang
-    )
+    effective_org_id = await resolve_school_dashboard_org_id_scoped(scope, organization_id, db, lang)
 
     org = (await db.execute(select(Organization).where(Organization.id == effective_org_id))).scalars().first()
     if not org:
@@ -404,6 +402,7 @@ async def get_token_stats_admin(
     month_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
     total_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
     top_users = []
+    top_users_today = []
 
     # Initialize breakdown by service type
     empty_breakdown = {
@@ -701,7 +700,7 @@ async def get_token_stats_admin(
         "past_month": month_stats,
         "total": total_stats,
         "top_users": top_users,
-        "top_users_today": top_users_today if "top_users_today" in locals() else [],
+        "top_users_today": top_users_today,
         "by_service": by_service,  # MindGraph vs MindMate breakdown
         "dingtalk_generations": dingtalk_generations,
     }

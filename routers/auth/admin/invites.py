@@ -40,7 +40,11 @@ async def list_invite_organizations_admin(
 ):
     """List organizations for the invite-users tab (includes full invitation codes)."""
     orgs = (
-        (await db.execute(select(Organization).where(invite_org_filter(scope, Organization.id)).order_by(Organization.id)))
+        (
+            await db.execute(
+                select(Organization).where(invite_org_filter(scope, Organization.id)).order_by(Organization.id)
+            )
+        )
         .scalars()
         .all()
     )

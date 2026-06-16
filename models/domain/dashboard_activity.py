@@ -13,9 +13,12 @@ All Rights Reserved
 Proprietary License
 """
 
+from __future__ import annotations
+
 from datetime import UTC, datetime
 
-from sqlalchemy import Column, Integer, String, DateTime, Index
+from sqlalchemy import DateTime, Index, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
 
 from models.domain.auth import Base
 
@@ -30,17 +33,22 @@ class DashboardActivity(Base):
 
     __tablename__ = "dashboard_activities"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
 
     # Activity details
-    user_id = Column(Integer, nullable=True, index=True)  # User ID (can be null for anonymous)
-    user_name = Column(String(100), nullable=True)  # Masked/anonymized username
-    action = Column(String(50), nullable=False)  # e.g., "generated", "created"
-    diagram_type = Column(String(50), nullable=False)  # e.g., "bubble_map", "mind_map"
-    topic = Column(String(500), nullable=True)  # Optional topic/subject
+    user_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    user_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    action: Mapped[str] = mapped_column(String(50), nullable=False)
+    diagram_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    topic: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # Timestamp
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        nullable=False,
+        index=True,
+    )
 
     # Index for efficient queries (most recent first)
     __table_args__ = (Index("idx_dashboard_activities_created_at", "created_at"),)

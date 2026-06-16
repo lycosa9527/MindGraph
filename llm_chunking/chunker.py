@@ -97,7 +97,7 @@ class LLMSemanticChunker:
                     "[LLMSemanticChunker] Embedding service not available, embedding-based chunking will be disabled"
                 )
                 self.embedding_detector = None
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.warning("[LLMSemanticChunker] Failed to initialize embedding detector: %s", e)
             self.embedding_detector = None
 
@@ -199,7 +199,7 @@ class LLMSemanticChunker:
 
             return chunks
 
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.error(
                 "[LLMSemanticChunker] ✗ Error during chunking for doc_id=%s: %s",
                 document_id,

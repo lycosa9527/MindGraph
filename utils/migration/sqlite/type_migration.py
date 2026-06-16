@@ -392,7 +392,10 @@ def recreate_table_with_correct_schema(db_path: str, table_name: str, table_clas
 
             # Step 5: Recreate indexes
             for idx in table_metadata.indexes:
-                idx_name = idx.name
+                idx_name_raw = idx.name
+                if idx_name_raw is None:
+                    continue
+                idx_name = str(idx_name_raw)
                 idx_cols = [f'"{col.name}"' for col in idx.columns]
                 if validate_identifier(idx_name):
                     idx_sql = f'CREATE INDEX IF NOT EXISTS "{idx_name}" ON "{table_name}" ({", ".join(idx_cols)})'

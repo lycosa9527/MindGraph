@@ -18,7 +18,7 @@ import json
 import logging
 import re
 
-from services.infrastructure.http.error_handler import LLMProviderError
+from services.infrastructure.http.error_handler import LLMProviderError, attach_llm_user_message
 from services.llm.dashscope_errors import (
     has_chinese_characters,
     parse_400_errors,
@@ -193,7 +193,4 @@ def parse_and_raise_dashscope_error(status_code: int, error_text: str, error_dat
         },
     )
 
-    # Attach user-friendly message to exception
-    exception.user_message = user_message  # type: ignore[attr-defined]
-
-    raise exception
+    raise attach_llm_user_message(exception, user_message)

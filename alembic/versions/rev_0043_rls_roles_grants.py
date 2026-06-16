@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
-from alembic.rls_roles_sql import build_create_roles_sql, build_grants_sql
+from db_rls.roles_sql import build_create_roles_sql, build_grants_sql
 
 revision: str = "0043"
 down_revision: Union[str, None] = "0042"

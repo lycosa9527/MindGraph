@@ -19,22 +19,29 @@ async def test_startup_sms_keeps_lock_after_successful_send() -> None:
     sms_middleware.is_available = True
     sms_middleware.send_notification = send_mock
 
-    with patch(f"{LIFESPAN_MODULE}.admin_sms_alerts_enabled", return_value=True), patch.dict(
-        "os.environ",
-        {
-            "SMS_STARTUP_NOTIFICATION_ENABLED": "true",
-            "TENCENT_SMS_TEMPLATE_STARTUP": "2590580",
-        },
-        clear=False,
-    ), patch(f"{LIFESPAN_MODULE}.ADMIN_PHONES", ["13800000000"]), patch(
-        f"{LIFESPAN_MODULE}.get_sms_middleware",
-        return_value=sms_middleware,
-    ), patch(
-        f"{LIFESPAN_MODULE}.acquire_startup_sms_notification_lock",
-        new=AsyncMock(return_value="worker-lock-token"),
-    ), patch(
-        f"{LIFESPAN_MODULE}.release_startup_sms_notification_lock",
-        new=release_mock,
+    with (
+        patch(f"{LIFESPAN_MODULE}.admin_sms_alerts_enabled", return_value=True),
+        patch.dict(
+            "os.environ",
+            {
+                "SMS_STARTUP_NOTIFICATION_ENABLED": "true",
+                "TENCENT_SMS_TEMPLATE_STARTUP": "2590580",
+            },
+            clear=False,
+        ),
+        patch(f"{LIFESPAN_MODULE}.ADMIN_PHONES", ["13800000000"]),
+        patch(
+            f"{LIFESPAN_MODULE}.get_sms_middleware",
+            return_value=sms_middleware,
+        ),
+        patch(
+            f"{LIFESPAN_MODULE}.acquire_startup_sms_notification_lock",
+            new=AsyncMock(return_value="worker-lock-token"),
+        ),
+        patch(
+            f"{LIFESPAN_MODULE}.release_startup_sms_notification_lock",
+            new=release_mock,
+        ),
     ):
         from services.infrastructure.lifecycle.lifespan import _send_startup_sms_notification_once
 
@@ -52,22 +59,29 @@ async def test_startup_sms_releases_lock_after_failed_send() -> None:
     sms_middleware.is_available = True
     sms_middleware.send_notification = send_mock
 
-    with patch(f"{LIFESPAN_MODULE}.admin_sms_alerts_enabled", return_value=True), patch.dict(
-        "os.environ",
-        {
-            "SMS_STARTUP_NOTIFICATION_ENABLED": "true",
-            "TENCENT_SMS_TEMPLATE_STARTUP": "2590580",
-        },
-        clear=False,
-    ), patch(f"{LIFESPAN_MODULE}.ADMIN_PHONES", ["13800000000"]), patch(
-        f"{LIFESPAN_MODULE}.get_sms_middleware",
-        return_value=sms_middleware,
-    ), patch(
-        f"{LIFESPAN_MODULE}.acquire_startup_sms_notification_lock",
-        new=AsyncMock(return_value="worker-lock-token"),
-    ), patch(
-        f"{LIFESPAN_MODULE}.release_startup_sms_notification_lock",
-        new=release_mock,
+    with (
+        patch(f"{LIFESPAN_MODULE}.admin_sms_alerts_enabled", return_value=True),
+        patch.dict(
+            "os.environ",
+            {
+                "SMS_STARTUP_NOTIFICATION_ENABLED": "true",
+                "TENCENT_SMS_TEMPLATE_STARTUP": "2590580",
+            },
+            clear=False,
+        ),
+        patch(f"{LIFESPAN_MODULE}.ADMIN_PHONES", ["13800000000"]),
+        patch(
+            f"{LIFESPAN_MODULE}.get_sms_middleware",
+            return_value=sms_middleware,
+        ),
+        patch(
+            f"{LIFESPAN_MODULE}.acquire_startup_sms_notification_lock",
+            new=AsyncMock(return_value="worker-lock-token"),
+        ),
+        patch(
+            f"{LIFESPAN_MODULE}.release_startup_sms_notification_lock",
+            new=release_mock,
+        ),
     ):
         from services.infrastructure.lifecycle.lifespan import _send_startup_sms_notification_once
 
@@ -84,22 +98,29 @@ async def test_startup_sms_keeps_lock_after_provider_rate_limit_failure() -> Non
     sms_middleware.is_available = True
     sms_middleware.send_notification = send_mock
 
-    with patch(f"{LIFESPAN_MODULE}.admin_sms_alerts_enabled", return_value=True), patch.dict(
-        "os.environ",
-        {
-            "SMS_STARTUP_NOTIFICATION_ENABLED": "true",
-            "TENCENT_SMS_TEMPLATE_STARTUP": "2590580",
-        },
-        clear=False,
-    ), patch(f"{LIFESPAN_MODULE}.ADMIN_PHONES", ["13800000000"]), patch(
-        f"{LIFESPAN_MODULE}.get_sms_middleware",
-        return_value=sms_middleware,
-    ), patch(
-        f"{LIFESPAN_MODULE}.acquire_startup_sms_notification_lock",
-        new=AsyncMock(return_value="worker-lock-token"),
-    ), patch(
-        f"{LIFESPAN_MODULE}.release_startup_sms_notification_lock",
-        new=release_mock,
+    with (
+        patch(f"{LIFESPAN_MODULE}.admin_sms_alerts_enabled", return_value=True),
+        patch.dict(
+            "os.environ",
+            {
+                "SMS_STARTUP_NOTIFICATION_ENABLED": "true",
+                "TENCENT_SMS_TEMPLATE_STARTUP": "2590580",
+            },
+            clear=False,
+        ),
+        patch(f"{LIFESPAN_MODULE}.ADMIN_PHONES", ["13800000000"]),
+        patch(
+            f"{LIFESPAN_MODULE}.get_sms_middleware",
+            return_value=sms_middleware,
+        ),
+        patch(
+            f"{LIFESPAN_MODULE}.acquire_startup_sms_notification_lock",
+            new=AsyncMock(return_value="worker-lock-token"),
+        ),
+        patch(
+            f"{LIFESPAN_MODULE}.release_startup_sms_notification_lock",
+            new=release_mock,
+        ),
     ):
         from services.infrastructure.lifecycle.lifespan import _send_startup_sms_notification_once
 

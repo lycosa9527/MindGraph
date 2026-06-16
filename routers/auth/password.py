@@ -256,7 +256,7 @@ async def set_password_with_sms(
     user.locked_until = None
     try:
         await db.commit()
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         await db.rollback()
         logger.error("[Auth] set-password-with-sms commit failed: %s", exc, exc_info=True)
         raise HTTPException(

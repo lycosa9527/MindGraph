@@ -9,15 +9,20 @@ All Rights Reserved
 Proprietary License
 """
 
+from __future__ import annotations
+
 import uuid
 from datetime import UTC, datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.domain.auth import Base
+
+if TYPE_CHECKING:
+    from models.domain.auth import User
 
 
 def generate_uuid() -> str:

@@ -80,7 +80,7 @@ async def _max_message_id_for_channels(db: AsyncSession, visible_ids: List[int])
             ChatMessage.is_deleted.is_(False),
         )
     )
-    return result.scalar()
+    return result.scalar() or 0
 
 
 async def _membership_digest_for_channels(

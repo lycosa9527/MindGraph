@@ -292,7 +292,12 @@ async def idle_monitor_loop(manager: _IdleKickTarget) -> None:
             if not stale_raw:
                 continue
 
-            stale_codes = [c.decode("utf-8") if isinstance(c, bytes) else c for c in stale_raw]
+            stale_codes: list[str] = []
+            for item in stale_raw:
+                if isinstance(item, bytes):
+                    stale_codes.append(item.decode("utf-8"))
+                elif isinstance(item, str):
+                    stale_codes.append(item)
             logger.debug("[OnlineCollabMgr] monitor_cycle_start n_stale=%s", len(stale_codes))
             record_ws_idle_monitor_cycle()
 

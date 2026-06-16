@@ -22,18 +22,17 @@ Proprietary License
 """
 
 import inspect
+import logging
 import os
 import time
-import logging
 import warnings
-from typing import Optional, Any, Dict, List, Callable, TypeVar
-
-try:
-    import redis
-except ImportError:
-    redis = None  # type: ignore[assignment, misc]
-
 from functools import wraps
+from typing import Any, Callable, Dict, List, Optional, TypeVar
+
+import redis
+from redis.exceptions import ConnectionError as RedisPyConnectionError
+from redis.exceptions import ResponseError as RedisPyResponseError
+from redis.exceptions import TimeoutError as RedisPyTimeoutError
 
 from services.infrastructure.utils.launch_commands import (
     error_footer_launch_reference,
@@ -102,9 +101,6 @@ def _with_retry(operation_name: str, default_return: Any = None):
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
-            if redis is None:
-                return default_return
-
             # G8: short-circuit when the per-process breaker is OPEN so a
             # downed Redis cannot multiply tail latency by the worker count.
             breaker = _get_breaker() if _breaker_enabled() else None
@@ -118,7 +114,7 @@ def _with_retry(operation_name: str, default_return: Any = None):
                     if breaker is not None:
                         breaker.record_success()
                     return result
-                except (redis.ConnectionError, redis.TimeoutError) as e:  # type: ignore[attr-defined]
+                except (RedisPyConnectionError, RedisPyTimeoutError) as e:
                     last_error = e
                     if attempt < _RETRY_MAX_ATTEMPTS - 1:
                         delay = _RETRY_BASE_DELAY * (2**attempt)
@@ -215,8 +211,6 @@ def _redis_py_supports_xadd_idmpauto() -> bool:
     redis-py binds the same ``StreamCommands.xadd`` to sync and async clients,
     so checking three classes is redundant and can confuse readers.
     """
-    if redis is None:
-        return False
     try:
         from redis import asyncio as redis_async
 
@@ -326,6 +320,16 @@ def _apply_redis_startup_config(redis_client: Any, redis_version: str) -> None:
         )
 
 
+def redis_delex_enabled() -> bool:
+    """Return whether Redis 8.4+ DELEX compare-and-delete is enabled for this process."""
+    return bool(_RedisCapabilities.delex)
+
+
+def set_redis_delex_enabled(enabled: bool) -> None:
+    """Disable DELEX at runtime when the server rejects the command."""
+    _RedisCapabilities.delex = enabled
+
+
 def init_redis_sync() -> bool:
     """
     Initialize Redis connection (synchronous version for startup).
@@ -343,21 +347,8 @@ def init_redis_sync() -> bool:
 
     logger.info("[Redis] Connecting to %s...", redis_url)
 
-    if redis is None:
-        _log_redis_error(
-            title="REDIS PACKAGE NOT INSTALLED",
-            details=[
-                "The 'redis' package is required but not installed.",
-                "",
-                "To fix, run:",
-                "  pip install redis>=5.0.0",
-                *error_footer_launch_reference(),
-            ],
-        )
-        raise RedisStartupError("Redis package not installed") from None
-
     try:
-        redis_client = redis.from_url(  # type: ignore[attr-defined]
+        redis_client = redis.from_url(
             redis_url,
             encoding="utf-8",
             decode_responses=True,
@@ -680,14 +671,14 @@ class RedisOperations:
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", UserWarning)
                     return bool(redis_client.delex(key, expected_value))
-            except (redis.ConnectionError, redis.TimeoutError) as exc:  # type: ignore[union-attr]
+            except (RedisPyConnectionError, RedisPyTimeoutError) as exc:
                 logger.warning(
                     "[Redis] compare_and_delete connection error for %s: %s",
                     key[:20],
                     exc,
                 )
                 return False
-            except redis.ResponseError as exc:  # type: ignore[attr-defined]
+            except RedisPyResponseError as exc:
                 # Capability marker was wrong (very rare) — disable for the
                 # rest of the process and fall through to the Lua path.
                 logger.warning(

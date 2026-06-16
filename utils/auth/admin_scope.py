@@ -102,10 +102,10 @@ async def load_expert_invited_org_ids(actor_id: int) -> frozenset[int]:
 
     async with system_rls_session() as db:
         rows = (
-            await db.execute(
-                select(Organization.id).where(Organization.invited_by_user_id == actor_id)
-            )
-        ).scalars().all()
+            (await db.execute(select(Organization.id).where(Organization.invited_by_user_id == actor_id)))
+            .scalars()
+            .all()
+        )
     return frozenset(int(org_id) for org_id in rows)
 
 
@@ -282,10 +282,7 @@ def uses_invited_org_panel_scope(scope: AdminScope) -> bool:
 
 def expert_invite_scope_only(scope: AdminScope) -> bool:
     """Expert invite tab: own created orgs only (no global or legacy org access)."""
-    return (
-        CAP_SCOPE_INVITED_ORGS in scope.capabilities
-        and CAP_SCOPE_GLOBAL not in scope.capabilities
-    )
+    return CAP_SCOPE_INVITED_ORGS in scope.capabilities and CAP_SCOPE_GLOBAL not in scope.capabilities
 
 
 def panel_readable_org_where_clause() -> ColumnElement:
@@ -394,11 +391,7 @@ async def assert_panel_org_readable(
     """Load org invited_by and enforce panel read scope for BD / expert."""
     if not uses_invited_org_panel_scope(scope):
         return
-    row = (
-        await db.execute(
-            select(Organization.invited_by_user_id).where(Organization.id == org_id)
-        )
-    ).first()
+    row = (await db.execute(select(Organization.invited_by_user_id).where(Organization.id == org_id))).first()
     if row is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

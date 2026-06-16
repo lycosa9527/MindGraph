@@ -25,6 +25,7 @@ _stamp_geo_cn_mainland_cookie = set_geo_cn_mainland_cookie
 from services.auth.geoip_country import resolve_country_iso_from_request
 from utils.auth import AUTH_MODE, is_https
 from utils.auth.config import REGISTRATION_ENABLED
+
 router = APIRouter()
 
 CLIENT_REGION_COOKIE = "mg_client_region"

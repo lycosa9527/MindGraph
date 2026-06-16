@@ -15,6 +15,7 @@ conda activate python313   # or: conda activate mindgraph
 cd /mnt/d/MindGraph
 python -m pytest tests/some_test.py -q
 python -m pylint path/to/module.py
+python -m basedpyright .
 ```
 
 ## Cursor Cloud specific instructions
@@ -73,9 +74,10 @@ Match CI pylint scope when touching collab/auth paths, or run pylint on files yo
 
 ```bash
 python -m pylint path/to/changed_module.py
+python -m basedpyright .
 ```
 
-Follow PEP 8; fix all pylint findings without `# noqa` suppressions.
+Follow PEP 8; fix all pylint findings without `# noqa` suppressions. Fix all basedpyright diagnostics; do not add project-wide `report* = "none"` suppressions in `pyproject.toml`.
 
 ### Full stack (optional)
 

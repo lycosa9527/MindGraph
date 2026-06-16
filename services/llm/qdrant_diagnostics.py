@@ -8,11 +8,23 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Protocol
 import logging
 import random
 
+from qdrant_client import AsyncQdrantClient
+
 logger = logging.getLogger(__name__)
+
+
+class _QdrantDiagnosticsHost(Protocol):
+    client: AsyncQdrantClient
+    use_compression: bool
+    compression_type: str | None
+
+    async def get_user_collection(self, user_id: int) -> str | None: ...
+
+    def _get_collection_name(self, user_id: int) -> str: ...
 
 
 def _empty_compression_metrics(error: str | None = None) -> Dict[str, Any]:
@@ -30,6 +42,20 @@ def _empty_compression_metrics(error: str | None = None) -> Dict[str, Any]:
     if error is not None:
         result["error"] = error
     return result
+
+
+def _vector_size_from_config(vectors_config: object) -> int:
+    """Extract embedding dimension from Qdrant vectors config (single or named)."""
+    if hasattr(vectors_config, "size"):
+        return int(getattr(vectors_config, "size"))
+    if isinstance(vectors_config, dict):
+        default_cfg = vectors_config.get("")
+        if default_cfg is not None and hasattr(default_cfg, "size"):
+            return int(default_cfg.size)
+        first_cfg = next(iter(vectors_config.values()), None)
+        if first_cfg is not None and hasattr(first_cfg, "size"):
+            return int(first_cfg.size)
+    return 0
 
 
 def _build_compression_metrics(
@@ -66,7 +92,7 @@ def _build_compression_metrics(
     }
 
 
-class QdrantDiagnosticsMixin:
+class QdrantDiagnosticsMixin(_QdrantDiagnosticsHost):
     """
     Compression metrics and collection diagnostics for QdrantService.
 
@@ -100,9 +126,11 @@ class QdrantDiagnosticsMixin:
             info = await self.client.get_collection(collection_name)
             compression_enabled = self.use_compression
             compression_type = self.compression_type if compression_enabled else None
+            vectors_config = info.config.params.vectors if info.config and info.config.params else None
+            vector_size = _vector_size_from_config(vectors_config) if vectors_config is not None else 0
             return _build_compression_metrics(
-                info.points_count,
-                info.config.params.vectors.size,
+                info.points_count or 0,
+                vector_size,
                 compression_enabled,
                 compression_type,
             )
@@ -146,10 +174,9 @@ class QdrantDiagnosticsMixin:
                 result["points_count"] = info.points_count
                 if info.config and info.config.params and info.config.params.vectors:
                     vectors_config = info.config.params.vectors
-                    if hasattr(vectors_config, "size"):
-                        result["vector_dimensions"] = vectors_config.size
-                    elif isinstance(vectors_config, dict) and "" in vectors_config:
-                        result["vector_dimensions"] = vectors_config[""].size
+                    vector_size = _vector_size_from_config(vectors_config)
+                    if vector_size:
+                        result["vector_dimensions"] = vector_size
             except Exception as exc:
                 result["errors"].append(f"Failed to get collection info: {exc}")
 

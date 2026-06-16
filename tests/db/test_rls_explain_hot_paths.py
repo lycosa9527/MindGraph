@@ -25,11 +25,8 @@ async def test_diagrams_list_uses_user_id_index():
     user_id = int(os.getenv("RLS_TEST_USER_ID", "1"))
     ctx = RlsContext.for_celery_user(user_id)
     async with rls_async_session(ctx) as session:
-            result = await session.execute(
-                text(
-                    "EXPLAIN (FORMAT TEXT) SELECT id FROM diagrams "
-                    "WHERE user_id = rls_current_user_id() LIMIT 10"
-                )
-            )
-            lines = [row[0] for row in result.fetchall()]
-            assert not _plan_uses_seq_scan(lines, "diagrams"), lines
+        result = await session.execute(
+            text("EXPLAIN (FORMAT TEXT) SELECT id FROM diagrams WHERE user_id = rls_current_user_id() LIMIT 10")
+        )
+        lines = [row[0] for row in result.fetchall()]
+        assert not _plan_uses_seq_scan(lines, "diagrams"), lines

@@ -197,7 +197,7 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
         except asyncio.CancelledError:
             logger.info("[AbuseIPDB] Blacklist scheduler cancelled")
             raise
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             logger.warning("[AbuseIPDB] Error while waiting for next blocklist sync: %s", exc)
             await asyncio.sleep(60)
             continue
@@ -270,7 +270,7 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
             except asyncio.CancelledError:
                 logger.info("[AbuseIPDB] Blacklist scheduler cancelled")
                 raise
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 logger.warning("[AbuseIPDB] Blocklist sync error: %s", exc)
                 await asyncio.sleep(60)
                 continue

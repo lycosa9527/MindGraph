@@ -8,7 +8,6 @@ from typing import Optional
 from fastapi import HTTPException, status
 from sqlalchemy import select
 
-from utils.db.session_open import system_rls_session
 from models.domain.auth import Organization
 from models.domain.messages import Language, Messages
 
@@ -32,6 +31,8 @@ except ImportError:
 
 async def downgrade_expired_org_to_trial(org_id: int) -> Optional[Organization]:
     """Persist trial downgrade when subscription expired; refresh cache."""
+    from utils.db.session_open import system_rls_session
+
     async with system_rls_session() as db:
         result = await db.execute(select(Organization).where(Organization.id == org_id))
         org = result.scalar_one_or_none()

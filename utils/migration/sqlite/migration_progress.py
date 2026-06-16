@@ -12,24 +12,12 @@ All Rights Reserved
 Proprietary License
 """
 
+import importlib.util
 import sys
 import logging
 from typing import Optional
 
-try:
-    from rich.progress import (
-        Progress,
-        SpinnerColumn,
-        BarColumn,
-        TextColumn,
-        TimeElapsedColumn,
-        TimeRemainingColumn,
-    )
-    from rich.console import Console
-
-    RICH_AVAILABLE = True
-except ImportError:
-    RICH_AVAILABLE = False
+RICH_AVAILABLE = importlib.util.find_spec("rich") is not None
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +80,16 @@ class MigrationProgressTracker:
         self.use_rich = RICH_AVAILABLE and sys.stdout.isatty()
 
         if self.use_rich:
+            from rich.console import Console
+            from rich.progress import (
+                BarColumn,
+                Progress,
+                SpinnerColumn,
+                TextColumn,
+                TimeElapsedColumn,
+                TimeRemainingColumn,
+            )
+
             self.console = Console()
             self.progress = Progress(
                 SpinnerColumn(),

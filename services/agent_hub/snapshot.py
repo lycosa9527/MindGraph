@@ -57,7 +57,8 @@ async def _live_spec_summary(
     live = await load_kitty_live_context(scope)
     if not live:
         return None
-    dd = live.get("diagram_data") if isinstance(live.get("diagram_data"), dict) else {}
+    raw_dd = live.get("diagram_data")
+    dd: Dict[str, Any] = raw_dd if isinstance(raw_dd, dict) else {}
     children = dd.get("children")
     child_count = len(children) if isinstance(children, list) else 0
     return {

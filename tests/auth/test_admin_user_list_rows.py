@@ -6,7 +6,6 @@ from models.domain.auth import Organization, User
 from services.auth.admin_user_list_rows import (
     build_admin_user_detail_payload,
     build_admin_user_list_row,
-    diagram_quota_from_count,
 )
 from utils.auth.school_tier_defs import SCHOOL_TIER_TRIAL
 

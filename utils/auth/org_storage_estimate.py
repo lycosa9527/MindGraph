@@ -13,15 +13,15 @@ from models.domain.diagrams import Diagram
 from models.domain.diagram_snapshots import DiagramSnapshot
 from models.domain.school_zone import SharedDiagram
 
-ColumnBytesFn = Callable[[ColumnElement[Any]], ColumnElement[Any]]
+ColumnBytesFn = Callable[[Any], ColumnElement[Any]]
 
 
-def _pg_column_bytes(column: ColumnElement[Any]) -> ColumnElement[Any]:
+def _pg_column_bytes(column: Any) -> ColumnElement[Any]:
     """Stored byte size for a PostgreSQL column value (0 when NULL)."""
     return func.coalesce(func.pg_column_size(column), 0)
 
 
-def _text_fallback_bytes(column: ColumnElement[Any]) -> ColumnElement[Any]:
+def _text_fallback_bytes(column: Any) -> ColumnElement[Any]:
     """Fallback payload size when pg_column_size is unavailable (e.g. SQLite tests)."""
     return func.coalesce(func.octet_length(cast(column, Text)), 0)
 

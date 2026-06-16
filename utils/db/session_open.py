@@ -14,9 +14,7 @@ def user_rls_session(user_id: int, organization_id: Optional[int] = None):
 
 def actor_rls_session(user: Any, *, allow_global_channels: bool = False):
     """Context manager: async session for a User model / actor."""
-    return rls_async_session(
-        RlsContext.from_user(user, allow_global_channels=allow_global_channels)
-    )
+    return rls_async_session(RlsContext.from_user(user, allow_global_channels=allow_global_channels))
 
 
 def system_rls_session():

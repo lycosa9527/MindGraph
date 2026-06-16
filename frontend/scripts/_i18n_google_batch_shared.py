@@ -77,3 +77,4 @@ def translate_with_retries(
             if attempt + 1 >= retries:
                 raise
             time.sleep(retry_base_delay * (2**attempt))
+    raise RuntimeError("translate_with_retries exhausted retries without returning")

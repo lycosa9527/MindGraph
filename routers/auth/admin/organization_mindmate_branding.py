@@ -289,6 +289,7 @@ def _process_static_avatar_image(opened: Image.Image) -> Image.Image:
         image = ImageOps.exif_transpose(opened).convert("RGBA")
     except (OSError, ValueError) as exc:
         _raise_invalid_image(exc)
+        raise AssertionError("invalid image") from exc
     return _square_crop_resize(image, enforce_min_size=True)
 
 
@@ -384,6 +385,11 @@ async def save_mindmate_agent_avatar(org: Organization, file: UploadFile) -> str
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="mindmate_avatar_invalid_image",
         )
+
+    animated = False
+    static_image = None
+    gif_frames = None
+    gif_durations = None
 
     try:
         with Image.open(BytesIO(contents)) as opened:

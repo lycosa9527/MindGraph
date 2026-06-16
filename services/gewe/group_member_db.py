@@ -21,6 +21,7 @@ from sqlalchemy.sql.functions import count as sql_count
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.gewe_group_member import GeweGroupMember
+from services.utils.typing_helpers import result_rowcount
 from services.redis.redis_async_ops import AsyncRedisOperations
 from services.redis.redis_client import is_redis_available
 
@@ -394,7 +395,7 @@ class GeweGroupMemberDB:
             await self.db.commit()
 
             # Invalidate Redis cache
-            if is_redis_available() and result.rowcount > 0:
+            if is_redis_available() and result_rowcount(result) > 0:
                 try:
                     member_cache_key = f"{GROUP_MEMBER_KEY_PREFIX}{app_id}:{group_wxid}:{member_wxid}"
                     list_cache_key = f"{GROUP_MEMBER_LIST_KEY_PREFIX}{app_id}:{group_wxid}"
@@ -409,7 +410,7 @@ class GeweGroupMemberDB:
                         e,
                     )
 
-            return result.rowcount > 0
+            return result_rowcount(result) > 0
         except Exception as e:
             logger.error("Failed to delete group member: %s", e, exc_info=True)
             await self.db.rollback()
@@ -438,7 +439,7 @@ class GeweGroupMemberDB:
             await self.db.commit()
 
             # Invalidate Redis cache for group members list
-            if is_redis_available() and result.rowcount > 0:
+            if is_redis_available() and result_rowcount(result) > 0:
                 try:
                     list_cache_key = f"{GROUP_MEMBER_LIST_KEY_PREFIX}{app_id}:{group_wxid}"
                     await AsyncRedisOperations.delete(list_cache_key)
@@ -450,7 +451,7 @@ class GeweGroupMemberDB:
                         e,
                     )
 
-            return result.rowcount
+            return result_rowcount(result)
         except Exception as e:
             logger.error("Failed to delete all group members: %s", e, exc_info=True)
             await self.db.rollback()

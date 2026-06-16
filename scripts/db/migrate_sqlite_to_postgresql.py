@@ -139,6 +139,12 @@ except ImportError:
     POSTGRESQL_STARTUP_AVAILABLE = False
     logger.warning("[Migration] PostgreSQL startup functions not available - PostgreSQL must be started manually")
 
+    def check_postgresql_installed() -> tuple[bool, str]:
+        return False, "PostgreSQL startup helpers unavailable"
+
+    def start_postgresql_server():
+        return None
+
 
 def ensure_postgresql_running() -> bool:
     """

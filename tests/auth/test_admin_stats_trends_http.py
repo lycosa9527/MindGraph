@@ -35,9 +35,7 @@ def clear_dependency_overrides():
 def test_org_trends_requires_org_identifier(client: TestClient) -> None:
     app.dependency_overrides[get_current_user] = lambda: _make_user("superadmin")
     app.dependency_overrides[get_language_dependency] = lambda: "en"
-    response = client.get(
-        "/api/auth/admin/stats/trends/organization?days=1&hourly=true&service=mindmate"
-    )
+    response = client.get("/api/auth/admin/stats/trends/organization?days=1&hourly=true&service=mindmate")
     assert response.status_code == 400
 
 
@@ -54,17 +52,13 @@ def test_school_trends_service_param_not_forbidden_for_manager(client: TestClien
         organization_id=42,
     )
     app.dependency_overrides[get_language_dependency] = lambda: "en"
-    response = client.get(
-        "/api/auth/admin/stats/school/trends?days=1&hourly=true&service=mindgraph"
-    )
+    response = client.get("/api/auth/admin/stats/school/trends?days=1&hourly=true&service=mindgraph")
     assert response.status_code != 403
 
 
 def test_global_token_trends_accepts_service_filter(client: TestClient) -> None:
     app.dependency_overrides[get_current_user] = lambda: _make_user("superadmin")
     app.dependency_overrides[get_language_dependency] = lambda: "en"
-    response = client.get(
-        "/api/auth/admin/stats/trends?metric=tokens&days=7&service=mindgraph"
-    )
+    response = client.get("/api/auth/admin/stats/trends?metric=tokens&days=7&service=mindgraph")
     assert response.status_code != 403
     assert response.status_code != 422
