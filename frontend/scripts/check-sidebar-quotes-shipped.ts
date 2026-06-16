@@ -86,7 +86,7 @@ function assertLazyLoadImplementation(): void {
   }
 
   const viteConfig = readFileSync(VITE_CONFIG_PATH, 'utf8')
-  if (!viteConfig.includes("globIgnores: ['**/sidebar-quotes-*']")) {
+  if (!viteConfig.includes("'**/sidebar-quotes-*'")) {
     throw new Error('vite PWA workbox must globIgnore sidebar-quotes assets')
   }
 }

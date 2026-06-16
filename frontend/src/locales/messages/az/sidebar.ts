@@ -77,6 +77,7 @@ export default {
   'sidebar.smartResponse': 'Ağıllı Cavab',
   'sidebar.teacherUsage': 'Müəllim istifadəsi',
   'sidebar.templateResources': 'Şablonlar',
+  'sidebar.orgEdition': '{org} Ekskluziv',
   'sidebar.userSubtitleDefault': 'MindGraph Pro paketi',
   'sidebar.account': 'Hesab',
   'sidebar.roleSuperAdmin': 'Super Admin',

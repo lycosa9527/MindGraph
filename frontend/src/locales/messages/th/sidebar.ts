@@ -77,6 +77,7 @@ export default {
   'sidebar.smartResponse': 'การตอบสนองอัจฉริยะ',
   'sidebar.teacherUsage': 'การใช้งานของครู',
   'sidebar.templateResources': 'เทมเพลต',
+  'sidebar.orgEdition': '{org} เวอร์ชันพิเศษ',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': 'บัญชี',
   'sidebar.roleSuperAdmin': 'Super Admin',

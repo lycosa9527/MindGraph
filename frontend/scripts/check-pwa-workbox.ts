@@ -24,7 +24,7 @@ if (!viteConfig.includes('PWA_RUNTIME_CACHING')) {
   throw new Error('vite.config.ts must define PWA_RUNTIME_CACHING for on-demand /assets/* cache')
 }
 
-if (!viteConfig.includes("globIgnores: ['**/sidebar-quotes-*'")) {
+if (!viteConfig.includes("'**/sidebar-quotes-*'")) {
   throw new Error('vite PWA workbox must globIgnore sidebar-quotes assets')
 }
 

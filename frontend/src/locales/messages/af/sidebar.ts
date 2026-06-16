@@ -77,6 +77,7 @@ export default {
   'sidebar.smartResponse': 'Slim reaksie',
   'sidebar.teacherUsage': 'Onderwysergebruik',
   'sidebar.templateResources': 'Sjablone',
+  'sidebar.orgEdition': '{org} Eksklusief',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': 'Rekening',
   'sidebar.roleSuperAdmin': 'Super Admin',

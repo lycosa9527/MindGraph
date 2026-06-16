@@ -77,6 +77,7 @@ export default {
   'sidebar.smartResponse': 'Réponse intelligente',
   'sidebar.teacherUsage': 'Utilisation par les enseignants',
   'sidebar.templateResources': 'Modèles',
+  'sidebar.orgEdition': '{org} Exclusif',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': 'Compte',
   'sidebar.roleSuperAdmin': 'Super Admin',
