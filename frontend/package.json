@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.117.40",
+  "version": "5.117.41",
   "type": "module",
   "engines": {
     "node": ">=26.0.0"
@@ -12,7 +12,7 @@
     "dev": "vite",
     "dev:pwa": "VITE_PWA_DEV=1 vite",
     "generate-pwa-icons": "node scripts/generate-pwa-icons.mjs",
-    "prebuild": "npm run build-prompt-registry && npm run sync-version && npm run generate-pwa-icons",
+    "prebuild": "npm run build-prompt-registry && npm run sync-version && npm run generate-pwa-icons && npm run check:sidebar-quotes",
     "build": "node --max-old-space-size=4096 node_modules/vue-tsc/bin/vue-tsc.js --noEmit && node --max-old-space-size=4096 node_modules/vite/bin/vite.js build",
     "preview": "vite preview",
     "lint": "eslint .",
@@ -21,7 +21,7 @@
     "format:check": "prettier --check \"src/**/*.{vue,ts,js,json,css,scss}\"",
     "check": "node --max-old-space-size=4096 node_modules/vue-tsc/bin/vue-tsc.js --noEmit && npm run lint && npm run format:check",
     "check:fix": "npm run fix && npm run check",
-    "check:scripts": "node scripts/sync-version.ts && node scripts/check-i18n-keys.ts",
+    "check:scripts": "node scripts/sync-version.ts && node scripts/check-i18n-keys.ts && npm run check:sidebar-quotes",
     "check:dep0205": "node scripts/check-dep0205.mjs",
     "check:vueuse-pure": "node scripts/check-vueuse-pure-annotations.mjs",
     "postinstall": "patch-package && node scripts/ensure-cross-platform-native-deps.mjs",
@@ -35,6 +35,8 @@
     "i18n:verify-keyboard": "node scripts/verify-keyboard-layout-map.ts",
     "audit:element-plus": "node scripts/audit-element-plus-usage.ts",
     "i18n:generate-lazy-loaders": "node scripts/generate-lazy-locale-loaders.js",
+    "import:sidebar-quotes": "node scripts/import-sidebar-quotes/index.ts",
+    "check:sidebar-quotes": "node scripts/check-sidebar-quotes-shipped.ts",
     "fix": "npm run lint:fix && npm run format",
     "test": "vitest run",
     "test:watch": "vitest"

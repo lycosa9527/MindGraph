@@ -1,0 +1,11 @@
+{
+  "source": {
+    "repo": "Luminoid/echoes",
+    "ref": "4cee3e9bb71ff24ec63f53a77381f5dee82da1ab",
+    "license": "CC BY-NC-SA 4.0"
+  },
+  "extractedAt": "2026-06-16T03:53:26.819Z",
+  "zhCount": 1605,
+  "enCount": 1462,
+  "note": "Frozen extract shipped in repo; import reads JSON only (no upstream .ts fetch)."
+}

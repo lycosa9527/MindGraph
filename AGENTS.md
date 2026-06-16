@@ -48,8 +48,18 @@ Frontend checks (from `frontend/`):
 npm run check:vueuse-pure
 npm run check:dep0205
 npm run check:scripts
-npx vitest run tests/useWorkshopReconnect.spec.ts
+npx vitest run tests/import-sidebar-quotes.spec.ts tests/useSidebarPhilosophyQuote.spec.ts tests/loadSidebarQuotePool.spec.ts
 ```
+
+**Sidebar quotes** ship as committed assets (no network at build/dev):
+
+- `frontend/src/assets/sidebar-quotes-zh.json`, `sidebar-quotes-en.json`
+- `frontend/scripts/vendor/sidebar-quotes/` (wisdom-quotes snapshots + `extracted/echoes-*.json`)
+- `npm run check:sidebar-quotes` verifies they exist (`prebuild` + CI `check:scripts`)
+- Refresh wisdom-quotes: `npm run import:sidebar-quotes -- --refresh`
+- Re-extract echoes (rare): `--refresh-echoes` then `--extract-echoes` (normal import uses frozen `extracted/` JSON only)
+- Quote rotation (UI): new quote on login, full page refresh, UI locale change, and every 5 minutes while authenticated; same quote during SPA navigation within that window; timer uses `shownAt` in `sessionStorage` and pauses when the tab is hidden
+- Lazy load (runtime): authenticated sidebar only; locale bucket (`zh` vs `en`) resolved via dynamic `import('…json?url')` + `fetch()` in `sidebarQuotePicker.ts` — JSON ships as static assets, not megabyte JS chunks; PWA workbox `globIgnores` excludes `sidebar-quotes-*` from precache
 
 Import smoke:
 

@@ -5,7 +5,7 @@ AI-powered diagram generation platform. Transform natural language into professi
 [![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
 [![Vue](https://img.shields.io/badge/Vue-3.5+-42b883.svg)](https://vuejs.org/)
-[![Version](https://img.shields.io/badge/Version-5.117.40-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-5.117.41-brightgreen.svg)](CHANGELOG.md)
 
 ---
 

@@ -252,6 +252,7 @@ declare module 'vue' {
     SchoolDashboardUsersTab: typeof import('./components/school/SchoolDashboardUsersTab.vue')['default']
     SetPasswordWithSmsModal: typeof import('./components/auth/SetPasswordWithSmsModal.vue')['default']
     ShareExportModal: typeof import('./components/panels/ShareExportModal.vue')['default']
+    SidebarQuoteMarquee: typeof import('./components/sidebar/SidebarQuoteMarquee.vue')['default']
     SmartResponsePanel: typeof import('./components/admin/SmartResponsePanel.vue')['default']
     StepEdge: typeof import('./components/diagram/edges/StepEdge.vue')['default']
     StraightEdge: typeof import('./components/diagram/edges/StraightEdge.vue')['default']

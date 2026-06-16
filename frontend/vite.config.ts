@@ -202,6 +202,8 @@ export default defineConfig({
         globPatterns: isPwaDev
           ? []
           : ['**/*.{js,css,html,ico,png,svg,woff2,woff,webmanifest}'],
+        // Sidebar quote pools are fetched on demand after login (locale-specific).
+        globIgnores: ['**/sidebar-quotes-*'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [
           /^\/api/,

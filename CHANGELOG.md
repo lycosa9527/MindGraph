@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.41] - 2026-06-16
+
+> **Sidebar philosophy quotes for signed-in users, org edition label in the header, and offline quote import pipeline with lazy-loaded locale assets.**
+
+### Added
+
+- **Sidebar — philosophy quotes** — Authenticated users see a random quote under their name in the account footer; rotates on login, full refresh, UI locale change, and every 5 minutes (session-scoped, pauses when the tab is hidden) ([`useSidebarPhilosophyQuote.ts`](frontend/src/composables/sidebar/useSidebarPhilosophyQuote.ts), [`sidebarQuotePicker.ts`](frontend/src/composables/sidebar/sidebarQuotePicker.ts), [`SidebarQuoteMarquee.vue`](frontend/src/components/sidebar/SidebarQuoteMarquee.vue)).
+- **Sidebar — quote libraries** — Shipped zh/en JSON assets (~2.2 MB) merged from wisdom-quotes and frozen echoes extracts ([`sidebar-quotes-zh.json`](frontend/src/assets/sidebar-quotes-zh.json), [`sidebar-quotes-en.json`](frontend/src/assets/sidebar-quotes-en.json), [`import-sidebar-quotes/`](frontend/scripts/import-sidebar-quotes/), [`ATTRIBUTIONS.md`](frontend/scripts/vendor/sidebar-quotes/ATTRIBUTIONS.md)).
+- **Sidebar — lazy load** — Locale bucket fetched via dynamic `import('…json?url')` + `fetch()` after login; not bundled into main JS chunks ([`sidebarQuotePicker.ts`](frontend/src/composables/sidebar/sidebarQuotePicker.ts)).
+- **Scripts — import & verify** — `npm run import:sidebar-quotes` and `check:sidebar-quotes` in prebuild/CI ([`check-sidebar-quotes-shipped.ts`](frontend/scripts/check-sidebar-quotes-shipped.ts), [`package.json`](frontend/package.json)).
+- **Tests** — Quote picker, pool loader, and import pipeline ([`useSidebarPhilosophyQuote.spec.ts`](frontend/tests/useSidebarPhilosophyQuote.spec.ts), [`loadSidebarQuotePool.spec.ts`](frontend/tests/loadSidebarQuotePool.spec.ts), [`import-sidebar-quotes.spec.ts`](frontend/tests/import-sidebar-quotes.spec.ts)).
+
+### Changed
+
+- **Sidebar — org edition label** — School/org name moves to a truncated “{org} 专属版” line under the brand logo; full name on hover ([`AppSidebar.vue`](frontend/src/components/sidebar/AppSidebar.vue), [`useAppSidebar.ts`](frontend/src/composables/sidebar/useAppSidebar.ts), [`sidebar.ts`](frontend/src/locales/messages/en/sidebar.ts)).
+- **Sidebar — account footer** — Replaces static school subtitle with scrolling quote marquee when text overflows ([`AppSidebarAccountFooter.vue`](frontend/src/components/sidebar/AppSidebarAccountFooter.vue)).
+- **PWA — Workbox** — Excludes `sidebar-quotes-*` from precache; fetched on demand per locale ([`vite.config.ts`](frontend/vite.config.ts)).
+- **Docs — AGENTS.md** — Sidebar quote asset paths, rotation rules, and import refresh commands.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.41).
+
 ## [5.117.40] - 2026-06-16
 
 > **CI Node 26, GitHub Actions v6, and i18n key parity restored across all UI locales.**

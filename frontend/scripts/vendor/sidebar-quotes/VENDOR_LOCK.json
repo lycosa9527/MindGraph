@@ -1,0 +1,12 @@
+{
+  "wisdom-quotes": {
+    "repo": "snakeek/wisdom-quotes",
+    "ref": "bdd95ba6d7662fadfc95a4d7135a9f03972060cc"
+  },
+  "echoes": {
+    "repo": "Luminoid/echoes",
+    "ref": "4cee3e9bb71ff24ec63f53a77381f5dee82da1ab",
+    "note": "Frozen in extracted/echoes-*.json; refresh via --refresh-echoes --extract-echoes"
+  },
+  "refreshedAt": "2026-06-16T03:53:00.000Z"
+}

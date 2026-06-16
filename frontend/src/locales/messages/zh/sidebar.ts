@@ -75,6 +75,7 @@ export default {
   'sidebar.smartResponse': 'Smart Response 智回',
   'sidebar.teacherUsage': '教师使用度',
   'sidebar.templateResources': '模板资源',
+  'sidebar.orgEdition': '{org}专属版',
   'sidebar.userSubtitleDefault': 'MindGraph专业版',
   'sidebar.account': '账号设置',
   'sidebar.roleSuperAdmin': '超级管理员',

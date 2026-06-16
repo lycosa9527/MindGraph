@@ -18,9 +18,11 @@ import {
 } from '@lucide/vue'
 
 import QuickRegisterModal from '@/components/mindgraph/QuickRegisterModal.vue'
+import SidebarQuoteMarquee from '@/components/sidebar/SidebarQuoteMarquee.vue'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
-import { usePwaInstall } from '@/composables/usePwaInstall'
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
+import { useSidebarPhilosophyQuote } from '@/composables/sidebar/useSidebarPhilosophyQuote'
+import { usePwaInstall } from '@/composables/usePwaInstall'
 import { isMindGraphLandingPath } from '@/utils/canvasBackNavigation'
 
 const _raw = inject(appSidebarInjectionKey)
@@ -29,11 +31,11 @@ if (!_raw) {
 }
 const s = reactive(_raw)
 const route = useRoute()
-const orgSubtitle = computed(() => s.userSubtitle as string)
 const showShareSiteModal = ref(false)
 const { triggerImport } = useDiagramImport()
 const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.path))
 const { showPwaInstall, handlePwaInstall } = usePwaInstall((key) => s.t(key))
+const { quote } = useSidebarPhilosophyQuote()
 </script>
 
 <template>
@@ -109,20 +111,11 @@ const { showPwaInstall, handlePwaInstall } = usePwaInstall((key) => s.t(key))
                   {{ s.userRolePill.label }}
                 </span>
               </div>
-              <div class="org-subtitle-wrapper text-xs text-stone-500 leading-tight mt-0.5">
-                <div
-                  class="org-subtitle-inner"
-                  :class="{ 'org-subtitle-marquee': orgSubtitle.length > 12 }"
-                >
-                  <span class="org-subtitle-text">{{ orgSubtitle }}</span>
-                  <span
-                    v-if="orgSubtitle.length > 12"
-                    class="org-subtitle-text org-subtitle-sep"
-                  >
-                    {{ orgSubtitle }}
-                  </span>
-                </div>
-              </div>
+              <SidebarQuoteMarquee
+                v-if="quote"
+                :text="quote.text"
+                :author="quote.author"
+              />
             </div>
           </div>
           <ChevronDown class="w-4 h-4 text-stone-400 shrink-0 ml-2" />
@@ -300,42 +293,6 @@ const { showPwaInstall, handlePwaInstall } = usePwaInstall((key) => s.t(key))
 
 .user-dropdown {
   width: 100%;
-}
-
-/* Organization name marquee for long names */
-.org-subtitle-wrapper {
-  overflow: hidden;
-  min-width: 0;
-}
-
-.org-subtitle-inner {
-  display: inline-flex;
-  white-space: nowrap;
-}
-
-.org-subtitle-text {
-  flex-shrink: 0;
-}
-
-.org-subtitle-sep {
-  padding-left: 1.5em;
-}
-
-.org-subtitle-marquee {
-  animation: org-subtitle-scroll 12s linear infinite;
-}
-
-.org-subtitle-marquee:hover {
-  animation-play-state: paused;
-}
-
-@keyframes org-subtitle-scroll {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
 }
 </style>
 

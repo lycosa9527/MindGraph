@@ -28,6 +28,17 @@ import { userCanAccessMindbotAdmin } from '@/utils/mindbotAccess'
 import { getRolePillStyle } from '@/utils/userRoleDisplay'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
 
+/** Max graphemes for org name in sidebar header (total label ≈ 10 incl. 专属版). */
+const ORG_EDITION_MAX_ORG_NAME_LENGTH = 7
+
+function truncateGraphemes(text: string, maxLength: number): string {
+  const graphemes = [...text]
+  if (graphemes.length <= maxLength) {
+    return text
+  }
+  return graphemes.slice(0, maxLength).join('')
+}
+
 export function useAppSidebar() {
   const { t } = useLanguage()
   const router = useRouter()
@@ -185,9 +196,20 @@ export function useAppSidebar() {
       borderClass: style.borderClass,
     }
   })
-  const userSubtitle = computed(() => {
-    const schoolName = authStore.user?.schoolName
-    return schoolName && schoolName.trim() ? schoolName : t('sidebar.userSubtitleDefault')
+  const orgEditionLabel = computed(() => {
+    const schoolName = authStore.user?.schoolName?.trim()
+    if (schoolName) {
+      const org = truncateGraphemes(schoolName, ORG_EDITION_MAX_ORG_NAME_LENGTH)
+      return t('sidebar.orgEdition', { org })
+    }
+    return t('sidebar.userSubtitleDefault')
+  })
+  const orgEditionTooltip = computed(() => {
+    const schoolName = authStore.user?.schoolName?.trim()
+    if (!schoolName) {
+      return ''
+    }
+    return t('sidebar.orgEdition', { org: schoolName })
   })
   const userAvatar = computed(() => {
     const avatar = authStore.user?.avatar || '🐈‍⬛'
@@ -526,7 +548,8 @@ export function useAppSidebar() {
     mindMateNavLabel,
     userName,
     userRolePill,
-    userSubtitle,
+    orgEditionLabel,
+    orgEditionTooltip,
     userAvatar,
     showLoginModal,
     showAccountModal,
