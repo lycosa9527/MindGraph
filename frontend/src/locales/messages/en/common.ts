@@ -190,6 +190,7 @@ export default {
   'settings.language.promptSelectPlaceholder': 'Search languages…',
   'settings.language.supportsCount': 'Supports {n} languages',
   'settings.language.title': 'Language & prompts',
+  'settings.language.headerNote': 'Interface · AI · canvas',
   'settings.language.mindMapCanvas': 'Mind map canvas',
   'settings.language.mindMapCanvasLegacy': 'Classic canvas',
   'settings.language.mindMapCanvasV2': 'New canvas',

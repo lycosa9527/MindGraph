@@ -1,10 +1,11 @@
 <script setup lang="ts">
 /**
  * Language & prompt language settings (interface vs LLM prompt language).
+ * Shell: light Swiss stone (user settings).
  */
 import { computed, ref, watch } from 'vue'
 
-import { ElCheckbox, ElRadio, ElRadioGroup } from 'element-plus'
+import { ElCheckbox } from 'element-plus'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -19,6 +20,8 @@ import { useAuthStore } from '@/stores'
 import type { Language, MindMapCanvasMode, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
 import { MULTISCRIPT_SANS_STACK } from '@/utils/diagramNodeFontStack'
+
+import '@/styles/settings-language-swiss.css'
 
 const visible = defineModel<boolean>({ required: true })
 
@@ -187,29 +190,43 @@ function onClose(): void {
 <template>
   <el-dialog
     v-model="visible"
-    :title="t('settings.language.title')"
+    class="language-settings-dialog language-settings-swiss"
     width="min(480px, 92vw)"
     destroy-on-close
     @close="onClose"
   >
-    <div class="space-y-5">
-      <div>
+    <template #header>
+      <div class="language-settings-swiss__header">
+        <span
+          class="language-settings-swiss__glyph"
+          aria-hidden="true"
+        >◇</span>
+        <span class="language-settings-swiss__title">{{ t('settings.language.title') }}</span>
+        <span
+          class="language-settings-swiss__divider"
+          aria-hidden="true"
+        />
+        <span class="language-settings-swiss__note">{{ t('settings.language.headerNote') }}</span>
+      </div>
+    </template>
+
+    <div class="language-settings-swiss__stack">
+      <div class="language-settings-swiss__inset">
         <ElCheckbox v-model="matchPromptToInterface">
           {{ t('settings.language.matchPrompt') }}
         </ElCheckbox>
       </div>
-      <div>
-        <div
-          class="text-sm text-stone-600 dark:text-stone-400 mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5"
-        >
+
+      <section>
+        <div class="language-settings-swiss__kicker">
           <span>{{ t('settings.language.interface') }}</span>
-          <span class="text-xs text-stone-400 dark:text-stone-500 font-normal">
+          <span class="language-settings-swiss__kicker-count">
             {{ t('settings.language.supportsCount', { n: interfaceLanguageOptionCount }) }}
           </span>
         </div>
         <el-select
           v-model="draftUi"
-          class="interface-lang-select prompt-lang-select w-full"
+          class="lang-settings-swiss-select interface-lang-select prompt-lang-select w-full"
           filterable
           :placeholder="t('settings.language.promptSelectPlaceholder')"
           popper-class="prompt-lang-select-popper"
@@ -233,19 +250,18 @@ function onClose(): void {
             </span>
           </el-option>
         </el-select>
-      </div>
-      <div>
-        <div
-          class="text-sm text-stone-600 dark:text-stone-400 mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5"
-        >
+      </section>
+
+      <section>
+        <div class="language-settings-swiss__kicker">
           <span>{{ t('settings.language.prompt') }}</span>
-          <span class="text-xs text-stone-400 dark:text-stone-500 font-normal">
+          <span class="language-settings-swiss__kicker-count">
             {{ t('settings.language.supportsCount', { n: promptLanguageOptionCount }) }}
           </span>
         </div>
         <el-select
           v-model="draftPrompt"
-          class="prompt-lang-select w-full"
+          class="lang-settings-swiss-select prompt-lang-select w-full"
           :disabled="matchPromptToInterface"
           filterable
           :placeholder="t('settings.language.promptSelectPlaceholder')"
@@ -270,34 +286,66 @@ function onClose(): void {
             </span>
           </el-option>
         </el-select>
-      </div>
-      <div>
-        <div class="text-sm text-stone-600 dark:text-stone-400 mb-2">
-          {{ t('settings.language.mindMapCanvas') }}
+      </section>
+
+      <section>
+        <div class="language-settings-swiss__kicker">
+          <span>{{ t('settings.language.mindMapCanvas') }}</span>
         </div>
-        <ElRadioGroup
-          v-model="draftMindMapCanvasMode"
-          class="flex flex-col items-start gap-2"
+        <!--
+          Swiss 50/50 split segmented control (reference pattern).
+          Use plain <button role="radio"> — NOT ElRadioGroup/ElRadioButton (shows circles).
+          Styles: settings-language-swiss.css → .language-settings-canvas-segmented / -segment
+          Active half: .is-active on the selected button; v-model via click + :class binding.
+        -->
+        <div
+          class="language-settings-canvas-segmented"
+          role="radiogroup"
+          :aria-label="t('settings.language.mindMapCanvas')"
         >
-          <ElRadio value="legacy">
+          <button
+            type="button"
+            role="radio"
+            class="language-settings-canvas-segment"
+            :class="{ 'is-active': draftMindMapCanvasMode === 'legacy' }"
+            :aria-checked="draftMindMapCanvasMode === 'legacy'"
+            @click="draftMindMapCanvasMode = 'legacy'"
+          >
             {{ t('settings.language.mindMapCanvasLegacy') }}
-          </ElRadio>
-          <ElRadio value="v2">
+          </button>
+          <button
+            type="button"
+            role="radio"
+            class="language-settings-canvas-segment"
+            :class="{ 'is-active': draftMindMapCanvasMode === 'v2' }"
+            :aria-checked="draftMindMapCanvasMode === 'v2'"
+            @click="draftMindMapCanvasMode = 'v2'"
+          >
             {{ t('settings.language.mindMapCanvasV2') }}
-          </ElRadio>
-        </ElRadioGroup>
-      </div>
+          </button>
+        </div>
+        <p class="language-settings-swiss__hint">
+          {{ t('settings.language.mindMapCanvasRefreshHint') }}
+        </p>
+      </section>
     </div>
+
     <template #footer>
-      <el-button @click="onClose">
-        {{ t('common.cancel') }}
-      </el-button>
-      <el-button
-        type="primary"
-        @click="save"
-      >
-        {{ t('common.save') }}
-      </el-button>
+      <div class="language-settings-swiss__footer">
+        <el-button
+          class="lang-settings-swiss-btn"
+          @click="onClose"
+        >
+          {{ t('common.cancel') }}
+        </el-button>
+        <el-button
+          type="primary"
+          class="lang-settings-swiss-btn"
+          @click="save"
+        >
+          {{ t('common.save') }}
+        </el-button>
+      </div>
     </template>
   </el-dialog>
 </template>

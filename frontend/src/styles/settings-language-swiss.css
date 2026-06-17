@@ -1,0 +1,330 @@
+/**
+ * Language & prompts modal — light Swiss stone shell (user settings, not admin phosphor).
+ */
+
+.language-settings-swiss.el-dialog {
+  --lang-settings-ink: #1c1917;
+  --lang-settings-body: #44403c;
+  --lang-settings-muted: #78716c;
+  --lang-settings-subtle: #a8a29e;
+  --lang-settings-border: #e7e5e4;
+  --lang-settings-border-strong: #d6d3d1;
+  --lang-settings-surface: #ffffff;
+  --lang-settings-inset: #fafaf9;
+  --lang-settings-hover: #f5f5f4;
+
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--lang-settings-border);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.08),
+    0 4px 6px -4px rgba(0, 0, 0, 0.06);
+}
+
+.dark .language-settings-swiss.el-dialog {
+  --lang-settings-ink: #f9fafb;
+  --lang-settings-body: #d6d3d1;
+  --lang-settings-muted: #a8a29e;
+  --lang-settings-subtle: #78716c;
+  --lang-settings-border: #374151;
+  --lang-settings-border-strong: #4b5563;
+  --lang-settings-surface: #1f2937;
+  --lang-settings-inset: #111827;
+  --lang-settings-hover: #374151;
+}
+
+.language-settings-swiss .el-dialog__header {
+  margin: 0;
+  padding: 1rem 1.25rem 0.75rem;
+  border-bottom: 1px solid var(--lang-settings-border);
+}
+
+.language-settings-swiss .el-dialog__headerbtn {
+  top: 0.85rem;
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.language-settings-swiss .el-dialog__headerbtn .el-dialog__close {
+  color: var(--lang-settings-subtle);
+  font-size: 1rem;
+}
+
+.language-settings-swiss .el-dialog__headerbtn:hover .el-dialog__close {
+  color: var(--lang-settings-ink);
+}
+
+.language-settings-swiss .el-dialog__body {
+  padding: 1rem 1.25rem 0.25rem;
+}
+
+.language-settings-swiss .el-dialog__footer {
+  padding: 0.75rem 1.25rem 1rem;
+  border-top: 1px solid var(--lang-settings-border);
+}
+
+.language-settings-swiss__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem 0.65rem;
+  padding-inline-end: 1.75rem;
+}
+
+.language-settings-swiss__glyph {
+  color: var(--lang-settings-subtle);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+}
+
+.language-settings-swiss__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--lang-settings-ink);
+  line-height: 1.35;
+}
+
+.language-settings-swiss__divider {
+  flex: 1 1 100%;
+  height: 0;
+  margin: 0;
+  border: none;
+}
+
+@media (min-width: 420px) {
+  .language-settings-swiss__divider {
+    flex: 0 0 auto;
+    width: 1px;
+    height: 0.85rem;
+    align-self: center;
+    background: var(--lang-settings-border-strong);
+  }
+}
+
+.language-settings-swiss__note {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lang-settings-muted);
+  line-height: 1.35;
+}
+
+.language-settings-swiss__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.language-settings-swiss__inset {
+  padding: 0.75rem 0.85rem;
+  border-radius: 6px;
+  border: 1px solid var(--lang-settings-border);
+  background: var(--lang-settings-inset);
+}
+
+.language-settings-swiss__kicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lang-settings-muted);
+  line-height: 1.35;
+}
+
+.language-settings-swiss__kicker::before {
+  content: '';
+  display: inline-block;
+  width: 0.35rem;
+  height: 0.35rem;
+  margin-inline-end: 0.1rem;
+  background: var(--lang-settings-subtle);
+  border-radius: 1px;
+  transform: translateY(-0.05rem);
+}
+
+.language-settings-swiss__kicker-count {
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--lang-settings-subtle);
+}
+
+.language-settings-swiss__hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--lang-settings-muted);
+}
+
+.language-settings-swiss .el-checkbox {
+  --el-checkbox-text-color: var(--lang-settings-body);
+  height: auto;
+}
+
+.language-settings-swiss .el-checkbox__label {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--lang-settings-body);
+}
+
+.language-settings-swiss .lang-settings-swiss-select :deep(.el-select__wrapper) {
+  min-height: 2.25rem;
+  border-radius: 6px;
+  border: 1px solid var(--lang-settings-border-strong);
+  background: var(--lang-settings-surface);
+  box-shadow: none;
+  transition:
+    border-color 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.language-settings-swiss .lang-settings-swiss-select :deep(.el-select__wrapper:hover) {
+  border-color: var(--lang-settings-subtle);
+}
+
+.language-settings-swiss .lang-settings-swiss-select :deep(.el-select__wrapper.is-focused) {
+  border-color: var(--lang-settings-muted);
+  box-shadow: 0 0 0 1px var(--lang-settings-border);
+}
+
+.language-settings-swiss .lang-settings-swiss-select :deep(.el-select__placeholder),
+.language-settings-swiss .lang-settings-swiss-select :deep(.el-select__selected-item) {
+  color: var(--lang-settings-ink);
+}
+
+.language-settings-swiss .lang-settings-swiss-select :deep(.el-select__placeholder) {
+  color: var(--lang-settings-muted);
+}
+
+/*
+ * Swiss 50/50 split segmented control (reference pattern).
+ *
+ * One full-width rectangle, two equal halves, vertical divider, no radio circles/icons.
+ * Reuse for any binary setting in light-stone modals (e.g. classic vs new canvas).
+ *
+ * Markup (LanguageSettingsModal.vue):
+ *   .language-settings-canvas-segmented  role="radiogroup"
+ *     button.language-settings-canvas-segment.is-active  role="radio" aria-checked
+ *
+ * Do NOT use ElRadioGroup / ElRadioButton — Element Plus renders visible radio UI.
+ * Use plain buttons + .is-active; wire state with @click and :class binding.
+ */
+.language-settings-canvas-segmented {
+  display: flex;
+  flex-wrap: nowrap;
+  width: 100%;
+  border-radius: 6px;
+  border: 1px solid var(--lang-settings-border-strong);
+  background: var(--lang-settings-inset);
+  overflow: hidden;
+}
+
+.language-settings-canvas-segment {
+  flex: 1 1 50%;
+  min-width: 0;
+  margin: 0;
+  padding: 0.55rem 0.5rem;
+  min-height: 2.35rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
+  color: var(--lang-settings-muted);
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.language-settings-canvas-segment:first-child {
+  border-right: 1px solid var(--lang-settings-border-strong);
+}
+
+.language-settings-canvas-segment:not(.is-active):hover {
+  color: var(--lang-settings-ink);
+  background: var(--lang-settings-hover);
+}
+
+.language-settings-canvas-segment.is-active {
+  color: var(--lang-settings-surface);
+  font-weight: 600;
+  background: var(--lang-settings-ink);
+}
+
+.language-settings-canvas-segment:focus {
+  outline: none;
+}
+
+.language-settings-canvas-segment:focus-visible {
+  outline: 2px solid var(--lang-settings-muted);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+.dark .language-settings-canvas-segment.is-active {
+  color: var(--lang-settings-ink);
+  background: #f9fafb;
+}
+
+.language-settings-swiss__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.language-settings-swiss .lang-settings-swiss-btn.el-button {
+  font-weight: 500;
+  border-radius: 6px;
+}
+
+.language-settings-swiss .lang-settings-swiss-btn.el-button--default {
+  --el-button-text-color: #57534e;
+  --el-button-hover-text-color: var(--lang-settings-ink);
+  --el-button-hover-bg-color: var(--lang-settings-hover);
+  --el-button-border-color: var(--lang-settings-border-strong);
+  --el-button-hover-border-color: var(--lang-settings-subtle);
+}
+
+.dark .language-settings-swiss .lang-settings-swiss-btn.el-button--default {
+  --el-button-text-color: var(--lang-settings-body);
+  --el-button-hover-text-color: var(--lang-settings-ink);
+  --el-button-hover-bg-color: var(--lang-settings-hover);
+  --el-button-border-color: var(--lang-settings-border-strong);
+  --el-button-hover-border-color: var(--lang-settings-muted);
+}
+
+.language-settings-swiss .lang-settings-swiss-btn.el-button--primary {
+  --el-button-bg-color: var(--lang-settings-ink);
+  --el-button-border-color: var(--lang-settings-ink);
+  --el-button-hover-bg-color: #292524;
+  --el-button-hover-border-color: #292524;
+  --el-button-active-bg-color: #0c0a09;
+  --el-button-active-border-color: #0c0a09;
+  min-width: 5.5rem;
+}
+
+.dark .language-settings-swiss .lang-settings-swiss-btn.el-button--primary {
+  --el-button-hover-bg-color: #374151;
+  --el-button-hover-border-color: #374151;
+  --el-button-active-bg-color: #4b5563;
+  --el-button-active-border-color: #4b5563;
+}

@@ -193,6 +193,7 @@ export default {
   'settings.language.promptSelectPlaceholder': '搜索语言…',
   'settings.language.supportsCount': '支持 {n} 种语言',
   'settings.language.title': '语言与提示词',
+  'settings.language.headerNote': '界面 · AI · 画布',
   'settings.language.mindMapCanvas': '思维导图画布',
   'settings.language.mindMapCanvasLegacy': '经典画布',
   'settings.language.mindMapCanvasV2': '新版画布',

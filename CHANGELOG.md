@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.46] - 2026-06-18
+
+> **Language settings modal — light Swiss stone shell and segmented canvas toggle.**
+
+### Added
+
+- **Frontend — language settings styles** — [`settings-language-swiss.css`](frontend/src/styles/settings-language-swiss.css): light stone dialog shell, inset sections, kickers, and reusable 50/50 segmented control pattern for binary settings (dark mode included).
+
+### Changed
+
+- **Frontend — LanguageSettingsModal** — Redesigned [`LanguageSettingsModal.vue`](frontend/src/components/settings/LanguageSettingsModal.vue) with custom header (glyph, title, subtitle note), stone inset layout, styled selects and footer buttons; mind map canvas mode uses plain `role="radio"` buttons instead of `ElRadioGroup` (no visible radio circles).
+- **Frontend — i18n** — Added `settings.language.headerNote` in en, zh, and zh-tw locale bundles.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.46).
+
 ## [5.117.45] - 2026-06-17
 
 > **Canonical copyright headers across application Python modules.**

@@ -190,6 +190,7 @@ export default {
   'settings.language.promptSelectPlaceholder': '搜索語言…',
   'settings.language.supportsCount': '支持 {n} 種語言',
   'settings.language.title': '語言與提示詞',
+  'settings.language.headerNote': '介面 · AI · 畫布',
   'settings.language.mindMapCanvas': '思維導圖畫布',
   'settings.language.mindMapCanvasLegacy': '經典畫布',
   'settings.language.mindMapCanvasV2': '新版畫布',
