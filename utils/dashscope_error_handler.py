@@ -46,7 +46,7 @@ class DashScopeError(Exception):
         retryable: bool = False,
         retry_after: Optional[int] = None,
     ):
-        """ init  ."""
+        """init  ."""
         self.message = message
         self.error_code = error_code
         self.error_type = error_type

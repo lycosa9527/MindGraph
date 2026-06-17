@@ -11,6 +11,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import csv
 import json
 import logging
@@ -647,7 +648,6 @@ class UserDocumentLoader(BenchmarkLoader):
         if not HAS_CHUNK_TEST_MODELS or ChunkTestDocument is None or ChunkTestDocumentChunk is None:
             raise ImportError("Chunk test document models not available. Cannot load user documents.")
 
-
         documents = []
         for doc_id in self.document_ids:
             result = await self.db.execute(
@@ -664,7 +664,6 @@ class UserDocumentLoader(BenchmarkLoader):
                     doc_id,
                 )
                 continue
-
 
             processor = get_document_processor()
             cleaner = get_document_cleaner()

@@ -37,7 +37,7 @@ class SessionEventBus:
     """One ``asyncio.Queue`` per voice session with a single consumer task."""
 
     def __init__(self, voice_session_id: str, *, maxsize: int = 64) -> None:
-        """ init  ."""
+        """init  ."""
         self.voice_session_id = voice_session_id
         self._queue: asyncio.Queue[KittyEvent] = asyncio.Queue(maxsize=maxsize)
         self._consumer_task: Optional[asyncio.Task] = None

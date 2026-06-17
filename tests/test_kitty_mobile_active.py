@@ -36,8 +36,9 @@ def _kitty_user(user_id: int) -> User:
 
 class _FakeRedis:
     """_FakeRedis helper."""
+
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self.data: Dict[str, str] = {}
 
     async def get(self, key: str) -> Optional[str]:
@@ -71,8 +72,9 @@ class _FakeRedis:
 
 class _FakePipeline:
     """_FakePipeline helper."""
+
     def __init__(self, redis: _FakeRedis, transaction: bool = False) -> None:
-        """ init  ."""
+        """init  ."""
         self._redis = redis
         self._transaction = transaction
         self._ops: list[tuple[Any, ...]] = []
@@ -119,11 +121,11 @@ class _FakePipeline:
         return [True] * count if count else [True]
 
     async def __aenter__(self) -> "_FakePipeline":
-        """ aenter  ."""
+        """aenter  ."""
         return self
 
     async def __aexit__(self, *_args: Any) -> None:
-        """ aexit  ."""
+        """aexit  ."""
         return None
 
 
@@ -397,9 +399,10 @@ async def test_kitty_rest_desktop_pairing_active_long_poll_pop() -> None:
 @pytest.mark.asyncio
 async def test_pop_wait_uses_blpop_when_blocking(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test pop wait uses blpop when blocking."""
+
     class _QueueRedis:
         def __init__(self) -> None:
-            """ init  ."""
+            """init  ."""
             self.blpop_timeout: int | None = None
 
         async def lpop(self, _key: str) -> None:
@@ -605,7 +608,7 @@ async def test_pop_discards_stale_actions(monkeypatch: pytest.MonkeyPatch) -> No
 
     class _QueueRedis:
         def __init__(self) -> None:
-            """ init  ."""
+            """init  ."""
             self.items = [stale.encode("utf-8"), fresh.encode("utf-8")]
 
         async def lpop(self, _key: str) -> bytes | None:

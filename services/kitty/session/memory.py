@@ -13,6 +13,7 @@ TurnSource = Literal["transcription", "text", "omni_tts", "action"]
 @dataclass(slots=True)
 class KittyTurn:
     """KittyTurn helper."""
+
     role: TurnRole
     content: str
     source: TurnSource
@@ -24,7 +25,7 @@ class KittySessionMemory:
     """Single turn store per voice session (cap 20 turns)."""
 
     def __init__(self, *, max_turns: int = 20) -> None:
-        """ init  ."""
+        """init  ."""
         self.turns: Deque[KittyTurn] = deque(maxlen=max_turns)
         self.diagram_snapshot_rev: int = 0
         self._assistant_buffer: List[str] = []

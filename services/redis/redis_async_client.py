@@ -165,8 +165,7 @@ def _build_async_client() -> aioredis.Redis:
 
     client = aioredis.from_url(url, **kwargs)
     logger.info(
-        "[RedisAsync] Pool ready (url=%s, max_conn=%d, RESP%d, health=%ds, "
-        "keepalive=%s, sch=%s)",
+        "[RedisAsync] Pool ready (url=%s, max_conn=%d, RESP%d, health=%ds, keepalive=%s, sch=%s)",
         url,
         max_conn,
         kwargs.get("protocol", 2),

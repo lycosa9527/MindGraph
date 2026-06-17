@@ -16,16 +16,16 @@ class _FakePipeline:
     """Captures pipeline commands; returns a fixed ``execute()`` result list."""
 
     def __init__(self, execute_results):
-        """ init  ."""
+        """init  ."""
         self._execute_results = execute_results
         self.records = []
 
     async def __aenter__(self):
-        """ aenter  ."""
+        """aenter  ."""
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
-        """ aexit  ."""
+        """aexit  ."""
         return False
 
     def execute_command(self, *args):

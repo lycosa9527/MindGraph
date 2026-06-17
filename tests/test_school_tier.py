@@ -47,8 +47,9 @@ from utils.auth.school_tier_defs import EXTRA_MEMBER_SEATS_MAX
 
 class _FakeOrg:
     """_FakeOrg helper."""
+
     def __init__(self, school_tier=None, extra_member_seats=0):
-        """ init  ."""
+        """init  ."""
         self.school_tier = school_tier
         self.extra_member_seats = extra_member_seats
         self.id = 1

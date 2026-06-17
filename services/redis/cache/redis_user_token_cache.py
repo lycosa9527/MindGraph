@@ -30,6 +30,7 @@ def _short_hash_from_full_token_hash(token_hash_64: str) -> str:
 
 class _UserTokenCache:
     """_UserTokenCache helper."""
+
     async def get_by_raw_token(self, raw_token: str) -> Optional[Dict[str, Any]]:
         """Get by raw token."""
         if not is_redis_available():

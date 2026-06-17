@@ -53,7 +53,7 @@ class RedisSMSStorage:
     """
 
     def __init__(self):
-        """ init  ."""
+        """init  ."""
         self._fallback_enabled = False
 
     def _get_key(self, phone: str, purpose: str = "verification") -> str:

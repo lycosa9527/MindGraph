@@ -19,7 +19,7 @@ class BaseConfig:
     """Base configuration class with caching mechanism."""
 
     def __init__(self):
-        """ init  ."""
+        """init  ."""
         self._cache = {}
         self._cache_timestamp = 0
         self._cache_duration = 30

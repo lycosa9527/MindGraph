@@ -59,7 +59,7 @@ class _UserConnection:
         username: str,
         avatar: Optional[str],
     ):
-        """ init  ."""
+        """init  ."""
         self.websocket = websocket
         self.user_id = user_id
         self.username = username
@@ -72,7 +72,7 @@ class ChatConnectionManager:
     """Manages WebSocket connections for workshop chat."""
 
     def __init__(self):
-        """ init  ."""
+        """init  ."""
         self._connections: Dict[int, _UserConnection] = {}
         self._channel_subscribers: Dict[int, Set[int]] = {}
         self._typing_state: Dict[str, float] = {}

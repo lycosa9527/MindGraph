@@ -79,4 +79,3 @@ def test_connection_probe_host_normalises_localhost() -> None:
         is_local=True,
     )
     assert config.connection_probe_host == "127.0.0.1"
-

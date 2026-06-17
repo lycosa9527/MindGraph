@@ -2,6 +2,7 @@
 
 Detects content types: theory, example, exercise, summary, code, formula.
 """
+
 from services.utils.error_types import JSON_PARSE_ERRORS
 
 from typing import List, Optional, Any

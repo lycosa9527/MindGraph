@@ -24,8 +24,7 @@ from redis.maint_notifications import MaintNotificationsConfig
 _DISABLED_MAINT_NOTIFICATIONS = MaintNotificationsConfig(enabled=False)
 
 _ASYNC_MAINT_NOTIFICATIONS_SUPPORTED = (
-    "maint_notifications_config"
-    in inspect.signature(AsyncAbstractConnection.__init__).parameters
+    "maint_notifications_config" in inspect.signature(AsyncAbstractConnection.__init__).parameters
 )
 
 

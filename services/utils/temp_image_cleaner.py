@@ -65,7 +65,7 @@ class CleanupLockState:
     """Encapsulates cleanup lock state to avoid global variables."""
 
     def __init__(self):
-        """ init  ."""
+        """init  ."""
         self.lock_id: Optional[str] = None
 
     def generate_lock_id(self) -> str:

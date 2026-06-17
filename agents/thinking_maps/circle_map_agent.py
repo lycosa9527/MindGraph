@@ -7,6 +7,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 from typing import Any, Dict, Optional, Tuple
 
@@ -25,7 +26,7 @@ class CircleMapAgent(BaseAgent):
     """Agent for generating circle maps."""
 
     def __init__(self, model="qwen"):
-        """ init  ."""
+        """init  ."""
         super().__init__(model=model)
         # llm_client is now a dynamic property from BaseAgent
         self.diagram_type = "circle_map"

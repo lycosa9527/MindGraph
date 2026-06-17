@@ -22,7 +22,7 @@ class LLMTimingStats:
     """Asyncio-safe LLM timing statistics tracker."""
 
     def __init__(self):
-        """ init  ."""
+        """init  ."""
         self._lock = asyncio.Lock()
         self._total_calls = 0
         self._total_time = 0.0

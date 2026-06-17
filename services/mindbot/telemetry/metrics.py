@@ -47,7 +47,7 @@ class MindbotMetrics:
     """Lightweight counters for DingTalk callback outcomes."""
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self._lock = Lock()
         self._counts: collections.OrderedDict[str, int] = collections.OrderedDict()
         self._by_org: collections.OrderedDict[int, collections.OrderedDict[str, int]] = collections.OrderedDict()

@@ -8,6 +8,7 @@ Orchestrates the complete chunking workflow:
 4. LLM refinement for unclear boundaries (20% of chunks)
 5. Validate and return chunks
 """
+
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 from typing import List, Dict, Any, Optional, Union

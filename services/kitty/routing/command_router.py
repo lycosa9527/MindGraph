@@ -63,6 +63,7 @@ VOICE_COMMAND_CONFIDENCE_VOICE = 0.5
 
 class RouteOutcome(str, Enum):
     """RouteOutcome helper."""
+
     EXECUTED = "executed"
     CONVERSATIONAL_FALLBACK = "conversational_fallback"
     FAILED = "failed"
@@ -71,6 +72,7 @@ class RouteOutcome(str, Enum):
 @dataclass(slots=True)
 class RouteResult:
     """RouteResult helper."""
+
     outcome: RouteOutcome
     reason: Optional[str] = None
 

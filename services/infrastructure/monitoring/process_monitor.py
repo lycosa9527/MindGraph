@@ -589,7 +589,7 @@ class ProcessMonitor:
                 logger.info("[ProcessMonitor] Qdrant is running externally")
                 return True
 
-            if service_name == "celery":                # Stop existing process if any (run in thread pool)
+            if service_name == "celery":  # Stop existing process if any (run in thread pool)
                 if ServerState.celery_worker_process is not None:
                     await asyncio.to_thread(stop_celery_worker)
 
@@ -602,7 +602,7 @@ class ProcessMonitor:
                     )
                     return True
 
-            if service_name == "postgresql":                # Stop existing process if any (run in thread pool)
+            if service_name == "postgresql":  # Stop existing process if any (run in thread pool)
                 if ServerState.postgresql_process is not None:
                     await asyncio.to_thread(stop_postgresql_server)
 

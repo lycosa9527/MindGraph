@@ -45,7 +45,7 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
     """
 
     def __init__(self):
-        """ init  ."""
+        """init  ."""
         super().__init__()
         # Mode-specific session storage
         self.current_mode = {}  # session_id -> 'similarities' | 'differences' | 'both'

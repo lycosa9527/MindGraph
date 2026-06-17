@@ -40,7 +40,7 @@ class PromptManager:
     """
 
     def __init__(self):
-        """ init  ."""
+        """init  ."""
         self._prompts: Dict[str, Dict[str, Dict[str, Dict[str, str]]]] = {}
         self._initialized = False
         logger.info("[PromptManager] Initialized")

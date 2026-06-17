@@ -1,6 +1,7 @@
 """
 brace map agent module.
 """
+
 import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
@@ -40,7 +41,7 @@ class BraceMapAgent(BaseAgent):
     """Brace Map Agent with block-based positioning system"""
 
     def __init__(self, model="qwen"):
-        """ init  ."""
+        """init  ."""
         super().__init__(model=model)
         self.context_manager = ContextManager()
         self.llm_processor = LLMHybridProcessor()

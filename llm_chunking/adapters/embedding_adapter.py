@@ -5,6 +5,7 @@ Adapts embedding generation to different chunk types:
 - Parent-Child: Embed only child chunks, store parent in payload
 - Q&A: Embed questions (or Q&A pairs)
 """
+
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 from abc import ABC, abstractmethod

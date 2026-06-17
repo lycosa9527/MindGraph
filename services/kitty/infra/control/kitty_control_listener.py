@@ -36,7 +36,7 @@ class KittyControlListenerRuntime:
     __slots__ = ("task", "stop_event")
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self.task: Optional[asyncio.Task[None]] = None
         self.stop_event: Optional[asyncio.Event] = None
 

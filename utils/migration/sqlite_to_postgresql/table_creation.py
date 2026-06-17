@@ -312,7 +312,7 @@ def create_table_indexes(pg_engine: Any, table_name: str, table: Any) -> None:
                 if getattr(column, "index", False) and not isinstance(column.index, bool):
                     # Index object already handled above
                     continue
-                if getattr(column, "index", False):                    # Implicit index from index=True
+                if getattr(column, "index", False):  # Implicit index from index=True
                     index_name = f"ix_{table_name}_{column.name}"
                     if index_name in existing_indexes:
                         continue

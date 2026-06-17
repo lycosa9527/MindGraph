@@ -31,6 +31,7 @@ def test_client_op_dedupe_truncates_long_id(monkeypatch):
 
 class _FailingPipeline:
     """_FailingPipeline helper."""
+
     def delete(self, *_keys: str) -> "_FailingPipeline":
         """Delete."""
         return self
@@ -40,18 +41,19 @@ class _FailingPipeline:
         raise RuntimeError("cross-slot")
 
     async def __aenter__(self) -> "_FailingPipeline":
-        """ aenter  ."""
+        """aenter  ."""
         return self
 
     async def __aexit__(self, _exc_type: Any, _exc: Any, _tb: Any) -> bool:
-        """ aexit  ."""
+        """aexit  ."""
         return False
 
 
 class _PurgeRedis:
     """_PurgeRedis helper."""
+
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self.unlinked: list[str] = []
         self.deleted: list[str] = []
         self.zrem_calls: list[tuple[str, str]] = []

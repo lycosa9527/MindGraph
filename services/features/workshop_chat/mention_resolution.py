@@ -36,7 +36,7 @@ class MentionResolutionError(Exception):
         unknown_names: Sequence[str],
         ambiguous_names: Sequence[str],
     ) -> None:
-        """ init  ."""
+        """init  ."""
         self.unknown_names = list(unknown_names)
         self.ambiguous_names = list(ambiguous_names)
         super().__init__(f"unknown={self.unknown_names!r}, ambiguous={self.ambiguous_names!r}")

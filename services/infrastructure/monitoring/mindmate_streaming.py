@@ -24,7 +24,7 @@ class _MindmateStreamState:
     __slots__ = ("_lock", "_n")
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self._lock = asyncio.Lock()
         self._n = 0
 

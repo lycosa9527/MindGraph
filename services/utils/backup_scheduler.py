@@ -107,7 +107,7 @@ class _BackupSchedulerLockState:
     __slots__ = ("worker_lock_id",)
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self.worker_lock_id: Optional[str] = None
 
 

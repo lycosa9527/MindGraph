@@ -23,6 +23,7 @@ router = APIRouter()
 
 class AdminOrderRow(BaseModel):
     """AdminOrderRow helper."""
+
     id: int
     user_id: int
     user_email_or_phone: Optional[str]
@@ -39,6 +40,7 @@ class AdminOrderRow(BaseModel):
 
 class AdminListingRow(BaseModel):
     """AdminListingRow helper."""
+
     id: int
     slug: str
     listing_kind: str
@@ -50,6 +52,7 @@ class AdminListingRow(BaseModel):
 
 class AdminSubscriptionRow(BaseModel):
     """AdminSubscriptionRow helper."""
+
     id: int
     user_id: int
     user_email_or_phone: Optional[str]

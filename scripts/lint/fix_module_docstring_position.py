@@ -58,14 +58,18 @@ def _module_docstring_after_imports(source: str) -> tuple[str, bool] | None:
 def main() -> int:
     """Main."""
     root = Path(__file__).resolve().parents[2]
-    targets = [root / name for name in sys.argv[1:]] if len(sys.argv) > 1 else [
-        root / "services",
-        root / "routers",
-        root / "agents",
-        root / "clients",
-        root / "config",
-        root / "utils",
-    ]
+    targets = (
+        [root / name for name in sys.argv[1:]]
+        if len(sys.argv) > 1
+        else [
+            root / "services",
+            root / "routers",
+            root / "agents",
+            root / "clients",
+            root / "config",
+            root / "utils",
+        ]
+    )
     changed = 0
     for directory in targets:
         if directory.is_file():

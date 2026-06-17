@@ -25,9 +25,7 @@ def _read_snapshot_tuple() -> Tuple[bool, bool, bool, bool, int]:
     """Read snapshot tuple."""
     abuse_master = ip_reputation_env_flags.abuseipdb_master_enabled()
     crowd_lu = ip_reputation_env_flags.crowdsec_blocklist_lookup_enabled()
-    lookup_active = (
-        abuse_master and ip_reputation_env_flags.abuseipdb_blacklist_lookup_enabled()
-    ) or crowd_lu
+    lookup_active = (abuse_master and ip_reputation_env_flags.abuseipdb_blacklist_lookup_enabled()) or crowd_lu
     check_enabled = ip_reputation_env_flags.abuseipdb_check_enabled()
     check_min = ip_reputation_env_flags.get_check_min_score()
     return abuse_master, crowd_lu, lookup_active, check_enabled, check_min
@@ -72,13 +70,9 @@ def log_ip_reputation_startup_summary() -> None:
     )
     sync_bits = []
     if ip_reputation_env_flags.abuseipdb_master_enabled():
-        sync_bits.append(
-            "abuseipdb_sync=" + str(ip_reputation_env_flags.abuseipdb_blacklist_sync_enabled())
-        )
+        sync_bits.append("abuseipdb_sync=" + str(ip_reputation_env_flags.abuseipdb_blacklist_sync_enabled()))
     if ip_reputation_env_flags.crowdsec_blocklist_master_enabled():
-        sync_bits.append(
-            "crowdsec_sync=" + str(ip_reputation_env_flags.crowdsec_blocklist_sync_enabled())
-        )
+        sync_bits.append("crowdsec_sync=" + str(ip_reputation_env_flags.crowdsec_blocklist_sync_enabled()))
     if sync_bits:
         logger.info("[IP reputation] Scheduled blocklist refresh: %s", ", ".join(sync_bits))
 

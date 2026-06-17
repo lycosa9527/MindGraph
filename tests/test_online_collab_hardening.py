@@ -25,10 +25,10 @@ from tests.typing_helpers import mock_call_args
 _has_verified_resume_for_rate_limit = getattr(auth, "_has_verified_resume_for_rate_limit")
 
 
-
 @dataclass
 class _User:
     """_User helper."""
+
     id: int = 123
     username: str = "teacher"
 
@@ -37,7 +37,7 @@ class _FakeWebSocket:
     """Minimal WebSocket stand-in for pre-accept rejection tests."""
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self.headers: dict[str, str] = {"origin": "https://evil.example"}
         self.query_params: dict[str, str] = {}
         self.closed: list[dict[str, Any]] = []
@@ -49,8 +49,9 @@ class _FakeWebSocket:
 
 class _ResumeRedis:
     """_ResumeRedis helper."""
+
     def __init__(self, diagram_id: str | None) -> None:
-        """ init  ."""
+        """init  ."""
         self.diagram_id = diagram_id
 
     async def get(self, _key: str) -> str | None:
@@ -120,15 +121,17 @@ async def test_resume_rate_limit_bypass_requires_current_diagram_match() -> None
 
 class _DiagramRow:
     """_DiagramRow helper."""
+
     def __init__(self, workshop_code: str) -> None:
-        """ init  ."""
+        """init  ."""
         self.workshop_code = workshop_code
 
 
 class _ScalarResult:
     """_ScalarResult helper."""
+
     def __init__(self, value: Any) -> None:
-        """ init  ."""
+        """init  ."""
         self._value = value
 
     def first(self) -> Any:
@@ -138,8 +141,9 @@ class _ScalarResult:
 
 class _ExecuteResult:
     """_ExecuteResult helper."""
+
     def __init__(self, value: Any) -> None:
-        """ init  ."""
+        """init  ."""
         self._value = value
 
     def scalars(self) -> _ScalarResult:
@@ -203,8 +207,9 @@ async def test_idle_stop_flush_failure_keeps_session_intact() -> None:
 
 class _AtomicRedis:
     """_AtomicRedis helper."""
+
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self.data: dict[str, str] = {}
         self.eval_calls = 0
 

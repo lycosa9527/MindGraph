@@ -18,6 +18,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 from typing import Any, Dict, Optional, Tuple
 
@@ -41,7 +42,7 @@ class TreeMapAgent(BaseAgent):
     """Utility agent to improve tree map specs before rendering."""
 
     def __init__(self, model="qwen"):
-        """ init  ."""
+        """init  ."""
         super().__init__(model=model)
         self.diagram_type = "tree_map"
 

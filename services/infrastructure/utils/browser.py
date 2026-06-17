@@ -363,7 +363,7 @@ class BrowserContextManager:
     """Context manager that creates a fresh browser for each request"""
 
     def __init__(self):
-        """ init  ."""
+        """init  ."""
         self.context = None
         self.browser = None
         self.playwright = None

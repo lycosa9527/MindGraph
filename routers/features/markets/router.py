@@ -72,6 +72,7 @@ def _subscription_return_url() -> str | None:
 
 class ListingOut(BaseModel):
     """ListingOut helper."""
+
     id: int
     slug: str
     listing_kind: str
@@ -87,16 +88,19 @@ class ListingOut(BaseModel):
 
 class OrderCreateBody(BaseModel):
     """OrderCreateBody helper."""
+
     listing_id: int = Field(ge=1)
 
 
 class SubscriptionIntentBody(BaseModel):
     """SubscriptionIntentBody helper."""
+
     listing_id: int = Field(ge=1)
 
 
 class OrderOut(BaseModel):
     """OrderOut helper."""
+
     id: int
     listing_id: int
     out_trade_no: str
@@ -109,6 +113,7 @@ class OrderOut(BaseModel):
 
 class SubscriptionOut(BaseModel):
     """SubscriptionOut helper."""
+
     id: int
     listing_id: int
     listing_slug: Optional[str]
@@ -125,6 +130,7 @@ class SubscriptionOut(BaseModel):
 
 class EntitlementOut(BaseModel):
     """EntitlementOut helper."""
+
     listing_id: int
     listing_slug: Optional[str]
     listing_title: Optional[str]

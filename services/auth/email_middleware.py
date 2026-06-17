@@ -34,7 +34,7 @@ class EmailMiddleware:
         enable_error_handling: bool = True,
         enable_performance_tracking: bool = True,
     ):
-        """ init  ."""
+        """init  ."""
         self.max_concurrent_requests = max_concurrent_requests or config.EMAIL_MAX_CONCURRENT_REQUESTS
         self.qpm_limit = qpm_limit or config.EMAIL_QPM_LIMIT
         self.enable_rate_limiting = enable_rate_limiting and config.EMAIL_RATE_LIMITING_ENABLED
@@ -250,6 +250,7 @@ class EmailMiddleware:
 
 class _EmailMiddlewareSingleton:
     """_EmailMiddlewareSingleton helper."""
+
     instance: Optional[EmailMiddleware] = None
 
     @classmethod

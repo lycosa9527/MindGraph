@@ -74,6 +74,7 @@ except ImportError:
         """No-op when PostgreSQL startup helpers are unavailable."""
         return None
 
+
 # Set up environment
 os.environ.setdefault("PYTHONPATH", str(project_root))
 

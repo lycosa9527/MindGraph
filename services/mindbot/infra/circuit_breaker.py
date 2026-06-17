@@ -98,7 +98,7 @@ class CircuitBreaker:
     """
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self._failures: int = 0
         self._opened_at: float = 0.0
         self._is_open: bool = False

@@ -28,7 +28,7 @@ class DiagramCommandBus:
     """
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self._adapters: List[str] = []
 
     def register_adapter(self, name: str) -> None:

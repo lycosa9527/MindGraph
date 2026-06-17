@@ -128,6 +128,7 @@ class ViewerHandle:
 
 AnyHandle = Union[ConnectionHandle, ViewerHandle]
 
+
 async def _get_room_lock(code: str) -> asyncio.Lock:
     """Backward-compatible alias for ``get_room_lock``."""
     return await get_room_lock(code)

@@ -14,9 +14,7 @@ def fix_file(path: Path) -> bool:
     """Fix file."""
     source = path.read_text(encoding="utf-8")
     lines = source.splitlines(keepends=True)
-    logger_indices = [
-        index for index, line in enumerate(lines) if _LOGGER_RE.match(line.rstrip("\n"))
-    ]
+    logger_indices = [index for index, line in enumerate(lines) if _LOGGER_RE.match(line.rstrip("\n"))]
     if not logger_indices:
         return False
 
@@ -40,8 +38,7 @@ def fix_file(path: Path) -> bool:
             continue
         # Check for imports after logger line
         has_later_import = any(
-            isinstance(node, (ast.Import, ast.ImportFrom)) and node.lineno > logger_line_no
-            for node in tree.body
+            isinstance(node, (ast.Import, ast.ImportFrom)) and node.lineno > logger_line_no for node in tree.body
         )
         if not has_later_import:
             continue
@@ -67,14 +64,18 @@ def fix_file(path: Path) -> bool:
 def main() -> int:
     """Main."""
     root = Path(__file__).resolve().parents[2]
-    dirs = [root / name for name in sys.argv[1:]] if len(sys.argv) > 1 else [
-        root / "services",
-        root / "routers",
-        root / "agents",
-        root / "clients",
-        root / "config",
-        root / "utils",
-    ]
+    dirs = (
+        [root / name for name in sys.argv[1:]]
+        if len(sys.argv) > 1
+        else [
+            root / "services",
+            root / "routers",
+            root / "agents",
+            root / "clients",
+            root / "config",
+            root / "utils",
+        ]
+    )
     changed = 0
     for directory in dirs:
         for path in sorted(directory.rglob("*.py")):

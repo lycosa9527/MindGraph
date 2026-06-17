@@ -59,7 +59,7 @@ class _AsyncSlidingWindowLimiter:
     """
 
     def __init__(self, max_calls: int, window_seconds: float) -> None:
-        """ init  ."""
+        """init  ."""
         self._max_calls = max(1, max_calls)
         self._window = max(0.001, window_seconds)
         self.cfg_max_calls = max_calls

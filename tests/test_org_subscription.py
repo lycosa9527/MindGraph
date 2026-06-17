@@ -82,11 +82,11 @@ async def test_downgrade_expired_org_to_trial_persists_trial():
 
     class _SessionCtx:
         async def __aenter__(self):
-            """ aenter  ."""
+            """aenter  ."""
             return mock_db
 
         async def __aexit__(self, *_args):
-            """ aexit  ."""
+            """aexit  ."""
             return False
 
     with patch("utils.auth.org_subscription_downgrade.system_rls_session", return_value=_SessionCtx()):

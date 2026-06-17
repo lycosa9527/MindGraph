@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import base64
 import logging
 import mimetypes
@@ -456,9 +457,7 @@ class DocumentProcessor:
                 raise ValueError(
                     f"File content does not match claimed type. Claimed: {file_type}, Detected: {detected_type}"
                 )
-            raise ValueError(
-                f"File content validation failed. File may be corrupted or not match type: {file_type}"
-            )
+            raise ValueError(f"File content validation failed. File may be corrupted or not match type: {file_type}")
 
         extractor = self.supported_types[file_type]
         try:

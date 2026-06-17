@@ -45,9 +45,7 @@ def _mindgraph_root() -> Path:
 
 _env_bool = ip_reputation_env_flags.env_bool
 _env_int = ip_reputation_env_flags.env_int
-crowdsec_blocklist_credentials_configured = (
-    ip_reputation_env_flags.crowdsec_blocklist_credentials_configured
-)
+crowdsec_blocklist_credentials_configured = ip_reputation_env_flags.crowdsec_blocklist_credentials_configured
 crowdsec_blocklist_endpoint_configured = ip_reputation_env_flags.crowdsec_blocklist_endpoint_configured
 crowdsec_blocklist_master_enabled = ip_reputation_env_flags.crowdsec_blocklist_master_enabled
 crowdsec_blocklist_sync_enabled = ip_reputation_env_flags.crowdsec_blocklist_sync_enabled
@@ -122,9 +120,7 @@ async def apply_crowdsec_baseline_from_file_async() -> int:
     batch = list(ips)
     chunk_size = 2000
     try:
-        added_total = await pipeline_sadd_chunks_async(
-            redis, KEY_BLACKLIST, batch, chunk_size
-        )
+        added_total = await pipeline_sadd_chunks_async(redis, KEY_BLACKLIST, batch, chunk_size)
     except (OSError, RedisError) as exc:
         logger.warning("[CrowdSec] baseline SADD failed: %s", exc)
         return 0

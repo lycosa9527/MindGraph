@@ -31,6 +31,8 @@ async def test_schedule_flush_not_called_when_merge_returns_none() -> None:
         "diagram_id": "d1",
         "spec": {"v": 1, "nodes": [], "connections": []},
     }
+    mock_redis = mock.AsyncMock()
+    mock_redis.set = mock.AsyncMock(return_value=True)
 
     with (
         mock.patch.object(hu, "schedule_live_spec_db_flush", mock_flush),
@@ -39,7 +41,7 @@ async def test_schedule_flush_not_called_when_merge_returns_none() -> None:
             "mutate_live_spec_after_ws_update",
             mock_merge,
         ),
-        mock.patch.object(hu, "get_async_redis", return_value=object()),
+        mock.patch.object(hu, "get_async_redis", return_value=mock_redis),
         mock.patch.object(
             hu,
             "is_ws_fanout_enabled",

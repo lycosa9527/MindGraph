@@ -12,8 +12,6 @@ async def load_expert_invited_org_ids(actor_id: int) -> frozenset[int]:
     """Organization IDs created via invite flow by this expert or teaching researcher."""
     async with system_rls_session() as db:
         rows = (
-            await db.execute(
-                select(Organization.id).where(Organization.invited_by_user_id == int(actor_id))
-            )
+            await db.execute(select(Organization.id).where(Organization.invited_by_user_id == int(actor_id)))
         ).scalars()
         return frozenset(int(org_id) for org_id in rows)

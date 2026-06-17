@@ -67,6 +67,7 @@ def _new_hub_mutation_id() -> str:
 @dataclass(slots=True)
 class HubTraceState:
     """HubTraceState helper."""
+
     request_id: str
     mutation_id: Optional[str] = None
     idempotency_key: Optional[str] = None
@@ -76,6 +77,7 @@ class HubTraceState:
 @dataclass(slots=True)
 class HubScopeBinding:
     """HubScopeBinding helper."""
+
     scope: str
     revision: int = 0
     bound_at: float = field(default_factory=time.time)
@@ -85,6 +87,7 @@ class HubScopeBinding:
 @dataclass(slots=True)
 class HubKittyRuntimeState:
     """HubKittyRuntimeState helper."""
+
     voice_session_id: Optional[str] = None
     agent_session_id: Optional[str] = None
     connected: bool = False
@@ -93,6 +96,7 @@ class HubKittyRuntimeState:
 @dataclass(slots=True)
 class HubSessionState:
     """HubSessionState helper."""
+
     session_id: str
     user_id: int
     client_lane: Optional[str]
@@ -139,7 +143,7 @@ class MindGraphAgentHub:
     """Policy owner for Kitty voice scope: refcount, preempt, HTTP cleanup, mobile diagram bootstrap."""
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self._sessions: Dict[str, HubSessionState] = {}
         self._idempotent_mutation_result: Dict[str, Dict[str, Any]] = {}
         self._session_lock = None

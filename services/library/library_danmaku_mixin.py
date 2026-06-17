@@ -6,6 +6,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 import re
 from datetime import UTC, datetime
@@ -62,7 +63,6 @@ class LibraryDanmakuMixin:
         """
         if page_number is not None or selected_text:
             try:
-
                 redis_cache = LibraryRedisCache()
                 cached_list = await redis_cache.get_danmaku_list(
                     document_id=document_id,
@@ -154,7 +154,6 @@ class LibraryDanmakuMixin:
 
         if (page_number is not None or selected_text) and result_list:
             try:
-
                 redis_cache = LibraryRedisCache()
                 await redis_cache.cache_danmaku_list(
                     document_id=document_id,
@@ -253,7 +252,6 @@ class LibraryDanmakuMixin:
 
         if result_list:
             try:
-
                 redis_cache = LibraryRedisCache()
                 await redis_cache.cache_recent_danmaku(limit, result_list)
             except REDIS_ERRORS as exc:
@@ -334,7 +332,6 @@ class LibraryDanmakuMixin:
         )
 
         try:
-
             redis_cache = LibraryRedisCache()
             redis_cache.invalidate_danmaku(document_id)
         except REDIS_ERRORS as exc:
@@ -480,7 +477,6 @@ class LibraryDanmakuMixin:
             refresh_result = await self.db.execute(select(LibraryDanmaku).where(LibraryDanmaku.id == danmaku_id))
             refreshed_danmaku = refresh_result.scalar_one_or_none()
             if refreshed_danmaku:
-
                 redis_cache = LibraryRedisCache()
                 redis_cache.invalidate_danmaku(refreshed_danmaku.document_id)
         except REDIS_ERRORS as exc:

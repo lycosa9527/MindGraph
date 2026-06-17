@@ -27,18 +27,21 @@ router = APIRouter(prefix="/api/devices", tags=["devices"])
 
 class DeviceRegisterRequest(BaseModel):
     """DeviceRegisterRequest helper."""
+
     watch_id: str
     mac_address: Optional[str] = None
 
 
 class DeviceAssignRequest(BaseModel):
     """DeviceAssignRequest helper."""
+
     student_id: int
     class_id: Optional[int] = None
 
 
 class DeviceResponse(BaseModel):
     """DeviceResponse helper."""
+
     id: int
     watch_id: str
     student_id: Optional[int] = None

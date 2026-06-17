@@ -87,9 +87,7 @@ def warm_sismember_cache_ttl_snapshot() -> None:
 
     Matches env snapshot timing so TTL is not re-parsed from os.environ on every request.
     """
-    _bl_redis.warm_sismember_cache_ttl_snapshot(
-        max(0, _env_int("IP_REPUTATION_SISMEMBER_CACHE_TTL_SECONDS", 0))
-    )
+    _bl_redis.warm_sismember_cache_ttl_snapshot(max(0, _env_int("IP_REPUTATION_SISMEMBER_CACHE_TTL_SECONDS", 0)))
 
 
 def invalidate_sismember_cache_ttl_snapshot() -> None:

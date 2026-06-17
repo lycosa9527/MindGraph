@@ -28,6 +28,7 @@ KITTY_CONTROL_SECRET_BACKUP_FILE = os.path.join(
     ".kitty_control_secret",
 )
 
+
 class _KittyControlSecretCache:
     """In-memory Kitty control secret holder (no global keyword)."""
 

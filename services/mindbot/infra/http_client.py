@@ -46,6 +46,7 @@ from utils.env_helpers import env_int
 
 logger = logging.getLogger(__name__)
 
+
 class _MindbotHttpSessions:
     """Shared aiohttp session holder (no global keyword)."""
 
@@ -74,7 +75,7 @@ class _PinnedIPResolver(AbstractResolver):
     """
 
     def __init__(self, pinned_ip: str) -> None:
-        """ init  ."""
+        """init  ."""
         self._pinned_ip = pinned_ip
 
     async def resolve(self, host: str, port: int = 0, family: int = 0) -> list[dict]:

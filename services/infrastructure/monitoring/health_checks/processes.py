@@ -16,12 +16,8 @@ async def check_processes_health() -> Dict[str, Any]:
         process_monitor = get_process_monitor()
         status = process_monitor.get_status()
 
-        unhealthy_count = sum(
-            1 for service_status in status.values() if service_status.get("status") == "unhealthy"
-        )
-        degraded_count = sum(
-            1 for service_status in status.values() if service_status.get("status") == "degraded"
-        )
+        unhealthy_count = sum(1 for service_status in status.values() if service_status.get("status") == "unhealthy")
+        degraded_count = sum(1 for service_status in status.values() if service_status.get("status") == "degraded")
 
         overall_status = "healthy"
         if unhealthy_count > 0:
@@ -48,12 +44,8 @@ def processes_health_payload() -> Dict[str, Any]:
     process_monitor = get_process_monitor()
     status = process_monitor.get_status()
 
-    unhealthy_count = sum(
-        1 for service_status in status.values() if service_status.get("status") == "unhealthy"
-    )
-    degraded_count = sum(
-        1 for service_status in status.values() if service_status.get("status") == "degraded"
-    )
+    unhealthy_count = sum(1 for service_status in status.values() if service_status.get("status") == "unhealthy")
+    degraded_count = sum(1 for service_status in status.values() if service_status.get("status") == "degraded")
 
     overall_status = "healthy"
     status_code = 200

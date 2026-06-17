@@ -43,7 +43,7 @@ class GeweAPIError(Exception):
         error_code: Optional[str] = None,
         response_data: Optional[Dict[str, Any]] = None,
     ):
-        """ init  ."""
+        """init  ."""
         self.message = message
         self.status_code = status_code
         self.error_code = error_code

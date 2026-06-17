@@ -3,6 +3,7 @@ Concept extraction for teaching materials.
 
 Extracts key concepts and their relationships from educational content.
 """
+
 from services.utils.error_types import JSON_PARSE_ERRORS
 
 import json

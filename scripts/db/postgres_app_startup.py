@@ -20,8 +20,7 @@ def verify_runtime_database_connection() -> tuple[bool, str]:
         return True, "DATABASE_URL connection verified"
     return (
         False,
-        f"DATABASE_URL connection failed for {config.runtime_user}@"
-        f"{config.host}:{config.port}/{config.database}",
+        f"DATABASE_URL connection failed for {config.runtime_user}@{config.host}:{config.port}/{config.database}",
     )
 
 

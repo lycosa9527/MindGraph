@@ -19,6 +19,7 @@ pytestmark = pytest.mark.skipif(
 @pytest.mark.asyncio
 async def test_panel_mode_persists_after_commit():
     """Test panel mode persists after commit."""
+
     class _User:
         role = "school_admin"
         id = 1

@@ -153,6 +153,7 @@ class RedisEmailStorage:
 
 class _EmailStorageHolder:
     """_EmailStorageHolder helper."""
+
     instance: Optional["RedisEmailStorage"] = None
 
 

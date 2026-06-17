@@ -349,8 +349,7 @@ def check_postgresql_installed() -> tuple[bool, str]:
         if system_cluster is not None:
             main_path, version = system_cluster
             return True, (
-                f"PostgreSQL ready for {config.mode_label} "
-                f"(system cluster {main_path}, version {version}, not running)"
+                f"PostgreSQL ready for {config.mode_label} (system cluster {main_path}, version {version}, not running)"
             )
         if postgres_binary_found:
             version_msg = f" (version {postgres_version})" if postgres_version else ""
@@ -358,8 +357,7 @@ def check_postgresql_installed() -> tuple[bool, str]:
         if not config.is_local:
             return True, f"PostgreSQL client ready for remote DATABASE_URL ({config.host}:{config.port})"
         return False, (
-            f"PostgreSQL not reachable for {config.mode_label}. "
-            "Install PostgreSQL or start your database service."
+            f"PostgreSQL not reachable for {config.mode_label}. Install PostgreSQL or start your database service."
         )
 
     if postgres_binary_found and initdb_binary_found:

@@ -34,6 +34,7 @@ MINDBOT_USAGE_SUCCESS_CODES = (
 
 class TokenPeriodTotals(TypedDict):
     """TokenPeriodTotals helper."""
+
     input_tokens: int
     output_tokens: int
     total_tokens: int

@@ -22,7 +22,6 @@ _recent_fanout_ids = getattr(wfd, "_RECENT_FANOUT_IDS")
 _handle_workshop_raw = getattr(lst, "_handle_workshop_raw")
 
 
-
 def _truthy() -> bool:
     """Truthy."""
     return True

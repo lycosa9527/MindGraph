@@ -98,7 +98,7 @@ class _SyncHelperCollector(ast.NodeVisitor):
     """Find sync def helpers that contain synchronous Redis calls."""
 
     def __init__(self, qualified_module: str) -> None:
-        """ init  ."""
+        """init  ."""
         self._qualified_module = qualified_module
         self._scope: List[str] = []
         self._async_depth = 0
@@ -160,7 +160,7 @@ class _AsyncCallerScanner(ast.NodeVisitor):
         path: str,
         sync_helper_names: Set[str],
     ) -> None:
-        """ init  ."""
+        """init  ."""
         self._lines = source_lines
         self._path = path
         self._sync_names = sync_helper_names

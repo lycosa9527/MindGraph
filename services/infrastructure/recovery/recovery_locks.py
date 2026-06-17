@@ -44,6 +44,7 @@ _integrity_check_cache: Optional[Tuple[bool, float]] = None  # Unused, kept for 
 
 logger = logging.getLogger(__name__)
 
+
 def _generate_integrity_check_lock_id() -> str:
     """Generate unique lock ID for this worker: {pid}:{uuid}"""
     return f"{os.getpid()}:{uuid.uuid4().hex[:8]}"

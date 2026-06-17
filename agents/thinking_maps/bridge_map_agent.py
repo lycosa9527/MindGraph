@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -28,7 +29,7 @@ class BridgeMapAgent(BaseAgent):
     """Agent for generating bridge maps."""
 
     def __init__(self, model="qwen"):
-        """ init  ."""
+        """init  ."""
         super().__init__(model=model)
         # llm_client is now a dynamic property from BaseAgent
         self.diagram_type = "bridge_map"

@@ -3,6 +3,7 @@
 Caches detected document structures in Redis + in-memory fallback
 for instant reuse without re-analysis.
 """
+
 from services.utils.error_types import REDIS_ERRORS
 
 from datetime import datetime

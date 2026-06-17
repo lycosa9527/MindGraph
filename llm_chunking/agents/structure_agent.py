@@ -3,6 +3,7 @@
 Analyzes first 30 pages to detect document structure and determine
 optimal chunking strategy (General, Parent-Child, or Q&A).
 """
+
 from services.utils.error_types import JSON_PARSE_ERRORS
 
 from typing import Dict, Any, Optional, List

@@ -73,8 +73,7 @@ def _scan_file(path: Path, repo_root: Path) -> list[str]:
     if rel in {ASYNC_CLIENT_MODULE, CONNECTION_OPTIONS_MODULE}:
         if rel == ASYNC_CLIENT_MODULE and "redis_connection_options" in text and not uses_async_options:
             violations.append(
-                f"{rel}: async client must use redis_async_connection_options(), "
-                "not redis_connection_options()",
+                f"{rel}: async client must use redis_async_connection_options(), not redis_connection_options()",
             )
         return violations
 
@@ -96,8 +95,7 @@ def main() -> int:
     if violations:
         formatted = "\n  ".join(violations)
         print(
-            "[lint_redis_connection_options] sync SCH kwargs on async Redis client:\n  "
-            + formatted,
+            "[lint_redis_connection_options] sync SCH kwargs on async Redis client:\n  " + formatted,
             file=sys.stderr,
         )
         return 1

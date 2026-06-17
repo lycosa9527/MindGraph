@@ -17,6 +17,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+
 class _OpenCcConverterState:
     """Lazy OpenCC s2t converter holder."""
 

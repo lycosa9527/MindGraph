@@ -171,7 +171,7 @@ class OnlineCollabManager:
     """
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self._destroy_locks: Dict[str, asyncio.Lock] = {}
         self._destroy_locks_mutex = asyncio.Lock()
         self.idle_monitor_task: Optional[asyncio.Task] = None

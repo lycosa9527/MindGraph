@@ -287,13 +287,13 @@ class SelectiveGZipMiddleware:
     """
 
     def __init__(self, app: ASGIApp, minimum_size: int = 1000, compresslevel: int = 9):
-        """ init  ."""
+        """init  ."""
         self.app = app
         self.minimum_size = minimum_size
         self.compresslevel = compresslevel
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """ call  ."""
+        """call  ."""
         if scope["type"] == "http":
             path = scope.get("path", "")
             # Check if this is a PDF file endpoint BEFORE processing

@@ -4,6 +4,7 @@ Uses LLM to identify semantic boundaries when pattern matching
 is insufficient. Now includes embedding-based pre-filtering to
 reduce LLM calls by ~50% (from 20% to ~10% of boundaries).
 """
+
 from services.utils.error_types import JSON_PARSE_ERRORS
 
 from typing import List, Optional, Tuple

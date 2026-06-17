@@ -108,7 +108,7 @@ class OmniRealtimeClient:
         on_content_part_done: Optional[Callable[[dict], None]] = None,
         on_function_call: Optional[Callable[[str, str, str], None]] = None,
     ):
-        """ init  ."""
+        """init  ."""
         self.api_key = api_key
         self.model = model
         self.voice = voice

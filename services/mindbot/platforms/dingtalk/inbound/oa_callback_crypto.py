@@ -37,7 +37,7 @@ class DingTalkOaCallbackCrypto:
     """Encrypt/decrypt DingTalk open-platform callback payloads (AES-CBC + SHA1)."""
 
     def __init__(self, token: str, encoding_aes_key: str, owner_key: str) -> None:
-        """ init  ."""
+        """init  ."""
         self.encoding_aes_key = encoding_aes_key
         self.owner_key = owner_key
         self.token = token

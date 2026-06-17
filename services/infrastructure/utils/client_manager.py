@@ -43,7 +43,7 @@ class ClientManager:
     """
 
     def __init__(self):
-        """ init  ."""
+        """init  ."""
         self._clients: Dict[str, Any] = {}
         self._lock = Lock()
         self._initialized = False

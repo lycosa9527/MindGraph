@@ -40,7 +40,7 @@ class _VoiceSessionGetterSlot:
     __slots__ = ("getter",)
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self.getter: Optional[Any] = None
 
 

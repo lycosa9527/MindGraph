@@ -11,6 +11,7 @@ logger = logging.getLogger("KITTY_AGENT")
 
 class DiagramNode(TypedDict):
     """DiagramNode helper."""
+
     id: str
     index: int
     text: str
@@ -18,6 +19,7 @@ class DiagramNode(TypedDict):
 
 class DiagramState(TypedDict):
     """DiagramState helper."""
+
     diagram_type: str
     center_text: str
     nodes: List[DiagramNode]
@@ -26,6 +28,7 @@ class DiagramState(TypedDict):
 
 class AgentState(TypedDict):
     """AgentState helper."""
+
     messages: List[Any]
     diagram: DiagramState
     active_panel: str
@@ -40,7 +43,7 @@ class KittyAgent:
     """Lightweight per-diagram canvas mirror while a voice session is active."""
 
     def __init__(self, session_id: str) -> None:
-        """ init  ."""
+        """init  ."""
         self.session_id = session_id
         self._state = self._create_initial_state()
         logger.info("KittyAgent initialized for session %s", session_id)
@@ -117,7 +120,7 @@ class KittyAgentManager:
     """Manages :class:`KittyAgent` instances per diagram session."""
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self._agents: Dict[str, KittyAgent] = {}
 
     def get_or_create(self, session_id: str) -> KittyAgent:

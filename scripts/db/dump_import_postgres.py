@@ -497,7 +497,7 @@ class DumpImportProgress:
     """Progress bar for dump/import operations. Uses Rich when available and TTY."""
 
     def __init__(self, mode: str, total_stages: int, stage_names: Dict[int, str]):
-        """ init  ."""
+        """init  ."""
         self.mode = mode
         self.total_stages = total_stages
         self.stage_names = stage_names
@@ -507,28 +507,19 @@ class DumpImportProgress:
         self.console: Any = None
 
         if self.use_rich:
-            from rich.console import Console as RichConsole
-            from rich.progress import (
-                BarColumn as RichBarColumn,
-                Progress as RichProgress,
-                SpinnerColumn as RichSpinnerColumn,
-                TextColumn as RichTextColumn,
-                TimeElapsedColumn as RichTimeElapsedColumn,
-            )
-
-            self.console = RichConsole()
-            self.progress = RichProgress(
-                RichSpinnerColumn(),
-                RichTextColumn("[progress.description]{task.description}"),
-                RichBarColumn(),
-                RichTextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-                RichTimeElapsedColumn(),
+            self.console = Console()
+            self.progress = Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+                TimeElapsedColumn(),
                 console=self.console,
                 expand=True,
             )
 
     def __enter__(self) -> "DumpImportProgress":
-        """ enter  ."""
+        """enter  ."""
         if self.use_rich and self.progress:
             self.progress.__enter__()
             self.task_id = self.progress.add_task(
@@ -538,7 +529,7 @@ class DumpImportProgress:
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        """ exit  ."""
+        """exit  ."""
         if self.use_rich and self.progress:
             self.progress.__exit__(exc_type, exc_val, exc_tb)
 

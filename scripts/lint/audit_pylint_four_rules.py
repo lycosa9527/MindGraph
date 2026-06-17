@@ -44,8 +44,9 @@ def _attribute_root_name(node: ast.Attribute) -> str | None:
 
 class _RuleVisitor(ast.NodeVisitor):
     """_RuleVisitor helper."""
+
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self.globals_count = 0
         self.function_imports = 0
         self.broad_except = 0

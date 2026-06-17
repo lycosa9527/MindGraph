@@ -265,8 +265,7 @@ def _apply_redis_aof_config(redis_client: Any) -> None:
             logger.info("[Redis] %s set to '%s'", cfg_key, cfg_val)
         except REDIS_ERRORS as exc:
             logger.warning(
-                "[Redis] Could not set %s=%s (%s). "
-                "Collab edits may be lost on crash until AOF is enabled.",
+                "[Redis] Could not set %s=%s (%s). Collab edits may be lost on crash until AOF is enabled.",
                 cfg_key,
                 cfg_val,
                 exc,

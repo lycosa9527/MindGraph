@@ -222,6 +222,7 @@ def _visible_text_hide_chain_of_thought(raw: str) -> str:
 
 def _truncate_block_match(rx: Pattern[str], text: str, cap: int) -> str:
     """Truncate block match."""
+
     def repl(m: re.Match[str]) -> str:
         inner = m.group(2)
         if len(inner) <= cap:
@@ -245,6 +246,7 @@ def _truncate_thinking_in_full_text(text: str, max_chars: int) -> str:
 
 def _truncate_loose_block_match(rx: Pattern[str], text: str, cap: int) -> str:
     """Truncate loose block match."""
+
     def repl(m: re.Match[str]) -> str:
         inner = m.group(2)
         if len(inner) <= cap:
@@ -296,7 +298,7 @@ class MindbotThinkingStreamFilter:
     """
 
     def __init__(self, *, show_chain_of_thought: bool) -> None:
-        """ init  ."""
+        """init  ."""
         self._show = bool(show_chain_of_thought)
         self._raw = ""
         self._sent_visible_len = 0

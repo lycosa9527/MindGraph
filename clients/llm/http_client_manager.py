@@ -32,7 +32,7 @@ class HTTPXClientManager:
     _instance: Optional["HTTPXClientManager"] = None
 
     def __init__(self):
-        """ init  ."""
+        """init  ."""
         self._clients: Dict[str, httpx.AsyncClient] = {}
         self._lock = asyncio.Lock()
 

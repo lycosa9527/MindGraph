@@ -23,7 +23,6 @@ All Rights Reserved
 Proprietary License
 """
 
-
 import os
 import platform
 import re

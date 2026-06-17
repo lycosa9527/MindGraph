@@ -21,6 +21,7 @@ from .config import JWT_SECRET_BACKUP_FILE, JWT_SECRET_REDIS_KEY
 
 logger = logging.getLogger(__name__)
 
+
 # Cached JWT secret (to avoid Redis lookup on every request).
 # After startup warmup via warmup_jwt_secret_async(), all callers (sync or async)
 # read from this cache and never hit Redis on the hot path.

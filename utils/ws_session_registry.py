@@ -95,7 +95,7 @@ class WsSessionRegistry:
     """
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self._sessions: Dict[str, WsSession] = {}
         self._by_user: Dict[int, Set[str]] = {}
         self._lock = asyncio.Lock()

@@ -172,7 +172,7 @@ class ShutdownErrorFilter:
     """Filter stderr to suppress expected shutdown errors"""
 
     def __init__(self, stderr_target):
-        """ init  ."""
+        """init  ."""
         self.original_stderr = stderr_target
         self.buffer = ""
         self.in_traceback = False

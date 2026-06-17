@@ -6,8 +6,9 @@ from utils.auth.admin_scope import build_admin_scope
 
 class _User:
     """_User helper."""
+
     def __init__(self, role: str, user_id: int = 7):
-        """ init  ."""
+        """init  ."""
         self.role = role
         self.id = user_id
         self.organization_id = None

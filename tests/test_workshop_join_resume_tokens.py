@@ -11,8 +11,9 @@ from services.online_collab.participant import workshop_join_resume_tokens as to
 
 class _FakeRedis:
     """_FakeRedis helper."""
+
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self.data: dict[str, str] = {}
 
     async def setex(self, key: str, _ttl: int, val: str) -> bool:

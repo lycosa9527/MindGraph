@@ -50,7 +50,7 @@ class _ShardedPubsubRuntime:
     __slots__ = ("active",)
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self.active = False
 
 

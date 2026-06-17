@@ -59,7 +59,7 @@ class DashscopeTtsService:
     """Service for generating speech using Dashscope real-time TTS"""
 
     def __init__(self):
-        """ init  ."""
+        """init  ."""
         self.api_key: Optional[str] = None
         self._initialize_api_key()
 
@@ -277,6 +277,7 @@ class DashscopeTtsService:
 # ============================================================================
 # Global Instance
 # ============================================================================
+
 
 class _TtsServiceState:
     """Process-wide TTS service singleton holder."""

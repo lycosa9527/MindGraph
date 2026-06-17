@@ -48,7 +48,7 @@ class _NetworkRateState:
     __slots__ = ("t_mono", "bytes_sent", "bytes_recv")
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self.t_mono: Optional[float] = None
         self.bytes_sent: Optional[int] = None
         self.bytes_recv: Optional[int] = None

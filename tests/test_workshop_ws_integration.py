@@ -52,7 +52,7 @@ class _FakeWebSocket:
     """Minimal FastAPI-compatible stand-in for a WebSocket."""
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self.sent: List[Dict[str, Any]] = []
         self.client_state: Any = WebSocketState.CONNECTED
 
@@ -67,6 +67,7 @@ class _FakeWebSocket:
 
 class _FakeRateLimiter:
     """_FakeRateLimiter helper."""
+
     def allow(self) -> bool:
         """Allow."""
         return True
@@ -74,8 +75,9 @@ class _FakeRateLimiter:
 
 class _FakeUser:
     """_FakeUser helper."""
+
     def __init__(self, user_id: int, username: str) -> None:
-        """ init  ."""
+        """init  ."""
         self.id = user_id
         self.username = username
 
@@ -109,6 +111,7 @@ def _make_ctx(
 
 class TestFullSpecValidation:
     """TestFullSpecValidation helper."""
+
     def test_none_is_ok(self) -> None:
         """Test none is ok."""
         assert _full_spec_validation_error(None) is None
@@ -143,6 +146,7 @@ class TestFullSpecValidation:
 
 class TestDiagramUpdateValidation:
     """TestDiagramUpdateValidation helper."""
+
     def test_diagram_id_mismatch(self) -> None:
         """Test diagram id mismatch."""
         err = _diagram_update_validation_error("d1", {"diagram_id": "d2", "nodes": [{"id": "n1"}]})
@@ -228,15 +232,17 @@ class TestDiagramUpdateValidation:
 
 class _StubUser:
     """_StubUser helper."""
+
     def __init__(self, username: str) -> None:
-        """ init  ."""
+        """init  ."""
         self.username = username
 
 
 class _StubUserCache:
     """_StubUserCache helper."""
+
     def __init__(self, users: Dict[int, _StubUser]) -> None:
-        """ init  ."""
+        """init  ."""
         self._users = users
 
     async def get_by_id(self, uid: int) -> Optional[_StubUser]:
@@ -246,6 +252,7 @@ class _StubUserCache:
 
 class TestBuildParticipantsWithNames:
     """TestBuildParticipantsWithNames helper."""
+
     @pytest.mark.asyncio
     async def test_empty(self) -> None:
         """Test empty."""
@@ -269,11 +276,12 @@ class TestBuildParticipantsWithNames:
     @pytest.mark.asyncio
     async def test_cached_user_prefers_profile_name_over_username_slug(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test cached user prefers profile name over username slug."""
+
         class _UserWithBoth(_StubUser):
             """ORM-shaped user: promotional ``username`` slug must lose to ``name``."""
 
             def __init__(self) -> None:
-                """ init  ."""
+                """init  ."""
                 super().__init__("Chen Laoshi")
                 self.id = 77
                 self.name = "Chen Laoshi"
@@ -322,6 +330,7 @@ class TestBuildParticipantsWithNames:
 
 class TestHandlePing:
     """TestHandlePing helper."""
+
     @pytest.mark.asyncio
     async def test_pong_sent(self) -> None:
         """Test pong sent."""
@@ -337,6 +346,7 @@ class TestHandlePing:
 
 class TestHandleNodeEditing:
     """TestHandleNodeEditing helper."""
+
     @pytest.mark.asyncio
     async def test_invalid_node_id_sends_error(self) -> None:
         """Test invalid node id sends error."""
@@ -378,9 +388,11 @@ class TestHandleNodeEditing:
 
 class TestRestActiveCodeGuard:
     """TestRestActiveCodeGuard helper."""
+
     @pytest.mark.asyncio
     async def test_409_when_active(self) -> None:
         """Test 409 when active."""
+
         async def _get_active(_: str) -> Optional[str]:
             return "abc-123"
 
@@ -396,6 +408,7 @@ class TestRestActiveCodeGuard:
     @pytest.mark.asyncio
     async def test_no_exception_when_inactive(self) -> None:
         """Test no exception when inactive."""
+
         async def _get_active(_: str) -> Optional[str]:
             return None
 
@@ -438,6 +451,7 @@ class TestIdleKickMessageShape:
 
 class TestMessageHandlerRegistry:
     """TestMessageHandlerRegistry helper."""
+
     def test_all_expected_types_registered(self) -> None:
         """Test all expected types registered."""
         expected = {

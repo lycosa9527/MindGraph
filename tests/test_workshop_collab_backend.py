@@ -73,6 +73,7 @@ def _editors_with_lock(code: str, node_id: str, owner_id: int, username: str) ->
 
 class TestMergeGranularIntoSpec:
     """TestMergeGranularIntoSpec helper."""
+
     def test_adds_new_node(self) -> None:
         """Test adds new node."""
         spec: Dict[str, Any] = {"nodes": [], "connections": []}
@@ -166,6 +167,7 @@ class TestMergeGranularIntoSpec:
 
 class TestApplyLiveUpdate:
     """TestApplyLiveUpdate helper."""
+
     def test_full_spec_replace_bumps_version(self) -> None:
         """Test full spec replace bumps version."""
         current = _make_spec(version=5)
@@ -215,6 +217,7 @@ class TestApplyLiveUpdate:
 
 class TestLockHelpers:
     """TestLockHelpers helper."""
+
     CODE = "abc-123"
     ALICE_ID = 1
     BOB_ID = 2
@@ -349,6 +352,7 @@ class TestLockBeforeWriteContract:
 
 class TestRedisKeyFormats:
     """TestRedisKeyFormats helper."""
+
     def test_room_idle_kick_lock_key_format(self) -> None:
         """Test room idle kick lock key format."""
         key = room_idle_kick_lock_key("abc-123")
@@ -383,6 +387,7 @@ class TestRestCollabGuardLogic:
     @pytest.mark.asyncio
     async def test_409_raised_when_active_code_exists(self) -> None:
         """Test 409 raised when active code exists."""
+
         async def _get_active(_diagram_id: str) -> Optional[str]:
             return "abc-123"
 
@@ -398,6 +403,7 @@ class TestRestCollabGuardLogic:
     @pytest.mark.asyncio
     async def test_no_exception_when_no_active_code(self) -> None:
         """Test no exception when no active code."""
+
         async def _get_active(_diagram_id: str) -> Optional[str]:
             return None
 
@@ -572,6 +578,7 @@ class TestHexpireParticipants:
         When HEXPIRE is unsupported, the implementation falls back to EXPIRE on
         the whole key.  Validate the fallback logic never raises.
         """
+
         class FakeRedis:
             """Minimal Redis stub that raises ResponseError on hexpire."""
 

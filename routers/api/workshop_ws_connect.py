@@ -36,6 +36,7 @@ from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
+
 def _log_join_parallel_read_failures(exc_group: BaseExceptionGroup) -> None:
     """Log join parallel read failures."""
     for sub in exc_group.exceptions:

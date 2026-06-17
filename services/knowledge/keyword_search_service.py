@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 import re
 from typing import Any, Dict, List, Optional
@@ -43,7 +44,6 @@ class KeywordSearchService:
             List of keywords
         """
         try:
-
             # Extract keywords using jieba3 (modern Python 3 rewrite)
             tokenizer = jieba3.jieba3()
             words = tokenizer.cut_text(text_content)

@@ -52,10 +52,11 @@ def _log_blocklist_scheduled_abuseipdb_summary(result: Dict[str, Any]) -> None:
 
 class _AbuseipdbLockState:
     """_AbuseipdbLockState helper."""
+
     __slots__ = ("worker_lock_id",)
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self.worker_lock_id: Optional[str] = None
 
 

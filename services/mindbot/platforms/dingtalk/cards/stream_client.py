@@ -89,7 +89,7 @@ class DingTalkStreamManager:
     instance: Optional["DingTalkStreamManager"] = None
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self._clients: dict[str, Any] = {}
         self._tasks: dict[str, asyncio.Task] = {}
         self._lock = asyncio.Lock()

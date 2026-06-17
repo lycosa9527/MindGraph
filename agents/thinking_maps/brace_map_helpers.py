@@ -20,7 +20,7 @@ class ContextManager:
     """Manages user context and preferences"""
 
     def __init__(self):
-        """ init  ."""
+        """init  ."""
         self.user_contexts: Dict = {}
         self.user_preferences: Dict = {}
 
@@ -181,7 +181,7 @@ class ContextAwareAlgorithmSelector:
     """Selects layout algorithm based on context"""
 
     def __init__(self, context_manager: ContextManager):
-        """ init  ."""
+        """init  ."""
         self.context_manager = context_manager
 
     def select_algorithm(self, _spec: Dict, _user_id: Optional[str] = None) -> LayoutAlgorithm:

@@ -103,7 +103,7 @@ class RelationshipLabelsGenerator:
     """
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self.llm_service = llm_service
         self.llm_models = ["qwen", "deepseek", "doubao"]
         self.seen_labels: Dict[str, Set[str]] = {}

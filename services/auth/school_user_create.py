@@ -38,6 +38,7 @@ MAX_MEMBER_NAME_LENGTH = 200
 @dataclass(frozen=True)
 class SchoolMemberInput:
     """SchoolMemberInput helper."""
+
     phone: str | None
     email: str | None
     name: str
@@ -52,6 +53,7 @@ class SchoolMemberInput:
 @dataclass(frozen=True)
 class SchoolMemberBatchFailure:
     """SchoolMemberBatchFailure helper."""
+
     index: int
     phone: str | None
     email: str | None

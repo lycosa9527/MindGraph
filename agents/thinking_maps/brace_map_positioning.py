@@ -317,7 +317,7 @@ class FlexibleLayoutCalculator:
     """Implements the flexible dynamic layout algorithm"""
 
     def __init__(self):
-        """ init  ."""
+        """init  ."""
         self._text_width_cache = {}
 
     def calculate_text_dimensions(self, spec: Dict, theme: Dict) -> Dict[str, Any]:

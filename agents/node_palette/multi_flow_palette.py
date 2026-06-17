@@ -28,7 +28,7 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
     """
 
     def __init__(self):
-        """ init  ."""
+        """init  ."""
         super().__init__()
         self.current_mode = {}
 

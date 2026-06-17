@@ -86,7 +86,7 @@ class RedisActivityTracker:
 
     def __init__(self):
         # In-memory fallback for when Redis is disabled
-        """ init  ."""
+        """init  ."""
         self._memory_sessions: Dict[str, Dict] = {}
         self._memory_user_sessions: Dict[int, Set[str]] = {}
         self._memory_history: List[Dict] = []

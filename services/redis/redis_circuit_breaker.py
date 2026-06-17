@@ -112,7 +112,7 @@ class RedisCircuitBreaker:
         failure_threshold: int = 5,
         cooldown_s: float = 10.0,
     ) -> None:
-        """ init  ."""
+        """init  ."""
         self.failure_threshold = max(1, failure_threshold)
         self.cooldown_s = max(0.1, cooldown_s)
         self._state: _State = _State.CLOSED

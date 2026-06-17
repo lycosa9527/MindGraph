@@ -45,12 +45,14 @@ router = APIRouter(prefix="/api/askonce", tags=["AskOnce"])
 
 class Message(BaseModel):
     """Message helper."""
+
     role: str
     content: str
 
 
 class ChatRequest(BaseModel):
     """ChatRequest helper."""
+
     messages: List[Message]
     temperature: Optional[float] = None
     max_tokens: Optional[int] = None
@@ -58,6 +60,7 @@ class ChatRequest(BaseModel):
 
 class HealthResponse(BaseModel):
     """HealthResponse helper."""
+
     status: str
     models: List[str]
 

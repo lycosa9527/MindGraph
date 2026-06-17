@@ -39,13 +39,13 @@ async def upload_media_oapi(
     filename: str,
 ) -> Optional[str]:
     """
-from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+    from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
-    POST ``https://oapi.dingtalk.com/media/upload?access_token=...&type=...``
+        POST ``https://oapi.dingtalk.com/media/upload?access_token=...&type=...``
 
-    Form field ``media``. Returns ``media_id``.
+        Form field ``media``. Returns ``media_id``.
 
-    https://open.dingtalk.com/document/orgapp/upload-media-files
+        https://open.dingtalk.com/document/orgapp/upload-media-files
     """
     dmt = dingtalk_media_type.strip().lower()
     max_b = oapi_max_bytes_for_type(dmt)

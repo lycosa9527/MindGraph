@@ -49,7 +49,7 @@ class RedisRateLimiter:
 
     def __init__(self):
         # In-memory fallback when the async Redis path fails
-        """ init  ."""
+        """init  ."""
         self._memory_store: Dict[str, List[float]] = defaultdict(list)
 
     async def check_and_record(

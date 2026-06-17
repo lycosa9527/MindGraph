@@ -2,6 +2,7 @@
 
 Extracted from knowledge_space_service.py to reduce complexity.
 """
+
 import logging
 import os
 from typing import Any, Dict, List, Optional, Set, Tuple

@@ -82,12 +82,16 @@ def fix_file(path: Path) -> bool:
 def main() -> int:
     """Run docstring insertion across target directories."""
     root = Path(__file__).resolve().parents[2]
-    dirs = [root / name for name in sys.argv[1:]] if len(sys.argv) > 1 else [
-        root / "scripts",
-        root / "tests",
-        root / "loadtests",
-        root / "tasks",
-    ]
+    dirs = (
+        [root / name for name in sys.argv[1:]]
+        if len(sys.argv) > 1
+        else [
+            root / "scripts",
+            root / "tests",
+            root / "loadtests",
+            root / "tasks",
+        ]
+    )
     changed = 0
     for directory in dirs:
         for path in sorted(directory.rglob("*.py")):

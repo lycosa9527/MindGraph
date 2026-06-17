@@ -5,6 +5,7 @@ from utils.db.rls_context import RlsContext
 
 class _User:
     """_User helper."""
+
     id = 1
     organization_id = 10
     role = "teacher"

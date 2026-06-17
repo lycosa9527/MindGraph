@@ -50,7 +50,7 @@ class LLMProviderError(LLMServiceError):
         error_code: Optional[str] = None,
         user_message: Optional[str] = None,
     ):
-        """ init  ."""
+        """init  ."""
         super().__init__(message)
         self.provider = provider
         self.error_code = error_code
@@ -76,7 +76,7 @@ class LLMInvalidParameterError(LLMProviderError):
         error_code: Optional[str] = None,
         provider: Optional[str] = None,
     ):
-        """ init  ."""
+        """init  ."""
         super().__init__(message, provider=provider, error_code=error_code)
         self.parameter = parameter
 

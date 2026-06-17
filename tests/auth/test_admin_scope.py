@@ -28,8 +28,9 @@ from utils.auth.role_constants import ALL_USER_ROLES
 
 class _User:
     """_User helper."""
+
     def __init__(self, role: str, organization_id: int | None = None, user_id: int = 1):
-        """ init  ."""
+        """init  ."""
         self.role = role
         self.organization_id = organization_id
         self.id = user_id

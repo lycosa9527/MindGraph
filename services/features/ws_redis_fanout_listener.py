@@ -77,7 +77,7 @@ class _FanoutListenerState:
     __slots__ = ("listener_task", "stop_event")
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self.listener_task: Optional[asyncio.Task] = None
         self.stop_event: Optional[asyncio.Event] = None
 

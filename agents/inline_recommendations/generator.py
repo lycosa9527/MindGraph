@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import asyncio
 import logging
 import re
@@ -54,7 +55,7 @@ class InlineRecommendationsGenerator:
     """
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self.llm_service = llm_service
         self.llm_models = ["qwen", "deepseek", "doubao"]
         self.seen_texts: Dict[str, Set[str]] = {}

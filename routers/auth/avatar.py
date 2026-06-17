@@ -603,12 +603,14 @@ AVAILABLE_AVATARS = [
 
 class AvatarResponse(BaseModel):
     """AvatarResponse helper."""
+
     id: str
     emoji: str
 
 
 class UpdateAvatarRequest(BaseModel):
     """UpdateAvatarRequest helper."""
+
     avatar: str
 
 

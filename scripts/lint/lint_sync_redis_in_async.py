@@ -80,10 +80,11 @@ SYNC_REDIS_TARGET_NAMES = {
 
 class _Finding:
     """_Finding helper."""
+
     __slots__ = ("path", "lineno", "snippet")
 
     def __init__(self, path: str, lineno: int, snippet: str) -> None:
-        """ init  ."""
+        """init  ."""
         self.path = path
         self.lineno = lineno
         self.snippet = snippet
@@ -155,7 +156,7 @@ class _AsyncBodyScanner(ast.NodeVisitor):
     """Walks an AST and reports violations only inside ``async def`` bodies."""
 
     def __init__(self, source_lines: List[str], path: str) -> None:
-        """ init  ."""
+        """init  ."""
         self._lines = source_lines
         self._path = path
         self._async_depth = 0

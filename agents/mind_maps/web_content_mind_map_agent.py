@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Any, Dict, List, Optional, Tuple
 
 from agents.core.agent_utils import extract_json_from_response

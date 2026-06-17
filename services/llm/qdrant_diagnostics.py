@@ -7,6 +7,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 import random
 from typing import Any, Dict, Protocol
@@ -20,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class _QdrantDiagnosticsHost(Protocol):
     """_QdrantDiagnosticsHost helper."""
+
     client: AsyncQdrantClient
     use_compression: bool
     compression_type: str | None

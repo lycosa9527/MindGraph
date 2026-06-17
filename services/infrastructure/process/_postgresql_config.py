@@ -108,6 +108,7 @@ def _detect_total_ram_mb() -> int:
 
     if platform.system() == "Windows":
         try:
+
             class _MEMORYSTATUSEX(ctypes.Structure):
                 _fields_ = [
                     ("dw_length", ctypes.c_ulong),

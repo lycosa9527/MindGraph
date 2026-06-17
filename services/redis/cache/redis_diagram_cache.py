@@ -75,7 +75,7 @@ class RedisDiagramCache:
     """
 
     def __init__(self):
-        """ init  ."""
+        """init  ."""
         self._total_synced: int = 0
         self._total_errors: int = 0
         logger.info(

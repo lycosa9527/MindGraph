@@ -20,8 +20,9 @@ from utils.auth.admin_scope import (
 
 class _User:
     """_User helper."""
+
     def __init__(self, role: str, user_id: int = 1, organization_id: int | None = None):
-        """ init  ."""
+        """init  ."""
         self.role = role
         self.id = user_id
         self.organization_id = organization_id

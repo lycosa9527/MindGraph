@@ -209,7 +209,7 @@ class AsyncDifyClient:
     """Async client for interacting with Dify API using aiohttp"""
 
     def __init__(self, api_key: str, api_url: str, timeout: int = 300):
-        """ init  ."""
+        """init  ."""
         self.api_key = api_key
         self.api_url = api_url.rstrip("/")
         self.timeout = timeout

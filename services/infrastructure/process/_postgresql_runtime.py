@@ -98,11 +98,7 @@ def load_postgres_runtime_config() -> PostgresRuntimeConfig:
 
     is_local = _is_local_host(host)
     managed_by_app = _env_flag("POSTGRESQL_MANAGED_BY_APP", default=True)
-    spawn_subprocess = (
-        managed_by_app
-        and is_local
-        and runtime_user in ("", ROLE_LEGACY)
-    )
+    spawn_subprocess = managed_by_app and is_local and runtime_user in ("", ROLE_LEGACY)
 
     provision_user = os.getenv("POSTGRESQL_USER", ROLE_LEGACY)
     provision_password = os.getenv("POSTGRESQL_PASSWORD", "mindgraph_password")

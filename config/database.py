@@ -346,6 +346,8 @@ _MIGRATION_LOCK_KEY = "lock:mindgraph:alembic_migration"
 _MIGRATION_LOCK_TTL = 3600
 _MIGRATION_WAIT_INTERVAL_SEC = 2.0
 _MIGRATION_WAIT_MAX_ATTEMPTS = 1800
+
+
 class _MigrationLockState:
     """Alembic migration Redis lock holder (no global keyword)."""
 

@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -32,7 +33,7 @@ class MindMapAgent(BaseAgent):
     """
 
     def __init__(self, model="qwen"):
-        """ init  ."""
+        """init  ."""
         super().__init__(model=model)
         self.config = Config()
         self.diagram_type = "mindmap"

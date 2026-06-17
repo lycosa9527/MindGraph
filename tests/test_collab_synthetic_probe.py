@@ -12,9 +12,10 @@ import scripts.collab_synthetic_probe as probe
 @pytest.mark.asyncio
 async def test_run_dual_collab_ws_probe_reports_success(monkeypatch):
     """Test run dual collab ws probe reports success."""
+
     class _Sock:
         def __init__(self) -> None:
-            """ init  ."""
+            """init  ."""
             self.frames = [
                 '{"type":"joined","diagram_id":"diag-1"}',
                 '{"type":"snapshot","diagram_id":"diag-1","spec":{}}',
@@ -37,11 +38,11 @@ async def test_run_dual_collab_ws_probe_reports_success(monkeypatch):
 
     class _Ctx:
         async def __aenter__(self) -> _Sock:
-            """ aenter  ."""
+            """aenter  ."""
             return _Sock()
 
         async def __aexit__(self, exc_type, exc, tb) -> None:
-            """ aexit  ."""
+            """aexit  ."""
             del exc_type, exc, tb
 
     fake_mod = mock.MagicMock()
@@ -60,6 +61,7 @@ async def test_run_dual_collab_ws_probe_reports_success(monkeypatch):
 @pytest.mark.asyncio
 async def test_run_dual_reports_failure_when_frame_has_no_type(monkeypatch):
     """Test run dual reports failure when frame has no type."""
+
     class _Sock:
         async def send(self, _: str) -> None:
             """Send."""
@@ -71,11 +73,11 @@ async def test_run_dual_reports_failure_when_frame_has_no_type(monkeypatch):
 
     class _Ctx:
         async def __aenter__(self) -> _Sock:
-            """ aenter  ."""
+            """aenter  ."""
             return _Sock()
 
         async def __aexit__(self, exc_type, exc, tb) -> None:
-            """ aexit  ."""
+            """aexit  ."""
             del exc_type, exc, tb
 
     fake_mod = mock.MagicMock()

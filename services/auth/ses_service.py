@@ -64,7 +64,7 @@ class SESService:
     """Tencent Cloud SES SendEmail (native async)."""
 
     def __init__(self) -> None:
-        """ init  ."""
+        """init  ."""
         self._initialized = False
         self._client: Optional[httpx.AsyncClient] = None
         if not all([TENCENT_SES_SECRET_ID, TENCENT_SES_SECRET_KEY, TENCENT_SES_FROM_EMAIL]):

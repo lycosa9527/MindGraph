@@ -57,6 +57,7 @@ from utils.ws_limits import (
 @dataclass(slots=True)
 class KittyWsAuthResult:
     """KittyWsAuthResult helper."""
+
     current_user: User
     diagram_session_id: str
     hub: Any
@@ -202,6 +203,7 @@ async def prepare_diagram_voice_lock(
 @dataclass(slots=True)
 class KittySessionStartResult:
     """KittySessionStartResult helper."""
+
     voice_session_id: str
     agent_session_id: str
     omni_generator: Any

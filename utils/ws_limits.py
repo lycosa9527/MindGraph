@@ -189,7 +189,7 @@ class WebsocketMessageRateLimiter:
     """Sliding 1-second window limiter for WebSocket message frequency."""
 
     def __init__(self, max_messages_per_second: int) -> None:
-        """ init  ."""
+        """init  ."""
         self._max = max_messages_per_second
         self._timestamps: deque[float] = deque()
 

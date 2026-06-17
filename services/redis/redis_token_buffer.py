@@ -92,7 +92,7 @@ class RedisTokenBuffer:
     }
 
     def __init__(self):
-        """ init  ."""
+        """init  ."""
         self._enabled = os.getenv("TOKEN_TRACKER_ENABLED", "true").lower() == "true"
         self._worker_task: Optional[asyncio.Task] = None
         self._initialized = False
