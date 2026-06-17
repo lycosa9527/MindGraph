@@ -13,7 +13,7 @@ Proprietary License
 
 import logging
 import sqlite3
-from typing import Any, Callable, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from sqlalchemy import inspect
 from sqlalchemy.exc import OperationalError, ProgrammingError

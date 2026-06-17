@@ -46,12 +46,6 @@ All Rights Reserved
 Proprietary License
 """
 
-
-try:
-    from _path_setup import project_root as _MINDGRAPH_PROJECT_ROOT
-except ModuleNotFoundError:
-    from scripts.setup._path_setup import project_root as _MINDGRAPH_PROJECT_ROOT
-
 import argparse
 import ctypes
 import importlib
