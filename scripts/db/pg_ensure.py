@@ -11,6 +11,8 @@ import time
 from typing import Optional
 from urllib.parse import urlparse
 
+import psycopg
+
 from services.utils.error_types import DATABASE_ERRORS
 
 try:
@@ -18,18 +20,13 @@ try:
 except ImportError:
     start_postgresql_server = None
 
-try:
-    import psycopg2
-except ImportError:
-    psycopg2 = None
-
 logger = logging.getLogger(__name__)
 
 _LIBPQ_SCHEME = re.compile(r"^postgresql\+[^/]+://", re.IGNORECASE)
 
 
 def libpq_database_url(db_url: str) -> str:
-    """Strip SQLAlchemy driver suffix for psycopg2."""
+    """Strip SQLAlchemy driver suffix for libpq."""
     if not db_url:
         return db_url
     return _LIBPQ_SCHEME.sub("postgresql://", db_url, count=1)
@@ -68,24 +65,18 @@ def _find_process_on_port(port: int) -> Optional[int]:
 
 def _can_connect_postgresql(db_url: str, timeout: int = 2) -> bool:
     """Can connect postgresql."""
-    if psycopg2 is None:
-        logger.error("psycopg2 not installed. Install with: pip install psycopg2-binary")
-        return False
     try:
-        conn = psycopg2.connect(libpq_database_url(db_url), connect_timeout=timeout)
-        conn.close()
-        return True
+        with psycopg.connect(libpq_database_url(db_url), connect_timeout=timeout):
+            return True
     except DATABASE_ERRORS:
         return False
 
 
 def _get_connection_error(db_url: str, timeout: int = 2) -> Optional[str]:
     """Get connection error."""
-    if psycopg2 is None:
-        return None
     try:
-        psycopg2.connect(libpq_database_url(db_url), connect_timeout=timeout)
-        return None
+        with psycopg.connect(libpq_database_url(db_url), connect_timeout=timeout):
+            return None
     except DATABASE_ERRORS as exc:
         return str(exc)
 

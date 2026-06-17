@@ -32,23 +32,11 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from types import ModuleType
 from typing import Sequence
 
+import psycopg
+
 from services.utils.error_types import DATABASE_ERRORS
-
-psycopg: ModuleType | None = None
-try:
-    import psycopg as _psycopg
-
-    psycopg = _psycopg
-except ImportError:
-    try:
-        import psycopg2 as _psycopg2
-
-        psycopg = _psycopg2
-    except ImportError:
-        psycopg = None
 
 
 _TOP_STATEMENTS_SQL = """
@@ -119,46 +107,35 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    if psycopg is None:
-        print(
-            "[db_stats] Neither psycopg nor psycopg2 is installed; install one to run this helper.",
-            file=sys.stderr,
-        )
-        return 2
-
     try:
-        conn = psycopg.connect(args.dsn)
+        with psycopg.connect(args.dsn) as conn:
+            with conn.cursor() as cur:
+                try:
+                    cur.execute(_TOP_STATEMENTS_SQL, (args.limit,))
+                    _print_table(
+                        "Top statements (pg_stat_statements)",
+                        ["calls", "total_ms", "mean_ms", "rows", "query"],
+                        cur.fetchall(),
+                    )
+                except DATABASE_ERRORS as exc:
+                    print(f"[db_stats] pg_stat_statements unavailable: {exc}", file=sys.stderr)
+
+                cur.execute(_TOP_SEQ_SCAN_TABLES_SQL, (args.limit,))
+                _print_table(
+                    "Top tables by sequential scans",
+                    ["table", "seq_scan", "seq_tup_read", "idx_scan", "n_live_tup"],
+                    cur.fetchall(),
+                )
+
+                cur.execute(_UNUSED_INDEXES_SQL, (args.limit,))
+                _print_table(
+                    "Largest unused indexes (idx_scan = 0)",
+                    ["table", "index", "size", "idx_scan"],
+                    cur.fetchall(),
+                )
     except DATABASE_ERRORS as exc:
         print(f"[db_stats] Could not connect to {args.dsn!r}: {exc}", file=sys.stderr)
         return 1
-
-    try:
-        with conn.cursor() as cur:
-            try:
-                cur.execute(_TOP_STATEMENTS_SQL, (args.limit,))
-                _print_table(
-                    "Top statements (pg_stat_statements)",
-                    ["calls", "total_ms", "mean_ms", "rows", "query"],
-                    cur.fetchall(),
-                )
-            except DATABASE_ERRORS as exc:
-                print(f"[db_stats] pg_stat_statements unavailable: {exc}", file=sys.stderr)
-
-            cur.execute(_TOP_SEQ_SCAN_TABLES_SQL, (args.limit,))
-            _print_table(
-                "Top tables by sequential scans",
-                ["table", "seq_scan", "seq_tup_read", "idx_scan", "n_live_tup"],
-                cur.fetchall(),
-            )
-
-            cur.execute(_UNUSED_INDEXES_SQL, (args.limit,))
-            _print_table(
-                "Largest unused indexes (idx_scan = 0)",
-                ["table", "index", "size", "idx_scan"],
-                cur.fetchall(),
-            )
-    finally:
-        conn.close()
 
     return 0
 

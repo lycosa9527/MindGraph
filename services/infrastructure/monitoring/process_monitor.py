@@ -28,6 +28,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Awaitable, Dict, Optional, cast
 
+import psycopg
+
 try:
     from services.redis.redis_async_client import get_async_redis
     from services.redis.redis_client import is_redis_available
@@ -66,14 +68,6 @@ try:
 except ImportError:
     config = None
     _CONFIG_AVAILABLE = False
-
-try:
-    import psycopg2
-
-    _PSYCOPG2_AVAILABLE = True
-except ImportError:
-    psycopg2 = None
-    _PSYCOPG2_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -384,25 +378,14 @@ class ProcessMonitor:
             ServiceStatus (HEALTHY or UNHEALTHY)
         """
         try:
-            if not _PSYCOPG2_AVAILABLE or psycopg2 is None:
-                # psycopg2 not installed, skip PostgreSQL check
-                logger.debug("[ProcessMonitor] psycopg2 not available, skipping PostgreSQL health check")
-                return ServiceStatus.HEALTHY
-
-            # Store reference for type checking
-            pg_module = psycopg2
-
             db_url = os.getenv("DATABASE_URL", "")
             if not db_url or "postgresql" not in db_url.lower():
-                # Not using PostgreSQL, skip check
                 return ServiceStatus.HEALTHY
 
-            # Connection test (run in thread pool to avoid blocking)
             def check_connection():
                 try:
-                    conn = pg_module.connect(db_url, connect_timeout=2)
-                    conn.close()
-                    return True
+                    with psycopg.connect(db_url, connect_timeout=2):
+                        return True
                 except BACKGROUND_INFRA_ERRORS:
                     return False
 

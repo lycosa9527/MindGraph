@@ -17,7 +17,10 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
+
+import psycopg
+from psycopg import sql
 
 from services.infrastructure.process._port_utils import check_port_in_use
 from services.infrastructure.process._process_io import (
@@ -53,16 +56,6 @@ from services.utils.error_types import BACKGROUND_INFRA_ERRORS, PG_CONNECT_ERROR
 
 
 logger = logging.getLogger(__name__)
-if TYPE_CHECKING:
-    import psycopg2
-    from psycopg2 import sql
-else:
-    try:
-        import psycopg2
-        from psycopg2 import sql
-    except ImportError:
-        psycopg2 = None
-        sql = None
 
 
 def _check_existing_postgresql(config: PostgresRuntimeConfig) -> Optional[bool]:
@@ -94,8 +87,8 @@ def _check_existing_postgresql(config: PostgresRuntimeConfig) -> Optional[bool]:
             print("[POSTGRESQL] ✓ Using existing PostgreSQL server")
             if db_url and "postgresql" in db_url:
                 try:
-                    conn = psycopg2.connect(db_url, connect_timeout=2)
-                    conn.close()
+                    with psycopg.connect(db_url, connect_timeout=2):
+                        pass
                 except (*PG_CONNECT_ERRORS,) as exc:
                     if "password authentication failed" in str(exc).lower():
                         print(
@@ -148,13 +141,12 @@ def _check_existing_postgresql(config: PostgresRuntimeConfig) -> Optional[bool]:
 
     if db_url and "postgresql" in db_url:
         try:
-            conn = psycopg2.connect(db_url, connect_timeout=2)
-            conn.close()
-            try:
-                print("[POSTGRESQL] PostgreSQL server is already running")
-                print("[POSTGRESQL] Using existing PostgreSQL instance")
-            except (ValueError, OSError):
-                pass
+            with psycopg.connect(db_url, connect_timeout=2):
+                try:
+                    print("[POSTGRESQL] PostgreSQL server is already running")
+                    print("[POSTGRESQL] Using existing PostgreSQL instance")
+                except (ValueError, OSError):
+                    pass
             return True
         except (*PG_CONNECT_ERRORS,) as exc:
             logger.debug("PostgreSQL connection check failed: %s", exc)
@@ -256,29 +248,27 @@ def _wait_for_postgresql_ready(port: str) -> str:
 
     for i in range(30):
         try:
-            conn = psycopg2.connect(
+            with psycopg.connect(
                 f"postgresql://{superuser_name}@127.0.0.1:{port}/postgres",
                 connect_timeout=2,
-            )
-            conn.close()
-            break
+            ):
+                break
         except (*PG_CONNECT_ERRORS,) as e:
             if 'role "postgres" does not exist' in str(e) and current_user != "postgres":
                 try:
-                    conn = psycopg2.connect(
+                    with psycopg.connect(
                         f"postgresql://{current_user}@127.0.0.1:{port}/postgres",
                         connect_timeout=2,
-                    )
-                    conn.close()
-                    superuser_name = current_user
-                    try:
-                        msg = (
-                            f"[POSTGRESQL] Using current Linux user '{current_user}' "
-                            "as superuser (postgres role not found)"
-                        )
-                        print(msg)
-                    except (ValueError, OSError):
-                        pass
+                    ):
+                        superuser_name = current_user
+                        try:
+                            msg = (
+                                f"[POSTGRESQL] Using current Linux user '{current_user}' "
+                                "as superuser (postgres role not found)"
+                            )
+                            print(msg)
+                        except (ValueError, OSError):
+                            pass
                     break
                 except (*PG_CONNECT_ERRORS,) as exc:
                     logger.debug("PostgreSQL superuser connection attempt failed: %s", exc)
@@ -293,82 +283,64 @@ def _wait_for_postgresql_ready(port: str) -> str:
 
 def _create_database_and_user(superuser_name: str, port: str, user: str, password: str, database: str) -> None:
     """Create database and user if they don't exist, granting CREATEDB."""
-    if sql is None:
-        logger.warning("[PGManager] psycopg2.sql not available — skipping DB provisioning")
-        return
-
-    conn = None
     try:
-        conn = psycopg2.connect(
+        with psycopg.connect(
             f"postgresql://{superuser_name}@127.0.0.1:{port}/postgres",
             connect_timeout=5,
-        )
-        conn.autocommit = True
-        cursor = conn.cursor()
+        ) as conn:
+            conn.autocommit = True
+            cursor = conn.cursor()
 
-        # Ensure "postgres" role exists
-        cursor.execute("SELECT 1 FROM pg_roles WHERE rolname = 'postgres'")
-        if not cursor.fetchone():
-            try:
-                cursor.execute("CREATE ROLE postgres WITH SUPERUSER CREATEDB CREATEROLE LOGIN")
-                logger.info("[PGManager] Created missing 'postgres' role")
-            except BACKGROUND_INFRA_ERRORS as role_error:
-                logger.warning("[PGManager] Could not create 'postgres' role: %s", role_error)
+            # Ensure "postgres" role exists
+            cursor.execute("SELECT 1 FROM pg_roles WHERE rolname = 'postgres'")
+            if not cursor.fetchone():
+                try:
+                    cursor.execute("CREATE ROLE postgres WITH SUPERUSER CREATEDB CREATEROLE LOGIN")
+                    logger.info("[PGManager] Created missing 'postgres' role")
+                except BACKGROUND_INFRA_ERRORS as role_error:
+                    logger.warning("[PGManager] Could not create 'postgres' role: %s", role_error)
 
-        cursor.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (user,))
-        if not cursor.fetchone():
-            cursor.execute(
-                sql.SQL("CREATE USER {} WITH PASSWORD %s CREATEDB").format(sql.Identifier(user)),
-                (password,),
-            )
-            logger.info("[PGManager] Created user: %s", user)
-        else:
-            cursor.execute(sql.SQL("ALTER USER {} CREATEDB").format(sql.Identifier(user)))
-            logger.info("[PGManager] Granted CREATEDB to existing user: %s", user)
+            cursor.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (user,))
+            if not cursor.fetchone():
+                cursor.execute(
+                    sql.SQL("CREATE USER {} WITH PASSWORD %s CREATEDB").format(sql.Identifier(user)),
+                    (password,),
+                )
+                logger.info("[PGManager] Created user: %s", user)
+            else:
+                cursor.execute(sql.SQL("ALTER USER {} CREATEDB").format(sql.Identifier(user)))
+                logger.info("[PGManager] Granted CREATEDB to existing user: %s", user)
 
-        cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", (database,))
-        if not cursor.fetchone():
-            cursor.execute(
-                sql.SQL("CREATE DATABASE {} OWNER {}").format(sql.Identifier(database), sql.Identifier(user))
-            )
-            logger.info("[PGManager] Created database: %s", database)
+            cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", (database,))
+            if not cursor.fetchone():
+                cursor.execute(
+                    sql.SQL("CREATE DATABASE {} OWNER {}").format(sql.Identifier(database), sql.Identifier(user))
+                )
+                logger.info("[PGManager] Created database: %s", database)
 
-        cursor.close()
+            cursor.close()
     except (*PG_CONNECT_ERRORS,) as exc:
         logger.warning(
             "[PGManager] DB provisioning failed (superuser='%s'): %s",
             superuser_name,
             exc,
         )
-    finally:
-        if conn is not None:
-            try:
-                conn.close()
-            except BACKGROUND_INFRA_ERRORS:
-                pass
 
 
 def _app_user_has_createdb(port: str, user: str, password: str, database: str) -> bool:
     """Return True if the app user already has CREATEDB privilege."""
-    conn = None
     try:
-        conn = psycopg2.connect(
+        with psycopg.connect(
             f"postgresql://{user}:{password}@127.0.0.1:{port}/{database}",
             connect_timeout=5,
-        )
-        cursor = conn.cursor()
-        cursor.execute("SELECT rolcreatedb FROM pg_roles WHERE rolname = current_user")
-        row = cursor.fetchone()
-        cursor.close()
-        return bool(row and row[0])
+        ) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT rolcreatedb FROM pg_roles WHERE rolname = current_user")
+            row = cursor.fetchone()
+            cursor.close()
+            return bool(row and row[0])
     except (*PG_CONNECT_ERRORS,):
         return False
-    finally:
-        if conn is not None:
-            try:
-                conn.close()
-            except (*PG_CONNECT_ERRORS,):
-                pass
 
 
 def _ensure_createdb_privilege(port: str, user: str, password: str, database: str) -> None:
@@ -439,12 +411,6 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
     Returns:
         Optional[subprocess.Popen[bytes]]: PostgreSQL process or None if using existing
     """
-    if psycopg2 is None:
-        print("[ERROR] psycopg2 is not available")
-        print("        Install with: pip install psycopg2-binary")
-        print("        Application cannot start without PostgreSQL.")
-        sys.exit(1)
-
     config = load_postgres_runtime_config()
     _log_runtime_mode(config)
 
@@ -676,15 +642,14 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
         test_db_url = f"postgresql://{user}:{password}@127.0.0.1:{port}/{database}"
 
         try:
-            conn = psycopg2.connect(test_db_url, connect_timeout=5)
-            conn.close()
-            try:
-                pid = server_state.postgresql_process.pid
-                print(f"[POSTGRESQL] Server started successfully (PID: {pid})")
-                if sys.platform != "win32":
-                    print(f"[POSTGRESQL] Logs: {postgres_log}")
-            except (ValueError, OSError):
-                pass
+            with psycopg.connect(test_db_url, connect_timeout=5):
+                try:
+                    pid = server_state.postgresql_process.pid
+                    print(f"[POSTGRESQL] Server started successfully (PID: {pid})")
+                    if sys.platform != "win32":
+                        print(f"[POSTGRESQL] Logs: {postgres_log}")
+                except (ValueError, OSError):
+                    pass
             return server_state.postgresql_process
         except (*PG_CONNECT_ERRORS,) as e:
             try:

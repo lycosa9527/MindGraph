@@ -192,11 +192,11 @@ from utils.migration.sqlite_to_postgresql.table_creation import (
 logger = logging.getLogger(__name__)
 
 try:
-    import psycopg2 as _psycopg2
+    import psycopg as _psycopg
 
-    PSYCOPG2_AVAILABLE = _psycopg2 is not None
+    PSYCOPG_AVAILABLE = _psycopg is not None
 except ImportError:
-    PSYCOPG2_AVAILABLE = False
+    PSYCOPG_AVAILABLE = False
 
 # Lazy import to avoid circular dependency with config.database
 # Use list to allow mutation without global statement (avoids pylint W0603)
@@ -236,10 +236,10 @@ def migrate_sqlite_to_postgresql(
     Returns:
         Tuple of (success, error_message, statistics)
     """
-    if not PSYCOPG2_AVAILABLE:
+    if not PSYCOPG_AVAILABLE:
         return (
             False,
-            "psycopg2 not installed. Install with: pip install psycopg2-binary",
+            "psycopg not installed. Install with: pip install 'psycopg[binary]'",
             None,
         )
 

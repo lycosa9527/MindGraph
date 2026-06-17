@@ -193,7 +193,7 @@ def lines_postgresql_hint() -> list[str]:
     """Lines postgresql hint."""
     return [
         "PostgreSQL: ensure DATABASE_URL is reachable.",
-        "  pip install psycopg2-binary",
+        '  pip install "psycopg[binary]"',
         "  Ubuntu: sudo systemctl start postgresql",
         "  Install server: sudo apt-get install postgresql postgresql-contrib  (or brew install postgresql)",
         "",
@@ -222,7 +222,6 @@ def lines_core_python_clients() -> list[str]:
         "  pip install qdrant-client",
         '  pip install "psycopg[binary]"',
         "  pip install uvicorn[standard]>=0.24.0",
-        "  Some scripts still mention psycopg2-binary; app standard is psycopg3 above.",
     ]
 
 

@@ -90,15 +90,13 @@ BACKGROUND_INFRA_ERRORS: Tuple[Type[Exception], ...] = (
 )
 
 try:
-    import psycopg2
+    from psycopg import Error as _PsycopgError
 except ImportError:
-    _Psycopg2Error = _FallbackSQLAlchemyError
-else:
-    _Psycopg2Error = psycopg2.Error
+    _PsycopgError = _FallbackSQLAlchemyError
 
-# psycopg2 connection and server errors (OperationalError, etc.)
+# PostgreSQL connection and server errors (OperationalError, etc.)
 PG_CONNECT_ERRORS: Tuple[Type[Exception], ...] = (
-    _Psycopg2Error,
+    _PsycopgError,
     ConnectionError,
     TimeoutError,
     OSError,

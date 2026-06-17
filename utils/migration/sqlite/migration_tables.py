@@ -18,38 +18,16 @@ from typing import Any, Optional, Tuple
 from sqlalchemy import inspect
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
-try:
-    from psycopg2.extras import execute_values as _psycopg2_execute_values
-except ImportError:
-    _psycopg2_execute_values = None
-
-from models.domain.registry import Base
-
-from services.utils.error_types import DATABASE_ERRORS
+from utils.migration.pg_execute_values import execute_values
 from utils.migration.sqlite.migration_table_helpers import (
     build_insert_sql,
     convert_row_data,
     handle_foreign_key_violations,
 )
 
-if _psycopg2_execute_values is not None:
-    execute_values = _psycopg2_execute_values
-    PSYCOPG2_AVAILABLE = True
-else:
+from models.domain.registry import Base
 
-    def execute_values(
-        cur: Any,
-        sql: str,
-        argslist: Any,
-        template: str | None = None,
-        page_size: int = 100,
-        fetch: bool = False,
-    ) -> list[Any] | None:
-        """Bulk insert helper unavailable without psycopg2."""
-        _ = (cur, sql, argslist, template, page_size, fetch)
-        raise RuntimeError("psycopg2 is required for PostgreSQL migration")
-
-    PSYCOPG2_AVAILABLE = False
+from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -248,7 +226,7 @@ def migrate_table(
         conflict_columns = [col for col in pk_column_names if col in common_columns] if pk_column_names else []
         insert_sql = build_insert_sql(table_name, common_columns, pk_column_names or [], conflict_columns)
 
-        # Migrate data using psycopg2 for better performance
+        # Migrate data using psycopg3 for better performance
         # Use batch processing to avoid loading entire table into memory
         pg_conn = pg_engine.raw_connection()
         try:

@@ -30,7 +30,7 @@ Examples:
     python scripts/db/migrate_sqlite_to_postgresql.py --verify-only
 
 Note: This script requires:
-    - psycopg2-binary: pip install psycopg2-binary
+    - psycopg[binary]: pip install "psycopg[binary]"
     - SQLite database file (if migrating)
     - PostgreSQL database (empty or with --force flag)
     - DATABASE_URL environment variable set to PostgreSQL URL
@@ -147,7 +147,7 @@ try:
 except ImportError as e:
     print(f"[ERROR] Failed to import migration module: {e}")
     print("\nRequired dependencies:")
-    print("  - psycopg2-binary: pip install psycopg2-binary")
+    print('  - psycopg[binary]: pip install "psycopg[binary]"')
     sys.exit(1)
 
 

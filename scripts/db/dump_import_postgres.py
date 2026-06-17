@@ -16,7 +16,7 @@ Features:
     - Timestamp comparison: prompts to overwrite when dump is older than last import
     - Self-contained ensure_postgresql_running (check, start if needed)
 
-Requires: psycopg2-binary, PostgreSQL client tools (pg_dump, pg_restore), rich (for progress bar)
+Requires: psycopg[binary], PostgreSQL client tools (pg_dump, pg_restore), rich (for progress bar)
 """
 
 try:
@@ -38,6 +38,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
+import psycopg
 from sqlalchemy import inspect, text
 
 from config.database import DATABASE_URL, engine, init_db, libpq_database_url
@@ -58,11 +59,6 @@ try:
     from dotenv import load_dotenv
 except ImportError:
     load_dotenv = None
-
-try:
-    import psycopg2
-except ImportError:
-    psycopg2 = None
 
 RICH_AVAILABLE = importlib.util.find_spec("rich") is not None
 
@@ -253,26 +249,20 @@ def _find_postgres_processes() -> List[str]:
 
 def _can_connect_postgresql(db_url: str, timeout: int = 2) -> bool:
     """Try to connect to PostgreSQL. Returns True if successful."""
-    if psycopg2 is None:
-        logger.error("psycopg2 not installed. Install with: pip install psycopg2-binary")
-        return False
     libpq_url = libpq_database_url(db_url)
     try:
-        conn = psycopg2.connect(libpq_url, connect_timeout=timeout)
-        conn.close()
-        return True
+        with psycopg.connect(libpq_url, connect_timeout=timeout):
+            return True
     except BACKGROUND_INFRA_ERRORS:
         return False
 
 
 def _get_connection_error(db_url: str, timeout: int = 2) -> Optional[str]:
     """Try to connect and return the error message for diagnostics."""
-    if psycopg2 is None:
-        return None
     libpq_url = libpq_database_url(db_url)
     try:
-        psycopg2.connect(libpq_url, connect_timeout=timeout)
-        return None
+        with psycopg.connect(libpq_url, connect_timeout=timeout):
+            return None
     except BACKGROUND_INFRA_ERRORS as e:
         return str(e)
 

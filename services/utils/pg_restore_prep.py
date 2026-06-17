@@ -10,16 +10,12 @@ import logging
 from typing import Optional
 from urllib.parse import unquote, urlparse
 
+import psycopg
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from config.database import libpq_database_url
 from services.utils.error_types import DATABASE_ERRORS
-
-try:
-    import psycopg2
-except ImportError:
-    psycopg2 = None
 
 logger = logging.getLogger(__name__)
 
@@ -69,19 +65,10 @@ def ensure_public_schema_exists(
                 conn.execute(text("CREATE SCHEMA IF NOT EXISTS public"))
                 conn.execute(text("GRANT ALL ON SCHEMA public TO PUBLIC"))
         else:
-            if psycopg2 is None:
-                logger.error(
-                    "psycopg2 not installed. Install with: pip install psycopg2-binary",
-                )
-                return False
-            conn = psycopg2.connect(libpq_database_url(db_url))
-            conn.autocommit = True
-            try:
+            with psycopg.connect(libpq_database_url(db_url), autocommit=True) as conn:
                 with conn.cursor() as cur:
                     cur.execute("CREATE SCHEMA IF NOT EXISTS public")
                     cur.execute("GRANT ALL ON SCHEMA public TO PUBLIC")
-            finally:
-                conn.close()
     except DATABASE_ERRORS as exc:
         logger.error("Failed to ensure public schema: %s", exc)
         _log_database_privilege_hint(exc, db_url)
@@ -109,20 +96,11 @@ def wipe_public_schema_before_restore(
                 conn.execute(text("CREATE SCHEMA public"))
                 conn.execute(text("GRANT ALL ON SCHEMA public TO PUBLIC"))
         else:
-            if psycopg2 is None:
-                logger.error(
-                    "psycopg2 not installed. Install with: pip install psycopg2-binary",
-                )
-                return False
-            conn = psycopg2.connect(libpq_database_url(db_url))
-            conn.autocommit = True
-            try:
+            with psycopg.connect(libpq_database_url(db_url), autocommit=True) as conn:
                 with conn.cursor() as cur:
                     cur.execute("DROP SCHEMA IF EXISTS public CASCADE")
                     cur.execute("CREATE SCHEMA public")
                     cur.execute("GRANT ALL ON SCHEMA public TO PUBLIC")
-            finally:
-                conn.close()
     except DATABASE_ERRORS as exc:
         logger.error("Failed to reset public schema: %s", exc)
         _log_database_privilege_hint(exc, db_url)

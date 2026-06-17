@@ -90,7 +90,6 @@ rich>=15.0.0  # Rich terminal output with progress bars (for migration progress)
 SQLAlchemy>=2.0.50
 alembic>=1.18.4  # Database migrations
 psycopg[binary]>=3.3.4  # PostgreSQL driver (psycopg3, async-compatible, works with PG18 async I/O)
-types-psycopg2>=2.9.21.20250809  # Typing stubs for optional psycopg2 script/infra imports (basedpyright)
 python-jose[cryptography]>=3.5.0
 bcrypt>=5.0.0  # Password hashing (direct bcrypt, passlib removed in v4.12.0)
 captcha>=0.7.1

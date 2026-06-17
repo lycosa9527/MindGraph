@@ -8,7 +8,7 @@ Rationale
 Phase 6 of the database tuning work moved every PostgreSQL session reachable
 from the asyncio event loop onto the async engine.  Constructing a
 ``SyncSessionLocal()`` inside an ``async def`` block re-introduces a blocking
-psycopg2 connection on the event loop thread, which is exactly the latency
+psycopg sync connection on the event loop thread, which is exactly the latency
 cliff Phase 6 set out to eliminate.
 
 Policy

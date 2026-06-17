@@ -38,11 +38,11 @@ except ImportError:
     REDIS_MODULE = None
 
 try:
-    import psycopg2
+    import psycopg
 
-    PSYCOPG2_MODULE: Optional[ModuleType] = psycopg2
+    PSYCOPG_MODULE: Optional[ModuleType] = psycopg
 except ImportError:
-    PSYCOPG2_MODULE = None
+    PSYCOPG_MODULE = None
 
 
 def check_package_installed(package_name: str) -> bool:
@@ -276,8 +276,8 @@ def check_postgresql_installed() -> tuple[bool, str]:
     Returns:
         tuple[bool, str]: (is_installed, message)
     """
-    if not check_package_installed("psycopg2"):
-        return False, ("PostgreSQL Python package not installed. Install with: pip install psycopg2-binary")
+    if not check_package_installed("psycopg"):
+        return False, ("PostgreSQL Python package not installed. Install with: pip install 'psycopg[binary]'")
 
     config = load_postgres_runtime_config()
     # Check for postgres binary in common locations
@@ -336,11 +336,10 @@ def check_postgresql_installed() -> tuple[bool, str]:
 
     # Check if PostgreSQL is already running (connection test)
     postgres_running = False
-    if PSYCOPG2_MODULE is not None and "postgresql" in config.database_url:
+    if PSYCOPG_MODULE is not None and "postgresql" in config.database_url:
         try:
-            conn = PSYCOPG2_MODULE.connect(config.database_url, connect_timeout=1)
-            conn.close()
-            postgres_running = True
+            with PSYCOPG_MODULE.connect(config.database_url, connect_timeout=1):
+                postgres_running = True
         except (*PG_CONNECT_ERRORS,) as exc:
             logger.debug("PostgreSQL connectivity check failed: %s", exc)
 

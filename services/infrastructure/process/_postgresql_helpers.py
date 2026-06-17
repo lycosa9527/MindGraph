@@ -14,16 +14,12 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
+import psycopg
+
 from services.utils.error_types import PG_CONNECT_ERRORS
 
 if TYPE_CHECKING:
-    import psycopg2
     from services.infrastructure.process._postgresql_runtime import PostgresRuntimeConfig
-else:
-    try:
-        import psycopg2
-    except ImportError:
-        psycopg2 = None
 
 
 def postgresql_accepts_connections(host: str, port: int) -> bool:
@@ -45,25 +41,19 @@ def postgresql_accepts_connections(host: str, port: int) -> bool:
     except (FileNotFoundError, subprocess.SubprocessError, ValueError):
         pass
 
-    if psycopg2 is None:
-        return False
     try:
         test_url = f"postgresql://postgres@{host}:{port}/postgres"
-        conn = psycopg2.connect(test_url, connect_timeout=2)
-        conn.close()
-        return True
+        with psycopg.connect(test_url, connect_timeout=2):
+            return True
     except (*PG_CONNECT_ERRORS,):
         return False
 
 
 def try_database_url_connect(config: "PostgresRuntimeConfig", timeout: int = 5) -> bool:
     """Return True when ``config.database_url`` accepts a connection."""
-    if psycopg2 is None:
-        return False
     try:
-        conn = psycopg2.connect(config.database_url, connect_timeout=timeout)
-        conn.close()
-        return True
+        with psycopg.connect(config.database_url, connect_timeout=timeout):
+            return True
     except (*PG_CONNECT_ERRORS,):
         return False
 
@@ -83,11 +73,10 @@ def verify_postgresql_on_port(host: str, port: int, db_url: Optional[str] = None
     Returns:
         bool: True if PostgreSQL is responding, False otherwise
     """
-    if psycopg2 is not None and db_url and "postgresql" in db_url:
+    if db_url and "postgresql" in db_url:
         try:
-            conn = psycopg2.connect(db_url, connect_timeout=2)
-            conn.close()
-            return True
+            with psycopg.connect(db_url, connect_timeout=2):
+                return True
         except (*PG_CONNECT_ERRORS,):
             pass
     return postgresql_accepts_connections(host, port)
