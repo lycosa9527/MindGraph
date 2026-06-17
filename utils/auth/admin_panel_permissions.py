@@ -7,6 +7,7 @@ Tune role tab sets here without changing Vue or router components.
 
 from typing import Final
 
+from utils.auth.env_superadmin import is_env_configured_superadmin
 from utils.auth.role_constants import (
     ALL_USER_ROLES,
     ROLE_EXPERT,
@@ -144,11 +145,16 @@ def capabilities_for_role(role: str | None) -> frozenset[str]:
     return ROLE_PANEL_CAPABILITIES.get(canonical, frozenset())
 
 
+def _has_superadmin_panel_access(current_user) -> bool:
+    """DB superadmin role or env-configured superadmin (ADMIN_PHONES / ADMIN_USER_IDS)."""
+    return role_in(current_user, SUPERADMIN_ROLES) or is_env_configured_superadmin(current_user)
+
+
 def user_panel_capabilities(current_user) -> frozenset[str]:
     """Capabilities granted to the user for the management panel."""
     if not hasattr(current_user, "role"):
         return frozenset()
-    if role_in(current_user, SUPERADMIN_ROLES):
+    if _has_superadmin_panel_access(current_user):
         return ROLE_PANEL_CAPABILITIES[ROLE_SUPERADMIN]
     return capabilities_for_role(current_user.role)
 
@@ -163,7 +169,7 @@ def is_management_panel_user(current_user) -> bool:
     """True when user may access the unified management panel (roles 1–4)."""
     if not hasattr(current_user, "role"):
         return False
-    if role_in(current_user, SUPERADMIN_ROLES):
+    if _has_superadmin_panel_access(current_user):
         return True
     return role_has_panel_access(current_user.role)
 

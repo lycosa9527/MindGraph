@@ -200,8 +200,8 @@ def test_env_superadmin_with_teacher_role_gets_full_caps(monkeypatch):
     """Test env superadmin with teacher role gets full caps."""
     user = _User("teacher")
     user.phone = "13800138000"
-    monkeypatch.setattr("utils.auth.roles.ADMIN_PHONES", ["13800138000"])
-    monkeypatch.setattr("utils.auth.roles.ADMIN_USER_IDS", [])
+    monkeypatch.setattr("utils.auth.env_superadmin.ADMIN_PHONES", ["13800138000"])
+    monkeypatch.setattr("utils.auth.env_superadmin.ADMIN_USER_IDS", [])
     caps = user_panel_capabilities(user)
     assert CAP_SCOPE_GLOBAL in caps
     scope = build_admin_scope(user, lang="en")

@@ -10,15 +10,15 @@ All Rights Reserved
 Proprietary License
 """
 
-import uuid
-
 from config.settings import config
 from services.redis.cache.redis_feature_org_access_cache import get_cached_map as _get_feature_access_map_cached
 
 from utils.auth.admin_panel_permissions import is_management_panel_user
-
-from .config import ADMIN_PHONES, ADMIN_USER_IDS
-from .role_constants import (
+from utils.auth.env_superadmin import (
+    is_env_configured_superadmin,
+    phone_matches_admin_env_token,
+)
+from utils.auth.role_constants import (
     B2B_ORG_ROLES,
     C2C_CONSUMER_ROLES,
     LEGACY_ROLE_USER,
@@ -55,35 +55,6 @@ FEATURE_KEY_TO_CONFIG_ATTR = {
 }
 
 
-def phone_matches_admin_env_token(user_phone: str | None, token: str) -> bool:
-    """Match env token to user phone by string equality or UUID equality (case-insensitive)."""
-    if user_phone is None:
-        return False
-    u_raw = user_phone.strip()
-    t_raw = token.strip()
-    if not u_raw or not t_raw:
-        return False
-    if u_raw == t_raw:
-        return True
-    try:
-        return uuid.UUID(u_raw) == uuid.UUID(t_raw)
-    except ValueError:
-        return False
-
-
-def _is_env_superadmin(current_user) -> bool:
-    """True when user id or phone matches env-configured superadmin tokens."""
-    user_id = getattr(current_user, "id", None)
-    if user_id is not None and user_id in ADMIN_USER_IDS:
-        return True
-    admin_tokens = [p.strip() for p in ADMIN_PHONES if p.strip()]
-    user_phone = getattr(current_user, "phone", None)
-    for tok in admin_tokens:
-        if phone_matches_admin_env_token(user_phone, tok):
-            return True
-    return False
-
-
 def is_superadmin(current_user) -> bool:
     """
     Full platform admin (超级管理员).
@@ -92,7 +63,7 @@ def is_superadmin(current_user) -> bool:
     """
     if role_in(current_user, SUPERADMIN_ROLES):
         return True
-    return _is_env_superadmin(current_user)
+    return is_env_configured_superadmin(current_user)
 
 
 def is_admin(current_user) -> bool:
@@ -241,4 +212,4 @@ def get_user_role(current_user) -> str:
     return normalize_role(raw)
 
 
-__all__ = ["is_management_panel_user"]
+__all__ = ["is_management_panel_user", "phone_matches_admin_env_token"]
