@@ -34,6 +34,7 @@ class _QdrantDiagnosticsHost(Protocol):
         """Build the default collection name for a user id."""
         raise NotImplementedError
 
+
 def _empty_compression_metrics(error: str | None = None) -> Dict[str, Any]:
     """Default metrics dict when collection is missing or on error."""
     result: Dict[str, Any] = {
