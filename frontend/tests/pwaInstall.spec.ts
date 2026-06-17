@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  bindPwaInstallListeners,
   canShowPwaInstallUi,
   detectPwaInstallSurface,
   getPwaInstallFeedback,
@@ -65,6 +66,8 @@ function mockWindow(options: {
     matchMedia: (query: string) => ({
       matches: STANDALONE_MEDIA_MATCHES(query, options.displayMode),
     }),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
     navigator: {
       userAgent: ua,
       standalone: options.standalone ?? false,
@@ -151,13 +154,20 @@ describe('pwaInstall', () => {
     expect(canShowPwaInstallUi()).toBe(false)
   })
 
-  it('returns desktop-hint on Chromium when install prompt is not ready', async () => {
-    vi.useFakeTimers()
+  it('adopts an install prompt captured before the app bundle loads', () => {
     mockWindow({ displayMode: 'browser', innerWidth: 1280, userAgent: WINDOWS_CHROME_UA })
-    const resultPromise = promptPwaInstall()
-    await vi.runAllTimersAsync()
-    await expect(resultPromise).resolves.toBe('desktop-hint')
-    vi.useRealTimers()
+    window.__mgPwaInstallEarly = {
+      prompt: () => Promise.resolve(),
+      userChoice: Promise.resolve({ outcome: 'accepted' }),
+    } as BeforeInstallPromptEvent
+    bindPwaInstallListeners()
+    expect(canShowPwaInstallUi()).toBe(true)
+    expect(window.__mgPwaInstallEarly).toBeNull()
+  })
+
+  it('returns desktop-hint on Chromium when install prompt is not ready', async () => {
+    mockWindow({ displayMode: 'browser', innerWidth: 1280, userAgent: WINDOWS_CHROME_UA })
+    await expect(promptPwaInstall()).resolves.toBe('desktop-hint')
   })
 
   it('returns ios-hint when prompting on iOS without deferred event', async () => {

@@ -14,6 +14,13 @@
   </head>
   <body>
     <div id="app"></div>
+    <script>
+      window.__mgPwaInstallEarly = null
+      window.addEventListener('beforeinstallprompt', function (event) {
+        event.preventDefault()
+        window.__mgPwaInstallEarly = event
+      })
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -4,6 +4,15 @@
 declare const __APP_VERSION__: string
 declare const __BUILD_TIME__: number
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
+interface Window {
+  __mgPwaInstallEarly?: BeforeInstallPromptEvent | null
+}
+
 declare module 'vue3-carousel-3d' {
   import type { DefineComponent } from 'vue'
 

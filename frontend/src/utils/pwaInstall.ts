@@ -5,13 +5,6 @@ import { readonly, ref } from 'vue'
 
 import { computeIsMobileClient } from '@/utils/isMobileClient'
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
-}
-
-const INSTALL_PROMPT_WAIT_MS = import.meta.env.MODE === 'test' ? 0 : 1500
-
 const STANDALONE_DISPLAY_MODES = [
   'standalone',
   'window-controls-overlay',
@@ -23,7 +16,6 @@ const installAvailable = ref(false)
 const sessionInstalled = ref(false)
 let deferredPrompt: BeforeInstallPromptEvent | null = null
 let listenersBound = false
-const installPromptWaiters: Array<() => void> = []
 
 export const pwaInstallAvailable = readonly(installAvailable)
 
@@ -46,18 +38,26 @@ export type PwaInstallResult =
   | 'dev-hint'
   | 'insecure-hint'
 
-function notifyInstallPromptWaiters(): void {
-  while (installPromptWaiters.length > 0) {
-    const resolve = installPromptWaiters.pop()
-    resolve?.()
-  }
+function storeDeferredInstallPrompt(event: BeforeInstallPromptEvent): void {
+  deferredPrompt = event
+  installAvailable.value = true
 }
 
 function captureInstallPrompt(event: Event): void {
   event.preventDefault()
-  deferredPrompt = event as BeforeInstallPromptEvent
-  installAvailable.value = true
-  notifyInstallPromptWaiters()
+  storeDeferredInstallPrompt(event as BeforeInstallPromptEvent)
+}
+
+function adoptEarlyCapturedInstallPrompt(): void {
+  if (typeof window === 'undefined') {
+    return
+  }
+  const early = window.__mgPwaInstallEarly
+  if (!early) {
+    return
+  }
+  window.__mgPwaInstallEarly = null
+  storeDeferredInstallPrompt(early)
 }
 
 /** @internal Reset captured install state between Vitest cases. */
@@ -65,7 +65,10 @@ export function resetPwaInstallStateForTests(): void {
   deferredPrompt = null
   installAvailable.value = false
   sessionInstalled.value = false
-  installPromptWaiters.length = 0
+  listenersBound = false
+  if (typeof window !== 'undefined') {
+    window.__mgPwaInstallEarly = null
+  }
 }
 
 /** @internal Inject a deferred install prompt for Vitest. */
@@ -85,40 +88,13 @@ export function bindPwaInstallListeners(): void {
   }
   listenersBound = true
 
+  adoptEarlyCapturedInstallPrompt()
   window.addEventListener('beforeinstallprompt', captureInstallPrompt)
 
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null
     installAvailable.value = false
     sessionInstalled.value = true
-  })
-}
-
-function waitForInstallPrompt(timeoutMs: number): Promise<boolean> {
-  if (deferredPrompt) {
-    return Promise.resolve(true)
-  }
-  if (typeof window === 'undefined') {
-    return Promise.resolve(false)
-  }
-  if (typeof window.setTimeout !== 'function') {
-    return Promise.resolve(deferredPrompt !== null)
-  }
-  return new Promise((resolve) => {
-    const timer = window.setTimeout(() => {
-      const index = installPromptWaiters.indexOf(onReady)
-      if (index >= 0) {
-        installPromptWaiters.splice(index, 1)
-      }
-      resolve(deferredPrompt !== null)
-    }, timeoutMs)
-
-    function onReady() {
-      window.clearTimeout(timer)
-      resolve(deferredPrompt !== null)
-    }
-
-    installPromptWaiters.push(onReady)
   })
 }
 
@@ -290,21 +266,18 @@ function hintForSurface(surface: PwaInstallSurface): PwaInstallResult {
 }
 
 /**
- * Try to open the native install dialog after user click.
- * Waits briefly for beforeinstallprompt when it has not fired yet.
+ * Open the native install dialog on user click.
+ * Must call prompt() in the same click turn — browsers reject delayed prompts.
  */
 export async function promptPwaInstall(): Promise<PwaInstallResult> {
   if (!isInstallablePwaOrigin()) {
     return 'insecure-hint'
   }
 
-  if (!deferredPrompt) {
-    await waitForInstallPrompt(INSTALL_PROMPT_WAIT_MS)
-  }
-
-  if (deferredPrompt) {
-    await deferredPrompt.prompt()
-    const choice = await deferredPrompt.userChoice
+  const prompt = deferredPrompt
+  if (prompt) {
+    await prompt.prompt()
+    const choice = await prompt.userChoice
     deferredPrompt = null
     installAvailable.value = false
     if (choice.outcome === 'accepted') {
