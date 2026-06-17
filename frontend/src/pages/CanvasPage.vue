@@ -20,7 +20,7 @@
  * - LLM completed: flush and save once
  * - Auto-updates if diagram is already in library; auto-saves new if slots available
  */
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
@@ -28,13 +28,16 @@ import { storeToRefs } from 'pinia'
 import {
   AIModelSelector,
   CanvasChrome,
+  CanvasMindMapShortcutGuide,
+  MindMapSidePanel,
+  MindMapSideToolbar,
   CanvasTopBar,
   ConceptMapFocusReviewPicker,
   ConceptMapLabelPicker,
   ConceptMapRootConceptPicker,
   InlineRecommendationsPicker,
-  PresentationSideToolbar,
-  PresentationTimerOverlay,
+  MindMapPresentationSideToolbar,
+  MindMapSlideOverlay,
   ZoomControls,
 } from '@/components/canvas'
 import CanvasCollabOverlay from '@/components/canvas/CanvasCollabOverlay.vue'
@@ -85,6 +88,20 @@ import {
   toggleCanvasVirtualKeyboard,
 } from '@/composables/canvasToolbar'
 import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
+import { useMindMapSlidePresentation } from '@/composables/mindMap/useMindMapSlidePresentation'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import {
+  PRESENTATION_BOARD_THICKNESS_SCALE,
+  presentationBoardColorStroke,
+  type PresentationBoardColorId,
+  type PresentationBoardThickness,
+} from '@/config/presentationPen'
+import { usePresentationPointerStore } from '@/stores/presentationPointer'
+import type { MindMapPresentationToolId } from '@/types/diagram'
+import {
+  bindMindMapExternalPanelClose,
+  useMindMapSideToolbarState,
+} from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import {
   diagramSpecLikelyNeedsMarkdownPipeline,
   loadDiagramMarkdownPipeline,
@@ -98,6 +115,7 @@ import { useKittyDiagramReviewAnnotationBus } from '@/composables/kitty/useKitty
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
 import { IMPORT_SPEC_KEY, SAVE } from '@/config'
 import { FIT_PADDING, PANEL, PANEL_INSET } from '@/config/uiConfig'
+import { isMindMapDiagramType } from '@/utils/conceptMapDesktopViewport'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { intlLocaleForUiCode } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
@@ -221,6 +239,58 @@ function handleStartPresentationWithTier() {
   handleStartPresentation()
 }
 
+async function enterPresentationFullscreen(): Promise<void> {
+  const el = canvasPageRef.value
+  if (!el?.requestFullscreen) return
+  try {
+    if (document.fullscreenElement !== el) {
+      await el.requestFullscreen()
+    }
+  } catch {
+    /* user denied or unsupported */
+  }
+}
+
+async function exitPresentationFullscreen(): Promise<void> {
+  try {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen()
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function applyPenThickness(value: PresentationBoardThickness): void {
+  penThickness.value = value
+  presentationPointerStore.penScale = PRESENTATION_BOARD_THICKNESS_SCALE[value]
+}
+
+function applyPenColor(id: PresentationBoardColorId): void {
+  penColorId.value = id
+  presentationPenColor.value = presentationBoardColorStroke(id)
+}
+
+function handleMindMapPresentationToolSelect(tool: MindMapPresentationToolId): void {
+  mindMapPresentationTool.value = tool
+}
+
+function handlePresentationEscape(event: KeyboardEvent): void {
+  if (!showSimplifiedPresentationRail.value) return
+  if (useMindMapV2.value && mindMapPresentationTool.value === 'slides') return
+  if (event.key !== 'Escape') return
+  const active = document.activeElement as HTMLElement
+  if (
+    active?.tagName === 'INPUT' ||
+    active?.tagName === 'TEXTAREA' ||
+    active?.isContentEditable
+  ) {
+    return
+  }
+  event.preventDefault()
+  handleStartPresentationWithTier()
+}
+
 function handleCollabSession(payload: {
   code: string | null
   visibility: 'organization' | 'network' | null
@@ -244,6 +314,7 @@ const { activeNodeId: inlineRecActiveNodeId } = storeToRefs(inlineRecStore)
 
 // Hide zoom/pan when concept map label picker or inline recommendations picker is showing
 const showZoomControls = computed(() => {
+  if (isMindMapPresentationMode.value) return false
   const rel = diagramStore.type === 'concept_map' && relationshipActiveEntry.value
   const rootPick =
     diagramStore.type === 'concept_map' &&
@@ -256,6 +327,94 @@ const showZoomControls = computed(() => {
     !rootPick
   return !(rel || rootPick || focusPick || inlineRecActiveNodeId.value)
 })
+
+const fitViewOnInit = computed(() => {
+  const type = diagramStore.type
+  if (type === 'concept_map') return false
+  if (isMindMapDiagramType(type) && uiStore.mindMapCanvasMode === 'v2') return false
+  return true
+})
+
+const isMindMapCanvas = computed(() => isMindMapDiagramType(diagramStore.type))
+const useMindMapV2 = useMindMapV2Chrome()
+
+const isMindMapPresentationMode = computed(
+  () =>
+    useMindMapV2.value &&
+    presentationRailOpen.value &&
+    canUsePresentationTools.value
+)
+
+/** All diagram types use the simplified 4-tool presentation rail when open. */
+const showSimplifiedPresentationRail = computed(
+  () => presentationRailOpen.value && canUsePresentationTools.value
+)
+
+const mindMapPresentationTool = ref<MindMapPresentationToolId>('hand')
+const penColorId = ref<PresentationBoardColorId>('red')
+const penThickness = ref<PresentationBoardThickness>('medium')
+const presentationPenColor = ref(presentationBoardColorStroke('red'))
+const presentationPointerStore = usePresentationPointerStore()
+
+const slidePresentation = useMindMapSlidePresentation({
+  active: () =>
+    isMindMapPresentationMode.value && mindMapPresentationTool.value === 'slides',
+  onExitPresentation: () => handleStartPresentationWithTier(),
+})
+
+const effectiveHandToolActive = computed(() => {
+  if (showSimplifiedPresentationRail.value) {
+    return mindMapPresentationTool.value === 'hand'
+  }
+  return handToolActive.value
+})
+
+const showMindMapSlideOverlay = computed(
+  () =>
+    isMindMapPresentationMode.value &&
+    mindMapPresentationTool.value === 'slides' &&
+    slidePresentation.slideCount.value > 0
+)
+
+const showBottomBar = computed(() => !isMindMapPresentationMode.value)
+
+const showMindMapShortcutGuide = computed(
+  () => useMindMapV2.value && !presentationRailOpen.value && Boolean(diagramStore.data)
+)
+
+const showMindMapSideToolbar = computed(
+  () =>
+    useMindMapV2.value &&
+    !presentationRailOpen.value &&
+    Boolean(diagramStore.data) &&
+    !isViewer.value
+)
+
+const { activeTool, sidebarVisible, closeActiveTool } = useMindMapSideToolbarState()
+
+watch(
+  () =>
+    useMindMapV2.value &&
+    panelsStore.nodePalettePanel.isOpen &&
+    panelsStore.nodePalettePanel.mindMapWaterfallMode === true,
+  (shouldShowWaterfallPanel) => {
+    if (shouldShowWaterfallPanel && activeTool.value !== 'waterfall') {
+      activeTool.value = 'waterfall'
+    }
+  }
+)
+
+bindMindMapExternalPanelClose(
+  () => panelsStore.nodePalettePanel.isOpen,
+  closeActiveTool
+)
+
+watch(
+  () => diagramStore.type,
+  () => {
+    closeActiveTool()
+  }
+)
 
 /** MindMate `right` offset: shift left when presentation rail is open so it does not cover the rail. */
 const mindMatePanelRight = computed(() => {
@@ -534,9 +693,68 @@ watch(
     if (open && panelsStore.mindmatePanel.isOpen) {
       panelsStore.closeMindmate()
     }
+    if (open && useMindMapV2.value) {
+      closeActiveTool()
+      mindMapPresentationTool.value = 'hand'
+      handToolActive.value = true
+      void enterPresentationFullscreen()
+      void nextTick(() => {
+        eventBus.emit('view:fit_to_canvas_requested', { animate: true, userInitiated: true })
+      })
+    } else if (open) {
+      mindMapPresentationTool.value = 'laser'
+      presentationTool.value = 'laser'
+      handToolActive.value = false
+    } else {
+      mindMapPresentationTool.value = 'hand'
+      slidePresentation.reset()
+      handToolActive.value = false
+      if (useMindMapV2.value) {
+        void exitPresentationFullscreen()
+      }
+    }
   },
   { flush: 'sync' }
 )
+
+watch(mindMapPresentationTool, (tool) => {
+  if (!showSimplifiedPresentationRail.value) return
+  if (tool === 'slides' && !useMindMapV2.value) {
+    mindMapPresentationTool.value = 'laser'
+    return
+  }
+  if (tool === 'pen') {
+    presentationTool.value = 'pen'
+    handToolActive.value = false
+    slidePresentation.stopSlideShow()
+    return
+  }
+  if (tool === 'laser') {
+    presentationTool.value = 'laser'
+    handToolActive.value = false
+    slidePresentation.stopSlideShow()
+    return
+  }
+  if (tool === 'hand') {
+    presentationTool.value = 'laser'
+    handToolActive.value = true
+    slidePresentation.stopSlideShow()
+    return
+  }
+  if (tool === 'slides') {
+    presentationTool.value = 'laser'
+    handToolActive.value = false
+    slidePresentation.startSlideShow()
+  }
+})
+
+watch(showSimplifiedPresentationRail, (active) => {
+  if (active) {
+    window.addEventListener('keydown', handlePresentationEscape, true)
+  } else {
+    window.removeEventListener('keydown', handlePresentationEscape, true)
+  }
+})
 
 watch(canUsePresentationTools, (allowed) => {
   if (!allowed) {
@@ -802,6 +1020,7 @@ onUnmounted(() => {
   uiStore.setSelectedChartType('选择具体图示')
   uiStore.setFreeInputValue('')
   resetPresentationStateOnLeave()
+  void exitPresentationFullscreen()
   resetPreviousDiagramTracking()
 })
 </script>
@@ -812,60 +1031,59 @@ onUnmounted(() => {
     class="canvas-page flex flex-col h-screen bg-gray-50 relative"
     :class="{
       'presentation-active': canUsePresentationTools && presentationRailOpen,
-      'presentation-highlighter-mode':
-        canUsePresentationTools && presentationRailOpen && presentationTool === 'highlighter',
+      'mind-map-presentation-active': isMindMapPresentationMode,
+      'presentation-hand-mode':
+        showSimplifiedPresentationRail && mindMapPresentationTool === 'hand',
+      'presentation-slides-mode':
+        showSimplifiedPresentationRail && mindMapPresentationTool === 'slides',
+      'presentation-highlighter-mode': false,
       'presentation-pen-mode':
-        canUsePresentationTools && presentationRailOpen && presentationTool === 'pen',
-      'presentation-timer-mode':
-        canUsePresentationTools && presentationRailOpen && presentationTool === 'timer',
+        canUsePresentationTools &&
+        presentationRailOpen &&
+        mindMapPresentationTool === 'pen',
+      'presentation-timer-mode': false,
     }"
   >
     <!-- Laser pointer cursor (presentation mode, laser tool) -->
     <Transition name="laser-fade">
       <div
-        v-if="canUsePresentationTools && presentationRailOpen && presentationTool === 'laser'"
+        v-if="
+          canUsePresentationTools &&
+          presentationRailOpen &&
+          mindMapPresentationTool === 'laser'
+        "
         class="laser-cursor"
         :style="laserCursorStyle"
         aria-hidden="true"
       />
     </Transition>
 
-    <!-- Spotlight overlay: dark vignette with circular reveal (spotlight tool) -->
-    <Transition name="spotlight-fade">
-      <div
-        v-if="canUsePresentationTools && presentationRailOpen && presentationTool === 'spotlight'"
-        class="spotlight-overlay"
-        :style="spotlightStyle"
-        aria-hidden="true"
-      />
-    </Transition>
+    <!-- Spotlight / timer removed — simplified presentation rail only -->
 
-    <!-- Presentation timer: fullscreen dim + large countdown -->
-    <PresentationTimerOverlay
-      v-if="canUsePresentationTools && presentationRailOpen && presentationTool === 'timer'"
-      :remaining-seconds="timerRemainingSeconds"
-      :total-seconds="timerTotalSeconds"
-      :running="timerRunning"
-      @toggle-run="onTimerToggleRun"
-      @reset="onTimerReset"
-      @presetMinutes="onTimerPresetMinutes"
-      @setMinutes="onTimerSetMinutes"
-      @exit="onTimerExit"
+    <!-- Simplified presentation rail: hand · laser · pen · slides (mind map) -->
+    <MindMapPresentationSideToolbar
+      v-if="showSimplifiedPresentationRail"
+      :active-tool="mindMapPresentationTool"
+      :color-id="penColorId"
+      :thickness="penThickness"
+      :show-slides-tool="useMindMapV2"
+      @select-tool="handleMindMapPresentationToolSelect"
+      @select-color="applyPenColor"
+      @select-thickness="applyPenThickness"
     />
 
-    <!-- Presentation tools: vertical rail (right); hidden during timer so overlay is unobstructed -->
-    <PresentationSideToolbar
-      v-if="canUsePresentationTools && presentationRailOpen && presentationTool !== 'timer'"
-      :active-tool="presentationTool"
-      :virtual-keyboard-open="canvasVirtualKeyboardOpen"
-      @selectTool="presentationTool = $event"
-      @clearHighlighter="presentationHighlightStrokes = []"
-      @fit="handleFitToScreen"
-      @exit="handleStartPresentationWithTier"
-      @toggleVirtualKeyboard="toggleCanvasVirtualKeyboard"
+    <MindMapSlideOverlay
+      v-if="showMindMapSlideOverlay"
+      :slide-index="slidePresentation.slideIndex.value"
+      :slide-count="slidePresentation.slideCount.value"
+      :slide-title="slidePresentation.currentSlide.value?.title ?? ''"
+      :auto-play="slidePresentation.autoPlay.value"
+      @toggle-auto-play="slidePresentation.toggleAutoPlay()"
+      @prev="slidePresentation.prevSlide()"
+      @next="slidePresentation.nextSlide()"
     />
 
-    <CanvasChrome>
+    <CanvasChrome v-if="!isMindMapPresentationMode">
       <CanvasTopBar
         :auto-saved-status="autoSavedStatusText"
         :slot-full-and-new-diagram="isSlotsFullAndNewDiagram"
@@ -925,7 +1143,7 @@ onUnmounted(() => {
       <!-- Node Palette panel (瀑布流) - left 50%, inset to clear floating toolbars -->
       <Transition name="node-palette-slide">
         <div
-          v-if="panelsStore.nodePalettePanel.isOpen && !isViewer"
+          v-if="panelsStore.nodePalettePanel.isOpen && !isViewer && !useMindMapV2"
           class="node-palette-panel-split shrink-0 flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden ml-4 mr-2 self-stretch"
           :style="{
             width: '50%',
@@ -954,15 +1172,23 @@ onUnmounted(() => {
           v-model:presentation-highlight-strokes="presentationHighlightStrokes"
           v-model:presentation-tool="presentationTool"
           v-model:presentation-highlighter-color="presentationHighlighterColor"
+          v-model:presentation-pen-color="presentationPenColor"
           class="w-full flex-1 min-h-0"
           :show-background="true"
           :show-minimap="false"
-          :fit-view-on-init="diagramStore.type !== 'concept_map'"
+          :fit-view-on-init="fitViewOnInit"
           :concept-map-initial-topic-fit="false"
-          :hand-tool-active="handToolActive || isViewer"
+          :hand-tool-active="effectiveHandToolActive || isViewer"
           :collab-locked-node-ids="collabLockedNodeIds"
           :presentation-rail-open="presentationRailOpen"
           @node-double-click="handleNodeDoubleClick"
+        />
+
+        <MindMapSideToolbar v-if="showMindMapSideToolbar && sidebarVisible" />
+        <MindMapSidePanel
+          v-if="showMindMapSideToolbar && activeTool"
+          :tool="activeTool"
+          @close="closeActiveTool"
         />
       </div>
 
@@ -989,13 +1215,16 @@ onUnmounted(() => {
       </Transition>
     </div>
 
-    <!-- Bottom controls: single floating glass card, adaptive width -->
+    <!-- Bottom controls: shortcut guide (mind map) + floating glass toolbar card -->
     <div
-      class="canvas-bottom-controls absolute bottom-3 left-0 right-0 z-20 flex justify-center px-2 sm:px-4"
+      v-if="showBottomBar"
+      class="canvas-bottom-controls absolute bottom-3 left-0 right-0 z-20 flex justify-center px-2 sm:px-4 pointer-events-none"
     >
-      <div
-        class="bottom-controls-card flex flex-col md:flex-row md:items-start gap-1.5 md:gap-2 rounded-xl shadow-lg p-1 md:p-1.5 border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md w-fit max-w-[95vw] min-w-0"
-      >
+      <div class="bottom-bar-cluster pointer-events-auto flex items-end gap-2 sm:gap-3 max-w-[95vw] min-w-0">
+        <CanvasMindMapShortcutGuide v-if="showMindMapShortcutGuide" />
+        <div
+          class="bottom-controls-card flex flex-col items-center md:flex-row md:flex-nowrap md:items-center gap-1.5 md:gap-0 rounded-xl shadow-lg p-1 md:p-1.5 border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md w-fit min-w-0 shrink-0"
+        >
         <!-- shrink-0: AI block + focus picker width follows content (no flex-1 stretch) -->
         <div
           class="ai-selector-wrap flex shrink-0 justify-center md:justify-center min-w-0 order-2 md:order-1"
@@ -1028,7 +1257,11 @@ onUnmounted(() => {
         />
         <div
           v-if="showZoomControls"
-          class="zoom-controls-wrap flex shrink-0 order-1 md:order-2"
+          class="bottom-controls-divider hidden md:block order-1 md:order-2 w-px h-[22px] mx-2 bg-gray-200 dark:bg-gray-600 shrink-0 self-center"
+        />
+        <div
+          v-if="showZoomControls"
+          class="zoom-controls-wrap flex shrink-0 order-1 md:order-3"
         >
           <ZoomControls
             :zoom="canvasZoom"
@@ -1045,6 +1278,7 @@ onUnmounted(() => {
             @startPresentation="handleStartPresentationWithTier"
             @openCollab="handleOpenCollab"
           />
+        </div>
         </div>
       </div>
     </div>

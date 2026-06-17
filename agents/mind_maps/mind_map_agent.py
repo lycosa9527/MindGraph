@@ -10,16 +10,17 @@ All Rights Reserved
 Proprietary License
 """
 
+from typing import Dict, List, Optional, Tuple, Any
 import logging
-from typing import Any, Dict, List, Optional, Tuple
 
-from agents.core.agent_utils import extract_json_from_response
 from agents.core.base_agent import BaseAgent
+from agents.core.agent_utils import extract_json_from_response
 from config.settings import Config
 from prompts import get_prompt
 from services.llm import llm_service
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import is_chinese_prompt_shell_language
+
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,6 @@ class MindMapAgent(BaseAgent):
     """
 
     def __init__(self, model="qwen"):
-        """init  ."""
         super().__init__(model=model)
         self.config = Config()
         self.diagram_type = "mindmap"
@@ -192,7 +192,7 @@ class MindMapAgent(BaseAgent):
 
         except LLM_PIPELINE_ERRORS as e:
             logger.error("MindMapAgent: Error in spec generation: %s", e)
-            return None, None
+            raise
 
     def validate_output(self, output: Dict[str, Any]) -> Tuple[bool, str]:
         """Validate a mind map specification."""

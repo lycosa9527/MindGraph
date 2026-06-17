@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 
+import { eventBus } from '@/composables/core/useEventBus'
 import {
   estimateNodeWidth as estimateMindMapBranchWidth,
   measureBranchNodeHeight as measureMindMapBranchHeight,
@@ -17,13 +18,14 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
 
   function mindMapEstimatedData(
     existingData: Record<string, unknown> | undefined,
-    text: string
+    text: string,
+    nodeId?: string
   ): Record<string, unknown> | undefined {
     if (!isMindMap()) return existingData
     return {
       ...existingData,
-      estimatedWidth: estimateMindMapBranchWidth(text),
-      estimatedHeight: measureMindMapBranchHeight(text),
+      estimatedWidth: estimateMindMapBranchWidth(text, nodeId),
+      estimatedHeight: measureMindMapBranchHeight(text, nodeId),
     }
   }
 
@@ -50,15 +52,42 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     return typeof answer === 'string' && answer.trim() ? answer.trim() : undefined
   }
 
-  function trackHiddenAnswer(d: Record<string, unknown>, originalText: string, prevAnswer?: string): void {
-    let answers = (d.hiddenAnswers as string[] | undefined) ?? []
-    if (prevAnswer && prevAnswer !== originalText) {
-      answers = answers.map((entry) => (entry === prevAnswer ? originalText : entry))
+  function isNodeBlankedForLearningSheet(nodeId: string): boolean {
+    const node = data.value?.nodes?.find((n) => n.id === nodeId)
+    if (!node) return false
+    const nodeData = node.data as { hidden?: boolean; hiddenAnswer?: string } | undefined
+    const text = String(node.text ?? '').trim()
+    return (
+      nodeData?.hidden === true ||
+      (text === LEARNING_SHEET_PLACEHOLDER && nodeHiddenAnswer(node) !== undefined)
+    )
+  }
+
+  function restoreNodeFromLearningSheet(nodeId: string): boolean {
+    if (!data.value?.nodes || !isLearningSheet.value) return false
+
+    const nodeIndex = data.value.nodes.findIndex((n) => n.id === nodeId)
+    if (nodeIndex === -1) return false
+
+    const node = data.value.nodes[nodeIndex]
+    const originalText = nodeHiddenAnswer(node)
+    if (!originalText) return false
+
+    data.value.nodes[nodeIndex] = {
+      ...node,
+      text: originalText,
+      data: {
+        ...mindMapEstimatedData(node.data as Record<string, unknown>, originalText, nodeId),
+        hidden: false,
+        hiddenAnswer: originalText,
+      },
     }
-    if (!answers.includes(originalText)) {
-      answers = [...answers, originalText]
-    }
-    d.hiddenAnswers = answers
+
+    reconcileHiddenAnswersFromBlankedNodes()
+
+    emitEvent('diagram:node_updated', { nodeId, updates: { text: originalText } })
+    eventBus.emit('node:text_updated', { nodeId, text: originalText })
+    return true
   }
 
   function emptyNodeForLearningSheet(nodeId: string): boolean {
@@ -68,32 +97,56 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     if (nodeIndex === -1) return false
 
     const node = data.value.nodes[nodeIndex]
-    const originalText = String(node.text ?? '').trim()
-    const nodeData = node.data as { hidden?: boolean; hiddenAnswer?: string } | undefined
+    const nodeData = node.data as { hidden?: boolean; hiddenAnswer?: string; label?: string } | undefined
+    const originalText = String(node.text ?? nodeData?.label ?? '').trim()
     if (!originalText || originalText === LEARNING_SHEET_PLACEHOLDER || nodeData?.hidden) return false
-
-    const d = data.value as Record<string, unknown>
-    trackHiddenAnswer(d, originalText, nodeHiddenAnswer(node))
 
     data.value.nodes[nodeIndex] = {
       ...node,
       text: LEARNING_SHEET_PLACEHOLDER,
       data: {
-        ...mindMapEstimatedData(node.data as Record<string, unknown>, LEARNING_SHEET_PLACEHOLDER),
+        ...mindMapEstimatedData(node.data as Record<string, unknown>, LEARNING_SHEET_PLACEHOLDER, nodeId),
         hidden: true,
         hiddenAnswer: originalText,
       },
     }
 
+    reconcileHiddenAnswersFromBlankedNodes()
+
     emitEvent('diagram:node_updated', { nodeId, updates: { text: LEARNING_SHEET_PLACEHOLDER } })
+    eventBus.emit('node:text_updated', { nodeId, text: LEARNING_SHEET_PLACEHOLDER })
     return true
+  }
+
+  function toggleLearningSheetNodeBlank(nodeId: string): 'blanked' | 'restored' | 'skipped' {
+    if (!data.value?.nodes || !isLearningSheet.value) return 'skipped'
+    if (isNodeBlankedForLearningSheet(nodeId)) {
+      return restoreNodeFromLearningSheet(nodeId) ? 'restored' : 'skipped'
+    }
+    return emptyNodeForLearningSheet(nodeId) ? 'blanked' : 'skipped'
+  }
+
+  function reconcileHiddenAnswersFromBlankedNodes(): void {
+    if (!data.value?.nodes) return
+    const d = data.value as Record<string, unknown>
+    const answers: string[] = []
+    for (const node of data.value.nodes) {
+      if (!isNodeBlankedForLearningSheet(node.id)) continue
+      const answer = nodeHiddenAnswer(node)
+      if (answer && !answers.includes(answer)) {
+        answers.push(answer)
+      }
+    }
+    d.hiddenAnswers = answers
   }
 
   function setLearningSheetMode(enabled: boolean): void {
     if (!data.value) return
     const d = data.value as Record<string, unknown>
     syncLearningSheetFlags(d, enabled)
-    if (enabled && !d.hiddenAnswers) {
+    if (enabled) {
+      reconcileHiddenAnswersFromBlankedNodes()
+    } else {
       d.hiddenAnswers = []
     }
   }
@@ -111,7 +164,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
         ...node,
         text: originalText,
         data: {
-          ...mindMapEstimatedData(node.data as Record<string, unknown>, originalText),
+          ...mindMapEstimatedData(node.data as Record<string, unknown>, originalText, node.id),
           hidden: false,
           hiddenAnswer: originalText,
         },
@@ -120,6 +173,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     })
 
     syncLearningSheetFlags(d, false)
+    d.hiddenAnswers = []
   }
 
   function applyLearningSheetView(): void {
@@ -137,7 +191,8 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
         data: {
           ...mindMapEstimatedData(
             node.data as Record<string, unknown>,
-            LEARNING_SHEET_PLACEHOLDER
+            LEARNING_SHEET_PLACEHOLDER,
+            node.id
           ),
           hidden: true,
           hiddenAnswer: originalText,
@@ -157,13 +212,38 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     return data.value.nodes.some((n) => nodeHiddenAnswer(n) !== undefined)
   }
 
+  function clearLearningSheetPreservation(): void {
+    const dv = data.value
+    if (!dv?.nodes) return
+
+    const d = dv as Record<string, unknown>
+    d.hiddenAnswers = []
+
+    dv.nodes.forEach((node, idx) => {
+      const nodeData = node.data as Record<string, unknown> | undefined
+      if (!nodeData?.hiddenAnswer) return
+      const { hidden: _hidden, hiddenAnswer: _answer, ...rest } = nodeData
+      dv.nodes[idx] = {
+        ...node,
+        data: rest,
+      }
+    })
+
+    syncLearningSheetFlags(d, false)
+  }
+
   return {
     isLearningSheet,
     hiddenAnswers,
+    isNodeBlankedForLearningSheet,
     emptyNodeForLearningSheet,
+    restoreNodeFromLearningSheet,
+    toggleLearningSheetNodeBlank,
     setLearningSheetMode,
+    reconcileHiddenAnswersFromBlankedNodes,
     restoreFromLearningSheetMode,
     applyLearningSheetView,
     hasPreservedLearningSheet,
+    clearLearningSheetPreservation,
   }
 }

@@ -1,3 +1,5 @@
+import type { MindMapThemeId } from '@/config/mindMapThemes'
+import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
 import type { DiagramNode, NodeStyle } from '@/types'
 
 import { emitEvent } from './events'
@@ -39,14 +41,17 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
     }
   }
 
-  function applyStylePreset(preset: {
-    backgroundColor: string
-    textColor: string
-    borderColor: string
-    topicBackgroundColor: string
-    topicTextColor: string
-    topicBorderColor: string
-  }): void {
+  function applyStylePreset(
+    preset: {
+      backgroundColor: string
+      textColor: string
+      borderColor: string
+      topicBackgroundColor: string
+      topicTextColor: string
+      topicBorderColor: string
+    },
+    options?: { mindMapThemeId?: MindMapThemeId }
+  ): void {
     const nodes = data.value?.nodes
     if (!nodes) return
 
@@ -71,6 +76,16 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
         }
       }
     })
+    const diagramType = data.value?.type
+    if (
+      data.value?.connections &&
+      (diagramType === 'mindmap' || diagramType === 'mind_map')
+    ) {
+      syncMindMapConnectionStrokeColors(data.value.connections, preset.topicBorderColor)
+      if (options?.mindMapThemeId) {
+        data.value._mindmap_theme = options.mindMapThemeId
+      }
+    }
     ctx.pushHistory('Apply style preset')
     emitEvent('diagram:style_changed', { preset: true })
   }

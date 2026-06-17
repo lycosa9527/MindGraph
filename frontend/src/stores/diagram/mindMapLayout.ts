@@ -10,7 +10,11 @@ import {
   estimateNodeWidth as estimateBranchWidth,
   estimateTopicNodeWidth,
   measureBranchNodeHeight,
+  measureBranchNodeUnderlineHeight,
 } from '@/stores/specLoader/mindMap'
+import { computeSymmetricRootStartYs } from '@/utils/mindMapSideStacking'
+import { resolveNodeShape } from '@/utils/nodeShapeStyle'
+import { mindMapConnectionAnchorY, mindMapNodeTopYForAnchorY } from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode } from '@/types'
 
 import type { DiagramContext } from './types'
@@ -102,10 +106,37 @@ function getNodeHeight(
 ): number {
   const measured = nodeHeights[nodeId]
   const node = nodeMap.get(nodeId)
-  const freshEstimate = node?.text ? measureBranchNodeHeight(node.text) : DEFAULT_NODE_HEIGHT
+  const shape = resolveNodeShape(node?.style, true)
+  const measureHeight =
+    shape === 'underline' ? measureBranchNodeUnderlineHeight : measureBranchNodeHeight
+  const freshEstimate = node?.text ? measureHeight(node.text, nodeId) : DEFAULT_NODE_HEIGHT
   const stored = (node?.data?.estimatedHeight as number | undefined) ?? DEFAULT_NODE_HEIGHT
   const estimated = Math.max(stored, freshEstimate)
   return measured !== undefined ? Math.max(measured, estimated) : estimated
+}
+
+function getNodeAnchorY(
+  nodeId: string,
+  nodeTopY: number,
+  nodeMap: Map<string, DiagramNode>,
+  nodeHeights: Record<string, number>
+): number {
+  const node = nodeMap.get(nodeId)
+  const h = getNodeHeight(nodeId, nodeMap, nodeHeights)
+  const shape = resolveNodeShape(node?.style, true)
+  return mindMapConnectionAnchorY(nodeTopY, h, shape)
+}
+
+function getNodeTopYForAnchor(
+  nodeId: string,
+  anchorY: number,
+  nodeMap: Map<string, DiagramNode>,
+  nodeHeights: Record<string, number>
+): number {
+  const node = nodeMap.get(nodeId)
+  const h = getNodeHeight(nodeId, nodeMap, nodeHeights)
+  const shape = resolveNodeShape(node?.style, true)
+  return mindMapNodeTopYForAnchorY(anchorY, h, shape)
 }
 
 export interface MindMapColumnResult {
@@ -114,22 +145,18 @@ export interface MindMapColumnResult {
 }
 
 /**
- * Recalculate mind-map node positions using a column system (X) and
- * DOM-measured heights (Y).
+ * Recalculate mind-map node positions using subtree-relative X and balanced Y.
  *
- * X: Each depth level on each side forms a "column". Column X positions chain
- * outward from the topic center with a fixed gap.
- *
- * Y: When actual DOM-measured heights are available, re-stack siblings and
- * re-center parents on their children so that curves stay straight even when
- * text wraps to more lines than estimated.
+ * X: Each node is placed one rankSeparation beyond its parent (not a global depth column).
+ * Y: DOM-measured heights re-stack siblings and re-center parents on their children.
  */
 export function recalculateMindMapColumnPositions(
   nodes: DiagramNode[],
   topicWidth: number | null,
   nodeWidths: Record<string, number>,
   nodeHeights: Record<string, number> = {},
-  connections: Connection[] = []
+  connections: Connection[] = [],
+  collapsedNodeIds: ReadonlySet<string> = new Set<string>()
 ): MindMapColumnResult {
   const topicNode = nodes.find((n) => n.id === 'topic')
   if (!topicNode?.position) return { nodes, gaps: { left: 0, right: 0 } }
@@ -144,51 +171,65 @@ export function recalculateMindMapColumnPositions(
   const gap = DEFAULT_MINDMAP_RANK_SEPARATION
 
   const centerX = topicNode.position.x + effectiveTopicWidth / 2
-
-  // Group branch nodes by side and depth, collecting their widths
-  const rightMaxWidths = new Map<number, number>()
-  const leftMaxWidths = new Map<number, number>()
-
-  for (const node of nodes) {
-    const parsed = parseNodeId(node.id)
-    if (!parsed) continue
-    const w = getNodeWidth(node, nodeWidths)
-    const map = parsed.side === 'r' ? rightMaxWidths : leftMaxWidths
-    map.set(parsed.depth, Math.max(map.get(parsed.depth) ?? 0, w))
-  }
-
   const topicRightEdge = centerX + effectiveTopicWidth / 2
   const topicLeftEdge = centerX - effectiveTopicWidth / 2
 
-  // Compute column left-edge positions for right side (chaining outward)
-  const rightColumnLeftEdge = new Map<number, number>()
-  const rightDepths = Array.from(rightMaxWidths.keys()).sort((a, b) => a - b)
-  let rightX = topicRightEdge + gap
-  for (const depth of rightDepths) {
-    rightColumnLeftEdge.set(depth, rightX)
-    rightX += (rightMaxWidths.get(depth) ?? DEFAULT_NODE_WIDTH) + gap
+  const childrenMap = new Map<string, string[]>()
+  for (const c of connections) {
+    const kids = childrenMap.get(c.source)
+    if (kids) {
+      kids.push(c.target)
+    } else {
+      childrenMap.set(c.source, [c.target])
+    }
+  }
+  for (const kids of childrenMap.values()) {
+    kids.sort((a, b) => {
+      const aIdx = parseInt(a.split('-')[3] ?? '0', 10)
+      const bIdx = parseInt(b.split('-')[3] ?? '0', 10)
+      return aIdx - bIdx
+    })
   }
 
-  // Compute column right-edge positions for left side (chaining outward)
-  const leftColumnRightEdge = new Map<number, number>()
-  const leftDepths = Array.from(leftMaxWidths.keys()).sort((a, b) => a - b)
-  let leftX = topicLeftEdge - gap
-  for (const depth of leftDepths) {
-    leftColumnRightEdge.set(depth, leftX)
-    leftX -= (leftMaxWidths.get(depth) ?? DEFAULT_NODE_WIDTH) + gap
+  const nodeMap = new Map<string, DiagramNode>()
+  for (const n of nodes) nodeMap.set(n.id, n)
+
+  const newX = new Map<string, number>()
+
+  function assignSubtreeX(nodeId: string, parentId: string, side: 'r' | 'l'): void {
+    const node = nodeMap.get(nodeId)
+    if (!node) return
+    const w = getNodeWidth(node, nodeWidths)
+
+    let x: number
+    if (parentId === 'topic') {
+      x = side === 'r' ? topicRightEdge + gap : topicLeftEdge - gap - w
+    } else {
+      const parent = nodeMap.get(parentId)
+      if (!parent?.position) return
+      const parentW = getNodeWidth(parent, nodeWidths)
+      const parentX = newX.get(parentId) ?? parent.position.x
+      x = side === 'r' ? parentX + parentW + gap : parentX - gap - w
+    }
+    newX.set(nodeId, x)
+
+    if (collapsedNodeIds.has(nodeId)) return
+    for (const childId of childrenMap.get(nodeId) ?? []) {
+      assignSubtreeX(childId, nodeId, side)
+    }
   }
 
-  // Measure topic-to-branch gaps (depth-1 column edge to topic edge)
+  for (const rootId of childrenMap.get('topic') ?? []) {
+    const parsed = parseNodeId(rootId)
+    if (!parsed) continue
+    assignSubtreeX(rootId, 'topic', parsed.side)
+  }
+
   const rightGap =
-    rightDepths.length > 0
-      ? (rightColumnLeftEdge.get(rightDepths[0]) ?? topicRightEdge) - topicRightEdge
-      : 0
+    (childrenMap.get('topic') ?? []).some((id) => id.startsWith('branch-r-')) ? gap : 0
   const leftGap =
-    leftDepths.length > 0
-      ? topicLeftEdge - (leftColumnRightEdge.get(leftDepths[0]) ?? topicLeftEdge)
-      : 0
+    (childrenMap.get('topic') ?? []).some((id) => id.startsWith('branch-l-')) ? gap : 0
 
-  // Apply corrected X positions
   let correctedNodes = nodes.map((node) => {
     if (!node.position) return node
 
@@ -198,28 +239,15 @@ export function recalculateMindMapColumnPositions(
       return { ...node, position: { ...node.position, x: newX } }
     }
 
-    const parsed = parseNodeId(node.id)
-    if (!parsed) return node
-
-    const w = getNodeWidth(node, nodeWidths)
-
-    if (parsed.side === 'r') {
-      const colLeft = rightColumnLeftEdge.get(parsed.depth)
-      if (colLeft == null) return node
-      if (Math.abs(node.position.x - colLeft) < 0.5) return node
-      return { ...node, position: { ...node.position, x: colLeft } }
-    }
-
-    const colRight = leftColumnRightEdge.get(parsed.depth)
-    if (colRight == null) return node
-    const newX = colRight - w
-    if (Math.abs(node.position.x - newX) < 0.5) return node
-    return { ...node, position: { ...node.position, x: newX } }
+    const correctedX = newX.get(node.id)
+    if (correctedX == null) return node
+    if (Math.abs(node.position.x - correctedX) < 0.5) return node
+    return { ...node, position: { ...node.position, x: correctedX } }
   })
 
   // --- Y-position correction using actual measured heights ---
   if (connections.length > 0) {
-    correctedNodes = correctYPositions(correctedNodes, nodeHeights, connections)
+    correctedNodes = correctYPositions(correctedNodes, nodeHeights, connections, collapsedNodeIds)
   }
 
   return { nodes: correctedNodes, gaps: { left: leftGap, right: rightGap } }
@@ -232,7 +260,8 @@ export function recalculateMindMapColumnPositions(
 function correctYPositions(
   nodes: DiagramNode[],
   nodeHeights: Record<string, number>,
-  connections: Connection[]
+  connections: Connection[],
+  collapsedNodeIds: ReadonlySet<string> = new Set<string>()
 ): DiagramNode[] {
   const nodeMap = new Map<string, DiagramNode>()
   for (const n of nodes) nodeMap.set(n.id, n)
@@ -245,6 +274,13 @@ function correctYPositions(
     } else {
       childrenMap.set(c.source, [c.target])
     }
+  }
+  for (const kids of childrenMap.values()) {
+    kids.sort((a, b) => {
+      const aIdx = parseInt(a.split('-')[3] ?? '0', 10)
+      const bIdx = parseInt(b.split('-')[3] ?? '0', 10)
+      return aIdx - bIdx
+    })
   }
 
   const topicChildren = childrenMap.get('topic') ?? []
@@ -262,19 +298,20 @@ function correctYPositions(
     else leftRoots.push(cid)
   }
 
-  // Sort roots by their current Y to preserve order
-  const byCurrentY = (a: string, b: string) => {
-    const ay = nodeMap.get(a)?.position?.y ?? 0
-    const by = nodeMap.get(b)?.position?.y ?? 0
-    return ay - by
+  // Sort roots by stable global index (not stale Y) so re-stack stays in tree order
+  const byGlobalIndex = (a: string, b: string) => {
+    const aIdx = parseInt(a.split('-')[3] ?? '0', 10)
+    const bIdx = parseInt(b.split('-')[3] ?? '0', 10)
+    return aIdx - bIdx
   }
-  rightRoots.sort(byCurrentY)
-  leftRoots.sort(byCurrentY)
+  rightRoots.sort(byGlobalIndex)
+  leftRoots.sort(byGlobalIndex)
 
   const newY = new Map<string, number>()
 
   function computeSubtreeSpan(nodeId: string): number {
     const h = getNodeHeight(nodeId, nodeMap, nodeHeights)
+    if (collapsedNodeIds.has(nodeId)) return h
     const kids = childrenMap.get(nodeId)
     if (!kids || kids.length === 0) return h
     const childSpans = kids.map((kid) => computeSubtreeSpan(kid))
@@ -287,7 +324,7 @@ function correctYPositions(
     const h = getNodeHeight(nodeId, nodeMap, nodeHeights)
     const kids = childrenMap.get(nodeId)
 
-    if (!kids || kids.length === 0) {
+    if (!kids || kids.length === 0 || collapsedNodeIds.has(nodeId)) {
       newY.set(nodeId, startY)
       return startY + h
     }
@@ -307,7 +344,7 @@ function correctYPositions(
       const lastKidH = getNodeHeight(lastKid, nodeMap, nodeHeights)
       const childBottom = (newY.get(lastKid) ?? startY) + lastKidH
       const childCenter = (childTop + childBottom) / 2
-      newY.set(nodeId, childCenter - h / 2)
+      newY.set(nodeId, getNodeTopYForAnchor(nodeId, childCenter, nodeMap, nodeHeights))
       return y
     }
 
@@ -321,47 +358,33 @@ function correctYPositions(
     return startY + h
   }
 
-  function stackBranches(roots: string[]): void {
+  function stackBranches(roots: string[], topicCenterY: number): void {
     if (roots.length === 0) return
+
+    if (roots.length === 2) {
+      const spans = roots.map((r) => computeSubtreeSpan(r))
+      const startYs = computeSymmetricRootStartYs(spans, topicCenterY, crossBranchGap)
+      for (let i = 0; i < roots.length; i++) {
+        assignSubtreeY(roots[i], startYs[i] ?? topicCenterY)
+      }
+      return
+    }
+
     const spans = roots.map((r) => computeSubtreeSpan(r))
-    const totalSpan = spans.reduce((a, b) => a + b, 0) + (roots.length - 1) * crossBranchGap
-
-    const firstRootY = nodeMap.get(roots[0])?.position?.y ?? 0
-    const lastRoot = roots[roots.length - 1]
-    const lastRootH = getNodeHeight(lastRoot, nodeMap, nodeHeights)
-    const lastRootY = nodeMap.get(lastRoot)?.position?.y ?? 0
-    const currentCenter = (firstRootY + lastRootY + lastRootH) / 2
-
-    let startY = currentCenter - totalSpan / 2
+    const totalHeight =
+      spans.reduce((a, b) => a + b, 0) + Math.max(0, roots.length - 1) * crossBranchGap
+    let y = topicCenterY - totalHeight / 2
     for (let i = 0; i < roots.length; i++) {
-      if (i > 0) startY += crossBranchGap
-      startY = assignSubtreeY(roots[i], startY)
+      y = assignSubtreeY(roots[i], y)
+      if (i < roots.length - 1) y += crossBranchGap
     }
   }
 
-  stackBranches(rightRoots)
-  stackBranches(leftRoots)
+  const topicTopY = nodeMap.get('topic')?.position?.y ?? 0
+  const topicCenterY = getNodeAnchorY('topic', topicTopY, nodeMap, nodeHeights)
 
-  // Re-center topic on all first-level branches
-  if (newY.size > 0) {
-    let minBranchY = Infinity
-    let maxBranchBottom = -Infinity
-    for (const cid of topicChildren) {
-      const y = newY.get(cid)
-      if (y == null) continue
-      const h = getNodeHeight(cid, nodeMap, nodeHeights)
-      minBranchY = Math.min(minBranchY, y)
-      maxBranchBottom = Math.max(maxBranchBottom, y + h)
-    }
-    if (minBranchY !== Infinity) {
-      const branchesCenter = (minBranchY + maxBranchBottom) / 2
-      const topicH =
-        nodeHeights['topic'] ??
-        (nodeMap.get('topic')?.data?.estimatedHeight as number | undefined) ??
-        DEFAULT_NODE_HEIGHT
-      newY.set('topic', branchesCenter - topicH / 2)
-    }
-  }
+  stackBranches(rightRoots, topicCenterY)
+  stackBranches(leftRoots, topicCenterY)
 
   if (newY.size === 0) return nodes
 

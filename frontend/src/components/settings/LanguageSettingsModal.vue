@@ -4,9 +4,10 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { ElCheckbox } from 'element-plus'
+import { ElCheckbox, ElRadio, ElRadioGroup } from 'element-plus'
 
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import {
   getInterfaceLanguagePickerLocaleCount,
@@ -15,7 +16,7 @@ import {
   matchedPromptLanguageForUiLocale,
 } from '@/i18n/locales'
 import { useAuthStore } from '@/stores'
-import type { Language, PromptLanguage } from '@/stores/ui'
+import type { Language, MindMapCanvasMode, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
 import { MULTISCRIPT_SANS_STACK } from '@/utils/diagramNodeFontStack'
 
@@ -24,9 +25,11 @@ const visible = defineModel<boolean>({ required: true })
 const uiStore = useUIStore()
 const authStore = useAuthStore()
 const { t } = useLanguage()
+const notify = useNotifications()
 
 const draftUi = ref<Language>(uiStore.language)
 const draftPrompt = ref<PromptLanguage>(uiStore.promptLanguage)
+const draftMindMapCanvasMode = ref<MindMapCanvasMode>(uiStore.mindMapCanvasMode)
 const matchPromptToInterface = ref(uiStore.matchPromptToUi)
 
 const allowSimplifiedChinesePicker = computed(() => uiStore.languagePolicyAllowZh)
@@ -111,6 +114,7 @@ watch(visible, (v) => {
     }
     draftUi.value = ui
     draftPrompt.value = pr
+    draftMindMapCanvasMode.value = uiStore.mindMapCanvasMode
     matchPromptToInterface.value = uiStore.matchPromptToUi
     void ensureFontsForLanguageCode(draftPrompt.value)
     void ensureFontsForLanguageCode(draftUi.value)
@@ -165,6 +169,11 @@ async function save(): Promise<void> {
   uiStore.setLanguage(ui)
   if (!matchPromptToInterface.value) {
     uiStore.setPromptLanguage(promptForPersist)
+  }
+  const prevMindMapMode = uiStore.mindMapCanvasMode
+  uiStore.setMindMapCanvasMode(draftMindMapCanvasMode.value)
+  if (prevMindMapMode !== draftMindMapCanvasMode.value) {
+    notify.info(t('settings.language.mindMapCanvasRefreshHint'))
   }
   uiStore.setUiLanguageExplicit(true)
   visible.value = false
@@ -261,6 +270,22 @@ function onClose(): void {
             </span>
           </el-option>
         </el-select>
+      </div>
+      <div>
+        <div class="text-sm text-stone-600 dark:text-stone-400 mb-2">
+          {{ t('settings.language.mindMapCanvas') }}
+        </div>
+        <ElRadioGroup
+          v-model="draftMindMapCanvasMode"
+          class="flex flex-col items-start gap-2"
+        >
+          <ElRadio value="legacy">
+            {{ t('settings.language.mindMapCanvasLegacy') }}
+          </ElRadio>
+          <ElRadio value="v2">
+            {{ t('settings.language.mindMapCanvasV2') }}
+          </ElRadio>
+        </ElRadioGroup>
       </div>
     </div>
     <template #footer>

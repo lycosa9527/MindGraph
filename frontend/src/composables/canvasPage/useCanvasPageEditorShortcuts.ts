@@ -2,10 +2,17 @@ import type { Ref } from 'vue'
 
 import { nodeIdsDiffBetweenDiagrams } from '@/composables/canvasPage/diagramDiff'
 import { eventBus } from '@/composables/core/useEventBus'
-import { useEditorShortcuts } from '@/composables/core/useKeyboard'
+import { useEditorShortcuts, useKeyboard } from '@/composables/core/useKeyboard'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
+import {
+  buildMindMapNavRectsFromLayout,
+  findMindMapNodeInDirection,
+  isMindMapDiagramType,
+  mindMapArrowKeyToDirection,
+  resolveMindMapNavStartId,
+} from '@/composables/mindMap/mindMapArrowNavigation'
 import { useAuthStore, useDiagramStore } from '@/stores'
 
 type ActiveEditorEntry = { user_id: number }
@@ -70,6 +77,56 @@ export function useCanvasPageEditorShortcuts(options: {
       diagramStore.type === 'flow_map'
     ) {
       eventBus.emit('diagram:add_child_requested', {})
+    }
+  }
+
+  function handleTabKey(event: KeyboardEvent) {
+    if (event.repeat) return
+    if (isTypingInInput()) return
+    if (isMindMapDiagramType(diagramStore.type)) {
+      eventBus.emit('diagram:add_child_requested', {})
+      return
+    }
+    handleAddBranchKey()
+  }
+
+  function handleEnterKey(event: KeyboardEvent) {
+    if (event.repeat) return
+    if (isTypingInInput()) return
+    if (isMindMapDiagramType(diagramStore.type)) {
+      eventBus.emit('diagram:add_sibling_requested', {})
+      return
+    }
+    handleAddChildKey()
+  }
+
+  function handleSpaceEditKey(event: KeyboardEvent) {
+    if (event.repeat) return
+    if (isTypingInInput()) return
+    if (!isMindMapDiagramType(diagramStore.type)) return
+    const selectedId = diagramStore.selectedNodes[0]
+    if (!selectedId) return
+    eventBus.emit('node:edit_requested', { nodeId: selectedId })
+  }
+
+  function handleMindMapArrowKey(key: string) {
+    if (isTypingInInput()) return
+    if (!isMindMapDiagramType(diagramStore.type)) return
+    const direction = mindMapArrowKeyToDirection(key)
+    if (!direction) return
+
+    const rects = buildMindMapNavRectsFromLayout(
+      diagramStore.vueFlowNodes,
+      (nodeId) => diagramStore.getNodeDimension(nodeId)
+    )
+    if (rects.length === 0) return
+
+    const startId = resolveMindMapNavStartId(diagramStore.selectedNodes, rects)
+    if (!startId) return
+
+    const nextId = findMindMapNodeInDirection(startId, direction, rects)
+    if (nextId) {
+      diagramStore.selectNodes(nextId)
     }
   }
 
@@ -197,10 +254,18 @@ export function useCanvasPageEditorShortcuts(options: {
     save: handleSaveKey,
     delete: handleDeleteKey,
     addNode: handleAddNodeKey,
-    addBranch: handleAddBranchKey,
-    addChild: handleAddChildKey,
     clearNodeText: handleClearNodeTextKey,
   })
+
+  useKeyboard([
+    { key: 'Tab', handler: handleTabKey },
+    { key: 'Enter', handler: handleEnterKey },
+    { key: ' ', handler: handleSpaceEditKey },
+    { key: 'ArrowUp', handler: () => handleMindMapArrowKey('ArrowUp') },
+    { key: 'ArrowDown', handler: () => handleMindMapArrowKey('ArrowDown') },
+    { key: 'ArrowLeft', handler: () => handleMindMapArrowKey('ArrowLeft') },
+    { key: 'ArrowRight', handler: () => handleMindMapArrowKey('ArrowRight') },
+  ])
 
   return { handleSaveKey }
 }

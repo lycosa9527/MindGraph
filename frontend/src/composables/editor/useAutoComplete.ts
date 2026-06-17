@@ -320,7 +320,9 @@ export function useAutoComplete() {
   /**
    * Check if auto-complete can be triggered
    */
-  function validateForAutoComplete(): { valid: boolean; error?: string } {
+  function validateForAutoComplete(options?: {
+    generationInstructions?: string
+  }): { valid: boolean; error?: string } {
     if (llmResultsStore.isGenerating) {
       return {
         valid: false,
@@ -379,6 +381,12 @@ export function useAutoComplete() {
       }
     }
 
+    // One-sentence / mind-map side panel: requirements alone can drive generation
+    const instructions = (options?.generationInstructions ?? '').trim()
+    if (instructions) {
+      return { valid: true }
+    }
+
     // All other cases need a valid topic
     const mainTopic = extractMainTopic()
     if (!mainTopic) {
@@ -422,17 +430,31 @@ export function useAutoComplete() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: 'Request failed' }))
+        const detail = errorData.detail
+        const detailText =
+          typeof detail === 'string'
+            ? detail
+            : Array.isArray(detail)
+              ? detail.map((d: { msg?: string }) => d.msg).filter(Boolean).join('; ')
+              : undefined
         return {
           model,
           success: false,
-          error: errorData.detail || `HTTP ${response.status}`,
+          error: detailText || `HTTP ${response.status}`,
           elapsed,
         }
       }
 
       const result = await response.json()
 
-      if (result.success && result.spec) {
+      const specPayload = result.spec as { success?: boolean; error?: string } | undefined
+      const specLooksLikeError =
+        specPayload &&
+        typeof specPayload === 'object' &&
+        specPayload.success === false &&
+        typeof specPayload.error === 'string'
+
+      if (result.success && result.spec && !specLooksLikeError) {
         let diagramType = result.diagram_type || requestBody.diagram_type
         if (diagramType === 'mind_map') {
           diagramType = 'mindmap'
@@ -446,10 +468,12 @@ export function useAutoComplete() {
           elapsed,
         }
       } else {
+        const nestedSpecError =
+          specLooksLikeError && specPayload ? specPayload.error : undefined
         return {
           model,
           success: false,
-          error: result.error || 'Unknown error',
+          error: nestedSpecError || result.error || 'Unknown error',
           elapsed,
         }
       }
@@ -481,9 +505,17 @@ export function useAutoComplete() {
       onError?: (error: string) => void
       /** Append to prompt (e.g. ' 半成品' for learning sheet mode) */
       promptSuffix?: string
+      /** User-specified mind map / diagram generation requirements */
+      generationInstructions?: string
     } = {}
   ): Promise<{ success: boolean; error?: string }> {
-    const { modelsToRun = [...LLM_MODELS], onFirstResult, onAllComplete, promptSuffix } = options
+    const {
+      modelsToRun = [...LLM_MODELS],
+      onFirstResult,
+      onAllComplete,
+      promptSuffix,
+      generationInstructions,
+    } = options
 
     if (diagramStore.collabSessionActive) {
       notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
@@ -491,15 +523,24 @@ export function useAutoComplete() {
     }
 
     // Validate
-    const validation = validateForAutoComplete()
+    const validation = validateForAutoComplete({ generationInstructions })
     if (!validation.valid) {
-      options.onError?.(validation.error || 'Validation failed')
+      const validationError = validation.error || 'Validation failed'
+      notify.warning(validationError)
+      options.onError?.(validationError)
       return { success: false, error: validation.error }
     }
 
     // Build simple request - backend handles prompt construction
     const language = promptLanguage.value
-    const topic = (extractMainTopic() || '') + (promptSuffix ?? '')
+    const baseTopic = extractMainTopic() || ''
+    const instructions = (generationInstructions ?? '').trim()
+    const reqLabel = t('autoComplete.generationInstructionsLabel')
+    let topic = baseTopic
+    if (instructions) {
+      topic = baseTopic ? `${baseTopic}\n\n${reqLabel}\n${instructions}` : instructions
+    }
+    topic += promptSuffix ?? ''
 
     const requestBody: Record<string, unknown> = {
       prompt: topic,
@@ -617,10 +658,15 @@ export function useAutoComplete() {
       onAllComplete?.(successCount, totalCount)
 
       if (successCount === 0) {
-        const errorMsg = t('autoComplete.generationFailedRetry')
+        const firstModelError = modelsToRun
+          .map((model) => llmResultsStore.results[model]?.error)
+          .find((msg) => typeof msg === 'string' && msg.trim().length > 0)
+        const errorMsg = firstModelError
+          ? `${t('autoComplete.generationFailedRetry')}：${firstModelError}`
+          : t('autoComplete.generationFailedRetry')
         notify.error(errorMsg)
         options.onError?.(errorMsg)
-        return { success: false, error: 'All models failed' }
+        return { success: false, error: firstModelError || 'All models failed' }
       } else {
         const msg = t('autoComplete.modelsReadyCount', {
           success: successCount,

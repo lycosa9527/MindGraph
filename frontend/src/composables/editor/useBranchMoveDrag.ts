@@ -19,19 +19,24 @@ import { computed, onUnmounted, ref } from 'vue'
 import { useVueFlow } from '@vue-flow/core'
 
 import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
+import {
+  getDropPreviewBorderRadius,
+  getDropTargetShapeClass,
+} from '@/composables/diagramCanvas/diagramCanvasZoomPaneStyles'
+import { isLearningSheetCustomPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { mindMapBranchFontSize, resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
+import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
 import { ANIMATION } from '@/config/uiConfig'
 import { useDiagramStore } from '@/stores'
 import type { MindGraphNode } from '@/types'
+import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 
 const DEFAULT_NODE_WIDTH = 120
 const DEFAULT_NODE_HEIGHT = 50
 const LONG_PRESS_MOVE_THRESHOLD_SQ = 15 * 15
-
-/** Top-level branches are depth 1 (branch-r-1-X or branch-l-1-X). */
-function isTopLevelBranch(nodeId: string): boolean {
-  return /^branch-(r|l)-1-\d+$/.test(nodeId)
-}
+/** Start branch drag after this movement (px) — no need to wait for long-press. */
+const DRAG_START_THRESHOLD_SQ = 8 * 8
 
 /** Tree map: categories (tree-cat-X) are top-level. */
 function isTopLevelTreeMapNode(nodeId: string): boolean {
@@ -87,9 +92,22 @@ function getTopicId(diagramType: string): string {
 }
 
 export interface DropTarget {
-  type: 'topic' | 'child'
+  type: 'topic' | 'child' | 'before' | 'after'
   nodeId: string
-  index?: number
+}
+
+export interface BranchMoveGhostPreview {
+  label: string
+  width: number
+  height: number
+  backgroundColor: string
+  textColor: string
+  borderColor: string
+  fontSize: string
+  fontWeight: string
+  borderRadius: string
+  shapeClass: string
+  variant: 'standard' | 'underline'
 }
 
 export interface BranchMoveState {
@@ -101,13 +119,15 @@ export interface BranchMoveState {
   branchColor: { fill: string; border: string }
   nodeStartPos: { x: number; y: number; width: number; height: number } | null
   animationPhase: 'shrinking' | 'following'
+  draggedGhost: BranchMoveGhostPreview | null
 }
 
-export function useBranchMoveDrag() {
+export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
   const diagramStore = useDiagramStore()
-  const { screenToFlowCoordinate, getNodes } = useVueFlow()
+  const { screenToFlowCoordinate, getNodes, getViewport } = useVueFlow()
 
   const pendingNodeId = ref<string | null>(null)
+  const longPressNodeId = ref<string | null>(null)
   const longPressTimer = ref<ReturnType<typeof setTimeout> | null>(null)
   const cursorPos = ref<{ x: number; y: number } | null>(null)
   const lastMouseDownPos = ref<{ clientX: number; clientY: number } | null>(null)
@@ -115,6 +135,7 @@ export function useBranchMoveDrag() {
   const capturedBranchColor = ref<{ fill: string; border: string }>(getMindmapBranchColor(0))
   const nodeStartPos = ref<{ x: number; y: number; width: number; height: number } | null>(null)
   const animationPhase = ref<'shrinking' | 'following'>('shrinking')
+  const draggedGhost = ref<BranchMoveGhostPreview | null>(null)
 
   let touchOrigin = false
   let awaitingTapConfirm = false
@@ -138,9 +159,31 @@ export function useBranchMoveDrag() {
     branchColor: branchColor.value,
     nodeStartPos: nodeStartPos.value,
     animationPhase: animationPhase.value,
+    draggedGhost: draggedGhost.value,
   }))
 
-  function getNodeDimensions(node: MindGraphNode): { w: number; h: number } {
+  function resolveDiagramType(node?: MindGraphNode): string {
+    return (
+      node?.data?.diagramType ??
+      diagramStore.type ??
+      diagramStore.data?.type ??
+      ''
+    )
+  }
+
+  function isMindMapBranchNode(nodeId: string, node?: MindGraphNode): boolean {
+    const dt = resolveDiagramType(node)
+    if (dt !== 'mindmap' && dt !== 'mind_map') return false
+    return nodeId.startsWith('branch-') || node?.type === 'branch'
+  }
+
+  function getNodeDimensions(node: MindGraphNode, nodeId?: string): { w: number; h: number } {
+    const id = nodeId ?? node.id ?? ''
+    const cached = id ? diagramStore.nodeDimensions[id] : undefined
+    if (cached?.width && cached?.height) {
+      return { w: cached.width, h: cached.height }
+    }
+
     const graphNode = node as MindGraphNode & { dimensions?: { width: number; height: number } }
     const dims = graphNode.dimensions
     if (dims?.width && dims?.height) return { w: dims.width, h: dims.height }
@@ -153,6 +196,115 @@ export function useBranchMoveDrag() {
     const dataSize = node.data?.style?.size as number | undefined
     if (dataSize) return { w: dataSize, h: dataSize }
     return { w: styleW ?? DEFAULT_NODE_WIDTH, h: styleH ?? DEFAULT_NODE_HEIGHT }
+  }
+
+  function readGhostFromDom(nodeId: string): BranchMoveGhostPreview | null {
+    const nodeEl = document.querySelector(
+      `.vue-flow__node[data-id="${CSS.escape(nodeId)}"]`
+    ) as HTMLElement | null
+    const branchEl = nodeEl?.querySelector('.branch-node, .mind-map-node') as HTMLElement | null
+    if (!branchEl) return null
+
+    const zoom = getViewport().zoom || 1
+    const rect = branchEl.getBoundingClientRect()
+    if (rect.width <= 0 || rect.height <= 0) return null
+
+    const cs = getComputedStyle(branchEl)
+    const labelEl = branchEl.querySelector(
+      '.inline-edit-display, .mind-map-underline-text .inline-edit-display'
+    )
+    const label = (labelEl?.textContent ?? '').trim() || '…'
+    const isUnderline = branchEl.classList.contains('mind-map-underline-node')
+
+    return {
+      label,
+      width: Math.max(rect.width / zoom, DEFAULT_NODE_WIDTH),
+      height: Math.max(rect.height / zoom, DEFAULT_NODE_HEIGHT),
+      backgroundColor: cs.backgroundColor,
+      textColor: cs.color,
+      borderColor: cs.borderColor,
+      fontSize: cs.fontSize,
+      fontWeight: cs.fontWeight,
+      borderRadius: cs.borderRadius,
+      shapeClass: isUnderline ? '' : 'is-pill',
+      variant: isUnderline ? 'underline' : 'standard',
+    }
+  }
+
+  function buildDraggedGhost(
+    nodeId: string,
+    node: MindGraphNode | undefined
+  ): BranchMoveGhostPreview | null {
+    if (!node) return readGhostFromDom(nodeId)
+    if (!isMindMapBranchNode(nodeId, node)) return null
+
+    const storeNode = diagramStore.data?.nodes.find((n) => n.id === nodeId)
+    const persistedStyle = (diagramStore.data?._node_styles?.[nodeId] ?? {}) as Record<
+      string,
+      unknown
+    >
+    const label = String(node.data?.label ?? storeNode?.text ?? '').trim() || '…'
+    const { w, h } = getNodeDimensions(node, nodeId)
+    const dataStyle = {
+      ...persistedStyle,
+      ...(storeNode?.style ?? {}),
+      ...(node.data?.style ?? {}),
+    } as Record<string, unknown>
+    const vueStyle =
+      typeof node.style === 'object' && node.style !== null
+        ? (node.style as Record<string, unknown>)
+        : {}
+
+    const theme = getMindMapThemeForDiagram(diagramStore.data)
+    const nodeShape = resolveNodeShape(dataStyle as never, true)
+    const isUnderline = nodeShape === 'underline'
+    const fontSizePx = dataStyle.fontSize ?? mindMapBranchFontSize(nodeId)
+    const fontSize =
+      typeof fontSizePx === 'number' ? `${fontSizePx}px` : String(fontSizePx ?? '16px')
+
+    const ghost: BranchMoveGhostPreview = {
+      label,
+      width: Math.max(w, DEFAULT_NODE_WIDTH),
+      height: Math.max(h, DEFAULT_NODE_HEIGHT),
+      backgroundColor: String(
+        dataStyle.backgroundColor ??
+          vueStyle.backgroundColor ??
+          (isUnderline ? 'transparent' : theme.backgroundColor)
+      ),
+      textColor: String(dataStyle.textColor ?? vueStyle.color ?? theme.textColor),
+      borderColor: String(
+        dataStyle.borderColor ??
+          vueStyle.borderColor ??
+          resolveMindMapTopicBorderColor(null) ??
+          theme.borderColor
+      ),
+      fontSize,
+      fontWeight: String(dataStyle.fontWeight ?? vueStyle.fontWeight ?? 'normal'),
+      borderRadius: isUnderline ? '0px' : getDropPreviewBorderRadius(node as MindGraphNode),
+      shapeClass: getDropTargetShapeClass(node as MindGraphNode),
+      variant: isUnderline ? 'underline' : 'standard',
+    }
+
+    return ghost
+  }
+
+  function classifyBranchDrop(
+    node: MindGraphNode,
+    flowX: number,
+    flowY: number
+  ): DropTarget | null {
+    const pos = node.position ?? { x: 0, y: 0 }
+    const { w: nodeW, h: nodeH } = getNodeDimensions(node)
+    if (flowX < pos.x || flowX > pos.x + nodeW || flowY < pos.y || flowY > pos.y + nodeH) {
+      return null
+    }
+    const relY = flowY - pos.y
+    const topZone = nodeH * 0.28
+    const bottomZone = nodeH * 0.72
+    const nodeId = node.id ?? ''
+    if (relY < topZone) return { type: 'before', nodeId }
+    if (relY > bottomZone) return { type: 'after', nodeId }
+    return { type: 'child', nodeId }
   }
 
   function hitTestHierarchical(
@@ -177,16 +329,24 @@ export function useBranchMoveDrag() {
     }
     const branchPattern = isTreeMap ? /^tree-(cat|leaf)-/ : /^branch-/
     const h = hiddenIds.value
+    const draggedId = pendingNodeId.value
+    let best: DropTarget | null = null
+    let bestArea = Infinity
     for (const node of nodes) {
-      if (node.id === topicId || !branchPattern.test(node.id ?? '')) continue
-      if (h.has(node.id ?? '')) continue
+      const nid = node.id ?? ''
+      if (nid === topicId || !branchPattern.test(nid)) continue
+      if (h.has(nid) || nid === draggedId) continue
+      const hit = classifyBranchDrop(node, flowX, flowY)
+      if (!hit) continue
       const pos = node.position ?? { x: 0, y: 0 }
       const { w: nodeW, h: nodeH } = getNodeDimensions(node)
-      if (flowX >= pos.x && flowX <= pos.x + nodeW && flowY >= pos.y && flowY <= pos.y + nodeH) {
-        return { type: 'child', nodeId: node.id ?? '' }
+      const area = nodeW * nodeH
+      if (area < bestArea) {
+        bestArea = area
+        best = hit
       }
     }
-    return null
+    return best
   }
 
   function hitTestSwap(nodes: MindGraphNode[], flowX: number, flowY: number): DropTarget | null {
@@ -236,6 +396,7 @@ export function useBranchMoveDrag() {
     document.removeEventListener('mouseup', handleCancelTimer, captureOpt)
     document.removeEventListener('touchend', handleCancelTimer, captureOpt)
     document.removeEventListener('touchmove', handleCancelTouchMove, captureOpt)
+    document.removeEventListener('mousemove', handlePreDragMouseMove, captureOpt)
     document.documentElement.removeEventListener('mouseleave', handleMouseLeave)
     document.removeEventListener('keydown', handleEscape)
   }
@@ -243,10 +404,12 @@ export function useBranchMoveDrag() {
   function cleanup(): void {
     clearTimer()
     pendingNodeId.value = null
+    longPressNodeId.value = null
     cursorPos.value = null
     dropTarget.value = null
     nodeStartPos.value = null
     animationPhase.value = 'shrinking'
+    draggedGhost.value = null
     lastMouseDownPos.value = null
     touchOrigin = false
     awaitingTapConfirm = false
@@ -268,6 +431,8 @@ export function useBranchMoveDrag() {
     if (isTreeMap) {
       if (target.type === 'topic') {
         diagramStore.moveTreeMapBranch(nodeId, 'topic', target.nodeId)
+      } else if (target.type === 'before' || target.type === 'after') {
+        diagramStore.moveTreeMapBranch(nodeId, 'sibling', target.nodeId)
       } else if (isTopLevelTreeMapNode(nodeId)) {
         diagramStore.moveTreeMapBranch(nodeId, 'sibling', target.nodeId)
       } else if (isTopLevelTreeMapNode(target.nodeId)) {
@@ -279,15 +444,48 @@ export function useBranchMoveDrag() {
       if (target.type === 'topic') {
         const flowX = cursorPos.value?.x ?? DEFAULT_CENTER_X + 1
         diagramStore.moveMindMapBranch(nodeId, 'topic', undefined, undefined, flowX)
-      } else if (isTopLevelBranch(nodeId)) {
-        diagramStore.moveMindMapBranch(nodeId, 'sibling', target.nodeId)
-      } else {
+      } else if (target.type === 'before') {
+        diagramStore.moveMindMapBranch(nodeId, 'before', target.nodeId)
+      } else if (target.type === 'after') {
+        diagramStore.moveMindMapBranch(nodeId, 'after', target.nodeId)
+      } else if (target.type === 'child') {
         diagramStore.moveMindMapBranch(nodeId, 'child', target.nodeId)
       }
     }
   }
 
   // ---- Desktop: mouse handlers ----
+
+  function attachActiveDragListeners(): void {
+    document.removeEventListener('mouseup', handleCancelTimer, captureOpt)
+    document.removeEventListener('touchend', handleCancelTimer, captureOpt)
+    document.removeEventListener('touchmove', handleCancelTouchMove, captureOpt)
+    document.removeEventListener('mousemove', handlePreDragMouseMove, captureOpt)
+
+    document.addEventListener('mouseup', handleDocumentMouseUp, captureOpt)
+    document.addEventListener('mousemove', handleDocumentMouseMove, captureOpt)
+    if (touchOrigin) {
+      document.addEventListener('touchmove', handleDocumentTouchMove, captureOpt)
+      document.addEventListener('touchend', handleDocumentTouchEnd, captureOpt)
+    }
+    document.documentElement.addEventListener('mouseleave', handleMouseLeave)
+    document.addEventListener('keydown', handleEscape)
+  }
+
+  function beginDragForNode(nodeId: string): void {
+    clearTimer()
+    activateDragMode(nodeId)
+    attachActiveDragListeners()
+  }
+
+  function handlePreDragMouseMove(e: MouseEvent): void {
+    if (!longPressTimer.value || !longPressNodeId.value || !lastMouseDownPos.value) return
+    const dx = e.clientX - lastMouseDownPos.value.clientX
+    const dy = e.clientY - lastMouseDownPos.value.clientY
+    if (dx * dx + dy * dy < DRAG_START_THRESHOLD_SQ) return
+    beginDragForNode(longPressNodeId.value)
+    handleDocumentMouseMove(e)
+  }
 
   function handleDocumentMouseUp(): void {
     const target = dropTarget.value
@@ -335,7 +533,12 @@ export function useBranchMoveDrag() {
     if (!nodeId) return
 
     if (target && target.nodeId !== nodeId) {
-      executeDrop(nodeId, target.nodeId)
+      const dt = diagramStore.type ?? ''
+      if (usesHierarchicalMove(dt)) {
+        handleDropHierarchical(nodeId, target)
+      } else {
+        diagramStore.moveNodeBySwap(nodeId, target.nodeId)
+      }
       cleanup()
       return
     }
@@ -361,7 +564,6 @@ export function useBranchMoveDrag() {
   function activateDragMode(nodeId: string): void {
     const vfNodes = getNodes.value as MindGraphNode[]
     const node = vfNodes.find((n) => n.id === nodeId)
-    pendingNodeId.value = nodeId
     const idx =
       (node?.data?.branchIndex as number) ??
       (node?.data?.groupIndex as number) ??
@@ -370,19 +572,23 @@ export function useBranchMoveDrag() {
     capturedBranchColor.value = getMindmapBranchColor(idx)
     const pos = node?.position ?? { x: 0, y: 0 }
     const { w, h } = node
-      ? getNodeDimensions(node)
+      ? getNodeDimensions(node, nodeId)
       : { w: DEFAULT_NODE_WIDTH, h: DEFAULT_NODE_HEIGHT }
     nodeStartPos.value = { x: pos.x, y: pos.y, width: w, height: h }
-    animationPhase.value = 'shrinking'
+    draggedGhost.value = buildDraggedGhost(nodeId, node) ?? readGhostFromDom(nodeId)
+    pendingNodeId.value = nodeId
+    animationPhase.value = draggedGhost.value ? 'following' : 'shrinking'
     const lastPos = lastMouseDownPos.value
     const flowPos =
       lastPos !== null
         ? screenToFlowCoordinate({ x: lastPos.clientX, y: lastPos.clientY })
         : { x: pos.x + w / 2, y: pos.y + h / 2 }
     cursorPos.value = { x: flowPos.x, y: flowPos.y }
-    setTimeout(() => {
-      animationPhase.value = 'following'
-    }, 280)
+    if (!draggedGhost.value) {
+      setTimeout(() => {
+        animationPhase.value = 'following'
+      }, 280)
+    }
   }
 
   /**
@@ -396,6 +602,8 @@ export function useBranchMoveDrag() {
     clientY?: number,
     fromTouch?: boolean
   ): boolean {
+    if (isLearningSheetCustomPickActive()) return false
+    if (options?.allowNodeMove && !options.allowNodeMove()) return false
     const dt = diagramStore.type
     if (!dt) return false
     if (isEditing) return false
@@ -420,25 +628,18 @@ export function useBranchMoveDrag() {
     if (clientX !== undefined && clientY !== undefined) {
       lastMouseDownPos.value = { clientX, clientY }
     }
+    longPressNodeId.value = nodeId
     longPressTimer.value = setTimeout(() => {
       longPressTimer.value = null
-      activateDragMode(nodeId)
-
-      document.removeEventListener('mouseup', handleCancelTimer, captureOpt)
-      document.removeEventListener('touchend', handleCancelTimer, captureOpt)
-      document.removeEventListener('touchmove', handleCancelTouchMove, captureOpt)
-
-      document.addEventListener('mouseup', handleDocumentMouseUp, captureOpt)
-      document.addEventListener('mousemove', handleDocumentMouseMove, captureOpt)
-      if (touchOrigin) {
-        document.addEventListener('touchmove', handleDocumentTouchMove, captureOpt)
-        document.addEventListener('touchend', handleDocumentTouchEnd, captureOpt)
+      if (longPressNodeId.value) {
+        beginDragForNode(longPressNodeId.value)
       }
-      document.documentElement.addEventListener('mouseleave', handleMouseLeave)
-      document.addEventListener('keydown', handleEscape)
     }, ANIMATION.LONG_PRESS_MS)
 
     document.addEventListener('mouseup', handleCancelTimer, captureOpt)
+    if (!fromTouch) {
+      document.addEventListener('mousemove', handlePreDragMouseMove, captureOpt)
+    }
     if (fromTouch) {
       document.addEventListener('touchend', handleCancelTimer, captureOpt)
       document.addEventListener('touchmove', handleCancelTouchMove, captureOpt)
@@ -449,12 +650,13 @@ export function useBranchMoveDrag() {
   function handleCancelTimer(): void {
     if (longPressTimer.value) {
       clearTimer()
-      pendingNodeId.value = null
+      longPressNodeId.value = null
       lastMouseDownPos.value = null
       touchOrigin = false
       document.removeEventListener('mouseup', handleCancelTimer, captureOpt)
       document.removeEventListener('touchend', handleCancelTimer, captureOpt)
       document.removeEventListener('touchmove', handleCancelTouchMove, captureOpt)
+      document.removeEventListener('mousemove', handlePreDragMouseMove, captureOpt)
     }
   }
 

@@ -105,7 +105,7 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
   }
 
   function handleFitToScreen(): void {
-    eventBus.emit('view:fit_to_window_requested', { animate: true })
+    eventBus.emit('view:fit_to_window_requested', { animate: true, userInitiated: true })
   }
 
   function handleZoomReset(): void {

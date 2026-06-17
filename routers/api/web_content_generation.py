@@ -6,20 +6,35 @@ Proprietary License
 """
 
 import asyncio
+import ipaddress
 import logging
-from typing import Optional
+import re
+import socket
+import tempfile
+from html.parser import HTMLParser
+from pathlib import Path
+from typing import Optional, Tuple
+from urllib.parse import urlparse
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+import httpx
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 
 from agents.mind_maps.web_content_mind_map_agent import WebContentMindMapAgent
-from models import Messages, WebContentGenerateRequest, WebContentMindmapPngRequest, get_request_language
+from models import (
+    CanvasDocumentMindmapRequest,
+    Messages,
+    WebContentGenerateRequest,
+    WebContentMindmapPngRequest,
+    get_request_language,
+)
 from models.domain.auth import User
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.api.vueflow_screenshot import capture_diagram_screenshot
+from services.knowledge.document_processor import DocumentProcessor
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
-from services.utils.error_types import BACKGROUND_INFRA_ERRORS
-from utils.auth import get_current_user_or_api_key
+from services.utils.error_types import REDIS_ERRORS
+from utils.auth import get_current_user, get_current_user_or_api_key
 from utils.auth.school_tier import (
     TIER_FEATURE_CHROME_EXTENSION,
     assert_user_has_school_tier_feature,
@@ -31,6 +46,176 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["api"])
 
 _SAVE_LIMIT_REACHED = "__limit_reached__"
+_MAX_FETCH_BYTES = 2 * 1024 * 1024
+_MAX_IMAGE_BYTES = 10 * 1024 * 1024
+_MAX_DOC_BYTES = 20 * 1024 * 1024
+_ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/jpg"}
+_ALLOWED_DOC_TYPES = {
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+
+
+class _HTMLTextExtractor(HTMLParser):
+    """Minimal HTML-to-text extractor for web page fetch."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._chunks: list[str] = []
+        self._skip_depth = 0
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        if tag in {"script", "style", "noscript"}:
+            self._skip_depth += 1
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in {"script", "style", "noscript"} and self._skip_depth > 0:
+            self._skip_depth -= 1
+
+    def handle_data(self, data: str) -> None:
+        if self._skip_depth == 0:
+            text = data.strip()
+            if text:
+                self._chunks.append(text)
+
+    def get_text(self) -> str:
+        """Join extracted text chunks into a single plain-text document."""
+        return re.sub(r"\n{3,}", "\n\n", "\n".join(self._chunks)).strip()
+
+
+def _is_blocked_fetch_host(host: str) -> bool:
+    """Reject localhost and private/reserved IPs to reduce SSRF risk."""
+    lowered = (host or "").strip().lower()
+    if lowered in {"localhost", "127.0.0.1", "::1"}:
+        return True
+    try:
+        for info in socket.getaddrinfo(host, None):
+            ip_str = info[4][0]
+            ip = ipaddress.ip_address(ip_str)
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                return True
+    except OSError:
+        return True
+    return False
+
+
+async def _fetch_url_page_text(url: str) -> Tuple[str, Optional[str]]:
+    """Fetch a public web page and return plain text plus document title."""
+    parsed = urlparse(url.strip())
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise HTTPException(status_code=400, detail="Invalid URL")
+
+    host = parsed.hostname or ""
+    if _is_blocked_fetch_host(host):
+        raise HTTPException(status_code=400, detail="URL host is not allowed")
+
+    headers = {
+        "User-Agent": "MindGraphCanvas/1.0 (+https://mg.mindspringedu.com)",
+        "Accept": "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True, headers=headers) as client:
+            response = await client.get(url.strip())
+            if response.status_code >= 400:
+                raise HTTPException(status_code=502, detail="Failed to fetch page")
+            if len(response.content) > _MAX_FETCH_BYTES:
+                raise HTTPException(status_code=413, detail="Page too large")
+
+            content_type = (response.headers.get("content-type") or "").lower()
+            raw = response.text
+
+            if "text/plain" in content_type or "application/json" in content_type:
+                text = raw.strip()
+            else:
+                parser = _HTMLTextExtractor()
+                parser.feed(raw)
+                text = parser.get_text()
+
+            title_match = re.search(r"<title[^>]*>(.*?)</title>", raw, re.IGNORECASE | re.DOTALL)
+            title = re.sub(r"\s+", " ", title_match.group(1)).strip() if title_match else None
+
+            if not text:
+                raise HTTPException(status_code=422, detail="No readable text found on page")
+            return text[:32000], title
+    except httpx.TimeoutException as exc:
+        raise HTTPException(status_code=504, detail="Timeout fetching page") from exc
+    except httpx.RequestError as exc:
+        logger.warning("canvas document summary fetch failed: %s", exc)
+        raise HTTPException(status_code=502, detail="Failed to fetch page") from exc
+
+
+async def _resolve_canvas_page_content(req: CanvasDocumentMindmapRequest) -> Tuple[str, Optional[str], Optional[str]]:
+    """Resolve text content from paste/upload or by fetching a URL."""
+    content = (req.page_content or "").strip()
+    title = req.page_title
+    page_url = (req.page_url or "").strip() or None
+
+    if content:
+        return content, title, page_url
+
+    if page_url:
+        fetched_content, fetched_title = await _fetch_url_page_text(page_url)
+        return fetched_content, fetched_title or title, page_url
+
+    raise HTTPException(status_code=400, detail="Either page_content or page_url is required")
+
+
+async def _generate_mindmap_from_resolved_content(
+    *,
+    page_content: str,
+    language: str,
+    content_format: str,
+    page_title: Optional[str],
+    page_url: Optional[str],
+    request: Request,
+    current_user: Optional[User],
+    endpoint_path: str,
+    rate_limit_key: str,
+    require_chrome_tier: bool,
+) -> dict:
+    """Shared mind map generation from resolved page text."""
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(rate_limit_key, identifier, max_requests=100, window_seconds=60)
+
+    accept_language = request.headers.get("Accept-Language", "")
+    lang = get_request_language(None, accept_language)
+
+    if require_chrome_tier and current_user is not None:
+        async with actor_rls_session(current_user) as db:
+            await assert_user_has_school_tier_feature(
+                db,
+                current_user,
+                TIER_FEATURE_CHROME_EXTENSION,
+                lang,
+            )
+
+    user_id = current_user.id if current_user and hasattr(current_user, "id") else None
+    organization_id = (
+        getattr(current_user, "organization_id", None) if current_user and hasattr(current_user, "id") else None
+    )
+
+    http_request_id = _sanitize_correlation_header(request.headers.get("X-Request-Id"))
+
+    agent = WebContentMindMapAgent(model="qwen")
+    result = await agent.generate_from_page_content(
+        page_content=page_content.strip(),
+        language=language,
+        content_format=content_format,
+        page_title=page_title,
+        page_url=page_url,
+        user_id=user_id,
+        organization_id=organization_id,
+        request_type="diagram_generation",
+        endpoint_path=endpoint_path,
+        http_request_id=http_request_id,
+    )
+
+    if not result.get("success"):
+        detail = result.get("error") or "Generation failed"
+        raise HTTPException(status_code=500, detail=detail)
+
+    return result
 
 
 async def _try_save_to_library(
@@ -76,7 +261,7 @@ async def _try_save_to_library(
             save_err,
         )
         return None
-    except BACKGROUND_INFRA_ERRORS as save_exc:
+    except REDIS_ERRORS as save_exc:
         logger.warning(
             "web_content_mindmap_png: library save error user=%s request_id=%s: %s",
             user_id,
@@ -107,47 +292,138 @@ async def generate_from_web_content(
 
     Rate limited: 100 requests per minute per user/IP.
     """
-    identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit("generate_from_web_content", identifier, max_requests=100, window_seconds=60)
-
-    accept_language = request.headers.get("Accept-Language", "")
-    lang = get_request_language(None, accept_language)
-
-    if current_user is not None:
-        async with actor_rls_session(current_user) as db:
-            await assert_user_has_school_tier_feature(
-                db,
-                current_user,
-                TIER_FEATURE_CHROME_EXTENSION,
-                lang,
-            )
-
-    user_id = current_user.id if current_user and hasattr(current_user, "id") else None
-    organization_id = (
-        getattr(current_user, "organization_id", None) if current_user and hasattr(current_user, "id") else None
-    )
-
-    http_request_id = _sanitize_correlation_header(request.headers.get("X-Request-Id"))
-
-    agent = WebContentMindMapAgent(model="qwen")
-    result = await agent.generate_from_page_content(
+    return await _generate_mindmap_from_resolved_content(
         page_content=req.page_content.strip(),
         language=req.language,
         content_format=req.content_format,
         page_title=req.page_title,
         page_url=req.page_url,
-        user_id=user_id,
-        organization_id=organization_id,
-        request_type="diagram_generation",
+        request=request,
+        current_user=current_user,
         endpoint_path="/api/generate_from_web_content",
-        http_request_id=http_request_id,
+        rate_limit_key="generate_from_web_content",
+        require_chrome_tier=True,
     )
 
-    if not result.get("success"):
-        detail = result.get("error") or "Generation failed"
-        raise HTTPException(status_code=500, detail=detail)
 
-    return result
+@router.post("/canvas/generate_mindmap_from_document")
+async def canvas_generate_mindmap_from_document(
+    req: CanvasDocumentMindmapRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    """Canvas document summary panel — text paste, uploaded doc, or web URL."""
+    page_content, page_title, page_url = await _resolve_canvas_page_content(req)
+    return await _generate_mindmap_from_resolved_content(
+        page_content=page_content,
+        language=req.language,
+        content_format=req.content_format,
+        page_title=page_title,
+        page_url=page_url,
+        request=request,
+        current_user=current_user,
+        endpoint_path="/api/canvas/generate_mindmap_from_document",
+        rate_limit_key="canvas_generate_mindmap_from_document",
+        require_chrome_tier=False,
+    )
+
+
+@router.post("/canvas/generate_mindmap_from_document_file")
+async def canvas_generate_mindmap_from_document_file(
+    request: Request,
+    file: UploadFile = File(...),
+    language: str = Form("zh"),
+    current_user: User = Depends(get_current_user),
+):
+    """Canvas document summary panel — extract PDF/DOCX text then generate mind map."""
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Empty file")
+    if len(raw) > _MAX_DOC_BYTES:
+        raise HTTPException(status_code=413, detail="Document too large")
+
+    suffix = Path(file.filename or "upload.pdf").suffix.lower()
+    if suffix not in {".pdf", ".docx"}:
+        raise HTTPException(status_code=400, detail="Unsupported document type")
+
+    temp_path: Optional[Path] = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(raw)
+            temp_path = Path(tmp.name)
+
+        processor = DocumentProcessor()
+        file_type = processor.get_file_type(str(temp_path))
+        if file_type not in _ALLOWED_DOC_TYPES or not processor.is_supported(file_type):
+            raise HTTPException(status_code=400, detail="Unsupported document type")
+
+        extracted = processor.extract_text(str(temp_path), file_type)
+        if not extracted or not extracted.strip():
+            raise HTTPException(status_code=422, detail="No text extracted from document")
+
+        page_title = (file.filename or "Document").strip()[:500]
+        return await _generate_mindmap_from_resolved_content(
+            page_content=extracted.strip()[:32000],
+            language=language,
+            content_format="text/plain",
+            page_title=page_title,
+            page_url=None,
+            request=request,
+            current_user=current_user,
+            endpoint_path="/api/canvas/generate_mindmap_from_document_file",
+            rate_limit_key="canvas_generate_mindmap_from_document_file",
+            require_chrome_tier=False,
+        )
+    finally:
+        if temp_path and temp_path.exists():
+            temp_path.unlink(missing_ok=True)
+
+
+@router.post("/canvas/generate_mindmap_from_image")
+async def canvas_generate_mindmap_from_image(
+    request: Request,
+    file: UploadFile = File(...),
+    language: str = Form("zh"),
+    current_user: User = Depends(get_current_user),
+):
+    """Canvas document summary panel — OCR image text then generate mind map."""
+    if file.content_type not in _ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status_code=400, detail="Unsupported image type")
+
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Empty file")
+    if len(raw) > _MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=413, detail="Image too large")
+
+    suffix = Path(file.filename or "upload.jpg").suffix or ".jpg"
+    temp_path: Optional[Path] = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(raw)
+            temp_path = Path(tmp.name)
+
+        processor = DocumentProcessor()
+        extracted = processor.extract_text(str(temp_path), file.content_type or "image/jpeg")
+        if not extracted or not extracted.strip():
+            raise HTTPException(status_code=422, detail="No text extracted from image")
+
+        page_title = (file.filename or "Image").strip()[:500]
+        return await _generate_mindmap_from_resolved_content(
+            page_content=extracted.strip()[:32000],
+            language=language,
+            content_format="text/plain",
+            page_title=page_title,
+            page_url=None,
+            request=request,
+            current_user=current_user,
+            endpoint_path="/api/canvas/generate_mindmap_from_image",
+            rate_limit_key="canvas_generate_mindmap_from_image",
+            require_chrome_tier=False,
+        )
+    finally:
+        if temp_path and temp_path.exists():
+            temp_path.unlink(missing_ok=True)
 
 
 @router.post("/web_content_mindmap_png")

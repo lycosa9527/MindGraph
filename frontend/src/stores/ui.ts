@@ -24,6 +24,7 @@ export type PromptLanguage = PromptOutputLanguageCode
 
 export type AppMode = 'mindmate' | 'mindgraph' | 'template' | 'course' | 'community'
 export type UiVersion = 'chinese' | 'international'
+export type MindMapCanvasMode = 'legacy' | 'v2'
 
 const THEME_KEY = 'mindgraph_theme'
 const LANGUAGE_KEY = 'language'
@@ -32,6 +33,13 @@ const MATCH_PROMPT_TO_UI_KEY = 'mindgraph_match_prompt_to_ui'
 const UI_LANGUAGE_EXPLICIT_KEY = 'mindgraph_ui_language_explicit'
 const BROWSER_LOCALE_HINT_KEY = 'mindgraph_browser_locale_hint_dismissed'
 const UI_VERSION_KEY = 'mindgraph_ui_version'
+const MINDMAP_CANVAS_MODE_KEY = 'mindgraph_mindmap_canvas_mode'
+
+const VALID_MINDMAP_CANVAS_MODES: ReadonlySet<string> = new Set(['legacy', 'v2'])
+
+function isValidMindMapCanvasMode(value: string | null): value is MindMapCanvasMode {
+  return value !== null && VALID_MINDMAP_CANVAS_MODES.has(value)
+}
 
 const VALID_UI_VERSIONS: ReadonlySet<string> = new Set(['chinese', 'international'])
 
@@ -88,6 +96,8 @@ export const useUIStore = defineStore('ui', () => {
   const uiLanguageExplicit = ref(false)
   const browserLocaleHintDismissed = ref(false)
   const uiVersion = ref<UiVersion>(detectDefaultUiVersion())
+  /** Mind map canvas chrome: legacy (Option 1) or v2 side-toolbar layout (Option 2). */
+  const mindMapCanvasMode = ref<MindMapCanvasMode>('legacy')
   const isMobile = ref(false)
   const sidebarCollapsed = ref(false)
 
@@ -229,6 +239,11 @@ export const useUIStore = defineStore('ui', () => {
       uiVersion.value = detectDefaultUiVersion()
     }
 
+    const storedMindMapCanvasMode = localStorage.getItem(MINDMAP_CANVAS_MODE_KEY)
+    if (isValidMindMapCanvasMode(storedMindMapCanvasMode)) {
+      mindMapCanvasMode.value = storedMindMapCanvasMode
+    }
+
     if (isValidLanguage(storedLanguage)) {
       language.value = storedLanguage
     } else if (!uiLanguageExplicit.value) {
@@ -357,6 +372,11 @@ export const useUIStore = defineStore('ui', () => {
   function setUiVersion(version: UiVersion): void {
     uiVersion.value = version
     localStorage.setItem(UI_VERSION_KEY, version)
+  }
+
+  function setMindMapCanvasMode(mode: MindMapCanvasMode): void {
+    mindMapCanvasMode.value = mode
+    localStorage.setItem(MINDMAP_CANVAS_MODE_KEY, mode)
   }
 
   function applyUiVersionFromServerProfile(version: string | null | undefined): void {
@@ -501,6 +521,7 @@ export const useUIStore = defineStore('ui', () => {
     localStorage.removeItem(UI_LANGUAGE_EXPLICIT_KEY)
     localStorage.removeItem(BROWSER_LOCALE_HINT_KEY)
     localStorage.removeItem(UI_VERSION_KEY)
+    localStorage.removeItem(MINDMAP_CANVAS_MODE_KEY)
     applyTheme()
     initFromStorage()
   }
@@ -517,6 +538,7 @@ export const useUIStore = defineStore('ui', () => {
     uiLanguageExplicit,
     browserLocaleHintDismissed,
     uiVersion,
+    mindMapCanvasMode,
     isMobile,
     sidebarCollapsed,
     wireframeMode,
@@ -542,6 +564,7 @@ export const useUIStore = defineStore('ui', () => {
     languagePolicyAllowZh,
     setLanguagePolicyAllowZh,
     setUiVersion,
+    setMindMapCanvasMode,
     applyUiVersionFromServerProfile,
     applyLanguageFromServerProfile,
     applyGuestLocaleFromBrowser,

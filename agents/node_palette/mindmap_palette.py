@@ -4,14 +4,10 @@ Mind Map specific node palette generator with multi-stage workflow.
 Supports 2-stage progressive generation:
 1. Stage 1 (branches): Generate main branches from central topic
 2. Stage 2 (children): Generate sub-branches for selected branch
-
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
-All Rights Reserved
-Proprietary License
 """
 
+from typing import Optional, Dict, Any, AsyncGenerator
 import logging
-from typing import Any, AsyncGenerator, Dict, Optional
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
 from prompts.node_palette import (
@@ -110,12 +106,20 @@ class MindMapPaletteGenerator(BasePaletteGenerator):
     def _tag_node_with_mode(self, event: Dict[str, Any], stage: str, stage_data: Dict[str, Any]) -> None:
         """Add mode and parent_id to node for tab routing. parent_id is stable; mode is display fallback."""
         node = event.get("node", {})
+        source_id = stage_data.get("source_node_id")
         if stage == "children" and stage_data.get("branch_name"):
             node_mode = stage_data["branch_name"]
             if stage_data.get("branch_id"):
                 node["parent_id"] = stage_data["branch_id"]
+        elif stage == "branches":
+            node_mode = stage
+            if source_id:
+                node["parent_id"] = source_id
+                node_mode = source_id
         else:
             node_mode = stage
+        if source_id and not node.get("parent_id"):
+            node["parent_id"] = source_id
         node["mode"] = node_mode
         logger.debug(
             "[MindMapPalette] Node tagged with mode='%s' parent_id=%s | ID: %s | Text: %s",

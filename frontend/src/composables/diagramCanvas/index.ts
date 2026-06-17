@@ -1,5 +1,9 @@
 export { diagramCanvasGridConfig, diagramCanvasZoomConfig } from './diagramCanvasViewportConfig'
-export { getBranchMoveCircleStyle, getDropTargetStyle } from './diagramCanvasZoomPaneStyles'
+export {
+  getBranchMoveCircleStyle,
+  getBranchMoveGhostStyle,
+  getDropTargetStyle,
+} from './diagramCanvasZoomPaneStyles'
 export { useDiagramCanvasConceptMapLink } from './useDiagramCanvasConceptMapLink'
 export {
   useDiagramCanvasContextMenu,

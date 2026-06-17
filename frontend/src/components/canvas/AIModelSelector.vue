@@ -56,6 +56,9 @@ const llmResultsStore = useLLMResultsStore()
 const inlineRecStore = useInlineRecommendationsStore()
 const focusReviewStore = useConceptMapFocusReviewStore()
 const isConceptMap = computed(() => diagramStore.type === 'concept_map')
+const isMindMap = computed(
+  () => diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map'
+)
 
 const FOCUS_TOPIC_NODE_ID = 'topic'
 
@@ -220,8 +223,10 @@ const conceptMapRelationshipBadgeGlowClass = computed(() => {
   return conceptMapTabRelationshipHighlightIdle.value ? 'tab-rec-badge-wrap--idle' : ''
 })
 
-/** Show "Tab推荐" indicator when topic fixed—AI ready for inline recommendations (edit node, press Tab) */
-const showInlineRecReady = computed(() => !isConceptMap.value && inlineRecStore.isReady)
+/** Show "Tab推荐" indicator when topic fixed—inline rec ready (not mind map / concept map). */
+const showInlineRecReady = computed(
+  () => !isConceptMap.value && !isMindMap.value && inlineRecStore.isReady
+)
 
 /**
  * Tab rec badge ring matches inline SSE store (`streamPhase`):
@@ -446,17 +451,17 @@ function getButtonStyle(modelKey: string) {
       </div>
       <div
         v-else
-        class="flex gap-1 flex-1 justify-center items-start min-w-0"
+        class="flex gap-1 shrink-0 justify-center items-center min-w-0"
       >
         <ElTooltip
           v-for="modelKey in llmResultsStore.models"
           :key="modelKey"
-          class="inline-flex self-start"
+          class="inline-flex self-center"
           :content="tooltipForModel(modelKey)"
           placement="top"
         >
           <span
-            class="model-btn-stack inline-flex flex-col items-center self-start relative shrink-0"
+            class="model-btn-stack inline-flex flex-col items-center self-center relative shrink-0"
             :aria-label="hostBadgeAriaLabel(modelKey)"
           >
             <span

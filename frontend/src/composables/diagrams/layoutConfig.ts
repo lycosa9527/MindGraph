@@ -108,8 +108,8 @@ export const FLOW_GROUP_GAP = 10
 /** Minimum spacing between steps without substeps */
 export const FLOW_MIN_STEP_SPACING = 40
 
-/** BranchNode height */
-export const BRANCH_NODE_HEIGHT = 36
+/** BranchNode height (mind-map default min-height baseline) */
+export const BRANCH_NODE_HEIGHT = 34
 
 /** BubbleNode height */
 export const BUBBLE_NODE_HEIGHT = 50
@@ -134,7 +134,7 @@ export const DOUBLE_BUBBLE_MAX_CAPSULE_HEIGHT = 65
 export const NODE_MIN_DIMENSIONS = {
   topic: { minWidth: 120, minHeight: 48 },
   brace: { minWidth: 100, minHeight: 40 },
-  branch: { minWidth: 80, minHeight: 36 },
+  branch: { minWidth: 90, minHeight: 34 },
   flow: { minWidth: 120, minHeight: 50 },
   bubble: { minWidth: 90, minHeight: 50 },
   label: { minWidth: 100, minHeight: 24 },
@@ -153,15 +153,14 @@ export const DEFAULT_VERTICAL_SPACING = 60
 
 /** Fixed vertical gap between the bottom edge of one sibling and the top edge
  *  of the next sibling within the same mind map branch. */
-export const MINDMAP_SIBLING_GAP = 20
+export const MINDMAP_SIBLING_GAP = 12
 
 /** Vertical gap between top-level branches in a mind map.
  *  Larger than sibling spacing to visually separate independent branches. */
-export const DEFAULT_MINDMAP_BRANCH_GAP = 70
+export const DEFAULT_MINDMAP_BRANCH_GAP = 28
 
-/** Mindmap column width (rank separation) - horizontal distance between depth levels.
- *  Matches double bubble map diff-to-topic spacing for shorter, tighter curves. */
-export const DEFAULT_MINDMAP_RANK_SEPARATION = 80
+/** Mindmap column width (rank separation) - horizontal distance between depth levels. */
+export const DEFAULT_MINDMAP_RANK_SEPARATION = 52
 
 /** Minimum horizontal extent for mindmap curves. When layout produces smaller extent
  * (e.g. after branch move), scale both sides up to this for consistent curve length. */

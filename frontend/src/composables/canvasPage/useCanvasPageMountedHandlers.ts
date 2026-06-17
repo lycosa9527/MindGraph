@@ -101,6 +101,9 @@ export function useCanvasPageMountedHandlers(options: {
         const nodeId = data?.nodeId
         if (!nodeId) return
 
+        const dt = diagramStore.type
+        if (dt === 'mindmap' || dt === 'mind_map') return
+
         if (diagramStore.type === 'concept_map' && nodeId === 'topic') {
           const draft = typeof data.draftText === 'string' ? data.draftText.trim() : ''
           if (draft) {

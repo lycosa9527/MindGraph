@@ -25,7 +25,7 @@ import type {
   PropertyPanelState,
   UploadedFile,
 } from '@/types'
-import { isDesktopConceptMapManualViewport } from '@/utils/conceptMapDesktopViewport'
+import { isManualViewportMode } from '@/utils/conceptMapDesktopViewport'
 
 export const usePanelsStore = defineStore('panels', () => {
   // State
@@ -167,6 +167,8 @@ export const usePanelsStore = defineStore('panels', () => {
         stage: snapshot.stage ?? null,
         stage_data: snapshot.stage_data ?? null,
         conceptMapTabs,
+        mindMapWaterfallMode: snapshot.mindMapWaterfallMode === true,
+        mindMapSourceTabs: snapshot.mindMapSourceTabs,
         open: true,
         useConceptListHeader: restOptions.useConceptListHeader === true,
       }
@@ -204,7 +206,15 @@ export const usePanelsStore = defineStore('panels', () => {
   }
 
   function saveNodePaletteSession(diagramKey: string): void {
-    const { suggestions, selected, stage, stage_data, conceptMapTabs } = nodePalette.value
+    const {
+      suggestions,
+      selected,
+      stage,
+      stage_data,
+      conceptMapTabs,
+      mindMapWaterfallMode,
+      mindMapSourceTabs,
+    } = nodePalette.value
     let mode = nodePalette.value.mode
     if (suggestions.length > 0 && diagramKey) {
       let tabsToSave = conceptMapTabs ? [...conceptMapTabs] : undefined
@@ -227,6 +237,8 @@ export const usePanelsStore = defineStore('panels', () => {
         stage: stage ?? null,
         stage_data: stage_data ?? null,
         conceptMapTabs: tabsToSave,
+        mindMapWaterfallMode: mindMapWaterfallMode === true,
+        mindMapSourceTabs: mindMapSourceTabs ? [...mindMapSourceTabs] : undefined,
       })
       nodePaletteSessionsByDiagram.value = map
     }
@@ -274,7 +286,7 @@ export const usePanelsStore = defineStore('panels', () => {
       // Re-fit after close when canvas regains space (300ms ≈ slide). Desktop concept maps: manual view only.
       const diagramStore = useDiagramStore()
       const uiStore = useUIStore()
-      if (!isDesktopConceptMapManualViewport(diagramStore, uiStore)) {
+      if (!isManualViewportMode(diagramStore, uiStore)) {
         setTimeout(() => eventBus.emit('view:fit_diagram_requested', {}), 300)
       }
     }
@@ -299,6 +311,16 @@ export const usePanelsStore = defineStore('panels', () => {
     }
   }
 
+  function removeNodePaletteSuggestions(suggestionIds: string[]): void {
+    if (suggestionIds.length === 0) return
+    const remove = new Set(suggestionIds)
+    nodePalette.value = {
+      ...nodePalette.value,
+      suggestions: nodePalette.value.suggestions.filter((s) => !remove.has(s.id)),
+      selected: nodePalette.value.selected.filter((id) => !remove.has(id)),
+    }
+  }
+
   /**
    * Clear node palette state.
    * - Always clears live panel state (suggestions, selected, mode, stage, stage_data).
@@ -318,6 +340,8 @@ export const usePanelsStore = defineStore('panels', () => {
       stage_data: null,
       conceptMapTabs: undefined,
       useConceptListHeader: false,
+      mindMapWaterfallMode: false,
+      mindMapSourceTabs: undefined,
     }
     if (clearSessions) {
       nodePaletteSessionsByDiagram.value = new Map()
@@ -467,6 +491,7 @@ export const usePanelsStore = defineStore('panels', () => {
     updateNodePalette,
     setNodePaletteSuggestions,
     appendNodePaletteSuggestion,
+    removeNodePaletteSuggestions,
     clearNodePaletteState,
     toggleNodePaletteSelection,
     openProperty,

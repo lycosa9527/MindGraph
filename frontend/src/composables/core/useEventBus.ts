@@ -76,6 +76,7 @@ export type EventTypes = {
   'diagram:add_node_requested': Record<string, never>
   'diagram:add_branch_requested': Record<string, never>
   'diagram:add_child_requested': Record<string, never>
+  'diagram:add_sibling_requested': Record<string, never>
   'diagram:node_updated': {
     nodeId: string
     updates: unknown
@@ -271,6 +272,13 @@ export type EventTypes = {
     animate?: boolean
     userInitiated?: boolean
     forExport?: boolean
+  }
+  'view:fit_to_nodes_requested': {
+    nodeIds: string[]
+    animate?: boolean
+    duration?: number
+    padding?: number
+    userInitiated?: boolean
   }
   'view:fit_diagram_requested': Record<string, never>
   'view:flip_orientation_requested': Record<string, never>

@@ -6,7 +6,7 @@ import { ANIMATION } from '@/config/uiConfig'
 import { useDiagramStore } from '@/stores'
 import { useUIStore } from '@/stores/ui'
 import type { Connection, DiagramNode, DiagramType, MindGraphNode } from '@/types'
-import { isDesktopConceptMapManualViewport } from '@/utils/conceptMapDesktopViewport'
+import { isManualViewportMode } from '@/utils/conceptMapDesktopViewport'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
 import { waitForNextPaint } from '@/utils/diagramHtmlToImage'
 
@@ -15,6 +15,10 @@ type FitApi = {
   fitWithPanel: (animate?: boolean) => void
   fitDiagram: (animate?: boolean) => void
   fitForExport: () => void
+  fitToNodes: (
+    nodeIds: string[],
+    options?: { animate?: boolean; duration?: number; padding?: number }
+  ) => Promise<void>
 }
 
 type DiagramStore = ReturnType<typeof useDiagramStore>
@@ -102,7 +106,7 @@ export function useDiagramCanvasEventBus(): {
     function allowViewportFitEvent(
       data: { userInitiated?: boolean; forExport?: boolean } | undefined
     ): boolean {
-      if (!isDesktopConceptMapManualViewport(diagramStore, uiStore)) return true
+      if (!isManualViewportMode(diagramStore, uiStore)) return true
       return Boolean(data?.userInitiated || data?.forExport)
     }
 
@@ -123,8 +127,19 @@ export function useDiagramCanvasEventBus(): {
     )
 
     unsubscribers.push(
+      eventBus.on('view:fit_to_nodes_requested', (data) => {
+        if (!allowViewportFitEvent(data)) return
+        void fitApi.fitToNodes(data.nodeIds, {
+          animate: data.animate !== false,
+          duration: data.duration,
+          padding: data.padding,
+        })
+      })
+    )
+
+    unsubscribers.push(
       eventBus.on('diagram:branch_moved', () => {
-        if (isDesktopConceptMapManualViewport(diagramStore, uiStore)) return
+        if (isManualViewportMode(diagramStore, uiStore)) return
         setTimeout(() => {
           eventBus.emit('view:fit_to_canvas_requested', { animate: true })
         }, ANIMATION.FIT_DELAY)
@@ -133,7 +148,7 @@ export function useDiagramCanvasEventBus(): {
 
     unsubscribers.push(
       eventBus.on('view:fit_diagram_requested', () => {
-        if (isDesktopConceptMapManualViewport(diagramStore, uiStore)) return
+        if (isManualViewportMode(diagramStore, uiStore)) return
         fitApi.fitDiagram(true)
       })
     )

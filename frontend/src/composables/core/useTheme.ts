@@ -5,9 +5,52 @@
  */
 import { type Ref, computed } from 'vue'
 
+import { useUIStore } from '@/stores/ui'
 import type { DiagramType, NodeStyle } from '@/types'
 
 // Default themes matching the old StyleManager
+const LEGACY_MINDMAP_THEME = {
+  background: '#f5f5f5',
+  centralTopicFill: '#1976d2',
+  centralTopicText: '#ffffff',
+  centralTopicStroke: '#000000',
+  centralTopicStrokeWidth: 3,
+  branchFill: '#e3f2fd',
+  branchText: '#333333',
+  branchStroke: '#4e79a7',
+  branchStrokeWidth: 2,
+  childFill: '#bbdefb',
+  childText: '#333333',
+  childStroke: '#90caf9',
+  childStrokeWidth: 1,
+  fontTopic: 18,
+  fontBranch: 16,
+  fontChild: 12,
+  linkStroke: '#4e79a7',
+  linkStrokeWidth: 2,
+}
+
+const V2_MINDMAP_THEME = {
+  background: '#f5f5f5',
+  centralTopicFill: '#3b82f6',
+  centralTopicText: '#ffffff',
+  centralTopicStroke: '#2563eb',
+  centralTopicStrokeWidth: 1.5,
+  branchFill: '#eff6ff',
+  branchText: '#1e40af',
+  branchStroke: '#93c5fd',
+  branchStrokeWidth: 1.5,
+  childFill: '#ffffff',
+  childText: '#334155',
+  childStroke: '#CBD5E1',
+  childStrokeWidth: 1.5,
+  fontTopic: 18,
+  fontBranch: 16,
+  fontChild: 14,
+  linkStroke: '#64748b',
+  linkStrokeWidth: 2,
+}
+
 const DEFAULT_THEMES: Partial<Record<DiagramType, DiagramTheme>> = {
   bubble_map: {
     background: '#f5f5f5',
@@ -44,26 +87,8 @@ const DEFAULT_THEMES: Partial<Record<DiagramType, DiagramTheme>> = {
     fontTopic: 16,
     fontAttribute: 12,
   },
-  mindmap: {
-    background: '#f5f5f5',
-    centralTopicFill: '#1976d2',
-    centralTopicText: '#ffffff',
-    centralTopicStroke: '#000000',
-    centralTopicStrokeWidth: 3,
-    branchFill: '#e3f2fd',
-    branchText: '#333333',
-    branchStroke: '#4e79a7',
-    branchStrokeWidth: 2,
-    childFill: '#bbdefb',
-    childText: '#333333',
-    childStroke: '#90caf9',
-    childStrokeWidth: 1,
-    fontTopic: 18,
-    fontBranch: 16,
-    fontChild: 12,
-    linkStroke: '#4e79a7',
-    linkStrokeWidth: 2,
-  },
+  mindmap: LEGACY_MINDMAP_THEME,
+  mind_map: LEGACY_MINDMAP_THEME,
   concept_map: {
     background: '#f5f5f5',
     topicFill: '#e3f2fd',
@@ -280,6 +305,8 @@ export interface UseThemeOptions {
  * Get theme for a diagram type
  */
 export function useTheme(options: UseThemeOptions = {}) {
+  const uiStore = useUIStore()
+
   const diagramType = computed(() => {
     const type = options.diagramType
     return type && typeof type === 'object' && 'value' in type ? type.value : type
@@ -290,7 +317,10 @@ export function useTheme(options: UseThemeOptions = {}) {
     if (!type) return {}
 
     // Start with default theme
-    const defaultTheme = DEFAULT_THEMES[type] || {}
+    let defaultTheme = DEFAULT_THEMES[type] || {}
+    if ((type === 'mindmap' || type === 'mind_map') && uiStore.mindMapCanvasMode === 'v2') {
+      defaultTheme = V2_MINDMAP_THEME
+    }
 
     // Merge backend theme if provided
     let merged = { ...defaultTheme }

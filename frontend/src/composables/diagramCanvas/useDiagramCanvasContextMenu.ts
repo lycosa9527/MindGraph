@@ -21,6 +21,7 @@ export function useDiagramCanvasContextMenu(options: {
   emitPaneClick: () => void
   diagramStore: DiagramCanvasContextMenuStore
   t: (key: string) => string
+  shouldSuppressPaneClear?: () => boolean
 }) {
   const {
     vueFlowWrapper,
@@ -30,6 +31,7 @@ export function useDiagramCanvasContextMenu(options: {
     emitPaneClick,
     diagramStore,
     t,
+    shouldSuppressPaneClear,
   } = options
 
   const contextMenuVisible = ref(false)
@@ -74,6 +76,9 @@ export function useDiagramCanvasContextMenu(options: {
           x: event.clientX,
           y: event.clientY,
         }
+      }
+      if (shouldSuppressPaneClear?.()) {
+        return
       }
       /* Selection clear, relationship + inline rec dismiss: useInlineRecommendationsCoordinator */
       eventBus.emit('canvas:pane_clicked', {})

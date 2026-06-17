@@ -79,6 +79,18 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
         ...merged,
         style: { ...(oldNode.style || {}), ...updates.style },
       }
+      if (
+        (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') &&
+        Object.keys(updates.style).length > 0
+      ) {
+        if (!ctx.data.value._node_styles) {
+          ctx.data.value._node_styles = {}
+        }
+        ctx.data.value._node_styles[nodeId] = {
+          ...(ctx.data.value._node_styles[nodeId] || {}),
+          ...merged.style,
+        }
+      }
     }
 
     // Keep data.label in sync with text so vue-flow nodes render the latest label.
@@ -140,8 +152,8 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       nodeId !== 'topic'
     ) {
       const newText = updates.text ?? ''
-      const freshWidth = estimateMindMapBranchWidth(newText)
-      const freshHeight = measureMindMapBranchHeight(newText)
+      const freshWidth = estimateMindMapBranchWidth(newText, nodeId)
+      const freshHeight = measureMindMapBranchHeight(newText, nodeId)
       ctx.data.value.nodes[nodeIndex] = {
         ...ctx.data.value.nodes[nodeIndex],
         data: {
@@ -213,6 +225,26 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
     ) {
       delete ctx.nodeDimensions.value[nodeId]
       eventBus.emit('diagram:double_bubble_relayout_requested', {})
+    }
+
+    if (
+      (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') &&
+      updates.style &&
+      (updates.style.textAlign !== undefined ||
+        updates.style.textDecoration !== undefined ||
+        updates.style.fontSize !== undefined ||
+        updates.style.fontWeight !== undefined ||
+        updates.style.fontStyle !== undefined ||
+        updates.style.fontFamily !== undefined ||
+        updates.style.textColor !== undefined)
+    ) {
+      delete ctx.nodeDimensions.value[nodeId]
+      delete ctx.mindMapNodeWidths.value[nodeId]
+      delete ctx.mindMapNodeHeights.value[nodeId]
+      if (nodeId === 'topic') {
+        ctx.mindMapTopicActualWidth.value = null
+      }
+      ctx.mindMapRecalcTrigger.value++
     }
 
     emitEvent('diagram:node_updated', { nodeId, updates })

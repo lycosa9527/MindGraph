@@ -46,7 +46,8 @@ export interface NodeStyle {
   borderWidth?: number
   borderStyle?: 'solid' | 'dashed' | 'dotted' | 'double' | 'dash-dot' | 'dash-dot-dot'
   borderRadius?: number
-  // Dimension overrides (for boundary nodes and circle nodes)
+  /** Mind-map node silhouette: rounded | rectangle | oval | underline */
+  nodeShape?: 'rounded' | 'rectangle' | 'oval' | 'underline'
   width?: number
   height?: number
   size?: number // Uniform size for perfect circles (diameter)
@@ -124,6 +125,10 @@ export interface DiagramData {
   }
   /** Per-node custom style overrides (persisted across sessions) */
   _node_styles?: Record<string, NodeStyle>
+  /** Active mind-map color theme (new nodes inherit this instead of default nordicBlue) */
+  _mindmap_theme?: string
+  /** Mind map: stable path keys of branches with collapsed subtrees */
+  _collapsed_paths?: string[]
   /** Custom positions set by user dragging (distinct from auto-layout) */
   _customPositions?: Record<string, Position>
   /** Index signature for dynamic property access (e.g., 'attributes', 'steps', etc.) */
@@ -153,6 +158,9 @@ export type DiagramSpec = DiagramData
 /** Tools available in browser fullscreen presentation mode */
 export type PresentationToolId = 'laser' | 'spotlight' | 'highlighter' | 'pen' | 'timer'
 
+/** Mind map presentation rail tools */
+export type MindMapPresentationToolId = 'hand' | 'laser' | 'pen' | 'slides'
+
 /** Freehand strokes in presentation highlighter mode (Vue Flow coordinates). */
 export interface PresentationHighlightStroke {
   points: { x: number; y: number }[]
@@ -168,4 +176,6 @@ export interface PresentationHighlightStroke {
    * Omitted on legacy strokes: renderer falls back to current tool props.
    */
   strokeRoleScale?: number
+  /** Tool used when the stroke was drawn; legacy strokes infer from strokeRoleScale. */
+  strokeTool?: 'pen' | 'highlighter'
 }

@@ -27,11 +27,14 @@ export type UseNodeActionsOptions = {
   includeTreeMapPrimaryAdd?: boolean
   /** When false, primary add skips multi-flow (desktop uses Cause / Effect buttons). */
   includeMultiFlowPrimaryAdd?: boolean
+  /** When false, skip diagram:* event-bus listeners (parent already registered). */
+  registerEventBusListeners?: boolean
 }
 
 const DEFAULT_NODE_ACTIONS_OPTIONS: Required<UseNodeActionsOptions> = {
   includeTreeMapPrimaryAdd: true,
   includeMultiFlowPrimaryAdd: true,
+  registerEventBusListeners: true,
 }
 
 function getDoubleBubbleGroup(
@@ -169,13 +172,35 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
 
     const selectedId = diagramStore.selectedNodes[0]
     if (!selectedId || selectedId === 'topic') {
-      notify.warning(t('canvas.toolbar.selectBranchOrChild'))
+      handleAddBranch()
       return
     }
     if (diagramStore.addMindMapChild(selectedId, t('canvas.toolbar.newChild'))) {
       notify.success(t('canvas.toolbar.childAdded'))
     } else {
       notify.warning(t('canvas.toolbar.cannotAddChild'))
+    }
+  }
+
+  function handleAddSibling(): void {
+    const diagramType = diagramStore.type
+    if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return
+    if (!diagramStore.data?.nodes) {
+      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      return
+    }
+
+    const selectedId = diagramStore.selectedNodes[0]
+    if (!selectedId || selectedId === 'topic') {
+      notify.warning(t('canvas.toolbar.selectBranchForSibling'))
+      return
+    }
+    if (
+      diagramStore.addMindMapSibling(selectedId, t('canvas.toolbar.newBranch'))
+    ) {
+      notify.success(t('canvas.toolbar.siblingAdded'))
+    } else {
+      notify.warning(t('canvas.toolbar.cannotAddSibling'))
     }
   }
 
@@ -696,17 +721,21 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
   // ---- Lifecycle: auto-register event listeners ----
 
   onMounted(() => {
+    if (!opts.registerEventBusListeners) return
     eventBus.on('diagram:add_node_requested', handleAddNode)
     eventBus.on('diagram:delete_selected_requested', handleDeleteNode)
     eventBus.on('diagram:add_branch_requested', handleAddBranch)
     eventBus.on('diagram:add_child_requested', handleAddChild)
+    eventBus.on('diagram:add_sibling_requested', handleAddSibling)
   })
 
   onUnmounted(() => {
+    if (!opts.registerEventBusListeners) return
     eventBus.off('diagram:add_node_requested', handleAddNode)
     eventBus.off('diagram:delete_selected_requested', handleDeleteNode)
     eventBus.off('diagram:add_branch_requested', handleAddBranch)
     eventBus.off('diagram:add_child_requested', handleAddChild)
+    eventBus.off('diagram:add_sibling_requested', handleAddSibling)
   })
 
   return {
@@ -714,6 +743,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     handleDeleteNode,
     handleAddBranch,
     handleAddChild,
+    handleAddSibling,
     handleAddCause,
     handleAddEffect,
   }

@@ -4,6 +4,12 @@ import {
   DEFAULT_NODE_WIDTH,
   MULTI_FLOW_MAP_TOPIC_WIDTH,
 } from '@/composables/diagrams/layoutConfig'
+import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
+import {
+  getMindMapThemeForDiagram,
+  mindMapStyleFromTheme,
+  nodeHasMindMapThemeColors,
+} from '@/config/mindMapThemes'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
 
@@ -75,6 +81,18 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       ctx.mindMapTopicActualWidth.value = null
       ctx.mindMapTopicBranchGaps.value = null
       ctx.mindMapRecalcTrigger.value = 0
+
+      const themeFromSpec = getMindMapThemeForDiagram(
+        spec as { _mindmap_theme?: string | null }
+      )
+      nodesToStore = nodesToStore.map((node) => {
+        if (node.type === 'boundary' || nodeHasMindMapThemeColors(node.style)) return node
+        return {
+          ...node,
+          style: { ...mindMapStyleFromTheme(node, themeFromSpec), ...(node.style || {}) },
+        }
+      })
+      syncMindMapConnectionStrokeColors(result.connections, themeFromSpec.topicBorderColor)
 
       if (nodesToStore.length > 0) {
         const topicNode = nodesToStore.find(
@@ -335,6 +353,12 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       const fq = dataRecord.focus_question
       if (typeof fq === 'string' && fq.trim()) {
         spec.focus_question = fq.trim()
+      }
+    }
+    if (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') {
+      const collapsed = dataRecord._collapsed_paths
+      if (Array.isArray(collapsed) && collapsed.length > 0) {
+        spec._collapsed_paths = collapsed
       }
     }
     return spec

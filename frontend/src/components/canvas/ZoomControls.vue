@@ -10,11 +10,9 @@ import {
   ElDropdown,
   ElDropdownItem,
   ElDropdownMenu,
-  ElOption,
-  ElSelect,
 } from 'element-plus'
 
-import { Hand, Maximize2, Minus, Play, Plus, Square, Users } from '@lucide/vue'
+import { ChevronDown, Hand, Maximize2, Minus, Play, Plus, Square, Users } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { ZOOM } from '@/config/uiConfig'
@@ -107,6 +105,10 @@ function handleZoomReset() {
   emit('fitToScreen')
 }
 
+function handleZoomPick(value: number) {
+  zoomSelectValue.value = value
+}
+
 function toggleHandTool() {
   isHandToolActive.value = !isHandToolActive.value
   emit('handToolToggle', isHandToolActive.value)
@@ -115,6 +117,12 @@ function toggleHandTool() {
 function handlePresentation() {
   emit('startPresentation')
 }
+
+const presentationTooltip = computed(() =>
+  props.presentationRailOpen
+    ? t('canvas.zoomControls.hidePresentationTools')
+    : t('canvas.zoomControls.presentationMode')
+)
 
 const emit = defineEmits<{
   (e: 'zoomChange', level: number): void
@@ -133,10 +141,11 @@ defineExpose({
 </script>
 
 <template>
-  <div class="zoom-controls z-20">
-    <div class="rounded-xl p-1 flex items-center gap-0.5">
-      <!-- Hand tool -->
+  <div class="zoom-controls z-20 flex items-center">
+    <div class="rounded-xl p-1 flex items-center gap-0.5 shrink-0">
+      <!-- Hand tool (hidden during presentation — use right rail hand) -->
       <ElTooltip
+        v-if="!props.presentationRailOpen"
         :content="t('canvas.zoomControls.hand')"
         placement="top"
       >
@@ -150,7 +159,10 @@ defineExpose({
         </ElButton>
       </ElTooltip>
 
-      <div class="divider" />
+      <div
+        v-if="!props.presentationRailOpen"
+        class="divider"
+      />
 
       <!-- Zoom out -->
       <ElTooltip
@@ -168,19 +180,33 @@ defineExpose({
       </ElTooltip>
 
       <!-- Zoom level dropdown -->
-      <ElSelect
-        v-model="zoomSelectValue"
-        size="small"
-        class="zoom-select"
-        :teleported="false"
+      <ElDropdown
+        trigger="click"
+        placement="bottom"
+        popper-class="canvas-zoom-select-popper"
+        @command="handleZoomPick"
       >
-        <ElOption
-          v-for="opt in zoomOptions"
-          :key="`zoom-${opt.value}`"
-          :label="opt.label"
-          :value="opt.value"
-        />
-      </ElSelect>
+        <button
+          type="button"
+          class="zoom-level-btn"
+          :aria-label="`${displayZoom}%`"
+        >
+          <span>{{ displayZoom }}%</span>
+          <ChevronDown class="zoom-chevron" />
+        </button>
+        <template #dropdown>
+          <ElDropdownMenu>
+            <ElDropdownItem
+              v-for="opt in zoomOptions"
+              :key="`zoom-${opt.value}`"
+              :command="opt.value"
+              :class="{ 'is-selected': displayZoom === opt.value }"
+            >
+              {{ opt.label }}
+            </ElDropdownItem>
+          </ElDropdownMenu>
+        </template>
+      </ElDropdown>
 
       <!-- Zoom in -->
       <ElTooltip
@@ -219,11 +245,7 @@ defineExpose({
       <!-- Toggle presentation tools rail (right) -->
       <ElTooltip
         v-if="props.allowPresentationTools"
-        :content="
-          props.presentationRailOpen
-            ? t('canvas.zoomControls.hidePresentationTools')
-            : t('canvas.zoomControls.showPresentationTools')
-        "
+        :content="presentationTooltip"
         placement="top"
       >
         <ElButton
@@ -249,6 +271,7 @@ defineExpose({
         <!-- Online collaboration trigger (host only) -->
         <ElDropdown
           trigger="click"
+          placement="bottom-end"
           popper-class="canvas-collab-dropdown-popper"
           @command="(cmd: string) => emit('openCollab', cmd as 'organization' | 'network' | 'stop')"
         >
@@ -304,24 +327,39 @@ defineExpose({
   margin: 0 3px;
 }
 
-/* Zoom level dropdown */
-.zoom-select {
-  min-width: 72px;
+/* Zoom level trigger */
+.zoom-level-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 28px;
+  min-width: 52px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
   font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1;
+  transition: all 0.15s ease;
 }
 
-:deep(.zoom-select .el-input__wrapper) {
-  padding: 2px 6px;
-  box-shadow: none;
-  background-color: transparent;
-}
-
-:deep(.zoom-select .el-input__wrapper:hover) {
+.zoom-level-btn:hover {
   background-color: #e5e7eb;
+  color: #374151;
 }
 
-:deep(.zoom-select.is-focus .el-input__wrapper) {
-  background-color: #e5e7eb;
+.zoom-chevron {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  opacity: 0.7;
 }
 
 /* Button styling */
@@ -385,13 +423,13 @@ defineExpose({
   background-color: #4b5563;
 }
 
-:deep(.dark .zoom-select .el-input__wrapper) {
-  background-color: transparent;
+:deep(.dark) .zoom-level-btn {
+  color: #9ca3af;
 }
 
-:deep(.dark .zoom-select .el-input__wrapper:hover),
-:deep(.dark .zoom-select.is-focus .el-input__wrapper) {
+:deep(.dark) .zoom-level-btn:hover {
   background-color: #4b5563;
+  color: #f3f4f6;
 }
 
 :deep(.dark .zoom-btn) {
@@ -536,5 +574,32 @@ defineExpose({
 .canvas-collab-dropdown-popper .el-dropdown-menu__item.is-divided:hover {
   background: #fef2f2;
   color: #b91c1c;
+}
+
+/* Zoom dropdown — teleported, opens downward */
+.canvas-zoom-select-popper.el-popper {
+  padding: 4px !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.08),
+    0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.canvas-zoom-select-popper .el-dropdown-menu {
+  padding: 0 !important;
+  min-width: 72px !important;
+}
+
+.canvas-zoom-select-popper .el-dropdown-menu__item {
+  font-size: 12px;
+  padding: 6px 12px !important;
+  line-height: 1.4;
+  justify-content: center;
+}
+
+.canvas-zoom-select-popper .el-dropdown-menu__item.is-selected {
+  color: #2563eb;
+  font-weight: 600;
 }
 </style>

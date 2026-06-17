@@ -3,6 +3,10 @@ import { type MaybeRefOrGetter, computed, toValue } from 'vue'
 import { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
 import { useDiagramStore } from '@/stores'
 import { useCanvasNodeIndicatorsStore } from '@/stores/canvasNodeIndicators'
+import {
+  getMindMapCollapseHiddenIds,
+  getMindMapCollapsedPaths,
+} from '@/stores/diagram/mindMapCollapse'
 
 export interface UseDiagramCanvasNodesEdgesOptions {
   diagramStore: ReturnType<typeof useDiagramStore>
@@ -17,11 +21,27 @@ export function useDiagramCanvasNodesEdges(options: UseDiagramCanvasNodesEdgesOp
   const storeNodes = computed(() => diagramStore.vueFlowNodes)
   const storeEdges = computed(() => diagramStore.vueFlowEdges)
 
+  const mindMapCollapseHiddenIds = computed(() => {
+    const dtype = diagramStore.type
+    if (dtype !== 'mindmap' && dtype !== 'mind_map') return new Set<string>()
+    const data = diagramStore.data
+    if (!data?.nodes || !data.connections) return new Set<string>()
+    const paths = getMindMapCollapsedPaths(data)
+    if (paths.length === 0) return new Set<string>()
+    return getMindMapCollapseHiddenIds(
+      data.nodes,
+      data.connections,
+      paths,
+      diagramStore.getMindMapDescendantIds
+    )
+  })
+
   const nodes = computed(() => {
     const hidden = branchMove.state.value.hiddenIds
+    const collapseHidden = mindMapCollapseHiddenIds.value
     let list = storeNodes.value
-    if (hidden.size > 0) {
-      list = list.filter((n) => !hidden.has(n.id))
+    if (hidden.size > 0 || collapseHidden.size > 0) {
+      list = list.filter((n) => !hidden.has(n.id) && !collapseHidden.has(n.id))
     }
     const locked = toValue(collabLockedNodeIds)
     if (locked.length > 0) {
@@ -85,9 +105,16 @@ export function useDiagramCanvasNodesEdges(options: UseDiagramCanvasNodesEdgesOp
       return []
     }
     const hidden = branchMove.state.value.hiddenIds
+    const collapseHidden = mindMapCollapseHiddenIds.value
     const baseList =
-      hidden.size > 0
-        ? storeEdges.value.filter((e) => !hidden.has(e.source) && !hidden.has(e.target))
+      hidden.size > 0 || collapseHidden.size > 0
+        ? storeEdges.value.filter(
+            (e) =>
+              !hidden.has(e.source) &&
+              !hidden.has(e.target) &&
+              !collapseHidden.has(e.source) &&
+              !collapseHidden.has(e.target)
+          )
         : storeEdges.value
 
     // Concept maps use edge-level tab-rec ant lines; always map them so that the

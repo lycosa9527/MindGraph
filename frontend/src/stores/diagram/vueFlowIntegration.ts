@@ -21,6 +21,10 @@ import {
   recalculateTreeMapLayout,
 } from '../specLoader'
 import { getEdgeTypeForDiagram } from './events'
+import {
+  getMindMapCollapsedNodeIds,
+  getMindMapCollapsedPaths,
+} from './mindMapCollapse'
 import { recalculateMindMapColumnPositions } from './mindMapLayout'
 import type { DiagramContext } from './types'
 
@@ -119,12 +123,19 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       void ctx.mindMapRecalcTrigger.value
 
       const connections = ctx.data.value.connections ?? []
+      const collapsedPaths = getMindMapCollapsedPaths(ctx.data.value)
+      const collapsedNodeIds = getMindMapCollapsedNodeIds(
+        ctx.data.value.nodes,
+        connections,
+        collapsedPaths
+      )
       const { nodes: correctedNodes, gaps } = recalculateMindMapColumnPositions(
         ctx.data.value.nodes,
         ctx.mindMapTopicActualWidth.value,
         ctx.mindMapNodeWidths.value,
         ctx.mindMapNodeHeights.value,
-        connections
+        connections,
+        collapsedNodeIds
       )
       ctx.mindMapTopicBranchGaps.value = gaps
       const firstLevelBranchCount = connections.filter((c) => c.source === 'topic').length

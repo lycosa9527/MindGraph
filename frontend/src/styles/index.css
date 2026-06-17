@@ -140,20 +140,6 @@ body {
   transform: scaleX(-1);
 }
 
-/* User emoji avatars — explicit color-emoji fonts for Windows / Edge */
-.mg-user-avatar-emoji {
-  font-family:
-    'Apple Color Emoji',
-    'Segoe UI Emoji',
-    'Segoe UI Symbol',
-    'Noto Color Emoji',
-    emoji,
-    sans-serif;
-  line-height: 1;
-  font-weight: normal;
-  font-style: normal;
-}
-
 /* Focus styles */
 :focus-visible {
   outline: 2px solid var(--mg-primary);
@@ -529,6 +515,7 @@ body {
   word-break: normal;
   overflow-wrap: break-word;
   line-break: auto;
+  text-decoration: inherit;
 }
 
 /*
@@ -572,6 +559,7 @@ body {
 /* Zero vertical margins so flex `items-center` on the node isn’t fighting CommonMark `<p>` bands */
 .diagram-node-md p {
   margin: 0;
+  text-decoration: inherit;
 }
 
 /*

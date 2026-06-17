@@ -18,9 +18,21 @@ const { t } = useLanguage()
 
 const viewport = computed(() => vueFlowViewport.value ?? getViewport())
 
-const isLearningSheet = computed(
-  () => diagramStore.isLearningSheet && diagramStore.hiddenAnswers.length > 0
-)
+const blankedAnswers = computed(() => {
+  if (!diagramStore.isLearningSheet) return []
+  const nodes = diagramStore.data?.nodes ?? []
+  const answers: string[] = []
+  for (const node of nodes) {
+    if (!diagramStore.isNodeBlankedForLearningSheet(node.id)) continue
+    const answer = (node.data as { hiddenAnswer?: string } | undefined)?.hiddenAnswer?.trim()
+    if (answer && !answers.includes(answer)) {
+      answers.push(answer)
+    }
+  }
+  return answers
+})
+
+const isLearningSheet = computed(() => blankedAnswers.value.length > 0)
 
 interface NodeWithDimensions {
   position?: { x: number; y: number }
@@ -83,7 +95,7 @@ const answerSectionPosition = computed(() => {
 })
 
 const answerChips = computed(() => {
-  const answers = diagramStore.hiddenAnswers
+  const answers = blankedAnswers.value
   if (answers.length === 0 || !answerSectionPosition.value) return []
 
   const { chipsY, centerX } = answerSectionPosition.value

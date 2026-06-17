@@ -1,22 +1,36 @@
-import { ref, watch } from 'vue'
+import { ref, watch, type Ref } from 'vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { STYLE_PRESET_PALETTES, type StylePresetColors } from '@/config/colorPalette'
+import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
 import { useDiagramStore } from '@/stores'
 import { type BorderStyleType, getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { colorToHex, hexToRgba, parseAlphaFromColor } from '@/utils/colorFormat'
 
-export function useCanvasToolbarFormatting() {
+export function useCanvasToolbarFormatting(options?: {
+  silentUpdates?: boolean
+  /** When set, formatting applies to this node even if canvas selection was cleared (floating toolbar). */
+  pinnedNodeId?: Ref<string | null | undefined>
+}) {
   const diagramStore = useDiagramStore()
   const { t } = useLanguage()
   const notify = useNotifications()
+  const notifyOnApply = !options?.silentUpdates
+  const pinnedNodeId = options?.pinnedNodeId
+
+  function getTargetNodeIds(): string[] {
+    const selected = diagramStore.selectedNodes
+    if (selected.length > 0) return selected
+    const pinned = pinnedNodeId?.value
+    return pinned ? [pinned] : []
+  }
 
   const formatBrushActive = ref(false)
   const formatBrushStyle = ref<import('@/types').NodeStyle | null>(null)
 
   const fontFamily = ref('Inter')
-  const fontSize = ref(16)
+  const fontSize = ref(14)
   const textColor = ref('#000000')
   const fontWeight = ref<'normal' | 'bold'>('normal')
   const fontStyle = ref<'normal' | 'italic'>('normal')
@@ -24,6 +38,7 @@ export function useCanvasToolbarFormatting() {
     'none'
   )
   const textAlign = ref<'left' | 'center' | 'right'>('center')
+  const nodeShape = ref<import('@/utils/nodeShapeStyle').NodeShape>('rounded')
 
   const textColorPalette = [
     '#000000',
@@ -132,7 +147,26 @@ export function useCanvasToolbarFormatting() {
     notify.success(t('canvas.toolbar.styleApplied'))
   }
 
-  function applyTextStyleToSelected(updates: {
+  function applyNodeShapeToSelected(
+    shape: import('@/utils/nodeShapeStyle').NodeShape,
+    options?: { silent?: boolean }
+  ) {
+    const ids = getTargetNodeIds()
+    if (!ids.length) return
+    diagramStore.pushHistory(t('canvas.toolbar.updateTextStyle'))
+    ids.forEach((nodeId) => {
+      const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
+      if (node) {
+        diagramStore.updateNode(nodeId, {
+          style: { ...(node.style || {}), nodeShape: shape },
+        })
+      }
+    })
+    if (!options?.silent && notifyOnApply) notify.success(t('canvas.toolbar.applied'))
+  }
+
+  function applyTextStyleToSelected(
+    updates: {
     fontFamily?: string
     fontSize?: number
     textColor?: string
@@ -140,10 +174,12 @@ export function useCanvasToolbarFormatting() {
     fontStyle?: 'normal' | 'italic'
     textDecoration?: 'none' | 'underline' | 'line-through' | 'underline line-through'
     textAlign?: 'left' | 'center' | 'right'
-  }) {
-    const ids = diagramStore.selectedNodes
+  },
+    options?: { silent?: boolean }
+  ) {
+    const ids = getTargetNodeIds()
     if (!ids.length) {
-      notify.warning(t('canvas.toolbar.selectNodesFirst'))
+      if (!options?.silent) notify.warning(t('canvas.toolbar.selectNodesFirst'))
       return
     }
     diagramStore.pushHistory(t('canvas.toolbar.updateTextStyle'))
@@ -154,13 +190,13 @@ export function useCanvasToolbarFormatting() {
         diagramStore.updateNode(nodeId, { style: mergedStyle })
       }
     })
-    notify.success(t('canvas.toolbar.applied'))
+    if (!options?.silent && notifyOnApply) notify.success(t('canvas.toolbar.applied'))
   }
 
-  function applyBackgroundToSelected(color?: string) {
-    const ids = diagramStore.selectedNodes
+  function applyBackgroundToSelected(color?: string, options?: { silent?: boolean }) {
+    const ids = getTargetNodeIds()
     if (!ids.length) {
-      notify.warning(t('canvas.toolbar.selectNodesFirst'))
+      if (!options?.silent) notify.warning(t('canvas.toolbar.selectNodesFirst'))
       return
     }
     const baseColor = color ?? backgroundColor.value
@@ -174,17 +210,20 @@ export function useCanvasToolbarFormatting() {
         diagramStore.updateNode(nodeId, { style: mergedStyle })
       }
     })
-    notify.success(t('canvas.toolbar.applied'))
+    if (!options?.silent && notifyOnApply) notify.success(t('canvas.toolbar.applied'))
   }
 
-  function applyBorderToSelected(updates: {
+  function applyBorderToSelected(
+    updates: {
     borderColor?: string
     borderWidth?: number
     borderStyle?: import('@/types').NodeStyle['borderStyle']
-  }) {
-    const ids = diagramStore.selectedNodes
+  },
+    options?: { silent?: boolean }
+  ) {
+    const ids = getTargetNodeIds()
     if (!ids.length) {
-      notify.warning(t('canvas.toolbar.selectNodesFirst'))
+      if (!options?.silent) notify.warning(t('canvas.toolbar.selectNodesFirst'))
       return
     }
     if (updates.borderColor !== undefined) borderColor.value = updates.borderColor
@@ -198,7 +237,16 @@ export function useCanvasToolbarFormatting() {
         diagramStore.updateNode(nodeId, { style: mergedStyle })
       }
     })
-    notify.success(t('canvas.toolbar.applied'))
+    const diagramType = diagramStore.type
+    if (
+      updates.borderColor &&
+      (diagramType === 'mindmap' || diagramType === 'mind_map') &&
+      ids.includes('topic') &&
+      diagramStore.data?.connections
+    ) {
+      syncMindMapConnectionStrokeColors(diagramStore.data.connections, updates.borderColor)
+    }
+    if (!options?.silent && notifyOnApply) notify.success(t('canvas.toolbar.applied'))
   }
 
   function handleToggleBold() {
@@ -215,7 +263,8 @@ export function useCanvasToolbarFormatting() {
     part: 'underline' | 'line-through'
   ): 'none' | 'underline' | 'line-through' | 'underline line-through' {
     const current = textDecoration.value || 'none'
-    const parts = current.split(' ').filter(Boolean)
+    const parts =
+      current === 'none' ? [] : current.split(' ').filter((p) => p !== 'none' && Boolean(p))
     const has = parts.includes(part)
     if (has) {
       const newParts = parts.filter((p) => p !== part)
@@ -225,7 +274,7 @@ export function useCanvasToolbarFormatting() {
         | 'line-through'
         | 'underline line-through'
     }
-    return [...parts, part].filter(Boolean).join(' ') as
+    return [...parts, part].join(' ') as
       | 'none'
       | 'underline'
       | 'line-through'
@@ -261,16 +310,40 @@ export function useCanvasToolbarFormatting() {
     }
   }
 
+  function handleFontSizePick(size: number) {
+    fontSize.value = size
+    applyTextStyleToSelected({ fontSize: size }, { silent: true })
+  }
+
   function handleTextColorPick(color: string) {
     textColor.value = color
-    applyTextStyleToSelected({ textColor: color })
+    applyTextStyleToSelected({ textColor: color }, { silent: true })
+  }
+
+  function handleFillColorPick(color: string) {
+    applyBackgroundToSelected(color, { silent: true })
+  }
+
+  function handleBorderColorPick(color: string) {
+    applyBorderToSelected({ borderColor: color }, { silent: true })
+  }
+
+  function handleNodeShapePick(shape: import('@/utils/nodeShapeStyle').NodeShape) {
+    nodeShape.value = shape
+    applyNodeShapeToSelected(shape, { silent: true })
   }
 
   watch(
-    () => diagramStore.selectedNodeData,
-    (nodes) => {
-      if (nodes.length === 1) {
-        const s = nodes[0]?.style
+    () => {
+      const pinned = pinnedNodeId?.value
+      const nodes = diagramStore.selectedNodeData
+      if (nodes.length === 1) return nodes[0]
+      if (pinned) return diagramStore.data?.nodes?.find((n) => n.id === pinned)
+      return undefined
+    },
+    (node) => {
+      if (node) {
+        const s = node.style
         if (s) {
           if (s.fontFamily) fontFamily.value = s.fontFamily
           if (s.fontSize) fontSize.value = s.fontSize
@@ -286,6 +359,7 @@ export function useCanvasToolbarFormatting() {
             backgroundColor.value = colorToHex(s.backgroundColor)
             backgroundOpacity.value = parseAlphaFromColor(s.backgroundColor)
           }
+          if (s.nodeShape) nodeShape.value = s.nodeShape
         }
       }
     },
@@ -306,6 +380,7 @@ export function useCanvasToolbarFormatting() {
       'borderWidth',
       'borderStyle',
       'borderRadius',
+      'nodeShape',
     ]
 
     if (!formatBrushActive.value) {
@@ -372,6 +447,7 @@ export function useCanvasToolbarFormatting() {
     borderWidth,
     borderStyle,
     borderStyleOptions,
+    nodeShape,
     getBorderPreviewStyle,
     handleApplyStylePreset,
     applyBackgroundToSelected,
@@ -383,7 +459,12 @@ export function useCanvasToolbarFormatting() {
     handleTextAlign,
     handleFontFamilyChange,
     handleFontSizeInput,
+    handleFontSizePick,
     handleTextColorPick,
+    handleFillColorPick,
+    handleBorderColorPick,
+    handleNodeShapePick,
     handleFormatBrush,
+    applyNodeShapeToSelected,
   }
 }

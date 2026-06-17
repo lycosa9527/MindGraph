@@ -113,6 +113,14 @@ useKittyVoiceSelectionBus('MobileCanvasPage')
 const chartType = computed(() => uiStore.selectedChartType)
 const diagramType = computed<DiagramType | null>(() => diagramTypeFromKey(chartType.value))
 const isConceptMap = computed(() => diagramStore.type === 'concept_map')
+const isMindMap = computed(
+  () => diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map'
+)
+const fitViewOnInit = computed(
+  () =>
+    !isConceptMap.value &&
+    !(isMindMap.value && uiStore.mindMapCanvasMode === 'v2')
+)
 
 const tabReady = computed(() => {
   if (!authStore.isAuthenticated) return false
@@ -397,7 +405,7 @@ onUnmounted(() => {
         class="absolute inset-0 canvas-touch"
         :show-background="true"
         :show-minimap="false"
-        :fit-view-on-init="!isConceptMap"
+        :fit-view-on-init="fitViewOnInit"
         :concept-map-initial-topic-fit="isConceptMap"
         :hand-tool-active="false"
         :collab-locked-node-ids="[]"

@@ -16,14 +16,6 @@ export function isNodeEligibleForInlineRec(
   if (!dt || !(INLINE_RECOMMENDATIONS_SUPPORTED_TYPES as readonly string[]).includes(dt))
     return false
   const nid = node.id ?? ''
-  if (dt === 'mindmap') {
-    return (
-      nid.startsWith('branch-l-1-') ||
-      nid.startsWith('branch-r-1-') ||
-      nid.startsWith('branch-l-2-') ||
-      nid.startsWith('branch-r-2-')
-    )
-  }
   if (dt === 'flow_map') {
     return nid.startsWith('flow-step-') || nid.startsWith('flow-substep-')
   }

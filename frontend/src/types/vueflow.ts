@@ -24,7 +24,8 @@ export type MindGraphNodeType =
 
 // Custom edge types
 export type MindGraphEdgeType =
-  | 'curved' // For mind maps
+  | 'curved' // For concept maps, double bubble maps
+  | 'mindmapOrthogonal' // Mind maps: rounded orthogonal topology
   | 'straight' // For flow maps
   | 'step' // For tree maps (T/L shaped orthogonal connectors, vertical-first)
   | 'horizontalStep' // For flow map substeps (T/L shaped, horizontal-first)

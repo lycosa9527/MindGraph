@@ -62,7 +62,7 @@ export function subscribeToDiagramEvents(
 
 export function getEdgeTypeForDiagram(diagramType: DiagramType | null): MindGraphEdgeType {
   if (diagramType === 'mindmap' || diagramType === 'mind_map') {
-    return 'curved'
+    return 'mindmapOrthogonal'
   }
   if (!diagramType) return 'curved'
 

@@ -7,6 +7,25 @@
   position: relative;
 }
 
+/* Pointer mode: default arrow on empty canvas (Vue Flow sets grab when pan-on-drag is enabled). */
+.diagram-canvas:not(.diagram-canvas--hand-tool) .vue-flow__pane.draggable,
+.diagram-canvas:not(.diagram-canvas--hand-tool) .vue-flow__pane.selection {
+  cursor: default;
+}
+
+.diagram-canvas:not(.diagram-canvas--hand-tool) .vue-flow__pane.dragging {
+  cursor: grabbing;
+}
+
+/* Hand tool: grab to pan the canvas. */
+.diagram-canvas.diagram-canvas--hand-tool .vue-flow__pane.draggable {
+  cursor: grab;
+}
+
+.diagram-canvas.diagram-canvas--hand-tool .vue-flow__pane.dragging {
+  cursor: grabbing;
+}
+
 .vue-flow-wrapper {
   transition: filter 0.2s ease;
 }
@@ -30,6 +49,18 @@
 .diagram-canvas .vue-flow__nodesselection,
 .diagram-canvas .vue-flow__nodesselection-rect {
   display: none !important;
+}
+
+/* Mind map: show rubber-band selection rectangle in pointer mode */
+.diagram-canvas.mind-map-canvas .vue-flow__nodesselection,
+.diagram-canvas.mind-map-canvas .vue-flow__nodesselection-rect {
+  display: block !important;
+}
+
+.diagram-canvas.mind-map-canvas .vue-flow__nodesselection-rect {
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.45);
+  border-radius: 4px;
 }
 
 /* Default node selection: pulse glow animation (same as circle map, concept map) */
@@ -92,6 +123,12 @@
     box-shadow 0.2s ease,
     filter 0.2s ease,
     transform 0.2s ease;
+}
+
+/* Mind map: allow four-directional + handles to extend outside node bounds */
+.vue-flow__node-branch:has(.mind-map-node),
+.vue-flow__node-topic:has(.mind-map-topic-node) {
+  overflow: visible !important;
 }
 
 /* Boundary node styling - ensure it's visible and not clipped */
@@ -346,6 +383,54 @@
 /* Editing + remote selection: workshop ants take precedence — hide the orange frame */
 .vue-flow__node.workshop-editing.collab-remote-selected > *::after {
   display: none !important;
+}
+
+/* ── Branch-move ghost: semi-transparent dragged node following cursor ─── */
+.branch-move-ghost {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.72;
+  box-shadow: 0 8px 24px rgb(15 23 42 / 0.18);
+  z-index: 1001;
+  transform: translateZ(0);
+  transition: opacity 0.12s ease;
+}
+
+.branch-move-ghost--standard {
+  padding: 9px 18px;
+  border: 1.5px solid;
+}
+
+.branch-move-ghost--underline {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  border: none;
+  background: transparent !important;
+  box-shadow: none;
+}
+
+.branch-move-ghost__label {
+  display: block;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  line-height: 1.35;
+  pointer-events: none;
+  user-select: none;
+}
+
+.branch-move-ghost__underline {
+  display: block;
+  width: 100%;
+  height: 2px;
+  margin-top: 4px;
+  border-radius: 1px;
+  flex-shrink: 0;
 }
 
 /* ── Branch-move drop-target preview: primary blue, thick marching ants ────

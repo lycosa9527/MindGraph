@@ -6,23 +6,31 @@
  * Two-View Zoom System:
  * - fitToFullCanvas(): Fits diagram to full canvas (no panel space reserved)
  * - fitWithPanel(): Fits diagram with space reserved for right-side panels
- * - Desktop concept maps default to manual zoom; **IHMC cmap imports with layout keys** trigger a
- *   one-shot `fitDiagram` on first nodes init (`_import_cmap_fit_view_pending`; see useDiagramCanvasFit).
+ * - Mind maps: manual zoom only; initial view centers diagram at 100% (no scale-to-fit).
+ * - Desktop concept maps: manual zoom; IHMC cmap imports trigger one-shot fit on init.
  *
  * SVG text / RTL: primary labels use InlineEditableText (HTML, dir=auto). Decorative
  * overlays (brace/tree/bridge) use SVG <text>; bidi for all-RTL strings can be weaker
  * in some browsers — if reported, consider foreignObject + HTML for those labels.
  */
-import { computed, onMounted, onUnmounted, provide, ref, toRef, unref } from 'vue'
+import { computed, onMounted, onUnmounted, provide, ref, toRef, unref, watch } from 'vue'
 
 import { Background } from '@vue-flow/background'
-import { type GraphNode, VueFlow, useVueFlow } from '@vue-flow/core'
+import { type GraphNode, SelectionMode, VueFlow, useVueFlow } from '@vue-flow/core'
 import { MiniMap } from '@vue-flow/minimap'
 
 import { storeToRefs } from 'pinia'
 
-import { ExportToCommunityModal } from '@/components/canvas'
+import { ExportToCommunityModal, CanvasNodeFloatingToolbar, MindMapSubgraphPreviewBar } from '@/components/canvas'
 import { useBranchMoveDrag, useLanguage } from '@/composables'
+import { useNodeFloatingToolbarPosition } from '@/composables/canvasToolbar'
+import { useMindMapSubgraphSuggest } from '@/composables/editor/useMindMapSubgraphSuggest'
+import {
+  useLearningSheetCustomMode,
+  useLearningSheetPickKeyboard,
+} from '@/composables/mindMap/useLearningSheetCustomMode'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import { LEARNING_SHEET_HAMMER_CURSOR } from '@/config/learningSheetCursor'
 import { registerDiagramLayoutRecalcBootstrap } from '@/composables/core/diagramLayoutRecalcBootstrap'
 import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
 import { useTheme } from '@/composables/core/useTheme'
@@ -40,6 +48,8 @@ import {
   useDiagramCanvasVueFlowHandlers,
   useDiagramCanvasVueFlowUi,
 } from '@/composables/diagramCanvas'
+import { useDiagramCanvasMindMapPaletteDrop } from '@/composables/diagramCanvas/useDiagramCanvasMindMapPaletteDrop'
+import { useMindMapMultiLinePaste } from '@/composables/mindMap/useMindMapMultiLinePaste'
 import {
   CONCEPT_MAP_GENERATING_KEY,
   useConceptMapRelationship,
@@ -50,9 +60,12 @@ import type { MindGraphNode, PresentationHighlightStroke, PresentationToolId } f
 
 import BraceOverlay from './BraceOverlay.vue'
 import BridgeOverlay from './BridgeOverlay.vue'
+import MindMapCollapseToggleOverlay from './MindMapCollapseToggleOverlay.vue'
+import MindMapDirectionalAddOverlay from './MindMapDirectionalAddOverlay.vue'
 import ContextMenu from './ContextMenu.vue'
 import DiagramCanvasZoomPaneOverlays from './DiagramCanvasZoomPaneOverlays.vue'
 import LearningSheetOverlay from './LearningSheetOverlay.vue'
+import LearningSheetPickBanner from '@/components/canvas/LearningSheetPickBanner.vue'
 import PresentationHighlightOverlay from './PresentationHighlightOverlay.vue'
 import TreeMapOverlay from './TreeMapOverlay.vue'
 import './diagramCanvas.css'
@@ -96,6 +109,10 @@ const presentationTool = defineModel<PresentationToolId>('presentationTool', {
 
 const presentationHighlighterColor = defineModel<string>('presentationHighlighterColor', {
   default: DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR,
+})
+
+const presentationPenColor = defineModel<string>('presentationPenColor', {
+  default: 'rgba(239, 68, 68, 0.92)',
 })
 
 const emit = defineEmits<{
@@ -159,7 +176,9 @@ function getVueFlowNodesForOverlays(): GraphNode[] {
   return unref(getVueFlowNodes) as GraphNode[]
 }
 
-const branchMove = useBranchMoveDrag()
+const branchMove = useBranchMoveDrag({
+  allowNodeMove: () => !props.handToolActive && !props.presentationRailOpen,
+})
 provide('branchMove', branchMove)
 
 const presentationHighlighterStrokeScale = computed(() =>
@@ -187,6 +206,8 @@ const {
   presentationToolIsNotTimer,
   nodesDraggable,
   elementsSelectable,
+  selectNodesOnDrag,
+  selectionKeyCode,
   vueFlowBackgroundClasses,
 } = useDiagramCanvasVueFlowUi({
   diagramStore,
@@ -195,6 +216,7 @@ const {
   panOnDragButtons: toRef(props, 'panOnDragButtons'),
   presentationTool,
   presentationHighlighterColor,
+  presentationPenColor,
 })
 
 const { nodes, edges, nodesLength } = useDiagramCanvasNodesEdges({
@@ -202,6 +224,74 @@ const { nodes, edges, nodesLength } = useDiagramCanvasNodesEdges({
   branchMove,
   collabLockedNodeIds: () => props.collabLockedNodeIds,
 })
+
+const useMindMapV2 = useMindMapV2Chrome()
+
+const { handlePaste: handleMindMapMultiLinePaste } = useMindMapMultiLinePaste()
+
+function onCanvasPaste(event: ClipboardEvent): void {
+  if (!useMindMapV2.value) return
+  handleMindMapMultiLinePaste(event)
+}
+
+const { isPickActive: isLearningSheetPickActive } = useLearningSheetCustomMode()
+const hammerPickCursor = LEARNING_SHEET_HAMMER_CURSOR
+useLearningSheetPickKeyboard()
+
+watch(
+  isLearningSheetPickActive,
+  (active) => {
+    document.documentElement.classList.toggle('mg-learning-sheet-pick', active)
+    if (active) {
+      document.documentElement.style.setProperty('--mg-hammer-cursor', hammerPickCursor)
+    } else {
+      document.documentElement.style.removeProperty('--mg-hammer-cursor')
+    }
+  },
+  { immediate: true }
+)
+
+const floatingToolbarNodeIds = computed(() => {
+  if (!useMindMapV2.value) return []
+  return diagramStore.selectedNodes.slice()
+})
+
+const floatingToolbarEnabled = computed(() => floatingToolbarNodeIds.value.length > 0)
+
+const floatingToolbarAnchorId = computed(() => floatingToolbarNodeIds.value[0] ?? null)
+
+const { position: floatingToolbarPosition, scheduleMeasure: scheduleFloatingToolbarMeasure } =
+  useNodeFloatingToolbarPosition({
+    containerRef: canvasContainer,
+    selectedNodeIds: floatingToolbarNodeIds,
+    enabled: floatingToolbarEnabled,
+  })
+
+const subgraphPreviewLayoutTick = ref(0)
+
+watch(
+  () =>
+    nodes.value
+      .map((n) => `${n.id}:${n.position?.x ?? 0}:${n.position?.y ?? 0}`)
+      .join('|'),
+  () => {
+    scheduleFloatingToolbarMeasure()
+    subgraphPreviewLayoutTick.value += 1
+  }
+)
+
+const {
+  isGenerating: subgraphGenerating,
+  hasPreview: subgraphPreviewActive,
+  anchorNodeId: subgraphPreviewAnchorId,
+  generateSubgraph,
+  acceptPreview: acceptSubgraphPreview,
+  discardPreview: discardSubgraphPreview,
+} = useMindMapSubgraphSuggest()
+
+async function handleAiSubgraphGenerate() {
+  await generateSubgraph(floatingToolbarAnchorId.value)
+}
 
 const {
   isFittedForPanel,
@@ -211,6 +301,7 @@ const {
   fitWithPanel,
   fitDiagram,
   fitForExport,
+  fitToNodes,
   scheduleFitAfterStructuralNodeChange,
   clearFitTimersOnUnmount,
 } = useDiagramCanvasFit({
@@ -227,6 +318,13 @@ const {
   presentationToolIsNotTimer,
   nodesLength,
 })
+
+function handleViewportChangeWithToolbar(
+  ...args: Parameters<typeof handleViewportChange>
+) {
+  handleViewportChange(...args)
+  scheduleFloatingToolbarMeasure()
+}
 
 useConceptMapCmapMeasuredLayoutRelax(diagramStore)
 
@@ -246,6 +344,24 @@ const {
   handleConceptMapDrop,
 } = conceptMapLink
 
+const mindMapPaletteDrop = useDiagramCanvasMindMapPaletteDrop({ diagramStore })
+
+function handleCanvasDragOver(event: DragEvent): void {
+  handleConceptMapDragOver(event)
+  mindMapPaletteDrop.handleMindMapPaletteDragOver(event)
+}
+
+function handleCanvasDrop(event: DragEvent): void {
+  handleConceptMapDrop(event)
+  mindMapPaletteDrop.handleMindMapPaletteDrop(event)
+}
+
+const suppressPaneClearUntil = ref(0)
+
+function markSelectionDragEnded() {
+  suppressPaneClearUntil.value = Date.now() + 150
+}
+
 const contextMenu = useDiagramCanvasContextMenu({
   vueFlowWrapper,
   getNodes: () => unref(getVueFlowNodes),
@@ -254,6 +370,7 @@ const contextMenu = useDiagramCanvasContextMenu({
   emitPaneClick: () => emit('paneClick'),
   diagramStore,
   t,
+  shouldSuppressPaneClear: () => Date.now() < suppressPaneClearUntil.value,
 })
 
 const {
@@ -280,8 +397,10 @@ const { setupMobileTouchZoom, mobileTouchCleanup } = useDiagramCanvasMobileTouch
 
 useDiagramCanvasVueFlowHandlers({
   diagramStore,
+  getVueFlowNodes: () => unref(getVueFlowNodes) as GraphNode[],
   emit,
   scheduleFitAfterStructuralNodeChange,
+  onSelectionDragEnd: markSelectionDragEnded,
   vueFlowHandlers: {
     onNodesChange,
     onNodeClick,
@@ -307,6 +426,7 @@ onMounted(() => {
       fitWithPanel,
       fitDiagram,
       fitForExport,
+      fitToNodes,
     },
     emit,
     exportByFormat,
@@ -319,6 +439,8 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  document.documentElement.classList.remove('mg-learning-sheet-pick')
+  document.documentElement.style.removeProperty('--mg-hammer-cursor')
   unsubscribeEventBus?.()
   unsubscribeEventBus = null
   clearFitTimersOnUnmount()
@@ -338,15 +460,22 @@ defineExpose({
 <template>
   <div
     ref="canvasContainer"
-    class="diagram-canvas w-full h-full"
+    class="diagram-canvas relative w-full h-full"
+    :class="{
+      'mind-map-canvas': useMindMapV2,
+      'diagram-canvas--hand-tool': props.handToolActive,
+      'diagram-canvas--learning-sheet-pick': isLearningSheetPickActive,
+    }"
     @contextmenu.capture="handleContextMenuEvent"
+    @paste.capture="onCanvasPaste"
   >
+    <LearningSheetPickBanner v-if="useMindMapV2" />
     <div
       ref="vueFlowWrapper"
       class="vue-flow-wrapper w-full h-full"
       :class="{ 'wireframe-mode': uiStore.wireframeMode }"
-      @dragover="handleConceptMapDragOver"
-      @drop="handleConceptMapDrop"
+      @dragover="handleCanvasDragOver"
+      @drop="handleCanvasDrop"
     >
       <VueFlow
         :nodes="nodes"
@@ -361,6 +490,9 @@ defineExpose({
         :nodes-draggable="nodesDraggable"
         :nodes-connectable="false"
         :elements-selectable="elementsSelectable"
+        :select-nodes-on-drag="selectNodesOnDrag"
+        :selection-key-code="selectionKeyCode"
+        :selection-mode="SelectionMode.Partial"
         :pan-on-scroll="false"
         :zoom-on-scroll="true"
         :zoom-on-double-click="false"
@@ -369,7 +501,7 @@ defineExpose({
         :style="{ backgroundColor: backgroundColor }"
         @pane-click="handlePaneClick"
         @nodes-initialized="handleNodesInitialized"
-        @viewport-change="handleViewportChange"
+        @viewport-change="handleViewportChangeWithToolbar"
       >
         <Background
           v-if="showBackground"
@@ -397,6 +529,7 @@ defineExpose({
           :current-color="presentationStrokeColor"
           :pointer-size-scale="presentationStrokePointerScale"
           :stroke-width-role-scale="presentationHighlighterStrokeScale"
+          :mode="presentationTool === 'pen' ? 'pen' : 'highlighter'"
         />
 
         <template #zoom-pane>
@@ -412,6 +545,34 @@ defineExpose({
         </template>
       </VueFlow>
     </div>
+
+    <CanvasNodeFloatingToolbar
+      v-if="useMindMapV2"
+      :position="floatingToolbarPosition"
+      :node-id="floatingToolbarAnchorId"
+      :ai-generating="subgraphGenerating"
+      :ai-disabled="subgraphPreviewActive"
+      @ai-subgraph-generate="handleAiSubgraphGenerate"
+    />
+
+    <MindMapSubgraphPreviewBar
+      v-if="useMindMapV2"
+      :visible="subgraphPreviewActive"
+      :anchor-node-id="subgraphPreviewAnchorId"
+      :container-ref="canvasContainer"
+      :layout-tick="subgraphPreviewLayoutTick"
+      @accept="acceptSubgraphPreview"
+      @discard="discardSubgraphPreview"
+    />
+
+    <MindMapDirectionalAddOverlay
+      v-if="useMindMapV2"
+      :container-ref="canvasContainer"
+    />
+    <MindMapCollapseToggleOverlay
+      v-if="useMindMapV2"
+      :container-ref="canvasContainer"
+    />
 
     <ContextMenu
       :visible="contextMenuVisible"
@@ -434,3 +595,32 @@ defineExpose({
     />
   </div>
 </template>
+
+<style scoped>
+.diagram-canvas--learning-sheet-pick,
+.diagram-canvas--learning-sheet-pick :deep(.vue-flow__pane),
+.diagram-canvas--learning-sheet-pick :deep(.vue-flow__node),
+.diagram-canvas--learning-sheet-pick :deep(.branch-node),
+.diagram-canvas--learning-sheet-pick :deep(.topic-node),
+.diagram-canvas--learning-sheet-pick :deep(.mind-map-node),
+.diagram-canvas--learning-sheet-pick :deep(.mind-map-topic-node),
+.diagram-canvas--learning-sheet-pick :deep(.inline-editable-text),
+.diagram-canvas--learning-sheet-pick :deep(.inline-edit-display),
+.diagram-canvas--learning-sheet-pick :deep(.cursor-grab) {
+  cursor: v-bind('hammerPickCursor') !important;
+}
+</style>
+
+<style>
+html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick,
+html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .vue-flow__pane,
+html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .vue-flow__node,
+html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .branch-node,
+html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .topic-node,
+html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .mind-map-node,
+html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .inline-editable-text,
+html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .inline-edit-display,
+html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .cursor-grab {
+  cursor: var(--mg-hammer-cursor) !important;
+}
+</style>

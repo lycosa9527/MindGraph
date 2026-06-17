@@ -17,7 +17,6 @@ import {
   ElDropdownItem,
   ElDropdownMenu,
   ElInput,
-  ElMessageBox,
   ElTooltip,
 } from 'element-plus'
 
@@ -28,6 +27,8 @@ import { ArrowLeft, FileImage, FileJson, FileText, ImageDown, RotateCcw, Share2 
 import CanvasToolbar from '@/components/canvas/CanvasToolbar.vue'
 import DiagramSlotFullModal from '@/components/canvas/DiagramSlotFullModal.vue'
 import { useFeatureFlags } from '@/composables'
+import { useCanvasReset } from '@/composables/canvasPage/useCanvasReset'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import {
   eventBus,
   getDefaultDiagramName,
@@ -37,10 +38,11 @@ import {
 import type { SnapshotMetadata } from '@/composables'
 import { useLanguage } from '@/composables'
 import { CANVAS_TOP_BAR } from '@/config/uiConfig'
-import { useAuthStore, useDiagramStore, useLLMResultsStore, usePanelsStore } from '@/stores'
+import { useAuthStore, useDiagramStore, usePanelsStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
-import type { DiagramType } from '@/types'
 import { CANVAS_ENTRY_PATH_KEY, isMindGraphLandingPath } from '@/utils/canvasBackNavigation'
+
+const { resetToDefaultTemplate } = useCanvasReset()
 
 const notify = useNotifications()
 
@@ -122,6 +124,8 @@ const autoSaveHoverTitle = computed(() => {
 const diagramTypeForName = computed(
   () => (diagramStore.type as string) || (route.query.type as string) || null
 )
+
+const isMindMapEditor = useMindMapV2Chrome()
 
 /**
  * Generate default diagram name (simple, no timestamp)
@@ -277,34 +281,8 @@ function handleOpenMindmate() {
  * Nothing is persisted. Shows confirmation modal first.
  */
 async function handleReset() {
-  const diagramType = diagramStore.type as DiagramType | null
-  if (!diagramType) {
-    notify.warning(t('canvas.reset.warnSelectType'))
-    return
-  }
-
-  try {
-    await ElMessageBox.confirm(t('canvas.reset.confirmBody'), t('canvas.reset.confirmTitle'), {
-      confirmButtonText: t('canvas.reset.confirmButton'),
-      cancelButtonText: t('common.cancel'),
-      type: 'warning',
-    })
-  } catch {
-    return
-  }
-
-  savedDiagramsStore.clearActiveDiagram()
-  router.replace({ path: '/canvas', query: { type: diagramType } })
+  await resetToDefaultTemplate()
   showSlotFullModal.value = false
-  useLLMResultsStore().reset()
-  panelsStore.reset()
-  diagramStore.clearHistory()
-  diagramStore.loadDefaultTemplate(diagramType)
-  diagramStore.initTitle(generateDefaultName())
-  if (diagramType !== 'concept_map') {
-    eventBus.emit('view:fit_to_canvas_requested', { animate: true })
-  }
-  notify.success(t('notification.resetDefaultTemplate'))
 }
 </script>
 
@@ -379,7 +357,9 @@ async function handleReset() {
     </div>
 
     <!-- Col 2: editing toolbar (hidden for viewers) -->
-    <div class="min-w-0 flex justify-center items-center self-center overflow-x-auto px-0.5 z-[5]">
+    <div
+      class="min-w-0 flex justify-center items-center self-center overflow-x-auto px-0.5 z-[5]"
+    >
       <span
         v-if="props.isViewer"
         class="inline-flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-full px-2.5 py-1 select-none"
@@ -446,6 +426,7 @@ async function handleReset() {
 
       <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <ElTooltip
+          v-if="!isMindMapEditor"
           :content="t('canvas.topBar.teachingDesign')"
           placement="bottom"
           :disabled="!compactTopBarActions"
@@ -462,6 +443,7 @@ async function handleReset() {
         </ElTooltip>
 
         <ElTooltip
+          v-if="!isMindMapEditor"
           :content="t('canvas.topBar.resetTemplate')"
           placement="bottom"
           :disabled="!compactTopBarActions"
@@ -478,6 +460,7 @@ async function handleReset() {
         </ElTooltip>
 
         <ElTooltip
+          v-if="!isMindMapEditor"
           :content="t('canvas.topBar.export')"
           placement="bottom"
           :disabled="!compactTopBarActions"

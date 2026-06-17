@@ -5,6 +5,7 @@ import { markRaw } from 'vue'
 
 import BraceEdge from './edges/BraceEdge.vue'
 import CurvedEdge from './edges/CurvedEdge.vue'
+import MindMapOrthogonalEdge from './edges/MindMapOrthogonalEdge.vue'
 import HorizontalStepEdge from './edges/HorizontalStepEdge.vue'
 import RadialEdge from './edges/RadialEdge.vue'
 import StepEdge from './edges/StepEdge.vue'
@@ -38,6 +39,7 @@ export const diagramCanvasNodeTypes = {
 
 export const diagramCanvasEdgeTypes = {
   curved: markRaw(CurvedEdge),
+  mindmapOrthogonal: markRaw(MindMapOrthogonalEdge),
   straight: markRaw(StraightEdge),
   step: markRaw(StepEdge),
   horizontalStep: markRaw(HorizontalStepEdge),

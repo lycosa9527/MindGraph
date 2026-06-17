@@ -302,6 +302,37 @@ class WebContentMindmapPngRequest(WebContentGenerateRequest):
     height: Optional[int] = Field(800, ge=300, le=3000, description="PNG height in pixels")
 
 
+class CanvasDocumentMindmapRequest(BaseModel):
+    """Canvas document summary panel — text paste, local file, or web URL fetch."""
+
+    page_content: str = Field("", max_length=32000, description="Document or pasted text")
+    content_format: Literal["text/plain", "text/markdown"] = Field(
+        "text/plain",
+        description="Whether page_content is plain text or markdown",
+    )
+    page_title: Optional[str] = Field(None, max_length=500, description="Document title if available")
+    page_url: Optional[str] = Field(None, max_length=500, description="Fetch page text from URL when content empty")
+    language: str = Field(
+        "zh",
+        description="Language code for prompts and output (prompt output registry)",
+    )
+
+    @field_validator("language")
+    @classmethod
+    def validate_canvas_document_language(cls, value: str) -> str:
+        """Reject unknown generation language codes."""
+        return _validate_prompt_output_language(value)
+
+    @model_validator(mode="after")
+    def require_content_or_url(self) -> "CanvasDocumentMindmapRequest":
+        """Require pasted/uploaded text or a URL to fetch."""
+        has_content = bool((self.page_content or "").strip())
+        has_url = bool((self.page_url or "").strip())
+        if not has_content and not has_url:
+            raise ValueError("Either page_content or page_url is required")
+        return self
+
+
 class DiagramCreateRequest(BaseModel):
     """Request model for creating a new diagram"""
 

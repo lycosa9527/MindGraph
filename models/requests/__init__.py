@@ -2,10 +2,6 @@
 Request Models
 
 Pydantic request models for API endpoints.
-
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
-All Rights Reserved
-Proprietary License
 """
 
 from .requests_diagram import (
@@ -16,6 +12,7 @@ from .requests_diagram import (
     GenerateDingTalkRequest,
     WebContentGenerateRequest,
     WebContentMindmapPngRequest,
+    CanvasDocumentMindmapRequest,
     DiagramCreateRequest,
     DiagramUpdateRequest,
 )
@@ -61,6 +58,7 @@ __all__ = [
     "GenerateDingTalkRequest",
     "WebContentGenerateRequest",
     "WebContentMindmapPngRequest",
+    "CanvasDocumentMindmapRequest",
     "DiagramCreateRequest",
     "DiagramUpdateRequest",
     # Assistant Requests

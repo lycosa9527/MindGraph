@@ -7,6 +7,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useLanguage, useNotifications } from '@/composables'
 import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
 import { IMPORT_SPEC_KEY } from '@/config'
+import { useDiagramStore } from '@/stores'
 import type { DiagramType } from '@/types'
 import { canvasPathForImportNavigation } from '@/utils/canvasBackNavigation'
 import { CMAP_PARSE_FAILED, decodeCmapToConceptMapSpec } from '@/utils/cmapImport'
@@ -59,6 +60,83 @@ export function useDiagramImport() {
   const router = useRouter()
   const { t } = useLanguage()
   const notify = useNotifications()
+  const diagramStore = useDiagramStore()
+
+  async function parseImportFile(file: File): Promise<Record<string, unknown> | null> {
+    const lowerName = file.name.toLowerCase()
+    const isMg = lowerName.endsWith('.mg')
+    const isCmap = lowerName.endsWith('.cmap')
+    const isJson = lowerName.endsWith('.json')
+    if (!isMg && !isCmap && !isJson) {
+      notify.error(t('canvas.import.invalidFile'))
+      return null
+    }
+    try {
+      const buffer = await file.arrayBuffer()
+      if (isCmap) {
+        const spec = decodeCmapToConceptMapSpec(buffer)
+        if (!isValidImportedDiagramSpec(spec)) {
+          notify.error(t('canvas.import.invalidFile'))
+          return null
+        }
+        const cmapHintsRaw = spec._import_hints
+        if (Array.isArray(cmapHintsRaw)) {
+          cmapHintsRaw.forEach((hintKey) => {
+            if (typeof hintKey === 'string') {
+              notify.info(t(hintKey))
+            }
+          })
+        }
+        return spec
+      }
+      if (isJson) {
+        const text = new TextDecoder().decode(buffer)
+        const parsed = JSON.parse(text) as unknown
+        if (!isValidImportedDiagramSpec(parsed)) {
+          notify.error(t('canvas.import.invalidFile'))
+          return null
+        }
+        return parsed
+      }
+      const text = await decodeMgFileToJsonText(buffer)
+      const parsed = JSON.parse(text) as unknown
+      if (!isValidImportedDiagramSpec(parsed)) {
+        notify.error(t('canvas.import.invalidFile'))
+        return null
+      }
+      return parsed as Record<string, unknown>
+    } catch (error) {
+      console.error('Import failed:', error)
+      if (error instanceof Error) {
+        if (error.message === MG_FILE_NOT_ENCRYPTED || error.message === CMAP_PARSE_FAILED) {
+          notify.error(t('canvas.import.invalidFile'))
+          return null
+        }
+      }
+      notify.error(t('canvas.import.parseError'))
+      return null
+    }
+  }
+
+  /** Import on the canvas page without navigation (mind-map toolbar). */
+  function triggerImportInPlace(): void {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.mg,.json,.cmap'
+    input.onchange = async () => {
+      const file = input.files?.[0]
+      if (!file) return
+      const spec = await parseImportFile(file)
+      if (!spec) return
+      const diagramType = spec.type as DiagramType
+      if (diagramStore.loadFromSpec(spec, diagramType)) {
+        notify.success(t('canvas.toolbar.importSuccess'))
+      } else {
+        notify.error(t('canvas.import.parseError'))
+      }
+    }
+    input.click()
+  }
 
   function triggerImport(): void {
     const input = document.createElement('input')
@@ -67,62 +145,21 @@ export function useDiagramImport() {
     input.onchange = async () => {
       const file = input.files?.[0]
       if (!file) return
-      const lowerName = file.name.toLowerCase()
-      const isMg = lowerName.endsWith('.mg')
-      const isCmap = lowerName.endsWith('.cmap')
-      if (!isMg && !isCmap) {
-        notify.error(t('canvas.import.invalidFile'))
-        return
-      }
+      const spec = await parseImportFile(file)
+      if (!spec) return
       try {
-        const buffer = await file.arrayBuffer()
-        let payloadJson: string
-        if (isCmap) {
-          const spec = decodeCmapToConceptMapSpec(buffer)
-          if (!isValidImportedDiagramSpec(spec)) {
-            notify.error(t('canvas.import.invalidFile'))
-            return
-          }
-          const cmapHintsRaw = spec._import_hints
-          if (Array.isArray(cmapHintsRaw)) {
-            cmapHintsRaw.forEach((hintKey) => {
-              if (typeof hintKey === 'string') {
-                notify.info(t(hintKey))
-              }
-            })
-          }
-          payloadJson = JSON.stringify(spec)
-        } else {
-          const text = await decodeMgFileToJsonText(buffer)
-          const parsed = JSON.parse(text) as unknown
-          if (!isValidImportedDiagramSpec(parsed)) {
-            notify.error(t('canvas.import.invalidFile'))
-            return
-          }
-          payloadJson = text
-        }
-        sessionStorage.setItem(IMPORT_SPEC_KEY, payloadJson)
+        sessionStorage.setItem(IMPORT_SPEC_KEY, JSON.stringify(spec))
         router.push({
           path: canvasPathForImportNavigation(route.path),
           query: { import: '1' },
         })
       } catch (error) {
         console.error('Import failed:', error)
-        if (error instanceof Error) {
-          if (error.message === MG_FILE_NOT_ENCRYPTED) {
-            notify.error(t('canvas.import.invalidFile'))
-            return
-          }
-          if (error.message === CMAP_PARSE_FAILED) {
-            notify.error(t('canvas.import.invalidFile'))
-            return
-          }
-        }
         notify.error(t('canvas.import.parseError'))
       }
     }
     input.click()
   }
 
-  return { triggerImport }
+  return { triggerImport, triggerImportInPlace }
 }

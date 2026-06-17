@@ -3,10 +3,6 @@ Node Palette streaming helpers.
 
 Extracted streaming logic for node palette SSE endpoints to reduce complexity
 and fix type checker issues (reportGeneralTypeIssues, ContentStream).
-
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
-All Rights Reserved
-Proprietary License
 """
 
 import asyncio
@@ -25,7 +21,12 @@ from services.infrastructure.http.error_handler import (
     LLMServiceError,
     LLMTimeoutError,
 )
-from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from services.utils.error_types import (
+    DATABASE_ERRORS,
+    FILE_IO_ERRORS,
+    JSON_PARSE_ERRORS,
+    REDIS_ERRORS,
+)
 from utils.chinese_language_policy import (
     collect_node_palette_text_blobs,
     effective_language_for_thinking_user,
@@ -35,6 +36,13 @@ from utils.placeholder import is_placeholder_text
 from utils.prompt_output_languages import is_prompt_output_language
 
 logger = logging.getLogger(__name__)
+
+_NODE_PALETTE_STREAM_FALLBACK_ERRORS: tuple[Type[Exception], ...] = (
+    *JSON_PARSE_ERRORS,
+    *REDIS_ERRORS,
+    *DATABASE_ERRORS,
+    *FILE_IO_ERRORS,
+)
 
 _LLM_ERROR_MAP: dict[Type[Exception], str] = {
     LLMContentFilterError: "content_filter",
@@ -188,11 +196,12 @@ def _build_batch_kwargs(
     stage, stage_data = _resolve_stage_and_data(req, req.diagram_type, default_stage)
     user_id = current_user.id if current_user else None
     org_id = current_user.organization_id if current_user else None
+    nodes_per_llm = getattr(req, "nodes_per_llm", None)
     base = {
         "session_id": session_id,
         "center_topic": center_topic,
         "educational_context": _merged_educational_context(req, effective_language),
-        "nodes_per_llm": 15,
+        "nodes_per_llm": nodes_per_llm if isinstance(nodes_per_llm, int) and nodes_per_llm > 0 else 15,
         "user_id": user_id,
         "organization_id": org_id,
         "diagram_type": req.diagram_type,
@@ -345,7 +354,7 @@ async def stream_node_palette(
         no_chunk_response_sent = True
         yield _yield_error_event(req, error_type, getattr(exc, "user_message", None), language_for_ui=effective_lang)
 
-    except BACKGROUND_INFRA_ERRORS as exc:
+    except _NODE_PALETTE_STREAM_FALLBACK_ERRORS as exc:
         logger.error(
             "%s Stream error | Session: %s | Error: %s",
             log_prefix,

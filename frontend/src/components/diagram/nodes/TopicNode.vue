@@ -6,20 +6,36 @@
  */
 import { computed, nextTick, ref } from 'vue'
 
+import type { CSSProperties } from 'vue'
+
 import { Handle, Position } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import {
+  handleLearningSheetPickNodeClick,
+  isLearningSheetCustomPickActive,
+} from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { useDiagramStore } from '@/stores'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
+import { applyNodeShapeToStyle, mindMapUnderlineHandleStyle, resolveNodeShape, type NodeShape } from '@/utils/nodeShapeStyle'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import {
+  MIND_MAP_GEOMETRY,
+  MINDMAP_UNDERLINE_STROKE_WIDTH,
+  mindMapHorizontalPadding,
+  mindMapUnderlineContentPadding,
+} from '@/config/mindMapGeometry'
+import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
 
 import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+
+const diagramStore = useDiagramStore()
 
 // Get theme defaults matching old StyleManager
 const { getNodeStyle } = useTheme({
@@ -53,6 +69,47 @@ const isMultiFlowMap = computed(() => props.data.diagramType === 'multi_flow_map
 const isMindMap = computed(
   () => props.data.diagramType === 'mindmap' || props.data.diagramType === 'mind_map'
 )
+
+const topicNodeShape = computed((): NodeShape => {
+  const style = resolvedStyle.value
+  const defaultMindMapShape: NodeShape = 'rectangle'
+  return style.nodeShape ?? (isMindMap.value ? defaultMindMapShape : resolveNodeShape(style, false))
+})
+
+const isUnderlineTopic = computed(
+  () => isMindMap.value && topicNodeShape.value === 'underline'
+)
+
+const defaultMindMapTheme = computed(() => getMindMapThemeForDiagram(diagramStore.data))
+
+const resolvedStyle = computed(() => ({
+  ...(diagramStore.data?._node_styles?.[props.id] || {}),
+  ...(props.data.style || {}),
+}))
+
+const contentJustifyClass = computed(() => 'justify-center')
+
+const underlineTextStyle = computed((): CSSProperties => {
+  const padX = mindMapHorizontalPadding('underline')
+  return {
+    paddingLeft: `${padX}px`,
+    paddingRight: `${padX}px`,
+  }
+})
+
+const underlineLineStyle = computed((): CSSProperties => {
+  const style = resolvedStyle.value
+  const lineColor =
+    style.borderColor ||
+    defaultStyle.value.borderColor ||
+    defaultMindMapTheme.value.topicBorderColor
+  const { textGap } = mindMapUnderlineContentPadding()
+  return {
+    backgroundColor: lineColor,
+    marginTop: `${textGap}px`,
+    height: `${MINDMAP_UNDERLINE_STROKE_WIDTH}px`,
+  }
+})
 
 // For multi-flow maps: get cause count to generate handles dynamically
 const causeCount = computed(() => {
@@ -102,7 +159,7 @@ const totalBranchCount = computed(() => {
   return (props.data.totalBranchCount as number) || 0
 })
 
-// Mindmap handles: only left and right edges, evenly distributed along each edge
+// Mindmap handles: one trunk exit per side (center of edge) — branches split on shared bus
 const mindMapHandlePositions = computed(() => {
   if (totalBranchCount.value === 0) {
     return { right: [], left: [] }
@@ -113,56 +170,98 @@ const mindMapHandlePositions = computed(() => {
   const rightCount = midPoint
   const leftCount = total - midPoint
 
-  const generateHandles = (count: number, prefix: string) => {
-    const handles: Array<{ id: string; top: string; transform: string }> = []
-    for (let i = 0; i < count; i++) {
-      const topPercent = ((i + 1) / (count + 1)) * 100
-      handles.push({
-        id: `${prefix}-${i}`,
-        top: `${topPercent}%`,
-        transform: 'translateY(-50%)',
-      })
-    }
-    return handles
-  }
+  const rightHandleStyle = isUnderlineTopic.value
+    ? mindMapUnderlineHandleStyle('right')
+    : { top: '50%', transform: 'translate(50%, -50%)' }
+  const leftHandleStyle = isUnderlineTopic.value
+    ? mindMapUnderlineHandleStyle('left')
+    : { top: '50%', transform: 'translate(-50%, -50%)' }
 
   return {
-    right: generateHandles(rightCount, 'mindmap-right'),
-    left: generateHandles(leftCount, 'mindmap-left'),
+    right:
+      rightCount > 0
+        ? [{ id: 'mindmap-right', ...rightHandleStyle }]
+        : [],
+    left:
+      leftCount > 0
+        ? [{ id: 'mindmap-left', ...leftHandleStyle }]
+        : [],
   }
 })
 
 const nodeStyle = computed(() => {
-  const borderColor = props.data.style?.borderColor || defaultStyle.value.borderColor || '#0d47a1'
-  const borderWidth = props.data.style?.borderWidth || defaultStyle.value.borderWidth || 3
-  const borderStyle = props.data.style?.borderStyle || 'solid'
+  const style = resolvedStyle.value
+  const borderColor =
+    style.borderColor ||
+    defaultStyle.value.borderColor ||
+    (isMindMap.value ? defaultMindMapTheme.value.topicBorderColor : '#0d47a1')
+  const borderWidth =
+    style.borderWidth ??
+    defaultStyle.value.borderWidth ??
+    (isMindMap.value ? MIND_MAP_GEOMETRY.borderWidth : 3)
+  const borderStyle = style.borderStyle || 'solid'
   const backgroundColor =
-    props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#1976d2'
+    style.backgroundColor ||
+    defaultStyle.value.backgroundColor ||
+    (isMindMap.value ? defaultMindMapTheme.value.topicBackgroundColor : '#1976d2')
 
   const baseStyle = {
     backgroundColor,
-    color: props.data.style?.textColor || defaultStyle.value.textColor || '#ffffff',
-    fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
-    fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 18}px`,
-    fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'bold',
-    fontStyle: props.data.style?.fontStyle || 'normal',
-    textDecoration: props.data.style?.textDecoration || 'none',
+    color:
+      style.textColor ||
+      defaultStyle.value.textColor ||
+      (isMindMap.value ? defaultMindMapTheme.value.topicTextColor : '#ffffff'),
+    fontFamily:
+      style.fontFamily ||
+      (isMindMap.value ? MIND_MAP_GEOMETRY.fontFamily : DIAGRAM_NODE_FONT_STACK),
+    fontSize: `${style.fontSize || defaultStyle.value.fontSize || (isMindMap.value ? MIND_MAP_GEOMETRY.topicFontSize : 18)}px`,
+    fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'bold',
+    fontStyle: style.fontStyle || 'normal',
+    textDecoration: style.textDecoration || 'none',
     ...getBorderStyleProps(borderColor, borderWidth, borderStyle, {
       backgroundColor,
     }),
-    // Pill shape for tree map (9999px creates fully rounded ends)
-    // Rounded rectangle for multi-flow map, circle for others
-    borderRadius: isPillShape.value
-      ? '9999px'
-      : isRoundedRectangle.value
-        ? `${props.data.style?.borderRadius || 8}px`
-        : `${props.data.style?.borderRadius || 50}%`,
   }
+
+  const shape = topicNodeShape.value
+  const shapedStyle =
+    isMindMap.value || style.nodeShape
+      ? applyNodeShapeToStyle(baseStyle, shape, borderColor, isMindMap.value)
+      : {
+          ...baseStyle,
+          borderRadius: isPillShape.value
+            ? '9999px'
+            : isRoundedRectangle.value
+              ? `${style.borderRadius || 8}px`
+              : `${style.borderRadius || 50}%`,
+        }
+
+  const withMindMapBox = isMindMap.value
+    ? {
+        ...shapedStyle,
+        ...(isUnderlineTopic.value
+          ? (() => {
+              const { top } = mindMapUnderlineContentPadding()
+              return {
+                padding: `${top}px 0 0`,
+                minWidth: `${MIND_MAP_GEOMETRY.minWidth}px`,
+                minHeight: 'auto',
+                boxShadow: 'none',
+              }
+            })()
+          : {
+              padding: `${MIND_MAP_GEOMETRY.paddingY}px ${mindMapHorizontalPadding(shape)}px`,
+              minWidth: `${MIND_MAP_GEOMETRY.minWidth}px`,
+              minHeight: `${MIND_MAP_GEOMETRY.minHeight}px`,
+              boxShadow: '0 1px 4px rgba(15, 23, 42, 0.12)',
+            }),
+      }
+    : shapedStyle
 
   // Add dynamic width when editing (only for multi-flow map)
   if (isMultiFlowMap.value && dynamicWidth.value !== null) {
     return {
-      ...baseStyle,
+      ...withMindMapBox,
       width: `${dynamicWidth.value}px`,
       minWidth: `${dynamicWidth.value}px`,
       transition: 'width 0.2s ease',
@@ -172,7 +271,7 @@ const nodeStyle = computed(() => {
   // Multi-flow map topic: adaptive width so node grows/shrinks with text
   if (isMultiFlowMap.value && dynamicWidth.value === null) {
     return {
-      ...baseStyle,
+      ...withMindMapBox,
       width: 'max-content',
       minWidth: '90px',
     }
@@ -181,7 +280,7 @@ const nodeStyle = computed(() => {
   // Flow map topic: adaptive width and height so full text displays
   if (isFlowMap.value) {
     return {
-      ...baseStyle,
+      ...withMindMapBox,
       width: 'max-content',
       minWidth: '120px',
       minHeight: '48px',
@@ -192,7 +291,7 @@ const nodeStyle = computed(() => {
   // Tree map: measured box from layout so wrapped text stays inside the pill (Vue Flow + CSS match)
   if (isTreeMap.value && props.data.style?.width != null) {
     return {
-      ...baseStyle,
+      ...withMindMapBox,
       width: `${props.data.style.width}px`,
       minWidth: `${props.data.style.width}px`,
       maxWidth: `${props.data.style.width}px`,
@@ -208,12 +307,13 @@ const nodeStyle = computed(() => {
   // Brace map / mind map: hard-cap width so the pill never exceeds the layout algorithm's maximum
   if (isBraceMap.value || isMindMap.value) {
     return {
-      ...baseStyle,
+      ...withMindMapBox,
+      width: 'fit-content',
       maxWidth: '400px',
     }
   }
 
-  return baseStyle
+  return withMindMapBox
 })
 
 const TOPIC_MAX_TEXT_WIDTH = 300
@@ -241,11 +341,9 @@ const isEditing = ref(false)
 const dynamicWidth = ref<number | null>(null)
 const topicNodeRef = ref<HTMLDivElement | null>(null)
 
-const diagramStore = useDiagramStore()
-
 const { reportDimensions } = useNodeDimensions(topicNodeRef, props.id, {
   onResize(w, h) {
-    if (!isMindMap.value) return
+    if (!isMindMap.value || isEditing.value) return
     diagramStore.setMindMapTopicWidth(w)
     diagramStore.setMindMapNodeDimensions(props.id, null, h)
   },
@@ -293,6 +391,18 @@ function handleEditCancel() {
   dynamicWidth.value = null // Reset width after canceling
 }
 
+function handleTopicNodeClick(event: MouseEvent): void {
+  if (isEditing.value) return
+  if (isMindMap.value && isLearningSheetCustomPickActive()) {
+    event.stopPropagation()
+    event.preventDefault()
+    handleLearningSheetPickNodeClick(props.id)
+    return
+  }
+  if (isMindMap.value) return
+  diagramStore.selectNodes(props.id)
+}
+
 function handleWidthChange(width: number) {
   // Update node width dynamically as user types (only for multi-flow map)
   if (isMultiFlowMap.value) {
@@ -325,25 +435,60 @@ function handleWidthChange(width: number) {
 <template>
   <div
     ref="topicNodeRef"
-    class="topic-node flex items-center justify-center px-6 border-solid cursor-default select-none"
-    :class="{
-      'pill-shape': isPillShape,
-      'rounded-rectangle': isRoundedRectangle,
-      'multi-flow-map-node': isMultiFlowMap,
-      'flow-map-topic-node': isFlowMap,
-      'py-3': isFlowMap,
-      'py-4': !isFlowMap,
-    }"
+    class="topic-node flex border-solid cursor-default select-none relative"
+    :class="[
+      isUnderlineTopic ? 'flex-col items-stretch' : 'items-center',
+      contentJustifyClass,
+      {
+        'pill-shape': isPillShape && !isMindMap,
+        'rounded-rectangle': isRoundedRectangle,
+        'multi-flow-map-node': isMultiFlowMap,
+        'flow-map-topic-node': isFlowMap,
+        'mind-map-topic-node': isMindMap,
+        'mind-map-underline-node': isUnderlineTopic,
+        'py-3': isFlowMap,
+        'py-4': !isFlowMap && !isMindMap,
+        'px-6': !isMindMap,
+      },
+    ]"
     :style="nodeStyle"
+    @click.capture="handleTopicNodeClick"
   >
+    <template v-if="isUnderlineTopic">
+      <div
+        class="mind-map-underline-text"
+        :style="underlineTextStyle"
+      >
+        <InlineEditableText
+          :text="data.label || ''"
+          :node-id="id"
+          :is-editing="isEditing"
+          :readonly="data.hidden === true"
+          :max-width="topicMaxWidth"
+          :text-align="resolvedStyle.textAlign || 'center'"
+          :text-decoration="resolvedStyle.textDecoration || 'none'"
+          auto-wrap
+          render-markdown
+          @save="handleTextSave"
+          @cancel="handleEditCancel"
+          @edit-start="isEditing = true"
+          @width-change="handleWidthChange"
+        />
+      </div>
+      <div
+        class="mind-map-underline-line"
+        :style="underlineLineStyle"
+      />
+    </template>
     <InlineEditableText
+      v-else
       :text="data.label || ''"
       :node-id="id"
       :is-editing="isEditing"
       :readonly="data.hidden === true"
       :max-width="topicMaxWidth"
-      :text-align="data.style?.textAlign || 'center'"
-      :text-decoration="data.style?.textDecoration || 'none'"
+      :text-align="resolvedStyle.textAlign || 'center'"
+      :text-decoration="resolvedStyle.textDecoration || 'none'"
       auto-wrap
       render-markdown
       @save="handleTextSave"
@@ -476,6 +621,29 @@ function handleWidthChange(width: number) {
 
 .topic-node:hover {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.topic-node.mind-map-underline-node {
+  min-height: unset;
+  box-shadow: none !important;
+}
+
+.topic-node.mind-map-underline-node .mind-map-underline-text {
+  width: 100%;
+}
+
+.topic-node.mind-map-underline-node .mind-map-underline-line {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.topic-node.mind-map-underline-node:hover {
+  box-shadow: none !important;
+}
+
+.topic-node.mind-map-topic-node {
+  width: fit-content;
+  max-width: 400px;
 }
 
 /* Tree map pill shape adjustments */

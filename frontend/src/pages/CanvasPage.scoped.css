@@ -30,7 +30,35 @@
   transform: translateX(0);
 }
 
-/* Short viewport: compact bottom controls */
+/* Stop bottom bar children from stretching or clipping each other */
+.bottom-controls-card {
+  overflow: visible;
+}
+
+.ai-selector-wrap,
+.zoom-controls-wrap {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 767px) {
+  .bottom-controls-card {
+    width: min(95vw, max-content);
+  }
+
+  .zoom-controls-wrap {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .ai-selector-wrap {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 @media (max-height: 560px) {
   .ai-selector-wrap {
     justify-content: flex-start;
@@ -69,7 +97,32 @@
 
 /* Vertical rail: normal cursor while hovering (overrides none, spotlight, highlighter brush, etc.) */
 .presentation-active .presentation-side-toolbar:hover,
-.presentation-active .presentation-side-toolbar:hover * {
+.presentation-active .presentation-side-toolbar:hover *,
+.presentation-active .mind-map-presentation-toolbar:hover,
+.presentation-active .mind-map-presentation-toolbar:hover * {
+  cursor: auto !important;
+}
+
+/* Mind map presentation: hand / grab on canvas */
+.presentation-active.presentation-hand-mode,
+.presentation-active.presentation-hand-mode * {
+  cursor: grab !important;
+}
+
+.presentation-active.presentation-hand-mode:active,
+.presentation-active.presentation-hand-mode:active * {
+  cursor: grabbing !important;
+}
+
+/* Slide show: restore visible cursor (presentation-active hides it by default) */
+.presentation-active.presentation-slides-mode,
+.presentation-active.presentation-slides-mode * {
+  cursor: default !important;
+}
+
+.presentation-active .mind-map-presentation-toolbar:hover,
+.presentation-active .mind-map-presentation-toolbar:hover *,
+.presentation-active .mind-map-slide-overlay:hover * {
   cursor: auto !important;
 }
 

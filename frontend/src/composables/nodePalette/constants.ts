@@ -8,6 +8,12 @@ export const NODE_PALETTE_NEXT = '/thinking_mode/node_palette/next_batch'
 /** Drag payload MIME for concept-map palette → canvas drops (see DiagramCanvas, RootConceptModal) */
 export const PALETTE_CONCEPT_DRAG_MIME = 'application/mindgraph-palette-concept'
 
+/** Drag payload MIME for mind-map waterfall palette → canvas drops */
+export const PALETTE_MINDMAP_DRAG_MIME = 'application/mindgraph-palette-mindmap'
+
+/** 3 LLMs × 3 nodes ≈ 9 suggestions per source (within 6–10 target range) */
+export const MINDMAP_WATERFALL_NODES_PER_LLM = 3
+
 export const RELATIONSHIP_LABELS_START = '/thinking_mode/relationship_labels/start'
 export const RELATIONSHIP_LABELS_NEXT = '/thinking_mode/relationship_labels/next_batch'
 export const RELATIONSHIP_LABELS_CLEANUP = '/thinking_mode/relationship_labels/cleanup'
@@ -17,7 +23,6 @@ export const INLINE_RECOMMENDATIONS_NEXT = '/thinking_mode/inline_recommendation
 export const INLINE_RECOMMENDATIONS_CLEANUP = '/thinking_mode/inline_recommendations/cleanup'
 
 export const INLINE_RECOMMENDATIONS_SUPPORTED_TYPES = [
-  'mindmap',
   'flow_map',
   'tree_map',
   'brace_map',

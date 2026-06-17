@@ -1,5 +1,6 @@
 import type { GraphNode } from '@vue-flow/core'
 
+import type { BranchMoveGhostPreview } from '@/composables/editor/useBranchMoveDrag'
 import type { DropTarget } from '@/composables/editor/useBranchMoveDrag'
 import type { MindGraphNode } from '@/types/vueflow'
 
@@ -42,7 +43,7 @@ function getTargetNodeDimensions(
 }
 
 /** Border radius for branch-move drop preview — keep in sync with diagram node components. */
-function getDropPreviewBorderRadius(node: MindGraphNode): string {
+export function getDropPreviewBorderRadius(node: MindGraphNode): string {
   const vfType = node.type ?? ''
   const data = node.data
   if (!data) {
@@ -136,6 +137,22 @@ export function getDropTargetShapeClass(node: MindGraphNode): 'is-circle' | 'is-
   return ''
 }
 
+export function getBranchMoveGhostStyle(state: {
+  cursorPos: { x: number; y: number } | null
+  ghost: BranchMoveGhostPreview | null
+}): Record<string, string> | null {
+  if (!state.ghost || !state.cursorPos) return null
+  const { width, height } = state.ghost
+  return {
+    position: 'absolute',
+    left: `${state.cursorPos.x - width / 2}px`,
+    top: `${state.cursorPos.y - height / 2}px`,
+    width: `${width}px`,
+    minHeight: `${height}px`,
+    pointerEvents: 'none',
+  }
+}
+
 export function getBranchMoveCircleStyle(state: {
   cursorPos: { x: number; y: number } | null
   nodeStartPos: { x: number; y: number; width: number; height: number } | null
@@ -179,6 +196,25 @@ export function getDropTargetStyle(
   if (!node?.position) return { display: 'none' }
 
   const { width: nodeW, height: nodeH } = getTargetNodeDimensions(node)
+
+  if (target.type === 'before' || target.type === 'after') {
+    const y =
+      target.type === 'before'
+        ? node.position.y - 2
+        : node.position.y + nodeH - 2
+    return {
+      position: 'absolute',
+      left: `${node.position.x}px`,
+      top: `${y}px`,
+      width: `${nodeW}px`,
+      height: '4px',
+      borderRadius: '2px',
+      background: '#2563eb',
+      boxShadow: '0 0 0 2px rgb(37 99 235 / 0.25)',
+      pointerEvents: 'none',
+    }
+  }
+
   const previewW = Math.round(nodeW * DROP_PREVIEW_SCALE)
   const previewH = Math.round(nodeH * DROP_PREVIEW_SCALE)
   const offsetX = (previewW - nodeW) / 2
@@ -186,7 +222,7 @@ export function getDropTargetStyle(
 
   const borderRadius = getDropPreviewBorderRadius(node)
 
-  return {
+  const baseStyle: Record<string, string> = {
     position: 'absolute',
     left: node.position.x - offsetX + 'px',
     top: node.position.y - offsetY + 'px',
@@ -195,4 +231,11 @@ export function getDropTargetStyle(
     borderRadius,
     pointerEvents: 'none',
   }
+
+  if (target.type === 'child') {
+    baseStyle.border = '2px dashed #2563eb'
+    baseStyle.background = 'rgb(37 99 235 / 0.08)'
+  }
+
+  return baseStyle
 }

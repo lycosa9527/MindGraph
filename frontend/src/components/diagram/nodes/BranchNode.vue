@@ -11,14 +11,29 @@ import { Handle, Position } from '@vue-flow/core'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
+import {
+  handleLearningSheetPickNodeClick,
+  isLearningSheetCustomPickActive,
+} from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
+import {
+  MIND_MAP_GEOMETRY,
+  MINDMAP_UNDERLINE_STROKE_WIDTH,
+  mindMapBranchDepth,
+  mindMapBranchFontSize,
+  mindMapHorizontalPadding,
+  mindMapUnderlineContentPadding,
+  resolveMindMapTopicBorderColor,
+} from '@/config/mindMapGeometry'
+import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
 import { useDiagramStore } from '@/stores/diagram'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
+import { applyNodeShapeToStyle, mindMapUnderlineHandleStyle, resolveNodeShape } from '@/utils/nodeShapeStyle'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
 import InlineEditableText from './InlineEditableText.vue'
@@ -33,8 +48,17 @@ const { getNodeStyle } = useTheme({
   diagramType: computed(() => props.data.diagramType),
 })
 
+const isMindMap = computed(
+  () => props.data.diagramType === 'mindmap' || props.data.diagramType === 'mind_map'
+)
+
 // Determine if this is a child node (deeper in hierarchy)
-const isChild = computed(() => props.data.nodeType === 'branch' && props.data.parentId)
+const isChild = computed(() => {
+  if (isMindMap.value) {
+    return mindMapBranchDepth(props.id) >= 2
+  }
+  return props.data.nodeType === 'branch' && props.data.parentId
+})
 
 // Tree map: use branch style for categories, leaf style for children
 const themeNodeType = computed(() => {
@@ -65,7 +89,9 @@ const textMaxWidth = computed(() => {
   if (!label) return `${BRANCH_MAX_TEXT_WIDTH}px`
 
   const wrapThreshold = computeScriptAwareMaxWidth(label, BRANCH_MAX_TEXT_WIDTH)
-  const fontSize = parseFloat(nodeStyle.value.fontSize as string) || 16
+  const fontSize =
+    parseFloat(nodeStyle.value.fontSize as string) ||
+    mindMapBranchFontSize(isMindMap.value ? props.id : undefined)
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
   const textWidth = measureTextWidth(label, fontSize, { fontWeight })
 
@@ -83,15 +109,23 @@ const useAutoWrap = computed(() => !isTreeMap.value && !isBridgeMap.value)
 // Check if this is a bridge map node (should be text-only, including first pair)
 const isBridgeMap = computed(() => props.data.diagramType === 'bridge_map')
 
-// Mindmap uses pill shape for branch and children nodes (matches topic)
-const isMindMap = computed(
-  () => props.data.diagramType === 'mindmap' || props.data.diagramType === 'mind_map'
-)
+const nodeShape = computed(() => resolveNodeShape(resolvedStyle.value, isMindMap.value))
+const isUnderlineShape = computed(() => isMindMap.value && nodeShape.value === 'underline')
 
-const mindmapBranchColors = computed(() => {
-  const index = (props.data.branchIndex as number) ?? 0
-  return getMindmapBranchColor(index)
-})
+const defaultMindMapTheme = computed(() => getMindMapThemeForDiagram(diagramStore.data))
+
+const resolvedStyle = computed(() => ({
+  ...(diagramStore.data?._node_styles?.[props.id] || {}),
+  ...(props.data.style || {}),
+}))
+
+const mindMapThemeColors = computed(() => ({
+  fill: defaultMindMapTheme.value.backgroundColor,
+  border: defaultMindMapTheme.value.borderColor,
+  text: defaultMindMapTheme.value.textColor,
+}))
+
+const contentJustifyClass = computed(() => 'justify-center')
 
 const treeMapGroupColors = computed(() => {
   if (!isTreeMap.value) return null
@@ -104,35 +138,63 @@ const treeMapGroupColors = computed(() => {
   return idx !== undefined ? getMindmapBranchColor(idx) : null
 })
 
+const underlineTextStyle = computed((): CSSProperties => {
+  const padX = mindMapHorizontalPadding('underline')
+  return {
+    paddingLeft: `${padX}px`,
+    paddingRight: `${padX}px`,
+  }
+})
+
+const underlineLineStyle = computed((): CSSProperties => {
+  const style = resolvedStyle.value
+  const lineColor = isMindMap.value
+    ? style.borderColor || resolveMindMapTopicBorderColor(null)
+    : style.borderColor ||
+      (isTreeMap.value && treeMapGroupColors.value
+        ? treeMapGroupColors.value.border
+        : mindMapThemeColors.value.border) ||
+      '#4e79a7'
+  const { textGap } = mindMapUnderlineContentPadding()
+  return {
+    backgroundColor: lineColor,
+    marginTop: `${textGap}px`,
+    height: `${MINDMAP_UNDERLINE_STROKE_WIDTH}px`,
+  }
+})
+
 const nodeStyle = computed((): CSSProperties => {
   // For all bridge map nodes (including first pair), remove borders, background, and shadows (text-only)
   const shouldHaveBorder = !isBridgeMap.value
   const shouldHaveBackground = !isBridgeMap.value
   const shouldHaveShadow = !isBridgeMap.value
 
+  const style = resolvedStyle.value
   const bgColor = shouldHaveBackground
-    ? props.data.style?.backgroundColor ||
+    ? style.backgroundColor ||
       (isTreeMap.value && treeMapGroupColors.value
         ? treeMapGroupColors.value.fill
         : isMindMap.value
-          ? mindmapBranchColors.value.fill
+          ? mindMapThemeColors.value.fill
           : defaultStyle.value.backgroundColor) ||
       '#e3f2fd'
     : 'transparent'
   const borderColor = shouldHaveBorder
-    ? props.data.style?.borderColor ||
+    ? style.borderColor ||
       (isTreeMap.value && treeMapGroupColors.value
         ? treeMapGroupColors.value.border
         : isMindMap.value
-          ? mindmapBranchColors.value.border
+          ? mindMapThemeColors.value.border
           : defaultStyle.value.borderColor) ||
       '#4e79a7'
     : 'transparent'
 
   const borderWidth = shouldHaveBorder
-    ? (props.data.style?.borderWidth ?? (isMindMap.value ? 3 : defaultStyle.value.borderWidth) ?? 2)
+    ? (style.borderWidth ??
+        (isMindMap.value ? MIND_MAP_GEOMETRY.borderWidth : defaultStyle.value.borderWidth) ??
+        2)
     : 0
-  const borderStyle = shouldHaveBorder ? props.data.style?.borderStyle || 'solid' : 'solid'
+  const borderStyle = shouldHaveBorder ? style.borderStyle || 'solid' : 'solid'
 
   const base: CSSProperties = {
     backgroundColor: bgColor,
@@ -141,27 +203,62 @@ const nodeStyle = computed((): CSSProperties => {
           backgroundColor: bgColor,
         })
       : { borderColor: 'transparent', borderWidth: '0px', borderStyle: 'none' }),
-    color: props.data.style?.textColor || defaultStyle.value.textColor || '#333333',
-    fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
-    fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 16}px`,
-    fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
-    fontStyle: props.data.style?.fontStyle || 'normal',
-    textDecoration: props.data.style?.textDecoration || 'none',
-    borderRadius:
-      isMindMap.value || isTreeMap.value ? '9999px' : `${props.data.style?.borderRadius || 8}px`,
+    color:
+      style.textColor ||
+      (isMindMap.value ? mindMapThemeColors.value.text : defaultStyle.value.textColor) ||
+      '#333333',
+    fontFamily:
+      style.fontFamily ||
+      (isMindMap.value ? MIND_MAP_GEOMETRY.fontFamily : DIAGRAM_NODE_FONT_STACK),
+    fontSize: `${
+      style.fontSize ||
+      defaultStyle.value.fontSize ||
+      (isMindMap.value ? mindMapBranchFontSize(props.id) : MIND_MAP_GEOMETRY.fontSize)
+    }px`,
+    fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'normal',
+    fontStyle: style.fontStyle || 'normal',
+    textDecoration: style.textDecoration || 'none',
     boxShadow: shouldHaveShadow ? undefined : 'none',
   }
-  // Tree map: use measured width from layout for center alignment (rendered must match layout)
-  if (isTreeMap.value && props.data.style?.width != null) {
-    base.width = `${props.data.style.width}px`
-    base.minWidth = `${props.data.style.width}px`
-    base.maxWidth = `${props.data.style.width}px`
+
+  const shape = nodeShape.value
+  const shaped = applyNodeShapeToStyle(base, shape, borderColor, isMindMap.value)
+
+  if (shape === 'rounded' && !style.nodeShape && !isMindMap.value) {
+    shaped.borderRadius = `${style.borderRadius || 8}px`
   }
-  return base
+
+  const result: CSSProperties = { ...shaped }
+
+  if (isMindMap.value) {
+    const padX = mindMapHorizontalPadding(shape)
+    if (isUnderlineShape.value) {
+      const { top } = mindMapUnderlineContentPadding()
+      result.padding = `${top}px 0 0`
+      result.minWidth = `${MIND_MAP_GEOMETRY.minWidth}px`
+      result.minHeight = 'auto'
+      result.boxShadow = 'none'
+    } else {
+      result.padding = `${MIND_MAP_GEOMETRY.paddingY}px ${padX}px`
+      result.minWidth = `${MIND_MAP_GEOMETRY.minWidth}px`
+      result.minHeight = `${MIND_MAP_GEOMETRY.minHeight}px`
+      result.boxShadow = shouldHaveShadow ? '0 1px 3px rgba(15, 23, 42, 0.06)' : 'none'
+    }
+  }
+
+  if (isTreeMap.value && props.data.style?.width != null) {
+    result.width = `${props.data.style.width}px`
+    result.minWidth = `${props.data.style.width}px`
+    result.maxWidth = `${props.data.style.width}px`
+  }
+  return result
 })
 
 // Inline editing state
+// Inline editing state
 const isEditing = ref(false)
+
+const isSubgraphPreview = computed(() => Boolean(props.data.subgraphPreview))
 
 const collabCanvas = inject<{ isNodeLockedByOther?: (nodeId: string) => boolean } | undefined>(
   'collabCanvas',
@@ -190,13 +287,17 @@ const supportsBranchMove = computed(
     (isBridgeMap.value && props.id?.startsWith('pair-'))
 )
 
+const isSheetPickActive = computed(() => isLearningSheetCustomPickActive())
+
 function handleBranchMovePointerDown(event: MouseEvent): void {
+  if (isSheetPickActive.value) return
   if (supportsBranchMove.value) {
     branchMove.onBranchMovePointerDown(props.id, isEditing.value, event.clientX, event.clientY)
   }
 }
 
 function handleBranchMoveTouchStart(event: TouchEvent): void {
+  if (isSheetPickActive.value) return
   if (!supportsBranchMove.value || event.touches.length !== 1) return
   const touch = event.touches[0]
   const consumed = branchMove.onBranchMovePointerDown(
@@ -220,7 +321,7 @@ function handleBranchMovePointerUp(): void {
 
 useNodeDimensions(branchNodeRef, props.id, {
   onResize(w, h) {
-    if (!isMindMap.value) return
+    if (!isMindMap.value || isEditing.value) return
     diagramStore.setMindMapNodeDimensions(props.id, w, h)
   },
 })
@@ -238,6 +339,7 @@ function handleEditCancel() {
 }
 
 function handleBranchNodeDoubleClick(): void {
+  if (isLearningSheetCustomPickActive()) return
   if ((props.data.hidden === true && diagramStore.isLearningSheet) || isEditing.value) return
   if (collabCanvas?.isNodeLockedByOther?.(props.id)) {
     notifyCollab.warning(t('collab.nodeLocked'))
@@ -245,30 +347,79 @@ function handleBranchNodeDoubleClick(): void {
   }
   isEditing.value = true
 }
+
+function handleBranchNodeClick(event: MouseEvent): void {
+  if (isEditing.value) return
+  if (isMindMap.value && isLearningSheetCustomPickActive()) {
+    event.stopPropagation()
+    event.preventDefault()
+    handleLearningSheetPickNodeClick(props.id)
+    return
+  }
+  if (isMindMap.value) return
+  diagramStore.selectNodes(props.id)
+}
 </script>
 
 <template>
   <div
     ref="branchNodeRef"
-    class="branch-node flex items-center justify-center px-4 py-2 cursor-grab select-none border-solid"
-    :class="{
-      'tree-map-node': isTreeMap,
-      'border-none': isBridgeMap,
-    }"
+    class="branch-node flex select-none border-solid relative"
+    :class="[
+      isUnderlineShape ? 'flex-col items-stretch' : 'items-center',
+      contentJustifyClass,
+      {
+        'tree-map-node': isTreeMap,
+        'mind-map-node': isMindMap,
+        'mind-map-underline-node': isUnderlineShape,
+        'border-none': isBridgeMap,
+        'px-4 py-2': !isMindMap,
+        'cursor-grab': !isSheetPickActive,
+        'branch-node--sheet-pick': isSheetPickActive,
+        'branch-node--subgraph-preview': isSubgraphPreview,
+      },
+    ]"
     :style="nodeStyle"
     @mousedown.capture="handleBranchMovePointerDown"
     @mouseup.capture="handleBranchMovePointerUp"
     @touchstart.capture="handleBranchMoveTouchStart"
+    @click.capture="handleBranchNodeClick"
     @dblclick="handleBranchNodeDoubleClick"
   >
+    <template v-if="isUnderlineShape">
+      <div
+        class="mind-map-underline-text"
+        :style="underlineTextStyle"
+      >
+        <InlineEditableText
+          :text="data.label || ''"
+          :node-id="id"
+          :is-editing="isEditing"
+          :readonly="data.hidden === true && diagramStore.isLearningSheet"
+          :max-width="textMaxWidth"
+          :text-align="resolvedStyle.textAlign || 'center'"
+          :text-decoration="resolvedStyle.textDecoration || 'none'"
+          :auto-wrap="useAutoWrap"
+          render-markdown
+          @save="handleTextSave"
+          @cancel="handleEditCancel"
+          @edit-start="isEditing = true"
+        />
+      </div>
+      <div
+        class="mind-map-underline-line"
+        :style="underlineLineStyle"
+      />
+    </template>
     <InlineEditableText
+      v-else
       :text="data.label || ''"
       :node-id="id"
       :is-editing="isEditing"
       :readonly="data.hidden === true && diagramStore.isLearningSheet"
       :max-width="textMaxWidth"
-      :text-align="data.style?.textAlign || 'center'"
-      :text-decoration="data.style?.textDecoration || 'none'"
+      :text-align="resolvedStyle.textAlign || 'center'"
+      :text-decoration="resolvedStyle.textDecoration || 'none'"
       :auto-wrap="useAutoWrap"
       render-markdown
       @save="handleTextSave"
@@ -283,6 +434,7 @@ function handleBranchNodeDoubleClick(): void {
       id="left"
       type="target"
       :position="Position.Left"
+      :style="isUnderlineShape ? mindMapUnderlineHandleStyle('left') : undefined"
       class="bg-blue-400!"
     />
     <Handle
@@ -290,6 +442,7 @@ function handleBranchNodeDoubleClick(): void {
       id="right"
       type="source"
       :position="Position.Right"
+      :style="isUnderlineShape ? mindMapUnderlineHandleStyle('right') : undefined"
       class="bg-blue-400!"
     />
     <!-- Right target handle for mindmap left-side children (RL direction) -->
@@ -302,6 +455,7 @@ function handleBranchNodeDoubleClick(): void {
       id="right-target"
       type="target"
       :position="Position.Right"
+      :style="isUnderlineShape ? mindMapUnderlineHandleStyle('right') : undefined"
       class="bg-blue-400!"
     />
     <!-- Left source handle for mindmap left-side branches (RL direction) -->
@@ -314,6 +468,7 @@ function handleBranchNodeDoubleClick(): void {
       id="left-source"
       type="source"
       :position="Position.Left"
+      :style="isUnderlineShape ? mindMapUnderlineHandleStyle('left') : undefined"
       class="bg-blue-400!"
     />
 
@@ -334,6 +489,37 @@ function handleBranchNodeDoubleClick(): void {
 </template>
 
 <style scoped>
+.branch-node.mind-map-underline-node {
+  min-height: unset;
+  width: fit-content;
+  box-shadow: none !important;
+}
+
+.branch-node.mind-map-underline-node .mind-map-underline-text {
+  width: 100%;
+}
+
+.branch-node.mind-map-underline-node .mind-map-underline-line {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.branch-node.mind-map-underline-node:hover {
+  box-shadow: none !important;
+}
+
+.branch-node.mind-map-node {
+  min-width: 90px;
+  min-height: 34px;
+  width: fit-content;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.branch-node.mind-map-node:hover:not(.border-none) {
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+  border-color: #94a3b8;
+}
+
 .branch-node {
   min-width: 80px;
   min-height: 36px;
@@ -358,8 +544,14 @@ function handleBranchNodeDoubleClick(): void {
   border-color: #3b82f6;
 }
 
-.branch-node:active {
+.branch-node:active:not(.branch-node--sheet-pick) {
   cursor: grabbing;
+}
+
+.branch-node--subgraph-preview {
+  outline: 2px dashed rgba(59, 130, 246, 0.65);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12) !important;
 }
 
 /* Hide handle dots visually while keeping them functional */

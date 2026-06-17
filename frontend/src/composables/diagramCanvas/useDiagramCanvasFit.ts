@@ -4,11 +4,15 @@ import { ref, watch } from 'vue'
 import { useVueFlow } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import { ANIMATION, FIT_PADDING, PANEL, ZOOM } from '@/config/uiConfig'
+import { ANIMATION, CANVAS, FIT_PADDING, PANEL, ZOOM } from '@/config/uiConfig'
+import { animateViewportTransition, cancelViewportTransition } from '@/utils/viewportTransition'
 import type { useDiagramStore } from '@/stores/diagram'
 import type { usePanelsStore } from '@/stores/panels'
 import { useUIStore } from '@/stores/ui'
-import { isDesktopConceptMapManualViewport } from '@/utils/conceptMapDesktopViewport'
+import {
+  isDesktopConceptMapManualViewport,
+  isMindMapDiagramType,
+} from '@/utils/conceptMapDesktopViewport'
 
 type DiagramStore = ReturnType<typeof useDiagramStore>
 type PanelsStore = ReturnType<typeof usePanelsStore>
@@ -44,6 +48,10 @@ export function useDiagramCanvasFit(options: {
   fitWithPanel: (animate?: boolean) => void
   fitDiagram: (animate?: boolean) => void
   fitForExport: () => void
+  fitToNodes: (
+    nodeIds: string[],
+    options?: { animate?: boolean; duration?: number; padding?: number }
+  ) => Promise<void>
   scheduleFitAfterStructuralNodeChange: (hasFitTriggeringChange: boolean) => void
   clearFitTimersOnUnmount: () => void
 } {
@@ -232,6 +240,105 @@ export function useDiagramCanvasFit(options: {
     } as Parameters<FitViewFn>[0])
   }
 
+  async function fitToNodes(
+    nodeIds: string[],
+    options?: { animate?: boolean; duration?: number; padding?: number }
+  ): Promise<void> {
+    if (!nodeIds.length || getNodes().length === 0) return
+
+    const animate = options?.animate !== false
+    const duration = options?.duration ?? 900
+    const padding = options?.padding ?? 0.38
+
+    const fitOptions = {
+      nodes: nodeIds,
+      padding,
+      duration: 0,
+      minZoom: ZOOM.MIN,
+      maxZoom: ZOOM.MAX,
+      includeHiddenNodes: false,
+    } as Parameters<FitViewFn>[0]
+
+    if (!animate) {
+      cancelViewportTransition()
+      void fitView({ ...fitOptions, duration: 0 })
+      eventBus.emit('view:fit_completed', { mode: 'nodes', animate: false })
+      return
+    }
+
+    const from = getViewport()
+    cancelViewportTransition()
+    await fitView(fitOptions)
+    const to = getViewport()
+    setViewport(from, { duration: 0 })
+
+    await animateViewportTransition(from, to, duration, (vp) => {
+      setViewport(vp, { duration: 0 })
+    })
+
+    eventBus.emit('view:fit_completed', { mode: 'nodes', animate: true })
+  }
+
+  type FlowNodeLike = {
+    position?: { x?: number; y?: number }
+    dimensions?: { width?: number; height?: number }
+    measured?: { width?: number; height?: number }
+    width?: number
+    height?: number
+  }
+
+  function getNodeWidthHeight(
+    node: FlowNodeLike,
+    defaultW = 120,
+    defaultH = 40
+  ): { width: number; height: number } {
+    const w = node.dimensions?.width ?? node.measured?.width ?? node.width ?? defaultW
+    const h = node.dimensions?.height ?? node.measured?.height ?? node.height ?? defaultH
+    return { width: Number(w) || defaultW, height: Number(h) || defaultH }
+  }
+
+  /** Center diagram bounding box in viewport at default zoom (no scale-to-fit). */
+  function centerDiagramAtDefaultZoom(animate = false): void {
+    const list = getNodes() as FlowNodeLike[]
+    if (!Array.isArray(list) || list.length === 0) return
+
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+    for (const node of list) {
+      const x = node.position?.x ?? 0
+      const y = node.position?.y ?? 0
+      const { width, height } = getNodeWidthHeight(node)
+      minX = Math.min(minX, x)
+      minY = Math.min(minY, y)
+      maxX = Math.max(maxX, x + width)
+      maxY = Math.max(maxY, y + height)
+    }
+    if (!Number.isFinite(minX)) return
+
+    const centerX = (minX + maxX) / 2
+    const centerY = (minY + maxY) / 2
+    const zoom = ZOOM.DEFAULT
+
+    const container = canvasContainer.value
+    const viewW = container?.clientWidth ?? CANVAS.DEFAULT_WIDTH
+    const viewH = container?.clientHeight ?? CANVAS.DEFAULT_HEIGHT
+    const topPad = getFitViewTopPx()
+    const bottomPad = getFitViewBottomPx()
+    const visibleCenterX = viewW / 2
+    const visibleCenterY = topPad + (viewH - topPad - bottomPad) / 2
+
+    setViewport(
+      {
+        x: visibleCenterX - centerX * zoom,
+        y: visibleCenterY - centerY * zoom,
+        zoom,
+      },
+      { duration: animate ? ANIMATION.DURATION_NORMAL : 0 }
+    )
+  }
+
   function getConceptMapFocusNodeIdForFit(): string | null {
     const list = getNodes() as unknown
     if (!Array.isArray(list) || list.length === 0) return null
@@ -250,6 +357,14 @@ export function useDiagramCanvasFit(options: {
   function handleNodesInitialized(): void {
     if (getNodes().length === 0) return
     if (!fitViewOnInit.value) {
+      if (isMindMapDiagramType(diagramStore.type)) {
+        hasInitialFitDoneForDiagram.value = true
+        setTimeout(() => {
+          centerDiagramAtDefaultZoom(false)
+          eventBus.emit('view:fit_completed', { mode: 'mind_map_centered', animate: false })
+        }, Math.max(ANIMATION.FIT_VIEWPORT_DELAY, 450))
+        return
+      }
       if (diagramStore.type === 'concept_map') {
         hasInitialFitDoneForDiagram.value = true
         const dv = diagramStore.data as Record<string, unknown> | null | undefined
@@ -302,6 +417,7 @@ export function useDiagramCanvasFit(options: {
     if (
       !hasFitTriggeringChange ||
       diagramStore.type === 'concept_map' ||
+      isMindMapDiagramType(diagramStore.type) ||
       !fitViewOnInit.value ||
       getNodes().length === 0
     ) {
@@ -336,6 +452,7 @@ export function useDiagramCanvasFit(options: {
   watch(
     () => panelsStore.anyPanelOpen,
     (isOpen, wasOpen) => {
+      if (!fitViewOnInit.value) return
       if (diagramStore.type === 'concept_map') return
       if (nodesLength.value > 0 && isOpen !== wasOpen) {
         setTimeout(() => fitDiagram(true), ANIMATION.PANEL_DELAY)
@@ -350,6 +467,7 @@ export function useDiagramCanvasFit(options: {
       panelsStore.nodePalettePanel.isOpen,
     ],
     () => {
+      if (!fitViewOnInit.value) return
       if (diagramStore.type === 'concept_map') return
       if (nodesLength.value > 0) {
         setTimeout(() => fitDiagram(true), ANIMATION.PANEL_DELAY)
@@ -360,6 +478,7 @@ export function useDiagramCanvasFit(options: {
   watch(
     () => presentationRailOpen.value,
     (active, wasActive) => {
+      if (!fitViewOnInit.value) return
       if (diagramStore.type === 'concept_map') return
       if (active === wasActive) return
       if (active && getNodes().length > 0) {
@@ -371,6 +490,7 @@ export function useDiagramCanvasFit(options: {
   watch(
     () => Boolean(presentationRailOpen.value && presentationToolIsNotTimer.value),
     () => {
+      if (!fitViewOnInit.value) return
       if (diagramStore.type === 'concept_map') return
       if (!presentationRailOpen.value || getNodes().length === 0) return
       setTimeout(() => fitDiagram(true), ANIMATION.FIT_VIEWPORT_DELAY)
@@ -386,6 +506,7 @@ export function useDiagramCanvasFit(options: {
     fitWithPanel,
     fitDiagram,
     fitForExport,
+    fitToNodes,
     scheduleFitAfterStructuralNodeChange,
     clearFitTimersOnUnmount,
   }

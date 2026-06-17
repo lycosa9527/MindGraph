@@ -14,8 +14,11 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
+import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useDiagramStore } from '@/stores'
+import { useAuthStore } from '@/stores/auth'
+import { isMindMapDiagramType } from '@/utils/conceptMapDesktopViewport'
 import { useDiagramTranslateUiStore } from '@/stores/diagramTranslateUi'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { useUIStore } from '@/stores/ui'
@@ -48,6 +51,7 @@ export function useCanvasToolbarApps() {
   const diagramTranslateUi = useDiagramTranslateUiStore()
   const savedDiagramsStore = useSavedDiagramsStore()
   const uiStore = useUIStore()
+  const authStore = useAuthStore()
   const { t } = useLanguage()
   const notify = useNotifications()
   const { isGenerating: isAIGenerating, autoComplete, validateForAutoComplete } = useAutoComplete()
@@ -151,12 +155,18 @@ export function useCanvasToolbarApps() {
     return list
   })
 
-  async function handleAIGenerate() {
+  async function handleAIGenerate(options?: { generationInstructions?: string }) {
+    if (!authStore.isAuthenticated) {
+      notify.warning(t('notification.signInToUse'))
+      return
+    }
     if (diagramStore.collabSessionActive) {
       notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
       return
     }
-    const validation = validateForAutoComplete()
+    const validation = validateForAutoComplete({
+      generationInstructions: options?.generationInstructions,
+    })
     if (!validation.valid) {
       notify.warning(validation.error || t('canvas.toolbar.cannotGenerate'))
       return
@@ -164,6 +174,7 @@ export function useCanvasToolbarApps() {
 
     const result = await autoComplete({
       promptSuffix: diagramStore.isLearningSheet ? ' 半成品' : undefined,
+      generationInstructions: options?.generationInstructions,
     })
     if (!result.success && result.error) {
       console.error('Auto-complete failed:', result.error)
@@ -329,7 +340,11 @@ export function useCanvasToolbarApps() {
         notify.warning(t('canvas.toolbar.createDiagramFirst'))
         return
       }
-      eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'toolbar' })
+      if (isMindMapDiagramType(diagramStore.type) && uiStore.mindMapCanvasMode === 'v2') {
+        useMindMapSideToolbarState().openTool('waterfall')
+      } else {
+        eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'toolbar' })
+      }
       return
     }
     if (app.appKey === 'learning_sheet') {

@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, toValue } from 'vue'
 
 import type { GraphNode } from '@vue-flow/core'
 
-import { getBranchMoveCircleStyle, getDropTargetStyle } from '@/composables/diagramCanvas'
+import {
+  getBranchMoveCircleStyle,
+  getBranchMoveGhostStyle,
+  getDropTargetStyle,
+} from '@/composables/diagramCanvas'
 import { getDropTargetShapeClass } from '@/composables/diagramCanvas/diagramCanvasZoomPaneStyles'
 import type { DropTarget } from '@/composables/editor/useBranchMoveDrag'
 import type { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
@@ -22,8 +26,17 @@ const props = defineProps<{
   linkPreviewShowArrow: boolean
 }>()
 
+const dragState = computed(() => toValue(props.branchMove.state))
+
+const ghostLayoutStyle = computed(() =>
+  getBranchMoveGhostStyle({
+    cursorPos: dragState.value.cursorPos,
+    ghost: dragState.value.draggedGhost,
+  })
+)
+
 const dropTargetShapeClass = computed((): string => {
-  const target = props.branchMove.state.value.dropTarget
+  const target = dragState.value.dropTarget
   if (!target) return ''
   const node = props.getVueFlowNodes().find((n) => n.id === target.nodeId) as
     | MindGraphNode
@@ -34,19 +47,46 @@ const dropTargetShapeClass = computed((): string => {
 
 <template>
   <div
-    v-if="branchMove.state.value.active && branchMove.state.value.cursorPos"
+    v-if="dragState.active && dragState.cursorPos"
     class="branch-move-overlay pointer-events-none"
-    style="position: absolute; inset: 0; z-index: 10"
+    style="position: absolute; inset: 0; z-index: 1000"
   >
     <div
+      v-if="dragState.draggedGhost && ghostLayoutStyle"
+      class="branch-move-ghost"
+      :class="[
+        dragState.draggedGhost.shapeClass,
+        dragState.draggedGhost.variant === 'underline'
+          ? 'branch-move-ghost--underline'
+          : 'branch-move-ghost--standard',
+      ]"
+      :style="{
+        ...ghostLayoutStyle,
+        backgroundColor: dragState.draggedGhost.backgroundColor,
+        color: dragState.draggedGhost.textColor,
+        borderColor: dragState.draggedGhost.borderColor,
+        fontSize: dragState.draggedGhost.fontSize,
+        fontWeight: dragState.draggedGhost.fontWeight,
+        borderRadius: dragState.draggedGhost.borderRadius,
+      }"
+    >
+      <span class="branch-move-ghost__label">{{ dragState.draggedGhost.label }}</span>
+      <span
+        v-if="dragState.draggedGhost.variant === 'underline'"
+        class="branch-move-ghost__underline"
+        :style="{ backgroundColor: dragState.draggedGhost.borderColor }"
+      />
+    </div>
+    <div
+      v-else
       class="branch-move-circle"
-      :style="getBranchMoveCircleStyle(branchMove.state.value)"
+      :style="getBranchMoveCircleStyle(dragState)"
     />
     <div
-      v-if="branchMove.state.value.dropTarget"
+      v-if="dragState.dropTarget"
       class="branch-move-drop-preview"
       :class="dropTargetShapeClass"
-      :style="getDropTargetStyle(getVueFlowNodes, branchMove.state.value.dropTarget as DropTarget)"
+      :style="getDropTargetStyle(getVueFlowNodes, dragState.dropTarget as DropTarget)"
     />
   </div>
   <svg

@@ -9,6 +9,7 @@ import { ElButton, ElTooltip } from 'element-plus'
 import { ArrowDownUp, Brush } from '@lucide/vue'
 
 import { useCanvasToolbarApps, useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimiter'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -22,6 +23,7 @@ import CanvasToolbarAddDelete from './CanvasToolbarAddDelete.vue'
 import CanvasToolbarAiSection from './CanvasToolbarAiSection.vue'
 import CanvasToolbarBackgroundDropdown from './CanvasToolbarBackgroundDropdown.vue'
 import CanvasToolbarBorderDropdown from './CanvasToolbarBorderDropdown.vue'
+import CanvasToolbarMindMap from './CanvasToolbarMindMap.vue'
 import CanvasToolbarMoreAppsDropdown from './CanvasToolbarMoreAppsDropdown.vue'
 import CanvasToolbarStyleDropdown from './CanvasToolbarStyleDropdown.vue'
 import CanvasToolbarTextDropdown from './CanvasToolbarTextDropdown.vue'
@@ -99,6 +101,7 @@ const {
 const isMultiFlowMap = computed(() => diagramStore.type === 'multi_flow_map')
 const isBridgeMap = computed(() => diagramStore.type === 'bridge_map')
 const isFlowMap = computed(() => diagramStore.type === 'flow_map')
+const useMindMapV2 = useMindMapV2Chrome()
 
 const mathInsertDialogOpen = ref(false)
 
@@ -162,7 +165,12 @@ function handleToggleOrientation() {
           : 'rounded-xl shadow-lg p-1.5 border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md'
       "
     >
+      <CanvasToolbarMindMap
+        v-if="useMindMapV2"
+        :compact="compactToolbar"
+      />
       <div
+        v-else
         class="toolbar-content flex items-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-1 gap-0.5 min-w-min"
       >
         <CanvasToolbarUndoRedo

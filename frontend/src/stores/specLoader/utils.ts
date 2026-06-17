@@ -71,31 +71,34 @@ export function applyLearningSheetHiddenNodes(
   const isLearningSheet = spec.is_learning_sheet === true
   const rawPct = spec.hidden_node_percentage
   const pct = typeof rawPct === 'number' ? Math.max(0, Math.min(1, rawPct)) : 0
-  const existingHiddenAnswers = Array.isArray(spec.hiddenAnswers) ? spec.hiddenAnswers : []
 
   if (!isLearningSheet || !result.nodes.length) {
-    if (isLearningSheet && existingHiddenAnswers.length > 0) {
-      const metadata = {
-        ...result.metadata,
-        hiddenAnswers: existingHiddenAnswers,
-        isLearningSheet: true,
-      }
-      return { ...result, metadata }
-    }
     return result
-  }
-
-  if (pct <= 0 && existingHiddenAnswers.length > 0) {
-    const metadata = {
-      ...result.metadata,
-      hiddenAnswers: existingHiddenAnswers,
-      isLearningSheet: true,
-    }
-    return { ...result, metadata }
   }
 
   if (pct <= 0) {
-    return result
+    const hiddenAnswersFromNodes: string[] = []
+    for (const node of result.nodes) {
+      const nodeData = node.data as { hidden?: boolean; hiddenAnswer?: string } | undefined
+      const text = String(node.text ?? '').trim()
+      const isBlanked = nodeData?.hidden === true || text === LEARNING_SHEET_PLACEHOLDER
+      if (!isBlanked) continue
+      const answer =
+        typeof nodeData?.hiddenAnswer === 'string' && nodeData.hiddenAnswer.trim()
+          ? nodeData.hiddenAnswer.trim()
+          : text !== LEARNING_SHEET_PLACEHOLDER
+            ? text
+            : ''
+      if (answer && !hiddenAnswersFromNodes.includes(answer)) {
+        hiddenAnswersFromNodes.push(answer)
+      }
+    }
+    const metadata = {
+      ...result.metadata,
+      hiddenAnswers: hiddenAnswersFromNodes,
+      isLearningSheet: true,
+    }
+    return { ...result, metadata }
   }
 
   const hideableIndices: number[] = []

@@ -64,6 +64,12 @@ class NodePaletteStartRequest(BaseModel):
         None,
         description=("Stage-specific data (e.g., {'dimension': 'Habitat', 'category_name': 'Water Animals'})"),
     )
+    nodes_per_llm: Optional[int] = Field(
+        None,
+        ge=1,
+        le=20,
+        description="Nodes to request from each LLM (default 15; mind-map waterfall uses 3 for 6–10 total)",
+    )
 
     @field_validator("language")
     @classmethod

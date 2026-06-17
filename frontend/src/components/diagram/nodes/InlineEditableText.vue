@@ -15,6 +15,9 @@ import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from '
 import { useLanguage, useNotifications } from '@/composables'
 import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimiter'
 import { eventBus } from '@/composables/core/useEventBus'
+import {
+  isLearningSheetCustomPickActive,
+} from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useDiagramNodeMarkdownDisplay } from '@/composables/diagram/useDiagramNodeMarkdownDisplay'
 import { useDiagramStore } from '@/stores'
 import {
@@ -142,6 +145,11 @@ const inputRef = ref<HTMLInputElement | HTMLTextAreaElement | null>(null)
 const displayRef = ref<HTMLElement | null>(null)
 const wrapperRef = ref<HTMLDivElement | null>(null)
 const inputWidth = ref<string | undefined>(undefined)
+/** When autoWrap: lock edit box to display size so balance-wrapped labels don't expand to single-line width. */
+const editLockedWidthPx = ref<number | null>(null)
+const editLockedMinHeightPx = ref<number | null>(null)
+/** autoWrap: textarea only when display already wraps; single-line labels use input. */
+const editUsesMultilineControl = ref(false)
 const measureRef = ref<HTMLSpanElement | null>(null) // Hidden span for measuring text width
 
 /** Matches computed font on display/edit for measureTextWidth (multiscript stack). */
@@ -164,6 +172,7 @@ watch(
       startEditing()
     } else if (!newVal && localIsEditing.value) {
       localIsEditing.value = false
+      clearEditLock()
     }
   }
 )
@@ -205,11 +214,37 @@ watch(
   }
 )
 
+function clearEditLock(): void {
+  editLockedWidthPx.value = null
+  editLockedMinHeightPx.value = null
+  editUsesMultilineControl.value = false
+}
+
+function isDisplaySingleLine(el: HTMLElement): boolean {
+  const cs = getComputedStyle(el)
+  let lineHeight = parseFloat(cs.lineHeight)
+  if (!Number.isFinite(lineHeight) || lineHeight <= 0) {
+    lineHeight = (parseFloat(cs.fontSize) || 14) * 1.4
+  }
+  return el.offsetHeight <= lineHeight * 1.5
+}
+
 /**
  * Update input width based on current text content
  */
 function updateInputWidth(): void {
-  if (!measureRef.value || !localIsEditing.value) return
+  if (!localIsEditing.value) return
+
+  // autoWrap display uses text-wrap: balance (multi-line, often narrower than one line).
+  // Keep the edit box at the display width — do not re-measure as a single line.
+  if (props.autoWrap) {
+    if (editLockedWidthPx.value != null) {
+      inputWidth.value = `${editLockedWidthPx.value}px`
+    }
+    return
+  }
+
+  if (!measureRef.value) return
 
   // Use nextTick to ensure DOM is updated
   nextTick(() => {
@@ -272,6 +307,18 @@ const shouldPreventWrap = computed(() => {
   })
 })
 
+const stretchesToFillWidth = computed(() => props.fullWidth)
+
+const rootAlignClass = computed(() => {
+  if (props.textAlign === 'left') return 'inline-editable-text--align-left'
+  if (props.textAlign === 'right') return 'inline-editable-text--align-right'
+  return 'inline-editable-text--align-center'
+})
+
+const displayDecorationStyle = computed(() => ({
+  textDecoration: props.textDecoration || 'none',
+}))
+
 const showMutedTailSplit = computed(() => {
   if (isFocusQuestionSplitMode.value) return false
   const s = props.mutedTailSplit
@@ -295,18 +342,23 @@ const { richHtml: displayMarkdownHtml, needsRichMarkdown } = useDiagramNodeMarkd
 // Computed styles - textDecoration must be explicit (CSS does not inherit to input/textarea)
 const inputStyle = computed(() => ({
   maxWidth: props.maxWidth,
+  width: stretchesToFillWidth.value ? '100%' : undefined,
   textAlign: props.textAlign,
   textDecoration: props.textDecoration || 'none',
+  ...(props.autoWrap && editLockedMinHeightPx.value != null
+    ? { minHeight: `${editLockedMinHeightPx.value}px` }
+    : {}),
 }))
 
 // Computed wrapper style for right-aligned text
 const wrapperStyle = computed(() => {
   const baseStyle: Record<string, string> = {
-    width: inputWidth.value || 'auto',
+    width: stretchesToFillWidth.value ? '100%' : inputWidth.value || 'auto',
   }
-  // For right-aligned text, ensure wrapper aligns to the right
   if (props.textAlign === 'right') {
     baseStyle.marginLeft = 'auto'
+  } else if (props.textAlign === 'left') {
+    baseStyle.marginRight = 'auto'
   }
   return baseStyle
 })
@@ -323,34 +375,25 @@ function startEditing(): void {
   }
 
   // Measure width before switching to edit mode
-  // For right-aligned text, use parent container width or maxWidth to avoid empty space
-  // For other alignments, use display text width
   if (displayRef.value) {
-    const textWidth = displayRef.value.offsetWidth
-    const parentElement = displayRef.value.parentElement
-
-    if (props.textAlign === 'right') {
-      // For right-aligned text, use parent container width if available, otherwise maxWidth
-      // This prevents empty space on the left and allows text to expand properly
-      const maxWidthPx = parseInt(props.maxWidth) || 180
-      let calculatedWidth: number
-
-      if (parentElement) {
-        // Get parent container width (accounting for padding)
-        const parentWidth = parentElement.offsetWidth || parentElement.clientWidth
-        // Use parent width if it's reasonable, but cap at maxWidth
-        // Ensure it's at least text width to avoid shrinking
-        calculatedWidth = Math.max(textWidth, Math.min(parentWidth, maxWidthPx))
-      } else {
-        // Fallback: use maxWidth, but ensure it's at least text width
-        calculatedWidth = Math.max(maxWidthPx, textWidth)
-      }
-
-      inputWidth.value = `${calculatedWidth}px`
+    const textWidth = Math.max(displayRef.value.offsetWidth, displayRef.value.scrollWidth)
+    const textHeight = displayRef.value.offsetHeight
+    if (props.autoWrap) {
+      editUsesMultilineControl.value = !isDisplaySingleLine(displayRef.value)
+      editLockedWidthPx.value = Math.max(textWidth, 40)
+      editLockedMinHeightPx.value = editUsesMultilineControl.value
+        ? Math.max(textHeight, 20)
+        : null
+      inputWidth.value = `${editLockedWidthPx.value}px`
+    } else if (props.textAlign === 'right') {
+      const maxWidthPx = parseInt(props.maxWidth, 10) || 180
+      inputWidth.value = `${Math.max(textWidth, maxWidthPx)}px`
     } else {
-      // For left/center aligned, use measured text width
       inputWidth.value = `${textWidth}px`
     }
+  } else if (props.autoWrap) {
+    editLockedWidthPx.value = null
+    editLockedMinHeightPx.value = null
   }
 
   if (props.focusQuestionEditableSplit) {
@@ -391,6 +434,7 @@ function saveEdit(): void {
     if (finalText.length < props.minLength) {
       editBody.value = stripConceptMapFocusQuestionPrefix(originalComposed.value)
       localIsEditing.value = false
+      clearEditLock()
       eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
       emit('cancel')
       return
@@ -399,6 +443,7 @@ function saveEdit(): void {
       finalText = finalText.slice(0, props.maxLength)
     }
     localIsEditing.value = false
+    clearEditLock()
     eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
     if (finalText !== originalComposed.value) {
       emit('save', finalText)
@@ -412,6 +457,7 @@ function saveEdit(): void {
   if (trimmedText.length < props.minLength) {
     editText.value = originalText.value
     localIsEditing.value = false
+    clearEditLock()
     eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
     emit('cancel')
     return
@@ -421,6 +467,7 @@ function saveEdit(): void {
   const finalText = trimmedText.slice(0, props.maxLength)
   editText.value = finalText
   localIsEditing.value = false
+  clearEditLock()
 
   // Emit event for workshop tracking (editing stopped)
   eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
@@ -443,6 +490,7 @@ function cancelEdit(): void {
     editText.value = originalText.value
   }
   localIsEditing.value = false
+  clearEditLock()
 
   // Emit event for workshop tracking (editing stopped)
   eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
@@ -505,6 +553,7 @@ function handleBlur(): void {
  * Handle double-click to start editing
  */
 function handleDoubleClick(event: MouseEvent): void {
+  if (isLearningSheetCustomPickActive()) return
   if (props.readonly) return
   event.preventDefault()
   event.stopPropagation()
@@ -665,7 +714,10 @@ onUnmounted(() => {
 <template>
   <div
     class="inline-editable-text"
-    :class="{ 'inline-editable-text--full-width': fullWidth }"
+    :class="[
+      rootAlignClass,
+      { 'inline-editable-text--full-width': fullWidth },
+    ]"
     @dblclick="handleDoubleClick"
     @touchstart="handleTouchStart"
     @touchend="handleTouchEnd"
@@ -673,7 +725,7 @@ onUnmounted(() => {
   >
     <!-- Hidden span for measuring text width -->
     <span
-      v-if="localIsEditing"
+      v-if="localIsEditing && !autoWrap"
       ref="measureRef"
       class="inline-edit-measure"
       :style="{
@@ -698,6 +750,7 @@ onUnmounted(() => {
       v-if="localIsEditing"
       ref="wrapperRef"
       class="inline-edit-wrapper"
+      :class="{ 'inline-edit-wrapper--auto-wrap': autoWrap }"
       :style="wrapperStyle"
     >
       <div
@@ -733,19 +786,22 @@ onUnmounted(() => {
         class="inline-edit-container"
       >
         <textarea
-          v-if="multiline"
+          v-if="multiline || (autoWrap && editUsesMultilineControl)"
           :id="fieldHtmlId"
           ref="inputRef"
           v-model="editText"
           dir="auto"
           class="inline-edit-input"
-          :class="{ 'whitespace-nowrap': noWrap || shouldPreventWrap }"
+          :class="{
+            'whitespace-nowrap': !autoWrap && (noWrap || shouldPreventWrap),
+            'inline-edit-input--auto-wrap': autoWrap && editUsesMultilineControl,
+          }"
           :style="inputStyle"
           :name="fieldHtmlId"
           :placeholder="resolvedPlaceholder"
           :aria-label="fieldAriaLabel"
           :maxlength="maxLength"
-          rows="2"
+          :rows="autoWrap ? 1 : 2"
           @keydown="handleKeydown"
           @blur="handleBlur"
           @mousedown.stop
@@ -759,7 +815,9 @@ onUnmounted(() => {
             dir="auto"
             type="text"
             class="inline-edit-input"
-            :class="{ 'whitespace-nowrap': noWrap || shouldPreventWrap }"
+            :class="{
+              'whitespace-nowrap': noWrap || shouldPreventWrap || autoWrap,
+            }"
             :style="inputStyle"
             :name="fieldHtmlId"
             :placeholder="resolvedPlaceholder"
@@ -795,6 +853,7 @@ onUnmounted(() => {
       ]"
       :style="{
         maxWidth: maxWidth,
+        width: stretchesToFillWidth ? '100%' : undefined,
         textAlign: textAlign,
         textDecoration: textDecoration || 'none',
       }"
@@ -823,10 +882,14 @@ onUnmounted(() => {
       <div
         v-else-if="markdownDisplayEnabled && needsRichMarkdown"
         class="diagram-node-md inline-block min-w-0 max-w-full text-inherit"
+        :style="displayDecorationStyle"
         v-html="displayMarkdownHtml"
       />
       <template v-else>
-        {{ text }}
+        <span
+          class="inline-edit-plain"
+          :style="displayDecorationStyle"
+        >{{ text }}</span>
       </template>
     </div>
   </div>
@@ -847,12 +910,29 @@ onUnmounted(() => {
   width: 100%;
 }
 
+.inline-editable-text--align-left {
+  justify-content: flex-start;
+}
+
+.inline-editable-text--align-right {
+  justify-content: flex-end;
+}
+
+.inline-editable-text--align-center {
+  justify-content: center;
+}
+
 .inline-edit-wrapper {
   position: relative;
   display: inline-block;
   max-width: 100%;
   overflow: visible; /* Allow text to be visible while typing */
   min-width: fit-content; /* Allow wrapper to expand with content */
+}
+
+.inline-edit-wrapper--auto-wrap {
+  min-width: 0;
+  flex-shrink: 0;
 }
 
 .inline-edit-container {
@@ -925,8 +1005,11 @@ onUnmounted(() => {
   vertical-align: middle;
   cursor: text;
   user-select: none;
-  text-decoration: inherit;
   line-height: 1.4;
+}
+
+.inline-edit-plain {
+  text-decoration: inherit;
 }
 
 .inline-edit-muted-suffix {
@@ -984,5 +1067,17 @@ onUnmounted(() => {
 textarea.inline-edit-input {
   min-height: 2.5em;
   line-height: 1.4;
+}
+
+textarea.inline-edit-input--auto-wrap {
+  min-height: 0;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: normal;
+  overflow-wrap: break-word;
+  line-break: auto;
+  overflow: hidden;
+  resize: none;
+  field-sizing: content;
 }
 </style>
