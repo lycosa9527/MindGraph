@@ -6,6 +6,7 @@ from services.online_collab.spec.online_collab_live_spec import merge_granular_i
 
 
 def test_merge_skips_patches_for_ids_deleted_in_same_batch():
+    """Test merge skips patches for ids deleted in same batch."""
     spec = {
         "nodes": [{"id": "a", "text": "A"}, {"id": "b", "text": "B"}],
         "connections": [{"id": "e1", "source": "a", "target": "b"}],
@@ -22,6 +23,7 @@ def test_merge_skips_patches_for_ids_deleted_in_same_batch():
 
 
 def test_prune_drops_edges_to_deleted_endpoints():
+    """Test prune drops edges to deleted endpoints."""
     spec = {
         "nodes": [{"id": "x", "text": "X"}],
         "connections": [

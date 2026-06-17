@@ -8,6 +8,7 @@ Orchestrates the complete chunking workflow:
 4. LLM refinement for unclear boundaries (20% of chunks)
 5. Validate and return chunks
 """
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 from typing import List, Dict, Any, Optional, Union
 import logging
@@ -97,7 +98,7 @@ class LLMSemanticChunker:
                     "[LLMSemanticChunker] Embedding service not available, embedding-based chunking will be disabled"
                 )
                 self.embedding_detector = None
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("[LLMSemanticChunker] Failed to initialize embedding detector: %s", e)
             self.embedding_detector = None
 
@@ -199,7 +200,7 @@ class LLMSemanticChunker:
 
             return chunks
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error(
                 "[LLMSemanticChunker] ✗ Error during chunking for doc_id=%s: %s",
                 document_id,

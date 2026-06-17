@@ -17,11 +17,13 @@ from services.mindbot.platforms.dingtalk.api.constants import (
     OAPI_MAX_VOICE_BYTES,
     OAPI_MEDIA_UPLOAD,
 )
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
 
 def oapi_max_bytes_for_type(dingtalk_media_type: str) -> int:
+    """Oapi max bytes for type."""
     return {
         "image": OAPI_MAX_IMAGE_BYTES,
         "voice": OAPI_MAX_VOICE_BYTES,
@@ -37,6 +39,8 @@ async def upload_media_oapi(
     filename: str,
 ) -> Optional[str]:
     """
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+
     POST ``https://oapi.dingtalk.com/media/upload?access_token=...&type=...``
 
     Form field ``media``. Returns ``media_id``.
@@ -92,6 +96,6 @@ async def upload_media_oapi(
             if isinstance(mid, str) and mid.strip():
                 return mid.strip()
             return None
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.exception("[MindBot] oapi media/upload error: %s", exc)
         return None

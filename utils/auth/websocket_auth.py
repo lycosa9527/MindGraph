@@ -19,8 +19,17 @@ from sqlalchemy import select
 
 from models.domain.auth import User
 from services.auth.http_auth_token import extract_bearer_token_from_websocket
+
+try:
+    from services.redis.cache.redis_user_cache import user_cache
+    from services.redis.session.redis_session_manager import get_session_manager
+except ImportError:
+    user_cache = None
+    get_session_manager = None
+
 from utils.auth_ws import authenticate_websocket_user
 from utils.db.session_open import system_rls_session
+
 from . import auth_resolution
 from .tokens import decode_access_token
 
@@ -33,15 +42,10 @@ _redis = SimpleNamespace(
     user_cache=None,
 )
 
-try:
-    from services.redis.session.redis_session_manager import get_session_manager
-    from services.redis.cache.redis_user_cache import user_cache
-
+if get_session_manager is not None:
     _redis.available = True
     _redis.get_session_manager = get_session_manager
     _redis.user_cache = user_cache
-except ImportError:
-    pass
 
 
 async def get_current_user_ws(websocket) -> User:

@@ -11,15 +11,16 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Union
 import logging
 import os
+from typing import Union
 
-from clients.llm.dashscope import QwenClient, DeepSeekClient, KimiClient
-from clients.llm.volcengine import DoubaoClient, VolcengineClient
+from clients.llm.dashscope import DeepSeekClient, KimiClient, QwenClient
+from clients.llm.http_client_manager import close_httpx_clients
 from clients.llm.hunyuan import HunyuanClient
 from clients.llm.mock import MockLLMClient
-from clients.llm.http_client_manager import close_httpx_clients
+from clients.llm.volcengine import DoubaoClient, VolcengineClient
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ def _initialize_clients():
         # Only log from main worker to avoid duplicate messages
         if os.getenv("UVICORN_WORKER_ID") is None or os.getenv("UVICORN_WORKER_ID") == "0":
             logger.info("[LLMClients] LLM clients initialized successfully (Qwen, DeepSeek, Kimi, Hunyuan, Doubao)")
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.warning("Failed to initialize LLM clients: %s", e)
 
     return (
@@ -119,15 +120,15 @@ def get_llm_client(
     if client is not None:
         logger.debug("Using %s LLM client", model_id)
         return client
-    else:
-        logger.error(
-            'LLM client not available for model "%s". This should not happen in production. '
-            "Falling back to deprecated mock client. Please check LLM configuration.",
-            model_id,
-        )
-        # DEPRECATED: Mock client fallback - should not be used in production
-        # Real LLM clients should always be configured
-        return MockLLMClient()
+
+    logger.error(
+        'LLM client not available for model "%s". This should not happen in production. '
+        "Falling back to deprecated mock client. Please check LLM configuration.",
+        model_id,
+    )
+    # DEPRECATED: Mock client fallback - should not be used in production
+    # Real LLM clients should always be configured
+    return MockLLMClient()
 
 
 __all__ = [

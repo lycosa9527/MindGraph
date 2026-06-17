@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.44] - 2026-06-17
+
+> **Full-repo pylint gate, four-rule hardening completion, config import-cycle splits, and workshop WS module extraction.**
+
+### Added
+
+- **CI — four-rule audit gate** — [`audit_pylint_four_rules.py`](scripts/lint/audit_pylint_four_rules.py) with `--fail` in [`ci.yml`](.github/workflows/ci.yml) for `global-statement`, `import-outside-toplevel`, `protected-access`, and `broad-except`.
+- **Config — db leaf modules** — [`db_sessions.py`](config/db_sessions.py) and [`database_alembic.py`](config/database_alembic.py) break `config.database` ↔ RLS/Alembic import cycles.
+- **Clients — Dify exceptions** — Typed Dify API errors moved to [`dify_exceptions.py`](clients/dify_exceptions.py); shared by client and HTTP error mapping.
+- **Lifecycle — app runtime** — Process-wide uptime holder in [`app_runtime.py`](services/infrastructure/lifecycle/app_runtime.py).
+- **Workshop WS — feature modules** — Connection registry, broadcast core, disconnect cleanup, and shutdown constants split out of router modules ([`workshop_ws_registry.py`](services/features/workshop_ws_registry.py), [`workshop_ws_broadcast_core.py`](services/features/workshop_ws_broadcast_core.py), [`workshop_ws_disconnect_cleanup.py`](services/features/workshop_ws_disconnect_cleanup.py), [`workshop_ws_shutdown_constants.py`](services/features/workshop_ws_shutdown_constants.py)).
+- **Scripts — lint helpers** — Docstring/import fixers and [`audit_pylint_four_rules.py`](scripts/lint/audit_pylint_four_rules.py) for the hardening sweep.
+
+### Changed
+
+- **CI — full pylint** — Python job runs pylint on `services`, `routers`, `agents`, `clients`, `config`, `utils`, `scripts`, `tests`, `loadtests`, `tasks`, and `alembic/env.py` with `--fail-under=10.0` (replaces collab/WS-only subset).
+- **pyproject.toml — minimal pylint disables** — Main and `messages_control` lists trimmed to four pattern-level disables (`duplicate-code`, `too-few-public-methods`, `arguments-renamed`, `too-many-positional-arguments`); re-enabled docstring, import-order, design, and four hardening rules repo-wide.
+- **Repo — pylint sweep (~780 files)** — Module/class/function docstrings, top-level imports, narrow `except` tuples from [`error_types.py`](services/utils/error_types.py), holder singletons (`instance` instead of `_instance`), and optional-import fallbacks without inline suppressions.
+- **Singleton holders** — Email/SMS middleware, captcha, geolocation, health/process monitors, rate limiters, activity tracker, and document processor use public `instance` on holder classes.
+- **Alembic — env.py** — `DATABASE_MIGRATION_URL` import hoisted to module top after path bootstrap.
+- **Docs — AGENTS.md** — Documents full-tree pylint command, four-rule audit, and no-inline-suppression policy.
+
+### Fixed
+
+- **PostgreSQL startup (`.env`-driven)** — [`_postgresql_runtime.py`](services/infrastructure/process/_postgresql_runtime.py) derives connect-only vs app-managed mode from `DATABASE_URL` (RLS roles → never `initdb`); system cluster start via [`_postgresql_external.py`](services/infrastructure/process/_postgresql_external.py); `PG_CONNECT_ERRORS` in dependency check; `DATABASE_URL` verified after RLS bootstrap ([`postgres_app_startup.py`](scripts/db/postgres_app_startup.py)).
+- **Inline suppressions** — Remaining `# type: ignore` in optional-import fallbacks replaced with module-top `try`/`ImportError` aliases; [`lint_no_inline_disables.py`](scripts/lint/lint_no_inline_disables.py) passes on the production tree.
+- **Redis async startup** — Split sync vs async SCH kwargs in [`redis_connection_options.py`](services/redis/redis_connection_options.py): redis-py 8.0.0 accepts ``maint_notifications_config`` on sync connections only; async pools use ``redis_async_connection_options()`` so lifespan no longer crashes on first command. CI guard [`lint_redis_connection_options.py`](scripts/lint/lint_redis_connection_options.py) and [`test_redis_connection_options.py`](tests/test_redis_connection_options.py) prevent regression.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.44).
+
 ## [5.117.43] - 2026-06-16
 
 > **basedpyright strict typing, CI lint gates, ORM Mapped migration, db_rls extraction, and repo-wide inline-suppression cleanup.**

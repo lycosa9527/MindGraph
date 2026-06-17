@@ -18,6 +18,7 @@ from fastapi.responses import JSONResponse
 from models import FeedbackRequest
 from services.auth.captcha_storage import get_captcha_storage
 from services.redis.cache.redis_user_cache import user_cache
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 from utils.auth import decode_access_token
 
 logger = logging.getLogger(__name__)
@@ -46,16 +47,15 @@ async def submit_feedback(req: FeedbackRequest, request: Request):
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Captcha expired or invalid. Please refresh.",
                 )
-            elif error_reason == "incorrect":
+            if error_reason == "incorrect":
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Incorrect captcha code",
                 )
-            else:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Captcha verification failed. Please refresh.",
-                )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Captcha verification failed. Please refresh.",
+            )
 
         logger.debug("Captcha verified for feedback from user %s", req.user_id or "anonymous")
 
@@ -82,7 +82,7 @@ async def submit_feedback(req: FeedbackRequest, request: Request):
                     if current_user:
                         user_id_from_db = current_user.id
                         user_name_from_db = current_user.name if hasattr(current_user, "name") else None
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug("Failed to extract user from token: %s", exc)
 
         # Get user info (use from request if provided, otherwise from token, otherwise anonymous)
@@ -98,9 +98,6 @@ async def submit_feedback(req: FeedbackRequest, request: Request):
             content={"success": True, "message": "Feedback submitted successfully"},
         )
 
-    except HTTPException:
-        # Re-raise HTTP exceptions (like 400 for invalid captcha) as-is
-        raise
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Error processing feedback: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to submit feedback. Please try again later.") from e

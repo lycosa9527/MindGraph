@@ -51,6 +51,7 @@ def _print_result(
     text: str,
     verbose: bool,
 ) -> None:
+    """Print result."""
     err = headers.get("x-mindbot-error-code") or headers.get("X-MindBot-Error-Code") or ""
     print(f"[{name}] HTTP {status}  X-MindBot-Error-Code={err!r}")
     if verbose and text:
@@ -61,12 +62,14 @@ def _print_result(
 
 
 def _get_secret(args: argparse.Namespace) -> str:
+    """Get secret."""
     if args.secret and args.secret.strip():
         return args.secret.strip()
     return (os.environ.get("MINDBOT_DINGTALK_APP_SECRET") or "").strip()
 
 
 def main() -> int:
+    """Main."""
     parser = argparse.ArgumentParser(
         description="Smoke-test MindBot /api/mindbot/dingtalk/callback/t/{token}",
     )

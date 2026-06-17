@@ -22,6 +22,7 @@ _MAX_SKEW_MS_CAP = 86400000
 
 
 def _max_skew_ms() -> int:
+    """Max skew ms."""
     raw = env_int("MINDBOT_DINGTALK_MAX_SKEW_MS", _DEFAULT_MAX_SKEW_MS)
     if raw < 1:
         return _DEFAULT_MAX_SKEW_MS

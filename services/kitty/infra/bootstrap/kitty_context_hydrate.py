@@ -7,8 +7,8 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 from services.infrastructure.monitoring.ws_metrics import record_kitty_hydrate_cache_miss
-from services.kitty.infra.desktop.kitty_desktop_focus import get_kitty_desktop_focus_diagram
 from services.kitty.infra.bootstrap.kitty_native_spec import native_spec_to_pseudo_nodes
+from services.kitty.infra.desktop.kitty_desktop_focus import get_kitty_desktop_focus_diagram
 from services.kitty.infra.redis.kitty_session_redis import (
     fetch_kitty_sessionmeta_for_user,
     load_kitty_live_context,
@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 def _node_display_text(node: Dict[str, Any]) -> str:
+    """Node display text."""
     text_raw = str(node.get("text") or "").strip()
     if text_raw:
         return text_raw

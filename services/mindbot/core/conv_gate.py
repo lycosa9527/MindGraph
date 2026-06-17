@@ -40,32 +40,39 @@ _POLL_STEP_MAX_MS = 400
 
 @functools.cache
 def _conv_gate_ttl_seconds() -> int:
+    """Conv gate ttl seconds."""
     return max(30, min(600, env_int("MINDBOT_CONV_GATE_TTL_SECONDS", _DEFAULT_GATE_TTL)))
 
 
 @functools.cache
 def _conv_gate_poll_total_ms() -> int:
+    """Conv gate poll total ms."""
     return max(100, min(120_000, env_int("MINDBOT_CONV_GATE_POLL_MS", _DEFAULT_POLL_TOTAL_MS)))
 
 
 @functools.cache
 def _conv_gate_poll_step_initial_ms() -> int:
+    """Conv gate poll step initial ms."""
     return max(10, min(500, env_int("MINDBOT_CONV_GATE_POLL_STEP_MS", _DEFAULT_POLL_STEP_INITIAL_MS)))
 
 
 def conv_gate_ttl_seconds() -> int:
+    """Conv gate ttl seconds."""
     return _conv_gate_ttl_seconds()
 
 
 def conv_gate_poll_total_ms() -> int:
+    """Conv gate poll total ms."""
     return _conv_gate_poll_total_ms()
 
 
 def conv_gate_poll_step_ms() -> int:
+    """Conv gate poll step ms."""
     return _conv_gate_poll_step_initial_ms()
 
 
 def conv_gate_enabled() -> bool:
+    """Conv gate enabled."""
     return env_bool("MINDBOT_CONV_GATE_ENABLED", True)
 
 
@@ -88,6 +95,7 @@ def normalize_dify_conversation_id_from_redis(val: Optional[str]) -> Optional[st
 
 
 def gate_key_for(org_id: int, dingtalk_conversation_id: str) -> str:
+    """Gate key for."""
     return f"{CONV_GATE_PREFIX}{org_id}:{dingtalk_conversation_id}"
 
 
@@ -119,6 +127,7 @@ async def redis_acquire_conv_gate_async(
 
 
 async def redis_release_conv_gate_async(org_id: int, dingtalk_conversation_id: str) -> None:
+    """Redis release conv gate async."""
     key = gate_key_for(org_id, dingtalk_conversation_id)
     await redis_delete(key)
 

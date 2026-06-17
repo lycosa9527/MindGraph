@@ -13,9 +13,8 @@ import logging
 
 from fastapi import APIRouter, HTTPException, Request
 
-from models import FrontendLogRequest, FrontendLogBatchRequest
+from models import FrontendLogBatchRequest, FrontendLogRequest
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
-
 
 logger = logging.getLogger(__name__)
 

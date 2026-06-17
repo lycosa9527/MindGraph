@@ -24,14 +24,17 @@ class _MindmateStreamState:
     __slots__ = ("_lock", "_n")
 
     def __init__(self) -> None:
+        """ init  ."""
         self._lock = asyncio.Lock()
         self._n = 0
 
     async def begin(self) -> None:
+        """Begin."""
         async with self._lock:
             self._n += 1
 
     async def end(self) -> None:
+        """End."""
         try:
             async with self._lock:
                 if self._n > 0:
@@ -40,6 +43,7 @@ class _MindmateStreamState:
             logger.debug("mindmate stream end: %s", exc)
 
     async def snapshot(self) -> Dict[str, Any]:
+        """Snapshot."""
         async with self._lock:
             return {"active_mindmate_streaming": int(self._n)}
 

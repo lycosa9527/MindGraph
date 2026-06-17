@@ -7,24 +7,29 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Any, Dict, Protocol
 import logging
 import random
+from typing import Any, Dict, Protocol
 
 from qdrant_client import AsyncQdrantClient
+
+from services.utils.error_types import QDRANT_ERRORS
 
 logger = logging.getLogger(__name__)
 
 
 class _QdrantDiagnosticsHost(Protocol):
+    """_QdrantDiagnosticsHost helper."""
     client: AsyncQdrantClient
     use_compression: bool
     compression_type: str | None
 
-    async def get_user_collection(self, user_id: int) -> str | None: ...
+    async def get_user_collection(self, user_id: int) -> str | None:
+        """Return the Qdrant collection name for a user, if any."""
 
-    def _get_collection_name(self, user_id: int) -> str: ...
+    def _get_collection_name(self, user_id: int) -> str:
+        """Build the default collection name for a user id."""
+        ...
 
 
 def _empty_compression_metrics(error: str | None = None) -> Dict[str, Any]:
@@ -134,7 +139,7 @@ class QdrantDiagnosticsMixin(_QdrantDiagnosticsHost):
                 compression_enabled,
                 compression_type,
             )
-        except Exception as exc:
+        except QDRANT_ERRORS as exc:
             logger.error("[Qdrant] Failed to get compression metrics for user %s: %s", user_id, exc)
             return _empty_compression_metrics(str(exc))
 
@@ -177,7 +182,7 @@ class QdrantDiagnosticsMixin(_QdrantDiagnosticsHost):
                     vector_size = _vector_size_from_config(vectors_config)
                     if vector_size:
                         result["vector_dimensions"] = vector_size
-            except Exception as exc:
+            except QDRANT_ERRORS as exc:
                 result["errors"].append(f"Failed to get collection info: {exc}")
 
             try:
@@ -196,7 +201,7 @@ class QdrantDiagnosticsMixin(_QdrantDiagnosticsHost):
                     if point.payload:
                         result["payload_keys"].update(point.payload.keys())
 
-            except Exception as exc:
+            except QDRANT_ERRORS as exc:
                 result["errors"].append(f"Failed to scroll points: {exc}")
 
             result["payload_keys"] = list(result["payload_keys"])
@@ -211,10 +216,10 @@ class QdrantDiagnosticsMixin(_QdrantDiagnosticsHost):
                         with_payload=True,
                     )
                     result["test_search_returned"] = len(response.points)
-                except Exception as exc:
+                except QDRANT_ERRORS as exc:
                     result["errors"].append(f"Test search failed: {exc}")
 
-        except Exception as exc:
+        except QDRANT_ERRORS as exc:
             result["errors"].append(f"Diagnostic failed: {exc}")
 
         return result

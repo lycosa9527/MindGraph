@@ -33,6 +33,19 @@ from typing import Callable, Dict, Literal, Optional, Tuple, Union, cast
 from fastapi import WebSocket
 
 from models.domain.auth import User
+from services.features.workshop_ws_collab_disconnect_api import finalize_canvas_collab_disconnect
+from services.features.workshop_ws_registry import (
+    ACTIVE_CONNECTIONS,
+    clear_room_lock,
+    get_room_lock,
+)
+from services.infrastructure.monitoring.ws_metrics import (
+    record_ws_batch_frames_emitted,
+    record_ws_coalesce_hit,
+    record_ws_slow_consumer,
+    record_ws_writer_task_failed,
+)
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -115,19 +128,9 @@ class ViewerHandle:
 
 AnyHandle = Union[ConnectionHandle, ViewerHandle]
 
-ACTIVE_CONNECTIONS: Dict[str, Dict[int, AnyHandle]] = {}
-ACTIVE_EDITORS: Dict[str, Dict[str, Dict[int, str]]] = {}
-_ROOM_REGISTRY_LOCKS: Dict[str, asyncio.Lock] = {}
-_REGISTRY_LOCKS_GUARD = asyncio.Lock()
-
-
 async def _get_room_lock(code: str) -> asyncio.Lock:
-    """Return per-room mutation lock (single Lock per ``code``, TOCTOU-safe)."""
-    room_lock = _ROOM_REGISTRY_LOCKS.get(code)
-    if room_lock is not None:
-        return room_lock
-    async with _REGISTRY_LOCKS_GUARD:
-        return _ROOM_REGISTRY_LOCKS.setdefault(code, asyncio.Lock())
+    """Backward-compatible alias for ``get_room_lock``."""
+    return await get_room_lock(code)
 
 
 async def _writer_loop(handle: AnyHandle) -> None:
@@ -195,14 +198,7 @@ async def _flush_coalesce_buffer(handle: ConnectionHandle) -> None:
     for msg_type, group in by_type.items():
         if msg_type == "node_editing" and len(group) > 1:
             frame = {"type": "node_editing_batch_ws", "events": group}
-            try:
-                from services.infrastructure.monitoring.ws_metrics import (
-                    record_ws_batch_frames_emitted,
-                )
-
-                record_ws_batch_frames_emitted()
-            except Exception:
-                pass
+            record_ws_batch_frames_emitted()
         elif len(group) == 1:
             frame = group[0]
         else:
@@ -217,7 +213,7 @@ async def _flush_coalesce_buffer(handle: ConnectionHandle) -> None:
                 name=f"evict:{handle.code}:{handle.user_id}",
             )
             return
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug(
                 "[ConnectionHandle] flush_coalesce_buffer error code=%s: %s",
                 handle.code,
@@ -232,12 +228,7 @@ async def _evict_slow_consumer(handle: AnyHandle, reason: str) -> None:
     Sends a best-effort kicked frame, closes the socket with 4014, removes
     from registry, and removes from participant set.
     """
-    try:
-        from services.infrastructure.monitoring.ws_metrics import record_ws_slow_consumer
-
-        record_ws_slow_consumer(reason)
-    except Exception:
-        pass
+    record_ws_slow_consumer(reason)
     kicked_body = json.dumps(
         {
             "type": "kicked",
@@ -250,18 +241,14 @@ async def _evict_slow_consumer(handle: AnyHandle, reason: str) -> None:
             handle.send_queue.put(("text", kicked_body)),
             timeout=0.2,
         )
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         pass
     try:
         async with asyncio.timeout(1.0):
             await handle.websocket.close(code=4014, reason="slow consumer evicted")
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         pass
     try:
-        from routers.api.workshop_ws_disconnect import (
-            finalize_canvas_collab_disconnect,
-        )
-
         user_stub = cast(User, SimpleNamespace(id=handle.user_id))
         owner_id = handle.user_id if handle.role == "host" else None
         await finalize_canvas_collab_disconnect(
@@ -270,7 +257,7 @@ async def _evict_slow_consumer(handle: AnyHandle, reason: str) -> None:
             handle=handle,
             workshop_owner_id=owner_id,
         )
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning(
             "[ConnectionHandle] slow-consumer cleanup failed code=%s user=%s: %s",
             handle.code,
@@ -307,14 +294,7 @@ async def enqueue(handle: AnyHandle, payload: dict, msg_type: str) -> None:
                     _flush_coalesce_buffer(handle),
                     name=f"flush:{handle.code}:{handle.user_id}",
                 )
-        try:
-            from services.infrastructure.monitoring.ws_metrics import (
-                record_ws_coalesce_hit,
-            )
-
-            record_ws_coalesce_hit(msg_type)
-        except Exception:
-            pass
+        record_ws_coalesce_hit(msg_type)
         return
 
     try:
@@ -419,14 +399,7 @@ def create_connection_handle(
                 user_id,
                 exc,
             )
-            try:
-                from services.infrastructure.monitoring.ws_metrics import (
-                    record_ws_writer_task_failed,
-                )
-
-                record_ws_writer_task_failed()
-            except Exception:
-                pass
+            record_ws_writer_task_failed()
 
     writer.add_done_callback(_on_writer_done)
     handle.writer_task = writer
@@ -529,7 +502,7 @@ async def teardown_superseded_connection(
             room.pop(user_id, None)
             if not room:
                 ACTIVE_CONNECTIONS.pop(code, None)
-                _ROOM_REGISTRY_LOCKS.pop(code, None)
+                clear_room_lock(code)
     await finalize_handle_writer_shutdown(superseded)
 
 
@@ -552,7 +525,7 @@ async def unregister_connection(code: str, user_id: int) -> None:
             handle = room.pop(user_id, None)
             if not room:
                 ACTIVE_CONNECTIONS.pop(code, None)
-                _ROOM_REGISTRY_LOCKS.pop(code, None)
+                clear_room_lock(code)
 
     if handle is None:
         return

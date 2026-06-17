@@ -34,8 +34,8 @@ from typing import Any, Awaitable, Dict, Optional, cast
 
 from redis.exceptions import RedisError
 
-from services.redis.redis_async_client import get_async_redis
 from services.online_collab.redis.online_collab_redis_keys import session_meta_key
+from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +52,7 @@ class _TrackingState:
 
 
 def _client_tracking_enabled() -> bool:
+    """Client tracking enabled."""
     return os.getenv("COLLAB_REDIS_CLIENT_TRACKING", "0") not in (
         "0",
         "false",
@@ -61,6 +62,7 @@ def _client_tracking_enabled() -> bool:
 
 
 def _decode(val: Any) -> str:
+    """Decode."""
     if isinstance(val, bytes):
         return val.decode("utf-8", errors="replace")
     return str(val) if val is not None else ""

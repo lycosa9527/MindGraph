@@ -22,6 +22,7 @@ from typing import Any, cast
 from fastapi import APIRouter, Depends
 
 from models.domain.auth import User
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from services.utils.typing_helpers import mapping_float, mapping_int
 from utils.auth import get_current_user
 
@@ -102,7 +103,7 @@ async def get_cache_status(_current_user: User = Depends(get_current_user)):
         logger.warning("Lazy cache status check: FAILED - cache not initialized")
         return cache_data
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         cache_data = {
             "status": "error",
             "error": str(e),
@@ -165,7 +166,7 @@ async def get_cache_performance(_current_user: User = Depends(get_current_user))
         )
         return performance_data
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         performance_data = {
             "status": "error",
             "error": str(e),
@@ -220,7 +221,7 @@ async def get_modular_cache_status(_current_user: User = Depends(get_current_use
         logger.info("Modular cache status check: OK - %s", status_msg)
         return cache_data
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         cache_data = {
             "status": "error",
             "cache_type": "modular",

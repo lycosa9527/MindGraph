@@ -16,19 +16,20 @@ All Rights Reserved
 Proprietary License
 """
 
-from pathlib import Path
-from typing import Optional, Tuple
 import logging
 import os
 import platform
 import re
 import subprocess
 import sys
+from pathlib import Path
+from typing import Optional, Tuple
 
+import playwright
 from playwright.async_api import async_playwright
 from playwright.sync_api import sync_playwright
-import playwright
 
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -69,13 +70,13 @@ def _get_chromium_version(executable_path: str) -> Optional[str]:
                         browser.close()
                         return version_str
                 browser.close()
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 logger.debug("Chromium CDP version detection failed: %s", exc)
                 try:
                     browser.close()
-                except Exception as exc_close:
+                except BACKGROUND_INFRA_ERRORS as exc_close:
                     logger.debug("Chromium browser close after error failed: %s", exc_close)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("Chromium CDP connection failed: %s", exc)
 
     # Method 2: Try --version flag with timeout (fallback)
@@ -95,7 +96,7 @@ def _get_chromium_version(executable_path: str) -> Optional[str]:
                 return version_match.group(1)
     except subprocess.TimeoutExpired:
         pass
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("Chromium --version fallback failed: %s", exc)
 
     # Method 3: Extract revision from path (fallback for Playwright browsers)
@@ -106,7 +107,7 @@ def _get_chromium_version(executable_path: str) -> Optional[str]:
             if revision_match:
                 # Return revision as fallback (will be compared as revision number)
                 return revision_match.group(1)
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("Chromium revision extraction from path failed: %s", exc)
 
     return None
@@ -131,9 +132,8 @@ def _compare_versions(version1: str, version2: str) -> int:
         if len(parts) == 1:
             # Single number - likely a revision, treat as major version
             return (int(parts[0]), 0, 0, 0)
-        else:
-            # Full version string
-            return tuple(int(x) for x in parts)
+        # Full version string
+        return tuple(int(x) for x in parts)
 
     try:
         v1_tuple = version_tuple(version1)
@@ -146,11 +146,10 @@ def _compare_versions(version1: str, version2: str) -> int:
 
         if v1_tuple < v2_tuple:
             return -1
-        elif v1_tuple > v2_tuple:
+        if v1_tuple > v2_tuple:
             return 1
-        else:
-            return 0
-    except Exception:
+        return 0
+    except BACKGROUND_INFRA_ERRORS:
         # If parsing fails, assume versions are equal
         return 0
 
@@ -167,7 +166,7 @@ def _get_playwright_chromium_executable() -> Optional[str]:
             browser_path = p.chromium.executable_path
             if browser_path and os.path.exists(browser_path):
                 return browser_path
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("Playwright Chromium executable lookup failed: %s", exc)
     return None
 
@@ -200,16 +199,15 @@ def _get_local_chromium_executable():
             if path.exists():
                 return str(path)
         return None
-    else:  # Linux (default for WSL/production)
-        # Linux: browsers/chromium/chrome-linux/chrome
-        possible_paths = [
-            browsers_dir / "chrome-linux" / "chrome",
-            browsers_dir / "chrome",
-        ]
-        for path in possible_paths:
-            if path.exists():
-                return str(path)
-        return None
+    # Linux: browsers/chromium/chrome-linux/chrome
+    possible_paths = [
+        browsers_dir / "chrome-linux" / "chrome",
+        browsers_dir / "chrome",
+    ]
+    for path in possible_paths:
+        if path.exists():
+            return str(path)
+    return None
 
 
 def _get_best_chromium_executable() -> Optional[str]:
@@ -296,7 +294,7 @@ def _get_best_chromium_executable() -> Optional[str]:
             local_version,
         )
         return playwright_chromium
-    elif comparison > 0:
+    if comparison > 0:
         # Local version is newer (unlikely but possible)
         logger.info(
             "Using local Chromium (v%s) - newer than Playwright (v%s)",
@@ -304,10 +302,9 @@ def _get_best_chromium_executable() -> Optional[str]:
             playwright_version,
         )
         return local_chromium
-    else:
-        # Versions are equal, prefer local (faster, no download needed)
-        logger.debug("Using local Chromium (v%s) - same version as Playwright", local_version)
-        return local_chromium
+    # Versions are equal, prefer local (faster, no download needed)
+    logger.debug("Using local Chromium (v%s) - same version as Playwright", local_version)
+    return local_chromium
 
 
 async def log_browser_diagnostics():
@@ -328,7 +325,7 @@ async def log_browser_diagnostics():
         try:
             playwright_path = playwright.__file__
             logger.debug("[Browser] Playwright module path: %s", playwright_path)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[Browser] Cannot import playwright: %s", e)
             return
 
@@ -348,13 +345,13 @@ async def log_browser_diagnostics():
                         logger.debug("[Browser] Chromium executable exists: NO (will be installed on first use)")
             finally:
                 await playwright_instance.stop()
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             # Only log warning from main process
             if is_main_process:
                 logger.warning("[Browser] Could not verify Chromium installation: %s", e)
             else:
                 logger.debug("[Browser] Could not verify Chromium installation: %s", e)
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         # Only log warning from main process
         if is_main_process:
             logger.warning("[Browser] Diagnostic check failed: %s", e)
@@ -366,6 +363,7 @@ class BrowserContextManager:
     """Context manager that creates a fresh browser for each request"""
 
     def __init__(self):
+        """ init  ."""
         self.context = None
         self.browser = None
         self.playwright = None
@@ -399,7 +397,7 @@ class BrowserContextManager:
                     logger.error("[Browser] Playwright browsers check output:\n%s", result.stdout)
                     if "chromium" in result.stdout.lower():
                         logger.error("[Browser] Browsers ARE installed but Playwright can't access them!")
-            except Exception as check_error:
+            except BACKGROUND_INFRA_ERRORS as check_error:
                 logger.error("[Browser] Could not check browser installation: %s", check_error)
 
             error_msg = (
@@ -409,7 +407,7 @@ class BrowserContextManager:
             )
             logger.error("[Browser] %s", error_msg)
             raise RuntimeError(error_msg) from e
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[Browser] Error starting Playwright: %s", e, exc_info=True)
             raise
 

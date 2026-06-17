@@ -6,13 +6,15 @@ import logging
 import time
 
 from services.mindbot.core.redis_keys import SEND_TRACKER_PREFIX, SEND_TRACKER_TTL
-from services.utils.typing_helpers import redis_hset_mapping
 from services.redis.redis_async_client import get_async_redis
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from services.utils.typing_helpers import redis_hset_mapping
 
 logger = logging.getLogger(__name__)
 
 
 def _send_track_key(msg_id: str) -> str:
+    """Send track key."""
     return f"{SEND_TRACKER_PREFIX}{msg_id}"
 
 
@@ -21,6 +23,7 @@ async def _hset_expire(
     mapping: dict[str, str],
     pipeline_ctx: str,
 ) -> None:
+    """Hset expire."""
     if not msg_id.strip():
         return
     key = _send_track_key(msg_id.strip())
@@ -30,7 +33,7 @@ async def _hset_expire(
             pipe.hset(key, mapping=redis_hset_mapping(mapping))
             pipe.expire(key, SEND_TRACKER_TTL)
             await pipe.execute()
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning(
             "[MindBot] send_tracker_redis_error %s key=%s: %s",
             pipeline_ctx,

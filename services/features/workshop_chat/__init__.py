@@ -22,12 +22,12 @@ Proprietary License
 """
 
 from services.features.workshop_chat.channel_service import channel_service
-from services.features.workshop_chat.topic_service import topic_service
-from services.features.workshop_chat.message_service import message_service
 from services.features.workshop_chat.dm_service import dm_service
+from services.features.workshop_chat.file_service import file_service
+from services.features.workshop_chat.message_service import message_service
 from services.features.workshop_chat.reaction_service import reaction_service
 from services.features.workshop_chat.star_service import star_service
-from services.features.workshop_chat.file_service import file_service
+from services.features.workshop_chat.topic_service import topic_service
 
 __all__ = [
     "channel_service",

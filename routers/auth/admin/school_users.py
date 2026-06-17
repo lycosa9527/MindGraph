@@ -7,19 +7,26 @@ Proprietary License
 
 from __future__ import annotations
 
-from typing import Any, Optional
 import logging
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.functions import coalesce as sa_coalesce, count as sa_count, sum as sa_sum
+from sqlalchemy.sql.functions import coalesce as sa_coalesce
+from sqlalchemy.sql.functions import count as sa_count
+from sqlalchemy.sql.functions import sum as sa_sum
 
 from config.database import get_async_db
 from models.domain.auth import Organization, User
-from models.domain.messages import Messages, Language
+from models.domain.messages import Language, Messages
 from models.domain.token_usage import TokenUsage
+from services.auth.admin_user_list_rows import (
+    build_admin_user_detail_payload,
+    diagram_quota_for_user,
+    enrich_admin_user_list_rows,
+)
 from services.auth.phone_uniqueness import other_user_id_with_phone
 from services.auth.school_dashboard_logger import get_school_dashboard_logger
 from services.auth.school_user_create import (
@@ -32,14 +39,10 @@ from services.auth.school_user_create import (
 from services.auth.user_fk_cleanup import delete_user_fk_dependent_rows
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
-
+from services.utils.error_types import DATABASE_ERRORS, REDIS_ERRORS
 from utils.auth.admin_panel_permissions import CAP_TAB_USERS_EDIT, CAP_TAB_USERS_VIEW
 from utils.auth.admin_scope import AdminScope
-from services.auth.admin_user_list_rows import (
-    build_admin_user_detail_payload,
-    diagram_quota_for_user,
-    enrich_admin_user_list_rows,
-)
+
 from ..dependencies import get_language_dependency, require_panel_capability
 from ..helpers import commit_user_with_retry
 from .school_scope import resolve_school_dashboard_org_id_scoped
@@ -56,6 +59,7 @@ async def _load_user_in_school_or_not_found(
     user_id: int,
     effective_org_id: int,
 ) -> Optional[User]:
+    """Load user in school or not found."""
     row = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     if row is None or row.organization_id != effective_org_id:
         return None
@@ -63,6 +67,7 @@ async def _load_user_in_school_or_not_found(
 
 
 def _not_found_school_user(lang: Language) -> HTTPException:
+    """Not found school user."""
     return HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=Messages.error("school_user_not_found", lang=lang),
@@ -128,7 +133,7 @@ async def list_school_users(
                     "output_tokens": int(stat.output_tokens or 0),
                     "total_tokens": int(stat.total_tokens or 0),
                 }
-        except Exception as exc:
+        except DATABASE_ERRORS as exc:
             sd_log.debug(
                 "TokenUsage not available for school list: %s",
                 exc,
@@ -170,6 +175,7 @@ async def create_school_user(
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, Any]:
+    """Create school user."""
     current_user = scope.actor
     if not isinstance(request, dict):
         raise HTTPException(
@@ -194,7 +200,7 @@ async def create_school_user(
     except HTTPException:
         await db.rollback()
         raise
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         await db.rollback()
         sd_log.error(
             "school user create failed: %s",
@@ -208,7 +214,7 @@ async def create_school_user(
 
     try:
         await user_cache.cache_user(new_user)
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         sd_log.warning(
             "school user cache write failed: %s",
             exc,
@@ -240,6 +246,7 @@ async def create_school_users_batch(
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, Any]:
+    """Create school users batch."""
     current_user = scope.actor
     if not isinstance(request, dict):
         raise HTTPException(
@@ -274,7 +281,7 @@ async def create_school_users_batch(
     except HTTPException:
         await db.rollback()
         raise
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         await db.rollback()
         sd_log.error(
             "school user batch create failed: %s",
@@ -289,7 +296,7 @@ async def create_school_users_batch(
     for user in created:
         try:
             await user_cache.cache_user(user)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             sd_log.warning(
                 "school user batch cache write failed: %s",
                 exc,
@@ -314,6 +321,7 @@ async def get_school_user(
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, Any]:
+    """Get school user."""
     current_user = scope.actor
     org_id = await resolve_school_dashboard_org_id_scoped(scope, organization_id, db, lang)
     user = await _load_user_in_school_or_not_found(db, user_id, org_id)
@@ -346,6 +354,7 @@ async def update_school_user(
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, Any]:
+    """Update school user."""
     current_user = scope.actor
     if not isinstance(request, dict):
         raise HTTPException(
@@ -431,7 +440,7 @@ async def update_school_user(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=Messages.error("internal_error", lang=lang),
         ) from err
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         await db.rollback()
         sd_log.error(
             "school user update failed: %s",
@@ -446,7 +455,7 @@ async def update_school_user(
     try:
         await user_cache.invalidate(user_id, old_phone, getattr(user, "email", None))
         await user_cache.cache_user(user)
-    except Exception as e:
+    except REDIS_ERRORS as e:
         sd_log.warning(
             "school user cache update failed: %s",
             e,
@@ -484,6 +493,7 @@ async def delete_school_user(
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, str]:
+    """Delete school user."""
     current_user = scope.actor
     org_id = await resolve_school_dashboard_org_id_scoped(scope, organization_id, db, lang)
     user = await _load_user_in_school_or_not_found(db, user_id, org_id)
@@ -500,7 +510,7 @@ async def delete_school_user(
         await delete_user_fk_dependent_rows(db, user_id)
         await db.delete(user)
         await db.commit()
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         await db.rollback()
         sd_log.error(
             "school user delete failed: %s",
@@ -514,7 +524,7 @@ async def delete_school_user(
 
     try:
         await user_cache.invalidate(user_id, user_phone, getattr(user, "email", None))
-    except Exception as e:
+    except REDIS_ERRORS as e:
         sd_log.warning(
             "cache invalidate after school delete failed: %s",
             e,
@@ -540,6 +550,7 @@ async def unlock_school_user(
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, str]:
+    """Unlock school user."""
     current_user = scope.actor
     org_id = await resolve_school_dashboard_org_id_scoped(scope, organization_id, db, lang)
     user = await _load_user_in_school_or_not_found(db, user_id, org_id)
@@ -553,7 +564,7 @@ async def unlock_school_user(
     try:
         await db.commit()
         await db.refresh(user)
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         await db.rollback()
         sd_log.error(
             "school unlock failed: %s",
@@ -568,7 +579,7 @@ async def unlock_school_user(
     try:
         await user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
         await user_cache.cache_user(user)
-    except Exception as e:
+    except REDIS_ERRORS as e:
         sd_log.warning(
             "school unlock cache failed: %s",
             e,

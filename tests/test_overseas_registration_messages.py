@@ -22,16 +22,19 @@ from utils.email_mainland_china import raise_if_mainland_china_email_for_oversea
     ],
 )
 def test_overseas_registration_message_key(base_key: str, expected: str) -> None:
+    """Test overseas registration message key."""
     assert overseas_registration_message_key(base_key) == expected
 
 
 def test_overseas_registration_error_uses_generic_copy() -> None:
+    """Test overseas registration error uses generic copy."""
     msg = overseas_registration_error("registration_email_not_available_in_region", "en")
     assert "Education email" not in msg
     assert "Email registration" in msg
 
 
 def test_mainland_china_domain_blocked_for_overseas_registration() -> None:
+    """Test mainland china domain blocked for overseas registration."""
     with pytest.raises(HTTPException) as exc:
         raise_if_mainland_china_email_for_overseas_registration("user@qq.com", "en")
     assert exc.value.status_code == 400

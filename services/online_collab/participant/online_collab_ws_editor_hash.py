@@ -34,13 +34,13 @@ from typing import Any, Awaitable, Dict, List, Optional, Tuple, cast
 
 from redis.exceptions import RedisError, WatchError
 
-from services.redis.redis_async_client import get_async_redis
 from services.online_collab.redis.online_collab_redis_keys import _tag
 from services.online_collab.redis.online_collab_redis_locks import (
     fcall_node_claim_exclusive,
     fcall_node_editing_del,
     fcall_node_editing_set,
 )
+from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
 
@@ -64,14 +64,17 @@ def editors_use_hash_backend() -> bool:
 
 
 def _key(code: str) -> str:
+    """Key."""
     return f"mg:ws:workshop:editors_h:{_tag(code)}"
 
 
 def _field(node_id: str) -> str:
+    """Field."""
     return str(node_id)
 
 
 def _node_map_to_json(node_map: Dict[int, str]) -> str:
+    """Node map to json."""
     return json.dumps(
         {str(uid): name for uid, name in node_map.items()},
         ensure_ascii=False,
@@ -79,6 +82,7 @@ def _node_map_to_json(node_map: Dict[int, str]) -> str:
 
 
 def _json_to_node_map(raw: Any) -> Dict[int, str]:
+    """Json to node map."""
     if raw is None:
         return {}
     if isinstance(raw, bytes):
@@ -101,6 +105,7 @@ def _json_to_node_map(raw: Any) -> Dict[int, str]:
 
 
 def _hash_backoff_delay(attempt: int) -> float:
+    """Hash backoff delay."""
     base = _HASH_WATCH_BASE_BACKOFF_SEC * (2**attempt)
     capped = min(base, _HASH_WATCH_MAX_BACKOFF_SEC)
     return capped + random.uniform(0, capped)

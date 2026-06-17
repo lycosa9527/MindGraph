@@ -15,7 +15,7 @@ Proprietary License
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,8 +29,8 @@ from models.requests.requests_knowledge_space import (
 from models.responses import EvaluationDatasetResponse, EvaluationRunResponse
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 from services.knowledge.retrieval_test_service import get_retrieval_test_service
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user
-
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ async def create_evaluation_dataset(
             created_at=dataset.created_at.isoformat(),
             updated_at=dataset.updated_at.isoformat(),
         )
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("[KnowledgeSpaceAPI] Failed to create evaluation dataset: %s", e)
         await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to create evaluation dataset") from e
@@ -132,7 +132,7 @@ async def run_evaluation(
         return EvaluationRunResponse(**result)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[KnowledgeSpaceAPI] Failed to run evaluation: %s", e)
         raise HTTPException(status_code=500, detail="Failed to run evaluation") from e
 

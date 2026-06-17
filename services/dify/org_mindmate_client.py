@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.dify import AsyncDifyClient
 from models.domain.auth import Organization
+from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ class MindmateDifyNotConfiguredError(Exception):
 
 
 def _global_dify_credentials() -> tuple[str, str, int]:
+    """Global dify credentials."""
     api_key = (os.getenv("DIFY_API_KEY") or "").strip()
     api_url = (os.getenv("DIFY_API_URL") or "https://api.dify.ai/v1").strip()
     timeout = int(os.getenv("DIFY_TIMEOUT", "300"))
@@ -37,6 +39,7 @@ async def _org_dify_credentials(
     db: AsyncSession,
     organization_id: int,
 ) -> Optional[tuple[str, str]]:
+    """Org dify credentials."""
     org = (await db.execute(select(Organization).where(Organization.id == organization_id))).scalar_one_or_none()
     if org is None:
         return None
@@ -113,8 +116,6 @@ async def resolve_mindmate_dify_client_short_lived(
     Use for routes that await slow upstream Dify HTTP after credential lookup, so the
     request-scoped session is not held open past idle_in_transaction_session_timeout.
     """
-    from utils.db.session_open import system_rls_session
-
     async with system_rls_session() as db:
         return await resolve_mindmate_dify_client_or_http(
             db,

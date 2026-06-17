@@ -26,6 +26,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
+from services.utils.error_types import DATABASE_ERRORS
 from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 
 logger = logging.getLogger(__name__)
@@ -101,6 +102,7 @@ def _sqlite_tables(conn: sqlite3.Connection) -> Dict[str, int]:
 
 
 def _sqlite_columns(conn: sqlite3.Connection, table: str) -> List[str]:
+    """Sqlite columns."""
     cur = conn.cursor()
     cur.execute(f"PRAGMA table_info([{table}])")
     return [row[1] for row in cur.fetchall()]
@@ -121,6 +123,7 @@ def _pg_existing_org_names(pg_engine: Engine) -> Dict[str, int]:
 
 
 def _pg_existing_api_keys(pg_engine: Engine) -> Set[str]:
+    """Pg existing api keys."""
     with pg_engine.connect() as conn:
         rows = conn.execute(text("SELECT key FROM api_keys"))
         return {r[0] for r in rows}
@@ -229,6 +232,7 @@ def _analyze_impl(
     sq: sqlite3.Connection,
     pg_engine: Engine,
 ) -> Dict[str, Any]:
+    """Analyze impl."""
     cur = sq.cursor()
     table_counts = _sqlite_tables(sq)
 
@@ -344,6 +348,7 @@ def _merge_impl(
     sq: sqlite3.Connection,
     pg_engine: Engine,
 ) -> Dict[str, Any]:
+    """Merge impl."""
     cur = sq.cursor()
     results: Dict[str, Dict[str, int]] = {}
     started = datetime.now(tz=UTC)
@@ -465,6 +470,7 @@ def _merge_organizations(
     new_org_sq_ids: List[int],
     bool_cols: Set[str],
 ) -> Dict[str, int]:
+    """Merge organizations."""
     if not new_org_sq_ids:
         return {"inserted": 0, "skipped": len(org_map)}
 
@@ -517,6 +523,7 @@ def _merge_users(
     org_map: Dict[int, Optional[int]],
     bool_cols: Set[str],
 ) -> Dict[str, int]:
+    """Merge users."""
     if not new_user_sq_ids:
         return {"inserted": 0, "skipped": len(user_map)}
 
@@ -591,6 +598,7 @@ def _merge_api_keys(
     org_map: Dict[int, Optional[int]],
     bool_cols: Set[str],
 ) -> Dict[str, int]:
+    """Merge api keys."""
     existing_keys = _pg_existing_api_keys(pg_engine)
     cur = sq.cursor()
     sq_cols = _sqlite_columns(sq, "api_keys")
@@ -646,6 +654,7 @@ def _merge_token_usage(
     org_map: Dict[int, Optional[int]],
     bool_cols: Set[str],
 ) -> Dict[str, int]:
+    """Merge token usage."""
     cur = sq.cursor()
     sq_cols = _sqlite_columns(sq, "token_usage")
 
@@ -709,6 +718,7 @@ def _merge_dashboard_activities(
     user_map: Dict[int, Optional[int]],
     bool_cols: Set[str],
 ) -> Dict[str, int]:
+    """Merge dashboard activities."""
     cur = sq.cursor()
     cur.execute("SELECT COUNT(*) FROM dashboard_activities")
     if cur.fetchone()[0] == 0:
@@ -810,6 +820,7 @@ def _merge_update_notification_dismissed(
     user_map: Dict[int, Optional[int]],
     bool_cols: Set[str],
 ) -> Dict[str, int]:
+    """Merge update notification dismissed."""
     cur = sq.cursor()
     cur.execute("SELECT COUNT(*) FROM update_notification_dismissed")
     if cur.fetchone()[0] == 0:
@@ -900,7 +911,7 @@ def _reset_sequences(pg_engine: Engine) -> None:
                         {"seq": seq_name},
                     )
                     sp.commit()
-                except Exception as exc:
+                except DATABASE_ERRORS as exc:
                     sp.rollback()
                     logger.debug(
                         "[SQLiteMerge] Could not reset sequence for %s: %s",
@@ -908,6 +919,6 @@ def _reset_sequences(pg_engine: Engine) -> None:
                         exc,
                     )
             txn.commit()
-        except Exception:
+        except DATABASE_ERRORS:
             txn.rollback()
             raise

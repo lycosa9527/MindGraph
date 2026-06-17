@@ -30,14 +30,13 @@ import logging
 
 from dotenv import load_dotenv
 
-from utils.env_utils import ensure_utf8_env_file
-
 from config.base_config import BaseConfig
+from config.features_config import FeaturesConfigMixin
+from config.knowledge_config import KnowledgeConfigMixin
 from config.llm_config import LLMConfigMixin
 from config.rate_limiting import RateLimitingConfigMixin
-from config.knowledge_config import KnowledgeConfigMixin
 from config.visualization_config import VisualizationConfigMixin
-from config.features_config import FeaturesConfigMixin
+from utils.env_utils import ensure_utf8_env_file
 
 logger = logging.getLogger(__name__)
 

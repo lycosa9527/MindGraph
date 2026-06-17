@@ -25,6 +25,7 @@ _OPENAPI_MARKDOWN_TITLE_MAX = 80
 
 
 def _truncate(text: str) -> str:
+    """Truncate."""
     if len(text) <= _MAX_OUT:
         return text
     return text[:_MAX_OUT] + "…"
@@ -68,6 +69,7 @@ def build_session_webhook_payload(answer: str, *, stream_chunk: bool = False) ->
 
 
 def _clip_openapi_text(text: str, max_len: int) -> str:
+    """Clip openapi text."""
     if len(text) <= max_len:
         return text
     if max_len <= 1:
@@ -96,6 +98,7 @@ def markdown_title_and_body_for_openapi(answer: str) -> tuple[str, str]:
 
 
 def _first_https_url_line(answer: str) -> str:
+    """First https url line."""
     for line in answer.strip().splitlines():
         line = line.strip()
         if line.startswith("https://"):

@@ -35,8 +35,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import warnings
-from functools import wraps
 from collections.abc import Mapping
+from functools import wraps
 from typing import Any, Awaitable, Callable, Dict, List, Optional, TypeVar, cast
 
 import redis.asyncio as aioredis
@@ -45,12 +45,15 @@ from redis.exceptions import ResponseError as RedisResponseError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from services.redis.redis_async_client import get_async_redis
-from services.redis.redis_client import redis_delex_enabled, set_redis_delex_enabled
-from services.utils.typing_helpers import redis_decode, redis_hash_to_str, redis_list_to_str
-from services.redis.redis_circuit_breaker import (
-    get_breaker as _get_breaker,
-    is_breaker_enabled as _breaker_enabled,
+from services.redis.redis_circuit_breaker import get_breaker as _get_breaker
+from services.redis.redis_circuit_breaker import is_breaker_enabled as _breaker_enabled
+from services.redis.redis_client import (
+    is_redis_available,
+    redis_delex_enabled,
+    set_redis_delex_enabled,
 )
+from services.utils.error_types import REDIS_ERRORS
+from services.utils.typing_helpers import redis_decode, redis_hash_to_str, redis_list_to_str
 
 logger = logging.getLogger(__name__)
 
@@ -63,18 +66,10 @@ _RETRY_BASE_DELAY = 0.05  # seconds; tighter than sync because await is cheap
 
 
 def _is_redis_available() -> bool:
-    """Lazy resolver for sync availability flag (avoids import cycle).
-
-    Returns True when the sync-side ``_RedisState`` has not been initialised
-    yet so first-touch async callers (e.g. lifespan startup) are not blocked.
-    """
+    """Return sync-side Redis availability (True when state is not yet initialised)."""
     try:
-        from services.redis.redis_client import is_redis_available as _check
-    except Exception:
-        return True
-    try:
-        return bool(_check())
-    except Exception:
+        return bool(is_redis_available())
+    except REDIS_ERRORS:
         return True
 
 
@@ -121,7 +116,7 @@ def _with_async_retry(operation_name: str, default_return: Any = None):
                             _RETRY_MAX_ATTEMPTS,
                             delay,
                         )
-                except Exception as exc:
+                except REDIS_ERRORS as exc:
                     logger.warning("[RedisAsync] %s failed: %s", operation_name, exc)
                     return default_return
 
@@ -385,7 +380,7 @@ class AsyncRedisOperations:
                     exc,
                 )
                 set_redis_delex_enabled(False)
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logger.warning(
                     "[RedisAsync] compare_and_delete unexpected error for %s: %s",
                     key[:20],
@@ -400,7 +395,7 @@ class AsyncRedisOperations:
                 expected_value,
             )
             return bool(result)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning(
                 "[RedisAsync] compare_and_delete fallback failed for %s: %s",
                 key[:20],
@@ -420,7 +415,7 @@ class AsyncRedisOperations:
                 keys.append(key)
                 if len(keys) >= count:
                     break
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning("[RedisAsync] SCAN failed for %s: %s", pattern[:20], exc)
         return keys[:count]
 
@@ -438,7 +433,7 @@ class AsyncRedisOperations:
         try:
             client = _client()
             return dict(await (client.info(section) if section else client.info()) or {})
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning("[RedisAsync] INFO failed: %s", exc)
             return {}
 

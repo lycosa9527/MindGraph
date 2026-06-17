@@ -18,19 +18,21 @@ All Rights Reserved
 Proprietary License
 """
 
-from enum import Enum
-from typing import Optional, Callable, Dict, Any, AsyncGenerator, List, Coroutine, cast
 import asyncio
 import base64
 import json
 import logging
 import time
+from enum import Enum
+from typing import Any, AsyncGenerator, Callable, Coroutine, Dict, List, Optional, cast
 
 import httpx
 import websockets
 from websockets.exceptions import ConnectionClosed
 
 from config.settings import config
+from services.kitty.omni.tools import build_omni_diagram_tools
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 _bg_tasks: set[asyncio.Task] = set()
 
@@ -106,6 +108,7 @@ class OmniRealtimeClient:
         on_content_part_done: Optional[Callable[[dict], None]] = None,
         on_function_call: Optional[Callable[[str, str, str], None]] = None,
     ):
+        """ init  ."""
         self.api_key = api_key
         self.model = model
         self.voice = voice
@@ -185,7 +188,7 @@ class OmniRealtimeClient:
             # Start message handler
             self._message_handler_task = asyncio.create_task(self._handle_messages())
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             self._connected = False
             logger.error("Failed to connect: %s", e, exc_info=True)
             raise
@@ -302,7 +305,7 @@ class OmniRealtimeClient:
                     logger.error("Failed to parse message: %s", e)
                     if self.on_error:
                         self.on_error({"type": "parse_error", "message": str(e)})
-                except Exception as e:
+                except BACKGROUND_INFRA_ERRORS as e:
                     logger.error("Error processing event: %s", e, exc_info=True)
                     if self.on_error:
                         self.on_error({"type": "processing_error", "message": str(e)})
@@ -310,7 +313,7 @@ class OmniRealtimeClient:
         except ConnectionClosed:
             logger.debug("WebSocket connection closed")
             self._connected = False
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Error in message handler: %s", e, exc_info=True)
             self._connected = False
             if self.on_error:
@@ -468,7 +471,7 @@ class OmniRealtimeClient:
                         result = self.on_audio_chunk(audio_bytes)
                         if result is not None and asyncio.iscoroutine(result):
                             await cast(Coroutine[Any, Any, None], result)
-                except Exception as e:
+                except BACKGROUND_INFRA_ERRORS as e:
                     logger.error("Failed to decode audio: %s", e)
 
             elif event_type == "response.audio.done":
@@ -548,7 +551,7 @@ class OmniRealtimeClient:
             else:
                 logger.debug("Unhandled event type: %s", event_type)
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Error processing event %s: %s", event_type, e, exc_info=True)
             if self.on_error:
                 self.on_error(
@@ -573,7 +576,7 @@ class OmniRealtimeClient:
         if self.ws:
             try:
                 await self.ws.close()
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.debug("Error closing WebSocket: %s", e)
             self.ws = None
 
@@ -734,7 +737,7 @@ class OmniClient:
             await self.register_diagram_tools()
             # Signal session ready
             await self.event_queue.put({"type": "session_ready"})
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Failed to connect: %s", e, exc_info=True)
             await self.event_queue.put({"type": "error", "error": str(e)})
             return
@@ -751,7 +754,7 @@ class OmniClient:
 
                 if event["type"] in ("error", "conversation_end"):
                     break
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Event yielding error: %s", e, exc_info=True)
             yield {"type": "error", "error": str(e)}
         finally:
@@ -761,8 +764,6 @@ class OmniClient:
         """Register Kitty diagram tool schemas on the Omni realtime session."""
         if not self._native_client or not self._native_client.is_connected():
             return
-        from services.kitty.omni.tools import build_omni_diagram_tools
-
         self._diagram_tools = build_omni_diagram_tools()
         session_config: Dict[str, Any] = {
             "tools": self._diagram_tools,
@@ -784,7 +785,7 @@ class OmniClient:
         try:
             await self._native_client.interrupt_assistant_for_user_speech()
             await self._native_client.append_audio(audio_base64)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Failed to send audio: %s", e)
 
     async def update_instructions(self, new_instructions: str):
@@ -818,7 +819,7 @@ class OmniClient:
             await self._native_client.update_session(session_config)
             logger.debug("Instructions updated: %s...", new_instructions[:50])
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Failed to update instructions: %s", e, exc_info=True)
 
     async def create_greeting(self, greeting_text: str = "Hello! How can I help you today?"):
@@ -830,7 +831,7 @@ class OmniClient:
         try:
             await self._native_client.create_response(instructions=greeting_text)
             logger.debug("Greeting created: %s", greeting_text)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Failed to create greeting: %s", e, exc_info=True)
 
     async def send_text_message(self, text: str):
@@ -843,7 +844,7 @@ class OmniClient:
             instructions = f'The user typed this message: "{text}". Please respond helpfully and naturally.'
             await self._native_client.create_response(instructions=instructions)
             logger.debug("Text message sent: %s...", text[:50])
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Failed to send text message: %s", e, exc_info=True)
 
     async def cancel_response(self):
@@ -855,7 +856,7 @@ class OmniClient:
         try:
             await self._native_client.cancel_response()
             logger.debug("Response cancelled")
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Failed to cancel response: %s", e, exc_info=True)
 
     async def clear_audio_buffer(self):
@@ -867,7 +868,7 @@ class OmniClient:
         try:
             await self._native_client.clear_audio_buffer()
             logger.debug("Audio buffer cleared")
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Failed to clear audio buffer: %s", e, exc_info=True)
 
     async def commit_audio_buffer(self):
@@ -879,7 +880,7 @@ class OmniClient:
         try:
             await self._native_client.commit_audio_buffer()
             logger.debug("Audio buffer committed")
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Failed to commit audio buffer: %s", e, exc_info=True)
 
     async def append_image(self, image_bytes: bytes, image_format: str = "jpeg"):
@@ -891,7 +892,7 @@ class OmniClient:
         try:
             await self._native_client.append_image(image_bytes, image_format)
             logger.debug("Image appended: %s bytes (%s)", len(image_bytes), image_format)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Failed to append image: %s", e, exc_info=True)
 
     async def chat_completion(
@@ -953,13 +954,12 @@ class OmniClient:
                     content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
                     usage = data.get("usage", {})
                     return {"content": content, "usage": usage}
-                else:
-                    error_text = response.text
-                    raise RuntimeError(f"API returned status {response.status_code}: {error_text}")
+                error_text = response.text
+                raise RuntimeError(f"API returned status {response.status_code}: {error_text}")
         except httpx.TimeoutException as e:
             logger.error("Chat completion timeout for Omni: %s", e)
             raise
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Chat completion failed for Omni: %s", e)
             raise
 

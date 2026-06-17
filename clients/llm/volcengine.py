@@ -12,29 +12,24 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Dict, List, Optional, Any, AsyncGenerator
 import logging
 import re
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
-from openai import AsyncOpenAI, RateLimitError, APIStatusError
+from openai import APIStatusError, AsyncOpenAI, RateLimitError
 
-from config.settings import config
-from services.infrastructure.http.error_handler import (
-    LLMRateLimitError,
-    LLMProviderError,
-    LLMInvalidParameterError,
-    LLMQuotaExhaustedError,
-    LLMModelNotFoundError,
-    LLMAccessDeniedError,
-    LLMContentFilterError,
-    LLMTimeoutError,
-)
-from services.llm.error_parsers.doubao_error_parser import parse_and_raise_doubao_error
 from clients.llm.base import (
     as_openai_chat_messages,
     extract_usage_from_openai_completion,
     extract_usage_from_stream_chunk,
 )
+from config.settings import config
+from services.infrastructure.http.error_handler import (
+    LLMProviderError,
+    LLMRateLimitError,
+)
+from services.llm.error_parsers.doubao_error_parser import parse_and_raise_doubao_error
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -108,9 +103,8 @@ class DoubaoClient:
                 # Extract usage data
                 usage = extract_usage_from_openai_completion(completion)
                 return {"content": content, "usage": usage}
-            else:
-                logger.error("Doubao API returned empty content")
-                raise ValueError("Doubao API returned empty content")
+            logger.error("Doubao API returned empty content")
+            raise ValueError("Doubao API returned empty content")
 
         except RateLimitError as e:
             logger.error("Doubao rate limit error: %s", e)
@@ -156,28 +150,13 @@ class DoubaoClient:
                     provider="doubao",
                     error_code=error_code,
                 ) from e
-            except (
-                LLMInvalidParameterError,
-                LLMQuotaExhaustedError,
-                LLMModelNotFoundError,
-                LLMAccessDeniedError,
-                LLMContentFilterError,
-                LLMRateLimitError,
-                LLMTimeoutError,
-            ):
-                # Re-raise parsed exceptions
-                raise
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 # Fallback to generic error if parsing fails
                 raise LLMProviderError(
                     f"Doubao API error ({error_code}): {error_msg}",
                     provider="doubao",
                     error_code=error_code,
                 ) from exc
-
-        except Exception as e:
-            logger.error("Doubao API error: %s", e)
-            raise
 
     # Alias for compatibility with agents that call chat_completion
     async def chat_completion(
@@ -277,28 +256,13 @@ class DoubaoClient:
             # Parse error using comprehensive Doubao error parser
             try:
                 parse_and_raise_doubao_error(error_code, error_msg, status_code=status_code)
-            except (
-                LLMInvalidParameterError,
-                LLMQuotaExhaustedError,
-                LLMModelNotFoundError,
-                LLMAccessDeniedError,
-                LLMContentFilterError,
-                LLMRateLimitError,
-                LLMTimeoutError,
-            ):
-                # Re-raise parsed exceptions
-                raise
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 # Fallback to generic error if parsing fails
                 raise LLMProviderError(
                     f"Doubao stream error ({error_code}): {error_msg}",
                     provider="doubao",
                     error_code=error_code,
                 ) from exc
-
-        except Exception as e:
-            logger.error("Doubao streaming error: %s", e)
-            raise
 
 
 class VolcengineClient:
@@ -460,26 +424,12 @@ class VolcengineClient:
                     provider="volcengine",
                     error_code=error_code,
                 ) from e
-            except (
-                LLMInvalidParameterError,
-                LLMQuotaExhaustedError,
-                LLMModelNotFoundError,
-                LLMAccessDeniedError,
-                LLMContentFilterError,
-                LLMRateLimitError,
-                LLMTimeoutError,
-            ):
-                raise
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 raise LLMProviderError(
                     f"Volcengine API error ({error_code}): {error_msg}",
                     provider="volcengine",
                     error_code=error_code,
                 ) from exc
-
-        except Exception as e:
-            logger.error("Volcengine %s error: %s", self.model_alias, e)
-            raise
 
     async def async_stream_chat_completion(
         self,
@@ -578,26 +528,12 @@ class VolcengineClient:
 
             try:
                 parse_and_raise_doubao_error(error_code, error_msg, status_code=status_code)
-            except (
-                LLMInvalidParameterError,
-                LLMQuotaExhaustedError,
-                LLMModelNotFoundError,
-                LLMAccessDeniedError,
-                LLMContentFilterError,
-                LLMRateLimitError,
-                LLMTimeoutError,
-            ):
-                raise
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 raise LLMProviderError(
                     f"Volcengine stream error ({error_code}): {error_msg}",
                     provider="volcengine",
                     error_code=error_code,
                 ) from exc
-
-        except Exception as e:
-            logger.error("Volcengine %s stream error: %s", self.model_alias, e)
-            raise
 
     # Alias for compatibility with agents that call chat_completion
     async def chat_completion(

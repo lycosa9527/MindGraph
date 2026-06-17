@@ -9,7 +9,6 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
 from typing import Any, Dict, List, Optional, Tuple
 
 from agents.core.agent_utils import extract_json_from_response
@@ -17,6 +16,7 @@ from agents.mind_maps.mind_map_agent import MindMapAgent
 from config.settings import config
 from prompts import get_prompt
 from services.llm import llm_service
+from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import build_web_page_content_user_block
 
 
@@ -80,7 +80,7 @@ class WebContentMindMapAgent(MindMapAgent):
                 result["recovery_warnings"] = recovery_warnings
             return result
 
-        except Exception as exc:
+        except LLM_PIPELINE_ERRORS as exc:
             return {"success": False, "error": f"Generation failed: {str(exc)}"}
 
     async def _spec_from_web_page_content(

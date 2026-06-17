@@ -19,6 +19,16 @@ from fastapi import HTTPException, Request, status
 
 from models.domain.auth import User
 from services.auth.http_auth_token import extract_bearer_token
+
+try:
+    from services.redis.cache.redis_org_cache import org_cache
+    from services.redis.cache.redis_user_cache import user_cache as redis_user_cache
+    from services.redis.session.redis_session_manager import get_session_manager
+except ImportError:
+    org_cache = None
+    redis_user_cache = None
+    get_session_manager = None
+
 from utils.auth.config import AUTH_MODE
 from utils.auth.org_subscription import ensure_org_subscription_current
 from utils.auth.tokens import decode_access_token
@@ -32,15 +42,11 @@ _redis = SimpleNamespace(
     user_cache=None,
 )
 
-try:
-    from services.redis.session.redis_session_manager import get_session_manager
-    from services.redis.cache.redis_user_cache import user_cache as redis_user_cache
-
+if get_session_manager is not None:
     _redis.available = True
     _redis.get_session_manager = get_session_manager
     _redis.user_cache = redis_user_cache
-except ImportError:
-    pass
+    _redis.org_cache = org_cache
 
 
 async def raise_if_org_locked_or_expired_async(user: User) -> None:
@@ -49,8 +55,6 @@ async def raise_if_org_locked_or_expired_async(user: User) -> None:
         return
     org = None
     try:
-        from services.redis.cache.redis_org_cache import org_cache
-
         if org_cache:
             org = await org_cache.get_by_id(user.organization_id)
     except ImportError:

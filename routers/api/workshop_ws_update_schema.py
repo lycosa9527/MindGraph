@@ -73,6 +73,7 @@ _ALLOWED_CONNECTION_TOP_KEYS: FrozenSet[str] = frozenset(
 
 
 def _collab_max_node_text_bytes() -> int:
+    """Collab max node text bytes."""
     raw = os.environ.get("COLLAB_WS_MAX_TEXT_BYTES", "1048576")
     try:
         return max(4096, int(raw))
@@ -81,6 +82,7 @@ def _collab_max_node_text_bytes() -> int:
 
 
 def _utf8_len(value: str) -> int:
+    """Utf8 len."""
     return len(value.encode("utf-8"))
 
 
@@ -90,6 +92,7 @@ def _validate_depth_and_strings(
     max_depth: int,
     max_utf8: int,
 ) -> Optional[str]:
+    """Validate depth and strings."""
     if depth > max_depth:
         return f"Value exceeds maximum nesting depth ({max_depth})"
     if isinstance(obj, str):
@@ -116,6 +119,7 @@ def _validate_depth_and_strings(
 
 
 def _check_top_level_keys(items: List[Any], label: str, allowed: Set[str]) -> Optional[str]:
+    """Check top level keys."""
     for idx, item in enumerate(items):
         if not isinstance(item, dict):
             return f"{label}[{idx}] must be an object"
@@ -142,6 +146,7 @@ class CollabWsUpdateSchemaModel(BaseModel):
 
     @model_validator(mode="after")
     def _structural_rules(self) -> CollabWsUpdateSchemaModel:
+        """Structural rules."""
         text_limit = min(_collab_max_node_text_bytes(), _MAX_NODE_STRING_UTF8)
         if self.nodes is not None:
             err = _check_top_level_keys(self.nodes, "nodes", set(_ALLOWED_NODE_TOP_KEYS))

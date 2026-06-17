@@ -15,13 +15,17 @@ All Rights Reserved
 Proprietary License
 """
 
-import os
 import json
 import logging
-import sys
+import os
 import sqlite3
+import sys
 from pathlib import Path
-from typing import Optional, Dict, Any, Tuple
+from typing import Any, Dict, Optional, Tuple
+
+from sqlalchemy import create_engine, inspect, text
+
+from services.utils.error_types import DATABASE_ERRORS
 
 try:
     import psutil
@@ -36,8 +40,6 @@ except ImportError:
     _fcntl_mod = None
 
 FCNTL_AVAILABLE = _fcntl_mod is not None
-
-from sqlalchemy import create_engine, inspect, text
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +139,7 @@ def get_sqlite_db_path() -> Optional[Path]:
         except PermissionError:
             logger.debug("[Migration] Permission denied checking path: %s (skipping)", db_path)
             continue
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.debug("[Migration] Error checking path %s: %s (skipping)", db_path, e)
             continue
 
@@ -167,7 +169,7 @@ def load_migration_progress() -> Dict[str, Any]:
     try:
         with open(MIGRATION_PROGRESS_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.warning("[Migration] Failed to load migration progress: %s", e)
         return {}
 
@@ -187,7 +189,7 @@ def save_migration_progress(progress: Dict[str, Any]) -> bool:
         with open(MIGRATION_PROGRESS_FILE, "w", encoding="utf-8") as f:
             json.dump(progress, f, indent=2)
         return True
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.warning("[Migration] Failed to save migration progress: %s", e)
         return False
 
@@ -200,7 +202,7 @@ def clear_migration_progress() -> None:
         if MIGRATION_PROGRESS_FILE.exists():
             MIGRATION_PROGRESS_FILE.unlink()
             logger.debug("[Migration] Cleared migration progress file")
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.debug("[Migration] Failed to clear migration progress: %s", e)
 
 
@@ -258,12 +260,11 @@ def acquire_migration_lock() -> Optional[Any]:
                                         pid,
                                     )
                                     return None
-                                else:
-                                    logger.warning(
-                                        "[Migration] Removing stale migration lock (process %d not running)",
-                                        pid,
-                                    )
-                                    MIGRATION_LOCK_FILE.unlink()
+                                logger.warning(
+                                    "[Migration] Removing stale migration lock (process %d not running)",
+                                    pid,
+                                )
+                                MIGRATION_LOCK_FILE.unlink()
                             else:
                                 # psutil not available, skip stale check
                                 logger.debug("[Migration] psutil not available, skipping stale lock check")
@@ -272,7 +273,7 @@ def acquire_migration_lock() -> Optional[Any]:
                                         "[Migration] Migration lock file exists - another migration may be in progress"
                                     )
                                     return None
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 logger.debug("[Migration] Error checking stale lock: %s", e)
                 # If we can't check, assume lock is valid to be safe
                 if MIGRATION_LOCK_FILE.exists():
@@ -280,7 +281,11 @@ def acquire_migration_lock() -> Optional[Any]:
                     return None
 
         # Try to create lock file
-        lock_file = open(MIGRATION_LOCK_FILE, "w", encoding="utf-8")
+        lock_fd = os.open(
+            os.fspath(MIGRATION_LOCK_FILE),
+            os.O_CREAT | os.O_WRONLY | os.O_TRUNC,
+        )
+        lock_file = os.fdopen(lock_fd, "w", encoding="utf-8")
 
         # Try to acquire exclusive lock (non-blocking)
         if sys.platform != "win32":
@@ -309,7 +314,7 @@ def acquire_migration_lock() -> Optional[Any]:
             logger.debug("[Migration] Acquired migration lock (PID: %d)", os.getpid())
             return lock_file
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.warning("[Migration] Failed to acquire migration lock: %s", e)
         return None
 
@@ -329,7 +334,7 @@ def release_migration_lock(lock_file: Optional[Any]) -> None:
             if MIGRATION_LOCK_FILE.exists():
                 MIGRATION_LOCK_FILE.unlink()
             logger.debug("[Migration] Released migration lock")
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.warning("[Migration] Failed to release migration lock: %s", e)
 
 
@@ -372,7 +377,7 @@ def check_table_completeness(
                 cursor.execute(f'SELECT COUNT(*) FROM "{table_name}"')
                 sqlite_count = cursor.fetchone()[0]
             sqlite_conn.close()
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.debug("[Migration] Could not get SQLite count for %s: %s", table_name, e)
 
     # Get PostgreSQL row count (reuse engine if provided)
@@ -398,7 +403,7 @@ def check_table_completeness(
                     result = conn.execute(text(f'SELECT COUNT(*) FROM "{table_name}"'))
                     postgresql_count = result.scalar()
             engine.dispose()
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.debug("[Migration] Could not get PostgreSQL count for %s: %s", table_name, e)
 
     # Determine completeness
@@ -465,7 +470,7 @@ def is_postgresql_empty(
                             False,
                             "Migration already completed (marker file exists, SQLite moved)",
                         )
-                except Exception:
+                except DATABASE_ERRORS:
                     # If we can't check, be conservative but still allow if SQLite path was provided
                     if sqlite_path:
                         logger.warning(
@@ -526,15 +531,14 @@ def is_postgresql_empty(
                             )
                             pg_engine.dispose()
                             return True, None
-                        else:
-                            # PostgreSQL has data but we can't verify completeness
-                            pg_engine.dispose()
-                            return False, (
-                                f"PostgreSQL has {len(user_tables)} tables with {total_rows} total rows "
-                                "but SQLite database not found. Cannot verify if data is complete. "
-                                "Use --force flag to override."
-                            )
-                except Exception as check_error:
+                        # PostgreSQL has data but we can't verify completeness
+                        pg_engine.dispose()
+                        return False, (
+                            f"PostgreSQL has {len(user_tables)} tables with {total_rows} total rows "
+                            "but SQLite database not found. Cannot verify if data is complete. "
+                            "Use --force flag to override."
+                        )
+                except DATABASE_ERRORS as check_error:
                     logger.warning(
                         "[Migration] Could not check if PostgreSQL is empty: %s. Blocking migration.",
                         check_error,
@@ -668,7 +672,7 @@ def is_postgresql_empty(
                 # Clean up engine
                 pg_engine.dispose()
 
-        except Exception as check_error:
+        except DATABASE_ERRORS as check_error:
             # If we can't check row counts, be conservative and block
             logger.warning(
                 "[Migration] Could not check table completeness: %s. Blocking migration.",
@@ -679,6 +683,6 @@ def is_postgresql_empty(
                 "and could not verify table completeness. Use --force flag to override."
             )
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("[Migration] Failed to check if PostgreSQL is empty: %s", e)
         return False, f"Failed to check PostgreSQL: {str(e)}"

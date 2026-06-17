@@ -8,12 +8,12 @@ Orchestrates the startup sequence:
 - Graceful shutdown handling
 """
 
+import asyncio
+import logging
+import multiprocessing
 import os
 import sys
-import asyncio
-import multiprocessing
 import traceback
-import logging
 
 try:
     import uvicorn
@@ -31,33 +31,34 @@ except ImportError:
     main_module = None
 
 from config.settings import config
-from services.infrastructure.utils.dependency_checker import (
-    check_redis_installed,
-    check_celery_installed,
-    check_qdrant_installed,
-    check_postgresql_installed,
-)
-from services.infrastructure.process.process_manager import (
-    start_redis_server,
-    start_celery_worker,
-    start_qdrant_server,
-    start_postgresql_server,
-    stop_celery_worker,
-    stop_qdrant_server,
-    stop_postgresql_server,
-    setup_signal_handlers,
-)
-from services.infrastructure.utils.launch_commands import lines_http_port_in_use
-from services.infrastructure.utils.port_manager import ShutdownErrorFilter
+from scripts.db.postgres_app_startup import prepare_postgresql_rls_runtime
 from services.infrastructure.lifecycle.startup import MINDGRAPH_LAUNCHER_PID_ENV
 from services.infrastructure.process import _port_utils
+from services.infrastructure.process._reload_watch_guard import (
+    clear_reload_breaking_symlinks,
+)
+from services.infrastructure.process.process_manager import (
+    setup_signal_handlers,
+    start_celery_worker,
+    start_postgresql_server,
+    start_qdrant_server,
+    start_redis_server,
+    stop_celery_worker,
+    stop_postgresql_server,
+    stop_qdrant_server,
+)
 from services.infrastructure.process.uvicorn_signal_diag import (
     log_uvicorn_supervisor_boot,
     patch_signal_for_uvicorn_sighup_trace,
 )
-from services.infrastructure.process._reload_watch_guard import (
-    clear_reload_breaking_symlinks,
+from services.infrastructure.utils.dependency_checker import (
+    check_celery_installed,
+    check_postgresql_installed,
+    check_qdrant_installed,
+    check_redis_installed,
 )
+from services.infrastructure.utils.launch_commands import lines_http_port_in_use
+from services.infrastructure.utils.port_manager import ShutdownErrorFilter
 
 logger = logging.getLogger(__name__)
 
@@ -197,13 +198,11 @@ def run_server() -> None:
                 sys.exit(1)
             logger.debug("[POSTGRESQL] %s", message)
             logger.debug("[POSTGRESQL] Starting PostgreSQL server...")
-            postgresql_server = start_postgresql_server()  # Reuse 5432 if up; else start subprocess
+            postgresql_server = start_postgresql_server()  # Mode from DATABASE_URL; reuse, system, or subprocess
             if postgresql_server:
                 logger.debug("[POSTGRESQL] ✓ PostgreSQL server started as subprocess")
             else:
                 logger.debug("[POSTGRESQL] ✓ PostgreSQL server is running (reused existing instance)")
-
-            from scripts.db.postgres_app_startup import prepare_postgresql_rls_runtime
 
             rls_ready, rls_message = prepare_postgresql_rls_runtime()
             if not rls_ready:

@@ -8,6 +8,7 @@ from services.utils.pg_client_binaries import build_pg_dump_cmd
 
 
 def test_build_pg_dump_cmd_includes_rls_safe_flags() -> None:
+    """Test build pg dump cmd includes rls safe flags."""
     cmd = build_pg_dump_cmd(
         "/usr/bin/pg_dump",
         Path("/tmp/mindgraph.dump"),

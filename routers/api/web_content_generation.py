@@ -14,16 +14,17 @@ from fastapi.responses import Response
 
 from agents.mind_maps.web_content_mind_map_agent import WebContentMindMapAgent
 from models import Messages, WebContentGenerateRequest, WebContentMindmapPngRequest, get_request_language
-from utils.db.session_open import actor_rls_session
 from models.domain.auth import User
+from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
+from routers.api.vueflow_screenshot import capture_diagram_screenshot
+from services.redis.cache.redis_diagram_cache import get_diagram_cache
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.auth import get_current_user_or_api_key
 from utils.auth.school_tier import (
     TIER_FEATURE_CHROME_EXTENSION,
     assert_user_has_school_tier_feature,
 )
-from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
-from routers.api.vueflow_screenshot import capture_diagram_screenshot
-from services.redis.cache.redis_diagram_cache import get_diagram_cache
-from utils.auth import get_current_user_or_api_key
+from utils.db.session_open import actor_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +76,7 @@ async def _try_save_to_library(
             save_err,
         )
         return None
-    except Exception as save_exc:
+    except BACKGROUND_INFRA_ERRORS as save_exc:
         logger.warning(
             "web_content_mindmap_png: library save error user=%s request_id=%s: %s",
             user_id,

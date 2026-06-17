@@ -16,9 +16,10 @@ from typing import Any, List, Optional, Tuple
 from sqlalchemy import select
 from sqlalchemy.sql.functions import count as sa_count
 
-from utils.db.session_open import user_rls_session
 from models.domain.diagrams import Diagram
 from services.redis import keys as _keys
+from services.utils.error_types import REDIS_ERRORS
+from utils.db.session_open import user_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,7 @@ async def _redis_json_set_paths(
             pipe.expire(key, ttl)
             await pipe.execute()
         return True
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.debug("[DiagramCache] JSON.SET paths failed for %s: %s", key, exc)
         return False
 
@@ -70,6 +71,6 @@ async def count_diagrams_from_db(
                 select(sa_count()).select_from(Diagram).where(Diagram.user_id == user_id, Diagram.is_deleted.is_(False))
             )
             return result.scalar_one()
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.error("[DiagramCache] Database count failed: %s", exc)
         return 0

@@ -11,14 +11,14 @@ All Rights Reserved
 Proprietary License
 """
 
-from functools import lru_cache
-from typing import Optional, Dict, Any, AsyncGenerator
 import logging
+from functools import lru_cache
+from typing import Any, AsyncGenerator, Dict, Optional
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
 from prompts.node_palette import (
-    get_bridge_pairs_prompt,
     get_bridge_dimensions_prompt,
+    get_bridge_pairs_prompt,
 )
 from utils import placeholder
 

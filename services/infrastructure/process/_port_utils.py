@@ -10,6 +10,8 @@ import subprocess
 import sys
 from typing import Optional
 
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+
 logger = logging.getLogger(__name__)
 
 
@@ -33,7 +35,7 @@ def check_port_in_use(host: str, port: int) -> tuple[bool, Optional[int]]:
         pid = find_process_on_port(port)
         if pid is not None:
             return (True, pid)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("Process lookup on port %d failed: %s", port, exc)
 
     bind_failed_eaddrinuse = False
@@ -52,7 +54,7 @@ def check_port_in_use(host: str, port: int) -> tuple[bool, Optional[int]]:
                 bind_failed_eaddrinuse = True
             elif "address already in use" in error_msg or "address is already in use" in error_msg:
                 bind_failed_eaddrinuse = True
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("Port %d bind check failed: %s", port, exc)
 
     if bind_failed_eaddrinuse:
@@ -64,7 +66,7 @@ def check_port_in_use(host: str, port: int) -> tuple[bool, Optional[int]]:
             if result == 0:
                 pid = find_process_on_port(port)
                 return (True, pid)
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("Port %d connection check failed: %s", port, exc)
         pid = find_process_on_port(port)
         if pid is not None:
@@ -113,6 +115,6 @@ def find_process_on_port(port: int) -> Optional[int]:
                     candidate = line.strip()
                     if candidate.isdigit():
                         return int(candidate)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("Find process on port %d failed: %s", port, exc)
     return None

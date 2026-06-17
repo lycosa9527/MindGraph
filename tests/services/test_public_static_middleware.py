@@ -31,6 +31,7 @@ from services.infrastructure.utils.spa_handler import is_public_static_path
     ],
 )
 def test_is_public_static_path_true(path: str) -> None:
+    """Test is public static path true."""
     assert is_public_static_path(path) is True
 
 
@@ -45,10 +46,12 @@ def test_is_public_static_path_true(path: str) -> None:
     ],
 )
 def test_is_public_static_path_false_for_app_routes(path: str) -> None:
+    """Test is public static path false for app routes."""
     assert is_public_static_path(path) is False
 
 
 def _app_with_auth_middleware() -> FastAPI:
+    """App with auth middleware."""
     app = FastAPI()
     app.middleware("http")(auth_context_middleware)
 
@@ -64,6 +67,7 @@ def _app_with_auth_middleware() -> FastAPI:
 
 
 def test_auth_middleware_skips_session_for_assets() -> None:
+    """Test auth middleware skips session for assets."""
     app = _app_with_auth_middleware()
     resolve_mock = AsyncMock(return_value=None)
     with patch(
@@ -77,6 +81,7 @@ def test_auth_middleware_skips_session_for_assets() -> None:
 
 
 def test_auth_middleware_resolves_user_for_api() -> None:
+    """Test auth middleware resolves user for api."""
     app = _app_with_auth_middleware()
     resolve_mock = AsyncMock(return_value=None)
     with patch(
@@ -90,6 +95,7 @@ def test_auth_middleware_resolves_user_for_api() -> None:
 
 
 def _app_with_log_middleware() -> FastAPI:
+    """App with log middleware."""
     app = FastAPI()
     app.middleware("http")(log_requests)
 
@@ -105,6 +111,7 @@ def _app_with_log_middleware() -> FastAPI:
 
 
 def test_log_requests_skips_debug_line_for_assets(caplog: pytest.LogCaptureFixture) -> None:
+    """Test log requests skips debug line for assets."""
     caplog.set_level("DEBUG")
     client = TestClient(_app_with_log_middleware())
     client.get("/assets/chunk.js")
@@ -112,6 +119,7 @@ def test_log_requests_skips_debug_line_for_assets(caplog: pytest.LogCaptureFixtu
 
 
 def test_log_requests_keeps_debug_line_for_api(caplog: pytest.LogCaptureFixture) -> None:
+    """Test log requests keeps debug line for api."""
     caplog.set_level("DEBUG")
     client = TestClient(_app_with_log_middleware())
     client.get("/api/ping")

@@ -19,6 +19,7 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 
 
 def _optional_positive_int(name: str) -> int:
+    """Optional positive int."""
     raw = os.environ.get(name)
     if raw is None or raw == "":
         return 0
@@ -118,6 +119,7 @@ def collab_json_exceeds_depth(value: Any, max_depth: int) -> bool:
 
 
 def kitty_ws_max_json_depth() -> int:
+    """Kitty ws max json depth."""
     raw = _optional_positive_int("KITTY_WS_MAX_JSON_DEPTH")
     if raw:
         return max(8, min(raw, 64))
@@ -187,6 +189,7 @@ class WebsocketMessageRateLimiter:
     """Sliding 1-second window limiter for WebSocket message frequency."""
 
     def __init__(self, max_messages_per_second: int) -> None:
+        """ init  ."""
         self._max = max_messages_per_second
         self._timestamps: deque[float] = deque()
 

@@ -96,6 +96,7 @@ def join_resume_claims_match_user_room(
 
 
 def _resume_ttl_seconds() -> int:
+    """Resume ttl seconds."""
     raw = os.getenv("WORKSHOP_JOIN_RESUME_TTL_SEC", str(_DEFAULT_RECONNECT_TTL_SEC))
     try:
         parsed = int(raw)

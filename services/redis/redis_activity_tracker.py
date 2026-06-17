@@ -24,20 +24,20 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Set
 import asyncio
 import json
 import logging
 import uuid
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional, Set
 
 from services.auth.ip_geolocation import get_geolocation_service
 from services.monitoring.city_flag_tracker import get_city_flag_tracker
 from services.redis import keys as _keys
-from services.utils.typing_helpers import redis_decode, redis_decode_required, redis_hash_to_str
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
-
+from services.utils.error_types import REDIS_ERRORS
+from services.utils.typing_helpers import redis_decode, redis_decode_required, redis_hash_to_str
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +86,7 @@ class RedisActivityTracker:
 
     def __init__(self):
         # In-memory fallback for when Redis is disabled
+        """ init  ."""
         self._memory_sessions: Dict[str, Dict] = {}
         self._memory_user_sessions: Dict[int, Set[str]] = {}
         self._memory_history: List[Dict] = []
@@ -150,7 +151,7 @@ class RedisActivityTracker:
 
             return await self._create_new_session(redis_client, user_id, user_phone, user_name, session_id, ip_address)
 
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.error("[ActivityTracker] Redis error: %s", exc)
             return self._memory_start_session(user_id, user_phone, user_name, session_id, ip_address, reuse_existing)
 
@@ -279,7 +280,7 @@ class RedisActivityTracker:
                         if city or province:
                             flag_tracker = get_city_flag_tracker()
                             await flag_tracker.record_city_flag(city, province, lat, lng)
-                except Exception as e:
+                except REDIS_ERRORS as e:
                     logger.debug("Failed to record city flag: %s", e)
 
             try:
@@ -288,9 +289,9 @@ class RedisActivityTracker:
                     asyncio.create_task(_record_flag())
                 except RuntimeError:
                     asyncio.run(_record_flag())
-            except Exception as e:
+            except REDIS_ERRORS as e:
                 logger.debug("Failed to schedule city flag recording: %s", e)
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.debug("Failed to record city flag: %s", e)
 
     def _memory_start_session(
@@ -390,7 +391,7 @@ class RedisActivityTracker:
                 await redis.delete(user_sessions_key)
                 logger.debug("Ended all sessions for user %s", user_id)
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("[ActivityTracker] Redis error ending session: %s", e)
 
     def _memory_end_session(self, session_id: Optional[str], user_id: Optional[int]):
@@ -502,7 +503,7 @@ class RedisActivityTracker:
 
             await self._log_activity(user_id, user_phone, activity_type, details, session_id)
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("[ActivityTracker] Redis error recording activity: %s", e)
 
     async def _memory_record_activity(
@@ -575,7 +576,7 @@ class RedisActivityTracker:
                         pipe.ltrim(HISTORY_KEY, 0, MAX_HISTORY - 1)
                         await pipe.execute()
                     return
-                except Exception as e:
+                except REDIS_ERRORS as e:
                     logger.error("[ActivityTracker] Redis error logging activity: %s", e)
 
         # Fallback to memory
@@ -645,7 +646,7 @@ class RedisActivityTracker:
 
                         try:
                             duration = str(now - created_at).split(".", maxsplit=1)[0]
-                        except Exception:
+                        except REDIS_ERRORS:
                             duration = "0:00:00"
 
                         user_data = {
@@ -664,7 +665,7 @@ class RedisActivityTracker:
                             "session_duration": duration,
                         }
                         active_users.append(user_data)
-                    except Exception as e:
+                    except REDIS_ERRORS as e:
                         logger.debug("Error parsing session data: %s", e)
 
                 if cursor == 0:
@@ -673,7 +674,7 @@ class RedisActivityTracker:
             active_users.sort(key=lambda x: x["last_activity"], reverse=True)
             return active_users
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("[ActivityTracker] Redis error getting active users: %s", e)
             return await self._memory_get_active_users()
 
@@ -733,7 +734,7 @@ class RedisActivityTracker:
         try:
             entries = await redis.lrange(HISTORY_KEY, 0, limit - 1)
             return [json.loads(entry) for entry in entries]
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("[ActivityTracker] Redis error getting activities: %s", e)
             return self._memory_get_recent_activities(limit)
 
@@ -797,7 +798,7 @@ class RedisActivityTracker:
                 "timestamp": get_beijing_now().isoformat(),
             }
 
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.error("[ActivityTracker] Redis error getting stats: %s", exc)
             return self._memory_get_stats()
 
@@ -816,14 +817,14 @@ class RedisActivityTracker:
 class ActivityTrackerSingleton:
     """Singleton wrapper for RedisActivityTracker."""
 
-    _instance: Optional[RedisActivityTracker] = None
+    instance: Optional[RedisActivityTracker] = None
 
     @classmethod
     def get_instance(cls) -> RedisActivityTracker:
         """Get or create the singleton instance."""
-        if cls._instance is None:
-            cls._instance = RedisActivityTracker()
-        return cls._instance
+        if cls.instance is None:
+            cls.instance = RedisActivityTracker()
+        return cls.instance
 
 
 def get_activity_tracker() -> RedisActivityTracker:

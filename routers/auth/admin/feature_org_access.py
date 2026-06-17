@@ -9,11 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.feature_org_access import FeatureOrgAccessEntry
+from routers.auth.dependencies import require_admin
 from services.feature_access.repository import (
     load_feature_org_access_session,
     replace_feature_org_access,
 )
-from routers.auth.dependencies import require_admin
 
 logger = logging.getLogger(__name__)
 

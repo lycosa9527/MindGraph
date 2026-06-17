@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 async def _sessionmeta_subset(scope: str, user_id: int) -> Optional[Dict[str, Any]]:
+    """Sessionmeta subset."""
     redis = get_async_redis()
     if redis is None:
         return None
@@ -50,6 +51,7 @@ async def _live_spec_summary(
     user_id: int,
     meta_subset: Optional[Dict[str, Any]] = None,
 ) -> Optional[Dict[str, Any]]:
+    """Live spec summary."""
     if meta_subset is None:
         meta_subset = await _sessionmeta_subset(scope, user_id)
     if meta_subset is None:

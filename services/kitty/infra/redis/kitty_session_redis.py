@@ -23,6 +23,7 @@ from services.kitty.infra.redis.kitty_redis_keys import (
     kitty_sessionmeta_key,
     kitty_ws_refcount_key,
 )
+from services.kitty.session.voice_session_lookup import lookup_voice_session
 from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,7 @@ class _VoiceSessionGetterSlot:
     __slots__ = ("getter",)
 
     def __init__(self) -> None:
+        """ init  ."""
         self.getter: Optional[Any] = None
 
 
@@ -51,12 +53,11 @@ def configure_voice_session_getter(getter: Any) -> None:
 
 
 def _get_voice_session_coalesce(voice_sid: str) -> Optional[Dict[str, Any]]:
+    """Get voice session coalesce."""
     getter = _VOICE_SESSION_GETTER.getter
     if getter is not None:
         return getter(voice_sid)
-    from services.kitty.session.ops import get_voice_session
-
-    return get_voice_session(voice_sid)
+    return lookup_voice_session(voice_sid)
 
 
 async def upsert_kitty_redis_session(

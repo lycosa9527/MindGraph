@@ -8,15 +8,20 @@ Handles checking for required dependencies:
 - PostgreSQL (Python package + server binaries)
 """
 
+import importlib.util
 import logging
 import os
 import re
-import sys
 import subprocess
-import importlib.util
+import sys
 import urllib.request
 from types import ModuleType
 from typing import Optional
+
+from services.infrastructure.process._postgresql_paths import find_system_postgresql_cluster
+from services.infrastructure.process._postgresql_runtime import load_postgres_runtime_config
+from services.redis.redis_connection_options import redis_connection_options
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, PG_CONNECT_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -94,10 +99,15 @@ def check_redis_installed() -> tuple[bool, str]:
             redis_port_str = os.getenv("REDIS_PORT", "6379")
             redis_port = int(redis_port_str)
             redis_client_class = getattr(REDIS_MODULE, "Redis")
-            r = redis_client_class(host=redis_host, port=redis_port, socket_connect_timeout=1)
+            r = redis_client_class(
+                host=redis_host,
+                port=redis_port,
+                socket_connect_timeout=1,
+                **redis_connection_options(),
+            )
             r.ping()
             redis_running = True
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("Redis connectivity check failed: %s", exc)
 
     if redis_running:
@@ -141,9 +151,14 @@ def check_celery_installed() -> tuple[bool, str]:
         redis_port_str = os.getenv("REDIS_PORT", "6379")
         redis_port = int(redis_port_str)
         redis_client_class = getattr(REDIS_MODULE, "Redis")
-        r = redis_client_class(host=redis_host, port=redis_port, socket_connect_timeout=1)
+        r = redis_client_class(
+            host=redis_host,
+            port=redis_port,
+            socket_connect_timeout=1,
+            **redis_connection_options(),
+        )
         r.ping()
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         return False, (
             f"Celery requires Redis but Redis server is not available: {e}\n"
             "Start Redis: sudo systemctl start redis-server"
@@ -164,8 +179,9 @@ def check_celery_installed() -> tuple[bool, str]:
 
     # Verify Qdrant is actually running
     try:
-        urllib.request.urlopen("http://localhost:6333/collections", timeout=2)
-    except Exception:
+        with urllib.request.urlopen("http://localhost:6333/collections", timeout=2):
+            pass
+    except BACKGROUND_INFRA_ERRORS:
         return False, (
             "Celery requires Qdrant server but Qdrant is not running on port 6333.\n"
             "Start Qdrant: sudo systemctl start qdrant\n"
@@ -193,9 +209,9 @@ def check_qdrant_installed() -> tuple[bool, str]:
 
     # Check if Qdrant is already running
     try:
-        urllib.request.urlopen("http://localhost:6333/collections", timeout=2)
-        return True, "Qdrant is installed and running"
-    except Exception as exc:
+        with urllib.request.urlopen("http://localhost:6333/collections", timeout=2):
+            return True, "Qdrant is installed and running"
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("Qdrant connectivity check failed: %s", exc)
 
     # Check if Qdrant binary exists in common locations
@@ -247,20 +263,19 @@ def check_qdrant_installed() -> tuple[bool, str]:
 
 def check_postgresql_installed() -> tuple[bool, str]:
     """
-    Check if PostgreSQL is installed (Python package + server binaries).
+    Check if PostgreSQL is installed for the configured startup mode.
 
-    Checks for:
-    - psycopg2 Python package
-    - postgres binary (PostgreSQL server)
-    - initdb binary (for initializing data directory)
+    App-managed mode (``mindgraph_user`` subprocess) requires server binaries and
+    ``initdb``. Connect-only mode (``mindgraph_app`` / external) requires only the
+    client library and a reachable or startable server.
 
     Returns:
         tuple[bool, str]: (is_installed, message)
     """
-    # Check Python package (psycopg2-binary)
     if not check_package_installed("psycopg2"):
         return False, ("PostgreSQL Python package not installed. Install with: pip install psycopg2-binary")
 
+    config = load_postgres_runtime_config()
     # Check for postgres binary in common locations
     postgres_paths = [
         "/usr/lib/postgresql/18/bin/postgres",  # PostgreSQL 18 (WSL/Ubuntu)
@@ -302,7 +317,7 @@ def check_postgresql_installed() -> tuple[bool, str]:
                         version_match = re.search(r"(\d+)", result.stdout)
                         if version_match:
                             postgres_version = version_match.group(1)
-                except Exception as exc:
+                except BACKGROUND_INFRA_ERRORS as exc:
                     logger.debug("PostgreSQL version detection failed: %s", exc)
             break
 
@@ -317,20 +332,35 @@ def check_postgresql_installed() -> tuple[bool, str]:
 
     # Check if PostgreSQL is already running (connection test)
     postgres_running = False
-    if PSYCOPG2_MODULE is not None:
+    if PSYCOPG2_MODULE is not None and "postgresql" in config.database_url:
         try:
-            db_url = os.getenv("DATABASE_URL", "")
-            if db_url and "postgresql" in db_url:
-                # Try to connect (quick timeout)
-                conn = PSYCOPG2_MODULE.connect(db_url, connect_timeout=1)
-                conn.close()
-                postgres_running = True
-        except Exception as exc:
+            conn = PSYCOPG2_MODULE.connect(config.database_url, connect_timeout=1)
+            conn.close()
+            postgres_running = True
+        except (*PG_CONNECT_ERRORS,) as exc:
             logger.debug("PostgreSQL connectivity check failed: %s", exc)
 
     if postgres_running:
         version_msg = f" (version {postgres_version})" if postgres_version else ""
         return True, f"PostgreSQL is installed and running{version_msg}"
+
+    if not config.spawn_subprocess:
+        system_cluster = find_system_postgresql_cluster(config.port)
+        if system_cluster is not None:
+            main_path, version = system_cluster
+            return True, (
+                f"PostgreSQL ready for {config.mode_label} "
+                f"(system cluster {main_path}, version {version}, not running)"
+            )
+        if postgres_binary_found:
+            version_msg = f" (version {postgres_version})" if postgres_version else ""
+            return True, f"PostgreSQL available for {config.mode_label}{version_msg} (not running)"
+        if not config.is_local:
+            return True, f"PostgreSQL client ready for remote DATABASE_URL ({config.host}:{config.port})"
+        return False, (
+            f"PostgreSQL not reachable for {config.mode_label}. "
+            "Install PostgreSQL or start your database service."
+        )
 
     if postgres_binary_found and initdb_binary_found:
         version_msg = f" (version {postgres_version})" if postgres_version else ""

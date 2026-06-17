@@ -22,13 +22,14 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional, Tuple
 import logging
+from typing import Optional, Tuple
 
 from services.redis import keys as _keys
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_async_ops import AsyncRedisOps
 from services.redis.redis_client import is_redis_available
+from services.utils.error_types import REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,7 @@ class RedisSMSStorage:
     """
 
     def __init__(self):
+        """ init  ."""
         self._fallback_enabled = False
 
     def _get_key(self, phone: str, purpose: str = "verification") -> str:
@@ -140,7 +142,7 @@ class RedisSMSStorage:
                 )
             else:
                 logger.debug("[SMS] No code found for %s (purpose: %s)", phone_masked, purpose)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug("[SMS] exists check failed: %s", exc)
         return False
 
@@ -218,7 +220,7 @@ class RedisSMSStorage:
             ttl = results[1] if results[1] is not None else -2
 
             return exists, ttl
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("[SMS] Pipeline execution failed: %s", e)
             return False, -2
 

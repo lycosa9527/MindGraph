@@ -10,7 +10,7 @@ Proprietary License
 """
 
 from functools import lru_cache
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
 from utils.prompt_locale import is_chinese_prompt_shell_language

@@ -11,26 +11,26 @@ All Rights Reserved
 Proprietary License
 """
 
+import logging
 from datetime import UTC, datetime
 from typing import Optional
-import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.sql.functions import count as sa_count
 
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.school_zone import (
     SharedDiagram,
-    SharedDiagramLike,
     SharedDiagramComment,
+    SharedDiagramLike,
 )
+from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_current_user, is_admin_or_manager
-
 
 logger = logging.getLogger(__name__)
 
@@ -253,7 +253,7 @@ async def create_shared_diagram(
     try:
         await db.commit()
         await db.refresh(diagram)
-    except Exception:
+    except DATABASE_ERRORS:
         await db.rollback()
         raise
 
@@ -300,7 +300,7 @@ async def get_shared_diagram(
     )
     try:
         await db.commit()
-    except Exception:
+    except DATABASE_ERRORS:
         await db.rollback()
         raise
 
@@ -346,7 +346,7 @@ async def delete_shared_diagram(
     diagram.is_active = False
     try:
         await db.commit()
-    except Exception:
+    except DATABASE_ERRORS:
         await db.rollback()
         raise
 
@@ -410,7 +410,7 @@ async def toggle_like(
 
     try:
         await db.commit()
-    except Exception:
+    except DATABASE_ERRORS:
         await db.rollback()
         raise
 
@@ -519,7 +519,7 @@ async def create_comment(
     try:
         await db.commit()
         await db.refresh(comment)
-    except Exception:
+    except DATABASE_ERRORS:
         await db.rollback()
         raise
 
@@ -593,7 +593,7 @@ async def delete_comment(
 
     try:
         await db.commit()
-    except Exception:
+    except DATABASE_ERRORS:
         await db.rollback()
         raise
 

@@ -2,17 +2,16 @@
 
 Extracted from knowledge_space_service.py to reduce complexity.
 """
-
 import logging
 import shutil
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.domain.knowledge_space import KnowledgeDocument, DocumentBatch
-
+from models.domain.knowledge_space import DocumentBatch, KnowledgeDocument
+from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +76,7 @@ async def batch_upload_documents(
     try:
         await db.commit()
         await db.refresh(batch)
-    except Exception:
+    except DATABASE_ERRORS:
         await db.rollback()
         raise
 
@@ -110,7 +109,7 @@ async def batch_upload_documents(
 
     try:
         await db.commit()
-    except Exception:
+    except DATABASE_ERRORS:
         await db.rollback()
         raise
 
@@ -163,6 +162,6 @@ async def update_batch_progress(
 
     try:
         await db.commit()
-    except Exception:
+    except DATABASE_ERRORS:
         await db.rollback()
         raise

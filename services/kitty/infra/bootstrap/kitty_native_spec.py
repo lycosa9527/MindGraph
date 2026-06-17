@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 
 
 def _as_str_list(val: Any) -> List[str]:
+    """As str list."""
     if not isinstance(val, list):
         return []
     out: List[str] = []

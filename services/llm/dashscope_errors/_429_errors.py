@@ -8,8 +8,8 @@ Handles rate limiting and quota exhaustion errors.
 from typing import Optional, Tuple
 
 from services.infrastructure.http.error_handler import (
-    LLMRateLimitError,
     LLMQuotaExhaustedError,
+    LLMRateLimitError,
 )
 
 

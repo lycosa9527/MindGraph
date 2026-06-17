@@ -13,22 +13,23 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional
 import asyncio
 import json
 import logging
 import time
+from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from agents.core.workflow import agent_graph_workflow_with_styles
 from models import GenerateRequest, LLMHealthResponse, Messages, get_request_language
 from models.domain.auth import User
 from services.llm import llm_service
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user, get_current_user_or_api_key
-from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 
+from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +69,7 @@ async def get_llm_metrics(model: Optional[str] = None, _current_user: User = Dep
             }
         )
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Error getting LLM metrics: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to retrieve metrics") from e
 
@@ -127,7 +128,7 @@ async def llm_health_check(_current_user: User = Depends(get_current_user)):
 
         return JSONResponse(content=response_data, status_code=status_code)
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("LLM health check error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Health check failed") from e
 
@@ -243,7 +244,7 @@ async def generate_multi_parallel(
                     "llm_model": model,
                 }
 
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 duration = time.time() - model_start
                 logger.error("[generate_multi_parallel] %s failed: %s", model, e)
                 return {
@@ -291,7 +292,7 @@ async def generate_multi_parallel(
             "models_requested": models,
         }
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[generate_multi_parallel] Error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=Messages.error("internal_error", lang)) from e
 
@@ -387,7 +388,7 @@ async def generate_multi_progressive(
                         "llm_model": model,
                     }
 
-                except Exception as e:
+                except BACKGROUND_INFRA_ERRORS as e:
                     duration = time.time() - model_start
                     logger.error("[generate_multi_progressive] %s failed: %s", model, e)
                     return {
@@ -414,7 +415,7 @@ async def generate_multi_progressive(
             logger.info("[generate_multi_progressive] All models completed in %.2fs", total_time)
             yield f"data: {json.dumps({'event': 'complete', 'total_time': total_time})}\n\n"
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[generate_multi_progressive] Error: %s", e, exc_info=True)
             yield f"data: {json.dumps({'event': 'error', 'message': 'Internal server error'})}\n\n"
 

@@ -24,28 +24,24 @@ All Rights Reserved
 Proprietary License
 """
 
+import logging
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional, cast
-import logging
-
-from collections.abc import Mapping
-
-from services.utils.typing_helpers import redis_hash_to_str
 
 from sqlalchemy import select
 
-from utils.db.session_open import system_rls_session, user_rls_session
 from models.domain.auth import User
 from services.redis.cache.redis_cache_stampede import with_stampede_lock
+from services.redis import keys as _keys
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
+from services.utils.error_types import REDIS_ERRORS
+from services.utils.typing_helpers import redis_hash_to_str
 from utils.auth.role_constants import normalize_role
-
+from utils.db.session_open import system_rls_session, user_rls_session
 
 logger = logging.getLogger(__name__)
-
-from services.redis import keys as _keys
-
 USER_CACHE_TTL = _keys.TTL_USER
 
 
@@ -165,13 +161,13 @@ class UserCache:
             return None
         try:
             cached = await redis.hgetall(_keys.USER_BY_ID.format(user_id=user_id))
-        except Exception:
+        except REDIS_ERRORS:
             return None
         if not cached:
             return None
         try:
             return self._deserialize_user(cached)
-        except Exception:
+        except REDIS_ERRORS:
             return None
 
     async def _read_cached_by_phone(self, phone: str) -> Optional[User]:
@@ -181,7 +177,7 @@ class UserCache:
             return None
         try:
             user_id_str = await redis.get(_keys.USER_BY_PHONE.format(phone=phone))
-        except Exception:
+        except REDIS_ERRORS:
             return None
         if not user_id_str:
             return None
@@ -197,7 +193,7 @@ class UserCache:
             return None
         try:
             user_id_str = await redis.get(_keys.USER_BY_EMAIL.format(email=email))
-        except Exception:
+        except REDIS_ERRORS:
             return None
         if not user_id_str:
             return None
@@ -231,11 +227,11 @@ class UserCache:
                 if user:
                     try:
                         await self.cache_user(user)
-                    except Exception as e:
+                    except REDIS_ERRORS as e:
                         logger.debug("[UserCache] Failed to cache user loaded from database: %s", e)
 
                 return user
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("[UserCache] Database query failed: %s", e, exc_info=True)
             raise
 
@@ -321,14 +317,14 @@ class UserCache:
                     )
                     try:
                         await redis.delete(key)
-                    except Exception as exc:
+                    except REDIS_ERRORS as exc:
                         logger.debug(
                             "Corrupted user cache entry deletion failed for user ID %s: %s",
                             user_id,
                             exc,
                         )
                     return await self._load_from_database(user_id=user_id)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning(
                 "[UserCache] Redis error for user ID %s, falling back to database: %s",
                 user_id,
@@ -367,10 +363,10 @@ class UserCache:
                 except (ValueError, TypeError):
                     try:
                         await redis.delete(index_key)
-                    except Exception as exc:
+                    except REDIS_ERRORS as exc:
                         logger.debug("Corrupted user email index deletion failed: %s", exc)
                     return await self._load_from_database(email=email)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning(
                 "[UserCache] Redis error for email lookup, falling back to database: %s",
                 exc,
@@ -418,10 +414,10 @@ class UserCache:
                     )
                     try:
                         await redis.delete(index_key)
-                    except Exception as exc:
+                    except REDIS_ERRORS as exc:
                         logger.debug("Corrupted user phone index deletion failed: %s", exc)
                     return await self._load_from_database(phone=phone)
-        except Exception as e:
+        except REDIS_ERRORS as e:
             phone_masked = phone[:3] + "***" + phone[-4:]
             logger.warning(
                 "[UserCache] Redis error for phone %s, falling back to database: %s",
@@ -480,7 +476,7 @@ class UserCache:
             logger.debug("[UserCache] Cached user ID %s (phone: %s)", user.id, phone_masked)
 
             return True
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning("[UserCache] Failed to cache user ID %s: %s", user.id, exc)
             return False
 
@@ -518,7 +514,7 @@ class UserCache:
                         getattr(user, "email", None),
                     )
                 )
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logger.warning(
                     "[UserCache] Skipping user %s in bulk write: %s",
                     getattr(user, "id", "?"),
@@ -548,7 +544,7 @@ class UserCache:
                             ex=USER_CACHE_TTL,
                         )
                 await pipe.execute()
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning("[UserCache] Bulk pipeline execute failed: %s", exc)
             return 0
 
@@ -588,7 +584,7 @@ class UserCache:
 
             logger.info("[UserCache] Invalidated cache for user ID %s", user_id)
             return True
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning(
                 "[UserCache] Failed to invalidate cache for user ID %s: %s",
                 user_id,
@@ -597,12 +593,21 @@ class UserCache:
             return False
 
 
+class _UserCacheState:
+    """Holds the global UserCache singleton."""
+
+    cache_instance: UserCache | None = None
+
+
+_user_cache_state = _UserCacheState()
+
+
 def get_user_cache() -> UserCache:
     """Get or create global UserCache instance."""
-    if not hasattr(get_user_cache, "cache_instance"):
-        get_user_cache.cache_instance = UserCache()
+    if _user_cache_state.cache_instance is None:
+        _user_cache_state.cache_instance = UserCache()
         logger.info("[UserCache] Initialized")
-    return get_user_cache.cache_instance
+    return _user_cache_state.cache_instance
 
 
 # Convenience alias

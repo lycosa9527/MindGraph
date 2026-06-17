@@ -11,6 +11,7 @@ from utils.auth.school_tier_defs import SCHOOL_TIER_TRIAL
 
 
 def _user(org_id: int | None = 1) -> User:
+    """User."""
     user = User()
     user.id = 1
     user.phone = "13800138000"
@@ -23,6 +24,7 @@ def _user(org_id: int | None = 1) -> User:
 
 
 def _org(expires_at: datetime | None) -> Organization:
+    """Org."""
     org = Organization()
     org.id = 1
     org.code = "SCH-001"
@@ -32,6 +34,7 @@ def _org(expires_at: datetime | None) -> Organization:
 
 
 def test_list_row_includes_effective_school_tier():
+    """Test list row includes effective school tier."""
     org = _org(None)
     org.school_tier = "standard"
     row = build_admin_user_list_row(
@@ -45,6 +48,7 @@ def test_list_row_includes_effective_school_tier():
 
 
 def test_list_row_trial_tier_for_trial_org():
+    """Test list row trial tier for trial org."""
     org = _org(None)
     org.school_tier = SCHOOL_TIER_TRIAL
     row = build_admin_user_list_row(
@@ -58,6 +62,7 @@ def test_list_row_trial_tier_for_trial_org():
 
 
 def test_paid_benefit_uses_organization_expires_at():
+    """Test paid benefit uses organization expires at."""
     expires = datetime(2026, 6, 1, 12, 0, 0)
     row = build_admin_user_list_row(
         _user(),
@@ -72,6 +77,7 @@ def test_paid_benefit_uses_organization_expires_at():
 
 
 def test_paid_benefit_organization_without_expiry_is_permanent():
+    """Test paid benefit organization without expiry is permanent."""
     row = build_admin_user_list_row(
         _user(),
         _org(None),
@@ -84,6 +90,7 @@ def test_paid_benefit_organization_without_expiry_is_permanent():
 
 
 def test_user_detail_payload_includes_email_and_diagram_remaining():
+    """Test user detail payload includes email and diagram remaining."""
     org = _org(None)
     org.school_tier = "trial"
     user = _user()
@@ -96,6 +103,7 @@ def test_user_detail_payload_includes_email_and_diagram_remaining():
 
 
 def test_paid_tier_user_detail_has_unlimited_diagram_quota():
+    """Test paid tier user detail has unlimited diagram quota."""
     org = _org(None)
     org.school_tier = "standard"
     user = _user()
@@ -105,6 +113,7 @@ def test_paid_tier_user_detail_has_unlimited_diagram_quota():
 
 
 def test_paid_benefit_without_organization_uses_market():
+    """Test paid benefit without organization uses market."""
     market_expires = datetime(2025, 12, 31, 0, 0, 0)
     row = build_admin_user_list_row(
         _user(org_id=None),

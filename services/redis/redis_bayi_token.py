@@ -22,16 +22,16 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional, Tuple
 import hashlib
 import logging
 import time
+from typing import Optional, Tuple
 
 from services.redis import keys as _keys
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 from services.redis.redis_async_ops import AsyncRedisOps
 from services.redis.redis_client import is_redis_available
-
+from services.utils.error_types import REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,7 @@ class BayiTokenTracker:
                 logger.debug("[BayiToken] Token already used (replay attack prevented)")
                 return True
             return False
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning(
                 "[BayiToken] Redis error checking token usage, allowing request: %s",
                 e,
@@ -124,7 +124,7 @@ class BayiTokenTracker:
             if success:
                 logger.debug("[BayiToken] Marked token as used (TTL: %ss)", TOKEN_TTL)
             return success
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning("[BayiToken] Failed to mark token as used: %s", e)
             return False
 
@@ -153,7 +153,7 @@ class BayiTokenTracker:
                 logger.debug("[BayiToken] Token validation cached (invalid)")
                 return False
             return None
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning("[BayiToken] Redis error checking validation cache: %s", e)
             return None
 
@@ -184,7 +184,7 @@ class BayiTokenTracker:
                     TOKEN_TTL,
                 )
             return success
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning("[BayiToken] Failed to cache token validation: %s", e)
             return False
 
@@ -218,11 +218,20 @@ class BayiTokenTracker:
         return await self._rate_limiter.clear("bayi_token", ip)
 
 
+class _BayiTokenTrackerState:
+    """Holds the global BayiTokenTracker singleton."""
+
+    instance: BayiTokenTracker | None = None
+
+
+_bayi_token_tracker_state = _BayiTokenTrackerState()
+
+
 def get_bayi_token_tracker() -> BayiTokenTracker:
     """Get singleton instance of BayiTokenTracker."""
-    if not hasattr(get_bayi_token_tracker, "_instance"):
-        setattr(get_bayi_token_tracker, "_instance", BayiTokenTracker())
-    return getattr(get_bayi_token_tracker, "_instance")
+    if _bayi_token_tracker_state.instance is None:
+        _bayi_token_tracker_state.instance = BayiTokenTracker()
+    return _bayi_token_tracker_state.instance
 
 
 # Convenience alias

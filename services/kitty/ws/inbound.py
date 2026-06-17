@@ -11,26 +11,25 @@ from typing import Any, Literal
 from fastapi import WebSocket
 
 from models.domain.auth import User
-from services.kitty.session.agent_state import kitty_agent_manager
+from services.agent_hub import build_desktop_pairing_snapshot, get_mind_graph_agent_hub
+from services.kitty.context.hub_context import apply_kitty_ws_context_patch
+from services.kitty.context.messaging import safe_websocket_send
 from services.kitty.infra.bootstrap.kitty_context_hydrate import (
     diagram_data_has_visible_content,
     merge_voice_context_with_library,
 )
-from services.kitty.context.hub_context import apply_kitty_ws_context_patch
-from services.kitty.context.messaging import safe_websocket_send
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
-from services.kitty.session.runtime_state import voice_sessions
+from services.kitty.infra.desktop.kitty_desktop_wake_fanout import publish_kitty_selection_update
+from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.events import KittyEvent, get_session_event_bus
 from services.kitty.session.ops import (
     get_agent_session_id,
     get_session_omni_client,
     update_panel_context,
 )
+from services.kitty.session.runtime_state import voice_sessions
 from services.kitty.ws.append_image import kitty_ws_handle_append_image
 from services.kitty.ws.guards import KITTY_WS_MAX_AUDIO_B64_CHARS, KITTY_WS_MAX_TEXT_CHARS
-
-from services.agent_hub import build_desktop_pairing_snapshot, get_mind_graph_agent_hub
-from services.kitty.infra.desktop.kitty_desktop_wake_fanout import publish_kitty_selection_update
 
 logger = logging.getLogger(__name__)
 

@@ -13,23 +13,23 @@ from fastapi import FastAPI
 from config.settings import config
 from routers import (
     api,
-    concept_map_focus,
-    node_palette,
-    relationship_labels,
-    inline_recommendations,
     auth,
+    concept_map_focus,
+    inline_recommendations,
+    node_palette,
     public_dashboard,
+    relationship_labels,
 )
-from routers.admin import (
-    database_router as admin_database,
-    env_router as admin_env,
-    logs_router as admin_logs,
-    realtime_router as admin_realtime,
-)
-from routers.core import changelog, pages, cache, update_notification
-from routers.core.vue_spa import router as vue_spa
+from routers.admin import database_router as admin_database
+from routers.admin import env_router as admin_env
+from routers.admin import logs_router as admin_logs
+from routers.admin import realtime_router as admin_realtime
+from routers.core import cache, changelog, pages, update_notification
 from routers.core.health import router as health_router
-from routers.features import kitty, school_zone, askonce
+from routers.core.vue_spa import router as vue_spa
+from routers.features import askonce, kitty, school_zone
+from services.mcp.mount import mount_mindgraph_mcp
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +37,8 @@ logger = logging.getLogger(__name__)
 LIBRARY_MODULE = None
 if config.FEATURE_LIBRARY:
     try:
-        from routers.features import library as LIBRARY_MODULE
-    except Exception as e:
+        LIBRARY_MODULE = importlib.import_module("routers.features.library")
+    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
         LIBRARY_MODULE = None
         logger.debug("[RouterRegistration] Failed to import library router: %s", e, exc_info=True)
 else:
@@ -47,8 +47,8 @@ else:
 DEBATEVERSE_MODULE = None
 if config.FEATURE_DEBATEVERSE:
     try:
-        from routers.features import debateverse as DEBATEVERSE_MODULE
-    except Exception as e:
+        DEBATEVERSE_MODULE = importlib.import_module("routers.features.debateverse")
+    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
         DEBATEVERSE_MODULE = None
         logger.debug(
             "[RouterRegistration] Failed to import debateverse router: %s",
@@ -61,8 +61,8 @@ else:
 COMMUNITY_MODULE = None
 if config.FEATURE_COMMUNITY:
     try:
-        from routers.features.community import router as COMMUNITY_MODULE
-    except Exception as e:
+        COMMUNITY_MODULE = importlib.import_module("routers.features.community").router
+    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
         COMMUNITY_MODULE = None
         logger.debug(
             "[RouterRegistration] Failed to import community router: %s",
@@ -75,8 +75,8 @@ else:
 GEWE_MODULE = None
 if config.FEATURE_GEWE:
     try:
-        from routers.features.gewe import router as GEWE_MODULE
-    except Exception as e:
+        GEWE_MODULE = importlib.import_module("routers.features.gewe").router
+    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
         GEWE_MODULE = None
         logger.debug("[RouterRegistration] Failed to import gewe router: %s", e, exc_info=True)
 else:
@@ -86,12 +86,12 @@ WORKSHOP_CHAT_MODULE = None
 WORKSHOP_CHAT_WS_MODULE = None
 if config.FEATURE_WORKSHOP_CHAT:
     try:
-        from routers.features import workshop_chat as _wc_mod
-        from routers.features import workshop_chat_ws as _wc_ws_mod
+        _wc_mod = importlib.import_module("routers.features.workshop_chat")
+        _wc_ws_mod = importlib.import_module("routers.features.workshop_chat_ws")
 
         WORKSHOP_CHAT_MODULE = _wc_mod.router
         WORKSHOP_CHAT_WS_MODULE = _wc_ws_mod.router
-    except Exception as e:
+    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
         WORKSHOP_CHAT_MODULE = None
         WORKSHOP_CHAT_WS_MODULE = None
         logger.warning(
@@ -106,8 +106,8 @@ else:
 MARKETS_MODULE = None
 if config.FEATURE_MARKETS:
     try:
-        from routers.features import markets as MARKETS_MODULE
-    except Exception as e:
+        MARKETS_MODULE = importlib.import_module("routers.features.markets")
+    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
         MARKETS_MODULE = None
         logger.debug("[RouterRegistration] Failed to import markets router: %s", e, exc_info=True)
 else:
@@ -142,11 +142,9 @@ def register_routers(app: FastAPI) -> None:
 
     if config.FEATURE_MCP_HTTP:
         try:
-            from services.mcp.mount import mount_mindgraph_mcp
-
             mount_mindgraph_mcp(app)
             logger.info("[RouterRegistration] MCP Streamable HTTP mounted at /api/mcp")
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.warning(
                 "[RouterRegistration] MCP mount failed (FEATURE_MCP_HTTP=True): %s",
                 exc,
@@ -167,7 +165,7 @@ def register_routers(app: FastAPI) -> None:
 
     # Library (图书馆) - PDF viewing with danmaku comments
     if LIBRARY_MODULE is not None:
-        app.include_router(LIBRARY_MODULE)
+        app.include_router(LIBRARY_MODULE.router)
         registered_feature_paths.append("/api/library")
     else:
         if config.FEATURE_LIBRARY:
@@ -255,7 +253,7 @@ def register_routers(app: FastAPI) -> None:
 
     # DebateVerse (论境) - US-style debate system
     if DEBATEVERSE_MODULE is not None:
-        app.include_router(DEBATEVERSE_MODULE)
+        app.include_router(DEBATEVERSE_MODULE.router)
         registered_feature_paths.append("/api/debateverse")
     else:
         if config.FEATURE_DEBATEVERSE:

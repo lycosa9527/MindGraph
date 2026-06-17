@@ -4,10 +4,9 @@ from typing import Any, Dict
 
 from fastapi import WebSocket
 
-from services.kitty.session.agent_state import kitty_agent_manager
-
-from services.kitty.diagram.diagram_utils import get_diagram_prefix_map
 from services.kitty.context.messaging import safe_websocket_send, send_kitty_diagram_update
+from services.kitty.diagram.diagram_utils import get_diagram_prefix_map
+from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.ops import get_agent_session_id
 from services.kitty.session.runtime_state import logger, voice_sessions
 
@@ -453,15 +452,14 @@ async def voice_apply_add_node_action(
 
         logger.debug("Node added: %s", target)
         return True
-    else:
-        count = command.get("count", 1)
-        logger.debug("Opening node palette for adding %d node(s)", count)
-        await safe_websocket_send(
-            websocket,
-            {
-                "type": "action",
-                "action": "open_node_palette",
-                "params": {"count": count},
-            },
-        )
-        return True
+    count = command.get("count", 1)
+    logger.debug("Opening node palette for adding %d node(s)", count)
+    await safe_websocket_send(
+        websocket,
+        {
+            "type": "action",
+            "action": "open_node_palette",
+            "params": {"count": count},
+        },
+    )
+    return True

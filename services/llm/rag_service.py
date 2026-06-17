@@ -9,19 +9,13 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
 import asyncio
-from collections import Counter
-from datetime import UTC, datetime, timedelta
-from typing import List, Dict, Any, Optional
 import logging
 import os
 import time
-
-try:
-    import numpy as np
-except ImportError:
-    np = None
+from collections import Counter
+from datetime import UTC, datetime, timedelta
+from typing import Any, Dict, List, Optional
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -31,19 +25,24 @@ from sqlalchemy.sql.functions import count as sa_count
 from clients.dashscope_embedding import get_embedding_client
 from clients.dashscope_rerank import get_rerank_client
 from models.domain.knowledge_space import (
-    DocumentChunk,
-    KnowledgeDocument,
-    KnowledgeSpace,
-    KnowledgeQuery,
-    QueryFeedback,
-    DocumentRelationship,
     ChunkAttachment,
+    DocumentChunk,
+    DocumentRelationship,
+    KnowledgeDocument,
+    KnowledgeQuery,
+    KnowledgeSpace,
+    QueryFeedback,
 )
 from services.infrastructure.rate_limiting.kb_rate_limiter import get_kb_rate_limiter
 from services.knowledge.keyword_search_service import get_keyword_search_service
 from services.llm.embedding_cache import get_embedding_cache
 from services.llm.qdrant_service import get_qdrant_service
+from services.utils.error_types import QDRANT_ERRORS
 
+try:
+    import numpy as np
+except ImportError:
+    np = None
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +117,7 @@ class RAGService:
             )
             count = result.scalar()
             return (count or 0) > 0
-        except Exception as e:
+        except QDRANT_ERRORS as e:
             logger.error(
                 "[RAGService] Failed to check knowledge base for user %s: %s",
                 user_id,
@@ -451,7 +450,7 @@ class RAGService:
                             score_threshold=score_threshold,
                         )
                         results = [item["document"] for item in reranked]
-                    except Exception as rerank_error:
+                    except QDRANT_ERRORS as rerank_error:
                         # If reranking fails, fall back to original results without reranking
                         logger.warning(
                             "[RAGService] Reranking failed, using original results: %s",
@@ -475,7 +474,7 @@ class RAGService:
                         score_threshold=score_threshold,
                     )
                     results = [item["document"] for item in reranked]
-                except Exception as rerank_error:
+                except QDRANT_ERRORS as rerank_error:
                     # If reranking fails, fall back to original results without reranking
                     logger.warning(
                         "[RAGService] Reranking failed, using original results: %s",
@@ -506,7 +505,7 @@ class RAGService:
 
             return results
 
-        except Exception as e:
+        except QDRANT_ERRORS as e:
             logger.error("[RAGService] Failed to retrieve context: %s", e)
             try:
                 result = await db.execute(select(KnowledgeSpace).where(KnowledgeSpace.user_id == user_id))
@@ -526,7 +525,7 @@ class RAGService:
                         source=source,
                         source_context=source_context,
                     )
-            except Exception as record_error:
+            except QDRANT_ERRORS as record_error:
                 logger.error("[RAGService] Failed to record query: %s", record_error)
             return []
 
@@ -578,7 +577,7 @@ class RAGService:
                 )
 
             return [r["id"] for r in results]
-        except Exception as e:
+        except QDRANT_ERRORS as e:
             logger.error("[RAGService] Vector search failed: %s", e)
             return []
 
@@ -611,7 +610,7 @@ class RAGService:
                 metadata_filter=metadata_filter,
             )
             return [r["chunk_id"] for r in results]
-        except Exception as e:
+        except QDRANT_ERRORS as e:
             logger.error("[RAGService] Keyword search failed: %s", e)
             return []
 
@@ -662,7 +661,7 @@ class RAGService:
                         metadata_filter,
                     ),
                 )
-            except Exception as parallel_err:
+            except QDRANT_ERRORS as parallel_err:
                 logger.warning(
                     "[RAGService] Parallel search failed, falling back to vector search: %s",
                     parallel_err,
@@ -692,7 +691,7 @@ class RAGService:
             # Return top K chunk IDs
             return [chunk_id for chunk_id, _ in sorted_chunks[:top_k]]
 
-        except Exception as e:
+        except QDRANT_ERRORS as e:
             logger.error("[RAGService] Hybrid search failed: %s", e)
             return await self.vector_search(db, user_id, query, top_k, metadata_filter)
 
@@ -714,7 +713,7 @@ class RAGService:
                 metadata_filter=metadata_filter,
             )
             return [{"id": r["id"], "score": r["score"]} for r in results]
-        except Exception as e:
+        except QDRANT_ERRORS as e:
             logger.error("[RAGService] Vector search with scores failed: %s", e)
             return []
 
@@ -736,7 +735,7 @@ class RAGService:
                 metadata_filter=metadata_filter,
             )
             return [{"chunk_id": r["chunk_id"], "score": r["score"]} for r in results]
-        except Exception as e:
+        except QDRANT_ERRORS as e:
             logger.error("[RAGService] Keyword search with scores failed: %s", e)
             return []
 
@@ -860,7 +859,7 @@ class RAGService:
 
             return [chunk.text for chunk in sorted_chunks]
 
-        except Exception as e:
+        except QDRANT_ERRORS as e:
             logger.error("[RAGService] Error retrieving by images: %s", e)
             return []
 
@@ -1101,7 +1100,7 @@ class RAGService:
                 result_count,
                 total_ms if total_ms else 0.0,
             )
-        except Exception as e:
+        except QDRANT_ERRORS as e:
             await db.rollback()
             logger.warning("[RAGService] Failed to record query: %s", e)
 
@@ -1149,14 +1148,14 @@ class RAGService:
 class RAGServiceSingleton:
     """Singleton wrapper for RAG service instance."""
 
-    _instance: Optional[RAGService] = None
+    instance: Optional[RAGService] = None
 
     @classmethod
     def get_instance(cls) -> RAGService:
         """Get singleton RAG service instance."""
-        if cls._instance is None:
-            cls._instance = RAGService()
-        return cls._instance
+        if cls.instance is None:
+            cls.instance = RAGService()
+        return cls.instance
 
 
 def get_rag_service() -> RAGService:

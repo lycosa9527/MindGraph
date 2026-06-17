@@ -1,15 +1,21 @@
 """Voice session lifecycle and Omni client accessors."""
 
-from datetime import datetime
-from typing import Any, Awaitable, Callable, Dict, Optional, cast
 import asyncio
 import copy
 import uuid
+from datetime import datetime
+from typing import Any, Awaitable, Callable, Dict, Optional, cast
 
 from clients.omni_client import OmniClient
+from services.agent_hub.scope_lifecycle import (
+    configure_kitty_control_state,
+    configure_kitty_scope_cleanup,
+)
+from services.kitty.infra.redis.kitty_session_redis import configure_voice_session_getter
 from services.kitty.session.agent_state import kitty_agent_manager
-
+from services.kitty.session.omni_client_access import get_session_omni_client as _get_session_omni_client_impl
 from services.kitty.session.runtime_state import active_websockets, logger, voice_sessions
+from services.kitty.session.session_teardown import teardown_session_event_handlers
 
 
 def get_agent_session_id(voice_session_id: str) -> str:
@@ -104,29 +110,9 @@ def persist_voice_session_context(voice_session_id: str, session_context: Dict[s
 
 
 def get_session_omni_client(voice_session_id: str):
-    """
-    Get the OmniClient instance for a voice session.
-
-    CRITICAL: Each voice session has its own OmniClient instance to support
-    concurrent users. This prevents cross-contamination between users.
-
-    Args:
-        voice_session_id: Voice session ID
-
-    Returns:
-        OmniClient instance for this session, or None if session not found
-    """
-    session = get_voice_session(voice_session_id)
-    if not session:
-        logger.warning("Voice session %s not found", voice_session_id)
-        return None
-
-    omni_client = session.get("omni_client")
-    if not omni_client:
-        logger.warning("OmniClient not found for session %s", voice_session_id)
-        return None
-
-    return omni_client
+    """Return the OmniClient for a voice session (delegates to leaf accessor)."""
+    ensure_kitty_hub_wired()
+    return _get_session_omni_client_impl(voice_session_id)
 
 
 def update_panel_context(session_id: str, active_panel: Optional[str]) -> None:
@@ -181,8 +167,6 @@ async def end_voice_session_async(session_id: str, reason: str = "completed") ->
     Always ``await`` Omni ``close()`` from async contexts — never ``asyncio.run``.
     Idempotent and safe under concurrent cleanup (e.g. WebSocket teardown vs HTTP).
     """
-    from services.kitty.session.event_handlers import teardown_session_event_handlers
-
     await teardown_session_event_handlers(session_id)
     session = voice_sessions.pop(session_id, None)
     if session is None:
@@ -283,25 +267,22 @@ async def cleanup_voice_by_diagram_session(diagram_session_id: str) -> bool:
     return False
 
 
-_HUB_VOICE_INFRA_WIRED = False
+class _HubVoiceInfraState:
+    """One-time Agent Hub wiring flag holder."""
+
+    wired: bool = False
 
 
 def ensure_kitty_hub_wired() -> None:
     """Register Agent Hub + Redis getters once (avoids import-time agent_hub cycles)."""
-    global _HUB_VOICE_INFRA_WIRED
-    if _HUB_VOICE_INFRA_WIRED:
+    if _HubVoiceInfraState.wired:
         return
     _wire_agent_hub_infrastructure()
-    _HUB_VOICE_INFRA_WIRED = True
+    _HubVoiceInfraState.wired = True
 
 
 def _wire_agent_hub_infrastructure() -> None:
-    from services.agent_hub.scope_lifecycle import (
-        configure_kitty_control_state,
-        configure_kitty_scope_cleanup,
-    )
-    from services.kitty.infra.redis.kitty_session_redis import configure_voice_session_getter
-
+    """Wire agent hub infrastructure."""
     configure_voice_session_getter(get_voice_session)
     configure_kitty_scope_cleanup(cleanup_voice_by_diagram_session)
     configure_kitty_control_state(active_websockets, voice_sessions)

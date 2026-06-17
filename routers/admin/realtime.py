@@ -1,15 +1,3 @@
-import asyncio
-import json
-import logging
-
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from fastapi.responses import StreamingResponse
-from models.domain.auth import User
-from services.redis.redis_activity_tracker import get_activity_tracker
-from services.infrastructure.monitoring.ws_metrics import get_ws_metrics_snapshot
-from utils.auth import get_current_user, is_admin
-from utils.ws_session_registry import _registry as _ws_registry
-
 """
 Admin Realtime Monitoring Router
 ==================================
@@ -29,6 +17,20 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
+import asyncio
+import json
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
+
+from models.domain.auth import User
+from services.infrastructure.monitoring.ws_metrics import get_ws_metrics_snapshot
+from services.redis.redis_activity_tracker import get_activity_tracker
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.auth import get_current_user, is_admin
+from utils.ws_session_registry import _registry as _ws_registry
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +64,7 @@ async def get_realtime_stats(current_user: User = Depends(get_current_user)):
 
         return stats
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to get realtime stats: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -92,7 +94,7 @@ async def get_active_users(current_user: User = Depends(get_current_user)):
             "timestamp": stats["timestamp"],
         }
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to get active users: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -123,7 +125,7 @@ async def get_recent_activities(
 
         return {"activities": activities, "count": len(activities)}
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to get activities: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -226,7 +228,7 @@ async def stream_realtime_updates(current_user: User = Depends(get_current_user)
             stats = await tracker.get_stats()
             active_users = await tracker.get_active_users()
             return stats, active_users, None
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Error getting initial state: %s", e)
             error_data = json.dumps({"type": "error", "error": "Failed to fetch initial state"})
             return None, None, f"data: {error_data}\n\n"
@@ -236,7 +238,7 @@ async def stream_realtime_updates(current_user: User = Depends(get_current_user)
         try:
             current_stats = await tracker.get_stats()
             current_users = await tracker.get_active_users()
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Error getting tracker data: %s", e)
             error_data = json.dumps({"type": "error", "error": "Failed to fetch activity data"})
             return None, None, None, None, f"data: {error_data}\n\n", True
@@ -307,12 +309,12 @@ async def stream_realtime_updates(current_user: User = Depends(get_current_user)
         except asyncio.CancelledError:
             logger.info("Realtime stream cancelled for admin %s", current_user.phone)
             return
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Error in realtime stream: %s", e, exc_info=True)
             try:
                 error_data = json.dumps({"type": "error", "error": str(e)})
                 yield f"data: {error_data}\n\n"
-            except Exception:
+            except BACKGROUND_INFRA_ERRORS:
                 return
         finally:
             if user_id in _active_sse_connections:
@@ -359,7 +361,7 @@ async def get_ws_sessions(current_user: User = Depends(get_current_user)):
             "registry": registry_snapshot,
             "metrics": metrics_snapshot,
         }
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.error("Failed to get WS session snapshot: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

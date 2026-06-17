@@ -1,10 +1,3 @@
-from collections import deque
-from datetime import datetime, timedelta
-from threading import Lock
-from typing import Dict, List, Optional, Any
-import logging
-
-
 """
 Performance Tracker
 ===================
@@ -19,6 +12,11 @@ All Rights Reserved
 Proprietary License
 """
 
+import logging
+from collections import deque
+from datetime import datetime, timedelta
+from threading import Lock
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -226,8 +224,7 @@ class PerformanceTracker:
         with self._lock:
             if model:
                 return self._get_model_metrics(model)
-            else:
-                return {model_name: self._get_model_metrics(model_name) for model_name in self._metrics.keys()}
+            return {model_name: self._get_model_metrics(model_name) for model_name in self._metrics}
 
     def _get_model_metrics(self, model: str) -> Dict[str, Any]:
         """Get metrics for a specific model."""

@@ -25,6 +25,7 @@ _OFFLOAD_THRESHOLD = int(os.getenv("COLLAB_JSON_THREAD_OFFLOAD_BYTES", str(64 * 
 
 
 def _offload_threshold() -> int:
+    """Offload threshold."""
     return _OFFLOAD_THRESHOLD
 
 

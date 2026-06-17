@@ -11,34 +11,34 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import List, Dict, Any, Optional, Callable, TYPE_CHECKING
 import logging
 import uuid
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.knowledge.rag_chunk_test.benchmark_loaders import (
-    get_benchmark_loader,
-    UserDocumentLoader,
-)
-from services.knowledge.rag_chunk_test.chunk_comparator import ChunkComparator
-from services.knowledge.rag_chunk_test.retrieval_evaluator import RetrievalEvaluator
-from services.knowledge.rag_chunk_test.answer_quality_evaluator import (
-    AnswerQualityEvaluator,
-)
-from services.knowledge.rag_chunk_test.diversity_evaluator import DiversityEvaluator
-from services.knowledge.rag_chunk_test.cross_method_comparator import (
-    CrossMethodComparator,
-)
-from services.knowledge.rag_chunk_test.metrics_calculator import MetricsCalculator
-from services.knowledge.rag_chunk_test.summary_generator import SummaryGenerator
 from services.knowledge.progress_tracking import (
+    ensure_completion_progress,
     format_progress_string,
     get_progress_percent,
     validate_progress,
-    ensure_completion_progress,
 )
+from services.knowledge.rag_chunk_test.answer_quality_evaluator import (
+    AnswerQualityEvaluator,
+)
+from services.knowledge.rag_chunk_test.benchmark_loaders import (
+    UserDocumentLoader,
+    get_benchmark_loader,
+)
+from services.knowledge.rag_chunk_test.chunk_comparator import ChunkComparator
+from services.knowledge.rag_chunk_test.cross_method_comparator import (
+    CrossMethodComparator,
+)
+from services.knowledge.rag_chunk_test.diversity_evaluator import DiversityEvaluator
+from services.knowledge.rag_chunk_test.metrics_calculator import MetricsCalculator
+from services.knowledge.rag_chunk_test.retrieval_evaluator import RetrievalEvaluator
+from services.knowledge.rag_chunk_test.summary_generator import SummaryGenerator
+from services.utils.error_types import DATABASE_ERRORS
 
 if TYPE_CHECKING:
     from models.domain.knowledge_space import ChunkTestResult
@@ -308,7 +308,7 @@ class RAGChunkTestService:
                         progress,
                         progress_string,
                     )
-                except Exception as callback_error:
+                except DATABASE_ERRORS as callback_error:
                     logger.error(
                         "[RAGChunkTest] Error in progress callback: %s",
                         callback_error,
@@ -361,7 +361,7 @@ class RAGChunkTestService:
                     chunks, time_ms = self.chunk_comparator.chunk_with_method(doc_text, mode, doc_metadata)
                     all_chunks[mode].extend(chunks)
                     chunking_times[mode].append(time_ms)
-                except Exception as e:
+                except DATABASE_ERRORS as e:
                     logger.warning(
                         "[RAGChunkTest] %s failed for document %s: %s",
                         mode,
@@ -472,7 +472,7 @@ class RAGChunkTestService:
                             # Cleanup immediately after successful test
                             await self.retrieval_evaluator.cleanup_test_collection(test_user_id, collection_name)
                             created_collections.remove((test_user_id, collection_name))
-                        except Exception as e:
+                        except DATABASE_ERRORS as e:
                             logger.error(
                                 "[RAGChunkTest] %s retrieval failed for query '%s': %s",
                                 mode,
@@ -490,7 +490,7 @@ class RAGChunkTestService:
                         collection_name,
                         user_id,
                     )
-                except Exception as cleanup_error:
+                except DATABASE_ERRORS as cleanup_error:
                     logger.warning(
                         "[RAGChunkTest] Failed to cleanup collection %s (user_id=%s): %s",
                         collection_name,
@@ -629,7 +629,7 @@ class RAGChunkTestService:
             try:
                 chunks, _ = self.chunk_comparator.chunk_with_method(doc_text, method, doc_metadata)
                 all_chunks.extend(chunks)
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 logger.warning(
                     "[RAGChunkTest] Failed to chunk document %s with method %s: %s",
                     doc.get("id"),

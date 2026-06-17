@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def _use_cluster_hash_tags() -> bool:
+    """Use cluster hash tags."""
     return os.getenv("COLLAB_REDIS_HASH_TAGS", "1") not in ("0", "false", "False", "")
 
 

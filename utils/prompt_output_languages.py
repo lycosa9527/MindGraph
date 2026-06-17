@@ -21,6 +21,7 @@ _REGISTRY_PATH = _REPO_ROOT / "data" / "prompt_language_registry.json"
 
 
 def _load_registry() -> tuple[frozenset[str], dict[str, str]]:
+    """Load registry."""
     if not _REGISTRY_PATH.is_file():
         raise FileNotFoundError(
             f"Missing prompt language registry: {_REGISTRY_PATH}. Run: python scripts/build_prompt_language_registry.py"

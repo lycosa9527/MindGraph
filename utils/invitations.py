@@ -13,11 +13,10 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional
 import random
 import re
 import string
-
+from typing import Optional
 
 # Exclude confusing letters/digits: O, 0, 1, I, L (and lowercase o, i, l)
 _CONFUSING_CHARS = frozenset("oO0iIlL1")
@@ -34,6 +33,7 @@ def invitation_code_is_valid(candidate: str) -> bool:
 
 
 def _random_part() -> str:
+    """Random part."""
     return "".join(random.choices(_SAFE_CHARS, k=3))
 
 

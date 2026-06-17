@@ -14,7 +14,7 @@ Proprietary License
 
 import logging
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count as sa_count
@@ -22,14 +22,14 @@ from sqlalchemy.sql.functions import count as sa_count
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.knowledge_space import (
-    KnowledgeSpace,
-    KnowledgeDocument,
     DocumentChunk,
+    KnowledgeDocument,
+    KnowledgeSpace,
 )
 from models.responses import CompressionMetricsResponse
 from services.llm.qdrant_service import get_qdrant_service
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user
-
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ async def get_compression_metrics(current_user: User = Depends(get_current_user)
         qdrant_service = get_qdrant_service()
         metrics = await qdrant_service.get_compression_metrics(current_user.id)
         return CompressionMetricsResponse(**metrics)
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error(
             "[KnowledgeSpaceAPI] Failed to get compression metrics for user %s: %s",
             current_user.id,
@@ -156,7 +156,7 @@ async def get_qdrant_diagnostics(
             "diagnosis": diagnosis,
         }
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error(
             "[KnowledgeSpaceAPI] Failed to get Qdrant diagnostics for user %s: %s",
             current_user.id,

@@ -30,13 +30,13 @@ from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
 from services.redis.session.redis_session_manager import get_refresh_token_manager, get_session_manager
 from utils.auth import get_client_ip
-from utils.auth.connection_types import HttpOrWebSocket
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR
 from utils.auth.config import (
     AUTH_MODE,
     VPN_CN_KICKOUT_ALLOWLIST_USER_IDS,
     VPN_CN_KICKOUT_ENABLED,
 )
+from utils.auth.connection_types import HttpOrWebSocket
 from utils.auth.user_tokens import validate_user_token
 from utils.cn_mobile import is_cn_mainland_mobile
 
@@ -45,6 +45,7 @@ _WS_CLOSE_REASON_MAX = 120
 
 
 def should_kick_vpn_transition(login_cc: Optional[str], current_cc: Optional[str]) -> bool:
+    """Should kick vpn transition."""
     if not login_cc or len(login_cc) != 2:
         return False
     if login_cc == "CN":
@@ -55,6 +56,7 @@ def should_kick_vpn_transition(login_cc: Optional[str], current_cc: Optional[str
 
 
 def _decode_redis_value(raw: object) -> Optional[str]:
+    """Decode redis value."""
     if raw is None:
         return None
     if isinstance(raw, bytes):
@@ -63,6 +65,7 @@ def _decode_redis_value(raw: object) -> Optional[str]:
 
 
 def _vpn_geo_path_matches(request_path: str) -> bool:
+    """Vpn geo path matches."""
     if request_path.startswith("/api/auth"):
         return False
     if request_path.startswith("/api/frontend_log"):
@@ -79,6 +82,7 @@ def _vpn_geo_path_matches(request_path: str) -> bool:
 
 
 async def _refresh_geo_keys_ttl(redis: aioredis.Redis, user_id: int, ttl: int) -> None:
+    """Refresh geo keys ttl."""
     login_key = redis_keys.GEO_VPN_LOGIN_CC.format(user_id=user_id)
     last_ip_key = redis_keys.GEO_VPN_LAST_IP.format(user_id=user_id)
     async with redis.pipeline(transaction=False) as pipe:
@@ -88,6 +92,7 @@ async def _refresh_geo_keys_ttl(redis: aioredis.Redis, user_id: int, ttl: int) -
 
 
 async def record_vpn_login_geo(user_id: int, request: Request) -> None:
+    """Record vpn login geo."""
     if not VPN_CN_KICKOUT_ENABLED:
         return
     if AUTH_MODE in ("bayi", "enterprise"):
@@ -110,6 +115,7 @@ async def record_vpn_login_geo(user_id: int, request: Request) -> None:
 
 
 async def record_vpn_refresh_last_ip(user_id: int, request: Request) -> None:
+    """Record vpn refresh last ip."""
     if not VPN_CN_KICKOUT_ENABLED:
         return
     if AUTH_MODE in ("bayi", "enterprise"):
@@ -131,6 +137,7 @@ async def record_vpn_refresh_last_ip(user_id: int, request: Request) -> None:
 
 
 def _vpn_geo_prereqs_ok(connection: HttpOrWebSocket) -> bool:
+    """Vpn geo prereqs ok."""
     if not VPN_CN_KICKOUT_ENABLED:
         return False
     if AUTH_MODE in ("bayi", "enterprise"):
@@ -218,6 +225,7 @@ async def maybe_enforce_vpn_cn_geo_for_user(
 
 
 async def maybe_enforce_vpn_cn_geo(request: Request) -> Optional[JSONResponse]:
+    """Maybe enforce vpn cn geo."""
     if not _vpn_geo_prereqs_ok(request):
         return None
 
@@ -277,6 +285,7 @@ async def maybe_enforce_vpn_cn_geo_async(connection: HttpOrWebSocket) -> Optiona
 
 
 def _close_reason_from_geo_json_response(resp: JSONResponse) -> Optional[str]:
+    """Close reason from geo json response."""
     body = getattr(resp, "body", None)
     if body is None:
         return None

@@ -18,7 +18,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.functions import count as sa_count, sum as sa_sum
+from sqlalchemy.sql.functions import count as sa_count
+from sqlalchemy.sql.functions import sum as sa_sum
 
 from config.database import get_async_db
 from models.domain.auth import User
@@ -27,10 +28,11 @@ from models.domain.user_activity_log import UserActivityLog
 from models.domain.user_usage_stats import UserUsageStats
 from routers.auth.helpers import BEIJING_TIMEZONE, get_beijing_now
 from services.teacher_usage_stats import (
+    compute_and_upsert_user_usage_stats_async,
     get_classification_config_async,
     save_classification_config_async,
-    compute_and_upsert_user_usage_stats_async,
 )
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth.role_constants import TEACHER_ROLES
 
 from ..dependencies import require_admin
@@ -111,7 +113,7 @@ async def get_teacher_usage(
         )
         for row in stats_rows:
             stats_map[row.user_id] = (row.tier1, row.tier2)
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.debug("Failed to fetch usage stats: %s", exc)
 
     token_rows = (
@@ -181,7 +183,7 @@ async def get_teacher_usage(
                 )
             ).all()
             user_rel_labels_count = {int(r.user_id): int(r.cnt or 0) for r in rel_labels_rows}
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("Failed to fetch activity log counts: %s", exc)
 
     groups: dict[str, list[dict[str, Any]]] = {gid: [] for gid in GROUP_IDS}
@@ -228,7 +230,7 @@ async def get_teacher_usage(
                 )
             ).all()
             weekly_by_group[gid] = [int(r.total or 0) for r in weekly_rows]
-        except Exception:
+        except BACKGROUND_INFRA_ERRORS:
             weekly_by_group[gid] = []
 
     return {
@@ -330,7 +332,7 @@ async def get_teacher_usage_users(
                 )
             ).all()
             user_rel_labels_count = {int(r.user_id): int(r.cnt or 0) for r in rel_labels_rows}
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("Failed to fetch paginated activity log counts: %s", exc)
     total = len(teachers)
     start = (page - 1) * page_size
@@ -395,7 +397,7 @@ async def get_user_weekly_tokens(
             )
         ).all()
         weekly_tokens = [int(r.total or 0) for r in weekly_rows]
-    except Exception:
+    except DATABASE_ERRORS:
         weekly_tokens = []
     return {
         "userId": user_id,
@@ -599,7 +601,7 @@ async def get_user_detail(
                     "output_tokens": int(row.output_tokens or 0),
                     "total_tokens": int(row.total_tokens or 0),
                 }
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.debug("Failed to fetch token stats: %s", exc)
     return {
         "userId": user_id,

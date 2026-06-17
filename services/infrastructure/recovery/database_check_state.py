@@ -22,15 +22,9 @@ import os
 import time
 from typing import Optional, Tuple
 
-try:
-    from services.redis.redis_client import is_redis_available
-    from services.redis.redis_async_client import get_async_redis
-
-    _REDIS_AVAILABLE = True
-except ImportError:
-    get_async_redis = None
-    is_redis_available = None
-    _REDIS_AVAILABLE = False
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
+from services.utils.error_types import REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -52,14 +46,12 @@ class DatabaseCheckStateManager:
 
     def _get_redis_client(self):
         """Get the shared async Redis client if available."""
-        if not _REDIS_AVAILABLE or is_redis_available is None or not is_redis_available():
+        if not is_redis_available():
             return None
 
         try:
-            if get_async_redis is None:
-                return None
             return get_async_redis()
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.debug("[DatabaseCheckState] Redis not available: %s", e)
             return None
 
@@ -90,7 +82,7 @@ class DatabaseCheckStateManager:
                     return True
                 logger.debug("[DatabaseCheckState] Database check already in progress (Redis)")
                 return False
-            except Exception as e:
+            except REDIS_ERRORS as e:
                 logger.debug("[DatabaseCheckState] Failed to set Redis state: %s", e)
                 # Fall through to in-memory state
 
@@ -132,7 +124,7 @@ class DatabaseCheckStateManager:
                 )
                 logger.debug("[DatabaseCheckState] Database check completed: %s (Redis)", state)
                 return
-            except Exception as e:
+            except REDIS_ERRORS as e:
                 logger.debug("[DatabaseCheckState] Failed to update Redis state: %s", e)
                 # Fall through to in-memory state
 
@@ -175,7 +167,7 @@ class DatabaseCheckStateManager:
                                 pass
                         return True
                 return False
-            except Exception as e:
+            except REDIS_ERRORS as e:
                 logger.debug("[DatabaseCheckState] Failed to check Redis state: %s", e)
                 # Fall through to in-memory state
 
@@ -213,7 +205,7 @@ class DatabaseCheckStateManager:
                         return state.decode("utf-8")
                     return str(state)
                 return None
-            except Exception as e:
+            except REDIS_ERRORS as e:
                 logger.debug("[DatabaseCheckState] Failed to get Redis state: %s", e)
                 # Fall through to in-memory state
 
@@ -224,13 +216,14 @@ class DatabaseCheckStateManager:
         return None
 
 
-# Global singleton instance
-_db_check_state_manager: Optional[DatabaseCheckStateManager] = None
+class _DatabaseCheckState:
+    """Process-wide database check state manager singleton holder."""
+
+    instance: Optional[DatabaseCheckStateManager] = None
 
 
 def get_database_check_state_manager() -> DatabaseCheckStateManager:
     """Get global DatabaseCheckStateManager instance"""
-    global _db_check_state_manager
-    if _db_check_state_manager is None:
-        _db_check_state_manager = DatabaseCheckStateManager()
-    return _db_check_state_manager
+    if _DatabaseCheckState.instance is None:
+        _DatabaseCheckState.instance = DatabaseCheckStateManager()
+    return _DatabaseCheckState.instance

@@ -1,12 +1,3 @@
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
-import json
-import logging
-
-from services.redis.redis_async_client import get_async_redis
-from services.redis.redis_client import is_redis_available
-from services.utils.typing_helpers import redis_decode_required
-
 """
 City Flag Tracker Service
 =========================
@@ -31,6 +22,15 @@ All Rights Reserved
 Proprietary License
 """
 
+import json
+import logging
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from services.utils.typing_helpers import redis_decode_required
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +105,7 @@ class CityFlagTracker:
                         lng,
                     )
                     return
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.error("[CityFlag] Error recording flag in Redis: %s", e)
 
         # Fallback: in-memory storage
@@ -186,7 +186,7 @@ class CityFlagTracker:
                                                     "lng": None,
                                                 }
                                             )
-                            except Exception as e:
+                            except BACKGROUND_INFRA_ERRORS as e:
                                 logger.debug(
                                     "[CityFlag] Error processing flag key %s: %s",
                                     key,
@@ -198,7 +198,7 @@ class CityFlagTracker:
                             break
 
                     return flags
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.error("[CityFlag] Error getting flags from Redis: %s", e)
 
         # Fallback: in-memory
@@ -227,13 +227,14 @@ class CityFlagTracker:
         return flags
 
 
-# Global singleton instance
-_city_flag_tracker: Optional[CityFlagTracker] = None
+class _CityFlagTrackerState:
+    """Process-wide city flag tracker singleton holder."""
+
+    instance: Optional[CityFlagTracker] = None
 
 
 def get_city_flag_tracker() -> CityFlagTracker:
     """Get global city flag tracker instance."""
-    global _city_flag_tracker
-    if _city_flag_tracker is None:
-        _city_flag_tracker = CityFlagTracker()
-    return _city_flag_tracker
+    if _CityFlagTrackerState.instance is None:
+        _CityFlagTrackerState.instance = CityFlagTracker()
+    return _CityFlagTrackerState.instance

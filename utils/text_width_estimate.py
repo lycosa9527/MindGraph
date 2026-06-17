@@ -63,6 +63,7 @@ _EM_RANGE_TABLE: tuple[tuple[int, int, float], ...] = (
 
 
 def _em_width_for_code_point(code_point: int) -> float:
+    """Em width for code point."""
     if code_point <= 0x20:
         return 0.28 if code_point == 0x20 else 0.0
     for start, end, em in _EM_RANGE_TABLE:

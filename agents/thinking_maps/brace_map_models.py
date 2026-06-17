@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-
 # Configuration constants
 BRACE_SPACING_CONFIG = {
     "main_brace_from_topic": 20,

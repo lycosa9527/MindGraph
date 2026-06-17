@@ -23,31 +23,22 @@ jobs:
           ruff format --check .
       - name: No inline lint suppressions
         run: python scripts/lint/lint_no_inline_disables.py
+      - name: Redis async connection options guard
+        run: python scripts/lint/lint_redis_connection_options.py
+      - name: Pylint four-rule audit (AST baseline)
+        run: python scripts/lint/audit_pylint_four_rules.py --fail
       - name: basedpyright (strict; see pyproject.toml)
         run: python -m basedpyright .
       - name: App import smoke
         run: python -c "from main import app; assert app.title"
-      - name: Pylint (collab / WS paths + auth tier split)
+      - name: Pylint (full Python tree; minimal policy disables)
         run: |
-          pylint services/online_collab/spec/online_collab_live_spec_shutdown.py \
-            services/online_collab/spec/online_collab_live_flush.py \
-            utils/ws_limits.py routers/core/health.py routers/api/workshop_ws_handlers.py \
-            services/infrastructure/lifecycle/lifespan.py \
-            services/infrastructure/lifecycle/lifespan_shutdown.py \
-            services/infrastructure/lifecycle/lifespan_redis_integration.py \
-            services/infrastructure/lifecycle/lifespan_db_integration.py \
-            services/infrastructure/lifecycle/lifespan_collab_integration.py \
-            services/infrastructure/process/server_launcher.py \
-            services/features/ws_redis_fanout_publish.py services/features/workshop_ws_fanout_delivery.py \
-            routers/api/workshop_ws_auth.py routers/api/workshop_ws_connect.py \
-            services/online_collab/participant/workshop_join_resume_tokens.py \
-            scripts/collab_synthetic_probe.py \
-            routers/auth/admin/organization_mindmate_branding.py \
-            utils/auth/school_tier_defs.py utils/auth/school_tier_effective.py \
-            utils/auth/org_subscription.py utils/auth/school_tier.py utils/auth/auth_resolution.py
+          pylint services routers agents clients config utils scripts tests loadtests tasks alembic/env.py \
+            --fail-under=10.0
       - name: Pytest (focused + collab)
         run: |
-          pytest -q tests/test_collab_ws_json_limits.py tests/test_workshop_update_flush_gate.py \
+          pytest -q tests/test_redis_connection_options.py \
+            tests/test_collab_ws_json_limits.py tests/test_workshop_update_flush_gate.py \
             tests/test_workshop_ws_integration.py tests/test_online_collab_phase8.py \
             tests/test_workshop_collab_backend.py tests/test_collab_palette_sync.py \
             tests/test_workshop_editor_redis_merge.py tests/test_ws_fanout.py \

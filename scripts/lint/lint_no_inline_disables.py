@@ -20,6 +20,7 @@ _ALLOWED_PARTS = {
 
 
 def _is_allowed(path: Path, root: Path) -> bool:
+    """Is allowed."""
     rel = path.relative_to(root).as_posix()
     if rel.endswith("scripts/lint/strip_inline_disables.py"):
         return True
@@ -32,6 +33,7 @@ def _is_allowed(path: Path, root: Path) -> bool:
 
 
 def main() -> int:
+    """Main."""
     root = Path(__file__).resolve().parents[2]
     violations: list[str] = []
     for py_path in sorted(root.rglob("*.py")):

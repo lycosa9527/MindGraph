@@ -17,29 +17,42 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import UTC, datetime
 import logging
+from datetime import UTC, datetime
 from typing import Optional, cast
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Request, UploadFile, status
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.functions import coalesce as sa_coalesce, count as sa_count, sum as sa_sum
+from sqlalchemy.sql.functions import coalesce as sa_coalesce
+from sqlalchemy.sql.functions import count as sa_count
+from sqlalchemy.sql.functions import sum as sa_sum
 
 from config.database import get_async_db
 from models.domain.auth import Organization, User
-from models.domain.messages import Messages, Language
+from models.domain.messages import Language, Messages
 
 try:
     from models.domain.token_usage import TokenUsage
 except ImportError:
     TokenUsage = None
+
 from services.auth.user_fk_cleanup import delete_user_fk_dependent_rows
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS, REDIS_ERRORS
+from utils.auth.admin_panel_permissions import CAP_TAB_INVITES_VIEW, CAP_TAB_ORGANIZATIONS_VIEW
+from utils.auth.admin_scope import (
+    AdminScope,
+    assert_panel_org_readable,
+    assert_resource_org_in_scope,
+    org_filter,
+    panel_org_table_filter,
+)
+from utils.auth.mindbot_token_stats import add_token_period, aggregate_mindbot_token_totals
+from utils.auth.org_privatization import org_privatization_list_field
 from utils.auth.role_constants import ROLE_TEACHER, SCHOOL_ADMIN_ROLES, normalize_role
 from utils.auth.roles import is_superadmin
-from utils.auth.mindbot_token_stats import add_token_period, aggregate_mindbot_token_totals
 from utils.auth.school_tier import (
     apply_extra_member_seats_on_update,
     apply_school_tier_on_create,
@@ -52,34 +65,8 @@ from utils.auth.school_tier import (
     member_count_for_org,
     school_tier_list_fields,
 )
-from utils.auth.admin_panel_permissions import CAP_TAB_INVITES_VIEW, CAP_TAB_ORGANIZATIONS_VIEW
-from utils.auth.org_privatization import org_privatization_list_field
-from utils.auth.admin_scope import (
-    AdminScope,
-    assert_panel_org_readable,
-    assert_resource_org_in_scope,
-    org_filter,
-    panel_org_table_filter,
-)
 from utils.invitations import generate_invitation_code, normalize_or_generate
 from utils.sensitive_mask import mask_invitation_code
-from .organization_dify import (
-    apply_dify_on_create,
-    apply_dify_on_update,
-    dify_list_fields,
-    global_mindmate_dify_fields,
-    propagate_org_dify_settings_to_mindbot_configs,
-    probe_mindmate_dify_health,
-    probe_mindmate_dify_health_draft,
-)
-from .organization_mindmate_branding import (
-    apply_mindmate_branding_on_update,
-    finalize_mindmate_avatar_upload,
-    mindmate_branding_list_fields,
-    purge_org_mindmate_avatar_storage,
-    revert_mindmate_avatar_upload,
-    save_mindmate_agent_avatar,
-)
 
 from ..dependencies import (
     get_admin_scope,
@@ -89,6 +76,23 @@ from ..dependencies import (
     require_invite_org_create,
 )
 from ..helpers import utc_to_beijing_iso
+from .organization_dify import (
+    apply_dify_on_create,
+    apply_dify_on_update,
+    dify_list_fields,
+    global_mindmate_dify_fields,
+    probe_mindmate_dify_health,
+    probe_mindmate_dify_health_draft,
+    propagate_org_dify_settings_to_mindbot_configs,
+)
+from .organization_mindmate_branding import (
+    apply_mindmate_branding_on_update,
+    finalize_mindmate_avatar_upload,
+    mindmate_branding_list_fields,
+    purge_org_mindmate_avatar_storage,
+    revert_mindmate_avatar_upload,
+    save_mindmate_agent_avatar,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +181,7 @@ async def list_organizations_admin(
                     organization_id=int(org_key),
                 )
                 token_stats_by_org[org_key] = add_token_period(org_stats, mindbot_totals)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.debug("TokenUsage query failed: %s", e)
 
     for org in orgs:
@@ -348,7 +352,7 @@ async def create_organization_admin(
     try:
         await db.commit()
         await db.refresh(new_org)
-    except Exception as e:
+    except REDIS_ERRORS as e:
         await db.rollback()
         logger.error("[Auth] Failed to create org in database: %s", e)
         raise HTTPException(
@@ -360,7 +364,7 @@ async def create_organization_admin(
     try:
         await org_cache.cache_org(new_org)
         logger.info("[Auth] New org cached: ID %s, code %s", new_org.id, new_org.code)
-    except Exception as e:
+    except REDIS_ERRORS as e:
         logger.warning("[Auth] Failed to cache new org ID %s: %s", new_org.id, e)
 
     logger.info("Admin %s created organization: %s", current_user.phone, new_org.code)
@@ -525,7 +529,7 @@ async def update_organization_admin(
     try:
         await db.commit()
         await db.refresh(org)
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         await db.rollback()
         logger.error("[Auth] Failed to update org ID %s in database: %s", org_id, e)
         raise HTTPException(
@@ -583,7 +587,7 @@ async def upload_organization_mindmate_avatar_admin(
     try:
         await db.commit()
         await db.refresh(org)
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         await db.rollback()
         revert_mindmate_avatar_upload(old_avatar_url, avatar_url)
         logger.error("[Auth] Failed to save MindMate avatar for org ID %s: %s", org_id, exc)
@@ -660,7 +664,7 @@ async def refresh_organization_invitation_code(
     try:
         await db.commit()
         await db.refresh(org)
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         await db.rollback()
         logger.error("[Auth] Failed to refresh invitation code for org %s: %s", org_id, e)
         raise HTTPException(
@@ -714,7 +718,7 @@ async def delete_organization_admin(
             await db.delete(user)
         try:
             await db.flush()
-        except Exception as e:
+        except REDIS_ERRORS as e:
             await db.rollback()
             logger.error("[Auth] Failed to delete users for %s: %s", org_id, e)
             raise HTTPException(
@@ -727,7 +731,7 @@ async def delete_organization_admin(
     await db.delete(org)
     try:
         await db.commit()
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         await db.rollback()
         logger.error("[Auth] Failed to delete org ID %s in database: %s", org_id, e)
         raise HTTPException(
@@ -738,7 +742,7 @@ async def delete_organization_admin(
     try:
         await org_cache.invalidate(org_id, org_code, org_invite)
         logger.info("[Auth] Invalidated cache for deleted org ID %s", org_id)
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.warning("[Auth] Failed to invalidate cache for deleted org ID %s: %s", org_id, e)
 
     logger.warning(
@@ -932,7 +936,7 @@ async def set_organization_manager(
     try:
         await db.commit()
         await db.refresh(user)
-    except Exception as e:
+    except REDIS_ERRORS as e:
         await db.rollback()
         logger.error("[Auth] Failed to set manager role for user ID %s: %s", user_id, e)
         raise HTTPException(
@@ -944,7 +948,7 @@ async def set_organization_manager(
     try:
         await user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
         await user_cache.cache_user(user)
-    except Exception as e:
+    except REDIS_ERRORS as e:
         logger.warning("[Auth] Failed to update user cache: %s", e)
 
     logger.info(
@@ -996,7 +1000,7 @@ async def remove_organization_manager(
     try:
         await db.commit()
         await db.refresh(user)
-    except Exception as e:
+    except REDIS_ERRORS as e:
         await db.rollback()
         logger.error("[Auth] Failed to remove manager role from user ID %s: %s", user_id, e)
         raise HTTPException(
@@ -1008,7 +1012,7 @@ async def remove_organization_manager(
     try:
         await user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
         await user_cache.cache_user(user)
-    except Exception as e:
+    except REDIS_ERRORS as e:
         logger.warning("[Auth] Failed to update user cache: %s", e)
 
     logger.info(

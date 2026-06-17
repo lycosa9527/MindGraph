@@ -10,7 +10,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 from services.gewe.protocols import GeweServiceBase
 

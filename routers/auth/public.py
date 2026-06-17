@@ -12,19 +12,18 @@ Proprietary License
 """
 
 from fastapi import APIRouter, Depends, Request, Response
-
-from utils.db.rls_request import bind_public_org_list_rls_dependency
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import Organization
 from services.auth.geo_cn_mainland_cookie import set_geo_cn_mainland_cookie
-
-_stamp_geo_cn_mainland_cookie = set_geo_cn_mainland_cookie
 from services.auth.geoip_country import resolve_country_iso_from_request
 from utils.auth import AUTH_MODE, is_https
 from utils.auth.config import REGISTRATION_ENABLED
+from utils.db.rls_request import bind_public_org_list_rls_dependency
+
+_stamp_geo_cn_mainland_cookie = set_geo_cn_mainland_cookie
 
 router = APIRouter()
 

@@ -9,15 +9,16 @@ All Rights Reserved
 Proprietary License
 """
 
-from pathlib import Path
 import logging
 import shutil
+from pathlib import Path
 
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 # Try to get logger, but handle case where logging isn't configured yet
 try:
     LOGGER = logging.getLogger(__name__)
-except Exception:
+except BACKGROUND_INFRA_ERRORS:
     LOGGER = None
 
 
@@ -97,7 +98,7 @@ def ensure_utf8_env_file(env_path: str = ".env") -> None:
                 with open(env_file, "r", encoding="utf-8", errors="replace") as f:
                     content = f.read()
                 detected_encoding = "utf-8 (with replacements)"
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 _log(f"Failed to read .env file: {e}", "error")
                 raise ValueError("Cannot read .env file: invalid encoding. Please save the file as UTF-8.") from e
 
@@ -115,6 +116,6 @@ def ensure_utf8_env_file(env_path: str = ".env") -> None:
 
             _log(f"Successfully converted .env file from {detected_encoding} to UTF-8")
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             _log(f"Failed to write UTF-8 .env file: {e}", "error")
             raise ValueError(f"Cannot convert .env file to UTF-8: {e}") from e

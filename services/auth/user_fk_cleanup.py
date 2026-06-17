@@ -28,34 +28,38 @@ from models.domain.library import (
     LibraryDanmakuReply,
     LibraryDocument,
 )
+from models.domain.mindbot_usage import MindbotUsageEvent
 from models.domain.pinned_conversations import PinnedConversation
 from models.domain.school_zone import (
     SharedDiagram,
     SharedDiagramComment,
     SharedDiagramLike,
 )
+from models.domain.token_usage import TokenUsage
 from models.domain.user_activity_log import UserActivityLog
 from models.domain.user_api_token import UserAPIToken
 from models.domain.user_usage_stats import UserUsageStats
 from models.domain.workshop_chat import ChatTopic
-
-from models.domain.token_usage import TokenUsage
-from models.domain.mindbot_usage import MindbotUsageEvent
+from services.online_collab.core.purge_user_collab import purge_user_from_active_collab
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
 
 async def _null_token_usage_user_id(db: AsyncSession, user_id: int) -> None:
+    """Null token usage user id."""
     await db.execute(update(TokenUsage).where(TokenUsage.user_id == user_id).values(user_id=None))
 
 
 async def _null_mindbot_linked_user(db: AsyncSession, user_id: int) -> None:
+    """Null mindbot linked user."""
     await db.execute(
         update(MindbotUsageEvent).where(MindbotUsageEvent.linked_user_id == user_id).values(linked_user_id=None)
     )
 
 
 async def _delete_community_for_user(db: AsyncSession, user_id: int) -> None:
+    """Delete community for user."""
     ap = select(CommunityPost.id).where(CommunityPost.author_id == user_id).scalar_subquery()
     await db.execute(delete(CommunityPostComment).where(CommunityPostComment.post_id.in_(ap)))
     await db.execute(delete(CommunityPostLike).where(CommunityPostLike.post_id.in_(ap)))
@@ -65,6 +69,7 @@ async def _delete_community_for_user(db: AsyncSession, user_id: int) -> None:
 
 
 async def _delete_school_zone_for_user(db: AsyncSession, user_id: int) -> None:
+    """Delete school zone for user."""
     dsub = select(SharedDiagram.id).where(SharedDiagram.author_id == user_id).scalar_subquery()
     await db.execute(delete(SharedDiagramComment).where(SharedDiagramComment.diagram_id.in_(dsub)))
     await db.execute(delete(SharedDiagramLike).where(SharedDiagramLike.diagram_id.in_(dsub)))
@@ -74,6 +79,7 @@ async def _delete_school_zone_for_user(db: AsyncSession, user_id: int) -> None:
 
 
 async def _delete_library_for_user(db: AsyncSession, user_id: int) -> None:
+    """Delete library for user."""
     await db.execute(delete(LibraryDanmakuLike).where(LibraryDanmakuLike.user_id == user_id))
     await db.execute(delete(LibraryDanmakuReply).where(LibraryDanmakuReply.user_id == user_id))
     await db.execute(delete(LibraryDanmaku).where(LibraryDanmaku.user_id == user_id))
@@ -182,12 +188,8 @@ async def delete_user_fk_dependent_rows(db: AsyncSession, user_id: int) -> None:
     Delete child rows and null FKs that would block ``DELETE FROM users`` for this id.
     """
     try:
-        from services.online_collab.core.purge_user_collab import (
-            purge_user_from_active_collab,
-        )
-
         purge_user_from_active_collab(user_id)
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         pass
 
     await _null_token_usage_user_id(db, user_id)

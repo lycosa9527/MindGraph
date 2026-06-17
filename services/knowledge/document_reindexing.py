@@ -2,15 +2,15 @@
 
 Extracted from knowledge_space_service.py to reduce complexity.
 """
-
 import logging
-from typing import List, Dict, Set, Tuple, Any, Optional
+import os
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from config.settings import config
-from models.domain.knowledge_space import KnowledgeDocument, DocumentChunk
+from models.domain.knowledge_space import DocumentChunk, KnowledgeDocument
 from services.knowledge.chunking_service import ChunkingService
 from services.llm.embedding_cache import get_embedding_cache
-
+from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,6 @@ def chunk_text_for_reindexing(
                 separator = seg.get("separator") or seg.get("delimiter")
 
     # Log chunking configuration for update
-    import os
 
     chunking_engine = os.getenv("CHUNKING_ENGINE", "semchunk").lower()
     chunking_method = "mindchunk" if chunking_engine == "mindchunk" else "semchunk"
@@ -135,7 +134,7 @@ def chunk_text_for_reindexing(
                 page_info=page_info,
                 language=document.language,
             )
-    except Exception as chunk_error:
+    except DATABASE_ERRORS as chunk_error:
         error_msg = f"文本分块失败: {str(chunk_error)}"
         logger.error(
             "[KnowledgeSpace] Chunking failed for document %s: %s",
@@ -248,7 +247,7 @@ async def process_updated_chunks(
                 if embeddings:
                     cached_embedding = embeddings[0]
                     await embedding_cache.cache_document_embedding(db, new_chunk.text, cached_embedding)
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 logger.error(
                     "[KnowledgeSpace] Failed to generate embedding for chunk %s: %s",
                     chunk_index,
@@ -313,7 +312,7 @@ async def process_new_chunks(
                 if embeddings:
                     cached_embedding = embeddings[0]
                     await embedding_cache.cache_document_embedding(db, new_chunk.text, cached_embedding)
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 logger.error(
                     "[KnowledgeSpace] Failed to generate embedding for new chunk %s: %s",
                     chunk_index,

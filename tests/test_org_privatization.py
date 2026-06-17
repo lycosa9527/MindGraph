@@ -6,10 +6,13 @@ from types import SimpleNamespace
 from typing import cast
 
 from models.domain.auth import Organization
-from utils.auth.org_privatization import organization_is_privatized, org_privatization_list_field
+from routers.auth.admin.organization_dify import dify_list_fields
+from routers.auth.admin.organization_mindmate_branding import mindmate_branding_list_fields
+from utils.auth.org_privatization import org_privatization_list_field, organization_is_privatized
 
 
 def _org(**fields: object) -> Organization:
+    """Org."""
     defaults: dict[str, object] = {
         "mindmate_agent_name": None,
         "mindmate_agent_avatar_url": None,
@@ -21,27 +24,32 @@ def _org(**fields: object) -> Organization:
 
 
 def test_not_privatized_when_all_empty() -> None:
+    """Test not privatized when all empty."""
     org = _org()
     assert organization_is_privatized(org) is False
     assert org_privatization_list_field(org) == {"is_privatized": False}
 
 
 def test_not_privatized_with_agent_name_only() -> None:
+    """Test not privatized with agent name only."""
     org = _org(mindmate_agent_name="小助手")
     assert organization_is_privatized(org) is False
 
 
 def test_not_privatized_with_avatar_only() -> None:
+    """Test not privatized with avatar only."""
     org = _org(mindmate_agent_avatar_url="/static/org_mindmate_avatars/1/avatar.png")
     assert organization_is_privatized(org) is False
 
 
 def test_not_privatized_with_dify_key_only() -> None:
+    """Test not privatized with dify key only."""
     org = _org(dify_api_key="app-secret-key")
     assert organization_is_privatized(org) is False
 
 
 def test_not_privatized_with_dify_url_and_key_missing_pair() -> None:
+    """Test not privatized with dify url and key missing pair."""
     org = _org(
         mindmate_agent_name="Mind",
         mindmate_agent_avatar_url="/static/org_mindmate_avatars/2/avatar.gif",
@@ -57,6 +65,7 @@ def test_not_privatized_with_dify_url_and_key_missing_pair() -> None:
 
 
 def test_not_privatized_with_two_of_three_criteria() -> None:
+    """Test not privatized with two of three criteria."""
     org = _org(
         mindmate_agent_name="Mind",
         mindmate_agent_avatar_url="/static/org_mindmate_avatars/2/avatar.gif",
@@ -65,6 +74,7 @@ def test_not_privatized_with_two_of_three_criteria() -> None:
 
 
 def test_whitespace_only_fields_are_not_privatized() -> None:
+    """Test whitespace only fields are not privatized."""
     org = _org(
         mindmate_agent_name="   ",
         mindmate_agent_avatar_url="  ",
@@ -74,6 +84,7 @@ def test_whitespace_only_fields_are_not_privatized() -> None:
 
 
 def test_privatized_when_all_three_criteria_met() -> None:
+    """Test privatized when all three criteria met."""
     org = _org(
         mindmate_agent_name="Mind",
         mindmate_agent_avatar_url="/static/org_mindmate_avatars/2/avatar.gif",
@@ -86,9 +97,6 @@ def test_privatized_when_all_three_criteria_met() -> None:
 
 def test_admin_list_payload_marks_privatized_after_superadmin_configures_all_three() -> None:
     """Mirrors GET /admin/organizations field assembly for one fully configured school."""
-    from routers.auth.admin.organization_dify import dify_list_fields
-    from routers.auth.admin.organization_mindmate_branding import mindmate_branding_list_fields
-
     org = _org(
         mindmate_agent_name="SchoolBot",
         mindmate_agent_avatar_url="/static/org_mindmate_avatars/5/avatar.png",

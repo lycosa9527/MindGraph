@@ -34,12 +34,12 @@ from routers.features.workshop_chat.dependencies import (
 from routers.features.workshop_chat.schemas import (
     CreateChannelRequest,
     InviteChannelMemberRequest,
-    OrgMembersPage,
     OrgMemberRow,
+    OrgMembersPage,
     ReorderTeachingGroupsRequest,
+    UpdateChannelPermissionsRequest,
     UpdateChannelRequest,
     UpdateMemberPrefsRequest,
-    UpdateChannelPermissionsRequest,
 )
 from services.features.workshop_chat import channel_service
 from services.features.workshop_chat.default_channels import (
@@ -48,6 +48,7 @@ from services.features.workshop_chat.default_channels import (
 )
 from services.features.workshop_chat.workshop_list_etag import channels_list_etag
 from services.features.workshop_chat_ws_manager import chat_ws_manager
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user, is_admin
 
 logger = logging.getLogger(__name__)
@@ -159,7 +160,7 @@ async def initialize_default_channels(
         if not created:
             return {"ok": True, "created": 0, "channels": []}
         return {"ok": True, "created": len(created), "channels": created}
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.exception(
             "[WorkshopChat] initialize_default_channels failed: %s",
             exc,

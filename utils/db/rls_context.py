@@ -18,23 +18,31 @@ from sqlalchemy import event, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+from config.db_sessions import open_async_session, open_sync_session
+from utils.db.rls_context_from_actor import (
+    build_from_admin_scope_kwargs,
+    build_from_user_kwargs,
+    build_panel_superadmin_kwargs,
+)
+from utils.db.rls_types import (
+    MODE_AUTHENTICATED,
+    MODE_DASHBOARD,
+    MODE_DENY,
+    MODE_MINDBOT_SERVICE,
+    MODE_PUBLIC,
+    MODE_SYSTEM,
+    RlsListenerRegistration,
+)
+
 _logger = logging.getLogger(__name__)
 
 _rls_context_var: ContextVar[Optional["RlsContext"]] = ContextVar("rls_context", default=None)
 
 
 def _rls_strict_enabled() -> bool:
+    """Rls strict enabled."""
     return os.getenv("RLS_CONTEXT_STRICT", "0").lower() in ("1", "true", "yes")
 
-
-MODE_AUTHENTICATED = "authenticated"
-MODE_PANEL = "panel"
-MODE_PANEL_SUPERADMIN = "panel_superadmin"
-MODE_PUBLIC = "public"
-MODE_DASHBOARD = "dashboard"
-MODE_MINDBOT_SERVICE = "mindbot_service"
-MODE_DENY = "deny"
-MODE_SYSTEM = "system"
 
 _APP_PREFIX = "app."
 
@@ -81,53 +89,37 @@ class RlsContext:
 
     @classmethod
     def deny_default(cls) -> "RlsContext":
+        """Deny default."""
         return cls(mode=MODE_DENY)
 
     @classmethod
     def from_user(cls, user: Any, *, allow_global_channels: bool = False) -> "RlsContext":
-        from utils.auth.role_constants import normalize_role
-
-        uid = getattr(user, "id", None)
-        org_id = getattr(user, "organization_id", None)
-        role = normalize_role(getattr(user, "role", None))
-        return cls(
-            mode=MODE_AUTHENTICATED,
-            user_id=int(uid) if uid is not None else None,
-            organization_id=int(org_id) if org_id is not None else None,
-            role=role,
-            actor_user_id=int(uid) if uid is not None else None,
-            allow_global_channels=allow_global_channels,
-        )
+        """From user."""
+        return cls(**build_from_user_kwargs(user, allow_global_channels=allow_global_channels))
 
     @classmethod
     def from_admin_scope(cls, scope: Any) -> "RlsContext":
-        from utils.db.rls_admin_scope import admin_scope_to_session_vars
-
-        return cls(**admin_scope_to_session_vars(scope))
+        """From admin scope."""
+        return cls(**build_from_admin_scope_kwargs(scope))
 
     @classmethod
     def panel_superadmin(cls, user: Any) -> "RlsContext":
-        from utils.auth.role_constants import normalize_role
-
-        uid = getattr(user, "id", None)
-        return cls(
-            mode=MODE_PANEL_SUPERADMIN,
-            user_id=int(uid) if uid is not None else None,
-            role=normalize_role(getattr(user, "role", None)),
-            actor_user_id=int(uid) if uid is not None else None,
-            panel_global_read=True,
-        )
+        """Panel superadmin."""
+        return cls(**build_panel_superadmin_kwargs(user))
 
     @classmethod
     def for_public_org_list(cls) -> "RlsContext":
+        """For public org list."""
         return cls(mode=MODE_PUBLIC, allow_public_org_list=True)
 
     @classmethod
     def for_dashboard(cls) -> "RlsContext":
+        """For dashboard."""
         return cls(mode=MODE_DASHBOARD)
 
     @classmethod
     def for_celery_user(cls, user_id: int, organization_id: Optional[int] = None) -> "RlsContext":
+        """For celery user."""
         return cls(
             mode=MODE_AUTHENTICATED,
             user_id=int(user_id),
@@ -142,6 +134,7 @@ class RlsContext:
         organization_id: int,
         callback_token: Optional[str] = None,
     ) -> "RlsContext":
+        """For mindbot service."""
         return cls(
             mode=MODE_MINDBOT_SERVICE,
             organization_id=int(organization_id),
@@ -150,22 +143,27 @@ class RlsContext:
 
     @classmethod
     def system_bootstrap(cls) -> "RlsContext":
+        """System bootstrap."""
         return cls(mode=MODE_SYSTEM)
 
 
 def get_rls_context() -> Optional[RlsContext]:
+    """Get rls context."""
     return _rls_context_var.get()
 
 
 def set_rls_context(ctx: Optional[RlsContext]) -> Token:
+    """Set rls context."""
     return _rls_context_var.set(ctx)
 
 
 def reset_rls_context(token: Token) -> None:
+    """Reset rls context."""
     _rls_context_var.reset(token)
 
 
 def resolve_rls_context_for_transaction() -> RlsContext:
+    """Resolve rls context for transaction."""
     ctx = get_rls_context()
     if ctx is not None:
         return ctx
@@ -191,6 +189,7 @@ async def apply_rls_context_async(session: AsyncSession, ctx: Optional[RlsContex
 
 
 def apply_rls_context_sync(connection: Any, ctx: Optional[RlsContext] = None) -> None:
+    """Apply rls context sync."""
     effective = ctx if ctx is not None else resolve_rls_context_for_transaction()
     for key, value in effective.session_vars().items():
         connection.execute(
@@ -200,6 +199,7 @@ def apply_rls_context_sync(connection: Any, ctx: Optional[RlsContext] = None) ->
 
 
 def _after_begin_apply_rls(_session: Session, _transaction, connection) -> None:
+    """After begin apply rls."""
     apply_rls_context_sync(connection)
 
 
@@ -211,20 +211,18 @@ def register_rls_listeners(async_engine: Any, sync_engine: Any) -> None:
     transactions through the underlying Session class.
     """
     del async_engine, sync_engine
-    if getattr(register_rls_listeners, "_registered", False):
+    if RlsListenerRegistration.registered:
         return
     event.listen(Session, "after_begin", _after_begin_apply_rls)
-    register_rls_listeners._registered = True
+    RlsListenerRegistration.registered = True
 
 
 @asynccontextmanager
 async def rls_async_session(ctx: RlsContext) -> AsyncIterator[AsyncSession]:
-    """Open AsyncSessionLocal with RLS context for direct-session code paths."""
-    from config.database import AsyncSessionLocal
-
+    """Open async DB session with RLS context for direct-session code paths."""
     token = set_rls_context(ctx)
     try:
-        async with AsyncSessionLocal() as session:
+        async with open_async_session() as session:
             yield session
     finally:
         reset_rls_context(token)
@@ -232,14 +230,29 @@ async def rls_async_session(ctx: RlsContext) -> AsyncIterator[AsyncSession]:
 
 @contextmanager
 def rls_sync_session(ctx: RlsContext) -> Iterator[Session]:
-    from config.database import SyncSessionLocal
-
+    """Rls sync session."""
     token = set_rls_context(ctx)
     try:
-        session = SyncSessionLocal()
+        session = open_sync_session()
         try:
             yield session
         finally:
             session.close()
     finally:
         reset_rls_context(token)
+
+
+def to_rls_session_vars(scope: Any) -> dict[str, str]:
+    """Flat app.* key → value map for SET LOCAL (panel routes)."""
+    ctx = RlsContext.from_admin_scope(scope)
+    return ctx.session_vars()
+
+
+def rls_context_from_admin_scope(scope: Any) -> RlsContext:
+    """Rls context from admin scope."""
+    return RlsContext.from_admin_scope(scope)
+
+
+def rls_context_panel_superadmin(user: Any) -> RlsContext:
+    """Rls context panel superadmin."""
+    return RlsContext.panel_superadmin(user)

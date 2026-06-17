@@ -20,6 +20,7 @@ _PROMPT_SOFT_CAP = 42_000
 
 
 def _diagram_payload_for_inventory(diagram_type: str, diagram_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Diagram payload for inventory."""
     base = dict(diagram_data)
     base["diagram_type"] = diagram_type
     raw = json.dumps(base, ensure_ascii=False, separators=(",", ":"), default=str)
@@ -38,6 +39,7 @@ def _diagram_payload_for_inventory(diagram_type: str, diagram_data: Dict[str, An
 
 
 def _flatten_id_text_pairs(diagram_data: Dict[str, Any]) -> List[Tuple[str, str]]:
+    """Flatten id text pairs."""
     pairs: List[Tuple[str, str]] = []
 
     children = diagram_data.get("children")
@@ -62,6 +64,7 @@ def _flatten_id_text_pairs(diagram_data: Dict[str, Any]) -> List[Tuple[str, str]
 
 
 def _norm(s: str) -> str:
+    """Norm."""
     return re.sub(r"\s+", " ", (s or "").strip().lower())
 
 
@@ -71,6 +74,7 @@ def _resolve_node_id(
     text_hint: Any,
     pairs: List[Tuple[str, str]],
 ) -> str | None:
+    """Resolve node id."""
     if isinstance(raw_id, str) and raw_id.strip():
         nid = raw_id.strip()
         if any(p[0] == nid for p in pairs):
@@ -92,11 +96,12 @@ def _resolve_node_id(
 
 
 def _parse_llm_json(text: str) -> Dict[str, Any]:
+    """Parse llm json."""
     cleaned = text.strip()
     if "```" in cleaned:
         start = cleaned.find("{")
         end = cleaned.rfind("}") + 1
-        if start >= 0 and end > start:
+        if 0 <= start < end:
             cleaned = cleaned[start:end]
     return json.loads(cleaned)
 

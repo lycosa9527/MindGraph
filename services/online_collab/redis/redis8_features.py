@@ -38,22 +38,27 @@ logger = logging.getLogger(__name__)
 
 
 def _flag_on(name: str) -> bool:
+    """Flag on."""
     return os.getenv(name, "0") not in ("0", "false", "False", "")
 
 
 def bloom_codes_enabled() -> bool:
+    """Bloom codes enabled."""
     return _flag_on("COLLAB_REDIS_BLOOM_CODES")
 
 
 def timeseries_enabled() -> bool:
+    """Timeseries enabled."""
     return _flag_on("COLLAB_REDIS_TIMESERIES")
 
 
 def tdigest_enabled() -> bool:
+    """Tdigest enabled."""
     return _flag_on("COLLAB_REDIS_TDIGEST")
 
 
 def topk_enabled() -> bool:
+    """Topk enabled."""
     return _flag_on("COLLAB_REDIS_TOPK")
 
 
@@ -379,6 +384,7 @@ class _TopKState:
 
 
 async def _ensure_topk_reserved(redis: Any, key: str) -> bool:
+    """Ensure topk reserved."""
     if _TopKState.supported is False:
         return False
     if key in _TopKState.reserved:

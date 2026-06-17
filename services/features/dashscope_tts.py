@@ -10,21 +10,21 @@ All Rights Reserved
 Proprietary License
 """
 
-from pathlib import Path
-from typing import Optional, AsyncGenerator
 import logging
 import os
+from pathlib import Path
+from typing import AsyncGenerator, Optional
 
 import aiofiles
 import anyio
 
 from clients.tts_realtime_client import (
-    TTSRealtimeClient,
-    SessionMode,
     AudioFormat,
+    SessionMode,
+    TTSRealtimeClient,
 )
 from config.settings import config
-
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +59,7 @@ class DashscopeTtsService:
     """Service for generating speech using Dashscope real-time TTS"""
 
     def __init__(self):
+        """ init  ."""
         self.api_key: Optional[str] = None
         self._initialize_api_key()
 
@@ -174,11 +175,10 @@ class DashscopeTtsService:
                 audio_bytes = b"".join(audio_chunks)
                 logger.info("[TTS] Successfully synthesized %s bytes", len(audio_bytes))
                 return audio_bytes
-            else:
-                logger.warning("[TTS] Synthesis returned no audio")
-                return None
+            logger.warning("[TTS] Synthesis returned no audio")
+            return None
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[TTS] Synthesis error: %s", e, exc_info=True)
             return None
 
@@ -233,7 +233,7 @@ class DashscopeTtsService:
             async for audio_chunk in client.synthesize_stream(text_chunks, voice):
                 yield audio_chunk
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[TTS] Streaming synthesis error: %s", e, exc_info=True)
 
     async def synthesize_to_file(
@@ -269,7 +269,7 @@ class DashscopeTtsService:
             logger.info("[TTS] Saved audio to %s", output_path)
             return str(output_path)
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[TTS] Failed to save audio file: %s", e, exc_info=True)
             return None
 
@@ -278,12 +278,14 @@ class DashscopeTtsService:
 # Global Instance
 # ============================================================================
 
-_tts_service: Optional[DashscopeTtsService] = None
+class _TtsServiceState:
+    """Process-wide TTS service singleton holder."""
+
+    instance: Optional[DashscopeTtsService] = None
 
 
 def get_tts_service() -> DashscopeTtsService:
     """Get global TTS service instance"""
-    global _tts_service
-    if _tts_service is None:
-        _tts_service = DashscopeTtsService()
-    return _tts_service
+    if _TtsServiceState.instance is None:
+        _TtsServiceState.instance = DashscopeTtsService()
+    return _TtsServiceState.instance

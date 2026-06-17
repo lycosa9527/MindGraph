@@ -3,30 +3,39 @@
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass
 from typing import Any, Dict
 
 from fastapi import WebSocket
 
-from services.kitty.routing.command_router import RouteOutcome, route_omni_function_call, route_voice_command
-from services.kitty.context.messaging import safe_websocket_send
-from services.kitty.omni.context_refresh import schedule_omni_context_refresh
 from services.kitty.content.paragraph import process_paragraph_with_qwen_plus
-from services.kitty.session.events import KittyEvent, SessionEventBus, get_session_event_bus
+from services.kitty.context.library_refresh import bump_voice_mutation_freshness
+from services.kitty.context.messaging import safe_websocket_send
+from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
+from services.kitty.omni.context_refresh import schedule_omni_context_refresh
+from services.kitty.routing.command_router import RouteOutcome, route_omni_function_call, route_voice_command
+from services.kitty.session.events import (
+    KittyEvent,
+    SessionEventBus,
+    get_session_event_bus,
+)
 from services.kitty.session.memory import get_session_memory
+from services.kitty.session.omni_client_access import get_session_omni_client
 from services.kitty.session.runtime_state import voice_sessions
-from services.kitty.session.ops import get_session_omni_client
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
 class KittySessionRuntime:
+    """KittySessionRuntime helper."""
     websocket: WebSocket
     voice_session_id: str
 
 
 async def setup_session_event_handlers(runtime: KittySessionRuntime) -> SessionEventBus:
+    """Setup session event handlers."""
     bus = get_session_event_bus(runtime.voice_session_id)
 
     async def _on_event(event: KittyEvent) -> None:
@@ -44,10 +53,6 @@ async def setup_session_event_handlers(runtime: KittySessionRuntime) -> SessionE
         elif event.kind == "function_call":
             await _handle_function_call(runtime, event.payload)
         elif event.kind == "diagram_mutated":
-            import time as _time
-
-            from services.kitty.context.library_refresh import bump_voice_mutation_freshness
-
             bump_voice_mutation_freshness(runtime.voice_session_id)
             delta = event.payload.get("delta")
             await schedule_omni_context_refresh(
@@ -56,11 +61,9 @@ async def setup_session_event_handlers(runtime: KittySessionRuntime) -> SessionE
                 delta=str(delta) if delta else None,
             )
         elif event.kind == "context_update":
-            import time as _time
-
             sess = voice_sessions.get(runtime.voice_session_id)
             if sess is not None:
-                sess["_last_context_update_mono"] = _time.monotonic()
+                sess["_last_context_update_mono"] = time.monotonic()
             reason = str(event.payload.get("reason") or "context_update")
             await schedule_omni_context_refresh(runtime.voice_session_id, reason=reason)
         elif event.kind == "image_paragraph":
@@ -71,24 +74,11 @@ async def setup_session_event_handlers(runtime: KittySessionRuntime) -> SessionE
     return bus
 
 
-async def teardown_session_event_handlers(voice_session_id: str) -> None:
-    bus = get_session_event_bus(voice_session_id)
-    await bus.stop()
-    from services.kitty.session.events import remove_session_event_bus
-    from services.kitty.session.memory import remove_session_memory
-    from services.kitty.omni.context_refresh import cancel_pending_omni_refresh
-
-    remove_session_event_bus(voice_session_id)
-    remove_session_memory(voice_session_id)
-    cancel_pending_omni_refresh(voice_session_id)
-
-
 async def _handle_transcription(runtime: KittySessionRuntime, payload: Dict[str, Any]) -> None:
+    """Handle transcription."""
     text = str(payload.get("text") or "").strip()
     if not text:
         return
-
-    from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 
     kitty_wf_log(
         "user_turn",
@@ -107,6 +97,7 @@ async def _handle_transcription(runtime: KittySessionRuntime, payload: Dict[str,
 
 
 async def _handle_text_inbound(runtime: KittySessionRuntime, payload: Dict[str, Any]) -> None:
+    """Handle text inbound."""
     text = str(payload.get("text") or "").strip()
     if not text:
         return
@@ -152,12 +143,11 @@ async def _handle_text_inbound(runtime: KittySessionRuntime, payload: Dict[str, 
 
 
 async def _handle_function_call(runtime: KittySessionRuntime, payload: Dict[str, Any]) -> None:
+    """Handle function call."""
     name = payload.get("name")
     args = payload.get("arguments") or "{}"
     if not isinstance(name, str):
         return
-    from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
-
     kitty_wf_log(
         "omni_tool",
         str(args)[:160],
@@ -176,6 +166,7 @@ async def _handle_function_call(runtime: KittySessionRuntime, payload: Dict[str,
 
 
 async def _handle_image_paragraph(runtime: KittySessionRuntime, payload: Dict[str, Any]) -> None:
+    """Handle image paragraph."""
     text = str(payload.get("text") or "").strip()
     if not text:
         return

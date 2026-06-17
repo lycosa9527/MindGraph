@@ -17,17 +17,19 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-_OPENCC_CONVERTER = None
+class _OpenCcConverterState:
+    """Lazy OpenCC s2t converter holder."""
+
+    instance: Any = None
 
 
 def _s2t_converter():
     """Lazy singleton OpenCC s2t (Simplified -> Traditional) for glyph detection."""
-    global _OPENCC_CONVERTER
-    if _OPENCC_CONVERTER is None:
+    if _OpenCcConverterState.instance is None:
         opencc_mod = importlib.import_module("opencc")
         opencc_cls = getattr(opencc_mod, "OpenCC")
-        _OPENCC_CONVERTER = opencc_cls("s2t")
-    return _OPENCC_CONVERTER
+        _OpenCcConverterState.instance = opencc_cls("s2t")
+    return _OpenCcConverterState.instance
 
 
 def text_contains_simplified_chinese_glyphs(text: str) -> bool:
@@ -75,6 +77,7 @@ def effective_language_for_thinking_user(
 
 
 def _walk_diagram_texts(obj: Any, parts: list[str]) -> None:
+    """Walk diagram texts."""
     if isinstance(obj, dict):
         for key, val in obj.items():
             if key in ("text", "label") and isinstance(val, str) and val.strip():

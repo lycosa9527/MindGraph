@@ -7,15 +7,15 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Any, Dict, Optional, Tuple
 import logging
+from typing import Any, Dict, Optional, Tuple
 
-from agents.core.base_agent import BaseAgent
 from agents.core.agent_utils import extract_json_from_response
+from agents.core.base_agent import BaseAgent
 from config.settings import config
 from prompts import get_prompt
 from services.llm import llm_service
+from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
 logger = logging.getLogger(__name__)
@@ -25,6 +25,7 @@ class CircleMapAgent(BaseAgent):
     """Agent for generating circle maps."""
 
     def __init__(self, model="qwen"):
+        """ init  ."""
         super().__init__(model=model)
         # llm_client is now a dynamic property from BaseAgent
         self.diagram_type = "circle_map"
@@ -82,7 +83,7 @@ class CircleMapAgent(BaseAgent):
                 "diagram_type": self.diagram_type,
             }
 
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             logger.error("CircleMapAgent: Circle map generation failed: %s", e)
             return {"success": False, "error": f"Generation failed: {str(e)}"}
 
@@ -138,7 +139,7 @@ class CircleMapAgent(BaseAgent):
 
             return spec
 
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             logger.error("CircleMapAgent: Error in spec generation: %s", e)
             return None
 
@@ -173,7 +174,7 @@ class CircleMapAgent(BaseAgent):
 
             return spec
 
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             logger.error("CircleMapAgent: Error enhancing spec: %s", e)
             return spec
 
@@ -205,7 +206,7 @@ class CircleMapAgent(BaseAgent):
             if error_msg:
                 return False, error_msg
             return True, "Specification is valid"
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             return False, f"Validation error: {str(e)}"
 
     async def enhance_spec(self, spec: Dict) -> Dict[str, Any]:
@@ -236,6 +237,6 @@ class CircleMapAgent(BaseAgent):
 
             return {"success": True, "spec": enhanced_spec}
 
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             logger.error("CircleMapAgent: Error enhancing spec: %s", e)
             return {"success": False, "error": f"Enhancement failed: {str(e)}"}

@@ -33,12 +33,14 @@ Author: lycosa9527
 Made by: MindSpring Team
 """
 
-import sqlite3
 import os
-import sys
 import shutil
+import sqlite3
+import sys
 from pathlib import Path
 from typing import Optional
+
+from services.utils.error_types import DATABASE_ERRORS
 
 # Calculate project root (parent of scripts directory)
 _project_root = Path(__file__).parent.parent.parent
@@ -204,7 +206,7 @@ def cleanup_orphaned_records(db_path: Path, dry_run: bool = True) -> dict:
                     print(f"    [WOULD DELETE] {orphaned_count:,} records")
                     stats["records_deleted"][table_name] = orphaned_count
                     stats["total_deleted"] += orphaned_count
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             print(f"    [ERROR] Could not check {table_name}: {e}")
 
     conn.close()

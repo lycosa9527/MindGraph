@@ -6,6 +6,7 @@ from repositories.markets_repo import MarketEntitlementRepository, MarketListing
 
 
 async def user_has_listing_access(session: AsyncSession, user_id: int, listing_slug: str) -> bool:
+    """User has listing access."""
     listing_repo = MarketListingRepository(session)
     listing = await listing_repo.get_by_slug(listing_slug)
     if listing is None:

@@ -7,13 +7,13 @@ from typing import Any, Dict, List
 
 from fastapi import WebSocket
 
-from services.kitty.session.agent_state import kitty_agent_manager
+from services.kitty.context.messaging import send_kitty_diagram_update
 from services.kitty.diagram.diagram_spec_sync import sync_diagram_data_to_spec_shape
 from services.kitty.diagram.hub_bridge import try_sync_voice_diagram_to_hub
-from services.kitty.context.messaging import send_kitty_diagram_update
-from services.kitty.session.runtime_state import logger, voice_sessions
+from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.events import emit_diagram_mutated
 from services.kitty.session.ops import get_agent_session_id, persist_voice_session_context
+from services.kitty.session.runtime_state import logger, voice_sessions
 
 
 async def apply_paragraph_batch_add_nodes(

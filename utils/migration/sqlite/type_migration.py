@@ -14,13 +14,15 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import List, Any, Optional, Dict
 import logging
 import re
 import sqlite3
-from sqlalchemy import inspect
-from models.domain.auth import Base
+from typing import Any, Dict, List, Optional
 
+from sqlalchemy import inspect
+
+from models.domain.auth import Base
+from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -87,21 +89,20 @@ def normalize_sqlite_type(type_str: str) -> str:
 
     if base_type in integer_types:
         return "INTEGER"
-    elif base_type in text_types:
+    if base_type in text_types:
         return "TEXT"
-    elif base_type in real_types:
+    if base_type in real_types:
         return "REAL"
-    elif base_type in blob_types:
+    if base_type in blob_types:
         return "BLOB"
-    elif base_type == "BOOLEAN":
+    if base_type == "BOOLEAN":
         # SQLite stores BOOLEAN as INTEGER, but we track it separately
         return "BOOLEAN"
-    elif base_type in ("DATE", "DATETIME", "TIMESTAMP"):
+    if base_type in ("DATE", "DATETIME", "TIMESTAMP"):
         # SQLite stores these as TEXT or INTEGER
         return "DATETIME"
-    else:
-        # Default to NUMERIC affinity
-        return "NUMERIC"
+    # Default to NUMERIC affinity
+    return "NUMERIC"
 
 
 def types_are_compatible(expected_type: str, actual_type: str) -> bool:
@@ -140,21 +141,20 @@ def get_sqlite_type(column_def: Any) -> str:
     # SQLite type mapping
     if "INTEGER" in type_str.upper():
         return "INTEGER"
-    elif "VARCHAR" in type_str.upper() or "STRING" in type_str.upper():
+    if "VARCHAR" in type_str.upper() or "STRING" in type_str.upper():
         # Extract length if available
         if hasattr(column_def.type, "length") and column_def.type.length:
             return f"VARCHAR({column_def.type.length})"
         return "TEXT"
-    elif "TEXT" in type_str.upper():
+    if "TEXT" in type_str.upper():
         return "TEXT"
-    elif "FLOAT" in type_str.upper() or "REAL" in type_str.upper():
+    if "FLOAT" in type_str.upper() or "REAL" in type_str.upper():
         return "REAL"
-    elif "BOOLEAN" in type_str.upper():
+    if "BOOLEAN" in type_str.upper():
         return "BOOLEAN"
-    elif "DATETIME" in type_str.upper() or "TIMESTAMP" in type_str.upper():
+    if "DATETIME" in type_str.upper() or "TIMESTAMP" in type_str.upper():
         return "DATETIME"
-    else:
-        return type_str
+    return type_str
 
 
 def get_sql_default_value(default: Any) -> Optional[str]:
@@ -175,12 +175,11 @@ def get_sql_default_value(default: Any) -> Optional[str]:
     # Convert Python values to SQL
     if isinstance(default, bool):
         return "1" if default else "0"
-    elif isinstance(default, (int, float)):
+    if isinstance(default, (int, float)):
         return str(default)
-    elif isinstance(default, str):
+    if isinstance(default, str):
         return f"'{default}'"
-    else:
-        return str(default)
+    return str(default)
 
 
 def detect_type_mismatches(engine: Any, table_name: str, table_class: Any) -> List[Dict]:
@@ -242,7 +241,7 @@ def detect_type_mismatches(engine: Any, table_name: str, table_class: Any) -> Li
 
         return mismatches
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("[DBTypeMigration] Detection failed for %s: %s", table_name, e)
         return []
 
@@ -402,7 +401,7 @@ def recreate_table_with_correct_schema(db_path: str, table_name: str, table_clas
                     try:
                         cursor.execute(idx_sql)
                         logger.debug("[DBTypeMigration] Recreated index: %s", idx_name)
-                    except Exception as idx_err:
+                    except DATABASE_ERRORS as idx_err:
                         logger.warning("[DBTypeMigration] Index %s failed: %s", idx_name, idx_err)
 
             # Re-enable foreign key checks
@@ -415,19 +414,19 @@ def recreate_table_with_correct_schema(db_path: str, table_name: str, table_clas
             )
             return True
 
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             conn.rollback()
             # Cleanup temp table if it exists
             try:
                 cursor.execute(f'DROP TABLE IF EXISTS "{temp_table_name}"')
                 conn.commit()
-            except Exception:
+            except DATABASE_ERRORS:
                 pass
             logger.error("[DBTypeMigration] Table recreation failed: %s", e)
             return False
         finally:
             conn.close()
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("[DBTypeMigration] Table recreation error: %s", e, exc_info=True)
         return False

@@ -26,25 +26,23 @@ Proprietary License
 """
 
 import logging
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional, cast
 
-from collections.abc import Mapping
-
 from sqlalchemy import select
 
-from services.utils.typing_helpers import redis_hash_to_str
+from models.domain.auth import Organization
 from services.redis.cache.redis_cache_stampede import with_stampede_lock
+from services.redis import keys as _keys
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
-from utils.db.session_open import system_rls_session
-from models.domain.auth import Organization
+from services.utils.error_types import REDIS_ERRORS
+from services.utils.typing_helpers import redis_hash_to_str
 from utils.auth.school_tier_defs import EXTRA_MEMBER_SEATS_MAX
+from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
-
-from services.redis import keys as _keys
-
 ORG_CACHE_TTL = _keys.TTL_ORG
 
 
@@ -155,13 +153,13 @@ class OrganizationCache:
             return None
         try:
             cached = await redis.hgetall(_keys.ORG_BY_ID.format(org_id=org_id))
-        except Exception:
+        except REDIS_ERRORS:
             return None
         if not cached:
             return None
         try:
             return self._deserialize_org(cached)
-        except Exception:
+        except REDIS_ERRORS:
             return None
 
     async def _read_cached_by_code(self, code: str) -> Optional[Organization]:
@@ -171,7 +169,7 @@ class OrganizationCache:
             return None
         try:
             org_id_str = await redis.get(_keys.ORG_BY_CODE.format(code=code))
-        except Exception:
+        except REDIS_ERRORS:
             return None
         if not org_id_str:
             return None
@@ -187,7 +185,7 @@ class OrganizationCache:
             return None
         try:
             org_id_str = await redis.get(_keys.ORG_BY_INVITE.format(invite_code=invite_code))
-        except Exception:
+        except REDIS_ERRORS:
             return None
         if not org_id_str:
             return None
@@ -220,11 +218,11 @@ class OrganizationCache:
                 if org:
                     try:
                         await self.cache_org(org)
-                    except Exception as e:
+                    except REDIS_ERRORS as e:
                         logger.debug("[OrgCache] Failed to cache org loaded from database: %s", e)
 
                 return org
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("[OrgCache] Database query failed: %s", e, exc_info=True)
             raise
 
@@ -307,14 +305,14 @@ class OrganizationCache:
                     )
                     try:
                         await redis.delete(key)
-                    except Exception as exc:
+                    except REDIS_ERRORS as exc:
                         logger.debug(
                             "Corrupted org cache entry deletion failed for org ID %s: %s",
                             org_id,
                             exc,
                         )
                     return await self._load_from_database(org_id=org_id)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning(
                 "[OrgCache] Redis error for org ID %s, falling back to database: %s",
                 org_id,
@@ -358,14 +356,14 @@ class OrganizationCache:
                     logger.error("[OrgCache] Invalid org ID in code index for %s: %s", code, e)
                     try:
                         await redis.delete(index_key)
-                    except Exception as exc:
+                    except REDIS_ERRORS as exc:
                         logger.debug(
                             "Corrupted org code index deletion failed for code %s: %s",
                             code,
                             exc,
                         )
                     return await self._load_from_database(code=code)
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning(
                 "[OrgCache] Redis error for code %s, falling back to database: %s",
                 code,
@@ -415,10 +413,10 @@ class OrganizationCache:
                     )
                     try:
                         await redis.delete(index_key)
-                    except Exception as exc:
+                    except REDIS_ERRORS as exc:
                         logger.debug("Corrupted org invite index deletion failed: %s", exc)
                     return await self._load_from_database(invite_code=invite_code)
-        except Exception as e:
+        except REDIS_ERRORS as e:
             masked_invite = f"{invite_code[:8]}***" if len(invite_code) >= 8 else "***"
             logger.warning(
                 "[OrgCache] Redis error for invitation code %s, falling back to database: %s",
@@ -492,7 +490,7 @@ class OrganizationCache:
             )
 
             return True
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning("[OrgCache] Failed to cache org ID %s: %s", getattr(org, "id", "?"), exc)
             return False
 
@@ -525,7 +523,7 @@ class OrganizationCache:
                         getattr(org, "invitation_code", None),
                     )
                 )
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logger.warning(
                     "[OrgCache] Skipping org %s in bulk write: %s",
                     getattr(org, "id", "?"),
@@ -555,7 +553,7 @@ class OrganizationCache:
                             ex=ORG_CACHE_TTL,
                         )
                 await pipe.execute()
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning("[OrgCache] Bulk pipeline execute failed: %s", exc)
             return 0
 
@@ -598,7 +596,7 @@ class OrganizationCache:
             await redis_client.delete(*keys_to_delete)
             logger.info("[OrgCache] Invalidated cache for org ID %s", org_id)
             return True
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning("[OrgCache] Failed to invalidate cache for org ID %s: %s", org_id, exc)
             return False
 
@@ -633,12 +631,21 @@ class OrganizationCache:
             await self.invalidate(org_id, new_code, new_invite)
 
 
+class _OrgCacheState:
+    """Holds the global OrganizationCache singleton."""
+
+    cache_instance: OrganizationCache | None = None
+
+
+_org_cache_state = _OrgCacheState()
+
+
 def get_org_cache() -> OrganizationCache:
     """Get or create global OrganizationCache instance."""
-    if not hasattr(get_org_cache, "cache_instance"):
-        get_org_cache.cache_instance = OrganizationCache()
+    if _org_cache_state.cache_instance is None:
+        _org_cache_state.cache_instance = OrganizationCache()
         logger.info("[OrgCache] Initialized")
-    return get_org_cache.cache_instance
+    return _org_cache_state.cache_instance
 
 
 # Convenience alias

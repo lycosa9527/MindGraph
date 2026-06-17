@@ -17,12 +17,14 @@ import sqlite3
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
-from typing import Optional, Dict, Any, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from sqlalchemy import create_engine, inspect, text
 
+from services.utils.error_types import DATABASE_ERRORS
+
 from .migration_table_order import get_table_migration_order
-from .migration_utils import MIGRATION_MARKER_FILE, BACKUP_DIR
+from .migration_utils import BACKUP_DIR, MIGRATION_MARKER_FILE
 
 logger = logging.getLogger(__name__)
 
@@ -152,7 +154,7 @@ def verify_migration(sqlite_path: Path, pg_url: str) -> Tuple[bool, Dict[str, An
                         pg_count,
                     )
 
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 logger.error(
                     "[Migration] Failed to verify table %s: %s",
                     table_name,
@@ -191,7 +193,7 @@ def verify_migration(sqlite_path: Path, pg_url: str) -> Tuple[bool, Dict[str, An
 
         return is_valid, stats
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("[Migration] Verification failed with exception: %s", e, exc_info=True)
         return False, stats
 
@@ -221,7 +223,7 @@ def create_migration_marker(backup_path: Optional[Path], stats: Dict[str, Any]) 
 
         logger.info("[Migration] Migration marker created: %s", MIGRATION_MARKER_FILE)
         return True
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("[Migration] Failed to create migration marker: %s", e)
         return False
 
@@ -302,7 +304,7 @@ def reset_postgresql_sequences(pg_engine: Any) -> None:
                                     next_val,
                                     table_name,
                                 )
-                            except Exception as seq_error:
+                            except DATABASE_ERRORS as seq_error:
                                 logger.warning(
                                     "[Migration] Failed to reset sequence %s for table %s: %s",
                                     sequence_name,
@@ -318,7 +320,7 @@ def reset_postgresql_sequences(pg_engine: Any) -> None:
                                 pk_col,
                             )
 
-                except Exception as e:
+                except DATABASE_ERRORS as e:
                     logger.warning("[Migration] Could not reset sequence for %s: %s", table_name, e)
                     sequences_failed.append(table_name)
                     continue
@@ -332,5 +334,5 @@ def reset_postgresql_sequences(pg_engine: Any) -> None:
             )
         else:
             logger.info("[Migration] PostgreSQL sequences reset (%d sequences)", sequences_reset)
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.warning("[Migration] Failed to reset sequences: %s", e)

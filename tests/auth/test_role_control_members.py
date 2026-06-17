@@ -13,6 +13,7 @@ from utils.auth import get_current_user
 
 
 def _make_user(role: str, user_id: int = 1):
+    """Make user."""
     user = SimpleNamespace()
     user.id = user_id
     user.role = role
@@ -23,17 +24,20 @@ def _make_user(role: str, user_id: int = 1):
 
 @pytest.fixture(name="client")
 def fixture_client():
+    """Fixture client."""
     return TestClient(app)
 
 
 @pytest.fixture(autouse=True)
 def clear_dependency_overrides():
+    """Clear dependency overrides."""
     app.dependency_overrides.clear()
     yield
     app.dependency_overrides.clear()
 
 
 def test_teacher_denied_platform_role_members(client: TestClient) -> None:
+    """Test teacher denied platform role members."""
     app.dependency_overrides[get_current_user] = lambda: _make_user("teacher")
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     response = client.get("/api/auth/admin/platform-role-members?role=platform_bd")
@@ -41,6 +45,7 @@ def test_teacher_denied_platform_role_members(client: TestClient) -> None:
 
 
 def test_superadmin_invalid_platform_role_query(client: TestClient) -> None:
+    """Test superadmin invalid platform role query."""
     app.dependency_overrides[get_current_user] = lambda: _make_user("superadmin")
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     response = client.get("/api/auth/admin/platform-role-members?role=teacher")
@@ -48,6 +53,7 @@ def test_superadmin_invalid_platform_role_query(client: TestClient) -> None:
 
 
 def test_superadmin_platform_role_members_ok(client: TestClient) -> None:
+    """Test superadmin platform role members ok."""
     app.dependency_overrides[get_current_user] = lambda: _make_user("superadmin")
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     response = client.get("/api/auth/admin/platform-role-members?role=expert")

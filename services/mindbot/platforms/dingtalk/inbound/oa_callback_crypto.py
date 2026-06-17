@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def _decode_encoding_aes_key(encoding_aes_key: str) -> bytes:
+    """Decode encoding aes key."""
     raw = encoding_aes_key.strip()
     pad = "=" * ((4 - len(raw) % 4) % 4)
     return base64.b64decode(raw + pad)
@@ -36,6 +37,7 @@ class DingTalkOaCallbackCrypto:
     """Encrypt/decrypt DingTalk open-platform callback payloads (AES-CBC + SHA1)."""
 
     def __init__(self, token: str, encoding_aes_key: str, owner_key: str) -> None:
+        """ init  ."""
         self.encoding_aes_key = encoding_aes_key
         self.owner_key = owner_key
         self.token = token
@@ -95,6 +97,7 @@ class DingTalkOaCallbackCrypto:
         return decode_res[20 : (20 + msg_len)].decode("utf-8")
 
     def _encrypt(self, content: str) -> str:
+        """Encrypt."""
         msg_len = self._length(content)
         plain = "".join(
             [
@@ -117,15 +120,18 @@ class DingTalkOaCallbackCrypto:
         token: str,
         msg_encrypt: str,
     ) -> str:
+        """Generate signature."""
         sign_list = "".join(sorted([nonce, timestamp, token, msg_encrypt]))
         return hashlib.sha1(sign_list.encode()).hexdigest()
 
     @staticmethod
     def _length(content: str) -> bytes:
+        """Length."""
         return struct.pack(">l", len(content))
 
     @staticmethod
     def _pks7encode(content: str) -> str:
+        """Pks7encode."""
         length = len(content)
         output = io.StringIO()
         val = 32 - (length % 32)
@@ -135,4 +141,5 @@ class DingTalkOaCallbackCrypto:
 
     @staticmethod
     def _generate_random_key(size: int) -> str:
+        """Generate random key."""
         return secrets.token_urlsafe(size)[:size]

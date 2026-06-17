@@ -37,6 +37,7 @@ def parse_collab_ws_allowed_origins(raw: str | None) -> FrozenSet[str]:
 
 
 def load_collab_ws_allowed_origins_env() -> FrozenSet[str]:
+    """Load collab ws allowed origins env."""
     return parse_collab_ws_allowed_origins(os.environ.get("COLLAB_WS_ALLOWED_ORIGINS"))
 
 

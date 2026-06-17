@@ -31,6 +31,7 @@ _GEO_CN_COOKIE_PAYLOAD = b"mindgraph:geo_cn_mainland:v1"
 
 
 def _expected_cookie_value() -> str:
+    """Expected cookie value."""
     secret = get_jwt_secret().encode("utf-8")
     return hmac.new(secret, _GEO_CN_COOKIE_PAYLOAD, hashlib.sha256).hexdigest()
 

@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import logging
 import os
+
 from redis.exceptions import RedisError
 
-from services.redis.redis_async_client import get_async_redis
 from services.online_collab.redis.online_collab_redis_keys import session_closing_key
+from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,7 @@ _CLOSING_TTL_FALLBACK_SEC = 120
 
 
 def workshop_session_closing_ttl_seconds() -> int:
+    """Workshop session closing ttl seconds."""
     raw = os.environ.get("WORKSHOP_SESSION_CLOSING_TTL_SEC")
     if raw is None:
         return _CLOSING_TTL_FALLBACK_SEC

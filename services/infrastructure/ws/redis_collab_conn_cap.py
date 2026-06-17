@@ -15,6 +15,7 @@ _KEY_TMPL = "mg:ws:collab:user:{uid}:open"
 
 
 def redis_collab_socket_cap_enabled() -> bool:
+    """Redis collab socket cap enabled."""
     return os.getenv(
         "COLLAB_WS_REDIS_GLOBAL_SOCKET_CAP",
         "0",
@@ -22,6 +23,7 @@ def redis_collab_socket_cap_enabled() -> bool:
 
 
 def _effective_max_sockets_per_user() -> int:
+    """Effective max sockets per user."""
     raw = os.environ.get("COLLAB_WS_MAX_PER_USER_GLOBAL", "20")
     default = 20
     try:
@@ -64,6 +66,7 @@ async def try_acquire_collab_redis_socket_slot(user_id: int) -> bool:
 
 
 async def release_collab_redis_socket_slot(user_id: int) -> None:
+    """Release collab redis socket slot."""
     if not redis_collab_socket_cap_enabled():
         return
     client = get_async_redis()

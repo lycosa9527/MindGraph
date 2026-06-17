@@ -8,31 +8,26 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Dict, List, Optional, Any, AsyncGenerator
 import logging
 import re
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
-from openai import AsyncOpenAI, RateLimitError, APIStatusError
+from openai import APIStatusError, AsyncOpenAI, RateLimitError
 
-from config.settings import config
-from services.infrastructure.http.error_handler import (
-    LLMRateLimitError,
-    LLMProviderError,
-    LLMInvalidParameterError,
-    LLMQuotaExhaustedError,
-    LLMModelNotFoundError,
-    LLMAccessDeniedError,
-    LLMContentFilterError,
-    LLMTimeoutError,
-)
-from services.llm.error_parsers.hunyuan_error_parser import (
-    parse_and_raise_hunyuan_error,
-)
 from clients.llm.base import (
     as_openai_chat_messages,
     extract_usage_from_openai_completion,
     extract_usage_from_stream_chunk,
 )
+from config.settings import config
+from services.infrastructure.http.error_handler import (
+    LLMProviderError,
+    LLMRateLimitError,
+)
+from services.llm.error_parsers.hunyuan_error_parser import (
+    parse_and_raise_hunyuan_error,
+)
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +115,7 @@ class HunyuanClient:
                     if "error" in error_data:
                         error_code = error_data["error"].get("code", "Unknown")
                         error_msg = error_data["error"].get("message", error_msg)
-                except Exception as parse_error:
+                except BACKGROUND_INFRA_ERRORS as parse_error:
                     logger.debug("Failed to parse error response JSON: %s", parse_error)
 
             # Try to extract from error message if code not found
@@ -145,28 +140,13 @@ class HunyuanClient:
             # Parse error using comprehensive Hunyuan error parser
             try:
                 parse_and_raise_hunyuan_error(error_code, error_msg, status_code=getattr(e, "status_code", None))
-            except (
-                LLMInvalidParameterError,
-                LLMQuotaExhaustedError,
-                LLMModelNotFoundError,
-                LLMAccessDeniedError,
-                LLMContentFilterError,
-                LLMRateLimitError,
-                LLMTimeoutError,
-            ):
-                # Re-raise parsed exceptions
-                raise
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 # Fallback to generic error if parsing fails
                 raise LLMProviderError(
                     f"Hunyuan API error ({error_code}): {error_msg}",
                     provider="hunyuan",
                     error_code=error_code,
                 ) from exc
-
-        except Exception as e:
-            logger.error("Hunyuan API error: %s", e)
-            raise
 
     # Alias for compatibility with agents that call chat_completion
     async def chat_completion(
@@ -269,25 +249,10 @@ class HunyuanClient:
             # Parse error using comprehensive Hunyuan error parser
             try:
                 parse_and_raise_hunyuan_error(error_code, error_msg, status_code=getattr(e, "status_code", None))
-            except (
-                LLMInvalidParameterError,
-                LLMQuotaExhaustedError,
-                LLMModelNotFoundError,
-                LLMAccessDeniedError,
-                LLMContentFilterError,
-                LLMRateLimitError,
-                LLMTimeoutError,
-            ):
-                # Re-raise parsed exceptions
-                raise
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 # Fallback to generic error if parsing fails
                 raise LLMProviderError(
                     f"Hunyuan stream error ({error_code}): {error_msg}",
                     provider="hunyuan",
                     error_code=error_code,
                 ) from exc
-
-        except Exception as e:
-            logger.error("Hunyuan streaming error: %s", e)
-            raise

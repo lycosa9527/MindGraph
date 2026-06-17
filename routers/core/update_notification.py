@@ -1,16 +1,3 @@
-from pathlib import Path
-from typing import List, Optional
-import logging
-import uuid
-
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
-from pydantic import BaseModel
-
-from models.domain.auth import User
-from services.utils.update_notifier import update_notifier
-from routers.auth.dependencies import require_admin
-from utils.auth import get_current_user
-
 """
 Update Notification Router
 ===========================
@@ -33,6 +20,19 @@ All Rights Reserved
 Proprietary License
 """
 
+import logging
+import uuid
+from pathlib import Path
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from pydantic import BaseModel
+
+from models.domain.auth import User
+from routers.auth.dependencies import require_admin
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, FILE_IO_ERRORS
+from services.utils.update_notifier import update_notifier
+from utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +112,7 @@ async def get_update_notification(current_user: User = Depends(get_current_user)
 
         return {"notification": notification}
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to get notification: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -132,15 +132,12 @@ async def dismiss_update_notification(current_user: User = Depends(get_current_u
 
         if success:
             return {"message": "Notification dismissed"}
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to dismiss notification",
-            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to dismiss notification",
+        )
 
-    except HTTPException:
-        raise
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to dismiss notification: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -178,7 +175,7 @@ async def get_notification_config(_current_user: User = Depends(require_admin)):
             "dismissed_count": dismissed_count,
         }
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to get notification config: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -220,7 +217,7 @@ async def set_notification_config(
             "notification": notification,
         }
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to set notification config: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -242,7 +239,7 @@ async def disable_notification(current_user: User = Depends(require_admin)):
 
         return {"message": "Notification disabled", "notification": notification}
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to disable notification: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -263,15 +260,12 @@ async def reset_dismissed(current_user: User = Depends(require_admin)):
         if success:
             logger.info("Admin %s reset all dismissed states", current_user.phone)
             return {"message": "All dismissed states cleared"}
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to reset dismissed states",
-            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reset dismissed states",
+        )
 
-    except HTTPException:
-        raise
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to reset dismissed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -321,6 +315,6 @@ async def upload_announcement_image(
 
         return {"url": image_url, "filename": filename}
 
-    except Exception as e:
+    except FILE_IO_ERRORS as e:
         logger.error("Failed to upload image: %s", e)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="图片上传失败") from e

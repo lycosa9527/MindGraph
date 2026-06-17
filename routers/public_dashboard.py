@@ -15,22 +15,22 @@ All Rights Reserved
 Proprietary License
 """
 
-from collections import defaultdict
-from datetime import datetime, timezone
-from typing import Dict, Any, List
 import asyncio
 import json
 import logging
 import uuid
+from collections import defaultdict
+from datetime import datetime, timezone
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import case, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.functions import count as sa_count, sum as sa_sum
+from sqlalchemy.sql.functions import count as sa_count
+from sqlalchemy.sql.functions import sum as sa_sum
 
 from config.database import get_async_db
-from utils.db.rls_request import bind_dashboard_rls_dependency
 from config.settings import config
 from models.domain.auth import User
 from models.domain.token_usage import TokenUsage
@@ -39,11 +39,13 @@ from services.auth.ip_geolocation import get_geolocation_service
 from services.monitoring.activity_stream import get_activity_stream_service
 from services.monitoring.city_flag_tracker import get_city_flag_tracker
 from services.monitoring.dashboard_session import get_dashboard_session_manager
+from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
-from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 from utils.auth import get_client_ip
+from utils.db.rls_request import bind_dashboard_rls_dependency
 
 logger = logging.getLogger(__name__)
 
@@ -234,7 +236,7 @@ async def get_cached_stats(tracker) -> Dict:
             except json.JSONDecodeError:
                 try:
                     await redis.delete(STATS_CACHE_KEY)
-                except Exception as exc:
+                except REDIS_ERRORS as exc:
                     logger.debug("Failed to delete invalid stats cache: %s", exc)
 
         stats = await tracker.get_stats()
@@ -244,12 +246,12 @@ async def get_cached_stats(tracker) -> Dict:
                 STATS_CACHE_TTL,
                 json.dumps(stats, ensure_ascii=False),
             )
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.debug("Failed to cache stats: %s", e)
 
         return stats
 
-    except Exception as e:
+    except REDIS_ERRORS as e:
         logger.debug("Stats cache error: %s, falling back to direct query", e)
         return await tracker.get_stats()
 
@@ -294,7 +296,7 @@ async def get_dashboard_stats(
                 cached_count = await redis.get(REGISTERED_USERS_CACHE_KEY)
                 if cached_count:
                     registered_users = int(cached_count)
-            except Exception as e:
+            except REDIS_ERRORS as e:
                 logger.debug("Error reading registered users cache: %s", e)
 
         if registered_users is None:
@@ -307,7 +309,7 @@ async def get_dashboard_stats(
                         REGISTERED_USERS_CACHE_TTL,
                         str(registered_users),
                     )
-                except Exception as e:
+                except REDIS_ERRORS as e:
                     logger.debug("Failed to cache registered users count: %s", e)
 
         # Get token usage stats (cached)
@@ -321,7 +323,7 @@ async def get_dashboard_stats(
                     token_data = json.loads(cached_tokens)
                     tokens_used_today = token_data.get("today", None)
                     total_tokens_used = token_data.get("total", None)
-            except Exception as e:
+            except REDIS_ERRORS as e:
                 logger.debug("Error reading token usage cache: %s", e)
 
         if tokens_used_today is None or total_tokens_used is None:
@@ -363,7 +365,7 @@ async def get_dashboard_stats(
                             TOKEN_USAGE_CACHE_TTL,
                             json.dumps(token_data),
                         )
-                    except Exception as e:
+                    except REDIS_ERRORS as e:
                         logger.debug("Failed to cache token usage: %s", e)
 
         return {
@@ -374,9 +376,7 @@ async def get_dashboard_stats(
             "total_tokens_used": total_tokens_used,
         }
 
-    except HTTPException:
-        raise
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Error getting dashboard stats: %s", e, exc_info=True)
         # Return empty stats on error (don't break dashboard)
         beijing_now = get_beijing_now()
@@ -417,9 +417,9 @@ async def get_map_data(request: Request) -> Dict[str, Any]:
                     except json.JSONDecodeError:
                         try:
                             await redis.delete(MAP_DATA_CACHE_KEY)
-                        except Exception as exc:
+                        except REDIS_ERRORS as exc:
                             logger.debug("Failed to delete invalid map data cache: %s", exc)
-            except Exception as e:
+            except REDIS_ERRORS as e:
                 logger.debug("Error reading map data cache: %s", e)
 
     try:
@@ -575,14 +575,12 @@ async def get_map_data(request: Request) -> Dict[str, Any]:
                         MAP_DATA_CACHE_TTL,
                         json.dumps(result, ensure_ascii=False),
                     )
-                except Exception as e:
+                except REDIS_ERRORS as e:
                     logger.debug("Failed to cache map data: %s", e)
 
         return result
 
-    except HTTPException:
-        raise
-    except Exception as e:
+    except REDIS_ERRORS as e:
         logger.error("Error getting map data: %s", e, exc_info=True)
         # Return empty data on error (don't break dashboard)
         return {
@@ -637,9 +635,7 @@ async def get_activity_history(request: Request, limit: int = 100) -> Dict[str, 
 
         return {"activities": activity_list, "count": len(activity_list)}
 
-    except HTTPException:
-        raise
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Error getting activity history: %s", e, exc_info=True)
         # Return empty list on error (don't break dashboard)
         return {"activities": [], "count": 0}
@@ -698,9 +694,7 @@ async def stream_activity_updates(request: Request):
                     client_ip,
                     current_connections,
                 )
-            except HTTPException:
-                raise
-            except Exception as e:
+            except REDIS_ERRORS as e:
                 logger.warning(
                     "Error tracking SSE connection in Redis: %s, continuing without tracking",
                     e,
@@ -731,7 +725,7 @@ async def stream_activity_updates(request: Request):
                     "tokens_used_today": 0,  # Will be updated by stats endpoint
                     "total_tokens_used": 0,  # Will be updated by stats endpoint
                 }
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.error("Error getting initial state: %s", e, exc_info=True)
                 error_data = json.dumps({"type": "error", "error": "Failed to fetch initial state"})
                 yield f"data: {error_data}\n\n"
@@ -755,7 +749,7 @@ async def stream_activity_updates(request: Request):
                         yield f"data: {activity_json}\n\n"
                     except asyncio.TimeoutError:
                         pass  # No activity event, continue
-                except Exception as e:
+                except BACKGROUND_INFRA_ERRORS as e:
                     logger.error("Error reading activity queue: %s", e)
 
                 # Send stats update periodically
@@ -770,7 +764,7 @@ async def stream_activity_updates(request: Request):
                         stats_data = json.dumps({"type": "stats_update", **stats_update})
                         yield f"data: {stats_data}\n\n"
                         stats_counter = 0
-                    except Exception as e:
+                    except BACKGROUND_INFRA_ERRORS as e:
                         logger.error("Error getting stats: %s", e, exc_info=True)
 
                 # Send heartbeat periodically
@@ -788,12 +782,12 @@ async def stream_activity_updates(request: Request):
         except asyncio.CancelledError:
             logger.info("Activity stream cancelled for connection %s", connection_id)
             return
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Error in activity stream: %s", e, exc_info=True)
             try:
                 error_data = json.dumps({"type": "error", "error": str(e)})
                 yield f"data: {error_data}\n\n"
-            except Exception:
+            except REDIS_ERRORS:
                 return
         finally:
             # Cleanup
@@ -814,7 +808,7 @@ async def stream_activity_updates(request: Request):
                                 client_ip,
                                 max(0, remaining),
                             )
-                        except Exception as e:
+                        except REDIS_ERRORS as e:
                             logger.debug("Error decrementing SSE connection count: %s", e)
 
     return StreamingResponse(

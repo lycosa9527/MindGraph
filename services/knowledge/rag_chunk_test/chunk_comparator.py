@@ -1,5 +1,4 @@
-"""
-Chunk Comparator for RAG Chunk Testing
+"""Chunk Comparator for RAG Chunk Testing
 =======================================
 
 Compares chunking results between different methods (semchunk vs mindchunk).
@@ -11,10 +10,15 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Any, Dict, List, Optional
 import logging
 import time
+from typing import Any, Dict, List, Optional
+
+import tiktoken
+
+from services.knowledge.chunking_service import Chunk, ChunkingService, MindChunkAdapter
+from services.knowledge.rag_chunk_test.qa_generator import QAGenerator
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 np: Any = None
 HAS_NUMPY = False
@@ -75,12 +79,6 @@ try:
     HAS_LLM_CHUNKING = True
 except ImportError:
     pass
-
-import tiktoken
-
-from services.knowledge.chunking_service import Chunk
-from services.knowledge.rag_chunk_test.qa_generator import QAGenerator
-
 
 logger = logging.getLogger(__name__)
 
@@ -321,7 +319,6 @@ class ChunkComparator:
         # Create separate service instances instead of modifying global state (thread-safe)
         if method == "semchunk":
             # Create semchunk service instance directly (thread-safe)
-            from services.knowledge.chunking_service import ChunkingService
 
             service = ChunkingService(mode="automatic")
         elif method == "mindchunk":
@@ -331,7 +328,6 @@ class ChunkComparator:
                 raise ValueError(
                     "MindChunk chunking requires llm_chunking library. Install with: pip install llm-chunking"
                 )
-            from services.knowledge.chunking_service import MindChunkAdapter
 
             chunker = LLMSemanticChunker()
             service = MindChunkAdapter(chunker)
@@ -547,7 +543,7 @@ class ChunkComparator:
 
             return float(np.mean(similarities))
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("[ChunkComparator] Failed to calculate coherence: %s", e)
             return 0.0
 
@@ -647,6 +643,6 @@ class ChunkComparator:
 
             return quality_score
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("[ChunkComparator] Failed to calculate boundary quality: %s", e)
             return 0.0

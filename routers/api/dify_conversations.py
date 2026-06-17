@@ -13,10 +13,10 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional
 import logging
+from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,9 +26,9 @@ from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.pinned_conversations import PinnedConversation
 from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short_lived
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user
 from utils.dify_mindmate_user_id import mindmate_dify_user_id
-
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +43,7 @@ def get_dify_user_id(user: User) -> str:
 
 
 def _organization_id_for_user(user: User) -> Optional[int]:
+    """Organization id for user."""
     org_id = getattr(user, "organization_id", None)
     return int(org_id) if org_id is not None else None
 
@@ -106,9 +107,7 @@ async def list_conversations(
             "limit": result.get("limit", limit),
         }
 
-    except HTTPException:
-        raise
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to fetch conversations: %s", e)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -133,9 +132,7 @@ async def delete_conversation(
 
         return {"success": True, "message": "Conversation deleted"}
 
-    except HTTPException:
-        raise
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to delete conversation: %s", e)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -167,9 +164,7 @@ async def rename_conversation(
 
         return {"success": True, "data": result}
 
-    except HTTPException:
-        raise
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to rename conversation: %s", e)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -215,9 +210,7 @@ async def get_conversation_messages(
             "limit": result.get("limit", limit),
         }
 
-    except HTTPException:
-        raise
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to fetch messages: %s", e)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -273,9 +266,7 @@ async def submit_message_feedback(
 
         return {"success": True, "data": result}
 
-    except HTTPException:
-        raise
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("Failed to submit message feedback: %s", e)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -300,7 +291,7 @@ async def list_pinned_conversations(
 
         return {"success": True, "data": [p.conversation_id for p in pinned]}
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("Failed to fetch pinned conversations: %s", e)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -346,7 +337,7 @@ async def toggle_pin_conversation(
             "message": "Conversation pinned",
         }
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("Failed to toggle pin for conversation: %s", e)
         await db.rollback()
         raise HTTPException(status_code=500, detail=str(e)) from e

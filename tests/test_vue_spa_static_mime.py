@@ -30,10 +30,12 @@ vue_spa_module = importlib.import_module("routers.core.vue_spa")
     ],
 )
 def test_media_type_for_vue_dist_relpath(relpath: str, expected: str) -> None:
+    """Test media type for vue dist relpath."""
     assert media_type_for_vue_dist_relpath(relpath) == expected
 
 
 def test_index_html_route_serves_text_html(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test index html route serves text html."""
     dist_dir = tmp_path / "dist"
     dist_dir.mkdir()
     index_path = dist_dir / "index.html"

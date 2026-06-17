@@ -14,6 +14,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from config.database import libpq_database_url
+from services.utils.error_types import DATABASE_ERRORS
 
 try:
     import psycopg2
@@ -81,7 +82,7 @@ def ensure_public_schema_exists(
                     cur.execute("GRANT ALL ON SCHEMA public TO PUBLIC")
             finally:
                 conn.close()
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.error("Failed to ensure public schema: %s", exc)
         _log_database_privilege_hint(exc, db_url)
         return False
@@ -122,7 +123,7 @@ def wipe_public_schema_before_restore(
                     cur.execute("GRANT ALL ON SCHEMA public TO PUBLIC")
             finally:
                 conn.close()
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.error("Failed to reset public schema: %s", exc)
         _log_database_privilege_hint(exc, db_url)
         return False

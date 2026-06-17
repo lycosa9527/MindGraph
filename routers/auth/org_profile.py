@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Optional
 
-
 from utils.auth.org_subscription import (
     effective_school_tier_for_org,
     is_org_subscription_expired,
@@ -16,6 +15,7 @@ from utils.auth.school_tier import (
 
 
 def _org_mindmate_agent_name(org) -> Optional[str]:
+    """Org mindmate agent name."""
     if not org:
         return None
     raw = getattr(org, "mindmate_agent_name", None)
@@ -26,6 +26,7 @@ def _org_mindmate_agent_name(org) -> Optional[str]:
 
 
 def _org_mindmate_avatar_url(org) -> Optional[str]:
+    """Org mindmate avatar url."""
     if not org:
         return None
     raw = getattr(org, "mindmate_agent_avatar_url", None)

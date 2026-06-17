@@ -7,13 +7,12 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
 import logging
 
-from prompts import get_prompt
-
 from agents.core.utils import validate_inputs
+from prompts import get_prompt
 from services.llm import llm_service
+from services.utils.error_types import LLM_PIPELINE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +128,7 @@ async def _detect_diagram_type_from_prompt(
             "clarity": "very_unclear",
             "has_topic": False,
         }
-    except Exception as e:
+    except LLM_PIPELINE_ERRORS as e:
         logger.error("LLM classification failed: %s", e)
         return {
             "diagram_type": "mind_map",

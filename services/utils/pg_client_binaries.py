@@ -15,6 +15,8 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
+from config.database import libpq_database_url
+
 
 def find_pg_client_binary(name: str) -> Optional[str]:
     """
@@ -56,8 +58,6 @@ def build_pg_dump_cmd(pg_dump: str, output_path: Path, db_url: str) -> List[str]
 
     Uses custom format, no owner/oids, and --no-policies so dumps work under RLS.
     """
-    from config.database import libpq_database_url
-
     return [
         pg_dump,
         "-Fc",

@@ -23,10 +23,12 @@ from utils.auth.token_stats_queries import token_usage_service_filter
 
 
 def sql_count_column(column: Any) -> ColumnElement:
+    """Sql count column."""
     return sql_count(column)
 
 
 def mask_user_phone(phone: Optional[str]) -> str:
+    """Mask user phone."""
     if phone and len(phone) == 11:
         return phone[:3] + "****" + phone[-4:]
     return phone or ""
@@ -39,6 +41,7 @@ def top_user_row_from_sql(
     include_org_name: bool = False,
     include_io_tokens: bool = False,
 ) -> Dict[str, Any]:
+    """Top user row from sql."""
     raw_phone = row.phone or ""
     phone = mask_user_phone(raw_phone) if mask_phone else raw_phone
     display_name = row.name or raw_phone or str(row.id)
@@ -64,6 +67,7 @@ def _token_usage_join_conditions(
     organization_id: Optional[int] = None,
     service: Optional[str] = None,
 ) -> list[ColumnElement]:
+    """Token usage join conditions."""
     conditions = [
         User.id == TokenUsage.user_id,
         TokenUsage.success,

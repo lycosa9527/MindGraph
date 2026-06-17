@@ -120,6 +120,7 @@ async def _apply_subscription_renewal_notify(
     trade_no: str | None,
     total_amount: str | None,
 ) -> str:
+    """Apply subscription renewal notify."""
     agreement_no = get_notify_str(params, "agreement_no")
     if not agreement_no:
         out_trade_no = get_notify_str(params, "out_trade_no")

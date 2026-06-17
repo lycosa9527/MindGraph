@@ -20,9 +20,10 @@ from celery import group
 from sqlalchemy import select
 
 from config.celery import celery_app
-from utils.db.rls_context import RlsContext, rls_async_session, rls_sync_session
 from models.domain.knowledge_space import DocumentBatch, KnowledgeDocument
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
+from utils.db.rls_context import RlsContext, rls_async_session, rls_sync_session
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +86,7 @@ async def _mark_document_failed_async(document_id: int, error: Exception) -> Non
             doc.processing_progress_percent = 0
             try:
                 await db.commit()
-            except Exception:
+            except DATABASE_ERRORS:
                 await db.rollback()
                 raise
             logger.info(
@@ -145,7 +146,7 @@ def _start_batch_sync(batch_id: int, user_id: int) -> List[int]:
         batch.status = "processing"
         try:
             db.commit()
-        except Exception:
+        except DATABASE_ERRORS:
             db.rollback()
             raise
 
@@ -168,10 +169,10 @@ def _mark_batch_failed_sync(user_id: int, batch_id: int, error: Exception) -> No
                 batch.error_message = str(error)
                 try:
                     db.commit()
-                except Exception:
+                except DATABASE_ERRORS:
                     db.rollback()
                     raise
-        except Exception as update_error:
+        except BACKGROUND_INFRA_ERRORS as update_error:
             logger.error("[KnowledgeSpaceTask] Failed to update batch status: %s", update_error)
 
 
@@ -196,7 +197,7 @@ def process_document_task(self, user_id: int, document_id: int):
     )
     try:
         asyncio.run(_process_document_async(user_id, document_id))
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error(
             "[KnowledgeSpaceTask] ✗ Failed to process document %s for user %s: %s",
             document_id,
@@ -210,7 +211,7 @@ def process_document_task(self, user_id: int, document_id: int):
 
         try:
             asyncio.run(_mark_document_failed_async(document_id, e))
-        except Exception as update_error:
+        except BACKGROUND_INFRA_ERRORS as update_error:
             logger.error(
                 "[KnowledgeSpaceTask] Failed to update document status: %s",
                 update_error,
@@ -236,7 +237,7 @@ def update_document_task(self, user_id: int, document_id: int):
     """
     try:
         asyncio.run(_update_document_async(user_id, document_id))
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error(
             "[KnowledgeSpaceTask] Failed to update document %s for user %s: %s",
             document_id,
@@ -271,7 +272,7 @@ def batch_process_documents_task(self, user_id: int, batch_id: int):
             try:
                 task_result.get(timeout=3600)
                 completed += 1
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.error(
                     "[KnowledgeSpaceTask] Document processing failed in batch %s: %s",
                     batch_id,
@@ -287,7 +288,7 @@ def batch_process_documents_task(self, user_id: int, batch_id: int):
             completed,
             failed,
         )
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error(
             "[KnowledgeSpaceTask] Failed to process batch %s for user %s: %s",
             batch_id,

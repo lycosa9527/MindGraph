@@ -4,27 +4,40 @@ Map AdminScope to Postgres RLS session variables (app.* GUCs).
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from utils.auth.admin_panel_permissions import (
     CAP_SCOPE_GLOBAL,
+    CAP_SCOPE_INVITED_ORGS,
     CAP_SCOPE_ORG,
 )
-from utils.auth.admin_scope import AdminScope, uses_invited_org_panel_scope
-from utils.auth.roles import is_superadmin
-from utils.db.rls_context import (
-    MODE_PANEL,
-    RlsContext,
-)
+from utils.auth.role_constants import SUPERADMIN_ROLES, role_in
+from utils.db.rls_types import MODE_PANEL
+
+if TYPE_CHECKING:
+    pass
+
+
+def _is_scope_superadmin(actor: Any) -> bool:
+    """Is scope superadmin."""
+    return role_in(actor, SUPERADMIN_ROLES)
+
+
+def _uses_invited_org_panel_scope(scope: Any) -> bool:
+    """Uses invited org panel scope."""
+    if _is_scope_superadmin(scope.actor):
+        return False
+    return CAP_SCOPE_INVITED_ORGS in scope.capabilities
 
 
 def _comma_join_org_ids(org_ids: frozenset[int] | None) -> Optional[str]:
+    """Comma join org ids."""
     if org_ids is None or len(org_ids) == 0:
         return None
     return ",".join(str(int(x)) for x in sorted(org_ids))
 
 
-def admin_scope_to_session_vars(scope: AdminScope) -> dict[str, Any]:
+def admin_scope_to_session_vars(scope: Any) -> dict[str, Any]:
     """
     Build kwargs for RlsContext from AdminScope.
 
@@ -35,7 +48,7 @@ def admin_scope_to_session_vars(scope: AdminScope) -> dict[str, Any]:
     actor_org = getattr(actor, "organization_id", None)
     role = scope.role
 
-    if is_superadmin(actor):
+    if _is_scope_superadmin(actor):
         return {
             "mode": MODE_PANEL,
             "user_id": int(actor_id) if actor_id is not None else None,
@@ -69,7 +82,7 @@ def admin_scope_to_session_vars(scope: AdminScope) -> dict[str, Any]:
             "panel_global_read": True,
         }
 
-    if uses_invited_org_panel_scope(scope):
+    if _uses_invited_org_panel_scope(scope):
         invited = scope.invited_org_ids if scope.invited_org_ids is not None else frozenset()
         return {
             "mode": MODE_PANEL,
@@ -87,17 +100,3 @@ def admin_scope_to_session_vars(scope: AdminScope) -> dict[str, Any]:
         "readable_org_ids": _comma_join_org_ids(scope.org_ids),
         "actor_user_id": int(actor_id) if actor_id is not None else None,
     }
-
-
-def to_rls_session_vars(scope: AdminScope) -> dict[str, str]:
-    """Flat app.* key → value map for SET LOCAL (panel routes)."""
-    ctx = RlsContext.from_admin_scope(scope)
-    return ctx.session_vars()
-
-
-def rls_context_from_admin_scope(scope: AdminScope) -> RlsContext:
-    return RlsContext.from_admin_scope(scope)
-
-
-def rls_context_panel_superadmin(user: Any) -> RlsContext:
-    return RlsContext.panel_superadmin(user)

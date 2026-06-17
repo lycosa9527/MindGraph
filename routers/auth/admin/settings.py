@@ -18,8 +18,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from models.domain.auth import User
 from models.domain.messages import Messages
-from ..dependencies import get_language_dependency, require_admin
 
+from ..dependencies import get_language_dependency, require_admin
 
 logger = logging.getLogger(__name__)
 

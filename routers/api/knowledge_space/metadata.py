@@ -14,7 +14,7 @@ Proprietary License
 
 import logging
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
@@ -23,10 +23,10 @@ from models.requests.requests_knowledge_space import (
     MetadataUpdateRequest,
     RollbackRequest,
 )
-from models.responses import DocumentResponse, VersionResponse, VersionListResponse
+from models.responses import DocumentResponse, VersionListResponse, VersionResponse
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user
-
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ async def update_document_metadata(
             created_at=document.created_at.isoformat(),
             updated_at=document.updated_at.isoformat(),
         )
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error(
             "[KnowledgeSpaceAPI] Failed to update metadata for document %s: %s",
             document_id,
@@ -125,7 +125,7 @@ async def get_document_versions(
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error(
             "[KnowledgeSpaceAPI] Failed to get versions for document %s: %s",
             document_id,
@@ -165,6 +165,6 @@ async def rollback_document(
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[KnowledgeSpaceAPI] Failed to rollback document %s: %s", document_id, e)
         raise HTTPException(status_code=500, detail="Failed to rollback document") from e

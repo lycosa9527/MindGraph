@@ -23,35 +23,39 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
-from pathlib import Path
-from typing import Optional, Dict
 import ipaddress
 import json
 import logging
 import threading
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, Optional
 
+from config.settings import config
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
-from config.settings import config
+from services.utils.error_types import (
+    BACKGROUND_INFRA_ERRORS,
+    FILE_IO_ERRORS,
+    JSON_PARSE_ERRORS,
+    REDIS_ERRORS,
+)
+
+_IPGEO_INIT_ERRORS = (ImportError,) + FILE_IO_ERRORS
+_IPGEO_PATCH_ERRORS = JSON_PARSE_ERRORS + FILE_IO_ERRORS
+_IPGEO_VERSION_PARSE_ERRORS = (ValueError, OSError) + FILE_IO_ERRORS
 
 
 try:
-    # Try importing py-ip2region (official Python binding for xdb format)
-    try:
-        from ip2region.searcher import new_with_file_only as _new_with_file_only_func
-        from ip2region.util import IPv4 as _ipv4_type, IPv6 as _ipv6_type
+    from ip2region.searcher import new_with_file_only as _new_with_file_only_func
+    from ip2region.util import IPv4 as _ipv4_type
+    from ip2region.util import IPv6 as _ipv6_type
 
-        IP2REGION_AVAILABLE = True
-        NEW_WITH_FILE_ONLY = _new_with_file_only_func
-        IPV4_TYPE = _ipv4_type
-        IPV6_TYPE = _ipv6_type
-    except ImportError:
-        IP2REGION_AVAILABLE = False
-        NEW_WITH_FILE_ONLY = None
-        IPV4_TYPE = None
-        IPV6_TYPE = None
-except Exception:
+    IP2REGION_AVAILABLE = True
+    NEW_WITH_FILE_ONLY = _new_with_file_only_func
+    IPV4_TYPE = _ipv4_type
+    IPV6_TYPE = _ipv6_type
+except ImportError:
     IP2REGION_AVAILABLE = False
     NEW_WITH_FILE_ONLY = None
     IPV4_TYPE = None
@@ -250,7 +254,7 @@ class IPGeolocationService:
                         DB_FILE_PATH_V4,
                         file_size_mb,
                     )
-                except Exception as e:
+                except _IPGEO_INIT_ERRORS as e:
                     logger.error(
                         "[IPGeo] Failed to initialize IPv4 database: %s",
                         e,
@@ -274,7 +278,7 @@ class IPGeolocationService:
                         DB_FILE_PATH_V6,
                         file_size_mb,
                     )
-                except Exception as e:
+                except _IPGEO_INIT_ERRORS as e:
                     logger.warning("[IPGeo] Failed to initialize IPv6 database: %s", e)
             else:
                 logger.info("[IPGeo] IPv6 database not found at %s (optional)", DB_FILE_PATH_V6)
@@ -283,7 +287,7 @@ class IPGeolocationService:
             if DB_FILE_PATH_V4.exists():
                 self._check_database_age(DB_FILE_PATH_V4)
 
-        except Exception as e:
+        except FILE_IO_ERRORS as e:
             logger.error("[IPGeo] Failed to initialize databases: %s", e, exc_info=True)
 
     def _load_patch_cache(self):
@@ -315,7 +319,7 @@ class IPGeolocationService:
             patch_count = self.patch_cache.get("total_patches", 0)
             if patch_count > 0:
                 logger.info("[IPGeo] Loaded %s patches from cache", patch_count)
-        except Exception as e:
+        except _IPGEO_PATCH_ERRORS as e:
             logger.warning("[IPGeo] Failed to load patch cache: %s", e, exc_info=True)
             self.patch_cache = {}
 
@@ -410,14 +414,14 @@ class IPGeolocationService:
                         "lng": coords.get("lng"),
                         "country": country,
                     }
-                elif ip_int < patch["start_int"]:
+                if ip_int < patch["start_int"]:
                     right = mid - 1
                 else:
                     left = mid + 1
 
             return None
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.debug("[IPGeo] Error checking patch for IP %s: %s", ip, e)
             return None
 
@@ -434,7 +438,7 @@ class IPGeolocationService:
                         if lines:
                             download_time = datetime.fromisoformat(lines[0].strip())
                             age_days = (datetime.now() - download_time).days
-                except Exception as exc:
+                except _IPGEO_VERSION_PARSE_ERRORS as exc:
                     logger.debug("IP geolocation DB version file parse failed: %s", exc)
 
             # Fallback to file modification time
@@ -456,7 +460,7 @@ class IPGeolocationService:
                     age_days,
                 )
 
-        except Exception as e:
+        except FILE_IO_ERRORS as e:
             logger.debug("[IPGeo] Could not check database age: %s", e)
 
     def _use_redis(self) -> bool:
@@ -486,7 +490,7 @@ class IPGeolocationService:
 
             return None
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("[IPGeo] Error reading cache: %s", e)
             return None
 
@@ -508,7 +512,7 @@ class IPGeolocationService:
             )
             logger.debug("[IPGeo] Cached location for IP %s", ip)
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("[IPGeo] Error storing cache: %s", e)
 
     def _lookup_local(self, ip: str) -> Optional[Dict]:
@@ -594,7 +598,7 @@ class IPGeolocationService:
                 "country": country,
             }
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("[IPGeo] Local lookup error for IP %s: %s", ip, e)
             return None
 
@@ -606,7 +610,7 @@ class IPGeolocationService:
         # Try city first, then province
         if city and city in COORDINATES:
             return COORDINATES[city]
-        elif province and province in COORDINATES:
+        if province and province in COORDINATES:
             return COORDINATES[province]
 
         # Default to Beijing if not found
@@ -643,7 +647,7 @@ class IPGeolocationService:
                     }
                     logger.debug("[IPGeo] Localhost IP %s mapped to Beijing (DEBUG mode)", ip)
                     return localhost_location
-            except Exception as exc:
+            except (AttributeError, TypeError) as exc:
                 logger.debug("Localhost IP geolocation fallback failed: %s", exc)
             # In production, skip localhost IPs
             return None
@@ -702,7 +706,7 @@ class IPGeolocationService:
 class GeolocationServiceSingleton:
     """Thread-safe singleton wrapper for IPGeolocationService."""
 
-    _instance: Optional[IPGeolocationService] = None
+    instance: Optional[IPGeolocationService] = None
     _lock = threading.Lock()
 
     @classmethod
@@ -713,12 +717,12 @@ class GeolocationServiceSingleton:
         Uses double-checked locking pattern to ensure only one instance is created
         even when multiple requests initialize the service simultaneously during startup.
         """
-        if cls._instance is None:
+        if cls.instance is None:
             with cls._lock:
                 # Double-check after acquiring lock (another thread might have created it)
-                if cls._instance is None:
-                    cls._instance = IPGeolocationService()
-        return cls._instance
+                if cls.instance is None:
+                    cls.instance = IPGeolocationService()
+        return cls.instance
 
 
 def get_geolocation_service() -> IPGeolocationService:

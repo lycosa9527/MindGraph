@@ -9,10 +9,6 @@ from typing import Any, Optional
 
 from config.settings import config
 from models.domain.mindbot_config import OrganizationMindbotConfig
-from services.mindbot.education.metrics import (
-    conversation_user_turn_index,
-    dingtalk_chat_scope,
-)
 from services.mindbot.core.dify_user_id import (
     mindbot_conv_gate_scope_id,
     mindbot_dify_conv_redis_suffix,
@@ -23,20 +19,28 @@ from services.mindbot.core.redis_keys import (
     MSG_DEDUP_PREFIX,
     MSG_DEDUP_TTL,
 )
-from services.mindbot.platforms.dingtalk import (
-    DingTalkInboundMessage,
-    parse_inbound_message,
-    verify_dingtalk_sign,
-)
-from services.mindbot.integrations.dingtalk.inbound_log import (
-    debug_callback_failure_logging_enabled,
-    dingtalk_inbound_logging_enabled,
+from services.mindbot.education.metrics import (
+    conversation_user_turn_index,
+    dingtalk_chat_scope,
 )
 from services.mindbot.errors import MindbotErrorCode, mindbot_error_headers
 from services.mindbot.infra.circuit_breaker import check_circuit_breaker
 from services.mindbot.infra.rate_limit import check_org_rate_limit
 from services.mindbot.infra.redis_async import redis_setnx_ttl
+from services.mindbot.integrations.dingtalk.inbound_log import (
+    debug_callback_failure_logging_enabled,
+    dingtalk_inbound_logging_enabled,
+    log_dingtalk_callback_failure_details,
+)
+from services.mindbot.platforms.dingtalk import (
+    DingTalkInboundMessage,
+    parse_inbound_message,
+    verify_dingtalk_sign,
+)
 from services.mindbot.telemetry.usage import persist_mindbot_usage_event
+from services.redis.cache.redis_org_cache import org_cache
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.auth.org_subscription import ensure_org_subscription_current
 
 logger = logging.getLogger(__name__)
 
@@ -51,12 +55,10 @@ async def _check_org_active(organization_id: int) -> Optional[tuple[int, dict[st
     outage never blocks legitimate inbound messages.
     """
     try:
-        from services.redis.cache.redis_org_cache import org_cache
-
         if org_cache is None:
             return None
         org = await org_cache.get_by_id(organization_id)
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         return None
     if org is None:
         return None
@@ -74,10 +76,8 @@ async def _check_org_active(organization_id: int) -> Optional[tuple[int, dict[st
             ),
         )
     try:
-        from utils.auth.org_subscription import ensure_org_subscription_current
-
         await ensure_org_subscription_current(org)
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         pass
     return None
 
@@ -111,9 +111,6 @@ def _log_callback_debug_failure(
     """Full request dump when MINDBOT_LOG_CALLBACK_DEBUG is enabled and the router passed raw bytes."""
     if debug_raw_body is None:
         return
-    from services.mindbot.integrations.dingtalk.inbound_log import (
-        log_dingtalk_callback_failure_details,
-    )
 
     log_dingtalk_callback_failure_details(
         route_label=debug_route_label or "?",
@@ -129,6 +126,7 @@ def hdr_for_cfg(
     cfg: OrganizationMindbotConfig,
     code: MindbotErrorCode,
 ) -> dict[str, str]:
+    """Hdr for cfg."""
     return mindbot_error_headers(
         code,
         organization_id=cfg.organization_id,

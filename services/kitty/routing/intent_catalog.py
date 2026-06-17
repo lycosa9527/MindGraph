@@ -196,4 +196,5 @@ def voice_intent_rows_as_json() -> List[Dict[str, Any]]:
 
 
 def special_flows_as_json() -> List[Dict[str, Any]]:
+    """Special flows as json."""
     return [dict(s) for s in KITTY_SPECIAL_FLOWS]

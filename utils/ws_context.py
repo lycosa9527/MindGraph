@@ -34,6 +34,12 @@ from typing import Any, Callable, Optional
 from fastapi import WebSocket
 
 from services.infrastructure.monitoring.ws_metrics import redis_increment_active_total
+from services.infrastructure.ws.redis_collab_conn_cap import (
+    redis_collab_socket_cap_enabled,
+    release_collab_redis_socket_slot,
+    try_acquire_collab_redis_socket_slot,
+)
+from utils.ws_limits import safe_websocket_send_text
 from utils.ws_session_registry import WsSession, _registry
 
 logger = logging.getLogger(__name__)
@@ -86,8 +92,6 @@ async def ws_managed_session(
                 max_per_user_endpoint,
             )
             if close_error_fn is not None:
-                from utils.ws_limits import safe_websocket_send_text  # local import avoids circularity
-
                 await safe_websocket_send_text(
                     websocket,
                     close_error_fn("connection_limit", "Connection limit reached"),
@@ -105,8 +109,6 @@ async def ws_managed_session(
                 max_per_user_global,
             )
             if close_error_fn is not None:
-                from utils.ws_limits import safe_websocket_send_text
-
                 await safe_websocket_send_text(
                     websocket,
                     close_error_fn("connection_limit", "Too many connections"),
@@ -116,11 +118,6 @@ async def ws_managed_session(
 
     redis_cap_acquired = False
     if redis_collab_cap and endpoint == "collab":
-        from services.infrastructure.ws.redis_collab_conn_cap import (
-            redis_collab_socket_cap_enabled,
-            try_acquire_collab_redis_socket_slot,
-        )
-
         if redis_collab_socket_cap_enabled():
             if not await try_acquire_collab_redis_socket_slot(user_id):
                 logger.warning(
@@ -128,8 +125,6 @@ async def ws_managed_session(
                     user_id,
                 )
                 if close_error_fn is not None:
-                    from utils.ws_limits import safe_websocket_send_text
-
                     await safe_websocket_send_text(
                         websocket,
                         close_error_fn("connection_limit", "Too many connections"),
@@ -162,11 +157,6 @@ async def ws_managed_session(
         await _registry.unregister(session.session_id)
         await redis_increment_active_total(-1)
         if redis_cap_acquired:
-            from services.infrastructure.ws.redis_collab_conn_cap import (
-                redis_collab_socket_cap_enabled,
-                release_collab_redis_socket_slot,
-            )
-
             if redis_collab_socket_cap_enabled():
                 await release_collab_redis_socket_slot(user_id)
         duration = time.monotonic() - _started

@@ -9,7 +9,9 @@ from fastapi import APIRouter, Depends, Path, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
+from models.domain.mindbot_config import OrganizationMindbotConfig
 from repositories.mindbot_repo import MindbotConfigRepository
+from routers.api.mindbot_helpers import _dict_from_dingtalk_raw_body, _require_mindbot_feature
 from services.mindbot.errors import MindbotErrorCode, mindbot_error_headers
 from services.mindbot.integrations.dingtalk.inbound_log import (
     debug_callback_failure_logging_enabled,
@@ -27,8 +29,6 @@ from services.mindbot.pipeline.callback import (
 )
 from services.mindbot.platforms.dingtalk.auth.verify import extract_dingtalk_robot_auth_headers
 from services.mindbot.telemetry.metrics import mindbot_metrics
-from routers.api.mindbot_helpers import _dict_from_dingtalk_raw_body, _require_mindbot_feature
-from models.domain.mindbot_config import OrganizationMindbotConfig
 from utils.db.rls_context import RlsContext, apply_rls_context_async
 from utils.db.rls_request import (
     bind_mindbot_callback_rls,

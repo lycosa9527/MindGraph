@@ -6,11 +6,11 @@ All Rights Reserved
 Proprietary License
 """
 
-from contextlib import asynccontextmanager
-from typing import Any, Dict, Optional, Tuple
 import asyncio
 import logging
 import time
+from contextlib import asynccontextmanager
+from typing import Any, Dict, Optional, Tuple
 
 from config.settings import config
 from models.domain.messages import Language
@@ -18,7 +18,7 @@ from services.auth.ses_service import SESService, SESServiceError
 from services.infrastructure.rate_limiting.rate_limiter import DashscopeRateLimiter
 from services.monitoring.performance_tracker import performance_tracker
 from services.redis.redis_email_storage import mask_email_for_log
-
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,7 @@ class EmailMiddleware:
         enable_error_handling: bool = True,
         enable_performance_tracking: bool = True,
     ):
+        """ init  ."""
         self.max_concurrent_requests = max_concurrent_requests or config.EMAIL_MAX_CONCURRENT_REQUESTS
         self.qpm_limit = qpm_limit or config.EMAIL_QPM_LIMIT
         self.enable_rate_limiting = enable_rate_limiting and config.EMAIL_RATE_LIMITING_ENABLED
@@ -65,9 +66,11 @@ class EmailMiddleware:
 
     @property
     def is_available(self) -> bool:
+        """Is available."""
         return self._ses_service.is_available
 
     def generate_code(self) -> str:
+        """Generate code."""
         return self._ses_service.generate_code()
 
     @asynccontextmanager
@@ -78,6 +81,7 @@ class EmailMiddleware:
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
     ):
+        """Request context."""
         request_start_time = time.time()
         request_id = f"email_{purpose}_{int(time.time() * 1000)}"
         masked = mask_email_for_log(email)
@@ -120,7 +124,7 @@ class EmailMiddleware:
                             masked,
                         )
 
-                    except Exception as exc:
+                    except BACKGROUND_INFRA_ERRORS as exc:
                         duration = time.time() - request_start_time
                         if self.enable_performance_tracking:
                             self._track_performance(
@@ -151,7 +155,7 @@ class EmailMiddleware:
                                 self._active_requests,
                                 self.max_concurrent_requests,
                             )
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 logger.warning("[EmailMiddleware] Rate limiter acquisition failed: %s", exc)
                 async with self._request_lock:
                     self._active_requests -= 1
@@ -185,7 +189,7 @@ class EmailMiddleware:
                     masked,
                 )
 
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 duration = time.time() - request_start_time
                 if self.enable_performance_tracking:
                     self._track_performance(duration=duration, success=False, error=str(exc), purpose=purpose)
@@ -221,6 +225,7 @@ class EmailMiddleware:
         organization_id: Optional[int] = None,
         lang: Language = "en",
     ) -> Tuple[bool, str, Optional[str]]:
+        """Send verification code."""
         async with self.request_context(email, purpose, user_id, organization_id):
             return await self._ses_service.send_verification_code(email, purpose, code, lang)
 
@@ -231,25 +236,30 @@ class EmailMiddleware:
         error: Optional[str] = None,
         purpose: Optional[str] = None,
     ) -> None:
+        """Track performance."""
         try:
             model_name = f"email-{purpose}" if purpose else "email"
             performance_tracker.record_request(model=model_name, duration=duration, success=success, error=error)
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("[EmailMiddleware] Performance tracking failed (non-critical): %s", exc)
 
     async def close(self) -> None:
+        """Close."""
         await self._ses_service.close()
 
 
 class _EmailMiddlewareSingleton:
-    _instance: Optional[EmailMiddleware] = None
+    """_EmailMiddlewareSingleton helper."""
+    instance: Optional[EmailMiddleware] = None
 
     @classmethod
     def get_instance(cls) -> EmailMiddleware:
-        if cls._instance is None:
-            cls._instance = EmailMiddleware()
-        return cls._instance
+        """Get instance."""
+        if cls.instance is None:
+            cls.instance = EmailMiddleware()
+        return cls.instance
 
 
 def get_email_middleware() -> EmailMiddleware:
+    """Get email middleware."""
     return _EmailMiddlewareSingleton.get_instance()

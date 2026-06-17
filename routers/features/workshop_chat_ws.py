@@ -21,17 +21,17 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.settings import config
-from utils.db.session_open import actor_rls_session
 from models.domain.auth import User as UserModel
-from models.domain.workshop_chat import ChatChannel, ChannelMember
+from models.domain.workshop_chat import ChannelMember, ChatChannel
 from routers.features.workshop_chat.dependencies import (
     get_effective_org_id,
     require_post_permission,
 )
+from services.auth.vpn_geo_enforcement import maybe_close_websocket_for_vpn_cn_geo
 from services.features.workshop_chat import (
     channel_service,
-    message_service,
     dm_service,
+    message_service,
 )
 from services.features.workshop_chat.mention_resolution import (
     MentionResolutionError,
@@ -41,11 +41,10 @@ from services.infrastructure.monitoring.ws_metrics import (
     record_ws_auth_failure,
     record_ws_rate_limit_hit,
 )
-from services.auth.vpn_geo_enforcement import maybe_close_websocket_for_vpn_cn_geo
-
-_close_ws_if_vpn_cn_geo = maybe_close_websocket_for_vpn_cn_geo
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, JSON_PARSE_ERRORS
 from utils.auth import can_access_workshop_chat
 from utils.auth_ws import authenticate_websocket_user
+from utils.db.session_open import actor_rls_session
 from utils.ws_context import ws_managed_session
 from utils.ws_limits import (
     DEFAULT_MAX_WS_MESSAGES_PER_SECOND,
@@ -53,6 +52,8 @@ from utils.ws_limits import (
     WebsocketMessageRateLimiter,
     inbound_text_exceeds_limit,
 )
+
+_close_ws_if_vpn_cn_geo = maybe_close_websocket_for_vpn_cn_geo
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +148,7 @@ async def chat_websocket(websocket: WebSocket):
     if not user:
         try:
             record_ws_auth_failure()
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("Failed to record auth failure metric: %s", exc)
         await websocket.close(code=4001, reason=error or "Auth failed")
         logger.warning("[ChatWS] Auth rejected: %s", error)
@@ -160,7 +161,7 @@ async def chat_websocket(websocket: WebSocket):
     if not can_access_workshop_chat(user):
         try:
             record_ws_auth_failure()
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("Failed to record access rejection metric: %s", exc)
         await websocket.close(code=4003, reason="Elevated access required")
         logger.warning(
@@ -190,7 +191,7 @@ async def chat_websocket(websocket: WebSocket):
                 if not rate_limiter.allow():
                     try:
                         record_ws_rate_limit_hit()
-                    except Exception as exc:
+                    except JSON_PARSE_ERRORS as exc:
                         logger.debug("Failed to record rate limit metric: %s", exc)
                     await websocket.send_text(json.dumps({"type": "error", "message": "Rate limit exceeded"}))
                     continue
@@ -202,7 +203,7 @@ async def chat_websocket(websocket: WebSocket):
                 await _handle_message(websocket, user, data)
         except WebSocketDisconnect:
             logger.info("[ChatWS] User %d disconnected", user.id)
-        except Exception:
+        except JSON_PARSE_ERRORS:
             logger.exception("[ChatWS] Error in WS loop for user %d", user.id)
         finally:
             old_channels, presence_org = await chat_ws_manager.disconnect(user.id)

@@ -13,6 +13,7 @@ _DETAIL_MAX = 240
 
 
 def _env_falsy(name: str) -> bool:
+    """Env falsy."""
     raw = os.environ.get(name, "")
     return raw.strip().lower() in ("0", "false", "no", "off")
 
@@ -23,6 +24,7 @@ def kitty_workflow_trace_enabled() -> bool:
 
 
 def _clip(text: str, limit: int = _DETAIL_MAX) -> str:
+    """Clip."""
     cleaned = " ".join(str(text).split()).strip()
     if len(cleaned) <= limit:
         return cleaned
@@ -30,6 +32,7 @@ def _clip(text: str, limit: int = _DETAIL_MAX) -> str:
 
 
 def _short_scope(scope: Optional[str]) -> str:
+    """Short scope."""
     if not scope or not isinstance(scope, str):
         return "—"
     s = scope.strip()
@@ -39,6 +42,7 @@ def _short_scope(scope: Optional[str]) -> str:
 
 
 def _short_sid(voice_session_id: Optional[str]) -> str:
+    """Short sid."""
     if not voice_session_id or not isinstance(voice_session_id, str):
         return "—"
     s = voice_session_id.strip()
@@ -52,6 +56,7 @@ def _resolve_session(
     scope: Optional[str],
     user_id: Optional[int],
 ) -> tuple[Optional[str], Optional[str], Optional[int]]:
+    """Resolve session."""
     sid = voice_session_id.strip() if isinstance(voice_session_id, str) and voice_session_id.strip() else None
     sc = scope.strip() if isinstance(scope, str) and scope.strip() else None
     uid = user_id

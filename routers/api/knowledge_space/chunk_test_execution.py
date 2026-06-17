@@ -8,7 +8,7 @@ import logging
 import threading
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,15 +19,16 @@ from models.requests.requests_knowledge_space import (
     ChunkTestBenchmarkRequest,
     ChunkTestUserDocumentsRequest,
 )
-from models.responses import ChunkTestResultResponse, ChunkTestProgressResponse
+from models.responses import ChunkTestProgressResponse, ChunkTestResultResponse
 from routers.api.knowledge_space.chunk_test_background import (
-    run_test_in_background,
-    run_benchmark_in_background,
     cancel_test,
     detect_and_mark_stuck_tests_async,
+    run_benchmark_in_background,
+    run_test_in_background,
 )
 from routers.api.knowledge_space.chunk_test_utils import check_feature_enabled
 from services.knowledge.rag_chunk_test import get_rag_chunk_test_service
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -83,7 +84,7 @@ async def test_benchmark_dataset(
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error(
             "[ChunkTestExecution] Benchmark test failed for user %s: %s",
             current_user.id,
@@ -175,7 +176,7 @@ async def test_benchmark_dataset_async(
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error(
             "[ChunkTestExecution] Benchmark test initiation failed for user %s: %s",
             current_user.id,
@@ -270,7 +271,7 @@ async def test_user_documents(
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error(
             "[ChunkTestExecution] User documents test initiation failed for user %s: %s",
             current_user.id,
@@ -443,7 +444,7 @@ async def delete_chunk_test_result(
         logger.info("[ChunkTestExecution] Test %s deleted by user %s", test_id, current_user.id)
 
         return {"success": True, "message": "Test result deleted successfully"}
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error(
             "[ChunkTestExecution] Failed to delete test %s: %s",
             test_id,
@@ -501,7 +502,7 @@ async def cancel_chunk_test(
             "success": True,
             "message": "Test cancellation requested. The test will stop at the next checkpoint.",
         }
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error(
             "[ChunkTestExecution] Failed to cancel test %s: %s",
             test_id,
@@ -531,6 +532,6 @@ async def detect_stuck_tests(
             "stuck_tests_detected": stuck_count,
             "message": f"Detected and marked {stuck_count} stuck test(s) as failed",
         }
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[ChunkTestExecution] Failed to detect stuck tests: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to detect stuck tests") from e

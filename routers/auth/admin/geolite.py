@@ -6,9 +6,8 @@ All Rights Reserved
 Proprietary License
 """
 
-from pydantic import BaseModel
-
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 
 from services.auth.geoip_country import (
     GEOIP_GEOLITE_DOWNLOAD_URL,

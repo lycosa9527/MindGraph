@@ -5,12 +5,12 @@ from services.agent_hub.matrix_bus import (
     DiagramCommandOrigin,
     get_diagram_command_bus,
 )
+from services.kitty.infra.control.kitty_control_fanout import handle_kitty_control_dispatch
 from services.agent_hub.scope_lifecycle import (
     MindGraphAgentHub,
     configure_kitty_control_state,
     configure_kitty_scope_cleanup,
     get_mind_graph_agent_hub,
-    handle_kitty_control_dispatch,
 )
 from services.agent_hub.snapshot import build_desktop_pairing_snapshot
 

@@ -11,9 +11,10 @@ import logging
 from typing import Dict, Optional
 
 from models.domain.feature_org_access import FeatureOrgAccessEntry
+from services.redis import keys as _keys
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
-from services.redis import keys as _keys
+from services.utils.error_types import REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ CACHE_TTL_SECONDS = _keys.TTL_FEATURE_ACCESS
 
 
 def _deserialize(text: str) -> Optional[Dict[str, FeatureOrgAccessEntry]]:
+    """Deserialize."""
     try:
         raw = json.loads(text)
         if not isinstance(raw, dict):
@@ -52,7 +54,7 @@ async def get_cached_map() -> Optional[Dict[str, FeatureOrgAccessEntry]]:
         return None
     try:
         text = await redis.get(CACHE_KEY)
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.debug("Feature access cache read failed: %s", exc)
         return None
     if text is None:
@@ -63,7 +65,7 @@ async def get_cached_map() -> Optional[Dict[str, FeatureOrgAccessEntry]]:
     if result is None:
         try:
             await redis.delete(CACHE_KEY)
-        except Exception:
+        except REDIS_ERRORS:
             pass
         return None
     return result
@@ -82,7 +84,7 @@ async def set_cached_map(data: Dict[str, FeatureOrgAccessEntry]) -> None:
         await redis.setex(CACHE_KEY, CACHE_TTL_SECONDS, text)
     except (TypeError, ValueError) as exc:
         logger.warning("Failed to serialize feature org access cache: %s", exc)
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.debug("Feature access cache write failed: %s", exc)
 
 
@@ -95,5 +97,5 @@ async def invalidate_cached_map() -> None:
         return
     try:
         await redis.delete(CACHE_KEY)
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.debug("Feature access cache invalidate failed: %s", exc)

@@ -23,4 +23,5 @@ def system_rls_session():
 
 
 def panel_superadmin_rls_session(user: Any):
+    """Panel superadmin rls session."""
     return rls_async_session(RlsContext.panel_superadmin(user))

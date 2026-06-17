@@ -8,12 +8,13 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Optional, Tuple
+import json
 import logging
 import re
-import json
+from typing import Optional, Tuple
 
+from agents.core.prompt_helpers import create_topic_extraction_chain
+from services.utils.error_types import JSON_PARSE_ERRORS
 from utils.prompt_locale import template_lang_for_registry
 from utils.prompt_output_languages import is_prompt_output_language
 
@@ -243,9 +244,6 @@ async def extract_topics_with_agent(user_prompt: str, language: str = "zh") -> T
     registry_lang = template_lang_for_registry(language)
 
     logger.debug("Agent: Extracting topics from prompt: %s", user_prompt)
-    # Create the topic extraction function
-    from .prompt_helpers import create_topic_extraction_chain
-
     topic_func = create_topic_extraction_chain(registry_lang)
     try:
         # Run the function directly (not a LangChain chain)
@@ -254,7 +252,7 @@ async def extract_topics_with_agent(user_prompt: str, language: str = "zh") -> T
         # Parse the result using utility function
         topics = parse_topic_extraction_result(result, registry_lang)
         return topics
-    except Exception as e:
+    except JSON_PARSE_ERRORS as e:
         logger.error("Agent: Topic extraction failed: %s", e)
         # Fallback to utility function
         return extract_topics_from_prompt(user_prompt)

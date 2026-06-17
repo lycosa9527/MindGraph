@@ -13,9 +13,10 @@ from services.kitty.context.messaging import (
     resolve_voice_interaction_language,
     safe_websocket_send,
 )
-from services.kitty.session.runtime_state import logger, voice_sessions
+from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.kitty.session.events import KittyEvent, SessionEventBus, emit_kitty_session_event
-from services.kitty.session.ops import get_session_omni_client
+from services.kitty.session.omni_client_access import get_session_omni_client
+from services.kitty.session.runtime_state import logger, voice_sessions
 
 
 async def run_kitty_omni_event_loop(
@@ -143,12 +144,11 @@ async def _handle_transcription_event(
     event: dict[str, Any],
     event_bus: SessionEventBus,
 ) -> None:
+    """Handle transcription event."""
     transcription_text = event.get("text", "")
     session_mut = voice_sessions.get(voice_session_id)
     if session_mut is None:
         return
-
-    from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 
     kitty_wf_log(
         "transcription",
@@ -190,6 +190,7 @@ async def _handle_transcription_event(
 
 
 async def _forward_audio_chunk(websocket: WebSocket, event: dict[str, Any]) -> None:
+    """Forward audio chunk."""
     audio_bytes = event.get("audio")
     if audio_bytes is None:
         logger.warning("Received audio_chunk event without audio data")
@@ -211,6 +212,7 @@ async def _forward_informational_event(
     event_type: str,
     event: dict[str, Any],
 ) -> bool:
+    """Forward informational event."""
     payload_map = {
         "session_created": ("session_created", {"session": event.get("session", {})}),
         "session_updated": ("session_updated", {"session": event.get("session", {})}),

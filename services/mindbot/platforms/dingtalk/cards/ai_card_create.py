@@ -11,11 +11,11 @@ from services.mindbot.platforms.dingtalk.api.constants import (
     PATH_CARD_INSTANCES_CREATE_AND_DELIVER,
 )
 from services.mindbot.platforms.dingtalk.api.http import post_v1_json_unverified
-from services.mindbot.platforms.dingtalk.auth.oauth import get_access_token
 from services.mindbot.platforms.dingtalk.api.response import dingtalk_v1_response_ok
-from services.mindbot.platforms.dingtalk.messaging.session_webhook import sanitize_markdown_for_dingtalk
-from services.mindbot.platforms.dingtalk.cards.stream_client import get_stream_manager
+from services.mindbot.platforms.dingtalk.auth.oauth import get_access_token
 from services.mindbot.platforms.dingtalk.cards.ai_card_errors import describe_ai_card_failure
+from services.mindbot.platforms.dingtalk.cards.stream_client import get_stream_manager
+from services.mindbot.platforms.dingtalk.messaging.session_webhook import sanitize_markdown_for_dingtalk
 from utils.env_helpers import env_bool
 
 logger = logging.getLogger(__name__)
@@ -43,14 +43,17 @@ def mindbot_ai_card_streaming_max_chars(cfg: OrganizationMindbotConfig) -> int:
 
 
 def _dt_err(body: dict[str, Any]) -> tuple[str, str]:
+    """Dt err."""
     return str(body.get("code") or ""), str(body.get("message") or body.get("msg") or "")
 
 
 def _http_detail(status: int) -> str:
+    """Http detail."""
     return f"http_{status}"
 
 
 def mindbot_ai_card_param_key(cfg: OrganizationMindbotConfig) -> str:
+    """Mindbot ai card param key."""
     raw = (getattr(cfg, "dingtalk_ai_card_param_key", None) or "").strip()
     if raw:
         return raw
@@ -58,6 +61,7 @@ def mindbot_ai_card_param_key(cfg: OrganizationMindbotConfig) -> str:
 
 
 def mindbot_ai_card_template_id(cfg: OrganizationMindbotConfig) -> str:
+    """Mindbot ai card template id."""
     return (getattr(cfg, "dingtalk_ai_card_template_id", None) or "").strip()
 
 
@@ -73,6 +77,7 @@ def mindbot_ai_card_wiring_enabled(cfg: OrganizationMindbotConfig) -> bool:
 
 
 def _clip_streaming_content(text: str, max_chars: int) -> str:
+    """Clip streaming content."""
     if len(text) <= max_chars:
         return text
     logger.warning(
@@ -99,6 +104,7 @@ def _resolve_app_key(
     cfg: OrganizationMindbotConfig,
     app_key_override: Optional[str],
 ) -> str:
+    """Resolve app key."""
     if app_key_override is not None:
         stripped = app_key_override.strip()
         if stripped:
@@ -111,6 +117,7 @@ async def _access_token(
     *,
     app_key_override: Optional[str] = None,
 ) -> Optional[str]:
+    """Access token."""
     app_key = _resolve_app_key(cfg, app_key_override)
     if not app_key:
         return None
@@ -265,14 +272,17 @@ def is_cross_org_group_body(body: dict[str, Any]) -> bool:
 
 
 def _open_space_id_group(open_conversation_id: str) -> str:
+    """Open space id group."""
     return f"dtv1.card//im_group.{open_conversation_id.strip()}"
 
 
 def _open_space_id_robot(user_id: str) -> str:
+    """Open space id robot."""
     return f"dtv1.card//im_robot.{user_id.strip()}"
 
 
 def _im_group_space_model() -> dict[str, Any]:
+    """Im group space model."""
     return {"supportForward": True}
 
 
@@ -286,6 +296,7 @@ def _im_group_robot_code(cfg: OrganizationMindbotConfig) -> str:
 
 
 def _im_robot_space_model() -> dict[str, Any]:
+    """Im robot space model."""
     return {
         "supportForward": False,
         "lastMessageI18n": {"ZH_CN": "AI", "EN_US": "AI"},

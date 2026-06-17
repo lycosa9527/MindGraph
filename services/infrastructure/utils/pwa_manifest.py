@@ -6,13 +6,12 @@ import os
 
 from fastapi import Request
 
+from routers.api.helpers import normalize_external_base_url, strip_leading_http_schemes
 from utils.auth.request_helpers import is_https
 
 
 def public_site_origin_from_request(request: Request) -> str:
     """Resolve public https?://host[:port] for manifest start_url (proxy-aware)."""
-    from routers.api.helpers import normalize_external_base_url, strip_leading_http_schemes
-
     external_base = normalize_external_base_url(os.getenv("EXTERNAL_BASE_URL", ""))
     if external_base:
         return external_base

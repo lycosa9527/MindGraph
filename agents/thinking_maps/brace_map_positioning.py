@@ -5,10 +5,10 @@ Block-based positioning system and flexible layout calculator for brace maps.
 from typing import Any, Dict, List, Tuple, Union
 
 from .brace_map_models import (
-    Block,
-    BlockUnit,
     CHAR_WIDTH_CONFIG,
     FONT_WEIGHT_CONFIG,
+    Block,
+    BlockUnit,
     NodePosition,
     SpacingInfo,
     UnitPosition,
@@ -19,7 +19,7 @@ class BlockBasedPositioningSystem:
     """Block-based positioning system that arranges nodes like LEGO pieces"""
 
     def __init__(self):
-        pass
+        """Initialize block-based positioning system."""
 
     def arrange_blocks(self, spec: Dict, dimensions: Dict, theme: Dict) -> List[BlockUnit]:
         """Arrange blocks using LEGO-like positioning"""
@@ -317,6 +317,7 @@ class FlexibleLayoutCalculator:
     """Implements the flexible dynamic layout algorithm"""
 
     def __init__(self):
+        """ init  ."""
         self._text_width_cache = {}
 
     def calculate_text_dimensions(self, spec: Dict, theme: Dict) -> Dict[str, Any]:

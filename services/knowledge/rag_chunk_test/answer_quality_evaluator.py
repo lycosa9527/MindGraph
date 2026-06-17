@@ -12,12 +12,11 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import List
 import logging
 import re
+from typing import List
 
 from services.knowledge.chunking_service import Chunk
-
 
 logger = logging.getLogger(__name__)
 

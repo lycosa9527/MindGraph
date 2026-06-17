@@ -20,14 +20,27 @@ from services.mindbot.core.conv_gate import (
     redis_release_conv_gate_async,
 )
 from services.mindbot.core.dify_reply import mindbot_dify_chat_blocking
-from services.mindbot.infra.circuit_breaker import (
-    record_dify_failure,
-    record_dify_success,
-)
 from services.mindbot.dify.usage_parse import parse_dify_usage_from_blocking_response
 from services.mindbot.education.metrics import (
     conversation_user_turn_index,
     dingtalk_chat_scope,
+)
+from services.mindbot.errors import MindbotErrorCode, mindbot_error_headers
+from services.mindbot.infra.circuit_breaker import (
+    record_dify_failure,
+    record_dify_success,
+)
+from services.mindbot.infra.redis_async import (
+    redis_bind,
+    redis_delete,
+    redis_get,
+    redis_ping,
+)
+from services.mindbot.infra.task_registry import register as register_background_task
+from services.mindbot.pipeline.callback_validate import (
+    MindbotPipelineContext,
+    hdr_for_cfg,
+    validate_callback_fast,
 )
 from services.mindbot.pipeline.context import DifyReplyContext
 from services.mindbot.pipeline.dify_paths import (
@@ -39,23 +52,11 @@ from services.mindbot.platforms.dingtalk import (
     fetch_message_media_bytes,
     media_filename_and_types,
 )
-from services.mindbot.errors import MindbotErrorCode, mindbot_error_headers
+from services.mindbot.session.webhook_url import validate_session_webhook_url
 from services.mindbot.telemetry.metrics import mindbot_metrics
 from services.mindbot.telemetry.pipeline_log import format_pipeline_ctx, get_pipeline_logger
 from services.mindbot.telemetry.usage import persist_mindbot_usage_event
-from services.mindbot.session.webhook_url import validate_session_webhook_url
-from services.mindbot.infra.redis_async import (
-    redis_bind,
-    redis_delete,
-    redis_get,
-    redis_ping,
-)
-from services.mindbot.pipeline.callback_validate import (
-    MindbotPipelineContext,
-    validate_callback_fast,
-    hdr_for_cfg,
-)
-from services.mindbot.infra.task_registry import register as register_background_task
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.env_helpers import env_bool, env_float, env_int
 
 logger = logging.getLogger(__name__)
@@ -95,56 +96,67 @@ _org_blocking_lock = asyncio.Lock()
 
 @functools.cache
 def _org_stream_warn_threshold() -> int:
+    """Org stream warn threshold."""
     return max(1, env_int("MINDBOT_ORG_STREAM_WARN_THRESHOLD", 10))
 
 
 @functools.cache
 def _org_max_concurrent_streaming() -> int:
+    """Org max concurrent streaming."""
     return max(1, env_int("MINDBOT_ORG_MAX_CONCURRENT_STREAMING", 8))
 
 
 @functools.cache
 def _global_max_active_streaming() -> int:
+    """Global max active streaming."""
     return max(1, env_int("MINDBOT_MAX_ACTIVE_STREAMING", 128))
 
 
 @functools.cache
 def _org_burst_free_threshold() -> float:
+    """Org burst free threshold."""
     return max(0.1, min(0.95, env_float("MINDBOT_ORG_BURST_FREE_THRESHOLD", 0.5)))
 
 
 @functools.cache
 def _org_burst_share() -> float:
+    """Org burst share."""
     return max(0.1, min(0.9, env_float("MINDBOT_ORG_BURST_SHARE", 0.4)))
 
 
 @functools.cache
 def _org_absolute_max_streaming() -> int:
+    """Org absolute max streaming."""
     return max(1, env_int("MINDBOT_ORG_ABSOLUTE_MAX_STREAMING", 40))
 
 
 @functools.cache
 def _org_max_concurrent_blocking() -> int:
+    """Org max concurrent blocking."""
     return max(1, env_int("MINDBOT_ORG_MAX_CONCURRENT_BLOCKING", 4))
 
 
 @functools.cache
 def _global_max_active_blocking() -> int:
+    """Global max active blocking."""
     return max(1, env_int("MINDBOT_MAX_ACTIVE_BLOCKING", 128))
 
 
 @functools.cache
 def _org_burst_free_threshold_blocking() -> float:
+    """Org burst free threshold blocking."""
     return max(0.1, min(0.95, env_float("MINDBOT_ORG_BURST_FREE_THRESHOLD_BLOCKING", 0.5)))
 
 
 @functools.cache
 def _org_burst_share_blocking() -> float:
+    """Org burst share blocking."""
     return max(0.1, min(0.9, env_float("MINDBOT_ORG_BURST_SHARE_BLOCKING", 0.4)))
 
 
 @functools.cache
 def _org_absolute_max_blocking() -> int:
+    """Org absolute max blocking."""
     return max(1, env_int("MINDBOT_ORG_ABSOLUTE_MAX_BLOCKING", 16))
 
 
@@ -191,6 +203,7 @@ async def _try_inc_org_stream(org_id: int) -> Optional[tuple[int, int]]:
 
 
 async def _dec_org_stream(org_id: int) -> None:
+    """Dec org stream."""
     async with _org_stream_lock:
         count = _org_active_streams.get(org_id, 1) - 1
         if count <= 0:
@@ -229,6 +242,7 @@ async def _try_inc_org_blocking(org_id: int) -> Optional[tuple[int, int]]:
 
 
 async def _dec_org_blocking(org_id: int) -> None:
+    """Dec org blocking."""
     async with _org_blocking_lock:
         count = _org_active_blocking.get(org_id, 1) - 1
         if count <= 0:
@@ -305,14 +319,17 @@ def _parse_dify_inputs_from_config(
 
 
 def _dify_streaming_enabled() -> bool:
+    """Dify streaming enabled."""
     return env_bool("MINDBOT_DIFY_STREAMING", True)
 
 
 async def _redis_get_async(key: str) -> Optional[str]:
+    """Redis get async."""
     return await redis_get(key)
 
 
 async def _redis_delete_async(key: str) -> None:
+    """Redis delete async."""
     await redis_delete(key)
 
 
@@ -334,6 +351,7 @@ async def _maybe_dify_files_for_media(
     dify_user_id: str,
     dify: AsyncDifyClient,
 ) -> list[DifyFile]:
+    """Maybe dify files for media."""
     if not env_bool("MINDBOT_OPENAPI_ENABLED", True):
         return []
     if not env_bool("MINDBOT_FETCH_MEDIA", True):
@@ -355,7 +373,7 @@ async def _maybe_dify_files_for_media(
             robot_code,
             code,
         )
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning("[MindBot] OpenAPI media fetch failed: %s", exc)
         return []
     if not raw:
@@ -369,7 +387,7 @@ async def _maybe_dify_files_for_media(
             filename=fname,
             content_type=mime,
         )
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning("[MindBot] Dify upload_file failed: %s", exc)
         return []
     file_id = up.get("id") if isinstance(up, dict) else None
@@ -692,7 +710,7 @@ async def run_pipeline_background(ctx: MindbotPipelineContext) -> None:
     try:
         _code, headers = await execute_mindbot_pipeline(ctx)
         mindbot_metrics.record_from_headers(headers)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.exception("[MindBot] run_pipeline_background failed: %s", exc)
         mindbot_metrics.record_error_code(MindbotErrorCode.PIPELINE_INTERNAL_ERROR.value)
 

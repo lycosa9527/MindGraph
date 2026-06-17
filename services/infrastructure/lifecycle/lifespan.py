@@ -20,15 +20,16 @@ import time
 from contextlib import asynccontextmanager
 from typing import Optional
 
+import httpx
 from fastapi import FastAPI
 
+from agents.inline_recommendations import start_inline_rec_cleanup_scheduler
 from config.celery import CeleryStartupError, init_celery_worker_check
 from config.settings import config
 from services.auth.geoip_country import log_geolite_country_mmdb_startup_status
-
-_log_geolite_country_mmdb_startup_status = log_geolite_country_mmdb_startup_status
 from services.auth.sms_middleware import get_sms_middleware
 from services.auth.sms_service import SMS_NOTIFICATION_RATE_LIMIT_MESSAGE
+from services.infrastructure.lifecycle.app_runtime import set_app_start_time
 from services.infrastructure.lifecycle.lifespan_collab_integration import (
     start_online_collab_subsystem_async,
 )
@@ -40,40 +41,43 @@ from services.infrastructure.lifecycle.lifespan_shutdown import (
     LifespanBackgroundTasks,
     run_lifespan_shutdown,
 )
+from services.infrastructure.lifecycle.startup import _handle_shutdown_signal
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService, admin_sms_alerts_enabled
 from services.infrastructure.monitoring.health_monitor import get_health_monitor
 from services.infrastructure.monitoring.process_monitor import get_process_monitor
-from services.infrastructure.lifecycle.startup import _handle_shutdown_signal
-from services.infrastructure.utils.browser import log_browser_diagnostics
-from services.infrastructure.utils.launch_commands import lines_playwright_startup_critical
-from services.llm import llm_service
-from services.llm.qdrant_startup import QdrantStartupError, init_qdrant_sync
-from services.redis.redis_distributed_lock import (
-    acquire_startup_sms_notification_lock,
-    release_startup_sms_notification_lock,
-)
-from services.redis.cache.redis_diagram_cache import get_diagram_cache
+from services.infrastructure.monitoring.worker_perf_heartbeat import start_worker_perf_heartbeat
+from services.infrastructure.process.fatal_process_exit import fatal_startup_exit
+from services.infrastructure.security.abuseipdb_scheduler import start_abuseipdb_blacklist_scheduler
 from services.infrastructure.security.abuseipdb_service import (
     apply_blacklist_baseline_from_file_async,
     clear_ip_reputation_sismember_cache,
 )
-from services.infrastructure.security.fail2ban_integration.startup_gate import (
-    enforce_fail2ban_startup_or_exit,
-)
-from services.infrastructure.security.abuseipdb_scheduler import start_abuseipdb_blacklist_scheduler
 from services.infrastructure.security.crowdsec_blocklist_service import (
     apply_crowdsec_baseline_from_file_async,
     crowdsec_blocklist_sync_enabled,
     merge_crowdsec_blocklist_from_network,
 )
+from services.infrastructure.security.fail2ban_integration.startup_gate import (
+    enforce_fail2ban_startup_or_exit,
+)
+from services.infrastructure.utils.browser import log_browser_diagnostics
+from services.infrastructure.utils.launch_commands import lines_playwright_startup_critical
+from services.llm import llm_service
+from services.llm.qdrant_startup import QdrantStartupError, init_qdrant_sync
+from services.redis.cache.redis_api_key_usage_flush import start_api_key_usage_flush_scheduler
+from services.redis.cache.redis_diagram_cache import get_diagram_cache
+from services.redis.redis_distributed_lock import (
+    acquire_startup_sms_notification_lock,
+    release_startup_sms_notification_lock,
+)
 from services.utils.backup_scheduler import start_backup_scheduler
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from services.utils.temp_image_cleaner import start_cleanup_scheduler
-
-# PDF auto-import removed - no longer needed for image-based viewing
-from agents.inline_recommendations import start_inline_rec_cleanup_scheduler
-from utils.auth import AUTH_MODE
+from utils.auth import AUTH_MODE, warmup_jwt_secret_async
 from utils.auth.config import ADMIN_PHONES
 from utils.dependency_checker import DependencyError, check_system_dependencies
+
+_log_geolite_country_mmdb_startup_status = log_geolite_country_mmdb_startup_status
 
 logger = logging.getLogger(__name__)
 
@@ -169,6 +173,7 @@ async def lifespan(fastapi_app: FastAPI):
     # Startup timing
     startup_start = time.time()
     fastapi_app.state.start_time = startup_start
+    set_app_start_time(startup_start)
     fastapi_app.state.is_shutting_down = False
 
     # Register signal handlers for graceful shutdown
@@ -200,19 +205,17 @@ async def lifespan(fastapi_app: FastAPI):
     if crowdsec_blocklist_sync_enabled():
         try:
             await merge_crowdsec_blocklist_from_network()
-        except Exception as crowdsec_exc:
+        except (*BACKGROUND_INFRA_ERRORS, httpx.HTTPError) as crowdsec_exc:
             if is_main_worker:
                 logger.warning("[CrowdSec] Startup blocklist merge failed: %s", crowdsec_exc)
 
     clear_ip_reputation_sismember_cache()
 
     try:
-        from utils.auth import warmup_jwt_secret_async
-
         await warmup_jwt_secret_async()
         if is_main_worker:
             logger.debug("[LIFESPAN] JWT secret cache warmed via async Redis client")
-    except Exception as jwt_warm_exc:
+    except BACKGROUND_INFRA_ERRORS as jwt_warm_exc:
         if is_main_worker:
             logger.warning(
                 "[LIFESPAN] JWT secret async warmup failed (sync fallback will be used on first call): %s",
@@ -240,10 +243,10 @@ async def lifespan(fastapi_app: FastAPI):
                         "Check Qdrant connection and configuration."
                     ),
                 )
-            except Exception as alert_error:
+            except BACKGROUND_INFRA_ERRORS as alert_error:
                 logger.error("Failed to send startup failure alert: %s", alert_error)
             logger.error("Application startup failed. Exiting.")
-            os._exit(1)
+            fatal_startup_exit(1)
     else:
         if is_main_worker:
             logger.debug("[LIFESPAN] Skipping Qdrant initialization (Knowledge Space feature is disabled)")
@@ -268,10 +271,10 @@ async def lifespan(fastapi_app: FastAPI):
                         "Start Celery worker: celery -A config.celery worker --loglevel=info"
                     ),
                 )
-            except Exception as alert_error:
+            except BACKGROUND_INFRA_ERRORS as alert_error:
                 logger.error("Failed to send startup failure alert: %s", alert_error)
             logger.error("Application startup failed. Exiting.")
-            os._exit(1)
+            fatal_startup_exit(1)
     else:
         if is_main_worker:
             logger.debug("[LIFESPAN] Skipping Celery worker check (Knowledge Space feature is disabled)")
@@ -284,7 +287,7 @@ async def lifespan(fastapi_app: FastAPI):
         if not check_system_dependencies(exit_on_error=True):
             # check_system_dependencies already exits, but this is a safety check
             logger.error("System dependency check failed. Exiting.")
-            os._exit(1)
+            fatal_startup_exit(1)
         if is_main_worker:
             logger.debug("System dependencies check passed")
     except DependencyError as e:
@@ -296,11 +299,11 @@ async def lifespan(fastapi_app: FastAPI):
                 error_message=f"System dependency check failed: {str(e)}",
                 details=("Required system dependencies are missing. Check Tesseract OCR installation."),
             )
-        except Exception as alert_error:
+        except BACKGROUND_INFRA_ERRORS as alert_error:
             if is_main_worker:
                 logger.error("Failed to send startup failure alert: %s", alert_error)
-        os._exit(1)
-    except Exception as e:
+        fatal_startup_exit(1)
+    except BACKGROUND_INFRA_ERRORS as e:
         # Log but don't exit on unexpected errors during dependency check
         # This allows the app to start even if dependency check has issues
         if is_main_worker:
@@ -323,7 +326,7 @@ async def lifespan(fastapi_app: FastAPI):
         llm_service.initialize()
         if is_main_worker:
             logger.debug("LLM Service initialized")
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         if is_main_worker:
             logger.warning("Failed to initialize LLM Service: %s", e)
 
@@ -334,19 +337,15 @@ async def lifespan(fastapi_app: FastAPI):
         except NotImplementedError:
             for line in lines_playwright_startup_critical():
                 logger.error(line)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("Could not verify Playwright installation: %s", e)
 
     api_key_usage_flush_task: Optional[asyncio.Task] = None
     try:
-        from services.redis.cache.redis_api_key_usage_flush import (
-            start_api_key_usage_flush_scheduler,
-        )
-
         api_key_usage_flush_task = start_api_key_usage_flush_scheduler()
         if is_main_worker:
             logger.debug("API key usage flush scheduler started")
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         if is_main_worker:
             logger.warning("Failed to start API key usage flush scheduler: %s", e)
 
@@ -356,7 +355,7 @@ async def lifespan(fastapi_app: FastAPI):
         cleanup_task = asyncio.create_task(start_cleanup_scheduler(interval_hours=1))
         if is_main_worker:
             logger.debug("Temp image cleanup scheduler started")
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         if is_main_worker:
             logger.warning("Failed to start cleanup scheduler: %s", e)
 
@@ -366,12 +365,8 @@ async def lifespan(fastapi_app: FastAPI):
     worker_perf_task: Optional[asyncio.Task[None]] = None
     worker_perf_stop: Optional[asyncio.Event] = None
     try:
-        from services.infrastructure.monitoring.worker_perf_heartbeat import (
-            start_worker_perf_heartbeat,
-        )
-
         worker_perf_task, worker_perf_stop = start_worker_perf_heartbeat()
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         if is_main_worker:
             logger.warning("Failed to start admin worker perf heartbeat: %s", e)
 
@@ -380,7 +375,7 @@ async def lifespan(fastapi_app: FastAPI):
         asyncio.create_task(start_inline_rec_cleanup_scheduler(interval_minutes=30))
         if is_main_worker:
             logger.debug("Inline recommendations cleanup scheduler started")
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         if is_main_worker:
             logger.warning("Failed to start inline rec cleanup scheduler: %s", e)
 
@@ -392,14 +387,14 @@ async def lifespan(fastapi_app: FastAPI):
     try:
         backup_scheduler_task = asyncio.create_task(start_backup_scheduler())
         # Don't log here - the scheduler will log whether it acquired the lock
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         if worker_id == "0" or not worker_id:
             logger.warning("Failed to start backup scheduler: %s", e)
 
     abuseipdb_scheduler_task: Optional[asyncio.Task] = None
     try:
         abuseipdb_scheduler_task = asyncio.create_task(start_abuseipdb_blacklist_scheduler())
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         if worker_id == "0" or not worker_id:
             logger.warning("Failed to start AbuseIPDB blacklist scheduler: %s", e)
 
@@ -416,7 +411,7 @@ async def lifespan(fastapi_app: FastAPI):
         process_monitor_task = asyncio.create_task(process_monitor.start())
         if is_main_worker:
             logger.debug("Process monitor started")
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         if is_main_worker:
             logger.warning("Failed to start process monitor: %s", e)
         process_monitor_task = None  # Ensure it's None if initialization failed
@@ -430,7 +425,7 @@ async def lifespan(fastapi_app: FastAPI):
         health_monitor_task = asyncio.create_task(health_monitor.start())
         if is_main_worker:
             logger.debug("Health monitor started")
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         if is_main_worker:
             logger.warning("Failed to start health monitor: %s", e)
         health_monitor_task = None  # Ensure it's None if initialization failed
@@ -443,14 +438,14 @@ async def lifespan(fastapi_app: FastAPI):
         get_diagram_cache()
         if is_main_worker:
             logger.debug("Diagram cache initialized")
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         if is_main_worker:
             logger.warning("Failed to initialize diagram cache: %s", e)
 
     # Send startup notification SMS (Redis lock — once per cluster; not gated on worker id)
     try:
         await _send_startup_sms_notification_once()
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.warning(
             "[LIFESPAN] Failed to send startup SMS notification (non-critical): %s",
             e,

@@ -9,9 +9,9 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Dict, Optional
 import asyncio
 import logging
+from typing import Dict, Optional
 
 import httpx
 
@@ -32,6 +32,7 @@ class HTTPXClientManager:
     _instance: Optional["HTTPXClientManager"] = None
 
     def __init__(self):
+        """ init  ."""
         self._clients: Dict[str, httpx.AsyncClient] = {}
         self._lock = asyncio.Lock()
 

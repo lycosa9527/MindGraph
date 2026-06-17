@@ -20,7 +20,14 @@ from urllib.parse import quote
 import httpx
 from redis.exceptions import RedisError
 
-from services.infrastructure.security import abuseipdb_service
+from services.infrastructure.security import ip_reputation_env_flags, ip_reputation_env_snapshot
+from services.infrastructure.security.ip_reputation_blacklist_redis import (
+    KEY_BLACKLIST,
+    clear_ip_reputation_sismember_cache,
+    parse_baseline_file_lines,
+    parse_retry_after_seconds,
+    pipeline_sadd_chunks_async,
+)
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
 
@@ -32,58 +39,19 @@ _DEFAULT_CROWDSEC_INTEGRATION_API_BASE = "https://admin.api.crowdsec.net/v1/inte
 
 
 def _mindgraph_root() -> Path:
+    """Mindgraph root."""
     return Path(__file__).resolve().parent.parent.parent.parent
 
 
-def _env_bool(name: str, default: bool = False) -> bool:
-    val = os.getenv(name, "").lower().strip()
-    if not val:
-        return default
-    return val in ("1", "true", "yes", "on")
-
-
-def _env_int(name: str, default: int) -> int:
-    raw = os.getenv(name, "").strip()
-    if not raw:
-        return default
-    try:
-        return int(raw)
-    except ValueError:
-        return default
-
-
-def crowdsec_blocklist_credentials_configured() -> bool:
-    """True when username and password are set (Console integration credentials)."""
-    user = os.getenv("CROWDSEC_BLOCKLIST_USERNAME", "").strip()
-    password = os.getenv("CROWDSEC_BLOCKLIST_PASSWORD", "").strip()
-    return bool(user and password)
-
-
-def crowdsec_blocklist_endpoint_configured() -> bool:
-    """True when URL or integration id is set."""
-    url = os.getenv("CROWDSEC_BLOCKLIST_URL", "").strip()
-    if url:
-        return True
-    integration_id = os.getenv("CROWDSEC_BLOCKLIST_INTEGRATION_ID", "").strip()
-    return bool(integration_id)
-
-
-def crowdsec_blocklist_master_enabled() -> bool:
-    """True when CrowdSec blocklist merge may run (operator opted in and configured)."""
-    if not _env_bool("CROWDSEC_BLOCKLIST_ENABLED", False):
-        return False
-    if not crowdsec_blocklist_credentials_configured():
-        return False
-    return crowdsec_blocklist_endpoint_configured()
-
-
-def crowdsec_blocklist_sync_enabled() -> bool:
-    return crowdsec_blocklist_master_enabled() and _env_bool("CROWDSEC_BLOCKLIST_SYNC_ENABLED", True)
-
-
-def crowdsec_blocklist_lookup_enabled() -> bool:
-    """Use shared Redis blacklist for blocking (CrowdSec-only or with AbuseIPDB)."""
-    return crowdsec_blocklist_master_enabled() and _env_bool("CROWDSEC_BLOCKLIST_LOOKUP_ENABLED", True)
+_env_bool = ip_reputation_env_flags.env_bool
+_env_int = ip_reputation_env_flags.env_int
+crowdsec_blocklist_credentials_configured = (
+    ip_reputation_env_flags.crowdsec_blocklist_credentials_configured
+)
+crowdsec_blocklist_endpoint_configured = ip_reputation_env_flags.crowdsec_blocklist_endpoint_configured
+crowdsec_blocklist_master_enabled = ip_reputation_env_flags.crowdsec_blocklist_master_enabled
+crowdsec_blocklist_sync_enabled = ip_reputation_env_flags.crowdsec_blocklist_sync_enabled
+crowdsec_blocklist_lookup_enabled = ip_reputation_env_flags.crowdsec_blocklist_lookup_enabled
 
 
 def get_crowdsec_sync_interval_seconds() -> int:
@@ -107,6 +75,7 @@ def crowdsec_baseline_file_enabled() -> bool:
 
 
 def crowdsec_baseline_blacklist_path() -> Path:
+    """Crowdsec baseline blacklist path."""
     override = os.getenv("CROWDSEC_BASELINE_FILE", "").strip()
     if override:
         path = Path(override)
@@ -141,7 +110,7 @@ async def apply_crowdsec_baseline_from_file_async() -> int:
         logger.warning("[CrowdSec] could not read baseline file %s: %s", path, exc)
         return 0
 
-    ips = abuseipdb_service.parse_baseline_file_lines(text)
+    ips = parse_baseline_file_lines(text)
     if not ips:
         logger.debug("[CrowdSec] baseline file has no valid IPs: %s", path)
         return 0
@@ -153,8 +122,8 @@ async def apply_crowdsec_baseline_from_file_async() -> int:
     batch = list(ips)
     chunk_size = 2000
     try:
-        added_total = await abuseipdb_service.pipeline_sadd_chunks_async(
-            redis, abuseipdb_service.KEY_BLACKLIST, batch, chunk_size
+        added_total = await pipeline_sadd_chunks_async(
+            redis, KEY_BLACKLIST, batch, chunk_size
         )
     except (OSError, RedisError) as exc:
         logger.warning("[CrowdSec] baseline SADD failed: %s", exc)
@@ -194,12 +163,14 @@ def build_crowdsec_blocklist_content_url() -> Optional[str]:
 
 
 def _basic_auth() -> Tuple[str, str]:
+    """Basic auth."""
     user = os.getenv("CROWDSEC_BLOCKLIST_USERNAME", "").strip()
     password = os.getenv("CROWDSEC_BLOCKLIST_PASSWORD", "").strip()
     return user, password
 
 
 async def _get_last_merge_unix_async() -> Optional[float]:
+    """Get last merge unix async."""
     if not is_redis_available():
         return None
     redis = get_async_redis()
@@ -219,6 +190,7 @@ async def _get_last_merge_unix_async() -> Optional[float]:
 
 
 async def _set_last_merge_meta_async(count: int) -> None:
+    """Set last merge meta async."""
     if not is_redis_available():
         return
     redis = get_async_redis()
@@ -232,6 +204,7 @@ async def _set_last_merge_meta_async(count: int) -> None:
 
 
 async def _should_skip_due_to_min_interval_async() -> bool:
+    """Should skip due to min interval async."""
     last = await _get_last_merge_unix_async()
     if last is None:
         return False
@@ -240,6 +213,7 @@ async def _should_skip_due_to_min_interval_async() -> bool:
 
 
 async def _sadd_ips_chunked_async(ips: set[str]) -> int:
+    """Sadd ips chunked async."""
     if not is_redis_available() or not ips:
         return 0
     redis = get_async_redis()
@@ -247,7 +221,7 @@ async def _sadd_ips_chunked_async(ips: set[str]) -> int:
         return 0
     batch = list(ips)
     chunk_size = 2000
-    return await abuseipdb_service.pipeline_sadd_chunks_async(redis, abuseipdb_service.KEY_BLACKLIST, batch, chunk_size)
+    return await pipeline_sadd_chunks_async(redis, KEY_BLACKLIST, batch, chunk_size)
 
 
 async def merge_crowdsec_blocklist_from_network(force: bool = False) -> Dict[str, Any]:
@@ -295,7 +269,7 @@ async def merge_crowdsec_blocklist_from_network(force: bool = False) -> Dict[str
         return result
 
     if response.status_code == 429:
-        retry_after = abuseipdb_service.parse_retry_after_seconds(response) or 3600
+        retry_after = parse_retry_after_seconds(response) or 3600
         result["error"] = "rate_limited"
         result["rate_limited"] = True
         result["retry_after_seconds"] = retry_after
@@ -312,7 +286,7 @@ async def merge_crowdsec_blocklist_from_network(force: bool = False) -> Dict[str
         return result
 
     body = response.text or ""
-    ips = abuseipdb_service.parse_baseline_file_lines(body)
+    ips = parse_baseline_file_lines(body)
     if not ips:
         logger.warning("[CrowdSec] blocklist response contained no valid IPs")
         result["error"] = "empty_or_invalid"
@@ -333,12 +307,10 @@ async def merge_crowdsec_blocklist_from_network(force: bool = False) -> Dict[str
         len(ips),
         added,
     )
-    abuseipdb_service.clear_ip_reputation_sismember_cache()
+    clear_ip_reputation_sismember_cache()
     return result
 
 
 def ip_reputation_blacklist_lookup_active() -> bool:
     """True if middleware should consult the shared Redis blacklist set."""
-    from services.infrastructure.security import ip_reputation_env_snapshot
-
     return ip_reputation_env_snapshot.blacklist_lookup_active()

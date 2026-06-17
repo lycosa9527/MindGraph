@@ -6,19 +6,20 @@ Handles manual evaluation and chunk viewing.
 
 import logging
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
-from utils.auth import get_current_user
 from models.domain.knowledge_space import ChunkTestResult
 from models.requests.requests_knowledge_space import ManualEvaluationRequest
 from routers.api.knowledge_space.chunk_test_utils import check_feature_enabled
 from services.knowledge.chunking_service import Chunk
 from services.knowledge.rag_chunk_test import get_rag_chunk_test_service
 from services.knowledge.rag_chunk_test.manual_evaluator import get_manual_evaluator
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +79,7 @@ async def get_chunk_test_chunks(
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error(
             "[ChunkTestEvaluation] Failed to get chunks for test %s, method %s: %s",
             test_id,
@@ -187,7 +188,7 @@ async def manual_evaluate_chunks(
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error(
             "[ChunkTestEvaluation] Failed to evaluate chunks for test %s: %s",
             test_id,

@@ -26,27 +26,6 @@ import time
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from services.features.workshop_ws_connection_state import (
-    ACTIVE_CONNECTIONS as active_connections,
-    ACTIVE_EDITORS as active_editors,
-    AnyHandle,
-    activate_connection,
-    create_connection_handle,
-    enqueue,
-    finalize_handle_writer_shutdown,
-    teardown_superseded_connection,
-)
-from utils.collab_ws_origin import (
-    canvas_collab_websocket_origin_is_allowed,
-    load_collab_ws_allowed_origins_env,
-)
-from utils.ws_context import ws_managed_session
-from services.online_collab.core.online_collab_manager import (
-    get_online_collab_manager,
-)
-from services.auth.vpn_geo_enforcement import maybe_close_websocket_for_vpn_cn_geo
-
-_close_ws_if_vpn_cn_geo = maybe_close_websocket_for_vpn_cn_geo
 from routers.api.workshop_ws_auth import (
     authenticate_canvas_collab_user,
     normalize_canvas_collab_code,
@@ -61,16 +40,40 @@ from routers.api.workshop_ws_handlers import (
     CollabWsContext,
     run_canvas_collab_receive_loop,
 )
+from services.auth.vpn_geo_enforcement import maybe_close_websocket_for_vpn_cn_geo
+from services.features.workshop_ws_connection_state import ACTIVE_CONNECTIONS as active_connections
+from services.features.workshop_ws_registry import ACTIVE_EDITORS as active_editors
+from services.features.workshop_ws_connection_state import (
+    AnyHandle,
+    activate_connection,
+    create_connection_handle,
+    enqueue,
+    finalize_handle_writer_shutdown,
+    teardown_superseded_connection,
+)
 from services.infrastructure.monitoring.ws_metrics import (
     record_ws_collab_origin_reject,
     record_ws_editor_connection_delta,
     record_ws_viewer_connection_delta,
 )
 from services.online_collab.common.collab_palette import USER_COLORS, USER_EMOJIS
+from services.online_collab.core.online_collab_manager import (
+    get_online_collab_manager,
+)
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, user_has_school_tier_feature
+from utils.collab_ws_origin import (
+    canvas_collab_websocket_origin_is_allowed,
+    load_collab_ws_allowed_origins_env,
+)
+from utils.db.session_open import actor_rls_session
+from utils.ws_context import ws_managed_session
 from utils.ws_limits import (
     DEFAULT_MAX_WS_MESSAGES_PER_SECOND,
     WebsocketMessageRateLimiter,
 )
+
+_close_ws_if_vpn_cn_geo = maybe_close_websocket_for_vpn_cn_geo
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +83,7 @@ router = APIRouter()
 
 
 def _parse_positive_int_env(name: str, default: int) -> int:
+    """Parse positive int env."""
     raw = os.environ.get(name)
     if raw is None:
         return default
@@ -95,6 +99,7 @@ _COLLAB_WS_MAX_PER_USER_GLOBAL = _parse_positive_int_env("COLLAB_WS_MAX_PER_USER
 
 
 def _collaboration_disabled_by_env() -> bool:
+    """Collaboration disabled by env."""
     raw = os.environ.get("COLLAB_DISABLED", "0")
     return raw.lower() in ("1", "true", "yes")
 
@@ -138,16 +143,13 @@ async def canvas_collab_websocket(
                 code=1013,
                 reason="Collaboration temporarily disabled",
             )
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("[WorkshopWS] Close on collab-disabled: %s", exc)
         return
 
     user, auth_err = await authenticate_canvas_collab_user(websocket)
     if auth_err or user is None:
         return
-
-    from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, user_has_school_tier_feature
-    from utils.db.session_open import actor_rls_session
 
     async with actor_rls_session(user) as tier_db:
         collab_allowed = await user_has_school_tier_feature(
@@ -185,7 +187,7 @@ async def canvas_collab_websocket(
     ):
         try:
             record_ws_collab_origin_reject()
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("[WorkshopWS] origin metric skipped: %s", exc)
         logger.warning("[WorkshopWS] Origin rejected for user_id=%s", user.id)
         await websocket.close(
@@ -208,7 +210,7 @@ async def canvas_collab_websocket(
 
     try:
         resolved = await resolve_canvas_collab_join(websocket, user, norm_code)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.error(
             "[CanvasCollabWS] resolve_canvas_collab_join raised unexpectedly user_id=%s code=%s: %s",
             user.id,
@@ -218,7 +220,7 @@ async def canvas_collab_websocket(
         )
         try:
             await websocket.close(code=1011, reason="Internal error")
-        except Exception as close_exc:
+        except BACKGROUND_INFRA_ERRORS as close_exc:
             logger.debug("[CanvasCollabWS] close after join error: %s", close_exc)
         return
     if not resolved:
@@ -273,7 +275,7 @@ async def canvas_collab_websocket(
             if previous_handle is not None and previous_handle.websocket is not websocket:
                 try:
                     await previous_handle.websocket.close(code=4003, reason="replaced_by_new_session")
-                except Exception as exc:
+                except BACKGROUND_INFRA_ERRORS as exc:
                     logger.debug("[WorkshopWS] Close superseded socket failed: %s", exc)
                 await teardown_superseded_connection(code, user.id, previous_handle)
                 await clear_editor_state_for_superseded_session(code, user)
@@ -288,7 +290,7 @@ async def canvas_collab_websocket(
                     USER_COLORS,
                     USER_EMOJIS,
                 )
-            except Exception as hs_exc:
+            except BACKGROUND_INFRA_ERRORS as hs_exc:
                 logger.error(
                     "[WorkshopWS] Handshake failed user=%s code=%s: %s",
                     user.id,
@@ -297,7 +299,7 @@ async def canvas_collab_websocket(
                 )
                 try:
                     await websocket.close(code=4011, reason="handshake_failed")
-                except Exception:
+                except BACKGROUND_INFRA_ERRORS:
                     pass
                 raise
 
@@ -317,7 +319,7 @@ async def canvas_collab_websocket(
                     user.id,
                     code,
                 )
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 logger.error(
                     "[WorkshopWS] Error in workshop WebSocket: %s",
                     exc,
@@ -329,7 +331,7 @@ async def canvas_collab_websocket(
                         {"type": "error", "message": _COLLAB_WS_GENERIC_ERROR},
                         "error",
                     )
-                except Exception as send_exc:
+                except BACKGROUND_INFRA_ERRORS as send_exc:
                     logger.debug("Failed to send WebSocket error message: %s", send_exc)
             finally:
                 if handle.role == "viewer":
@@ -347,7 +349,7 @@ async def canvas_collab_websocket(
         if not join_committed:
             try:
                 await get_online_collab_manager().remove_participant(code, user.id)
-            except Exception as cleanup_exc:
+            except BACKGROUND_INFRA_ERRORS as cleanup_exc:
                 logger.warning(
                     "[WorkshopWS] remove_participant after failed join user=%s code=%s: %s",
                     user.id,

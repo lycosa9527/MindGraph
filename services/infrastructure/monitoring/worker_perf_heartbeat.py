@@ -23,6 +23,7 @@ _TTL_S = 14
 
 
 async def _build_and_store() -> None:
+    """Build and store."""
     if not is_redis_available():
         return
     try:

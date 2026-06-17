@@ -28,10 +28,10 @@ from models.domain.workshop_chat import (
     ChatMessage,
     ChatTopic,
 )
+from services.features.workshop_chat import message_fts
 from services.features.workshop_chat.mention_resolution import (
     resolve_mentioned_user_ids,
 )
-from services.features.workshop_chat import message_fts
 from utils.auth.roles import can_moderate_workshop_channel
 
 logger = logging.getLogger(__name__)

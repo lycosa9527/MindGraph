@@ -21,13 +21,14 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Any, Dict, List
 import asyncio
 import json
 import logging
 import os
+from typing import Any, Dict, List
 
 from services.infrastructure.utils.browser import BrowserContextManager
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -185,7 +186,7 @@ async def _screenshot_canvas(
     try:
         await page.wait_for_selector(".vue-flow__node", timeout=5000)
         logger.debug("[VueFlowScreenshot] Vue Flow nodes found in DOM")
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         _log_debug_info(console_messages, page_errors)
         raise RuntimeError(
             "No .vue-flow__node elements found after render",
@@ -278,9 +279,9 @@ async def capture_diagram_screenshot(
             )
             return screenshot_bytes
 
-        except RuntimeError:
-            raise
-        except Exception as exc:
+        except RuntimeError as runtime_error:
+            raise runtime_error
+        except BACKGROUND_INFRA_ERRORS as exc:
             _log_debug_info(console_messages, page_errors)
             logger.error(
                 "[VueFlowScreenshot] Unexpected error: %s",

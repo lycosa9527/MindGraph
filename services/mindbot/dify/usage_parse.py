@@ -6,6 +6,7 @@ from typing import Any, Optional
 
 
 def _coerce_usage_dict(usage: dict[str, Any]) -> Optional[dict[str, int]]:
+    """Coerce usage dict."""
     if not isinstance(usage, dict):
         return None
 

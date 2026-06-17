@@ -17,10 +17,10 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, Request, status
-from fastapi.security import HTTPBearer, APIKeyHeader
+from fastapi.security import APIKeyHeader, HTTPBearer
 from jose import JWTError, jwt
 
-from .config import JWT_ALGORITHM, ACCESS_TOKEN_EXPIRY_MINUTES
+from .config import ACCESS_TOKEN_EXPIRY_MINUTES, JWT_ALGORITHM
 from .jwt_secret import get_jwt_secret
 
 logger = logging.getLogger(__name__)

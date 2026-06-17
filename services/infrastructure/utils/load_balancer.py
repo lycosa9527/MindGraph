@@ -16,15 +16,16 @@ Key Design:
 Copyright 2024-2025 北京思源智教科技有限公司
 """
 
-from typing import Dict, Optional, Any, TYPE_CHECKING
 import json
 import logging
 import random
 import time
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from services.infrastructure.rate_limiting.rate_limiter import LoadBalancerRateLimiter
 from services.redis.redis_async_ops import AsyncRedisOps
 from services.redis.redis_client import is_redis_available
+from services.utils.error_types import REDIS_ERRORS
 
 if TYPE_CHECKING:
     from services.infrastructure.rate_limiting.rate_limiter import DashscopeRateLimiter
@@ -208,10 +209,10 @@ class LLMLoadBalancer:
             if dashscope_available and not volcengine_available:
                 logger.debug("[LoadBalancer] Rate limit-aware: Dashscope has capacity, Volcengine at limit")
                 return self.PROVIDER_DASHSCOPE
-            elif volcengine_available and not dashscope_available:
+            if volcengine_available and not dashscope_available:
                 logger.debug("[LoadBalancer] Rate limit-aware: Volcengine has capacity, Dashscope at limit")
                 return self.PROVIDER_VOLCENGINE
-            elif not dashscope_available and not volcengine_available:
+            if not dashscope_available and not volcengine_available:
                 # Both at capacity - fall through to strategy selection (will block on acquire)
                 logger.debug("[LoadBalancer] Rate limit-aware: Both providers at capacity, using strategy")
             # If both available, fall through to strategy selection
@@ -231,10 +232,10 @@ class LLMLoadBalancer:
             )
             return provider
 
-        elif self.strategy == "random":
+        if self.strategy == "random":
             return random.choice([self.PROVIDER_DASHSCOPE, self.PROVIDER_VOLCENGINE])
 
-        elif self.strategy == "round_robin":
+        if self.strategy == "round_robin":
             # Use Redis for shared counter across workers
             # HOW IT WORKS ACROSS WORKERS (example with 5 workers):
             # All workers share the same Redis counter, so number of workers doesn't matter!
@@ -259,12 +260,11 @@ class LLMLoadBalancer:
                         provider,
                     )
                     return provider
-                else:
-                    # Redis failed, fall back to local counter
-                    logger.warning(
-                        "[LoadBalancer] Redis unavailable, using local counter "
-                        "for round-robin (uneven distribution in multi-worker)"
-                    )
+                # Redis failed, fall back to local counter
+                logger.warning(
+                    "[LoadBalancer] Redis unavailable, using local counter "
+                    "for round-robin (uneven distribution in multi-worker)"
+                )
 
             # Fallback: local counter (per-worker, uneven distribution in multi-worker)
             # Each worker maintains its own counter, so distribution is uneven:
@@ -445,7 +445,7 @@ class LLMLoadBalancer:
             # Set TTL on window key
             await AsyncRedisOps.set_ttl(window_key, 3600)
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             # Non-critical: metrics tracking failure shouldn't break load balancing
             logger.debug("[LoadBalancer] Failed to record metrics in Redis: %s", e)
 
@@ -535,7 +535,7 @@ class LLMLoadBalancer:
                 "healthy": healthy,
             }
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.debug("[LoadBalancer] Failed to get provider health from Redis: %s", e)
             return {
                 "success_rate": 1.0,
@@ -604,7 +604,10 @@ class LLMLoadBalancer:
 # The singleton pattern is kept for potential future use cases where
 # a global load balancer instance might be needed (e.g., admin endpoints,
 # monitoring, or shared state across services).
-_load_balancer: Optional[LLMLoadBalancer] = None
+class _LoadBalancerState:
+    """Process-wide load balancer singleton holder."""
+
+    instance: Optional[LLMLoadBalancer] = None
 
 
 def initialize_load_balancer(
@@ -632,8 +635,7 @@ def initialize_load_balancer(
     Note: This function initializes both the global singleton and returns
     the instance. The singleton is kept for potential future use cases.
     """
-    global _load_balancer
-    _load_balancer = LLMLoadBalancer(
+    _LoadBalancerState.instance = LLMLoadBalancer(
         strategy=strategy,
         weights=weights,
         enabled=enabled,
@@ -641,4 +643,4 @@ def initialize_load_balancer(
         load_balancer_rate_limiter=load_balancer_rate_limiter,
         rate_limit_aware=rate_limit_aware,
     )
-    return _load_balancer
+    return _LoadBalancerState.instance

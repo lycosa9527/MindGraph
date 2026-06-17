@@ -63,21 +63,25 @@ _CB_REDIS_KEY_PREFIX = "mindbot:cb:"
 
 @functools.cache
 def _cb_max_keys() -> int:
+    """Cb max keys."""
     return max(100, env_int("MINDBOT_CIRCUIT_BREAKER_MAX_KEYS", 2000))
 
 
 @functools.cache
 def _cb_enabled() -> bool:
+    """Cb enabled."""
     return env_bool("MINDBOT_CIRCUIT_BREAKER_ENABLED", True)
 
 
 @functools.cache
 def _cb_failure_threshold() -> int:
+    """Cb failure threshold."""
     return max(1, env_int("MINDBOT_CIRCUIT_BREAKER_FAILURE_THRESHOLD", 5))
 
 
 @functools.cache
 def _cb_reset_seconds() -> float:
+    """Cb reset seconds."""
     return max(5.0, env_float("MINDBOT_CIRCUIT_BREAKER_RESET_SECONDS", 60.0))
 
 
@@ -94,6 +98,7 @@ class CircuitBreaker:
     """
 
     def __init__(self) -> None:
+        """ init  ."""
         self._failures: int = 0
         self._opened_at: float = 0.0
         self._is_open: bool = False
@@ -107,16 +112,20 @@ class CircuitBreaker:
         return "open"
 
     def is_open(self) -> bool:
+        """Is open."""
         return self.state() == "open"
 
     def is_half_open(self) -> bool:
+        """Is half open."""
         return self.state() == "half_open"
 
     def record_success(self) -> None:
+        """Record success."""
         self._failures = 0
         self._is_open = False
 
     def record_failure(self, key: str) -> None:
+        """Record failure."""
         self._failures += 1
         if self._failures >= _cb_failure_threshold():
             if not self._is_open:
@@ -130,6 +139,7 @@ class CircuitBreaker:
 
 
 def get_breaker(key: str) -> CircuitBreaker:
+    """Get breaker."""
     if key in _breakers:
         _breakers.move_to_end(key)
         return _breakers[key]

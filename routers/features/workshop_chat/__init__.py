@@ -28,11 +28,11 @@ from fastapi import APIRouter, Depends
 
 from routers.auth.dependencies import require_workshop_chat_access
 from routers.features.workshop_chat.channels import router as channels_router
-from routers.features.workshop_chat.topics import router as topics_router
-from routers.features.workshop_chat.messages import router as messages_router
 from routers.features.workshop_chat.direct_messages import router as dm_router
-from routers.features.workshop_chat.reactions import router as reactions_router
 from routers.features.workshop_chat.files import router as files_router
+from routers.features.workshop_chat.messages import router as messages_router
+from routers.features.workshop_chat.reactions import router as reactions_router
+from routers.features.workshop_chat.topics import router as topics_router
 
 router = APIRouter(
     prefix="/api/chat",

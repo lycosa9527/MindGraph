@@ -10,6 +10,15 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import WebSocket
 
+from routers.api.workshop_ws_handlers_presence import (
+    handle_claim_node_edit,
+    handle_host_llm_model,
+    handle_node_editing,
+    handle_node_editing_batch,
+    handle_node_selected,
+    build_participants_with_names,
+)
+from routers.api.workshop_ws_handlers_update import handle_update
 from services.features.workshop_ws_connection_state import (
     ACTIVE_CONNECTIONS,
     AnyHandle,
@@ -17,38 +26,31 @@ from services.features.workshop_ws_connection_state import (
     enqueue,
 )
 from services.features.workshop_ws_role_change import handle_role_change
-from services.redis.redis_async_client import get_async_redis
 from services.infrastructure.monitoring.ws_metrics import (
     record_ws_collab_resync,
     record_ws_rate_limit_hit,
     record_ws_resync_rate_limit_check_failure,
-)
-from services.online_collab.participant.online_collab_snapshots import (
-    websocket_send_live_spec_snapshot,
-)
-from services.online_collab.redis.redis8_features import tdigest_record_latency
-from services.online_collab.redis.online_collab_redis_keys import resync_rate_limit_key
-from services.online_collab.participant.collab_display_name import (
-    workshop_collab_member_display_name,
+    record_ws_viewer_resync,
 )
 from services.online_collab.core.online_collab_manager import get_online_collab_manager
 from services.online_collab.core.online_collab_status import (
     diagram_title_for_active_workshop,
     online_collab_visibility_for_diagram_id,
 )
+from services.online_collab.participant.collab_display_name import (
+    workshop_collab_member_display_name,
+)
+from services.online_collab.participant.online_collab_snapshots import (
+    websocket_send_live_spec_snapshot,
+)
 from services.online_collab.participant.workshop_join_resume_tokens import (
     mint_join_resume_token_async,
 )
+from services.online_collab.redis.online_collab_redis_keys import resync_rate_limit_key
+from services.online_collab.redis.redis8_features import tdigest_record_latency
+from services.redis.redis_async_client import get_async_redis
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 from utils.auth_ws import authenticate_websocket_user
-from routers.api.workshop_ws_handlers_presence import (
-    build_participants_with_names,
-    _handle_claim_node_edit,
-    _handle_host_llm_model,
-    _handle_node_editing,
-    _handle_node_editing_batch,
-    _handle_node_selected,
-)
-from routers.api.workshop_ws_handlers_update import handle_update as _handle_update
 from utils.ws_limits import (
     MAX_COLLAB_INBOUND_JSON_DEPTH,
     WORKSHOP_MAX_WS_TEXT_BYTES,
@@ -60,7 +62,8 @@ from utils.ws_limits import (
 logger = logging.getLogger(__name__)
 
 
-def _collab_jwt_revalidate_interval_sec() -> float:
+def collab_jwt_revalidate_interval_sec() -> float:
+    """Collab jwt revalidate interval sec."""
     raw = os.environ.get("COLLAB_WS_JWT_REVALIDATE_SEC", "180")
     try:
         parsed = float(raw)
@@ -93,7 +96,7 @@ class CollabWsContext:
         return "editor"
 
 
-async def _ctx_send(ctx: "CollabWsContext", payload: dict, msg_type: str = "error") -> None:
+async def ctx_send(ctx: "CollabWsContext", payload: dict, msg_type: str = "error") -> None:
     """Route an outbound frame through handle.enqueue or ws.send_json fallback."""
     if ctx.handle is not None:
         await enqueue(ctx.handle, payload, msg_type)
@@ -108,25 +111,27 @@ def _refresh_ctx_handle(ctx: "CollabWsContext") -> None:
         ctx.handle = current
 
 
-async def _handle_ping(ctx: CollabWsContext, _message: Dict[str, Any]) -> None:
+async def handle_ping(ctx: CollabWsContext, _message: Dict[str, Any]) -> None:
+    """Handle ping."""
     try:
         await get_online_collab_manager().refresh_participant_ttl(
             ctx.code,
             ctx.user.id,
         )
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("[CanvasCollabWS] ping participant TTL refresh skipped: %s", exc)
     try:
         await get_online_collab_manager().touch_activity(ctx.code)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("[CanvasCollabWS] ping touch_activity skipped: %s", exc)
-    await _ctx_send(ctx, {"type": "pong"}, "pong")
+    await ctx_send(ctx, {"type": "pong"}, "pong")
 
 
-async def _handle_join_repeat(
+async def handle_join_repeat(
     ctx: CollabWsContext,
     message: Dict[str, Any],
 ) -> None:
+    """Handle join repeat."""
     join_diagram_id = message.get("diagram_id")
     if isinstance(join_diagram_id, str) and join_diagram_id and join_diagram_id != ctx.diagram_id:
         logger.warning(
@@ -136,7 +141,7 @@ async def _handle_join_repeat(
             join_diagram_id,
             ctx.diagram_id,
         )
-        await _ctx_send(ctx, {"type": "error", "message": "Diagram ID mismatch"})
+        await ctx_send(ctx, {"type": "error", "message": "Diagram ID mismatch"})
         return
 
     participant_ids = await get_online_collab_manager().get_participants(ctx.code)
@@ -169,7 +174,7 @@ async def _handle_join_repeat(
     if resume_tok:
         join_repeat["resume_token"] = resume_tok
 
-    await _ctx_send(ctx, join_repeat, "joined")
+    await ctx_send(ctx, join_repeat, "joined")
     logger.debug(
         "[CanvasCollabWS] join_repeat_ok user=%s code=%s participants=%d",
         ctx.user.id,
@@ -182,7 +187,7 @@ _RESYNC_RATE_LIMIT_PER_MIN = 5
 _RESYNC_RATE_LIMIT_TTL_SEC = 60
 
 
-async def _handle_resync(ctx: CollabWsContext, message: Dict[str, Any]) -> None:
+async def handle_resync(ctx: CollabWsContext, message: Dict[str, Any]) -> None:
     """Send authoritative live spec snapshot (version-gap recovery path)."""
     diag = message.get("diagram_id")
     if diag != ctx.diagram_id:
@@ -193,7 +198,7 @@ async def _handle_resync(ctx: CollabWsContext, message: Dict[str, Any]) -> None:
             diag,
             ctx.diagram_id,
         )
-        await _ctx_send(ctx, {"type": "error", "message": "Diagram ID mismatch"})
+        await ctx_send(ctx, {"type": "error", "message": "Diagram ID mismatch"})
         return
     logger.debug(
         "[CanvasCollabWS] resync_start user=%s code=%s diagram=%s role=%s",
@@ -216,7 +221,7 @@ async def _handle_resync(ctx: CollabWsContext, message: Dict[str, Any]) -> None:
                     ctx.code,
                     count,
                 )
-                await _ctx_send(
+                await ctx_send(
                     ctx,
                     {
                         "type": "error",
@@ -224,54 +229,50 @@ async def _handle_resync(ctx: CollabWsContext, message: Dict[str, Any]) -> None:
                     },
                 )
                 return
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.warning("[CanvasCollabWS] resync rate limit check failed (allowing): %s", exc)
             try:
                 record_ws_resync_rate_limit_check_failure()
-            except Exception:
+            except BACKGROUND_INFRA_ERRORS:
                 pass
     try:
         record_ws_collab_resync()
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("record_ws_collab_resync skipped: %s", exc)
     if isinstance(ctx.handle, ViewerHandle):
         try:
-            from services.infrastructure.monitoring.ws_metrics import (
-                record_ws_viewer_resync,
-            )
-
             record_ws_viewer_resync()
-        except Exception:
+        except BACKGROUND_INFRA_ERRORS:
             pass
     await websocket_send_live_spec_snapshot(ctx.handle, ctx.code, ctx.diagram_id)
 
 
-_EDITOR_HANDLERS = {
-    "ping": _handle_ping,
-    "join": _handle_join_repeat,
-    "resync": _handle_resync,
-    "node_editing": _handle_node_editing,
-    "node_editing_batch": _handle_node_editing_batch,
-    "node_selected": _handle_node_selected,
-    "host_llm_model": _handle_host_llm_model,
-    "claim_node_edit": _handle_claim_node_edit,
-    "update": _handle_update,
+EDITOR_HANDLERS = {
+    "ping": handle_ping,
+    "join": handle_join_repeat,
+    "resync": handle_resync,
+    "node_editing": handle_node_editing,
+    "node_editing_batch": handle_node_editing_batch,
+    "node_selected": handle_node_selected,
+    "host_llm_model": handle_host_llm_model,
+    "claim_node_edit": handle_claim_node_edit,
+    "update": handle_update,
     "role_change": handle_role_change,
 }
 
-_VIEWER_HANDLERS = {
-    "ping": _handle_ping,
-    "resync": _handle_resync,
+VIEWER_HANDLERS = {
+    "ping": handle_ping,
+    "resync": handle_resync,
 }
 
-_MSG_HANDLERS = _EDITOR_HANDLERS
+MSG_HANDLERS = EDITOR_HANDLERS
 
 
 async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
     """Main receive loop until disconnect or error.
 
-    Dispatches to _EDITOR_HANDLERS for host/editor connections and
-    _VIEWER_HANDLERS for viewer connections.  Viewer sends of editor-only
+    Dispatches to EDITOR_HANDLERS for host/editor connections and
+    VIEWER_HANDLERS for viewer connections.  Viewer sends of editor-only
     messages (update, node_editing, etc.) are rejected with close code 4015
     without running any validation or DB/Redis logic.
     """
@@ -279,14 +280,14 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
         _refresh_ctx_handle(ctx)
         data = await ctx.websocket.receive_text()
         if inbound_text_exceeds_limit(data, WORKSHOP_MAX_WS_TEXT_BYTES):
-            await _ctx_send(ctx, {"type": "error", "message": "Message too large"})
+            await ctx_send(ctx, {"type": "error", "message": "Message too large"})
             continue
         if not ctx.rate_limiter.allow():
             try:
                 record_ws_rate_limit_hit()
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 logger.debug("Failed to record rate limit metric: %s", exc)
-            await _ctx_send(ctx, {"type": "error", "message": "Rate limit exceeded"})
+            await ctx_send(ctx, {"type": "error", "message": "Rate limit exceeded"})
             continue
 
         now_loop = time.monotonic()
@@ -297,7 +298,7 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
                 participant_ids = await get_online_collab_manager().get_participants(
                     ctx.code,
                 )
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logger.warning(
                     "[CanvasCollabWS] authz participant refresh failed: %s",
                     exc,
@@ -309,7 +310,7 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
             # must NOT be treated as "participant not found" or every Redis hiccup
             # would disconnect all active users.
             if participants_ok and participant_ids and uid_loop not in participant_ids:
-                await _ctx_send(
+                await ctx_send(
                     ctx,
                     {
                         "type": "error",
@@ -322,7 +323,7 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
                 )
                 return
 
-        reval_sec = _collab_jwt_revalidate_interval_sec()
+        reval_sec = collab_jwt_revalidate_interval_sec()
         if reval_sec > 0:
             now_m = time.monotonic()
             if now_m - ctx.jwt_last_revalidated_monotonic >= reval_sec:
@@ -331,7 +332,7 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
                 uid_ctx = int(getattr(ctx.user, "id", -1))
                 uid_chk = int(getattr(user_chk, "id", -2)) if user_chk else -3
                 if err_chk or user_chk is None or uid_chk != uid_ctx:
-                    await _ctx_send(
+                    await ctx_send(
                         ctx,
                         {
                             "type": "error",
@@ -347,15 +348,15 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
         try:
             message = json.loads(data)
         except json.JSONDecodeError:
-            await _ctx_send(ctx, {"type": "error", "message": "Invalid JSON"})
+            await ctx_send(ctx, {"type": "error", "message": "Invalid JSON"})
             continue
 
         if not isinstance(message, dict):
-            await _ctx_send(ctx, {"type": "error", "message": "Message must be a JSON object"})
+            await ctx_send(ctx, {"type": "error", "message": "Message must be a JSON object"})
             continue
 
         if collab_json_exceeds_depth(message, MAX_COLLAB_INBOUND_JSON_DEPTH):
-            await _ctx_send(
+            await ctx_send(
                 ctx,
                 {
                     "type": "error",
@@ -370,15 +371,15 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
         msg_type = msg_type_raw
         _refresh_ctx_handle(ctx)
         is_viewer = isinstance(ctx.handle, ViewerHandle)
-        handlers = _VIEWER_HANDLERS if is_viewer else _EDITOR_HANDLERS
+        handlers = VIEWER_HANDLERS if is_viewer else EDITOR_HANDLERS
         handler = handlers.get(msg_type)
         if handler:
             _t0 = time.perf_counter()
             try:
                 await handler(ctx, message)
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 logger.exception("[CanvasCollabWS] handler %s raised: %s", msg_type, exc)
-                await _ctx_send(
+                await ctx_send(
                     ctx,
                     {
                         "type": "error",
@@ -393,11 +394,11 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
             )
             continue
 
-        if is_viewer and msg_type in _EDITOR_HANDLERS:
+        if is_viewer and msg_type in EDITOR_HANDLERS:
             await ctx.websocket.close(
                 code=4015,
                 reason="viewer: not authorized for this message type",
             )
             return
 
-        await _ctx_send(ctx, {"type": "error", "message": f"Unknown message type: {msg_type}"})
+        await ctx_send(ctx, {"type": "error", "message": f"Unknown message type: {msg_type}"})

@@ -8,6 +8,7 @@ Proprietary License
 from __future__ import annotations
 
 import asyncio
+import importlib
 import logging
 import os
 import platform
@@ -24,11 +25,14 @@ from routers.core.health import _cached_redis_info, _fetch_redis_memory_stats
 from services.infrastructure.monitoring.mindbot_streaming_peak_24h import (
     record_and_read_mindbot_streaming_peak_24h,
 )
+from services.infrastructure.monitoring.mindmate_streaming import mindmate_streaming_snapshot
 from services.infrastructure.monitoring.mindmate_streaming_peak_24h import (
     record_and_read_mindmate_streaming_peak_24h,
 )
 from services.infrastructure.monitoring.worker_perf_redis import load_all_worker_perf_snapshots
 from services.infrastructure.monitoring.ws_metrics import get_ws_metrics_snapshot
+from services.llm import llm_service
+from services.mindbot.pipeline.callback import mindbot_concurrency_snapshot
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
@@ -44,6 +48,7 @@ class _NetworkRateState:
     __slots__ = ("t_mono", "bytes_sent", "bytes_recv")
 
     def __init__(self) -> None:
+        """ init  ."""
         self.t_mono: Optional[float] = None
         self.bytes_sent: Optional[int] = None
         self.bytes_recv: Optional[int] = None
@@ -53,6 +58,7 @@ _NET_RATE = _NetworkRateState()
 
 
 def _compute_network_rates() -> Dict[str, Any]:
+    """Compute network rates."""
     unavailable = {
         "error": "network counters unavailable",
         "bytes_sent_per_sec": None,
@@ -87,6 +93,7 @@ def _compute_network_rates() -> Dict[str, Any]:
 
 
 def _primary_disk_mount() -> str:
+    """Primary disk mount."""
     if platform.system() == "Windows":
         drive = os.environ.get("SystemDrive", "C:")
         if not drive.endswith("\\") and not drive.endswith("/"):
@@ -96,6 +103,7 @@ def _primary_disk_mount() -> str:
 
 
 def _disk_usage_one(path: str) -> Optional[Dict[str, Any]]:
+    """Disk usage one."""
     try:
         usage = psutil.disk_usage(path)
         total = int(usage.total)
@@ -114,6 +122,7 @@ def _disk_usage_one(path: str) -> Optional[Dict[str, Any]]:
 
 
 def _collect_disk_volumes() -> List[Dict[str, Any]]:
+    """Collect disk volumes."""
     primary = _primary_disk_mount()
     out: List[Dict[str, Any]] = []
     try:
@@ -136,6 +145,7 @@ def _collect_disk_volumes() -> List[Dict[str, Any]]:
 
 
 def _host_snapshot() -> Dict[str, Any]:
+    """Host snapshot."""
     try:
         raw_cpu = psutil.cpu_percent(interval=None, percpu=False)
         cpu_percent = float(raw_cpu[0]) if isinstance(raw_cpu, list) else float(raw_cpu)
@@ -158,6 +168,7 @@ def _host_snapshot() -> Dict[str, Any]:
 
 
 def _process_snapshot() -> Dict[str, Any]:
+    """Process snapshot."""
     try:
         proc = psutil.Process()
         with proc.oneshot():
@@ -175,9 +186,8 @@ def _process_snapshot() -> Dict[str, Any]:
 
 
 def _llm_snapshot() -> Dict[str, Any]:
+    """Llm snapshot."""
     try:
-        from services.llm import llm_service
-
         raw = llm_service.get_performance_metrics()
         out: Dict[str, Any] = {}
         for name, data in raw.items():
@@ -199,10 +209,10 @@ def _llm_snapshot() -> Dict[str, Any]:
 
 
 def _app_snapshot() -> Dict[str, Any]:
+    """App snapshot."""
     try:
-        import main
-
-        app = main.app
+        main_mod = importlib.import_module("main")
+        app = main_mod.app
         uptime = time.time() - app.state.start_time if hasattr(app.state, "start_time") else 0.0
         return {
             "version": config.version,
@@ -213,6 +223,7 @@ def _app_snapshot() -> Dict[str, Any]:
 
 
 async def _redis_snapshot() -> Dict[str, Any]:
+    """Redis snapshot."""
     if not is_redis_available():
         return {"status": "unavailable", "message": "Redis not connected"}
     redis_client = get_async_redis()
@@ -255,6 +266,7 @@ async def _redis_snapshot() -> Dict[str, Any]:
 
 
 async def _activity_snapshot() -> Dict[str, Any]:
+    """Activity snapshot."""
     try:
         return await asyncio.wait_for(get_activity_tracker().get_stats(), timeout=3.0)
     except asyncio.TimeoutError:
@@ -304,16 +316,12 @@ async def build_worker_perf_payload_async() -> Dict[str, Any]:
     except (ConnectionError, RuntimeError, ValueError, TypeError) as exc:
         websockets = {"error": str(exc)}
     try:
-        from services.mindbot.pipeline.callback import mindbot_concurrency_snapshot
-
         mindbot_concurrency = await asyncio.wait_for(mindbot_concurrency_snapshot(), timeout=1.0)
     except asyncio.TimeoutError:
         mindbot_concurrency = {"error": "mindbot concurrency snapshot timed out"}
     except (RuntimeError, TypeError, ValueError) as exc:
         mindbot_concurrency = {"error": str(exc)}
     try:
-        from services.infrastructure.monitoring.mindmate_streaming import mindmate_streaming_snapshot
-
         mindmate_streaming = await asyncio.wait_for(mindmate_streaming_snapshot(), timeout=1.0)
     except asyncio.TimeoutError:
         mindmate_streaming = {"error": "mindmate streaming snapshot timed out"}
@@ -333,6 +341,7 @@ async def build_worker_perf_payload_async() -> Dict[str, Any]:
 
 
 def _coalesce_worker_rows(stored: List[Dict[str, Any]], live: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Coalesce worker rows."""
     by_pid: Dict[int, Dict[str, Any]] = {}
     for row in stored:
         pid = row.get("pid")
@@ -345,6 +354,7 @@ def _coalesce_worker_rows(stored: List[Dict[str, Any]], live: Dict[str, Any]) ->
 
 
 def _merge_process_cluster(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Merge process cluster."""
     workers: List[Dict[str, Any]] = []
     rss_sum = 0
     cpu_sum = 0.0
@@ -376,6 +386,7 @@ def _merge_process_cluster(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def _merge_llm_cluster(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Merge llm cluster."""
     acc: Dict[str, Dict[str, Any]] = {}
     for row in rows:
         llm = row.get("llm") or {}
@@ -418,6 +429,7 @@ def _merge_llm_cluster(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def _merge_mindbot_concurrency_cluster(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Merge mindbot concurrency cluster."""
     stream_sum = 0
     block_sum = 0
     any_ok = False
@@ -446,6 +458,7 @@ def _merge_mindbot_concurrency_cluster(rows: List[Dict[str, Any]]) -> Dict[str, 
 
 
 def _merge_mindmate_streaming_cluster(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Merge mindmate streaming cluster."""
     total = 0
     any_ok = False
     errors: List[str] = []
@@ -469,6 +482,7 @@ def _merge_mindmate_streaming_cluster(rows: List[Dict[str, Any]]) -> Dict[str, A
 
 
 def _merge_websockets_cluster(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Merge websockets cluster."""
     merged: Dict[str, Any] = {k: 0 for k in _WS_SUM_KEYS}
     redis_total: Optional[int] = None
     for row in rows:
@@ -500,6 +514,7 @@ def _merge_cluster_worker_fields(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def _pick_app_cluster(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Pick app cluster."""
     best: Optional[Dict[str, Any]] = None
     best_uptime = -1.0
     for row in rows:

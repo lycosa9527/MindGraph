@@ -16,8 +16,11 @@ from routers.auth.admin import organization_dify as org_dify_mod
 from services.dify import org_mindmate_client as mindmate_client_mod
 from tests.typing_helpers import as_organization, as_type
 
+_resolved_dify_settings = getattr(mindbot_helpers_mod, "_resolved_dify_settings")
+
 
 def _org(**overrides: object) -> Organization:
+    """Org."""
     base = {
         "id": 1,
         "dify_api_base_url": None,
@@ -34,6 +37,7 @@ def _org(**overrides: object) -> Organization:
 
 
 def _mindbot_row(**overrides: object) -> OrganizationMindbotConfig:
+    """Mindbot row."""
     base = {
         "dify_api_base_url": "https://old.example/v1",
         "dify_api_key": "old-key",
@@ -52,6 +56,7 @@ def _mindbot_row(**overrides: object) -> OrganizationMindbotConfig:
 async def test_propagate_org_dify_skips_custom_bots(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Test propagate org dify skips custom bots."""
     monkeypatch.setattr(
         org_dify_mod,
         "resolve_organization_dify_credentials",
@@ -67,10 +72,12 @@ async def test_propagate_org_dify_skips_custom_bots(
 
     class _Scalars:
         def all(self) -> list[OrganizationMindbotConfig]:
+            """All."""
             return [linked, custom]
 
     class _Result:
         def scalars(self) -> _Scalars:
+            """Scalars."""
             return _Scalars()
 
     db = AsyncMock()
@@ -84,6 +91,7 @@ async def test_propagate_org_dify_skips_custom_bots(
 
 
 def test_mindbot_row_supports_use_org_dify_settings_flag() -> None:
+    """Test mindbot row supports use org dify settings flag."""
     row = _mindbot_row(use_org_dify_settings=False)
     assert row.use_org_dify_settings is False
 
@@ -91,6 +99,7 @@ def test_mindbot_row_supports_use_org_dify_settings_flag() -> None:
 def test_apply_org_dify_fields_updates_behavior_without_credentials(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Test apply org dify fields updates behavior without credentials."""
     monkeypatch.setattr(
         org_dify_mod,
         "resolve_organization_dify_credentials",
@@ -110,6 +119,7 @@ def test_apply_org_dify_fields_updates_behavior_without_credentials(
 def test_apply_org_dify_fields_updates_credentials_when_present(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Test apply org dify fields updates credentials when present."""
     monkeypatch.setattr(
         org_dify_mod,
         "resolve_organization_dify_credentials",
@@ -126,6 +136,7 @@ def test_apply_org_dify_fields_updates_credentials_when_present(
 def test_resolved_dify_settings_use_org_when_flag_set(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Test resolved dify settings use org when flag set."""
     monkeypatch.setattr(
         mindbot_helpers_mod,
         "resolve_organization_dify_credentials",
@@ -140,7 +151,7 @@ def test_resolved_dify_settings_use_org_when_flag_set(
             "use_org_dify_settings": True,
         }
     )
-    settings = mindbot_helpers_mod._resolved_dify_settings(
+    settings = _resolved_dify_settings(
         payload,
         org,
         None,
@@ -155,6 +166,7 @@ def test_resolved_dify_settings_use_org_when_flag_set(
 def test_resolved_dify_settings_requires_org_credentials_when_flag_set(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Test resolved dify settings requires org credentials when flag set."""
     monkeypatch.setattr(
         mindbot_helpers_mod,
         "resolve_organization_dify_credentials",
@@ -170,7 +182,7 @@ def test_resolved_dify_settings_requires_org_credentials_when_flag_set(
         }
     )
     with pytest.raises(HTTPException) as exc_info:
-        mindbot_helpers_mod._resolved_dify_settings(
+        _resolved_dify_settings(
             payload,
             org,
             None,
@@ -183,10 +195,12 @@ def test_resolved_dify_settings_requires_org_credentials_when_flag_set(
 async def test_mindmate_client_keeps_org_timeout_with_global_credentials(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Test mindmate client keeps org timeout with global credentials."""
     org = _org(dify_api_base_url=None, dify_api_key=None, dify_timeout_seconds=120)
 
     class _Result:
         def scalar_one_or_none(self) -> Organization:
+            """Scalar one or none."""
             return org
 
     db = AsyncMock()

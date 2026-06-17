@@ -289,6 +289,7 @@ def omni_function_call_to_command(name: str, arguments_json: str) -> Dict[str, A
 
 
 def parse_node_index_from_identifier(raw: Optional[str]) -> Optional[int]:
+    """Parse node index from identifier."""
     if raw is None:
         return None
     text = str(raw).strip().lower()

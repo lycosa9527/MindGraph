@@ -6,6 +6,7 @@ import os
 
 
 def env_bool(name: str, default: bool) -> bool:
+    """Env bool."""
     raw = os.getenv(name)
     if raw is None:
         return default
@@ -13,6 +14,7 @@ def env_bool(name: str, default: bool) -> bool:
 
 
 def env_int(name: str, default: int) -> int:
+    """Env int."""
     raw = os.getenv(name)
     if raw is None or not str(raw).strip():
         return default
@@ -23,6 +25,7 @@ def env_int(name: str, default: int) -> int:
 
 
 def env_float(name: str, default: float) -> float:
+    """Env float."""
     raw = os.getenv(name)
     if raw is None or not str(raw).strip():
         return default

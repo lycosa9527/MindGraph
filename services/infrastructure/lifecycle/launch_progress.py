@@ -12,11 +12,13 @@ All Rights Reserved
 Proprietary License
 """
 
-import sys
-import time
 import logging
+import sys
 import threading
-from typing import Any, Optional, TYPE_CHECKING
+import time
+from typing import TYPE_CHECKING, Any, Optional
+
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -33,17 +35,15 @@ Panel: Any = None
 RICH_AVAILABLE = False
 
 try:
-    from rich.progress import (
-        Progress as _Progress,
-        SpinnerColumn as _SpinnerColumn,
-        BarColumn as _BarColumn,
-        TextColumn as _TextColumn,
-        TimeElapsedColumn as _TimeElapsedColumn,
-        TimeRemainingColumn as _TimeRemainingColumn,
-    )
     from rich.console import Console as _Console
-    from rich.rule import Rule as _Rule
     from rich.panel import Panel as _Panel
+    from rich.progress import BarColumn as _BarColumn
+    from rich.progress import Progress as _Progress
+    from rich.progress import SpinnerColumn as _SpinnerColumn
+    from rich.progress import TextColumn as _TextColumn
+    from rich.progress import TimeElapsedColumn as _TimeElapsedColumn
+    from rich.progress import TimeRemainingColumn as _TimeRemainingColumn
+    from rich.rule import Rule as _Rule
 
     Console = _Console
     Progress = _Progress
@@ -213,7 +213,7 @@ class ApplicationLaunchProgressTracker:
                 )
                 self.console.print()
                 self._header_printed = True
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 # Log error but don't fail - fall back to logging mode
                 logger.warning(
                     "[LaunchProgress] Failed to initialize Rich progress bar: %s",
@@ -271,14 +271,14 @@ class ApplicationLaunchProgressTracker:
                 # Forcefully exit the progress context
                 try:
                     progress_ref.__exit__(None, None, None)
-                except Exception as e:
+                except BACKGROUND_INFRA_ERRORS as e:
                     # Log errors during forced exit for debugging
                     logger.debug(
                         "[LaunchProgress] Error during progress context exit: %s",
                         e,
                         exc_info=True,
                     )
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 # Log errors during kill for debugging (non-critical but should be visible)
                 logger.warning(
                     "[LaunchProgress] Error during progress bar kill: %s",
@@ -294,7 +294,7 @@ class ApplicationLaunchProgressTracker:
                         console_file = getattr(console_ref, "_file", None)
                         if console_file is not None and hasattr(console_file, "flush"):
                             console_file.flush()
-                    except Exception as exc:
+                    except BACKGROUND_INFRA_ERRORS as exc:
                         logger.debug("Console flush during cleanup failed: %s", exc)
 
     def __exit__(
@@ -390,7 +390,7 @@ class ApplicationLaunchProgressTracker:
                     "[LaunchProgress] Progress update failed (task removed/closed): %s",
                     e,
                 )
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 # Log other exceptions but don't fail - progress bar is non-critical
                 logger.warning(
                     "[LaunchProgress] Progress update failed (non-critical): %s",
@@ -498,8 +498,8 @@ class GlobalTrackerManager:
     Uses class variables to avoid global statement warnings.
     """
 
-    _instance: Optional["ApplicationLaunchProgressTracker"] = None
-    _lock = threading.Lock()
+    instance: Optional["ApplicationLaunchProgressTracker"] = None
+    lock = threading.Lock()
 
 
 def set_global_tracker_instance(
@@ -513,8 +513,8 @@ def set_global_tracker_instance(
     Args:
         tracker: The progress tracker instance to track globally
     """
-    with GlobalTrackerManager._lock:
-        GlobalTrackerManager._instance = tracker
+    with GlobalTrackerManager.lock:
+        GlobalTrackerManager.instance = tracker
 
 
 def kill_global_progress_bar() -> bool:
@@ -530,18 +530,18 @@ def kill_global_progress_bar() -> bool:
     Returns:
         True if progress bar was killed, False if it didn't exist
     """
-    with GlobalTrackerManager._lock:
-        if GlobalTrackerManager._instance is not None:
+    with GlobalTrackerManager.lock:
+        if GlobalTrackerManager.instance is not None:
             try:
-                GlobalTrackerManager._instance.kill()
-                GlobalTrackerManager._instance = None
+                GlobalTrackerManager.instance.kill()
+                GlobalTrackerManager.instance = None
                 return True
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.warning(
                     "[LaunchProgress] Failed to kill global progress bar: %s",
                     e,
                     exc_info=True,
                 )
-                GlobalTrackerManager._instance = None
+                GlobalTrackerManager.instance = None
                 return False
     return False

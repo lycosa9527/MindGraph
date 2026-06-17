@@ -23,12 +23,13 @@ All Rights Reserved
 Proprietary License
 """
 
-import time
 import logging
-from typing import Tuple, Dict, List, Optional
+import time
 from collections import defaultdict
+from typing import Dict, List, Optional, Tuple
 
 from services.redis.redis_async_client import get_async_redis
+from services.utils.error_types import REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,7 @@ class RedisRateLimiter:
 
     def __init__(self):
         # In-memory fallback when the async Redis path fails
+        """ init  ."""
         self._memory_store: Dict[str, List[float]] = defaultdict(list)
 
     async def check_and_record(
@@ -115,7 +117,7 @@ class RedisRateLimiter:
 
             return True, count, ""
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("[RateLimiter] Redis error: %s", e)
             return self._memory_check_and_record(category, identifier, max_attempts, window_seconds)
 
@@ -166,7 +168,7 @@ class RedisRateLimiter:
         try:
             redis = get_async_redis()
             await redis.delete(key)
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("[RateLimiter] Redis clear error: %s", e)
 
         mem_key = f"{category}:{identifier}"
@@ -211,7 +213,7 @@ class RedisRateLimiter:
 
             return remaining, max(0, reset_seconds)
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("[RateLimiter] Redis error: %s", e)
 
         key = f"{category}:{identifier}"
@@ -234,14 +236,14 @@ class RedisRateLimiter:
 class _RateLimiterHolder:
     """Holder for singleton rate limiter instance."""
 
-    _instance: Optional[RedisRateLimiter] = None
+    instance: Optional[RedisRateLimiter] = None
 
     @classmethod
     def get_instance(cls) -> RedisRateLimiter:
         """Get or create singleton rate limiter instance."""
-        if cls._instance is None:
-            cls._instance = RedisRateLimiter()
-        return cls._instance
+        if cls.instance is None:
+            cls.instance = RedisRateLimiter()
+        return cls.instance
 
 
 def get_rate_limiter() -> RedisRateLimiter:

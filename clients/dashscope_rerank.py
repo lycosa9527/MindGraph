@@ -11,12 +11,12 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import List, Dict, Any, Optional
 import asyncio
 import hashlib
 import json
 import logging
 import os
+from typing import Any, Dict, List, Optional
 
 import httpx
 
@@ -28,11 +28,12 @@ except ImportError:
 from config.settings import config
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.dashscope_error_handler import (
-    handle_dashscope_response,
     DashScopeError,
-    should_retry,
     get_retry_delay,
+    handle_dashscope_response,
+    should_retry,
 )
 
 logger = logging.getLogger(__name__)
@@ -131,7 +132,7 @@ class DashScopeRerankClient:
                 return result
         except (json.JSONDecodeError, TypeError, ValueError) as e:
             logger.debug("[DashScopeRerank] Failed to parse cached result: %s", e)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             if (
                 redis_client
                 and redis_module is not None
@@ -158,7 +159,7 @@ class DashScopeRerankClient:
             logger.debug("[DashScopeRerank] Cached rerank result")
         except (TypeError, ValueError) as e:
             logger.debug("[DashScopeRerank] Failed to serialize result: %s", e)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             if (
                 redis_client
                 and redis_module is not None
@@ -359,9 +360,8 @@ class DashScopeRerankClient:
                             )
                             await asyncio.sleep(delay)
                             continue
-                        else:
-                            # Don't retry, raise the error
-                            raise error
+                        # Don't retry, raise the error
+                        raise error
 
                     result = response.json()
 
@@ -475,7 +475,7 @@ class DashScopeRerankClient:
                 # Data/format errors - don't retry
                 logger.error("[DashScopeRerank] Data error reranking: %s", e)
                 raise
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 # Unexpected errors - don't retry but log for debugging
                 logger.error("[DashScopeRerank] Unexpected error reranking: %s", e)
                 raise

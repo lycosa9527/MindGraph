@@ -7,10 +7,10 @@ get_tree_categories_prompt, get_tree_items_prompt.
 from typing import Any, Dict, List, Optional
 
 from ._common import (
+    TREE_DIMENSION_TYPES_EN,
+    TREE_DIMENSION_TYPES_ZH,
     append_batch_note,
     is_chinese_inline_prompt_language,
-    TREE_DIMENSION_TYPES_ZH,
-    TREE_DIMENSION_TYPES_EN,
 )
 
 

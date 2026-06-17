@@ -14,9 +14,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
-from models.domain.messages import Messages, Language
+from models.domain.messages import Language, Messages
 from models.requests.requests_auth import LanguagePreferencesUpdate
 from services.redis.cache.redis_user_cache import user_cache
+from services.utils.error_types import REDIS_ERRORS
 from utils.auth import get_current_user
 
 from .dependencies import get_language_dependency
@@ -78,7 +79,7 @@ async def update_language_preferences(
     try:
         await db.commit()
         await db.refresh(user)
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.error(
             "Failed to save language preferences for user %s: %s",
             user.id,

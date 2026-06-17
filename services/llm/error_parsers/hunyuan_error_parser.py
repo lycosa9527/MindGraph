@@ -16,21 +16,21 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional, Tuple, NoReturn
 import logging
 import re
+from typing import NoReturn, Optional, Tuple
 
 from services.infrastructure.http.error_handler import (
+    LLMAccessDeniedError,
+    LLMContentFilterError,
+    LLMInvalidParameterError,
+    LLMModelNotFoundError,
+    LLMProviderError,
+    LLMQuotaExhaustedError,
+    LLMRateLimitError,
     LLMServiceError,
     LLMTimeoutError,
-    LLMRateLimitError,
-    LLMContentFilterError,
-    LLMProviderError,
     attach_llm_user_message,
-    LLMInvalidParameterError,
-    LLMQuotaExhaustedError,
-    LLMModelNotFoundError,
-    LLMAccessDeniedError,
 )
 
 logger = logging.getLogger(__name__)
@@ -520,7 +520,7 @@ def parse_and_raise_hunyuan_error(error_code: str, error_message: str, status_co
     logger.error(
         "Hunyuan API error (%s): %s - %s",
         error_code,
-        exception.__class__.__name__,
+        type(exception).__name__,
         str(exception),
         extra={
             "error_code": error_code,

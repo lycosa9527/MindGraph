@@ -36,6 +36,7 @@ def duration_allowed_for_visibility(visibility: str, duration: str) -> bool:
 
 
 def _as_utc_aware(dt: datetime) -> datetime:
+    """As utc aware."""
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)

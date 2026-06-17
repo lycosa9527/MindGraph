@@ -7,13 +7,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from tests.typing_helpers import mock_await_args, mock_await_kwargs
-
-from services.kitty.session.runtime_state import voice_sessions
+from services.kitty.routing.command_router import RouteOutcome
 from services.kitty.session.event_handlers import (
     KittySessionRuntime,
     setup_session_event_handlers,
-    teardown_session_event_handlers,
 )
 from services.kitty.session.events import (
     KittyEvent,
@@ -22,6 +19,9 @@ from services.kitty.session.events import (
 )
 from services.kitty.session.memory import get_session_memory
 from services.kitty.session.ops import create_voice_session
+from services.kitty.session.runtime_state import voice_sessions
+from services.kitty.session.session_teardown import teardown_session_event_handlers
+from tests.typing_helpers import mock_await_args, mock_await_kwargs
 
 
 async def _drain_bus() -> None:
@@ -30,6 +30,7 @@ async def _drain_bus() -> None:
 
 
 async def _make_event_runtime() -> tuple[KittySessionRuntime, str]:
+    """Make event runtime."""
     ws = MagicMock()
     voice_session_id = create_voice_session(
         user_id="1",
@@ -46,12 +47,14 @@ async def _make_event_runtime() -> tuple[KittySessionRuntime, str]:
 
 
 async def _cleanup_event_runtime(voice_session_id: str) -> None:
+    """Cleanup event runtime."""
     await teardown_session_event_handlers(voice_session_id)
     voice_sessions.pop(voice_session_id, None)
 
 
 @pytest.mark.asyncio
 async def test_function_call_event_routes_omni_call() -> None:
+    """Test function call event routes omni call."""
     _, voice_session_id = await _make_event_runtime()
     try:
         bus = get_session_event_bus(voice_session_id)
@@ -76,6 +79,7 @@ async def test_function_call_event_routes_omni_call() -> None:
 
 @pytest.mark.asyncio
 async def test_transcription_event_memory_only_no_router() -> None:
+    """Test transcription event memory only no router."""
     _, voice_session_id = await _make_event_runtime()
     try:
         bus = get_session_event_bus(voice_session_id)
@@ -111,8 +115,7 @@ async def test_transcription_event_memory_only_no_router() -> None:
 
 @pytest.mark.asyncio
 async def test_text_inbound_routes_with_from_voice_false() -> None:
-    from services.kitty.routing.command_router import RouteOutcome
-
+    """Test text inbound routes with from voice false."""
     _, voice_session_id = await _make_event_runtime()
     try:
         bus = get_session_event_bus(voice_session_id)
@@ -139,8 +142,7 @@ async def test_text_inbound_routes_with_from_voice_false() -> None:
 
 @pytest.mark.asyncio
 async def test_text_inbound_conversational_fallback_sends_omni() -> None:
-    from services.kitty.routing.command_router import RouteOutcome
-
+    """Test text inbound conversational fallback sends omni."""
     _, voice_session_id = await _make_event_runtime()
     try:
         bus = get_session_event_bus(voice_session_id)
@@ -171,6 +173,7 @@ async def test_text_inbound_conversational_fallback_sends_omni() -> None:
 
 @pytest.mark.asyncio
 async def test_diagram_mutated_schedules_single_debounced_refresh() -> None:
+    """Test diagram mutated schedules single debounced refresh."""
     _, voice_session_id = await _make_event_runtime()
     try:
         with patch(
@@ -190,6 +193,7 @@ async def test_diagram_mutated_schedules_single_debounced_refresh() -> None:
 
 @pytest.mark.asyncio
 async def test_context_update_schedules_refresh_once() -> None:
+    """Test context update schedules refresh once."""
     _, voice_session_id = await _make_event_runtime()
     try:
         bus = get_session_event_bus(voice_session_id)
@@ -215,6 +219,7 @@ async def test_context_update_schedules_refresh_once() -> None:
 
 @pytest.mark.asyncio
 async def test_image_paragraph_event_processes_paragraph() -> None:
+    """Test image paragraph event processes paragraph."""
     _, voice_session_id = await _make_event_runtime()
     try:
         bus = get_session_event_bus(voice_session_id)
@@ -238,6 +243,7 @@ async def test_image_paragraph_event_processes_paragraph() -> None:
 
 @pytest.mark.asyncio
 async def test_teardown_clears_bus_memory_and_pending_refresh() -> None:
+    """Test teardown clears bus memory and pending refresh."""
     _runtime, voice_session_id = await _make_event_runtime()
     get_session_memory(voice_session_id).append_user_turn("hello", source="text")
 

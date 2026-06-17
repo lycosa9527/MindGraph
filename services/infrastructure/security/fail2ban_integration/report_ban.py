@@ -31,6 +31,7 @@ DEFAULT_KEY_FILE = "/etc/fail2ban/abuseipdb.conf"
 
 
 def _read_key_file(path: Path) -> Optional[str]:
+    """Read key file."""
     if not path.is_file():
         return None
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -49,6 +50,7 @@ def normalize_client_ip(text: str) -> str:
 
 
 def load_api_key() -> str:
+    """Load api key."""
     env_key = os.getenv("ABUSEIPDB_API_KEY", "").strip()
     if env_key:
         return env_key
@@ -63,6 +65,7 @@ def load_api_key() -> str:
 
 
 def main() -> None:
+    """Main."""
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     parser = argparse.ArgumentParser(description="Report banned IP to AbuseIPDB")
     parser.add_argument("ip", help="IPv4/IPv6 address Fail2ban banned")

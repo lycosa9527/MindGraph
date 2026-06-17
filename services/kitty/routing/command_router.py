@@ -17,41 +17,42 @@ try:
 except ImportError:
     redis_user_cache = None
 
-from services.kitty.infra.desktop.kitty_desktop_action_queue import enqueue_kitty_desktop_action
-from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
-    publish_kitty_desktop_action_pending,
-    publish_kitty_selection_update,
-)
-from services.kitty.infra.bootstrap.kitty_diagram_vocabulary import normalize_voice_desktop_canvas_diagram_type
-from services.kitty.infra.redis.kitty_session_redis import (
-    apply_redis_live_to_voice_session,
-    load_kitty_live_context,
-)
-from services.kitty.diagram.diagram_execute import execute_diagram_update
-from services.kitty.diagram.hub_bridge import try_sync_voice_diagram_to_hub
-from services.kitty.diagram.diagram_utils import (
-    NODE_TARGET_ACTIONS,
-    is_paragraph_text,
-    resolve_voice_node_reference,
-)
-from services.kitty.routing.intent_parser import parse_voice_intent_with_tools
+from services.kitty.content.paragraph import process_paragraph_with_qwen_plus
 from services.kitty.context.library_refresh import (
     live_spec_newer_than_library,
     should_skip_library_refresh,
     throttled_refresh_voice_context_from_library,
 )
-from services.kitty.content.paragraph import process_paragraph_with_qwen_plus
 from services.kitty.context.messaging import (
     safe_websocket_send,
     user_requests_diagram_pedagogical_review,
 )
+from services.kitty.diagram.diagram_execute import execute_diagram_update
+from services.kitty.diagram.diagram_utils import (
+    NODE_TARGET_ACTIONS,
+    is_paragraph_text,
+    resolve_voice_node_reference,
+)
+from services.kitty.diagram.hub_bridge import try_sync_voice_diagram_to_hub
+from services.kitty.infra.bootstrap.kitty_diagram_vocabulary import normalize_voice_desktop_canvas_diagram_type
+from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
+from services.kitty.infra.desktop.kitty_desktop_action_queue import enqueue_kitty_desktop_action
+from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
+    publish_kitty_desktop_action_pending,
+    publish_kitty_selection_update,
+)
+from services.kitty.infra.desktop.kitty_voice_command_fanout import fanout_voice_command_from_session
+from services.kitty.infra.redis.kitty_session_redis import (
+    apply_redis_live_to_voice_session,
+    load_kitty_live_context,
+)
 from services.kitty.omni.context_refresh import schedule_omni_context_refresh
 from services.kitty.omni.tools import omni_function_call_to_command, parse_node_index_from_identifier
-from services.kitty.infra.desktop.kitty_voice_command_fanout import fanout_voice_command_from_session
+from services.kitty.routing.intent_parser import parse_voice_intent_with_tools
 from services.kitty.session.memory import get_session_memory
+from services.kitty.session.omni_client_access import get_session_omni_client
 from services.kitty.session.ops import (
     get_agent_session_id,
-    get_session_omni_client,
     get_voice_session,
 )
 from services.kitty.session.runtime_state import logger, voice_sessions
@@ -61,6 +62,7 @@ VOICE_COMMAND_CONFIDENCE_VOICE = 0.5
 
 
 class RouteOutcome(str, Enum):
+    """RouteOutcome helper."""
     EXECUTED = "executed"
     CONVERSATIONAL_FALLBACK = "conversational_fallback"
     FAILED = "failed"
@@ -68,6 +70,7 @@ class RouteOutcome(str, Enum):
 
 @dataclass(slots=True)
 class RouteResult:
+    """RouteResult helper."""
     outcome: RouteOutcome
     reason: Optional[str] = None
 
@@ -79,8 +82,7 @@ def _finish_route(
     reason: Optional[str] = None,
     action: Optional[str] = None,
 ) -> RouteResult:
-    from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
-
+    """Finish route."""
     detail = reason or outcome.value
     if action and str(action) not in ("none", ""):
         detail = f"{action} → {detail}"
@@ -94,6 +96,7 @@ def _finish_route(
 
 
 async def _send_diagram_failure_ack(voice_session_id: str, message: str) -> None:
+    """Send diagram failure ack."""
     omni_client = get_session_omni_client(voice_session_id)
     if omni_client:
         try:
@@ -103,6 +106,7 @@ async def _send_diagram_failure_ack(voice_session_id: str, message: str) -> None
 
 
 def _normalize_open_panel_action(command: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize open panel action."""
     action = command.get("action")
     if action != "open_panel":
         return command
@@ -122,6 +126,7 @@ def _normalize_open_panel_action(command: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _normalize_close_panel_action(command: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize close panel action."""
     action = command.get("action")
     if action != "close_panel":
         return command
@@ -144,6 +149,7 @@ def _normalize_close_panel_action(command: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _resolve_node_index(command: Dict[str, Any]) -> Dict[str, Any]:
+    """Resolve node index."""
     if command.get("node_index") is not None:
         return command
     ident = command.get("node_identifier")
@@ -162,6 +168,7 @@ def _diagram_type_for_session(
     voice_session_id: str,
     session_context: Dict[str, Any],
 ) -> str:
+    """Diagram type for session."""
     diagram_type = None
     if voice_session_id in voice_sessions:
         diagram_type = voice_sessions[voice_session_id].get("diagram_type")
@@ -177,6 +184,7 @@ def _resolve_command_node(
     *,
     prefer_selected: bool = True,
 ) -> Optional[Dict[str, Any]]:
+    """Resolve command node."""
     diagram_type = _diagram_type_for_session(voice_session_id, session_context)
     node_identifier = command.get("node_identifier")
     ident_str = node_identifier if isinstance(node_identifier, str) else None
@@ -255,8 +263,6 @@ async def route_voice_command(
                 force=bool(is_text_message),
             )
             if skip_refresh:
-                from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
-
                 kitty_wf_log(
                     "library_refresh",
                     "skipped (fresh voice context)",
@@ -282,8 +288,6 @@ async def route_voice_command(
                         diagram_session_id=ws_scope.strip(),
                         force=bool(is_text_message),
                     )
-                    from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
-
                     kitty_wf_log(
                         "library_refresh",
                         "merged library into voice session",
@@ -420,8 +424,6 @@ async def route_voice_command(
             from_voice,
         )
 
-        from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
-
         route_detail = command_text.strip()[:120] if command_text.strip() else f"tool:{action}"
         if target:
             route_detail = f"{route_detail} → {str(target)[:48]}"
@@ -465,8 +467,6 @@ async def route_voice_command(
             if confidence >= confidence_threshold:
                 executed = await execute_diagram_update(websocket, voice_session_id, action, command, session_context)
                 if executed:
-                    from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
-
                     kitty_wf_log(
                         "diagram_execute",
                         f"{action} ok target={target or node_index or '—'}",
@@ -529,13 +529,13 @@ async def route_voice_command(
             await safe_websocket_send(websocket, {"type": "action", "action": "open_mindmate", "params": {}})
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
-        elif action == "close_thinkguide":
+        if action == "close_thinkguide":
             # Redirect to MindMate
             logger.debug("Closing MindMate panel")
             await safe_websocket_send(websocket, {"type": "action", "action": "close_mindmate", "params": {}})
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
-        elif action == "open_node_palette":
+        if action == "open_node_palette":
             logger.debug("Opening Node Palette")
             await safe_websocket_send(
                 websocket,
@@ -543,7 +543,7 @@ async def route_voice_command(
             )
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
-        elif action == "close_node_palette":
+        if action == "close_node_palette":
             logger.debug("Closing Node Palette")
             await safe_websocket_send(
                 websocket,
@@ -551,17 +551,17 @@ async def route_voice_command(
             )
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
-        elif action == "open_mindmate":
+        if action == "open_mindmate":
             logger.debug("Opening MindMate AI panel")
             await safe_websocket_send(websocket, {"type": "action", "action": "open_mindmate", "params": {}})
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
-        elif action == "close_mindmate":
+        if action == "close_mindmate":
             logger.debug("Closing MindMate AI panel")
             await safe_websocket_send(websocket, {"type": "action", "action": "close_mindmate", "params": {}})
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
-        elif action == "close_all_panels":
+        if action == "close_all_panels":
             logger.debug("Closing all panels")
             await safe_websocket_send(
                 websocket,
@@ -570,7 +570,7 @@ async def route_voice_command(
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
         # Interaction control
-        elif action == "auto_complete":
+        if action == "auto_complete":
             logger.info("Triggering AI auto-complete from text/voice command")
             await safe_websocket_send(websocket, {"type": "action", "action": "auto_complete", "params": {}})
             await fanout_voice_command_from_session(voice_session_id, "auto_complete")
@@ -584,7 +584,7 @@ async def route_voice_command(
                 logger.debug("Could not send acknowledgment to Omni: %s", e)
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
-        elif action == "start_inline_recommendations":
+        if action == "start_inline_recommendations":
             logger.info("Kitty: start inline recommendations action")
             resolved = _resolve_command_node(
                 voice_session_id,
@@ -621,7 +621,7 @@ async def route_voice_command(
                 logger.debug("Could not send acknowledgment to Omni: %s", e)
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
-        elif action == "add_node_with_recommendations":
+        if action == "add_node_with_recommendations":
             logger.info("Kitty: add node with inline recommendations")
             add_node_params: Dict[str, Any] = {}
             seed = command.get("target")
@@ -648,7 +648,7 @@ async def route_voice_command(
                 logger.debug("Could not send acknowledgment to Omni: %s", e)
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
-        elif action == "ask_thinkguide" and target:
+        if action == "ask_thinkguide" and target:
             # Redirect to MindMate
             logger.debug("Sending question to MindMate: %s", target)
             await safe_websocket_send(
@@ -661,7 +661,7 @@ async def route_voice_command(
             )
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
-        elif action == "ask_mindmate" and target:
+        if action == "ask_mindmate" and target:
             logger.debug("Sending question to MindMate: %s", target)
             await safe_websocket_send(
                 websocket,
@@ -673,7 +673,7 @@ async def route_voice_command(
             )
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
-        elif action == "select_node":
+        if action == "select_node":
             resolved = _resolve_command_node(
                 voice_session_id,
                 command,
@@ -739,7 +739,7 @@ async def route_voice_command(
                 action=str(action) if action else None,
             )
 
-        elif action == "explain_node":
+        if action == "explain_node":
             resolved = _resolve_command_node(
                 voice_session_id,
                 command,
@@ -787,7 +787,7 @@ async def route_voice_command(
                 action=str(action) if action else None,
             )
 
-        elif action == "open_desktop_canvas":
+        if action == "open_desktop_canvas":
             if user_id is None:
                 logger.warning("Kitty open_desktop_canvas: missing user_id")
                 return _finish_route(
@@ -831,12 +831,12 @@ async def route_voice_command(
                 logger.debug("open_desktop_canvas Omni ack skipped: %s", e)
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
-        elif action == "help":
+        if action == "help":
             logger.debug("User requested help - opening MindMate")
             await safe_websocket_send(websocket, {"type": "action", "action": "open_mindmate", "params": {}})
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
-        elif action == "none":
+        if action == "none":
             logger.debug("No command detected - should send to Omni for conversational response")
             return _finish_route(
                 voice_session_id,

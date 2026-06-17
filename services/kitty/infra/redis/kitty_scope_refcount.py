@@ -66,11 +66,13 @@ _lua_load_lock = asyncio.Lock()
 
 
 def _refcount_evalsha_enabled() -> bool:
+    """Refcount evalsha enabled."""
     raw = os.getenv("KITTY_REFCOUNT_USE_EVALSHA", "1").strip().lower()
     return raw not in ("0", "false", "no", "off")
 
 
 def _normalize_sha(loaded: Any) -> str:
+    """Normalize sha."""
     if isinstance(loaded, bytes):
         return loaded.decode("utf-8")
     return str(loaded)

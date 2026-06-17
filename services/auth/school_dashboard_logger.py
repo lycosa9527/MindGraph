@@ -30,6 +30,7 @@ class SchoolDashboardLogAdapter(logging.LoggerAdapter):
     """Inject school-dashboard scope into log records for structured backends."""
 
     def process(self, msg: Any, kwargs: MutableMapping[str, Any]) -> tuple[Any, MutableMapping[str, Any]]:
+        """Process."""
         extra = dict(self.extra or {})
         existing = kwargs.get("extra") or {}
         extra.update(existing)

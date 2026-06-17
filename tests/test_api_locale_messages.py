@@ -28,14 +28,17 @@ from models.domain.messages import Language, Messages, get_request_language
     ],
 )
 def test_resolve_request_locale(header: str, expected: str | None) -> None:
+    """Test resolve request locale."""
     assert resolve_request_locale(header) == expected
 
 
 def test_get_request_language_defaults_to_en() -> None:
+    """Test get request language defaults to en."""
     assert get_request_language(None, None) == "en"
 
 
 def test_get_request_language_x_language_fr() -> None:
+    """Test get request language x language fr."""
     assert get_request_language("fr", None) == "fr"
 
 
@@ -48,11 +51,13 @@ def test_messages_error_falls_back_en_for_generated_locales() -> None:
 
 
 def test_messages_error_preserves_az_translation() -> None:
+    """Test messages error preserves az translation."""
     az = Messages.error("invalid_request", lang="az")
     en = Messages.error("invalid_request", lang="en")
     assert az != en
 
 
 def test_messages_get_positional_lang_kwarg() -> None:
+    """Test messages get positional lang kwarg."""
     out = Messages.get("ERRORS", "invalid_request", "de", lang="en")
     assert out == Messages.error("invalid_request", lang="de")

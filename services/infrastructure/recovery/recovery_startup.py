@@ -11,12 +11,11 @@ from typing import Any, Dict
 from sqlalchemy import select, text
 
 from config.database import (
-    recover_from_kill_9,
-    check_integrity,
-    async_engine,
     DATABASE_URL,
+    async_engine,
+    check_integrity,
+    recover_from_kill_9,
 )
-from utils.db.session_open import system_rls_session, user_rls_session
 from models.domain.knowledge_space import ChunkTestDocument
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.infrastructure.recovery.recovery_locks import (
@@ -25,6 +24,8 @@ from services.infrastructure.recovery.recovery_locks import (
 )
 from services.knowledge.chunk_test_document_service import ChunkTestDocumentService
 from services.utils.backup_scheduler import get_backup_status
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.db.session_open import system_rls_session, user_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +60,7 @@ async def _cleanup_user_documents(user_id, docs) -> int:
     async with user_rls_session(int(user_id)) as db:
         try:
             service = ChunkTestDocumentService(db, user_id)
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.error(
                 "[Recovery] Failed to create service for user %s: %s",
                 user_id,
@@ -77,7 +78,7 @@ async def _cleanup_user_documents(user_id, docs) -> int:
                     doc.id,
                     user_id,
                 )
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 logger.error(
                     "[Recovery] Failed to cleanup document %s: %s",
                     doc.id,
@@ -115,7 +116,7 @@ async def cleanup_incomplete_chunk_operations() -> int:
             exc,
         )
         return 0
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning(
             "[Recovery] Error during incomplete chunk operations cleanup: %s",
             exc,
@@ -190,7 +191,7 @@ async def check_database_on_startup() -> bool:
             error_message="PostgreSQL connectivity check failed",
             details=("Cannot connect to PostgreSQL. Check DATABASE_URL, PostgreSQL service status, and pg_hba.conf."),
         )
-    except Exception as alert_error:
+    except BACKGROUND_INFRA_ERRORS as alert_error:
         logger.error("[Recovery] Failed to send database alert: %s", alert_error)
 
     backup_status = get_backup_status()
@@ -251,7 +252,7 @@ async def get_recovery_status() -> Dict[str, Any]:
                     "database_url": masked_url,
                     "size": size_row[0],
                 }
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("Failed to get database stats: %s", exc)
 
     backup_status = get_backup_status()

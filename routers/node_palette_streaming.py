@@ -21,6 +21,7 @@ from services.infrastructure.http.error_handler import (
     LLMServiceError,
     LLMTimeoutError,
 )
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.chinese_language_policy import (
     collect_node_palette_text_blobs,
     effective_language_for_thinking_user,
@@ -340,7 +341,7 @@ async def stream_node_palette(
         no_chunk_response_sent = True
         yield _yield_error_event(req, error_type, getattr(exc, "user_message", None), language_for_ui=effective_lang)
 
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.error(
             "%s Stream error | Session: %s | Error: %s",
             log_prefix,

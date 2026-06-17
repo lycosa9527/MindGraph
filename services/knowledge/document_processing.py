@@ -2,18 +2,17 @@
 
 Extracted from knowledge_space_service.py to reduce complexity.
 """
-
 import logging
 import os
 import traceback
-from typing import List, Optional, Tuple, Any, Dict
+from typing import Any, Dict, List, Optional, Tuple
 
 from config.settings import config
-from utils.dashscope_error_handler import DashScopeError
 from models.domain.knowledge_space import KnowledgeDocument
 from services.knowledge.chunking_service import ChunkingService
 from services.llm.embedding_cache import get_embedding_cache
-
+from services.utils.error_types import QDRANT_ERRORS
+from utils.dashscope_error_handler import DashScopeError
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +77,7 @@ async def extract_and_clean_text(
                 remove_extra_spaces=True,
                 remove_urls_emails=False,  # Keep URLs/emails by default
             )
-    except Exception as clean_error:
+    except QDRANT_ERRORS as clean_error:
         error_msg = f"文本清理失败: {str(clean_error)}"
         logger.error(
             "[KnowledgeSpace] Text cleaning failed for document %s: %s",
@@ -258,7 +257,7 @@ async def chunk_text_with_mode(
                     len(chunks) if chunks else 0,
                     type(chunks).__name__ if chunks else "None",
                 )
-    except Exception as chunk_error:
+    except QDRANT_ERRORS as chunk_error:
         error_msg = f"文本分块失败: {str(chunk_error)}"
         logger.error(
             "[KnowledgeSpace] ✗ Chunking failed for document %s: %s",

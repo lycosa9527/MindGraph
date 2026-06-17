@@ -10,12 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import Organization, User
 from models.domain.messages import Language, Messages
-
 from services.redis.cache.redis_org_cache import org_cache
+from utils.auth import school_tier_defs
 from utils.auth.org_storage_estimate import org_diagram_storage_estimate
 from utils.auth.role_constants import SCHOOL_ADMIN_ROLES
 from utils.auth.roles import is_superadmin
-from utils.auth import school_tier_defs
 from utils.auth.school_tier_defs import (
     DEFAULT_SCHOOL_TIER,
     EXTRA_MEMBER_SEATS_MAX,
@@ -50,6 +49,7 @@ school_tier_features_for_no_org = school_tier_defs.school_tier_features_for_no_o
 
 
 async def _organization_for_user(db: AsyncSession, user: User) -> Organization | None:
+    """Organization for user."""
     org_id = getattr(user, "organization_id", None)
     if org_id is None:
         return None

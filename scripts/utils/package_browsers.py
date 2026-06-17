@@ -23,13 +23,20 @@ All Rights Reserved
 Proprietary License
 """
 
+
 import os
-import sys
 import platform
-import zipfile
+import re
+import sys
 import tempfile
+import traceback
 import urllib.request
+import zipfile
 from pathlib import Path
+
+from playwright.sync_api import sync_playwright
+
+from services.utils.error_types import FILE_IO_ERRORS
 
 
 def get_project_root():
@@ -55,15 +62,11 @@ def download_playwright_browser_for_platform(target_platform):
 
     try:
         # Get Chromium revision from current installation
-        from playwright.sync_api import sync_playwright
-
         with sync_playwright() as p:
             # Get browser revision
             browser_path = p.chromium.executable_path
             if browser_path:
                 # Extract revision from path (e.g., chromium-1194)
-                import re
-
                 match = re.search(r"chromium-(\d+)", browser_path)
                 if match:
                     revision = match.group(1)
@@ -131,10 +134,8 @@ def download_playwright_browser_for_platform(target_platform):
         print(f"[SUCCESS] Downloaded Chromium for {target_platform}")
         return chromium_dir
 
-    except Exception as e:
+    except FILE_IO_ERRORS as e:
         print(f"[WARNING] Failed to download Chromium for {target_platform}: {e}")
-        import traceback
-
         traceback.print_exc()
         return None
 
@@ -151,8 +152,6 @@ def get_playwright_browser_path(target_platform=None):
         Path to Chromium executable, or None if not found
     """
     try:
-        from playwright.sync_api import sync_playwright
-
         with sync_playwright() as p:
             browser_path = p.chromium.executable_path
             if browser_path and os.path.exists(browser_path):
@@ -167,7 +166,7 @@ def get_playwright_browser_path(target_platform=None):
                     return None
 
                 return browser_path
-    except Exception as e:
+    except FILE_IO_ERRORS as e:
         print(f"[ERROR] Could not get Playwright browser path: {e}")
         if not target_platform:
             print("[INFO] Please install Playwright first:")
@@ -182,12 +181,11 @@ def get_platform_name():
     system = platform.system().lower()
     if system == "windows":
         return "windows"
-    elif system == "darwin":
+    if system == "darwin":
         return "mac"
-    elif system == "linux":
+    if system == "linux":
         return "linux"
-    else:
-        return system
+    return system
 
 
 def package_platform_chromium(zip_path, platform_name, chromium_source_dir):
@@ -340,9 +338,8 @@ def package_chromium():
         print("    3. Setup will automatically extract the correct platform")
 
         return True
-    else:
-        print("[ERROR] Failed to create zip file")
-        return False
+    print("[ERROR] Failed to create zip file")
+    return False
 
 
 if __name__ == "__main__":

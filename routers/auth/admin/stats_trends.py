@@ -10,9 +10,9 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import Optional, Dict, Any
 import logging
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func, select
@@ -20,10 +20,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import sum as sa_sum
 
 from config.database import get_async_db
-from models.domain.auth import User, Organization
+from models.domain.auth import Organization, User
 from models.domain.messages import Language, Messages
 from models.domain.token_usage import TokenUsage
 from services.auth.school_dashboard_logger import school_dashboard_extra
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth.admin_scope import AdminScope, assert_panel_org_readable, assert_panel_user_readable
 from utils.auth.mindbot_token_stats import (
     aggregate_mindbot_tokens_by_date,
@@ -37,13 +38,14 @@ from utils.auth.token_stats_queries import (
     utc_hour_bucket,
     utc_naive_hour_to_beijing_key,
 )
+
 from ..dependencies import (
     get_language_dependency,
     require_admin_stats_read,
     require_school_dashboard_read,
 )
+from ..helpers import BEIJING_TIMEZONE, get_beijing_now
 from .school_scope import resolve_school_dashboard_org_id_scoped
-from ..helpers import get_beijing_now, BEIJING_TIMEZONE
 from .stats import _sql_count
 
 logger = logging.getLogger(__name__)
@@ -152,7 +154,7 @@ async def get_stats_trends_admin(
                 if date_str in counts_by_date:
                     cumulative += counts_by_date[date_str]
                 trends_data.append({"date": date_str, "value": cumulative})
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Error fetching user trends: %s", e)
             # Return zeros if error
             for date in date_list:
@@ -194,7 +196,7 @@ async def get_stats_trends_admin(
                 if date_str in counts_by_date:
                     cumulative += counts_by_date[date_str]
                 trends_data.append({"date": date_str, "value": cumulative})
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Error fetching organization trends: %s", e)
             for date in date_list:
                 trends_data.append({"date": str(date), "value": 0})
@@ -228,7 +230,7 @@ async def get_stats_trends_admin(
             for date in date_list:
                 date_str = str(date)
                 trends_data.append({"date": date_str, "value": counts_by_date.get(date_str, 0)})
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Error fetching registration trends: %s", e)
             for date in date_list:
                 trends_data.append({"date": str(date), "value": 0})
@@ -289,7 +291,7 @@ async def get_stats_trends_admin(
                         "output": tokens["output"],
                     }
                 )
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Error fetching token trends: %s", e)
             for date in date_list:
                 trends_data.append({"date": str(date), "value": 0, "input": 0, "output": 0})
@@ -474,7 +476,7 @@ async def get_organization_token_trends_admin(
                         "output": tokens["output"],
                     }
                 )
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Error fetching hourly organization token trends: %s", e)
             for hour in hour_list:
                 trends_data.append(
@@ -548,7 +550,7 @@ async def get_organization_token_trends_admin(
                         "output": tokens["output"],
                     }
                 )
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Error fetching organization token trends: %s", e)
             for date in date_list:
                 trends_data.append({"date": str(date), "value": 0, "input": 0, "output": 0})
@@ -668,7 +670,7 @@ async def get_user_token_trends_admin(
                         "output": tokens["output"],
                     }
                 )
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Error fetching hourly user token trends: %s", e)
             for hour in hour_list:
                 trends_data.append(
@@ -732,7 +734,7 @@ async def get_user_token_trends_admin(
                         "output": tokens["output"],
                     }
                 )
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Error fetching user token trends: %s", e)
             for date in date_list:
                 trends_data.append({"date": str(date), "value": 0, "input": 0, "output": 0})

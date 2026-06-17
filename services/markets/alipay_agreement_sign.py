@@ -17,6 +17,7 @@ from services.markets.alipay_settings import AlipayEnvConfig
 
 
 def _resolve_sign_scene(cfg: AlipayEnvConfig, listing: MarketListing) -> str:
+    """Resolve sign scene."""
     extra = listing.extra_json or {}
     scene = extra.get("sign_scene")
     if isinstance(scene, str) and scene.strip():
@@ -25,6 +26,7 @@ def _resolve_sign_scene(cfg: AlipayEnvConfig, listing: MarketListing) -> str:
 
 
 def _resolve_personal_product_code(cfg: AlipayEnvConfig, listing: MarketListing) -> str:
+    """Resolve personal product code."""
     extra = listing.extra_json or {}
     code = extra.get("personal_product_code")
     if isinstance(code, str) and code.strip():
@@ -33,6 +35,7 @@ def _resolve_personal_product_code(cfg: AlipayEnvConfig, listing: MarketListing)
 
 
 def _period_type_for_interval(interval: str) -> str:
+    """Period type for interval."""
     if interval == "year":
         return "YEAR"
     return "MONTH"
@@ -77,6 +80,7 @@ def build_agreement_sign_form_html(
 
 
 def listing_sign_metadata(listing: MarketListing) -> dict[str, Any]:
+    """Listing sign metadata."""
     interval = listing_billing_interval(listing.extra_json)
     return {
         "interval": interval,

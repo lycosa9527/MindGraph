@@ -9,16 +9,26 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
+import base64
+import logging
+import mimetypes
+import re
+import zipfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
-import logging
-import re
-import mimetypes
-import zipfile
-import base64
+
+from services.utils.error_types import FILE_IO_ERRORS
 
 logger = logging.getLogger(__name__)
+
+
+class _DocumentProcessorState:
+    """Holds the global DocumentProcessor singleton."""
+
+    instance: Optional["DocumentProcessor"] = None
+
+
+_document_processor_state = _DocumentProcessorState()
 
 # Try to import language detection library
 _langdetect_fn: Any = None
@@ -227,7 +237,7 @@ class DocumentProcessor:
                         else:
                             # It's a ZIP but not a recognized Office format
                             detected_type = "application/zip"
-                except Exception as e:
+                except FILE_IO_ERRORS as e:
                     logger.warning("[DocumentProcessor] Failed to inspect ZIP structure: %s", e)
                     # If ZIP inspection fails, assume it matches if expected type is ZIP-based
                     if expected_mime_type in [
@@ -254,13 +264,12 @@ class DocumentProcessor:
                     return True, detected_type
                 if expected_mime_type == detected_type:
                     return True, detected_type
-                else:
-                    logger.warning(
-                        "[DocumentProcessor] File content mismatch: expected %s, detected %s",
-                        expected_mime_type,
-                        detected_type,
-                    )
-                    return False, detected_type
+                logger.warning(
+                    "[DocumentProcessor] File content mismatch: expected %s, detected %s",
+                    expected_mime_type,
+                    detected_type,
+                )
+                return False, detected_type
 
             # If no magic bytes match but file exists, allow it (might be text or other format)
             # But log a warning
@@ -270,7 +279,7 @@ class DocumentProcessor:
             )
             return True, None  # Allow processing but warn
 
-        except Exception as e:
+        except FILE_IO_ERRORS as e:
             logger.error("[DocumentProcessor] Failed to validate file content: %s", e)
             return False, None
 
@@ -341,11 +350,10 @@ class DocumentProcessor:
         try:
             if file_type == "application/pdf":
                 return self._extract_pdf_metadata(file_path)
-            elif file_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            if file_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
                 return self._extract_docx_metadata(file_path)
-            else:
-                return {}
-        except Exception as e:
+            return {}
+        except FILE_IO_ERRORS as e:
             logger.warning(
                 "[DocumentProcessor] Failed to extract metadata from %s: %s",
                 file_path,
@@ -371,7 +379,7 @@ class DocumentProcessor:
                         metadata["creation_date"] = str(pdf_meta["/CreationDate"])
                     if pdf_meta.get("/Subject"):
                         metadata["subject"] = pdf_meta["/Subject"]
-        except Exception as e:
+        except FILE_IO_ERRORS as e:
             logger.debug("[DocumentProcessor] PDF metadata extraction failed: %s", e)
         return metadata
 
@@ -393,7 +401,7 @@ class DocumentProcessor:
                 metadata["subject"] = core_props.subject
             if core_props.keywords:
                 metadata["keywords"] = core_props.keywords
-        except Exception as e:
+        except FILE_IO_ERRORS as e:
             logger.debug("[DocumentProcessor] DOCX metadata extraction failed: %s", e)
         return metadata
 
@@ -423,7 +431,7 @@ class DocumentProcessor:
             lang_code = _langdetect_fn(sample)
             logger.debug("[DocumentProcessor] Detected language: %s", lang_code)
             return lang_code
-        except Exception as exc:
+        except FILE_IO_ERRORS as exc:
             logger.debug("[DocumentProcessor] Language detection failed: %s", exc)
             return None
 
@@ -448,10 +456,9 @@ class DocumentProcessor:
                 raise ValueError(
                     f"File content does not match claimed type. Claimed: {file_type}, Detected: {detected_type}"
                 )
-            else:
-                raise ValueError(
-                    f"File content validation failed. File may be corrupted or not match type: {file_type}"
-                )
+            raise ValueError(
+                f"File content validation failed. File may be corrupted or not match type: {file_type}"
+            )
 
         extractor = self.supported_types[file_type]
         try:
@@ -469,7 +476,7 @@ class DocumentProcessor:
             if not text or not text.strip():
                 raise ValueError(f"No text extracted from {file_path}")
             return text.strip()
-        except Exception as e:
+        except FILE_IO_ERRORS as e:
             logger.error("[DocumentProcessor] Failed to extract text from %s: %s", file_path, e)
             raise
 
@@ -489,7 +496,7 @@ class DocumentProcessor:
                         if text:
                             text_parts.append(text)
                 return "\n\n".join(text_parts)
-            except Exception as e:
+            except FILE_IO_ERRORS as e:
                 logger.warning("[DocumentProcessor] pypdf failed, trying pdfplumber: %s", e)
                 if _pdfplumber_available and _pdfplumber_mod is not None:
                     with _pdfplumber_mod.open(file_path) as pdf:
@@ -578,7 +585,7 @@ class DocumentProcessor:
                     return file.read()
             except UnicodeDecodeError:
                 continue
-            except Exception as e:
+            except FILE_IO_ERRORS as e:
                 logger.warning("[DocumentProcessor] Failed to read with %s: %s", encoding, e)
                 continue
 
@@ -589,12 +596,12 @@ class DocumentProcessor:
         # Try DashScope OCR first
         try:
             return self._extract_image_dashscope(file_path)
-        except Exception as e:
+        except FILE_IO_ERRORS as e:
             logger.warning("[DocumentProcessor] DashScope OCR failed: %s", e)
             # Fallback to pytesseract
             try:
                 return self._extract_image_tesseract(file_path)
-            except Exception as e2:
+            except FILE_IO_ERRORS as e2:
                 raise ValueError(f"OCR failed with both DashScope and Tesseract: {e2}") from e2
 
     def _extract_image_dashscope(self, file_path: str) -> str:
@@ -680,7 +687,7 @@ class DocumentProcessor:
             image = _pil_image_cls.open(file_path)
             text = _pytesseract_mod.image_to_string(image, lang="chi_sim+eng")  # Chinese + English
             return text
-        except Exception as e:
+        except FILE_IO_ERRORS as e:
             # Check if this is a TesseractNotFoundError
             error_str = str(e).lower()
             if "tesseract" in error_str and (
@@ -697,10 +704,10 @@ class DocumentProcessor:
                     f"Original error: {str(e)}"
                 )
                 raise RuntimeError(error_msg) from e
-            else:
-                logger.error("[DocumentProcessor] Tesseract OCR failed: %s", str(e))
-                error_msg = f"Tesseract OCR failed: {str(e)}"
-                raise RuntimeError(error_msg) from e
+
+            logger.error("[DocumentProcessor] Tesseract OCR failed: %s", str(e))
+            error_msg = f"Tesseract OCR failed: {str(e)}"
+            raise RuntimeError(error_msg) from e
 
     def _extract_pptx(self, file_path: str) -> str:
         """Extract text from PPTX."""
@@ -778,6 +785,6 @@ class DocumentProcessor:
 
 def get_document_processor() -> DocumentProcessor:
     """Get global document processor instance."""
-    if not hasattr(get_document_processor, "_instance"):
-        get_document_processor._instance = DocumentProcessor()
-    return get_document_processor._instance
+    if _document_processor_state.instance is None:
+        _document_processor_state.instance = DocumentProcessor()
+    return _document_processor_state.instance

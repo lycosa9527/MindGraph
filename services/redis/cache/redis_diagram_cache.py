@@ -31,33 +31,35 @@ from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 import orjson
-from sqlalchemy import desc, select, update as sa_update
+from sqlalchemy import desc, select
+from sqlalchemy import update as sa_update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-from services.utils.typing_helpers import result_rowcount
+from models.domain.diagrams import Diagram
+from services.redis.cache._redis_diagram_cache_helpers import (
+    CACHE_TTL,
+    DIAGRAM_KEY,
+    MAX_SPEC_SIZE_KB,
+    SYNC_BATCH_SIZE,
+    SYNC_INTERVAL,
+    USER_LIST_KEY,
+    USER_META_KEY,
+    _redis_json_set_paths,
+    count_diagrams_from_db,
+)
+from services.redis.cache.diagram_new_id import assign_id_for_new_diagram
+from services.redis.cache.diagram_save_errors import describe_diagram_db_error
 from services.redis.cache.redis_cache_stampede import with_stampede_lock
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
-from services.redis.cache.diagram_new_id import assign_id_for_new_diagram
-from services.redis.cache.diagram_save_errors import describe_diagram_db_error
-from services.redis.cache._redis_diagram_cache_helpers import (
-    _redis_json_set_paths,
-    count_diagrams_from_db,
-    CACHE_TTL,
-    SYNC_INTERVAL,
-    SYNC_BATCH_SIZE,
-    MAX_SPEC_SIZE_KB,
-    DIAGRAM_KEY,
-    USER_META_KEY,
-    USER_LIST_KEY,
-)
-from utils.db.session_open import user_rls_session
-from models.domain.diagrams import Diagram
+from services.utils.error_types import REDIS_ERRORS
+from services.utils.typing_helpers import result_rowcount
 from utils.auth.school_tier import (
     format_diagram_save_limit_error,
     is_unlimited_diagram_limit,
     max_diagrams_for_user_id,
 )
+from utils.db.session_open import user_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +75,7 @@ class RedisDiagramCache:
     """
 
     def __init__(self):
+        """ init  ."""
         self._total_synced: int = 0
         self._total_errors: int = 0
         logger.info(
@@ -117,7 +120,7 @@ class RedisDiagramCache:
                         count = await redis.zcard(meta_key)
                         if count is not None:
                             return count
-                except Exception as exc:
+                except REDIS_ERRORS as exc:
                     logger.warning("[DiagramCache] Redis count failed: %s", exc)
 
         return await count_diagrams_from_db(user_id, organization_id)
@@ -128,6 +131,7 @@ class RedisDiagramCache:
         max_per_user: Optional[int],
         organization_id: Optional[int] = None,
     ) -> int:
+        """Resolve diagram cap."""
         if max_per_user is not None:
             return int(max_per_user)
         async with user_rls_session(user_id, organization_id) as db:
@@ -267,7 +271,7 @@ class RedisDiagramCache:
                         diagram_id,
                         user_id,
                     )
-                except Exception as e:
+                except REDIS_ERRORS as e:
                     logger.warning(
                         "[DiagramCache] Redis cache update failed (diagram saved to database): %s",
                         e,
@@ -312,11 +316,11 @@ class RedisDiagramCache:
                     if result.scalar_one_or_none() == diagram_id:
                         return True, None
                     return False, "Failed to save diagram to database"
-                except Exception as exc:
+                except REDIS_ERRORS as exc:
                     await db.rollback()
                     logger.error("[DiagramCache] Database create failed: %s", exc)
                     return False, describe_diagram_db_error(exc)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.error("[DiagramCache] Database connection failed: %s", exc)
             return False, describe_diagram_db_error(exc)
 
@@ -346,11 +350,11 @@ class RedisDiagramCache:
                         return False
                     await db.commit()
                     return True
-                except Exception as exc:
+                except REDIS_ERRORS as exc:
                     await db.rollback()
                     logger.error("[DiagramCache] meta-only DB update failed: %s", exc)
                     return False
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.error("[DiagramCache] meta-only DB connection failed: %s", exc)
             return False
 
@@ -391,7 +395,7 @@ class RedisDiagramCache:
                         pipe.delete(diagram_key)
                         pipe.delete(list_key)
                         await pipe.execute()
-                except Exception as exc:
+                except REDIS_ERRORS as exc:
                     logger.warning(
                         "[DiagramCache] meta-only cache invalidate failed: %s",
                         exc,
@@ -427,11 +431,11 @@ class RedisDiagramCache:
                         return False, "Diagram not found"
                     await db.commit()
                     return True, None
-                except Exception as exc:
+                except REDIS_ERRORS as exc:
                     await db.rollback()
                     logger.error("[DiagramCache] Database update failed: %s", exc)
                     return False, describe_diagram_db_error(exc)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.error("[DiagramCache] Database connection failed: %s", exc)
             return False, describe_diagram_db_error(exc)
 
@@ -461,13 +465,13 @@ class RedisDiagramCache:
                                 return diagram
                             return None
 
-                except Exception as exc:
+                except REDIS_ERRORS as exc:
                     logger.warning("[DiagramCache] Redis get failed: %s", exc)
                     # Stale key with wrong type — remove it so the cache-aside
                     # write in _load_from_database can succeed with JSON type.
                     try:
                         await redis.delete(diagram_key)
-                    except Exception:
+                    except REDIS_ERRORS:
                         pass
 
         # Fallback to database (cache-aside pattern)
@@ -483,7 +487,7 @@ class RedisDiagramCache:
         diagram_key = self._get_diagram_key(user_id, diagram_id)
         try:
             json_result = await redis.json().get(diagram_key, "$")
-        except Exception:
+        except REDIS_ERRORS:
             return None
         if not json_result:
             return None
@@ -552,11 +556,11 @@ class RedisDiagramCache:
                             pipe.zadd(meta_key, {str(diagram_id): updated_ts})
                             pipe.expire(meta_key, CACHE_TTL)
                             await pipe.execute()
-                    except Exception as exc:
+                    except REDIS_ERRORS as exc:
                         logger.debug("[DiagramCache] Redis cache-aside write failed: %s", exc)
 
             return diagram_data
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("[DiagramCache] Database load failed: %s", e)
             return None
 
@@ -614,7 +618,7 @@ class RedisDiagramCache:
                             "has_more": offset + len(paginated) < total,
                             "max_diagrams": diagram_cap,
                         }
-                except Exception as e:
+                except REDIS_ERRORS as e:
                     logger.warning("[DiagramCache] Redis list cache read failed: %s", e)
 
         # Cache miss: Load from database
@@ -636,7 +640,7 @@ class RedisDiagramCache:
                 try:
                     cache_data = {"items": items, "total": total}
                     await redis.setex(list_key, CACHE_TTL, orjson.dumps(cache_data))
-                except Exception as e:
+                except REDIS_ERRORS as e:
                     logger.warning("[DiagramCache] Redis list cache write failed: %s", e)
 
         # Paginate
@@ -680,7 +684,7 @@ class RedisDiagramCache:
                         }
                     )
                 return items
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("[DiagramCache] Database list load failed: %s", e)
             return []
 
@@ -713,11 +717,11 @@ class RedisDiagramCache:
                         .values(is_deleted=True, updated_at=now)
                     )
                     await db.commit()
-                except Exception as e:
+                except REDIS_ERRORS as e:
                     await db.rollback()
                     logger.error("[DiagramCache] Database delete failed: %s", e)
                     return False, "Failed to delete diagram"
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("[DiagramCache] Database connection failed: %s", e)
             return False, "Database error"
 
@@ -750,7 +754,7 @@ class RedisDiagramCache:
                         diagram_id,
                         user_id,
                     )
-                except Exception as e:
+                except REDIS_ERRORS as e:
                     logger.warning(
                         "[DiagramCache] Redis cache update failed (diagram deleted in database): %s",
                         e,
@@ -831,11 +835,11 @@ class RedisDiagramCache:
                     if result_rowcount(result) == 0:
                         return False, "Diagram not found"
                     await db.commit()
-                except Exception as e:
+                except REDIS_ERRORS as e:
                     await db.rollback()
                     logger.error("[DiagramCache] Database pin failed: %s", e)
                     return False, "Failed to update diagram"
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("[DiagramCache] Pin connection failed: %s", e)
             return False, "Database error"
 
@@ -862,7 +866,7 @@ class RedisDiagramCache:
                         diagram_id,
                         user_id,
                     )
-                except Exception as e:
+                except REDIS_ERRORS as e:
                     logger.warning(
                         "[DiagramCache] Redis cache update failed (pin saved to database): %s",
                         e,
@@ -916,7 +920,7 @@ class RedisDiagramCache:
                     )
 
             return True
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning("[DiagramCache] Preload failed for user %s: %s", user_id, e)
             return False
 
@@ -929,7 +933,7 @@ class RedisDiagramCache:
             return
         try:
             await redis.delete(self._get_user_list_key(user_id))
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning("[DiagramCache] invalidate_user_list failed user=%s: %s", user_id, exc)
 
     def get_stats(self) -> Dict[str, Any]:
@@ -950,8 +954,17 @@ class RedisDiagramCache:
         return stats
 
 
+class _DiagramCacheState:
+    """Holds the global RedisDiagramCache singleton."""
+
+    cache_instance: RedisDiagramCache | None = None
+
+
+_diagram_cache_state = _DiagramCacheState()
+
+
 def get_diagram_cache() -> RedisDiagramCache:
     """Get or create global diagram cache instance."""
-    if not hasattr(get_diagram_cache, "cache_instance"):
-        get_diagram_cache.cache_instance = RedisDiagramCache()
-    return get_diagram_cache.cache_instance
+    if _diagram_cache_state.cache_instance is None:
+        _diagram_cache_state.cache_instance = RedisDiagramCache()
+    return _diagram_cache_state.cache_instance

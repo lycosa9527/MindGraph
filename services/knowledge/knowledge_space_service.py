@@ -9,51 +9,46 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from pathlib import Path
-from typing import List, Optional, Dict, Any
 import hashlib
 import logging
 import os
 import shutil
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from sqlalchemy import and_, select, func, delete
+from sqlalchemy import and_, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.dashscope_embedding import get_embedding_client
 from models.domain.knowledge_space import (
-    KnowledgeSpace,
-    KnowledgeDocument,
-    DocumentChunk,
     DocumentBatch,
+    DocumentChunk,
     DocumentVersion,
+    KnowledgeDocument,
+    KnowledgeSpace,
 )
 from services.infrastructure.rate_limiting.kb_rate_limiter import get_kb_rate_limiter
 from services.knowledge.chunking_service import get_chunking_service
+from services.knowledge.document_batch_service import batch_upload_documents as batch_upload_documents_helper
+from services.knowledge.document_batch_service import update_batch_progress as update_batch_progress_helper
 from services.knowledge.document_cleaner import get_document_cleaner
-from services.knowledge.document_processor import get_document_processor
 from services.knowledge.document_processing import (
-    extract_and_clean_text,
     chunk_text_with_mode,
+    extract_and_clean_text,
     generate_embeddings_with_cache,
     prepare_qdrant_metadata,
 )
+from services.knowledge.document_processor import get_document_processor
 from services.knowledge.document_reindexing import (
     chunk_text_for_reindexing,
     compare_chunks,
-    process_updated_chunks,
     process_new_chunks,
+    process_updated_chunks,
 )
-from services.knowledge.document_versioning import (
-    rollback_document as rollback_document_helper,
-    get_document_versions as get_document_versions_helper,
-)
-from services.knowledge.document_batch_service import (
-    batch_upload_documents as batch_upload_documents_helper,
-    update_batch_progress as update_batch_progress_helper,
-)
+from services.knowledge.document_versioning import get_document_versions as get_document_versions_helper
+from services.knowledge.document_versioning import rollback_document as rollback_document_helper
 from services.llm.qdrant_service import get_qdrant_service
-
+from services.utils.error_types import QDRANT_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -269,9 +264,9 @@ class KnowledgeSpaceService:
                 cleaned_text, page_info = await extract_and_clean_text(
                     self.processor, self.cleaner, document, self.db, processing_rules
                 )
-            except ValueError:
-                raise
-            except Exception as extract_error:
+            except ValueError as value_error:
+                raise value_error
+            except QDRANT_ERRORS as extract_error:
                 error_msg = f"文本提取失败: {str(extract_error)}"
                 logger.error(
                     "[KnowledgeSpace] Text extraction failed for document %s: %s",
@@ -373,7 +368,7 @@ class KnowledgeSpaceService:
                     document_id,
                     len(chunk_ids),
                 )
-            except Exception as chunk_db_error:
+            except QDRANT_ERRORS as chunk_db_error:
                 error_msg = f"保存分块数据失败: {str(chunk_db_error)}"
                 logger.error(
                     "[RAG] ✗ Chunking FAILED: doc=%s, error=%s",
@@ -397,7 +392,7 @@ class KnowledgeSpaceService:
                         document_id,
                         len(chunk_ids),
                     )
-                except Exception as qdrant_insert_error:
+                except QDRANT_ERRORS as qdrant_insert_error:
                     error_msg = f"向量存储失败: {str(qdrant_insert_error)}"
                     logger.error(
                         "[RAG] ✗ Vector Store FAILED: doc=%s, error=%s",
@@ -412,9 +407,9 @@ class KnowledgeSpaceService:
                 document.processing_progress_percent = 100
                 await self.db.commit()
 
-            except ValueError:
-                raise
-            except Exception as qdrant_error:
+            except ValueError as value_error:
+                raise value_error
+            except QDRANT_ERRORS as qdrant_error:
                 error_msg = f"数据保存失败: {str(qdrant_error)}"
                 logger.error(
                     "[KnowledgeSpace] Qdrant write succeeded but database commit failed: %s",
@@ -427,7 +422,7 @@ class KnowledgeSpaceService:
                         "[KnowledgeSpace] Cleaned up orphaned Qdrant vectors for document %s",
                         document_id,
                     )
-                except Exception as cleanup_error:
+                except QDRANT_ERRORS as cleanup_error:
                     logger.error(
                         "[KnowledgeSpace] Failed to cleanup Qdrant after database failure: %s",
                         cleanup_error,
@@ -461,21 +456,21 @@ class KnowledgeSpaceService:
                         document.id,
                         ref["text"],
                     )
-            except Exception as ref_error:
+            except QDRANT_ERRORS as ref_error:
                 logger.warning(
                     "[KnowledgeSpace] Failed to extract references for document %s: %s",
                     document_id,
                     ref_error,
                 )
 
-        except Exception as e:
+        except QDRANT_ERRORS as e:
             logger.error("[KnowledgeSpace] Failed to process document %s: %s", document_id, e)
             document.status = "failed"
             document.error_message = str(e)
             document.processing_progress = None
             document.processing_progress_percent = 0
             await self.db.commit()
-            raise
+            raise e
 
     async def batch_upload_documents(self, files: List[Dict[str, Any]]) -> DocumentBatch:
         """
@@ -553,10 +548,10 @@ class KnowledgeSpaceService:
                 self.user_id,
             )
 
-        except Exception as e:
+        except QDRANT_ERRORS as e:
             logger.error("[KnowledgeSpace] Failed to delete document %s: %s", document_id, e)
             await self.db.rollback()
-            raise
+            raise e
 
     async def get_user_documents(self) -> List[KnowledgeDocument]:
         """Get all documents for user."""
@@ -726,7 +721,7 @@ class KnowledgeSpaceService:
                         document.version,
                         document.id,
                     )
-            except Exception as version_error:
+            except QDRANT_ERRORS as version_error:
                 logger.warning(
                     "[KnowledgeSpace] Failed to create version for document %s: %s",
                     document.id,
@@ -736,7 +731,7 @@ class KnowledgeSpaceService:
             if old_file_path != document.file_path and Path(old_file_path).exists():
                 try:
                     Path(old_file_path).unlink()
-                except Exception as e:
+                except QDRANT_ERRORS as e:
                     logger.warning(
                         "[KnowledgeSpace] Failed to delete old file %s: %s",
                         old_file_path,
@@ -758,14 +753,14 @@ class KnowledgeSpaceService:
             )
             return document
 
-        except Exception as e:
+        except QDRANT_ERRORS as e:
             logger.error("[KnowledgeSpace] Failed to update document %s: %s", document_id, e)
             document.status = "failed"
             document.error_message = str(e)
             document.processing_progress = None
             document.processing_progress_percent = 0
             await self.db.commit()
-            raise
+            raise e
 
     async def _reindex_chunks(self, document: KnowledgeDocument, content_hash: str) -> Dict[str, int]:
         """
@@ -793,9 +788,9 @@ class KnowledgeSpaceService:
                 cleaned_text, page_info = await extract_and_clean_text(
                     self.processor, self.cleaner, document, self.db, processing_rules
                 )
-            except ValueError:
-                raise
-            except Exception as extract_error:
+            except ValueError as value_error:
+                raise value_error
+            except QDRANT_ERRORS as extract_error:
                 error_msg = f"文本提取失败: {str(extract_error)}"
                 logger.error(
                     "[KnowledgeSpace] Text extraction failed for document %s: %s",
@@ -937,7 +932,7 @@ class KnowledgeSpaceService:
 
             return change_summary
 
-        except Exception as e:
+        except QDRANT_ERRORS as e:
             logger.error(
                 "[KnowledgeSpace] Failed to reindex chunks for document %s: %s",
                 document.id,

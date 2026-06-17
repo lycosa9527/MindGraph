@@ -8,13 +8,14 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Dict, Optional, Any
 import json
 import logging
 import re
+from typing import Any, Dict, Optional
 
 from dotenv import load_dotenv
+
+from services.utils.error_types import JSON_PARSE_ERRORS
 
 # Load environment variables for logging configuration
 load_dotenv()
@@ -66,7 +67,7 @@ def extract_json_from_response(response_content: Any, allow_partial: bool = Fals
         except json.JSONDecodeError as e:
             return _handle_json_decode_error(cleaned, e, allow_partial)
 
-    except Exception as e:
+    except JSON_PARSE_ERRORS as e:
         # Unexpected error - log with full context
         content_str = str(response_content)
         content_preview = content_str[:500] + "..." if len(content_str) > 500 else content_str
@@ -362,7 +363,7 @@ def _extract_partial_json(text: str) -> Optional[Dict]:
         )
         return result
 
-    except Exception as e:
+    except JSON_PARSE_ERRORS as e:
         logger.debug("Partial JSON extraction failed: %s", e)
         return None
 
@@ -434,7 +435,7 @@ def _build_mind_map_branch(match: re.Match) -> Optional[Dict]:
             branch_obj["children"] = children_list
 
         return branch_obj
-    except Exception as e:
+    except JSON_PARSE_ERRORS as e:
         logger.debug("Skipping invalid branch object: %s", e)
         return None
 
@@ -452,7 +453,7 @@ def _build_tree_map_branch_with_id(match: re.Match) -> Optional[Dict]:
             branch_obj["children"] = children_list
 
         return branch_obj
-    except Exception as e:
+    except JSON_PARSE_ERRORS as e:
         logger.debug("Skipping invalid branch object: %s", e)
         return None
 
@@ -470,7 +471,7 @@ def _build_tree_map_branch_no_id(match: re.Match) -> Optional[Dict]:
             branch_obj["children"] = children_list
 
         return branch_obj
-    except Exception as e:
+    except JSON_PARSE_ERRORS as e:
         logger.debug("Skipping invalid branch object: %s", e)
         return None
 

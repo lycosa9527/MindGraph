@@ -49,17 +49,18 @@ import sys
 from pathlib import Path
 from typing import Iterable, List, Set, Tuple
 
-
 BASELINE_FILE_NAME = "lazy_selectin_baseline.txt"
 
 _PATTERN = re.compile(r'lazy\s*=\s*["\']selectin["\']')
 
 
 def _iter_python_files(root: Path) -> Iterable[Path]:
+    """Iter python files."""
     yield from sorted(root.rglob("*.py"))
 
 
 def _scan_file(path: Path) -> List[Tuple[int, str]]:
+    """Scan file."""
     findings: List[Tuple[int, str]] = []
     try:
         text = path.read_text(encoding="utf-8")
@@ -84,6 +85,7 @@ def _format_entry(rel_path: str, snippet: str) -> str:
 
 
 def _load_baseline(baseline_path: Path) -> Set[str]:
+    """Load baseline."""
     if not baseline_path.exists():
         return set()
     return {
@@ -94,6 +96,7 @@ def _load_baseline(baseline_path: Path) -> Set[str]:
 
 
 def _collect_findings(repo_root: Path, scan_paths: List[str]) -> List[Tuple[str, int, str]]:
+    """Collect findings."""
     findings: List[Tuple[str, int, str]] = []
     for raw in scan_paths:
         target = (repo_root / raw).resolve()
@@ -112,6 +115,7 @@ def _collect_findings(repo_root: Path, scan_paths: List[str]) -> List[Tuple[str,
 
 
 def _write_baseline(baseline_path: Path, findings: List[Tuple[str, int, str]]) -> None:
+    """Write baseline."""
     entries = sorted({_format_entry(rel, snippet) for rel, _, snippet in findings})
     header = (
         '# Baseline of lazy="selectin" declarations grandfathered into the build.\n'
@@ -124,6 +128,7 @@ def _write_baseline(baseline_path: Path, findings: List[Tuple[str, int, str]]) -
 
 
 def main(argv: List[str] | None = None) -> int:
+    """Main."""
     doc_lines = (__doc__ or "Lazy selectin lint").splitlines()
     description = doc_lines[1] if len(doc_lines) > 1 else doc_lines[0]
     parser = argparse.ArgumentParser(description=description)

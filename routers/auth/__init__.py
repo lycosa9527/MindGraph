@@ -14,43 +14,43 @@ from fastapi import APIRouter
 
 # Import all sub-routers
 from . import (
-    registration,
-    registration_overseas,
-    login,
-    quick_register,
-    sms,
-    email,
-    captcha,
-    password,
-    session,
-    public,
     avatar,
+    captcha,
+    email,
+    login,
+    password,
+    personal_token,
     phone,
     preferences,
-    personal_token,
+    public,
+    quick_register,
+    registration,
+    registration_overseas,
+    session,
+    sms,
 )
 from .admin import admin_router
+from .dependencies import (
+    get_language_dependency,
+    require_admin,
+    require_admin_or_manager,
+    require_global_dashboard_readonly,
+    require_global_data_center_read,
+    require_manager,
+    require_mindbot_admin_access,
+    require_school_admin,
+    require_superadmin,
+)
 
 # Import utilities
 from .helpers import (
     BEIJING_TIMEZONE,
+    commit_user_with_retry,
     get_beijing_now,
     get_beijing_today_start_utc,
-    utc_to_beijing_iso,
-    track_user_activity,
     set_auth_cookies,
-    commit_user_with_retry,
-)
-from .dependencies import (
-    get_language_dependency,
-    require_admin,
-    require_superadmin,
-    require_school_admin,
-    require_admin_or_manager,
-    require_manager,
-    require_mindbot_admin_access,
-    require_global_data_center_read,
-    require_global_dashboard_readonly,
+    track_user_activity,
+    utc_to_beijing_iso,
 )
 
 # Create main auth router

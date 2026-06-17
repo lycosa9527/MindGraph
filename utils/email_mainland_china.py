@@ -13,7 +13,6 @@ from fastapi import HTTPException, status
 from models.domain.messages import Language, Messages
 from utils.auth.overseas_registration_messages import overseas_registration_message_key
 
-
 # Consumer / campus mail hosts commonly used in mainland China (not exhaustive).
 _MAINLAND_BLOCKLIST_ROOTS: frozenset[str] = frozenset(
     {
@@ -58,6 +57,7 @@ def is_mainland_china_email_domain(host: str) -> bool:
 
 
 def _raise_if_mainland_china_email(email: str, lang: Language, message_key: str) -> None:
+    """Raise if mainland china email."""
     parts = email.strip().rsplit("@", 1)
     if len(parts) != 2:
         return

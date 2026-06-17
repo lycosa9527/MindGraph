@@ -22,17 +22,18 @@ All Rights Reserved
 Proprietary License
 """
 
+import asyncio
+import logging
 import os
 import uuid
-import logging
-import asyncio
-from typing import Optional
 from contextlib import asynccontextmanager
+from typing import Optional
 
 from services.redis import keys as _keys
-from services.redis.redis_async_ops import AsyncRedisOps
 from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_async_ops import AsyncRedisOps
 from services.redis.redis_client import is_redis_available
+from services.utils.error_types import REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +143,7 @@ class DistributedLock:
                 )
                 return False
 
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logger.warning(
                     "[DistributedLock] Lock acquisition error for %s: %s",
                     self.resource,
@@ -179,7 +180,7 @@ class DistributedLock:
             )
             return False
 
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning("[DistributedLock] Lock release error for %s: %s", self.resource, exc)
             return False
 
@@ -234,7 +235,7 @@ async def acquire_startup_sms_notification_lock() -> Optional[str]:
             holder,
         )
         return None
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.warning(
             "[LIFESPAN] Startup SMS lock acquisition failed (skipping send): %s",
             exc,
@@ -250,7 +251,7 @@ async def release_startup_sms_notification_lock(lock_id: str) -> None:
         return
     try:
         await AsyncRedisOps.compare_and_delete(STARTUP_SMS_NOTIFICATION_LOCK_KEY, lock_id)
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.debug(
             "[LIFESPAN] Startup SMS lock release (non-critical): %s",
             exc,

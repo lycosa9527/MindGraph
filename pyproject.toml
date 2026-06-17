@@ -82,7 +82,6 @@ disable = [
     "too-few-public-methods",  # Common for data classes and utilities
     "duplicate-code",  # Large codebase shares similar patterns; refactor is tracked separately
     "arguments-renamed",  # Subclasses intentionally align API with different parameter names
-    "global-statement",  # Singleton and lazy-init patterns use module-level globals
 ]
 
 [tool.pylint.format]
@@ -166,6 +165,35 @@ good-names = [
     "down_revision",
     "branch_labels",
     "depends_on",
+    # Optional-import fallback aliases (Rich, psutil, numpy, etc.)
+    "Console",
+    "Progress",
+    "BarColumn",
+    "SpinnerColumn",
+    "TextColumn",
+    "TimeElapsedColumn",
+    "TimeRemainingColumn",
+    "Rule",
+    "Panel",
+    "RICH_AVAILABLE",
+    "_PSUTIL_AVAILABLE",
+    "HAS_DATASETS",
+    "HAS_NUMPY",
+    "HAS_CHUNK_TEST_MODELS",
+    "ChunkTestDocument",
+    "ChunkTestDocumentChunk",
+    "HAS_EMBEDDING",
+    "HAS_SPACY",
+    "HAS_CHONKIE",
+    "HAS_LANGCHAIN",
+    "HAS_LLM_CHUNKING",
+    "TokenChunker",
+    "RecursiveCharacterTextSplitter",
+    "LLMSemanticChunker",
+    "registration_metrics",
+    # db_sessions module-level engine holders (mutated at startup)
+    "engine",
+    "async_engine",
 ]
 # Allow UPPER_CASE for class attributes (constants)
 class-attribute-rgx = "^[A-Z][A-Z0-9_]*$|^[a-z_][a-z0-9_]*$"
@@ -179,32 +207,12 @@ method-rgx = "^(?:[a-z_][a-z0-9_]{2,40}|test_[a-z0-9_]{2,80}|visit_[A-Za-z][a-zA
 [tool.pylint.messages_control]
 # Merged with [tool.pylint.main] disable list by pylint.
 # Pattern-level policy (no inline disables — see lint_no_inline_disables.py):
-#   broad-except, import-outside-toplevel, protected-access — error recovery,
-#   import cycles, and framework internals (Starlette/FastAPI/logging handlers).
+# Four hardening rules enabled. Minimal permanent disables only (see plan).
 disable = [
-    "broad-except",
     "too-many-positional-arguments",  # Palette generators must match BasePaletteGenerator API
     "duplicate-code",
     "arguments-renamed",
-    "global-statement",
-    "no-else-return",
-    "no-else-raise",
-    "no-else-continue",
-    "no-else-break",
-    "missing-module-docstring",
-    "missing-class-docstring",
-    "missing-function-docstring",
-    "protected-access",
-    "attribute-defined-outside-init",
-    "consider-using-with",  # Many resources managed by framework or explicit close()
-    "import-outside-toplevel",  # Lazy imports to avoid cycles and optional deps
-    "wrong-import-position",
-    "ungrouped-imports",
-    "pointless-string-statement",  # Module markers / section dividers
-    "chained-comparison",
-    "consider-iterating-dictionary",
-    "unnecessary-dunder-call",
-    "inconsistent-return-statements",
+    "too-few-public-methods",
 ]
 
 [tool.pylint.typecheck]

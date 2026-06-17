@@ -35,6 +35,7 @@ class DiagramNodesPatchBody(BaseModel):
 
 
 def _patch_node_text(obj: Any, node_id: str, new_text: str) -> bool:
+    """Patch node text."""
     if isinstance(obj, dict):
         if obj.get("id") == node_id:
             if "text" in obj:
@@ -53,6 +54,7 @@ def _patch_node_text(obj: Any, node_id: str, new_text: str) -> bool:
 
 
 def _delete_node_by_id(obj: Any, node_id: str) -> bool:
+    """Delete node by id."""
     if isinstance(obj, dict) and "children" in obj and isinstance(obj["children"], list):
         new_children = []
         for ch in obj["children"]:
@@ -73,6 +75,7 @@ def _delete_node_by_id(obj: Any, node_id: str) -> bool:
 
 
 def _apply_spec_patch(spec: Dict[str, Any], body: DiagramNodesPatchBody) -> Dict[str, Any]:
+    """Apply spec patch."""
     if body.spec is not None:
         return body.spec
     if not body.action or not body.updates:
@@ -112,6 +115,7 @@ async def patch_diagram_nodes(
     body: DiagramNodesPatchBody,
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
+    """Patch diagram nodes."""
     cache = get_diagram_cache()
     record = await cache.get_diagram(current_user.id, diagram_id)
     if not record:
@@ -146,6 +150,7 @@ async def get_diagram_png_url(
     request: Request,
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, str]:
+    """Get diagram png url."""
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "diagram_png",

@@ -24,36 +24,37 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
-from utils.db.rls_request import bind_system_bootstrap_rls_dependency
-from models.domain.messages import Messages, Language
-from models.domain.auth import User, Organization
+from models.domain.auth import Organization, User
+from models.domain.messages import Language, Messages
 from models.requests.requests_auth import RegisterRequest, RegisterWithSMSRequest
 from routers.auth.org_profile import organization_session_payload
-from utils.auth import (
-    hash_password,
-    get_client_ip,
-    create_access_token,
-    create_refresh_token,
-    compute_device_hash,
-    ACCESS_TOKEN_EXPIRY_MINUTES,
-)
-from utils.invitations import invitation_code_is_valid
-from utils.auth.school_tier import assert_organization_has_member_capacity
-from services.redis.cache.redis_user_cache import user_cache
-from services.redis.cache.redis_org_cache import org_cache
-from services.redis.redis_distributed_lock import phone_registration_lock
-from services.redis.session.redis_session_manager import (
-    get_session_manager,
-    get_refresh_token_manager,
-)
+from services.auth.phone_uniqueness import any_user_id_with_phone
 from services.auth.vpn_geo_enforcement import record_vpn_login_geo
 from services.monitoring.registration_metrics import registration_metrics
-from services.auth.phone_uniqueness import any_user_id_with_phone
+from services.redis.cache.redis_org_cache import org_cache
+from services.redis.cache.redis_user_cache import user_cache
+from services.redis.redis_distributed_lock import phone_registration_lock
+from services.redis.session.redis_session_manager import (
+    get_refresh_token_manager,
+    get_session_manager,
+)
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
+from utils.auth import (
+    ACCESS_TOKEN_EXPIRY_MINUTES,
+    compute_device_hash,
+    create_access_token,
+    create_refresh_token,
+    get_client_ip,
+    hash_password,
+)
 from utils.auth.registration_gate import http_forbid_if_registration_disabled
+from utils.auth.school_tier import assert_organization_has_member_capacity
+from utils.db.rls_request import bind_system_bootstrap_rls_dependency
+from utils.invitations import invitation_code_is_valid
 
+from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
 from .helpers import commit_user_with_retry, set_auth_cookies, track_user_activity
-from .captcha import verify_captcha_with_retry
 from .sms import _verify_and_consume_sms_code
 
 logger = logging.getLogger(__name__)
@@ -101,14 +102,14 @@ async def finalize_sms_registration_session(
                 phone_prefix,
                 phone_suffix,
             )
-        except Exception as ex:
+        except BACKGROUND_INFRA_ERRORS as ex:
             cache_write_success = False
             logger.warning("[Auth] Failed to cache new user ID %s: %s", new_user.id, ex)
 
     async def store_session_async() -> None:
         try:
             await session_manager.store_session(new_user.id, token, device_hash=device_hash)
-        except Exception as ex:
+        except BACKGROUND_INFRA_ERRORS as ex:
             logger.warning("[Auth] Failed to store session for user ID %s: %s", new_user.id, ex)
 
     async def store_refresh_token_async() -> None:
@@ -121,7 +122,7 @@ async def finalize_sms_registration_session(
                 user_agent=user_agent,
                 device_hash=device_hash,
             )
-        except Exception as ex:
+        except BACKGROUND_INFRA_ERRORS as ex:
             logger.warning(
                 "[Auth] Failed to store refresh token for user ID %s: %s",
                 new_user.id,
@@ -256,7 +257,7 @@ async def register(
         if org:
             try:
                 await org_cache.cache_org(org)
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.debug("[Auth] Failed to cache org after database query: %s", e)
 
     logger.debug(
@@ -304,7 +305,7 @@ async def register(
         if e.status_code == status.HTTP_400_BAD_REQUEST and "sms_code" in str(e.detail).lower():
             registration_metrics.record_failure("sms_code_invalid", duration)
         raise
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         # Track other failures (database lock, etc.)
         duration = time.time() - start_time
         if "database is locked" in str(e).lower() or "locked" in str(e).lower():
@@ -342,7 +343,7 @@ async def register(
                 phone_prefix,
                 phone_suffix,
             )
-        except Exception as e:
+        except REDIS_ERRORS as e:
             cache_write_success = False
             logger.warning("[Auth] Failed to cache new user ID %s: %s", new_user.id, e)
 
@@ -350,7 +351,7 @@ async def register(
         """Store session in Redis (non-blocking)."""
         try:
             await session_manager.store_session(new_user.id, token, device_hash=device_hash)
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning("[Auth] Failed to store session for user ID %s: %s", new_user.id, e)
 
     async def store_refresh_token_async():
@@ -364,7 +365,7 @@ async def register(
                 user_agent=user_agent,
                 device_hash=device_hash,
             )
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning(
                 "[Auth] Failed to store refresh token for user ID %s: %s",
                 new_user.id,
@@ -474,7 +475,7 @@ async def register_with_sms(
         if org:
             try:
                 await org_cache.cache_org(org)
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.debug("[Auth] Failed to cache org after database query: %s", e)
 
     # Use distributed lock to prevent race condition on phone uniqueness check
@@ -523,7 +524,7 @@ async def register_with_sms(
         if e.status_code == status.HTTP_400_BAD_REQUEST and "sms_code" in str(e.detail).lower():
             registration_metrics.record_failure("sms_code_invalid", duration)
         raise
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         duration = time.time() - start_time
         if "database is locked" in str(e).lower() or "locked" in str(e).lower():
             registration_metrics.record_failure("database_deadlock", duration)

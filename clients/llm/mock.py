@@ -12,7 +12,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 
 class MockLLMClient:
@@ -76,7 +76,7 @@ class MockLLMClient:
                         {"from": "topic2", "to": "shared2", "label": "shares"},
                     ],
                 }
-            elif "bubble map" in content_lower:
+            if "bubble map" in content_lower:
                 return {
                     "topic": "Test Topic",
                     "attributes": [
@@ -102,7 +102,7 @@ class MockLLMClient:
                         {"from": "topic", "to": "attr3", "label": "contains"},
                     ],
                 }
-            elif "circle map" in content_lower:
+            if "circle map" in content_lower:
                 return {
                     "central_topic": "Central Concept",
                     "inner_circle": {
@@ -130,7 +130,7 @@ class MockLLMClient:
                         },
                     ],
                 }
-            elif "bridge map" in content_lower:
+            if "bridge map" in content_lower:
                 return {
                     "analogy_bridge": "Common relationship",
                     "left_side": {
@@ -162,7 +162,7 @@ class MockLLMClient:
                         },
                     ],
                 }
-            elif "concept map" in content_lower:
+            if "concept map" in content_lower:
                 return {
                     "topic": "Central Topic",
                     "concepts": ["Concept 1", "Concept 2", "Concept 3", "Concept 4"],
@@ -172,7 +172,7 @@ class MockLLMClient:
                         {"from": "Concept 3", "to": "Concept 4", "label": "part of"},
                     ],
                 }
-            elif "brace map" in content_lower:
+            if "brace map" in content_lower:
                 return {
                     "topic": "Central Topic",
                     "parts": [
@@ -180,15 +180,15 @@ class MockLLMClient:
                         {"name": "Part 2", "subparts": [{"name": "Subpart 2"}]},
                     ],
                 }
-            elif "multi-flow" in content_lower:
+            if "multi-flow" in content_lower:
                 return {
                     "event": "Multi-Flow Event",
                     "causes": ["Cause 1", "Cause 2", "Cause 3", "Cause 4"],
                     "effects": ["Effect 1", "Effect 2", "Effect 3", "Effect 4"],
                 }
-            elif "flow map" in content_lower or "flow maps" in content_lower:
+            if "flow map" in content_lower or "flow maps" in content_lower:
                 return {"title": "Flow Topic", "steps": ["Step 1", "Step 2", "Step 3"]}
-            elif "mind map" in content_lower:
+            if "mind map" in content_lower:
                 return {
                     "topic": "Central Topic",
                     "children": [
@@ -204,7 +204,7 @@ class MockLLMClient:
                         },
                     ],
                 }
-            elif "tree map" in content_lower:
+            if "tree map" in content_lower:
                 return {
                     "topic": "Root Topic",
                     "children": [
@@ -220,9 +220,7 @@ class MockLLMClient:
                         },
                     ],
                 }
-            else:
-                # Generic response for other diagram types
-                return {"result": "mock response", "type": "generic"}
-        else:
-            # Fallback for other formats
-            return {"result": "mock response", "type": "fallback"}
+            # Generic response for other diagram types
+            return {"result": "mock response", "type": "generic"}
+        # Fallback for other formats
+        return {"result": "mock response", "type": "fallback"}

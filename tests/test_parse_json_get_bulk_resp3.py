@@ -13,6 +13,7 @@ from services.online_collab.spec.online_collab_live_spec_json import (
 
 
 def test_preview_json_get_raw_nil_and_dict_bounded() -> None:
+    """Test preview json get raw nil and dict bounded."""
     assert _preview_json_get_raw(None) == "(nil)"
     many = {f"k{i}": i for i in range(15)}
     preview = _preview_json_get_raw(many)
@@ -42,4 +43,5 @@ def test_parse_json_get_bulk_shapes(
     raw: object,
     expected: dict | None,
 ) -> None:
+    """Test parse json get bulk shapes."""
     assert parse_json_get_bulk(raw) == expected

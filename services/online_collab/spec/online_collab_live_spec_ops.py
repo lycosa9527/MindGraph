@@ -18,23 +18,12 @@ from redis.exceptions import RedisError, WatchError
 from sqlalchemy import text as sql_text
 from sqlalchemy.exc import SQLAlchemyError
 
-from utils.db.session_open import system_rls_session
+from services.infrastructure.monitoring.ws_metrics import record_ws_redisjson_failure_total
 from services.online_collab.common.online_collab_json_offload import dumps_maybe_offload
 from services.online_collab.db.online_collab_stmt_cache import (
     STMT_DIAGRAM_BY_ID,
     STMT_DIAGRAM_UPDATE_SPEC,
 )
-from services.redis.redis_async_client import get_async_redis
-from services.infrastructure.monitoring.ws_metrics import record_ws_redisjson_failure_total
-from services.online_collab.redis.redis8_features import tdigest_record_latency
-from services.online_collab.spec.online_collab_live_spec import (
-    apply_live_update,
-    read_live_spec,
-    seed_live_spec_from_diagram,
-    spec_for_snapshot,
-)
-from services.online_collab.spec.online_collab_live_spec_json import json_get_live_spec
-from services.online_collab.redis.online_collab_redis_locks import fcall_spec_granular_apply
 from services.online_collab.redis.online_collab_redis_keys import (
     code_to_diagram_key,
     collab_hash_tags_enabled,
@@ -47,6 +36,17 @@ from services.online_collab.redis.online_collab_redis_keys import (
     snapshot_seq_key,
     tombstones_key,
 )
+from services.online_collab.redis.online_collab_redis_locks import fcall_spec_granular_apply
+from services.online_collab.redis.redis8_features import tdigest_record_latency
+from services.online_collab.spec.online_collab_live_spec import (
+    apply_live_update,
+    read_live_spec,
+    seed_live_spec_from_diagram,
+    spec_for_snapshot,
+)
+from services.online_collab.spec.online_collab_live_spec_json import json_get_live_spec
+from services.redis.redis_async_client import get_async_redis
+from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
 

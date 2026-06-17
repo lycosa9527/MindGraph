@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock
 import pytest
 from starlette.datastructures import Headers
 
+from services.online_collab.lifecycle import online_collab_session_closing as sc
 from utils.collab_ws_origin import (
     canvas_collab_websocket_origin_is_allowed,
     parse_collab_ws_allowed_origins,
@@ -14,6 +15,7 @@ from utils.collab_ws_origin import (
 
 
 def test_parse_collab_ws_allowed_origins_trims_and_lowercases_scheme_host() -> None:
+    """Test parse collab ws allowed origins trims and lowercases scheme host."""
     got = parse_collab_ws_allowed_origins(
         " https://A.EXAMPLE.com , https://B.example.com ",
     )
@@ -21,12 +23,14 @@ def test_parse_collab_ws_allowed_origins_trims_and_lowercases_scheme_host() -> N
 
 
 def test_origin_allowed_when_policy_off() -> None:
+    """Test origin allowed when policy off."""
     allowed: frozenset[str] = frozenset()
     hdr = Headers({"origin": "https://evil.example"})
     assert canvas_collab_websocket_origin_is_allowed(hdr, allowed) is True
 
 
 def test_origin_rejected_when_not_in_list(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test origin rejected when not in list."""
     monkeypatch.delenv("COLLAB_WS_ALLOW_MISSING_ORIGIN", raising=False)
     allowed = frozenset({"https://good.example"})
     hdr = Headers({"origin": "https://bad.example"})
@@ -35,8 +39,7 @@ def test_origin_rejected_when_not_in_list(monkeypatch: pytest.MonkeyPatch) -> No
 
 @pytest.mark.asyncio
 async def test_workshop_session_closing_probe(monkeypatch: pytest.MonkeyPatch) -> None:
-    from services.online_collab.lifecycle import online_collab_session_closing as sc
-
+    """Test workshop session closing probe."""
     mock_redis = AsyncMock()
     mock_redis.get = AsyncMock(return_value=b"1")
     monkeypatch.setattr(

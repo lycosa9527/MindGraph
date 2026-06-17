@@ -11,8 +11,8 @@ Proprietary License
 
 from agents.inline_recommendations.cleanup import start_inline_rec_cleanup_scheduler
 from agents.inline_recommendations.generator import (
-    get_inline_recommendations_generator,
     InlineRecommendationsGenerator,
+    get_inline_recommendations_generator,
 )
 
 __all__ = [

@@ -10,11 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.domain.auth import User
 from models.domain.markets import MarketListing, MarketSubscription
 from repositories.markets_repo import MarketSubscriptionRepository
-from services.markets.alipay_common import add_billing_period, listing_billing_interval, utc_now_naive
 from services.markets.alipay_agreement_sign import listing_sign_metadata
+from services.markets.alipay_common import add_billing_period, listing_billing_interval, utc_now_naive
 
 
 def build_external_agreement_no(user_id: int) -> str:
+    """Build external agreement no."""
     token = secrets.token_hex(8)
     return f"MGSub{user_id}{token}"[:64]
 
@@ -25,6 +26,7 @@ async def get_or_create_subscription_intent(
     user: User,
     listing: MarketListing,
 ) -> MarketSubscription:
+    """Get or create subscription intent."""
     repo = MarketSubscriptionRepository(session)
     existing = await repo.get_open_for_user_listing(user.id, listing.id)
     if existing is not None:
@@ -44,12 +46,14 @@ async def get_or_create_subscription_intent(
 
 
 def subscription_period_end(listing: MarketListing, *, start: Optional[Any] = None) -> Any:
+    """Subscription period end."""
     base = start if start is not None else utc_now_naive()
     interval = listing_billing_interval(listing.extra_json)
     return add_billing_period(base, interval)
 
 
 def subscription_to_dict(sub: MarketSubscription) -> dict[str, Any]:
+    """Subscription to dict."""
     listing = sub.listing
     return {
         "id": sub.id,

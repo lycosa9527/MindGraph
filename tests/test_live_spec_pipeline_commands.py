@@ -16,37 +16,46 @@ class _FakePipeline:
     """Captures pipeline commands; returns a fixed ``execute()`` result list."""
 
     def __init__(self, execute_results):
+        """ init  ."""
         self._execute_results = execute_results
         self.records = []
 
     async def __aenter__(self):
+        """ aenter  ."""
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
+        """ aexit  ."""
         return False
 
     def execute_command(self, *args):
+        """Execute command."""
         self.records.append(("execute_command", args))
         return self
 
     def expire(self, key, ttl_sec, **kwargs):
+        """Expire."""
         self.records.append(("expire", key, ttl_sec, kwargs))
         return self
 
     def sadd(self, key, *members):
+        """Sadd."""
         self.records.append(("sadd", key, members))
         return self
 
     def incr(self, key):
+        """Incr."""
         self.records.append(("incr", key))
         return self
 
     async def execute(self):
+        """Execute."""
         return self._execute_results
 
 
 @pytest.mark.asyncio
 async def test_mutate_granular_json_merge_pipeline(monkeypatch):
+    """Test mutate granular json merge pipeline."""
     current = {"v": 1, "nodes": [], "type": "mindmap"}
     # Pipeline for a granular update (no deletions): JSON.MERGE, expire(key),
     # sadd(ck_key), expire(ck_key), incr(seq_key) — 5 commands, no NUMINCRBY.
@@ -110,6 +119,7 @@ async def test_mutate_granular_json_merge_pipeline(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_mutate_full_replace_json_set_pipeline(monkeypatch):
+    """Test mutate full replace json set pipeline."""
     current = {"v": 5, "nodes": [{"id": "old"}], "type": "mindmap"}
     fake = _FakePipeline([True, True, 1, True, 99])
     redis = MagicMock()

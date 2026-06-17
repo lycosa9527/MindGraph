@@ -18,19 +18,27 @@ import json
 import logging
 import os
 import socket
-from typing import Any, Dict, Optional
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 
+from fastapi import WebSocket
 from redis.exceptions import RedisError
 
 from config.settings import config
 from services.infrastructure.monitoring.ws_metrics import (
+    record_kitty_control_cleanup_applied,
+    record_kitty_control_cleanup_not_configured,
+    record_kitty_control_message_ignored,
     record_kitty_control_publish_failure,
     record_kitty_control_publish_success,
+    record_kitty_control_received,
+    record_kitty_control_voice_cleanup_failed,
 )
 from services.kitty.infra.control.kitty_control_secret import get_kitty_control_shared_secret
 from services.kitty.infra.control.kitty_observability import kitty_extra
+from services.kitty.infra.redis.kitty_session_redis import kitty_sessionmeta_active_for_user
 from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
 from services.redis.redis_async_client import get_async_redis
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -209,8 +217,149 @@ def parse_kitty_control_envelope(raw: str) -> Optional[Dict[str, Any]]:
     return data
 
 
-async def handle_kitty_control_message(raw: str, local_instance: str) -> None:
-    """Dispatch pub/sub payload via :mod:`services.agent_hub.scope_lifecycle`."""
-    from services.agent_hub.scope_lifecycle import handle_kitty_control_dispatch
+class _ControlDispatchState:
+    """Injected process-local registries for subscriber dispatch."""
 
+    kitty_scope_cleanup: Optional[Callable[[str], Awaitable[bool]]] = None
+    active_websockets: Optional[Dict[str, List[WebSocket]]] = None
+    voice_sessions: Optional[Dict[str, Any]] = None
+
+
+def configure_kitty_control_dispatch(
+    *,
+    kitty_scope_cleanup: Optional[Callable[[str], Awaitable[bool]]] = None,
+    active_websockets: Optional[Dict[str, List[WebSocket]]] = None,
+    voice_sessions: Optional[Dict[str, Any]] = None,
+) -> None:
+    """Wire scope lifecycle registries used by Redis control subscriber dispatch."""
+    if kitty_scope_cleanup is not None:
+        _ControlDispatchState.kitty_scope_cleanup = kitty_scope_cleanup
+    if active_websockets is not None:
+        _ControlDispatchState.active_websockets = active_websockets
+    if voice_sessions is not None:
+        _ControlDispatchState.voice_sessions = voice_sessions
+
+
+async def _run_scope_cleanup(
+    cleanup: Callable[[str], Awaitable[bool]],
+    scope: str,
+) -> bool:
+    """Invoke configured scope cleanup callback."""
+    return await cleanup(scope)
+
+
+async def _local_scope_matches_user(scope: str, user_id: int) -> bool:
+    """Local scope matches user."""
+    if _ControlDispatchState.voice_sessions is None or _ControlDispatchState.active_websockets is None:
+        return False
+    matching_sessions = [
+        session
+        for session in _ControlDispatchState.voice_sessions.values()
+        if session.get("diagram_session_id") == scope
+    ]
+    if matching_sessions:
+        return all(str(session.get("user_id")) == str(user_id) for session in matching_sessions)
+    active_websockets = _ControlDispatchState.active_websockets
+    if active_websockets is not None and scope in dict(active_websockets):
+        return await kitty_sessionmeta_active_for_user(scope, user_id)
+    return False
+
+
+async def handle_kitty_control_dispatch(raw: str, local_instance: str) -> None:
+    """Redis subscriber entry: validate envelope, match local state, run cleanup."""
+    record_kitty_control_received()
+    envelope = parse_kitty_control_envelope(raw)
+    if envelope is None:
+        record_kitty_control_message_ignored()
+        return
+    if not verify_kitty_control_shared_secret(envelope):
+        env_uid: Optional[int] = None
+        raw_uid = envelope.get("user_id")
+        if isinstance(raw_uid, int) and not isinstance(raw_uid, bool):
+            env_uid = raw_uid
+        elif isinstance(raw_uid, str) and raw_uid.strip():
+            try:
+                env_uid = int(raw_uid.strip(), 10)
+            except ValueError:
+                env_uid = None
+        raw_scope = envelope.get("scope")
+        env_scope = normalize_kitty_diagram_session_id(raw_scope) if isinstance(raw_scope, str) else None
+        logger.warning(
+            "[KittyControl] rejected control message (auth verification failed)",
+            extra=kitty_extra("control_auth_rejected", scope=env_scope, user_id=env_uid),
+        )
+        record_kitty_control_message_ignored()
+        return
+
+    scope = str(envelope["_parsed_scope"])
+    user_id = int(envelope["_parsed_user_id"])
+    reason = str(envelope["_parsed_reason"])
+    origin = envelope.get("origin")
+    origin_str = origin if isinstance(origin, str) else ""
+
+    if reason == KITTY_CONTROL_REASON_HANDSHAKE_PREEMPT and origin_str == local_instance:
+        record_kitty_control_message_ignored()
+        return
+
+    if not await _local_scope_matches_user(scope, user_id):
+        record_kitty_control_message_ignored()
+        return
+
+    scope_cleanup = _ControlDispatchState.kitty_scope_cleanup
+    if scope_cleanup is None:
+        record_kitty_control_cleanup_not_configured()
+        logger.warning(
+            "[KittyControl] cleanup not configured; ignoring scope=%s",
+            scope,
+            extra=kitty_extra(
+                "cleanup_not_configured",
+                scope=scope,
+                user_id=user_id,
+                reason=reason,
+                origin=origin_str or None,
+            ),
+        )
+        return
+
+    assert callable(scope_cleanup)
+    try:
+        cleaned = await _run_scope_cleanup(scope_cleanup, scope)
+    except BACKGROUND_INFRA_ERRORS as exc:
+        record_kitty_control_voice_cleanup_failed()
+        logger.warning(
+            "[KittyControl] voice cleanup failed scope=%s user_id=%s reason=%s: %s",
+            scope,
+            user_id,
+            reason,
+            exc,
+            exc_info=True,
+            extra=kitty_extra(
+                "voice_cleanup_failed",
+                scope=scope,
+                user_id=user_id,
+                reason=reason,
+                origin=origin_str or None,
+                error_type=type(exc).__name__,
+            ),
+        )
+        return
+    if cleaned:
+        record_kitty_control_cleanup_applied()
+        logger.info(
+            "[KittyControl] cross-worker cleanup scope=%s user_id=%s reason=%s",
+            scope,
+            user_id,
+            reason,
+            extra=kitty_extra(
+                "control_cleanup_applied",
+                scope=scope,
+                user_id=user_id,
+                reason=reason,
+                origin=origin_str or None,
+            ),
+        )
+
+
+async def handle_kitty_control_message(raw: str, local_instance: str) -> None:
+    """Dispatch pub/sub payload to the configured scope cleanup handler."""
     await handle_kitty_control_dispatch(raw, local_instance)

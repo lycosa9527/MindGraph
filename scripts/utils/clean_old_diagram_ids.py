@@ -11,9 +11,12 @@ Usage:
 Author: MindSpring Team
 """
 
-import sys
-import os
 import io
+import os
+import sys
+from pathlib import Path
+
+from sqlalchemy import create_engine, text
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -22,8 +25,6 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 
 
 def find_database():
-    from pathlib import Path
-
     """Find the SQLite database file."""
     # Check data folder first (recommended location)
     data_db = Path("data/mindgraph.db")
@@ -40,15 +41,13 @@ def find_database():
     if "sqlite" in db_url:
         if db_url.startswith("sqlite:///./"):
             return Path(db_url.replace("sqlite:///./", ""))
-        elif db_url.startswith("sqlite:///"):
+        if db_url.startswith("sqlite:///"):
             return Path(db_url.replace("sqlite:///", ""))
 
     return None
 
 
 def clean_old_diagram_ids():
-    from sqlalchemy import create_engine, text
-
     """Delete diagram records with non-UUID IDs."""
     db_path = find_database()
 

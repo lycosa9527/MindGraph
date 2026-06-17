@@ -11,10 +11,12 @@ from services.markets.alipay_settings import AlipayEnvConfig
 
 
 def minor_to_yuan_str(price_minor: int) -> str:
+    """Minor to yuan str."""
     return f"{price_minor / 100.0:.2f}"
 
 
 def yuan_str_to_minor(total_amount: str) -> Optional[int]:
+    """Yuan str to minor."""
     try:
         value = Decimal(str(total_amount).strip())
     except (InvalidOperation, ValueError):
@@ -23,6 +25,7 @@ def yuan_str_to_minor(total_amount: str) -> Optional[int]:
 
 
 def get_notify_str(data: Mapping[str, Any], key: str) -> str | None:
+    """Get notify str."""
     raw = data.get(key)
     if raw is None:
         return None
@@ -32,15 +35,18 @@ def get_notify_str(data: Mapping[str, Any], key: str) -> str | None:
 
 
 def trade_notify_url(cfg: AlipayEnvConfig) -> str:
+    """Trade notify url."""
     return f"{cfg.notify_base_url.rstrip('/')}/api/markets/payments/alipay/notify"
 
 
 def verify_notify_app_id(params: Mapping[str, Any], cfg: AlipayEnvConfig) -> bool:
+    """Verify notify app id."""
     app_id = get_notify_str(params, "app_id")
     return app_id is None or app_id == cfg.app_id
 
 
 def verify_notify_amount(total_amount: str | None, expected_minor: int) -> bool:
+    """Verify notify amount."""
     if total_amount is None:
         return False
     parsed = yuan_str_to_minor(total_amount)
@@ -66,6 +72,7 @@ def add_billing_period(start: datetime, interval: str) -> datetime:
 
 
 def listing_billing_interval(listing_extra: Optional[dict[str, Any]]) -> str:
+    """Listing billing interval."""
     if not listing_extra:
         return "month"
     interval = listing_extra.get("interval")
@@ -75,6 +82,7 @@ def listing_billing_interval(listing_extra: Optional[dict[str, Any]]) -> str:
 
 
 def listing_execute_time(listing_extra: Optional[dict[str, Any]]) -> str:
+    """Listing execute time."""
     if not listing_extra:
         return "08:00"
     execute_time = listing_extra.get("execute_time")
@@ -84,4 +92,5 @@ def listing_execute_time(listing_extra: Optional[dict[str, Any]]) -> str:
 
 
 def utc_now_naive() -> datetime:
+    """Utc now naive."""
     return datetime.now(UTC).replace(tzinfo=None)

@@ -51,6 +51,7 @@ AUTH_MODE = os.getenv("AUTH_MODE", "standard").strip().lower()
 
 
 def _parse_bool_env(name: str, default: bool) -> bool:
+    """Parse bool env."""
     raw = os.getenv(name)
     if raw is None or not raw.strip():
         return default

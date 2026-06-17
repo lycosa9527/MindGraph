@@ -13,6 +13,8 @@ import logging
 from threading import Lock
 from typing import Any, Optional
 
+from services.mindbot.platforms.dingtalk.auth import oauth as oauth_mod
+from services.mindbot.platforms.dingtalk.cards.stream_client import get_stream_manager
 from utils.env_helpers import env_int
 
 logger = logging.getLogger(__name__)
@@ -22,6 +24,7 @@ _METRICS_MAX_KEYS_DEFAULT = 10_000
 
 @functools.cache
 def _metrics_max_keys() -> int:
+    """Metrics max keys."""
     return max(100, env_int("MINDBOT_METRICS_MAX_KEYS", _METRICS_MAX_KEYS_DEFAULT))
 
 
@@ -44,18 +47,21 @@ class MindbotMetrics:
     """Lightweight counters for DingTalk callback outcomes."""
 
     def __init__(self) -> None:
+        """ init  ."""
         self._lock = Lock()
         self._counts: collections.OrderedDict[str, int] = collections.OrderedDict()
         self._by_org: collections.OrderedDict[int, collections.OrderedDict[str, int]] = collections.OrderedDict()
         self._by_robot: collections.OrderedDict[str, collections.OrderedDict[str, int]] = collections.OrderedDict()
 
     def record_error_code(self, code: str) -> None:
+        """Record error code."""
         if not isinstance(code, str) or not code.strip():
             return
         with self._lock:
             _bounded_incr(self._counts, code.strip(), _metrics_max_keys())
 
     def record_from_headers(self, headers: dict[str, str]) -> None:
+        """Record from headers."""
         raw = headers.get("X-MindBot-Error-Code")
         if raw is None:
             code_s = "MINDBOT_MISSING_CODE"
@@ -89,6 +95,7 @@ class MindbotMetrics:
                 _bounded_incr(self._by_robot[rc], code_s, max_keys)
 
     def snapshot(self) -> dict[str, Any]:
+        """Snapshot."""
         with self._lock:
             return {
                 "by_error_code": dict(self._counts),
@@ -103,9 +110,6 @@ def mindbot_long_lived_maps_snapshot() -> dict[str, Any]:
 
     Intended for admin diagnostics and capacity planning (not high-cardinality series).
     """
-    from services.mindbot.platforms.dingtalk.auth import oauth as oauth_mod
-    from services.mindbot.platforms.dingtalk.cards.stream_client import get_stream_manager
-
     mgr = get_stream_manager()
     return {
         "oauth_lock_map_size": oauth_mod.oauth_lock_map_size(),

@@ -11,6 +11,7 @@ The generated ``postgresql.conf`` is tuned for MindGraph workloads:
   from holding pool connections indefinitely
 """
 
+import ctypes
 import os
 import platform
 import subprocess
@@ -18,6 +19,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Dict
 
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 _CONFIG_VERSION = "v2-perf-2026-04-conn175"
 
@@ -106,8 +108,6 @@ def _detect_total_ram_mb() -> int:
 
     if platform.system() == "Windows":
         try:
-            import ctypes
-
             class _MEMORYSTATUSEX(ctypes.Structure):
                 _fields_ = [
                     ("dw_length", ctypes.c_ulong),
@@ -121,8 +121,11 @@ def _detect_total_ram_mb() -> int:
                     ("sull_avail_extended_virtual", ctypes.c_ulonglong),
                 ]
 
+                def __init__(self) -> None:
+                    super().__init__()
+                    self.dw_length = ctypes.sizeof(type(self))
+
             stat = _MEMORYSTATUSEX()
-            stat.dw_length = ctypes.sizeof(_MEMORYSTATUSEX)
             windll_obj = getattr(ctypes, "windll", None)
             if windll_obj is not None:
                 kernel32 = windll_obj.kernel32
@@ -330,7 +333,7 @@ def update_postgresql_conf(data_path: Path, port: str, socket_dir: Path) -> None
                 )
             except (ValueError, OSError):
                 pass
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         try:
             print(f"[ERROR] Failed to update postgresql.conf: {e}")
         except (ValueError, OSError):
@@ -357,7 +360,7 @@ local   all             all                                     trust
 host    all             all             127.0.0.1/32            trust
 host    all             all             ::1/128                 trust
 """)
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         try:
             print(f"[ERROR] Failed to write pg_hba.conf: {e}")
         except (ValueError, OSError):

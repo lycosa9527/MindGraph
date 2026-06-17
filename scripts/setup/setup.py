@@ -46,6 +46,12 @@ All Rights Reserved
 Proprietary License
 """
 
+
+try:
+    from _path_setup import project_root as _MINDGRAPH_PROJECT_ROOT
+except ModuleNotFoundError:
+    from scripts.setup._path_setup import project_root as _MINDGRAPH_PROJECT_ROOT
+
 import argparse
 import ctypes
 import importlib
@@ -63,16 +69,7 @@ import urllib.error
 import urllib.request
 import zipfile
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
-
-try:
-    import psutil
-except ImportError:
-    psutil = None
-
-_SETUP_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-if _SETUP_SCRIPT_DIR not in sys.path:
-    sys.path.insert(0, _SETUP_SCRIPT_DIR)
+from typing import Dict, List, Optional, Tuple
 
 from conda_runtime import (
     CondaRuntimeError,
@@ -82,13 +79,23 @@ from conda_runtime import (
     run_as_project_user,
     run_as_project_user_streaming,
 )
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
-_PIP_PYTHON: Optional[str] = None
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
+
+class _PipPythonHolder:
+    """Cached project Python path for pip installs."""
+
+    value: Optional[str] = None
 
 
 def active_python() -> str:
     """Python executable for pip, Playwright, and dependency verification."""
-    return _PIP_PYTHON or sys.executable
+    return _PipPythonHolder.value or sys.executable
 
 
 def _python_can_import(python_exe: str, module_name: str, project_root: str) -> bool:
@@ -119,7 +126,7 @@ with sync_playwright() as playwright:
             print("VERSION:" + str(version_attr))
         else:
             print("VERSION:Working")
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         print("VERSION:Working")
     browser.close()
 print("OK")
@@ -383,14 +390,13 @@ class SetupError(Exception):
 
 def prepare_pip_python(project_root: str) -> str:
     """Resolve the active miniconda Python for pip installs."""
-    global _PIP_PYTHON
-    if _PIP_PYTHON:
-        return _PIP_PYTHON
+    if _PipPythonHolder.value:
+        return _PipPythonHolder.value
     try:
-        _PIP_PYTHON = prepare_project_python(project_root)
+        _PipPythonHolder.value = prepare_project_python(project_root)
     except CondaRuntimeError as exc:
         raise SetupError(str(exc)) from exc
-    return _PIP_PYTHON
+    return _PipPythonHolder.value
 
 
 def resolve_project_root(start_dir: str) -> str:
@@ -1103,6 +1109,7 @@ def _qdrant_find_binary() -> Optional[str]:
 
 
 def _qdrant_client_importable(project_root: str) -> bool:
+    """Qdrant client importable."""
     return _python_can_import(active_python(), "qdrant_client", project_root)
 
 
@@ -1119,6 +1126,7 @@ def _ensure_qdrant_client_pip(project_root: str) -> bool:
 
 
 def _qdrant_download_to_file(url: str, dest: str) -> bool:
+    """Qdrant download to file."""
     try:
         with urllib.request.urlopen(url, timeout=300) as response:
             with open(dest, "wb") as outfile:
@@ -1333,11 +1341,10 @@ def run_command(command: str, description: str, check: bool = True) -> bool:
         if result.returncode == 0:
             print(f"[SUCCESS] {description} completed")
             return True
-        else:
-            print(f"[WARNING] {description} completed with warnings")
-            if result.stderr:
-                print(f"    Warning: {result.stderr.strip()}")
-            return True
+        print(f"[WARNING] {description} completed with warnings")
+        if result.stderr:
+            print(f"    Warning: {result.stderr.strip()}")
+        return True
 
     except subprocess.SubprocessError as e:
         print(f"[ERROR] {description} failed: {e}")
@@ -1365,7 +1372,7 @@ def run_command_with_progress(command: str, description: str, check: bool = True
 
     try:
         # Start the process with real-time output
-        process = subprocess.Popen(
+        with subprocess.Popen(
             command,
             shell=True,
             stdout=subprocess.PIPE,
@@ -1373,70 +1380,68 @@ def run_command_with_progress(command: str, description: str, check: bool = True
             text=True,
             bufsize=1,
             universal_newlines=True,
-        )
+        ) as process:
+            # Track progress and download speed
+            start_time = time.time()
+            total_bytes = 0
 
-        # Track progress and download speed
-        start_time = time.time()
-        total_bytes = 0
+            print("    [INFO] Downloading and installing packages...")
 
-        print("    [INFO] Downloading and installing packages...")
+            proc_stdout = process.stdout
+            while True:
+                if proc_stdout is None:
+                    break
+                output = proc_stdout.readline()
+                if output == "" and process.poll() is not None:
+                    break
+                if output:
+                    line = output.strip()
 
-        proc_stdout = process.stdout
-        while True:
-            if proc_stdout is None:
-                break
-            output = proc_stdout.readline()
-            if output == "" and process.poll() is not None:
-                break
-            if output:
-                line = output.strip()
-
-                # Parse pip progress output
-                if "Downloading" in line and "%" in line:
-                    # Extract percentage and speed info
-                    print(f"\r    [INFO] {line}", end="", flush=True)
-                elif "Installing collected packages" in line:
-                    print(f"\n    [INFO] {line}")
-                elif "Successfully installed" in line:
-                    print(f"    [SUCCESS] {line}")
-                elif "Requirement already satisfied" in line:
-                    print(f"    [INFO] {line}")
-                elif "Collecting" in line:
-                    package_name = line.split("Collecting ")[-1].split()[0]
-                    print(f"    [INFO] Collecting {package_name}...")
-                elif "Downloading" in line and "MB" in line:
-                    # Extract download size and speed
-                    if "MB" in line:
-                        size_match = line.split("MB")[0].split()[-1]
-                        try:
-                            size_mb = float(size_match)
-                            total_bytes += size_mb * 1024 * 1024
-                        except ValueError:
-                            pass
-                    print(f"\r    [INFO] {line}", end="", flush=True)
-                elif "Installing" in line and "..." in line:
-                    print(f"\n    [INFO] {line}")
-                elif "Successfully" in line:
-                    print(f"    [SUCCESS] {line}")
-                elif "ERROR:" in line or "FAILED" in line:
-                    print(f"\n    [ERROR] {line}")
-                elif line and not line.startswith("WARNING:"):
-                    # Show other relevant output
-                    if len(line) < MAX_LINE_LENGTH:  # Avoid very long lines
+                    # Parse pip progress output
+                    if "Downloading" in line and "%" in line:
+                        # Extract percentage and speed info
+                        print(f"\r    [INFO] {line}", end="", flush=True)
+                    elif "Installing collected packages" in line:
+                        print(f"\n    [INFO] {line}")
+                    elif "Successfully installed" in line:
+                        print(f"    [SUCCESS] {line}")
+                    elif "Requirement already satisfied" in line:
                         print(f"    [INFO] {line}")
+                    elif "Collecting" in line:
+                        package_name = line.split("Collecting ")[-1].split()[0]
+                        print(f"    [INFO] Collecting {package_name}...")
+                    elif "Downloading" in line and "MB" in line:
+                        # Extract download size and speed
+                        if "MB" in line:
+                            size_match = line.split("MB")[0].split()[-1]
+                            try:
+                                size_mb = float(size_match)
+                                total_bytes += size_mb * 1024 * 1024
+                            except ValueError:
+                                pass
+                        print(f"\r    [INFO] {line}", end="", flush=True)
+                    elif "Installing" in line and "..." in line:
+                        print(f"\n    [INFO] {line}")
+                    elif "Successfully" in line:
+                        print(f"    [SUCCESS] {line}")
+                    elif "ERROR:" in line or "FAILED" in line:
+                        print(f"\n    [ERROR] {line}")
+                    elif line and not line.startswith("WARNING:"):
+                        # Show other relevant output
+                        if len(line) < MAX_LINE_LENGTH:  # Avoid very long lines
+                            print(f"    [INFO] {line}")
 
-        # Wait for process to complete
-        return_code = process.poll()
+            # Wait for process to complete
+            return_code = process.poll()
 
-        if return_code == 0:
-            elapsed_time = time.time() - start_time
-            if total_bytes > 0:
-                avg_speed = total_bytes / elapsed_time / (1024 * 1024)  # MB/s
-                print(f"\n    [SUCCESS] {description} completed in {elapsed_time:.1f}s (avg: {avg_speed:.1f} MB/s)")
-            else:
-                print(f"\n    [SUCCESS] {description} completed in {elapsed_time:.1f}s")
-            return True
-        else:
+            if return_code == 0:
+                elapsed_time = time.time() - start_time
+                if total_bytes > 0:
+                    avg_speed = total_bytes / elapsed_time / (1024 * 1024)  # MB/s
+                    print(f"\n    [SUCCESS] {description} completed in {elapsed_time:.1f}s (avg: {avg_speed:.1f} MB/s)")
+                else:
+                    print(f"\n    [SUCCESS] {description} completed in {elapsed_time:.1f}s")
+                return True
             print(f"\n    [ERROR] {description} failed with return code {return_code}")
             if check:
                 raise SetupError(f"Command failed: {description}")
@@ -1476,8 +1481,8 @@ def print_system_info() -> None:
     print(f"    Architecture: {platform.machine()}")
     print(f"    Python: {sys.version}")
     print(f"    Python Executable: {sys.executable}")
-    if _PIP_PYTHON and os.path.abspath(_PIP_PYTHON) != os.path.abspath(sys.executable):
-        print(f"    Project Python: {_PIP_PYTHON}")
+    if _PipPythonHolder.value and os.path.abspath(_PipPythonHolder.value) != os.path.abspath(sys.executable):
+        print(f"    Project Python: {_PipPythonHolder.value}")
     print(f"    Working Directory: {os.getcwd()}")
     print(f"    Available Memory: {get_available_memory():.1f} GB")
     print()
@@ -1490,7 +1495,7 @@ def get_available_memory() -> float:
     try:
         memory = psutil.virtual_memory()
         return memory.available / (1024**3)  # Convert to GB
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         return 0.0
 
 
@@ -1506,7 +1511,7 @@ def get_package_version(package_name: str) -> str:
     """
     try:
         return importlib.metadata.version(package_name)
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         return "unknown"
 
 
@@ -1784,7 +1789,7 @@ def get_local_chromium_executable() -> Optional[str]:
     if system == "windows":
         exe_path = chromium_path / "chrome.exe"
         return str(exe_path) if exe_path.exists() else None
-    elif system == "darwin":  # macOS
+    if system == "darwin":  # macOS
         possible_paths = [
             chromium_path / "chrome-mac" / "Chromium.app" / "Contents" / "MacOS" / "Chromium",
             chromium_path / "Chromium.app" / "Contents" / "MacOS" / "Chromium",
@@ -1794,15 +1799,14 @@ def get_local_chromium_executable() -> Optional[str]:
             if path.exists():
                 return str(path)
         return None
-    else:  # Linux
-        possible_paths = [
-            chromium_path / "chrome-linux" / "chrome",
-            chromium_path / "chrome",
-        ]
-        for path in possible_paths:
-            if path.exists():
-                return str(path)
-        return None
+    linux_paths = [
+        chromium_path / "chrome-linux" / "chrome",
+        chromium_path / "chrome",
+    ]
+    for linux_path in linux_paths:
+        if linux_path.exists():
+            return str(linux_path)
+    return None
 
 
 def check_offline_chromium_installed() -> bool:
@@ -1830,7 +1834,7 @@ def check_offline_chromium_installed() -> bool:
             version = result.stdout.strip()
             print(f"[INFO] Found offline Chromium: {version}")
             return True
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         pass
 
     return False
@@ -1841,12 +1845,11 @@ def get_platform_name():
     system = platform.system().lower()
     if system == "windows":
         return "windows"
-    elif system == "darwin":
+    if system == "darwin":
         return "mac"
-    elif system == "linux":
+    if system == "linux":
         return "linux"
-    else:
-        return system
+    return system
 
 
 def extract_chromium_zip() -> bool:
@@ -1942,11 +1945,10 @@ def extract_chromium_zip() -> bool:
         if check_offline_chromium_installed():
             print(f"[INFO] Chromium is now available at: {CHROMIUM_DIR}")
             return True
-        else:
-            print("[WARNING] Chromium extracted but verification failed")
-            return False
+        print("[WARNING] Chromium extracted but verification failed")
+        return False
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         print(f"[ERROR] Failed to extract Chromium zip: {e}")
         return False
 
@@ -2065,7 +2067,7 @@ def verify_dependencies(project_root: str) -> bool:
     """
     print("\n[INFO] Verifying all dependencies...")
 
-    if _PIP_PYTHON is None:
+    if _PipPythonHolder.value is None:
         prepare_pip_python(project_root)
 
     python_exe = active_python()
@@ -2142,7 +2144,7 @@ def verify_dependencies(project_root: str) -> bool:
         except ImportError as e:
             print(f"    [ERROR] {package_name:<20} - Import failed: {e}")
             failed_imports.append(package_name)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             print(f"    [WARNING] {package_name:<20} - Version check failed: {e}")
             successful_imports.append(package_name)
 
@@ -2304,11 +2306,10 @@ def check_logs_already_configured() -> bool:
         if not missing_files:
             print("[SUCCESS] Logging system already configured - all files present")
             return True
-        else:
-            print(f"[INFO] Missing log files: {', '.join(missing_files)}")
-            return False
+        print(f"[INFO] Missing log files: {', '.join(missing_files)}")
+        return False
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         print(f"[INFO] Logs check failed: {e}")
         return False
 
@@ -2366,7 +2367,7 @@ def setup_logs_directory() -> bool:
         print("[SUCCESS] Logging system configured")
         return True
 
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         raise SetupError(f"Failed to setup logging system: {exc}") from exc
 
 
@@ -2399,7 +2400,7 @@ def setup_data_directory() -> bool:
         print("[SUCCESS] Data directory configured")
         return True
 
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         raise SetupError(f"Failed to setup data directory: {exc}") from exc
 
 
@@ -2442,7 +2443,7 @@ def setup_application_directories() -> bool:
         print("[SUCCESS] Application directories configured")
         return True
 
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         raise SetupError(f"Failed to setup application directories: {exc}") from exc
 
 
@@ -2454,7 +2455,7 @@ def cleanup_temp_files() -> None:
         if os.path.exists(debug_script):
             os.remove(debug_script)
             print("[INFO] Cleaned up temporary debug script")
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         print(f"[WARNING] Could not clean up temporary files: {e}")
 
 
@@ -2620,7 +2621,7 @@ def setup_database_schema(project_root: Path) -> bool:
         print("    [WARNING] Schema initialization timed out")
         print("    [INFO] Migrations will run automatically when 'python main.py' starts")
         return False
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         print(f"    [WARNING] Schema initialization failed: {exc}")
         print("    [INFO] Migrations will run automatically when 'python main.py' starts")
         return False
@@ -2848,7 +2849,7 @@ def main() -> None:
                     print("[SUCCESS] Using Chromium from zip file - skipping Playwright download")
                 else:
                     print("[WARNING] Zip extraction failed, falling back to Playwright download")
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 print(f"[WARNING] Error extracting zip: {e}")
                 print("[INFO] Falling back to Playwright download...")
         else:
@@ -2863,7 +2864,7 @@ def main() -> None:
                 try:
                     if copy_playwright_chromium_to_offline(project_root):
                         setup_summary["offline_chromium"] = True
-                except Exception as e:
+                except BACKGROUND_INFRA_ERRORS as e:
                     print(f"[WARNING] Offline Chromium setup skipped: {e}")
                     print("[INFO] You can run this manually later if needed")
 
@@ -2922,7 +2923,7 @@ def main() -> None:
         print(f"[INFO] Execution time: {time.time() - start_time:.1f} seconds")
         os.chdir(original_cwd)
         sys.exit(1)
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         print(f"\n[ERROR] Unexpected error: {e}")
         print(f"[INFO] Execution time: {time.time() - start_time:.1f} seconds")
         print("\n[INFO] This may be a bug. Please report the issue with:")

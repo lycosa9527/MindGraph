@@ -22,7 +22,6 @@ from services.infrastructure.utils.spa_handler import (
     media_type_for_vue_dist_relpath,
 )
 
-
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Vue SPA"])

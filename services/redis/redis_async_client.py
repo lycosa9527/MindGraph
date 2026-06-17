@@ -21,9 +21,12 @@ Wire features (RESP3, keepalive, health-check)
 ----------------------------------------------
 We opt in to **RESP3** so newer Redis features (server-side push, client
 tracking, hash-field expiration return shapes) work without manual hex
-parsing later.  We also enable TCP keepalive and a short pool health check
-interval so dead connections (load balancer idle resets, NAT timeouts) are
-detected before the next user request fails.
+parsing later.  Smart Client Handoffs (``CLIENT MAINT_NOTIFICATIONS``) are
+disabled via :func:`redis_async_connection_options` when redis-py supports
+that kwarg on async connections; on redis-py 8.0.0 async pools omit it
+(OSS Redis tolerates the default).  We also enable TCP keepalive and a short
+pool health check interval so dead connections (load balancer idle resets,
+NAT timeouts) are detected before the next user request fails.
 
 Author: lycosa9527
 Made by: MindSpring Team
@@ -48,6 +51,8 @@ from redis.backoff import ExponentialBackoff
 from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
+from services.redis.redis_connection_options import redis_async_connection_options
+from services.utils.error_types import REDIS_ERRORS
 from utils.env_helpers import env_int
 
 logger = logging.getLogger(__name__)
@@ -154,15 +159,20 @@ def _build_async_client() -> aioredis.Redis:
         kwargs["socket_keepalive_options"] = keepalive_options
     if _enable_resp3_default():
         kwargs["protocol"] = 3
+    async_sch_opts = redis_async_connection_options()
+    kwargs.update(async_sch_opts)
+    sch_label = "disabled" if async_sch_opts else "redis-py-default"
 
     client = aioredis.from_url(url, **kwargs)
     logger.info(
-        "[RedisAsync] Pool ready (url=%s, max_conn=%d, RESP%d, health=%ds, keepalive=%s)",
+        "[RedisAsync] Pool ready (url=%s, max_conn=%d, RESP%d, health=%ds, "
+        "keepalive=%s, sch=%s)",
         url,
         max_conn,
         kwargs.get("protocol", 2),
         health_check,
         socket_keepalive,
+        sch_label,
     )
     return client
 
@@ -192,7 +202,7 @@ async def async_ping(timeout: float = 1.0) -> bool:
     except (asyncio.TimeoutError, RedisConnectionError, RedisTimeoutError) as exc:
         logger.warning("[RedisAsync] ping failed: %s", exc)
         return False
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.warning("[RedisAsync] unexpected ping error: %s", exc)
         return False
 
@@ -205,7 +215,7 @@ async def close_async_redis() -> None:
         return
     try:
         await client.aclose()
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.warning("[RedisAsync] close error: %s", exc)
     finally:
         _AsyncRedisState.client = None

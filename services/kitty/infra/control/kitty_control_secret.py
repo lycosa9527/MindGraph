@@ -28,7 +28,11 @@ KITTY_CONTROL_SECRET_BACKUP_FILE = os.path.join(
     ".kitty_control_secret",
 )
 
-_kitty_control_secret_cache: Optional[str] = None
+class _KittyControlSecretCache:
+    """In-memory Kitty control secret holder (no global keyword)."""
+
+    value: Optional[str] = None
+
 
 _get_redis = None
 _is_redis_available = None
@@ -52,16 +56,19 @@ except ImportError:
 
 
 def _env_override_secret() -> str:
+    """Env override secret."""
     return os.getenv("KITTY_CONTROL_SHARED_SECRET", "").strip()
 
 
 def _decode_redis_secret(raw: object) -> str:
+    """Decode redis secret."""
     if isinstance(raw, bytes):
         return raw.decode("utf-8")
     return str(raw)
 
 
 def _save_kitty_control_secret_backup(secret: str) -> bool:
+    """Save kitty control secret backup."""
     try:
         data_dir = os.path.dirname(KITTY_CONTROL_SECRET_BACKUP_FILE)
         if not os.path.exists(data_dir):
@@ -83,6 +90,7 @@ def _save_kitty_control_secret_backup(secret: str) -> bool:
 
 
 def _load_kitty_control_secret_backup() -> Optional[str]:
+    """Load kitty control secret backup."""
     try:
         if not os.path.exists(KITTY_CONTROL_SECRET_BACKUP_FILE):
             return None
@@ -100,8 +108,8 @@ def _load_kitty_control_secret_backup() -> Optional[str]:
 
 
 def _cache_secret(secret: str) -> str:
-    global _kitty_control_secret_cache
-    _kitty_control_secret_cache = secret
+    """Cache secret."""
+    _KittyControlSecretCache.value = secret
     return secret
 
 
@@ -116,8 +124,8 @@ def get_kitty_control_shared_secret() -> str:
     4. Backup file under ``data/.kitty_control_secret``
     5. Generate under SET NX (sync Redis path only)
     """
-    if _kitty_control_secret_cache:
-        return _kitty_control_secret_cache
+    if _KittyControlSecretCache.value:
+        return _KittyControlSecretCache.value
 
     env_secret = _env_override_secret()
     if env_secret:
@@ -168,8 +176,8 @@ async def warmup_kitty_control_secret_async() -> str:
 
     Mirrors :func:`get_kitty_control_shared_secret` but uses the async Redis client.
     """
-    if _kitty_control_secret_cache:
-        return _kitty_control_secret_cache
+    if _KittyControlSecretCache.value:
+        return _KittyControlSecretCache.value
 
     env_secret = _env_override_secret()
     if env_secret:

@@ -91,6 +91,7 @@ async def send_group_text_sample(
     open_conversation_id: str,
     text: str,
 ) -> Optional[dict[str, Any]]:
+    """Send group text sample."""
     return await send_group_robot_message(
         access_token,
         robot_code,
@@ -106,6 +107,7 @@ async def send_private_text_sample(
     user_staff_ids: list[str],
     text: str,
 ) -> Optional[dict[str, Any]]:
+    """Send private text sample."""
     return await send_oto_robot_message(
         access_token,
         robot_code,
@@ -121,6 +123,7 @@ async def send_group_image_by_photo_url(
     open_conversation_id: str,
     photo_url: str,
 ) -> Optional[dict[str, Any]]:
+    """Send group image by photo url."""
     return await send_group_robot_message(
         access_token,
         robot_code,
@@ -136,6 +139,7 @@ async def send_private_image_by_photo_url(
     user_staff_ids: list[str],
     photo_url: str,
 ) -> Optional[dict[str, Any]]:
+    """Send private image by photo url."""
     return await send_oto_robot_message(
         access_token,
         robot_code,
@@ -154,6 +158,7 @@ async def send_group_link_sample(
     message_url: str,
     pic_url: str = "",
 ) -> Optional[dict[str, Any]]:
+    """Send group link sample."""
     return await send_group_robot_message(
         access_token,
         robot_code,
@@ -172,6 +177,7 @@ async def send_private_link_sample(
     message_url: str,
     pic_url: str = "",
 ) -> Optional[dict[str, Any]]:
+    """Send private link sample."""
     return await send_oto_robot_message(
         access_token,
         robot_code,
@@ -190,6 +196,7 @@ async def send_group_action_card_sample(
     single_title: str,
     single_url: str,
 ) -> Optional[dict[str, Any]]:
+    """Send group action card sample."""
     return await send_group_robot_message(
         access_token,
         robot_code,
@@ -208,6 +215,7 @@ async def send_private_action_card_sample(
     single_title: str,
     single_url: str,
 ) -> Optional[dict[str, Any]]:
+    """Send private action card sample."""
     return await send_oto_robot_message(
         access_token,
         robot_code,
@@ -224,6 +232,7 @@ async def send_group_file_from_upload(
     file_bytes: bytes,
     filename: str,
 ) -> Optional[dict[str, Any]]:
+    """Send group file from upload."""
     mid = await upload_media_oapi(access_token, "file", file_bytes, filename)
     if not mid:
         return None
@@ -244,6 +253,7 @@ async def send_private_file_from_upload(
     file_bytes: bytes,
     filename: str,
 ) -> Optional[dict[str, Any]]:
+    """Send private file from upload."""
     mid = await upload_media_oapi(access_token, "file", file_bytes, filename)
     if not mid:
         return None
@@ -265,6 +275,7 @@ async def send_group_audio_from_upload(
     filename: str,
     duration_ms: int,
 ) -> Optional[dict[str, Any]]:
+    """Send group audio from upload."""
     mid = await upload_media_oapi(access_token, "voice", voice_bytes, filename)
     if not mid:
         return None
@@ -285,6 +296,7 @@ async def send_private_audio_from_upload(
     filename: str,
     duration_ms: int,
 ) -> Optional[dict[str, Any]]:
+    """Send private audio from upload."""
     mid = await upload_media_oapi(access_token, "voice", voice_bytes, filename)
     if not mid:
         return None
@@ -307,6 +319,7 @@ async def send_group_video_from_upload(
     pic_filename: str,
     duration_sec: int,
 ) -> Optional[dict[str, Any]]:
+    """Send group video from upload."""
     vid = await upload_media_oapi(access_token, "video", video_bytes, video_filename)
     pic = await upload_media_oapi(access_token, "image", pic_bytes, pic_filename)
     if not vid or not pic:
@@ -330,6 +343,7 @@ async def send_private_video_from_upload(
     pic_filename: str,
     duration_sec: int,
 ) -> Optional[dict[str, Any]]:
+    """Send private video from upload."""
     vid = await upload_media_oapi(access_token, "video", video_bytes, video_filename)
     pic = await upload_media_oapi(access_token, "image", pic_bytes, pic_filename)
     if not vid or not pic:
@@ -350,6 +364,7 @@ async def send_group_markdown_sample(
     title: str,
     text: str,
 ) -> Optional[dict[str, Any]]:
+    """Send group markdown sample."""
     return await send_group_robot_message(
         access_token,
         robot_code,
@@ -366,6 +381,7 @@ async def send_private_markdown_sample(
     title: str,
     text: str,
 ) -> Optional[dict[str, Any]]:
+    """Send private markdown sample."""
     return await send_oto_robot_message(
         access_token,
         robot_code,

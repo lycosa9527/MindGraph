@@ -21,6 +21,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import APIKey
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -171,7 +172,7 @@ async def track_api_key_usage(api_key: str, db: AsyncSession) -> None:
             key_record.last_used_at = datetime.now(UTC)
             try:
                 await db.commit()
-            except Exception:
+            except BACKGROUND_INFRA_ERRORS:
                 await db.rollback()
                 raise
             logger.debug(
@@ -182,7 +183,7 @@ async def track_api_key_usage(api_key: str, db: AsyncSession) -> None:
             )
         else:
             logger.warning("[Auth] API key usage tracking failed: key record not found")
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.error("[Auth] Failed to track API key usage: %s", exc, exc_info=True)
 
 
@@ -215,7 +216,7 @@ async def generate_api_key(name: str, description: str, quota_limit: Optional[in
     try:
         await db.commit()
         await db.refresh(api_key_record)
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         await db.rollback()
         raise
 

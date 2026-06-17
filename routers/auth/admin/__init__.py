@@ -12,20 +12,20 @@ Proprietary License
 from fastapi import APIRouter
 
 from . import (
-    organizations,
+    api_keys,
+    feature_org_access,
+    geolite,
     invites,
+    kitty_llmops,
+    organizations,
+    performance,
     roles,
-    users,
     school_users,
     settings,
     stats,
     stats_trends,
-    performance,
-    api_keys,
     teacher_usage,
-    feature_org_access,
-    geolite,
-    kitty_llmops,
+    users,
 )
 
 # Create admin router aggregation

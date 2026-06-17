@@ -48,6 +48,7 @@ _module_from_spec = importlib.util.module_from_spec
 
 
 def _resolve_project_root() -> Path:
+    """Resolve project root."""
     here = Path(__file__).resolve()
     for parent in [here.parent] + list(here.parents):
         if (parent / "requirements.txt").is_file():
@@ -74,6 +75,7 @@ def _load_dotenv_manual(env_path: Path) -> dict[str, str]:
 
 
 def _is_local_host(host: str) -> bool:
+    """Is local host."""
     h = (host or "").strip().lower()
     return h in ("localhost", "127.0.0.1", "::1", "")
 
@@ -84,6 +86,7 @@ def _run(
     check: bool = False,
     env: Optional[Mapping[str, str]] = None,
 ) -> subprocess.CompletedProcess[str]:
+    """Run."""
     run_env = {**os.environ, **dict(env)} if env else None
     return subprocess.run(
         cmd,
@@ -95,6 +98,7 @@ def _run(
 
 
 def _is_posix_root() -> bool:
+    """Is posix root."""
     if os.name == "nt":
         return False
     try:
@@ -109,6 +113,7 @@ def _is_posix_root() -> bool:
 
 
 def _normalize_db_url(url: str) -> str:
+    """Normalize db url."""
     for legacy in ("postgresql+psycopg://", "postgresql+psycopg2://"):
         if url.startswith(legacy):
             return "postgresql://" + url[len(legacy) :]
@@ -118,6 +123,7 @@ def _normalize_db_url(url: str) -> str:
 
 
 def _parse_database_url(url: str) -> Optional[dict[str, Any]]:
+    """Parse database url."""
     if not url or "sqlite" in url.lower():
         return None
     norm = _normalize_db_url(url)
@@ -141,10 +147,12 @@ def _parse_database_url(url: str) -> Optional[dict[str, Any]]:
 
 
 def _pg_quote_literal(value: str) -> str:
+    """Pg quote literal."""
     return value.replace("'", "''")
 
 
 def _validate_pg_identifier(name: str, label: str) -> Optional[str]:
+    """Validate pg identifier."""
     if not _PG_IDENT.match(name):
         return (
             f"{label} {name!r} is not a safe PostgreSQL identifier (use letters, digits, underscore; see DATABASE_URL)"
@@ -153,6 +161,7 @@ def _validate_pg_identifier(name: str, label: str) -> Optional[str]:
 
 
 def _pg_sudo_sql(sql: str) -> tuple[bool, str]:
+    """Pg sudo sql."""
     result = _run(
         ["sudo", "-u", "postgres", "psql", "-v", "ON_ERROR_STOP=1", "-c", sql],
         check=False,
@@ -167,6 +176,7 @@ def _postgres_connection_test(
     database_url: str,
     password: str,
 ) -> Optional[str]:
+    """Postgres connection test."""
     norm = _normalize_db_url(database_url)
     ping = _run(
         [psql_bin, norm, "-c", "SELECT 1"],
@@ -184,6 +194,7 @@ def _postgres_role_database_and_grants(
     password: str,
     database: str,
 ) -> Optional[str]:
+    """Postgres role database and grants."""
     pw = _pg_quote_literal(password)
     role_sql = f"""
 DO $$
@@ -252,6 +263,7 @@ def _postgres_apply_role_db_grants(
     database_url: str,
     psql_bin: str,
 ) -> tuple[bool, str]:
+    """Postgres apply role db grants."""
     err = _postgres_role_database_and_grants(user, password, database)
     if err:
         return False, err
@@ -262,6 +274,7 @@ def _postgres_apply_role_db_grants(
 
 
 def _provision_postgresql_local(cfg: dict[str, Any], database_url: str) -> tuple[bool, str]:
+    """Provision postgresql local."""
     user = cfg["user"]
     password = cfg["password"]
     database = cfg["database"]
@@ -288,6 +301,7 @@ def _provision_postgresql_local(cfg: dict[str, Any], database_url: str) -> tuple
 
 
 def _parse_redis_url(url: str) -> Optional[dict[str, Any]]:
+    """Parse redis url."""
     if not url or not url.startswith("redis"):
         return None
     parsed = urllib.parse.urlsplit(url.replace("rediss://", "redis://", 1))
@@ -306,6 +320,7 @@ def _redis_ping(url: str) -> bool:
 
 
 def _provision_redis_local(redis_url: str, host: str, port: int) -> tuple[bool, str]:
+    """Provision redis local."""
     if _redis_ping(redis_url):
         return True, "Redis already accepts REDIS_URL"
 
@@ -328,6 +343,7 @@ def _provision_redis_local(redis_url: str, host: str, port: int) -> tuple[bool, 
 
 
 def _parse_qdrant_endpoint(env: dict[str, str]) -> Optional[tuple[str, int]]:
+    """Parse qdrant endpoint."""
     url = (env.get("QDRANT_URL") or "").strip()
     if url:
         parsed = urllib.parse.urlsplit(url)
@@ -344,6 +360,7 @@ def _parse_qdrant_endpoint(env: dict[str, str]) -> Optional[tuple[str, int]]:
 
 
 def _qdrant_http_ok(host: str, port: int) -> bool:
+    """Qdrant http ok."""
     try:
         req = urllib.request.Request(f"http://{host}:{port}/", method="GET")
         with urllib.request.urlopen(req, timeout=3) as resp:
@@ -436,6 +453,7 @@ def _step_postgresql(
     database_url: str,
     is_root: bool,
 ) -> int:
+    """Step postgresql."""
     pg_cfg = _parse_database_url(database_url)
     if args.skip_postgres or not pg_cfg or not _is_local_host(pg_cfg["host"]):
         if pg_cfg and not _is_local_host(pg_cfg["host"]):
@@ -460,6 +478,7 @@ def _step_redis(
     redis_url: str,
     is_root: bool,
 ) -> int:
+    """Step redis."""
     if args.skip_redis or not redis_url:
         return 0
     if args.dry_run:
@@ -489,6 +508,7 @@ def _step_qdrant(
     project_root: Path,
     is_root: bool,
 ) -> None:
+    """Step qdrant."""
     if args.skip_qdrant:
         return
     env_for_qdrant = {**file_vars, **dict(os.environ)}
@@ -518,6 +538,7 @@ def _step_celery_sync(
     redis_url: str,
     celery_db: str,
 ) -> None:
+    """Step celery sync."""
     if args.skip_celery_sync or not redis_url or not env_path.is_file():
         return
     if args.dry_run:

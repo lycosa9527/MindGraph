@@ -20,8 +20,10 @@ from utils.auth.admin_panel_permissions import (
     CAP_SCOPE_ORG,
     user_panel_capabilities,
 )
+from utils.auth.expert_invited_org_ids import load_expert_invited_org_ids
 from utils.auth.role_constants import normalize_role
 from utils.auth.roles import is_superadmin
+from utils.db.rls_context import to_rls_session_vars as _admin_scope_to_rls_session_vars
 
 
 @dataclass(frozen=True)
@@ -37,12 +39,15 @@ class AdminScope:
     invited_org_ids: frozenset[int] | None = None
 
     def has_capability(self, capability: str) -> bool:
+        """Has capability."""
         return capability in self.capabilities
 
     def can_access_panel(self) -> bool:
+        """Can access panel."""
         return self.has_capability(CAP_PANEL_ACCESS)
 
     def assert_capability(self, capability: str, lang: Language) -> None:
+        """Assert capability."""
         if not self.has_capability(capability):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -50,6 +55,7 @@ class AdminScope:
             )
 
     def assert_not_read_only(self, lang: Language) -> None:
+        """Assert not read only."""
         if self.read_only:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -61,6 +67,7 @@ class AdminScope:
         self.assert_not_read_only(lang)
 
     def assert_any_capability(self, capabilities: frozenset[str], lang: Language) -> None:
+        """Assert any capability."""
         if any(cap in self.capabilities for cap in capabilities):
             return
         raise HTTPException(
@@ -69,13 +76,12 @@ class AdminScope:
         )
 
     def to_rls_session_vars(self) -> dict[str, str]:
-        """Map panel scope to SET LOCAL app.* keys for Postgres RLS policies."""
-        from utils.db.rls_admin_scope import to_rls_session_vars as _to_vars
-
-        return _to_vars(self)
+        """To rls session vars."""
+        return _admin_scope_to_rls_session_vars(self)
 
 
 def _read_only_for_role(role: str, capabilities: frozenset[str]) -> bool:
+    """Read only for role."""
     if is_superadmin_role_only(role):
         return False
     if CAP_SCOPE_GLOBAL in capabilities and CAP_SCOPE_ORG not in capabilities:
@@ -84,6 +90,7 @@ def _read_only_for_role(role: str, capabilities: frozenset[str]) -> bool:
 
 
 def is_superadmin_role_only(role: str) -> bool:
+    """Is superadmin role only."""
     return normalize_role(role) == "superadmin"
 
 
@@ -94,19 +101,6 @@ def panel_read_only_for_user(current_user) -> bool:
     role = normalize_role(getattr(current_user, "role", None))
     capabilities = user_panel_capabilities(current_user)
     return _read_only_for_role(role, capabilities)
-
-
-async def load_expert_invited_org_ids(actor_id: int) -> frozenset[int]:
-    """Organization IDs created via invite flow by this expert or teaching researcher."""
-    from utils.db.session_open import system_rls_session
-
-    async with system_rls_session() as db:
-        rows = (
-            (await db.execute(select(Organization.id).where(Organization.invited_by_user_id == actor_id)))
-            .scalars()
-            .all()
-        )
-    return frozenset(int(org_id) for org_id in rows)
 
 
 def _resolve_org_scope(

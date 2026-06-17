@@ -13,17 +13,16 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 
-from utils.db.session_open import actor_rls_session
 from models.domain.auth import User
 from models.domain.messages import Language
+from routers.auth.dependencies import get_language_dependency
 from utils.auth import get_current_user
 from utils.auth.school_tier import (
     TIER_FEATURE_API_TOKEN,
     TIER_FEATURE_CHROME_EXTENSION,
     assert_user_has_school_tier_feature,
 )
-
-from routers.auth.dependencies import get_language_dependency
+from utils.db.session_open import actor_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +34,7 @@ _CHROME_EXTENSION_DIR = _PROJECT_ROOT / "chrome-extension"
 
 
 def _should_skip_path(relative: Path) -> bool:
+    """Should skip path."""
     parts = relative.parts
     if "__pycache__" in parts:
         return True
@@ -42,6 +42,7 @@ def _should_skip_path(relative: Path) -> bool:
 
 
 def _zip_directory(source_dir: Path, arc_root_name: str) -> bytes:
+    """Zip directory."""
     if not source_dir.is_dir():
         raise FileNotFoundError(str(source_dir))
     buffer = io.BytesIO()
@@ -61,6 +62,7 @@ def _zip_directory(source_dir: Path, arc_root_name: str) -> bytes:
 
 
 def _bundle_response(data: bytes, filename: str) -> Response:
+    """Bundle response."""
     return Response(
         content=data,
         media_type="application/zip",

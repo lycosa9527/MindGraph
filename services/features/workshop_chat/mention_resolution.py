@@ -19,8 +19,8 @@ import re
 from typing import FrozenSet, List, Optional, Sequence, Set
 
 from sqlalchemy import func, or_, select
-from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import ColumnElement
 
 from models.domain.auth import User
 from utils.auth.role_constants import SUPERADMIN_ROLES
@@ -36,6 +36,7 @@ class MentionResolutionError(Exception):
         unknown_names: Sequence[str],
         ambiguous_names: Sequence[str],
     ) -> None:
+        """ init  ."""
         self.unknown_names = list(unknown_names)
         self.ambiguous_names = list(ambiguous_names)
         super().__init__(f"unknown={self.unknown_names!r}, ambiguous={self.ambiguous_names!r}")
@@ -55,6 +56,7 @@ def parse_mention_display_names(content: str) -> List[str]:
 
 
 def _staff_id_set() -> FrozenSet[int]:
+    """Staff id set."""
     raw = os.getenv("WORKSHOP_MENTIONABLE_STAFF_USER_IDS", "")
     found: List[int] = []
     for part in raw.split(","):

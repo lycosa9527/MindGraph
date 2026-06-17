@@ -18,7 +18,7 @@ import asyncio
 import logging
 import random
 from datetime import UTC, datetime, timedelta, timezone
-from typing import Optional, Callable, Awaitable
+from typing import Awaitable, Callable, Optional
 
 from fastapi import HTTPException, Request, Response, status
 from sqlalchemy import inspect as sa_inspect
@@ -26,25 +26,26 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import object_session
 
-from utils.db.session_open import user_rls_session
 from models.domain.auth import User
 from models.domain.messages import Language, Messages
 from models.domain.user_activity_log import UserActivityLog
-from services.redis.redis_activity_tracker import get_activity_tracker
-from services.teacher_usage_stats import compute_and_upsert_user_usage_stats_async
-from services.auth.vpn_geo_enforcement import record_vpn_login_geo
-from services.redis.session.redis_session_manager import get_session_manager
-from services.monitoring.city_flag_tracker import get_city_flag_tracker
 from services.auth.ip_geolocation import get_geolocation_service
+from services.auth.vpn_geo_enforcement import record_vpn_login_geo
+from services.monitoring.city_flag_tracker import get_city_flag_tracker
+from services.redis.redis_activity_tracker import get_activity_tracker
+from services.redis.session.redis_session_manager import get_session_manager
+from services.teacher_usage_stats import compute_and_upsert_user_usage_stats_async
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import (
-    create_access_token,
-    is_https,
-    get_client_ip,
-    compute_device_hash,
     ACCESS_TOKEN_EXPIRY_MINUTES,
     REFRESH_TOKEN_EXPIRY_DAYS,
+    compute_device_hash,
+    create_access_token,
+    get_client_ip,
+    is_https,
 )
 from utils.auth.role_constants import normalize_role
+from utils.db.session_open import user_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +149,7 @@ async def track_user_activity(
             user_name=user.name,
             ip_address=ip_address,
         )
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         # Don't fail the request if tracking fails
         logger.debug("Failed to track user activity: %s", e)
 
@@ -169,18 +170,18 @@ async def _log_login_and_compute_stats(user_id: int, db: AsyncSession) -> None:
         )
         db.add(log_entry)
         await db.commit()
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.debug("Failed to persist login activity log: %s", exc)
         try:
             await db.rollback()
-        except Exception as rollback_exc:
+        except DATABASE_ERRORS as rollback_exc:
             logger.debug("Rollback after login log failure: %s", rollback_exc)
         return
 
     try:
         async with user_rls_session(int(user_id)) as stats_session:
             await compute_and_upsert_user_usage_stats_async(user_id, stats_session)
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.debug("Failed to compute login usage stats: %s", exc)
 
 
@@ -204,7 +205,7 @@ def _record_city_flag_async(ip_address: str) -> None:
                 if city or province:
                     flag_tracker = get_city_flag_tracker()
                     await flag_tracker.record_city_flag(city, province, lat, lng)
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("Failed to record city flag: %s", exc)
 
     try:
@@ -219,11 +220,13 @@ def _record_city_flag_async(ip_address: str) -> None:
 
 
 def _integrity_error_looks_like_phone(err: Exception) -> bool:
+    """Integrity error looks like phone."""
     text = f"{getattr(err, 'orig', None) or err}".lower()
     return "phone" in text
 
 
 def _integrity_error_looks_like_email(err: Exception) -> bool:
+    """Integrity error looks like email."""
     text = f"{getattr(err, 'orig', None) or err}".lower()
     return "email" in text
 
@@ -300,29 +303,27 @@ async def commit_user_with_retry(
                     )
                     await asyncio.sleep(delay)  # Non-blocking async sleep
                     continue
-                else:
-                    # All retries exhausted
-                    await db.rollback()
-                    phone_prefix = (
-                        attached_user.phone[:3] if attached_user.phone and len(attached_user.phone) >= 3 else "***"
-                    )
-                    logger.error(
-                        "[Auth] Database deadlock persists after %d retries. Phone: %s***",
-                        max_retries,
-                        phone_prefix,
-                    )
-                    raise HTTPException(
-                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                        detail="Database temporarily unavailable due to high load. Please try again in a moment.",
-                    ) from e
-            else:
-                # Other OperationalError (not a lock) - don't retry
+                # All retries exhausted
                 await db.rollback()
-                logger.error("[Auth] Database operational error during registration: %s", e)
+                phone_prefix = (
+                    attached_user.phone[:3] if attached_user.phone and len(attached_user.phone) >= 3 else "***"
+                )
+                logger.error(
+                    "[Auth] Database deadlock persists after %d retries. Phone: %s***",
+                    max_retries,
+                    phone_prefix,
+                )
                 raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to create user account",
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Database temporarily unavailable due to high load. Please try again in a moment.",
                 ) from e
+            # Other OperationalError (not a lock) - don't retry
+            await db.rollback()
+            logger.error("[Auth] Database operational error during registration: %s", e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create user account",
+            ) from e
         except IntegrityError as e:
             await db.rollback()
             if _integrity_error_looks_like_phone(e):
@@ -342,7 +343,7 @@ async def commit_user_with_retry(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create user account",
             ) from e
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             # Non-OperationalError - don't retry
             await db.rollback()
             extra = ""

@@ -4,11 +4,12 @@ Script to download all RAG benchmark datasets from Hugging Face.
 Author: lycosa9527
 Made by: MindSpring Team
 """
-
 import json
 import logging
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
+
+from services.utils.error_types import FILE_IO_ERRORS
 
 try:
     from datasets import load_dataset
@@ -277,7 +278,7 @@ def download_datasets():
                                 logger.info("  %s: %s...", key, value_preview)
                         break
 
-        except Exception as e:
+        except FILE_IO_ERRORS as e:
             logger.error("✗ Failed to download %s: %s", dataset_info["name"], e, exc_info=True)
             continue
 

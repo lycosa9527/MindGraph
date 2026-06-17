@@ -31,7 +31,13 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Set
 
 from fastapi import WebSocket
+
+from services.features.workshop_ws_connection_state import (
+    ACTIVE_CONNECTIONS,
+    finalize_handle_writer_shutdown,
+)
 from services.infrastructure.monitoring.ws_metrics import record_ws_connection_delta
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +53,6 @@ async def _finalize_collab_writer_before_close(session: WsSession) -> None:
         code_val = session.meta.get("code")
         if not isinstance(code_val, str) or not code_val:
             return
-        from services.features.workshop_ws_connection_state import (
-            ACTIVE_CONNECTIONS,
-            finalize_handle_writer_shutdown,
-        )
-
         room = ACTIVE_CONNECTIONS.get(code_val)
         if not room:
             return
@@ -59,7 +60,7 @@ async def _finalize_collab_writer_before_close(session: WsSession) -> None:
         if handle is None:
             return
         await finalize_handle_writer_shutdown(handle)
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         pass
 
 
@@ -94,6 +95,7 @@ class WsSessionRegistry:
     """
 
     def __init__(self) -> None:
+        """ init  ."""
         self._sessions: Dict[str, WsSession] = {}
         self._by_user: Dict[int, Set[str]] = {}
         self._lock = asyncio.Lock()

@@ -10,17 +10,22 @@ from services.online_collab.participant import workshop_join_resume_tokens as to
 
 
 class _FakeRedis:
+    """_FakeRedis helper."""
     def __init__(self) -> None:
+        """ init  ."""
         self.data: dict[str, str] = {}
 
     async def setex(self, key: str, _ttl: int, val: str) -> bool:
+        """Setex."""
         self.data[key] = val
         return True
 
     async def get(self, key: str) -> str | None:
+        """Get."""
         return self.data.get(key)
 
     async def eval(self, _script: str, _num_keys: int, key: str, *args: str) -> int:
+        """Eval."""
         raw = self.data.get(key)
         if raw is None:
             return 0
@@ -31,6 +36,7 @@ class _FakeRedis:
         return 0
 
     async def delete(self, key: str) -> int:
+        """Delete."""
         if key in self.data:
             del self.data[key]
             return 1
@@ -39,6 +45,7 @@ class _FakeRedis:
 
 @pytest.mark.asyncio
 async def test_resume_mint_then_consume_deletes(monkeypatch):
+    """Test resume mint then consume deletes."""
     fake = _FakeRedis()
     monkeypatch.setattr(tokens, "get_async_redis", lambda: fake)
 
@@ -59,6 +66,7 @@ async def test_resume_mint_then_consume_deletes(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_resume_wrong_user_does_not_burn_token(monkeypatch):
+    """Test resume wrong user does not burn token."""
     fake = _FakeRedis()
     monkeypatch.setattr(tokens, "get_async_redis", lambda: fake)
 

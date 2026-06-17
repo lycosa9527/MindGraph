@@ -4,11 +4,53 @@ PostgreSQL initialization utilities.
 Handles initdb execution and user/ownership setup for PostgreSQL data directory.
 """
 
+import logging
 import os
-import sys
-import subprocess
 import shlex
+import shutil
+import subprocess
+import sys
 from pathlib import Path
+
+from services.infrastructure.process._postgresql_runtime import load_postgres_runtime_config
+
+logger = logging.getLogger(__name__)
+
+# Directories created by a real initdb cluster (partial cluster if PG_VERSION is missing).
+_CLUSTER_MARKERS = frozenset(
+    {
+        "base",
+        "global",
+        "pg_wal",
+        "pg_xact",
+        "pg_multixact",
+        "pg_subtrans",
+        "pg_commit_ts",
+        "pg_dynshmem",
+        "pg_logical",
+        "pg_notify",
+        "pg_replslot",
+        "pg_serial",
+        "pg_snapshots",
+        "pg_stat",
+        "pg_stat_tmp",
+        "pg_tblspc",
+        "pg_twophase",
+    }
+)
+
+# Config/runtime debris safe to remove when PG_VERSION is absent.
+_STALE_ARTIFACT_NAMES = frozenset(
+    {
+        "pg_hba.conf",
+        "postgresql.conf",
+        "postgresql.auto.conf",
+        "postmaster.pid",
+        "postmaster.opts",
+        "postgresql.log",
+        "sockets",
+    }
+)
 
 
 def _is_running_as_root() -> bool:
@@ -238,6 +280,70 @@ def _build_initdb_command(initdb_binary: str, data_path: Path) -> tuple[list[str
     return initdb_cmd, False
 
 
+def _prepare_data_directory_for_initdb(data_path: Path) -> None:
+    """Ensure data_path is empty enough for initdb when PG_VERSION is missing."""
+    config = load_postgres_runtime_config()
+    if not config.spawn_subprocess:
+        try:
+            print("[ERROR] Refusing to run initdb — DATABASE_URL is connect-only mode.")
+            print(f"        Mode: {config.mode_label}")
+            print(f"        Runtime user: {config.runtime_user}")
+            print("        Start your PostgreSQL service or use mindgraph_user for app-managed dev mode.")
+            print("        Application cannot start without PostgreSQL.")
+        except (ValueError, OSError):
+            pass
+        sys.exit(1)
+
+    if not data_path.exists():
+        return
+
+    pg_version_file = data_path / "PG_VERSION"
+    if pg_version_file.exists():
+        return
+
+    entries = list(data_path.iterdir())
+    if not entries:
+        return
+
+    cluster_markers = [entry.name for entry in entries if entry.name in _CLUSTER_MARKERS]
+    if cluster_markers:
+        try:
+            print("[ERROR] PostgreSQL data directory appears partially initialized but PG_VERSION is missing.")
+            print(f"        Path: {data_path}")
+            print(f"        Found cluster directories: {', '.join(sorted(cluster_markers))}")
+            print("        Remove the directory or set POSTGRESQL_DATA_DIR to a fresh location, then retry.")
+            print("        Application cannot start without PostgreSQL.")
+        except (ValueError, OSError):
+            pass
+        sys.exit(1)
+
+    unknown_entries: list[str] = []
+    for entry in entries:
+        if entry.name in _STALE_ARTIFACT_NAMES:
+            if entry.is_dir():
+                shutil.rmtree(entry)
+            else:
+                entry.unlink()
+            continue
+        unknown_entries.append(entry.name)
+
+    if unknown_entries:
+        try:
+            print("[ERROR] PostgreSQL data directory exists but is not a valid cluster.")
+            print(f"        Path: {data_path}")
+            print(f"        Unexpected entries: {', '.join(sorted(unknown_entries))}")
+            print("        Remove the directory or set POSTGRESQL_DATA_DIR to a fresh location, then retry.")
+            print("        Application cannot start without PostgreSQL.")
+        except (ValueError, OSError):
+            pass
+        sys.exit(1)
+
+    try:
+        print("[POSTGRESQL] Removed stale config from uninitialized data directory")
+    except (ValueError, OSError):
+        pass
+
+
 def initialize_postgresql_data_directory(initdb_binary: str, data_path: Path) -> None:
     """
     Initialize PostgreSQL data directory using initdb.
@@ -252,6 +358,13 @@ def initialize_postgresql_data_directory(initdb_binary: str, data_path: Path) ->
     pg_version_file = data_path / "PG_VERSION"
     if pg_version_file.exists():
         return
+
+    _prepare_data_directory_for_initdb(data_path)
+
+    try:
+        os.chmod(data_path, 0o700)
+    except OSError as exc:
+        logger.debug("Could not set data directory permissions to 0700: %s", exc)
 
     try:
         print("[POSTGRESQL] Initializing PostgreSQL data directory...")

@@ -10,6 +10,11 @@ import importlib
 import logging
 import os
 import sys
+import traceback
+
+from sqlalchemy import inspect, text
+
+from services.utils.error_types import DATABASE_ERRORS
 
 # Add project root to path
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -35,8 +40,6 @@ def list_all_test_results(db):
 
 def check_for_session_id_column(_db):
     """Check if session_id column exists in the table."""
-    from sqlalchemy import inspect
-
     inspector = inspect(engine)
 
     if "chunk_test_results" not in inspector.get_table_names():
@@ -48,8 +51,6 @@ def check_for_session_id_column(_db):
 
 def find_tests_without_session_id(db):
     """Find tests that don't have session_id (if column exists)."""
-    from sqlalchemy import text
-
     has_session_id_column = check_for_session_id_column(db)
 
     if has_session_id_column:
@@ -57,10 +58,9 @@ def find_tests_without_session_id(db):
         query = text("SELECT id FROM chunk_test_results WHERE session_id IS NULL")
         result = db.execute(query)
         return [row[0] for row in result]
-    else:
-        # If column doesn't exist, return all test IDs (they all lack session_id)
-        results = db.query(ChunkTestResult).all()
-        return [r.id for r in results]
+    # If column doesn't exist, return all test IDs (they all lack session_id)
+    results = db.query(ChunkTestResult).all()
+    return [r.id for r in results]
 
 
 def delete_test_by_id(db, test_id: int) -> bool:
@@ -75,7 +75,7 @@ def delete_test_by_id(db, test_id: int) -> bool:
         db.commit()
         print(f"✓ Deleted test {test_id}")
         return True
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         db.rollback()
         print(f"✗ Error deleting test {test_id}: {e}")
         return False
@@ -170,10 +170,8 @@ def main():
             except ValueError:
                 print("✗ Invalid input. Please enter numeric test IDs separated by commas.")
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         print(f"✗ Error: {e}")
-        import traceback
-
         traceback.print_exc()
         db.rollback()
     finally:

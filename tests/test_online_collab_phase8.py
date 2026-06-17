@@ -20,29 +20,41 @@ from __future__ import annotations
 
 import asyncio
 import json
+from importlib import reload
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from tests.typing_helpers import mock_await_args
 from services.features.workshop_ws_connection_state import (
     ACTIVE_CONNECTIONS,
     ConnectionHandle,
     ViewerHandle,
+    _get_room_lock,
     enqueue,
     register_connection,
     unregister_connection,
 )
+from services.features.workshop_ws_fanout_delivery import _push_shard
 from services.features.workshop_ws_role_change import (
     demote_to_viewer,
+    handle_role_change,
     promote_to_editor,
 )
+from services.online_collab.participant.online_collab_snapshots import (
+    websocket_send_live_spec_snapshot,
+)
+from services.online_collab.redis import online_collab_redis_keys as rk
 from services.online_collab.redis.online_collab_redis_keys import (
     snapshot_key,
     snapshot_seq_key,
 )
-
+from services.online_collab.spec.online_collab_viewer_snapshot import (
+    _SNAPSHOT_TASKS,
+    ensure_snapshot_task,
+)
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from tests.typing_helpers import mock_await_args
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -50,6 +62,7 @@ from services.online_collab.redis.online_collab_redis_keys import (
 
 
 def _make_ws() -> MagicMock:
+    """Make ws."""
     ws = MagicMock()
     ws.send_bytes = AsyncMock()
     ws.send_text = AsyncMock()
@@ -67,6 +80,7 @@ class TestViewerHandleConstruction:
 
     @pytest.mark.asyncio
     async def test_register_viewer_returns_viewer_handle(self) -> None:
+        """Test register viewer returns viewer handle."""
         code = "VIEWERTEST1"
         ws = _make_ws()
         handle = await register_connection(code, 1, ws, role="viewer")
@@ -82,6 +96,7 @@ class TestViewerHandleConstruction:
 
     @pytest.mark.asyncio
     async def test_register_host_returns_connection_handle(self) -> None:
+        """Test register host returns connection handle."""
         code = "HOSTTEST1"
         ws = _make_ws()
         handle = await register_connection(code, 2, ws, role="host")
@@ -94,6 +109,7 @@ class TestViewerHandleConstruction:
 
     @pytest.mark.asyncio
     async def test_register_editor_returns_connection_handle(self) -> None:
+        """Test register editor returns connection handle."""
         code = "EDITRTEST1"
         ws = _make_ws()
         handle = await register_connection(code, 3, ws, role="editor")
@@ -114,6 +130,7 @@ class TestViewerEnqueuePolicy:
 
     @pytest.mark.asyncio
     async def test_viewer_node_editing_uses_drop_not_coalesce(self) -> None:
+        """Test viewer node editing uses drop not coalesce."""
         code = "DROPTEST1"
         ws = _make_ws()
         handle = await register_connection(code, 4, ws, role="viewer")
@@ -135,18 +152,18 @@ class TestRedisSnapshotKeys:
     """Snapshot and snapshot_seq key helpers return expected patterns."""
 
     def test_snapshot_key_pattern(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test snapshot key pattern."""
         monkeypatch.setenv("COLLAB_REDIS_HASH_TAGS", "0")
         assert snapshot_key("ABC123") == "workshop:snapshot:ABC123"
 
     def test_snapshot_seq_key_pattern(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test snapshot seq key pattern."""
         monkeypatch.setenv("COLLAB_REDIS_HASH_TAGS", "0")
         assert snapshot_seq_key("ABC123") == "workshop:snapshot_seq:ABC123"
 
     def test_snapshot_key_hash_tag(self) -> None:
+        """Test snapshot key hash tag."""
         with patch.dict("os.environ", {"COLLAB_REDIS_HASH_TAGS": "1"}):
-            from importlib import reload
-            import services.online_collab.redis.online_collab_redis_keys as rk
-
             reload(rk)
             try:
                 assert rk.snapshot_key("X1") == "workshop:snapshot:{X1}"
@@ -164,6 +181,7 @@ class TestViewerSnapshotHit:
 
     @pytest.mark.asyncio
     async def test_snapshot_hit_metric_incremented(self) -> None:
+        """Test snapshot hit metric incremented."""
         code = "SNAPHIT1"
         ws = _make_ws()
         handle = await register_connection(code, 5, ws, role="viewer")
@@ -186,14 +204,10 @@ class TestViewerSnapshotHit:
                     new=AsyncMock(return_value=cached_snap),
                 ),
                 patch(
-                    "services.infrastructure.monitoring.ws_metrics.record_ws_viewer_snapshot_hit",
+                    "services.online_collab.participant.online_collab_snapshots.record_ws_viewer_snapshot_hit",
                     side_effect=_record_hit,
                 ),
             ):
-                from services.online_collab.participant.online_collab_snapshots import (
-                    websocket_send_live_spec_snapshot,
-                )
-
                 await websocket_send_live_spec_snapshot(handle, code, "diag1")
 
             assert hit_count["n"] == 1
@@ -219,6 +233,7 @@ class TestInPlacePromotion:
 
     @pytest.mark.asyncio
     async def test_promote_viewer_to_editor(self) -> None:
+        """Test promote viewer to editor."""
         code = "PROMOTE1"
         ws = _make_ws()
         viewer = await register_connection(code, 10, ws, role="viewer")
@@ -237,12 +252,14 @@ class TestInPlacePromotion:
 
     @pytest.mark.asyncio
     async def test_promote_nonexistent_user_returns_false(self) -> None:
+        """Test promote nonexistent user returns false."""
         code = "PROMOTE2"
         result = await promote_to_editor(code, 999, promoted_by=1)
         assert result is False
 
     @pytest.mark.asyncio
     async def test_promote_editor_returns_false(self) -> None:
+        """Test promote editor returns false."""
         code = "PROMOTE3"
         ws = _make_ws()
         await register_connection(code, 11, ws, role="editor")
@@ -254,6 +271,7 @@ class TestInPlacePromotion:
 
     @pytest.mark.asyncio
     async def test_promote_owner_viewer_to_host(self) -> None:
+        """Test promote owner viewer to host."""
         code = "PROMOWNER1"
         ws = _make_ws()
         await register_connection(code, 101, ws, role="viewer")
@@ -273,6 +291,7 @@ class TestInPlacePromotion:
 
     @pytest.mark.asyncio
     async def test_demote_host_returns_false(self) -> None:
+        """Test demote host returns false."""
         code = "DEMHOST1"
         ws = _make_ws()
         await register_connection(code, 202, ws, role="host")
@@ -289,6 +308,7 @@ class TestInPlacePromotion:
     async def test_role_changed_broadcast_on_promote_sends_fanout_excluding_target(
         self,
     ) -> None:
+        """Test role changed broadcast on promote sends fanout excluding target."""
         code = "BCPROMO1"
         ws_a = _make_ws()
         ws_b = _make_ws()
@@ -297,7 +317,7 @@ class TestInPlacePromotion:
         try:
             mock_broadcast = AsyncMock()
             with patch(
-                "routers.api.workshop_ws_broadcast.broadcast_to_others",
+                "services.features.workshop_ws_role_change.broadcast_to_others",
                 new=mock_broadcast,
             ):
                 await promote_to_editor(code, 303, promoted_by=302)
@@ -336,6 +356,7 @@ class TestInPlaceDemotion:
 
     @pytest.mark.asyncio
     async def test_demote_editor_to_viewer(self) -> None:
+        """Test demote editor to viewer."""
         code = "DEMOTE1"
         ws = _make_ws()
         editor = await register_connection(code, 20, ws, role="editor")
@@ -353,6 +374,7 @@ class TestInPlaceDemotion:
 
     @pytest.mark.asyncio
     async def test_demote_viewer_returns_false(self) -> None:
+        """Test demote viewer returns false."""
         code = "DEMOTE2"
         ws = _make_ws()
         await register_connection(code, 21, ws, role="viewer")
@@ -373,8 +395,7 @@ class TestRoleChangeAuthorisation:
 
     @pytest.mark.asyncio
     async def test_non_host_editor_cannot_promote(self) -> None:
-        from services.features.workshop_ws_role_change import handle_role_change
-
+        """Test non host editor cannot promote."""
         code = "AUTHZ1"
         ws_editor = _make_ws()
         ws_target = _make_ws()
@@ -399,8 +420,7 @@ class TestRoleChangeAuthorisation:
 
     @pytest.mark.asyncio
     async def test_viewer_cannot_issue_role_change(self) -> None:
-        from services.features.workshop_ws_role_change import handle_role_change
-
+        """Test viewer cannot issue role change."""
         code = "AUTHZ2"
         ws_viewer = _make_ws()
         viewer = await register_connection(code, 40, ws_viewer, role="viewer")
@@ -430,11 +450,7 @@ class TestViewerSnapshotRefreshTask:
     """ensure_snapshot_task starts only once per room; stops when viewers leave."""
 
     def test_ensure_snapshot_task_is_idempotent(self) -> None:
-        from services.online_collab.spec.online_collab_viewer_snapshot import (
-            _SNAPSHOT_TASKS,
-            ensure_snapshot_task,
-        )
-
+        """Test ensure snapshot task is idempotent."""
         code = "SNAPFRESH1"
         _SNAPSHOT_TASKS.pop(code, None)
 
@@ -457,7 +473,9 @@ class TestViewerSnapshotRefreshTask:
                 task.cancel()
                 try:
                     loop.run_until_complete(task)
-                except (asyncio.CancelledError, Exception):
+                except asyncio.CancelledError:
+                    pass
+                except BACKGROUND_INFRA_ERRORS:
                     pass
             loop.close()
             _SNAPSHOT_TASKS.pop(code, None)
@@ -473,10 +491,7 @@ class TestRoomRegistryLock:
 
     @pytest.mark.asyncio
     async def test_concurrent_room_lock_creation_single_instance(self) -> None:
-        from services.features.workshop_ws_connection_state import (
-            _get_room_lock,
-        )
-
+        """Test concurrent room lock creation single instance."""
         locks = await asyncio.gather(
             *(_get_room_lock("LOCKPAR1") for _ in range(32)),
         )
@@ -493,6 +508,7 @@ class TestSeqTracking:
     """seq field on broadcast update enables viewer gap detection."""
 
     def test_snapshot_key_included_in_purge_list(self) -> None:
+        """Test snapshot key included in purge list."""
         code = "PURGE1"
         sk = snapshot_key(code)
         ssk = snapshot_seq_key(code)
@@ -501,8 +517,7 @@ class TestSeqTracking:
 
     @pytest.mark.asyncio
     async def test_fanout_tracks_seq_on_viewer_handle(self) -> None:
-        from services.features.workshop_ws_fanout_delivery import _push_shard
-
+        """Test fanout tracks seq on viewer handle."""
         code = "SEQTRACK1"
         ws = _make_ws()
         viewer = await register_connection(code, 50, ws, role="viewer")

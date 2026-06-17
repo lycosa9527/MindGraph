@@ -10,22 +10,22 @@ All Rights Reserved
 Proprietary License
 """
 
-from pathlib import Path
-from typing import Dict, List, Any
 import logging
 import os
 import shutil
+from pathlib import Path
+from typing import Any, Dict, List
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.knowledge_space import (
-    KnowledgeSpace,
-    KnowledgeDocument,
     DocumentChunk,
+    KnowledgeDocument,
+    KnowledgeSpace,
 )
 from services.llm.qdrant_service import get_qdrant_service
-
+from services.utils.error_types import FILE_IO_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -208,7 +208,7 @@ class StorageManager:
                         "[StorageManager] Deleted orphaned directory for user %s",
                         user_id,
                     )
-                except Exception as exc:
+                except FILE_IO_ERRORS as exc:
                     logger.error(
                         "[StorageManager] Failed to delete orphaned directory %s: %s",
                         user_dir,
@@ -226,7 +226,7 @@ class StorageManager:
                         file_path.unlink()
                         deleted_count += 1
                         logger.debug("[StorageManager] Deleted orphaned file: %s", file_path)
-                    except Exception as exc:
+                    except FILE_IO_ERRORS as exc:
                         logger.error(
                             "[StorageManager] Failed to delete orphaned file %s: %s",
                             file_path,

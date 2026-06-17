@@ -9,7 +9,6 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
 import asyncio
 import logging
 import re
@@ -24,6 +23,7 @@ from agents.inline_recommendations.context_extractors import (
 from agents.inline_recommendations.prompts import build_prompt
 from agents.inline_recommendations.prompts._common import get_context_desc
 from services.llm import llm_service
+from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
 logger = logging.getLogger(__name__)
@@ -54,6 +54,7 @@ class InlineRecommendationsGenerator:
     """
 
     def __init__(self) -> None:
+        """ init  ."""
         self.llm_service = llm_service
         self.llm_models = ["qwen", "deepseek", "doubao"]
         self.seen_texts: Dict[str, Set[str]] = {}
@@ -313,7 +314,7 @@ class InlineRecommendationsGenerator:
                 stream_opts=opts,
             ):
                 yield evt
-        except Exception as exc:
+        except LLM_PIPELINE_ERRORS as exc:
             logger.error("[InlineRec] Stream error: %s", str(exc), exc_info=True)
             yield {
                 "event": "error",

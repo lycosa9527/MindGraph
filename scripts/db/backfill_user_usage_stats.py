@@ -11,23 +11,25 @@ Uses DATABASE_URL from environment.
 Creates user_activity_log and user_usage_stats tables if they do not exist.
 """
 
-import asyncio
-import sys
-from pathlib import Path
-from typing import cast
+try:
+    from _path_setup import project_root
+except ModuleNotFoundError:
+    from scripts.db._path_setup import project_root
 
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
+import asyncio
+from typing import cast
 
 from sqlalchemy import Table, select
 
 from config.database import AsyncSessionLocal, async_engine
 from models.domain.auth import Base, User
+from models.domain.teacher_usage_config import TeacherUsageConfig
 from models.domain.user_activity_log import UserActivityLog
 from models.domain.user_usage_stats import UserUsageStats
-from models.domain.teacher_usage_config import TeacherUsageConfig
 from services.teacher_usage_stats import compute_and_upsert_user_usage_stats_async
 from utils.auth.role_constants import TEACHER_ROLES
+
+_ = project_root
 
 
 async def _create_tables() -> None:

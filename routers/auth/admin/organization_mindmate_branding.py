@@ -17,6 +17,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 
 from models.domain.auth import MINDMATE_AGENT_NAME_MAX_LENGTH, Organization
 from models.domain.messages import Language, Messages
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,7 @@ def mindmate_branding_list_fields(org: Organization) -> dict[str, Any]:
 
 
 def _resolved_avatars_root() -> Path:
+    """Resolved avatars root."""
     return ORG_MINDMATE_AVATARS_DIR.resolve()
 
 
@@ -103,6 +105,7 @@ def delete_local_mindmate_avatar(avatar_url: Optional[str]) -> None:
 
 
 def _unlink_if_exists(filepath: Path) -> None:
+    """Unlink if exists."""
     if not filepath.is_file():
         return
     try:
@@ -226,6 +229,7 @@ def apply_mindmate_branding_on_update(
 
 
 def _raise_invalid_image(exc: Exception) -> None:
+    """Raise invalid image."""
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="mindmate_avatar_invalid_image",
@@ -233,6 +237,7 @@ def _raise_invalid_image(exc: Exception) -> None:
 
 
 def _validate_pil_format(pil_format: Optional[str]) -> None:
+    """Validate pil format."""
     normalized = (pil_format or "").upper()
     if normalized not in ALLOWED_PIL_FORMATS:
         raise HTTPException(
@@ -242,6 +247,7 @@ def _validate_pil_format(pil_format: Optional[str]) -> None:
 
 
 def _validate_decoded_dimensions(width: int, height: int) -> None:
+    """Validate decoded dimensions."""
     if width < 1 or height < 1:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -255,6 +261,7 @@ def _validate_decoded_dimensions(width: int, height: int) -> None:
 
 
 def _is_animated_gif(opened: Image.Image) -> bool:
+    """Is animated gif."""
     return (
         (opened.format or "").upper() == "GIF"
         and getattr(opened, "is_animated", False)
@@ -263,6 +270,7 @@ def _is_animated_gif(opened: Image.Image) -> bool:
 
 
 def _square_crop_resize(image: Image.Image, *, enforce_min_size: bool) -> Image.Image:
+    """Square crop resize."""
     width, height = image.size
     _validate_decoded_dimensions(width, height)
     if enforce_min_size and min(width, height) < MIN_AVATAR_INPUT_PX:
@@ -326,6 +334,7 @@ def _write_avatar_atomically(
     gif_frames: Optional[list[Image.Image]],
     gif_durations: Optional[list[int]],
 ) -> Path:
+    """Write avatar atomically."""
     org_dir.mkdir(parents=True, exist_ok=True)
     _cleanup_stale_upload_temps(org_dir)
     final_name = ORG_AVATAR_GIF_FILENAME if animated else ORG_AVATAR_PNG_FILENAME
@@ -359,7 +368,7 @@ def _write_avatar_atomically(
     except HTTPException:
         _unlink_if_exists(temp_path)
         raise
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         _unlink_if_exists(temp_path)
         raise
 

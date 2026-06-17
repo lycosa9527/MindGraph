@@ -35,6 +35,7 @@ from services.library.library_path_utils import (
     normalize_library_path,
     resolve_library_path,
 )
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS, FILE_IO_ERRORS
 
 from .helpers import require_admin
 from .models import DocumentVisibilityUpdate, RenameRequest
@@ -65,7 +66,7 @@ def _canonical_path(stored_path: str, storage_dir: Path, project_root: Path) -> 
         result = normalize_library_path(Path(normalized), storage_dir, project_root)
         if result and "/" in result:
             return result
-    except Exception as exc:
+    except FILE_IO_ERRORS as exc:
         logger.debug("Failed to normalize library path: %s", exc)
 
     folder_name = extract_folder_name_from_pages_dir_path(stored_path)
@@ -268,14 +269,14 @@ async def repair_library_paths(
             doc.pages_dir_path = desired
             doc.updated_at = datetime.now(UTC)
             updated += 1
-        except Exception as exc:
+        except DATABASE_ERRORS as exc:
             logger.error("[Library] Repair failed for document %s: %s", doc.id, exc)
             errors += 1
 
     if updated:
         try:
             await db.commit()
-        except Exception as exc:
+        except DATABASE_ERRORS as exc:
             await db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -320,7 +321,7 @@ async def update_document_visibility(
     try:
         await db.commit()
         await db.refresh(document)
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -401,7 +402,7 @@ def _execute_rename(folder_path: Path, plan: list) -> tuple:
         try:
             img_path.rename(temp_path)
             temp_files.append((temp_path, target_path))
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.error(
                 "[Library] Rename phase-1 error: %s <-%s: %s",
                 img_path.name,
@@ -414,7 +415,7 @@ def _execute_rename(folder_path: Path, plan: list) -> tuple:
         try:
             temp_path.rename(target_path)
             renamed += 1
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.error(
                 "[Library] Rename phase-2 error: %s <-%s: %s",
                 temp_path.name,
@@ -584,7 +585,7 @@ async def delete_document_record(
     try:
         await db.delete(document)
         await db.commit()
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -620,7 +621,7 @@ async def delete_document_record(
 
     try:
         await service.invalidate_document_cache(document_id)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning("[Library] Cache invalidation failed for %s: %s", document_id, exc)
 
     logger.info(

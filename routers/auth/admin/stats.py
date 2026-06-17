@@ -9,26 +9,25 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import timedelta, timezone
-from typing import Optional, Dict, Any
 import logging
+from datetime import timedelta, timezone
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.functions import (
-    sum as sa_sum,
-    coalesce as sa_coalesce,
-)
+from sqlalchemy.sql.functions import coalesce as sa_coalesce
+from sqlalchemy.sql.functions import sum as sa_sum
 
 from config.database import get_async_db
-from models.domain.auth import User, Organization
+from models.domain.auth import Organization, User
 from models.domain.messages import Language, Messages
 from models.domain.token_usage import TokenUsage
 from services.auth.school_dashboard_logger import (
     get_school_dashboard_logger,
     school_dashboard_extra,
 )
+from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_current_user, get_user_role, is_admin, is_management_panel_user
 from utils.auth.admin_panel_permissions import (
     CAP_PANEL_ACCESS,
@@ -50,15 +49,13 @@ from ..dependencies import (
     require_school_dashboard_read,
 )
 from ..helpers import get_beijing_now, get_beijing_today_start_utc
-
-from .stats_helpers import (
-    sql_count_column as _sql_count,
-    token_stats_by_org_today as _token_stats_by_org_today,
-    top_users_by_tokens_all_time,
-    top_users_by_tokens_today as _top_users_by_tokens_today,
-)
-
 from .school_scope import resolve_school_dashboard_org_id_scoped
+from .stats_helpers import sql_count_column as _sql_count
+from .stats_helpers import token_stats_by_org_today as _token_stats_by_org_today
+from .stats_helpers import (
+    top_users_by_tokens_all_time,
+)
+from .stats_helpers import top_users_by_tokens_today as _top_users_by_tokens_today
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +174,7 @@ async def get_stats_admin(
             include_org_name=True,
         )
 
-    except (ImportError, Exception) as e:
+    except DATABASE_ERRORS as e:
         logger.debug("TokenUsage dashboard stats not available: %s", e)
 
     return {
@@ -319,7 +316,7 @@ async def get_school_stats(
             organization_id=effective_org_id,
             mask_phone=True,
         )
-    except (ImportError, Exception) as e:
+    except DATABASE_ERRORS as e:
         logger.debug("TokenUsage not available: %s", e)
 
     quotas = await school_dashboard_quotas_payload(db, org)
@@ -689,9 +686,7 @@ async def get_token_stats_admin(
                     all_total,
                 )
 
-    except HTTPException:
-        raise
-    except (ImportError, Exception) as e:
+    except DATABASE_ERRORS as e:
         logger.error("Error loading token stats: %s", e, exc_info=True)
 
     return {

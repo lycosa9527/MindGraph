@@ -9,8 +9,7 @@ All names are re-exported from this module so callers do not need to change.
 
 from __future__ import annotations
 
-from services.mindbot.platforms.dingtalk.cards import ai_card_create
-from services.mindbot.platforms.dingtalk.cards import ai_card_update
+from services.mindbot.platforms.dingtalk.cards import ai_card_create, ai_card_update
 
 ai_card_body_deliverable = ai_card_create.ai_card_body_deliverable
 ai_card_overflow_remainder_for_markdown = ai_card_create.ai_card_overflow_remainder_for_markdown

@@ -25,6 +25,7 @@ _OPENAPI_TEXT_CHUNK = 5000
 
 
 def _split_reply_chunks(text: str, max_len: int) -> list[str]:
+    """Split reply chunks."""
     if not text:
         return []
     if len(text) <= max_len:
@@ -34,6 +35,7 @@ def _split_reply_chunks(text: str, max_len: int) -> list[str]:
 
 @functools.cache
 def _workflow_output_key() -> str:
+    """Workflow output key."""
     return os.getenv("MINDBOT_DIFY_WORKFLOW_OUTPUT_KEY", "").strip()
 
 
@@ -70,6 +72,7 @@ def mindbot_stream_batch_params() -> tuple[int, float, int]:
 
 @functools.cache
 def mindbot_stream_max_media_parts() -> int:
+    """Mindbot stream max media parts."""
     return max(0, env_int("MINDBOT_STREAM_MAX_MEDIA_PARTS", 12))
 
 
@@ -80,6 +83,7 @@ def _should_flush(
     last_flush_mono: float,
     flush_interval_s: float,
 ) -> bool:
+    """Should flush."""
     if not buffer:
         return False
     if len(buffer) >= min_chars:
@@ -219,7 +223,7 @@ async def mindbot_consume_dify_stream_batched(
         nonlocal media_sent, outbound_count
         if not use_media or not on_media:
             return None
-        if max_media > 0 and media_sent >= max_media:
+        if 0 < max_media <= media_sent:
             logger.warning(
                 "[MindBot] dify_sse_max_media %s cap=%s",
                 pipeline_ctx,

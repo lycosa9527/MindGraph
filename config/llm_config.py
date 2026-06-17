@@ -5,7 +5,7 @@ Qwen, Dashscope, DeepSeek, Kimi, Hunyuan, and ARK configurations.
 """
 
 import logging
-from typing import Optional, TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 logger = logging.getLogger(__name__)
 

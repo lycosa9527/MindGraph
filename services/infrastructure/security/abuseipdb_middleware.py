@@ -7,12 +7,13 @@ from __future__ import annotations
 import logging
 import os
 
+import httpx
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
+from services.infrastructure.security import abuseipdb_service, ip_reputation_env_snapshot
 from services.infrastructure.utils.spa_handler import is_public_static_path
-from services.infrastructure.security import abuseipdb_service
-from services.infrastructure.security import ip_reputation_env_snapshot
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 from utils.auth.request_helpers import get_client_ip
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ def _ip_reputation_request_log_enabled() -> bool:
 
 
 def _path_for_log(path: str) -> str:
+    """Path for log."""
     if len(path) <= _PATH_LOG_MAX:
         return path
     return path[: _PATH_LOG_MAX - 3] + "..."
@@ -47,6 +49,7 @@ def _log_vetting_allowed(
     provenance: str | None,
     min_score: int,
 ) -> None:
+    """Log vetting allowed."""
     if not _ip_reputation_request_log_enabled():
         return
     parts = [f"ip={client_ip}", f"{method} {_path_for_log(path)}"]
@@ -63,6 +66,7 @@ def _log_vetting_allowed(
 
 
 def _should_skip_abuseipdb_path(path: str) -> bool:
+    """Should skip abuseipdb path."""
     if is_public_static_path(path):
         return True
     # External webhooks (DingTalk MindBot, etc.): third-party egress must not be
@@ -108,7 +112,7 @@ async def abuseipdb_middleware(request: Request, call_next):
     if check_enabled:
         try:
             score, provenance = await abuseipdb_service.check_ip_score_cached_with_provenance(client_ip)
-        except Exception as exc:
+        except (*BACKGROUND_INFRA_ERRORS, *REDIS_ERRORS, httpx.HTTPError) as exc:
             logger.debug("[AbuseIPDB] check failed open: %s", exc)
             return await call_next(request)
 

@@ -31,10 +31,10 @@ from typing import Dict, Optional
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from utils.db.session_open import system_rls_session
-from services.utils.typing_helpers import result_rowcount
-
 from models.domain.auth import UpdateNotification, UpdateNotificationDismissed
+from services.utils.error_types import DATABASE_ERRORS
+from services.utils.typing_helpers import result_rowcount
+from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class UpdateNotifier:
                 db.add(notification)
                 await db.commit()
                 await db.refresh(notification)
-            except Exception:
+            except DATABASE_ERRORS:
                 await db.rollback()
                 result = await db.execute(select(UpdateNotification).where(UpdateNotification.id == 1))
                 notification = result.scalar_one_or_none()
@@ -154,7 +154,7 @@ class UpdateNotifier:
                     "message": notification.message or "",
                     "updated_at": notification.updated_at.isoformat() if notification.updated_at else None,
                 }
-            except Exception as exc:
+            except DATABASE_ERRORS as exc:
                 await db.rollback()
                 logger.error("Failed to set notification: %s", exc)
                 raise
@@ -259,11 +259,11 @@ class UpdateNotifier:
                             user_id,
                             version,
                         )
-                    except Exception:
+                    except DATABASE_ERRORS:
                         await db.rollback()
 
                 return True
-            except Exception as exc:
+            except DATABASE_ERRORS as exc:
                 await db.rollback()
                 logger.error("Failed to dismiss notification: %s", exc)
                 return False
@@ -292,7 +292,7 @@ class UpdateNotifier:
                     "message": notification.message or "",
                     "updated_at": notification.updated_at.isoformat() if notification.updated_at else None,
                 }
-            except Exception as exc:
+            except DATABASE_ERRORS as exc:
                 await db.rollback()
                 logger.error("Failed to disable notification: %s", exc)
                 raise
@@ -312,7 +312,7 @@ class UpdateNotifier:
 
                 logger.info("Cleared %s dismissed states", deleted)
                 return True
-            except Exception as exc:
+            except DATABASE_ERRORS as exc:
                 await db.rollback()
                 logger.error("Failed to clear dismissed: %s", exc)
                 return False

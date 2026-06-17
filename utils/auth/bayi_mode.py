@@ -15,7 +15,22 @@ import hashlib
 import json
 import logging
 from datetime import UTC, datetime
+from typing import Any
 from urllib.parse import unquote
+
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+
+AES: Any = None
+unpad: Any = None
+
+try:
+    from Crypto.Cipher import AES as _AES
+    from Crypto.Util.Padding import unpad as _unpad
+
+    AES = _AES
+    unpad = _unpad
+except ImportError:
+    pass
 
 from .config import BAYI_CLOCK_SKEW_TOLERANCE
 
@@ -36,13 +51,10 @@ def decrypt_bayi_token(encrypted_token: str, key: str) -> dict:
     Raises:
         ValueError: If decryption fails or token is invalid
     """
-    try:
-        from Crypto.Cipher import AES
-        from Crypto.Util.Padding import unpad
-    except ImportError as exc:
+    if AES is None or unpad is None:
         raise ValueError(
             "pycryptodome is required for bayi token decryption. Install with: pip install pycryptodome",
-        ) from exc
+        )
 
     try:
         # Decode URL encoding
@@ -63,7 +75,7 @@ def decrypt_bayi_token(encrypted_token: str, key: str) -> dict:
                 "Base64 decoded successfully - encrypted bytes length: %d",
                 len(encrypted_bytes),
             )
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Base64 decode failed: %s, token preview: %s", e, token[:50])
             raise ValueError(f"Invalid base64 token: {str(e)}") from e
 
@@ -76,7 +88,7 @@ def decrypt_bayi_token(encrypted_token: str, key: str) -> dict:
         try:
             decrypted_text = unpad(decrypted_bytes, AES.block_size).decode("utf-8")
             logger.debug("Unpadded successfully - decrypted text length: %d", len(decrypted_text))
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Unpad failed: %s, decrypted bytes preview: %s", e, decrypted_bytes[:50])
             raise ValueError(f"Padding removal failed: {str(e)}") from e
 
@@ -85,13 +97,12 @@ def decrypt_bayi_token(encrypted_token: str, key: str) -> dict:
             result = json.loads(decrypted_text)
             logger.debug("JSON parsed successfully - keys: %s", list(result.keys()))
             return result
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("JSON parse failed: %s, decrypted text: %s", e, decrypted_text[:200])
             raise ValueError(f"Invalid JSON in token: {str(e)}") from e
-    except ValueError:
-        # Re-raise ValueError as-is (these are our validation errors)
-        raise
-    except Exception as e:
+    except ValueError as value_error:
+        raise value_error
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Bayi token decryption failed: %s", e, exc_info=True)
         raise ValueError(f"Invalid token: {str(e)}") from e
 
@@ -212,6 +223,6 @@ def validate_bayi_token_body(body: dict) -> bool:
 
         logger.debug("Timestamp validation passed - diff: %ds", time_diff)
         return True
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Bayi token timestamp validation error: %s", e)
         return False

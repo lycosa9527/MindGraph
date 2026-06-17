@@ -5,6 +5,7 @@ Adapts embedding generation to different chunk types:
 - Parent-Child: Embed only child chunks, store parent in payload
 - Q&A: Embed questions (or Q&A pairs)
 """
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Union
@@ -37,7 +38,7 @@ class EmbeddingAdapter(ABC):
             else:
                 try:
                     self.embedding_client = get_embedding_client()
-                except Exception as e:
+                except BACKGROUND_INFRA_ERRORS as e:
                     logger.warning("Embedding client not available: %s", e)
 
     @abstractmethod

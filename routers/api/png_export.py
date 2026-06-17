@@ -13,45 +13,44 @@ All Rights Reserved
 Proprietary License
 """
 
-from pathlib import Path
-from typing import Optional
 import hashlib
 import logging
 import time
 import uuid
+from pathlib import Path
+from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Request
-from fastapi.responses import Response, PlainTextResponse, FileResponse
 import aiofiles
 import aiofiles.os
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import FileResponse, PlainTextResponse, Response
 
+from agents.core.agent_utils import extract_json_from_response
+from agents.core.learning_sheet import (
+    _clean_prompt_for_learning_sheet,
+    _detect_learning_sheet_from_prompt,
+)
+from config.settings import config
 from models import (
     ExportPNGRequest,
-    GeneratePNGRequest,
     GenerateDingTalkRequest,
+    GeneratePNGRequest,
     Messages,
     get_request_language,
 )
 from models.domain.auth import User
-from utils.auth import get_current_user_or_api_key
-from config.settings import config
 from prompts import get_prompt
-
-from agents.core.agent_utils import extract_json_from_response
-from agents.core.learning_sheet import (
-    _detect_learning_sheet_from_prompt,
-    _clean_prompt_for_learning_sheet,
-)
-
 from services.llm import llm_service
 from services.monitoring.activity_stream import get_activity_stream_service
 from services.redis.redis_token_buffer import get_token_tracker
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.auth import get_current_user_or_api_key
 
 from .helpers import (
     build_public_temp_image_url,
     check_endpoint_rate_limit,
-    get_rate_limit_identifier,
     generate_signed_url,
+    get_rate_limit_identifier,
     verify_signed_url,
 )
 from .vueflow_screenshot import capture_diagram_screenshot
@@ -137,7 +136,7 @@ async def export_png(
             headers={"Content-Disposition": 'attachment; filename="diagram.png"'},
         )
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("PNG export error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=Messages.error("export_failed", lang, str(e))) from e
 
@@ -308,7 +307,7 @@ async def generate_png_from_prompt(
                     response_time=response_time,
                     success=True,
                 )
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.warning(
                     "[GeneratePNG] Token tracking failed (non-critical): %s",
                     e,
@@ -347,7 +346,7 @@ async def generate_png_from_prompt(
                     topic=topic_display[:50],  # Truncate to 50 chars
                     user_name=user_name,
                 )
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.debug("Failed to broadcast activity: %s", e)
 
         return Response(
@@ -356,9 +355,7 @@ async def generate_png_from_prompt(
             headers={"Content-Disposition": 'attachment; filename="diagram.png"'},
         )
 
-    except HTTPException:
-        raise
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[GeneratePNG] Error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=Messages.error("generation_failed", lang, str(e))) from e
 
@@ -522,7 +519,7 @@ async def generate_dingtalk_png(
                     response_time=response_time,
                     success=True,
                 )
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.warning(
                     "[GenerateDingTalk] Token tracking failed (non-critical): %s",
                     e,
@@ -561,7 +558,7 @@ async def generate_dingtalk_png(
                     topic=topic_display[:50],  # Truncate to 50 chars
                     user_name=user_name,
                 )
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.debug("Failed to broadcast activity: %s", e)
 
         # Save PNG to temp directory (ASYNC file I/O)
@@ -589,9 +586,7 @@ async def generate_dingtalk_png(
 
         return PlainTextResponse(content=plain_text)
 
-    except HTTPException:
-        raise
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[GenerateDingTalk] Error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=Messages.error("generation_failed", lang, str(e))) from e
 
@@ -661,7 +656,7 @@ async def serve_temp_image(filepath: str, sig: Optional[str] = None, exp: Option
                     file_age_hours,
                 )
                 raise HTTPException(status_code=403, detail="Image URL expired")
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Failed to check file age: %s", e)
             raise HTTPException(status_code=404, detail="Image not found") from e
 

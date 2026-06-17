@@ -12,9 +12,11 @@ All Rights Reserved
 Proprietary License
 """
 
-import re
 import logging
-from typing import List, Dict, Tuple, Any, Optional
+import re
+from typing import Any, Dict, List, Optional, Tuple
+
+from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -77,11 +79,9 @@ def build_insert_sql(
                 f"ON CONFLICT ({conflict_target}) "
                 f"DO UPDATE SET {update_clause}{where_clause}"
             )
-        else:
-            conflict_target = ", ".join([f'"{col}"' for col in conflict_columns])
-            return f'INSERT INTO "{table_name}" ({columns_str}) VALUES %s ON CONFLICT ({conflict_target}) DO NOTHING'
-    else:
-        return f'INSERT INTO "{table_name}" ({columns_str}) VALUES %s ON CONFLICT DO NOTHING'
+        conflict_target = ", ".join([f'"{col}"' for col in conflict_columns])
+        return f'INSERT INTO "{table_name}" ({columns_str}) VALUES %s ON CONFLICT ({conflict_target}) DO NOTHING'
+    return f'INSERT INTO "{table_name}" ({columns_str}) VALUES %s ON CONFLICT DO NOTHING'
 
 
 def convert_row_data(
@@ -219,10 +219,10 @@ def handle_foreign_key_violations(
 
                 break
 
-            except Exception as row_error:
+            except DATABASE_ERRORS as row_error:
                 try:
                     pg_cursor.execute(f"ROLLBACK TO SAVEPOINT {individual_sp_name}")
-                except Exception:
+                except DATABASE_ERRORS:
                     pass
 
                 row_error_msg = str(row_error)
@@ -264,24 +264,23 @@ def handle_foreign_key_violations(
                         )
                     is_orphaned_record = True
                     break
-                else:
-                    if retry_attempt < max_retries - 1:
-                        logger.debug(
-                            "[Migration] Record %d in batch %d failed with non-FK error, retrying: %s",
-                            row_idx + 1,
-                            batch_num,
-                            row_error,
-                        )
-                        continue
-
-                    logger.error(
-                        "[Migration] CRITICAL: Record %d in batch %d cannot be migrated after %d retries: %s",
+                if retry_attempt < max_retries - 1:
+                    logger.debug(
+                        "[Migration] Record %d in batch %d failed with non-FK error, retrying: %s",
                         row_idx + 1,
                         batch_num,
-                        max_retries,
                         row_error,
                     )
-                    break
+                    continue
+
+                logger.error(
+                    "[Migration] CRITICAL: Record %d in batch %d cannot be migrated after %d retries: %s",
+                    row_idx + 1,
+                    batch_num,
+                    max_retries,
+                    row_error,
+                )
+                break
 
         if not row_inserted:
             batch_skipped_count += 1

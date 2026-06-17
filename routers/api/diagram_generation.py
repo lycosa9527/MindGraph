@@ -8,21 +8,22 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional
 import logging
 import time
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 
 from agents.core.workflow import agent_graph_workflow_with_styles
-from utils.db.session_open import system_rls_session
-from models.domain.diagrams import Diagram
 from models import GenerateRequest, GenerateResponse, Messages, get_request_language
 from models.domain.auth import User
-from utils.auth import get_current_user_or_api_key, is_superadmin
-from services.redis.redis_activity_tracker import get_activity_tracker
+from models.domain.diagrams import Diagram
 from services.monitoring.activity_stream import get_activity_stream_service
+from services.redis.redis_activity_tracker import get_activity_tracker
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.auth import get_current_user_or_api_key, is_superadmin
+from utils.db.session_open import system_rls_session
 
 from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 
@@ -124,7 +125,7 @@ async def generate_graph(
                     details={"diagram_type": diagram_type_str, "llm_model": llm_model},
                     user_name=getattr(current_user, "name", None),
                 )
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.debug("Failed to track user activity: %s", e)
 
         # Log auto-complete start at INFO level for user activity tracking
@@ -223,7 +224,7 @@ async def generate_graph(
                     topic=topic_display[:50],  # Truncate to 50 chars
                     user_name=user_name,
                 )
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.debug("Failed to broadcast activity: %s", e)
 
         # Add metadata
@@ -232,6 +233,6 @@ async def generate_graph(
 
         return result
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[%s] Error generating graph: %s", request_id, e, exc_info=True)
         raise HTTPException(status_code=500, detail=Messages.error("internal_error", lang)) from e

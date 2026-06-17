@@ -11,32 +11,25 @@ All Rights Reserved
 Proprietary License
 """
 
-import sqlite3
 import logging
+import sqlite3
 from typing import Any, Callable, Optional, Tuple
-
-ExecuteValuesFn = Callable[..., list[Any] | None]
-
-
-def _execute_values_unavailable(*_args: Any, **_kwargs: Any) -> list[Any] | None:
-    raise RuntimeError("psycopg2 is required for PostgreSQL migration")
-
-
-execute_values: ExecuteValuesFn
-try:
-    from psycopg2.extras import execute_values as _execute_values_impl
-
-    execute_values = _execute_values_impl
-    PSYCOPG2_AVAILABLE = True
-except ImportError:
-    execute_values = _execute_values_unavailable
-    PSYCOPG2_AVAILABLE = False
 
 from sqlalchemy import inspect
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
-# Import Base directly from models to avoid circular import with config.database
+try:
+    from psycopg2.extras import execute_values as _psycopg2_execute_values
+except ImportError:
+    _psycopg2_execute_values = None
+
 from models.domain.auth import Base
+from services.utils.error_types import DATABASE_ERRORS
+from utils.migration.sqlite.migration_table_helpers import (
+    build_insert_sql,
+    convert_row_data,
+    handle_foreign_key_violations,
+)
 
 # Import community models so they are registered with Base.metadata for table creation
 try:
@@ -55,11 +48,11 @@ except ImportError:
 # Import library models
 try:
     from models.domain.library import (
-        LibraryDocument,
+        LibraryBookmark,
         LibraryDanmaku,
         LibraryDanmakuLike,
         LibraryDanmakuReply,
-        LibraryBookmark,
+        LibraryDocument,
     )
 
     _ = LibraryDocument.__tablename__
@@ -72,9 +65,9 @@ except ImportError:
 
 # Import user activity/usage models
 try:
+    from models.domain.teacher_usage_config import TeacherUsageConfig
     from models.domain.user_activity_log import UserActivityLog
     from models.domain.user_usage_stats import UserUsageStats
-    from models.domain.teacher_usage_config import TeacherUsageConfig
 
     _ = UserActivityLog.__tablename__
     _ = UserUsageStats.__tablename__
@@ -84,9 +77,9 @@ except ImportError:
 
 # Import gewe models
 try:
-    from models.domain.gewe_message import GeweMessage
     from models.domain.gewe_contact import GeweContact
     from models.domain.gewe_group_member import GeweGroupMember
+    from models.domain.gewe_message import GeweMessage
 
     _ = GeweMessage.__tablename__
     _ = GeweContact.__tablename__
@@ -97,14 +90,14 @@ except ImportError:
 # Import workshop chat models
 try:
     from models.domain.workshop_chat import (
-        ChatChannel,
         ChannelMember,
-        ChatTopic,
+        ChatChannel,
         ChatMessage,
+        ChatTopic,
         DirectMessage,
+        FileAttachment,
         MessageReaction,
         StarredMessage,
-        FileAttachment,
         UserTopicPreference,
     )
 
@@ -120,12 +113,17 @@ try:
 except ImportError:
     pass
 
-# Import helper functions
-from utils.migration.sqlite.migration_table_helpers import (
-    build_insert_sql,
-    convert_row_data,
-    handle_foreign_key_violations,
-)
+if _psycopg2_execute_values is not None:
+    execute_values = _psycopg2_execute_values
+    PSYCOPG2_AVAILABLE = True
+else:
+
+    def _execute_values_unavailable(*_args: Any, **_kwargs: Any) -> list[Any] | None:
+        """Execute values unavailable."""
+        raise RuntimeError("psycopg2 is required for PostgreSQL migration")
+
+    execute_values = _execute_values_unavailable
+    PSYCOPG2_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -235,7 +233,7 @@ def migrate_table(
                         0,
                         f"Failed to create table {table_name}: {str(create_error)}",
                     )
-            except Exception as create_error:
+            except DATABASE_ERRORS as create_error:
                 return (
                     0,
                     f"Unexpected error creating table {table_name}: {str(create_error)}",
@@ -340,7 +338,7 @@ def migrate_table(
                     "[Migration] Disabled foreign key constraints for table %s",
                     table_name,
                 )
-            except Exception as fk_error:
+            except DATABASE_ERRORS as fk_error:
                 # Some PostgreSQL versions/configurations may not support this
                 # If it fails with permission denied, transaction might be aborted - rollback and continue
                 error_msg = str(fk_error).lower()
@@ -352,7 +350,7 @@ def migrate_table(
                     )
                     try:
                         pg_conn.rollback()
-                    except Exception:
+                    except DATABASE_ERRORS:
                         pass  # Ignore rollback errors
                 elif "aborted" in error_msg:
                     logger.debug(
@@ -362,7 +360,7 @@ def migrate_table(
                     )
                     try:
                         pg_conn.rollback()
-                    except Exception:
+                    except DATABASE_ERRORS:
                         pass  # Ignore rollback errors
                 else:
                     logger.debug(
@@ -406,7 +404,7 @@ def migrate_table(
                     try:
                         # Try a simple query to check transaction state
                         pg_cursor.execute("SELECT 1")
-                    except Exception as state_check:
+                    except DATABASE_ERRORS as state_check:
                         if "aborted" in str(state_check).lower():
                             logger.debug(
                                 "[Migration] Transaction is aborted, rolling back before batch %d",
@@ -434,7 +432,7 @@ def migrate_table(
                     # Commit after each batch for better error recovery
                     pg_conn.commit()
 
-                except Exception as batch_error:
+                except DATABASE_ERRORS as batch_error:
                     # Check if transaction is aborted
                     error_msg = str(batch_error).lower()
                     is_aborted = "aborted" in error_msg or "current transaction is aborted" in error_msg
@@ -465,7 +463,7 @@ def migrate_table(
                                     progress_tracker.update_table_records(rows_inserted)
                                 pg_conn.commit()
                                 continue  # Success, continue to next batch
-                            except Exception as retry_error:
+                            except DATABASE_ERRORS as retry_error:
                                 # Retry also failed
                                 logger.warning(
                                     "[Migration] Batch %d retry failed for table %s: %s",
@@ -476,7 +474,7 @@ def migrate_table(
                                 failed_batches.append(batch_num)
                                 batch_errors.append(f"Batch {batch_num}: {str(retry_error)}")
                                 continue
-                        except Exception as rollback_err:
+                        except DATABASE_ERRORS as rollback_err:
                             logger.error(
                                 "[Migration] Failed to rollback aborted transaction: %s",
                                 rollback_err,
@@ -540,7 +538,7 @@ def migrate_table(
                             )
                             # Continue with next batch instead of failing entire table
                             continue
-                        except Exception as rollback_error:
+                        except DATABASE_ERRORS as rollback_error:
                             # If savepoint rollback fails, check if transaction is aborted
                             rollback_msg = str(rollback_error).lower()
                             if "aborted" in rollback_msg or "does not exist" in rollback_msg:
@@ -557,7 +555,7 @@ def migrate_table(
                                     failed_batches.append(batch_num)
                                     batch_errors.append(f"Batch {batch_num}: {str(batch_error)}")
                                     continue
-                                except Exception:
+                                except DATABASE_ERRORS:
                                     pass
                             else:
                                 # If savepoint rollback fails, rollback entire transaction
@@ -614,12 +612,12 @@ def migrate_table(
                             "[Migration] Foreign key constraints re-enabled for table %s",
                             table_name,
                         )
-                except Exception as fk_check_error:
+                except DATABASE_ERRORS as fk_check_error:
                     logger.debug(
                         "[Migration] Could not verify foreign key constraints (non-critical): %s",
                         fk_check_error,
                     )
-            except Exception as fk_error:
+            except DATABASE_ERRORS as fk_error:
                 logger.warning(
                     "[Migration] Could not re-enable foreign key constraints (non-critical): %s",
                     fk_error,
@@ -700,13 +698,13 @@ def migrate_table(
 
             return rows_inserted, None
 
-        except Exception:
+        except DATABASE_ERRORS:
             pg_conn.rollback()
             raise
         finally:
             pg_conn.close()
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         error_msg = f"Failed to migrate table {table_name}: {str(e)}"
         logger.error("[Migration] %s", error_msg, exc_info=True)
         return 0, error_msg

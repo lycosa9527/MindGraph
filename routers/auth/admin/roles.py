@@ -19,8 +19,9 @@ from sqlalchemy.sql.functions import count as sa_count
 
 from config.database import get_async_db
 from models.domain.auth import Organization, User
-from models.domain.messages import Messages, Language
+from models.domain.messages import Language, Messages
 from services.redis.cache.redis_user_cache import user_cache
+from services.utils.error_types import REDIS_ERRORS
 from utils.auth.config import ADMIN_PHONES, ADMIN_USER_IDS
 from utils.auth.role_constants import (
     ROLE_EXPERT,
@@ -35,7 +36,6 @@ from utils.auth.school_tier import assert_organization_has_manager_capacity
 
 from ..dependencies import get_language_dependency, require_admin
 from ..helpers import utc_to_beijing_iso
-
 
 logger = logging.getLogger(__name__)
 
@@ -275,7 +275,7 @@ async def update_user_role(
     try:
         await db.commit()
         await db.refresh(user)
-    except Exception as e:
+    except REDIS_ERRORS as e:
         await db.rollback()
         logger.error("[Auth] Failed to update user role ID %s: %s", user_id, e)
         raise HTTPException(
@@ -286,7 +286,7 @@ async def update_user_role(
     try:
         await user_cache.invalidate(user_id, user.phone, getattr(user, "email", None))
         await user_cache.cache_user(user)
-    except Exception as e:
+    except REDIS_ERRORS as e:
         logger.warning("[Auth] Failed to invalidate/cache user %s: %s", user_id, e)
 
     if role == ROLE_SUPERADMIN:

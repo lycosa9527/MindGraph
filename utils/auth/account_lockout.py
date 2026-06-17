@@ -16,7 +16,9 @@ from typing import Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .config import MAX_LOGIN_ATTEMPTS, LOCKOUT_DURATION_MINUTES
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+
+from .config import LOCKOUT_DURATION_MINUTES, MAX_LOGIN_ATTEMPTS
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +77,7 @@ async def lock_account(user, db: AsyncSession) -> None:
     user.locked_until = datetime.now(UTC) + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
     try:
         await db.commit()
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         await db.rollback()
         raise
 
@@ -84,7 +86,7 @@ async def lock_account(user, db: AsyncSession) -> None:
         try:
             await _user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
             await _user_cache.cache_user(user)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.debug("[Auth] Failed to update cache after lock_account: %s", e)
 
     logger.warning("Account locked: %s", user.phone)
@@ -103,7 +105,7 @@ async def reset_failed_attempts(user, db: AsyncSession) -> None:
     user.last_login = datetime.now(UTC)
     try:
         await db.commit()
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         await db.rollback()
         raise
 
@@ -112,7 +114,7 @@ async def reset_failed_attempts(user, db: AsyncSession) -> None:
         try:
             await _user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
             await _user_cache.cache_user(user)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.debug("[Auth] Failed to update cache after reset_failed_attempts: %s", e)
 
 
@@ -127,7 +129,7 @@ async def increment_failed_attempts(user, db: AsyncSession) -> None:
     user.failed_login_attempts += 1
     try:
         await db.commit()
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         await db.rollback()
         raise
 
@@ -139,7 +141,7 @@ async def increment_failed_attempts(user, db: AsyncSession) -> None:
             try:
                 await _user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
                 await _user_cache.cache_user(user)
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.debug(
                     "[Auth] Failed to update cache after increment_failed_attempts: %s",
                     e,

@@ -17,11 +17,33 @@ import os
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
+from clients.dify import close_async_dify_shared_sessions
 from clients.llm import close_httpx_clients
+from config.database import close_db
+from services.auth.sms_middleware import shutdown_sms_service
 from services.infrastructure.lifecycle.lifespan_redis_integration import (
     close_redis_connection,
     stop_fanout_listeners,
 )
+from services.infrastructure.monitoring.health_monitor import get_health_monitor
+from services.infrastructure.monitoring.process_monitor import get_process_monitor
+from services.llm import llm_service
+from services.mindbot.infra.http_client import close_mindbot_http_sessions
+from services.mindbot.infra.redis_async import close_async_redis
+from services.mindbot.infra.task_registry import drain as mindbot_task_drain
+from services.mindbot.platforms.dingtalk.cards.stream_client import get_stream_manager
+from services.online_collab.spec.online_collab_live_flush import (
+    cancel_all_pending_live_spec_db_flushes,
+)
+from services.online_collab.spec.online_collab_live_spec_shutdown import (
+    flush_all_live_specs_on_shutdown,
+)
+from services.redis.cache.redis_api_key_usage_flush import flush_api_key_usage_to_db
+from services.redis.cache.redis_diagram_cache import get_diagram_cache
+from services.redis.redis_token_buffer import get_token_tracker
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS, REDIS_ERRORS
+from services.utils.update_notifier import update_notifier
+from utils.ws_session_registry import _registry as _ws_registry
 
 if TYPE_CHECKING:
     import fastapi.applications
@@ -57,23 +79,19 @@ async def run_lifespan_shutdown(
     await asyncio.sleep(0.1)
 
     try:
-        from services.mindbot.infra.task_registry import drain as mindbot_task_drain
-
         await mindbot_task_drain(
             timeout_s=float(os.getenv("MINDBOT_SHUTDOWN_DRAIN_TIMEOUT_S", "35")),
         )
         if is_main_worker:
             logger.info("MindBot pipeline background tasks drained")
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning("MindBot task drain error: %s", exc)
 
     try:
-        from clients.dify import close_async_dify_shared_sessions
-
         await close_async_dify_shared_sessions()
         if is_main_worker:
             logger.info("Async Dify shared HTTP sessions closed")
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning("Async Dify session close error: %s", exc)
 
     if holdings.cleanup_task:
@@ -128,11 +146,9 @@ async def run_lifespan_shutdown(
 
     if holdings.process_monitor_task:
         try:
-            from services.infrastructure.monitoring.process_monitor import get_process_monitor
-
             proc_mon = get_process_monitor()
             await proc_mon.stop()
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             if is_main_worker:
                 logger.warning("Failed to stop process monitor: %s", exc)
         holdings.process_monitor_task.cancel()
@@ -145,11 +161,9 @@ async def run_lifespan_shutdown(
 
     if holdings.health_monitor_task:
         try:
-            from services.infrastructure.monitoring.health_monitor import get_health_monitor
-
             health_monitor = get_health_monitor()
             await health_monitor.stop()
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             if is_main_worker:
                 logger.warning("Failed to stop health monitor: %s", exc)
         holdings.health_monitor_task.cancel()
@@ -161,22 +175,18 @@ async def run_lifespan_shutdown(
             logger.info("Health monitor stopped")
 
     try:
-        from services.llm import llm_service
-
         llm_service.cleanup()
         if is_main_worker:
             logger.info("LLM Service cleaned up")
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         if is_main_worker:
             logger.warning("Failed to cleanup LLM Service: %s", exc)
 
     try:
-        from services.utils.update_notifier import update_notifier
-
         update_notifier.shutdown()
         if is_main_worker:
             logger.info("Update notifier flushed")
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         if is_main_worker:
             logger.warning("Failed to flush update notifier: %s", exc)
 
@@ -188,44 +198,36 @@ async def run_lifespan_shutdown(
             pass
 
     try:
-        from services.redis.cache.redis_api_key_usage_flush import flush_api_key_usage_to_db
-
         flushed = await flush_api_key_usage_to_db()
         if is_main_worker and flushed:
             logger.info("API key usage flushed (%s key(s))", flushed)
-    except Exception as exc:
+    except (*BACKGROUND_INFRA_ERRORS, *DATABASE_ERRORS) as exc:
         if is_main_worker:
             logger.warning("Failed to flush API key usage: %s", exc)
 
     try:
-        from services.redis.redis_token_buffer import get_token_tracker
-
         token_tracker = get_token_tracker()
         await token_tracker.flush()
         if is_main_worker:
             logger.info("TokenTracker flushed")
-    except Exception as exc:
+    except (*BACKGROUND_INFRA_ERRORS, *REDIS_ERRORS) as exc:
         if is_main_worker:
             logger.warning("Failed to flush TokenTracker: %s", exc)
 
     try:
-        from services.redis.cache.redis_diagram_cache import get_diagram_cache
-
         diagram_cache = get_diagram_cache()
         await diagram_cache.flush()
         if is_main_worker:
             logger.info("Diagram cache flushed")
-    except Exception as exc:
+    except (*BACKGROUND_INFRA_ERRORS, *REDIS_ERRORS) as exc:
         if is_main_worker:
             logger.warning("Failed to flush diagram cache: %s", exc)
 
     try:
-        from services.auth.sms_middleware import shutdown_sms_service
-
         await shutdown_sms_service()
         if is_main_worker:
             logger.info("SMS service shut down")
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         if is_main_worker:
             logger.warning("Failed to shutdown SMS service: %s", exc)
 
@@ -233,21 +235,14 @@ async def run_lifespan_shutdown(
         await close_httpx_clients()
         if is_main_worker:
             logger.info("LLM httpx clients closed")
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         if is_main_worker:
             logger.warning("Failed to close httpx clients: %s", exc)
 
     try:
-        from services.online_collab.spec.online_collab_live_flush import (
-            cancel_all_pending_live_spec_db_flushes,
-        )
-        from services.online_collab.spec.online_collab_live_spec_shutdown import (
-            flush_all_live_specs_on_shutdown,
-        )
-
         await cancel_all_pending_live_spec_db_flushes()
         await flush_all_live_specs_on_shutdown()
-    except Exception as live_flush_exc:
+    except (*BACKGROUND_INFRA_ERRORS, *DATABASE_ERRORS) as live_flush_exc:
         if is_main_worker:
             logger.warning(
                 "[LiveSpec] Shutdown flush skipped or partial: %s",
@@ -255,56 +250,46 @@ async def run_lifespan_shutdown(
             )
 
     try:
-        from config.database import close_db
-
         await close_db()
         if is_main_worker:
             logger.info("Database connections closed")
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         if is_main_worker:
             logger.warning("Failed to close database: %s", exc)
 
     await stop_fanout_listeners(is_main_worker)
 
     try:
-        from utils.ws_session_registry import _registry as _ws_registry
-
         await _ws_registry.close_all(code=1001, reason="Server shutting down")
         await asyncio.sleep(0.5)
         if is_main_worker:
             logger.info("WebSocket sessions drained")
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         if is_main_worker:
             logger.warning("WebSocket graceful drain failed: %s", exc)
 
     close_redis_connection(is_main_worker)
 
     try:
-        from services.mindbot.platforms.dingtalk.cards.stream_client import get_stream_manager
-
         await get_stream_manager().stop_all()
         if is_main_worker:
             logger.info("DingTalk Stream SDK clients stopped")
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         if is_main_worker:
             logger.warning("Failed to stop DingTalk Stream SDK clients: %s", exc)
 
     try:
-        from services.mindbot.infra.http_client import close_mindbot_http_sessions
-
         await close_mindbot_http_sessions()
         if is_main_worker:
             logger.info("MindBot HTTP sessions closed")
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         if is_main_worker:
             logger.warning("Failed to close MindBot HTTP sessions: %s", exc)
 
     try:
-        from services.mindbot.infra.redis_async import close_async_redis
-
         await close_async_redis()
         if is_main_worker:
             logger.info("MindBot async Redis client closed")
-    except Exception as exc:
+    except (*BACKGROUND_INFRA_ERRORS, *REDIS_ERRORS) as exc:
         if is_main_worker:
             logger.warning("Failed to close MindBot async Redis client: %s", exc)

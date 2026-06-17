@@ -1,14 +1,3 @@
-from datetime import datetime, timezone
-from typing import Dict, Optional
-import asyncio
-import json
-import logging
-import re
-
-from services.redis.redis_async_client import get_async_redis
-from services.utils.typing_helpers import redis_decode_required
-from services.redis.redis_client import is_redis_available
-
 """
 Activity Stream Service
 =======================
@@ -34,6 +23,17 @@ All Rights Reserved
 Proprietary License
 """
 
+import asyncio
+import json
+import logging
+import re
+from datetime import datetime, timezone
+from typing import Dict, Optional
+
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from services.utils.typing_helpers import redis_decode_required
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +68,7 @@ class ActivityStreamService:
         self._connections: Dict[str, asyncio.Queue] = {}
         # Counter for anonymized usernames
         self._anon_counter = 0
+        self._anon_map: Dict[int, str] = {}
         # In-memory recent activities (fallback)
         self._memory_activities = []
 
@@ -107,18 +108,17 @@ class ActivityStreamService:
             first_char = name[0]
             masked = "*" * (len(name) - 1)
             return f"{first_char}{masked}"
-        else:
-            # English/Western name: keep first char of each word, mask the rest
-            words = name.split()
-            masked_words = []
-            for word in words:
-                if len(word) == 1:
-                    masked_words.append("*")
-                else:
-                    first_char = word[0]
-                    masked = "*" * (len(word) - 1)
-                    masked_words.append(f"{first_char}{masked}")
-            return " ".join(masked_words)
+        # English/Western name: keep first char of each word, mask the rest
+        words = name.split()
+        masked_words = []
+        for word in words:
+            if len(word) == 1:
+                masked_words.append("*")
+            else:
+                first_char = word[0]
+                masked = "*" * (len(word) - 1)
+                masked_words.append(f"{first_char}{masked}")
+        return " ".join(masked_words)
 
     async def _get_anon_username(self, user_id: int) -> str:
         """
@@ -146,13 +146,10 @@ class ActivityStreamService:
                     username = f"User {chr(64 + counter)}"  # counter=1 -> 'A', counter=2 -> 'B'
                     await redis.set(anon_key, username)  # No expiration (persistent mapping)
                     return username
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.error("[ActivityStream] Error getting anonymized username: %s", e)
 
         # Fallback: in-memory mapping
-        if not hasattr(self, "_anon_map"):
-            self._anon_map = {}
-
         if user_id not in self._anon_map:
             self._anon_counter += 1
             self._anon_map[user_id] = f"User {chr(64 + self._anon_counter)}"  # User A (65), User B (66), etc.
@@ -227,7 +224,7 @@ class ActivityStreamService:
             # If was_set is True, this is the first request (not duplicate)
             # If was_set is False, key already exists (duplicate)
             return not was_set  # Return True if duplicate
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[ActivityStream] Error checking dedup in Redis: %s", e)
             # On error, allow broadcast (fail open)
             return False
@@ -253,7 +250,7 @@ class ActivityStreamService:
                     await redis.ltrim(ACTIVITIES_KEY, 0, MAX_ACTIVITIES - 1)
                     # Set TTL
                     await redis.expire(ACTIVITIES_KEY, ACTIVITIES_TTL_SECONDS)
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.error("[ActivityStream] Error storing activity in Redis: %s", e)
 
         # Fallback: in-memory storage (when Redis unavailable)
@@ -321,7 +318,7 @@ class ActivityStreamService:
         for connection_id, queue in self._connections.items():
             try:
                 await queue.put(activity_json)
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.warning("[ActivityStream] Error broadcasting to %s: %s", connection_id, e)
                 disconnected.append(connection_id)
 
@@ -358,20 +355,21 @@ class ActivityStreamService:
                         except json.JSONDecodeError:
                             continue
                     return activities
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.error("[ActivityStream] Error getting activities from Redis: %s", e)
 
         # Fallback: in-memory
         return self._memory_activities[:limit]
 
 
-# Global singleton instance
-_activity_stream_service: Optional[ActivityStreamService] = None
+class _ActivityStreamState:
+    """Process-wide activity stream singleton holder."""
+
+    instance: Optional[ActivityStreamService] = None
 
 
 def get_activity_stream_service() -> ActivityStreamService:
     """Get global activity stream service instance."""
-    global _activity_stream_service
-    if _activity_stream_service is None:
-        _activity_stream_service = ActivityStreamService()
-    return _activity_stream_service
+    if _ActivityStreamState.instance is None:
+        _ActivityStreamState.instance = ActivityStreamService()
+    return _ActivityStreamState.instance

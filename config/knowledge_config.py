@@ -4,7 +4,7 @@ This module provides knowledge base related configuration properties.
 """
 
 import logging
-from typing import Optional, TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 logger = logging.getLogger(__name__)
 

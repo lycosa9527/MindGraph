@@ -17,18 +17,17 @@ import uuid
 from typing import Any, Awaitable, Callable, Optional
 
 from clients.dify import AsyncDifyClient, DifyFile
-from services.mindbot.pipeline.context import DifyReplyContext
+from services.mindbot.core.chain_of_thought_policy import effective_show_chain_of_thought
 from services.mindbot.core.dify_stream import (
     mindbot_consume_dify_stream_batched,
     mindbot_stream_batch_params,
 )
-from services.mindbot.core.chain_of_thought_policy import effective_show_chain_of_thought
+from services.mindbot.core.redis_keys import CONV_KEY_TTL_SECONDS
 from services.mindbot.core.reply_thinking import (
     MindbotThinkingStreamFilter,
     format_mindbot_reply_for_dingtalk,
     native_reasoning_from_dify_blocking_response,
 )
-from services.mindbot.core.redis_keys import CONV_KEY_TTL_SECONDS
 from services.mindbot.errors import MindbotErrorCode
 from services.mindbot.outbound.media import (
     send_blocking_response_attachments,
@@ -40,12 +39,13 @@ from services.mindbot.outbound.text import (
     send_full_reply,
     send_one_reply_chunk,
 )
+from services.mindbot.pipeline.ai_card_state import init_card_stream_state
+from services.mindbot.pipeline.context import DifyReplyContext
 from services.mindbot.pipeline.send_tracker import (
     mark_complete,
     mark_error,
     mark_sending,
 )
-from services.mindbot.pipeline.ai_card_state import init_card_stream_state
 from services.mindbot.platforms.dingtalk.cards.ai_card import (
     ai_card_body_deliverable,
     ai_card_overflow_remainder_for_markdown,

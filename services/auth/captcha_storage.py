@@ -18,12 +18,11 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional, Dict, Tuple
 import logging
 import time
+from typing import Dict, Optional, Tuple
 
 from services.redis.redis_async_ops import AsyncRedisOps
-
 
 logger = logging.getLogger(__name__)
 
@@ -130,15 +129,15 @@ class CaptchaStorage:
 class _CaptchaStorageSingleton:
     """Singleton wrapper for CaptchaStorage instance."""
 
-    _instance: Optional[CaptchaStorage] = None
+    instance: Optional[CaptchaStorage] = None
 
     @classmethod
     def get_instance(cls) -> CaptchaStorage:
         """Get the singleton captcha storage instance."""
-        if cls._instance is None:
-            cls._instance = CaptchaStorage()
+        if cls.instance is None:
+            cls.instance = CaptchaStorage()
             logger.info("[CaptchaStorage] Initialized (Redis)")
-        return cls._instance
+        return cls.instance
 
 
 def get_captcha_storage() -> CaptchaStorage:

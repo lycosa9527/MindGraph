@@ -13,18 +13,22 @@ from utils.ws_limits import (
 
 
 def test_workshop_code_from_live_spec_key_plain() -> None:
+    """Test workshop code from live spec key plain."""
     assert workshop_code_from_live_spec_key("workshop:live_spec:ABC12") == "ABC12"
 
 
 def test_workshop_code_from_live_spec_key_hash_tag() -> None:
+    """Test workshop code from live spec key hash tag."""
     assert workshop_code_from_live_spec_key("workshop:live_spec:{XYZ}") == "XYZ"
 
 
 def test_workshop_code_from_live_spec_key_bytes() -> None:
+    """Test workshop code from live spec key bytes."""
     assert workshop_code_from_live_spec_key(b"workshop:live_spec:{Q}") == "Q"
 
 
 def test_json_depth_nested() -> None:
+    """Test json depth nested."""
     shallow = {"a": 1, "b": {"c": 2}}
     assert json_value_nesting_depth(shallow) == 2
     deep: dict = {"leaf": True}
@@ -35,5 +39,6 @@ def test_json_depth_nested() -> None:
 
 
 def test_json_depth_flat_ok() -> None:
+    """Test json depth flat ok."""
     msg = {"type": "ping", "seq": 1}
     assert not collab_json_exceeds_depth(msg, MAX_COLLAB_INBOUND_JSON_DEPTH)

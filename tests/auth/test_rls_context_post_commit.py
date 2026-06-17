@@ -7,6 +7,9 @@ import os
 import pytest
 from sqlalchemy import text
 
+from utils.auth.admin_scope import build_admin_scope
+from utils.db.rls_context import RlsContext, rls_async_session, set_rls_context
+
 pytestmark = pytest.mark.skipif(
     os.getenv("RUN_RLS_DB_TESTS", "").lower() not in ("1", "true", "yes"),
     reason="Set RUN_RLS_DB_TESTS=1 with migrated Postgres and mindgraph_app URL",
@@ -15,9 +18,7 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.mark.asyncio
 async def test_panel_mode_persists_after_commit():
-    from utils.auth.admin_scope import build_admin_scope
-    from utils.db.rls_context import RlsContext, rls_async_session, set_rls_context
-
+    """Test panel mode persists after commit."""
     class _User:
         role = "school_admin"
         id = 1

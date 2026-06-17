@@ -13,6 +13,7 @@ from utils.auth import get_current_user
 
 
 def _make_user(role: str, organization_id: int | None = None, user_id: int = 1):
+    """Make user."""
     user = SimpleNamespace()
     user.id = user_id
     user.role = role
@@ -22,17 +23,20 @@ def _make_user(role: str, organization_id: int | None = None, user_id: int = 1):
 
 @pytest.fixture(name="client")
 def fixture_client():
+    """Fixture client."""
     return TestClient(app)
 
 
 @pytest.fixture(autouse=True)
 def clear_dependency_overrides():
+    """Clear dependency overrides."""
     app.dependency_overrides.clear()
     yield
     app.dependency_overrides.clear()
 
 
 def test_global_stats_readable_by_superadmin(client: TestClient) -> None:
+    """Test global stats readable by superadmin."""
     app.dependency_overrides[get_current_user] = lambda: _make_user("superadmin")
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     response = client.get("/api/auth/admin/stats")
@@ -40,6 +44,7 @@ def test_global_stats_readable_by_superadmin(client: TestClient) -> None:
 
 
 def test_token_stats_response_shape_keys(client: TestClient) -> None:
+    """Test token stats response shape keys."""
     app.dependency_overrides[get_current_user] = lambda: _make_user("superadmin")
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     response = client.get("/api/auth/admin/token-stats")
@@ -53,6 +58,7 @@ def test_token_stats_response_shape_keys(client: TestClient) -> None:
 
 
 def test_school_stats_includes_top_users(client: TestClient) -> None:
+    """Test school stats includes top users."""
     app.dependency_overrides[get_current_user] = lambda: _make_user("school_admin", organization_id=42)
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     response = client.get("/api/auth/admin/stats/school")
@@ -64,6 +70,7 @@ def test_school_stats_includes_top_users(client: TestClient) -> None:
 
 
 def test_user_trends_requires_user_id(client: TestClient) -> None:
+    """Test user trends requires user id."""
     app.dependency_overrides[get_current_user] = lambda: _make_user("superadmin")
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     response = client.get("/api/auth/admin/stats/trends/user?days=1&hourly=true&service=mindmate")

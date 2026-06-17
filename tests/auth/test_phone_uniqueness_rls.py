@@ -9,6 +9,7 @@ from services.auth.phone_uniqueness import any_user_id_with_phone, other_user_id
 
 @pytest.mark.asyncio
 async def test_any_user_id_with_phone_uses_system_rls_session():
+    """Test any user id with phone uses system rls session."""
     mock_db = AsyncMock()
     mock_db.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=42)))
 
@@ -27,6 +28,7 @@ async def test_any_user_id_with_phone_uses_system_rls_session():
 
 @pytest.mark.asyncio
 async def test_other_user_id_with_email_uses_system_rls_session():
+    """Test other user id with email uses system rls session."""
     mock_db = AsyncMock()
     mock_db.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=None)))
 

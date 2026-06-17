@@ -14,9 +14,8 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import UTC, datetime
-from services.online_collab.core.online_collab_manager import (
-    get_online_collab_manager,
-)
+
+from services.online_collab.core.online_collab_manager_access import get_online_collab_manager
 
 logger = logging.getLogger(__name__)
 

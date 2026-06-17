@@ -10,10 +10,9 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional, Dict, Any
 import logging
 import re
-
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -28,13 +27,13 @@ class DocumentCleaner:
     Singleton pattern: only one instance is created.
     """
 
-    _instance: Optional["DocumentCleaner"] = None
+    instance: Optional["DocumentCleaner"] = None
 
     def __new__(cls):
         """Singleton pattern: return the same instance on every call."""
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
+        if cls.instance is None:
+            cls.instance = super().__new__(cls)
+        return cls.instance
 
     @staticmethod
     def _remove_urls_emails_preserving_markdown(text: str) -> str:

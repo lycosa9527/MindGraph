@@ -23,6 +23,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.workshop_chat import FileAttachment
+from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +109,7 @@ class FileService:
         try:
             await db.commit()
             await db.refresh(attachment)
-        except Exception:
+        except DATABASE_ERRORS:
             await db.rollback()
             raise
 

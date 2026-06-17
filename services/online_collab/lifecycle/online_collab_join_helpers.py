@@ -8,11 +8,12 @@ from redis.exceptions import RedisError
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from utils.db.session_open import user_rls_session
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
+from services.online_collab.core.online_collab_manager_access import get_online_collab_manager
 from services.online_collab.lifecycle.online_collab_expiry import expires_at_to_unix
 from services.online_collab.redis.online_collab_redis_keys import code_to_diagram_key, session_key
+from utils.db.session_open import user_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -87,10 +88,6 @@ async def restore_online_collab_redis_from_db_row(
         expires_at_unix = 0
 
     try:
-        from services.online_collab.core.online_collab_manager import (
-            get_online_collab_manager,
-        )
-
         await get_online_collab_manager().create_session(
             code=code,
             diagram_id=diagram_id,

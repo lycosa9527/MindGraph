@@ -21,7 +21,7 @@ import logging
 from fastapi import WebSocket
 
 from services.kitty.context.messaging import safe_websocket_send
-from services.kitty.session.ops import get_session_omni_client
+from services.kitty.session.omni_client_access import get_session_omni_client
 from services.kitty.ws.guards import (
     KITTY_WS_IMAGE_B64_MAX_CHARS,
     KITTY_WS_IMAGE_RAW_MAX_BYTES,

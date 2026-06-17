@@ -31,6 +31,7 @@ async def grant_or_extend_entitlement(
     order_id: Optional[int] = None,
     subscription_id: Optional[int] = None,
 ) -> MarketEntitlement:
+    """Grant or extend entitlement."""
     repo = MarketEntitlementRepository(session)
     existing = await repo.get_for_user_listing(user_id, listing_id)
     if existing is None:
@@ -56,17 +57,20 @@ async def grant_or_extend_entitlement(
 
 
 async def user_has_active_entitlement(session: AsyncSession, user_id: int, listing_id: int) -> bool:
+    """User has active entitlement."""
     repo = MarketEntitlementRepository(session)
     row = await repo.get_for_user_listing(user_id, listing_id)
     return repo.is_row_active(row)
 
 
 async def list_active_entitlements(session: AsyncSession, user_id: int) -> Sequence[MarketEntitlement]:
+    """List active entitlements."""
     repo = MarketEntitlementRepository(session)
     return await repo.list_active_for_user(user_id)
 
 
 def entitlement_to_dict(row: MarketEntitlement, listing: Optional[MarketListing]) -> dict[str, Any]:
+    """Entitlement to dict."""
     return {
         "listing_id": row.listing_id,
         "listing_slug": listing.slug if listing else None,

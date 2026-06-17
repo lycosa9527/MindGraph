@@ -1,9 +1,3 @@
-from datetime import datetime
-from threading import Lock
-from typing import Optional, Dict, Any
-import logging
-
-
 """
 Registration Metrics Service
 ============================
@@ -27,6 +21,10 @@ All Rights Reserved
 Proprietary License
 """
 
+import logging
+from datetime import datetime
+from threading import Lock
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -268,17 +266,18 @@ class RegistrationMetrics:
             }
 
 
-# Global singleton instance
-_registration_metrics: Optional[RegistrationMetrics] = None
+class _RegistrationMetricsState:
+    """Process-wide registration metrics singleton holder."""
+
+    instance: Optional[RegistrationMetrics] = None
 
 
 def get_registration_metrics() -> RegistrationMetrics:
     """Get or create global RegistrationMetrics instance."""
-    global _registration_metrics
-    if _registration_metrics is None:
-        _registration_metrics = RegistrationMetrics()
+    if _RegistrationMetricsState.instance is None:
+        _RegistrationMetricsState.instance = RegistrationMetrics()
         logger.info("[RegistrationMetrics] Initialized")
-    return _registration_metrics
+    return _RegistrationMetricsState.instance
 
 
 # Convenience alias

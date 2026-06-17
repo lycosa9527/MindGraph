@@ -1,9 +1,9 @@
-"""
-Progress tracking utilities for chunk test components.
+"""Progress tracking utilities for chunk test components.
 
 Standardizes progress tracking format across ChunkTestDocument and ChunkTestResult.
 """
 
+import logging
 import re
 from typing import Optional, Tuple
 
@@ -103,15 +103,15 @@ def get_progress_percent(
             # Use doc processing range by default
             method_progress = int(15 + (method_index / total_methods) * 45)
             return min(method_progress, 60)
-        elif stage == "embedding":
+        if stage == "embedding":
             # Embedding: 60% + (method_index / total_methods) * 15%
             method_progress = int(60 + (method_index / total_methods) * 15)
             return min(method_progress, 75)
-        elif stage == "indexing":
+        if stage == "indexing":
             # Indexing: 75% + (method_index / total_methods) * 15%
             method_progress = int(75 + (method_index / total_methods) * 15)
             return min(method_progress, 90)
-        elif stage == "retrieval":
+        if stage == "retrieval":
             # Retrieval phase: 50-80% for RAG test
             # If sub_stage_progress provided, interpolate within retrieval range
             if sub_stage_progress is not None:
@@ -123,19 +123,17 @@ def get_progress_percent(
                     sub_base = retrieval_base
                     sub_range = retrieval_range / 3
                     return int(sub_base + (sub_stage_progress / 33) * sub_range)
-                elif sub_stage_progress < 66:
+                if sub_stage_progress < 66:
                     # Indexing sub-stage: 60-70%
                     sub_base = retrieval_base + retrieval_range / 3
                     sub_range = retrieval_range / 3
                     return int(sub_base + ((sub_stage_progress - 33) / 33) * sub_range)
-                else:
-                    # Retrieval sub-stage: 70-80%
-                    sub_base = retrieval_base + 2 * retrieval_range / 3
-                    sub_range = retrieval_range / 3
-                    return int(sub_base + ((sub_stage_progress - 66) / 34) * sub_range)
-            else:
-                # No sub-stage info, use base
-                return base
+                # Retrieval sub-stage: 70-80%
+                sub_base = retrieval_base + 2 * retrieval_range / 3
+                sub_range = retrieval_range / 3
+                return int(sub_base + ((sub_stage_progress - 66) / 34) * sub_range)
+            # No sub-stage info, use base
+            return base
 
     # Handle sub-stage progress for non-method stages
     if sub_stage_progress is not None and stage == "retrieval":
@@ -221,7 +219,6 @@ def validate_progress(
     if previous_progress is not None and validated_progress < previous_progress:
         is_valid = False
         # Log warning but don't fail - use previous progress
-        import logging
 
         logger = logging.getLogger(__name__)
         logger.warning(

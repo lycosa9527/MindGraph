@@ -19,14 +19,10 @@ from sqlalchemy import or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from utils.db.session_open import system_rls_session, user_rls_session
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
-from services.redis.redis_async_client import get_async_redis
-from services.online_collab.lifecycle.session_meta_cache import get_session_meta_cached
+from services.online_collab.core.online_collab_manager_access import get_online_collab_manager
 from services.online_collab.lifecycle.online_collab_expiry import is_online_collab_expired, remaining_seconds
-from services.online_collab.participant.online_collab_participant_ops import participant_count_for_code
-from services.online_collab.redis.online_collab_redis_keys import participants_key
 from services.online_collab.lifecycle.online_collab_session_fields import backfill_online_collab_expiry_if_needed
 from services.online_collab.lifecycle.online_collab_visibility_helpers import (
     ONLINE_COLLAB_VISIBILITY_NETWORK,
@@ -36,6 +32,11 @@ from services.online_collab.lifecycle.online_collab_visibility_helpers import (
     diagram_online_collab_visibility,
     viewer_may_see_online_collab_code,
 )
+from services.online_collab.lifecycle.session_meta_cache import get_session_meta_cached
+from services.online_collab.participant.online_collab_participant_ops import participant_count_for_code
+from services.online_collab.redis.online_collab_redis_keys import participants_key
+from services.redis.redis_async_client import get_async_redis
+from utils.db.session_open import system_rls_session, user_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -146,10 +147,6 @@ async def list_org_online_collab_sessions_for_user(
                 exc_info=True,
             )
             return []
-
-    from services.online_collab.core.online_collab_manager import (
-        get_online_collab_manager,
-    )
 
     async def _db_fallback() -> List[Dict[str, Any]]:
         return await _sql_list_org_sessions_by_org_id(org_id)

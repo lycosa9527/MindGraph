@@ -7,6 +7,7 @@ builder = load_rls_policy_builder()
 
 
 def test_user_owned_tables_have_user_id_column():
+    """Test user owned tables have user id column."""
     missing = []
     for table_name in builder.USER_OWNED_TABLES:
         table = Base.metadata.tables.get(table_name)
@@ -17,6 +18,7 @@ def test_user_owned_tables_have_user_id_column():
 
 
 def test_child_tables_not_in_user_owned():
+    """Test child tables not in user owned."""
     child_tables = {t for t, _ in builder.DEBATE_CHILD_TABLES}
     child_tables.update(t for t, _ in builder.MARKET_CHILD_TABLES)
     child_tables.update(t for t, _ in builder.KNOWLEDGE_SPACE_CHILD_TABLES)

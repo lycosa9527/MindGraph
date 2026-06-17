@@ -28,6 +28,7 @@ from models.requests.requests_diagram import (
 )
 from prompts import get_prompt
 from services.llm import llm_service
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,7 @@ def _sse_data(obj: Dict[str, Any]) -> str:
 
 
 def _question_lang_or_raise(req: FocusQuestionReviewRequest) -> Tuple[str, str]:
+    """Question lang or raise."""
     question = req.question.strip()
     if not question:
         raise HTTPException(status_code=400, detail="question required")
@@ -53,6 +55,7 @@ def _question_lang_or_raise(req: FocusQuestionReviewRequest) -> Tuple[str, str]:
 
 
 def _avoid_section(avoid: Optional[List[str]], lang: str) -> str:
+    """Avoid section."""
     if not avoid:
         return ""
     lines = "\n".join(f"- {a}" for a in avoid[:50])
@@ -64,6 +67,7 @@ def _avoid_section(avoid: Optional[List[str]], lang: str) -> str:
 
 
 def _avoid_section_root(avoid: Optional[List[str]], lang: str) -> str:
+    """Avoid section root."""
     if not avoid:
         return ""
     lines = "\n".join(f"- {a}" for a in avoid[:50])
@@ -75,6 +79,7 @@ def _avoid_section_root(avoid: Optional[List[str]], lang: str) -> str:
 
 
 def _get_validate_prompts(lang: str) -> Tuple[str, str]:
+    """Get validate prompts."""
     system = get_prompt("concept_map_focus_validate", lang, "system")
     user_tmpl = get_prompt("concept_map_focus_validate", lang, "user")
     if not system.strip() or not user_tmpl.strip():
@@ -84,6 +89,7 @@ def _get_validate_prompts(lang: str) -> Tuple[str, str]:
 
 
 def _get_suggestions_prompts(lang: str) -> Tuple[str, str]:
+    """Get suggestions prompts."""
     system = get_prompt("concept_map_focus_suggestions", lang, "system")
     user_tmpl = get_prompt("concept_map_focus_suggestions", lang, "user")
     if not system.strip() or not user_tmpl.strip():
@@ -93,6 +99,7 @@ def _get_suggestions_prompts(lang: str) -> Tuple[str, str]:
 
 
 def _get_root_concept_prompts(lang: str) -> Tuple[str, str]:
+    """Get root concept prompts."""
     system = get_prompt("concept_map_root_concept", lang, "system")
     user_tmpl = get_prompt("concept_map_root_concept", lang, "user")
     if not system.strip() or not user_tmpl.strip():
@@ -102,6 +109,7 @@ def _get_root_concept_prompts(lang: str) -> Tuple[str, str]:
 
 
 def _get_root_suggestions_prompts(lang: str) -> Tuple[str, str]:
+    """Get root suggestions prompts."""
     system = get_prompt("concept_map_root_concept_suggestions", lang, "system")
     user_tmpl = get_prompt("concept_map_root_concept_suggestions", lang, "user")
     if not system.strip() or not user_tmpl.strip():
@@ -111,6 +119,7 @@ def _get_root_suggestions_prompts(lang: str) -> Tuple[str, str]:
 
 
 def _normalize_root_concept_response(parsed: Dict[str, Any]) -> Dict[str, str]:
+    """Normalize root concept response."""
     rec = str(parsed.get("recommended_root_concept", "")).strip()
     reason = str(parsed.get("brief_reason", "")).strip()
     if not rec:
@@ -122,6 +131,7 @@ def _normalize_root_concept_response(parsed: Dict[str, Any]) -> Dict[str, str]:
 
 
 def _strip_code_fence(text: str) -> str:
+    """Strip code fence."""
     stripped = text.strip()
     if stripped.startswith("```"):
         lines = stripped.split("\n")
@@ -134,6 +144,7 @@ def _strip_code_fence(text: str) -> str:
 
 
 def _parse_json_object(raw: str) -> Dict[str, Any]:
+    """Parse json object."""
     text = _strip_code_fence(raw)
     try:
         parsed = json.loads(text)
@@ -152,18 +163,21 @@ def _parse_json_object(raw: str) -> Dict[str, Any]:
 
 
 def _normalize_validate(parsed: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize validate."""
     reason = parsed.get("reason")
     text = str(reason).strip()[:FOCUS_REASON_MAX_LEN] if reason is not None else ""
     return {"valid": bool(parsed.get("valid")), "reason": text}
 
 
 def _pad_suggestion(lang: str) -> str:
+    """Pad suggestion."""
     if lang == "zh":
         return "请用一句完整问句描述概念图要回答的核心问题。"
     return "State one clear question your concept map should answer."
 
 
 def _normalize_suggestions(parsed: Dict[str, Any], lang: str) -> List[str]:
+    """Normalize suggestions."""
     raw = parsed.get("suggestions")
     out: List[str] = []
     if isinstance(raw, list):
@@ -178,12 +192,14 @@ def _normalize_suggestions(parsed: Dict[str, Any], lang: str) -> List[str]:
 
 
 def _pad_root_suggestion(lang: str) -> str:
+    """Pad root suggestion."""
     if lang == "zh":
         return "请提供简洁的候选根概念名称。"
     return "Provide a concise candidate root concept name."
 
 
 def _normalize_root_suggestions(parsed: Dict[str, Any], lang: str) -> List[str]:
+    """Normalize root suggestions."""
     raw = parsed.get("suggestions")
     out: List[str] = []
     if isinstance(raw, list):
@@ -207,6 +223,7 @@ async def _chat_completion(
     request_type: str,
     max_tokens: int,
 ) -> str:
+    """Chat completion."""
     raw = await llm_service.chat(
         prompt=user,
         system_message=system,
@@ -233,6 +250,7 @@ async def _validate_one_model(
     user_id: int,
     organization_id: Optional[int],
 ) -> Dict[str, Any]:
+    """Validate one model."""
     system, user_tmpl = _get_validate_prompts(lang)
     user = user_tmpl.format(question=question)
     try:
@@ -256,7 +274,7 @@ async def _validate_one_model(
             "reason": norm["reason"],
             "error": None,
         }
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning("[FocusQuestion] validate model=%s: %s", model, exc)
         return {
             "model": model,
@@ -274,6 +292,7 @@ async def _suggestions_for_model_task(
     user_id: int,
     organization_id: Optional[int],
 ) -> Dict[str, Any]:
+    """Suggestions for model task."""
     system, user_tmpl = _get_suggestions_prompts(lang)
     user = user_tmpl.format(
         question=question,
@@ -299,7 +318,7 @@ async def _suggestions_for_model_task(
             "model": model,
             "suggestions": suggestions,
         }
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning("[FocusQuestion] suggestions model=%s: %s", model, exc)
         return {
             "event": "model_error",
@@ -316,6 +335,7 @@ async def _root_suggestions_for_model_task(
     user_id: int,
     organization_id: Optional[int],
 ) -> Dict[str, Any]:
+    """Root suggestions for model task."""
     system, user_tmpl = _get_root_suggestions_prompts(lang)
     user = user_tmpl.format(
         question=question,
@@ -341,7 +361,7 @@ async def _root_suggestions_for_model_task(
             "model": model,
             "suggestions": suggestions,
         }
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning("[RootConcept] suggestions model=%s: %s", model, exc)
         return {
             "event": "model_error",
@@ -383,9 +403,7 @@ async def root_concept_generate(
         parsed = _parse_json_object(raw)
         norm = _normalize_root_concept_response(parsed)
         return JSONResponse(norm)
-    except HTTPException:
-        raise
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning("[RootConcept] generate failed: %s", exc)
         raise HTTPException(
             status_code=500,
@@ -452,7 +470,7 @@ async def focus_question_suggestions_stream(
                     _model = tasks.pop(finished)
                     try:
                         payload = await finished
-                    except Exception as exc:
+                    except BACKGROUND_INFRA_ERRORS as exc:
                         logger.error(
                             "[FocusQuestion] suggestions task %s: %s",
                             _model,
@@ -469,7 +487,7 @@ async def focus_question_suggestions_stream(
                         continue
                     yield _sse_data(payload)
             yield _sse_data({"event": "end"})
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.error("[FocusQuestion] suggestions stream: %s", exc, exc_info=True)
             yield _sse_data({"event": "error", "message": str(exc)[:500]})
 
@@ -520,7 +538,7 @@ async def root_concept_suggestions_stream(
                     _model = tasks.pop(finished)
                     try:
                         payload = await finished
-                    except Exception as exc:
+                    except BACKGROUND_INFRA_ERRORS as exc:
                         logger.error(
                             "[RootConcept] suggestions task %s: %s",
                             _model,
@@ -537,7 +555,7 @@ async def root_concept_suggestions_stream(
                         continue
                     yield _sse_data(payload)
             yield _sse_data({"event": "end"})
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.error("[RootConcept] suggestions stream: %s", exc, exc_info=True)
             yield _sse_data({"event": "error", "message": str(exc)[:500]})
 

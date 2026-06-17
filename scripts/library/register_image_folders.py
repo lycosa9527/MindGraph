@@ -18,6 +18,8 @@ from pathlib import Path
 
 from sqlalchemy.orm import Session
 
+from services.utils.error_types import DATABASE_ERRORS
+
 # Add project root to path before importing project modules
 _project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
@@ -237,7 +239,7 @@ def main() -> int:
         finally:
             db.close()
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("Error: %s", e, exc_info=True)
         return 1
 

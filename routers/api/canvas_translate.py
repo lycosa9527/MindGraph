@@ -20,6 +20,7 @@ from models.requests.requests_canvas_translate import (
 )
 from services.infrastructure.http.error_handler import LLMServiceError
 from services.llm import llm_service
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, JSON_PARSE_ERRORS
 from utils.auth import get_current_user_or_api_key, is_superadmin
 
 from .diagram_generation import _query_diagram_ownership
@@ -55,12 +56,14 @@ def _normalize_translated_text(raw: str) -> str:
 
 
 def _coerce_llm_text(raw: object) -> str:
+    """Coerce llm text."""
     if isinstance(raw, list):
         return str(raw[0]) if raw else ""
     return str(raw)
 
 
 def _parse_translations_json(llm_text: str, expected_len: int) -> list[str]:
+    """Parse translations json."""
     text = llm_text.strip()
     if text.startswith("```"):
         lines = text.split("\n")
@@ -103,6 +106,7 @@ async def _translate_unique_texts_chunk(
     extra_rules: str = "",
     endpoint_path: str = "/api/canvas/translate_diagram_labels",
 ) -> list[str]:
+    """Translate unique texts chunk."""
     payload = json.dumps(texts, ensure_ascii=False)
     system_message = (
         "You translate diagram labels (node or relationship text). Output rules:\n"
@@ -147,6 +151,7 @@ def _diagram_ordered_unique_texts(req: TranslateDiagramLabelsRequest) -> list[st
 
 
 def _ndjson_line(obj: dict) -> bytes:
+    """Ndjson line."""
     return json.dumps(obj, ensure_ascii=False).encode("utf-8") + b"\n"
 
 
@@ -202,7 +207,7 @@ async def _translate_diagram_labels_ndjson(
     except (ValueError, json.JSONDecodeError) as exc:
         logger.warning("canvas_translate stream parse error: %s", exc)
         yield _ndjson_line({"event": "error", "detail": "Translation produced an invalid result"})
-    except Exception as exc:
+    except JSON_PARSE_ERRORS as exc:
         logger.error("canvas_translate stream failed: %s", exc, exc_info=True)
         yield _ndjson_line({"event": "error", "detail": "Translation failed"})
 
@@ -211,6 +216,7 @@ async def _ownership_check_diagram_translate(
     diagram_id: Optional[str],
     current_user: Optional[User],
 ) -> None:
+    """Ownership check diagram translate."""
     if diagram_id and current_user:
         workshop_code, diagram_user_id = await _query_diagram_ownership(diagram_id)
         if workshop_code:
@@ -278,7 +284,7 @@ async def translate_node_label(
     except LLMServiceError as exc:
         logger.warning("canvas_translate LLM error: %s", exc)
         raise HTTPException(status_code=503, detail="Translation service temporarily unavailable") from exc
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.error("canvas_translate failed: %s", exc, exc_info=True)
         raise HTTPException(status_code=503, detail="Translation failed") from exc
 
@@ -347,7 +353,7 @@ async def translate_diagram_labels(
             status_code=502,
             detail="Translation produced an invalid result",
         ) from exc
-    except Exception as exc:
+    except JSON_PARSE_ERRORS as exc:
         logger.error("canvas_translate batch failed: %s", exc, exc_info=True)
         raise HTTPException(status_code=503, detail="Translation failed") from exc
 

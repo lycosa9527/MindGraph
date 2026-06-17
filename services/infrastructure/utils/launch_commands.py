@@ -40,6 +40,7 @@ LIFESPAN_ORDER_TEXT = """
 
 
 def redis_port_from_url(redis_url: str) -> int:
+    """Redis port from url."""
     try:
         parsed = urlparse(redis_url)
         if parsed.port is not None:
@@ -50,6 +51,7 @@ def redis_port_from_url(redis_url: str) -> int:
 
 
 def lines_tcp_port_kill(port: int) -> list[str]:
+    """Lines tcp port kill."""
     lines = [f"If something else holds port {port}, free it:"]
     if sys.platform == "win32":
         lines.extend(
@@ -69,6 +71,7 @@ def lines_tcp_port_kill(port: int) -> list[str]:
 
 
 def error_footer_launch_reference() -> list[str]:
+    """Error footer launch reference."""
     return [
         "",
         "Full launch dependency cheatsheet (all copy-paste commands):",
@@ -105,6 +108,7 @@ def lines_redis_connection_failed(
 
 
 def lines_http_port_in_use(port: int, pid: int | None, *, include_footer: bool = True) -> list[str]:
+    """Lines http port in use."""
     out = [f"Port {port} is already in use."]
     if pid is not None:
         out.append(f"Detected process ID: {pid}")
@@ -135,6 +139,7 @@ def lines_qdrant_connection_failed(
     *,
     include_footer: bool = True,
 ) -> list[str]:
+    """Lines qdrant connection failed."""
     lines = [
         f"Failed to connect to Qdrant at: {connection_info}",
         f"Error: {exc}",
@@ -165,10 +170,12 @@ def lines_fail2ban_host_install() -> list[str]:
 
 
 def lines_fail2ban_deploy() -> list[str]:
+    """Lines fail2ban deploy."""
     return [FAIL2BAN_CHECK_CMD, FAIL2BAN_SETUP_CMD]
 
 
 def lines_celery_recovery() -> list[str]:
+    """Lines celery recovery."""
     return [
         "Start a worker from the MindGraph repo (conda env active):",
         f"  {CELERY_WORKER_CMD}",
@@ -179,6 +186,7 @@ def lines_celery_recovery() -> list[str]:
 
 
 def lines_postgresql_hint() -> list[str]:
+    """Lines postgresql hint."""
     return [
         "PostgreSQL: ensure DATABASE_URL is reachable.",
         "  pip install psycopg2-binary",
@@ -295,6 +303,7 @@ def lines_playwright_startup_critical() -> list[str]:
 
 
 def build_cheatsheet_text() -> str:
+    """Build cheatsheet text."""
     sections: list[str] = [
         "=" * 80,
         "MindGraph - launch dependency reference (copy-paste)",
@@ -344,6 +353,7 @@ def build_cheatsheet_text() -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Main."""
     parser = argparse.ArgumentParser(
         prog=_MODULE_INVOKE,
         description="Print copy-paste commands for MindGraph launch dependencies.",

@@ -9,10 +9,10 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Dict, List, Optional, Any, AsyncGenerator
 import asyncio
 import logging
 import time
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from services.infrastructure.http.error_handler import error_handler
 
@@ -255,14 +255,14 @@ class LLMRequestExecutor:
                     return chunk
                 # In non-structured mode, skip usage chunks
                 return None
-            elif chunk_type == "thinking":
+            if chunk_type == "thinking":
                 # Yield thinking/reasoning content
                 if yield_structured:
                     return chunk
                 # In non-structured mode, thinking is discarded
                 # (for backward compatibility with existing callers)
                 return None
-            elif chunk_type == "token":
+            if chunk_type == "token":
                 # Yield content token
                 content = chunk.get("content", "")
                 if content:

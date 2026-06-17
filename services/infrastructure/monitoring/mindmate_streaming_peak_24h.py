@@ -21,10 +21,12 @@ _MAX_BUCKETS = 24
 
 
 def _hour_tag_utc(when: datetime) -> str:
+    """Hour tag utc."""
     return when.astimezone(UTC).strftime("%Y%m%d%H")
 
 
 def _max_from_raw(raw: Optional[object]) -> int:
+    """Max from raw."""
     if raw is None:
         return 0
     if isinstance(raw, (bytes, bytearray, memoryview)):

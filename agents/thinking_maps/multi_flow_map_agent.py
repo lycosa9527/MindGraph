@@ -12,15 +12,15 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Dict, List, Any, Tuple, Optional
 import logging
+from typing import Any, Dict, List, Optional, Tuple
 
-from agents.core.base_agent import BaseAgent
 from agents.core.agent_utils import extract_json_from_response
+from agents.core.base_agent import BaseAgent
 from config.settings import config
 from prompts import get_prompt
 from services.llm import llm_service
+from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
 logger = logging.getLogger(__name__)
@@ -30,6 +30,7 @@ class MultiFlowMapAgent(BaseAgent):
     """Utility agent to improve multi-flow map specs before rendering."""
 
     def __init__(self, model="qwen"):
+        """ init  ."""
         super().__init__(model=model)
         self.diagram_type = "multi_flow_map"
 
@@ -89,7 +90,7 @@ class MultiFlowMapAgent(BaseAgent):
                 "diagram_type": self.diagram_type,
             }
 
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             logger.error("MultiFlowMapAgent: Multi-flow map generation failed: %s", e)
             return {"success": False, "error": f"Generation failed: {str(e)}"}
 
@@ -152,7 +153,7 @@ class MultiFlowMapAgent(BaseAgent):
 
             return spec
 
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             logger.error("MultiFlowMapAgent: Error in spec generation: %s", e)
             return None
 
@@ -185,7 +186,7 @@ class MultiFlowMapAgent(BaseAgent):
                 return False, "Missing or invalid effects"
 
             return True, "Valid multi-flow map specification"
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             return False, f"Validation error: {str(e)}"
 
     MAX_ITEMS_PER_SIDE: int = 10
@@ -336,5 +337,5 @@ class MultiFlowMapAgent(BaseAgent):
             }
 
             return {"success": True, "spec": enhanced_spec}
-        except Exception as exc:  # Defensive guard
+        except LLM_PIPELINE_ERRORS as exc:  # Defensive guard
             return {"success": False, "error": f"Unexpected error: {exc}"}

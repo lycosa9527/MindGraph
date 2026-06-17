@@ -4,15 +4,15 @@ import asyncio
 import logging
 from typing import Any, Dict, List, Optional
 
-logger = logging.getLogger(__name__)
-
-from services.features.ws_redis_fanout_config import is_ws_fanout_enabled
+from routers.api.workshop_ws_broadcast import broadcast_to_others
+from routers.api.workshop_ws_handlers import build_participants_with_names
+from services.features.workshop_ws_registry import ACTIVE_EDITORS as active_editors
 from services.features.workshop_ws_connection_state import (
-    ACTIVE_EDITORS as active_editors,
     AnyHandle,
     ViewerHandle,
     enqueue,
 )
+from services.features.ws_redis_fanout_config import is_ws_fanout_enabled
 from services.online_collab.core.online_collab_manager import (
     get_online_collab_manager,
 )
@@ -23,21 +23,21 @@ from services.online_collab.core.online_collab_status import (
 from services.online_collab.participant.collab_display_name import (
     workshop_collab_member_display_name,
 )
-from services.online_collab.participant.workshop_join_resume_tokens import (
-    mint_join_resume_token_async,
-)
 from services.online_collab.participant.online_collab_snapshots import (
     websocket_send_live_spec_snapshot,
 )
 from services.online_collab.participant.online_collab_ws_editor_redis import (
     load_editors,
 )
+from services.online_collab.participant.workshop_join_resume_tokens import (
+    mint_join_resume_token_async,
+)
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
-from routers.api.workshop_ws_broadcast import broadcast_to_others
-from routers.api.workshop_ws_handlers import build_participants_with_names
-
+logger = logging.getLogger(__name__)
 
 def _log_join_parallel_read_failures(exc_group: BaseExceptionGroup) -> None:
+    """Log join parallel read failures."""
     for sub in exc_group.exceptions:
         logger.warning(
             "[CanvasCollabWS] parallel join read failed: %s",
@@ -135,7 +135,7 @@ async def send_canvas_collab_join_handshake(
             tg.create_task(_load_visibility())
             tg.create_task(_load_editors())
             tg.create_task(_load_diagram_title())
-    except* Exception as eg:
+    except* BACKGROUND_INFRA_ERRORS as eg:
         if isinstance(eg, BaseExceptionGroup):
             _log_join_parallel_read_failures(eg)
 
@@ -168,7 +168,7 @@ async def send_canvas_collab_join_handshake(
 
     try:
         await websocket_send_live_spec_snapshot(handle, code, diagram_id)
-    except Exception as snap_exc:
+    except BACKGROUND_INFRA_ERRORS as snap_exc:
         logger.error(
             "[WorkshopWS] snapshot failed code=%s user=%s: %s",
             code,
@@ -181,7 +181,7 @@ async def send_canvas_collab_join_handshake(
                 {"type": "error", "message": "snapshot_failed", "code": "snapshot_failed"},
                 "error",
             )
-        except Exception:
+        except BACKGROUND_INFRA_ERRORS:
             pass
         raise
 

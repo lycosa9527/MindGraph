@@ -12,8 +12,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import List, Dict, Any
-
+from typing import Any, Dict, List
 
 # FinanceBench Example Queries (Financial Domain)
 FINANCEBENCH_QUERIES = [

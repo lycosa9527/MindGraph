@@ -66,6 +66,7 @@ def debug_callback_failure_logging_enabled() -> bool:
 
 
 def dingtalk_inbound_logging_enabled() -> bool:
+    """Dingtalk inbound logging enabled."""
     return (
         env_bool("MINDBOT_LOG_CALLBACK_INBOUND", False)
         or env_bool("MINDBOT_LOG_CALLBACK_INBOUND_FULL", False)
@@ -74,14 +75,17 @@ def dingtalk_inbound_logging_enabled() -> bool:
 
 
 def dingtalk_inbound_full_logging() -> bool:
+    """Dingtalk inbound full logging."""
     return env_bool("MINDBOT_LOG_CALLBACK_INBOUND_FULL", False) or (debug_callback_failure_logging_enabled())
 
 
 def _body_log_max() -> int:
+    """Body log max."""
     return max(256, env_int("MINDBOT_LOG_CALLBACK_BODY_MAX", _DEFAULT_BODY_LOG_MAX))
 
 
 def _parsed_body_json_for_log(parsed_body: dict[str, Any]) -> str:
+    """Parsed body json for log."""
     try:
         parsed_json = json.dumps(
             parsed_body,
@@ -117,6 +121,7 @@ def log_dingtalk_inbound(
 
 
 def _log_compact(request: Request, raw: bytes, route_label: str) -> None:
+    """Log compact."""
     ts, sg = extract_dingtalk_robot_auth_headers(request.headers)
     # Downgraded to DEBUG: the preview contains raw message content which may include
     # PII.  INFO-level logs are commonly shipped to aggregation systems without per-field
@@ -142,6 +147,7 @@ def _log_full(
     *,
     parsed_body: Optional[dict[str, Any]] = None,
 ) -> None:
+    """Log full."""
     headers_dict = _redact_headers(dict(request.headers.items()))
     client_host: Optional[str] = None
     if request.client is not None:

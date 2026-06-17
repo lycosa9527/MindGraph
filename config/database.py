@@ -14,13 +14,13 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import UTC, datetime
-from pathlib import Path
 import logging
 import os
 import re
 import time
 import warnings
+from datetime import UTC, datetime
+from pathlib import Path
 
 from fastapi import Request
 from sqlalchemy import create_engine, func, select, text
@@ -28,14 +28,27 @@ from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
+from config import db_sessions
+from config.database_alembic import run_alembic_upgrade as _run_alembic_upgrade_impl
 from models.domain.registry import Base, Organization
+from services.redis.redis_client import RedisOps, get_redis, is_redis_available
+from services.utils.error_types import DATABASE_ERRORS
+from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR
+from utils.db.rls_context import (
+    RlsContext,
+    register_rls_listeners,
+    reset_rls_context,
+    resolve_rls_context_for_transaction,
+    rls_sync_session,
+    set_rls_context,
+)
+
+logger = logging.getLogger(__name__)
 
 try:
     from utils.auth.invitations import load_invitation_codes
 except ImportError:
     load_invitation_codes = None
-
-logger = logging.getLogger(__name__)
 
 # Ensure data directory exists for database files
 DATA_DIR = Path("data")
@@ -190,10 +203,12 @@ engine = create_engine(
     connect_args=_CONNECT_ARGS,
     echo=False,
 )
+db_sessions.engine = engine
 
 # Sync session factory — ONLY for Celery tasks, migration scripts, and thread
 # targets that cannot use async.  All FastAPI routes must use AsyncSessionLocal.
 SyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+db_sessions.SyncSessionLocal = SyncSessionLocal
 SessionLocal = SyncSessionLocal  # backward-compat alias (will be removed)
 
 # ---------------------------------------------------------------------------
@@ -243,22 +258,20 @@ async_engine = create_async_engine(
     echo=False,
     query_cache_size=_QUERY_CACHE_SIZE,
 )
+db_sessions.async_engine = async_engine
 
 AsyncSessionLocal = async_sessionmaker(
     async_engine,
     class_=AsyncSession,
     expire_on_commit=False,
 )
-
-from utils.db.rls_context import register_rls_listeners
+db_sessions.AsyncSessionLocal = AsyncSessionLocal
 
 register_rls_listeners(async_engine, engine)
 
 
 def _seed_organizations_if_empty() -> None:
     """Insert organizations when the table is empty (INVITATION_CODES or built-in defaults)."""
-    from utils.db.rls_context import RlsContext, rls_sync_session
-
     with rls_sync_session(RlsContext.system_bootstrap()) as db:
         _seed_organizations_if_empty_with_session(db)
 
@@ -320,7 +333,7 @@ def _seed_organizations_if_empty_with_session(db) -> None:
             db.commit()
             logger.info("Seeded %d organizations", len(seeded_orgs))
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("Error seeding database: %s", e)
         db.rollback()
 
@@ -333,7 +346,10 @@ _MIGRATION_LOCK_KEY = "lock:mindgraph:alembic_migration"
 _MIGRATION_LOCK_TTL = 3600
 _MIGRATION_WAIT_INTERVAL_SEC = 2.0
 _MIGRATION_WAIT_MAX_ATTEMPTS = 1800
-_MIGRATION_LOCK_ID: "str | None" = None
+class _MigrationLockState:
+    """Alembic migration Redis lock holder (no global keyword)."""
+
+    lock_id: str | None = None
 
 
 def _get_alembic_version_num() -> str | None:
@@ -348,90 +364,8 @@ def _get_alembic_version_num() -> str | None:
             result = conn.execute(text("SELECT version_num FROM alembic_version LIMIT 1"))
             row = result.fetchone()
             return str(row[0]) if row else None
-    except Exception:
+    except DATABASE_ERRORS:
         return None
-
-
-def _run_alembic_upgrade() -> None:
-    """Apply pending Alembic migrations if the DB is behind head.
-
-    Compares the current ``alembic_version`` in the database to the latest
-    revision on disk.  If they already match, this is a no-op.
-
-    **Why a Redis lock:** every Uvicorn worker runs ``init_db()`` on startup
-    (default ``UVICORN_WORKER_ID`` is ``0`` for all processes). Without a
-    distributed lock, two workers could run ``alembic upgrade`` concurrently.
-
-    **Waiting workers** poll ``alembic_version`` with plain SQL (not Alembic's
-    ``MigrationContext``) so they do not emit Alembic INFO logs every second
-    during long migrations.
-
-    Workers that lose the lock wait until ``version_num`` matches head, then
-    return without running DDL. If the peer never reaches head within the
-    configured window, startup fails fast instead of continuing with a
-    partial schema.
-    """
-    from alembic.command import upgrade as alembic_upgrade
-    from alembic.config import Config as AlembicConfig
-    from alembic.script import ScriptDirectory
-
-    from scripts.db.migration_urls import configure_rls_migration_environment
-
-    if "postgresql" in DATABASE_URL:
-        from scripts.db.rls_roles_bootstrap import ensure_rls_roles_exist
-
-        roles_ok, roles_msg = ensure_rls_roles_exist()
-        if not roles_ok:
-            raise RuntimeError(f"RLS PostgreSQL bootstrap failed before Alembic: {roles_msg}")
-        if roles_msg != "RLS roles already exist":
-            logger.info("[Database] %s", roles_msg)
-        try:
-            configure_rls_migration_environment()
-        except Exception as exc:
-            logger.warning(
-                "[Database] Could not auto-resolve DATABASE_MIGRATION_URL for Alembic: %s",
-                exc,
-            )
-
-    alembic_cfg = AlembicConfig(_ALEMBIC_INI)
-    alembic_cfg.set_main_option("script_location", _ALEMBIC_SCRIPT_DIR)
-    alembic_cfg.set_main_option("prepend_sys_path", str(_PROJECT_ROOT))
-    script_dir = ScriptDirectory.from_config(alembic_cfg)
-    head_rev = script_dir.get_current_head()
-
-    current_rev = _get_alembic_version_num()
-
-    if current_rev == head_rev:
-        logger.info("[Database] Schema is up to date (revision %s)", current_rev)
-        return
-
-    if head_rev is None:
-        logger.error(
-            "[Database] Database has revision %s but no Alembic head revision found on disk.",
-            current_rev,
-        )
-        raise RuntimeError("Alembic script directory has no head revision; cannot apply migrations or wait for a peer.")
-
-    if current_rev is None:
-        logger.info("[Database] No alembic_version found — running initial migration")
-    else:
-        logger.info(
-            "[Database] Pending migration: %s → %s",
-            current_rev,
-            head_rev,
-        )
-
-    lock_acquired = False
-    try:
-        lock_acquired = _acquire_migration_lock()
-        if not lock_acquired:
-            _wait_for_migration_completion(head_rev)
-            return
-        alembic_upgrade(alembic_cfg, "head")
-        logger.info("[Database] Alembic upgrade to head completed")
-    finally:
-        if lock_acquired:
-            _release_migration_lock()
 
 
 def _acquire_migration_lock() -> bool:
@@ -441,13 +375,6 @@ def _acquire_migration_lock() -> bool:
     worker already holds the lock.  Falls back to True (run anyway) when
     Redis is unavailable (single-worker or dev setup).
     """
-    global _MIGRATION_LOCK_ID
-
-    try:
-        from services.redis.redis_client import get_redis, is_redis_available
-    except ImportError:
-        return True
-
     if not is_redis_available():
         return True
 
@@ -463,7 +390,7 @@ def _acquire_migration_lock() -> bool:
         ex=_MIGRATION_LOCK_TTL,
     )
     if acquired:
-        _MIGRATION_LOCK_ID = lock_id
+        _MigrationLockState.lock_id = lock_id
         logger.info("[Database] Migration lock acquired (id %s)", lock_id)
         return True
 
@@ -478,61 +405,20 @@ def _release_migration_lock() -> None:
     acquisition time, so a worker that outlasts its own TTL cannot
     accidentally evict a lock legitimately held by a different worker.
     """
-    global _MIGRATION_LOCK_ID
-
-    if not _MIGRATION_LOCK_ID:
-        return
-
-    try:
-        from services.redis.redis_client import RedisOps, is_redis_available
-    except ImportError:
-        _MIGRATION_LOCK_ID = None
+    if not _MigrationLockState.lock_id:
         return
 
     if not is_redis_available():
-        _MIGRATION_LOCK_ID = None
+        _MigrationLockState.lock_id = None
         return
 
-    lock_id = _MIGRATION_LOCK_ID
-    _MIGRATION_LOCK_ID = None
+    lock_id = _MigrationLockState.lock_id
+    _MigrationLockState.lock_id = None
 
     try:
         RedisOps.compare_and_delete(_MIGRATION_LOCK_KEY, lock_id)
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.debug("[Database] Migration lock release (non-critical): %s", exc)
-
-
-def _wait_for_migration_completion(expected_head: str) -> None:
-    """Poll until the winner worker finishes the migration (revision matches head)."""
-    for attempt in range(_MIGRATION_WAIT_MAX_ATTEMPTS):
-        time.sleep(_MIGRATION_WAIT_INTERVAL_SEC)
-        current = _get_alembic_version_num()
-        if current == expected_head:
-            logger.info(
-                "[Database] Migration completed by another worker (revision %s)",
-                current,
-            )
-            return
-        if (attempt + 1) % 15 == 0:
-            elapsed = int((attempt + 1) * _MIGRATION_WAIT_INTERVAL_SEC)
-            logger.info(
-                "[Database] Still waiting for migration to complete (~%d s elapsed, max ~%d s)...",
-                elapsed,
-                int(_MIGRATION_WAIT_MAX_ATTEMPTS * _MIGRATION_WAIT_INTERVAL_SEC),
-            )
-
-    logger.error(
-        "[Database] Timed out waiting for peer worker to finish migrations "
-        "(expected revision %s). Refusing to start with a possibly incomplete schema.",
-        expected_head,
-    )
-    raise RuntimeError(
-        "Timed out waiting for another worker to complete Alembic migrations. "
-        "If first-time baseline migrations legitimately take longer than the "
-        f"configured maximum (~{int(_MIGRATION_WAIT_MAX_ATTEMPTS * _MIGRATION_WAIT_INTERVAL_SEC)} s), "
-        "increase _MIGRATION_WAIT_MAX_ATTEMPTS / _MIGRATION_WAIT_INTERVAL_SEC in config/database.py, "
-        "or run `alembic upgrade head` once before starting multiple workers."
-    )
 
 
 def _check_pool_vs_max_connections() -> None:
@@ -555,7 +441,7 @@ def _check_pool_vs_max_connections() -> None:
             if row is None:
                 return
             pg_max = int(row[0])
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.debug("[Database] Could not query max_connections: %s", exc)
         return
     if total_needed > pg_max:
@@ -604,7 +490,7 @@ def _ensure_pg_extensions() -> None:
                         conn.execute(text(sql))
                 except ProgrammingError as exc:
                     logger.warning("[Database] Could not run %r (continuing): %s", sql, exc)
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.debug("[Database] Could not ensure PostgreSQL extensions: %s", exc)
 
 
@@ -627,7 +513,7 @@ def init_db(seed_organizations: bool = True):
 
     try:
         _run_alembic_upgrade()
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.error("[Database] Alembic migration failed: %s", exc, exc_info=True)
         raise
 
@@ -643,8 +529,6 @@ def init_db(seed_organizations: bool = True):
 
 def get_db_sync():
     """Sync dependency — Celery / scripts; uses context var set by caller or deny default."""
-    from utils.db.rls_context import resolve_rls_context_for_transaction, rls_sync_session
-
     ctx = resolve_rls_context_for_transaction()
     with rls_sync_session(ctx) as db:
         yield db
@@ -666,9 +550,6 @@ async def get_async_db(request: Request):
             result = await db.execute(select(User))
             ...
     """
-    from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR
-    from utils.db.rls_context import RlsContext, reset_rls_context, set_rls_context
-
     ctx = getattr(request.state, "rls_context", None)
     if ctx is None:
         user = getattr(request.state, AUTH_CONTEXT_USER_ATTR, None)
@@ -681,7 +562,7 @@ async def get_async_db(request: Request):
         async with AsyncSessionLocal() as session:
             try:
                 yield session
-            except Exception:
+            except DATABASE_ERRORS:
                 await session.rollback()
                 raise
     finally:
@@ -715,7 +596,7 @@ def check_disk_space(required_mb: int = 100) -> bool:
         except AttributeError:
             # Windows doesn't have statvfs, skip check
             return True
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.warning("[Database] Disk space check failed: %s", e)
         return True  # Assume OK if check fails
 
@@ -733,7 +614,7 @@ def check_integrity() -> bool:
             result = conn.execute(text("SELECT 1"))
             result.fetchone()
         return True
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("[Database] Integrity check error: %s", e)
         return False
 
@@ -749,7 +630,7 @@ async def check_integrity_async() -> bool:
             result = await conn.execute(text("SELECT 1"))
             result.fetchone()
         return True
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("[Database] Async integrity check error: %s", e)
         return False
 
@@ -775,7 +656,7 @@ def recover_from_kill_9():
         try:
             engine.dispose()
             logger.debug("[Database] Disposed existing connection pool")
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.warning("[Database] Error disposing connection pool: %s", e)
 
         # Try to open a new connection to verify database is accessible
@@ -785,7 +666,7 @@ def recover_from_kill_9():
                 result = conn.execute(text("SELECT 1"))
                 result.fetchone()
                 logger.debug("[Database] Database connection verified after recovery")
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("[Database] Database connection failed after recovery attempt: %s", e)
             # Try one more time with a short delay
             time.sleep(0.1)
@@ -794,14 +675,14 @@ def recover_from_kill_9():
                     result = conn.execute(text("SELECT 1"))
                     result.fetchone()
                     logger.debug("[Database] Database connection verified after retry")
-            except Exception as retry_error:
+            except DATABASE_ERRORS as retry_error:
                 logger.error("[Database] Database recovery failed: %s", retry_error)
                 return False
 
         logger.debug("[Database] Recovery from kill -9 scenario completed successfully")
         return True
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("[Database] Error during kill -9 recovery: %s", e, exc_info=True)
         return False
 
@@ -810,4 +691,21 @@ async def close_db():
     """Close both sync and async database connections (call on shutdown)."""
     engine.dispose()
     await async_engine.dispose()
-    logger.info("Database connections closed")
+
+
+def _run_alembic_upgrade() -> None:
+    """Apply pending Alembic migrations if the DB is behind head."""
+    _run_alembic_upgrade_impl(
+        database_url=DATABASE_URL,
+        alembic_ini=_ALEMBIC_INI,
+        alembic_script_dir=_ALEMBIC_SCRIPT_DIR,
+        project_root=_PROJECT_ROOT,
+        engine=engine,
+        migration_lock_key=_MIGRATION_LOCK_KEY,
+        migration_lock_ttl=_MIGRATION_LOCK_TTL,
+        migration_wait_interval_sec=_MIGRATION_WAIT_INTERVAL_SEC,
+        migration_wait_max_attempts=_MIGRATION_WAIT_MAX_ATTEMPTS,
+        get_alembic_version_num=_get_alembic_version_num,
+        acquire_migration_lock=_acquire_migration_lock,
+        release_migration_lock=_release_migration_lock,
+    )

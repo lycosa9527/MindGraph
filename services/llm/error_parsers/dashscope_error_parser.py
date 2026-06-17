@@ -13,10 +13,10 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Dict, NoReturn, Optional, Tuple
 import json
 import logging
 import re
+from typing import Dict, NoReturn, Optional, Tuple
 
 from services.infrastructure.http.error_handler import LLMProviderError, attach_llm_user_message
 from services.llm.dashscope_errors import (
@@ -183,7 +183,7 @@ def parse_and_raise_dashscope_error(status_code: int, error_text: str, error_dat
     logger.error(
         "DashScope API error (%d): %s - %s",
         status_code,
-        exception.__class__.__name__,
+        type(exception).__name__,
         str(exception),
         extra={
             "status_code": status_code,

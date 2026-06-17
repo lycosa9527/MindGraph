@@ -10,20 +10,20 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
 import json
-from datetime import UTC, datetime
-from typing import Optional, List, Dict, Any
 import logging
+from datetime import UTC, datetime
+from typing import Any, Dict, List, Optional
 
-from sqlalchemy import select, delete, and_
-from sqlalchemy.sql.functions import count as sql_count
+from sqlalchemy import and_, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import count as sql_count
 
 from models.domain.gewe_group_member import GeweGroupMember
-from services.utils.typing_helpers import result_rowcount
 from services.redis.redis_async_ops import AsyncRedisOperations
 from services.redis.redis_client import is_redis_available
+from services.utils.error_types import DATABASE_ERRORS
+from services.utils.typing_helpers import result_rowcount
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +141,7 @@ class GeweGroupMemberDB:
                     self.db.add(group_member)
 
                 saved_count += 1
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 logger.warning("Failed to save group member %s: %s", member_wxid, e)
                 continue
 
@@ -160,14 +160,14 @@ class GeweGroupMemberDB:
                         if member_wxid:
                             member_cache_key = f"{GROUP_MEMBER_KEY_PREFIX}{app_id}:{group_wxid}:{member_wxid}"
                             await AsyncRedisOperations.delete(member_cache_key)
-                except Exception as e:
+                except DATABASE_ERRORS as e:
                     logger.debug(
                         "Failed to invalidate group member cache %s:%s: %s",
                         app_id,
                         group_wxid,
                         e,
                     )
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Failed to commit group members: %s", e, exc_info=True)
             await self.db.rollback()
             return 0
@@ -206,7 +206,7 @@ class GeweGroupMemberDB:
                         )
                         # Invalidate corrupted cache
                         await AsyncRedisOperations.delete(cache_key)
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 logger.debug("Redis error for group members %s:%s: %s", app_id, group_wxid, e)
 
         # Cache miss - load from database
@@ -253,7 +253,7 @@ class GeweGroupMemberDB:
                         json.dumps(members, ensure_ascii=False),
                         GROUP_MEMBER_CACHE_TTL,
                     )
-                except Exception as exc:
+                except DATABASE_ERRORS as exc:
                     logger.debug(
                         "Failed to cache group members %s:%s: %s",
                         app_id,
@@ -262,7 +262,7 @@ class GeweGroupMemberDB:
                     )
 
             return members
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Failed to get group members: %s", e, exc_info=True)
             return []
 
@@ -303,7 +303,7 @@ class GeweGroupMemberDB:
                         )
                         # Invalidate corrupted cache
                         await AsyncRedisOperations.delete(cache_key)
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 logger.debug(
                     "Redis error for group member %s:%s:%s: %s",
                     app_id,
@@ -356,7 +356,7 @@ class GeweGroupMemberDB:
                         json.dumps(member_dict, ensure_ascii=False),
                         GROUP_MEMBER_CACHE_TTL,
                     )
-                except Exception as exc:
+                except DATABASE_ERRORS as exc:
                     logger.debug(
                         "Failed to cache group member %s:%s:%s: %s",
                         app_id,
@@ -366,7 +366,7 @@ class GeweGroupMemberDB:
                     )
 
             return member_dict
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Failed to get group member: %s", e, exc_info=True)
             return None
 
@@ -401,7 +401,7 @@ class GeweGroupMemberDB:
                     list_cache_key = f"{GROUP_MEMBER_LIST_KEY_PREFIX}{app_id}:{group_wxid}"
                     await AsyncRedisOperations.delete(member_cache_key)
                     await AsyncRedisOperations.delete(list_cache_key)
-                except Exception as e:
+                except DATABASE_ERRORS as e:
                     logger.debug(
                         "Failed to invalidate group member cache %s:%s:%s: %s",
                         app_id,
@@ -411,7 +411,7 @@ class GeweGroupMemberDB:
                     )
 
             return result_rowcount(result) > 0
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Failed to delete group member: %s", e, exc_info=True)
             await self.db.rollback()
             return False
@@ -443,7 +443,7 @@ class GeweGroupMemberDB:
                 try:
                     list_cache_key = f"{GROUP_MEMBER_LIST_KEY_PREFIX}{app_id}:{group_wxid}"
                     await AsyncRedisOperations.delete(list_cache_key)
-                except Exception as e:
+                except DATABASE_ERRORS as e:
                     logger.debug(
                         "Failed to invalidate group members list cache %s:%s: %s",
                         app_id,
@@ -452,7 +452,7 @@ class GeweGroupMemberDB:
                     )
 
             return result_rowcount(result)
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Failed to delete all group members: %s", e, exc_info=True)
             await self.db.rollback()
             return 0
@@ -481,7 +481,7 @@ class GeweGroupMemberDB:
             )
 
             return [row[0] for row in result.all()]
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Failed to get member groups: %s", e, exc_info=True)
             return []
 
@@ -508,6 +508,6 @@ class GeweGroupMemberDB:
                 )
             )
             return result.scalar() or 0
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Failed to get group member count: %s", e, exc_info=True)
             return 0

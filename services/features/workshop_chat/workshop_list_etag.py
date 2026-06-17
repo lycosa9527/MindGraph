@@ -56,11 +56,13 @@ def etag_is_not_modified(
 
 
 def _weak_etag_from_payload(payload: str) -> str:
+    """Weak etag from payload."""
     digest = hashlib.sha256(payload.encode()).hexdigest()[:32]
     return f'W/"{digest}"'
 
 
 async def _visible_channel_ids(db: AsyncSession, organization_id: int) -> List[int]:
+    """Visible channel ids."""
     result = await db.execute(
         select(ChatChannel.id).where(
             ChatChannel.is_archived.is_(False),
@@ -74,6 +76,7 @@ async def _visible_channel_ids(db: AsyncSession, organization_id: int) -> List[i
 
 
 async def _max_message_id_for_channels(db: AsyncSession, visible_ids: List[int]) -> int:
+    """Max message id for channels."""
     result = await db.execute(
         select(func.coalesce(func.max(ChatMessage.id), 0)).where(
             ChatMessage.channel_id.in_(visible_ids),
@@ -88,6 +91,7 @@ async def _membership_digest_for_channels(
     user_id: int,
     visible_ids: List[int],
 ) -> str:
+    """Membership digest for channels."""
     result = await db.execute(
         select(
             ChannelMember.channel_id,
@@ -115,6 +119,7 @@ async def _channels_fingerprint_non_empty(
     organization_id: int,
     admin_bit: int,
 ) -> str:
+    """Channels fingerprint non empty."""
     result = await db.execute(
         select(
             func.max(ChatChannel.updated_at),
@@ -170,6 +175,7 @@ async def _topics_aggregate_row(
     db: AsyncSession,
     channel_id: int,
 ) -> Tuple[Any, int]:
+    """Topics aggregate row."""
     result = await db.execute(
         select(
             func.coalesce(

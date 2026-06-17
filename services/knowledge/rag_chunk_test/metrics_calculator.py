@@ -11,19 +11,19 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import List, Dict, Any, Optional
 import logging
+from typing import Any, Dict, List, Optional
 
-from services.knowledge.rag_chunk_test.chunk_comparator import ChunkComparator
 from services.knowledge.rag_chunk_test.answer_quality_evaluator import (
     AnswerQualityEvaluator,
 )
-from services.knowledge.rag_chunk_test.diversity_evaluator import DiversityEvaluator
+from services.knowledge.rag_chunk_test.chunk_comparator import ChunkComparator
 from services.knowledge.rag_chunk_test.cross_method_comparator import (
     CrossMethodComparator,
 )
+from services.knowledge.rag_chunk_test.diversity_evaluator import DiversityEvaluator
 from services.knowledge.retrieval_test_service import RetrievalTestService
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -293,7 +293,7 @@ class MetricsCalculator:
                 try:
                     coherence = await self.chunk_comparator.calculate_chunk_coherence(mode_chunks)
                     evaluation_results["chunk_quality"][mode]["semantic_coherence"] = coherence
-                except Exception as e:
+                except BACKGROUND_INFRA_ERRORS as e:
                     logger.warning(
                         "[RAGChunkTest] Failed to calculate coherence for %s: %s",
                         mode,

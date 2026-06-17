@@ -12,6 +12,25 @@ from typing import Optional
 
 import aiohttp
 
+from clients.dify_exceptions import (
+    DifyAPIError,
+    DifyAppUnavailableError,
+    DifyCompletionRequestError,
+    DifyConversationNotFoundError,
+    DifyDraftWorkflowError,
+    DifyFileAccessDeniedError,
+    DifyFileNotFoundError,
+    DifyFileTooLargeError,
+    DifyInvalidParamError,
+    DifyModelNotSupportError,
+    DifyProviderNotInitializeError,
+    DifyQuotaExceededError,
+    DifyS3StorageError,
+    DifyUnsupportedFileTypeError,
+    DifyWorkflowIdFormatError,
+    DifyWorkflowNotFoundError,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -46,59 +65,56 @@ def raise_for_dify_http_error(
 
     Called after a non-2xx response; ``endpoint`` is the path fragment (e.g. ``/chat-messages``).
     """
-    # Late import: ``clients.dify`` imports this module at load time.
-    from clients import dify as dify_mod
-
     ec = (code or "").strip() if isinstance(code, str) else None
     ep = endpoint.lower()
 
     if status == 404:
         if ec in ("conversation_not_exists", "conversation_variable_not_exists"):
-            raise dify_mod.DifyConversationNotFoundError(message)
+            raise DifyConversationNotFoundError(message)
         if ec == "file_not_found":
-            raise dify_mod.DifyFileNotFoundError(message)
+            raise DifyFileNotFoundError(message)
         if "conversation" in ep:
-            raise dify_mod.DifyConversationNotFoundError(message)
+            raise DifyConversationNotFoundError(message)
         if "file" in ep:
-            raise dify_mod.DifyFileNotFoundError(message)
+            raise DifyFileNotFoundError(message)
 
     if status == 403 and ec == "file_access_denied":
-        raise dify_mod.DifyFileAccessDeniedError(message)
+        raise DifyFileAccessDeniedError(message)
 
     if status == 413 or ec == "file_too_large":
-        raise dify_mod.DifyFileTooLargeError(message)
+        raise DifyFileTooLargeError(message)
 
     if status == 415 and ec == "unsupported_file_type":
-        raise dify_mod.DifyUnsupportedFileTypeError(message)
+        raise DifyUnsupportedFileTypeError(message)
 
     if status == 400 and ec:
         if ec == "invalid_param":
-            raise dify_mod.DifyInvalidParamError(message)
+            raise DifyInvalidParamError(message)
         if ec == "app_unavailable":
-            raise dify_mod.DifyAppUnavailableError(message)
+            raise DifyAppUnavailableError(message)
         if ec == "provider_not_initialize":
-            raise dify_mod.DifyProviderNotInitializeError(message)
+            raise DifyProviderNotInitializeError(message)
         if ec == "provider_quota_exceeded":
-            raise dify_mod.DifyQuotaExceededError(message)
+            raise DifyQuotaExceededError(message)
         if ec == "model_currently_not_support":
-            raise dify_mod.DifyModelNotSupportError(message)
+            raise DifyModelNotSupportError(message)
         if ec == "workflow_not_found":
-            raise dify_mod.DifyWorkflowNotFoundError(message)
+            raise DifyWorkflowNotFoundError(message)
         if ec == "draft_workflow_error":
-            raise dify_mod.DifyDraftWorkflowError(message)
+            raise DifyDraftWorkflowError(message)
         if ec == "workflow_id_format_error":
-            raise dify_mod.DifyWorkflowIdFormatError(message)
+            raise DifyWorkflowIdFormatError(message)
         if ec == "completion_request_error":
-            raise dify_mod.DifyCompletionRequestError(message)
+            raise DifyCompletionRequestError(message)
         if ec in (
             "no_file_uploaded",
             "too_many_files",
             "unsupported_preview",
             "unsupported_estimate",
         ):
-            raise dify_mod.DifyInvalidParamError(message)
+            raise DifyInvalidParamError(message)
 
     if status == 503 and ec and ec.startswith("s3_"):
-        raise dify_mod.DifyS3StorageError(message, error_code=ec)
+        raise DifyS3StorageError(message, error_code=ec)
 
-    raise dify_mod.DifyAPIError(message, status_code=status, error_code=ec)
+    raise DifyAPIError(message, status_code=status, error_code=ec)

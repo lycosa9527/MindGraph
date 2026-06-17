@@ -3,6 +3,7 @@
 Analyzes first 30 pages to detect document structure and determine
 optimal chunking strategy (General, Parent-Child, or Q&A).
 """
+from services.utils.error_types import JSON_PARSE_ERRORS
 
 from typing import Dict, Any, Optional, List
 import json
@@ -54,7 +55,7 @@ class StructureAgent:
                     self.llm_service = None
                 else:
                     self.llm_service = default_llm_service
-            except Exception as e:
+            except JSON_PARSE_ERRORS as e:
                 logger.warning(
                     "[StructureAgent] LLM service not available: %s. Structure detection will use heuristics fallback.",
                     e,
@@ -107,7 +108,7 @@ class StructureAgent:
                 structure.document_type,
                 len(toc),
             )
-        except Exception as e:
+        except JSON_PARSE_ERRORS as e:
             logger.error("[StructureAgent] ✗ Failed to create DocumentStructure: %s", e)
             logger.error("[StructureAgent] Full traceback:")
             logger.error(traceback.format_exc())
@@ -194,7 +195,7 @@ Return JSON:
                 logger.warning("Failed to parse LLM response as JSON, using heuristics")
                 return self._heuristic_analyze(sample_text, toc)
 
-        except Exception as e:
+        except JSON_PARSE_ERRORS as e:
             logger.warning("LLM analysis failed: %s, using heuristics", e)
             return self._heuristic_analyze(sample_text, toc)
 

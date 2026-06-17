@@ -9,7 +9,6 @@ Covers signup routes and OTP issuance/verification used only for signup
 from fastapi import HTTPException, status
 
 from models.domain.messages import Language, Messages
-
 from utils.auth import config as auth_configuration
 
 

@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from redis.exceptions import RedisError, WatchError
 
+from services.kitty.infra.desktop.kitty_desktop_wake_fanout import publish_kitty_desktop_wake
 from services.kitty.infra.redis.kitty_redis_keys import kitty_mobile_active_key, kitty_redis_ttl_seconds
 from services.redis.redis_async_client import get_async_redis
 
@@ -26,6 +27,7 @@ _INACTIVE_BODY: Dict[str, Any] = {
 
 
 def _normalize_scope(scope: str) -> Optional[str]:
+    """Normalize scope."""
     text = str(scope).strip()
     if not text:
         return None
@@ -33,6 +35,7 @@ def _normalize_scope(scope: str) -> Optional[str]:
 
 
 def _decode_payload(raw: Any) -> Optional[Dict[str, Any]]:
+    """Decode payload."""
     if raw is None:
         return None
     try:
@@ -46,6 +49,7 @@ def _decode_payload(raw: Any) -> Optional[Dict[str, Any]]:
 
 
 def _scopes_from_payload(data: Dict[str, Any]) -> List[str]:
+    """Scopes from payload."""
     raw = data.get("scopes")
     if not isinstance(raw, list):
         return []
@@ -59,8 +63,7 @@ def _scopes_from_payload(data: Dict[str, Any]) -> List[str]:
 
 
 async def _emit_desktop_wake(user_id: int, mobile_state: Dict[str, Any]) -> None:
-    from services.kitty.infra.desktop.kitty_desktop_wake_fanout import publish_kitty_desktop_wake
-
+    """Emit desktop wake."""
     await publish_kitty_desktop_wake(int(user_id), mobile_state)
 
 

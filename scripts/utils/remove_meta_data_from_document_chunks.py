@@ -4,10 +4,13 @@ Remove meta_data column from document_chunks table to reduce database size.
 This column was storing ~2GB of data and is not needed for core functionality.
 """
 
+import shutil
 import sqlite3
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
+from services.utils.error_types import DATABASE_ERRORS
 
 
 def get_sqlite_version():
@@ -35,8 +38,6 @@ def backup_database(db_path: Path):
     print(f"Creating backup: {backup_path}")
 
     # Copy database file
-    import shutil
-
     shutil.copy2(db_path, backup_path)
 
     # Also copy WAL and SHM if they exist
@@ -144,7 +145,7 @@ def recreate_table_without_meta_data(db_path: Path):
         print("✓ Table recreated successfully")
         return True
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         conn.rollback()
         print(f"✗ Error recreating table: {e}")
         raise
@@ -213,7 +214,7 @@ def main():
         print("Note: You may need to run VACUUM to fully reclaim disk space.")
         print("Run: sqlite3 data/mindgraph.db 'VACUUM;'")
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         print(f"\n✗ Migration failed: {e}")
         print(f"Restore from backup: {backup_path}")
         sys.exit(1)

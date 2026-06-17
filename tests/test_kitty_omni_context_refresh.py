@@ -8,12 +8,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from services.kitty.omni.context_refresh import schedule_omni_context_refresh
-from services.kitty.session.runtime_state import voice_sessions
 from services.kitty.session.ops import create_voice_session
+from services.kitty.session.runtime_state import voice_sessions
 
 
 @pytest.mark.asyncio
 async def test_pedagogical_review_uses_deep_instructions() -> None:
+    """Test pedagogical review uses deep instructions."""
     voice_session_id = create_voice_session(
         user_id="1",
         diagram_session_id="omni_ped_review",

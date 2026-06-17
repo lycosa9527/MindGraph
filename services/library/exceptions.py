@@ -35,6 +35,7 @@ class DocumentNotFoundError(LibraryError):
     """Raised when a document is not found."""
 
     def __init__(self, document_id: int, message: Optional[str] = None):
+        """ init  ."""
         super().__init__(
             message or f"Document {document_id} not found",
             error_code="DOCUMENT_NOT_FOUND",
@@ -53,6 +54,7 @@ class PageNotFoundError(LibraryError):
         total_pages: Optional[int] = None,
         message: Optional[str] = None,
     ):
+        """ init  ."""
         if total_pages and page_number > total_pages:
             msg = message or f"Page {page_number} exceeds total pages ({total_pages})"
         else:
@@ -82,6 +84,7 @@ class PageImageNotFoundError(LibraryError):
         image_path: Optional[str] = None,
         message: Optional[str] = None,
     ):
+        """ init  ."""
         super().__init__(
             message or f"Page {page_number} image not found for document {document_id}",
             error_code="PAGE_IMAGE_NOT_FOUND",
@@ -105,6 +108,7 @@ class PagesDirectoryNotFoundError(LibraryError):
         pages_dir_path: Optional[str] = None,
         message: Optional[str] = None,
     ):
+        """ init  ."""
         super().__init__(
             message or f"Pages directory not found for document {document_id}",
             error_code="PAGES_DIRECTORY_NOT_FOUND",
@@ -118,6 +122,7 @@ class DocumentNotImageBasedError(LibraryError):
     """Raised when document doesn't use images."""
 
     def __init__(self, document_id: int, message: Optional[str] = None):
+        """ init  ."""
         super().__init__(
             message or f"Document {document_id} does not use images",
             error_code="DOCUMENT_NOT_IMAGE_BASED",
@@ -130,6 +135,7 @@ class DanmakuNotFoundError(LibraryError):
     """Raised when a danmaku is not found."""
 
     def __init__(self, danmaku_id: int, message: Optional[str] = None):
+        """ init  ."""
         super().__init__(
             message or f"Danmaku {danmaku_id} not found",
             error_code="DANMAKU_NOT_FOUND",
@@ -148,6 +154,7 @@ class BookmarkNotFoundError(LibraryError):
         page_number: Optional[int] = None,
         message: Optional[str] = None,
     ):
+        """ init  ."""
         if bookmark_id:
             msg = message or f"Bookmark {bookmark_id} not found"
             context = {"bookmark_id": bookmark_id}
@@ -170,6 +177,7 @@ class PermissionDeniedError(LibraryError):
         resource_id: Optional[int] = None,
         message: Optional[str] = None,
     ):
+        """ init  ."""
         super().__init__(
             message or f"Permission denied for operation: {operation}",
             error_code="PERMISSION_DENIED",

@@ -9,13 +9,26 @@ from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
+from sqlalchemy import Table
 from starlette.websockets import WebSocket as StarletteWebSocket
 
+from models.domain.diagrams import Diagram
+from routers.api import workshop_ws
+from routers.api import workshop_ws_auth as auth
+from routers.api import workshop_ws_handlers_update as update_handler
+from services.features import workshop_ws_role_change as roles
+from services.features.workshop_ws_connection_state import ConnectionHandle
+from services.online_collab.core import online_collab_stop as stop_ops
+from services.online_collab.participant import workshop_join_resume_tokens as tokens
 from tests.typing_helpers import mock_call_args
+
+_has_verified_resume_for_rate_limit = getattr(auth, "_has_verified_resume_for_rate_limit")
+
 
 
 @dataclass
 class _User:
+    """_User helper."""
     id: int = 123
     username: str = "teacher"
 
@@ -24,27 +37,30 @@ class _FakeWebSocket:
     """Minimal WebSocket stand-in for pre-accept rejection tests."""
 
     def __init__(self) -> None:
+        """ init  ."""
         self.headers: dict[str, str] = {"origin": "https://evil.example"}
         self.query_params: dict[str, str] = {}
         self.closed: list[dict[str, Any]] = []
 
     async def close(self, *, code: int, reason: str) -> None:
+        """Close."""
         self.closed.append({"code": code, "reason": reason})
 
 
 class _ResumeRedis:
+    """_ResumeRedis helper."""
     def __init__(self, diagram_id: str | None) -> None:
+        """ init  ."""
         self.diagram_id = diagram_id
 
     async def get(self, _key: str) -> str | None:
+        """Get."""
         return self.diagram_id
 
 
 @pytest.mark.asyncio
 async def test_origin_rejected_before_join_mutates_workshop_state() -> None:
     """A bad Origin must not reach the Redis/DB join path."""
-    from routers.api import workshop_ws
-
     websocket = _FakeWebSocket()
     resolve_join = AsyncMock()
 
@@ -81,8 +97,6 @@ async def test_origin_rejected_before_join_mutates_workshop_state() -> None:
 @pytest.mark.asyncio
 async def test_resume_rate_limit_bypass_requires_current_diagram_match() -> None:
     """A stale resume token for a recycled code must not skip join rate limits."""
-    from routers.api import workshop_ws_auth as auth
-
     websocket = _FakeWebSocket()
     websocket.query_params["resume"] = "resume-token"
     user = _User(id=123)
@@ -95,7 +109,7 @@ async def test_resume_rate_limit_bypass_requires_current_diagram_match() -> None
         ),
         patch.object(auth, "get_async_redis", return_value=_ResumeRedis("new-diagram")),
     ):
-        verified = await auth._has_verified_resume_for_rate_limit(
+        verified = await _has_verified_resume_for_rate_limit(
             cast(StarletteWebSocket, websocket),
             user,
             "ABC-123",
@@ -105,31 +119,37 @@ async def test_resume_rate_limit_bypass_requires_current_diagram_match() -> None
 
 
 class _DiagramRow:
+    """_DiagramRow helper."""
     def __init__(self, workshop_code: str) -> None:
+        """ init  ."""
         self.workshop_code = workshop_code
 
 
 class _ScalarResult:
+    """_ScalarResult helper."""
     def __init__(self, value: Any) -> None:
+        """ init  ."""
         self._value = value
 
     def first(self) -> Any:
+        """First."""
         return self._value
 
 
 class _ExecuteResult:
+    """_ExecuteResult helper."""
     def __init__(self, value: Any) -> None:
+        """ init  ."""
         self._value = value
 
     def scalars(self) -> _ScalarResult:
+        """Scalars."""
         return _ScalarResult(self._value)
 
 
 @pytest.mark.asyncio
 async def test_idle_stop_flush_failure_keeps_session_intact() -> None:
     """Idle cleanup must not destroy or clear a room when DB flush fails."""
-    from services.online_collab.core import online_collab_stop as stop_ops
-
     fake_db = AsyncMock()
     fake_db.execute = AsyncMock(return_value=_ExecuteResult(_DiagramRow("ABC-123")))
     fake_context = AsyncMock()
@@ -182,18 +202,23 @@ async def test_idle_stop_flush_failure_keeps_session_intact() -> None:
 
 
 class _AtomicRedis:
+    """_AtomicRedis helper."""
     def __init__(self) -> None:
+        """ init  ."""
         self.data: dict[str, str] = {}
         self.eval_calls = 0
 
     async def setex(self, key: str, _ttl: int, val: str) -> bool:
+        """Setex."""
         self.data[key] = val
         return True
 
     async def get(self, key: str) -> str | None:
+        """Get."""
         return self.data.get(key)
 
     async def eval(self, _script: str, _num_keys: int, key: str, *args: str) -> int:
+        """Eval."""
         self.eval_calls += 1
         payload = self.data.get(key)
         if payload is None:
@@ -211,8 +236,6 @@ async def test_resume_token_consume_is_single_use_atomic(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Concurrent reconnects must not both consume the same resume token."""
-    from services.online_collab.participant import workshop_join_resume_tokens as tokens
-
     fake = _AtomicRedis()
     monkeypatch.setattr(tokens, "get_async_redis", lambda: fake)
 
@@ -245,8 +268,6 @@ async def test_resume_token_consume_is_single_use_atomic(
 @pytest.mark.asyncio
 async def test_full_spec_update_rejects_when_foreign_node_lock_exists() -> None:
     """Full-spec replacement must not delete or overwrite another user's lock."""
-    from routers.api import workshop_ws_handlers_update as update_handler
-
     websocket = AsyncMock()
     ctx = MagicMock()
     ctx.code = "ABC-123"
@@ -293,9 +314,6 @@ async def test_full_spec_update_rejects_when_foreign_node_lock_exists() -> None:
 @pytest.mark.asyncio
 async def test_role_change_publishes_cross_worker_control() -> None:
     """Fanout mode must not require the target socket to be local."""
-    from services.features import workshop_ws_role_change as roles
-    from services.features.workshop_ws_connection_state import ConnectionHandle
-
     requester = ConnectionHandle(
         websocket=MagicMock(),
         code="ABC-123",
@@ -330,9 +348,7 @@ async def test_role_change_publishes_cross_worker_control() -> None:
 
 
 def test_diagram_model_enforces_unique_active_workshop_code() -> None:
-    from models.domain.diagrams import Diagram
-    from sqlalchemy import Table
-
+    """Test diagram model enforces unique active workshop code."""
     table = cast(Table, Diagram.__table__)
     indexes = {str(index.name): index for index in table.indexes if index.name is not None}
     index = indexes["ix_diagrams_workshop_code_unique_active"]

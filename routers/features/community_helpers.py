@@ -10,6 +10,7 @@ from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.community import CommunityPost
+from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +152,7 @@ async def commit_and_refresh(db: AsyncSession, obj: object, error_detail: str) -
     try:
         await db.commit()
         await db.refresh(obj)
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -164,7 +165,7 @@ async def _commit_post_or_rollback(db: AsyncSession, post: CommunityPost, post_i
     try:
         await db.commit()
         await db.refresh(post)
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         await db.rollback()
         delete_thumbnail(post_id)
         delete_spec_json(post_id)

@@ -37,6 +37,7 @@ class SessionEventBus:
     """One ``asyncio.Queue`` per voice session with a single consumer task."""
 
     def __init__(self, voice_session_id: str, *, maxsize: int = 64) -> None:
+        """ init  ."""
         self.voice_session_id = voice_session_id
         self._queue: asyncio.Queue[KittyEvent] = asyncio.Queue(maxsize=maxsize)
         self._consumer_task: Optional[asyncio.Task] = None
@@ -44,9 +45,11 @@ class SessionEventBus:
         self._closed = False
 
     def add_handler(self, handler: KittyEventHandler) -> None:
+        """Add handler."""
         self._handlers.append(handler)
 
     async def emit(self, event: KittyEvent) -> None:
+        """Emit."""
         if self._closed:
             return
         try:
@@ -63,11 +66,13 @@ class SessionEventBus:
             await self._queue.put(event)
 
     async def start(self) -> None:
+        """Start."""
         if self._consumer_task is not None:
             return
         self._consumer_task = asyncio.create_task(self._consume_loop())
 
     async def stop(self) -> None:
+        """Stop."""
         self._closed = True
         if self._consumer_task is not None:
             self._consumer_task.cancel()
@@ -79,6 +84,7 @@ class SessionEventBus:
         await self.emit(KittyEvent(kind="stop", voice_session_id=self.voice_session_id, payload={}))
 
     async def _consume_loop(self) -> None:
+        """Consume loop."""
         while not self._closed:
             event = await self._queue.get()
             if event.kind == "stop":
@@ -100,6 +106,7 @@ _buses: Dict[str, SessionEventBus] = {}
 
 
 def get_session_event_bus(voice_session_id: str) -> SessionEventBus:
+    """Get session event bus."""
     bus = _buses.get(voice_session_id)
     if bus is None:
         bus = SessionEventBus(voice_session_id)
@@ -108,6 +115,7 @@ def get_session_event_bus(voice_session_id: str) -> SessionEventBus:
 
 
 def remove_session_event_bus(voice_session_id: str) -> None:
+    """Remove session event bus."""
     _buses.pop(voice_session_id, None)
 
 

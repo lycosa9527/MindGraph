@@ -9,6 +9,7 @@ from services.kitty.session.runtime_state import voice_sessions
 
 
 def _clip(text: str, limit: int = 120) -> str:
+    """Clip."""
     cleaned = " ".join(str(text).split()).strip()
     if len(cleaned) <= limit:
         return cleaned
@@ -16,6 +17,7 @@ def _clip(text: str, limit: int = 120) -> str:
 
 
 def _detail_from_params(params: Optional[Dict[str, Any]]) -> Optional[str]:
+    """Detail from params."""
     if not isinstance(params, dict):
         return None
     for key in ("target", "new_text", "text", "message", "node_label", "node_id"):
@@ -26,6 +28,7 @@ def _detail_from_params(params: Optional[Dict[str, Any]]) -> Optional[str]:
 
 
 def _detail_from_diagram_updates(updates: Any) -> Optional[str]:
+    """Detail from diagram updates."""
     if isinstance(updates, dict):
         for key in ("text", "label", "topic", "target"):
             raw = updates.get(key)

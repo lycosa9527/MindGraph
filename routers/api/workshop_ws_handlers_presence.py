@@ -8,16 +8,18 @@ import time
 from collections import OrderedDict
 from typing import Any, Dict, List, Optional, Tuple
 
+from routers.api.workshop_ws_broadcast import broadcast_to_all, broadcast_to_others
+from services.features.workshop_ws_registry import ACTIVE_EDITORS as active_editors
 from services.features.workshop_ws_connection_state import (
-    ACTIVE_EDITORS as active_editors,
     enqueue,
 )
 from services.features.ws_redis_fanout_config import is_ws_fanout_enabled
-from services.redis.redis_async_client import get_async_redis
-from services.online_collab.spec.online_collab_live_spec import read_live_spec
 from services.online_collab.participant.canvas_collab_locks import (
     compute_subtree_node_ids_async,
     node_locked_by_other_user,
+)
+from services.online_collab.participant.collab_display_name import (
+    workshop_collab_member_display_name,
 )
 from services.online_collab.participant.online_collab_ws_editor_redis import (
     apply_node_editor_batch_delta_redis,
@@ -25,10 +27,9 @@ from services.online_collab.participant.online_collab_ws_editor_redis import (
     claim_node_exclusive_redis,
     load_editors,
 )
-from services.online_collab.participant.collab_display_name import (
-    workshop_collab_member_display_name,
-)
-from routers.api.workshop_ws_broadcast import broadcast_to_all, broadcast_to_others
+from services.online_collab.spec.online_collab_live_spec import read_live_spec
+from services.redis.redis_async_client import get_async_redis
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 
 try:
     from services.redis.cache.redis_user_cache import user_cache as redis_user_cache
@@ -46,27 +47,27 @@ async def _presence_send(ctx: Any, payload: dict, msg_type: str = "error") -> No
         await ctx.websocket.send_json(payload)
 
 
-_NODE_EDIT_DEDUP_WINDOW_SEC = 0.050
-_NODE_EDIT_DEDUP_MAX_ENTRIES = 5000
-_node_editing_dedup_cache: OrderedDict = OrderedDict()
-_NODE_EDIT_DEDUP_EVICT_COUNT = 100
+NODE_EDIT_DEDUP_WINDOW_SEC = 0.050
+NODE_EDIT_DEDUP_MAX_ENTRIES = 5000
+node_editing_dedup_cache: OrderedDict = OrderedDict()
+NODE_EDIT_DEDUP_EVICT_COUNT = 100
 
-_PARTICIPANTS_WITH_NAMES_CAP = 250
+PARTICIPANTS_WITH_NAMES_CAP = 250
 
-_USERNAME_CACHE_MAX = 10_000
-_USERNAME_CACHE_TTL_SEC = 30.0
-_username_cache: OrderedDict[int, Tuple[str, float]] = OrderedDict()
+USERNAME_CACHE_MAX = 10_000
+USERNAME_CACHE_TTL_SEC = 30.0
+username_cache: OrderedDict[int, Tuple[str, float]] = OrderedDict()
 
 
-def _evict_username_cache() -> None:
+def evict_username_cache() -> None:
     """Drop oldest 10 % of username cache entries when capacity is exceeded."""
-    evict_count = max(1, _USERNAME_CACHE_MAX // 10)
+    evict_count = max(1, USERNAME_CACHE_MAX // 10)
     for _ in range(evict_count):
-        if _username_cache:
-            _username_cache.popitem(last=False)
+        if username_cache:
+            username_cache.popitem(last=False)
 
 
-async def _resolve_participant_name(pid: int) -> Dict[str, Any]:
+async def resolve_participant_name(pid: int) -> Dict[str, Any]:
     """
     Resolve one participant's username with a short-TTL process-local cache.
 
@@ -75,8 +76,8 @@ async def _resolve_participant_name(pid: int) -> Dict[str, Any]:
     instead of 250+ concurrent pool checkouts on every join handshake.
     """
     now = time.monotonic()
-    cached = _username_cache.get(pid)
-    if cached is not None and (now - cached[1]) < _USERNAME_CACHE_TTL_SEC:
+    cached = username_cache.get(pid)
+    if cached is not None and (now - cached[1]) < USERNAME_CACHE_TTL_SEC:
         return {"user_id": pid, "username": cached[0]}
 
     username: str = f"User {pid}"
@@ -85,12 +86,12 @@ async def _resolve_participant_name(pid: int) -> Dict[str, Any]:
             participant_user = await redis_user_cache.get_by_id(pid)
             if participant_user:
                 username = workshop_collab_member_display_name(participant_user)
-        except Exception:
+        except BACKGROUND_INFRA_ERRORS:
             pass
 
-    if len(_username_cache) >= _USERNAME_CACHE_MAX:
-        _evict_username_cache()
-    _username_cache[pid] = (username, now)
+    if len(username_cache) >= USERNAME_CACHE_MAX:
+        evict_username_cache()
+    username_cache[pid] = (username, now)
     return {"user_id": pid, "username": username}
 
 
@@ -100,23 +101,23 @@ async def build_participants_with_names(
     """
     Build ``{user_id, username}`` entries for ``participant_ids`` (parallel).
 
-    Capped at ``_PARTICIPANTS_WITH_NAMES_CAP`` (250) entries to keep the join
+    Capped at ``PARTICIPANTS_WITH_NAMES_CAP`` (250) entries to keep the join
     handshake payload bounded in very large rooms. Beyond the cap, the client
     gets the first N plus a sentinel ``_overflow`` entry signalling the total
     count; full name resolution for off-cap participants can be served via a
     paginated ``/api/workshop/participants`` endpoint.
 
-    Usernames are cached process-locally for ``_USERNAME_CACHE_TTL_SEC`` seconds
+    Usernames are cached process-locally for ``USERNAME_CACHE_TTL_SEC`` seconds
     so that a burst of 500 participants joining the same room only pays Redis
     round-trips for the first join; subsequent join handshakes resolve from cache.
     """
     if not participant_ids:
         return []
     total = len(participant_ids)
-    truncated = total > _PARTICIPANTS_WITH_NAMES_CAP
-    effective_ids = participant_ids[:_PARTICIPANTS_WITH_NAMES_CAP] if truncated else participant_ids
+    truncated = total > PARTICIPANTS_WITH_NAMES_CAP
+    effective_ids = participant_ids[:PARTICIPANTS_WITH_NAMES_CAP] if truncated else participant_ids
     results = await asyncio.gather(
-        *[_resolve_participant_name(pid) for pid in effective_ids],
+        *[resolve_participant_name(pid) for pid in effective_ids],
         return_exceptions=True,
     )
     out: List[Dict[str, Any]] = []
@@ -129,12 +130,12 @@ async def build_participants_with_names(
         logger.info(
             "[CanvasCollabWS] participants list truncated total=%s cap=%s",
             total,
-            _PARTICIPANTS_WITH_NAMES_CAP,
+            PARTICIPANTS_WITH_NAMES_CAP,
         )
         out.append(
             {
                 "user_id": -1,
-                "username": f"+{total - _PARTICIPANTS_WITH_NAMES_CAP} more",
+                "username": f"+{total - PARTICIPANTS_WITH_NAMES_CAP} more",
                 "_overflow": True,
                 "_total": total,
             }
@@ -142,10 +143,11 @@ async def build_participants_with_names(
     return out
 
 
-async def _handle_node_editing(
+async def handle_node_editing(
     ctx: Any,
     message: Dict[str, Any],
 ) -> None:
+    """Handle node editing."""
     node_id = message.get("node_id")
     raw_editing = message.get("editing", False)
     editing = raw_editing is True or raw_editing == 1
@@ -157,20 +159,20 @@ async def _handle_node_editing(
 
     dedup_key = f"{ctx.code}:{node_id}:{ctx.user.id}"
     now_ts = asyncio.get_running_loop().time()
-    cached = _node_editing_dedup_cache.get(dedup_key)
+    cached = node_editing_dedup_cache.get(dedup_key)
     if cached is not None:
         prev_editing, prev_ts = cached
-        if prev_editing == editing and (now_ts - prev_ts) < _NODE_EDIT_DEDUP_WINDOW_SEC:
+        if prev_editing == editing and (now_ts - prev_ts) < NODE_EDIT_DEDUP_WINDOW_SEC:
             logger.debug(
                 "[CanvasCollabWS] node_editing duplicate suppressed user=%s node=%s",
                 ctx.user.id,
                 node_id,
             )
             return
-    while len(_node_editing_dedup_cache) >= _NODE_EDIT_DEDUP_MAX_ENTRIES:
-        for _ in range(min(_NODE_EDIT_DEDUP_EVICT_COUNT, len(_node_editing_dedup_cache))):
-            _node_editing_dedup_cache.popitem(last=False)
-    _node_editing_dedup_cache[dedup_key] = (editing, now_ts)
+    while len(node_editing_dedup_cache) >= NODE_EDIT_DEDUP_MAX_ENTRIES:
+        for _ in range(min(NODE_EDIT_DEDUP_EVICT_COUNT, len(node_editing_dedup_cache))):
+            node_editing_dedup_cache.popitem(last=False)
+    node_editing_dedup_cache[dedup_key] = (editing, now_ts)
 
     room = active_editors.setdefault(ctx.code, {})
     node_editors = room.setdefault(node_id, {})
@@ -230,7 +232,7 @@ async def _handle_node_editing(
     )
 
 
-async def _handle_node_editing_batch(
+async def handle_node_editing_batch(
     ctx: Any,
     message: Dict[str, Any],
 ) -> None:
@@ -264,7 +266,7 @@ async def _handle_node_editing_batch(
         redis_client = get_async_redis()
         try:
             live_doc = await read_live_spec(redis_client, ctx.code) if redis_client else None
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug(
                 "[CanvasCollabWS] node_editing_batch: live_spec read failed: %s",
                 exc,
@@ -366,7 +368,7 @@ async def _handle_node_editing_batch(
 _ALLOWED_HOST_LLM_MODELS = frozenset({"qwen", "deepseek", "doubao"})
 
 
-async def _handle_host_llm_model(ctx: Any, message: Dict[str, Any]) -> None:
+async def handle_host_llm_model(ctx: Any, message: Dict[str, Any]) -> None:
     """Diagram owner announces which multi-LLM canvas variant is active (guest UI)."""
     owner_id = ctx.owner_id
     if owner_id is None:
@@ -398,10 +400,11 @@ async def _handle_host_llm_model(ctx: Any, message: Dict[str, Any]) -> None:
     )
 
 
-async def _handle_node_selected(
+async def handle_node_selected(
     ctx: Any,
     message: Dict[str, Any],
 ) -> None:
+    """Handle node selected."""
     node_sel = message.get("node_id")
     selected = bool(message.get("selected", True))
     sel_username = workshop_collab_member_display_name(ctx.user)
@@ -430,7 +433,7 @@ async def _handle_node_selected(
     )
 
 
-async def _handle_claim_node_edit(
+async def handle_claim_node_edit(
     ctx: Any,
     message: Dict[str, Any],
 ) -> None:

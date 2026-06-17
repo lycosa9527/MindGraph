@@ -24,11 +24,20 @@ import logging
 import os
 import time
 from dataclasses import dataclass
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional
+
+from routers.core.health import (
+    _check_application_health,
+    _check_database_health,
+    _check_processes_health,
+    _check_redis_health,
+    _update_overall_status,
+)
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 try:
-    from services.redis.redis_client import is_redis_available
     from services.redis.redis_async_client import get_async_redis
+    from services.redis.redis_client import is_redis_available
 
     _REDIS_AVAILABLE = True
 except ImportError:
@@ -168,7 +177,7 @@ class HealthMonitor:
             )
 
             return bool(lock_acquired)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.debug("[HealthMonitor] Failed to acquire monitor lock: %s", e)
             return False
 
@@ -199,7 +208,7 @@ class HealthMonitor:
                     await redis_client.expire(MONITOR_LOCK_KEY, MONITOR_LOCK_TTL)
                     return True
             return False
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.debug("[HealthMonitor] Failed to refresh monitor lock: %s", e)
             return False
 
@@ -222,7 +231,7 @@ class HealthMonitor:
 
             exists = await redis_client.exists(SMS_ALERT_COOLDOWN_KEY)
             return bool(exists)
-        except Exception:
+        except BACKGROUND_INFRA_ERRORS:
             return False
 
     async def _set_sms_cooldown(self) -> None:
@@ -242,7 +251,7 @@ class HealthMonitor:
                 HEALTH_MONITOR_SMS_ALERT_COOLDOWN_SECONDS,
                 str(time.time()),
             )
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("[HealthMonitor] Failed to set SMS cooldown: %s", e)
 
     async def _send_sms_alert(self, reason: str, critical: bool = False) -> None:
@@ -268,7 +277,7 @@ class HealthMonitor:
             self.status.last_alert_time = time.time()
             if critical:
                 logger.info("[HealthMonitor] Critical alert sent: %s", reason)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error(
                 "[HealthMonitor] Error sending SMS alert via critical alert service: %s",
                 e,
@@ -288,7 +297,7 @@ class HealthMonitor:
         try:
             process_monitor = get_process_monitor()
             return process_monitor.get_status()
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.debug("[HealthMonitor] Failed to get process monitor status: %s", e)
             return None
 
@@ -381,14 +390,6 @@ class HealthMonitor:
             response_data: Parsed JSON response if available, None otherwise
         """
         try:
-            from routers.core.health import (
-                _check_application_health,
-                _check_redis_health,
-                _check_database_health,
-                _check_processes_health,
-                _update_overall_status,
-            )
-
             overall_status = "healthy"
             overall_status_code = 200
             checks: Dict[str, Any] = {}
@@ -474,7 +475,7 @@ class HealthMonitor:
                 return "degraded", None, response_data
             return "unhealthy", f"Status: {overall_status}", response_data
 
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             return "error", f"Unexpected error: {exc}", None
 
     async def _monitor_loop(self) -> None:
@@ -568,7 +569,7 @@ class HealthMonitor:
                                                     "[HealthMonitor] All issues are database-related "
                                                     "and check is in progress, skipping alert"
                                                 )
-                                    except Exception as e:
+                                    except BACKGROUND_INFRA_ERRORS as e:
                                         logger.debug(
                                             "[HealthMonitor] Failed to check database state: %s",
                                             e,
@@ -599,7 +600,7 @@ class HealthMonitor:
             except asyncio.CancelledError:
                 logger.info("[HealthMonitor] Monitoring loop cancelled")
                 break
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.error("[HealthMonitor] Error in monitoring loop: %s", e, exc_info=True)
                 await asyncio.sleep(HEALTH_MONITOR_INTERVAL_SECONDS)
 
@@ -627,7 +628,7 @@ class HealthMonitor:
                         break
                 except asyncio.CancelledError:
                     return
-                except Exception as exc:
+                except BACKGROUND_INFRA_ERRORS as exc:
                     logger.debug("Health monitor lock acquisition retry failed: %s", exc)
 
         # Wait for server to be ready before starting health checks
@@ -675,14 +676,14 @@ class HealthMonitor:
 class _HealthMonitorSingleton:
     """Singleton holder for HealthMonitor instance"""
 
-    _instance: Optional[HealthMonitor] = None
+    instance: Optional[HealthMonitor] = None
 
     @classmethod
     def get_instance(cls) -> HealthMonitor:
         """Get singleton HealthMonitor instance"""
-        if cls._instance is None:
-            cls._instance = HealthMonitor()
-        return cls._instance
+        if cls.instance is None:
+            cls.instance = HealthMonitor()
+        return cls.instance
 
 
 def get_health_monitor() -> HealthMonitor:

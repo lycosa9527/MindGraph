@@ -20,8 +20,8 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Dict
 import logging
+from typing import Dict
 
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -29,8 +29,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from config.settings import config
 from models.domain.auth import User
 from services.infrastructure.utils.env_manager import EnvManager
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user, is_admin
-
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +100,7 @@ async def get_env_settings(current_user: User = Depends(get_current_user)):
 
         return {"settings": masked_settings, "schema": schema}
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to get environment settings: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -224,7 +224,7 @@ async def update_env_settings(request: Dict[str, str], current_user: User = Depe
     except ValueError as e:
         logger.error("Settings update failed: %s", e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Unexpected error updating settings: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -260,7 +260,7 @@ async def validate_env_settings(request: Dict[str, str], current_user: User = De
 
         return {"is_valid": is_valid, "errors": errors}
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Validation failed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -298,7 +298,7 @@ async def list_env_backups(current_user: User = Depends(get_current_user)):
 
         return backups
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to list backups: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -383,7 +383,7 @@ async def restore_env_from_backup(backup_filename: str, current_user: User = Dep
     except ValueError as e:
         logger.error("Restore failed: %s", e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Unexpected error during restore: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -415,7 +415,7 @@ async def get_env_schema(current_user: User = Depends(get_current_user)):
 
         return schema
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to get schema: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -450,7 +450,7 @@ async def reload_runtime_env(
             "message": "Runtime configuration reloaded from .env",
             "env_path": str(env_path),
         }
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.error("Runtime env reload failed: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

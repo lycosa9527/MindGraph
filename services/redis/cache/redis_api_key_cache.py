@@ -19,6 +19,7 @@ from typing import Any, Dict, Optional
 from services.redis import keys as _keys
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
+from services.utils.error_types import REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,7 @@ class _APIKeyCache:
             raw = await redis.get(cache_key)
             if raw:
                 return json.loads(raw)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug("[APIKeyCache] get failed: %s", exc)
         return None
 
@@ -75,7 +76,7 @@ class _APIKeyCache:
         cache_key = _keys.API_KEY_BY_HASH.format(hash=_key_hash(api_key))
         try:
             await redis.setex(cache_key, _keys.TTL_API_KEY, _serialize(key_record))
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug("[APIKeyCache] set failed: %s", exc)
 
     async def invalidate(self, api_key: str) -> None:
@@ -88,7 +89,7 @@ class _APIKeyCache:
         cache_key = _keys.API_KEY_BY_HASH.format(hash=_key_hash(api_key))
         try:
             await redis.delete(cache_key)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug("[APIKeyCache] invalidate failed: %s", exc)
 
     async def incr_usage(self, key_id: int) -> int:
@@ -112,7 +113,7 @@ class _APIKeyCache:
                 pipe.expire(usage_key, _keys.TTL_API_KEY * 12, nx=True)
                 results = await pipe.execute()
             return int(results[0])
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug("[APIKeyCache] incr_usage failed: %s", exc)
             return 0
 
@@ -127,7 +128,7 @@ class _APIKeyCache:
         try:
             raw = await redis.get(usage_key)
             return int(raw) if raw else 0
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug("[APIKeyCache] get_pending_usage failed: %s", exc)
             return 0
 
@@ -146,7 +147,7 @@ class _APIKeyCache:
         try:
             raw = await redis.getdel(usage_key)
             return int(raw) if raw else 0
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug("[APIKeyCache] get_usage_delta failed: %s", exc)
             return 0
 

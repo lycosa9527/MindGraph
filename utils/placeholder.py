@@ -14,7 +14,6 @@ from typing import Optional
 
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
-
 # Chinese placeholder patterns (aligned with frontend useAutoComplete.ts)
 _CHINESE_PLACEHOLDERS = [
     re.compile(r"^分支\s*\d+$"),

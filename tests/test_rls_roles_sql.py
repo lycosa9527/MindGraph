@@ -11,6 +11,7 @@ build_ensure_postgresql_extensions_sql = _roles_sql.build_ensure_postgresql_exte
 
 
 def test_create_roles_sql_includes_both_roles():
+    """Test create roles sql includes both roles."""
     sql = build_create_roles_sql("app_pw", "migrate_pw")
     assert "mindgraph_app" in sql
     assert "mindgraph_migrate" in sql
@@ -26,12 +27,14 @@ def test_create_roles_sql_skips_alter_bypassrls_when_already_set():
 
 
 def test_grants_sql_targets_both_roles():
+    """Test grants sql targets both roles."""
     sql = build_grants_sql()
     assert "mindgraph_app" in sql
     assert "mindgraph_migrate" in sql
 
 
 def test_migrate_database_privileges_sql():
+    """Test migrate database privileges sql."""
     sql = build_migrate_database_privileges_sql()
     assert "mindgraph_migrate" in sql
     assert "ALTER DATABASE" in sql
@@ -39,6 +42,7 @@ def test_migrate_database_privileges_sql():
 
 
 def test_ensure_postgresql_extensions_sql():
+    """Test ensure postgresql extensions sql."""
     sql = build_ensure_postgresql_extensions_sql()
     assert "pg_stat_statements" in sql
     assert "pg_trgm" in sql
@@ -46,6 +50,7 @@ def test_ensure_postgresql_extensions_sql():
 
 
 def test_reassign_public_objects_sql():
+    """Test reassign public objects sql."""
     sql = build_reassign_public_objects_to_migrate_sql()
     assert "REASSIGN OWNED BY" in sql
     assert "mindgraph_user" in sql

@@ -15,6 +15,8 @@ import uuid
 from config.settings import config
 from services.redis.cache.redis_feature_org_access_cache import get_cached_map as _get_feature_access_map_cached
 
+from utils.auth.admin_panel_permissions import is_management_panel_user
+
 from .config import ADMIN_PHONES, ADMIN_USER_IDS
 from .role_constants import (
     B2B_ORG_ROLES,
@@ -159,17 +161,6 @@ def is_admin_or_manager(current_user) -> bool:
     return is_superadmin(current_user) or is_school_admin(current_user)
 
 
-def is_management_panel_user(current_user) -> bool:
-    """True when user may access the unified management panel (roles 1–4)."""
-    from utils.auth.admin_panel_permissions import role_has_panel_access
-
-    if not hasattr(current_user, "role"):
-        return False
-    if is_superadmin(current_user):
-        return True
-    return role_has_panel_access(current_user.role)
-
-
 def can_moderate_workshop_channel(current_user, channel) -> bool:
     """
     Whether the user may remove or manage others' content in this channel.
@@ -189,6 +180,7 @@ def can_moderate_workshop_channel(current_user, channel) -> bool:
 
 
 def _global_feature_flag_enabled(feature_key: str) -> bool:
+    """Global feature flag enabled."""
     attr = FEATURE_KEY_TO_CONFIG_ATTR.get(feature_key)
     if not attr:
         return True
@@ -196,6 +188,7 @@ def _global_feature_flag_enabled(feature_key: str) -> bool:
 
 
 def _legacy_workshop_preview_or_open(feature_key: str, current_user) -> bool:
+    """Legacy workshop preview or open."""
     if feature_key != "feature_workshop_chat":
         return True
     org_id = getattr(current_user, "organization_id", None)
@@ -246,3 +239,6 @@ def get_user_role(current_user) -> str:
         return ROLE_SUPERADMIN
     raw = getattr(current_user, "role", None) or LEGACY_ROLE_USER
     return normalize_role(raw)
+
+
+__all__ = ["is_management_panel_user"]

@@ -25,7 +25,8 @@ Proprietary License
 
 from __future__ import annotations
 
-from sqlalchemy import bindparam, select, update as sa_update
+from sqlalchemy import bindparam, select
+from sqlalchemy import update as sa_update
 
 from models.domain.diagrams import Diagram
 

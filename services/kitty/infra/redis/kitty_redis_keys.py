@@ -26,6 +26,7 @@ def kitty_sessionmeta_key(ws_session_id: str) -> str:
 
 
 def kitty_live_spec_key(ws_session_id: str) -> str:
+    """Kitty live spec key."""
     tag = str(ws_session_id).strip()
     return f"{{{tag}}}kitty:live_spec"
 
@@ -37,6 +38,7 @@ def kitty_scope_owner_key(ws_session_id: str) -> str:
 
 
 def kitty_ws_refcount_key(ws_session_id: str) -> str:
+    """Kitty ws refcount key."""
     tag = str(ws_session_id).strip()
     return f"{{{tag}}}kitty:ws_refcount"
 

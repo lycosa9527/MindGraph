@@ -17,11 +17,10 @@ from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.library.library_document_mixin import LibraryDocumentMixin
-from services.library.library_danmaku_mixin import LibraryDanmakuMixin
 from services.library.library_bookmark_mixin import LibraryBookmarkMixin
+from services.library.library_danmaku_mixin import LibraryDanmakuMixin
+from services.library.library_document_mixin import LibraryDocumentMixin
 from services.library.library_page_mixin import LibraryPageMixin
-
 
 logger = logging.getLogger(__name__)
 

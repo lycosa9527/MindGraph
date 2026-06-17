@@ -15,20 +15,20 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional, Tuple
 import logging
 import re
+from typing import Optional, Tuple
 
 from services.infrastructure.http.error_handler import (
-    LLMServiceError,
-    LLMRateLimitError,
-    LLMContentFilterError,
-    LLMProviderError,
-    attach_llm_user_message,
-    LLMInvalidParameterError,
-    LLMQuotaExhaustedError,
-    LLMModelNotFoundError,
     LLMAccessDeniedError,
+    LLMContentFilterError,
+    LLMInvalidParameterError,
+    LLMModelNotFoundError,
+    LLMProviderError,
+    LLMQuotaExhaustedError,
+    LLMRateLimitError,
+    LLMServiceError,
+    attach_llm_user_message,
 )
 
 logger = logging.getLogger(__name__)
@@ -508,7 +508,7 @@ def parse_and_raise_doubao_error(error_code: str, error_message: str, status_cod
     logger.error(
         "Doubao API error (%s): %s - %s",
         error_code,
-        exception.__class__.__name__,
+        type(exception).__name__,
         str(exception),
         extra={
             "error_code": error_code,

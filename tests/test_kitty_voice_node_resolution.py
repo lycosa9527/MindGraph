@@ -3,16 +3,20 @@
 from __future__ import annotations
 
 from typing import cast
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from tests.typing_helpers import mock_await_args
-
 from services.kitty.diagram.diagram_utils import resolve_voice_node_reference
 from services.kitty.omni.tools import omni_function_call_to_command
+from services.kitty.routing.command_router import RouteOutcome, route_omni_function_call
+from services.kitty.session.ops import create_voice_session
+from services.kitty.session.runtime_state import voice_sessions
+from tests.typing_helpers import mock_await_args
 
 
 def test_resolve_voice_node_by_index_uses_child_id() -> None:
+    """Test resolve voice node by index uses child id."""
     ctx = {
         "diagram_data": {
             "children": [
@@ -29,6 +33,7 @@ def test_resolve_voice_node_by_index_uses_child_id() -> None:
 
 
 def test_resolve_voice_node_by_text_match() -> None:
+    """Test resolve voice node by text match."""
     ctx = {
         "diagram_data": {
             "children": [{"id": "context-0", "text": "Wheels"}],
@@ -41,6 +46,7 @@ def test_resolve_voice_node_by_text_match() -> None:
 
 
 def test_resolve_voice_node_falls_back_to_selected() -> None:
+    """Test resolve voice node falls back to selected."""
     ctx = {
         "diagram_data": {
             "children": [{"id": "bubble-1", "text": "Fast"}],
@@ -55,6 +61,7 @@ def test_resolve_voice_node_falls_back_to_selected() -> None:
 
 
 def test_omni_start_inline_recommendations_tool() -> None:
+    """Test omni start inline recommendations tool."""
     cmd = omni_function_call_to_command(
         "start_inline_recommendations",
         '{"node_identifier": "第一个"}',
@@ -64,12 +71,14 @@ def test_omni_start_inline_recommendations_tool() -> None:
 
 
 def test_omni_explain_node_without_identifier() -> None:
+    """Test omni explain node without identifier."""
     cmd = omni_function_call_to_command("explain_node", "{}")
     assert cmd["action"] == "explain_node"
     assert "node_identifier" not in cmd
 
 
 def test_omni_add_node_with_recommendations_tool() -> None:
+    """Test omni add node with recommendations tool."""
     cmd = omni_function_call_to_command("add_node_with_recommendations", "{}")
     assert cmd["action"] == "add_node_with_recommendations"
     assert cmd.get("target") is None
@@ -83,12 +92,7 @@ def test_omni_add_node_with_recommendations_tool() -> None:
 
 @pytest.mark.asyncio
 async def test_route_omni_add_node_with_recommendations() -> None:
-    from unittest.mock import AsyncMock, MagicMock, patch
-
-    from services.kitty.routing.command_router import RouteOutcome, route_omni_function_call
-    from services.kitty.session.runtime_state import voice_sessions
-    from services.kitty.session.ops import create_voice_session
-
+    """Test route omni add node with recommendations."""
     ws = MagicMock()
     vid = create_voice_session(user_id="3", diagram_session_id="scope_test", diagram_type="bubble_map")
     voice_sessions[vid]["context"] = {"diagram_data": {"children": []}}
@@ -135,6 +139,7 @@ async def test_route_omni_add_node_with_recommendations() -> None:
 
 
 def test_omni_ask_mindmate_tool() -> None:
+    """Test omni ask mindmate tool."""
     cmd = omni_function_call_to_command(
         "ask_mindmate",
         '{"message": "什么是光合作用？"}',

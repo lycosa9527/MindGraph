@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def _workflow_file_keys_from_env() -> list[str]:
+    """Workflow file keys from env."""
     raw = os.getenv("MINDBOT_DIFY_WORKFLOW_FILE_KEYS", "").strip()
     if not raw:
         return []
@@ -30,6 +31,7 @@ _IMAGE_TYPES = frozenset(
 
 
 def _norm_type(raw: Any) -> str:
+    """Norm type."""
     if not isinstance(raw, str):
         return ""
     s = raw.strip().lower()
@@ -75,6 +77,7 @@ def parse_message_file_event(ev: dict[str, Any]) -> Optional[dict[str, Any]]:
 
 
 def is_image_file_type(type_s: str) -> bool:
+    """Is image file type."""
     t = (type_s or "").strip().lower()
     if t in _IMAGE_TYPES or t == "image":
         return True

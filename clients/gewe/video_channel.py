@@ -10,7 +10,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Dict, Any, Optional, Protocol
+from typing import Any, Dict, Optional, Protocol
 
 
 class _GeweClientProtocol(Protocol):

@@ -10,8 +10,8 @@ from typing import Optional, Tuple
 from services.infrastructure.http.error_handler import (
     LLMAccessDeniedError,
     LLMInvalidParameterError,
-    LLMQuotaExhaustedError,
     LLMProviderError,
+    LLMQuotaExhaustedError,
 )
 
 

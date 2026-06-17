@@ -25,10 +25,10 @@ from fastapi import (
     status,
 )
 from sqlalchemy import case, delete, select, update
-from sqlalchemy.sql.functions import count as sa_count
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.functions import count as sa_count
 
 from config.database import get_async_db
 from models.domain.auth import User
@@ -56,6 +56,7 @@ from services.redis.cache.redis_community_cache import (
     set_cached_list,
     set_cached_post,
 )
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user, is_school_admin, is_superadmin
 
 logger = logging.getLogger(__name__)
@@ -360,7 +361,7 @@ async def create_post(
     try:
         db.add(post)
         await db.commit()
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         await db.rollback()
         delete_thumbnail(post_id)
         delete_spec_json(post_id)
@@ -556,7 +557,7 @@ async def create_comment(
         )
         await db.commit()
         await db.refresh(comment)
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         await db.rollback()
         logger.error("[Community] Failed to add comment on post %s: %s", post_id, exc)
         raise HTTPException(
@@ -630,7 +631,7 @@ async def delete_comment(
             )
         )
         await db.commit()
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         await db.rollback()
         logger.error(
             "[Community] Failed to delete comment %s on post %s: %s",
@@ -701,7 +702,7 @@ async def update_post(
 
     try:
         await db.commit()
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -753,7 +754,7 @@ async def delete_post(
         await db.execute(delete(CommunityPostLike).where(CommunityPostLike.post_id == post_id))
         await db.delete(post)
         await db.commit()
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         await db.rollback()
         logger.error("[Community] Failed to delete post %s: %s", post_id, exc)
         raise HTTPException(
@@ -766,11 +767,11 @@ async def delete_post(
     # Filesystem and cache cleanup runs after DB commit; failures are non-fatal.
     try:
         delete_thumbnail(post_id)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning("[Community] Failed to delete thumbnail for post %s: %s", post_id, exc)
     try:
         delete_spec_json(post_id)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning("[Community] Failed to delete spec JSON for post %s: %s", post_id, exc)
     await invalidate_post(post_id)
     await invalidate_all()
@@ -840,7 +841,7 @@ async def toggle_like(
             "is_liked": existing_after is not None,
             "likes_count": post.likes_count,
         }
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         await db.rollback()
         logger.error("[Community] Failed to toggle like on post %s: %s", post_id, exc)
         raise HTTPException(

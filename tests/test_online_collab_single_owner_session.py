@@ -14,6 +14,7 @@ from services.online_collab.lifecycle.online_collab_single_owner_session import 
 
 @pytest.mark.asyncio
 async def test_stop_other_calls_stop_online_collab_per_candidate() -> None:
+    """Test stop other calls stop online collab per candidate."""
     stops: list[tuple[str, int]] = []
 
     async def _fake_stop(diagram_id: str, uid: int) -> bool:
@@ -63,6 +64,7 @@ async def test_stop_other_calls_stop_online_collab_per_candidate() -> None:
 
 @pytest.mark.asyncio
 async def test_stop_other_returns_zero_on_listing_error() -> None:
+    """Test stop other returns zero on listing error."""
     fake_sess = AsyncMock()
     fake_sess.execute = AsyncMock(side_effect=SQLAlchemyError("db down"))
 

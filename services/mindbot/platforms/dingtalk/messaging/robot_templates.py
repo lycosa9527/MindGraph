@@ -10,6 +10,7 @@ from typing import Any
 
 
 def _clip(s: str, n: int) -> str:
+    """Clip."""
     if len(s) <= n:
         return s
     if n <= 1:
@@ -18,14 +19,17 @@ def _clip(s: str, n: int) -> str:
 
 
 def msg_param_sample_text(content: str) -> dict[str, Any]:
+    """Msg param sample text."""
     return {"content": _clip(content, 5000)}
 
 
 def msg_param_sample_markdown(title: str, text: str) -> dict[str, Any]:
+    """Msg param sample markdown."""
     return {"title": _clip(title, 80), "text": _clip(text, 5000)}
 
 
 def msg_param_sample_image(photo_url: str) -> dict[str, Any]:
+    """Msg param sample image."""
     return {"photoURL": photo_url.strip()[:2048]}
 
 
@@ -35,6 +39,7 @@ def msg_param_sample_link(
     message_url: str,
     pic_url: str = "",
 ) -> dict[str, Any]:
+    """Msg param sample link."""
     out: dict[str, Any] = {
         "text": _clip(text, 5000),
         "title": _clip(title, 500),
@@ -51,6 +56,7 @@ def msg_param_sample_action_card(
     single_title: str,
     single_url: str,
 ) -> dict[str, Any]:
+    """Msg param sample action card."""
     return {
         "title": _clip(title, 500),
         "text": _clip(text, 5000),
@@ -60,6 +66,7 @@ def msg_param_sample_action_card(
 
 
 def msg_param_sample_audio(media_id: str, duration_ms: int) -> dict[str, Any]:
+    """Msg param sample audio."""
     try:
         dur = max(1, int(duration_ms))
     except (ValueError, TypeError):
@@ -71,6 +78,7 @@ def msg_param_sample_audio(media_id: str, duration_ms: int) -> dict[str, Any]:
 
 
 def msg_param_sample_file(media_id: str, file_name: str, file_type: str) -> dict[str, Any]:
+    """Msg param sample file."""
     return {
         "mediaId": media_id.strip(),
         "fileName": file_name.strip()[:255],
@@ -84,6 +92,7 @@ def msg_param_sample_video(
     pic_media_id: str,
     video_type: str = "mp4",
 ) -> dict[str, Any]:
+    """Msg param sample video."""
     try:
         dur = max(1, int(duration_sec))
     except (ValueError, TypeError):

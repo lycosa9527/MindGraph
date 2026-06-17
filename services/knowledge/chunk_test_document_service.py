@@ -9,14 +9,13 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from pathlib import Path
-from typing import List, Optional
 import logging
 import os
 import shutil
+from pathlib import Path
+from typing import List, Optional
 
-from sqlalchemy import and_, select, func, delete
+from sqlalchemy import and_, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.dashscope_embedding import get_embedding_client
@@ -24,17 +23,17 @@ from models.domain.knowledge_space import ChunkTestDocument, ChunkTestDocumentCh
 from services.infrastructure.rate_limiting.kb_rate_limiter import get_kb_rate_limiter
 from services.knowledge.chunking_service import get_chunking_service
 from services.knowledge.document_cleaner import get_document_cleaner
-from services.knowledge.document_processor import get_document_processor
 from services.knowledge.document_processing import generate_embeddings_with_cache
-from services.knowledge.rag_chunk_test.chunk_comparator import ChunkComparator
-from services.llm.qdrant_service import get_qdrant_service
+from services.knowledge.document_processor import get_document_processor
 from services.knowledge.progress_tracking import (
+    ensure_completion_progress,
     format_progress_string,
     get_progress_percent,
     validate_progress,
-    ensure_completion_progress,
 )
-
+from services.knowledge.rag_chunk_test.chunk_comparator import ChunkComparator
+from services.llm.qdrant_service import get_qdrant_service
+from services.utils.error_types import QDRANT_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -403,7 +402,7 @@ class ChunkTestDocumentService:
                         len(chunks),
                     )
 
-                except Exception as method_error:
+                except QDRANT_ERRORS as method_error:
                     error_msg = str(method_error)
                     failed_methods.append({"method": method_name, "error": error_msg})
                     logger.error(
@@ -476,7 +475,7 @@ class ChunkTestDocumentService:
                 self.user_id,
             )
 
-        except Exception as e:
+        except QDRANT_ERRORS as e:
             logger.error(
                 "[ChunkTestDocument] ✗ Processing failed: doc_id=%s, error=%s",
                 document_id,
@@ -520,7 +519,7 @@ class ChunkTestDocumentService:
                         chunk_ids,
                         chunking_method=method if method != "unknown" else None,
                     )
-                except Exception as e:
+                except QDRANT_ERRORS as e:
                     logger.warning(
                         "[ChunkTestDocument] Failed to delete Qdrant points for method %s: %s",
                         method,
@@ -530,7 +529,7 @@ class ChunkTestDocumentService:
         try:
             if os.path.exists(document.file_path):
                 os.remove(document.file_path)
-        except Exception as e:
+        except QDRANT_ERRORS as e:
             logger.warning("[ChunkTestDocument] Failed to delete file: %s", e)
 
         await self.db.delete(document)
@@ -596,7 +595,7 @@ class ChunkTestDocumentService:
                         len(chunk_ids),
                         method,
                     )
-                except Exception as e:
+                except QDRANT_ERRORS as e:
                     logger.warning(
                         "[ChunkTestDocument] Failed to delete Qdrant points for method %s: %s",
                         method,

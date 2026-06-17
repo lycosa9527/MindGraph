@@ -3,12 +3,12 @@
 from typing import Any, Dict, List, Optional
 
 from ._common import (
+    BRACE_DIMENSION_TYPES_EN,
+    BRACE_DIMENSION_TYPES_ZH,
+    THINKING_APPROACH,
     append_batch_note,
     is_chinese_inline_prompt_language,
-    THINKING_APPROACH,
     thinking_locale_key,
-    BRACE_DIMENSION_TYPES_ZH,
-    BRACE_DIMENSION_TYPES_EN,
 )
 
 

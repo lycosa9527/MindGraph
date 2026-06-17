@@ -17,17 +17,15 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import UTC, datetime
-from typing import Optional, Tuple
+from typing import Awaitable, Callable, Optional, Tuple
 
 from redis.exceptions import RedisError
-from sqlalchemy import select, text as sql_text
+from sqlalchemy import select
+from sqlalchemy import text as sql_text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from utils.db.session_open import system_rls_session, user_rls_session
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
-from services.redis.cache.redis_diagram_cache import get_diagram_cache
-from services.redis.redis_async_client import get_async_redis
 from services.infrastructure.monitoring.ws_metrics import record_ws_cleanup_partition_size
 from services.online_collab.lifecycle.online_collab_expiry import (
     DURATION_TODAY,
@@ -37,6 +35,7 @@ from services.online_collab.lifecycle.online_collab_expiry import (
     redis_ttl_seconds_for_expires_at,
 )
 from services.online_collab.lifecycle.online_collab_session_fields import (
+    backfill_online_collab_expiry_if_needed,
     clear_online_collab_session_by_id_returning,
     clear_online_collab_session_fields,
 )
@@ -58,6 +57,9 @@ from services.online_collab.redis.online_collab_redis_locks import (
     new_lock_token,
     release_nx_lock,
 )
+from services.redis.cache.redis_diagram_cache import get_diagram_cache
+from services.redis.redis_async_client import get_async_redis
+from utils.db.session_open import system_rls_session, user_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -217,10 +219,6 @@ RETURNING t.id, s.workshop_code
                     )
 
                 if legacy_ids:
-                    from services.online_collab.lifecycle.online_collab_session_fields import (
-                        backfill_online_collab_expiry_if_needed,
-                    )
-
                     legacy_result = await db.execute(select(Diagram).where(Diagram.id.in_(legacy_ids)))
                     legacy_diagrams = legacy_result.scalars().all()
                     for diagram in legacy_diagrams:
@@ -295,6 +293,8 @@ async def start_online_collab_impl(
     duration: str,
     workshop_session_ttl: int,
     target_org_id: Optional[int] = None,
+    stop_other_owner_online_collabs: Callable[..., Awaitable[int]] | None = None,
+    create_session: Callable[..., Awaitable[None]] | None = None,
 ) -> Tuple[Optional[str], Optional[str], Optional[datetime], int]:
     """
     Create (or return existing) workshop session for ``diagram_id``.
@@ -383,14 +383,12 @@ async def start_online_collab_impl(
                     0,
                 )
 
-            from services.online_collab.lifecycle.online_collab_single_owner_session import (
-                stop_other_owner_online_collabs,
-            )
-
-            stopped_prior_sessions = await stop_other_owner_online_collabs(
-                owner_user_id=user_id,
-                except_diagram_id=diagram_id,
-            )
+            stopped_prior_sessions = 0
+            if stop_other_owner_online_collabs is not None:
+                stopped_prior_sessions = await stop_other_owner_online_collabs(
+                    owner_user_id=user_id,
+                    except_diagram_id=diagram_id,
+                )
 
             owner_name = ""
             org_id: Optional[int] = None
@@ -566,21 +564,18 @@ async def start_online_collab_impl(
                     diagram_id,
                 )
 
-                from services.online_collab.core.online_collab_manager import (
-                    get_online_collab_manager,
-                )
-
-                await get_online_collab_manager().create_session(
-                    code=code,
-                    diagram_id=diagram_id,
-                    owner_id=user_id,
-                    org_id=org_id,
-                    visibility=visibility,
-                    expires_at_unix=expires_at_to_unix(expires_at),
-                    ttl_sec=ttl_sec,
-                    title=diagram_title,
-                    owner_name=owner_name,
-                )
+                if create_session is not None:
+                    await create_session(
+                        code=code,
+                        diagram_id=diagram_id,
+                        owner_id=user_id,
+                        org_id=org_id,
+                        visibility=visibility,
+                        expires_at_unix=expires_at_to_unix(expires_at),
+                        ttl_sec=ttl_sec,
+                        title=diagram_title,
+                        owner_name=owner_name,
+                    )
             except (RedisError, OSError, RuntimeError, TypeError) as redis_exc:
                 logger.error(
                     "[OnlineCollabMgr] Redis init failed for workshop %s, rolling back DB session fields: %s",
@@ -650,32 +645,9 @@ async def start_online_collab_impl(
             return None, error_msg, None, 0
 
 
-async def stop_online_collab_impl(diagram_id: str, user_id: int) -> bool:
-    """Owner-initiated workshop stop."""
-    from services.online_collab.core.online_collab_stop import (
-        stop_online_collab_impl as _impl,
-    )
-
-    return await _impl(diagram_id, user_id)
-
-
-async def stop_online_collab_for_room_idle_impl(
-    diagram_id: str,
-    expected_code: str,
-) -> bool:
-    """Idle-timer initiated stop with expected-code protection."""
-    from services.online_collab.core.online_collab_stop import (
-        stop_online_collab_for_room_idle_impl as _impl,
-    )
-
-    return await _impl(diagram_id, expected_code)
-
-
 __all__ = [
     "DURATION_TODAY",
     "ONLINE_COLLAB_VISIBILITY_ORGANIZATION",
     "cleanup_expired_online_collabs_impl",
     "start_online_collab_impl",
-    "stop_online_collab_for_room_idle_impl",
-    "stop_online_collab_impl",
 ]

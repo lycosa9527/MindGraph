@@ -8,8 +8,8 @@ Handles resource not found errors.
 from typing import Optional, Tuple
 
 from services.infrastructure.http.error_handler import (
-    LLMModelNotFoundError,
     LLMInvalidParameterError,
+    LLMModelNotFoundError,
     LLMProviderError,
 )
 

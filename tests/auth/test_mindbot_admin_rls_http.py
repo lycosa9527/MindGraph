@@ -13,6 +13,7 @@ from utils.auth import get_current_user
 
 
 def _make_user(role: str, organization_id: int | None = None, user_id: int = 1):
+    """Make user."""
     user = SimpleNamespace()
     user.id = user_id
     user.role = role
@@ -22,11 +23,13 @@ def _make_user(role: str, organization_id: int | None = None, user_id: int = 1):
 
 @pytest.fixture(name="client")
 def fixture_client():
+    """Fixture client."""
     return TestClient(app)
 
 
 @pytest.fixture(autouse=True)
 def clear_dependency_overrides():
+    """Clear dependency overrides."""
     app.dependency_overrides.clear()
     yield
     app.dependency_overrides.clear()
@@ -47,6 +50,7 @@ def test_school_admin_cross_org_mindbot_config_denied(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Test school admin cross org mindbot config denied."""
     app.dependency_overrides[get_current_user] = lambda: _make_user(
         "school_admin",
         organization_id=42,
@@ -62,7 +66,7 @@ def test_school_admin_cross_org_mindbot_config_denied(
     def _noop_feature():
         return None
 
-    def _fake_response(row, school_manager_view=False):
+    def _fake_response(row, _school_manager_view=False):
         return {"id": 1, "organization_id": row.organization_id}
 
     monkeypatch.setattr(

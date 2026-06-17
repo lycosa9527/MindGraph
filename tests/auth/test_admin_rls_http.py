@@ -12,9 +12,11 @@ from main import app
 from routers.auth.dependencies import get_language_dependency
 from utils.auth import get_current_user
 from utils.auth.admin_panel_permissions import CAP_TAB_USERS_EDIT
+from utils.auth.admin_scope import build_admin_scope
 
 
 def _make_user(role: str, organization_id: int | None = None, user_id: int = 1):
+    """Make user."""
     user = SimpleNamespace()
     user.id = user_id
     user.role = role
@@ -24,17 +26,20 @@ def _make_user(role: str, organization_id: int | None = None, user_id: int = 1):
 
 @pytest.fixture(name="client")
 def fixture_client():
+    """Fixture client."""
     return TestClient(app)
 
 
 @pytest.fixture(autouse=True)
 def clear_dependency_overrides():
+    """Clear dependency overrides."""
     app.dependency_overrides.clear()
     yield
     app.dependency_overrides.clear()
 
 
 def test_teacher_denied_school_stats(client: TestClient) -> None:
+    """Test teacher denied school stats."""
     app.dependency_overrides[get_current_user] = lambda: _make_user("teacher")
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     response = client.get("/api/auth/admin/stats/school?organization_id=1")
@@ -42,6 +47,7 @@ def test_teacher_denied_school_stats(client: TestClient) -> None:
 
 
 def test_school_admin_cross_org_denied(client: TestClient) -> None:
+    """Test school admin cross org denied."""
     app.dependency_overrides[get_current_user] = lambda: _make_user("school_admin", organization_id=42)
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     response = client.get("/api/auth/admin/stats/school?organization_id=99")
@@ -49,6 +55,7 @@ def test_school_admin_cross_org_denied(client: TestClient) -> None:
 
 
 def test_school_admin_cross_org_school_users_denied(client: TestClient) -> None:
+    """Test school admin cross org school users denied."""
     app.dependency_overrides[get_current_user] = lambda: _make_user("school_admin", organization_id=42)
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     response = client.get("/api/auth/admin/school/users?organization_id=99")
@@ -64,6 +71,7 @@ def test_school_admin_missing_org_query_not_cross_org_error(client: TestClient) 
 
 
 def test_school_admin_denied_global_stats(client: TestClient) -> None:
+    """Test school admin denied global stats."""
     app.dependency_overrides[get_current_user] = lambda: _make_user("school_admin", organization_id=42)
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     response = client.get("/api/auth/admin/stats")
@@ -71,6 +79,7 @@ def test_school_admin_denied_global_stats(client: TestClient) -> None:
 
 
 def test_platform_bd_denied_school_user_update(client: TestClient) -> None:
+    """Test platform bd denied school user update."""
     app.dependency_overrides[get_current_user] = lambda: _make_user("platform_bd")
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     response = client.put(
@@ -81,6 +90,7 @@ def test_platform_bd_denied_school_user_update(client: TestClient) -> None:
 
 
 def test_teacher_capabilities_empty_panel(client: TestClient) -> None:
+    """Test teacher capabilities empty panel."""
     app.dependency_overrides[get_current_user] = lambda: _make_user("teacher")
     response = client.get("/api/auth/admin/capabilities")
     assert response.status_code == 200
@@ -90,6 +100,7 @@ def test_teacher_capabilities_empty_panel(client: TestClient) -> None:
 
 
 def test_superadmin_capabilities_full_panel(client: TestClient) -> None:
+    """Test superadmin capabilities full panel."""
     app.dependency_overrides[get_current_user] = lambda: _make_user("superadmin")
     response = client.get("/api/auth/admin/capabilities")
     assert response.status_code == 200
@@ -101,8 +112,7 @@ def test_superadmin_capabilities_full_panel(client: TestClient) -> None:
 
 
 def test_platform_bd_mutation_blocked_without_edit_cap():
-    from utils.auth.admin_scope import build_admin_scope
-
+    """Test platform bd mutation blocked without edit cap."""
     user = _make_user("platform_bd")
     scope = build_admin_scope(user, lang="en")
     with pytest.raises(HTTPException) as exc:
@@ -111,6 +121,7 @@ def test_platform_bd_mutation_blocked_without_edit_cap():
 
 
 def test_school_admin_cross_org_token_stats_denied(client: TestClient) -> None:
+    """Test school admin cross org token stats denied."""
     app.dependency_overrides[get_current_user] = lambda: _make_user("school_admin", organization_id=42)
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     response = client.get("/api/auth/admin/stats/school/token-stats?organization_id=99")

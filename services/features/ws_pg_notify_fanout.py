@@ -38,6 +38,14 @@ import re
 import socket
 from typing import Any, Dict, Optional
 
+import psycopg
+from psycopg import sql
+
+from config.database import DATABASE_URL
+from services.features.workshop_ws_fanout_delivery import deliver_local_workshop_broadcast
+from services.features.ws_redis_fanout_listener import dispatch_chat_fanout_raw
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS, JSON_PARSE_ERRORS
+
 logger = logging.getLogger(__name__)
 
 _RECONNECT_DELAY_SEC = 3.0
@@ -49,6 +57,7 @@ _SHARED_CHANNEL = "workshop_fanout_shared"
 
 
 def _pg_notify_enabled() -> bool:
+    """Pg notify enabled."""
     return os.getenv("COLLAB_PG_NOTIFY_FALLBACK", "0") not in ("0", "false", "False", "")
 
 
@@ -76,17 +85,9 @@ async def _listener_loop(stop: asyncio.Event) -> None:
 
     Reconnects on any error after ``_RECONNECT_DELAY_SEC`` seconds.
     """
-    from services.features.workshop_ws_fanout_delivery import (
-        deliver_local_workshop_broadcast,
-    )
-
     while not stop.is_set():
         conn = None
         try:
-            import psycopg
-            from psycopg import sql
-            from config.database import DATABASE_URL
-
             dsn = str(DATABASE_URL).replace("+asyncpg", "").replace("+psycopg", "")
             conn = await psycopg.AsyncConnection.connect(dsn, autocommit=True)
             await conn.execute(sql.SQL("LISTEN {}").format(sql.Identifier(_SHARED_CHANNEL)))
@@ -102,18 +103,14 @@ async def _listener_loop(stop: asyncio.Event) -> None:
                 payload = notify.payload
                 try:
                     env = json.loads(payload)
-                except (json.JSONDecodeError, TypeError, ValueError):
+                except JSON_PARSE_ERRORS:
                     continue
                 if isinstance(env, dict) and env.get("fanout") == "chat":
                     inner = env.get("payload")
                     if isinstance(inner, str):
                         try:
-                            from services.features.ws_redis_fanout_listener import (
-                                dispatch_chat_fanout_raw,
-                            )
-
                             await dispatch_chat_fanout_raw(inner)
-                        except Exception as exc:
+                        except BACKGROUND_INFRA_ERRORS as exc:
                             logger.debug("[PgNotify] chat deliver error: %s", exc)
                     continue
                 if _FANOUT_ORIGIN_SECRET and env.get("origin") != _FANOUT_ORIGIN_SECRET:
@@ -130,15 +127,15 @@ async def _listener_loop(stop: asyncio.Event) -> None:
                 exclude = ex if isinstance(ex, int) else None
                 try:
                     await deliver_local_workshop_broadcast(code, mode, exclude, data_str)
-                except Exception as exc:
+                except BACKGROUND_INFRA_ERRORS as exc:
                     logger.debug("[PgNotify] deliver error: %s", exc)
-        except Exception as exc:
+        except DATABASE_ERRORS as exc:
             logger.warning("[PgNotify] listener error: %s — reconnecting", exc)
         finally:
             if conn is not None:
                 try:
                     await conn.close()
-                except Exception:
+                except BACKGROUND_INFRA_ERRORS:
                     pass
         if not stop.is_set():
             await asyncio.sleep(_RECONNECT_DELAY_SEC)
@@ -197,10 +194,6 @@ async def publish_pg_notify_fanout_async(envelope: Dict[str, Any]) -> None:
         )
         return
     try:
-        import psycopg
-        from psycopg import sql
-        from config.database import DATABASE_URL
-
         dsn = str(DATABASE_URL).replace("+asyncpg", "").replace("+psycopg", "")
         # We NOTIFY the shared channel so all workers receive the message,
         # not just the local one. The machine-specific channel is kept for
@@ -209,5 +202,5 @@ async def publish_pg_notify_fanout_async(envelope: Dict[str, Any]) -> None:
         async with await psycopg.AsyncConnection.connect(dsn, autocommit=True) as conn:
             await conn.execute(notify_query, (body,))
         logger.debug("[PgNotify] NOTIFY %s sent", _SHARED_CHANNEL)
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.debug("[PgNotify] publish failed: %s", exc)

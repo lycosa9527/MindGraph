@@ -18,6 +18,7 @@ def _request(
     path: str = "/manifest.webmanifest",
     headers: list[tuple[bytes, bytes]] | None = None,
 ) -> Request:
+    """Request."""
     header_list = headers or [(b"host", b"app.example.com")]
     scope = {
         "type": "http",
@@ -32,6 +33,7 @@ def _request(
 
 
 def test_build_pwa_manifest_uses_absolute_start_url_and_id() -> None:
+    """Test build pwa manifest uses absolute start url and id."""
     manifest = build_pwa_manifest("https://mindgraph.example.com")
     assert manifest["start_url"] == "https://mindgraph.example.com/"
     assert manifest["id"] == "https://mindgraph.example.com/"
@@ -42,12 +44,14 @@ def test_build_pwa_manifest_uses_absolute_start_url_and_id() -> None:
 
 
 def test_public_site_origin_prefers_external_base_url() -> None:
+    """Test public site origin prefers external base url."""
     request = _request()
     with patch.dict(os.environ, {"EXTERNAL_BASE_URL": "https://public.example.com"}, clear=False):
         assert public_site_origin_from_request(request) == "https://public.example.com"
 
 
 def test_public_site_origin_uses_forwarded_headers() -> None:
+    """Test public site origin uses forwarded headers."""
     request = _request(
         headers=[
             (b"x-forwarded-proto", b"https"),
@@ -60,6 +64,7 @@ def test_public_site_origin_uses_forwarded_headers() -> None:
 
 
 def test_public_site_origin_falls_back_to_host_header() -> None:
+    """Test public site origin falls back to host header."""
     request = _request(headers=[(b"host", b"localhost:9527")])
     with patch.dict(os.environ, {}, clear=False):
         os.environ.pop("EXTERNAL_BASE_URL", None)
@@ -76,6 +81,7 @@ def test_public_site_origin_falls_back_to_host_header() -> None:
     ],
 )
 def test_manifest_start_url_never_uses_file_scheme(platform_label: str, origin: str) -> None:
+    """Test manifest start url never uses file scheme."""
     _ = platform_label
     manifest = build_pwa_manifest(origin)
     assert manifest["start_url"].startswith("http://") or manifest["start_url"].startswith("https://")

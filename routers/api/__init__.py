@@ -20,25 +20,25 @@ from config.settings import config as app_config
 
 from . import (
     activity,
+    asr_realtime_ws,
     canvas_translate,
     client_bundles,
+    config,
     diagram_generation,
-    web_content_generation,
     diagram_node_ops,
+    diagrams,
+    dify_conversations,
+    dify_files,
+    feedback,
+    frontend_logging,
+    image_proxy,
+    live_translate_ws,
+    llm_operations,
     png_export,
     sse_streaming,
-    llm_operations,
-    frontend_logging,
-    feedback,
-    dify_files,
-    dify_conversations,
-    image_proxy,
-    diagrams,
+    web_content_generation,
     workshop_ws,
-    asr_realtime_ws,
-    live_translate_ws,
 )
-from . import config
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ KNOWLEDGE_SPACE_MODULE = None
 if app_config.FEATURE_KNOWLEDGE_SPACE:
     try:
         from . import knowledge_space as KNOWLEDGE_SPACE_MODULE
-    except Exception as e:
+    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
         KNOWLEDGE_SPACE_MODULE = None
         logger.debug("[API] Failed to import knowledge_space router: %s", e, exc_info=True)
 else:
@@ -56,7 +56,7 @@ MINDBOT_MODULE = None
 if app_config.FEATURE_MINDBOT:
     try:
         from . import mindbot as MINDBOT_MODULE
-    except Exception as e:
+    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
         MINDBOT_MODULE = None
         logger.debug("[API] Failed to import mindbot router: %s", e, exc_info=True)
 else:

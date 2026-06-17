@@ -22,6 +22,7 @@ _signal_patch_installed: list[bool] = [False]
 
 
 def _signal_diag_env_enabled() -> bool:
+    """Signal diag env enabled."""
     env_raw = os.environ.get("MINDGRAPH_UVICORN_SIGNAL_DIAG", "1").lower()
     return env_raw not in ("0", "false", "no", "off")
 
@@ -39,6 +40,7 @@ def _read_proc_cmdline(pid: int, max_bytes: int = 400) -> str:
 
 
 def _read_session_id() -> str:
+    """Read session id."""
     try:
         with open("/proc/self/sessionid", "r", encoding="utf-8") as sess_file:
             return sess_file.read().strip()
@@ -47,6 +49,7 @@ def _read_session_id() -> str:
 
 
 def _read_cgroup_hint() -> str:
+    """Read cgroup hint."""
     try:
         with open("/proc/self/cgroup", "r", encoding="utf-8") as cg_file:
             lines = [ln.strip() for ln in cg_file if ln.strip()]

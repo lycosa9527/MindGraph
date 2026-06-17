@@ -10,17 +10,19 @@ import logging
 import time
 from typing import Any, Optional
 
-from utils.db.rls_context import RlsContext, rls_async_session
-from models.domain.mindbot_usage import MindbotUsageEvent
 from models.domain.mindbot_config import OrganizationMindbotConfig
+from models.domain.mindbot_usage import MindbotUsageEvent
 from services.mindbot.errors import MindbotErrorCode
 from services.mindbot.platforms.dingtalk import extract_dingtalk_sender_profile
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.db.rls_context import RlsContext, rls_async_session
 from utils.env_helpers import env_bool
 
 logger = logging.getLogger(__name__)
 
 
 def _clip_opt(value: str, max_len: int) -> Optional[str]:
+    """Clip opt."""
     s = value.strip()
     if not s:
         return None
@@ -28,6 +30,7 @@ def _clip_opt(value: str, max_len: int) -> Optional[str]:
 
 
 def mindbot_usage_tracking_enabled() -> bool:
+    """Mindbot usage tracking enabled."""
     return env_bool("MINDBOT_USAGE_TRACKING", True)
 
 
@@ -49,6 +52,7 @@ async def persist_mindbot_usage_event(
     inbound_msg_type: str,
     conversation_user_turn: Optional[int],
 ) -> None:
+    """Persist mindbot usage event."""
     if not mindbot_usage_tracking_enabled():
         return
     staff_id, sender_nick, sender_ding_id = extract_dingtalk_sender_profile(body)
@@ -91,7 +95,7 @@ async def persist_mindbot_usage_event(
         async with rls_async_session(ctx) as session:
             session.add(row)
             await session.commit()
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning(
             "[MindBot] usage_persist_failed org_id=%s error=%s msg_id=%s — usage event dropped; pipeline continues",
             cfg.organization_id,

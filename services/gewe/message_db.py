@@ -10,18 +10,18 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from datetime import UTC, datetime, timedelta
-from typing import Optional, List
 import logging
+from datetime import UTC, datetime, timedelta
+from typing import List, Optional
 
-from sqlalchemy import select, delete
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count as sql_count
 
 from models.domain.gewe_message import GeweMessage
-from services.utils.typing_helpers import result_rowcount
 from services.redis.redis_async_ops import AsyncRedisOperations
+from services.utils.error_types import DATABASE_ERRORS
+from services.utils.typing_helpers import result_rowcount
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ class GeweMessageDB:
             if await AsyncRedisOperations.exists(message_key):
                 logger.debug("Duplicate message detected: %s", message_key)
                 return False
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.warning("Redis dedup check failed, proceeding without dedup: %s", e)
 
         # Save to database
@@ -91,7 +91,7 @@ class GeweMessageDB:
         self.db.add(message)
         try:
             await self.db.commit()
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Failed to save message: %s", e, exc_info=True)
             await self.db.rollback()
             return False
@@ -99,7 +99,7 @@ class GeweMessageDB:
         # Mark as processed in Redis (24 hour TTL) — non-fatal if it fails.
         try:
             await AsyncRedisOperations.set_with_ttl(message_key, "1", 86400)
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.warning("Failed to mark message in Redis: %s", e)
 
         return True
@@ -154,7 +154,7 @@ class GeweMessageDB:
 
             result = await self.db.execute(query)
             return list(result.scalars().all())
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Failed to query messages: %s", e, exc_info=True)
             return []
 
@@ -177,7 +177,7 @@ class GeweMessageDB:
             deleted_count = result_rowcount(result)
             logger.info("Cleaned up %d old messages (older than %d days)", deleted_count, days)
             return deleted_count
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Failed to cleanup old messages: %s", e, exc_info=True)
             await self.db.rollback()
             return 0
@@ -208,6 +208,6 @@ class GeweMessageDB:
 
             result = await self.db.execute(query)
             return result.scalar() or 0
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Failed to get message count: %s", e, exc_info=True)
             return 0

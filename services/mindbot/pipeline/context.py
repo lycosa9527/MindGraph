@@ -18,7 +18,6 @@ from typing import Any, Awaitable, Callable, Optional
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.mindbot.errors import MindbotErrorCode
 
-
 RecordUsageCallable = Callable[..., Awaitable[None]]
 HdrCallable = Callable[[MindbotErrorCode], dict[str, str]]
 RedisBindDifyConvCallable = Callable[..., Awaitable[None]]

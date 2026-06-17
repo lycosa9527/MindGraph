@@ -46,6 +46,7 @@ from typing import Awaitable, Callable, Optional, TypeVar
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_async_ops import AsyncRedisOps
 from services.redis.redis_client import is_redis_available
+from services.utils.error_types import REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +117,7 @@ async def with_stampede_lock(
 
     try:
         acquired = await redis.set(lock_key, lock_id, nx=True, ex=lock_ttl)
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         # Lock acquisition itself failed — skip protection and just load.
         logger.debug("[Stampede] SETNX failed for %s: %s", cache_key[:40], exc)
         return await loader()
@@ -127,7 +128,7 @@ async def with_stampede_lock(
         finally:
             try:
                 await AsyncRedisOps.compare_and_delete(lock_key, lock_id)
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logger.debug(
                     "[Stampede] lock release failed for %s: %s",
                     cache_key[:40],
@@ -140,7 +141,7 @@ async def with_stampede_lock(
         await asyncio.sleep(poll_interval)
         try:
             still_locked = await redis.exists(lock_key)
-        except Exception:
+        except REDIS_ERRORS:
             break
         if not still_locked:
             break
@@ -150,7 +151,7 @@ async def with_stampede_lock(
             value = await cache_reader()
             if value is not None:
                 return value
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug(
                 "[Stampede] cache_reader failed for %s: %s",
                 cache_key[:40],

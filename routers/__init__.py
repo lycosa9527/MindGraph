@@ -23,19 +23,12 @@ All Rights Reserved
 Proprietary License
 """
 
-from . import api
-from . import auth
-from . import node_palette
-from . import relationship_labels
-from . import inline_recommendations
-from . import public_dashboard
-from .admin import (
-    env_router as admin_env,
-    logs_router as admin_logs,
-    realtime_router as admin_realtime,
-)
-from .features import kitty, school_zone, askonce, debateverse, library, gewe
-from .core import pages, cache, vue_spa, update_notification
+from . import api, auth, inline_recommendations, node_palette, public_dashboard, relationship_labels
+from .admin import env_router as admin_env
+from .admin import logs_router as admin_logs
+from .admin import realtime_router as admin_realtime
+from .core import cache, pages, update_notification, vue_spa
+from .features import askonce, debateverse, gewe, kitty, library, school_zone
 
 __all__ = [
     "api",

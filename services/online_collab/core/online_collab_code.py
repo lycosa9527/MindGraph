@@ -13,7 +13,6 @@ from datetime import datetime
 from typing import Any, Optional
 
 from models.domain.diagrams import Diagram
-
 from services.online_collab.lifecycle.online_collab_expiry import (
     duration_allowed_for_visibility,
 )
@@ -38,6 +37,7 @@ ONLINE_COLLAB_SESSION_TTL = 86400
 
 
 def _parse_online_collab_max_participants() -> int:
+    """Parse online collab max participants."""
     raw = os.environ.get("WORKSHOP_MAX_PARTICIPANTS", "500")
     try:
         parsed = int(raw)

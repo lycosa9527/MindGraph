@@ -25,6 +25,7 @@ from starlette.websockets import WebSocketDisconnect
 
 from services.auth.vpn_geo_enforcement import maybe_close_websocket_for_vpn_cn_geo
 from services.features.asr_realtime_bridge import bridge_error_json, run_asr_relay
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth_ws import authenticate_websocket_user
 from utils.ws_context import ws_managed_session
 from utils.ws_limits import (
@@ -67,6 +68,7 @@ async def canvas_asr_websocket(websocket: WebSocket) -> None:
     # Token is read from scope (headers/cookies) — no accept() needed.
     # Unauthenticated clients receive an HTTP 403 rejection, not a WS close,
     # which avoids burning a file descriptor on invalid requests.
+    """Canvas asr websocket."""
     user, auth_error = await authenticate_websocket_user(websocket)
     if auth_error or user is None:
         logger.warning("[CanvasASR] Auth rejected: %s", auth_error)
@@ -83,7 +85,7 @@ async def canvas_asr_websocket(websocket: WebSocket) -> None:
         await _canvas_asr_session(websocket, user)
     except WebSocketDisconnect:
         return
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         logger.exception("[CanvasASR] Unhandled error after accept")
         with contextlib.suppress(Exception):
             await safe_websocket_send_text(websocket, bridge_error_json("internal", "Speech session error"))
@@ -92,6 +94,7 @@ async def canvas_asr_websocket(websocket: WebSocket) -> None:
 
 
 async def _canvas_asr_session(websocket: WebSocket, user: Any) -> None:
+    """Canvas asr session."""
     rate_limiter = WebsocketMessageRateLimiter(DEFAULT_MAX_WS_MESSAGES_PER_SECOND)
 
     try:

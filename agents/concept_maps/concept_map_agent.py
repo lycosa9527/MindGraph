@@ -13,19 +13,19 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Any, Dict, List, Optional, Set, Tuple, cast
 import json
 import logging
 import math
 import random
 import re
 from collections import defaultdict, deque
+from typing import Any, Dict, List, Optional, Set, Tuple, cast
 
 from langchain_core.prompts import PromptTemplate
 
 from prompts.concept_maps import CONCEPT_MAP_PROMPTS
 from services.llm import llm_service
+from services.utils.error_types import REDIS_ERRORS
 from utils.prompt_locale import (
     is_chinese_prompt_shell_language,
     output_language_instruction,
@@ -34,7 +34,6 @@ from utils.prompt_locale import (
 from utils.text_width_estimate import estimate_text_width_px
 
 from ..core.base_agent import BaseAgent
-
 
 logger = logging.getLogger(__name__)
 
@@ -220,7 +219,7 @@ class ConceptMapAgent(BaseAgent):
                 enhanced_spec["_style"] = spec["_style"]
 
             return {"success": True, "spec": enhanced_spec}
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             return {"success": False, "error": f"ConceptMapAgent failed: {exc}"}
 
     def _get_direction_instruction(self, link_direction: str | None, language: str) -> str:
@@ -330,7 +329,7 @@ class ConceptMapAgent(BaseAgent):
                 "relationship_label": labels[0],
                 "relationship_labels": labels,
             }
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("ConceptMapAgent: Relationship-only generation failed: %s", e)
             return {"success": False, "error": str(e)}
 
@@ -394,7 +393,7 @@ class ConceptMapAgent(BaseAgent):
                 return minimal_spec
             return enhanced_result.get("spec", minimal_spec)
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("ConceptMapAgent: Generation error: %s", e)
             return {"error": f"ConceptMapAgent generation failed: {str(e)}"}
 
@@ -427,7 +426,7 @@ class ConceptMapAgent(BaseAgent):
         except ImportError as e:
             print(f"Error importing prompts module: {e}")
             return None
-        except Exception as e:
+        except REDIS_ERRORS as e:
             print(f"Unexpected error in _get_prompt: {e}")
             return None
 
@@ -458,7 +457,7 @@ class ConceptMapAgent(BaseAgent):
             # Fallback for other client types
             raise ValueError(f"Unsupported LLM client type: {type(llm_client)}")
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             raise ValueError(f"Failed to get LLM response: {str(e)}") from e
 
     def parse_json_response(self, response: str) -> Dict:
@@ -653,6 +652,7 @@ class ConceptMapAgent(BaseAgent):
             return {"topic": topic, "concepts": []}
 
     def _clean_text(self, text: str, max_len: int) -> str:
+        """Clean text."""
         if not isinstance(text, str):
             return ""
         cleaned = " ".join(text.split())

@@ -47,7 +47,23 @@ from typing import Any, Dict
 from urllib.parse import urlparse, urlunparse
 
 from sqlalchemy import inspect, text
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Engine, make_url
+
+from scripts.db.migration_urls import (
+    RLS_HEAD_REVISION,
+    ROLE_APP,
+    configure_rls_migration_environment,
+    create_migration_engine,
+    env_rls_database_urls_match,
+    first_connectable_database_url,
+    print_rls_post_migration_guidance,
+    update_env_rls_database_urls,
+    verify_rls_migration_complete,
+)
+from scripts.db.pg_ensure import ensure_postgresql_running, ensure_postgresql_server_reachable
+from scripts.db.redis_flush import flush_redis_cache, redis_flush_cli_hint, redis_flush_summary_label
+from scripts.db.rls_roles_bootstrap import ensure_rls_roles_exist, iter_bootstrap_guidance, try_bootstrap_rls_roles
+from services.utils.error_types import DATABASE_ERRORS
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -170,6 +186,7 @@ def _log_database_connection_failure(logger: logging.Logger, exc: Exception) -> 
 
 
 def _configure_logging(debug: bool) -> None:
+    """Configure logging."""
     level = logging.DEBUG if debug else logging.INFO
     logging.basicConfig(
         level=level,
@@ -206,6 +223,7 @@ def _check_status(db_engine: Engine, base: Any) -> None:
 
 
 def _prompt_yes_no(question: str, default_yes: bool) -> bool:
+    """Prompt yes no."""
     hint = "Y/n" if default_yes else "y/N"
     raw = input(f"{question} [{hint}]: ").strip().lower()
     if not raw:
@@ -234,12 +252,11 @@ def _load_dump_import_module() -> Any:
 
 def _ensure_postgresql_for_migrations(db_url: str) -> bool:
     """If PostgreSQL is not reachable, try starting it (no full app import)."""
-    from scripts.db.pg_ensure import ensure_postgresql_running
-
     return bool(ensure_postgresql_running(db_url))
 
 
 def _fetch_alembic_revision(db_engine: Engine) -> str:
+    """Fetch alembic revision."""
     with db_engine.connect() as conn:
         row = conn.execute(text("SELECT version_num FROM alembic_version LIMIT 1")).first()
     return str(row[0]) if row else "(none)"
@@ -247,16 +264,12 @@ def _fetch_alembic_revision(db_engine: Engine) -> str:
 
 def _verify_and_bootstrap_rls(db_engine: Engine) -> tuple[bool, list[str]]:
     """Verify RLS rollout; create roles via superuser when rev 0043 skipped them."""
-    from scripts.db.migration_urls import verify_rls_migration_complete
-
     logger = logging.getLogger(__name__)
     rls_ok, rls_issues = verify_rls_migration_complete(db_engine)
     if rls_ok:
         return True, []
     if not any("role mindgraph_" in issue for issue in rls_issues):
         return False, rls_issues
-
-    from scripts.db.rls_roles_bootstrap import try_bootstrap_rls_roles
 
     boot_ok, boot_msg = try_bootstrap_rls_roles()
     if boot_ok:
@@ -268,9 +281,6 @@ def _verify_and_bootstrap_rls(db_engine: Engine) -> tuple[bool, list[str]]:
 
 def _print_migration_rls_status(db_engine: Engine) -> tuple[bool, list[str]]:
     """Print Alembic revision and RLS check summary."""
-    from scripts.db.migration_urls import RLS_HEAD_REVISION
-    from scripts.db.rls_roles_bootstrap import iter_bootstrap_guidance
-
     revision = _fetch_alembic_revision(db_engine)
     print(f"alembic_version: {revision} (head target for RLS: {RLS_HEAD_REVISION})")
 
@@ -297,14 +307,6 @@ def _offer_env_rls_patch(
     redis_flush_default_yes: bool = True,
 ) -> None:
     """Show RLS URL guidance, optionally patch ``.env``, then offer Redis flush."""
-    from scripts.db.migration_urls import (
-        ROLE_APP,
-        env_rls_database_urls_match,
-        print_rls_post_migration_guidance,
-        update_env_rls_database_urls,
-        verify_rls_migration_complete,
-    )
-
     if db_engine.dialect.name != "postgresql":
         return
 
@@ -331,8 +333,6 @@ def _offer_env_rls_patch(
 
 def _offer_redis_flush_with_default(default_yes: bool) -> None:
     """Optional ``FLUSHDB`` after RLS URL switch."""
-    from scripts.db.redis_flush import flush_redis_cache, redis_flush_cli_hint, redis_flush_summary_label
-
     label = redis_flush_summary_label()
     print()
     if not _prompt_yes_no(f"Flush Redis cache ({label})", default_yes=default_yes):
@@ -360,12 +360,6 @@ def _prepare_migration_cli() -> tuple[Engine, Path] | int:
     )
     _configure_logging(debug)
 
-    from scripts.db.migration_urls import (
-        configure_rls_migration_environment,
-        create_migration_engine,
-        first_connectable_database_url,
-    )
-
     logger = logging.getLogger(__name__)
     runtime_url = os.getenv("DATABASE_URL", "")
     if "postgresql" in runtime_url.lower():
@@ -374,15 +368,11 @@ def _prepare_migration_cli() -> tuple[Engine, Path] | int:
             if not _ensure_postgresql_for_migrations(connected[0]):
                 return 1
         else:
-            from scripts.db.pg_ensure import ensure_postgresql_server_reachable
-
             if not ensure_postgresql_server_reachable(runtime_url):
                 return 1
             logger.info(
                 "PostgreSQL is up; MindGraph roles not connected yet (RLS bootstrap runs next on a fresh install)"
             )
-
-    from scripts.db.rls_roles_bootstrap import ensure_rls_roles_exist
 
     roles_ok, roles_msg = ensure_rls_roles_exist()
     if not roles_ok:
@@ -391,16 +381,12 @@ def _prepare_migration_cli() -> tuple[Engine, Path] | int:
 
     try:
         rls_info = configure_rls_migration_environment()
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.error(
             "Could not resolve a migrate-capable DATABASE_MIGRATION_URL: %s",
             exc,
         )
         return 1
-
-    from sqlalchemy.engine import make_url
-
-    from scripts.db.migration_urls import ROLE_APP
 
     runtime_user = make_url(rls_info["runtime_url"]).username or ""
     if runtime_user == ROLE_APP:
@@ -492,8 +478,6 @@ def _prompt_primary_mode() -> str:
 
 def _load_database_modules() -> Dict[str, Any]:
     """Import DB stack after ``DATABASE_MIGRATION_URL`` is configured."""
-    from scripts.db.migration_urls import create_migration_engine
-
     cfg = importlib.import_module("config.database")
     migration_url = cfg.DATABASE_MIGRATION_URL
     return {
@@ -508,8 +492,6 @@ def _load_database_modules() -> Dict[str, Any]:
 
 def _preflight_migration_url(migration_url: str, env_path: Path) -> bool:
     """Connect with migrate URL only (before loading config.database / LLM stack)."""
-    from scripts.db.migration_urls import create_migration_engine
-
     logger = logging.getLogger(__name__)
     logger.info(
         "Env file: %s",
@@ -519,7 +501,7 @@ def _preflight_migration_url(migration_url: str, env_path: Path) -> bool:
         db_engine = create_migration_engine(migration_url)
         _preflight_database(db_engine)
         logger.info("Dialect: %s", db_engine.dialect.name)
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         _log_database_connection_failure(logger, exc)
         return False
     return True
@@ -539,7 +521,7 @@ def _execute_alembic_upgrade(mods: Dict[str, Any]) -> int:
 
     try:
         mods["init_db"](seed_organizations=True)
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.error("init_db() failed: %s", exc, exc_info=True)
         print(f"\nMigration failed: {exc}", flush=True)
         print(
@@ -667,7 +649,7 @@ def _ensure_schema_before_pg_import(mods: Dict[str, Any], live: bool) -> bool:
     logger.info("Creating missing schema (init_db, seed_organizations=False) before pg_restore...")
     try:
         mods["init_db"](seed_organizations=False)
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.error("init_db() failed before import: %s", exc, exc_info=True)
         return False
 

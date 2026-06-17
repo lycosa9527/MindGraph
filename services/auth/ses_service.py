@@ -8,8 +8,6 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
-from typing import Optional, Tuple
 import hashlib
 import hmac
 import json
@@ -18,11 +16,12 @@ import os
 import random
 import string
 import time
+from datetime import datetime
+from typing import Optional, Tuple
 
 import httpx
 
-from models.domain.messages import Messages, Language
-
+from models.domain.messages import Language, Messages
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +64,7 @@ class SESService:
     """Tencent Cloud SES SendEmail (native async)."""
 
     def __init__(self) -> None:
+        """ init  ."""
         self._initialized = False
         self._client: Optional[httpx.AsyncClient] = None
         if not all([TENCENT_SES_SECRET_ID, TENCENT_SES_SECRET_KEY, TENCENT_SES_FROM_EMAIL]):
@@ -78,9 +78,11 @@ class SESService:
 
     @property
     def is_available(self) -> bool:
+        """Is available."""
         return self._initialized
 
     async def _get_client(self) -> httpx.AsyncClient:
+        """Get client."""
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(
                 timeout=httpx.Timeout(SES_TIMEOUT_SECONDS),
@@ -89,17 +91,21 @@ class SESService:
         return self._client
 
     async def close(self) -> None:
+        """Close."""
         if self._client and not self._client.is_closed:
             await self._client.aclose()
         self._client = None
 
     def generate_code(self) -> str:
+        """Generate code."""
         return "".join(random.choices(string.digits, k=EMAIL_CODE_LENGTH))
 
     def _sign(self, key: bytes, msg: str) -> bytes:
+        """Sign."""
         return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
 
     def _build_authorization(self, timestamp: int, payload: str, action: str) -> str:
+        """Build authorization."""
         date = datetime.utcfromtimestamp(timestamp).strftime("%Y-%m-%d")
         http_method = "POST"
         canonical_uri = "/"
@@ -128,12 +134,14 @@ class SESService:
         )
 
     def _get_template_id_int(self) -> int:
+        """Get template id int."""
         try:
             return int(TENCENT_SES_TEMPLATE_ID)
         except ValueError as exc:
             raise ValueError(f"Invalid TENCENT_SES_TEMPLATE_ID: {TENCENT_SES_TEMPLATE_ID!r}") from exc
 
     def _get_subject(self, purpose: str) -> str:
+        """Get subject."""
         subjects = {
             "register": EMAIL_SUBJECT_REGISTER,
             "login": EMAIL_SUBJECT_LOGIN,
@@ -143,6 +151,7 @@ class SESService:
         return subjects.get(purpose, EMAIL_SUBJECT_REGISTER)
 
     def _translate_error_code(self, code: str, lang: Language) -> str:
+        """Translate error code."""
         mapping = {
             "FailedOperation.FrequencyLimit": "email_error_frequency_limit",
             "FailedOperation.NotAuthenticatedSender": "email_error_sender_not_authenticated",
@@ -172,6 +181,7 @@ class SESService:
         code: Optional[str] = None,
         lang: Language = "en",
     ) -> Tuple[bool, str, Optional[str]]:
+        """Send verification code."""
         if not self.is_available:
             return False, "SES service not available", None
 

@@ -7,16 +7,20 @@ This allows efficient querying and filtering by chunking method.
 Run with: python scripts/add_chunking_method_column.py
 """
 
+try:
+    from _path_setup import project_root
+except ModuleNotFoundError:
+    from scripts.chunk_test._path_setup import project_root
+
 import logging
 import sys
-from pathlib import Path
-
-# Add project root to path
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
 
 from sqlalchemy import text
+
 from config.database import engine
+from services.utils.error_types import DATABASE_ERRORS
+
+_ = project_root
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -55,7 +59,7 @@ def migrate():
             """)
             )
             conn.commit()
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.warning("Index creation failed (may already exist): %s", e)
 
         # Create composite index
@@ -68,7 +72,7 @@ def migrate():
             """)
             )
             conn.commit()
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.warning("Composite index creation failed (may already exist): %s", e)
 
         # Migrate data from meta_data JSON to column
@@ -131,6 +135,6 @@ def migrate():
 if __name__ == "__main__":
     try:
         migrate()
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("Migration failed: %s", e, exc_info=True)
         sys.exit(1)

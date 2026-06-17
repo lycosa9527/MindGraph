@@ -8,14 +8,17 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
 import logging
 import time
 from typing import TYPE_CHECKING, cast
 
-from services.llm.rag_service import RAGService
-
 from agents.concept_maps.concept_map_agent import ConceptMapAgent
+from agents.core.diagram_detection import _detect_diagram_type_from_prompt
+from agents.core.learning_sheet import (
+    _clean_prompt_for_learning_sheet,
+    _detect_learning_sheet_from_prompt,
+)
+from agents.core.utils import create_error_response, validate_inputs
 from agents.mind_maps.mind_map_agent import MindMapAgent
 from agents.thinking_maps.brace_map_agent import BraceMapAgent
 from agents.thinking_maps.bridge_map_agent import BridgeMapAgent
@@ -25,12 +28,8 @@ from agents.thinking_maps.double_bubble_map_agent import DoubleBubbleMapAgent
 from agents.thinking_maps.flow_map_agent import FlowMapAgent
 from agents.thinking_maps.multi_flow_map_agent import MultiFlowMapAgent
 from agents.thinking_maps.tree_map_agent import TreeMapAgent
-from agents.core.diagram_detection import _detect_diagram_type_from_prompt
-from agents.core.learning_sheet import (
-    _clean_prompt_for_learning_sheet,
-    _detect_learning_sheet_from_prompt,
-)
-from agents.core.utils import create_error_response, validate_inputs
+from services.llm.rag_service import RAGService
+from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.db.session_open import user_rls_session
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
@@ -302,7 +301,7 @@ async def _generate_spec_with_agent(
         logger.debug("Returning raw result")
         return result
 
-    except Exception as e:
+    except LLM_PIPELINE_ERRORS as e:
         logger.error("Agent instantiation/generation failed for %s: %s", diagram_type, e)
         return {"error": f"Failed to generate {diagram_type}: {str(e)}"}
 
@@ -508,7 +507,7 @@ auto-complete - user has dimension but no topic (generate topic and children)
                             )
                     else:
                         logger.debug("[RAG] User %d has no knowledge base, skipping RAG", user_id)
-            except Exception as e:
+            except LLM_PIPELINE_ERRORS as e:
                 logger.warning("[RAG] Failed to retrieve context: %s", e, exc_info=True)
 
         # Enhance prompt with RAG context if available
@@ -623,7 +622,7 @@ Please generate a more accurate and detailed diagram based on the above context.
             "style_preferences": {},
             "language": language,
         }
-    except Exception as e:
+    except LLM_PIPELINE_ERRORS as e:
         logger.error("Simplified workflow failed: %s", e)
         return {
             "success": False,

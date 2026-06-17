@@ -24,6 +24,7 @@ from websockets.asyncio.client import ClientConnection
 from websockets.exceptions import ConnectionClosed, ConnectionClosedError, ConnectionClosedOK
 
 from config.settings import config
+from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.ws_limits import (
     DEFAULT_MAX_WS_TEXT_BYTES,
     WebsocketMessageRateLimiter,
@@ -144,7 +145,7 @@ async def run_translate_relay(
             translate_error_json("upstream_handshake", "Translation service rejected connection"),
         )
         return
-    except Exception as exc:
+    except LLM_PIPELINE_ERRORS as exc:
         logger.exception("LiveTranslate upstream connect failed (unexpected): %s", exc)
         await safe_websocket_send_text(
             client_ws,

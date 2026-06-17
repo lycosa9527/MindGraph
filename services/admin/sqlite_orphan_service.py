@@ -19,6 +19,8 @@ from typing import Dict, Set
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
+from services.utils.error_types import DATABASE_ERRORS
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 def _sqlite_table_names(conn: sqlite3.Connection) -> Set[str]:
+    """Sqlite table names."""
     cur = conn.cursor()
     cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
     return {row[0] for row in cur.fetchall()}
@@ -44,6 +47,7 @@ def cleanup_sqlite_orphans(sqlite_path: Path) -> Dict[str, int]:
 
 
 def _cleanup_sqlite_orphans_impl(sq: sqlite3.Connection) -> Dict[str, int]:
+    """Cleanup sqlite orphans impl."""
     cur = sq.cursor()
     table_names = _sqlite_table_names(sq)
     cleaned: Dict[str, int] = {}
@@ -146,7 +150,7 @@ def detect_pg_orphans(pg_engine: Engine) -> Dict[str, int]:
                 count = result.scalar() or 0
                 if count > 0:
                     orphans[label] = count
-            except Exception as exc:
+            except DATABASE_ERRORS as exc:
                 logger.debug("[OrphanDetect] %s failed: %s", label, exc)
     return orphans
 
@@ -198,7 +202,7 @@ def cleanup_pg_orphans(pg_engine: Engine) -> Dict[str, int]:
                         label,
                         affected,
                     )
-            except Exception as exc:
+            except DATABASE_ERRORS as exc:
                 logger.warning(
                     "[OrphanCleanup] %s failed: %s",
                     label,

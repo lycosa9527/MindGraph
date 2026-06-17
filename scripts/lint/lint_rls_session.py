@@ -26,6 +26,7 @@ PATTERN = re.compile(r"\b(AsyncSessionLocal|SyncSessionLocal)\s*\(")
 
 
 def _should_scan(path: Path) -> bool:
+    """Should scan."""
     parts = path.relative_to(ROOT).parts
     if parts[0] in SKIP_DIRS:
         return False
@@ -35,6 +36,7 @@ def _should_scan(path: Path) -> bool:
 
 
 def main() -> int:
+    """Main."""
     violations: list[str] = []
     for path in ROOT.rglob("*.py"):
         if not _should_scan(path):

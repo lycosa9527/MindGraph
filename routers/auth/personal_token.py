@@ -14,6 +14,7 @@ from models.domain.auth import User
 from models.domain.messages import Language, Messages
 from models.domain.user_api_token import UserAPIToken
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
+from routers.auth.dependencies import get_language_dependency
 from services.redis.cache.redis_user_token_cache import user_token_cache
 from utils.auth import (
     get_current_user,
@@ -25,8 +26,6 @@ from utils.auth.school_tier import (
     assert_user_has_school_tier_feature,
     user_has_school_tier_feature,
 )
-
-from routers.auth.dependencies import get_language_dependency
 
 router = APIRouter(tags=["Authentication"])
 

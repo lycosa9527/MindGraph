@@ -15,11 +15,11 @@ Proprietary License
 """
 
 import importlib
+import logging
 import os
 import sqlite3
-import logging
 from types import ModuleType
-from typing import Optional, Dict, Any, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from sqlalchemy import create_engine, inspect
 
@@ -37,10 +37,10 @@ except ImportError:
 
 try:
     from models.domain.debateverse import (
-        DebateSession,
-        DebateParticipant,
-        DebateMessage,
         DebateJudgment,
+        DebateMessage,
+        DebateParticipant,
+        DebateSession,
     )
 
     _ = DebateSession.__tablename__
@@ -53,8 +53,8 @@ except ImportError:
 try:
     from models.domain.school_zone import (
         SharedDiagram,
-        SharedDiagramLike,
         SharedDiagramComment,
+        SharedDiagramLike,
     )
 
     _ = SharedDiagram.__tablename__
@@ -85,11 +85,11 @@ except ImportError:
 
 try:
     from models.domain.library import (
-        LibraryDocument,
+        LibraryBookmark,
         LibraryDanmaku,
         LibraryDanmakuLike,
         LibraryDanmakuReply,
-        LibraryBookmark,
+        LibraryDocument,
     )
 
     _ = LibraryDocument.__tablename__
@@ -101,9 +101,9 @@ except ImportError:
     pass
 
 try:
+    from models.domain.teacher_usage_config import TeacherUsageConfig
     from models.domain.user_activity_log import UserActivityLog
     from models.domain.user_usage_stats import UserUsageStats
-    from models.domain.teacher_usage_config import TeacherUsageConfig
 
     _ = UserActivityLog.__tablename__
     _ = UserUsageStats.__tablename__
@@ -119,9 +119,9 @@ except ImportError:
     pass
 
 try:
-    from models.domain.gewe_message import GeweMessage
     from models.domain.gewe_contact import GeweContact
     from models.domain.gewe_group_member import GeweGroupMember
+    from models.domain.gewe_message import GeweMessage
 
     _ = GeweMessage.__tablename__
     _ = GeweContact.__tablename__
@@ -131,10 +131,10 @@ except ImportError:
 
 try:
     from models.domain.workshop_chat import (
-        ChatChannel,
         ChannelMember,
-        ChatTopic,
+        ChatChannel,
         ChatMessage,
+        ChatTopic,
         DirectMessage,
     )
 
@@ -146,42 +146,43 @@ try:
 except ImportError:
     pass
 
-from utils.migration.sqlite.migration_utils import (
-    get_sqlite_db_path,
-    is_migration_completed,
-    load_migration_progress,
-    save_migration_progress,
-    clear_migration_progress,
-    acquire_migration_lock,
-    release_migration_lock,
-    is_postgresql_empty,
-    check_table_completeness,
-    BACKUP_DIR as MIGRATION_BACKUP_DIR,
-)
+from services.utils.error_types import DATABASE_ERRORS
 from utils.migration.sqlite.migration_backup import (
     backup_sqlite_database,
     move_sqlite_database_to_backup,
 )
-from utils.migration.sqlite.migration_table_order import get_table_migration_order
-from utils.migration.sqlite.migration_tables import migrate_table
-from utils.migration.sqlite.migration_verification import (
-    verify_migration,
-    create_migration_marker,
-    reset_postgresql_sequences,
-)
 from utils.migration.sqlite.migration_progress import (
-    MigrationProgressTracker,
-    STAGE_PREREQUISITES,
-    STAGE_LOCK,
     STAGE_BACKUP,
+    STAGE_COMPLETE,
     STAGE_CONNECT,
+    STAGE_CREATE_MARKER,
     STAGE_CREATE_TABLES,
+    STAGE_LOCK,
     STAGE_MIGRATE_TABLES,
+    STAGE_MOVE_SQLITE,
+    STAGE_PREREQUISITES,
     STAGE_RESET_SEQUENCES,
     STAGE_VERIFY,
-    STAGE_MOVE_SQLITE,
-    STAGE_CREATE_MARKER,
-    STAGE_COMPLETE,
+    MigrationProgressTracker,
+)
+from utils.migration.sqlite.migration_table_order import get_table_migration_order
+from utils.migration.sqlite.migration_tables import migrate_table
+from utils.migration.sqlite.migration_utils import BACKUP_DIR as MIGRATION_BACKUP_DIR
+from utils.migration.sqlite.migration_utils import (
+    acquire_migration_lock,
+    check_table_completeness,
+    clear_migration_progress,
+    get_sqlite_db_path,
+    is_migration_completed,
+    is_postgresql_empty,
+    load_migration_progress,
+    release_migration_lock,
+    save_migration_progress,
+)
+from utils.migration.sqlite.migration_verification import (
+    create_migration_marker,
+    reset_postgresql_sequences,
+    verify_migration,
 )
 from utils.migration.sqlite_to_postgresql.table_creation import (
     create_enum_types,
@@ -272,7 +273,7 @@ def migrate_sqlite_to_postgresql(
                         moved_files[0].name,
                     )
                     return True, None, None
-            except Exception:
+            except DATABASE_ERRORS:
                 # If we can't check, be safe and skip
                 logger.info("[Migration] Migration already completed (marker file exists), skipping")
                 return True, None, None
@@ -299,7 +300,7 @@ def migrate_sqlite_to_postgresql(
             sqlite_path,
         )
         return True, None, None
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.warning(
             "[Migration] Error checking SQLite database path %s: %s. Skipping migration.",
             sqlite_path,
@@ -421,7 +422,7 @@ def migrate_sqlite_to_postgresql(
                 init_db_func = _get_init_db_func()
                 init_db_func()
                 logger.debug("[Migration] init_db() completed")
-            except Exception as init_error:
+            except DATABASE_ERRORS as init_error:
                 # init_db() might fail due to duplicate indexes, but tables might still be created
                 logger.debug(
                     "[Migration] init_db() encountered error (may be non-critical): %s",
@@ -618,7 +619,7 @@ def migrate_sqlite_to_postgresql(
                             }
                         )
 
-                except Exception as e:
+                except DATABASE_ERRORS as e:
                     error_msg = f"Failed to migrate table {table_name}: {str(e)}"
                     logger.error("[Migration] %s", error_msg, exc_info=True)
                     migration_stats["errors"].append(error_msg)
@@ -705,7 +706,7 @@ def migrate_sqlite_to_postgresql(
 
             return True, None, final_stats
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         error_msg = f"Migration failed: {str(e)}"
         logger.error("[Migration] %s", error_msg, exc_info=True)
         logger.error("[Migration] Migration failed - PostgreSQL may be in inconsistent state")
@@ -724,7 +725,7 @@ def migrate_sqlite_to_postgresql(
         if sqlite_conn:
             try:
                 sqlite_conn.close()
-            except Exception:
+            except DATABASE_ERRORS:
                 pass
         if pg_engine:
             pg_engine.dispose()

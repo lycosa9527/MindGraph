@@ -11,15 +11,14 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import List, Dict, Any, Optional
+import asyncio
 import logging
 import re
-import asyncio
+from typing import Any, Dict, List, Optional
 
 from services.knowledge.chunking_service import Chunk
 from services.llm import llm_service as llm_svc
-
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +136,7 @@ class QAGenerator:
 
             return chunks
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[QAGenerator] Failed to generate Q&A pairs: %s", e, exc_info=True)
             raise RuntimeError(f"[QAGenerator] QA generation failed: {e}") from e
 

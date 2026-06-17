@@ -8,13 +8,15 @@ Handles:
 - Shutdown error filtering for stderr
 """
 
-import os
-import sys
-import socket
-import signal
-import time
-import subprocess
 import logging
+import os
+import signal
+import socket
+import subprocess
+import sys
+import time
+
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +90,7 @@ def find_process_on_port(port: int):
                     candidate = line.strip()
                     if candidate.isdigit():
                         return int(candidate)
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.warning("Could not detect process on port %s: %s", port, e)
 
     return None
@@ -158,11 +160,10 @@ def cleanup_stale_process(pid: int, port: int) -> bool:
         if port_available:
             logger.info("✅ Successfully cleaned up stale process (PID: %s)", pid)
             return True
-        else:
-            logger.error("❌ Port %s still in use after cleanup attempt", port)
-            return False
+        logger.error("❌ Port %s still in use after cleanup attempt", port)
+        return False
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to cleanup process %s: %s", pid, e)
         return False
 
@@ -171,6 +172,7 @@ class ShutdownErrorFilter:
     """Filter stderr to suppress expected shutdown errors"""
 
     def __init__(self, stderr_target):
+        """ init  ."""
         self.original_stderr = stderr_target
         self.buffer = ""
         self.in_traceback = False

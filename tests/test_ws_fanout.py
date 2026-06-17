@@ -10,49 +10,57 @@ from typing import Any, Dict, List, cast
 import pytest
 from redis.exceptions import RedisError
 
+from services.features import workshop_ws_fanout_delivery as wfd
+from services.features import ws_pg_notify_fanout as pgn
+from services.features import ws_redis_fanout_listener as lst
+from services.features import ws_redis_fanout_publish as pub
+from services.features import ws_redis_fanout_publish_core as pub_core
 from services.features.workshop_ws_connection_state import AnyHandle
+from services.features.workshop_ws_fanout_delivery import ACTIVE_CONNECTIONS
+
+_recent_fanout_ids = getattr(wfd, "_RECENT_FANOUT_IDS")
+_handle_workshop_raw = getattr(lst, "_handle_workshop_raw")
+
 
 
 def _truthy() -> bool:
+    """Truthy."""
     return True
 
 
 def _falsy_audit() -> bool:
+    """Falsy audit."""
     return False
 
 
 def _any_redis_client() -> object:
+    """Any redis client."""
     return object()
 
 
 @pytest.fixture(autouse=True)
 def _reset_fanout_delivery_state():
     """Ensure module-level fan-out LRU / connection buckets start clean."""
-    from services.features.workshop_ws_fanout_delivery import ACTIVE_CONNECTIONS
-    from services.features import workshop_ws_fanout_delivery as wfd
-
-    wfd._RECENT_FANOUT_IDS.clear()
+    _recent_fanout_ids.clear()
     ACTIVE_CONNECTIONS.clear()
     yield
-    wfd._RECENT_FANOUT_IDS.clear()
+    _recent_fanout_ids.clear()
     ACTIVE_CONNECTIONS.clear()
 
 
 @pytest.mark.asyncio
 async def test_envelope_publish_injects_msg_id(monkeypatch):
     """Workshop payloads without msg_id gain one before Redis transport."""
-    from services.features import ws_redis_fanout_publish as pub
-
     recorded: Dict[str, str] = {}
 
     async def spy_transport(_client: Any, channel: str, body: str) -> None:
         recorded["channel"] = channel
         recorded["body"] = body
 
-    monkeypatch.setattr(pub, "_publish_with_channel_transport", spy_transport)
-    monkeypatch.setattr(pub, "get_async_redis", _any_redis_client)
-    monkeypatch.setattr(pub, "is_ws_fanout_enabled", _truthy)
-    monkeypatch.setattr(pub, "use_streams_audit", _falsy_audit)
+    monkeypatch.setattr(pub_core, "_publish_with_channel_transport", spy_transport)
+    monkeypatch.setattr(pub_core, "get_async_redis", _any_redis_client)
+    monkeypatch.setattr(pub_core, "is_ws_fanout_enabled", _truthy)
+    monkeypatch.setattr(pub_core, "use_streams_audit", _falsy_audit)
 
     envelope = {
         "v": 1,
@@ -73,8 +81,6 @@ async def test_envelope_publish_injects_msg_id(monkeypatch):
 @pytest.mark.asyncio
 async def test_publish_redis_error_schedules_pg_with_same_payload(monkeypatch):
     """Redis failures enqueue PG NOTIFY with enriched envelope (still has msg_id)."""
-    from services.features import ws_redis_fanout_publish as pub
-
     captured: List[Dict[str, Any]] = []
 
     async def spy_publish_pg(env: Dict[str, Any]) -> None:
@@ -83,11 +89,11 @@ async def test_publish_redis_error_schedules_pg_with_same_payload(monkeypatch):
     async def flaky(_cli: Any, _ch: str, _bod: str) -> None:
         raise RedisError("simulated outage")
 
-    monkeypatch.setattr(pub, "_publish_with_channel_transport", flaky)
+    monkeypatch.setattr(pub_core, "_publish_with_channel_transport", flaky)
     monkeypatch.setattr(pub, "publish_pg_notify_fanout_async", spy_publish_pg)
-    monkeypatch.setattr(pub, "get_async_redis", _any_redis_client)
-    monkeypatch.setattr(pub, "is_ws_fanout_enabled", _truthy)
-    monkeypatch.setattr(pub, "use_streams_audit", _falsy_audit)
+    monkeypatch.setattr(pub_core, "get_async_redis", _any_redis_client)
+    monkeypatch.setattr(pub_core, "is_ws_fanout_enabled", _truthy)
+    monkeypatch.setattr(pub_core, "use_streams_audit", _falsy_audit)
 
     envelope = {
         "v": 1,
@@ -108,8 +114,6 @@ async def test_publish_redis_error_schedules_pg_with_same_payload(monkeypatch):
 @pytest.mark.asyncio
 async def test_handle_workshop_raw_dispatches_deliver(monkeypatch):
     """Listener path forwards decoded envelopes."""
-    from services.features import ws_redis_fanout_listener as lst
-
     calls: List[tuple[str, str, int | None, str]] = []
 
     async def fake_deliver(code: str, mode: str, exclude: int | None, data_str: str) -> None:
@@ -129,7 +133,7 @@ async def test_handle_workshop_raw_dispatches_deliver(monkeypatch):
         "ex": 5,
         "d": json.dumps({"seq": 2}, ensure_ascii=False),
     }
-    await lst._handle_workshop_raw(json.dumps(payload_obj))
+    await _handle_workshop_raw(json.dumps(payload_obj))
 
     assert len(calls) == 1
     code, mode, exclude, blob = calls[0]
@@ -142,8 +146,6 @@ async def test_handle_workshop_raw_dispatches_deliver(monkeypatch):
 @pytest.mark.asyncio
 async def test_pg_notify_warns_on_oversized_payload(monkeypatch):
     """Oversized pg_notify payloads are dropped before touching the database."""
-    from services.features import ws_pg_notify_fanout as pgn
-
     monkeypatch.setenv("COLLAB_PG_NOTIFY_FALLBACK", "1")
     lines: List[str] = []
 
@@ -161,9 +163,6 @@ async def test_pg_notify_warns_on_oversized_payload(monkeypatch):
 @pytest.mark.asyncio
 async def test_deliver_local_drop_second_identical_msg_id(monkeypatch):
     """LRU remembers msg_id across deliveries and suppresses repeats."""
-    from services.features.workshop_ws_fanout_delivery import ACTIVE_CONNECTIONS
-    from services.features import workshop_ws_fanout_delivery as wfd
-
     pushes: List[int] = []
 
     async def counting_push_shard(*_args: object, **_kwargs: object) -> None:

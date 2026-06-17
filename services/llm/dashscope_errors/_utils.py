@@ -1,9 +1,8 @@
-import re
-
-
 """
 Utility functions for DashScope error parsing.
 """
+
+import re
 
 
 def has_chinese_characters(text: str) -> bool:

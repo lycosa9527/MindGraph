@@ -7,10 +7,6 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from tests.stubs.redis8_features import install_redis8_features_stub
-
-install_redis8_features_stub()
-
 from services.agent_hub.scope_lifecycle import MindGraphAgentHub
 from services.kitty.diagram.hub_bridge import (
     DIAGRAM_VOICE_INTENTS,
@@ -18,13 +14,17 @@ from services.kitty.diagram.hub_bridge import (
     preview_voice_context_after_diagram_intent,
     try_sync_voice_diagram_to_hub,
 )
+from services.kitty.session.ops import create_voice_session
+from services.kitty.session.runtime_state import voice_sessions
 
 
 def test_diagram_voice_intents_count() -> None:
+    """Test diagram voice intents count."""
     assert len(DIAGRAM_VOICE_INTENTS) == 4
 
 
 def test_build_patch_context_mutation_cmd_shape() -> None:
+    """Test build patch context mutation cmd shape."""
     merged = {"diagram_data": {"center": {"text": "x"}}}
     cmd = build_patch_context_mutation_cmd(
         merged_context=merged,
@@ -72,6 +72,7 @@ def test_preview_circle_map_intents(
     diagram_type: str,
     assert_fn,
 ) -> None:
+    """Test preview circle map intents."""
     base = {
         "diagram_data": {
             "center": {"text": "Old"},
@@ -91,6 +92,7 @@ def test_preview_circle_map_intents(
 
 
 def test_preview_double_bubble_update_center() -> None:
+    """Test preview double bubble update center."""
     base = {"diagram_data": {"left": "L0", "right": "R0"}}
     out = preview_voice_context_after_diagram_intent(
         action="update_center",
@@ -104,6 +106,7 @@ def test_preview_double_bubble_update_center() -> None:
 
 
 def test_preview_unsupported_returns_none() -> None:
+    """Test preview unsupported returns none."""
     assert (
         preview_voice_context_after_diagram_intent(
             action="update_node",
@@ -116,6 +119,7 @@ def test_preview_unsupported_returns_none() -> None:
 
 
 def test_preview_bubble_map_add_node_syncs_attributes() -> None:
+    """Test preview bubble map add node syncs attributes."""
     base = {"diagram_data": {"center": {"text": "Dog"}, "children": []}}
     out = preview_voice_context_after_diagram_intent(
         action="add_node",
@@ -129,9 +133,7 @@ def test_preview_bubble_map_add_node_syncs_attributes() -> None:
 
 @pytest.mark.asyncio
 async def test_try_sync_voice_diagram_to_hub_updates_revision() -> None:
-    from services.kitty.session.runtime_state import voice_sessions
-    from services.kitty.session.ops import create_voice_session
-
+    """Test try sync voice diagram to hub updates revision."""
     hub = MindGraphAgentHub()
     hub_sid = await hub.open_session(42, client_lane="mobile", source_module="kitty_bridge_test")
     await hub.bind_scope(hub_sid, diagram_scope="scope_z", source_module="kitty_bridge_test")

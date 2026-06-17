@@ -7,16 +7,18 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from tests.typing_helpers import mock_await_args, mock_await_kwargs
+from services.agent_hub.scope_lifecycle import MindGraphAgentHub
 from services.kitty.context.messaging import send_kitty_diagram_update
 from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
     publish_kitty_diagram_update,
     publish_kitty_selection_update,
 )
+from tests.typing_helpers import mock_await_args, mock_await_kwargs
 
 
 @pytest.mark.asyncio
 async def test_publish_kitty_diagram_update_payload_shape() -> None:
+    """Test publish kitty diagram update payload shape."""
     fake_redis = MagicMock()
     fake_redis.publish = AsyncMock()
     with patch(
@@ -45,6 +47,7 @@ async def test_publish_kitty_diagram_update_payload_shape() -> None:
 
 @pytest.mark.asyncio
 async def test_publish_kitty_selection_update_payload_shape() -> None:
+    """Test publish kitty selection update payload shape."""
     fake_redis = MagicMock()
     fake_redis.publish = AsyncMock()
     with patch(
@@ -68,6 +71,7 @@ async def test_publish_kitty_selection_update_payload_shape() -> None:
 
 @pytest.mark.asyncio
 async def test_send_kitty_diagram_update_fanouts_when_voice_session_known() -> None:
+    """Test send kitty diagram update fanouts when voice session known."""
     websocket = MagicMock()
     message = {
         "type": "diagram_update",
@@ -102,8 +106,7 @@ async def test_send_kitty_diagram_update_fanouts_when_voice_session_known() -> N
 
 @pytest.mark.asyncio
 async def test_mobile_patch_context_prefers_library_when_delta_empty() -> None:
-    from services.agent_hub.scope_lifecycle import MindGraphAgentHub
-
+    """Test mobile patch context prefers library when delta empty."""
     hub = MindGraphAgentHub()
     sid = await hub.open_session(5, client_lane="mobile", source_module="kitty_test")
     await hub.bind_scope(sid, diagram_scope="lib-uuid-3", source_module="kitty_test")

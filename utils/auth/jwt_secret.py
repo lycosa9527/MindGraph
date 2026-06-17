@@ -15,14 +15,20 @@ import os
 import secrets
 from typing import Optional
 
-from .config import JWT_SECRET_REDIS_KEY, JWT_SECRET_BACKUP_FILE
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+
+from .config import JWT_SECRET_BACKUP_FILE, JWT_SECRET_REDIS_KEY
 
 logger = logging.getLogger(__name__)
 
 # Cached JWT secret (to avoid Redis lookup on every request).
 # After startup warmup via warmup_jwt_secret_async(), all callers (sync or async)
 # read from this cache and never hit Redis on the hot path.
-_jwt_secret_cache: Optional[str] = None
+class _JwtSecretCache:
+    """In-memory JWT secret holder (no global keyword)."""
+
+    value: Optional[str] = None
+
 
 _redis_available = False
 _get_redis = None
@@ -79,7 +85,7 @@ def _save_jwt_secret_backup(secret: str) -> bool:
 
         logger.info("[Auth] JWT secret backed up to file")
         return True
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.warning("[Auth] Failed to backup JWT secret to file: %s", e)
         return False
 
@@ -104,7 +110,7 @@ def _load_jwt_secret_backup() -> Optional[str]:
             return secret
 
         return None
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.warning("[Auth] Failed to load JWT secret backup: %s", e)
         return None
 
@@ -129,11 +135,9 @@ def get_jwt_secret() -> str:
     Raises:
         RuntimeError: If Redis is not available or JWT secret retrieval fails
     """
-    global _jwt_secret_cache
-
     # Return cached value if available (avoids Redis lookup on every JWT operation)
-    if _jwt_secret_cache:
-        return _jwt_secret_cache
+    if _JwtSecretCache.value:
+        return _JwtSecretCache.value
 
     if not _redis_available:
         raise RuntimeError("Redis client not available. Redis is required for JWT secret storage.")
@@ -157,7 +161,7 @@ def get_jwt_secret() -> str:
         secret = redis.get(JWT_SECRET_REDIS_KEY)
         if secret:
             secret_str = secret.decode("utf-8") if isinstance(secret, bytes) else secret
-            _jwt_secret_cache = secret_str
+            _JwtSecretCache.value = secret_str
             logger.debug("[Auth] Retrieved JWT secret from Redis")
             return secret_str
 
@@ -166,14 +170,14 @@ def get_jwt_secret() -> str:
         if backup_secret:
             if redis.set(JWT_SECRET_REDIS_KEY, backup_secret, nx=True):
                 logger.info("[Auth] Restored JWT secret from backup to Redis")
-                _jwt_secret_cache = backup_secret
+                _JwtSecretCache.value = backup_secret
                 return backup_secret
 
             # Another worker restored it first, fetch theirs
             secret = redis.get(JWT_SECRET_REDIS_KEY)
             if secret:
                 secret_str = secret.decode("utf-8") if isinstance(secret, bytes) else secret
-                _jwt_secret_cache = secret_str
+                _JwtSecretCache.value = secret_str
                 return secret_str
 
         # Generate new secret (SET NX ensures only one worker creates it)
@@ -181,7 +185,7 @@ def get_jwt_secret() -> str:
 
         if redis.set(JWT_SECRET_REDIS_KEY, new_secret, nx=True):
             logger.info("[Auth] Generated new JWT secret (stored in Redis)")
-            _jwt_secret_cache = new_secret
+            _JwtSecretCache.value = new_secret
             _save_jwt_secret_backup(new_secret)
             return new_secret
 
@@ -189,7 +193,7 @@ def get_jwt_secret() -> str:
         secret = redis.get(JWT_SECRET_REDIS_KEY)
         if secret:
             secret_str = secret.decode("utf-8") if isinstance(secret, bytes) else secret
-            _jwt_secret_cache = secret_str
+            _JwtSecretCache.value = secret_str
             _save_jwt_secret_backup(secret_str)
             return secret_str
 
@@ -197,7 +201,7 @@ def get_jwt_secret() -> str:
 
     except ImportError as exc:
         raise RuntimeError("Redis client not available. Redis is required for JWT secret storage.") from exc
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[Auth] JWT secret retrieval failed: %s", e)
         raise
 
@@ -221,10 +225,8 @@ async def warmup_jwt_secret_async() -> str:
     Raises:
         RuntimeError: If neither Redis nor a backup file is available.
     """
-    global _jwt_secret_cache
-
-    if _jwt_secret_cache:
-        return _jwt_secret_cache
+    if _JwtSecretCache.value:
+        return _JwtSecretCache.value
 
     if _get_async_redis is None:
         raise RuntimeError("Async Redis client not available. Cannot warm JWT secret cache.")
@@ -237,7 +239,7 @@ async def warmup_jwt_secret_async() -> str:
         secret = await redis.get(JWT_SECRET_REDIS_KEY)
         if secret:
             secret_str = secret.decode("utf-8") if isinstance(secret, bytes) else secret
-            _jwt_secret_cache = secret_str
+            _JwtSecretCache.value = secret_str
             logger.debug("[Auth] Warmed JWT secret cache from Redis")
             return secret_str
 
@@ -245,30 +247,30 @@ async def warmup_jwt_secret_async() -> str:
         if backup_secret:
             if await redis.set(JWT_SECRET_REDIS_KEY, backup_secret, nx=True):
                 logger.info("[Auth] Restored JWT secret from backup to Redis (warmup)")
-                _jwt_secret_cache = backup_secret
+                _JwtSecretCache.value = backup_secret
                 return backup_secret
 
             secret = await redis.get(JWT_SECRET_REDIS_KEY)
             if secret:
                 secret_str = secret.decode("utf-8") if isinstance(secret, bytes) else secret
-                _jwt_secret_cache = secret_str
+                _JwtSecretCache.value = secret_str
                 return secret_str
 
         new_secret = secrets.token_urlsafe(48)
         if await redis.set(JWT_SECRET_REDIS_KEY, new_secret, nx=True):
             logger.info("[Auth] Generated new JWT secret during async warmup")
-            _jwt_secret_cache = new_secret
+            _JwtSecretCache.value = new_secret
             _save_jwt_secret_backup(new_secret)
             return new_secret
 
         secret = await redis.get(JWT_SECRET_REDIS_KEY)
         if secret:
             secret_str = secret.decode("utf-8") if isinstance(secret, bytes) else secret
-            _jwt_secret_cache = secret_str
+            _JwtSecretCache.value = secret_str
             _save_jwt_secret_backup(secret_str)
             return secret_str
 
         raise RuntimeError("Failed to retrieve or generate JWT secret during async warmup")
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.error("[Auth] JWT secret async warmup failed: %s", exc)
         raise

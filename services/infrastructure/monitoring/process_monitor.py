@@ -29,8 +29,8 @@ from enum import Enum
 from typing import Any, Awaitable, Dict, Optional, cast
 
 try:
-    from services.redis.redis_client import is_redis_available
     from services.redis.redis_async_client import get_async_redis
+    from services.redis.redis_client import is_redis_available
 
     _REDIS_AVAILABLE = True
 except ImportError:
@@ -40,13 +40,14 @@ except ImportError:
 
 from services.infrastructure.process.process_manager import (
     ServerState,
-    start_qdrant_server,
     start_celery_worker,
     start_postgresql_server,
-    stop_qdrant_server,
+    start_qdrant_server,
     stop_celery_worker,
     stop_postgresql_server,
+    stop_qdrant_server,
 )
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 try:
     from services.infrastructure.monitoring.critical_alert import CriticalAlertService
@@ -219,7 +220,7 @@ class ProcessMonitor:
             )
 
             return bool(lock_acquired)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.debug("Failed to acquire monitor lock: %s", e)
             return False
 
@@ -252,7 +253,7 @@ class ProcessMonitor:
                     await redis_client.expire(MONITOR_LOCK_KEY, MONITOR_LOCK_TTL)
                     return True
             return False
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.debug("Failed to refresh monitor lock: %s", e)
             return False
 
@@ -285,7 +286,7 @@ class ProcessMonitor:
         except asyncio.TimeoutError:
             logger.warning("[ProcessMonitor] Redis health check timed out")
             return ServiceStatus.UNHEALTHY
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("[ProcessMonitor] Redis health check failed: %s", e)
             return ServiceStatus.UNHEALTHY
 
@@ -305,9 +306,9 @@ class ProcessMonitor:
             # HTTP check (run in thread pool to avoid blocking)
             def check_http():
                 try:
-                    urllib.request.urlopen("http://localhost:6333/collections", timeout=2)
-                    return True
-                except Exception:
+                    with urllib.request.urlopen("http://localhost:6333/collections", timeout=2):
+                        return True
+                except BACKGROUND_INFRA_ERRORS:
                     return False
 
             http_ok = await asyncio.wait_for(asyncio.to_thread(check_http), timeout=2.5)
@@ -330,7 +331,7 @@ class ProcessMonitor:
         except asyncio.TimeoutError:
             logger.warning("[ProcessMonitor] Qdrant health check timed out")
             return ServiceStatus.UNHEALTHY
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("[ProcessMonitor] Qdrant health check failed: %s", e)
             return ServiceStatus.UNHEALTHY
 
@@ -371,7 +372,7 @@ class ProcessMonitor:
                     return ServiceStatus.UNHEALTHY
 
             return ServiceStatus.HEALTHY
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("[ProcessMonitor] Celery health check failed: %s", e)
             return ServiceStatus.UNHEALTHY
 
@@ -402,7 +403,7 @@ class ProcessMonitor:
                     conn = pg_module.connect(db_url, connect_timeout=2)
                     conn.close()
                     return True
-                except Exception:
+                except BACKGROUND_INFRA_ERRORS:
                     return False
 
             connection_ok = await asyncio.wait_for(asyncio.to_thread(check_connection), timeout=2.5)
@@ -425,7 +426,7 @@ class ProcessMonitor:
         except asyncio.TimeoutError:
             logger.warning("[ProcessMonitor] PostgreSQL health check timed out")
             return ServiceStatus.UNHEALTHY
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("[ProcessMonitor] PostgreSQL health check failed: %s", e)
             return ServiceStatus.UNHEALTHY
 
@@ -451,7 +452,7 @@ class ProcessMonitor:
             key = f"{RESTART_COUNTER_KEY_PREFIX}{service_name}"
             count = await redis_client.get(key)
             return int(count) if count else 0
-        except Exception:
+        except BACKGROUND_INFRA_ERRORS:
             return 0
 
     async def _increment_restart_count(self, service_name: str) -> int:
@@ -477,7 +478,7 @@ class ProcessMonitor:
             count = await redis_client.incr(key)
             await redis_client.expire(key, PROCESS_MONITOR_RESTART_WINDOW_SECONDS)
             return int(count)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("[ProcessMonitor] Failed to increment restart count: %s", e)
             return 0
 
@@ -503,7 +504,7 @@ class ProcessMonitor:
             key = f"{SMS_ALERT_COOLDOWN_KEY_PREFIX}{service_name}"
             exists = await redis_client.exists(key)
             return bool(exists)
-        except Exception:
+        except BACKGROUND_INFRA_ERRORS:
             return False
 
     async def _set_sms_cooldown(self, service_name: str) -> None:
@@ -526,7 +527,7 @@ class ProcessMonitor:
                 PROCESS_MONITOR_SMS_ALERT_COOLDOWN_SECONDS,
                 str(time.time()),
             )
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("[ProcessMonitor] Failed to set SMS cooldown: %s", e)
 
     async def _send_sms_alert(self, service_name: str, reason: str) -> None:
@@ -551,7 +552,7 @@ class ProcessMonitor:
                 details=(f"Process monitor detected {service_name} failure. Check service status and logs."),
             )
             self.metrics[service_name].last_sms_alert_time = time.time()
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error(
                 "[ProcessMonitor] Error sending SMS alert via critical alert service: %s",
                 e,
@@ -584,13 +585,11 @@ class ProcessMonitor:
                         process.pid,
                     )
                     return True
-                else:
-                    # Process already running externally
-                    logger.info("[ProcessMonitor] Qdrant is running externally")
-                    return True
+                # Process already running externally
+                logger.info("[ProcessMonitor] Qdrant is running externally")
+                return True
 
-            elif service_name == "celery":
-                # Stop existing process if any (run in thread pool)
+            if service_name == "celery":                # Stop existing process if any (run in thread pool)
                 if ServerState.celery_worker_process is not None:
                     await asyncio.to_thread(stop_celery_worker)
 
@@ -603,8 +602,7 @@ class ProcessMonitor:
                     )
                     return True
 
-            elif service_name == "postgresql":
-                # Stop existing process if any (run in thread pool)
+            if service_name == "postgresql":                # Stop existing process if any (run in thread pool)
                 if ServerState.postgresql_process is not None:
                     await asyncio.to_thread(stop_postgresql_server)
 
@@ -616,13 +614,12 @@ class ProcessMonitor:
                         process.pid,
                     )
                     return True
-                else:
-                    # Process already running externally
-                    logger.info("[ProcessMonitor] PostgreSQL is running externally")
-                    return True
+                # Process already running externally
+                logger.info("[ProcessMonitor] PostgreSQL is running externally")
+                return True
 
             return False
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error(
                 "[ProcessMonitor] Failed to restart %s: %s",
                 service_name,
@@ -857,7 +854,7 @@ class ProcessMonitor:
             except asyncio.CancelledError:
                 logger.info("[ProcessMonitor] Monitoring loop cancelled")
                 break
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.error("[ProcessMonitor] Error in monitoring loop: %s", e, exc_info=True)
                 await asyncio.sleep(PROCESS_MONITOR_INTERVAL_SECONDS)
 
@@ -891,7 +888,7 @@ class ProcessMonitor:
                         break
                 except asyncio.CancelledError:
                     return
-                except Exception as exc:
+                except BACKGROUND_INFRA_ERRORS as exc:
                     logger.debug("Process monitor lock acquisition retry failed: %s", exc)
 
         # Start monitoring loop
@@ -925,14 +922,14 @@ class ProcessMonitor:
 class ProcessMonitorSingleton:
     """Singleton wrapper for ProcessMonitor to avoid global statement"""
 
-    _instance: Optional[ProcessMonitor] = None
+    instance: Optional[ProcessMonitor] = None
 
     @classmethod
     def get_instance(cls) -> ProcessMonitor:
         """Get global ProcessMonitor instance"""
-        if cls._instance is None:
-            cls._instance = ProcessMonitor()
-        return cls._instance
+        if cls.instance is None:
+            cls.instance = ProcessMonitor()
+        return cls.instance
 
 
 def get_process_monitor() -> ProcessMonitor:

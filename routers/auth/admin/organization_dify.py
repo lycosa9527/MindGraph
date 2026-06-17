@@ -12,6 +12,7 @@ from models.domain.auth import Organization
 from models.domain.messages import Language, Messages
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.dify.org_mindmate_client import global_mindmate_dify_credentials
+from services.mindbot.dify.service_health import check_dify_app_api_reachable
 from utils.secrets_mask import mask_secret
 
 MIN_DIFY_TIMEOUT_SECONDS = 5
@@ -108,8 +109,6 @@ def resolve_mindmate_dify_probe_credentials_draft(
 
 async def probe_mindmate_dify_health_draft(body: Optional[dict]) -> dict[str, Any]:
     """Probe Dify for school create form (no organization row yet)."""
-    from services.mindbot.dify.service_health import check_dify_app_api_reachable
-
     api_key, api_url = resolve_mindmate_dify_probe_credentials_draft(body)
     online, http_status, err = await check_dify_app_api_reachable(api_url, api_key)
     return {
@@ -124,8 +123,6 @@ async def probe_mindmate_dify_health(
     body: Optional[dict],
 ) -> dict[str, Any]:
     """Probe Dify app API (GET /parameters) for effective MindMate credentials."""
-    from services.mindbot.dify.service_health import check_dify_app_api_reachable
-
     api_key, api_url = resolve_mindmate_dify_probe_credentials(org, body)
     online, http_status, err = await check_dify_app_api_reachable(api_url, api_key)
     return {
@@ -140,6 +137,7 @@ def _validate_dify_pair(
     api_key: str,
     lang: Language,
 ) -> None:
+    """Validate dify pair."""
     if bool(base_url) != bool(api_key):
         error_msg = Messages.error("missing_required_fields", lang, "dify_api_base_url, dify_api_key")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
@@ -190,10 +188,12 @@ def apply_dify_on_update(org: Organization, request: dict, lang: Language) -> No
 
 
 def _clamp_int(value: int, minimum: int, maximum: int) -> int:
+    """Clamp int."""
     return max(minimum, min(maximum, value))
 
 
 def _apply_org_dify_behavior_on_update(org: Organization, request: dict) -> None:
+    """Apply org dify behavior on update."""
     if "dify_timeout_seconds" in request:
         raw = request.get("dify_timeout_seconds")
         if raw is None:

@@ -13,40 +13,41 @@ All Rights Reserved
 Proprietary License
 """
 
+import logging
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Optional, cast
-import logging
-import os
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from utils.db.session_open import system_rls_session
-from models.domain.auth import User, Organization
-from services.redis.session.redis_session_manager import get_session_manager
+from models.domain.auth import Organization, User
+from routers.auth.helpers import issue_access_token_with_vpn_geo
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
 from services.redis.redis_bayi_token import get_bayi_token_tracker
-from routers.auth.helpers import issue_access_token_with_vpn_geo
-
-_issue_bayi_access_token = issue_access_token_with_vpn_geo
-
+from services.redis.session.redis_session_manager import get_session_manager
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS, REDIS_ERRORS
 from utils.auth import (
     AUTH_MODE,
-    get_client_ip,
-    is_https,
     BAYI_DECRYPTION_KEY,
     BAYI_DEFAULT_ORG_CODE,
     BAYI_DEFAULT_ORG_ID,
     BAYI_SSO_DEFAULT_DISPLAY_NAME,
-    decrypt_bayi_token,
-    validate_bayi_token_body,
-    hash_password,
     compute_device_hash,
+    decrypt_bayi_token,
+    get_client_ip,
+    hash_password,
+    is_https,
+    validate_bayi_token_body,
 )
+from utils.auth.org_subscription import ensure_org_subscription_current
+from utils.db.session_open import system_rls_session
+
+_issue_bayi_access_token = issue_access_token_with_vpn_geo
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +120,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                     attempt_count,
                 )
                 return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("Rate limit check failed (allowing request): %s", e)
             # Fail-open: if rate limiting fails, allow request (backward compatibility)
 
@@ -132,7 +133,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                     client_ip,
                 )
                 return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.debug("Token usage check failed (allowing request): %s", e)
             # Fail-open: if check fails, allow request (backward compatibility)
 
@@ -157,7 +158,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
             )
             # Invalid token: fallback to standard auth UI
             return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error(
                 "Unexpected error during token decryption: %s - redirecting to %s",
                 e,
@@ -186,7 +187,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
             try:
                 token_tracker = get_bayi_token_tracker()
                 await token_tracker.cache_token_validation(token, False)
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.debug("Failed to cache invalid token: %s", e)
             # Invalid or expired token: fallback to standard auth UI
             return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
@@ -199,7 +200,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
             await token_tracker.mark_token_used(token)
             await token_tracker.cache_token_validation(token, True)
             await token_tracker.clear_rate_limit(client_ip)
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.debug("Failed to mark token as used/cache result: %s", e)
             # Non-critical - continue with authentication
 
@@ -235,7 +236,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                         logger.info("Created bayi organization: %s", BAYI_DEFAULT_ORG_CODE)
                         try:
                             await org_cache.cache_org(org)
-                        except Exception as e:
+                        except DATABASE_ERRORS as e:
                             logger.warning("Failed to cache bayi org: %s", e)
                     except IntegrityError:
                         await db.rollback()
@@ -248,9 +249,9 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                             return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
                         try:
                             await org_cache.cache_org(org)
-                        except Exception as cache_err:
+                        except DATABASE_ERRORS as cache_err:
                             logger.debug("Failed to cache org after race: %s", cache_err)
-                    except Exception:
+                    except DATABASE_ERRORS:
                         await db.rollback()
                         raise
 
@@ -262,8 +263,6 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
             if not is_active:
                 logger.warning("Bayi SSO blocked: Organization %s is locked", org.code)
                 return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
-
-            from utils.auth.org_subscription import ensure_org_subscription_current
 
             org = await ensure_org_subscription_current(org) or org
 
@@ -285,9 +284,9 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                     logger.info("Created bayi user: %s", user_phone)
                     try:
                         await user_cache.cache_user(bayi_user)
-                    except Exception as e:
+                    except REDIS_ERRORS as e:
                         logger.warning("Failed to cache bayi user: %s", e)
-                except Exception as e:
+                except REDIS_ERRORS as e:
                     await db.rollback()
                     logger.error("Failed to create bayi user: %s", e)
                     result = await db.execute(select(User).where(User.phone == user_phone))
@@ -297,7 +296,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                         return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
                     try:
                         await user_cache.cache_user(bayi_user)
-                    except Exception as cache_err:
+                    except REDIS_ERRORS as cache_err:
                         logger.debug(
                             "Failed to cache user after error recovery: %s",
                             cache_err,
@@ -338,7 +337,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
         )
         return redirect_response
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         # Any other error: redirect to fallback auth route
         logger.error(
             "Bayi authentication error: %s - redirecting to %s",
@@ -370,9 +369,9 @@ def favicon():
 
     if vue_favicon_ico.exists():
         return FileResponse(vue_favicon_ico, media_type="image/x-icon")
-    elif vue_favicon_svg.exists():
+    if vue_favicon_svg.exists():
         return FileResponse(vue_favicon_svg, media_type="image/svg+xml")
-    elif legacy_favicon.exists():
+    if legacy_favicon.exists():
         return FileResponse(legacy_favicon, media_type="image/svg+xml")
 
     # Return 404 if favicon doesn't exist

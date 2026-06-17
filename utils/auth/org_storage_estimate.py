@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
 
 from models.domain.auth import User
-from models.domain.diagrams import Diagram
 from models.domain.diagram_snapshots import DiagramSnapshot
+from models.domain.diagrams import Diagram
 from models.domain.school_zone import SharedDiagram
 
 ColumnBytesFn = Callable[[Any], ColumnElement[Any]]
@@ -27,12 +27,14 @@ def _text_fallback_bytes(column: Any) -> ColumnElement[Any]:
 
 
 def _column_bytes_fn(dialect_name: str) -> ColumnBytesFn:
+    """Column bytes fn."""
     if dialect_name == "postgresql":
         return _pg_column_bytes
     return _text_fallback_bytes
 
 
 async def _sum_diagram_bytes(db: AsyncSession, org_id: int, col_bytes: ColumnBytesFn) -> int:
+    """Sum diagram bytes."""
     spec_bytes = col_bytes(Diagram.spec)
     thumb_bytes = col_bytes(Diagram.thumbnail)
     stmt = (
@@ -48,6 +50,7 @@ async def _sum_diagram_bytes(db: AsyncSession, org_id: int, col_bytes: ColumnByt
 
 
 async def _sum_snapshot_bytes(db: AsyncSession, org_id: int, col_bytes: ColumnBytesFn) -> int:
+    """Sum snapshot bytes."""
     spec_bytes = col_bytes(DiagramSnapshot.spec)
     stmt = (
         select(func.coalesce(func.sum(spec_bytes), 0))
@@ -59,6 +62,7 @@ async def _sum_snapshot_bytes(db: AsyncSession, org_id: int, col_bytes: ColumnBy
 
 
 async def _sum_shared_diagram_bytes(db: AsyncSession, org_id: int, col_bytes: ColumnBytesFn) -> int:
+    """Sum shared diagram bytes."""
     data_bytes = col_bytes(SharedDiagram.diagram_data)
     thumb_bytes = col_bytes(SharedDiagram.thumbnail)
     stmt = (

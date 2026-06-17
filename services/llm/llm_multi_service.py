@@ -8,14 +8,14 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Dict, List, Optional, Any, AsyncGenerator
 import asyncio
 import logging
 import time
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
-from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.infrastructure.http.error_handler import LLMServiceError
+from services.infrastructure.monitoring.critical_alert import CriticalAlertService
+from services.utils.error_types import LLM_PIPELINE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ class LLMMultiService:
             try:
                 result = await task
                 results[model] = result
-            except Exception as e:
+            except LLM_PIPELINE_ERRORS as e:
                 results[model] = {
                     "response": None,
                     "success": False,
@@ -181,7 +181,7 @@ class LLMMultiService:
                         result["duration"],
                     )
 
-            except Exception as e:
+            except LLM_PIPELINE_ERRORS as e:
                 # Find which model failed
                 failed_model = None
                 for task, model in task_model_pairs:
@@ -321,7 +321,7 @@ class LLMMultiService:
                     tokens_per_sec,
                 )
 
-            except Exception as e:
+            except LLM_PIPELINE_ERRORS as e:
                 duration = time.time() - start_time
                 logical_model = physical_to_logical.get(physical_model, physical_model)
                 logger.error("[LLMMultiService] %s stream error: %s", logical_model, str(e))
@@ -445,7 +445,7 @@ class LLMMultiService:
                         "error": None,
                     }
 
-            except Exception as e:
+            except LLM_PIPELINE_ERRORS as e:
                 # Find which model failed
                 for task, model in task_model_pairs:
                     if task.done() and task.exception():
@@ -464,7 +464,7 @@ class LLMMultiService:
                     "Check API keys, network connectivity, and provider status."
                 ),
             )
-        except Exception as alert_error:
+        except LLM_PIPELINE_ERRORS as alert_error:
             logger.error("[LLMMultiService] Failed to send critical alert: %s", alert_error)
         raise LLMServiceError("All models failed to generate response")
 
@@ -603,7 +603,7 @@ class LLMMultiService:
                 "error": None,
             }
 
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             duration = time.time() - start_time
 
             # Record failure using PHYSICAL model name for circuit breaker

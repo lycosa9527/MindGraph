@@ -19,12 +19,22 @@ from collections import OrderedDict
 from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional
 
+from routers.api.workshop_ws_broadcast import broadcast_to_others
+from routers.api.workshop_ws_handlers_update_validate import (
+    _MAX_CLIENT_OP_ID_LENGTH,
+    _MAX_COLLAB_DELETED_CONNECTION_IDS,
+    _MAX_COLLAB_DELETED_NODE_IDS,
+    _MAX_COLLAB_UPDATE_CONNECTIONS,
+    _MAX_COLLAB_UPDATE_NODES,
+    _diagram_update_validation_error,
+    _full_spec_validation_error,
+)
+from routers.api.workshop_ws_update_schema import collab_update_schema_error
+from services.features.workshop_ws_registry import ACTIVE_EDITORS as active_editors
 from services.features.workshop_ws_connection_state import (
-    ACTIVE_EDITORS as active_editors,
     enqueue,
 )
 from services.features.ws_redis_fanout_config import is_ws_fanout_enabled
-
 from services.infrastructure.monitoring.ws_metrics import (
     record_ws_collab_granular_lock_reject,
     record_ws_collab_partial_filter_notify,
@@ -35,10 +45,16 @@ from services.infrastructure.monitoring.ws_metrics import (
     record_ws_update_latency,
     record_ws_update_semaphore_wait_ms,
 )
-from services.redis.redis_async_client import get_async_redis
+from services.online_collab.common.online_collab_constants import (
+    DEFAULT_DB_HOT_PATH_TIMEOUT_SEC,
+    DEFAULT_REDIS_HOT_PATH_TIMEOUT_SEC,
+)
 from services.online_collab.core.online_collab_manager import get_online_collab_manager
 from services.online_collab.lifecycle.online_collab_redis_ttl import (
     get_online_collab_redis_ttl_seconds,
+)
+from services.online_collab.lifecycle.online_collab_session_closing import (
+    workshop_session_is_closing,
 )
 from services.online_collab.participant.canvas_collab_locks import (
     build_connection_endpoints_map,
@@ -48,45 +64,31 @@ from services.online_collab.participant.canvas_collab_locks import (
     filter_granular_connections_for_locks,
     filter_granular_nodes_for_locks,
 )
+from services.online_collab.participant.online_collab_ws_editor_redis import (
+    load_editors,
+)
+from services.online_collab.redis.online_collab_redis_keys import client_op_dedupe_key
 from services.online_collab.redis.online_collab_redis_locks import (
     acquire_room_write_lock,
     release_room_write_lock,
-)
-from services.online_collab.participant.online_collab_ws_editor_redis import (
-    load_editors,
 )
 from services.online_collab.redis.redis8_features import (
     topk_record_room_activity,
     topk_record_user_activity,
 )
-from services.online_collab.lifecycle.online_collab_session_closing import (
-    workshop_session_is_closing,
-)
 from services.online_collab.spec.online_collab_live_flush import (
     schedule_live_spec_db_flush,
 )
-from services.online_collab.redis.online_collab_redis_keys import client_op_dedupe_key
 from services.online_collab.spec.online_collab_live_spec import read_live_spec
 from services.online_collab.spec.online_collab_live_spec_ops import (
     mutate_live_spec_after_ws_update,
 )
-from services.online_collab.common.online_collab_constants import (
-    DEFAULT_DB_HOT_PATH_TIMEOUT_SEC,
-    DEFAULT_REDIS_HOT_PATH_TIMEOUT_SEC,
-)
-from routers.api.workshop_ws_broadcast import broadcast_to_others
-from routers.api.workshop_ws_update_schema import collab_update_schema_error
-from routers.api.workshop_ws_handlers_update_validate import (
-    _MAX_CLIENT_OP_ID_LENGTH,
-    _MAX_COLLAB_DELETED_CONNECTION_IDS,
-    _MAX_COLLAB_DELETED_NODE_IDS,
-    _MAX_COLLAB_UPDATE_CONNECTIONS,
-    _MAX_COLLAB_UPDATE_NODES,
-    _diagram_update_validation_error,
-    _full_spec_validation_error,
-)
+from services.redis.redis_async_client import get_async_redis
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
+
+_REDIS_TIMEOUT_ERRORS = (asyncio.TimeoutError,) + REDIS_ERRORS
 
 __all__ = [
     "_MAX_CLIENT_OP_ID_LENGTH",
@@ -118,6 +120,7 @@ _PER_ROOM_SEM_CAP: int = max(1, int(os.environ.get("COLLAB_ROOM_MERGE_SEM_CAP", 
 
 
 def _collab_update_acquire_timeout_sec() -> float:
+    """Collab update acquire timeout sec."""
     raw = os.environ.get("COLLAB_WS_UPDATE_SEMAPHORE_ACQUIRE_SEC", "45")
     try:
         parsed = float(raw)
@@ -127,6 +130,7 @@ def _collab_update_acquire_timeout_sec() -> float:
 
 
 async def _room_merge_semaphore(code: str) -> asyncio.Semaphore:
+    """Room merge semaphore."""
     async with _ROOM_SEM_LOCK:
         existing = _ROOM_MERGE_SEMAPHORES.get(code)
         if existing is not None:
@@ -165,7 +169,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
     if schema_err:
         try:
             record_ws_collab_update_schema_reject()
-        except Exception:
+        except BACKGROUND_INFRA_ERRORS:
             pass
         await _send(
             ctx,
@@ -269,7 +273,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                 record_ws_load_editors_latency_ms(
                     (time.monotonic() - _le_start) * 1000,
                 )
-            except Exception:
+            except BACKGROUND_INFRA_ERRORS:
                 pass
     else:
         editors_redis = None
@@ -319,7 +323,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                     try:
                         async with asyncio.timeout(DEFAULT_REDIS_HOT_PATH_TIMEOUT_SEC):
                             live_doc = await read_live_spec(redis, ctx.code)
-                    except (asyncio.TimeoutError, Exception) as exc:
+                    except _REDIS_TIMEOUT_ERRORS as exc:
                         logger.debug("read_live_spec for deleted-conn filter failed: %s", exc)
                         live_doc = None
                 finally:
@@ -327,7 +331,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                         record_ws_read_live_spec_latency_ms(
                             (time.monotonic() - _rs_start) * 1000,
                         )
-                    except Exception:
+                    except BACKGROUND_INFRA_ERRORS:
                         pass
                 if isinstance(live_doc, dict):
                     spec_conns = live_doc.get("connections")
@@ -365,7 +369,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
             )
             try:
                 record_ws_collab_granular_lock_reject()
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 logger.debug("lock reject metric skipped: %s", exc)
             await _send(
                 ctx,
@@ -391,7 +395,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
             )
             try:
                 record_ws_collab_partial_filter_notify()
-            except Exception:
+            except BACKGROUND_INFRA_ERRORS:
                 pass
             await _send(
                 ctx,
@@ -420,7 +424,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                 )
                 try:
                     record_ws_collab_granular_lock_reject()
-                except Exception as exc:
+                except BACKGROUND_INFRA_ERRORS as exc:
                     logger.debug("lock reject metric skipped: %s", exc)
                 await _send(
                     ctx,
@@ -466,7 +470,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
             record_ws_update_semaphore_wait_ms(
                 (time.monotonic() - _sem_wait_mark) * 1000,
             )
-        except Exception:
+        except BACKGROUND_INFRA_ERRORS:
             pass
         await _send(
             ctx,
@@ -485,7 +489,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                 record_ws_update_semaphore_wait_ms(
                     (time.monotonic() - _sem_wait_mark) * 1000,
                 )
-            except Exception:
+            except BACKGROUND_INFRA_ERRORS:
                 pass
             await _send(
                 ctx,
@@ -501,7 +505,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                 record_ws_update_semaphore_wait_ms(
                     (time.monotonic() - _sem_wait_mark) * 1000,
                 )
-            except Exception:
+            except REDIS_ERRORS:
                 pass
             _merge_start = time.monotonic()
             skip_merge_duplicate = False
@@ -530,7 +534,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                 try:
                     async with asyncio.timeout(DEFAULT_REDIS_HOT_PATH_TIMEOUT_SEC):
                         merged_doc = await read_live_spec(redis, ctx.code)
-                except (asyncio.TimeoutError, Exception) as exc:
+                except _REDIS_TIMEOUT_ERRORS as exc:
                     logger.debug(
                         "[CollabDebug] read_live_spec duplicate path failed: %s",
                         exc,
@@ -550,7 +554,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                             ctx.code,
                             int(ctx.user.id),
                         )
-                except (asyncio.TimeoutError, Exception) as _wl_exc:
+                except _REDIS_TIMEOUT_ERRORS as _wl_exc:
                     logger.debug(
                         "[CollabDebug] write-lock acquire failed code=%s: %s",
                         ctx.code,
@@ -576,14 +580,14 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                     )
             try:
                 record_ws_update_latency((time.monotonic() - _merge_start) * 1000)
-            except Exception:
+            except BACKGROUND_INFRA_ERRORS:
                 pass
             if merged_doc is not None:
                 await schedule_live_spec_db_flush(ctx.code, ctx.diagram_id)
         except asyncio.TimeoutError:
             live_merge_failed = True
             logger.warning("[LiveSpec] merge/flush hit timeout code=%s", ctx.code)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             live_merge_failed = True
             logger.warning(
                 "[LiveSpec] merge or flush schedule failed: %s",
@@ -594,7 +598,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
             if write_lock_token:
                 try:
                     await release_room_write_lock(redis, ctx.code, write_lock_token)
-                except Exception as _rl_exc:
+                except REDIS_ERRORS as _rl_exc:
                     logger.debug(
                         "[CollabDebug] write-lock release failed code=%s: %s",
                         ctx.code,
@@ -615,7 +619,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
     if live_merge_failed:
         try:
             record_ws_live_spec_merge_failure()
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("merge failure metric skipped: %s", exc)
         await _send(
             ctx,

@@ -33,6 +33,7 @@ CONT_VALUE = re.compile(r"^(\s+)'(.+)$")
 
 
 def fix_unterminated(line: str) -> str:
+    """Fix unterminated."""
     s = line.rstrip()
     m = KEY_SINGLE_SQ.match(s)
     if m and s.endswith(","):
@@ -61,6 +62,7 @@ def fix_unterminated(line: str) -> str:
 
 
 def fix_line(line: str) -> list[str]:
+    """Fix line."""
     mm = MERGED_USERLEFT.match(line)
     if mm:
         indent, qkey = mm.group(1), mm.group(2)
@@ -83,6 +85,7 @@ def fix_line(line: str) -> list[str]:
 
 
 def fix_text_once(text: str) -> str:
+    """Fix text once."""
     text = text.replace("\r\r\n", "\n").replace("\r\n", "\n").replace("\r", "\n")
     stage: list[str] = []
     for line in text.split("\n"):
@@ -94,6 +97,7 @@ def fix_text_once(text: str) -> str:
 
 
 def fix_text(path: Path) -> str:
+    """Fix text."""
     raw = path.read_bytes()
     text = raw.decode("utf-8")
     prev = None
@@ -105,6 +109,7 @@ def fix_text(path: Path) -> str:
 
 
 def main() -> None:
+    """Main."""
     for wsh in sorted(ROOT.glob("*/workshop.ts")):
         if wsh.parent.name == "en":
             continue

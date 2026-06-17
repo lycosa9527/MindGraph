@@ -3,6 +3,7 @@ Concept extraction for teaching materials.
 
 Extracts key concepts and their relationships from educational content.
 """
+from services.utils.error_types import JSON_PARSE_ERRORS
 
 import json
 import logging
@@ -47,7 +48,7 @@ class ConceptExtractor:
                 if default_llm_service is None:
                     raise ImportError("llm_service not available")
                 self.llm_service = default_llm_service
-            except Exception as e:
+            except JSON_PARSE_ERRORS as e:
                 logger.warning("LLM service not available: %s", e)
 
     async def extract_concepts(self, text: str, max_concepts: int = 50) -> List[Concept]:
@@ -110,7 +111,7 @@ Extract up to {max_concepts} concepts.
                     concepts.append(concept)
 
                 return concepts[:max_concepts]
-        except Exception as e:
+        except JSON_PARSE_ERRORS as e:
             logger.warning("Concept extraction failed: %s", e)
 
         return []

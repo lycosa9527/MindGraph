@@ -2,14 +2,25 @@
 
 from __future__ import annotations
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
-from tests.typing_helpers import mock_await_args
 from services.kitty.diagram.diagram_spec_sync import sync_diagram_data_to_spec_shape
+from services.kitty.diagram.diagram_utils import is_paragraph_text
 from services.kitty.omni.tools import omni_function_call_to_command
+from services.kitty.routing.command_router import (
+    RouteOutcome,
+    route_omni_function_call,
+    route_voice_command,
+)
+from services.kitty.session.ops import create_voice_session
+from services.kitty.session.runtime_state import voice_sessions
+from tests.typing_helpers import mock_await_args
 
 
 def test_sync_circle_map_children_to_context() -> None:
+    """Test sync circle map children to context."""
     data = {
         "center": {"text": "Cars"},
         "children": [
@@ -23,6 +34,7 @@ def test_sync_circle_map_children_to_context() -> None:
 
 
 def test_sync_bubble_map_attributes() -> None:
+    """Test sync bubble map attributes."""
     data = {
         "center": {"text": "Dog"},
         "children": [{"text": "loyal"}, {"text": "furry"}],
@@ -32,6 +44,7 @@ def test_sync_bubble_map_attributes() -> None:
 
 
 def test_omni_add_node_function_call() -> None:
+    """Test omni add node function call."""
     cmd = omni_function_call_to_command("add_node", '{"text": "apple", "position": 1}')
     assert cmd["action"] == "add_node"
     assert cmd["target"] == "apple"
@@ -39,6 +52,7 @@ def test_omni_add_node_function_call() -> None:
 
 
 def test_omni_update_center_double_bubble() -> None:
+    """Test omni update center double bubble."""
     cmd = omni_function_call_to_command(
         "update_center",
         '{"left": "Apples", "right": "Pears"}',
@@ -56,19 +70,13 @@ def test_omni_update_center_double_bubble() -> None:
     ],
 )
 def test_is_paragraph_text_short_commands(text: str, is_paragraph: bool) -> None:
-    from services.kitty.diagram.diagram_utils import is_paragraph_text
-
+    """Test is paragraph text short commands."""
     assert is_paragraph_text(text) is is_paragraph
 
 
 @pytest.mark.asyncio
 async def test_route_omni_function_call_open_panel() -> None:
-    from unittest.mock import AsyncMock, MagicMock, patch
-
-    from services.kitty.routing.command_router import RouteOutcome, route_omni_function_call
-    from services.kitty.session.runtime_state import voice_sessions
-    from services.kitty.session.ops import create_voice_session
-
+    """Test route omni function call open panel."""
     ws = MagicMock()
     vid = create_voice_session(user_id="1", diagram_session_id="scope_test", diagram_type="circle_map")
     voice_sessions[vid]["context"] = {"diagram_data": {"children": [], "center": {"text": ""}}}
@@ -98,6 +106,7 @@ async def test_route_omni_function_call_open_panel() -> None:
 
 
 def test_omni_open_desktop_canvas_mindmap_zh() -> None:
+    """Test omni open desktop canvas mindmap zh."""
     cmd = omni_function_call_to_command(
         "open_desktop_canvas",
         '{"diagram_type": "思维导图", "target": "运动会"}',
@@ -109,6 +118,7 @@ def test_omni_open_desktop_canvas_mindmap_zh() -> None:
 
 
 def test_omni_open_desktop_canvas_double_bubble() -> None:
+    """Test omni open desktop canvas double bubble."""
     cmd = omni_function_call_to_command(
         "open_desktop_canvas",
         '{"diagram_type": "double_bubble_map", "left": "苹果", "right": "梨"}',
@@ -121,12 +131,7 @@ def test_omni_open_desktop_canvas_double_bubble() -> None:
 
 @pytest.mark.asyncio
 async def test_route_omni_function_call_open_desktop_canvas() -> None:
-    from unittest.mock import AsyncMock, MagicMock, patch
-
-    from services.kitty.routing.command_router import RouteOutcome, route_omni_function_call
-    from services.kitty.session.runtime_state import voice_sessions
-    from services.kitty.session.ops import create_voice_session
-
+    """Test route omni function call open desktop canvas."""
     ws = MagicMock()
     vid = create_voice_session(user_id="42", diagram_session_id="scope_test", diagram_type="circle_map")
     voice_sessions[vid]["context"] = {"diagram_data": {"children": [], "center": {"text": ""}}}
@@ -183,12 +188,7 @@ async def test_route_omni_function_call_open_desktop_canvas() -> None:
 
 @pytest.mark.asyncio
 async def test_route_omni_function_call_inline_recommendations_selected() -> None:
-    from unittest.mock import AsyncMock, MagicMock, patch
-
-    from services.kitty.routing.command_router import RouteOutcome, route_omni_function_call
-    from services.kitty.session.runtime_state import voice_sessions
-    from services.kitty.session.ops import create_voice_session
-
+    """Test route omni function call inline recommendations selected."""
     ws = MagicMock()
     vid = create_voice_session(user_id="7", diagram_session_id="scope_test", diagram_type="mindmap")
     voice_sessions[vid]["context"] = {
@@ -243,10 +243,7 @@ async def test_route_omni_function_call_inline_recommendations_selected() -> Non
 
 @pytest.mark.asyncio
 async def test_route_voice_command_from_voice_skips_turbo() -> None:
-    from unittest.mock import MagicMock
-
-    from services.kitty.routing.command_router import RouteOutcome, route_voice_command
-
+    """Test route voice command from voice skips turbo."""
     ws = MagicMock()
     result = await route_voice_command(
         ws,
@@ -261,12 +258,7 @@ async def test_route_voice_command_from_voice_skips_turbo() -> None:
 
 @pytest.mark.asyncio
 async def test_route_voice_select_node_syncs_hub_and_fanout() -> None:
-    from unittest.mock import AsyncMock, MagicMock, patch
-
-    from services.kitty.routing.command_router import RouteOutcome, route_voice_command
-    from services.kitty.session.ops import create_voice_session
-    from services.kitty.session.runtime_state import voice_sessions
-
+    """Test route voice select node syncs hub and fanout."""
     ws = MagicMock()
     vid = create_voice_session(user_id="42", diagram_session_id="lib-uuid-sel", diagram_type="circle_map")
     voice_sessions[vid]["context"] = {

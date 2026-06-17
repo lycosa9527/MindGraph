@@ -16,9 +16,10 @@ from utils.auth.role_constants import (
     ROLE_SCHOOL_ADMIN,
     ROLE_SUPERADMIN,
     ROLE_TEACHER,
+    SUPERADMIN_ROLES,
     normalize_role,
+    role_in,
 )
-from utils.auth.roles import is_superadmin
 
 CAP_PANEL_ACCESS: Final[str] = "panel.access"
 
@@ -147,7 +148,7 @@ def user_panel_capabilities(current_user) -> frozenset[str]:
     """Capabilities granted to the user for the management panel."""
     if not hasattr(current_user, "role"):
         return frozenset()
-    if is_superadmin(current_user):
+    if role_in(current_user, SUPERADMIN_ROLES):
         return ROLE_PANEL_CAPABILITIES[ROLE_SUPERADMIN]
     return capabilities_for_role(current_user.role)
 
@@ -156,6 +157,15 @@ def role_has_panel_access(role: str | None) -> bool:
     """True when the role may open the management panel."""
     caps = capabilities_for_role(role)
     return CAP_PANEL_ACCESS in caps
+
+
+def is_management_panel_user(current_user) -> bool:
+    """True when user may access the unified management panel (roles 1–4)."""
+    if not hasattr(current_user, "role"):
+        return False
+    if role_in(current_user, SUPERADMIN_ROLES):
+        return True
+    return role_has_panel_access(current_user.role)
 
 
 def all_panel_capability_keys() -> frozenset[str]:

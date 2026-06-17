@@ -10,8 +10,8 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Dict, Any, Optional
 import logging
+from typing import Any, Dict, Optional
 
 from services.gewe.protocols import GeweServiceBase
 

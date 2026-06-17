@@ -29,14 +29,14 @@ from routers.features.workshop_chat.dependencies import (
     require_post_permission,
 )
 from routers.features.workshop_chat.schemas import (
-    SendMessageRequest,
     EditMessageRequest,
+    SendMessageRequest,
 )
 from services.features.workshop_chat import (
-    message_service,
-    star_service,
-    reaction_service,
     file_service,
+    message_service,
+    reaction_service,
+    star_service,
 )
 from services.features.workshop_chat.mention_resolution import (
     MentionResolutionError,

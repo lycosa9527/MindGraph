@@ -1,19 +1,18 @@
 """
 brace map agent module.
 """
-
-from datetime import datetime
-from typing import List, Dict, Any, Optional, Tuple
 import logging
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
 
 from config.settings import config
 from prompts import get_prompt
 from services.llm import llm_service
+from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
-from ..core.base_agent import BaseAgent
 from ..core.agent_utils import extract_json_from_response
-
+from ..core.base_agent import BaseAgent
 from .brace_map_helpers import (
     CollisionDetector,
     ContextAwareAlgorithmSelector,
@@ -34,7 +33,6 @@ from .brace_map_positioning import (
     FlexibleLayoutCalculator,
 )
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -42,6 +40,7 @@ class BraceMapAgent(BaseAgent):
     """Brace Map Agent with block-based positioning system"""
 
     def __init__(self, model="qwen"):
+        """ init  ."""
         super().__init__(model=model)
         self.context_manager = ContextManager()
         self.llm_processor = LLMHybridProcessor()
@@ -136,7 +135,7 @@ class BraceMapAgent(BaseAgent):
                 "diagram_type": self.diagram_type,
             }
 
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             logger.error("BraceMapAgent: Brace map generation failed: %s", e)
             return {"success": False, "error": f"Generation failed: {e}"}
 
@@ -342,7 +341,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
 
             return spec
 
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             logger.error("BraceMapAgent: Error in spec generation: %s", e)
             return None
 
@@ -489,7 +488,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
 
             return result
 
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             logger.error("BraceMapAgent: Error in dimension-only mode: %s", e)
             return None
 
@@ -509,7 +508,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                 return False, "Must have at least one part"
 
             return True, "Valid brace map specification"
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             return False, f"Validation error: {str(e)}"
 
     async def enhance_spec(self, spec: Dict) -> Dict:
@@ -545,7 +544,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
 
             return {"success": True, "spec": spec}
 
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             return {"success": False, "error": f"BraceMapAgent failed: {e}"}
 
     def _normalize_field_names(self, spec: Dict) -> Dict:
@@ -576,7 +575,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
 
             return normalized_spec
 
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             logger.error("Error normalizing field names: %s", e)
             return spec
 
@@ -746,7 +745,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
             # Debug log removed
             return result
 
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             # Debug log removed}")
             return {"success": False, "error": str(e), "debug_logs": []}
 

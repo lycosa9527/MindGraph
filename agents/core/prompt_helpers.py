@@ -13,7 +13,6 @@ from langchain_core.prompts import PromptTemplate
 
 from agents.core.llm_clients import llm_classification, llm_generation
 
-
 # Topic Extraction Prompts
 topic_extraction_prompt_en = PromptTemplate(
     input_variables=["user_prompt"],

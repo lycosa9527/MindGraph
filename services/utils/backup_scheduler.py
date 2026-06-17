@@ -43,13 +43,20 @@ from typing import Any, Dict, List, Optional
 
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import get_redis, is_redis_available
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from services.utils.pg_client_binaries import build_pg_dump_cmd, find_pg_client_binary
 
-
 try:
-    from config.database import DATABASE_URL
+    from config.database import DATABASE_URL, engine
 except ImportError:
     DATABASE_URL = ""
+    engine = None
+
+try:
+    from sqlalchemy import inspect, text
+except ImportError:
+    inspect = None
+    text = None
 
 try:
     from qcloud_cos import CosConfig, CosS3Client
@@ -70,7 +77,7 @@ def _cos_exc_call(exc: Exception, method: str, default: str) -> str:
         return default
     try:
         val = bound()
-    except Exception:
+    except (AttributeError, TypeError, ValueError, RuntimeError):
         return default
     return str(val) if val is not None else default
 
@@ -100,6 +107,7 @@ class _BackupSchedulerLockState:
     __slots__ = ("worker_lock_id",)
 
     def __init__(self) -> None:
+        """ init  ."""
         self.worker_lock_id: Optional[str] = None
 
 
@@ -158,16 +166,15 @@ def acquire_backup_scheduler_lock() -> bool:
                 _backup_scheduler_lock.worker_lock_id,
             )
             return True
-        else:
-            # Lock held by another worker - check who
-            holder = redis.get(BACKUP_LOCK_KEY)
-            logger.debug(
-                "[Backup] Another worker holds the scheduler lock (holder=%s), this worker will not run backups",
-                holder,
-            )
-            return False
+        # Lock held by another worker - check who
+        holder = redis.get(BACKUP_LOCK_KEY)
+        logger.debug(
+            "[Backup] Another worker holds the scheduler lock (holder=%s), this worker will not run backups",
+            holder,
+        )
+        return False
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         # On Redis error, fail safe - do not allow backup to prevent duplicates
         logger.error(
             "[Backup] Lock acquisition failed: %s. Backup scheduler disabled to prevent duplicate backups.",
@@ -214,7 +221,7 @@ def release_backup_scheduler_lock() -> bool:
 
         return result == 1
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.warning("[Backup] Lock release failed: %s", e)
         return False
 
@@ -263,17 +270,16 @@ def refresh_backup_scheduler_lock() -> bool:
         if result == 1:
             logger.debug("[Backup] Lock refreshed (TTL=%ss)", BACKUP_LOCK_TTL)
             return True
-        else:
-            # Lock not held by us - check who holds it
-            holder = redis.get(BACKUP_LOCK_KEY)
-            logger.warning(
-                "[Backup] Lock lost! Holder: %s, our ID: %s",
-                holder,
-                _backup_scheduler_lock.worker_lock_id,
-            )
-            return False
+        # Lock not held by us - check who holds it
+        holder = redis.get(BACKUP_LOCK_KEY)
+        logger.warning(
+            "[Backup] Lock lost! Holder: %s, our ID: %s",
+            holder,
+            _backup_scheduler_lock.worker_lock_id,
+        )
+        return False
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.warning("[Backup] Lock refresh failed: %s", e)
         return False
 
@@ -303,7 +309,7 @@ def is_backup_lock_holder() -> bool:
     try:
         holder = redis.get(BACKUP_LOCK_KEY)
         return holder == _backup_scheduler_lock.worker_lock_id
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         # On error, fail safe - do not assume we hold the lock
         logger.warning("[Backup] Error checking lock ownership: %s", e)
         return False
@@ -361,7 +367,7 @@ async def acquire_backup_scheduler_lock_async() -> bool:
         )
         return False
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error(
             "[Backup] Lock acquisition failed: %s. Backup scheduler disabled to prevent duplicate backups.",
             e,
@@ -396,7 +402,7 @@ async def release_backup_scheduler_lock_async() -> bool:
 
         return result == 1
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.warning("[Backup] Lock release failed: %s", e)
         return False
 
@@ -441,7 +447,7 @@ async def refresh_backup_scheduler_lock_async() -> bool:
         )
         return False
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.warning("[Backup] Lock refresh failed: %s", e)
         return False
 
@@ -460,7 +466,7 @@ async def is_backup_lock_holder_async() -> bool:
     try:
         holder = await redis.get(BACKUP_LOCK_KEY)
         return holder == _backup_scheduler_lock.worker_lock_id
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.warning("[Backup] Error checking lock ownership: %s", e)
         return False
 
@@ -554,7 +560,7 @@ def _check_disk_space(backup_dir: Path, required_mb: int = 100) -> bool:
     except AttributeError:
         # Windows doesn't have statvfs, assume OK
         return True
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.warning("[Backup] Disk space check failed: %s", e)
         return True  # Assume OK if check fails
 
@@ -630,12 +636,12 @@ def backup_postgresql_database(backup_path: Path) -> bool:
         if backup_path.exists():
             backup_path.unlink()
         return False
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[Backup] PostgreSQL backup failed: %s", e, exc_info=True)
         if backup_path.exists():
             try:
                 backup_path.unlink()
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 logger.debug("Failed backup file cleanup failed: %s", exc)
         return False
 
@@ -667,14 +673,12 @@ def verify_backup(backup_path: Path) -> bool:
             if result.returncode == 0:
                 logger.debug("[Backup] PostgreSQL backup verification passed")
                 return True
-            else:
-                logger.warning("[Backup] PostgreSQL backup verification failed: %s", result.stderr)
-                return False
-        else:
-            # pg_restore not found, assume backup is valid if file exists and has size
-            logger.debug("[Backup] pg_restore not found, skipping verification (backup file exists)")
-            return True
-    except Exception as e:
+            logger.warning("[Backup] PostgreSQL backup verification failed: %s", result.stderr)
+            return False
+        # pg_restore not found, assume backup is valid if file exists and has size
+        logger.debug("[Backup] pg_restore not found, skipping verification (backup file exists)")
+        return True
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.warning("[Backup] PostgreSQL backup verification error: %s", e)
         # Assume valid if file exists and has size
         return True
@@ -817,7 +821,7 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
 
                 return True
 
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 # Check if error is retryable
                 # Only handle COS exceptions if SDK is available
                 if CosClientError is None or CosServiceError is None:
@@ -867,7 +871,7 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
             exc_info=True,
         )
         return False
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         # Client-side errors (network, configuration, etc.)
         if CosClientError is not None and isinstance(e, CosClientError):
             logger.error(
@@ -1018,7 +1022,7 @@ def list_cos_backups() -> List[dict]:
         logger.debug("[Backup] Found %s backup(s) in COS", len(backups))
         return backups
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         if CosClientError is not None and isinstance(e, CosClientError):
             logger.error("[Backup] COS client error listing backups: %s", e, exc_info=True)
             return []
@@ -1152,9 +1156,9 @@ def cleanup_old_cos_backups(retention_days: int = 2) -> int:
                                 Key=manifest_key,
                             )
                             logger.debug("[Backup] Deleted COS manifest: %s", manifest_key)
-                        except Exception:
+                        except (AttributeError, TypeError, ValueError, RuntimeError):
                             pass  # Manifest may not exist for older backups
-                    except Exception as delete_error:
+                    except BACKGROUND_INFRA_ERRORS as delete_error:
                         if CosServiceError is not None and isinstance(delete_error, CosServiceError):
                             error_code = _cos_exc_call(delete_error, "get_error_code", "Unknown")
                             logger.warning(
@@ -1169,7 +1173,7 @@ def cleanup_old_cos_backups(retention_days: int = 2) -> int:
                                 delete_error,
                             )
 
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.warning(
                     "[Backup] Error processing COS backup %s: %s",
                     backup.get("key", "unknown"),
@@ -1182,7 +1186,7 @@ def cleanup_old_cos_backups(retention_days: int = 2) -> int:
 
         return deleted_count
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         if CosClientError is not None and isinstance(e, CosClientError):
             logger.error("[Backup] COS client error cleaning up backups: %s", e, exc_info=True)
             return 0
@@ -1253,7 +1257,7 @@ def cleanup_old_backups(backup_dir: Path, keep_count: int) -> int:
                     logger.debug("[Backup] Deleted manifest: %s", manifest_file.name)
             except (OSError, PermissionError) as e:
                 logger.warning("[Backup] Could not delete %s: %s", backup_file.name, e)
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.warning("[Backup] Cleanup error: %s", e)
 
     return deleted_count
@@ -1271,8 +1275,8 @@ def _write_backup_manifest(backup_path: Path) -> Optional[Path]:
         Path to the manifest file, or None on failure.
     """
     try:
-        from config.database import engine
-        from sqlalchemy import inspect, text
+        if engine is None or inspect is None or text is None:
+            return None
 
         pg_inspector = inspect(engine)
         table_names = sorted(pg_inspector.get_table_names())
@@ -1283,14 +1287,14 @@ def _write_backup_manifest(backup_path: Path) -> Optional[Path]:
                 try:
                     result = conn.execute(text(f'SELECT COUNT(*) FROM "{table}"'))
                     counts[table] = result.scalar() or 0
-                except Exception:
+                except DATABASE_ERRORS:
                     counts[table] = -1
 
         total_columns = 0
         for table in table_names:
             try:
                 total_columns += len(pg_inspector.get_columns(table))
-            except Exception:
+            except DATABASE_ERRORS:
                 pass
 
         manifest: Dict[str, Any] = {
@@ -1308,7 +1312,7 @@ def _write_backup_manifest(backup_path: Path) -> Optional[Path]:
         logger.info("[Backup] Manifest written: %s", manifest_path.name)
         return manifest_path
 
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.warning("[Backup] Failed to write manifest: %s", exc)
         return None
 
@@ -1437,7 +1441,7 @@ async def start_backup_scheduler():
             except asyncio.CancelledError:
                 logger.info("[Backup] Scheduler monitor stopped")
                 return
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 logger.debug("Backup scheduler lock acquisition retry failed: %s", exc)
 
     # This worker holds the lock - run the scheduler
@@ -1503,7 +1507,7 @@ async def start_backup_scheduler():
                     logger.info("[Backup] Scheduled backup completed successfully")
                 else:
                     logger.error("[Backup] Scheduled backup failed")
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.error(
                     "[Backup] Scheduled backup failed with exception: %s",
                     e,
@@ -1521,7 +1525,7 @@ async def start_backup_scheduler():
             # Release lock on shutdown
             await release_backup_scheduler_lock_async()
             break
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[Backup] Scheduler error: %s", e, exc_info=True)
             # Wait before retrying
             await asyncio.sleep(300)  # 5 minutes
@@ -1550,7 +1554,7 @@ async def run_backup_now() -> bool:
         result = await asyncio.to_thread(create_backup)
         await refresh_backup_scheduler_lock_async()
         return result
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[Backup] Backup failed with exception: %s", e, exc_info=True)
         return False
 

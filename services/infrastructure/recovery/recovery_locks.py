@@ -10,7 +10,8 @@ import os
 import uuid
 from typing import Optional, Tuple
 
-logger = logging.getLogger(__name__)
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 
 # ============================================================================
 # DISTRIBUTED LOCK FOR MULTI-WORKER COORDINATION
@@ -29,16 +30,19 @@ logger = logging.getLogger(__name__)
 
 INTEGRITY_CHECK_LOCK_KEY = "recovery:integrity_check:lock"
 INTEGRITY_CHECK_LOCK_TTL = 300  # 5 minutes
-_integrity_check_lock_id: Optional[str] = None
+
+
+class _IntegrityCheckLockState:
+    """Integrity check Redis lock holder (no global keyword)."""
+
+    lock_id: Optional[str] = None
+
 
 # Note: No cache needed - lock mechanism ensures only one worker checks integrity
 # Other workers skip via lock acquisition failure
 _integrity_check_cache: Optional[Tuple[bool, float]] = None  # Unused, kept for API compatibility
 
-# Import Redis client (required dependency)
-from services.redis.redis_async_client import get_async_redis
-from services.redis.redis_client import is_redis_available
-
+logger = logging.getLogger(__name__)
 
 def _generate_integrity_check_lock_id() -> str:
     """Generate unique lock ID for this worker: {pid}:{uuid}"""
@@ -56,8 +60,6 @@ async def acquire_integrity_check_lock() -> bool:
         True if lock acquired (this worker should check integrity)
         False if lock held by another worker
     """
-    global _integrity_check_lock_id
-
     if get_async_redis is None or is_redis_available is None:
         return True
 
@@ -70,12 +72,12 @@ async def acquire_integrity_check_lock() -> bool:
         return True
 
     try:
-        if _integrity_check_lock_id is None:
-            _integrity_check_lock_id = _generate_integrity_check_lock_id()
+        if _IntegrityCheckLockState.lock_id is None:
+            _IntegrityCheckLockState.lock_id = _generate_integrity_check_lock_id()
 
         acquired = await redis.set(
             INTEGRITY_CHECK_LOCK_KEY,
-            _integrity_check_lock_id,
+            _IntegrityCheckLockState.lock_id,
             nx=True,
             ex=INTEGRITY_CHECK_LOCK_TTL,
         )
@@ -83,7 +85,7 @@ async def acquire_integrity_check_lock() -> bool:
         if acquired:
             logger.debug(
                 "[Recovery] Integrity check lock acquired by this worker (id=%s)",
-                _integrity_check_lock_id,
+                _IntegrityCheckLockState.lock_id,
             )
             return True
 
@@ -111,7 +113,7 @@ async def release_integrity_check_lock() -> bool:
     if get_async_redis is None or is_redis_available is None:
         return False
 
-    if not is_redis_available() or _integrity_check_lock_id is None:
+    if not is_redis_available() or _IntegrityCheckLockState.lock_id is None:
         return False
 
     redis = get_async_redis()
@@ -127,12 +129,12 @@ async def release_integrity_check_lock() -> bool:
         end
         """
 
-        result = await redis.eval(lua_script, 1, INTEGRITY_CHECK_LOCK_KEY, _integrity_check_lock_id)
+        result = await redis.eval(lua_script, 1, INTEGRITY_CHECK_LOCK_KEY, _IntegrityCheckLockState.lock_id)
 
         if result:
             logger.debug(
                 "[Recovery] Integrity check lock released (id=%s)",
-                _integrity_check_lock_id,
+                _IntegrityCheckLockState.lock_id,
             )
             return True
         return False

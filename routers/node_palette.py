@@ -14,10 +14,9 @@ Proprietary License
 """
 
 import logging
-
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,17 +33,18 @@ from agents.node_palette.mindmap_palette import get_mindmap_palette_generator
 from agents.node_palette.multi_flow_palette import get_multi_flow_palette_generator
 from agents.node_palette.tree_map_palette import get_tree_map_palette_generator
 from config.database import get_async_db
-from routers.node_palette_streaming import stream_node_palette
 from models.domain.auth import User
 from models.domain.user_activity_log import UserActivityLog
 from models.requests.requests_thinking import (
-    NodePaletteStartRequest,
-    NodePaletteNextRequest,
-    NodeSelectionRequest,
-    NodePaletteFinishRequest,
     NodePaletteCleanupRequest,
+    NodePaletteFinishRequest,
+    NodePaletteNextRequest,
+    NodePaletteStartRequest,
+    NodeSelectionRequest,
 )
+from routers.node_palette_streaming import stream_node_palette
 from services.redis.redis_activity_tracker import get_activity_tracker
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user, is_teacher
 from utils.placeholder import is_placeholder_text
 
@@ -179,7 +179,7 @@ async def start_node_palette(
                 details={"diagram_type": req.diagram_type, "session_id": session_id},
                 user_name=getattr(current_user, "name", None),
             )
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.debug("Failed to track user activity: %s", e)
 
     # Log at INFO level for user activity tracking
@@ -221,11 +221,11 @@ async def start_node_palette(
                 )
                 db.add(log_entry)
                 await db.commit()
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 logger.debug("Failed to log concept_generation: %s", e)
                 try:
                     await db.rollback()
-                except Exception as exc:
+                except DATABASE_ERRORS as exc:
                     logger.debug("Rollback after concept_generation log failure: %s", exc)
 
         _log_topic_and_firing(req, center_topic, session_id)
@@ -248,9 +248,7 @@ async def start_node_palette(
             },
         )
 
-    except HTTPException:
-        raise
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[NodePalette-API] Start error: %s", str(e), exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -295,7 +293,7 @@ async def get_next_batch(req: NodePaletteNextRequest, current_user: User = Depen
             },
         )
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[NodePalette-API] Next batch error: %s", str(e), exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) from e
 

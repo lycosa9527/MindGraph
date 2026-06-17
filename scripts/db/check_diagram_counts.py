@@ -7,20 +7,21 @@ Run: python scripts/db/check_diagram_counts.py
 Shows 智能补全次数 (auto-complete count) per teacher for Teacher Usage page.
 """
 
-import sys
-from pathlib import Path
-from typing import Callable, cast
+try:
+    from _path_setup import project_root
+except ModuleNotFoundError:
+    from scripts.db._path_setup import project_root
 
-# Add project root to path
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
+from typing import Callable, cast
 
 from sqlalchemy import func
 
 from config.database import SyncSessionLocal
 from models.domain.auth import User
-from utils.auth.role_constants import TEACHER_ROLES
 from models.domain.token_usage import TokenUsage
+from utils.auth.role_constants import TEACHER_ROLES
+
+_ = project_root
 
 _count: Callable = cast(Callable, getattr(func, "count"))
 

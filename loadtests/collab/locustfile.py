@@ -78,6 +78,7 @@ def flatten_room_cards(
 
 
 def http_base_to_ws_base(http_url: str) -> str:
+    """Http base to ws base."""
     parsed = urlparse(http_url.strip())
     scheme = "wss" if parsed.scheme == "https" else "ws"
     if not parsed.hostname:
@@ -90,6 +91,7 @@ def http_base_to_ws_base(http_url: str) -> str:
 
 @events.init.add_listener  # pragma: no cover - locust bootstrap
 def _warn_if_missing_env(**_kwargs) -> None:
+    """Warn if missing env."""
     if not os.environ.get("COLLAB_JWT"):
         print("[collab locust] WARNING: COLLAB_JWT is unset; connections will fail")
     layout = parse_workshop_sizes(os.environ.get("WORKSHOP_SIZES", DEFAULT_SIZES))
@@ -112,6 +114,9 @@ class CanvasCollabWsUser(User):
     abstract = False
     host = os.environ.get("COLLAB_LOCUST_HOST", "http://127.0.0.1:8000")
     wait_time = between(4, 11)
+    _jwt: str = ""
+    _room_cards: List[Tuple[str, int]] = []
+    _uri: str = ""
 
     def _record_ws_request(
         self,
@@ -120,6 +125,7 @@ class CanvasCollabWsUser(User):
         response_length: int,
         exc: BaseException | str | None,
     ) -> None:
+        """Record ws request."""
         env = getattr(self, "environment", None)
         hook = getattr(getattr(env, "events", None), "request", None)
         if hook is None:
@@ -133,6 +139,7 @@ class CanvasCollabWsUser(User):
         )
 
     def on_start(self) -> None:
+        """On start."""
         self._jwt = os.environ.get("COLLAB_JWT", "").strip()
         if not self._jwt:
             self._abort_start("COLLAB_JWT unset")
@@ -175,6 +182,7 @@ class CanvasCollabWsUser(User):
         )
 
     def on_stop(self) -> None:
+        """On stop."""
         if self._sock:
             try:
                 self._sock.close()
@@ -185,6 +193,7 @@ class CanvasCollabWsUser(User):
     @tag("collab", "heartbeat")
     @task(weight=10)
     def workshop_ping(self) -> None:
+        """Workshop ping."""
         if not self._sock:
             return
         payload = {"type": "ping"}
@@ -193,6 +202,7 @@ class CanvasCollabWsUser(User):
     @tag("collab", "presence")
     @task(weight=1)
     def node_selection_probe(self) -> None:
+        """Node selection probe."""
         if not self._sock:
             return
         probe = {"type": "node_selected", "node_id": "locust_probe", "selected": False}

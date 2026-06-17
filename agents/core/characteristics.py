@@ -8,17 +8,19 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Dict, Any
+import json
 import logging
 import re
-import json
+from typing import Any, Dict
+
 import yaml
 
+from agents.core.prompt_helpers import create_characteristics_chain
 from config.characteristics_fallbacks import (
-    get_fallback_characteristics,
     get_default_fallback,
+    get_fallback_characteristics,
 )
+from services.utils.error_types import JSON_PARSE_ERRORS
 from utils.prompt_locale import template_lang_for_registry
 from utils.prompt_output_languages import is_prompt_output_language
 
@@ -56,9 +58,6 @@ async def generate_characteristics_with_agent(topic1: str, topic2: str, language
     registry_lang = template_lang_for_registry(language)
 
     logger.debug("Agent: Generating characteristics for %s vs %s", topic1, topic2)
-    # Create the characteristics generation function
-    from .prompt_helpers import create_characteristics_chain
-
     char_func = create_characteristics_chain(registry_lang)
     try:
         # Run the function directly (not a LangChain chain)
@@ -67,7 +66,7 @@ async def generate_characteristics_with_agent(topic1: str, topic2: str, language
         # Parse the result using utility function
         spec = parse_characteristics_result(result, topic1, topic2)
         return spec
-    except Exception as e:
+    except JSON_PARSE_ERRORS as e:
         logger.error("Agent: Characteristics generation failed: %s", e)
         # Fallback to utility function
         return generate_characteristics_fallback(topic1, topic2)

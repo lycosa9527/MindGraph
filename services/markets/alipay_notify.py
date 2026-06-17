@@ -31,6 +31,7 @@ def _build_sign_message(params: Mapping[str, Any]) -> bytes:
 
 
 def _load_public_key(pem_or_b64: str):
+    """Load public key."""
     raw = pem_or_b64.strip()
     if "BEGIN PUBLIC KEY" in raw or "BEGIN RSA PUBLIC KEY" in raw:
         return serialization.load_pem_public_key(raw.encode("utf-8"))

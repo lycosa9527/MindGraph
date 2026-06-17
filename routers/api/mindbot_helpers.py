@@ -29,6 +29,7 @@ from utils.auth.roles import is_admin, is_superadmin
 
 
 def _require_mindbot_feature() -> None:
+    """Require mindbot feature."""
     if not config.FEATURE_MINDBOT:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -73,6 +74,7 @@ def _dify_probe_error_for_user(err: Optional[str], *, is_platform_admin: bool) -
 
 
 def _usage_event_for_user(user: User, row: MindbotUsageEvent) -> MindbotUsageEventItem:
+    """Usage event for user."""
     item = MindbotUsageEventItem.model_validate(row)
     if is_admin(user):
         return item
@@ -80,6 +82,7 @@ def _usage_event_for_user(user: User, row: MindbotUsageEvent) -> MindbotUsageEve
 
 
 def _usage_events_for_user(user: User, rows: list[MindbotUsageEvent]) -> list[MindbotUsageEventItem]:
+    """Usage events for user."""
     return [_usage_event_for_user(user, r) for r in rows]
 
 
@@ -118,6 +121,7 @@ def _to_response(
     *,
     school_manager_view: bool = False,
 ) -> MindbotConfigResponse:
+    """To response."""
     tok = (row.dingtalk_event_token or "").strip()
     aes = (row.dingtalk_event_aes_key or "").strip()
     own = (row.dingtalk_event_owner_key or "").strip()
@@ -195,6 +199,7 @@ def _effective_use_org_dify_settings(
     payload: MindbotConfigCreatePayload | MindbotConfigPayload,
     existing: Optional[OrganizationMindbotConfig],
 ) -> bool:
+    """Effective use org dify settings."""
     if isinstance(payload, MindbotConfigCreatePayload):
         return bool(payload.use_org_dify_settings)
     if "use_org_dify_settings" in payload.model_fields_set:
@@ -210,6 +215,7 @@ def _resolve_secrets(
     payload: MindbotConfigPayload,
     existing: Optional[OrganizationMindbotConfig],
 ) -> tuple[str, str]:
+    """Resolve secrets."""
     secret_raw = (payload.dingtalk_app_secret or "").strip()
     key_raw = (payload.dify_api_key or "").strip()
     use_org_dify = _effective_use_org_dify_settings(payload, existing)
@@ -240,6 +246,7 @@ def _resolved_dify_settings(
     *,
     resolved_dify_key: str,
 ) -> dict[str, Any]:
+    """Resolved dify settings."""
     if _effective_use_org_dify_settings(payload, existing):
         api_key, api_url = resolve_organization_dify_credentials(org)
         if not api_key or not api_url:
@@ -315,6 +322,7 @@ def _event_subscription_fields(
 
 
 def _norm_opt(value: Optional[str]) -> Optional[str]:
+    """Norm opt."""
     text = (value or "").strip()
     return text if text else None
 

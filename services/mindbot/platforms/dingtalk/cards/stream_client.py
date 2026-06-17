@@ -19,23 +19,31 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from types import ModuleType
 from typing import Any, Dict, List, Optional
 
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.env_helpers import env_int
+
+dingtalk_stream: ModuleType | None = None
+
+try:
+    import dingtalk_stream as _dingtalk_stream
+
+    dingtalk_stream = _dingtalk_stream
+except ImportError:
+    pass
 
 logger = logging.getLogger(__name__)
 
 
 def _import_sdk() -> Any:
     """Return the dingtalk_stream module, raising ImportError with a helpful message."""
-    try:
-        import dingtalk_stream
-
-        return dingtalk_stream
-    except ImportError as exc:
+    if dingtalk_stream is None:
         raise ImportError(
             "dingtalk-stream is required for group AI card streaming. Run: pip install dingtalk-stream>=0.24.3"
-        ) from exc
+        )
+    return dingtalk_stream
 
 
 def _make_card_callback_handler_class(sdk: Any) -> type:
@@ -58,6 +66,7 @@ def _make_card_callback_handler_class(sdk: Any) -> type:
         """
 
         async def process(self, callback: Any) -> tuple[int, str]:
+            """Process."""
             data = callback.data if hasattr(callback, "data") else {}
             out_track = (data or {}).get("outTrackId", "") if isinstance(data, dict) else ""
             logger.debug(
@@ -77,18 +86,20 @@ class DingTalkStreamManager:
     via a reconnect loop.  ``stop_all`` cancels all tasks on application shutdown.
     """
 
-    _instance: Optional["DingTalkStreamManager"] = None
+    instance: Optional["DingTalkStreamManager"] = None
 
     def __init__(self) -> None:
+        """ init  ."""
         self._clients: dict[str, Any] = {}
         self._tasks: dict[str, asyncio.Task] = {}
         self._lock = asyncio.Lock()
 
     @classmethod
     def get(cls) -> "DingTalkStreamManager":
-        if cls._instance is None:
-            cls._instance = cls()
-        return cls._instance
+        """Get."""
+        if cls.instance is None:
+            cls.instance = cls()
+        return cls.instance
 
     async def ensure_client(self, client_id: str, client_secret: str) -> None:
         """
@@ -120,12 +131,9 @@ class DingTalkStreamManager:
                 )
                 return
             sdk = _import_sdk()
-            from dingtalk_stream import Card_Callback_Router_Topic
-
-            credential = sdk.Credential(client_id, client_secret)
-            client = sdk.DingTalkStreamClient(credential)
+            client = sdk.DingTalkStreamClient(sdk.Credential(client_id, client_secret))
             handler_cls = _make_card_callback_handler_class(sdk)
-            client.register_callback_handler(Card_Callback_Router_Topic, handler_cls())
+            client.register_callback_handler(sdk.Card_Callback_Router_Topic, handler_cls())
             self._clients[client_id] = client
             task = asyncio.create_task(
                 self._run(client_id, client),
@@ -174,7 +182,7 @@ class DingTalkStreamManager:
                         client_id,
                     )
                     return
-                except Exception as exc:
+                except BACKGROUND_INFRA_ERRORS as exc:
                     consecutive_errors += 1
                     logger.warning(
                         "[MindBot] dingtalk_stream_client_error client_id=%s "

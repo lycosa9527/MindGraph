@@ -14,6 +14,7 @@ BEIJING_TIMEZONE = timezone(timedelta(hours=8))
 
 
 class BeijingPeriodStarts(TypedDict):
+    """BeijingPeriodStarts helper."""
     today_start: datetime
     week_ago: datetime
     month_ago: datetime

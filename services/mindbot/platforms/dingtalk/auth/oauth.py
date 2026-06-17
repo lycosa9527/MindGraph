@@ -26,9 +26,10 @@ from typing import Any, Optional
 import aiohttp
 
 from services.mindbot.infra.http_client import get_dingtalk_api_session
-from services.mindbot.platforms.dingtalk.api.constants import DING_API_BASE, PATH_OAUTH_ACCESS_TOKEN, TOKEN_TTL_SECONDS
 from services.mindbot.infra.redis_async import redis_delete, redis_get, redis_set_ttl
+from services.mindbot.platforms.dingtalk.api.constants import DING_API_BASE, PATH_OAUTH_ACCESS_TOKEN, TOKEN_TTL_SECONDS
 from services.redis.redis_client import is_redis_available
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.env_helpers import env_int
 
 logger = logging.getLogger(__name__)
@@ -89,11 +90,13 @@ def _get_token_lock(cache_key: str) -> asyncio.Lock:
 
 
 def _oauth_credential_cache_suffix(app_key: str, app_secret: str) -> str:
+    """Oauth credential cache suffix."""
     raw = f"{app_key.strip()}|{app_secret.strip()}".encode("utf-8")
     return hashlib.sha256(raw).hexdigest()[:32]
 
 
 def _token_cache_key(organization_id: int, app_key: str, app_secret: str) -> str:
+    """Token cache key."""
     return f"mindbot:dt_oauth:{organization_id}:{_oauth_credential_cache_suffix(app_key, app_secret)}"
 
 
@@ -210,7 +213,7 @@ async def get_access_token_with_error(
                     err = f"no access_token in response ({_sanitize_oauth_snippet(body_txt)})"
                 logger.warning("[MindBot] DingTalk accessToken missing token: %s", err)
                 return None, err
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.exception("[MindBot] DingTalk accessToken request error: %s", exc)
             return None, "request error — check server logs for details"
 

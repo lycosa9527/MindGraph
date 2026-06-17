@@ -19,13 +19,13 @@ from typing import Any, Dict, List
 from sqlalchemy import and_, case, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.utils.typing_helpers import result_rowcount
 from models.domain.auth import User
 from models.domain.workshop_chat import DirectMessage
 from services.features.workshop_chat.mention_resolution import (
     resolve_mentioned_user_ids,
 )
 from services.features.workshop_chat.message_fts import dm_content_match
+from services.utils.typing_helpers import result_rowcount
 
 logger = logging.getLogger(__name__)
 

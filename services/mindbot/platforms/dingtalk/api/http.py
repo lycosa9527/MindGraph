@@ -15,6 +15,7 @@ from services.mindbot.platforms.dingtalk.api.response import (
     dingtalk_v1_body_log_snippet,
     dingtalk_v1_response_ok,
 )
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +120,7 @@ async def _v1_json_request(
                 )
                 return resp.status, None
             return resp.status, data
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.exception(
             "[MindBot] DingTalk API %s network_error: %s: %s",
             path,

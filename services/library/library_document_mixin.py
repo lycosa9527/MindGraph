@@ -7,13 +7,12 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
 import asyncio
 import logging
-from pathlib import Path
-from typing import Optional, Dict, Any, cast, Tuple
-from datetime import UTC, datetime
 import time
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any, Dict, Optional, Tuple, cast
 
 from PIL import Image
 from sqlalchemy import func, or_, select, update
@@ -21,17 +20,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from models.domain.library import LibraryDocument
-from services.library.library_path_utils import (
-    normalize_library_path,
-    resolve_library_path,
-)
-from services.library.redis_cache import LibraryRedisCache
 from services.library.image_path_resolver import (
     count_pages,
     detect_image_pattern,
     list_page_images,
 )
-
+from services.library.library_path_utils import (
+    normalize_library_path,
+    resolve_library_path,
+)
+from services.library.redis_cache import LibraryRedisCache
+from services.utils.error_types import REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +140,7 @@ class LibraryDocumentMixin:
 
             if cached_metadata:
                 logger.debug("[Library] Redis cache hit for document %s", document_id)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug("[Library] Redis cache check failed: %s", exc)
             cached_metadata = None
 
@@ -172,7 +171,7 @@ class LibraryDocumentMixin:
                     "title": document.title,
                 }
                 await redis_cache.cache_document_metadata(document_id, metadata)
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logger.debug("[Library] Redis cache write failed: %s", exc)
 
             await self._cache_document_metadata(document_id, document)
@@ -233,7 +232,7 @@ class LibraryDocumentMixin:
             if cached:
                 logger.debug("[Library] Redis cache hit for document metadata %s", document_id)
                 return cached
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug("[Library] Redis cache check failed: %s", exc)
 
         async with _cache_lock:
@@ -260,7 +259,7 @@ class LibraryDocumentMixin:
         try:
             redis_cache = LibraryRedisCache()
             await redis_cache.invalidate_document(document_id)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug("[Library] Redis cache invalidation failed: %s", exc)
 
         async with _cache_lock:
@@ -285,7 +284,7 @@ class LibraryDocumentMixin:
                 "[Library] Document view incremented",
                 extra={"document_id": document_id},
             )
-        except Exception:
+        except REDIS_ERRORS:
             await self.db.rollback()
             raise
 
@@ -364,7 +363,7 @@ class LibraryDocumentMixin:
                     img.size[1],
                 )
                 return result_path
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.error(
                 "[Library] Failed to process cover image %s: %s",
                 source_image_path,
@@ -439,7 +438,7 @@ class LibraryDocumentMixin:
         try:
             await self.db.commit()
             await self.db.refresh(document)
-        except Exception:
+        except REDIS_ERRORS:
             await self.db.rollback()
             raise
 
@@ -477,7 +476,7 @@ class LibraryDocumentMixin:
         try:
             await self.db.commit()
             await self.db.refresh(existing_doc)
-        except Exception:
+        except REDIS_ERRORS:
             await self.db.rollback()
             raise
         await self.invalidate_document_cache(cast(int, existing_doc.id))
@@ -525,7 +524,7 @@ class LibraryDocumentMixin:
         try:
             await self.db.commit()
             await self.db.refresh(new_doc)
-        except Exception:
+        except REDIS_ERRORS:
             await self.db.rollback()
             raise
 
@@ -537,7 +536,7 @@ class LibraryDocumentMixin:
                 try:
                     await self.db.commit()
                     await self.db.refresh(new_doc)
-                except Exception:
+                except REDIS_ERRORS:
                     await self.db.rollback()
                     raise
 
@@ -645,7 +644,7 @@ class LibraryDocumentMixin:
         try:
             await self.db.commit()
             await self.db.refresh(document)
-        except Exception:
+        except REDIS_ERRORS:
             await self.db.rollback()
             raise
 
@@ -671,7 +670,7 @@ class LibraryDocumentMixin:
         document.updated_at = datetime.now(UTC)
         try:
             await self.db.commit()
-        except Exception:
+        except REDIS_ERRORS:
             await self.db.rollback()
             raise
 

@@ -11,14 +11,14 @@ Proprietary License
 from .concept_maps import ConceptMapAgent
 from .mind_maps import MindMapAgent
 from .thinking_maps import (
-    FlowMapAgent,
-    TreeMapAgent,
     BraceMapAgent,
-    MultiFlowMapAgent,
-    BubbleMapAgent,
-    DoubleBubbleMapAgent,
-    CircleMapAgent,
     BridgeMapAgent,
+    BubbleMapAgent,
+    CircleMapAgent,
+    DoubleBubbleMapAgent,
+    FlowMapAgent,
+    MultiFlowMapAgent,
+    TreeMapAgent,
 )
 
 # Agent Registry - Maps diagram types to their agent classes

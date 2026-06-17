@@ -8,15 +8,18 @@ Handles:
 - OpenAI SDK HTTP log reformatting
 """
 
-import os
-import sys
 import logging
+import os
 import re
-from logging.handlers import BaseRotatingHandler
+import sys
 from datetime import datetime, timedelta
-from typing import Literal
+from io import TextIOWrapper
+from logging.handlers import BaseRotatingHandler
+from typing import Literal, cast
 from urllib.parse import urlparse
+
 from config.settings import config
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 # Leading "[Tag]" in log messages (after pid); used for module-level ANSI highlights.
 _LEADING_MODULE_TAG_RE = re.compile(r"^(\[[A-Za-z][A-Za-z0-9_]*\])(.*)$", re.DOTALL)
@@ -104,6 +107,13 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
         now = datetime.now()
         return now >= self.next_rotation_time
 
+    def _create_log_stream(self) -> TextIOWrapper:
+        """Open the current log file without calling BaseRotatingHandler._open."""
+        return cast(
+            TextIOWrapper,
+            open(self.baseFilename, self.mode, encoding=self.encoding),
+        )
+
     def do_rollover(self):
         """Perform rollover to a new timestamped file."""
         if self.stream:
@@ -119,7 +129,7 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
         # Open new file
         new_filename = self._get_current_filename()
         self.baseFilename = new_filename
-        self.stream = self._open()
+        self.stream = self._create_log_stream()
 
     def __getattr__(self, name):
         """Handle camelCase method calls from Python logging framework."""
@@ -140,7 +150,7 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
                         self.stream.close()
                     except (ValueError, OSError):
                         pass
-                self.stream = self._open()
+                self.stream = self._create_log_stream()
             except (ValueError, OSError):
                 # Can't reopen, silently ignore
                 return
@@ -167,7 +177,7 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
                             self.stream.close()
                         except (ValueError, OSError):
                             pass
-                    self.stream = self._open()
+                    self.stream = self._create_log_stream()
                     super().emit(record)
                 except (ValueError, OSError, AttributeError, RuntimeError):
                     # If we can't reopen, silently ignore
@@ -175,7 +185,7 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
             else:
                 # Re-raise other errors
                 raise
-        except Exception:
+        except BACKGROUND_INFRA_ERRORS:
             # Catch any other unexpected errors to prevent logging failures
             # from crashing the application
             return
@@ -270,7 +280,7 @@ class SafeStreamHandler(logging.StreamHandler):
                 return
             # Re-raise other errors
             raise
-        except Exception:
+        except BACKGROUND_INFRA_ERRORS:
             # Catch any other unexpected errors to prevent logging failures
             # from crashing the application
             return
@@ -331,6 +341,7 @@ class UnifiedFormatter(logging.Formatter):
         # We manage our own colors in the format() method
 
     def format(self, record):
+        """Format."""
         timestamp = self.formatTime(record, "%H:%M:%S")
 
         level_map = {
@@ -402,6 +413,7 @@ class UvicornInvalidRequestFilter(logging.Filter):
 
     def filter(self, record):
         # If this is a WARNING about invalid HTTP request, downgrade to DEBUG
+        """Filter."""
         if record.levelno == logging.WARNING:
             message = record.getMessage()
             if "Invalid HTTP request" in message or "invalid request" in message.lower():
@@ -418,7 +430,11 @@ class CancelledErrorFilter(logging.Filter):
 
     def filter(self, record):
         # For verbose logging, show everything - no filtering
+        """Filter."""
         return True
+
+
+_OPENAI_REFORMATTED_ATTR = "openai_reformatted"
 
 
 class OpenAIHTTPLogFilter(logging.Filter):
@@ -487,7 +503,7 @@ class OpenAIHTTPLogFilter(logging.Filter):
     def filter(self, record):
         """Reformat HTTP request/response messages from OpenAI SDK."""
         # Only process if message hasn't been reformatted yet
-        if hasattr(record, "_openai_reformatted"):
+        if getattr(record, _OPENAI_REFORMATTED_ATTR, False):
             return True
 
         # Get message string (avoid calling getMessage() if possible)
@@ -504,14 +520,14 @@ class OpenAIHTTPLogFilter(logging.Filter):
             reformatted = self._reformat_response(message)
             record.msg = reformatted
             record.args = ()
-            record._openai_reformatted = True
+            setattr(record, _OPENAI_REFORMATTED_ATTR, True)
 
         # Reformat HTTP Request messages
         elif message.startswith("HTTP Request:"):
             reformatted = self._reformat_request(message)
             record.msg = reformatted
             record.args = ()
-            record._openai_reformatted = True
+            setattr(record, _OPENAI_REFORMATTED_ATTR, True)
 
         return True
 

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import time
 
-
 from services.kitty.context.library_refresh import (
     bump_voice_mutation_freshness,
     should_skip_library_refresh,
@@ -14,6 +13,7 @@ from services.kitty.session.runtime_state import voice_sessions
 
 
 def test_bump_voice_mutation_freshness_marks_session() -> None:
+    """Test bump voice mutation freshness marks session."""
     vid = create_voice_session(user_id="1", diagram_session_id="lib-1", diagram_type="circle_map")
     try:
         bump_voice_mutation_freshness(vid)
@@ -26,6 +26,7 @@ def test_bump_voice_mutation_freshness_marks_session() -> None:
 
 
 def test_should_skip_library_refresh_after_context_update() -> None:
+    """Test should skip library refresh after context update."""
     vid = create_voice_session(user_id="1", diagram_session_id="lib-2", diagram_type="circle_map")
     try:
         voice_sessions[vid]["_last_context_update_mono"] = time.monotonic()
@@ -35,6 +36,7 @@ def test_should_skip_library_refresh_after_context_update() -> None:
 
 
 def test_should_not_skip_when_stale_and_force() -> None:
+    """Test should not skip when stale and force."""
     vid = create_voice_session(user_id="1", diagram_session_id="lib-3", diagram_type="circle_map")
     try:
         voice_sessions[vid]["_last_context_update_mono"] = time.monotonic() - 60.0

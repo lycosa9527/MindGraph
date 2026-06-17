@@ -16,17 +16,18 @@ All Rights Reserved
 Proprietary License
 """
 
-from enum import Enum
-from typing import Optional, Callable, Dict, Any, AsyncGenerator
 import asyncio
 import base64
+import binascii
 import json
 import logging
+from enum import Enum
+from typing import Any, AsyncGenerator, Callable, Dict, Optional
 
-import binascii
 import websockets
 from websockets.exceptions import ConnectionClosed, WebSocketException
 
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger("TTS")
 
@@ -332,7 +333,7 @@ class TTSRealtimeClient:
         if self.ws:
             try:
                 await self.ws.close()
-            except Exception:
+            except BACKGROUND_INFRA_ERRORS:
                 pass
 
         self._connected = False

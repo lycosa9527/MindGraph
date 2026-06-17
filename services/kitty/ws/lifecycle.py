@@ -20,11 +20,19 @@ from services.infrastructure.monitoring.ws_metrics import (
     record_kitty_ws_inbound_reject,
     record_kitty_ws_rate_limit_close,
 )
+from services.kitty.context.messaging import build_voice_instructions, safe_websocket_send
 from services.kitty.infra.desktop.kitty_mobile_active import clear_kitty_mobile_scope
-from services.kitty.infra.scope.kitty_scope_access import user_may_access_kitty_scope
 from services.kitty.infra.redis.kitty_session_redis import persist_kitty_live_for_ws
+from services.kitty.infra.scope.kitty_scope_access import user_may_access_kitty_scope
 from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
 from services.kitty.session.agent_state import kitty_agent_manager
+from services.kitty.session.ops import (
+    cleanup_voice_by_diagram_session,
+    create_voice_session,
+    end_voice_session_async,
+    get_voice_session,
+)
+from services.kitty.session.runtime_state import active_websockets, logger, voice_sessions
 from services.kitty.session.voice_lock import (
     diagram_session_voice_lock,
     release_diagram_session_voice_lock_if_idle,
@@ -33,14 +41,6 @@ from services.kitty.ws.inbound import (
     KittyWsInboundContext,
     build_kitty_inbound_context,
     dispatch_kitty_ws_inbound_message,
-)
-from services.kitty.context.messaging import build_voice_instructions, safe_websocket_send
-from services.kitty.session.runtime_state import active_websockets, logger, voice_sessions
-from services.kitty.session.ops import (
-    cleanup_voice_by_diagram_session,
-    create_voice_session,
-    end_voice_session_async,
-    get_voice_session,
 )
 from utils.auth import user_has_feature_access
 from utils.auth_ws import authenticate_websocket_user
@@ -56,6 +56,7 @@ from utils.ws_limits import (
 
 @dataclass(slots=True)
 class KittyWsAuthResult:
+    """KittyWsAuthResult helper."""
     current_user: User
     diagram_session_id: str
     hub: Any
@@ -200,6 +201,7 @@ async def prepare_diagram_voice_lock(
 
 @dataclass(slots=True)
 class KittySessionStartResult:
+    """KittySessionStartResult helper."""
     voice_session_id: str
     agent_session_id: str
     omni_generator: Any

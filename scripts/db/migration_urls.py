@@ -12,6 +12,8 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.pool import NullPool
 
+from services.utils.error_types import DATABASE_ERRORS
+
 logger = logging.getLogger(__name__)
 
 ROLE_APP = "mindgraph_app"
@@ -36,6 +38,7 @@ _MASKED_PASSWORDS = frozenset({"", "****", "***"})
 
 
 def _password_for_role(role: str, fallback: str) -> str:
+    """Password for role."""
     if fallback in _MASKED_PASSWORDS:
         fallback = _DEFAULT_PASSWORD
     if role == ROLE_MIGRATE:
@@ -50,6 +53,7 @@ def _password_for_role(role: str, fallback: str) -> str:
 
 
 def _role_url_string(base_url: str, role: str) -> str:
+    """Role url string."""
     parsed = make_url(base_url)
     password = _password_for_role(role, parsed.password or "")
     return parsed.set(username=role, password=password).render_as_string(hide_password=False)
@@ -68,10 +72,12 @@ def url_for_dotenv(url: str) -> str:
 
 
 def _migrate_capable_username(url: str) -> str:
+    """Migrate capable username."""
     return make_url(url).username or ""
 
 
 def _runtime_url() -> str:
+    """Runtime url."""
     raw = os.getenv("DATABASE_URL")
     if not raw:
         return normalise_db_url(_DEFAULT_RUNTIME)
@@ -79,6 +85,7 @@ def _runtime_url() -> str:
 
 
 def _explicit_migration_url() -> str | None:
+    """Explicit migration url."""
     raw = os.getenv("DATABASE_MIGRATION_URL")
     if not raw or not raw.strip():
         return None
@@ -141,7 +148,7 @@ def first_connectable_database_url(
             with create_migration_engine(url).connect() as conn:
                 conn.execute(text("SELECT 1"))
             return url, label
-        except Exception as exc:
+        except DATABASE_ERRORS as exc:
             logger.debug("Database URL candidate failed (%s): %s", label, exc)
     return None
 
@@ -180,7 +187,7 @@ def bootstrap_rls_migration_from_env() -> None:
         return
     try:
         configure_rls_migration_environment()
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.warning("Could not auto-configure DATABASE_MIGRATION_URL: %s", exc)
 
 
@@ -220,6 +227,7 @@ def create_migration_engine(migration_url: str) -> Engine:
 
 
 def _mask_url(url: str) -> str:
+    """Mask url."""
     try:
         parsed = urlparse(url)
         if not parsed.password:
@@ -234,6 +242,7 @@ def _mask_url(url: str) -> str:
 
 
 def _role_exists(engine: Engine, role: str) -> bool:
+    """Role exists."""
     with engine.connect() as conn:
         row = conn.execute(
             text("SELECT 1 FROM pg_roles WHERE rolname = :role"),
@@ -243,11 +252,13 @@ def _role_exists(engine: Engine, role: str) -> bool:
 
 
 def _revision_number(revision: str) -> int:
+    """Revision number."""
     digits = "".join(ch for ch in revision if ch.isdigit())
     return int(digits) if digits else 0
 
 
 def _current_alembic_revision(engine: Engine) -> str | None:
+    """Current alembic revision."""
     with engine.connect() as conn:
         row = conn.execute(text("SELECT version_num FROM alembic_version LIMIT 1")).first()
     if row is None:
@@ -348,10 +359,12 @@ def env_rls_database_urls_match(env_path: Path, migration_engine: Engine) -> boo
 
 
 def runtime_database_role() -> str:
+    """Runtime database role."""
     return make_url(_runtime_url()).username or ""
 
 
 def _replace_or_append_env_key(lines: list[str], key: str, value: str) -> list[str]:
+    """Replace or append env key."""
     prefix = f"{key}="
     out: list[str] = []
     replaced = False
@@ -394,7 +407,7 @@ def _insert_env_key_after(lines: list[str], after_key: str, key: str, value: str
     return out
 
 
-def _apply_env_database_patches(lines: list[str], patches: dict[str, str]) -> list[str]:
+def apply_env_database_patches(lines: list[str], patches: dict[str, str]) -> list[str]:
     """Patch DATABASE_URL and place DATABASE_MIGRATION_URL on the next line."""
     if "DATABASE_URL" in patches:
         lines = _replace_or_append_env_key(lines, "DATABASE_URL", patches["DATABASE_URL"])
@@ -437,7 +450,7 @@ def update_env_rls_database_urls(env_path: Path, migration_engine: Engine) -> bo
     for env_line in env_lines:
         key, _, value = env_line.partition("=")
         patches[key] = value
-    lines = _apply_env_database_patches(lines, patches)
+    lines = apply_env_database_patches(lines, patches)
 
     try:
         env_path.write_text("".join(lines), encoding="utf-8")

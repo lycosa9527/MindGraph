@@ -11,21 +11,20 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import List, Dict, Any, Optional, Callable
 import logging
 import time
 import uuid
+from typing import Any, Callable, Dict, List, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.dashscope_embedding import get_embedding_client
 from services.infrastructure.rate_limiting.kb_rate_limiter import get_kb_rate_limiter
 from services.knowledge.chunking_service import Chunk
-from services.knowledge.retrieval_test_service import RetrievalTestService
 from services.knowledge.document_processing import generate_embeddings_with_cache
+from services.knowledge.retrieval_test_service import RetrievalTestService
 from services.llm.qdrant_service import get_qdrant_service
-
+from services.utils.error_types import QDRANT_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -204,7 +203,7 @@ class RetrievalEvaluator:
                 "collection_name": collection_name,
             }
 
-        except Exception as e:
+        except QDRANT_ERRORS as e:
             logger.error("[RetrievalEvaluator] Retrieval test failed: %s", e, exc_info=True)
             raise
 
@@ -316,10 +315,9 @@ class RetrievalEvaluator:
 
         if score_b > score_a:
             return mode_b
-        elif score_a > score_b:
+        if score_a > score_b:
             return mode_a
-        else:
-            return "tie"
+        return "tie"
 
     async def cleanup_test_collection(self, test_user_id: int = 0, collection_name: Optional[str] = None):
         """
@@ -339,7 +337,7 @@ class RetrievalEvaluator:
                         collection_name,
                         test_user_id,
                     )
-                except Exception as exc:
+                except QDRANT_ERRORS as exc:
                     logger.debug(
                         "[RetrievalEvaluator] Collection %s not found or already deleted: %s",
                         collection_name,
@@ -351,7 +349,7 @@ class RetrievalEvaluator:
                     "[RetrievalEvaluator] Cleaned up all test collections for user %s",
                     test_user_id,
                 )
-        except Exception as exc:
+        except QDRANT_ERRORS as exc:
             logger.warning(
                 "[RetrievalEvaluator] Failed to cleanup test collection (user_id=%s, collection=%s): %s",
                 test_user_id,

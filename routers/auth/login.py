@@ -22,42 +22,39 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
-from models.domain.messages import Messages, Language
-from models.domain.auth import User, Organization
+from models.domain.auth import Organization, User
+from models.domain.messages import Language, Messages
 from models.requests.requests_auth import (
-    PasskeyVerifyRequest,
     LoginRequest,
     LoginWithEmailRequest,
     LoginWithSMSRequest,
+    PasskeyVerifyRequest,
 )
-from services.redis.cache.redis_org_cache import org_cache
-from services.redis.rate_limiting.redis_rate_limiter import (
-    check_login_rate_limit,
-    clear_login_attempts,
-    get_login_attempts_remaining,
-    RedisRateLimiter,
-)
-from services.monitoring.dashboard_session import get_dashboard_session_manager
-from services.redis.cache.redis_diagram_cache import get_diagram_cache
-from services.redis.redis_email_storage import normalize_verification_email
-from services.redis.session.redis_session_manager import (
-    get_session_manager,
-    get_refresh_token_manager,
-)
+from routers.auth.org_profile import organization_session_payload
 from services.auth.geo_cn_mainland_cookie import json_forbidden_cn_geo
 from services.auth.geoip_country import email_cn_geo_blocked
 from services.auth.vpn_geo_enforcement import record_vpn_login_geo
-from services.redis.cache.redis_user_cache import user_cache
 from services.infrastructure.security.abuseipdb_service import (
     schedule_abuseipdb_report_on_lockout,
 )
-from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
-from utils.email_mainland_china import raise_if_mainland_china_email_for_email_login
-from utils.email_validation import validate_email_for_api
-from utils.auth.org_subscription import enforce_org_accessible_or_raise, ensure_org_subscription_current
-from routers.auth.org_profile import organization_session_payload
-from utils.auth.config import BAYI_DEFAULT_ORG_CODE, BAYI_DEFAULT_ORG_ID, BAYI_PASSKEY
+from services.monitoring.dashboard_session import get_dashboard_session_manager
+from services.redis.cache.redis_diagram_cache import get_diagram_cache
+from services.redis.cache.redis_org_cache import org_cache
+from services.redis.cache.redis_user_cache import user_cache
+from services.redis.rate_limiting.redis_rate_limiter import (
+    RedisRateLimiter,
+    check_login_rate_limit,
+    clear_login_attempts,
+    get_login_attempts_remaining,
+)
+from services.redis.redis_email_storage import normalize_verification_email
+from services.redis.session.redis_session_manager import (
+    get_refresh_token_manager,
+    get_session_manager,
+)
+from services.utils.error_types import DATABASE_ERRORS, REDIS_ERRORS
 from utils.auth import (
+    ACCESS_TOKEN_EXPIRY_MINUTES,
     AUTH_MODE,
     EMAIL_LOGIN_CN_BLOCK_ENABLED,
     LOCKOUT_DURATION_MINUTES,
@@ -65,29 +62,31 @@ from utils.auth import (
     PUBLIC_DASHBOARD_PASSKEY,
     RATE_LIMIT_WINDOW_MINUTES,
     check_account_lockout,
+    compute_device_hash,
     create_access_token,
     create_refresh_token,
-    compute_device_hash,
     get_client_ip,
     get_user_role,
     hash_password,
     increment_failed_attempts,
     is_https,
     reset_failed_attempts,
-    verify_dashboard_passkey,
     verify_bayi_passkey,
+    verify_dashboard_passkey,
     verify_password,
-    ACCESS_TOKEN_EXPIRY_MINUTES,
 )
-
+from utils.auth.config import BAYI_DEFAULT_ORG_CODE, BAYI_DEFAULT_ORG_ID, BAYI_PASSKEY
+from utils.auth.org_subscription import enforce_org_accessible_or_raise, ensure_org_subscription_current
 from utils.db.rls_request import bind_system_bootstrap_rls_dependency
+from utils.email_mainland_china import raise_if_mainland_china_email_for_email_login
+from utils.email_validation import validate_email_for_api
+from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 
 from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
 from .email import verify_and_consume_email_code
 from .helpers import set_auth_cookies, track_user_activity
 from .sms import _verify_and_consume_sms_code
-
 
 _bg_tasks: set[asyncio.Task] = set()
 
@@ -116,7 +115,7 @@ def _preload_user_diagrams(user_id: int):
             try:
                 cache = get_diagram_cache()
                 await cache.preload_user_diagrams(user_id)
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logging.getLogger(__name__).debug("[Login] Diagram preload failed for user %s: %s", user_id, exc)
 
         try:
@@ -124,7 +123,7 @@ def _preload_user_diagrams(user_id: int):
             _fire_and_forget(_do_preload())
         except RuntimeError:
             pass
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.debug("Failed to preload diagrams: %s", exc)
 
 
@@ -158,7 +157,7 @@ async def _complete_login_after_otp_verified(
             user = db_user
             try:
                 await user_cache.cache_user(db_user)
-            except Exception as cache_exc:
+            except REDIS_ERRORS as cache_exc:
                 logger.warning("[%s OTP login] failed to refresh user cache: %s", method, cache_exc)
 
     session_manager = get_session_manager()
@@ -665,13 +664,13 @@ async def verify_bayi_passkey_login(
                 try:
                     await db.commit()
                     await db.refresh(org)
-                except Exception:
+                except DATABASE_ERRORS:
                     await db.rollback()
                     raise
                 logger.info("Created bayi organization: %s", BAYI_DEFAULT_ORG_CODE)
                 try:
                     await org_cache.cache_org(org)
-                except Exception as cache_org_err:
+                except DATABASE_ERRORS as cache_org_err:
                     logger.warning("Failed to cache bayi org: %s", cache_org_err)
 
         try:
@@ -686,7 +685,7 @@ async def verify_bayi_passkey_login(
             try:
                 await db.commit()
                 await db.refresh(auth_user)
-            except Exception:
+            except REDIS_ERRORS:
                 await db.rollback()
                 raise
             logger.info("Created Bayi passkey user: %s", user_phone)
@@ -695,9 +694,9 @@ async def verify_bayi_passkey_login(
                 await user_cache.cache_user(auth_user)
                 if org:
                     await org_cache.cache_org(org)
-            except Exception as cache_err:
+            except REDIS_ERRORS as cache_err:
                 logger.warning("Failed to cache Bayi passkey user/org: %s", cache_err)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             await db.rollback()
             logger.error("Failed to create Bayi passkey user: %s", exc)
 

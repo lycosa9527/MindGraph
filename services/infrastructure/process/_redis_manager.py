@@ -6,12 +6,14 @@ Handles starting Redis server via systemctl or manual startup.
 
 import logging
 import os
+import subprocess
 import sys
 import time
-import subprocess
 from typing import TYPE_CHECKING, Optional
 
 from services.infrastructure.process._port_utils import check_port_in_use
+from services.redis.redis_connection_options import redis_connection_options
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +49,7 @@ def _get_process_name(pid: int) -> Optional[str]:
                 parts = result.stdout.strip().split(",")
                 if len(parts) > 0:
                     return parts[0].strip('"').lower()
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("Process name lookup via tasklist failed: %s", exc)
     else:
         try:
@@ -60,7 +62,7 @@ def _get_process_name(pid: int) -> Optional[str]:
             )
             if result.stdout.strip():
                 return result.stdout.strip().lower()
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("Process name lookup via ps failed: %s", exc)
     return None
 
@@ -70,7 +72,12 @@ def _get_redis_client(host: str, port: int, timeout: int = 2):
     if redis_module is None:
         raise RuntimeError("Redis module not available")
     redis_client_class = getattr(redis_module, "Redis")
-    return redis_client_class(host=host, port=port, socket_connect_timeout=timeout)
+    return redis_client_class(
+        host=host,
+        port=port,
+        socket_connect_timeout=timeout,
+        **redis_connection_options(),
+    )
 
 
 def _verify_redis_on_port(host: str, port: int) -> bool:
@@ -90,7 +97,7 @@ def _verify_redis_on_port(host: str, port: int) -> bool:
         r = _get_redis_client(host, port, timeout=2)
         r.ping()
         return True
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         return False
 
 
@@ -133,7 +140,7 @@ def start_redis_server(server_state) -> None:
                         r.ping()
                         print(f"[REDIS] ✓ Using existing Redis server (PID: {pid})")
                         return
-                    except Exception:
+                    except BACKGROUND_INFRA_ERRORS:
                         if i < 9:
                             time.sleep(1)
                         else:
@@ -155,7 +162,7 @@ def start_redis_server(server_state) -> None:
         r.ping()
         print("[REDIS] Redis server is already running")
         return
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("Redis pre-start connectivity check failed: %s", exc)
 
     if sys.platform != "win32":
@@ -186,7 +193,7 @@ def start_redis_server(server_state) -> None:
                     r.ping()
                     print("[REDIS] Redis server is ready")
                     return
-                except Exception:
+                except BACKGROUND_INFRA_ERRORS:
                     if i < 9:
                         time.sleep(1)
                     else:

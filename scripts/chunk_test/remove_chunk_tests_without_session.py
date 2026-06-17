@@ -5,15 +5,20 @@ This script identifies and removes chunk test results that were created
 before session_id tracking was implemented.
 """
 
-import sys
-import os
+try:
+    from _path_setup import project_root
+except ModuleNotFoundError:
+    from scripts.chunk_test._path_setup import project_root
 
-# Add parent directory to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import traceback
 
 from sqlalchemy.orm import Session
+
 from config.database import SyncSessionLocal
 from models.domain.knowledge_space import ChunkTestResult
+from services.utils.error_types import DATABASE_ERRORS
+
+_ = project_root
 
 
 def find_tests_without_session_id(db: Session) -> list:
@@ -44,7 +49,7 @@ def delete_test_result(db: Session, test_id: int) -> bool:
         db.commit()
         print(f"Successfully deleted test result {test_id}")
         return True
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         db.rollback()
         print(f"Error deleting test result {test_id}: {e}")
         return False
@@ -104,10 +109,8 @@ def main():
             except ValueError:
                 print("Invalid input. Please enter comma-separated test IDs or 'all'")
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         print(f"Error: {e}")
-        import traceback
-
         traceback.print_exc()
     finally:
         db.close()

@@ -11,10 +11,11 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
 import logging
 from pathlib import Path
 from typing import Optional
+
+from services.utils.error_types import FILE_IO_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +100,7 @@ def resolve_library_path(stored_path: str, storage_dir: Path, project_root: Opti
             resolved = project_root / stored_path.replace("\\", "/")
             if resolved.exists():
                 return resolved.resolve()
-        except Exception as exc:
+        except FILE_IO_ERRORS as exc:
             logger.debug("Library path resolve from project root failed: %s", exc)
 
     # Strategy 2: If stored path is just filename, try storage_dir + filename
@@ -108,7 +109,7 @@ def resolve_library_path(stored_path: str, storage_dir: Path, project_root: Opti
             resolved = storage_dir / stored_path
             if resolved.exists():
                 return resolved.resolve()
-        except Exception as exc:
+        except FILE_IO_ERRORS as exc:
             logger.debug("Library path resolve from storage dir failed: %s", exc)
 
     # Strategy 3: Try as absolute path (legacy)
@@ -116,7 +117,7 @@ def resolve_library_path(stored_path: str, storage_dir: Path, project_root: Opti
         try:
             if stored_path_obj.exists():
                 return stored_path_obj.resolve()
-        except Exception as exc:
+        except FILE_IO_ERRORS as exc:
             logger.debug("Library absolute path resolve failed: %s", exc)
 
     # Strategy 4: Try relative to current working directory
@@ -124,7 +125,7 @@ def resolve_library_path(stored_path: str, storage_dir: Path, project_root: Opti
         resolved = Path.cwd() / stored_path.replace("\\", "/")
         if resolved.exists():
             return resolved.resolve()
-    except Exception as exc:
+    except FILE_IO_ERRORS as exc:
         logger.debug("Library path resolve from cwd failed: %s", exc)
 
     # Strategy 5: Extract folder name and try storage_dir + folder_name
@@ -135,7 +136,7 @@ def resolve_library_path(stored_path: str, storage_dir: Path, project_root: Opti
             resolved = storage_dir / folder_name
             if resolved.exists() and resolved.is_dir():
                 return resolved.resolve()
-        except Exception as exc:
+        except FILE_IO_ERRORS as exc:
             logger.debug("Library folder name resolve failed: %s", exc)
 
     return None

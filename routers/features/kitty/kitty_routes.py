@@ -4,20 +4,15 @@ from fastapi import Body, Depends, HTTPException, Query, WebSocket
 
 from config.settings import config
 from models.domain.auth import User
-
-from utils.auth import get_current_user
-
-from services.agent_hub import get_mind_graph_agent_hub
-from services.kitty.infra.control.kitty_control_fanout import KITTY_CONTROL_REASON_HTTP_CLEANUP
-from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
-from services.kitty.infra.redis.kitty_scope_refcount import (
-    kitty_scope_force_teardown_redis,
-    kitty_scope_refcount_read,
+from routers.features.kitty.state import (
+    active_websockets,
+    logger,
+    router,
 )
-from services.kitty.infra.desktop.kitty_desktop_wake_stream import kitty_desktop_wake_stream_response
+from services.agent_hub import get_mind_graph_agent_hub
 from services.kitty.http.handlers import (
-    kitty_rest_desktop_action_pop,
     kitty_rest_desktop_action_enqueue,
+    kitty_rest_desktop_action_pop,
     kitty_rest_desktop_focus_get,
     kitty_rest_desktop_focus_put,
     kitty_rest_desktop_pairing,
@@ -26,15 +21,18 @@ from services.kitty.http.handlers import (
     kitty_rest_mobile_lane_hint,
     kitty_rest_mobile_open_bootstrap,
 )
-from services.kitty.ws.realtime import kitty_realtime_websocket
-from services.kitty.session.ops import cleanup_voice_by_diagram_session
+from services.kitty.infra.control.kitty_control_fanout import KITTY_CONTROL_REASON_HTTP_CLEANUP
+from services.kitty.infra.desktop.kitty_desktop_wake_stream import kitty_desktop_wake_stream_response
 from services.kitty.infra.guards.http_guards import kitty_http_allowed
-from services.kitty.session.voice_lock import diagram_session_voice_lock
-from routers.features.kitty.state import (
-    active_websockets,
-    logger,
-    router,
+from services.kitty.infra.redis.kitty_scope_refcount import (
+    kitty_scope_force_teardown_redis,
+    kitty_scope_refcount_read,
 )
+from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
+from services.kitty.session.ops import cleanup_voice_by_diagram_session
+from services.kitty.session.voice_lock import diagram_session_voice_lock
+from services.kitty.ws.realtime import kitty_realtime_websocket
+from utils.auth import get_current_user
 
 
 @router.websocket("/ws/kitty/{diagram_session_id}")
@@ -196,9 +194,8 @@ async def cleanup_kitty_session(diagram_session_id: str, current_user: User = De
             )
             message = f"Voice session and WebSocket connections cleaned up for diagram {scope}"
             return {"success": True, "message": message}
-        else:
-            logger.debug("No active voice session found for diagram %s", scope)
-            return {"success": True, "message": "No active voice session found"}
+        logger.debug("No active voice session found for diagram %s", scope)
+        return {"success": True, "message": "No active voice session found"}
 
     except (RuntimeError, ConnectionError, AttributeError) as e:
         logger.error("Cleanup error: %s", e, exc_info=True)

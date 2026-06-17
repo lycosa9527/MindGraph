@@ -11,10 +11,10 @@ All Rights Reserved
 Proprietary License
 """
 
+import logging
 from asyncio import Queue, create_task, gather
 from dataclasses import dataclass
-from typing import Optional, Dict, Any, AsyncGenerator
-import logging
+from typing import Any, AsyncGenerator, Dict, Optional
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
 from utils.prompt_locale import is_chinese_prompt_shell_language
@@ -45,6 +45,7 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
     """
 
     def __init__(self):
+        """ init  ."""
         super().__init__()
         # Mode-specific session storage
         self.current_mode = {}  # session_id -> 'similarities' | 'differences' | 'both'

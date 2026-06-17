@@ -5,11 +5,14 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import WebSocket
 
-from services.kitty.session.runtime_state import logger
 from services.kitty.infra.bootstrap.kitty_diagram_vocabulary import (
     KITTY_DIAGRAM_CATALOG_PROMPT,
     KITTY_VOICE_COMMAND_PROMPT,
 )
+from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log, summarize_diagram_update
+from services.kitty.infra.desktop.kitty_desktop_wake_fanout import publish_kitty_diagram_update
+from services.kitty.infra.desktop.kitty_voice_command_fanout import fanout_voice_command_from_session
+from services.kitty.session.runtime_state import logger, voice_sessions
 
 _DIAGRAM_HINT_ZH: tuple[str, ...] = (
     "图",
@@ -112,6 +115,7 @@ def user_requests_diagram_pedagogical_review(text: str) -> bool:
 
 
 def _diagram_spec_bundle_for_voice_llm(diagram_type: str, diagram_data: Any) -> Dict[str, Any]:
+    """Diagram spec bundle for voice llm."""
     bundle: Dict[str, Any] = {"diagram_type": diagram_type}
     if isinstance(diagram_data, dict):
         for key, val in diagram_data.items():
@@ -120,6 +124,7 @@ def _diagram_spec_bundle_for_voice_llm(diagram_type: str, diagram_data: Any) -> 
 
 
 def _serialize_diagram_spec_for_prompt(bundle: Dict[str, Any], max_chars: int) -> str:
+    """Serialize diagram spec for prompt."""
     raw = json.dumps(bundle, ensure_ascii=False, separators=(",", ":"), default=str)
     if len(raw) <= max_chars:
         return raw
@@ -127,6 +132,7 @@ def _serialize_diagram_spec_for_prompt(bundle: Dict[str, Any], max_chars: int) -
 
 
 def _diagram_review_instruction_addon(lang: str, spec_text: str) -> str:
+    """Diagram review instruction addon."""
     if lang == "en":
         return f"""
 
@@ -286,12 +292,6 @@ async def send_kitty_diagram_update(
     sent = await safe_websocket_send(websocket, message)
     if message.get("type") != "diagram_update":
         return sent
-    from services.kitty.infra.control.kitty_workflow_trace import (
-        kitty_wf_log,
-        summarize_diagram_update,
-    )
-    from services.kitty.infra.desktop.kitty_desktop_wake_fanout import publish_kitty_diagram_update
-    from services.kitty.session.runtime_state import voice_sessions
 
     sess = voice_sessions.get(voice_session_id)
     if not isinstance(sess, dict):
@@ -305,10 +305,6 @@ async def send_kitty_diagram_update(
     except (TypeError, ValueError):
         return sent
     await publish_kitty_diagram_update(uid, scope.strip(), message)
-    from services.kitty.infra.desktop.kitty_voice_command_fanout import (
-        fanout_voice_command_from_session,
-    )
-
     action_raw = message.get("action")
     if isinstance(action_raw, str) and action_raw.strip():
         act = action_raw.strip()

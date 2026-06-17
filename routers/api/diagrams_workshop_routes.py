@@ -6,7 +6,6 @@ from typing import Optional
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from sqlalchemy import select
 
-from utils.db.session_open import actor_rls_session, user_rls_session
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
 from models.domain.messages import Language
@@ -14,14 +13,15 @@ from models.requests.requests_diagram import (
     WorkshopJoinOrganizationRequest,
     WorkshopStartRequest,
 )
+from routers.auth.dependencies import get_language_dependency
 from services.online_collab.core.online_collab_manager import get_online_collab_manager
 from utils.auth import get_current_user
 from utils.auth.school_tier import (
     TIER_FEATURE_ONLINE_COLLAB,
     assert_user_has_school_tier_feature,
 )
+from utils.db.session_open import actor_rls_session, user_rls_session
 
-from routers.auth.dependencies import get_language_dependency
 from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 
 logger = logging.getLogger(__name__)
@@ -47,6 +47,7 @@ async def _require_online_collab_tier(
     current_user: User,
     lang: Language,
 ) -> None:
+    """Require online collab tier."""
     async with actor_rls_session(current_user) as db:
         await assert_user_has_school_tier_feature(
             db,

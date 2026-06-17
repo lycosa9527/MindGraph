@@ -8,8 +8,8 @@ All Rights Reserved
 Proprietary License
 """
 
-from abc import ABC, abstractmethod
 import logging
+from abc import ABC, abstractmethod
 from typing import Any, AsyncGenerator, Dict, Iterable, List, Optional, cast
 
 from openai.types.chat import ChatCompletionMessageParam

@@ -7,18 +7,17 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
 import logging
 import re
-from typing import Optional, List, Dict, Any
 from datetime import UTC, datetime
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from models.domain.library import LibraryBookmark
-
+from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +61,7 @@ class LibraryBookmarkMixin:
             setattr(existing, "updated_at", datetime.now(UTC))
             try:
                 await self.db.commit()
-            except Exception:
+            except DATABASE_ERRORS:
                 await self.db.rollback()
                 raise
             return existing
@@ -79,7 +78,7 @@ class LibraryBookmarkMixin:
         try:
             await self.db.commit()
             await self.db.refresh(bookmark)
-        except Exception:
+        except DATABASE_ERRORS:
             await self.db.rollback()
             raise
         return bookmark
@@ -111,7 +110,7 @@ class LibraryBookmarkMixin:
         await self.db.delete(bookmark)
         try:
             await self.db.commit()
-        except Exception:
+        except DATABASE_ERRORS:
             await self.db.rollback()
             raise
         return True

@@ -1,15 +1,3 @@
-from contextlib import asynccontextmanager
-from typing import Dict, Any, Optional, AsyncGenerator, Callable
-import asyncio
-import logging
-import time
-
-from config.settings import config
-from services.infrastructure.http.error_handler import LLMServiceError
-from services.infrastructure.rate_limiting.rate_limiter import DashscopeRateLimiter, get_rate_limiter
-from services.monitoring.performance_tracker import performance_tracker
-from services.redis.redis_token_buffer import get_token_tracker
-
 """
 WebSocket LLM Middleware
 =========================
@@ -30,12 +18,25 @@ All Rights Reserved
 Proprietary License
 """
 
+import asyncio
+import logging
+import time
+from contextlib import asynccontextmanager
+from typing import Any, AsyncGenerator, Callable, Dict, Optional
+
+from config.settings import config
+from services.infrastructure.http.error_handler import LLMServiceError
+from services.infrastructure.rate_limiting.rate_limiter import DashscopeRateLimiter, get_rate_limiter
+from services.monitoring.performance_tracker import performance_tracker
+from services.redis.redis_token_buffer import get_token_tracker
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def _optional_rate_limit(limiter: Optional[DashscopeRateLimiter]) -> AsyncGenerator[None, None]:
+    """Optional rate limit."""
     if limiter is not None:
         async with limiter:
             yield
@@ -87,7 +88,7 @@ class WebSocketLLMMiddleware:
         if self.enable_rate_limiting:
             try:
                 self.rate_limiter = get_rate_limiter()
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.warning("Could not get rate limiter: %s", e)
                 self.rate_limiter = None
 
@@ -176,7 +177,7 @@ class WebSocketLLMMiddleware:
                     duration,
                 )
 
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 # Track failed connection
                 duration = time.time() - connection_start_time
                 if self.enable_performance_tracking:
@@ -271,12 +272,12 @@ class WebSocketLLMMiddleware:
                     if on_event:
                         try:
                             on_event(event)
-                        except Exception as e:
+                        except BACKGROUND_INFRA_ERRORS as e:
                             logger.debug("Error in on_event callback: %s", e)
 
                     yield event
 
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 # Apply error handling with retry for connection failures
                 if self.enable_error_handling:
                     # For connection failures, we can retry
@@ -284,8 +285,7 @@ class WebSocketLLMMiddleware:
                     # Retry logic would go here, but for WebSocket connections,
                     # retrying means creating a new connection
                     raise LLMServiceError(f"WebSocket connection failed: {e}") from e
-                else:
-                    raise
+                raise
 
     async def _track_token_usage(self, response: Dict[str, Any], ctx: Dict[str, Any]):
         """Track token usage from Omni response."""
@@ -324,14 +324,14 @@ class WebSocketLLMMiddleware:
                 total,
             )
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.debug("[WebSocketLLMMiddleware] Token tracking failed (non-critical): %s", e)
 
     def _track_performance(self, duration: float, success: bool, error: Optional[str] = None):
         """Track performance metrics."""
         try:
             performance_tracker.record_request(model=self.model_alias, duration=duration, success=success, error=error)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.debug(
                 "[WebSocketLLMMiddleware] Performance tracking failed (non-critical): %s",
                 e,

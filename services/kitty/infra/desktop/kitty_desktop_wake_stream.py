@@ -13,13 +13,11 @@ from redis.exceptions import RedisError
 
 from config.settings import config
 from models.domain.auth import User
-
 from services.kitty.infra.desktop.kitty_desktop_wake_fanout import build_kitty_desktop_wake_payload
 from services.kitty.infra.desktop.kitty_mobile_active import read_kitty_mobile_active
+from services.kitty.infra.guards.http_guards import kitty_http_allowed
 from services.kitty.infra.redis.kitty_redis_keys import kitty_desktop_wake_channel
 from services.redis.redis_async_client import get_async_redis
-
-from services.kitty.infra.guards.http_guards import kitty_http_allowed
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +28,12 @@ _active_connections: Dict[int, int] = {}
 
 
 def _increment_connection(user_id: int) -> None:
+    """Increment connection."""
     _active_connections[user_id] = _active_connections.get(user_id, 0) + 1
 
 
 def _decrement_connection(user_id: int) -> None:
+    """Decrement connection."""
     count = _active_connections.get(user_id, 0)
     if count <= 1:
         _active_connections.pop(user_id, None)
@@ -42,6 +42,7 @@ def _decrement_connection(user_id: int) -> None:
 
 
 def _decode_pubsub_data(raw: Any) -> Optional[str]:
+    """Decode pubsub data."""
     if isinstance(raw, (bytes, bytearray)):
         try:
             return raw.decode("utf-8")
@@ -53,6 +54,7 @@ def _decode_pubsub_data(raw: Any) -> Optional[str]:
 
 
 async def _iter_wake_events(user_id: int) -> AsyncIterator[str]:
+    """Iter wake events."""
     yield ": stream_open\n\n"
 
     redis = get_async_redis()

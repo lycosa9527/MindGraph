@@ -6,13 +6,13 @@ Handles all 400 status code errors including parameter validation,
 file errors, audio/video errors, and other bad request scenarios.
 """
 
-from typing import Optional, Tuple
 import re
+from typing import Optional, Tuple
 
 from services.infrastructure.http.error_handler import (
     LLMInvalidParameterError,
-    LLMProviderError,
     LLMModelNotFoundError,
+    LLMProviderError,
 )
 
 

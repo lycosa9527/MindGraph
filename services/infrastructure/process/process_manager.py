@@ -10,25 +10,17 @@ Handles starting and stopping required services:
 """
 
 import os
-import sys
 import signal
-from typing import Optional, Any
+import sys
+from typing import Any, Optional
 
-from services.infrastructure.process._redis_manager import (
-    start_redis_server as _start_redis_server,
-)
-from services.infrastructure.process._celery_manager import (
-    start_celery_worker as _start_celery_worker,
-    stop_celery_worker as _stop_celery_worker,
-)
-from services.infrastructure.process._qdrant_manager import (
-    start_qdrant_server as _start_qdrant_server,
-    stop_qdrant_server as _stop_qdrant_server,
-)
-from services.infrastructure.process._postgresql_manager import (
-    start_postgresql_server as _start_postgresql_server,
-    stop_postgresql_server as _stop_postgresql_server,
-)
+from services.infrastructure.process._celery_manager import start_celery_worker as _start_celery_worker
+from services.infrastructure.process._celery_manager import stop_celery_worker as _stop_celery_worker
+from services.infrastructure.process._postgresql_manager import start_postgresql_server as _start_postgresql_server
+from services.infrastructure.process._postgresql_manager import stop_postgresql_server as _stop_postgresql_server
+from services.infrastructure.process._qdrant_manager import start_qdrant_server as _start_qdrant_server
+from services.infrastructure.process._qdrant_manager import stop_qdrant_server as _stop_qdrant_server
+from services.infrastructure.process._redis_manager import start_redis_server as _start_redis_server
 
 
 class ServerState:
@@ -37,8 +29,13 @@ class ServerState:
     celery_worker_process: Optional[Any] = None
     celery_stdout_file: Optional[Any] = None
     celery_stderr_file: Optional[Any] = None
+    celery_resource_stack: Optional[Any] = None
     qdrant_process: Optional[Any] = None
+    qdrant_resource_stack: Optional[Any] = None
     postgresql_process: Optional[Any] = None
+    postgresql_resource_stack: Optional[Any] = None
+    postgresql_stdout_file: Optional[Any] = None
+    postgresql_stderr_file: Optional[Any] = None
     redis_started_by_app: bool = False
     shutdown_in_progress: bool = False
 

@@ -26,6 +26,7 @@ def _internal_base_url() -> str:
 
 
 def _auth_headers_from_context(ctx: Context) -> dict[str, str]:
+    """Auth headers from context."""
     http_request = ctx.request_context.request
     if http_request is None:
         raise ValueError(

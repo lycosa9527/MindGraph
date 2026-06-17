@@ -1,18 +1,3 @@
-from typing import List, Optional
-import asyncio
-import json
-import logging
-
-from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-
-from fastapi import Request
-
-from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
-from services.llm import llm_service
-from utils.auth import get_current_user
-
 """
 AskOnce Router - Multi-LLM Streaming Chat Endpoints
 ====================================================
@@ -35,6 +20,19 @@ All Rights Reserved
 Proprietary License
 """
 
+import asyncio
+import json
+import logging
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+
+from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
+from services.llm import llm_service
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -46,17 +44,20 @@ router = APIRouter(prefix="/api/askonce", tags=["AskOnce"])
 
 
 class Message(BaseModel):
+    """Message helper."""
     role: str
     content: str
 
 
 class ChatRequest(BaseModel):
+    """ChatRequest helper."""
     messages: List[Message]
     temperature: Optional[float] = None
     max_tokens: Optional[int] = None
 
 
 class HealthResponse(BaseModel):
+    """HealthResponse helper."""
     status: str
     models: List[str]
 
@@ -179,7 +180,7 @@ async def stream_from_llm(
     except asyncio.CancelledError:
         logger.info("[ASKONCE:%s] Stream cancelled by client", model_id.upper())
         raise
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[ASKONCE:%s] Streaming error: %s", model_id.upper(), e)
         yield f"data: {json.dumps({'type': 'error', 'error': 'Internal server error'})}\n\n"
 

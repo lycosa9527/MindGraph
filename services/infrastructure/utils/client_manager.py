@@ -19,13 +19,19 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import TYPE_CHECKING, Any, Dict, List
 import logging
 from threading import Lock
+from typing import Any, Dict, List
 
-
-if TYPE_CHECKING:
-    pass
+from clients.llm import (
+    DeepSeekClient,
+    HunyuanClient,
+    KimiClient,
+    QwenClient,
+    VolcengineClient,
+)
+from clients.omni_client import OmniClient
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +43,7 @@ class ClientManager:
     """
 
     def __init__(self):
+        """ init  ."""
         self._clients: Dict[str, Any] = {}
         self._lock = Lock()
         self._initialized = False
@@ -56,16 +63,6 @@ class ClientManager:
                 return
 
             logger.debug("[ClientManager] Initializing LLM clients...")
-
-            # Lazy imports to avoid circular dependency
-            from clients.llm import (
-                QwenClient,
-                DeepSeekClient,
-                KimiClient,
-                HunyuanClient,
-                VolcengineClient,
-            )
-            from clients.omni_client import OmniClient
 
             try:
                 # Initialize Qwen clients (two instances: classification vs generation model ids)
@@ -107,7 +104,7 @@ class ClientManager:
                 self._initialized = True
                 logger.debug("[ClientManager] Initialized %s LLM clients", len(self._clients))
 
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.error("[ClientManager] Initialization failed: %s", e, exc_info=True)
                 raise
 

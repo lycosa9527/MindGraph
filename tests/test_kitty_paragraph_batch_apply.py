@@ -6,17 +6,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from tests.stubs.redis8_features import install_redis8_features_stub
-
-install_redis8_features_stub()
-
 from services.kitty.content.paragraph_batch_apply import apply_paragraph_batch_add_nodes
-from services.kitty.session.runtime_state import voice_sessions
 from services.kitty.session.ops import create_voice_session
+from services.kitty.session.runtime_state import voice_sessions
 
 
 @pytest.mark.asyncio
 async def test_apply_paragraph_batch_add_nodes_persists_and_syncs() -> None:
+    """Test apply paragraph batch add nodes persists and syncs."""
     ws = MagicMock()
     voice_session_id = create_voice_session(
         user_id="1",
@@ -71,6 +68,7 @@ async def test_apply_paragraph_batch_add_nodes_persists_and_syncs() -> None:
 
 @pytest.mark.asyncio
 async def test_apply_paragraph_batch_add_nodes_noop_when_empty() -> None:
+    """Test apply paragraph batch add nodes noop when empty."""
     ws = MagicMock()
     voice_session_id = create_voice_session(
         user_id="1",

@@ -14,6 +14,8 @@ import logging
 
 import bcrypt
 
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+
 from .config import BCRYPT_ROUNDS
 
 logger = logging.getLogger(__name__)
@@ -62,7 +64,7 @@ def hash_password(password: str) -> str:
         salt = bcrypt.gensalt(rounds=BCRYPT_ROUNDS)
         hashed = bcrypt.hashpw(password_bytes, salt)
         return hashed.decode("utf-8")
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Password hashing failed: %s", e)
         logger.error("Password length: %d chars, %d bytes", len(password), len(password_bytes))
         raise
@@ -104,6 +106,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
         # Verify password against hash
         return bcrypt.checkpw(password_bytes, hashed_password.encode("utf-8"))
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Password verification failed: %s", e)
         return False

@@ -37,12 +37,13 @@ from sqlalchemy.sql.functions import count as sql_count
 
 from models.domain.auth import User
 from models.domain.workshop_chat import (
-    ChatChannel,
     ChannelMember,
+    ChatChannel,
     ChatMessage,
     ChatTopic,
     UserTopicPreference,
 )
+from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import is_admin
 
 logger = logging.getLogger(__name__)
@@ -296,7 +297,7 @@ class ChannelService:
                 member.last_read_message_id = max_msg_id
         try:
             await db.commit()
-        except Exception:
+        except DATABASE_ERRORS:
             await db.rollback()
             raise
         return {
@@ -357,7 +358,7 @@ class ChannelService:
         db.add(owner_member)
         try:
             await db.commit()
-        except Exception:
+        except DATABASE_ERRORS:
             await db.rollback()
             raise
 
@@ -420,7 +421,7 @@ class ChannelService:
         channel.updated_at = datetime.now(UTC)
         try:
             await db.commit()
-        except Exception:
+        except DATABASE_ERRORS:
             await db.rollback()
             raise
         return {
@@ -449,7 +450,7 @@ class ChannelService:
         channel.updated_at = datetime.now(UTC)
         try:
             await db.commit()
-        except Exception:
+        except DATABASE_ERRORS:
             await db.rollback()
             raise
         logger.info("[WorkshopChat] Channel %d archived", channel_id)
@@ -480,7 +481,7 @@ class ChannelService:
         )
         try:
             await db.commit()
-        except Exception:
+        except DATABASE_ERRORS:
             await db.rollback()
             raise
         logger.info(
@@ -509,7 +510,7 @@ class ChannelService:
         await db.delete(member)
         try:
             await db.commit()
-        except Exception:
+        except DATABASE_ERRORS:
             await db.rollback()
             raise
         logger.info(
@@ -603,6 +604,7 @@ class ChannelService:
         channel_id: int,
         user_id: int,
     ) -> ChannelMember:
+        """Get membership."""
         result = await db.execute(
             select(ChannelMember).where(
                 ChannelMember.channel_id == channel_id,
@@ -625,7 +627,7 @@ class ChannelService:
         member.is_muted = not member.is_muted
         try:
             await db.commit()
-        except Exception:
+        except DATABASE_ERRORS:
             await db.rollback()
             raise
         return {"channel_id": channel_id, "is_muted": member.is_muted}
@@ -641,7 +643,7 @@ class ChannelService:
         member.pin_to_top = not member.pin_to_top
         try:
             await db.commit()
-        except Exception:
+        except DATABASE_ERRORS:
             await db.rollback()
             raise
         return {"channel_id": channel_id, "pin_to_top": member.pin_to_top}
@@ -665,7 +667,7 @@ class ChannelService:
             member.email_notifications = email_notifications
         try:
             await db.commit()
-        except Exception:
+        except DATABASE_ERRORS:
             await db.rollback()
             raise
         return {
@@ -704,7 +706,7 @@ class ChannelService:
         channel.updated_at = datetime.now(UTC)
         try:
             await db.commit()
-        except Exception:
+        except DATABASE_ERRORS:
             await db.rollback()
             raise
         return {
@@ -836,7 +838,7 @@ class ChannelService:
         db.add(owner_member)
         try:
             await db.commit()
-        except Exception:
+        except DATABASE_ERRORS:
             await db.rollback()
             raise
         logger.info(

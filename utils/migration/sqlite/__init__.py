@@ -9,31 +9,31 @@ This package contains utilities for SQLite migrations:
 - Utility functions (path detection, locks, etc.)
 """
 
-from .type_migration import (
-    detect_type_mismatches,
-    recreate_table_with_correct_schema,
-    types_are_compatible,
-)
 from .migration_backup import backup_sqlite_database, move_sqlite_database_to_backup
 from .migration_progress import MigrationProgressTracker
 from .migration_table_order import get_table_migration_order
 from .migration_tables import migrate_table
-from .migration_verification import (
-    verify_migration,
-    create_migration_marker,
-    reset_postgresql_sequences,
-)
 from .migration_utils import (
+    MIGRATION_MARKER_FILE,
+    acquire_migration_lock,
+    check_table_completeness,
+    clear_migration_progress,
     get_sqlite_db_path,
     is_migration_completed,
-    load_migration_progress,
-    save_migration_progress,
-    clear_migration_progress,
-    acquire_migration_lock,
-    release_migration_lock,
     is_postgresql_empty,
-    check_table_completeness,
-    MIGRATION_MARKER_FILE,
+    load_migration_progress,
+    release_migration_lock,
+    save_migration_progress,
+)
+from .migration_verification import (
+    create_migration_marker,
+    reset_postgresql_sequences,
+    verify_migration,
+)
+from .type_migration import (
+    detect_type_mismatches,
+    recreate_table_with_correct_schema,
+    types_are_compatible,
 )
 
 __all__ = [

@@ -16,20 +16,20 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
-from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 from models.domain.auth import User
-from models.domain.messages import Messages, Language
+from models.domain.messages import Language, Messages
 from models.requests.requests_auth import RegisterOverseasRequest
 from services.auth.geo_cn_mainland_cookie import json_forbidden_cn_geo
 from services.auth.geoip_country import overseas_email_registration_allowed
 from services.auth.vpn_geo_enforcement import record_vpn_login_geo
 from services.monitoring.registration_metrics import registration_metrics
 from services.redis.cache.redis_user_cache import user_cache
-from services.redis.session.redis_session_manager import (
-    get_session_manager,
-    get_refresh_token_manager,
-)
 from services.redis.redis_email_storage import normalize_verification_email
+from services.redis.session.redis_session_manager import (
+    get_refresh_token_manager,
+    get_session_manager,
+)
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 from utils.auth import (
     ACCESS_TOKEN_EXPIRY_MINUTES,
     compute_device_hash,
@@ -40,6 +40,7 @@ from utils.auth import (
 )
 from utils.auth.overseas_registration_messages import overseas_registration_error
 from utils.auth.registration_gate import http_forbid_if_registration_disabled
+from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 from utils.email_mainland_china import raise_if_mainland_china_email_for_overseas_registration
 from utils.email_validation import validate_email_for_api
 
@@ -151,14 +152,14 @@ async def register_overseas(
             await user_cache.cache_user(new_user)
             cache_write_success = True
             logger.info("[Auth] Overseas user registered: ID %s email=%s", new_user.id, email_norm[:3] + "***")
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             cache_write_success = False
             logger.warning("[Auth] Failed to cache overseas user ID %s: %s", new_user.id, exc)
 
     async def store_session_async() -> None:
         try:
             await session_manager.store_session(new_user.id, token, device_hash=device_hash)
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.warning("[Auth] Failed to store session for user ID %s: %s", new_user.id, exc)
 
     async def store_refresh_token_async() -> None:
@@ -171,7 +172,7 @@ async def register_overseas(
                 user_agent=user_agent,
                 device_hash=device_hash,
             )
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.warning(
                 "[Auth] Failed to store refresh token for user ID %s: %s",
                 new_user.id,

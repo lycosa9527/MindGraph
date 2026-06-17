@@ -26,7 +26,8 @@ from fastapi.websockets import WebSocketState
 
 from services.features import workshop_chat_presence_store
 from services.features.ws_redis_fanout_config import is_ws_fanout_enabled
-from services.features.ws_redis_fanout_publish import publish_chat_fanout_async
+from services.features.ws_redis_fanout_publish_core import publish_chat_fanout_async
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 
 def _dumps(obj: Any) -> str:
@@ -58,6 +59,7 @@ class _UserConnection:
         username: str,
         avatar: Optional[str],
     ):
+        """ init  ."""
         self.websocket = websocket
         self.user_id = user_id
         self.username = username
@@ -70,6 +72,7 @@ class ChatConnectionManager:
     """Manages WebSocket connections for workshop chat."""
 
     def __init__(self):
+        """ init  ."""
         self._connections: Dict[int, _UserConnection] = {}
         self._channel_subscribers: Dict[int, Set[int]] = {}
         self._typing_state: Dict[str, float] = {}
@@ -113,7 +116,7 @@ class ChatConnectionManager:
                     presence_org,
                     user_id,
                 )
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 logger.debug("Presence org user removal failed: %s", exc)
         self._remove_subscriptions(user_id)
         self._connections.pop(user_id, None)
@@ -131,7 +134,7 @@ class ChatConnectionManager:
                     org_id,
                     user_id,
                 )
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 logger.debug("Presence org user touch failed: %s", exc)
 
     def get_presence_org_id(self, user_id: int) -> Optional[int]:
@@ -151,7 +154,7 @@ class ChatConnectionManager:
                 conn.presence_org_id,
                 user_id,
             )
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("Presence heartbeat refresh failed: %s", exc)
 
     async def presence_org_online_ids(self, org_id: int) -> Set[int]:
@@ -161,7 +164,7 @@ class ChatConnectionManager:
                 return await workshop_chat_presence_store.online_user_ids_for_org(
                     org_id,
                 )
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 logger.debug("Presence org online users lookup failed: %s", exc)
         return {uid for uid, conn in self._connections.items() if conn.presence_org_id == org_id}
 
@@ -383,7 +386,7 @@ class ChatConnectionManager:
             if websocket.client_state == WebSocketState.CONNECTED:
                 await websocket.send_text(data)
                 return True
-        except Exception:
+        except BACKGROUND_INFRA_ERRORS:
             logger.debug("[ChatWS] Failed to send to user %d", user_id)
         return False
 

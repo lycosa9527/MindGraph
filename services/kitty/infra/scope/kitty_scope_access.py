@@ -54,6 +54,7 @@ async def user_may_access_kitty_scope(user_id: int, scope: str) -> bool:
 
 
 async def _library_diagram_owner_id(scope: str) -> Optional[int]:
+    """Library diagram owner id."""
     try:
         async with system_rls_session() as db:
             result = await db.execute(

@@ -4,10 +4,9 @@ from typing import Any, Dict, Optional
 
 from fastapi import WebSocket
 
-from services.kitty.session.agent_state import kitty_agent_manager
-
-from services.kitty.diagram.diagram_utils import get_diagram_prefix_map
 from services.kitty.context.messaging import send_kitty_diagram_update
+from services.kitty.diagram.diagram_utils import get_diagram_prefix_map
+from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.ops import get_agent_session_id
 from services.kitty.session.runtime_state import logger, voice_sessions
 
@@ -276,10 +275,9 @@ async def voice_apply_delete_node_action(
 
         logger.debug("Node deleted: %s", resolved_node_id)
         return True
-    else:
-        logger.warning(
-            "Could not resolve node_id for deletion: target=%s, node_index=%s",
-            target,
-            node_index,
-        )
-        return False
+    logger.warning(
+        "Could not resolve node_id for deletion: target=%s, node_index=%s",
+        target,
+        node_index,
+    )
+    return False

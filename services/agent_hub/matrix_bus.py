@@ -28,6 +28,7 @@ class DiagramCommandBus:
     """
 
     def __init__(self) -> None:
+        """ init  ."""
         self._adapters: List[str] = []
 
     def register_adapter(self, name: str) -> None:
@@ -49,11 +50,14 @@ class DiagramCommandBus:
         return False
 
 
-_BUS: Optional[DiagramCommandBus] = None
+class _DiagramCommandBusState:
+    """Process-wide diagram command bus singleton holder."""
+
+    instance: Optional[DiagramCommandBus] = None
 
 
 def get_diagram_command_bus() -> DiagramCommandBus:
-    global _BUS
-    if _BUS is None:
-        _BUS = DiagramCommandBus()
-    return _BUS
+    """Get diagram command bus."""
+    if _DiagramCommandBusState.instance is None:
+        _DiagramCommandBusState.instance = DiagramCommandBus()
+    return _DiagramCommandBusState.instance

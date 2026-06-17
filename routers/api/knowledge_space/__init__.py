@@ -15,6 +15,7 @@ Proprietary License
 """
 
 import importlib
+
 from fastapi import APIRouter
 
 # Import sub-routers from the knowledge_space package

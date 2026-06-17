@@ -10,23 +10,25 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Dict, Any, Optional
 import json
 import logging
+from typing import Any, Dict, Optional
+
 import aiohttp
 
-from .account import AccountMixin
-from .message import MessageMixin
-from .download import DownloadMixin
-from .group import GroupMixin
-from .contact import ContactMixin
-from .enterprise import EnterpriseMixin
-from .sns import SNSMixin
-from .personal import PersonalMixin
-from .tag import TagMixin
-from .collection import CollectionMixin
-from .video_channel import VideoChannelMixin
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
+from .account import AccountMixin
+from .collection import CollectionMixin
+from .contact import ContactMixin
+from .download import DownloadMixin
+from .enterprise import EnterpriseMixin
+from .group import GroupMixin
+from .message import MessageMixin
+from .personal import PersonalMixin
+from .sns import SNSMixin
+from .tag import TagMixin
+from .video_channel import VideoChannelMixin
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,7 @@ class GeweAPIError(Exception):
         error_code: Optional[str] = None,
         response_data: Optional[Dict[str, Any]] = None,
     ):
+        """ init  ."""
         self.message = message
         self.status_code = status_code
         self.error_code = error_code
@@ -95,7 +98,7 @@ class AsyncGeweClient(
         if self._session and not self._session.closed:
             try:
                 await self._session.close()
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.warning("Error closing Gewe client session: %s", e, exc_info=True)
             finally:
                 self._session = None
@@ -167,7 +170,7 @@ class AsyncGeweClient(
                 # Get response data
                 try:
                     response_data = await response.json()
-                except Exception as json_error:
+                except BACKGROUND_INFRA_ERRORS as json_error:
                     # If JSON parsing fails, try to get text
                     response_text = await response.text()
                     logger.error(
@@ -235,9 +238,6 @@ class AsyncGeweClient(
         except aiohttp.ClientError as e:
             logger.error("❌ [GeweAPI] Connection error: %s", e, exc_info=True)
             raise GeweAPIError(f"Connection error: {str(e)}") from e
-        except GeweAPIError:
-            # Re-raise GeweAPIError as-is
-            raise
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("❌ [GeweAPI] Unexpected error: %s", e, exc_info=True)
             raise GeweAPIError(f"Unexpected error: {str(e)}") from e

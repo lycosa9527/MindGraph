@@ -74,10 +74,20 @@ Match CI pylint scope when touching collab/auth paths, or run pylint on files yo
 
 ```bash
 python -m pylint path/to/changed_module.py
+python scripts/lint/audit_pylint_four_rules.py
 python -m basedpyright .
 ```
 
-Follow PEP 8; fix all pylint findings without `# noqa` suppressions. Fix all basedpyright diagnostics; do not add project-wide `report* = "none"` suppressions in `pyproject.toml`.
+Follow PEP 8; fix all pylint findings without inline suppressions. Fix all basedpyright diagnostics; do not add project-wide `report* = "none"` suppressions in `pyproject.toml`.
+
+Pylint policy: **full pylint** on the Python tree with minimal `[tool.pylint.messages_control].disable` entries (`duplicate-code`, `too-few-public-methods`, `arguments-renamed`, `too-many-positional-arguments`). Four hardening rules (`global-statement`, `protected-access`, `broad-except`, `import-outside-toplevel`) are enabled. No inline `# pylint: disable` / `# noqa` / `# type: ignore` — use structural fixes (holder singletons, cycle splits, narrow exception tuples from `services/utils/error_types.py`).
+
+```bash
+python scripts/lint/lint_no_inline_disables.py
+python scripts/lint/audit_pylint_four_rules.py --fail
+python -m pylint services routers agents clients config utils scripts tests loadtests tasks alembic/env.py --fail-under=10.0
+python -m basedpyright .
+```
 
 ### Full stack (optional)
 

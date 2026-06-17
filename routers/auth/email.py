@@ -16,9 +16,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
-from utils.db.rls_request import bind_system_bootstrap_rls_dependency
+from config.settings import config
 from models.domain.auth import User
-from models.domain.messages import Messages, Language
+from models.domain.messages import Language, Messages
 from models.requests.requests_auth import SendEmailCodeRequest, VerifyEmailCodeRequest
 from services.auth.email_middleware import SESServiceError, get_email_middleware
 from services.auth.geo_cn_mainland_cookie import json_forbidden_cn_geo
@@ -32,17 +32,17 @@ from services.auth.ses_service import (
     EMAIL_MAX_ATTEMPTS_WINDOW_HOURS,
     EMAIL_RESEND_INTERVAL_SECONDS,
 )
-from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
 from services.redis.cache.redis_user_cache import user_cache
+from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
 from services.redis.redis_email_storage import (
     get_email_storage,
     mask_email_for_log,
     normalize_verification_email,
 )
-from config.settings import config
 from utils.auth import AUTH_MODE, EMAIL_LOGIN_CN_BLOCK_ENABLED, get_client_ip
 from utils.auth.overseas_registration_messages import overseas_registration_error
 from utils.auth.registration_gate import http_forbid_if_registration_disabled
+from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 from utils.email_mainland_china import (
     raise_if_mainland_china_email_for_email_login,
     raise_if_mainland_china_email_for_overseas_registration,

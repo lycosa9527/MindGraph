@@ -26,6 +26,7 @@ from fastapi.responses import StreamingResponse
 
 from models.domain.auth import User
 from services.monitoring.log_streamer import LogStreamer
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user, is_admin
 
 logger = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ async def list_log_files(current_user: User = Depends(get_current_user)):
 
         return log_files
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to list log files: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -94,7 +95,7 @@ async def read_log_file(
 
         return entries
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to read log file: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -214,7 +215,7 @@ async def tail_logs(
 
         return result
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to tail log file: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -267,7 +268,7 @@ async def search_logs(
 
         return results
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Failed to search logs: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

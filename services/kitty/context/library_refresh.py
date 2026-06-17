@@ -7,22 +7,21 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Dict
 
-from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.infra.bootstrap.kitty_context_hydrate import merge_voice_context_with_library
+from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.kitty.infra.redis.kitty_session_redis import (
     load_kitty_live_context,
     schedule_persist_kitty_live_debounced,
 )
-from services.redis.cache.redis_diagram_cache import get_diagram_cache
-
+from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.events import emit_kitty_session_event
-from services.kitty.session.runtime_state import logger
 from services.kitty.session.ops import (
     get_agent_session_id,
     get_voice_session,
     update_panel_context,
 )
-from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
+from services.kitty.session.runtime_state import logger
+from services.redis.cache.redis_diagram_cache import get_diagram_cache
 
 _REFRESH_MIN_INTERVAL = 1.5
 _CONTEXT_FRESH_SEC = 2.0
@@ -40,6 +39,7 @@ def bump_voice_mutation_freshness(voice_session_id: str) -> None:
 
 
 def _library_row_updated_ts(cached: Dict[str, Any]) -> int:
+    """Library row updated ts."""
     raw = cached.get("updated_at")
     if raw is None:
         return 0

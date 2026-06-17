@@ -30,12 +30,12 @@ from routers.features.workshop_chat.dependencies import (
 )
 from routers.features.workshop_chat.schemas import (
     CreateTopicRequest,
-    UpdateTopicRequest,
     MoveTopicRequest,
     RenameTopicRequest,
     SetTopicVisibilityRequest,
+    UpdateTopicRequest,
 )
-from services.features.workshop_chat import topic_service, message_service
+from services.features.workshop_chat import message_service, topic_service
 from services.features.workshop_chat.workshop_list_etag import topics_list_etag
 from services.features.workshop_chat_ws_manager import chat_ws_manager
 from utils.auth import can_moderate_workshop_channel, get_current_user

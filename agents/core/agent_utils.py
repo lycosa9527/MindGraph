@@ -14,23 +14,23 @@ All Rights Reserved
 Proprietary License
 """
 
+# Characteristics generation functions
+from .characteristics import (
+    generate_characteristics_fallback,
+    generate_characteristics_with_agent,
+    parse_characteristics_result,
+)
+
 # JSON parsing functions
 from .json_parser import (
     extract_json_from_response,
 )
 
-# Characteristics generation functions
-from .characteristics import (
-    generate_characteristics_with_agent,
-    parse_characteristics_result,
-    generate_characteristics_fallback,
-)
-
 # Topic extraction functions
 from .topic_extraction_utils import (
+    extract_topics_from_prompt,
     extract_topics_with_agent,
     parse_topic_extraction_result,
-    extract_topics_from_prompt,
 )
 
 # Note: The following functions are deprecated/unused and not re-exported:

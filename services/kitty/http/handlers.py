@@ -8,7 +8,6 @@ from fastapi import HTTPException
 
 from config.settings import config
 from models.domain.auth import User
-
 from services.agent_hub import get_mind_graph_agent_hub
 from services.kitty.infra.desktop.kitty_desktop_action_queue import (
     consume_kitty_desktop_action_explicit_drain,
@@ -24,18 +23,16 @@ from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
     publish_kitty_desktop_action_pending,
 )
 from services.kitty.infra.desktop.kitty_mobile_active import read_kitty_mobile_active
+from services.kitty.infra.guards.http_guards import (
+    KITTY_MOBILE_BOOTSTRAP_DISABLED_BODY,
+    kitty_http_allowed,
+)
 from services.kitty.infra.redis.kitty_session_redis import (
     kitty_mobile_indicator_armed_for_user,
     kitty_sessionmeta_active_for_user,
     load_kitty_live_context,
 )
 from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
-
-from services.kitty.infra.guards.http_guards import (
-    KITTY_MOBILE_BOOTSTRAP_DISABLED_BODY,
-    kitty_http_allowed,
-)
-
 
 _INACTIVE_MOBILE_ACTIVE: Dict[str, Any] = {
     "active": False,

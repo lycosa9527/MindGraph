@@ -6,12 +6,19 @@ import asyncio
 import logging
 from typing import Any
 
-from redis.exceptions import RedisError
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from utils.db.session_open import system_rls_session, user_rls_session
 from models.domain.diagrams import Diagram
+from services.features.workshop_ws_broadcast import (
+    broadcast_workshop_session_closing,
+    broadcast_workshop_session_ended,
+)
+from services.online_collab.core.online_collab_manager_access import get_online_collab_manager
+from services.online_collab.lifecycle.online_collab_session_closing import (
+    mark_workshop_session_closing,
+    unmark_workshop_session_closing,
+)
 from services.online_collab.lifecycle.online_collab_session_fields import (
     clear_online_collab_session_by_id_returning,
     clear_online_collab_session_fields,
@@ -30,6 +37,8 @@ from services.online_collab.spec.online_collab_live_spec_ops import (
 )
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.redis_async_client import get_async_redis
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS, REDIS_ERRORS
+from utils.db.session_open import system_rls_session, user_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +85,7 @@ async def _extend_room_ttl_after_flush_failure(redis: Any, code: str) -> None:
             for key in keys:
                 pipe.expire(key, _FAILED_FLUSH_RETRY_TTL_SEC, gt=True)
             await pipe.execute()
-    except (RedisError, OSError, RuntimeError, TypeError) as exc:
+    except REDIS_ERRORS as exc:
         logger.error(
             "[OnlineCollabMgr] failed to extend room TTL after flush failure code=%s: %s",
             code,
@@ -109,13 +118,6 @@ async def stop_online_collab_impl(diagram_id: str, user_id: int) -> bool:
                 )
                 return True
             norm = str(code).strip().upper()
-            from services.online_collab.lifecycle.online_collab_session_closing import (
-                mark_workshop_session_closing,
-                unmark_workshop_session_closing,
-            )
-            from routers.api.workshop_ws_broadcast import (
-                broadcast_workshop_session_closing,
-            )
 
             await mark_workshop_session_closing(norm)
             await broadcast_workshop_session_closing(norm)
@@ -154,16 +156,8 @@ async def stop_online_collab_impl(diagram_id: str, user_id: int) -> bool:
                 raise
             await mark_live_spec_db_flushed(redis, norm)
 
-            from routers.api.workshop_ws_broadcast import (
-                broadcast_workshop_session_ended,
-            )
-
             await broadcast_workshop_session_ended(code)
             await asyncio.sleep(0.08)
-
-            from services.online_collab.core.online_collab_manager import (
-                get_online_collab_manager,
-            )
 
             await get_online_collab_manager().destroy_session(
                 norm,
@@ -178,14 +172,14 @@ async def stop_online_collab_impl(diagram_id: str, user_id: int) -> bool:
             )
             try:
                 await get_diagram_cache().invalidate_user_list(user_id)
-            except (AttributeError, TypeError, ValueError, OSError, RuntimeError) as cache_exc:
+            except BACKGROUND_INFRA_ERRORS as cache_exc:
                 logger.debug(
                     "[OnlineCollabMgr] List cache invalidation failed (non-fatal): %s",
                     cache_exc,
                 )
             return True
 
-        except (SQLAlchemyError, OSError) as exc:
+        except DATABASE_ERRORS as exc:
             logger.error(
                 "[OnlineCollabMgr] Error stopping workshop: %s",
                 exc,
@@ -220,14 +214,6 @@ async def stop_online_collab_for_room_idle_impl(
                 )
                 return False
 
-            from services.online_collab.lifecycle.online_collab_session_closing import (
-                mark_workshop_session_closing,
-                unmark_workshop_session_closing,
-            )
-            from routers.api.workshop_ws_broadcast import (
-                broadcast_workshop_session_closing,
-            )
-
             await mark_workshop_session_closing(norm)
             await broadcast_workshop_session_closing(norm)
             await asyncio.sleep(0.05)
@@ -251,10 +237,6 @@ async def stop_online_collab_for_room_idle_impl(
                 await db.rollback()
                 return False
 
-            from services.online_collab.core.online_collab_manager import (
-                get_online_collab_manager,
-            )
-
             redis_ok = True
             try:
                 await get_online_collab_manager().destroy_session(
@@ -262,7 +244,7 @@ async def stop_online_collab_for_room_idle_impl(
                     reason="idle",
                     diagram_id=diagram_id,
                 )
-            except (RedisError, OSError, RuntimeError, TypeError) as redis_exc:
+            except REDIS_ERRORS as redis_exc:
                 redis_ok = False
                 logger.error(
                     "[OnlineCollabMgr] Idle-stop destroy_session Redis failure code=%s diagram=%s: %s",
@@ -298,7 +280,7 @@ async def stop_online_collab_for_room_idle_impl(
             )
             return True
 
-        except (SQLAlchemyError, OSError, RedisError) as exc:
+        except DATABASE_ERRORS as exc:
             logger.error(
                 "[OnlineCollabMgr] Error idle-stopping workshop: %s",
                 exc,

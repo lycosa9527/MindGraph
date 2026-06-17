@@ -19,44 +19,44 @@ import time
 from datetime import UTC, datetime
 from typing import Optional
 
-from jose import jwt, JWTError
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
+from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from fastapi import APIRouter, Depends, Request, Response, Header, HTTPException, status
-
 from config.database import get_async_db
-from models import User, Messages, get_request_language, Language
+from models import Language, Messages, User, get_request_language
 from models.requests.requests_auth import UpdateProfileNameRequest
 from services.auth.vpn_geo_enforcement import record_vpn_refresh_last_ip
-
-_record_vpn_refresh_last_ip = record_vpn_refresh_last_ip
-from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.cache.redis_org_cache import org_cache
-from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
-from services.redis.session.redis_session_manager import (
-    get_session_manager,
-    get_refresh_token_manager,
-)
 from services.redis.cache.redis_user_cache import user_cache
-from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
+from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
+from services.redis.redis_activity_tracker import get_activity_tracker
+from services.redis.session.redis_session_manager import (
+    get_refresh_token_manager,
+    get_session_manager,
+)
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 from utils.auth import (
-    get_current_user,
-    get_user_role,
-    is_https,
-    get_client_ip,
+    ACCESS_TOKEN_EXPIRY_MINUTES,
+    JWT_ALGORITHM,
+    compute_device_hash,
     create_access_token,
     create_refresh_token,
-    hash_refresh_token,
-    compute_device_hash,
-    ACCESS_TOKEN_EXPIRY_MINUTES,
+    get_client_ip,
+    get_current_user,
     get_jwt_secret,
-    JWT_ALGORITHM,
+    get_user_role,
+    hash_refresh_token,
+    is_https,
 )
+from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 
 from .dependencies import get_language_dependency
 from .helpers import set_auth_cookies
 from .org_profile import organization_session_payload
+
+_record_vpn_refresh_last_ip = record_vpn_refresh_last_ip
 
 logger = logging.getLogger(__name__)
 
@@ -301,14 +301,14 @@ async def get_me(current_user: User = Depends(get_current_user)):
         try:
             if current_user.organization_id:
                 org = await org_cache.get_by_id(current_user.organization_id)
-        except Exception as org_error:
+        except BACKGROUND_INFRA_ERRORS as org_error:
             logger.warning("Error getting organization from cache: %s", org_error, exc_info=True)
             # Continue without org - not critical
 
         # Determine user role
         try:
             role = get_user_role(current_user)
-        except Exception as role_error:
+        except BACKGROUND_INFRA_ERRORS as role_error:
             logger.error("Error determining user role: %s", role_error, exc_info=True)
             role = "teacher"  # Default fallback
 
@@ -329,7 +329,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
             "match_prompt_to_ui": getattr(current_user, "match_prompt_to_ui", True),
             "allows_simplified_chinese": getattr(current_user, "allows_simplified_chinese", True),
         }
-    except Exception as me_error:
+    except BACKGROUND_INFRA_ERRORS as me_error:
         logger.error("Error in /me endpoint: %s", me_error, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -357,7 +357,7 @@ async def patch_profile(
     user.name = body.name
     try:
         await db.commit()
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         await db.rollback()
         logger.error("[Auth] profile patch commit failed: %s", exc, exc_info=True)
         raise HTTPException(
@@ -369,7 +369,7 @@ async def patch_profile(
         await user_cache.invalidate(
             int(user.id), phone=str(user.phone) if user.phone else None, email=str(user.email) if user.email else None
         )
-    except Exception as inv_exc:
+    except REDIS_ERRORS as inv_exc:
         logger.warning("[Auth] user cache invalidation after profile: %s", inv_exc)
     return {"ok": True, "name": user.name}
 
@@ -451,7 +451,7 @@ async def get_session_status(
             token_hash[:8],
         )
         return {"status": "active"}
-    except Exception as status_error:
+    except BACKGROUND_INFRA_ERRORS as status_error:
         logger.error("Error checking session status: %s", status_error, exc_info=True)
         # On error, assume session is active (fail-open)
         return {"status": "active"}
@@ -493,7 +493,7 @@ async def logout(
             token_hint,
         )
         await session_manager.delete_session(current_user.id, token=token)
-    except Exception as delete_error:
+    except BACKGROUND_INFRA_ERRORS as delete_error:
         logger.info(
             "[TokenAudit] Logout session delete failed: user=%s, error=%s",
             current_user.id,
@@ -519,7 +519,7 @@ async def logout(
                 "[TokenAudit] Logout: no refresh token cookie to revoke: user=%s",
                 current_user.id,
             )
-    except Exception as revoke_error:
+    except BACKGROUND_INFRA_ERRORS as revoke_error:
         logger.info(
             "[TokenAudit] Logout refresh token revoke failed: user=%s, error=%s",
             current_user.id,
@@ -541,7 +541,7 @@ async def logout(
     try:
         tracker = get_activity_tracker()
         await tracker.end_session(user_id=current_user.id)
-    except Exception as tracker_error:
+    except BACKGROUND_INFRA_ERRORS as tracker_error:
         logger.debug("Failed to end user session on logout: %s", tracker_error)
 
     logger.info(

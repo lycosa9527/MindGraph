@@ -2,6 +2,8 @@
 
 from fastapi import FastAPI
 
+from services.mcp.mindgraph_mcp import get_mindgraph_mcp
+
 
 def mount_mindgraph_mcp(app: FastAPI) -> None:
     """
@@ -10,7 +12,5 @@ def mount_mindgraph_mcp(app: FastAPI) -> None:
     Lifespan: the Starlette sub-app runs StreamableHTTPSessionManager; FastAPI propagates
     mounted application lifespan in supported versions.
     """
-    from services.mcp.mindgraph_mcp import get_mindgraph_mcp
-
     mcp = get_mindgraph_mcp()
     app.mount("/api/mcp", mcp.streamable_http_app())

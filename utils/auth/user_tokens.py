@@ -11,30 +11,36 @@ from typing import Optional
 from fastapi import HTTPException, Request, status
 from sqlalchemy import select
 
-from utils.db.session_open import system_rls_session, user_rls_session
 from models.domain.auth import User
 from models.domain.messages import Messages, get_request_language
 from models.domain.user_api_token import UserAPIToken
 from services.redis.cache.redis_user_token_cache import user_token_cache
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+
+try:
+    from services.redis.cache.redis_org_cache import org_cache
+    from services.redis.cache.redis_user_cache import user_cache
+except ImportError:
+    org_cache = None
+    user_cache = None
+
 from utils.auth.org_subscription import ensure_org_subscription_current
+from utils.auth.request_helpers import get_client_ip
 from utils.auth.school_tier import TIER_FEATURE_API_TOKEN, user_has_school_tier_feature
+from utils.db.session_open import system_rls_session, user_rls_session
 
 logger = logging.getLogger(__name__)
 
 _redis = SimpleNamespace(available=False, user_cache=None, org_cache=None)
 
-try:
-    from services.redis.cache.redis_user_cache import user_cache
-    from services.redis.cache.redis_org_cache import org_cache
-
+if user_cache is not None:
     _redis.available = True
     _redis.user_cache = user_cache
     _redis.org_cache = org_cache
-except ImportError:
-    pass
 
 
 async def _load_user(user_id: int) -> Optional[User]:
+    """Load user."""
     if _redis.available and _redis.user_cache:
         user = await _redis.user_cache.get_by_id(int(user_id))
         if user:
@@ -48,6 +54,7 @@ async def _load_user(user_id: int) -> Optional[User]:
 
 
 async def _check_org_access_async(user: User) -> None:
+    """Check org access async."""
     if not user.organization_id:
         return
     if not _redis.available or not _redis.org_cache:
@@ -71,8 +78,6 @@ def _log_mgat_audit(request: Optional[Request], user_id: int) -> None:
     if getattr(request.state, "_mgat_audit_logged", False):
         return
     setattr(request.state, "_mgat_audit_logged", True)
-    from utils.auth.request_helpers import get_client_ip
-
     raw_client = (request.headers.get("X-MG-Client") or "").strip()
     client = raw_client[:64] if raw_client else "unspecified"
     ip = get_client_ip(request)
@@ -131,7 +136,7 @@ async def validate_user_token(
             record.last_used_at = datetime.now(UTC)
             try:
                 await db.commit()
-            except Exception:
+            except BACKGROUND_INFRA_ERRORS:
                 await db.rollback()
                 logger.debug("[UserToken] last_used_at update failed", exc_info=True)
 

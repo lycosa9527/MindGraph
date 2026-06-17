@@ -22,6 +22,7 @@ async def apply_agreement_notify(
     params: Mapping[str, Any],
     cfg: AlipayEnvConfig,
 ) -> str:
+    """Apply agreement notify."""
     if not verify_async_notify(params, cfg.alipay_public_key):
         logger.warning("[Markets] Agreement notify rejected: bad signature")
         return "fail"
@@ -39,6 +40,7 @@ async def apply_agreement_notify(
 
 
 async def _apply_user_sign(session: AsyncSession, params: Mapping[str, Any]) -> str:
+    """Apply user sign."""
     status = (get_notify_str(params, "status") or "").upper()
     if status and status != "NORMAL":
         return "success"
@@ -75,6 +77,7 @@ async def _apply_user_sign(session: AsyncSession, params: Mapping[str, Any]) -> 
 
 
 async def _apply_user_unsign(session: AsyncSession, params: Mapping[str, Any]) -> str:
+    """Apply user unsign."""
     agreement_no = get_notify_str(params, "agreement_no")
     external_agreement_no = get_notify_str(params, "external_agreement_no")
     repo = MarketSubscriptionRepository(session)

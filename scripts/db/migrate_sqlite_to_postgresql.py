@@ -40,18 +40,39 @@ All Rights Reserved
 Proprietary License
 """
 
+try:
+    from _path_setup import project_root
+except ModuleNotFoundError:
+    from scripts.db._path_setup import project_root
+
 import argparse
 import json
 import logging
+import os
 import sqlite3
 import sys
-import os
 from pathlib import Path
 from typing import Optional
 
-# Add project root to path
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
+from services.utils.error_types import DATABASE_ERRORS
+
+try:
+    from services.infrastructure.process.process_manager import start_postgresql_server
+    from services.infrastructure.utils.dependency_checker import (
+        check_postgresql_installed,
+    )
+
+    POSTGRESQL_STARTUP_AVAILABLE = True
+except ImportError:
+    POSTGRESQL_STARTUP_AVAILABLE = False
+
+    def check_postgresql_installed() -> tuple[bool, str]:
+        """Report that PostgreSQL startup helpers are unavailable."""
+        return False, "PostgreSQL startup helpers unavailable"
+
+    def start_postgresql_server():
+        """No-op when PostgreSQL startup helpers are unavailable."""
+        return None
 
 # Set up environment
 os.environ.setdefault("PYTHONPATH", str(project_root))
@@ -59,6 +80,7 @@ os.environ.setdefault("PYTHONPATH", str(project_root))
 # Load .env file if it exists (before importing migration module)
 try:
     from dotenv import load_dotenv
+
     from utils.env_utils import ensure_utf8_env_file
 
     # Ensure .env file is UTF-8 encoded before loading
@@ -71,7 +93,7 @@ try:
 except ImportError:
     # python-dotenv not available, skip .env loading
     pass
-except Exception as e:
+except DATABASE_ERRORS as e:
     # If .env loading fails, continue anyway (might not exist)
     print(f"[WARNING] Could not load .env file: {e}")
 
@@ -111,39 +133,21 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 try:
-    from utils.migration.sqlite_to_postgresql.data_migration import (
-        migrate_sqlite_to_postgresql,
-    )
     from utils.migration.sqlite.migration_utils import (
+        MIGRATION_MARKER_FILE,
         get_sqlite_db_path,
         is_migration_completed,
         is_postgresql_empty,
-        MIGRATION_MARKER_FILE,
     )
     from utils.migration.sqlite.migration_verification import verify_migration
+    from utils.migration.sqlite_to_postgresql.data_migration import (
+        migrate_sqlite_to_postgresql,
+    )
 except ImportError as e:
     print(f"[ERROR] Failed to import migration module: {e}")
     print("\nRequired dependencies:")
     print("  - psycopg2-binary: pip install psycopg2-binary")
     sys.exit(1)
-
-# Import PostgreSQL startup functions
-try:
-    from services.infrastructure.utils.dependency_checker import (
-        check_postgresql_installed,
-    )
-    from services.infrastructure.process.process_manager import start_postgresql_server
-
-    POSTGRESQL_STARTUP_AVAILABLE = True
-except ImportError:
-    POSTGRESQL_STARTUP_AVAILABLE = False
-    logger.warning("[Migration] PostgreSQL startup functions not available - PostgreSQL must be started manually")
-
-    def check_postgresql_installed() -> tuple[bool, str]:
-        return False, "PostgreSQL startup helpers unavailable"
-
-    def start_postgresql_server():
-        return None
 
 
 def ensure_postgresql_running() -> bool:
@@ -183,7 +187,7 @@ def ensure_postgresql_running() -> bool:
         print("[ERROR] Failed to start PostgreSQL server")
         print("        Please check PostgreSQL logs and ensure PostgreSQL can be started")
         return False
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         print(f"[ERROR] Failed to start PostgreSQL: {e}")
         return False
 
@@ -209,7 +213,7 @@ def check_migration_status() -> None:
                 if stats:
                     print(f"  Tables migrated: {stats.get('tables_migrated', 0)}")
                     print(f"  Total records: {stats.get('total_records', 0)}")
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 print(f"  (Could not read marker file details: {e})")
         print()
         return
@@ -263,7 +267,7 @@ def check_migration_status() -> None:
             if empty_error:
                 print(f"  Reason: {empty_error}")
             print("  Use --force flag to force migration (DANGEROUS)")
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         error_msg = str(e)
         if "password authentication failed" in error_msg.lower():
             print("  ⚠️  Authentication failed - PostgreSQL credentials don't match")
@@ -348,7 +352,7 @@ def verify_existing_migration() -> None:
             print("\n✗ Migration verification failed!")
             sys.exit(1)
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         print(f"[ERROR] Verification failed: {e}")
         logger.exception("Verification error")
         sys.exit(1)
@@ -393,7 +397,7 @@ def run_migration(
         except sqlite3.DatabaseError as e:
             print(f"[ERROR] File at {sqlite_path_override} is not a valid SQLite database: {e}")
             sys.exit(1)
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             print(f"[ERROR] Could not validate SQLite database at {sqlite_path_override}: {e}")
             sys.exit(1)
 
@@ -424,7 +428,7 @@ def run_migration(
     except sqlite3.DatabaseError as e:
         print(f"[ERROR] File at {sqlite_path} is not a valid SQLite database: {e}")
         sys.exit(1)
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         print(f"[ERROR] Could not validate SQLite database at {sqlite_path}: {e}")
         sys.exit(1)
 
@@ -457,7 +461,7 @@ def run_migration(
                 print("  Migration will not proceed to prevent data loss.")
                 print("  Use --force flag to override (DANGEROUS - will not delete existing data)")
                 sys.exit(1)
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             print(f"[ERROR] Failed to check PostgreSQL: {e}")
             sys.exit(1)
 
@@ -521,7 +525,7 @@ def run_migration(
         print("\n✓ Migration process completed")
         print()
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         print(f"[ERROR] Migration failed with exception: {e}")
         logger.exception("Migration error")
         sys.exit(1)

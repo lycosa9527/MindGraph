@@ -46,6 +46,7 @@ _MINDBOT_QPS_LIMITER_MAX_KEYS_DEFAULT = 500
 
 
 def _qps_limiter_max_keys() -> int:
+    """Qps limiter max keys."""
     return max(10, env_int("MINDBOT_QPS_LIMITER_MAX_KEYS", _MINDBOT_QPS_LIMITER_MAX_KEYS_DEFAULT))
 
 
@@ -58,10 +59,11 @@ class _AsyncSlidingWindowLimiter:
     """
 
     def __init__(self, max_calls: int, window_seconds: float) -> None:
+        """ init  ."""
         self._max_calls = max(1, max_calls)
         self._window = max(0.001, window_seconds)
-        self._cfg_max_calls = max_calls
-        self._cfg_window_ms = int(window_seconds * 1000)
+        self.cfg_max_calls = max_calls
+        self.cfg_window_ms = int(window_seconds * 1000)
         self._lock = asyncio.Lock()
         self._times: list[float] = []
         self._waiters: collections.deque[asyncio.Event] = collections.deque()
@@ -72,6 +74,7 @@ class _AsyncSlidingWindowLimiter:
             self._waiters[0].set()
 
     async def acquire(self) -> None:
+        """Acquire."""
         loop = asyncio.get_running_loop()
         event: Optional[asyncio.Event] = None
 
@@ -181,9 +184,10 @@ async def acquire_dingtalk_streaming_qps_slot(app_key: str) -> None:
                     evicted_key[-6:] if len(evicted_key) > 6 else evicted_key,
                     max_keys,
                 )
-            _limiters[key] = _AsyncSlidingWindowLimiter(max_calls, window_s)
-            _limiters[key]._cfg_max_calls = max_calls
-            _limiters[key]._cfg_window_ms = window_ms
+            limiter = _AsyncSlidingWindowLimiter(max_calls, window_s)
+            limiter.cfg_max_calls = max_calls
+            limiter.cfg_window_ms = window_ms
+            _limiters[key] = limiter
             logger.debug(
                 "[MindBot] dingtalk_streaming_qps_limiter_created app_key_tail=%s max=%s window_ms=%s",
                 key[-6:] if len(key) > 6 else key,
@@ -193,8 +197,8 @@ async def acquire_dingtalk_streaming_qps_slot(app_key: str) -> None:
         else:
             _limiters.move_to_end(key)
             stored = _limiters[key]
-            prev_max = getattr(stored, "_cfg_max_calls", None)
-            prev_ms = getattr(stored, "_cfg_window_ms", None)
+            prev_max = stored.cfg_max_calls
+            prev_ms = stored.cfg_window_ms
             if prev_max is not None and prev_ms is not None:
                 if prev_max != max_calls or prev_ms != window_ms:
                     logger.warning(

@@ -20,7 +20,6 @@ from services.features.workshop_chat.seed_data_stem_math import (
     STEM_GROUP,
 )
 
-
 # ── Global announce channel ──────────────────────────────────────
 
 ANNOUNCE_CHANNEL: Dict[str, Any] = {

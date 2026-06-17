@@ -35,13 +35,14 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.pool import NullPool
 
 from config.database import DATABASE_URL, libpq_database_url
-from services.utils.pg_client_binaries import find_pg_client_binary
 from services.admin.pg_merge_tables import (
     SKIP_TABLES,
     merge_table,
     ordered_table_names,
     reset_all_sequences,
 )
+from services.utils.error_types import DATABASE_ERRORS
+from services.utils.pg_client_binaries import find_pg_client_binary
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +88,7 @@ def _create_staging_db() -> str:
         with psycopg.connect(_admin_url(), autocommit=True) as conn:
             with conn.cursor() as cur:
                 cur.execute(psycopg_sql.SQL("CREATE DATABASE {}").format(psycopg_sql.Identifier(staging_name)))
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         if "permission denied" in str(exc).lower():
             raise PermissionError(
                 "The database user lacks CREATEDB privilege. "
@@ -157,7 +158,7 @@ def _drop_staging_db(staging_url: str) -> None:
                 )
                 cur.execute(psycopg_sql.SQL("DROP DATABASE IF EXISTS {}").format(psycopg_sql.Identifier(staging_name)))
         logger.info("[PGMerge] Dropped staging database: %s", staging_name)
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.warning(
             "[PGMerge] Failed to drop staging database %s: %s",
             staging_name,
@@ -227,7 +228,7 @@ def _count_tables(engine: Engine) -> Dict[str, int]:
             try:
                 result = conn.execute(text(f'SELECT COUNT(*) FROM "{table}"'))
                 counts[table] = result.scalar() or 0
-            except Exception:
+            except DATABASE_ERRORS:
                 conn.rollback()
                 counts[table] = -1
     return counts
@@ -360,7 +361,7 @@ def merge_pg_dump(
             )
         return response
 
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.error("[PGMerge] Merge failed: %s", exc, exc_info=True)
         return {"success": False, "error": str(exc)[:500]}
     finally:

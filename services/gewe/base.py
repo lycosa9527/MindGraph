@@ -9,31 +9,30 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Optional, Set
+import json
 import logging
 import os
-import json
 from pathlib import Path
+from typing import Optional, Set
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from clients.gewe import AsyncGeweClient
 from clients.dify import AsyncDifyClient
-
+from clients.gewe import AsyncGeweClient
 from services.gewe.account import AccountServiceMixin
-from services.gewe.message import MessageServiceMixin
+from services.gewe.collection import CollectionServiceMixin
+from services.gewe.contact import ContactServiceMixin
+from services.gewe.contact_db import GeweContactDB
 from services.gewe.download import DownloadServiceMixin
 from services.gewe.group import GroupServiceMixin
-from services.gewe.contact import ContactServiceMixin
-from services.gewe.personal import PersonalServiceMixin
-from services.gewe.tag import TagServiceMixin
-from services.gewe.collection import CollectionServiceMixin
-from services.gewe.sns import SNSServiceMixin
-from services.gewe.video_channel import VideoChannelServiceMixin
-from services.gewe.message_db import GeweMessageDB
-from services.gewe.contact_db import GeweContactDB
 from services.gewe.group_member_db import GeweGroupMemberDB
-
+from services.gewe.message import MessageServiceMixin
+from services.gewe.message_db import GeweMessageDB
+from services.gewe.personal import PersonalServiceMixin
+from services.gewe.sns import SNSServiceMixin
+from services.gewe.tag import TagServiceMixin
+from services.gewe.video_channel import VideoChannelServiceMixin
+from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +95,7 @@ class GeweService(
         if self._gewe_client:
             try:
                 await self._gewe_client.close()
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 logger.warning("Error during Gewe client cleanup: %s", e, exc_info=True)
             finally:
                 self._gewe_client = None
@@ -123,7 +122,7 @@ class GeweService(
             with open(GEWE_LOGIN_INFO_PATH, "w", encoding="utf-8") as f:
                 json.dump(login_info, f, indent=2, ensure_ascii=False)
             logger.info("Saved gewe login info: app_id=%s, wxid=%s", app_id, wxid)
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Error saving gewe login info: %s", e, exc_info=True)
 
     def _load_login_info(self) -> Optional[dict]:
@@ -133,7 +132,7 @@ class GeweService(
                 return None
             with open(GEWE_LOGIN_INFO_PATH, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Error loading gewe login info: %s", e, exc_info=True)
             return None
 
@@ -150,7 +149,7 @@ class GeweService(
                 logger.info("Reset device ID: deleted login info file (app_id and wxid cleared)")
             else:
                 logger.info("Reset device ID: login info file does not exist")
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Error resetting device ID: %s", e, exc_info=True)
             raise
 
@@ -168,7 +167,7 @@ class GeweService(
                 device_type,
                 auto_sliding,
             )
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Error saving gewe preferences: %s", e, exc_info=True)
 
     def get_preferences(self) -> dict:
@@ -189,7 +188,7 @@ class GeweService(
             if "auto_sliding" in preferences:
                 result["auto_sliding"] = preferences["auto_sliding"]
             return result
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Error loading gewe preferences: %s", e, exc_info=True)
             return {"region_id": "110000", "device_type": "ipad", "auto_sliding": False}
 

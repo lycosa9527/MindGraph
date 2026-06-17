@@ -17,13 +17,13 @@ from typing import Any, Callable, Coroutine, Dict, List, Optional
 
 from redis.exceptions import RedisError
 
-from services.redis.redis_async_client import get_async_redis
 from services.online_collab.redis.online_collab_redis_keys import (
     participants_key,
     registry_global_org_key,
     registry_org_key,
     session_meta_key,
 )
+from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
 

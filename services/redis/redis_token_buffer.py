@@ -8,24 +8,25 @@ to per-worker memory buffer. Key schema: tokens:stream -> Redis Stream,
 tokens:stats -> hash of total_written, total_dropped, batches.
 """
 
-from datetime import UTC, datetime
-from typing import Awaitable, Optional, Dict, Any, List, Tuple, cast
 import asyncio
 import logging
 import os
 import threading
 import time
+from datetime import UTC, datetime
+from typing import Any, Awaitable, Dict, List, Optional, Tuple, cast
 
 import orjson
 from sqlalchemy import insert as sa_insert
 
 from config.database import check_disk_space
-from utils.db.session_open import system_rls_session
 from models.domain.token_usage import TokenUsage
 from services.redis import keys as _keys
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import _RedisCapabilities, is_redis_available
 from services.teacher_usage_stats import compute_and_upsert_user_usage_stats_async
+from services.utils.error_types import REDIS_ERRORS
+from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +92,7 @@ class RedisTokenBuffer:
     }
 
     def __init__(self):
+        """ init  ."""
         self._enabled = os.getenv("TOKEN_TRACKER_ENABLED", "true").lower() == "true"
         self._worker_task: Optional[asyncio.Task] = None
         self._initialized = False
@@ -132,7 +134,7 @@ class RedisTokenBuffer:
                 CONSUMER_GROUP,
                 STREAM_KEY,
             )
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             if "BUSYGROUP" not in str(exc):
                 logger.warning("[TokenBuffer] Could not create consumer group: %s", exc)
         return True
@@ -193,7 +195,7 @@ class RedisTokenBuffer:
             except asyncio.CancelledError:
                 logger.debug("[TokenBuffer] Flush worker cancelled")
                 break
-            except Exception as e:
+            except REDIS_ERRORS as e:
                 logger.error("[TokenBuffer] Flush worker error: %s", e, exc_info=True)
                 await asyncio.sleep(5)
 
@@ -210,7 +212,7 @@ class RedisTokenBuffer:
             try:
                 redis = get_async_redis()
                 return int(await redis.xlen(STREAM_KEY) or 0)
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logger.debug("Token buffer stream length check failed: %s", exc)
 
         with self._memory_lock:
@@ -236,7 +238,7 @@ class RedisTokenBuffer:
                     logger.error("[TokenBuffer] Insufficient disk space - records dropped")
                     self._total_dropped += record_count
                     return
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logger.debug("Token buffer disk space check failed: %s", exc)
 
             async with system_rls_session() as db:
@@ -267,7 +269,7 @@ class RedisTokenBuffer:
                     for uid in user_ids:
                         try:
                             await compute_and_upsert_user_usage_stats_async(uid, db)
-                        except Exception as stats_err:
+                        except REDIS_ERRORS as stats_err:
                             logger.debug(
                                 "[TokenBuffer] Stats compute failed for user %s: %s",
                                 uid,
@@ -275,16 +277,16 @@ class RedisTokenBuffer:
                             )
                     try:
                         await db.commit()
-                    except Exception as commit_err:
+                    except REDIS_ERRORS as commit_err:
                         await db.rollback()
                         logger.warning("[TokenBuffer] Stats commit failed: %s", commit_err)
 
-                except Exception as exc:
+                except REDIS_ERRORS as exc:
                     await db.rollback()
                     self._total_dropped += record_count
                     logger.error("[TokenBuffer] Database write failed: %s", exc)
 
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             self._total_dropped += record_count
             logger.error("[TokenBuffer] Flush failed: %s", exc)
 
@@ -316,7 +318,7 @@ class RedisTokenBuffer:
                     # With RESP3, parse_xautoclaim raises KeyError inside redis-py
                     # before returning, so that case is caught by the except below.
                     raw_entries: list[tuple[Any, Any]] = pending[1] if pending and len(pending) > 1 else []
-                except Exception:
+                except REDIS_ERRORS:
                     raw_entries = []
 
                 if raw_entries:
@@ -346,7 +348,7 @@ class RedisTokenBuffer:
                             await self._ack_records(dead_letters)
                             dead_set = set(dead_letters)
                             raw_entries = [(eid, fields) for eid, fields in raw_entries if eid not in dead_set]
-                    except Exception as dlq_exc:
+                    except REDIS_ERRORS as dlq_exc:
                         logger.debug("[TokenBuffer] Dead-letter check failed: %s", dlq_exc)
 
                 remaining = count - len(raw_entries)
@@ -380,7 +382,7 @@ class RedisTokenBuffer:
                         if "created_at" in record and isinstance(record["created_at"], str):
                             record["created_at"] = datetime.fromisoformat(record["created_at"])
                         records.append((entry_id, record))
-                    except Exception as exc:
+                    except REDIS_ERRORS as exc:
                         logger.warning(
                             "[TokenBuffer] Dropping unparseable stream entry %s: %s",
                             entry_id,
@@ -392,7 +394,7 @@ class RedisTokenBuffer:
                     await self._ack_records(poison_ids)
 
                 return records
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logger.error(
                     "[TokenBuffer] Redis stream read failed: %s: %s",
                     type(exc).__name__,
@@ -412,7 +414,7 @@ class RedisTokenBuffer:
             redis = get_async_redis()
             await redis.xack(STREAM_KEY, CONSUMER_GROUP, *entry_ids)
             await redis.xdel(STREAM_KEY, *entry_ids)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning("[TokenBuffer] Stream ack failed: %s", exc)
 
     async def _update_stats(self, count: int) -> None:
@@ -425,7 +427,7 @@ class RedisTokenBuffer:
                 pipe.hincrby(STATS_KEY, "total_written", count)
                 pipe.hincrby(STATS_KEY, "total_batches", 1)
                 await pipe.execute()
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug("Token buffer stats update failed: %s", exc)
 
     async def track_usage(
@@ -503,7 +505,7 @@ class RedisTokenBuffer:
 
             return await self._push_record(record)
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("[TokenBuffer] Failed to buffer record: %s", e)
             return False
 
@@ -544,7 +546,7 @@ class RedisTokenBuffer:
                         approximate=True,
                     )
                 return True
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logger.error("[TokenBuffer] Redis push failed: %s", exc)
 
         with self._memory_lock:
@@ -606,7 +608,7 @@ class RedisTokenBuffer:
                     stats["redis_total_written"] = int(redis_stats.get("total_written", 0))
                     stats["redis_total_batches"] = int(redis_stats.get("total_batches", 0))
                 stats["stream_length"] = int(await redis.xlen(STREAM_KEY) or 0)
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logger.debug("Token buffer stats retrieval failed: %s", exc)
 
         return stats

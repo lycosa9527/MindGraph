@@ -17,9 +17,9 @@ import geoip2.database
 import geoip2.errors
 from fastapi import Request
 
-from utils.auth.connection_types import HttpOrWebSocket
-
 from services.auth.geo_cn_mainland_cookie import GEO_CN_MAINLAND_COOKIE_NAME, verify_geo_cn_mainland_cookie
+from utils.auth import get_client_ip
+from utils.auth.connection_types import HttpOrWebSocket
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,7 @@ _STATE = _GeoReaderState()
 
 
 def _repo_root() -> Path:
+    """Repo root."""
     return Path(__file__).resolve().parent.parent.parent
 
 
@@ -108,8 +109,6 @@ def resolve_country_iso_from_connection(connection: HttpOrWebSocket) -> Optional
     Returns:
         ISO 3166-1 alpha-2 country code, or None if indeterminate.
     """
-    from utils.auth import get_client_ip
-
     cf_raw = connection.headers.get("CF-IPCountry") or connection.headers.get("cf-ipcountry")
     if cf_raw:
         candidate = cf_raw.strip().upper()

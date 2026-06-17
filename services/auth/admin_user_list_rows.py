@@ -16,9 +16,9 @@ from routers.auth.helpers import utc_to_beijing_iso
 from utils.auth.org_subscription import effective_school_tier_for_org
 from utils.auth.role_constants import normalize_role
 from utils.auth.school_tier import (
+    SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED,
     is_unlimited_diagram_limit,
     max_diagrams_for_tier,
-    SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED,
 )
 
 _ACTIVE_SUBSCRIPTION_STATUSES = ("pending", "active", "past_due")
@@ -46,12 +46,14 @@ def _resolve_paid_benefit(
 
 
 def _mask_phone(phone: Optional[str]) -> Optional[str]:
+    """Mask phone."""
     if phone and len(phone) == 11:
         return phone[:3] + "****" + phone[-4:]
     return phone
 
 
-def _max_diagrams_for_user(user: User, org: Optional[Organization]) -> int:
+def _max_diagrams_for_user(_user: User, org: Optional[Organization]) -> int:
+    """Max diagrams for user."""
     if org is None:
         return SCHOOL_TIER_DIAGRAM_LIMIT_UNLIMITED
     tier = effective_school_tier_for_org(org)
@@ -78,6 +80,7 @@ def diagram_quota_from_count(
 
 
 async def diagram_quota_for_user(db: AsyncSession, user_id: int) -> dict[str, int]:
+    """Diagram quota for user."""
     counts = await _diagram_counts_by_user(db, [user_id])
     return diagram_quota_from_count(counts.get(user_id, 0))
 
@@ -110,6 +113,7 @@ async def _diagram_counts_by_user(
     db: AsyncSession,
     user_ids: Sequence[int],
 ) -> dict[int, int]:
+    """Diagram counts by user."""
     if not user_ids:
         return {}
     stmt = (

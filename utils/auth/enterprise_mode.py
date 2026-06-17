@@ -19,27 +19,27 @@ from datetime import UTC, datetime
 from fastapi import HTTPException, status
 from sqlalchemy import select
 
+from models.domain.auth import Organization, User
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+
+try:
+    from services.redis.cache.redis_org_cache import org_cache
+    from services.redis.cache.redis_user_cache import user_cache
+except ImportError:
+    org_cache = None
+    user_cache = None
+
 from utils.db.session_open import system_rls_session
-from models.domain.auth import User, Organization
+
 from .config import ENTERPRISE_DEFAULT_ORG_CODE, ENTERPRISE_DEFAULT_USER_PHONE
 from .password import hash_password
 
 logger = logging.getLogger(__name__)
 
 # Redis modules (optional)
-_redis_available = False
-_org_cache = None
-_user_cache = None
-
-try:
-    from services.redis.cache.redis_org_cache import org_cache
-    from services.redis.cache.redis_user_cache import user_cache
-
-    _redis_available = True
-    _org_cache = org_cache
-    _user_cache = user_cache
-except ImportError:
-    pass
+_redis_available = org_cache is not None and user_cache is not None
+_org_cache = org_cache
+_user_cache = user_cache
 
 
 async def get_enterprise_user() -> User:
@@ -79,7 +79,7 @@ async def get_enterprise_user() -> User:
             try:
                 await db.commit()
                 await db.refresh(user)
-            except Exception:
+            except BACKGROUND_INFRA_ERRORS:
                 await db.rollback()
                 raise
             logger.info("Created enterprise mode user")

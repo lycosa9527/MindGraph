@@ -32,12 +32,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
-from sqlalchemy.sql.functions import count as sa_count
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import count as sa_count
 
 from clients.tts_realtime_client import AudioFormat, SessionMode, TTSRealtimeClient
 from config.database import get_async_db
-from utils.db.session_open import user_rls_session
 from models.domain.debateverse import DebateMessage, DebateParticipant, DebateSession
 from prompts.debateverse import get_position_generation_prompt
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
@@ -45,8 +44,9 @@ from services.features.dashscope_tts import get_tts_service
 from services.features.debateverse_service import DebateVerseService
 from services.llm import llm_service
 from services.llm.llm_utils import stream_enable_thinking
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user
-
+from utils.db.session_open import user_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -239,7 +239,7 @@ async def stream_debater_response(
                         model,
                         voice,
                     )
-                except Exception as tts_init_error:
+                except BACKGROUND_INFRA_ERRORS as tts_init_error:
                     logger.error(
                         "[DEBATEVERSE] TTS initialization error: %s",
                         tts_init_error,
@@ -295,7 +295,7 @@ async def stream_debater_response(
                             await tts_client.commit_text()
                             tts_pending_commit = False
                             logger.debug("[DEBATEVERSE] TTS committed text buffer")
-                    except Exception as tts_error:
+                    except BACKGROUND_INFRA_ERRORS as tts_error:
                         logger.warning("[DEBATEVERSE] TTS append error: %s", tts_error)
 
             async for chunk in llm_service.chat_stream(
@@ -321,7 +321,7 @@ async def stream_debater_response(
                                 await tts_client.wait_for_session_created()
                                 tts_started = True
                                 logger.info("[DEBATEVERSE] TTS streaming started")
-                            except Exception as tts_start_error:
+                            except BACKGROUND_INFRA_ERRORS as tts_start_error:
                                 logger.error(
                                     "[DEBATEVERSE] TTS start error: %s",
                                     tts_start_error,
@@ -370,7 +370,7 @@ async def stream_debater_response(
                             break
 
                     await tts_client.close()
-                except Exception as tts_finish_error:
+                except DATABASE_ERRORS as tts_finish_error:
                     logger.error(
                         "[DEBATEVERSE] TTS finish error: %s",
                         tts_finish_error,
@@ -417,7 +417,7 @@ async def stream_debater_response(
                         message.audio_url = f"/static/debateverse_audio/{audio_filename}"
                         try:
                             await db.commit()
-                        except Exception as commit_err:
+                        except DATABASE_ERRORS as commit_err:
                             await db.rollback()
                             logger.error("[DEBATEVERSE] Failed to save audio_url: %s", commit_err)
 
@@ -430,21 +430,21 @@ async def stream_debater_response(
                     else:
                         try:
                             await db.commit()
-                        except Exception as commit_err:
+                        except DATABASE_ERRORS as commit_err:
                             await db.rollback()
                             logger.error("[DEBATEVERSE] Failed to commit TTS fallback: %s", commit_err)
                         logger.warning("[DEBATEVERSE] TTS generation failed for message %s", message.id)
-                except Exception as tts_error:
+                except DATABASE_ERRORS as tts_error:
                     logger.error("[DEBATEVERSE] TTS error: %s", tts_error, exc_info=True)
                     try:
                         await db.commit()
-                    except Exception as commit_err:
+                    except DATABASE_ERRORS as commit_err:
                         await db.rollback()
                         logger.error("[DEBATEVERSE] Failed to commit after TTS error: %s", commit_err)
             else:
                 try:
                     await db.commit()
-                except Exception as commit_err:
+                except DATABASE_ERRORS as commit_err:
                     await db.rollback()
                     logger.error("[DEBATEVERSE] Failed to commit message: %s", commit_err)
 
@@ -453,7 +453,7 @@ async def stream_debater_response(
         except asyncio.CancelledError:
             logger.info("[DEBATEVERSE] Stream cancelled for participant %s", participant_id)
             raise
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("[DEBATEVERSE] Streaming error: %s", e, exc_info=True)
             yield f"data: {json.dumps({'type': 'error', 'error': 'Internal server error'})}\n\n"
 
@@ -487,7 +487,7 @@ async def create_session(
             "status": session.status,
             "created_at": session.created_at.isoformat(),
         }
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("Error creating debate session: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to create debate session") from e
 
@@ -642,7 +642,7 @@ async def generate_positions(
         except HTTPException as e:
             logger.warning("[DEBATEVERSE] Position generation rejected: %s", e.detail)
             yield f"data: {json.dumps({'type': 'error', 'error': e.detail})}\n\n"
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[DEBATEVERSE] Position generation error: %s", e, exc_info=True)
             yield f"data: {json.dumps({'type': 'error', 'error': 'Internal server error'})}\n\n"
 
@@ -721,7 +721,7 @@ async def send_user_message(
     db.add(message)
     try:
         await db.commit()
-    except Exception:
+    except DATABASE_ERRORS:
         await db.rollback()
         raise
 
@@ -777,36 +777,35 @@ async def trigger_next(
             "stage": session.current_stage,
             "language": language,
         }
-    else:
-        stage_order = [
-            "setup",
-            "coin_toss",
-            "opening",
-            "rebuttal",
-            "cross_exam",
-            "closing",
-            "judgment",
-            "completed",
-        ]
-        current_index = stage_order.index(session.current_stage) if session.current_stage in stage_order else -1
 
-        if current_index < len(stage_order) - 1:
-            next_stage = stage_order[current_index + 1]
-            return {
-                "action": "advance_stage",
-                "has_next_speaker": False,
-                "stage_complete": True,
-                "next_stage": next_stage,
-                "current_stage": session.current_stage,
-            }
-        else:
-            return {
-                "action": "complete",
-                "has_next_speaker": False,
-                "stage_complete": True,
-                "debate_complete": True,
-                "current_stage": session.current_stage,
-            }
+    stage_order = [
+        "setup",
+        "coin_toss",
+        "opening",
+        "rebuttal",
+        "cross_exam",
+        "closing",
+        "judgment",
+        "completed",
+    ]
+    current_index = stage_order.index(session.current_stage) if session.current_stage in stage_order else -1
+
+    if current_index < len(stage_order) - 1:
+        next_stage = stage_order[current_index + 1]
+        return {
+            "action": "advance_stage",
+            "has_next_speaker": False,
+            "stage_complete": True,
+            "next_stage": next_stage,
+            "current_stage": session.current_stage,
+        }
+    return {
+        "action": "complete",
+        "has_next_speaker": False,
+        "stage_complete": True,
+        "debate_complete": True,
+        "current_stage": session.current_stage,
+    }
 
 
 @router.post("/sessions/{session_id}/stream/{participant_id}")

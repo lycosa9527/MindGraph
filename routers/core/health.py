@@ -9,9 +9,9 @@ Provides endpoints to check the health status of various system components:
 - Application status endpoint
 """
 
-import time
 import asyncio
 import logging
+import time
 from typing import Any, Awaitable, Dict, cast
 
 import psutil
@@ -19,24 +19,33 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy import text
 
+from config.database import DATABASE_URL, async_engine, check_integrity_async, engine
 from config.settings import config
-from config.database import async_engine, check_integrity_async, DATABASE_URL, engine
 from models.domain.auth import User
 from models.responses import DatabaseHealthResponse
+from services.infrastructure.lifecycle.app_runtime import get_uptime_seconds
+from services.infrastructure.monitoring.health_checks import (
+    check_application_health,
+    check_processes_health,
+)
+from services.infrastructure.monitoring.health_checks.processes import (
+    processes_health_payload,
+)
 from services.infrastructure.monitoring.ws_metrics import (
     collab_ws_metrics_alerts,
     get_ws_metrics_snapshot,
     ws_metrics_prometheus_text,
 )
-from services.online_collab.spec.online_collab_live_spec_shutdown import (
-    collab_live_spec_durability_alerts,
-)
 from services.infrastructure.recovery.database_check_state import (
     get_database_check_state_manager,
 )
 from services.llm import llm_service
+from services.online_collab.spec.online_collab_live_spec_shutdown import (
+    collab_live_spec_durability_alerts,
+)
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS, REDIS_ERRORS
 from utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -62,12 +71,12 @@ def _update_overall_status(current_status: str, current_code: int, check_status:
     if check_status == "error" and current_code == 200:
         # First error when system was healthy -> mark as unhealthy with 500
         return "unhealthy", 500
-    elif check_status == "unknown":
+    if check_status == "unknown":
         # Unknown status treated as error for safety
         if current_status == "healthy":
             return "degraded", 503
         return current_status, current_code
-    elif check_status in ("unhealthy", "unavailable", "error"):
+    if check_status in ("unhealthy", "unavailable", "error"):
         # Degrade from healthy, or maintain current degraded/unhealthy state
         if current_status == "healthy":
             return "degraded", 503
@@ -77,20 +86,7 @@ def _update_overall_status(current_status: str, current_code: int, check_status:
 
 async def _check_application_health() -> Dict[str, Any]:
     """Check application health status."""
-    try:
-        # Import app lazily to avoid circular import
-        import main
-
-        app = main.app
-        uptime = time.time() - app.state.start_time if hasattr(app.state, "start_time") else 0
-        return {
-            "status": "healthy",
-            "version": config.version,
-            "uptime_seconds": round(uptime, 1),
-        }
-    except Exception as e:
-        logger.error("Application health check failed: %s", e, exc_info=True)
-        return {"status": "error", "error": str(e)}
+    return await check_application_health()
 
 
 _REDIS_INFO_TTL_S = 5.0
@@ -118,7 +114,7 @@ async def _cached_redis_info(redis_client: Any, section: str) -> Dict[str, Any]:
             return cached[1]
         try:
             data = await redis_client.info(section)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug("Redis INFO(%s) fetch failed: %s", section, exc)
             data = {}
         _redis_info_cache[section] = (time.monotonic(), data or {})
@@ -141,7 +137,7 @@ async def _fetch_redis_hotkeys(redis_client: Any) -> Any:
     """Fetch hot keys using HOTKEYS (Redis >= 8.6). Returns None on older versions."""
     try:
         return await redis_client.execute_command("HOTKEYS")
-    except Exception:
+    except REDIS_ERRORS:
         return None
 
 
@@ -188,7 +184,7 @@ async def _check_redis_health() -> Dict[str, Any]:
     except asyncio.TimeoutError:
         logger.warning("Redis health check timed out")
         return {"status": "error", "error": "Health check timed out"}
-    except Exception as e:
+    except REDIS_ERRORS as e:
         logger.error("Redis health check failed: %s", e, exc_info=True)
         return {"status": "error", "error": str(e)}
 
@@ -242,7 +238,7 @@ async def _check_database_health() -> Dict[str, Any]:
                         size_row = result.fetchone()
                         if size_row:
                             current_stats["size"] = size_row[0] if size_row else "unknown"
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 logger.debug("Failed to get database stats: %s", e)
 
             current_stats["pool"] = _collect_pool_stats(async_engine.pool)
@@ -286,7 +282,7 @@ async def _check_database_health() -> Dict[str, Any]:
             "status": "unavailable",
             "message": "Database check module not available",
         }
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("Database health check failed: %s", e, exc_info=True)
         if check_started:
             await state_manager.complete_check(success=False)
@@ -295,36 +291,7 @@ async def _check_database_health() -> Dict[str, Any]:
 
 async def _check_processes_health() -> Dict[str, Any]:
     """Check process monitor health status."""
-    try:
-        from services.infrastructure.monitoring.process_monitor import (
-            get_process_monitor,
-        )
-
-        process_monitor = get_process_monitor()
-        status = process_monitor.get_status()
-
-        # Determine overall status
-        unhealthy_count = sum(1 for service_status in status.values() if service_status.get("status") == "unhealthy")
-        degraded_count = sum(1 for service_status in status.values() if service_status.get("status") == "degraded")
-
-        overall_status = "healthy"
-        if unhealthy_count > 0:
-            overall_status = "unhealthy"
-        elif degraded_count > 0:
-            overall_status = "degraded"
-
-        return {
-            "status": overall_status,
-            "services": status,
-            "unhealthy_count": unhealthy_count,
-            "degraded_count": degraded_count,
-            "total_services": len(status),
-        }
-    except ImportError:
-        return {"status": "unavailable", "message": "Process monitor not available"}
-    except Exception as e:
-        logger.error("Process health check failed: %s", e, exc_info=True)
-        return {"status": "error", "error": str(e)}
+    return await check_processes_health()
 
 
 async def _check_llm_health() -> Dict[str, Any]:
@@ -363,7 +330,7 @@ async def _check_llm_health() -> Dict[str, Any]:
             "status": "error",
             "error": "Health check timed out (exceeded 30 seconds)",
         }
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("LLM health check failed: %s", e, exc_info=True)
         return {"status": "error", "error": str(e)}
 
@@ -469,7 +436,7 @@ async def redis_health_check(_current_user: User = Depends(get_current_user)):
 
     except asyncio.TimeoutError:
         return {"status": "unhealthy", "message": "Redis health check timed out"}
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         return {"status": "error", "error": str(exc)}
 
 
@@ -486,7 +453,7 @@ def _collect_pool_stats(pool_obj: Any) -> Dict[str, Any]:
         checked_in = pool_obj.checkedin()
         checked_out = pool_obj.checkedout()
         overflow = pool_obj.overflow()
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("[health] pool stats unavailable: %s", exc)
         return {}
 
@@ -516,7 +483,7 @@ async def _async_database_health_check() -> Dict[str, Any]:
                 size_row = result.fetchone()
                 if size_row:
                     current_stats["size"] = size_row[0] if size_row else "unknown"
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.debug("Failed to get database stats: %s", exc)
 
     current_stats["pool"] = _collect_pool_stats(async_engine.pool)
@@ -572,7 +539,7 @@ async def database_health_check(_current_user: User = Depends(get_current_user))
             status_code=503,
             detail="Database health check unavailable",
         ) from exc
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.error("Database health check error: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=500,
@@ -731,36 +698,10 @@ async def processes_health_check(_current_user: User = Depends(get_current_user)
         - 500 Internal Server Error: Health check failed
     """
     try:
-        from services.infrastructure.monitoring.process_monitor import (
-            get_process_monitor,
-        )
-
-        process_monitor = get_process_monitor()
-        status = process_monitor.get_status()
-
-        # Determine overall status
-        unhealthy_count = sum(1 for service_status in status.values() if service_status.get("status") == "unhealthy")
-        degraded_count = sum(1 for service_status in status.values() if service_status.get("status") == "degraded")
-
-        overall_status = "healthy"
-        status_code = 200
-        if unhealthy_count > 0:
-            overall_status = "unhealthy"
-            status_code = 503
-        elif degraded_count > 0:
-            overall_status = "degraded"
-            status_code = 503
-
-        response_data = {
-            "status": overall_status,
-            "services": status,
-            "unhealthy_count": unhealthy_count,
-            "degraded_count": degraded_count,
-            "total_services": len(status),
-            "timestamp": int(time.time()),
-        }
-
-        return JSONResponse(content=response_data, status_code=status_code)
+        payload = processes_health_payload()
+        status_code = int(payload.pop("status_code", 200))
+        payload["timestamp"] = int(time.time())
+        return JSONResponse(content=payload, status_code=status_code)
     except ImportError:
         return JSONResponse(
             content={
@@ -769,7 +710,7 @@ async def processes_health_check(_current_user: User = Depends(get_current_user)
             },
             status_code=503,
         )
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Process health check error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Process health check failed: {str(e)}") from e
 
@@ -777,13 +718,8 @@ async def processes_health_check(_current_user: User = Depends(get_current_user)
 @router.get("/status")
 async def get_status():
     """Application status endpoint with metrics"""
-    # Import app lazily to avoid circular import
-    import main
-
-    app = main.app
-
     memory = psutil.virtual_memory()
-    uptime = time.time() - app.state.start_time if hasattr(app.state, "start_time") else 0
+    uptime = get_uptime_seconds()
 
     return {
         "status": "running",

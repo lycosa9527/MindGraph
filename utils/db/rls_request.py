@@ -8,10 +8,12 @@ from utils.db.rls_context import RlsContext, set_rls_context
 
 
 def bind_public_org_list_rls(request: Request) -> None:
+    """Bind public org list rls."""
     request.state.rls_context = RlsContext.for_public_org_list()
 
 
 def bind_dashboard_rls(request: Request) -> None:
+    """Bind dashboard rls."""
     request.state.rls_context = RlsContext.for_dashboard()
 
 
@@ -20,6 +22,7 @@ def bind_authenticated_rls(
     *,
     allow_global_channels: bool = False,
 ) -> None:
+    """Bind authenticated rls."""
     user = getattr(request.state, "auth_context_user", None)
     if user is not None:
         request.state.rls_context = RlsContext.from_user(
@@ -29,12 +32,14 @@ def bind_authenticated_rls(
 
 
 def bind_panel_superadmin_rls(request: Request, user) -> None:
+    """Bind panel superadmin rls."""
     ctx = RlsContext.panel_superadmin(user)
     request.state.rls_context = ctx
     set_rls_context(ctx)
 
 
 def bind_mindbot_callback_rls(request: Request, *, organization_id: int, callback_token: str) -> None:
+    """Bind mindbot callback rls."""
     request.state.rls_context = RlsContext.for_mindbot_service(
         organization_id=organization_id,
         callback_token=callback_token,

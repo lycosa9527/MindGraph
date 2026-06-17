@@ -22,6 +22,7 @@ from services.online_collab.participant.workshop_join_resume_tokens import (
 )
 from services.online_collab.redis.online_collab_redis_keys import code_to_diagram_key
 from services.redis.redis_async_client import get_async_redis
+from services.utils.error_types import REDIS_ERRORS
 from utils.auth_ws import authenticate_websocket_user
 
 logger = logging.getLogger(__name__)
@@ -88,7 +89,7 @@ async def authenticate_canvas_collab_user(
     if auth_error or user is None:
         try:
             record_ws_auth_failure()
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug("Failed to record auth failure metric: %s", exc)
         logger.warning("[CanvasCollabWS] Auth failed: %s", auth_error or "unknown")
         await websocket.close(code=4001, reason="Authentication failed")

@@ -10,10 +10,11 @@ All Rights Reserved
 Proprietary License
 """
 
-from enum import Enum
-from typing import Dict, Any, Optional, Tuple
 import logging
+from enum import Enum
+from typing import Any, Dict, Optional, Tuple
 
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,7 @@ class DashScopeError(Exception):
         retryable: bool = False,
         retry_after: Optional[int] = None,
     ):
+        """ init  ."""
         self.message = message
         self.error_code = error_code
         self.error_type = error_type
@@ -209,15 +211,15 @@ def _get_user_friendly_message(
     # Status code based messages
     if status_code == 401:
         return "API密钥无效或已过期，请检查配置"
-    elif status_code == 403:
+    if status_code == 403:
         return "访问被拒绝，请检查API密钥权限"
-    elif status_code == 404:
+    if status_code == 404:
         return "模型不存在，请检查模型名称"
-    elif status_code == 429:
+    if status_code == 429:
         return "请求频率过高，请稍后重试"
-    elif status_code == 500:
+    if status_code == 500:
         return "服务内部错误，请稍后重试"
-    elif status_code == 503:
+    if status_code == 503:
         return "服务暂时不可用，请稍后重试"
 
     return default_msg
@@ -240,13 +242,13 @@ def handle_dashscope_response(response, raise_on_error: bool = True) -> Tuple[bo
     try:
         response.raise_for_status()
         return True, None
-    except Exception as original_error:
+    except BACKGROUND_INFRA_ERRORS as original_error:
         # Try to parse error response
         error = None
         try:
             error_data = response.json()
             error = parse_dashscope_error(error_data, response.status_code)
-        except Exception:
+        except BACKGROUND_INFRA_ERRORS:
             # If we can't parse JSON, create generic error
             error = DashScopeError(
                 message=f"HTTP {response.status_code}: {response.text[:200]}",

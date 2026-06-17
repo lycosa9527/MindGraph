@@ -17,8 +17,9 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from utils.db.session_open import user_rls_session
 from models.domain.diagrams import Diagram
+from services.online_collab.core.online_collab_stop import stop_online_collab_impl
+from utils.db.session_open import user_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +40,6 @@ async def stop_other_owner_online_collabs(
     int
         Count of diagrams for which ``stop_online_collab_impl`` returned ``True``.
     """
-    from services.online_collab.core.online_collab_lifecycle import (
-        stop_online_collab_impl,
-    )
-
     ids_to_stop: list[str] = []
     try:
         async with user_rls_session(owner_user_id) as db:

@@ -18,7 +18,8 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 
-from config.database import libpq_database_url
+from config.database import init_db, libpq_database_url
+from services.utils.error_types import DATABASE_ERRORS
 from services.utils.pg_client_binaries import build_pg_dump_cmd, find_pg_client_binary
 from services.utils.pg_restore_prep import wipe_public_schema_before_restore
 
@@ -87,14 +88,14 @@ def get_pg_stats(pg_engine: Engine) -> Dict[str, Any]:
             try:
                 result = conn.execute(text(f'SELECT COUNT(*) FROM "{table}"'))
                 counts[table] = result.scalar() or 0
-            except Exception:
+            except DATABASE_ERRORS:
                 counts[table] = -1
 
     total_columns = 0
     for table in table_names:
         try:
             total_columns += len(pg_inspector.get_columns(table))
-        except Exception:
+        except DATABASE_ERRORS:
             pass
 
     return {
@@ -132,13 +133,13 @@ def _build_manifest(
         for tbl in all_tables:
             try:
                 total_cols += len(pg_inspector.get_columns(tbl))
-            except Exception:
+            except DATABASE_ERRORS:
                 pass
 
         manifest["total_tables"] = len(all_tables)
         manifest["total_columns"] = total_cols
         manifest["total_records"] = sum(v for v in counts.values() if v >= 0)
-    except Exception:
+    except DATABASE_ERRORS:
         pass
 
     return manifest
@@ -264,7 +265,7 @@ def import_postgres_dump(
     try:
         logger.info("[DBImport] Applying Alembic migrations after restore (schema may predate current ORM)")
         _run_alembic_after_pg_restore()
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.error("[DBImport] Post-restore migration failed: %s", exc, exc_info=True)
         return {
             "success": False,
@@ -277,7 +278,7 @@ def import_postgres_dump(
     if pg_engine is not None:
         try:
             _reset_all_sequences(pg_engine)
-        except Exception as exc:
+        except DATABASE_ERRORS as exc:
             logger.debug("[DBImport] Sequence reset failed: %s", exc)
 
     logger.info("[DBImport] Restored %s successfully", filename)
@@ -329,19 +330,18 @@ def _run_alembic_after_pg_restore() -> None:
     dump: we do not inject demo organizations when the restored ``organizations``
     table happens to be empty.
     """
-    from config.database import init_db
-
     init_db(seed_organizations=False)
 
 
 def _get_row_counts(pg_engine: Engine) -> Dict[str, int]:
+    """Get row counts."""
     pg_inspector = inspect(pg_engine)
     counts: Dict[str, int] = {}
     with pg_engine.connect() as conn:
         for table in pg_inspector.get_table_names():
             try:
                 counts[table] = conn.execute(text(f'SELECT COUNT(*) FROM "{table}"')).scalar() or 0
-            except Exception:
+            except DATABASE_ERRORS:
                 pass
     return counts
 
@@ -354,5 +354,5 @@ def _reset_all_sequences(pg_engine: Engine) -> None:
             seq_name = f"{table}_id_seq"
             try:
                 conn.execute(text(f"SELECT setval('{seq_name}', COALESCE((SELECT MAX(id) FROM \"{table}\"), 1))"))
-            except Exception:
+            except DATABASE_ERRORS:
                 pass

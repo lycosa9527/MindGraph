@@ -10,15 +10,14 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Any, Callable, Optional, TypeVar
 import asyncio
 import logging
 import random
-
-
-logger = logging.getLogger(__name__)
+from typing import Any, Callable, Optional, TypeVar
 
 T = TypeVar("T")
+
+logger = logging.getLogger(__name__)
 
 
 class LLMServiceError(Exception):
@@ -51,6 +50,7 @@ class LLMProviderError(LLMServiceError):
         error_code: Optional[str] = None,
         user_message: Optional[str] = None,
     ):
+        """ init  ."""
         super().__init__(message)
         self.provider = provider
         self.error_code = error_code
@@ -76,6 +76,7 @@ class LLMInvalidParameterError(LLMProviderError):
         error_code: Optional[str] = None,
         provider: Optional[str] = None,
     ):
+        """ init  ."""
         super().__init__(message, provider=provider, error_code=error_code)
         self.parameter = parameter
 
@@ -158,7 +159,7 @@ class ErrorHandler:
                 # access denied - DO NOT RETRY
                 logger.warning(
                     "[ErrorHandler] Non-retryable error: %s - %s",
-                    e.__class__.__name__,
+                    type(e).__name__,
                     e,
                 )
                 raise  # Re-raise immediately, no retry
@@ -187,7 +188,17 @@ class ErrorHandler:
                     await asyncio.sleep(delay)
                 continue  # Skip normal delay calculation
 
-            except Exception as e:
+            except (
+                LLMServiceError,
+                OSError,
+                ConnectionError,
+                RuntimeError,
+                ValueError,
+                TypeError,
+                AttributeError,
+                KeyError,
+                LookupError,
+            ) as e:
                 last_exception = e
                 logger.warning("[ErrorHandler] Attempt %d failed: %s", attempt + 1, e)
 

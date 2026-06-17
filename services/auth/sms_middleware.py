@@ -18,21 +18,21 @@ All Rights Reserved
 Proprietary License
 """
 
-from contextlib import asynccontextmanager
-from typing import Dict, Any, Optional, Tuple
 import asyncio
 import logging
 import time
+from contextlib import asynccontextmanager
+from typing import Any, Dict, Optional, Tuple
 
 from config.settings import config
 from models.domain.messages import Language
-from services.infrastructure.rate_limiting.rate_limiter import DashscopeRateLimiter
-from services.monitoring.performance_tracker import performance_tracker
 from services.auth.sms_service import (
     SMSService,
     SMSServiceError,
 )
-
+from services.infrastructure.rate_limiting.rate_limiter import DashscopeRateLimiter
+from services.monitoring.performance_tracker import performance_tracker
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -185,7 +185,7 @@ class SMSMiddleware:
                             masked_phone,
                         )
 
-                    except Exception as e:
+                    except BACKGROUND_INFRA_ERRORS as e:
                         # Track failed request
                         duration = time.time() - request_start_time
                         if self.enable_performance_tracking:
@@ -220,7 +220,7 @@ class SMSMiddleware:
                                 self._active_requests,
                                 self.max_concurrent_requests,
                             )
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.warning("[SMSMiddleware] Rate limiter acquisition failed: %s", e)
                 # Decrement active requests on rate limiter failure
                 async with self._request_lock:
@@ -258,7 +258,7 @@ class SMSMiddleware:
                     masked_phone,
                 )
 
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 # Track failed request
                 duration = time.time() - request_start_time
                 if self.enable_performance_tracking:
@@ -374,7 +374,7 @@ class SMSMiddleware:
             # Use 'sms' as model name, append purpose for better tracking
             model_name = f"sms-{purpose}" if purpose else "sms"
             performance_tracker.record_request(model=model_name, duration=duration, success=success, error=error)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.debug("[SMSMiddleware] Performance tracking failed (non-critical): %s", e)
 
     def get_active_requests(self) -> int:
@@ -399,24 +399,24 @@ class SMSMiddleware:
 class _SMSMiddlewareSingleton:
     """Singleton holder for SMS middleware instance."""
 
-    _instance: Optional[SMSMiddleware] = None
+    instance: Optional[SMSMiddleware] = None
 
     @classmethod
     def get_instance(cls) -> SMSMiddleware:
         """Get singleton SMS middleware instance."""
-        if cls._instance is None:
-            cls._instance = SMSMiddleware()
-        return cls._instance
+        if cls.instance is None:
+            cls.instance = SMSMiddleware()
+        return cls.instance
 
     @classmethod
     def get_instance_if_exists(cls) -> Optional[SMSMiddleware]:
         """Get singleton instance if it exists, otherwise None."""
-        return cls._instance
+        return cls.instance
 
     @classmethod
     def reset_instance(cls) -> None:
         """Reset singleton instance (for testing/shutdown)."""
-        cls._instance = None
+        cls.instance = None
 
 
 def get_sms_middleware() -> SMSMiddleware:

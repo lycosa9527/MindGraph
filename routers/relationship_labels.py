@@ -24,16 +24,17 @@ from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.user_activity_log import UserActivityLog
 from models.requests.requests_thinking import (
-    RelationshipLabelsStartRequest,
-    RelationshipLabelsNextRequest,
     RelationshipLabelsCleanupRequest,
+    RelationshipLabelsNextRequest,
+    RelationshipLabelsStartRequest,
 )
 from services.infrastructure.http.error_handler import (
     LLMContentFilterError,
     LLMRateLimitError,
-    LLMTimeoutError,
     LLMServiceError,
+    LLMTimeoutError,
 )
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user, is_teacher
 from utils.chinese_language_policy import (
     collect_relationship_label_text_blobs,
@@ -95,7 +96,7 @@ async def _stream_labels(req, user: User | None, is_next: bool):
             else "AI service error. Please retry."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[RelLabels] Stream error: %s", str(e), exc_info=True)
         msg = "请求失败，请重试。" if is_chinese_ui_error_language(effective_lang) else "Request failed. Please retry."
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
@@ -132,11 +133,11 @@ async def start_relationship_labels(
             )
             db.add(log_entry)
             await db.commit()
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.debug("Failed to log relationship_labels: %s", e)
             try:
                 await db.rollback()
-            except Exception as exc:
+            except DATABASE_ERRORS as exc:
                 logger.debug("Rollback after relationship_labels log failure: %s", exc)
 
     return StreamingResponse(

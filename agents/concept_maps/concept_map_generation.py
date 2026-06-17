@@ -9,18 +9,17 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
 import asyncio
 import json
 import logging
 import traceback
 
-from prompts import get_prompt
-
 from agents.concept_maps.concept_map_agent import ConceptMapAgent
 from agents.core.llm_clients import llm_generation
 from agents.core.topic_extraction import extract_central_topic_llm
 from agents.core.utils import _parse_strict_json
+from prompts import get_prompt
+from services.utils.error_types import JSON_PARSE_ERRORS
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
 logger = logging.getLogger(__name__)
@@ -55,7 +54,7 @@ async def generate_concept_map_two_stage(user_prompt: str, language: str) -> dic
         agent = ConceptMapAgent()
         keys_obj = agent.parse_json_response(raw_keys)
         logger.debug("Used ConceptMapAgent improved parsing for keys generation")
-    except Exception as e:
+    except JSON_PARSE_ERRORS as e:
         logger.warning(
             "ConceptMapAgent parsing failed for keys, falling back to strict parsing: %s",
             e,
@@ -97,7 +96,7 @@ async def generate_concept_map_two_stage(user_prompt: str, language: str) -> dic
                 agent = ConceptMapAgent()
                 obj = agent.parse_json_response(raw)
                 logger.debug("Used ConceptMapAgent improved parsing for parts of key '%s'", k)
-            except Exception:
+            except JSON_PARSE_ERRORS:
                 logger.debug(
                     "ConceptMapAgent parsing failed for parts of key '%s', using strict parsing fallback",
                     k,
@@ -117,7 +116,7 @@ async def generate_concept_map_two_stage(user_prompt: str, language: str) -> dic
                 if len(parts_collected) >= per_key_cap:
                     break
             return (k, parts_collected)
-        except Exception:
+        except JSON_PARSE_ERRORS:
             return (k, [])
 
     parts_results = {k: [] for k in keys}
@@ -192,13 +191,13 @@ async def generate_concept_map_unified(user_prompt: str, language: str) -> dict:
         agent = ConceptMapAgent()
         obj = agent.parse_json_response(raw)
         logger.debug("Used ConceptMapAgent improved parsing for unified generation")
-    except Exception as e:
+    except JSON_PARSE_ERRORS as e:
         logger.warning("ConceptMapAgent parsing failed, falling back to strict parsing: %s", e)
         # Fallback to strict parsing if ConceptMapAgent is not available
         try:
             obj = _parse_strict_json(raw)
             logger.debug("Used strict parsing fallback for unified generation")
-        except Exception as e2:
+        except JSON_PARSE_ERRORS as e2:
             logger.error("All parsing methods failed for unified generation: %s", e2)
             return {"error": f"Concept map parsing failed: {e2}"}
     # Extract - prioritize concepts from ConceptMapAgent parsing
@@ -346,7 +345,7 @@ async def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> d
                 agent = ConceptMapAgent()
                 concepts_data = agent.parse_json_response(concepts_response)
                 logger.debug("Used ConceptMapAgent improved parsing for concepts")
-            except Exception as e:
+            except JSON_PARSE_ERRORS as e:
                 logger.warning("ConceptMapAgent parsing failed for concepts: %s", e)
                 concepts_data = _parse_strict_json(concepts_response)
                 logger.debug("Used strict parsing for concepts")
@@ -452,7 +451,7 @@ Requirements:
                 agent = ConceptMapAgent()
                 rel_data = agent.parse_json_response(relationships_response)
                 logger.debug("Used ConceptMapAgent improved parsing for relationships")
-            except Exception as e:
+            except JSON_PARSE_ERRORS as e:
                 logger.warning("ConceptMapAgent parsing failed for relationships: %s", e)
                 rel_data = _parse_strict_json(relationships_response)
                 logger.debug("Used strict parsing for relationships")
@@ -484,7 +483,7 @@ Requirements:
         )
         return spec
 
-    except Exception as e:
+    except JSON_PARSE_ERRORS as e:
         logger.error("Enhanced 30-concept generation failed: %s", e)
         logger.error("Stack trace: %s", traceback.format_exc())
 
@@ -507,7 +506,7 @@ async def generate_concept_map_robust(user_prompt: str, language: str, method: s
         try:
             # Use existing topic extraction + enhanced 30-concept generation
             return await generate_concept_map_enhanced_30(user_prompt, language)
-        except Exception as e:
+        except JSON_PARSE_ERRORS as e:
             logger.warning("Enhanced 30-concept generation failed: %s", e)
             try:
                 logger.debug("Attempting fallback with simplified two-stage generation...")
@@ -519,7 +518,7 @@ async def generate_concept_map_robust(user_prompt: str, language: str, method: s
                     result.get("error", "unknown"),
                 )
                 raise ValueError("All concept map generation methods failed") from e
-            except Exception as fallback_error:
+            except JSON_PARSE_ERRORS as fallback_error:
                 logger.warning("Simplified two-stage fallback also failed: %s", fallback_error)
 
     # If method is specified, try that first

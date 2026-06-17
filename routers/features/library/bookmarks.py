@@ -22,7 +22,6 @@ from utils.auth import get_current_user
 
 from .models import BookmarkCreate
 
-
 logger = logging.getLogger(__name__)
 
 router = APIRouter()

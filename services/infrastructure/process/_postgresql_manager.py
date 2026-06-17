@@ -4,37 +4,51 @@ PostgreSQL server management for MindGraph application.
 Handles starting and stopping PostgreSQL server processes.
 """
 
+import atexit
 import logging
 import os
+import shlex
+import signal
+import subprocess
 import sys
 import time
-import signal
-import atexit
-import subprocess
-import shlex
 from pathlib import Path
-from typing import Optional, TYPE_CHECKING
-
-logger = logging.getLogger(__name__)
+from typing import TYPE_CHECKING, Optional
 
 from services.infrastructure.process._port_utils import check_port_in_use
-from services.infrastructure.process._postgresql_helpers import (
-    verify_postgresql_on_port,
-    cleanup_stale_pid_file,
+from services.infrastructure.process._process_io import (
+    close_resource_stack,
+    launch_background_process,
+    open_append_text,
 )
-from services.infrastructure.process._postgresql_paths import (
-    find_postgres_binaries,
-    resolve_data_path,
+from services.infrastructure.process._postgresql_config import (
+    create_pg_hba_conf,
+    setup_socket_directory,
+    update_postgresql_conf,
+)
+from services.infrastructure.process._postgresql_helpers import (
+    cleanup_stale_pid_file,
+    try_database_url_connect,
+    verify_postgresql_on_port,
+)
+from services.infrastructure.process._postgresql_external import (
+    ensure_local_external_postgresql,
 )
 from services.infrastructure.process._postgresql_init import (
     initialize_postgresql_data_directory,
 )
-from services.infrastructure.process._postgresql_config import (
-    setup_socket_directory,
-    update_postgresql_conf,
-    create_pg_hba_conf,
+from services.infrastructure.process._postgresql_paths import (
+    find_postgres_binaries,
+    resolve_app_managed_data_path,
 )
+from services.infrastructure.process._postgresql_runtime import (
+    PostgresRuntimeConfig,
+    load_postgres_runtime_config,
+)
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, PG_CONNECT_ERRORS
 
+
+logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     import psycopg2
     from psycopg2 import sql
@@ -47,14 +61,28 @@ else:
         sql = None
 
 
-def _check_existing_postgresql(port: str, port_int: int, db_url: str) -> Optional[bool]:
+def _check_existing_postgresql(config: PostgresRuntimeConfig) -> Optional[bool]:
     """
     Check if PostgreSQL is already running.
 
     Returns:
         True if using existing instance, False if port conflict, None if need to start
     """
-    host = "localhost"
+    host = config.connection_probe_host
+    port = config.port_str
+    port_int = config.port
+    db_url = config.database_url
+
+    if not config.is_local:
+        if try_database_url_connect(config, timeout=2):
+            try:
+                print("[POSTGRESQL] Remote PostgreSQL from DATABASE_URL is reachable")
+                print(f"[POSTGRESQL] Using {config.host}:{config.port}/{config.database}")
+            except (ValueError, OSError):
+                pass
+            return True
+        return None
+
     port_in_use, pid = check_port_in_use(host, port_int)
     if port_in_use:
         if verify_postgresql_on_port(host, port_int, db_url):
@@ -64,7 +92,7 @@ def _check_existing_postgresql(port: str, port_int: int, db_url: str) -> Optiona
                 try:
                     conn = psycopg2.connect(db_url, connect_timeout=2)
                     conn.close()
-                except Exception as exc:
+                except (*PG_CONNECT_ERRORS,) as exc:
                     if "password authentication failed" in str(exc).lower():
                         print(
                             "[POSTGRESQL] Server is up but DATABASE_URL credentials failed. "
@@ -86,7 +114,7 @@ def _check_existing_postgresql(port: str, port_int: int, db_url: str) -> Optiona
                     )
                     if result.stdout.strip():
                         postgres_pids = [p.strip() for p in result.stdout.strip().split("\n") if p.strip()]
-                except Exception as exc:
+                except BACKGROUND_INFRA_ERRORS as exc:
                     logger.debug("PostgreSQL process search (pgrep) failed: %s", exc)
             if postgres_pids:
                 print(f"[ERROR] Port {port} is in use but no process found on port")
@@ -124,61 +152,9 @@ def _check_existing_postgresql(port: str, port_int: int, db_url: str) -> Optiona
             except (ValueError, OSError):
                 pass
             return True
-        except Exception as exc:
+        except (*PG_CONNECT_ERRORS,) as exc:
             logger.debug("PostgreSQL connection check failed: %s", exc)
 
-    return None
-
-
-def _check_systemd_service(db_url: str) -> Optional[bool]:
-    """
-    Check if PostgreSQL systemd service is active.
-
-    Returns:
-        True if using systemd service, None otherwise
-    """
-    postgresql_managed = os.getenv("POSTGRESQL_MANAGED_BY_APP", "true").lower() not in (
-        "false",
-        "0",
-        "no",
-    )
-    if not postgresql_managed:
-        if sys.platform != "win32":
-            try:
-                result = subprocess.run(
-                    ["systemctl", "is-active", "--quiet", "postgresql"],
-                    capture_output=True,
-                    timeout=1,
-                    check=False,
-                )
-                if result.returncode == 0:
-                    try:
-                        print("[POSTGRESQL] PostgreSQL systemd service is active (waiting for readiness...)")
-                    except (ValueError, OSError):
-                        pass
-                    for i in range(10):
-                        try:
-                            conn = psycopg2.connect(db_url, connect_timeout=2)
-                            conn.close()
-                            try:
-                                print("[POSTGRESQL] PostgreSQL systemd service is ready")
-                            except (ValueError, OSError):
-                                pass
-                            return True
-                        except Exception:
-                            if i < 9:
-                                time.sleep(1)
-                            else:
-                                break
-                    try:
-                        print("[ERROR] PostgreSQL systemd service is active but not responding after 10 seconds")
-                        print("        Check PostgreSQL logs: sudo journalctl -u postgresql -n 50")
-                        print("        Application cannot start without PostgreSQL.")
-                    except (ValueError, OSError):
-                        pass
-                    sys.exit(1)
-            except (subprocess.SubprocessError, FileNotFoundError):
-                pass
     return None
 
 
@@ -282,7 +258,7 @@ def _wait_for_postgresql_ready(port: str) -> str:
             )
             conn.close()
             break
-        except Exception as e:
+        except (*PG_CONNECT_ERRORS,) as e:
             if 'role "postgres" does not exist' in str(e) and current_user != "postgres":
                 try:
                     conn = psycopg2.connect(
@@ -300,7 +276,7 @@ def _wait_for_postgresql_ready(port: str) -> str:
                     except (ValueError, OSError):
                         pass
                     break
-                except Exception as exc:
+                except (*PG_CONNECT_ERRORS,) as exc:
                     logger.debug("PostgreSQL superuser connection attempt failed: %s", exc)
             last_error = e
             if i < 29:
@@ -332,7 +308,7 @@ def _create_database_and_user(superuser_name: str, port: str, user: str, passwor
             try:
                 cursor.execute("CREATE ROLE postgres WITH SUPERUSER CREATEDB CREATEROLE LOGIN")
                 logger.info("[PGManager] Created missing 'postgres' role")
-            except Exception as role_error:
+            except BACKGROUND_INFRA_ERRORS as role_error:
                 logger.warning("[PGManager] Could not create 'postgres' role: %s", role_error)
 
         cursor.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (user,))
@@ -354,7 +330,7 @@ def _create_database_and_user(superuser_name: str, port: str, user: str, passwor
             logger.info("[PGManager] Created database: %s", database)
 
         cursor.close()
-    except Exception as exc:
+    except (*PG_CONNECT_ERRORS,) as exc:
         logger.warning(
             "[PGManager] DB provisioning failed (superuser='%s'): %s",
             superuser_name,
@@ -364,7 +340,7 @@ def _create_database_and_user(superuser_name: str, port: str, user: str, passwor
         if conn is not None:
             try:
                 conn.close()
-            except Exception:
+            except BACKGROUND_INFRA_ERRORS:
                 pass
 
 
@@ -381,13 +357,13 @@ def _app_user_has_createdb(port: str, user: str, password: str, database: str) -
         row = cursor.fetchone()
         cursor.close()
         return bool(row and row[0])
-    except Exception:
+    except (*PG_CONNECT_ERRORS,):
         return False
     finally:
         if conn is not None:
             try:
                 conn.close()
-            except Exception:
+            except (*PG_CONNECT_ERRORS,):
                 pass
 
 
@@ -402,7 +378,7 @@ def _ensure_createdb_privilege(port: str, user: str, password: str, database: st
         return
 
     logger.info("[PGManager] %s lacks CREATEDB — granting now (first-time only)", user)
-    data_path, _ = resolve_data_path()
+    data_path, _ = resolve_app_managed_data_path()
     create_pg_hba_conf(data_path)
 
     postmaster_pid_file = data_path / "postmaster.pid"
@@ -425,11 +401,19 @@ def _ensure_createdb_privilege(port: str, user: str, password: str, database: st
         os.kill(pid, sighup)
         time.sleep(0.5)
         logger.debug("[PGManager] Reloaded pg_hba.conf (SIGHUP → PID %d)", pid)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning("[PGManager] pg_hba.conf reload failed: %s", exc)
         return
 
     _create_database_and_user("postgres", port, user, password, database)
+
+
+def _log_runtime_mode(config: PostgresRuntimeConfig) -> None:
+    try:
+        print(f"[POSTGRESQL] Startup mode: {config.mode_label}")
+        print(f"[POSTGRESQL] DATABASE_URL user: {config.runtime_user} @ {config.host}:{config.port}/{config.database}")
+    except (ValueError, OSError):
+        pass
 
 
 def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
@@ -457,25 +441,37 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
         print("        Application cannot start without PostgreSQL.")
         sys.exit(1)
 
-    port = os.getenv("POSTGRESQL_PORT", "5432")
-    port_int = int(port)
-    db_url = os.getenv("DATABASE_URL", "")
-    user = os.getenv("POSTGRESQL_USER", "mindgraph_user")
-    password = os.getenv("POSTGRESQL_PASSWORD", "mindgraph_password")
-    database = os.getenv("POSTGRESQL_DATABASE", "mindgraph")
+    config = load_postgres_runtime_config()
+    _log_runtime_mode(config)
 
-    # Check if PostgreSQL is already running
-    existing = _check_existing_postgresql(port, port_int, db_url)
+    port = config.port_str
+    user = config.provision_user
+    password = config.provision_password
+    database = config.database
+
+    existing = _check_existing_postgresql(config)
     if existing is True:
-        _ensure_createdb_privilege(port, user, password, database)
+        if config.spawn_subprocess:
+            _ensure_createdb_privilege(port, user, password, database)
         return None
 
-    # Check systemd service
-    existing = _check_systemd_service(db_url)
-    if existing is True:
-        return None
+    if not config.spawn_subprocess:
+        if config.is_local:
+            if not ensure_local_external_postgresql(config):
+                sys.exit(1)
+            return None
+        if try_database_url_connect(config, timeout=5):
+            return None
+        try:
+            print("[ERROR] Remote PostgreSQL from DATABASE_URL is not reachable.")
+            print(f"        Host: {config.host}:{config.port}")
+            print(f"        Runtime user: {config.runtime_user}")
+            print("        Application cannot start without PostgreSQL.")
+        except (ValueError, OSError):
+            pass
+        sys.exit(1)
 
-    # Find PostgreSQL binaries
+    # App-managed subprocess mode (legacy ``mindgraph_user`` on localhost)
     postgres_binary, initdb_binary = find_postgres_binaries()
     if not postgres_binary:
         try:
@@ -496,7 +492,7 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
         sys.exit(1)
 
     # Resolve data path
-    data_path, _ = resolve_data_path()
+    data_path, _ = resolve_app_managed_data_path()
 
     # Initialize data directory if needed
     initialize_postgresql_data_directory(initdb_binary, data_path)
@@ -535,7 +531,7 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
     try:
         test_file.write_text("test")
         test_file.unlink()
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         try:
             print(f"[ERROR] Cannot write to socket directory {socket_dir_abs}: {e}")
             print(f"        Fix permissions: chmod 700 {socket_dir_abs}")
@@ -599,16 +595,25 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
             except (subprocess.SubprocessError, FileNotFoundError):
                 pass
 
-        postgres_stdout = open(postgres_log, "a", encoding="utf-8") if sys.platform != "win32" else sys.stdout
-        postgres_stderr = open(postgres_log, "a", encoding="utf-8") if sys.platform != "win32" else sys.stderr
+        if sys.platform != "win32":
+            server_state.postgresql_stdout_file = open_append_text(postgres_log)
+            server_state.postgresql_stderr_file = server_state.postgresql_stdout_file
+            postgres_stdout = server_state.postgresql_stdout_file
+            postgres_stderr = server_state.postgresql_stderr_file
+        else:
+            postgres_stdout = sys.stdout
+            postgres_stderr = sys.stderr
 
-        server_state.postgresql_process = subprocess.Popen(
+        launch_background_process(
+            server_state,
+            "postgresql_resource_stack",
+            "postgresql_process",
             postgres_cmd,
             stdout=postgres_stdout,
             stderr=postgres_stderr,
             cwd=str(data_path),
             env=postgres_env,
-            start_new_session=sys.platform != "win32",
+            start_new_session=True,
             bufsize=1,
         )
 
@@ -646,7 +651,7 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
                                 last_log_lines = "\n".join(log_lines[-10:])
                                 print("[ERROR] PostgreSQL server process terminated")
                                 print(f"[ERROR] Last log entries:\n{last_log_lines}")
-                except Exception as exc:
+                except BACKGROUND_INFRA_ERRORS as exc:
                     logger.debug("PostgreSQL log file read failed: %s", exc)
             else:
                 try:
@@ -663,11 +668,8 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
         # Create database and user
         _create_database_and_user(superuser_name, port, user, password, database)
 
-        # Construct PostgreSQL URL for connection test if DATABASE_URL is SQLite or invalid
-        test_db_url = db_url
-        if not test_db_url or "sqlite" in test_db_url.lower() or "postgresql" not in test_db_url.lower():
-            # Construct from individual PostgreSQL settings
-            test_db_url = f"postgresql://{user}:{password}@127.0.0.1:{port}/{database}"
+        # Verify app-managed credentials; DATABASE_URL (e.g. mindgraph_app) is checked after RLS bootstrap.
+        test_db_url = f"postgresql://{user}:{password}@127.0.0.1:{port}/{database}"
 
         try:
             conn = psycopg2.connect(test_db_url, connect_timeout=5)
@@ -680,10 +682,10 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
             except (ValueError, OSError):
                 pass
             return server_state.postgresql_process
-        except Exception as e:
+        except (*PG_CONNECT_ERRORS,) as e:
             try:
                 print(f"[ERROR] PostgreSQL server started but connection test failed: {e}")
-                url_part = test_db_url.split("@")[0] if "@" in test_db_url else test_db_url
+                url_part = test_db_url.split("@", maxsplit=1)[0] if "@" in test_db_url else test_db_url
                 print(f"        Connection URL used: {url_part}@***")
                 print("        Check PostgreSQL logs: tail -f logs/postgresql.log")
                 print("        Application cannot start without PostgreSQL.")
@@ -726,6 +728,14 @@ def stop_postgresql_server(server_state) -> None:
                 server_state.postgresql_process.kill()
             except (OSError, ProcessLookupError):
                 pass
+        if server_state.postgresql_stdout_file is not None:
+            try:
+                server_state.postgresql_stdout_file.close()
+            except (OSError, ValueError):
+                pass
+            server_state.postgresql_stdout_file = None
+            server_state.postgresql_stderr_file = None
+        close_resource_stack(server_state, "postgresql_resource_stack")
         server_state.postgresql_process = None
         try:
             print("[POSTGRESQL] Server stopped")

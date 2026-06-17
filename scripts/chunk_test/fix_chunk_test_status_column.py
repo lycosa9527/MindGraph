@@ -12,6 +12,8 @@ import sys
 
 from sqlalchemy import inspect, text
 
+from services.utils.error_types import DATABASE_ERRORS
+
 # Add project root to path before importing project modules
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _PROJECT_ROOT)
@@ -40,23 +42,22 @@ def get_sqlite_column_type(column):
     # Map common types
     if "INTEGER" in column_type_upper or "BIGINT" in column_type_upper:
         return "INTEGER"
-    elif "REAL" in column_type_upper or "FLOAT" in column_type_upper or "DOUBLE" in column_type_upper:
+    if "REAL" in column_type_upper or "FLOAT" in column_type_upper or "DOUBLE" in column_type_upper:
         return "REAL"
-    elif (
+    if (
         "TEXT" in column_type_upper
         or "VARCHAR" in column_type_upper
         or "STRING" in column_type_upper
         or "CHAR" in column_type_upper
     ):
         return "TEXT"
-    elif "DATETIME" in column_type_upper or "DATE" in column_type_upper or "TIMESTAMP" in column_type_upper:
+    if "DATETIME" in column_type_upper or "DATE" in column_type_upper or "TIMESTAMP" in column_type_upper:
         return "TEXT"
-    elif "JSON" in column_type_upper:
+    if "JSON" in column_type_upper:
         return "TEXT"  # SQLite stores JSON as TEXT
-    elif "BLOB" in column_type_upper:
+    if "BLOB" in column_type_upper:
         return "BLOB"
-    else:
-        return "TEXT"  # Default to TEXT
+    return "TEXT"  # Default to TEXT
 
 
 def get_column_default_sql(column, has_rows):
@@ -69,7 +70,7 @@ def get_column_default_sql(column, has_rows):
             column_type = get_sqlite_column_type(column)
             if "INTEGER" in column_type:
                 return "DEFAULT 0"
-            elif "TEXT" in column_type:
+            if "TEXT" in column_type:
                 # Check if it's an ENUM with a default
                 if hasattr(column.type, "enums"):
                     # For ENUM, use first value as default if no explicit default
@@ -82,11 +83,11 @@ def get_column_default_sql(column, has_rows):
         default_value = column.default.arg
         if isinstance(default_value, (int, float)):
             return f"DEFAULT {default_value}"
-        elif isinstance(default_value, bool):
+        if isinstance(default_value, bool):
             return f"DEFAULT {1 if default_value else 0}"
-        elif isinstance(default_value, str):
+        if isinstance(default_value, str):
             return f"DEFAULT '{default_value}'"
-        elif callable(default_value):
+        if callable(default_value):
             # Callable defaults (like datetime.utcnow) can't be set in ALTER TABLE
             # SQLAlchemy will handle them on insert
             return ""
@@ -152,7 +153,7 @@ def fix_chunk_test_columns():
         )
         return True
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("Failed to add columns: %s", e, exc_info=True)
         db.rollback()
         return False

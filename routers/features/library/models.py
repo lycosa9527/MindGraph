@@ -10,8 +10,8 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional, List
 import re
+from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 

@@ -16,7 +16,7 @@ import logging
 import tempfile
 from typing import List
 
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count as sa_count
@@ -25,15 +25,15 @@ from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.knowledge_space import DocumentBatch, DocumentChunk
 from models.requests.requests_knowledge_space import ProcessSelectedRequest
-from models.responses import DocumentResponse, DocumentListResponse, BatchResponse
+from models.responses import BatchResponse, DocumentListResponse, DocumentResponse
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from tasks.knowledge_space_tasks import (
-    process_document_task,
     batch_process_documents_task,
+    process_document_task,
     update_document_task,
 )
 from utils.auth import get_current_user
-
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,7 @@ async def upload_document(
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("[KnowledgeSpaceAPI] Upload failed for user %s: %s", current_user.id, e)
         raise HTTPException(status_code=500, detail="Upload failed") from e
 
@@ -158,7 +158,7 @@ async def batch_upload_documents(
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error(
             "[KnowledgeSpaceAPI] Batch upload failed for user %s: %s",
             current_user.id,
@@ -302,7 +302,7 @@ async def update_document(
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error(
             "[KnowledgeSpaceAPI] Update failed for user %s, document %s: %s",
             current_user.id,
@@ -330,7 +330,7 @@ async def delete_document(
         return {"message": "Document deleted successfully"}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error(
             "[KnowledgeSpaceAPI] Delete failed for user %s, document %s: %s",
             current_user.id,
@@ -448,7 +448,7 @@ async def start_processing(current_user: User = Depends(get_current_user), db: A
             # Trigger background processing
             process_document_task.delay(current_user.id, doc.id)
             processed_count += 1
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error(
                 "[KnowledgeSpaceAPI] Failed to start processing document %s: %s",
                 doc.id,
@@ -501,7 +501,7 @@ async def process_selected_documents(
             # Trigger background processing
             process_document_task.delay(current_user.id, doc.id)
             processed_count += 1
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error(
                 "[KnowledgeSpaceAPI] Failed to start processing document %s: %s",
                 doc.id,

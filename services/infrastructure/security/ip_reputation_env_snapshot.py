@@ -10,43 +10,49 @@ from __future__ import annotations
 import logging
 from typing import Optional, Tuple
 
+from services.infrastructure.security import ip_reputation_env_flags
+
 logger = logging.getLogger(__name__)
 
-_IP_REPUTATION_SNAPSHOT: Optional[Tuple[bool, bool, bool, bool, int]] = None
-# abuse_master, crowd_lookup_enabled, blacklist_lookup_active, check_enabled, check_min_score
+
+class _IpReputationSnapshotState:
+    """Process-lifetime IP reputation env snapshot holder."""
+
+    value: Optional[Tuple[bool, bool, bool, bool, int]] = None
+
+
+def _read_snapshot_tuple() -> Tuple[bool, bool, bool, bool, int]:
+    """Read snapshot tuple."""
+    abuse_master = ip_reputation_env_flags.abuseipdb_master_enabled()
+    crowd_lu = ip_reputation_env_flags.crowdsec_blocklist_lookup_enabled()
+    lookup_active = (
+        abuse_master and ip_reputation_env_flags.abuseipdb_blacklist_lookup_enabled()
+    ) or crowd_lu
+    check_enabled = ip_reputation_env_flags.abuseipdb_check_enabled()
+    check_min = ip_reputation_env_flags.get_check_min_score()
+    return abuse_master, crowd_lu, lookup_active, check_enabled, check_min
 
 
 def warm_ip_reputation_env_snapshot() -> None:
     """Read AbuseIPDB/CrowdSec flags once; call from application lifespan after Redis init."""
-    global _IP_REPUTATION_SNAPSHOT
-    from services.infrastructure.security import abuseipdb_service
-    from services.infrastructure.security import crowdsec_blocklist_service
-
-    abuse_master = abuseipdb_service.abuseipdb_master_enabled()
-    crowd_lu = crowdsec_blocklist_service.crowdsec_blocklist_lookup_enabled()
-    lookup_active = (abuse_master and abuseipdb_service.abuseipdb_blacklist_lookup_enabled()) or crowd_lu
-    check_enabled = abuseipdb_service.abuseipdb_check_enabled()
-    check_min = abuseipdb_service.get_check_min_score()
-    _IP_REPUTATION_SNAPSHOT = (abuse_master, crowd_lu, lookup_active, check_enabled, check_min)
+    _IpReputationSnapshotState.value = _read_snapshot_tuple()
 
 
 def log_ip_reputation_startup_summary() -> None:
     """
     Log once after warm_ip_reputation_env_snapshot() so operators see how vetting is configured.
     """
-    if _IP_REPUTATION_SNAPSHOT is None:
+    if _IpReputationSnapshotState.value is None:
         warm_ip_reputation_env_snapshot()
-    abuse_master, crowd_lu, lookup_active, check_enabled, check_min = _IP_REPUTATION_SNAPSHOT or (
+    abuse_master, crowd_lu, lookup_active, check_enabled, check_min = _IpReputationSnapshotState.value or (
         False,
         False,
         False,
         False,
         80,
     )
-    from services.infrastructure.security import abuseipdb_service
-    from services.infrastructure.security import crowdsec_blocklist_service
 
-    abuse_bl = bool(abuse_master) and abuseipdb_service.abuseipdb_blacklist_lookup_enabled()
+    abuse_bl = bool(abuse_master) and ip_reputation_env_flags.abuseipdb_blacklist_lookup_enabled()
     if should_skip_ip_reputation_middleware():
         logger.info(
             "[IP reputation] Middleware inactive (enable ABUSEIPDB_* and/or "
@@ -65,18 +71,21 @@ def log_ip_reputation_startup_summary() -> None:
         check_min,
     )
     sync_bits = []
-    if abuseipdb_service.abuseipdb_master_enabled():
-        sync_bits.append("abuseipdb_sync=" + str(abuseipdb_service.abuseipdb_blacklist_sync_enabled()))
-    if crowdsec_blocklist_service.crowdsec_blocklist_master_enabled():
-        sync_bits.append("crowdsec_sync=" + str(crowdsec_blocklist_service.crowdsec_blocklist_sync_enabled()))
+    if ip_reputation_env_flags.abuseipdb_master_enabled():
+        sync_bits.append(
+            "abuseipdb_sync=" + str(ip_reputation_env_flags.abuseipdb_blacklist_sync_enabled())
+        )
+    if ip_reputation_env_flags.crowdsec_blocklist_master_enabled():
+        sync_bits.append(
+            "crowdsec_sync=" + str(ip_reputation_env_flags.crowdsec_blocklist_sync_enabled())
+        )
     if sync_bits:
         logger.info("[IP reputation] Scheduled blocklist refresh: %s", ", ".join(sync_bits))
 
 
 def invalidate_ip_reputation_env_snapshot() -> None:
     """Clear snapshot (e.g. pytest monkeypatch or reload). Next access re-reads env."""
-    global _IP_REPUTATION_SNAPSHOT
-    _IP_REPUTATION_SNAPSHOT = None
+    _IpReputationSnapshotState.value = None
 
 
 def should_skip_ip_reputation_middleware() -> bool:
@@ -85,41 +94,36 @@ def should_skip_ip_reputation_middleware() -> bool:
 
     Mirrors: not abuseipdb_master and not crowdsec_blocklist_lookup_enabled.
     """
-    if _IP_REPUTATION_SNAPSHOT is not None:
-        abuse_master, crowd_lu, _, _, _ = _IP_REPUTATION_SNAPSHOT
+    if _IpReputationSnapshotState.value is not None:
+        abuse_master, crowd_lu, _, _, _ = _IpReputationSnapshotState.value
         return not abuse_master and not crowd_lu
-    from services.infrastructure.security import abuseipdb_service
-    from services.infrastructure.security import crowdsec_blocklist_service
-
     return (
-        not abuseipdb_service.abuseipdb_master_enabled()
-        and not crowdsec_blocklist_service.crowdsec_blocklist_lookup_enabled()
+        not ip_reputation_env_flags.abuseipdb_master_enabled()
+        and not ip_reputation_env_flags.crowdsec_blocklist_lookup_enabled()
     )
 
 
 def blacklist_lookup_active() -> bool:
     """True if shared Redis blacklist lookup should run."""
-    if _IP_REPUTATION_SNAPSHOT is not None:
-        return _IP_REPUTATION_SNAPSHOT[2]
-    from services.infrastructure.security import abuseipdb_service
-    from services.infrastructure.security import crowdsec_blocklist_service
-
-    abuse = abuseipdb_service.abuseipdb_master_enabled() and abuseipdb_service.abuseipdb_blacklist_lookup_enabled()
-    crowd = crowdsec_blocklist_service.crowdsec_blocklist_lookup_enabled()
+    if _IpReputationSnapshotState.value is not None:
+        return _IpReputationSnapshotState.value[2]
+    abuse = (
+        ip_reputation_env_flags.abuseipdb_master_enabled()
+        and ip_reputation_env_flags.abuseipdb_blacklist_lookup_enabled()
+    )
+    crowd = ip_reputation_env_flags.crowdsec_blocklist_lookup_enabled()
     return abuse or crowd
 
 
 def abuseipdb_check_enabled_cached() -> bool:
-    if _IP_REPUTATION_SNAPSHOT is not None:
-        return _IP_REPUTATION_SNAPSHOT[3]
-    from services.infrastructure.security import abuseipdb_service
-
-    return abuseipdb_service.abuseipdb_check_enabled()
+    """Abuseipdb check enabled cached."""
+    if _IpReputationSnapshotState.value is not None:
+        return _IpReputationSnapshotState.value[3]
+    return ip_reputation_env_flags.abuseipdb_check_enabled()
 
 
 def get_check_min_score_cached() -> int:
-    if _IP_REPUTATION_SNAPSHOT is not None:
-        return _IP_REPUTATION_SNAPSHOT[4]
-    from services.infrastructure.security import abuseipdb_service
-
-    return abuseipdb_service.get_check_min_score()
+    """Get check min score cached."""
+    if _IpReputationSnapshotState.value is not None:
+        return _IpReputationSnapshotState.value[4]
+    return ip_reputation_env_flags.get_check_min_score()

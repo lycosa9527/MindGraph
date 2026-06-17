@@ -10,13 +10,14 @@ All Rights Reserved
 Proprietary License
 """
 
-from urllib.parse import urlparse
 import logging
+from urllib.parse import urlparse
 
+import httpx
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response
-import httpx
 
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ async def proxy_image(url: str = Query(..., description="The image URL to proxy"
         parsed = urlparse(url)
         if not parsed.scheme or not parsed.netloc:
             raise HTTPException(status_code=400, detail="Invalid URL")
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         raise HTTPException(status_code=400, detail="Invalid URL") from exc
 
     # Security: Check domain whitelist

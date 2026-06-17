@@ -33,10 +33,12 @@ Proprietary License
 from __future__ import annotations
 
 import asyncio
+import importlib
 import logging
 import time
 from typing import Any, Dict
 
+from services.features.workshop_ws_registry import ACTIVE_CONNECTIONS
 from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
@@ -44,19 +46,23 @@ logger = logging.getLogger(__name__)
 # Lazy import: loading ``online_collab.redis.redis8_features`` runs
 # ``online_collab`` package ``__init__``, which imports modules that depend on
 # this module during interpreter startup. Defer until first TS/TDigest use.
-_REDIS8_FEATURES_MOD: Any = None
+class _Redis8FeaturesState:
+    """Lazy redis8_features module holder (breaks import cycle at load time)."""
+
+    module: Any = None
 
 
 def _redis8_features() -> Any:
-    global _REDIS8_FEATURES_MOD
-    if _REDIS8_FEATURES_MOD is None:
-        from services.online_collab.redis import redis8_features
-
-        _REDIS8_FEATURES_MOD = redis8_features
-    return _REDIS8_FEATURES_MOD
+    """Redis8 features."""
+    if _Redis8FeaturesState.module is None:
+        _Redis8FeaturesState.module = importlib.import_module(
+            "services.online_collab.redis.redis8_features",
+        )
+    return _Redis8FeaturesState.module
 
 
 def _timeseries_enabled() -> bool:
+    """Timeseries enabled."""
     return bool(_redis8_features().timeseries_enabled())
 
 
@@ -475,70 +481,87 @@ def record_kitty_hydrate_cache_miss() -> None:
 
 
 def record_kitty_control_publish_success() -> None:
+    """Record kitty control publish success."""
     _bump("ws_kitty_control_publish_success_total")
 
 
 def record_kitty_control_publish_failure() -> None:
+    """Record kitty control publish failure."""
     _bump("ws_kitty_control_publish_failure_total")
 
 
 def record_kitty_control_received() -> None:
+    """Record kitty control received."""
     _bump("ws_kitty_control_received_total")
 
 
 def record_kitty_control_cleanup_applied() -> None:
+    """Record kitty control cleanup applied."""
     _bump("ws_kitty_control_cleanup_applied_total")
 
 
 def record_kitty_control_message_ignored() -> None:
+    """Record kitty control message ignored."""
     _bump("ws_kitty_control_message_ignored_total")
 
 
 def record_kitty_ws_rate_limit_close() -> None:
+    """Record kitty ws rate limit close."""
     _bump("ws_kitty_ws_rate_limit_close_total")
 
 
 def record_kitty_ws_inbound_reject() -> None:
+    """Record kitty ws inbound reject."""
     _bump("ws_kitty_ws_inbound_reject_total")
 
 
 def record_kitty_ws_idle_timeout_close() -> None:
+    """Record kitty ws idle timeout close."""
     _bump("ws_kitty_ws_idle_timeout_close_total")
 
 
 def record_kitty_refcount_attach() -> None:
+    """Record kitty refcount attach."""
     _bump("ws_kitty_refcount_attach_total")
 
 
 def record_kitty_refcount_detach_mismatch() -> None:
+    """Record kitty refcount detach mismatch."""
     _bump("ws_kitty_refcount_detach_mismatch_total")
 
 
 def record_kitty_refcount_teardown() -> None:
+    """Record kitty refcount teardown."""
     _bump("ws_kitty_refcount_teardown_total")
 
 
 def record_kitty_refcount_meta_drift() -> None:
+    """Record kitty refcount meta drift."""
     _bump("ws_kitty_refcount_meta_drift_total")
 
 
 def record_kitty_refcount_attach_failed() -> None:
+    """Record kitty refcount attach failed."""
     _bump("ws_kitty_refcount_attach_failed_total")
 
 
 def record_kitty_refcount_detach_failed() -> None:
+    """Record kitty refcount detach failed."""
     _bump("ws_kitty_refcount_detach_failed_total")
 
 
 def record_kitty_control_cleanup_not_configured() -> None:
+    """Record kitty control cleanup not configured."""
     _bump("ws_kitty_control_cleanup_not_configured_total")
 
 
 def record_kitty_control_voice_cleanup_failed() -> None:
+    """Record kitty control voice cleanup failed."""
     _bump("ws_kitty_control_voice_cleanup_failed_total")
 
 
 def record_kitty_control_dispatch_exception() -> None:
+    """Record kitty control dispatch exception."""
     _bump("ws_kitty_control_dispatch_exception_total")
 
 
@@ -557,17 +580,9 @@ async def get_ws_metrics_snapshot() -> Dict[str, Any]:
     except (OSError, RuntimeError, AttributeError) as exc:
         logger.debug("[WSMetrics] Redis gauge read failed: %s", exc)
 
-    # Room-size gauge: snapshot from in-process ACTIVE_CONNECTIONS.
-    try:
-        from services.features.workshop_ws_connection_state import (
-            ACTIVE_CONNECTIONS,
-        )
-
-        snap["ws_room_sizes"] = {code: len(handles) for code, handles in ACTIVE_CONNECTIONS.items()}
-        snap["ws_rooms_total"] = len(ACTIVE_CONNECTIONS)
-        snap["ws_total_connections_local"] = sum(len(h) for h in ACTIVE_CONNECTIONS.values())
-    except Exception:
-        pass
+    snap["ws_room_sizes"] = {code: len(handles) for code, handles in ACTIVE_CONNECTIONS.items()}
+    snap["ws_rooms_total"] = len(ACTIVE_CONNECTIONS)
+    snap["ws_total_connections_local"] = sum(len(h) for h in ACTIVE_CONNECTIONS.values())
 
     return snap
 

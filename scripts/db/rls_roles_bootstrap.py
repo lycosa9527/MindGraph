@@ -16,13 +16,14 @@ from sqlalchemy.pool import NullPool
 from scripts.db.migration_urls import (
     ROLE_APP,
     ROLE_MIGRATE,
-    build_role_url,
-    first_connectable_database_url,
     _password_for_role,
     _role_exists,
     _runtime_url,
+    build_role_url,
+    first_connectable_database_url,
     normalise_db_url,
 )
+from services.utils.error_types import DATABASE_ERRORS
 from utils.db.alembic_migration import load_rls_roles_sql
 
 _roles_sql = load_rls_roles_sql()
@@ -41,10 +42,12 @@ _DEFAULT_PASSWORD = "mindgraph_password"
 
 
 def _app_password() -> str:
+    """App password."""
     return _password_for_role(ROLE_APP, _DEFAULT_PASSWORD)
 
 
 def _migrate_password() -> str:
+    """Migrate password."""
     return _password_for_role(ROLE_MIGRATE, _DEFAULT_PASSWORD)
 
 
@@ -113,7 +116,7 @@ def ensure_migrate_database_privileges(
             conn.execute(text("CREATE SCHEMA IF NOT EXISTS public"))
             conn.commit()
         schema_ok = True
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.debug("Migrate DDL probe failed (%s): %s", migrate_url, exc)
     finally:
         engine.dispose()
@@ -133,7 +136,7 @@ def ensure_migrate_database_privileges(
             with verify_engine.connect() as conn:
                 conn.execute(text("CREATE SCHEMA IF NOT EXISTS public"))
                 conn.commit()
-        except Exception as exc:
+        except DATABASE_ERRORS as exc:
             return False, f"{ROLE_MIGRATE} still cannot run DDL after sudo grant: {exc}"
         finally:
             verify_engine.dispose()
@@ -166,7 +169,7 @@ def _public_tables_need_reassign(connect_url: str) -> bool:
                 )
             ).scalar()
         return bool(count and count > 0)
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.debug("Could not list public table owners: %s", exc)
         return True
     finally:
@@ -204,7 +207,7 @@ def _migrate_can_enable_rls_on_diagrams(migrate_url: str) -> bool:
             conn.execute(text("ALTER TABLE public.diagrams DISABLE ROW LEVEL SECURITY"))
             conn.commit()
         return True
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.debug("RLS enable probe on diagrams failed: %s", exc)
         return False
     finally:
@@ -225,7 +228,7 @@ def _postgresql_extensions_installed(connect_url: str) -> bool:
                 ),
             ).scalar()
         return count == len(_EXTENSION_NAMES)
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.debug("Could not read pg_extension: %s", exc)
         return False
     finally:
@@ -305,7 +308,7 @@ def _migrate_role_lacks_bypassrls(connect_url: str) -> bool:
         if row is None:
             return False
         return row is False
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.debug("Could not read mindgraph_migrate rolbypassrls: %s", exc)
         return False
     finally:
@@ -333,6 +336,7 @@ def ensure_migrate_role_bypassrls(
 
 
 def _roles_missing_on_url(database_url: str) -> bool:
+    """Roles missing on url."""
     engine = create_engine(normalise_db_url(database_url), poolclass=NullPool)
     try:
         return not (_role_exists(engine, ROLE_APP) and _role_exists(engine, ROLE_MIGRATE))
@@ -340,7 +344,7 @@ def _roles_missing_on_url(database_url: str) -> bool:
         engine.dispose()
 
 
-def _psql_tcp_host_port() -> tuple[str, str]:
+def psql_tcp_host_port() -> tuple[str, str]:
     """Host/port for the MindGraph PostgreSQL instance (not distro default socket)."""
     runtime = normalise_db_url(_runtime_url())
     parsed = make_url(runtime)
@@ -360,7 +364,7 @@ def _managed_postgresql_socket_dir() -> Path | None:
     return socket_dir if socket_dir.is_dir() else None
 
 
-def _psql_peer_auth_args() -> list[list[str]]:
+def psql_peer_auth_args() -> list[list[str]]:
     """
     Unix-socket targets for ``sudo -u postgres psql`` (peer auth, no password).
 
@@ -376,14 +380,14 @@ def _psql_peer_auth_args() -> list[list[str]]:
     return args
 
 
-def _psql_tcp_connection_args() -> list[list[str]]:
+def psql_tcp_connection_args() -> list[list[str]]:
     """
     TCP and app-managed socket targets (password or custom socket).
 
     MindGraph's managed subprocess listens on ``127.0.0.1:POSTGRESQL_PORT``; its
     socket lives under ``POSTGRESQL_DATA_DIR/sockets`` when set.
     """
-    host, port = _psql_tcp_host_port()
+    host, port = psql_tcp_host_port()
     args: list[list[str]] = [["-h", host, "-p", port]]
     socket_dir = _managed_postgresql_socket_dir()
     if socket_dir is not None:
@@ -391,10 +395,10 @@ def _psql_tcp_connection_args() -> list[list[str]]:
     return args
 
 
-def _psql_host_connection_args() -> list[list[str]]:
+def psql_host_connection_args() -> list[list[str]]:
     """Peer socket first, then TCP (backward-compatible combined list)."""
-    peer = _psql_peer_auth_args()
-    tcp = _psql_tcp_connection_args()
+    peer = psql_peer_auth_args()
+    tcp = psql_tcp_connection_args()
     combined: list[list[str]] = []
     seen: set[tuple[str, ...]] = set()
     for item in peer + tcp:
@@ -415,7 +419,7 @@ def _admin_url_for_database(dbname: str) -> str | None:
             with engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
             return url
-        except Exception as exc:
+        except DATABASE_ERRORS as exc:
             logger.debug("Admin connect failed for %s: %s", url, exc)
         finally:
             engine.dispose()
@@ -433,20 +437,21 @@ def _try_run_sql_via_admin(dbname: str, sql: str) -> tuple[bool, str]:
             conn.execute(text(sql))
             conn.commit()
         return True, ""
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         return False, str(exc)
     finally:
         engine.dispose()
 
 
 def _verify_roles_created(base_url: str) -> bool:
+    """Verify roles created."""
     for role in (ROLE_APP, ROLE_MIGRATE):
         role_url = build_role_url(base_url, role)
         engine = create_engine(role_url, poolclass=NullPool)
         try:
             with engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
-        except Exception as exc:
+        except DATABASE_ERRORS as exc:
             logger.debug("Role login check failed for %s: %s", role, exc)
             return False
         finally:
@@ -455,6 +460,7 @@ def _verify_roles_created(base_url: str) -> bool:
 
 
 def _valid_db_name(dbname: str) -> bool:
+    """Valid db name."""
     return bool(dbname) and all(ch.isalnum() or ch == "_" for ch in dbname)
 
 
@@ -468,7 +474,7 @@ def _run_sudo_postgres_cmd(
     if sys.platform == "win32":
         return False, "sudo postgres bootstrap unavailable on Windows"
 
-    host_lists = _psql_peer_auth_args() + _psql_tcp_connection_args() if peer_first else _psql_tcp_connection_args()
+    host_lists = psql_peer_auth_args() + psql_tcp_connection_args() if peer_first else psql_tcp_connection_args()
     wrapper_plans: list[tuple[list[str], bool, bool, list[list[str]]]] = [
         (["sudo", "-n", "-u", "postgres"], True, True, host_lists),
     ]
@@ -570,8 +576,8 @@ def _run_sudo_postgres_psql(
         os.chmod(sql_path, 0o644)
 
         last_detail = admin_detail
-        tcp_args = _psql_tcp_connection_args()
-        peer_args = _psql_peer_auth_args()
+        tcp_args = psql_tcp_connection_args()
+        peer_args = psql_peer_auth_args()
         wrapper_plans: list[tuple[list[str], bool, bool, list[list[str]]]] = [
             ([], True, False, tcp_args),
             (["sudo", "-n", "-u", "postgres"], True, True, peer_args + tcp_args),
@@ -700,7 +706,7 @@ def try_bootstrap_rls_roles(runtime_url: str | None = None) -> tuple[bool, str]:
             if _verify_roles_created(base_url):
                 return True, f"Created RLS roles using {label}"
             last_error = f"{label}: roles still missing after bootstrap"
-        except Exception as exc:
+        except DATABASE_ERRORS as exc:
             last_error = f"{label}: {exc}"
             logger.debug("Admin URL failed (%s): %s", admin_url, exc)
 
@@ -771,5 +777,6 @@ def ensure_rls_roles_exist(runtime_url: str | None = None) -> tuple[bool, str]:
 
 
 def iter_bootstrap_guidance() -> Iterable[str]:
+    """Iter bootstrap guidance."""
     yield "PYTHONPATH=. python scripts/db/run_migrations.py  → menu option 4 (full local setup)"
     yield "Or set PG_ADMIN_URL=postgresql://postgres:PASSWORD@localhost:5432/postgres"

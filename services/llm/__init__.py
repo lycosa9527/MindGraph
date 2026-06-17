@@ -12,23 +12,23 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Dict, List, Optional, Any, AsyncGenerator, Tuple
 import logging
 import time
+from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
-from services.infrastructure.utils.client_manager import client_manager
 from services.infrastructure.http.error_handler import LLMServiceError
-from services.monitoring.performance_tracker import performance_tracker
-from services.utils.prompt_manager import prompt_manager
-from services.llm.llm_message_builder import LLMMessageBuilder
-from services.llm.llm_request_executor import LLMRequestExecutor
-from services.llm.llm_metrics_tracker import LLMMetricsTracker
-from services.llm.llm_load_balancer_helper import LLMLoadBalancerHelper
-from services.llm.llm_service_init import LLMServiceInitializer
-from services.llm.llm_multi_service import LLMMultiService
+from services.infrastructure.utils.client_manager import client_manager
 from services.llm.llm_health import LLMHealthChecker
+from services.llm.llm_load_balancer_helper import LLMLoadBalancerHelper
+from services.llm.llm_message_builder import LLMMessageBuilder
+from services.llm.llm_metrics_tracker import LLMMetricsTracker
+from services.llm.llm_multi_service import LLMMultiService
+from services.llm.llm_request_executor import LLMRequestExecutor
+from services.llm.llm_service_init import LLMServiceInitializer
 from services.llm.llm_utils import LLMUtils
+from services.monitoring.performance_tracker import performance_tracker
+from services.utils.error_types import LLM_PIPELINE_ERRORS
+from services.utils.prompt_manager import prompt_manager
 
 logger = logging.getLogger(__name__)
 
@@ -291,9 +291,9 @@ class LLMService:
 
             return content
 
-        except ValueError:
-            raise
-        except Exception as e:
+        except ValueError as value_error:
+            raise value_error
+        except LLM_PIPELINE_ERRORS as e:
             duration = time.time() - start_time
             detail = LLMUtils.format_request_failure(e)
             logger.error("[LLMService] %s failed after %.2fs: %s", model, duration, detail)
@@ -435,9 +435,9 @@ class LLMService:
 
             return content, usage_data
 
-        except ValueError:
-            raise
-        except Exception as e:
+        except ValueError as value_error:
+            raise value_error
+        except LLM_PIPELINE_ERRORS as e:
             duration = time.time() - start_time
             detail = LLMUtils.format_request_failure(e)
             logger.error("[LLMService] %s failed after %.2fs: %s", model, duration, detail)
@@ -637,9 +637,9 @@ class LLMService:
                 duration=duration,
             )
 
-        except ValueError:
-            raise
-        except Exception as e:
+        except ValueError as value_error:
+            raise value_error
+        except LLM_PIPELINE_ERRORS as e:
             duration = time.time() - start_time
             detail = LLMUtils.format_request_failure(e)
             logger.error("[LLMService] %s stream failed after %.2fs: %s", model, duration, detail)

@@ -10,12 +10,14 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional, Tuple
 import logging
 import platform
 import shutil
 import subprocess
 import sys
+from typing import Optional, Tuple
+
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 try:
     import pytesseract
@@ -73,10 +75,9 @@ def install_tesseract_ocr() -> Tuple[bool, Optional[str]]:
         if result.returncode == 0:
             logger.info("[DependencyCheck] Successfully installed Tesseract OCR")
             return True, None
-        else:
-            error_msg = result.stderr or result.stdout or "Unknown error"
-            logger.warning("[DependencyCheck] Failed to auto-install Tesseract OCR: %s", error_msg)
-            return False, f"Auto-installation failed: {error_msg}"
+        error_msg = result.stderr or result.stdout or "Unknown error"
+        logger.warning("[DependencyCheck] Failed to auto-install Tesseract OCR: %s", error_msg)
+        return False, f"Auto-installation failed: {error_msg}"
 
     except subprocess.TimeoutExpired:
         logger.warning("[DependencyCheck] Tesseract OCR installation timed out")
@@ -84,7 +85,7 @@ def install_tesseract_ocr() -> Tuple[bool, Optional[str]]:
     except FileNotFoundError:
         logger.warning("[DependencyCheck] apt-get command not found, cannot auto-install")
         return True, None  # Not an error, just can't auto-install
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.warning("[DependencyCheck] Error during auto-installation: %s", e)
         return False, f"Auto-installation error: {str(e)}"
 
@@ -123,11 +124,11 @@ def check_tesseract_ocr() -> Tuple[bool, Optional[str]]:
                     # Don't fail - English OCR will still work
                 else:
                     logger.info("[DependencyCheck] Tesseract OCR Chinese language pack (chi_sim) is available")
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.warning("[DependencyCheck] Could not verify Tesseract language packs: %s", e)
 
             return True, None
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             # Tesseract binary not found - attempt auto-install on Linux
             if platform.system() == "Linux" and shutil.which("apt-get"):
                 logger.info("[DependencyCheck] Tesseract OCR not found, attempting automatic installation...")
@@ -151,11 +152,11 @@ def check_tesseract_ocr() -> Tuple[bool, Optional[str]]:
                                 )
                             else:
                                 logger.warning("[DependencyCheck] Chinese language pack not found after installation")
-                        except Exception:
+                        except BACKGROUND_INFRA_ERRORS:
                             pass  # Language check is optional
 
                         return True, None
-                    except Exception as e2:
+                    except BACKGROUND_INFRA_ERRORS as e2:
                         # Still failed after installation attempt
                         error_msg = (
                             "Tesseract OCR installation attempted but verification failed.\n"
@@ -188,7 +189,7 @@ def check_tesseract_ocr() -> Tuple[bool, Optional[str]]:
                 )
                 return False, error_msg
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         return False, f"Error checking Tesseract OCR: {str(e)}"
 
 

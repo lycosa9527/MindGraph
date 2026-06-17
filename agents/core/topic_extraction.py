@@ -7,11 +7,11 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
 import logging
 
 from agents.core.llm_clients import llm_classification
 from services.llm import llm_service
+from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ async def extract_central_topic_llm(user_prompt: str, language: str = "zh") -> s
 
         return central_topic
 
-    except Exception as e:
+    except LLM_PIPELINE_ERRORS as e:
         logger.error("LLM topic extraction error: %s, using original prompt", e)
         return user_prompt.strip()
 
@@ -91,7 +91,7 @@ Your output:"""
 
         return topics
 
-    except Exception as e:
+    except LLM_PIPELINE_ERRORS as e:
         logger.error("LLM double bubble topic extraction error: %s, using original prompt", e)
         return user_prompt.strip()
 

@@ -17,6 +17,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 def _json_codes() -> list[str]:
+    """Json codes."""
     path = _REPO_ROOT / "data" / "prompt_language_registry.json"
     if not path.is_file():
         print(f"Missing {path}", file=sys.stderr)
@@ -27,6 +28,7 @@ def _json_codes() -> list[str]:
 
 
 def _typescript_codes() -> list[str]:
+    """Typescript codes."""
     path = _REPO_ROOT / "frontend" / "src" / "i18n" / "locales.ts"
     text = path.read_text(encoding="utf-8")
     if "prompt_language_registry.json" in text:
@@ -44,6 +46,7 @@ def _typescript_codes() -> list[str]:
 
 
 def _python_codes() -> list[str]:
+    """Python codes."""
     mod_path = _REPO_ROOT / "utils" / "prompt_output_languages.py"
     spec = importlib.util.spec_from_file_location("prompt_output_languages", mod_path)
     if spec is None or spec.loader is None:

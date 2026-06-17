@@ -9,16 +9,16 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Dict, Any
 import logging
+from typing import Any, Dict
 
 from config.settings import config
-from services.infrastructure.utils.load_balancer import initialize_load_balancer
 from services.infrastructure.rate_limiting.rate_limiter import (
-    initialize_rate_limiter,
     DashscopeRateLimiter,
     LoadBalancerRateLimiter,
+    initialize_rate_limiter,
 )
+from services.infrastructure.utils.load_balancer import initialize_load_balancer
 
 logger = logging.getLogger(__name__)
 

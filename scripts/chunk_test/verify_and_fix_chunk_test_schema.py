@@ -5,9 +5,11 @@ This script checks if the required columns exist and provides SQL to fix them.
 Run with: python scripts/verify_and_fix_chunk_test_schema.py
 """
 
-import sys
 import os
+import sys
 from pathlib import Path
+
+from services.utils.error_types import DATABASE_ERRORS
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -16,6 +18,7 @@ os.environ.setdefault("PYTHONPATH", str(project_root))
 
 try:
     from sqlalchemy import inspect, text
+
     from config.database import engine
 except ImportError as e:
     print(f"Error importing dependencies: {e}")
@@ -126,7 +129,7 @@ def check_and_fix():
                     conn.commit()
                 print("\n✓ All fixes applied successfully!")
                 print("\nPlease restart your server for changes to take effect.")
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 print(f"\n✗ Error applying fixes: {e}")
                 print("\nYou can run the SQL commands manually using your database client.")
         else:
@@ -138,7 +141,7 @@ def check_and_fix():
 if __name__ == "__main__":
     try:
         check_and_fix()
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         print(f"\n✗ Error: {e}")
         import traceback
 

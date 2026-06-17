@@ -8,8 +8,8 @@ from typing import Any, Dict, Optional
 
 from redis.exceptions import RedisError
 
+from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log, summarize_diagram_update
 from services.kitty.infra.redis.kitty_redis_keys import kitty_desktop_wake_channel
-from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
@@ -86,11 +86,6 @@ async def publish_kitty_diagram_update(
     payload = json.dumps(body, ensure_ascii=False)
     try:
         await redis.publish(channel, payload)
-        from services.kitty.infra.control.kitty_workflow_trace import (
-            kitty_wf_log,
-            summarize_diagram_update,
-        )
-
         act = str(message.get("action") or "").strip()
         kitty_wf_log(
             "sse_fanout",
@@ -126,8 +121,6 @@ async def publish_kitty_selection_update(
     payload = json.dumps(body, ensure_ascii=False)
     try:
         await redis.publish(channel, payload)
-        from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
-
         sel = selected_nodes[0] if selected_nodes else "—"
         kitty_wf_log(
             "selection_fanout",
@@ -177,8 +170,6 @@ async def publish_kitty_voice_command_log(
     payload = json.dumps(body, ensure_ascii=False)
     try:
         await redis.publish(channel, payload)
-        from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
-
         kitty_wf_log(
             "voice_command",
             detail or act,

@@ -10,15 +10,15 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import UTC, datetime
-from typing import Dict, Optional
 import logging
 import random
+from datetime import UTC, datetime
+from typing import Dict, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.domain.debateverse import DebateSession, DebateParticipant, DebateMessage
+from models.domain.debateverse import DebateMessage, DebateParticipant, DebateSession
 from services.features.debateverse_context_builder import DebateVerseContextBuilder
 from services.llm import llm_service
 from services.llm.llm_utils import stream_enable_thinking

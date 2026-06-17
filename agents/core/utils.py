@@ -8,12 +8,12 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
 import json
+import logging
 import re
 import time
-import logging
 
+from services.utils.error_types import JSON_PARSE_ERRORS
 from utils.prompt_output_languages import is_prompt_output_language
 
 logger = logging.getLogger(__name__)
@@ -204,7 +204,7 @@ def _salvage_truncated_json(text: str) -> str | None:
         json.loads(salvaged_text)
         return salvaged_text
 
-    except Exception as e:
+    except JSON_PARSE_ERRORS as e:
         logger.error("JSON salvage failed: %s", e)
         return None
 
@@ -229,7 +229,7 @@ def _parse_strict_json(text: str) -> dict:
     cleaned = re.sub(r",\s*(\]|\})", r"\1", cleaned)
     try:
         return json.loads(cleaned)
-    except Exception:
+    except JSON_PARSE_ERRORS:
         # Try salvage
         candidate = _salvage_json_string(cleaned)
         if candidate:

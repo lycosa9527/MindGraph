@@ -10,6 +10,7 @@ All Rights Reserved
 Proprietary License
 """
 
+import importlib
 import logging
 import logging.handlers
 import os
@@ -22,26 +23,30 @@ from dotenv import load_dotenv
 
 from config.settings import config
 from services.infrastructure.http.error_handler import LLMServiceError
-from services.llm import llm_service
 from services.infrastructure.utils.launch_commands import error_footer_launch_reference
+from services.llm import llm_service
 from services.redis.redis_client import (
     RedisStartupError,
     init_redis_sync,
     is_redis_available,
 )
-
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 # Load environment variables from .env file
 # This ensures Celery workers have access to all environment variables
 load_dotenv()
 
-_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if _project_root not in sys.path:
-    sys.path.insert(0, _project_root)
 
-from scripts.db.migration_urls import bootstrap_rls_migration_from_env
+def _bootstrap_rls_migration_from_env() -> None:
+    """Ensure project root is on sys.path, then apply RLS migration URL bootstrap."""
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
+    migration_urls = importlib.import_module("scripts.db.migration_urls")
+    migration_urls.bootstrap_rls_migration_from_env()
 
-bootstrap_rls_migration_from_env()
+
+_bootstrap_rls_migration_from_env()
 
 
 # Configure Celery logging to match application format
@@ -63,6 +68,7 @@ class UnifiedFormatter(logging.Formatter):
 
     def format(self, record):
         # Timestamp: HH:MM:SS
+        """Format."""
         timestamp = self.formatTime(record, "%H:%M:%S")
 
         # Level abbreviation
@@ -384,10 +390,7 @@ def init_celery_worker_check() -> bool:
                 logger.info("[Celery] Found %d active worker(s)", worker_count)
             return True
 
-        except CeleryStartupError:
-            # Re-raise our custom exception immediately (don't retry)
-            raise
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             # Connection error or other unexpected error - retry
             last_exception = exc
             if attempt < max_retries - 1:

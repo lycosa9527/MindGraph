@@ -13,6 +13,7 @@ from starlette.testclient import TestClient
 from services.infrastructure.http.middleware import add_cache_control_headers
 from services.infrastructure.utils.spa_handler import (
     apply_no_cache_headers,
+    is_public_static_path,
     is_pwa_no_cache_path,
     is_spa_route,
     should_apply_api_no_cache,
@@ -47,6 +48,7 @@ vue_spa_module = importlib.import_module("routers.core.vue_spa")
     ],
 )
 def test_is_spa_route_true_for_client_routes(path: str) -> None:
+    """Test is spa route true for client routes."""
     assert is_spa_route(path) is True
 
 
@@ -69,6 +71,7 @@ def test_is_spa_route_true_for_client_routes(path: str) -> None:
     ],
 )
 def test_is_spa_route_false_for_non_client_routes(path: str) -> None:
+    """Test is spa route false for non client routes."""
     assert is_spa_route(path) is False
 
 
@@ -85,8 +88,7 @@ def test_is_spa_route_false_for_non_client_routes(path: str) -> None:
     ],
 )
 def test_is_public_static_path_for_middleware_skip(path: str) -> None:
-    from services.infrastructure.utils.spa_handler import is_public_static_path
-
+    """Test is public static path for middleware skip."""
     assert is_public_static_path(path) is True
 
 
@@ -100,16 +102,19 @@ def test_is_public_static_path_for_middleware_skip(path: str) -> None:
     ],
 )
 def test_is_pwa_no_cache_path(path: str) -> None:
+    """Test is pwa no cache path."""
     assert is_pwa_no_cache_path(path) is True
     assert should_apply_no_cache(path) is True
 
 
 def test_should_apply_no_cache_html_by_suffix_and_content_type() -> None:
+    """Test should apply no cache html by suffix and content type."""
     assert should_apply_no_cache("/nested/offline.html") is True
     assert should_apply_no_cache("/unexpected", "text/html; charset=utf-8") is True
 
 
 def test_should_apply_api_no_cache_only_when_unset() -> None:
+    """Test should apply api no cache only when unset."""
     response = Response()
     assert should_apply_api_no_cache("/api/auth/me", response) is True
 
@@ -120,6 +125,7 @@ def test_should_apply_api_no_cache_only_when_unset() -> None:
 
 
 def test_apply_no_cache_headers() -> None:
+    """Test apply no cache headers."""
     response = Response()
     apply_no_cache_headers(response)
     assert response.headers["Cache-Control"] == "no-cache, no-store, must-revalidate"
@@ -128,6 +134,7 @@ def test_apply_no_cache_headers() -> None:
 
 
 def _app_with_cache_middleware() -> FastAPI:
+    """App with cache middleware."""
     app = FastAPI()
     app.middleware("http")(add_cache_control_headers)
 
@@ -152,6 +159,7 @@ def _app_with_cache_middleware() -> FastAPI:
 
 
 def test_middleware_no_cache_on_spa_route(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test middleware no cache on spa route."""
     dist_dir = tmp_path / "dist"
     dist_dir.mkdir()
     (dist_dir / "index.html").write_text(
@@ -168,6 +176,7 @@ def test_middleware_no_cache_on_spa_route(tmp_path, monkeypatch: pytest.MonkeyPa
 
 
 def test_middleware_immutable_assets() -> None:
+    """Test middleware immutable assets."""
     client = TestClient(_app_with_cache_middleware())
     response = client.get("/assets/chunk-abc.js")
     assert response.status_code == 200
@@ -175,6 +184,7 @@ def test_middleware_immutable_assets() -> None:
 
 
 def test_middleware_api_default_no_cache() -> None:
+    """Test middleware api default no cache."""
     client = TestClient(_app_with_cache_middleware())
     response = client.get("/api/ping")
     assert response.status_code == 200
@@ -182,6 +192,7 @@ def test_middleware_api_default_no_cache() -> None:
 
 
 def test_middleware_preserves_api_handler_cache_control() -> None:
+    """Test middleware preserves api handler cache control."""
     client = TestClient(_app_with_cache_middleware())
     response = client.get("/api/cached-image")
     assert response.status_code == 200

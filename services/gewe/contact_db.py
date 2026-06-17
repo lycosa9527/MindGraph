@@ -10,20 +10,20 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
 import json
-from datetime import UTC, datetime
-from typing import Optional, List, Dict, Any
 import logging
+from datetime import UTC, datetime
+from typing import Any, Dict, List, Optional
 
-from sqlalchemy import select, delete, and_
-from sqlalchemy.sql.functions import count as sql_count
+from sqlalchemy import and_, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import count as sql_count
 
 from models.domain.gewe_contact import GeweContact
-from services.utils.typing_helpers import result_rowcount
 from services.redis.redis_async_ops import AsyncRedisOperations
 from services.redis.redis_client import is_redis_available
+from services.utils.error_types import DATABASE_ERRORS
+from services.utils.typing_helpers import result_rowcount
 
 logger = logging.getLogger(__name__)
 
@@ -126,11 +126,11 @@ class GeweContactDB:
                 try:
                     cache_key = f"{CONTACT_KEY_PREFIX}{app_id}:{wxid}"
                     await AsyncRedisOperations.delete(cache_key)
-                except Exception as e:
+                except DATABASE_ERRORS as e:
                     logger.debug("Failed to invalidate contact cache %s:%s: %s", app_id, wxid, e)
 
             return True
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Failed to save contact: %s", e, exc_info=True)
             await self.db.rollback()
             return False
@@ -214,12 +214,12 @@ class GeweContactDB:
 
                 saved_count += 1
                 invalidate_wxids.append(wxid)
-            except Exception as exc:
+            except DATABASE_ERRORS as exc:
                 logger.warning("Failed to stage contact %s: %s", wxid, exc)
 
         try:
             await self.db.commit()
-        except Exception as exc:
+        except DATABASE_ERRORS as exc:
             logger.error("Failed to commit contacts batch: %s", exc, exc_info=True)
             await self.db.rollback()
             return 0
@@ -230,7 +230,7 @@ class GeweContactDB:
                 try:
                     cache_key = f"{CONTACT_KEY_PREFIX}{app_id}:{wxid}"
                     await AsyncRedisOperations.delete(cache_key)
-                except Exception as exc:
+                except DATABASE_ERRORS as exc:
                     logger.debug("Failed to invalidate contact cache %s:%s: %s", app_id, wxid, exc)
 
         logger.info("Saved %d contacts in batch for app %s", saved_count, app_id)
@@ -263,7 +263,7 @@ class GeweContactDB:
                         logger.warning("Corrupted cache for contact %s:%s: %s", app_id, wxid, e)
                         # Invalidate corrupted cache
                         await AsyncRedisOperations.delete(cache_key)
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 logger.debug("Redis error for contact %s:%s: %s", app_id, wxid, e)
 
         # Cache miss - load from database
@@ -305,11 +305,11 @@ class GeweContactDB:
                         json.dumps(result, ensure_ascii=False),
                         CONTACT_CACHE_TTL,
                     )
-                except Exception as exc:
+                except DATABASE_ERRORS as exc:
                     logger.debug("Failed to cache contact %s:%s: %s", app_id, wxid, exc)
 
             return result
-        except Exception as exc:
+        except DATABASE_ERRORS as exc:
             logger.error("Failed to get contact: %s", exc, exc_info=True)
             return None
 
@@ -372,7 +372,7 @@ class GeweContactDB:
                 contacts.append(contact_dict)
 
             return contacts
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Failed to get contacts: %s", e, exc_info=True)
             return []
 
@@ -398,11 +398,11 @@ class GeweContactDB:
                 try:
                     cache_key = f"{CONTACT_KEY_PREFIX}{app_id}:{wxid}"
                     await AsyncRedisOperations.delete(cache_key)
-                except Exception as e:
+                except DATABASE_ERRORS as e:
                     logger.debug("Failed to invalidate contact cache %s:%s: %s", app_id, wxid, e)
 
             return result_rowcount(result) > 0
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Failed to delete contact: %s", e, exc_info=True)
             await self.db.rollback()
             return False
@@ -426,6 +426,6 @@ class GeweContactDB:
 
             count_result = await self.db.execute(query)
             return count_result.scalar() or 0
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Failed to get contacts count: %s", e, exc_info=True)
             return 0

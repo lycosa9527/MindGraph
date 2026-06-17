@@ -17,28 +17,26 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import UTC, datetime
-
 import io
 import json
 import logging
+from datetime import UTC, datetime
 from typing import Optional
 
+import qrcode
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
 from fastapi.responses import Response
-import qrcode
-from qrcode import constants as qrcode_constants
 from PIL import Image
+from qrcode import constants as qrcode_constants
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
-from utils.db.session_open import actor_rls_session, user_rls_session
 from models.domain.auth import User
-from models.domain.messages import Language
 from models.domain.diagram_snapshots import DiagramSnapshot
 from models.domain.diagrams import Diagram
+from models.domain.messages import Language
 from models.requests.requests_diagram import (
     DiagramCreateRequest,
     DiagramUpdateRequest,
@@ -52,12 +50,20 @@ from models.responses import (
     SnapshotMetadata,
     SnapshotRecallResponse,
 )
-from services.redis.cache._redis_diagram_cache_helpers import MAX_SPEC_SIZE_KB
+from routers.api.diagrams_workshop_routes import router as workshop_router
+from routers.auth.dependencies import get_language_dependency
 from services.online_collab.core.online_collab_manager import (
     get_online_collab_manager,
 )
 from services.online_collab.lifecycle.online_collab_expiry import is_online_collab_expired
+from services.online_collab.spec.online_collab_live_spec import (
+    read_live_spec,
+    spec_for_snapshot,
+)
+from services.redis.cache._redis_diagram_cache_helpers import MAX_SPEC_SIZE_KB
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
+from services.redis.redis_async_client import get_async_redis
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 from utils.auth import get_current_user
 from utils.auth.school_tier import (
     TIER_FEATURE_ONLINE_COLLAB,
@@ -66,10 +72,7 @@ from utils.auth.school_tier import (
     parse_diagram_save_limit_error,
     user_has_school_tier_feature,
 )
-
-from routers.auth.dependencies import get_language_dependency
-
-from routers.api.diagrams_workshop_routes import router as workshop_router
+from utils.db.session_open import actor_rls_session, user_rls_session
 
 from .helpers import (
     check_endpoint_rate_limit,
@@ -84,6 +87,7 @@ router.include_router(workshop_router)
 
 
 def _diagram_limit_http_detail(error: str | None, lang: Language) -> str | None:
+    """Diagram limit http detail."""
     cap = parse_diagram_save_limit_error(error)
     if cap is None:
         return None
@@ -176,11 +180,6 @@ async def _diagram_spec_with_live_collab_overlay(
     )
     if not active_code:
         return spec
-    from services.redis.redis_async_client import get_async_redis
-    from services.online_collab.spec.online_collab_live_spec import (
-        read_live_spec,
-        spec_for_snapshot,
-    )
 
     redis_client = get_async_redis()
     if not redis_client:
@@ -189,7 +188,7 @@ async def _diagram_spec_with_live_collab_overlay(
         live_doc = await read_live_spec(redis_client, active_code)
         if live_doc:
             return spec_for_snapshot(live_doc)
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.warning(
             "[Diagrams] live spec overlay failed diagram_id=%s: %s",
             diagram_id,
@@ -639,7 +638,7 @@ async def generate_qrcode(
                 "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
             },
         )
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[Diagrams] Error generating QR code: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to generate QR code") from e
 

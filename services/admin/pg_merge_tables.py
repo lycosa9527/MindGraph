@@ -22,6 +22,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.sql.schema import Table
 
 from models.domain.registry import Base
+from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -534,7 +535,7 @@ def _apply_self_ref_updates(
                     conn.execute(update_sql, params)
                     sp.commit()
                     applied += 1
-                except Exception as exc:
+                except DATABASE_ERRORS as exc:
                     sp.rollback()
                     logger.debug(
                         "[PGMerge] Self-ref update failed for %s pk=%s: %s",
@@ -543,7 +544,7 @@ def _apply_self_ref_updates(
                         exc,
                     )
             txn.commit()
-        except Exception:
+        except DATABASE_ERRORS:
             txn.rollback()
             raise
 
@@ -694,7 +695,7 @@ def merge_table(
                         inserted += 1
                         if old_self_ref is not None:
                             self_ref_updates.append((new_pk, old_self_ref))
-                    except Exception as exc:
+                    except DATABASE_ERRORS as exc:
                         savepoint.rollback()
                         logger.debug(
                             "[PGMerge] Insert failed %s pk=%s: %s",
@@ -704,7 +705,7 @@ def merge_table(
                         )
                         orphaned += 1
                 txn.commit()
-            except Exception:
+            except DATABASE_ERRORS:
                 txn.rollback()
                 raise
 
@@ -757,7 +758,7 @@ def reset_all_sequences(live_engine: Engine) -> None:
                         {"seq": seq_name},
                     )
                     sp.commit()
-                except Exception as exc:
+                except DATABASE_ERRORS as exc:
                     sp.rollback()
                     logger.debug(
                         "[PGMerge] Sequence reset skipped for %s: %s",
@@ -765,6 +766,6 @@ def reset_all_sequences(live_engine: Engine) -> None:
                         exc,
                     )
             txn.commit()
-        except Exception:
+        except DATABASE_ERRORS:
             txn.rollback()
             raise

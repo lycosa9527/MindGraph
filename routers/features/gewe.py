@@ -10,30 +10,30 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import List, Optional
 import json
 import logging
 import os
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from clients.gewe import GeweAPIError
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.gewe_responses import (
+    GeweCallbackResponse,
+    GeweContactInfoResponse,
+    GeweContactListResponse,
     GeweLoginQrCodeResponse,
     GeweLoginStatusResponse,
     GeweMessageSendResponse,
-    GeweContactListResponse,
-    GeweContactInfoResponse,
-    GeweCallbackResponse,
 )
-from clients.gewe import GeweAPIError
-from services.gewe import GeweService
 from routers.auth.dependencies import require_admin
+from services.gewe import GeweService
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.db.rls_request import bind_system_bootstrap_rls_dependency
-
 
 logger = logging.getLogger(__name__)
 
@@ -237,7 +237,7 @@ async def get_gewe_login_qrcode(
                 )
                 logger.info("Successfully created new device with empty app_id")
                 return GeweLoginQrCodeResponse(**result)
-            except Exception as retry_error:
+            except BACKGROUND_INFRA_ERRORS as retry_error:
                 logger.error("Error retrying with empty app_id: %s", retry_error, exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -252,7 +252,7 @@ async def get_gewe_login_qrcode(
             ) from e
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Error getting login QR code: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -286,7 +286,7 @@ async def check_gewe_login(
         return GeweLoginStatusResponse(**result)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Error checking login: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -314,7 +314,7 @@ async def set_gewe_callback(
         return GeweCallbackResponse(**result)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Error setting callback: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -343,7 +343,7 @@ async def send_gewe_message(
         return GeweMessageSendResponse(**result)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Error sending message: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -371,7 +371,7 @@ async def get_gewe_contacts(
         return GeweContactListResponse(**result)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Error getting contacts: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -398,7 +398,7 @@ async def get_gewe_contacts_info(
         return GeweContactInfoResponse(**result)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Error getting contacts info: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -419,7 +419,7 @@ async def get_gewe_login_info(_current_user: User = Depends(require_admin), db: 
         if login_info:
             return login_info
         return {"app_id": None, "wxid": None}
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("Error getting login info: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -458,7 +458,7 @@ async def get_gewe_config_status(
                 app_id_masked = (
                     "*" * len(app_id_value) if len(app_id_value) <= 8 else f"{app_id_value[:4]}...{app_id_value[-4:]}"
                 )
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("Failed to get saved login info: %s", exc)
     finally:
         await service.cleanup()
@@ -489,7 +489,7 @@ async def save_gewe_preferences(
             auto_sliding=data.auto_sliding,
         )
         return {"status": "success", "message": "Preferences saved successfully"}
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Error saving preferences: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -508,7 +508,7 @@ async def get_gewe_preferences(_current_user: User = Depends(require_admin), db:
     try:
         preferences = service.get_preferences()
         return preferences
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("Error getting preferences: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -528,7 +528,7 @@ async def reset_gewe_device_id(_current_user: User = Depends(require_admin), db:
     try:
         service.reset_device_id()
         return {"status": "success", "message": "Device ID reset successfully"}
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("Error resetting device ID: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -662,7 +662,7 @@ async def gewe_webhook(
                         )
                         await service.download_and_send_images(app_id=app_id, to_wxid=to_wxid, image_urls=image_urls)
                         logger.info("✅ [Webhook] Successfully sent images to %s", to_wxid)
-                except Exception as e:
+                except BACKGROUND_INFRA_ERRORS as e:
                     logger.error("❌ [Webhook] Error sending response: %s", e, exc_info=True)
                     return {
                         "status": "error",
@@ -673,7 +673,7 @@ async def gewe_webhook(
 
         return {"status": "ok"}
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("❌ [Webhook] Error processing webhook: %s", e, exc_info=True)
         return {"status": "error", "message": str(e)}
     finally:

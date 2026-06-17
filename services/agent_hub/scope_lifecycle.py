@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import copy
 import logging
 import time
@@ -12,23 +13,22 @@ from uuid import uuid4
 from fastapi import WebSocket
 
 from services.infrastructure.monitoring.ws_metrics import (
-    record_kitty_control_cleanup_applied,
-    record_kitty_control_cleanup_not_configured,
-    record_kitty_control_message_ignored,
-    record_kitty_control_received,
-    record_kitty_control_voice_cleanup_failed,
     record_kitty_refcount_attach,
     record_kitty_refcount_attach_failed,
     record_kitty_refcount_detach_failed,
     record_kitty_refcount_detach_mismatch,
     record_kitty_refcount_teardown,
 )
+from services.kitty.infra.bootstrap.kitty_context_hydrate import (
+    diagram_data_has_visible_content,
+    merge_voice_context_with_library,
+    resolve_mobile_open_bootstrap,
+)
 from services.kitty.infra.control.kitty_control_fanout import (
     KITTY_CONTROL_REASON_HANDSHAKE_PREEMPT,
     KITTY_CONTROL_REASON_IDLE_TIMEOUT,
-    parse_kitty_control_envelope,
+    configure_kitty_control_dispatch,
     publish_kitty_close_scope_async,
-    verify_kitty_control_shared_secret,
 )
 from services.kitty.infra.control.kitty_observability import kitty_extra
 from services.kitty.infra.redis.kitty_scope_refcount import (
@@ -36,13 +36,7 @@ from services.kitty.infra.redis.kitty_scope_refcount import (
     kitty_scope_refcount_attach,
     kitty_scope_refcount_detach,
 )
-from services.kitty.infra.bootstrap.kitty_context_hydrate import (
-    diagram_data_has_visible_content,
-    merge_voice_context_with_library,
-    resolve_mobile_open_bootstrap,
-)
 from services.kitty.infra.redis.kitty_session_redis import (
-    kitty_sessionmeta_active_for_user,
     upsert_kitty_redis_session,
 )
 from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
@@ -50,23 +44,29 @@ from services.redis.cache.redis_diagram_cache import get_diagram_cache
 
 logger = logging.getLogger(__name__)
 
-_KITTY_SCOPE_CLEANUP: Optional[Callable[[str], Awaitable[bool]]] = None
-_ACTIVE_WEBSOCKETS: Optional[Dict[str, List[WebSocket]]] = None
-_VOICE_SESSIONS: Optional[Dict[str, Any]] = None
 
-_DEFAULT_HUB: Optional["MindGraphAgentHub"] = None
+class _ScopeLifecycleState:
+    """Process-wide Kitty scope lifecycle singleton holder."""
+
+    kitty_scope_cleanup: Optional[Callable[[str], Awaitable[bool]]] = None
+    active_websockets: Optional[Dict[str, List[WebSocket]]] = None
+    voice_sessions: Optional[Dict[str, Any]] = None
+    default_hub: Optional["MindGraphAgentHub"] = None
 
 
 def _new_hub_request_id() -> str:
+    """New hub request id."""
     return f"hubreq_{uuid4().hex[:16]}"
 
 
 def _new_hub_mutation_id() -> str:
+    """New hub mutation id."""
     return f"hubmut_{uuid4().hex[:16]}"
 
 
 @dataclass(slots=True)
 class HubTraceState:
+    """HubTraceState helper."""
     request_id: str
     mutation_id: Optional[str] = None
     idempotency_key: Optional[str] = None
@@ -75,6 +75,7 @@ class HubTraceState:
 
 @dataclass(slots=True)
 class HubScopeBinding:
+    """HubScopeBinding helper."""
     scope: str
     revision: int = 0
     bound_at: float = field(default_factory=time.time)
@@ -83,6 +84,7 @@ class HubScopeBinding:
 
 @dataclass(slots=True)
 class HubKittyRuntimeState:
+    """HubKittyRuntimeState helper."""
     voice_session_id: Optional[str] = None
     agent_session_id: Optional[str] = None
     connected: bool = False
@@ -90,6 +92,7 @@ class HubKittyRuntimeState:
 
 @dataclass(slots=True)
 class HubSessionState:
+    """HubSessionState helper."""
     session_id: str
     user_id: int
     client_lane: Optional[str]
@@ -108,8 +111,8 @@ def configure_kitty_scope_cleanup(
     cleanup_voice_by_diagram: Callable[[str], Awaitable[bool]],
 ) -> None:
     """Inject voice session cleanup (closes local WS + ends Omni sessions)."""
-    global _KITTY_SCOPE_CLEANUP
-    _KITTY_SCOPE_CLEANUP = cleanup_voice_by_diagram
+    _ScopeLifecycleState.kitty_scope_cleanup = cleanup_voice_by_diagram
+    configure_kitty_control_dispatch(kitty_scope_cleanup=cleanup_voice_by_diagram)
 
 
 def configure_kitty_control_state(
@@ -117,32 +120,34 @@ def configure_kitty_control_state(
     voice_sessions: Dict[str, Any],
 ) -> None:
     """Inject process-local registries for control-message fan-in matching."""
-    global _ACTIVE_WEBSOCKETS, _VOICE_SESSIONS
-    _ACTIVE_WEBSOCKETS = active_websockets
-    _VOICE_SESSIONS = voice_sessions
+    _ScopeLifecycleState.active_websockets = active_websockets
+    _ScopeLifecycleState.voice_sessions = voice_sessions
+    configure_kitty_control_dispatch(
+        active_websockets=active_websockets,
+        voice_sessions=voice_sessions,
+    )
 
 
 def get_mind_graph_agent_hub() -> "MindGraphAgentHub":
     """Singleton façade for routes."""
-    global _DEFAULT_HUB
-    if _DEFAULT_HUB is None:
-        _DEFAULT_HUB = MindGraphAgentHub()
-    return _DEFAULT_HUB
+    if _ScopeLifecycleState.default_hub is None:
+        _ScopeLifecycleState.default_hub = MindGraphAgentHub()
+    return _ScopeLifecycleState.default_hub
 
 
 class MindGraphAgentHub:
     """Policy owner for Kitty voice scope: refcount, preempt, HTTP cleanup, mobile diagram bootstrap."""
 
     def __init__(self) -> None:
+        """ init  ."""
         self._sessions: Dict[str, HubSessionState] = {}
         self._idempotent_mutation_result: Dict[str, Dict[str, Any]] = {}
         self._session_lock = None
 
     @property
     def session_lock(self):
+        """Session lock."""
         if self._session_lock is None:
-            import asyncio
-
             self._session_lock = asyncio.Lock()
         return self._session_lock
 
@@ -153,6 +158,7 @@ class MindGraphAgentHub:
         client_lane: Optional[str],
         source_module: str,
     ) -> str:
+        """Open session."""
         session_id = f"hubsess_{uuid4().hex[:16]}"
         session = HubSessionState(
             session_id=session_id,
@@ -166,6 +172,7 @@ class MindGraphAgentHub:
         return session_id
 
     async def close_session(self, hub_session_id: str, *, reason: str) -> None:
+        """Close session."""
         async with self.session_lock:
             sess = self._sessions.pop(hub_session_id, None)
         if sess is None:
@@ -187,6 +194,7 @@ class MindGraphAgentHub:
         source_module: str,
         expected_revision: Optional[int] = None,
     ) -> Dict[str, Any]:
+        """Bind scope."""
         scope = normalize_kitty_diagram_session_id(diagram_scope)
         if scope is None:
             raise ValueError("invalid diagram scope")
@@ -223,6 +231,7 @@ class MindGraphAgentHub:
         expected_revision: Optional[int] = None,
         idempotency_key: Optional[str] = None,
     ) -> Dict[str, Any]:
+        """Switch scope."""
         if idempotency_key and idempotency_key in self._idempotent_mutation_result:
             return self._idempotent_mutation_result[idempotency_key]
         result = await self.bind_scope(
@@ -245,6 +254,7 @@ class MindGraphAgentHub:
         agent_session_id: Optional[str],
         connected: bool,
     ) -> None:
+        """Set kitty runtime."""
         async with self.session_lock:
             sess = self._sessions.get(hub_session_id)
             if sess is None:
@@ -281,6 +291,7 @@ class MindGraphAgentHub:
         client_lane: Optional[str] = None,
         client_suggested_scope: Optional[str] = None,
     ) -> Dict[str, Any]:
+        """Get diagram context."""
         request_id = _new_hub_request_id()
         scope_hint = client_suggested_scope or diagram_scope
         bootstrap = await resolve_mobile_open_bootstrap(
@@ -313,6 +324,7 @@ class MindGraphAgentHub:
         start_client_lane: Optional[str],
         source_module: str = "kitty",
     ) -> Dict[str, Any]:
+        """Prepare kitty start context."""
         request_id = _new_hub_request_id()
         initial_context_in = copy.deepcopy(start_context) if isinstance(start_context, dict) else {}
         if start_client_lane == "mobile":
@@ -370,6 +382,7 @@ class MindGraphAgentHub:
         expected_revision: Optional[int] = None,
         idempotency_key: Optional[str] = None,
     ) -> Dict[str, Any]:
+        """Apply diagram spec mutation."""
         if idempotency_key and idempotency_key in self._idempotent_mutation_result:
             return self._idempotent_mutation_result[idempotency_key]
 
@@ -511,9 +524,11 @@ class MindGraphAgentHub:
         await publish_kitty_close_scope_async(scope, int(user_id), reason)
 
     async def preempt_handshake(self, scope: str, user_id: int) -> None:
+        """Preempt handshake."""
         await self.preempt_scope(scope, user_id, KITTY_CONTROL_REASON_HANDSHAKE_PREEMPT)
 
     async def preempt_idle_timeout(self, scope: str, user_id: int) -> None:
+        """Preempt idle timeout."""
         await self.preempt_scope(scope, user_id, KITTY_CONTROL_REASON_IDLE_TIMEOUT)
 
     async def register_kitty_connection(self, scope: str, user_id: int) -> bool:
@@ -575,107 +590,3 @@ class MindGraphAgentHub:
         Not implemented: always valid when token omitted.
         """
         return _token is None or str(_token).strip() == ""
-
-
-async def _local_scope_matches_user(scope: str, user_id: int) -> bool:
-    if _VOICE_SESSIONS is None or _ACTIVE_WEBSOCKETS is None:
-        return False
-    matching_sessions = [s for s in _VOICE_SESSIONS.values() if s.get("diagram_session_id") == scope]
-    if matching_sessions:
-        return all(str(s.get("user_id")) == str(user_id) for s in matching_sessions)
-    if scope in _ACTIVE_WEBSOCKETS:
-        return await kitty_sessionmeta_active_for_user(scope, user_id)
-    return False
-
-
-async def handle_kitty_control_dispatch(raw: str, local_instance: str) -> None:
-    """Redis subscriber entry: validate envelope, match local state, run cleanup."""
-    record_kitty_control_received()
-    envelope = parse_kitty_control_envelope(raw)
-    if envelope is None:
-        record_kitty_control_message_ignored()
-        return
-    if not verify_kitty_control_shared_secret(envelope):
-        env_uid: Optional[int] = None
-        raw_uid = envelope.get("user_id")
-        if isinstance(raw_uid, int) and not isinstance(raw_uid, bool):
-            env_uid = raw_uid
-        elif isinstance(raw_uid, str) and raw_uid.strip():
-            try:
-                env_uid = int(raw_uid.strip(), 10)
-            except ValueError:
-                env_uid = None
-        raw_scope = envelope.get("scope")
-        env_scope = normalize_kitty_diagram_session_id(raw_scope) if isinstance(raw_scope, str) else None
-        logger.warning(
-            "[KittyControl] rejected control message (auth verification failed)",
-            extra=kitty_extra("control_auth_rejected", scope=env_scope, user_id=env_uid),
-        )
-        record_kitty_control_message_ignored()
-        return
-
-    scope = str(envelope["_parsed_scope"])
-    user_id = int(envelope["_parsed_user_id"])
-    reason = str(envelope["_parsed_reason"])
-    origin = envelope.get("origin")
-    origin_str = origin if isinstance(origin, str) else ""
-
-    if reason == KITTY_CONTROL_REASON_HANDSHAKE_PREEMPT and origin_str == local_instance:
-        record_kitty_control_message_ignored()
-        return
-
-    if not await _local_scope_matches_user(scope, user_id):
-        record_kitty_control_message_ignored()
-        return
-
-    if _KITTY_SCOPE_CLEANUP is None:
-        record_kitty_control_cleanup_not_configured()
-        logger.warning(
-            "[KittyControl] cleanup not configured; ignoring scope=%s",
-            scope,
-            extra=kitty_extra(
-                "cleanup_not_configured",
-                scope=scope,
-                user_id=user_id,
-                reason=reason,
-                origin=origin_str or None,
-            ),
-        )
-        return
-
-    try:
-        cleaned = await _KITTY_SCOPE_CLEANUP(scope)
-    except Exception as exc:
-        record_kitty_control_voice_cleanup_failed()
-        logger.warning(
-            "[KittyControl] voice cleanup failed scope=%s user_id=%s reason=%s: %s",
-            scope,
-            user_id,
-            reason,
-            exc,
-            exc_info=True,
-            extra=kitty_extra(
-                "voice_cleanup_failed",
-                scope=scope,
-                user_id=user_id,
-                reason=reason,
-                origin=origin_str or None,
-                error_type=type(exc).__name__,
-            ),
-        )
-        return
-    if cleaned:
-        record_kitty_control_cleanup_applied()
-        logger.info(
-            "[KittyControl] cross-worker cleanup scope=%s user_id=%s reason=%s",
-            scope,
-            user_id,
-            reason,
-            extra=kitty_extra(
-                "control_cleanup_applied",
-                scope=scope,
-                user_id=user_id,
-                reason=reason,
-                origin=origin_str or None,
-            ),
-        )

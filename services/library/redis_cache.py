@@ -22,14 +22,14 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
+import hashlib
 import json
 import logging
-import hashlib
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
 
 from services.redis.redis_async_ops import AsyncRedisOps
 from services.redis.redis_client import is_redis_available
+from services.utils.error_types import REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +116,7 @@ class LibraryRedisCache:
                     # Invalidate corrupted entry
                     await AsyncRedisOps.delete(key)
                     return None
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning("[LibraryCache] Redis error getting document %s: %s", document_id, e)
             return None
 
@@ -144,7 +144,7 @@ class LibraryRedisCache:
             if success:
                 logger.debug("[LibraryCache] Cached document metadata for %s", document_id)
             return success
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning("[LibraryCache] Redis error caching document %s: %s", document_id, e)
             return False
 
@@ -172,7 +172,7 @@ class LibraryRedisCache:
 
             logger.debug("[LibraryCache] Invalidated cache for document %s", document_id)
             return True
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning(
                 "[LibraryCache] Redis error invalidating document %s: %s",
                 document_id,
@@ -220,7 +220,7 @@ class LibraryRedisCache:
                     logger.warning("[LibraryCache] Corrupted danmaku cache: %s", e)
                     await AsyncRedisOps.delete(key)
                     return None
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning("[LibraryCache] Redis error getting danmaku: %s", e)
             return None
 
@@ -263,7 +263,7 @@ class LibraryRedisCache:
             if success:
                 logger.debug("[LibraryCache] Cached danmaku list doc=%s", document_id)
             return success
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning("[LibraryCache] Redis error caching danmaku: %s", e)
             return False
 
@@ -314,7 +314,7 @@ class LibraryRedisCache:
                     logger.warning("[LibraryCache] Corrupted recent danmaku cache: %s", e)
                     await AsyncRedisOps.delete(key)
                     return None
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning("[LibraryCache] Redis error getting recent danmaku: %s", e)
             return None
 
@@ -342,6 +342,6 @@ class LibraryRedisCache:
             if success:
                 logger.debug("[LibraryCache] Cached recent danmaku")
             return success
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning("[LibraryCache] Redis error caching recent danmaku: %s", e)
             return False

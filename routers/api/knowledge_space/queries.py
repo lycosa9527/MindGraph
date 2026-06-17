@@ -14,7 +14,7 @@ Proprietary License
 
 import logging
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,21 +27,21 @@ from models.domain.knowledge_space import (
     QueryTemplate,
 )
 from models.requests.requests_knowledge_space import (
-    RetrievalTestRequest,
     QueryFeedbackRequest,
     QueryTemplateRequest,
+    RetrievalTestRequest,
 )
 from models.responses import (
-    RetrievalTestHistoryResponse,
-    RetrievalTestHistoryItem,
     QueryAnalyticsResponse,
     QueryTemplateResponse,
+    RetrievalTestHistoryItem,
+    RetrievalTestHistoryResponse,
 )
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 from services.knowledge.retrieval_test_service import get_retrieval_test_service
 from services.llm.rag_service import get_rag_service
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user
-
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ async def test_retrieval(
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error(
             "[KnowledgeSpaceAPI] Retrieval test failed for user %s: %s",
             current_user.id,
@@ -135,7 +135,7 @@ async def get_retrieval_test_history(
             queries=history_items,
             total=len(history_items),
         )
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error(
             "[KnowledgeSpaceAPI] Failed to get retrieval test history for user %s: %s",
             current_user.id,
@@ -159,7 +159,7 @@ async def get_query_analytics(
         rag_service = get_rag_service()
         analytics = await rag_service.analyze_query_performance(db, current_user.id, days)
         return QueryAnalyticsResponse(**analytics)
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error(
             "[KnowledgeSpaceAPI] Failed to get query analytics for user %s: %s",
             current_user.id,
@@ -211,7 +211,7 @@ async def submit_query_feedback(
             "feedback_score": feedback.feedback_score,
             "created_at": feedback.created_at.isoformat(),
         }
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error(
             "[KnowledgeSpaceAPI] Failed to submit feedback for query %s: %s",
             query_id,
@@ -257,7 +257,7 @@ async def create_query_template(
             created_at=template.created_at.isoformat(),
             updated_at=template.updated_at.isoformat(),
         )
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("[KnowledgeSpaceAPI] Failed to create query template: %s", e)
         await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to create template") from e

@@ -8,19 +8,19 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Dict, List, Any
 import asyncio
 import logging
 import socket
 import time
+from typing import Any, Dict, List
 
 from clients.omni_client import OmniRealtimeClient, TurnDetectionMode
 from services.infrastructure.http.error_handler import (
-    LLMServiceError,
-    LLMRateLimitError,
     LLMQuotaExhaustedError,
+    LLMRateLimitError,
+    LLMServiceError,
 )
+from services.utils.error_types import LLM_PIPELINE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -143,12 +143,12 @@ class LLMHealthChecker:
                     # Connection successful, close it
                     await native_client.close()
                     return True
-                except Exception as e:
+                except LLM_PIPELINE_ERRORS as e:
                     logger.debug("Omni WebSocket health check failed: %s", e)
                     if native_client:
                         try:
                             await native_client.close()
-                        except Exception as exc:
+                        except LLM_PIPELINE_ERRORS as exc:
                             logger.debug("Omni WebSocket client close failed: %s", exc)
                     raise
 
@@ -159,7 +159,7 @@ class LLMHealthChecker:
                 "latency": round(latency, 2),
                 "note": "WebSocket-based real-time voice service",
             }
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             logger.warning("Health check failed for %s: %s", model, e)
             result = self._categorize_error(e)
             result["note"] = "WebSocket-based real-time voice service"
@@ -180,7 +180,7 @@ class LLMHealthChecker:
             await self.llm_service.chat(prompt="Test", model=model, max_tokens=10, timeout=5.0)
             latency = time.time() - start
             return {"status": "healthy", "latency": round(latency, 2)}
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             logger.warning("Health check failed for %s: %s", model, e)
             return self._categorize_error(e)
 

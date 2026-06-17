@@ -49,6 +49,7 @@ from services.admin.sqlite_orphan_service import (
     cleanup_sqlite_orphans,
     detect_pg_orphans,
 )
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, FILE_IO_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +87,7 @@ async def database_stats(
     """Current PostgreSQL table row counts and summary."""
     try:
         return await asyncio.to_thread(get_pg_stats, engine)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.error("[AdminDB] stats failed: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -127,7 +128,7 @@ def analyze_sqlite_file(
 
     try:
         return analyze_sqlite(sqlite_path, engine)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.error("[AdminDB] analyze failed: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -152,7 +153,7 @@ def cleanup_sqlite_orphans_endpoint(
 
     try:
         return cleanup_sqlite_orphans(sqlite_path)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.error(
             "[AdminDB] SQLite orphan cleanup failed: %s",
             exc,
@@ -181,7 +182,7 @@ def merge_sqlite(
 
     try:
         return merge_sqlite_into_postgres(sqlite_path, engine)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.error("[AdminDB] merge failed: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -196,7 +197,7 @@ def detect_orphans(
     """Detect orphaned FK references in the current PostgreSQL database."""
     try:
         return detect_pg_orphans(engine)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.error("[AdminDB] orphan detect failed: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -211,7 +212,7 @@ def cleanup_orphans(
     """Clean up orphaned FK references in the PostgreSQL database."""
     try:
         return cleanup_pg_orphans(engine)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.error("[AdminDB] orphan cleanup failed: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -232,9 +233,7 @@ def export_dump(
                 detail=result.get("error", "Export failed"),
             )
         return result
-    except HTTPException:
-        raise
-    except Exception as exc:
+    except FILE_IO_ERRORS as exc:
         logger.error("[AdminDB] export failed: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -270,9 +269,7 @@ def import_dump(
                 detail=result.get("error", "Import failed"),
             )
         return result
-    except HTTPException:
-        raise
-    except Exception as exc:
+    except FILE_IO_ERRORS as exc:
         logger.error("[AdminDB] import failed: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -303,9 +300,7 @@ def analyze_dump_file(
                 detail=result.get("error", "Analysis failed"),
             )
         return result
-    except HTTPException:
-        raise
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.error("[AdminDB] PG dump analysis failed: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -336,9 +331,7 @@ def merge_dump_file(
                 detail=result.get("error", "Merge failed"),
             )
         return result
-    except HTTPException:
-        raise
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.error("[AdminDB] PG dump merge failed: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

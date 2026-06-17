@@ -24,7 +24,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from redis.exceptions import RedisError, WatchError
 
-from services.redis.redis_async_client import get_async_redis
 from services.online_collab.participant.online_collab_ws_editor_hash import (
     editors_use_hash_backend,
     hash_apply_node_editor_batch_delta,
@@ -34,6 +33,7 @@ from services.online_collab.participant.online_collab_ws_editor_hash import (
     hash_purge_user_from_all_nodes,
 )
 from services.online_collab.redis.online_collab_redis_keys import _tag
+from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +51,7 @@ def _editors_backoff_delay(attempt: int) -> float:
 
 
 def _key(code: str) -> str:
+    """Key."""
     return f"mg:ws:workshop:editors:{_tag(code)}"
 
 
@@ -83,6 +84,7 @@ def parse_editors_raw(raw: Any) -> Dict[str, Dict[int, str]]:
 
 
 def _serialize_editors_payload(editors: Dict[str, Dict[int, str]]) -> str:
+    """Serialize editors payload."""
     serializable: Dict[str, Dict[str, str]] = {}
     for nid, ed in editors.items():
         serializable[str(nid)] = {str(uid): name for uid, name in ed.items()}

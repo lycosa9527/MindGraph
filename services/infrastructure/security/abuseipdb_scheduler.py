@@ -15,11 +15,11 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from services.infrastructure.security import abuseipdb_service
-from services.infrastructure.security import crowdsec_blocklist_service
+from services.infrastructure.security import abuseipdb_service, crowdsec_blocklist_service
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
 from services.utils.backup_scheduler import BACKUP_HOUR, get_next_backup_time
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -51,9 +51,11 @@ def _log_blocklist_scheduled_abuseipdb_summary(result: Dict[str, Any]) -> None:
 
 
 class _AbuseipdbLockState:
+    """_AbuseipdbLockState helper."""
     __slots__ = ("worker_lock_id",)
 
     def __init__(self) -> None:
+        """ init  ."""
         self.worker_lock_id: Optional[str] = None
 
 
@@ -61,10 +63,12 @@ _lock_state = _AbuseipdbLockState()
 
 
 def _generate_lock_id() -> str:
+    """Generate lock id."""
     return f"{os.getpid()}:{uuid.uuid4().hex[:8]}"
 
 
 async def acquire_abuseipdb_scheduler_lock() -> bool:
+    """Acquire abuseipdb scheduler lock."""
     if not is_redis_available():
         logger.debug("[AbuseIPDB] Redis unavailable; scheduler lock not acquired")
         return False
@@ -93,6 +97,7 @@ async def acquire_abuseipdb_scheduler_lock() -> bool:
 
 
 async def refresh_abuseipdb_scheduler_lock() -> bool:
+    """Refresh abuseipdb scheduler lock."""
     if not is_redis_available() or _lock_state.worker_lock_id is None:
         return False
     redis = get_async_redis()
@@ -197,7 +202,7 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
         except asyncio.CancelledError:
             logger.info("[AbuseIPDB] Blacklist scheduler cancelled")
             raise
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.warning("[AbuseIPDB] Error while waiting for next blocklist sync: %s", exc)
             await asyncio.sleep(60)
             continue
@@ -270,7 +275,7 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
             except asyncio.CancelledError:
                 logger.info("[AbuseIPDB] Blacklist scheduler cancelled")
                 raise
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 logger.warning("[AbuseIPDB] Blocklist sync error: %s", exc)
                 await asyncio.sleep(60)
                 continue

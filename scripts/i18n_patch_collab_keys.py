@@ -17,6 +17,7 @@ WORKSHOP_BLOCK = (
 
 
 def patch_canvas(canvas: Path) -> None:
+    """Patch canvas."""
     try:
         text = canvas.read_text(encoding="utf-8")
     except UnicodeDecodeError:
@@ -38,6 +39,7 @@ def patch_canvas(canvas: Path) -> None:
 
 
 def patch_workshop(wsh: Path) -> None:
+    """Patch workshop."""
     raw = wsh.read_bytes()
     try:
         text = raw.decode("utf-8")
@@ -54,6 +56,7 @@ def patch_workshop(wsh: Path) -> None:
 
 
 def main() -> None:
+    """Main."""
     for canvas in sorted(ROOT.glob("*/canvas.ts")):
         try:
             patch_canvas(canvas)

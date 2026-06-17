@@ -13,6 +13,7 @@ from services.online_collab.redis.online_collab_redis_health import (
 
 @pytest.mark.asyncio
 async def test_check_version_exits_below_8_when_collab_enabled(monkeypatch):
+    """Test check version exits below 8 when collab enabled."""
     monkeypatch.delenv("COLLAB_DISABLED", raising=False)
     redis = MagicMock()
     redis.info = AsyncMock(return_value={"redis_version": "7.4.0"})
@@ -27,6 +28,7 @@ async def test_check_version_exits_below_8_when_collab_enabled(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_check_version_warns_only_when_collab_disabled(monkeypatch):
+    """Test check version warns only when collab disabled."""
     monkeypatch.setenv("COLLAB_DISABLED", "1")
     redis = MagicMock()
     redis.info = AsyncMock(return_value={"redis_version": "7.4.0"})
@@ -37,6 +39,7 @@ async def test_check_version_warns_only_when_collab_disabled(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_check_version_ok_at_8(monkeypatch):
+    """Test check version ok at 8."""
     monkeypatch.delenv("COLLAB_DISABLED", raising=False)
     redis = MagicMock()
     redis.info = AsyncMock(return_value={"redis_version": "8.0.0"})

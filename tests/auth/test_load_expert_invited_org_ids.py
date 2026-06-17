@@ -9,6 +9,7 @@ from utils.auth.admin_scope import load_expert_invited_org_ids
 
 @pytest.mark.asyncio
 async def test_load_expert_invited_org_ids_uses_system_rls_session():
+    """Test load expert invited org ids uses system rls session."""
     mock_db = AsyncMock()
     mock_result = MagicMock()
     mock_result.scalars.return_value.all.return_value = [10, 20]

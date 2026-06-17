@@ -13,7 +13,7 @@ from config.database import get_async_db
 from config.settings import config
 from models.domain.auth import Organization, User
 from models.domain.mindbot_config import OrganizationMindbotConfig
-from repositories.mindbot_repo import MindbotConfigRepository, _BOT_CAP_PER_ORG
+from repositories.mindbot_repo import _BOT_CAP_PER_ORG, MindbotConfigRepository
 from repositories.mindbot_usage_repo import MindbotUsageRepository
 from routers.api.mindbot_helpers import (
     _callback_metrics_snapshot_for_user,
@@ -28,8 +28,6 @@ from routers.api.mindbot_helpers import (
     _usage_event_for_user,
     _usage_events_for_user,
 )
-from services.mindbot.dify.service_health import check_dify_app_api_reachable
-from services.utils.typing_helpers import mapping_int
 from routers.api.mindbot_models import (
     DifyServiceStatusResponse,
     DingtalkAiCardStreamingStatusResponse,
@@ -40,12 +38,15 @@ from routers.api.mindbot_models import (
     MindbotMovePayload,
     MindbotUsageEventItem,
 )
-from routers.auth.dependencies import require_admin, require_mindbot_admin_access
 from routers.auth.admin.organization_dify import apply_org_dify_fields_to_mindbot_config
+from routers.auth.dependencies import require_admin, require_mindbot_admin_access
+from services.mindbot.dify.service_health import check_dify_app_api_reachable
 from services.mindbot.errors import MindbotErrorCode
 from services.mindbot.platforms.dingtalk.cards.ai_card import probe_ai_card_streaming_update_api
 from services.mindbot.session.callback_token import new_public_callback_token
+from services.mindbot.telemetry.metrics import mindbot_long_lived_maps_snapshot
 from services.mindbot.telemetry.usage import mindbot_usage_tracking_enabled
+from services.utils.typing_helpers import mapping_int
 from utils.auth.roles import is_admin
 
 logger = logging.getLogger(__name__)
@@ -86,8 +87,6 @@ async def admin_mindbot_memory_footprint(
     Long-lived in-process MindBot maps (OAuth lock LRU, DingTalk Stream clients) plus
     callback counters. Platform admins only (process-wide metrics, not org-scoped).
     """
-    from services.mindbot.telemetry.metrics import mindbot_long_lived_maps_snapshot
-
     _require_mindbot_feature()
     long_lived = mindbot_long_lived_maps_snapshot()
     return MindbotMemoryFootprintResponse(
@@ -132,6 +131,7 @@ async def admin_list_mindbot_configs(
         description="Cursor: return configs with id strictly greater than this value",
     ),
 ) -> list[MindbotConfigResponse]:
+    """Admin list mindbot configs."""
     _require_mindbot_feature()
     repo = MindbotConfigRepository(db)
     if is_admin(user):
@@ -259,6 +259,7 @@ async def admin_get_mindbot_config(
     db: AsyncSession = Depends(get_async_db),
     user: User = Depends(require_mindbot_admin_access),
 ) -> MindbotConfigResponse:
+    """Admin get mindbot config."""
     _require_mindbot_feature()
     row = await _get_config_or_404(config_id, db)
     _ensure_org_scope(user, row.organization_id)
@@ -272,6 +273,7 @@ async def admin_update_mindbot_config(
     db: AsyncSession = Depends(get_async_db),
     user: User = Depends(require_admin),
 ) -> MindbotConfigResponse:
+    """Admin update mindbot config."""
     _require_mindbot_feature()
     result = await db.execute(
         select(OrganizationMindbotConfig).where(OrganizationMindbotConfig.id == config_id).with_for_update()
@@ -459,6 +461,7 @@ async def admin_delete_mindbot_config(
     db: AsyncSession = Depends(get_async_db),
     user: User = Depends(require_admin),
 ) -> Response:
+    """Admin delete mindbot config."""
     _require_mindbot_feature()
     result = await db.execute(select(OrganizationMindbotConfig).where(OrganizationMindbotConfig.id == config_id))
     row = result.scalar_one_or_none()
@@ -622,6 +625,7 @@ async def admin_list_mindbot_usage_events(
     before_id: Optional[int] = Query(None),
     dingtalk_staff_id: Optional[str] = Query(None),
 ) -> list[MindbotUsageEventItem]:
+    """Admin list mindbot usage events."""
     _require_mindbot_feature()
     _ensure_org_scope(user, organization_id)
     if not mindbot_usage_tracking_enabled():
@@ -646,6 +650,7 @@ async def admin_get_mindbot_usage_event(
     db: AsyncSession = Depends(get_async_db),
     user: User = Depends(require_mindbot_admin_access),
 ) -> MindbotUsageEventItem:
+    """Admin get mindbot usage event."""
     _require_mindbot_feature()
     _ensure_org_scope(user, organization_id)
     if not mindbot_usage_tracking_enabled():
@@ -677,6 +682,7 @@ async def admin_list_mindbot_usage_thread_events(
     limit: int = Query(50, ge=1, le=100),
     before_id: Optional[int] = Query(None),
 ) -> list[MindbotUsageEventItem]:
+    """Admin list mindbot usage thread events."""
     _require_mindbot_feature()
     _ensure_org_scope(user, organization_id)
     if not mindbot_usage_tracking_enabled():

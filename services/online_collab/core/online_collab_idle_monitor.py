@@ -19,9 +19,11 @@ from typing import Any, Awaitable, Protocol, cast
 
 from redis.exceptions import RedisError
 
-from services.redis.redis_async_client import get_async_redis
+from services.features.workshop_ws_broadcast import (
+    broadcast_to_all,
+    broadcast_workshop_room_idle_shutdown,
+)
 from services.infrastructure.monitoring.ws_metrics import record_ws_idle_monitor_cycle
-
 from services.online_collab.redis.online_collab_redis_keys import (
     idle_scores_key,
     participants_key,
@@ -29,11 +31,13 @@ from services.online_collab.redis.online_collab_redis_keys import (
     room_idle_warning_sent_key,
     session_meta_key,
 )
+from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
 
 
 def _int_env(var: str, default: int) -> int:
+    """Int env."""
     raw = os.getenv(var, "").strip()
     try:
         return max(1, int(raw)) if raw else default
@@ -49,6 +53,7 @@ MONITOR_CONCURRENCY = _int_env("WORKSHOP_MONITOR_CONCURRENCY", 20)
 
 
 def _decode_kv(val: Any) -> str:
+    """Decode kv."""
     if isinstance(val, (bytes, bytearray)):
         return val.decode("utf-8", errors="replace")
     if isinstance(val, memoryview):
@@ -63,13 +68,13 @@ class _IdleKickTarget(Protocol):
         self,
         diagram_id: str,
         expected_code: str,
-    ) -> bool: ...
+    ) -> bool:
+        """Stop collab for a room when idle timeout fires."""
+        ...
 
 
 async def broadcast_idle_warning(code: str, deadline_unix: int) -> None:
     """Send room_idle_warning to all participants once (NX-guarded)."""
-    from routers.api.workshop_ws_broadcast import broadcast_to_all
-
     redis = get_async_redis()
     if not redis:
         return
@@ -143,10 +148,6 @@ async def destroy_and_stop_db_for_idle(
         code,
         reason,
         diagram_id,
-    )
-
-    from routers.api.workshop_ws_broadcast import (
-        broadcast_workshop_room_idle_shutdown,
     )
 
     await broadcast_workshop_room_idle_shutdown(code)

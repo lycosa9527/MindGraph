@@ -43,7 +43,6 @@ import sys
 from pathlib import Path
 from typing import Iterable, List, Optional, Set, Tuple
 
-
 BASELINE_FILE_NAME = "sync_session_in_async_baseline.txt"
 
 DEFAULT_SCAN_PATHS = (
@@ -70,15 +69,18 @@ EXCLUDED_PARTS = {
 
 
 class _Finding:
+    """_Finding helper."""
     __slots__ = ("path", "lineno", "snippet")
 
     def __init__(self, path: str, lineno: int, snippet: str) -> None:
+        """ init  ."""
         self.path = path
         self.lineno = lineno
         self.snippet = snippet
 
 
 def _iter_python_files(root: Path) -> Iterable[Path]:
+    """Iter python files."""
     for candidate in sorted(root.rglob("*.py")):
         parts = set(candidate.parts)
         if parts & EXCLUDED_PARTS:
@@ -87,14 +89,17 @@ def _iter_python_files(root: Path) -> Iterable[Path]:
 
 
 def _normalise_rel(rel_path: str) -> str:
+    """Normalise rel."""
     return rel_path.replace("\\", "/")
 
 
 def _format_entry(rel_path: str, snippet: str) -> str:
+    """Format entry."""
     return f"{_normalise_rel(rel_path)} :: {snippet}"
 
 
 def _load_baseline(baseline_path: Path) -> Set[str]:
+    """Load baseline."""
     if not baseline_path.exists():
         return set()
     return {
@@ -105,6 +110,7 @@ def _load_baseline(baseline_path: Path) -> Set[str]:
 
 
 def _is_sync_session_local(call: ast.Call) -> bool:
+    """Is sync session local."""
     func = call.func
     if isinstance(func, ast.Name) and func.id == "SyncSessionLocal":
         return True
@@ -117,15 +123,18 @@ class _AsyncBodyScanner(ast.NodeVisitor):
     """Walks an AST and reports violations only inside ``async def`` bodies."""
 
     def __init__(self, source_lines: List[str], path: str) -> None:
+        """ init  ."""
         self._lines = source_lines
         self._path = path
         self._async_depth = 0
         self.findings: List[_Finding] = []
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        """Visit functiondef."""
         self.generic_visit(node)
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        """Visit asyncfunctiondef."""
         self._async_depth += 1
         try:
             self.generic_visit(node)
@@ -133,9 +142,11 @@ class _AsyncBodyScanner(ast.NodeVisitor):
             self._async_depth -= 1
 
     def visit_Lambda(self, node: ast.Lambda) -> None:
+        """Visit lambda."""
         self.generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> None:
+        """Visit call."""
         if self._async_depth > 0 and _is_sync_session_local(node):
             line_text = (
                 self._lines[node.lineno - 1].strip() if node.lineno - 1 < len(self._lines) else "SyncSessionLocal(...)"
@@ -145,6 +156,7 @@ class _AsyncBodyScanner(ast.NodeVisitor):
 
 
 def _scan_file(path: Path, repo_root: Path) -> List[_Finding]:
+    """Scan file."""
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
@@ -163,6 +175,7 @@ def _scan_file(path: Path, repo_root: Path) -> List[_Finding]:
 
 
 def _collect_findings(repo_root: Path, scan_paths: List[str]) -> List[_Finding]:
+    """Collect findings."""
     findings: List[_Finding] = []
     for raw in scan_paths:
         target = (repo_root / raw).resolve()
@@ -176,6 +189,7 @@ def _collect_findings(repo_root: Path, scan_paths: List[str]) -> List[_Finding]:
 
 
 def _write_baseline(baseline_path: Path, findings: List[_Finding]) -> None:
+    """Write baseline."""
     entries = sorted({_format_entry(f.path, f.snippet) for f in findings})
     header = (
         "# Baseline of SyncSessionLocal() usage inside async def bodies.\n"
@@ -188,6 +202,7 @@ def _write_baseline(baseline_path: Path, findings: List[_Finding]) -> None:
 
 
 def main(argv: Optional[List[str]] = None) -> int:
+    """Main."""
     parser = argparse.ArgumentParser(description=(__doc__ or "").split("\n")[1])
     parser.add_argument(
         "paths",

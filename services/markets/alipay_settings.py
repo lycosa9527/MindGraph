@@ -23,6 +23,7 @@ class AlipayEnvConfig:
 
     @property
     def server_url(self) -> str:
+        """Server url."""
         if self.sandbox:
             return "https://openapi.alipaydev.com/gateway.do"
         return "https://openapi.alipay.com/gateway.do"

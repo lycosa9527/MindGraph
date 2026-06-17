@@ -10,16 +10,17 @@ Handles:
 
 import logging
 import traceback
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, Response
-from fastapi.exceptions import RequestValidationError
-from fastapi import HTTPException
 from typing import cast
 
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse, Response
 from starlette.requests import ClientDisconnect
 from starlette.types import ExceptionHandler
+
 from config.settings import config
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -155,7 +156,7 @@ async def general_exception_handler(request: Request, exc: Exception):
                 stack_trace=stack_trace,
                 request_path=request_path,
             )
-        except Exception as alert_error:
+        except BACKGROUND_INFRA_ERRORS as alert_error:
             logger.error(
                 "Failed to send unhandled exception alert: %s",
                 alert_error,

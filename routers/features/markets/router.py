@@ -17,7 +17,6 @@ from models.domain.markets import MarketListing, MarketOrder, MarketSubscription
 from repositories.markets_repo import MarketListingRepository, MarketOrderRepository, MarketSubscriptionRepository
 from routers.api.helpers import normalize_external_base_url
 from routers.auth.dependencies import get_current_user
-from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 from routers.features.markets.helpers import require_markets_enabled
 from services.markets.alipay_agreement_sign import build_agreement_sign_form_html
 from services.markets.alipay_agreement_unsign import unsign_agreement
@@ -30,6 +29,8 @@ from services.markets.subscription_service import (
     get_or_create_subscription_intent,
     subscription_to_dict,
 )
+from services.utils.error_types import DATABASE_ERRORS
+from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,7 @@ router = APIRouter()
 
 
 def _require_alipay_config() -> AlipayEnvConfig:
+    """Require alipay config."""
     cfg = load_alipay_config()
     if cfg is None:
         raise HTTPException(
@@ -52,6 +54,7 @@ def _require_alipay_config() -> AlipayEnvConfig:
 
 
 def _user_external_logon_id(user: User) -> str:
+    """User external logon id."""
     if user.email:
         return str(user.email)
     if user.phone:
@@ -60,6 +63,7 @@ def _user_external_logon_id(user: User) -> str:
 
 
 def _subscription_return_url() -> str | None:
+    """Subscription return url."""
     external = normalize_external_base_url(os.getenv("EXTERNAL_BASE_URL", ""))
     if external:
         return f"{external}/template"
@@ -67,6 +71,7 @@ def _subscription_return_url() -> str | None:
 
 
 class ListingOut(BaseModel):
+    """ListingOut helper."""
     id: int
     slug: str
     listing_kind: str
@@ -81,14 +86,17 @@ class ListingOut(BaseModel):
 
 
 class OrderCreateBody(BaseModel):
+    """OrderCreateBody helper."""
     listing_id: int = Field(ge=1)
 
 
 class SubscriptionIntentBody(BaseModel):
+    """SubscriptionIntentBody helper."""
     listing_id: int = Field(ge=1)
 
 
 class OrderOut(BaseModel):
+    """OrderOut helper."""
     id: int
     listing_id: int
     out_trade_no: str
@@ -100,6 +108,7 @@ class OrderOut(BaseModel):
 
 
 class SubscriptionOut(BaseModel):
+    """SubscriptionOut helper."""
     id: int
     listing_id: int
     listing_slug: Optional[str]
@@ -115,6 +124,7 @@ class SubscriptionOut(BaseModel):
 
 
 class EntitlementOut(BaseModel):
+    """EntitlementOut helper."""
     listing_id: int
     listing_slug: Optional[str]
     listing_title: Optional[str]
@@ -142,6 +152,7 @@ async def list_listings(
     _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
 ) -> list[ListingOut]:
+    """List listings."""
     require_markets_enabled()
     repo = MarketListingRepository(db)
     rows = await repo.list_active(
@@ -180,6 +191,7 @@ async def create_order(
     db: AsyncSession = Depends(get_async_db),
     user: User = Depends(get_current_user),
 ) -> OrderOut:
+    """Create order."""
     require_markets_enabled()
     listing = await db.get(MarketListing, body.listing_id)
     if listing is None or not listing.is_active:
@@ -260,6 +272,7 @@ async def my_orders(
     offset: int = Query(0, ge=0, description="Legacy offset; ignored when before_id is supplied."),
     limit: int = Query(50, ge=1, le=100),
 ) -> list[OrderOut]:
+    """My orders."""
     require_markets_enabled()
     repo = MarketOrderRepository(db)
     rows = await repo.list_for_user(
@@ -290,6 +303,7 @@ async def my_entitlements(
     db: AsyncSession = Depends(get_async_db),
     user: User = Depends(get_current_user),
 ) -> list[EntitlementOut]:
+    """My entitlements."""
     require_markets_enabled()
     rows = await list_active_entitlements(db, user.id)
     return [EntitlementOut(**entitlement_to_dict(row, row.listing)) for row in rows]
@@ -300,6 +314,7 @@ async def my_subscriptions(
     db: AsyncSession = Depends(get_async_db),
     user: User = Depends(get_current_user),
 ) -> list[SubscriptionOut]:
+    """My subscriptions."""
     require_markets_enabled()
     repo = MarketSubscriptionRepository(db)
     rows = await repo.list_for_user(user.id)
@@ -419,7 +434,7 @@ async def alipay_notify(
     params: dict[str, Any] = dict(form)
     try:
         result = await dispatch_alipay_notify(db, params, cfg)
-    except Exception:
+    except DATABASE_ERRORS:
         logger.exception("[Markets] Notify processing failed")
         await db.rollback()
         return PlainTextResponse("fail")

@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def _safe_int(value: Any, *, default: int) -> int:
+    """Safe int."""
     try:
         return int(value)
     except (ValueError, TypeError):

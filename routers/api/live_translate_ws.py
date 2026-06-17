@@ -21,6 +21,7 @@ from starlette.websockets import WebSocketDisconnect
 
 from services.auth.vpn_geo_enforcement import maybe_close_websocket_for_vpn_cn_geo
 from services.features.live_translate_bridge import run_translate_relay, translate_error_json
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth.roles import is_admin
 from utils.auth_ws import authenticate_websocket_user
 from utils.ws_context import ws_managed_session
@@ -51,6 +52,7 @@ def _parse_start_options(start_msg: dict) -> tuple[str, str]:
 @router.websocket("/ws/canvas-translate")
 async def canvas_translate_websocket(websocket: WebSocket) -> None:
     # ── Auth before accept ───────────────────────────────────────────────────
+    """Canvas translate websocket."""
     user, auth_error = await authenticate_websocket_user(websocket)
     if auth_error or user is None:
         logger.warning("[CanvasTranslate] Auth rejected: %s", auth_error)
@@ -72,7 +74,7 @@ async def canvas_translate_websocket(websocket: WebSocket) -> None:
         await _canvas_translate_session(websocket, user)
     except WebSocketDisconnect:
         return
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         logger.exception("[CanvasTranslate] Unhandled error after accept")
         with contextlib.suppress(Exception):
             await safe_websocket_send_text(websocket, translate_error_json("internal", "Translation session error"))
@@ -81,6 +83,7 @@ async def canvas_translate_websocket(websocket: WebSocket) -> None:
 
 
 async def _canvas_translate_session(websocket: WebSocket, user: object) -> None:
+    """Canvas translate session."""
     rate_limiter = WebsocketMessageRateLimiter(DEFAULT_MAX_WS_MESSAGES_PER_SECOND)
 
     try:

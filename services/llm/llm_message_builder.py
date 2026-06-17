@@ -8,12 +8,12 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Dict, List, Optional, Any
 import logging
+from typing import Any, Dict, List, Optional
 
-from utils.db.session_open import user_rls_session
 from services.llm.rag_service import get_rag_service
+from services.utils.error_types import LLM_PIPELINE_ERRORS
+from utils.db.session_open import user_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +147,7 @@ class LLMMessageBuilder:
                     len(context_chunks),
                 )
 
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             logger.warning("[LLMMessageBuilder] RAG failed, using original prompt: %s", e)
 
         return messages
@@ -237,7 +237,7 @@ class LLMMessageBuilder:
 
                 return enhanced_prompt
 
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             logger.warning(
                 "[LLMMessageBuilder] RAG failed for streaming, using original prompt: %s",
                 e,

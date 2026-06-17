@@ -174,6 +174,7 @@ _RAW: list[tuple[str, str, str, list[str]]] = [
 
 
 def _build_entries() -> list[dict[str, object]]:
+    """Build entries."""
     seen: set[str] = set()
     out: list[dict[str, object]] = []
     for code, eng, native, zh_kw in _RAW:

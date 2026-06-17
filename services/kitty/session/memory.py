@@ -12,6 +12,7 @@ TurnSource = Literal["transcription", "text", "omni_tts", "action"]
 
 @dataclass(slots=True)
 class KittyTurn:
+    """KittyTurn helper."""
     role: TurnRole
     content: str
     source: TurnSource
@@ -23,21 +24,25 @@ class KittySessionMemory:
     """Single turn store per voice session (cap 20 turns)."""
 
     def __init__(self, *, max_turns: int = 20) -> None:
+        """ init  ."""
         self.turns: Deque[KittyTurn] = deque(maxlen=max_turns)
         self.diagram_snapshot_rev: int = 0
         self._assistant_buffer: List[str] = []
 
     def append_user_turn(self, content: str, *, source: TurnSource) -> None:
+        """Append user turn."""
         text = content.strip()
         if not text:
             return
         self.turns.append(KittyTurn(role="user", content=text, source=source))
 
     def append_assistant_chunk(self, chunk: str) -> None:
+        """Append assistant chunk."""
         if chunk:
             self._assistant_buffer.append(chunk)
 
     def flush_assistant_turn(self) -> None:
+        """Flush assistant turn."""
         if not self._assistant_buffer:
             return
         content = "".join(self._assistant_buffer).strip()
@@ -46,6 +51,7 @@ class KittySessionMemory:
             self.turns.append(KittyTurn(role="assistant", content=content, source="omni_tts"))
 
     def append_action_turn(self, summary: str, *, action: str) -> None:
+        """Append action turn."""
         text = summary.strip()
         if not text:
             return
@@ -61,11 +67,13 @@ class KittySessionMemory:
         )
 
     def recent_turns(self, n: int = 5) -> List[KittyTurn]:
+        """Recent turns."""
         if n <= 0:
             return []
         return list(self.turns)[-n:]
 
     def summarize_for_parser(self, n: int = 5) -> str:
+        """Summarize for parser."""
         lines: List[str] = []
         for turn in self.recent_turns(n):
             prefix = turn.role.upper()
@@ -79,6 +87,7 @@ _memories: Dict[str, KittySessionMemory] = {}
 
 
 def get_session_memory(voice_session_id: str) -> KittySessionMemory:
+    """Get session memory."""
     mem = _memories.get(voice_session_id)
     if mem is None:
         mem = KittySessionMemory()
@@ -87,4 +96,5 @@ def get_session_memory(voice_session_id: str) -> KittySessionMemory:
 
 
 def remove_session_memory(voice_session_id: str) -> None:
+    """Remove session memory."""
     _memories.pop(voice_session_id, None)

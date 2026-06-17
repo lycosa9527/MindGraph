@@ -10,22 +10,21 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import List, Optional, Dict, Any, cast
 import logging
 import os
+from typing import Any, Dict, List, Optional, cast
 
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.http import models as rest
 from qdrant_client.http.models import Distance
 
-# QuantizationType availability varies by qdrant-client version; resolve at runtime.
-_QUANTIZATION_TYPE = getattr(rest, "QuantizationType", None)
-
 from config.settings import config
-
 from services.llm.qdrant_diagnostics import QdrantDiagnosticsMixin
 from services.llm.qdrant_startup import parse_qdrant_host_port
+from services.utils.error_types import QDRANT_ERRORS
+
+# QuantizationType availability varies by qdrant-client version; resolve at runtime.
+_QUANTIZATION_TYPE = getattr(rest, "QuantizationType", None)
 
 logger = logging.getLogger(__name__)
 
@@ -271,7 +270,7 @@ class QdrantService(QdrantDiagnosticsMixin):
                     field_name="chunk_id",
                     field_schema=rest.PayloadSchemaType.KEYWORD,
                 )
-            except Exception as exc:
+            except QDRANT_ERRORS as exc:
                 logger.debug("[Qdrant] Payload index creation (may already exist): %s", exc)
 
             logger.info(
@@ -280,7 +279,7 @@ class QdrantService(QdrantDiagnosticsMixin):
                 self.compression_type,
             )
 
-        except Exception as exc:
+        except QDRANT_ERRORS as exc:
             logger.error("[Qdrant] Failed to create collection for user %s: %s", user_id, exc)
             raise
 
@@ -303,7 +302,7 @@ class QdrantService(QdrantDiagnosticsMixin):
             if collection_name in existing_names:
                 return collection_name
             return None
-        except Exception:
+        except QDRANT_ERRORS:
             return None
 
     async def add_documents(
@@ -363,7 +362,7 @@ class QdrantService(QdrantDiagnosticsMixin):
                 points=points,
             )
             logger.info("[Qdrant] Added %s embeddings for user %s", len(chunk_ids), user_id)
-        except Exception as exc:
+        except QDRANT_ERRORS as exc:
             logger.error("[Qdrant] Failed to add embeddings for user %s: %s", user_id, exc)
             raise
 
@@ -445,7 +444,7 @@ class QdrantService(QdrantDiagnosticsMixin):
             )
             return chunk_results
 
-        except Exception as exc:
+        except QDRANT_ERRORS as exc:
             logger.error("[Qdrant] Search failed for user %s: %s", user_id, exc)
             raise
 
@@ -481,7 +480,7 @@ class QdrantService(QdrantDiagnosticsMixin):
                 points_selector=rest.PointIdsList(points=cast(List[rest.ExtendedPointId], chunk_ids)),
             )
             logger.info("[Qdrant] Deleted %s chunks for user %s", len(chunk_ids), user_id)
-        except Exception as exc:
+        except QDRANT_ERRORS as exc:
             logger.error("[Qdrant] Failed to delete chunks for user %s: %s", user_id, exc)
             raise
 
@@ -542,7 +541,7 @@ class QdrantService(QdrantDiagnosticsMixin):
                 points=points,
             )
             logger.info("[Qdrant] Updated %s embeddings for user %s", len(chunk_ids), user_id)
-        except Exception as exc:
+        except QDRANT_ERRORS as exc:
             logger.error("[Qdrant] Failed to update embeddings for user %s: %s", user_id, exc)
             raise
 
@@ -578,7 +577,7 @@ class QdrantService(QdrantDiagnosticsMixin):
                 points_selector=rest.FilterSelector(filter=query_filter),
             )
             logger.info("[Qdrant] Deleted document %s for user %s", document_id, user_id)
-        except Exception as exc:
+        except QDRANT_ERRORS as exc:
             logger.error(
                 "[Qdrant] Failed to delete document %s for user %s: %s",
                 document_id,
@@ -599,7 +598,7 @@ class QdrantService(QdrantDiagnosticsMixin):
         try:
             await self.client.delete_collection(collection_name=collection_name)
             logger.info("[Qdrant] Deleted collection for user %s", user_id)
-        except Exception as exc:
+        except QDRANT_ERRORS as exc:
             logger.warning("[Qdrant] Failed to delete collection for user %s: %s", user_id, exc)
 
     async def get_collection_size(self, user_id: int) -> int:
@@ -619,7 +618,7 @@ class QdrantService(QdrantDiagnosticsMixin):
         try:
             info = await self.client.get_collection(collection_name)
             return info.points_count or 0
-        except Exception as exc:
+        except QDRANT_ERRORS as exc:
             logger.error("[Qdrant] Failed to get collection size for user %s: %s", user_id, exc)
             return 0
 

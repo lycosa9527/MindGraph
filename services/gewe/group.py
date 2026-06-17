@@ -9,11 +9,11 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Dict, Any, Optional, List
 import logging
+from typing import Any, Dict, List, Optional
 
 from services.gewe.protocols import GeweServiceBase
+from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,7 @@ class GroupServiceMixin(GeweServiceBase):
                         app_id=app_id, group_wxid=chatroom_id, members=members
                     )
                     logger.info("Cached %d members for group %s", saved_count, chatroom_id)
-                except Exception as e:
+                except DATABASE_ERRORS as e:
                     logger.warning("Failed to cache group members: %s", e)
 
         return response

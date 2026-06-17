@@ -6,20 +6,13 @@ async event loop (FastAPI lifespan).
 """
 
 import os
-import sys
-from pathlib import Path
-
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent
-if str(_PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(_PROJECT_ROOT))
-
 from logging.config import fileConfig
 
 from sqlalchemy import create_engine, pool
 
 from alembic import context
 
-from config.database import _normalise_db_url
+from config.database import DATABASE_MIGRATION_URL, _normalise_db_url
 from models.domain.registry import Base
 
 config = context.config
@@ -33,8 +26,6 @@ def _alembic_database_url() -> str:
     raw = os.getenv("DATABASE_MIGRATION_URL") or os.getenv("DATABASE_URL", "")
     if raw:
         return _normalise_db_url(raw)
-    from config.database import DATABASE_MIGRATION_URL
-
     return DATABASE_MIGRATION_URL
 
 

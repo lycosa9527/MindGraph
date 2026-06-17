@@ -20,6 +20,7 @@ from services.redis import keys as _keys
 from services.redis.cache.redis_api_key_cache import api_key_cache
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
+from services.utils.error_types import REDIS_ERRORS
 from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,7 @@ _USAGE_KEY_PREFIX = _keys.API_KEY_USAGE_INCR.format(key_id="")
 
 
 def _usage_key_id(redis_key: str) -> Optional[int]:
+    """Usage key id."""
     prefix = _USAGE_KEY_PREFIX
     if not redis_key.startswith(prefix):
         return None
@@ -61,7 +63,7 @@ async def apply_api_key_usage_delta(key_id: int, delta: int) -> bool:
         )
         try:
             await db.commit()
-        except Exception:
+        except REDIS_ERRORS:
             await db.rollback()
             raise
 
@@ -97,6 +99,7 @@ async def flush_api_key_usage_to_db() -> int:
 
 
 async def _flush_worker_loop() -> None:
+    """Flush worker loop."""
     logger.debug("[APIKeyUsageFlush] Worker started (interval=%ss)", FLUSH_INTERVAL)
     try:
         while True:
@@ -105,7 +108,7 @@ async def _flush_worker_loop() -> None:
                 count = await flush_api_key_usage_to_db()
                 if count:
                     logger.debug("[APIKeyUsageFlush] Flushed %s key(s)", count)
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logger.warning("[APIKeyUsageFlush] Flush error: %s", exc)
     except asyncio.CancelledError:
         logger.debug("[APIKeyUsageFlush] Worker cancelled")

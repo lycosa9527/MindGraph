@@ -13,15 +13,16 @@ Proprietary License
 """
 
 import logging
-from typing import Optional, Set, Any, Tuple
+from typing import Any, Optional, Set, Tuple
 
-from sqlalchemy import Enum as SAEnum, inspect, text
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy import inspect, text
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 # Import Base directly from models to avoid circular import with config.database
 from models.domain.auth import Base
-
+from services.utils.error_types import DATABASE_ERRORS
 from utils.migration.sqlite.migration_table_order import get_table_migration_order
 
 logger = logging.getLogger(__name__)
@@ -86,7 +87,7 @@ def create_enum_types(pg_engine: Any) -> None:
                     conn.execute(text(create_sql))
                     conn.commit()
                     logger.info("[Migration] Created ENUM type: %s", enum_name)
-                except Exception as enum_error:
+                except DATABASE_ERRORS as enum_error:
                     error_msg = str(enum_error).lower()
                     if "already exists" in error_msg or "duplicate" in error_msg:
                         logger.debug(
@@ -99,7 +100,7 @@ def create_enum_types(pg_engine: Any) -> None:
                             enum_name,
                             enum_error,
                         )
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.warning("[Migration] Error creating ENUM types: %s", e)
 
 
@@ -238,14 +239,13 @@ def create_table_without_indexes(
         if table_name in inspector.get_table_names():
             logger.debug("[Migration] Created table %s without indexes", table_name)
             return True
-        else:
-            logger.error(
-                "[Migration] Table %s creation reported success but table doesn't exist",
-                table_name,
-            )
-            return False
+        logger.error(
+            "[Migration] Table %s creation reported success but table doesn't exist",
+            table_name,
+        )
+        return False
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         error_msg = str(e).lower()
         # Check if table already exists
         if "already exists" in error_msg or "duplicate" in error_msg:
@@ -292,7 +292,7 @@ def create_table_indexes(pg_engine: Any, table_name: str, table: Any) -> None:
                         index.name,
                         table_name,
                     )
-                except Exception as idx_error:
+                except DATABASE_ERRORS as idx_error:
                     error_msg = str(idx_error).lower()
                     if "already exists" in error_msg or "duplicate" in error_msg:
                         logger.debug(
@@ -312,8 +312,7 @@ def create_table_indexes(pg_engine: Any, table_name: str, table: Any) -> None:
                 if getattr(column, "index", False) and not isinstance(column.index, bool):
                     # Index object already handled above
                     continue
-                elif getattr(column, "index", False):
-                    # Implicit index from index=True
+                if getattr(column, "index", False):                    # Implicit index from index=True
                     index_name = f"ix_{table_name}_{column.name}"
                     if index_name in existing_indexes:
                         continue
@@ -327,7 +326,7 @@ def create_table_indexes(pg_engine: Any, table_name: str, table: Any) -> None:
                             index_name,
                             table_name,
                         )
-                    except Exception as idx_error:
+                    except DATABASE_ERRORS as idx_error:
                         error_msg = str(idx_error).lower()
                         if "already exists" in error_msg or "duplicate" in error_msg:
                             logger.debug(
@@ -340,7 +339,7 @@ def create_table_indexes(pg_engine: Any, table_name: str, table: Any) -> None:
                                 index_name,
                                 idx_error,
                             )
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.warning("[Migration] Error creating indexes for table %s: %s", table_name, e)
 
 
@@ -421,7 +420,7 @@ def ensure_missing_tables_created(
                     table_error,
                 )
                 tables_failed.append(table_name)
-        except Exception as table_error:
+        except DATABASE_ERRORS as table_error:
             logger.error(
                 "[Migration] ✗ Unexpected error creating table %s: %s",
                 table_name,
@@ -533,7 +532,7 @@ def ensure_missing_tables_created(
                         table_error,
                     )
                     retry_failed.append(table_name)
-            except Exception as table_error:
+            except DATABASE_ERRORS as table_error:
                 logger.error(
                     "[Migration] ✗ Unexpected error creating table %s (retry %d): %s",
                     retry_pass + 1,

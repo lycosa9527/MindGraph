@@ -17,6 +17,7 @@ def test_voice_intent_row_counts() -> None:
 
 
 def test_llmops_manifest_shape() -> None:
+    """Test llmops manifest shape."""
     m = build_kitty_llmops_manifest()
     assert m["version"]
     assert isinstance(m["modules"], list) and len(m["modules"]) >= 3

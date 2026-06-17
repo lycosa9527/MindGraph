@@ -13,23 +13,24 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Dict, List, Optional, Any, AsyncGenerator, Union
 import json
 import logging
+from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 
 import httpx
 
 from clients.llm.http_client_manager import get_httpx_manager
 from config.settings import config
 from services.infrastructure.http.error_handler import (
-    LLMRateLimitError,
-    LLMProviderError,
     LLMAccessDeniedError,
+    LLMProviderError,
+    LLMRateLimitError,
     LLMTimeoutError,
 )
 from services.llm.error_parsers.dashscope_error_parser import (
     parse_and_raise_dashscope_error,
 )
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -218,38 +219,35 @@ class QwenClient:
                         "content": completions,
                         "usage": usage,
                     }
-                else:
-                    message = choices[0].get("message", {}) if choices else {}
-                    content = message.get("content", "")
-                    tool_calls = message.get("tool_calls")
-                    result = {"content": content, "usage": usage}
-                    if tool_calls:
-                        result["tool_calls"] = tool_calls
-                    if choices and logprobs and "logprobs" in choices[0]:
-                        result["logprobs"] = choices[0].get("logprobs")
-                    return result
-            else:
-                error_text = response.text
-                logger.error("Qwen API error %d: %s", response.status_code, error_text)
+                message = choices[0].get("message", {}) if choices else {}
+                content = message.get("content", "")
+                tool_calls = message.get("tool_calls")
+                result = {"content": content, "usage": usage}
+                if tool_calls:
+                    result["tool_calls"] = tool_calls
+                if choices and logprobs and "logprobs" in choices[0]:
+                    result["logprobs"] = choices[0].get("logprobs")
+                return result
+            error_text = response.text
+            logger.error("Qwen API error %d: %s", response.status_code, error_text)
 
-                try:
-                    error_data = json.loads(error_text)
-                    parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
-                except json.JSONDecodeError as exc:
-                    if response.status_code == 429:
-                        raise LLMRateLimitError(f"Qwen rate limit: {error_text}") from exc
-                    elif response.status_code == 401:
-                        raise LLMAccessDeniedError(
-                            f"Unauthorized: {error_text}",
-                            provider="qwen",
-                            error_code="Unauthorized",
-                        ) from exc
-                    else:
-                        raise LLMProviderError(
-                            f"Qwen API error ({response.status_code}): {error_text}",
-                            provider="qwen",
-                            error_code=f"HTTP{response.status_code}",
-                        ) from exc
+            try:
+                error_data = json.loads(error_text)
+                parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
+            except json.JSONDecodeError as exc:
+                if response.status_code == 429:
+                    raise LLMRateLimitError(f"Qwen rate limit: {error_text}") from exc
+                if response.status_code == 401:
+                    raise LLMAccessDeniedError(
+                        f"Unauthorized: {error_text}",
+                        provider="qwen",
+                        error_code="Unauthorized",
+                    ) from exc
+                raise LLMProviderError(
+                    f"Qwen API error ({response.status_code}): {error_text}",
+                    provider="qwen",
+                    error_code=f"HTTP{response.status_code}",
+                ) from exc
 
         except httpx.TimeoutException as e:
             logger.error("Qwen API timeout")
@@ -257,7 +255,7 @@ class QwenClient:
         except httpx.HTTPError as e:
             logger.error("Qwen HTTP error: %s", e)
             raise LLMProviderError(f"Qwen HTTP error: {e}", provider="qwen", error_code="HTTPError") from e
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Qwen API error: %s", e)
             raise
 
@@ -411,18 +409,17 @@ class QwenClient:
                     except json.JSONDecodeError as exc:
                         if response.status_code == 429:
                             raise LLMRateLimitError(f"Qwen rate limit: {error_text}") from exc
-                        elif response.status_code == 401:
+                        if response.status_code == 401:
                             raise LLMAccessDeniedError(
                                 f"Unauthorized: {error_text}",
                                 provider="qwen",
                                 error_code="Unauthorized",
                             ) from exc
-                        else:
-                            raise LLMProviderError(
-                                f"Qwen stream error ({response.status_code}): {error_text}",
-                                provider="qwen",
-                                error_code=f"HTTP{response.status_code}",
-                            ) from exc
+                        raise LLMProviderError(
+                            f"Qwen stream error ({response.status_code}): {error_text}",
+                            provider="qwen",
+                            error_code=f"HTTP{response.status_code}",
+                        ) from exc
 
                 # Read SSE stream line by line using httpx's aiter_lines()
                 last_usage = None
@@ -481,7 +478,7 @@ class QwenClient:
                 provider="qwen",
                 error_code="HTTPError",
             ) from e
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Qwen streaming error: %s", e)
             raise
 
@@ -547,28 +544,27 @@ class DeepSeekClient:
                 logger.debug("DeepSeek response length: %d chars", len(content))
                 usage = data.get("usage", {})
                 return {"content": content, "usage": usage}
-            else:
-                error_text = response.text
-                logger.error("DeepSeek API error %d: %s", response.status_code, error_text)
 
-                try:
-                    error_data = json.loads(error_text)
-                    parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
-                except json.JSONDecodeError as exc:
-                    if response.status_code == 429:
-                        raise LLMRateLimitError(f"DeepSeek rate limit: {error_text}") from exc
-                    elif response.status_code == 401:
-                        raise LLMAccessDeniedError(
-                            f"Unauthorized: {error_text}",
-                            provider="deepseek",
-                            error_code="Unauthorized",
-                        ) from exc
-                    else:
-                        raise LLMProviderError(
-                            f"DeepSeek API error ({response.status_code}): {error_text}",
-                            provider="deepseek",
-                            error_code=f"HTTP{response.status_code}",
-                        ) from exc
+            error_text = response.text
+            logger.error("DeepSeek API error %d: %s", response.status_code, error_text)
+
+            try:
+                error_data = json.loads(error_text)
+                parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
+            except json.JSONDecodeError as exc:
+                if response.status_code == 429:
+                    raise LLMRateLimitError(f"DeepSeek rate limit: {error_text}") from exc
+                if response.status_code == 401:
+                    raise LLMAccessDeniedError(
+                        f"Unauthorized: {error_text}",
+                        provider="deepseek",
+                        error_code="Unauthorized",
+                    ) from exc
+                raise LLMProviderError(
+                    f"DeepSeek API error ({response.status_code}): {error_text}",
+                    provider="deepseek",
+                    error_code=f"HTTP{response.status_code}",
+                ) from exc
 
         except httpx.TimeoutException as e:
             logger.error("DeepSeek API timeout")
@@ -576,7 +572,7 @@ class DeepSeekClient:
         except httpx.HTTPError as e:
             logger.error("DeepSeek HTTP error: %s", e)
             raise LLMProviderError(f"DeepSeek HTTP error: {e}", provider="deepseek", error_code="HTTPError") from e
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("DeepSeek API error: %s", e)
             raise
 
@@ -650,18 +646,17 @@ class DeepSeekClient:
                     except json.JSONDecodeError as exc:
                         if response.status_code == 429:
                             raise LLMRateLimitError(f"DeepSeek rate limit: {error_text}") from exc
-                        elif response.status_code == 401:
+                        if response.status_code == 401:
                             raise LLMAccessDeniedError(
                                 f"Unauthorized: {error_text}",
                                 provider="deepseek",
                                 error_code="Unauthorized",
                             ) from exc
-                        else:
-                            raise LLMProviderError(
-                                f"DeepSeek stream error ({response.status_code}): {error_text}",
-                                provider="deepseek",
-                                error_code=f"HTTP{response.status_code}",
-                            ) from exc
+                        raise LLMProviderError(
+                            f"DeepSeek stream error ({response.status_code}): {error_text}",
+                            provider="deepseek",
+                            error_code=f"HTTP{response.status_code}",
+                        ) from exc
 
                 last_usage = None
                 async for line in response.aiter_lines():
@@ -712,7 +707,7 @@ class DeepSeekClient:
                 provider="deepseek",
                 error_code="HTTPError",
             ) from e
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("DeepSeek streaming error: %s", e)
             raise
 
@@ -765,28 +760,27 @@ class KimiClient:
                 logger.debug("Kimi response length: %d chars", len(content))
                 usage = data.get("usage", {})
                 return {"content": content, "usage": usage}
-            else:
-                error_text = response.text
-                logger.error("Kimi API error %d: %s", response.status_code, error_text)
 
-                try:
-                    error_data = json.loads(error_text)
-                    parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
-                except json.JSONDecodeError as exc:
-                    if response.status_code == 429:
-                        raise LLMRateLimitError(f"Kimi rate limit: {error_text}") from exc
-                    elif response.status_code == 401:
-                        raise LLMAccessDeniedError(
-                            f"Unauthorized: {error_text}",
-                            provider="kimi",
-                            error_code="Unauthorized",
-                        ) from exc
-                    else:
-                        raise LLMProviderError(
-                            f"Kimi API error ({response.status_code}): {error_text}",
-                            provider="kimi",
-                            error_code=f"HTTP{response.status_code}",
-                        ) from exc
+            error_text = response.text
+            logger.error("Kimi API error %d: %s", response.status_code, error_text)
+
+            try:
+                error_data = json.loads(error_text)
+                parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
+            except json.JSONDecodeError as exc:
+                if response.status_code == 429:
+                    raise LLMRateLimitError(f"Kimi rate limit: {error_text}") from exc
+                if response.status_code == 401:
+                    raise LLMAccessDeniedError(
+                        f"Unauthorized: {error_text}",
+                        provider="kimi",
+                        error_code="Unauthorized",
+                    ) from exc
+                raise LLMProviderError(
+                    f"Kimi API error ({response.status_code}): {error_text}",
+                    provider="kimi",
+                    error_code=f"HTTP{response.status_code}",
+                ) from exc
 
         except httpx.TimeoutException as e:
             logger.error("Kimi API timeout")
@@ -794,7 +788,7 @@ class KimiClient:
         except httpx.HTTPError as e:
             logger.error("Kimi HTTP error: %s", e)
             raise LLMProviderError(f"Kimi HTTP error: {e}", provider="kimi", error_code="HTTPError") from e
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Kimi API error: %s", e)
             raise
 
@@ -864,18 +858,17 @@ class KimiClient:
                     except json.JSONDecodeError as exc:
                         if response.status_code == 429:
                             raise LLMRateLimitError(f"Kimi rate limit: {error_text}") from exc
-                        elif response.status_code == 401:
+                        if response.status_code == 401:
                             raise LLMAccessDeniedError(
                                 f"Unauthorized: {error_text}",
                                 provider="kimi",
                                 error_code="Unauthorized",
                             ) from exc
-                        else:
-                            raise LLMProviderError(
-                                f"Kimi stream error ({response.status_code}): {error_text}",
-                                provider="kimi",
-                                error_code=f"HTTP{response.status_code}",
-                            ) from exc
+                        raise LLMProviderError(
+                            f"Kimi stream error ({response.status_code}): {error_text}",
+                            provider="kimi",
+                            error_code=f"HTTP{response.status_code}",
+                        ) from exc
 
                 last_usage = None
                 async for line in response.aiter_lines():
@@ -926,6 +919,6 @@ class KimiClient:
                 provider="kimi",
                 error_code="HTTPError",
             ) from e
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Kimi streaming error: %s", e)
             raise

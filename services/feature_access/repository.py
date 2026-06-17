@@ -6,8 +6,6 @@ from typing import Dict
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from utils.db.session_open import system_rls_session
-from services.redis.cache import redis_feature_org_access_cache
 from models.domain.auth import Organization, User
 from models.domain.feature_access_control import (
     FeatureAccessOrgGrant,
@@ -15,6 +13,9 @@ from models.domain.feature_access_control import (
     FeatureAccessUserGrant,
 )
 from models.domain.feature_org_access import FeatureOrgAccessEntry
+from services.redis.cache import redis_feature_org_access_cache
+from services.utils.error_types import DATABASE_ERRORS, REDIS_ERRORS
+from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -108,11 +109,11 @@ async def replace_feature_org_access(db: AsyncSession, data: Dict[str, FeatureOr
             )
     try:
         await db.commit()
-    except Exception:
+    except DATABASE_ERRORS:
         await db.rollback()
         raise
     try:
         await redis_feature_org_access_cache.set_cached_map(data)
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.warning("Failed to update feature org access cache after commit: %s", exc)
     logger.info("Replaced feature org access rules (%d features)", len(data))

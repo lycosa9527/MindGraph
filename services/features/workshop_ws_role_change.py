@@ -17,11 +17,7 @@ import logging
 import os
 from typing import Any, Optional
 
-from services.features.ws_redis_fanout_config import (
-    ENVELOPE_VERSION,
-    is_ws_fanout_enabled,
-)
-from services.features.ws_redis_fanout_publish import publish_workshop_fanout_async
+from services.features.workshop_ws_broadcast_core import broadcast_to_others
 from services.features.workshop_ws_connection_state import (
     ACTIVE_CONNECTIONS,
     AnyHandle,
@@ -30,6 +26,16 @@ from services.features.workshop_ws_connection_state import (
     _get_room_lock,
     enqueue,
 )
+from services.features.ws_redis_fanout_config import (
+    ENVELOPE_VERSION,
+    is_ws_fanout_enabled,
+)
+from services.features.ws_redis_fanout_publish_core import publish_workshop_fanout_async
+from services.infrastructure.monitoring.ws_metrics import (
+    record_ws_role_demotion,
+    record_ws_role_promotion,
+)
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +67,7 @@ async def _publish_role_control(
     try:
         await publish_workshop_fanout_async(envelope)
         return True
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.warning("[RoleChange] publish role control failed room=%s: %s", code, exc)
         return False
 
@@ -109,11 +115,7 @@ async def promote_to_editor(
     }
     await enqueue(new_handle, role_changed, "joined")
     if broadcast:
-        from routers.api.workshop_ws_broadcast import (
-            broadcast_to_others as _broadcast_others_promo,
-        )
-
-        await _broadcast_others_promo(code, target_user_id, role_changed)
+        await broadcast_to_others(code, target_user_id, role_changed)
     logger.info(
         "[RoleChange] user=%s promoted to %s in room=%s by user=%s",
         target_user_id,
@@ -171,11 +173,7 @@ async def demote_to_viewer(
     }
     await enqueue(new_handle, role_changed, "joined")
     if broadcast:
-        from routers.api.workshop_ws_broadcast import (
-            broadcast_to_others as _broadcast_others_demo,
-        )
-
-        await _broadcast_others_demo(code, target_user_id, role_changed)
+        await broadcast_to_others(code, target_user_id, role_changed)
     logger.info(
         "[RoleChange] user=%s demoted to viewer in room=%s by user=%s",
         target_user_id,
@@ -279,8 +277,6 @@ async def handle_role_change(ctx: Any, message: dict) -> None:
         published_control = await _publish_role_control(ctx.code, control_msg)
 
     if published_control:
-        from routers.api.workshop_ws_broadcast import broadcast_to_others
-
         await broadcast_to_others(ctx.code, target_uid, role_changed)
         success = True
     elif to_role == "editor":
@@ -310,16 +306,11 @@ async def handle_role_change(ctx: Any, message: dict) -> None:
         return
 
     try:
-        from services.infrastructure.monitoring.ws_metrics import (
-            record_ws_role_promotion,
-            record_ws_role_demotion,
-        )
-
         if to_role == "editor":
             record_ws_role_promotion()
         else:
             record_ws_role_demotion()
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         pass
 
     await enqueue(

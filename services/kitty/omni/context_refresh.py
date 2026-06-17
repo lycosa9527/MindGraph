@@ -8,8 +8,8 @@ from typing import Any, Dict, Optional
 
 from services.kitty.context.messaging import build_voice_instructions
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
+from services.kitty.session.omni_client_access import get_session_omni_client
 from services.kitty.session.runtime_state import voice_sessions
-from services.kitty.session.ops import get_session_omni_client
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +57,7 @@ async def _apply_omni_refresh(
     reason: str,
     delta: Optional[str],
 ) -> None:
+    """Apply omni refresh."""
     session = voice_sessions.get(voice_session_id)
     if not session:
         return
@@ -119,6 +120,7 @@ async def _apply_omni_refresh(
 
 
 def cancel_pending_omni_refresh(voice_session_id: str) -> None:
+    """Cancel pending omni refresh."""
     task = _pending.pop(voice_session_id, None)
     if task is not None and not task.done():
         task.cancel()

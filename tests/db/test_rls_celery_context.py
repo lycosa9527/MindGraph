@@ -4,6 +4,7 @@ from utils.db.rls_context import RlsContext
 
 
 def test_for_celery_user_sets_authenticated_mode():
+    """Test for celery user sets authenticated mode."""
     ctx = RlsContext.for_celery_user(42, organization_id=5)
     vars_map = ctx.session_vars()
     assert vars_map["rls_mode"] == "authenticated"

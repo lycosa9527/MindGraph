@@ -16,6 +16,7 @@ class KittyProductionGuardError(RuntimeError):
 
 
 def _env_truthy(name: str, default: str = "0") -> bool:
+    """Env truthy."""
     return os.getenv(name, default).strip().lower() in ("1", "true", "yes", "on")
 
 

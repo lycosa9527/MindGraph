@@ -11,7 +11,6 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
 import asyncio
 import json
 import logging
@@ -20,7 +19,7 @@ from typing import Any, Dict, List
 
 from services.knowledge.chunking_service import Chunk
 from services.llm import llm_service as llm_svc
-
+from services.utils.error_types import JSON_PARSE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +165,7 @@ class ManualEvaluator:
             evaluation = self._parse_json_response(response)
             return evaluation
 
-        except Exception as e:
+        except JSON_PARSE_ERRORS as e:
             logger.error(
                 "[ManualEvaluator] Failed to evaluate chunk quality: %s",
                 e,
@@ -243,7 +242,7 @@ class ManualEvaluator:
             evaluation = self._parse_json_response(response)
             return evaluation
 
-        except Exception as e:
+        except JSON_PARSE_ERRORS as e:
             logger.error(
                 "[ManualEvaluator] Failed to evaluate answer relevance: %s",
                 e,
@@ -289,7 +288,7 @@ class ManualEvaluator:
             similarity = result.get("similarity_score", 0.0)
             return float(similarity)
 
-        except Exception as e:
+        except JSON_PARSE_ERRORS as e:
             logger.error(
                 "[ManualEvaluator] Failed to evaluate semantic similarity: %s",
                 e,

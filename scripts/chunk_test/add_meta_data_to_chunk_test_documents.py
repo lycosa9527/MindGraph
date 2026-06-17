@@ -12,6 +12,7 @@ import sys
 
 
 def main() -> int:
+    """Main."""
     print("This script is no longer needed.")
     print("Schema migrations are now managed by Alembic.")
     print()

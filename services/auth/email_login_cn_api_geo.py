@@ -24,11 +24,11 @@ from services.auth.http_auth_token import (
     extract_session_token,
     try_decode_access_token_payload_from_connection,
 )
-from utils.auth.connection_types import HttpOrWebSocket
 from services.redis.cache.redis_user_cache import user_cache
 from utils.auth import get_client_ip
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR
 from utils.auth.config import AUTH_MODE, EMAIL_LOGIN_CN_BLOCK_ENABLED
+from utils.auth.connection_types import HttpOrWebSocket
 from utils.auth.user_tokens import validate_user_token
 
 
@@ -48,6 +48,7 @@ def _email_cn_geo_api_path_matches(request_path: str) -> bool:
 
 
 def _email_cn_geo_prereqs_ok(connection: HttpOrWebSocket) -> bool:
+    """Email cn geo prereqs ok."""
     if not EMAIL_LOGIN_CN_BLOCK_ENABLED:
         return False
     if AUTH_MODE in ("bayi", "enterprise"):
@@ -60,6 +61,7 @@ def _email_cn_geo_prereqs_ok(connection: HttpOrWebSocket) -> bool:
 
 
 async def _resolve_user_for_email_cn_geo(connection: HttpOrWebSocket) -> Optional[User]:
+    """Resolve user for email cn geo."""
     cached = getattr(connection.state, AUTH_CONTEXT_USER_ATTR, None)
     if cached is not None:
         return cached

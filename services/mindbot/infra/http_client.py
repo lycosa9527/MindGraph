@@ -41,13 +41,18 @@ from typing import Optional
 import aiohttp
 from aiohttp.abc import AbstractResolver
 
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.env_helpers import env_int
 
 logger = logging.getLogger(__name__)
 
-_dingtalk_session: Optional[aiohttp.ClientSession] = None
-_outbound_session: Optional[aiohttp.ClientSession] = None
-_shutting_down: bool = False
+class _MindbotHttpSessions:
+    """Shared aiohttp session holder (no global keyword)."""
+
+    dingtalk: Optional[aiohttp.ClientSession] = None
+    outbound: Optional[aiohttp.ClientSession] = None
+    shutting_down: bool = False
+
 
 _PINNED_DEFAULT_MAX = 64
 
@@ -55,6 +60,7 @@ _pinned_sessions: "collections.OrderedDict[tuple[str, str], aiohttp.ClientSessio
 
 
 def _pinned_max() -> int:
+    """Pinned max."""
     return max(8, env_int("MINDBOT_PINNED_SESSION_MAX", _PINNED_DEFAULT_MAX))
 
 
@@ -68,9 +74,11 @@ class _PinnedIPResolver(AbstractResolver):
     """
 
     def __init__(self, pinned_ip: str) -> None:
+        """ init  ."""
         self._pinned_ip = pinned_ip
 
     async def resolve(self, host: str, port: int = 0, family: int = 0) -> list[dict]:
+        """Resolve."""
         return [
             {
                 "hostname": host,
@@ -83,6 +91,7 @@ class _PinnedIPResolver(AbstractResolver):
         ]
 
     async def close(self) -> None:
+        """Close."""
         return None
 
 
@@ -93,13 +102,12 @@ def get_dingtalk_api_session() -> aiohttp.ClientSession:
     Created lazily on first call (requires a running event loop).
     Callers must pass ``timeout`` per-request — **not** per-session.
     """
-    global _dingtalk_session
-    if _shutting_down:
+    if _MindbotHttpSessions.shutting_down:
         raise RuntimeError("MindBot HTTP sessions have been closed (shutdown in progress)")
     # No asyncio.Lock needed: ClientSession() construction has no await, so the
     # check-and-assign block runs atomically within a single event-loop tick.
     # This function must NOT be called from threads outside the event loop.
-    if _dingtalk_session is None or _dingtalk_session.closed:
+    if _MindbotHttpSessions.dingtalk is None or _MindbotHttpSessions.dingtalk.closed:
         connector = aiohttp.TCPConnector(
             limit=200,
             limit_per_host=60,
@@ -107,9 +115,9 @@ def get_dingtalk_api_session() -> aiohttp.ClientSession:
             keepalive_timeout=30,
             enable_cleanup_closed=True,
         )
-        _dingtalk_session = aiohttp.ClientSession(connector=connector)
+        _MindbotHttpSessions.dingtalk = aiohttp.ClientSession(connector=connector)
         logger.debug("[MindBot] dingtalk_api_session created")
-    return _dingtalk_session
+    return _MindbotHttpSessions.dingtalk
 
 
 def get_outbound_session() -> aiohttp.ClientSession:
@@ -120,11 +128,10 @@ def get_outbound_session() -> aiohttp.ClientSession:
     health probes — targets vary per message so ``limit_per_host`` is wider.
     Created lazily on first call (requires a running event loop).
     """
-    global _outbound_session
-    if _shutting_down:
+    if _MindbotHttpSessions.shutting_down:
         raise RuntimeError("MindBot HTTP sessions have been closed (shutdown in progress)")
     # No asyncio.Lock needed: same rationale as get_dingtalk_api_session above.
-    if _outbound_session is None or _outbound_session.closed:
+    if _MindbotHttpSessions.outbound is None or _MindbotHttpSessions.outbound.closed:
         connector = aiohttp.TCPConnector(
             limit=300,
             limit_per_host=30,
@@ -132,9 +139,9 @@ def get_outbound_session() -> aiohttp.ClientSession:
             keepalive_timeout=20,
             enable_cleanup_closed=True,
         )
-        _outbound_session = aiohttp.ClientSession(connector=connector)
+        _MindbotHttpSessions.outbound = aiohttp.ClientSession(connector=connector)
         logger.debug("[MindBot] outbound_session created")
-    return _outbound_session
+    return _MindbotHttpSessions.outbound
 
 
 async def get_pinned_outbound_session(
@@ -156,7 +163,7 @@ async def get_pinned_outbound_session(
     Async because eviction may need to ``await session.close()`` cleanly; the
     function still completes in O(1) on cache hit (no awaits on the hot path).
     """
-    if _shutting_down:
+    if _MindbotHttpSessions.shutting_down:
         raise RuntimeError("MindBot HTTP sessions have been closed (shutdown in progress)")
     key = (host, pinned_ip)
     cached = _pinned_sessions.get(key)
@@ -172,7 +179,7 @@ async def get_pinned_outbound_session(
         if evicted is not None and not evicted.closed:
             try:
                 await evicted.close()
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 logger.debug(
                     "[MindBot] pinned_session_evict_close_error host=%s err=%s",
                     evicted_key[0],
@@ -212,24 +219,23 @@ async def close_mindbot_http_sessions() -> None:
     Call once from the FastAPI lifespan ``finally`` block.  After this returns
     no further HTTP calls should be made via these sessions.
     """
-    global _dingtalk_session, _outbound_session, _shutting_down
-    _shutting_down = True
+    _MindbotHttpSessions.shutting_down = True
     for name, session in [
-        ("dingtalk_api", _dingtalk_session),
-        ("outbound", _outbound_session),
+        ("dingtalk_api", _MindbotHttpSessions.dingtalk),
+        ("outbound", _MindbotHttpSessions.outbound),
     ]:
         if session and not session.closed:
             try:
                 await session.close()
                 logger.info("[MindBot] http_session_closed session=%s", name)
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 logger.warning(
                     "[MindBot] http_session_close_error session=%s err=%s",
                     name,
                     exc,
                 )
-    _dingtalk_session = None
-    _outbound_session = None
+    _MindbotHttpSessions.dingtalk = None
+    _MindbotHttpSessions.outbound = None
 
     pinned_keys = list(_pinned_sessions.keys())
     for key in pinned_keys:
@@ -237,7 +243,7 @@ async def close_mindbot_http_sessions() -> None:
         if sess is not None and not sess.closed:
             try:
                 await sess.close()
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 logger.warning(
                     "[MindBot] pinned_session_close_error host=%s err=%s",
                     key[0],

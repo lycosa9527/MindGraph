@@ -20,13 +20,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
-from utils.auth.role_constants import SCHOOL_ADMIN_ROLES, SUPERADMIN_ROLES
 from services.online_collab.lifecycle.online_collab_expiry import is_online_collab_expired
-from services.online_collab.redis.online_collab_redis_keys import purge_online_collab_redis_keys
 from services.online_collab.lifecycle.online_collab_session_fields import (
     backfill_online_collab_expiry_if_needed,
     clear_online_collab_session_fields,
 )
+from services.online_collab.redis.online_collab_redis_keys import purge_online_collab_redis_keys
+from utils.auth.role_constants import SCHOOL_ADMIN_ROLES, SUPERADMIN_ROLES
 
 logger = logging.getLogger(__name__)
 

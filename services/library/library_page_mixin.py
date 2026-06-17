@@ -10,10 +10,10 @@ Proprietary License
 
 import logging
 from pathlib import Path
-from typing import Optional, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Optional, cast
 
-from services.library.library_path_utils import resolve_library_path
 from services.library.image_path_resolver import resolve_page_image
+from services.library.library_path_utils import resolve_library_path
 
 if TYPE_CHECKING:
     from models.domain.library import LibraryDocument

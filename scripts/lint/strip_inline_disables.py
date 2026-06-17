@@ -12,10 +12,12 @@ _SKIP_DIRS = {"__pycache__", ".venv", "venv", "node_modules", "frontend", "typin
 
 
 def _should_skip(path: Path) -> bool:
+    """Should skip."""
     return any(part in _SKIP_DIRS for part in path.parts)
 
 
 def strip_file(path: Path) -> bool:
+    """Strip file."""
     original = path.read_text(encoding="utf-8")
     updated = _INLINE_PYLINT.sub("", original)
     updated = _INLINE_NOQA.sub("", updated)
@@ -26,6 +28,7 @@ def strip_file(path: Path) -> bool:
 
 
 def main() -> int:
+    """Main."""
     root = Path(__file__).resolve().parents[2]
     changed = 0
     for py_path in sorted(root.rglob("*.py")):

@@ -30,6 +30,7 @@ from functools import wraps
 from typing import Any, Callable, Dict, List, Optional, TypeVar
 
 import redis
+from redis import asyncio as redis_async
 from redis.exceptions import ConnectionError as RedisPyConnectionError
 from redis.exceptions import ResponseError as RedisPyResponseError
 from redis.exceptions import TimeoutError as RedisPyTimeoutError
@@ -38,10 +39,10 @@ from services.infrastructure.utils.launch_commands import (
     error_footer_launch_reference,
     lines_redis_connection_failed,
 )
-from services.redis.redis_circuit_breaker import (
-    get_breaker as _get_breaker,
-    is_breaker_enabled as _breaker_enabled,
-)
+from services.redis.redis_circuit_breaker import get_breaker as _get_breaker
+from services.redis.redis_circuit_breaker import is_breaker_enabled as _breaker_enabled
+from services.redis.redis_connection_options import redis_connection_options
+from services.utils.error_types import REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +127,7 @@ def _with_retry(operation_name: str, default_return: Any = None):
                             _RETRY_MAX_ATTEMPTS,
                             delay,
                         )
-                except Exception as e:
+                except REDIS_ERRORS as e:
                     # Non-retryable error (data type mismatch, etc.)
                     logger.warning("[Redis] %s failed: %s", operation_name, e)
                     return default_return
@@ -212,8 +213,6 @@ def _redis_py_supports_xadd_idmpauto() -> bool:
     so checking three classes is redundant and can confuse readers.
     """
     try:
-        from redis import asyncio as redis_async
-
         sig = inspect.signature(redis_async.Redis.xadd)
     except (ImportError, TypeError, ValueError, AttributeError):
         return False
@@ -231,6 +230,58 @@ class _RedisCapabilities:
     version: tuple = (0, 0, 0)
     delex: bool = False  # Redis 8.4+ DELEX command for compare-and-delete
     idmpauto: bool = False  # Redis 8.6+ XADD IDMPAUTO (redis-py idmpauto= + id=*)
+
+
+def _env_truthy(name: str, default: str = "true") -> bool:
+    """Return True when an environment variable is set to a truthy value."""
+    return os.getenv(name, default).strip().lower() in ("1", "true", "yes", "on")
+
+
+def _apply_redis_aof_config(redis_client: Any) -> None:
+    """
+    Enable AOF persistence via CONFIG SET when permitted.
+
+    Collab live_spec write-back relies on appendonly=yes (appendfsync everysec).
+    Unlike io-threads, appendonly can usually be toggled at runtime without a
+    Redis restart. Managed providers may block CONFIG; in that case ops must set
+    AOF in the provider console or redis.conf.
+    """
+    if not _env_truthy("REDIS_AOF_ENABLED", "true"):
+        logger.debug("[Redis] AOF startup tuning disabled (REDIS_AOF_ENABLED=false)")
+        return
+
+    appendfsync = os.getenv("REDIS_APPENDFSYNC", "everysec").strip().lower()
+    if appendfsync not in ("everysec", "always", "no"):
+        appendfsync = "everysec"
+
+    for cfg_key, cfg_val in (("appendonly", "yes"), ("appendfsync", appendfsync)):
+        try:
+            current = redis_client.config_get(cfg_key) or {}
+            current_val = str(current.get(cfg_key, "")).lower()
+            if current_val == cfg_val.lower():
+                logger.debug("[Redis] %s already '%s'", cfg_key, cfg_val)
+                continue
+            redis_client.config_set(cfg_key, cfg_val)
+            logger.info("[Redis] %s set to '%s'", cfg_key, cfg_val)
+        except REDIS_ERRORS as exc:
+            logger.warning(
+                "[Redis] Could not set %s=%s (%s). "
+                "Collab edits may be lost on crash until AOF is enabled.",
+                cfg_key,
+                cfg_val,
+                exc,
+            )
+
+    if _env_truthy("REDIS_CONFIG_REWRITE", "false"):
+        try:
+            redis_client.config_rewrite()
+            logger.info("[Redis] CONFIG REWRITE saved runtime settings to redis.conf")
+        except REDIS_ERRORS as exc:
+            logger.info(
+                "[Redis] CONFIG REWRITE skipped (%s). "
+                "AOF remains active until Redis restarts; edit redis.conf to persist.",
+                exc,
+            )
 
 
 def _apply_redis_startup_config(redis_client: Any, redis_version: str) -> None:
@@ -266,13 +317,13 @@ def _apply_redis_startup_config(redis_client: Any, redis_version: str) -> None:
         try:
             redis_client.config_set("maxmemory-policy", policy)
             logger.info("[Redis] Eviction policy set to '%s'", policy)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning("[Redis] Could not set eviction policy: %s", exc)
 
         try:
             redis_client.config_set("key-memory-histograms", "yes")
             logger.info("[Redis] key-memory-histograms enabled")
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.info(
                 "[Redis] key-memory-histograms not applied at runtime (%s). "
                 "Optional in Redis 8.6+; often blocked unless set in redis.conf "
@@ -307,7 +358,7 @@ def _apply_redis_startup_config(redis_client: Any, redis_version: str) -> None:
         for cfg_key, cfg_val in runtime_settings.items():
             try:
                 redis_client.config_set(cfg_key, cfg_val)
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logger.debug(
                     "[Redis] CONFIG SET %s=%s skipped (%s)",
                     cfg_key,
@@ -318,6 +369,8 @@ def _apply_redis_startup_config(redis_client: Any, redis_version: str) -> None:
             "[Redis] Applied runtime tuning: io-threads=%d, lazyfree=*, activedefrag, latency-monitor-threshold=100ms",
             io_threads,
         )
+
+    _apply_redis_aof_config(redis_client)
 
 
 def redis_delex_enabled() -> bool:
@@ -356,6 +409,7 @@ def init_redis_sync() -> bool:
             socket_timeout=config["socket_timeout"],
             socket_connect_timeout=config["socket_connect_timeout"],
             retry_on_timeout=config["retry_on_timeout"],
+            **redis_connection_options(),
         )
 
         # Test connection
@@ -371,9 +425,7 @@ def init_redis_sync() -> bool:
         _apply_redis_startup_config(redis_client, redis_version)
         return True
 
-    except RedisStartupError:
-        raise
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         _log_redis_error(
             title="REDIS CONNECTION FAILED",
             details=lines_redis_connection_failed(redis_url, str(exc)),
@@ -388,7 +440,7 @@ def close_redis_sync():
         try:
             redis_client.close()
             logger.info("[Redis] Connection closed")
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning("[Redis] Error closing connection: %s", e)
 
     _RedisState.clear_client()
@@ -477,7 +529,7 @@ class RedisOperations:
             return None
         try:
             return redis_client.getdel(key)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning("[Redis] get_and_delete failed for key %s: %s", key, exc)
             return None
 
@@ -695,7 +747,7 @@ class RedisOperations:
                 expected_value,
             )
             return bool(result)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning("[Redis] compare_and_delete failed for %s: %s", key[:20], exc)
             return False
 
@@ -723,7 +775,7 @@ class RedisOperations:
                 if cursor == 0:
                     break
             return keys[:count]
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning("[Redis] SCAN failed for %s: %s", pattern[:20], e)
             return []
 
@@ -744,7 +796,7 @@ class RedisOperations:
             return {}
         try:
             return redis_client.info(section) if section else redis_client.info()
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning("[Redis] INFO failed: %s", e)
             return {}
 

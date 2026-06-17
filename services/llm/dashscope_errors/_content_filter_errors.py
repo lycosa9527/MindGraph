@@ -8,8 +8,8 @@ Handles content filtering and policy violation errors.
 from typing import Optional, Tuple
 
 from services.infrastructure.http.error_handler import (
-    LLMQuotaExhaustedError,
     LLMContentFilterError,
+    LLMQuotaExhaustedError,
 )
 
 

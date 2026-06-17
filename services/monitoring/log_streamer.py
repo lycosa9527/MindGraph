@@ -1,11 +1,3 @@
-from datetime import datetime
-from pathlib import Path
-from typing import AsyncGenerator, Dict, Optional, List
-import asyncio
-import logging
-import re
-
-
 """
 Log Streaming Service
 =====================
@@ -27,6 +19,14 @@ All Rights Reserved
 Proprietary License
 """
 
+import asyncio
+import logging
+import re
+from datetime import datetime
+from pathlib import Path
+from typing import AsyncGenerator, Dict, List, Optional
+
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 try:
     import aiofiles
@@ -232,10 +232,10 @@ class LogStreamer:
                                         log_file,
                                     )
                                     break  # Exit and let caller handle reconnection
-                            except Exception as e:
+                            except BACKGROUND_INFRA_ERRORS as e:
                                 logger.error("Error checking file rotation: %s", e)
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Error tailing log file %s: %s", log_file, e)
             yield {
                 "timestamp": datetime.now().isoformat(),
@@ -272,7 +272,7 @@ class LogStreamer:
                     else:
                         await asyncio.sleep(0.1)
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Error tailing log file %s: %s", log_file, e)
             yield {
                 "timestamp": datetime.now().isoformat(),
@@ -380,7 +380,7 @@ class LogStreamer:
                                 "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
                             }
                         )
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Error listing log files: %s", e)
 
         return log_files
@@ -419,7 +419,7 @@ class LogStreamer:
                 if entry:
                     entries.append(entry)
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Error reading log file %s: %s", log_file, e)
 
         return entries

@@ -10,6 +10,7 @@ Copyright 2024-2025 北京思源智教科技有限公司
 All Rights Reserved
 Proprietary License
 """
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 import logging
 from typing import List, Optional
@@ -46,7 +47,7 @@ class EmbeddingService:
                     raise ImportError("get_embedding_client not available")
                 self.embedding_client = get_embedding_client()
                 logger.info("[EmbeddingService] Initialized with DashScope embedding client")
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.warning("[EmbeddingService] Embedding client not available: %s", e)
                 self.embedding_client = None
 
@@ -70,7 +71,7 @@ class EmbeddingService:
             # DashScopeEmbeddingClient already normalizes embeddings
             embeddings = await self.embedding_client.embed_texts(texts=texts, text_type="document")
             return embeddings
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[EmbeddingService] Failed to embed texts: %s", e)
             raise
 
@@ -142,13 +143,14 @@ class EmbeddingService:
         return self.embedding_client is not None
 
 
-# Global instance
-_embedding_service: Optional[EmbeddingService] = None
+class _EmbeddingServiceState:
+    """Process-wide embedding service singleton holder."""
+
+    instance: Optional[EmbeddingService] = None
 
 
 def get_embedding_service() -> EmbeddingService:
     """Get global embedding service instance."""
-    global _embedding_service
-    if _embedding_service is None:
-        _embedding_service = EmbeddingService()
-    return _embedding_service
+    if _EmbeddingServiceState.instance is None:
+        _EmbeddingServiceState.instance = EmbeddingService()
+    return _EmbeddingServiceState.instance

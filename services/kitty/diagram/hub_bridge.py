@@ -7,13 +7,12 @@ import time
 from typing import Any, Dict, Optional
 
 from services.agent_hub import get_mind_graph_agent_hub
-
-from services.kitty.diagram.diagram_utils import get_diagram_prefix_map
-from services.kitty.diagram.diagram_spec_sync import sync_diagram_data_to_spec_shape
 from services.kitty.context.hub_context import apply_kitty_ws_context_patch
+from services.kitty.diagram.diagram_spec_sync import sync_diagram_data_to_spec_shape
+from services.kitty.diagram.diagram_utils import get_diagram_prefix_map
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
-from services.kitty.session.runtime_state import logger
 from services.kitty.session.ops import get_voice_session
+from services.kitty.session.runtime_state import logger
 
 DIAGRAM_VOICE_INTENTS = frozenset({"update_center", "update_node", "add_node", "delete_node"})
 
@@ -37,6 +36,7 @@ def _preview_double_bubble_update_center(
     command: Dict[str, Any],
     diagram_data: Dict[str, Any],
 ) -> bool:
+    """Preview double bubble update center."""
     left = command.get("left")
     right = command.get("right")
     if not (isinstance(left, str) and left.strip() and isinstance(right, str) and right.strip()):
@@ -47,6 +47,7 @@ def _preview_double_bubble_update_center(
 
 
 def _preview_update_center(command: Dict[str, Any], diagram_data: Dict[str, Any]) -> bool:
+    """Preview update center."""
     new_text = command.get("target") or command.get("new_text")
     if not isinstance(new_text, str) or not new_text.strip():
         return False
@@ -63,6 +64,7 @@ def _preview_update_node(
     diagram_data: Dict[str, Any],
     diagram_type: str,
 ) -> bool:
+    """Preview update node."""
     target = command.get("target")
     if not isinstance(target, str) or not target.strip():
         return False
@@ -106,6 +108,7 @@ def _preview_update_node(
 
 
 def _preview_add_node(command: Dict[str, Any], diagram_data: Dict[str, Any], diagram_type: str) -> bool:
+    """Preview add node."""
     target = command.get("target")
     if not isinstance(target, str) or not target.strip():
         return False
@@ -143,6 +146,7 @@ def _preview_add_node(command: Dict[str, Any], diagram_data: Dict[str, Any], dia
 
 
 def _preview_delete_node(command: Dict[str, Any], diagram_data: Dict[str, Any], diagram_type: str) -> bool:
+    """Preview delete node."""
     target = command.get("target")
     node_index_raw = command.get("node_index")
     nodes = diagram_data.get("children", [])

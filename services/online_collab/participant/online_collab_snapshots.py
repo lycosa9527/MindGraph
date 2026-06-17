@@ -14,12 +14,9 @@ from services.features.workshop_ws_connection_state import (
     ViewerHandle,
     enqueue,
 )
-from services.redis.redis_async_client import get_async_redis
-from services.online_collab.spec.online_collab_live_spec import spec_for_snapshot
-from services.online_collab.spec.online_collab_live_spec_ops import ensure_live_spec_seeded
-from services.online_collab.spec.online_collab_viewer_snapshot import (
-    ensure_snapshot_task,
-    read_viewer_snapshot,
+from services.infrastructure.monitoring.ws_metrics import (
+    record_ws_collab_snapshot_oversize,
+    record_ws_viewer_snapshot_hit,
 )
 from services.online_collab.lifecycle.online_collab_redis_ttl import (
     get_online_collab_redis_ttl_seconds,
@@ -28,7 +25,15 @@ from services.online_collab.redis.online_collab_redis_keys import (
     live_spec_key,
     snapshot_seq_key,
 )
+from services.online_collab.spec.online_collab_live_spec import spec_for_snapshot
 from services.online_collab.spec.online_collab_live_spec_json import parse_json_get_bulk
+from services.online_collab.spec.online_collab_live_spec_ops import ensure_live_spec_seeded
+from services.online_collab.spec.online_collab_viewer_snapshot import (
+    ensure_snapshot_task,
+    read_viewer_snapshot,
+)
+from services.redis.redis_async_client import get_async_redis
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +51,7 @@ _SNAPSHOT_OVERSIZE_MSG = (
 
 
 def _collab_snapshot_max_bytes() -> int:
+    """Collab snapshot max bytes."""
     raw = os.environ.get("COLLAB_WS_SNAPSHOT_MAX_BYTES")
     default = 4_194_304
     if raw is None:
@@ -58,12 +64,14 @@ def _collab_snapshot_max_bytes() -> int:
 
 
 def _snapshot_json_byte_length(payload: Mapping[str, Any]) -> int:
+    """Snapshot json byte length."""
     return len(
         json.dumps(payload, separators=(",", ":"), default=str).encode("utf-8"),
     )
 
 
 def _decode_lua_bulk_string(val: Any) -> Optional[str]:
+    """Decode lua bulk string."""
     if val is None:
         return None
     if isinstance(val, bytes):
@@ -74,6 +82,7 @@ def _decode_lua_bulk_string(val: Any) -> Optional[str]:
 
 
 def _parse_seq_from_lua(val: Any) -> Optional[int]:
+    """Parse seq from lua."""
     text = _decode_lua_bulk_string(val)
     if text is None or not text.strip():
         return None
@@ -90,6 +99,7 @@ async def _enqueue_snapshot_or_oversize(
     version: int,
     seq: Optional[int] = None,
 ) -> None:
+    """Enqueue snapshot or oversize."""
     body: Dict[str, Any] = {
         "type": "snapshot",
         "diagram_id": diagram_id,
@@ -101,12 +111,8 @@ async def _enqueue_snapshot_or_oversize(
     limit = _collab_snapshot_max_bytes()
     if _snapshot_json_byte_length(body) > limit:
         try:
-            from services.infrastructure.monitoring.ws_metrics import (
-                record_ws_collab_snapshot_oversize,
-            )
-
             record_ws_collab_snapshot_oversize()
-        except (AttributeError, TypeError, RuntimeError, OSError, ImportError):
+        except BACKGROUND_INFRA_ERRORS:
             pass
         logger.warning(
             "[CollabSnapshot] oversize diagram_id=%s bytes>%s",
@@ -148,12 +154,8 @@ async def websocket_send_live_spec_snapshot(
         cached = await read_viewer_snapshot(code)
         if cached is not None:
             try:
-                from services.infrastructure.monitoring.ws_metrics import (
-                    record_ws_viewer_snapshot_hit,
-                )
-
                 record_ws_viewer_snapshot_hit()
-            except (AttributeError, TypeError, RuntimeError, OSError, ImportError):
+            except BACKGROUND_INFRA_ERRORS:
                 pass
             raw_seq = cached.get("seq")
             viewer_seq: Optional[int] = int(raw_seq) if isinstance(raw_seq, (int, float)) and raw_seq > 0 else None

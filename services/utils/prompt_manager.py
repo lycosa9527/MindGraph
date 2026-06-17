@@ -40,6 +40,7 @@ class PromptManager:
     """
 
     def __init__(self):
+        """ init  ."""
         self._prompts: Dict[str, Dict[str, Dict[str, Dict[str, str]]]] = {}
         self._initialized = False
         logger.info("[PromptManager] Initialized")
@@ -334,7 +335,7 @@ class PromptManager:
         try:
             dummy_values = {var: "test" for var in template_vars}
             template.format(**dummy_values)
-        except Exception as e:
+        except (KeyError, ValueError, IndexError) as e:
             raise PromptTemplateError(f"Template formatting error: {e}") from e
 
         return True

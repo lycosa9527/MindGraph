@@ -110,6 +110,7 @@ def is_paragraph_text(text: str) -> bool:
 
 
 def _voice_node_text(node: object) -> str:
+    """Voice node text."""
     if isinstance(node, dict):
         raw = node.get("text") or node.get("label") or ""
         return str(raw).strip()
@@ -119,6 +120,7 @@ def _voice_node_text(node: object) -> str:
 
 
 def _prefix_node_id(diagram_type: str, index: int) -> str:
+    """Prefix node id."""
     prefix_map = get_diagram_prefix_map()
     prefix = prefix_map.get(diagram_type, "node")
     return f"{prefix}_{index}"

@@ -32,7 +32,23 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from types import ModuleType
 from typing import Sequence
+
+from services.utils.error_types import DATABASE_ERRORS
+
+psycopg: ModuleType | None = None
+try:
+    import psycopg as _psycopg
+
+    psycopg = _psycopg
+except ImportError:
+    try:
+        import psycopg2 as _psycopg2
+
+        psycopg = _psycopg2
+    except ImportError:
+        psycopg = None
 
 
 _TOP_STATEMENTS_SQL = """
@@ -91,6 +107,7 @@ def _print_table(title: str, columns: Sequence[str], rows: Sequence[tuple]) -> N
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Run PostgreSQL stat reports and print results."""
     doc_lines = (__doc__ or "Database stats").splitlines()
     description = doc_lines[1] if len(doc_lines) > 1 else doc_lines[0]
     parser = argparse.ArgumentParser(description=description)
@@ -102,21 +119,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    try:
-        import psycopg
-    except ImportError:
-        try:
-            import psycopg2 as psycopg
-        except ImportError:
-            print(
-                "[db_stats] Neither psycopg nor psycopg2 is installed; install one to run this helper.",
-                file=sys.stderr,
-            )
-            return 2
+    if psycopg is None:
+        print(
+            "[db_stats] Neither psycopg nor psycopg2 is installed; install one to run this helper.",
+            file=sys.stderr,
+        )
+        return 2
 
     try:
         conn = psycopg.connect(args.dsn)
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         print(f"[db_stats] Could not connect to {args.dsn!r}: {exc}", file=sys.stderr)
         return 1
 
@@ -129,7 +141,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     ["calls", "total_ms", "mean_ms", "rows", "query"],
                     cur.fetchall(),
                 )
-            except Exception as exc:
+            except DATABASE_ERRORS as exc:
                 print(f"[db_stats] pg_stat_statements unavailable: {exc}", file=sys.stderr)
 
             cur.execute(_TOP_SEQ_SCAN_TABLES_SQL, (args.limit,))

@@ -17,24 +17,30 @@ Coverage:
 
 from __future__ import annotations
 
+import asyncio
+from datetime import UTC, datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 import pytest
+from fastapi import HTTPException
+from redis.exceptions import ResponseError
 
 from services.online_collab.participant.canvas_collab_locks import (
     filter_granular_connections_for_locks,
     filter_granular_nodes_for_locks,
     node_locked_by_other_user,
 )
+from services.online_collab.participant.online_collab_participant_ops import _hexpire_field
+from services.online_collab.redis.online_collab_redis_keys import (
+    live_flush_pending_key,
+    live_spec_key,
+    participants_key,
+    room_idle_kick_lock_key,
+)
 from services.online_collab.spec.online_collab_live_spec import (
     apply_live_update,
     merge_granular_into_spec,
 )
-from services.online_collab.redis.online_collab_redis_keys import (
-    live_flush_pending_key,
-    room_idle_kick_lock_key,
-)
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -46,14 +52,17 @@ def _make_spec(
     connections: Optional[List[Dict[str, Any]]] = None,
     version: int = 1,
 ) -> Dict[str, Any]:
+    """Make spec."""
     return {"nodes": nodes or [], "connections": connections or [], "v": version}
 
 
 def _no_editors() -> Dict[str, Dict[str, Dict[int, str]]]:
+    """No editors."""
     return {}
 
 
 def _editors_with_lock(code: str, node_id: str, owner_id: int, username: str) -> Dict[str, Dict[str, Dict[int, str]]]:
+    """Editors with lock."""
     return {code: {node_id: {owner_id: username}}}
 
 
@@ -63,18 +72,22 @@ def _editors_with_lock(code: str, node_id: str, owner_id: int, username: str) ->
 
 
 class TestMergeGranularIntoSpec:
+    """TestMergeGranularIntoSpec helper."""
     def test_adds_new_node(self) -> None:
+        """Test adds new node."""
         spec: Dict[str, Any] = {"nodes": [], "connections": []}
         merge_granular_into_spec(spec, [{"id": "n1", "text": "hello"}], None)
         assert len(spec["nodes"]) == 1
         assert spec["nodes"][0]["id"] == "n1"
 
     def test_updates_existing_node(self) -> None:
+        """Test updates existing node."""
         spec = {"nodes": [{"id": "n1", "text": "old"}], "connections": []}
         merge_granular_into_spec(spec, [{"id": "n1", "text": "new"}], None)
         assert spec["nodes"][0]["text"] == "new"
 
     def test_adds_connection(self) -> None:
+        """Test adds connection."""
         spec: Dict[str, Any] = {
             "nodes": [{"id": "n1"}, {"id": "n2"}],
             "connections": [],
@@ -83,6 +96,7 @@ class TestMergeGranularIntoSpec:
         assert len(spec["connections"]) == 1
 
     def test_updates_connection_by_id(self) -> None:
+        """Test updates connection by id."""
         spec = {
             "nodes": [{"id": "n1"}, {"id": "n2"}],
             "connections": [{"id": "c1", "source": "n1", "target": "n2", "label": "old"}],
@@ -91,12 +105,14 @@ class TestMergeGranularIntoSpec:
         assert spec["connections"][0]["label"] == "new"
 
     def test_deletes_nodes_by_id(self) -> None:
+        """Test deletes nodes by id."""
         spec = {"nodes": [{"id": "n1"}, {"id": "n2"}], "connections": []}
         merge_granular_into_spec(spec, None, None, deleted_node_ids=["n1"])
         assert len(spec["nodes"]) == 1
         assert spec["nodes"][0]["id"] == "n2"
 
     def test_deletes_connections_by_id(self) -> None:
+        """Test deletes connections by id."""
         spec = {
             "nodes": [{"id": "n1"}, {"id": "n2"}, {"id": "n3"}],
             "connections": [
@@ -149,7 +165,9 @@ class TestMergeGranularIntoSpec:
 
 
 class TestApplyLiveUpdate:
+    """TestApplyLiveUpdate helper."""
     def test_full_spec_replace_bumps_version(self) -> None:
+        """Test full spec replace bumps version."""
         current = _make_spec(version=5)
         new_spec = {"nodes": [{"id": "x"}], "connections": [], "v": 0}
         doc, v, changed = apply_live_update(current, new_spec, None, None)
@@ -159,6 +177,7 @@ class TestApplyLiveUpdate:
         assert "__full__" in changed
 
     def test_granular_update_bumps_version(self) -> None:
+        """Test granular update bumps version."""
         current = _make_spec(version=3)
         doc, v, changed = apply_live_update(current, None, [{"id": "n1"}], None)
         assert v == 4
@@ -167,12 +186,14 @@ class TestApplyLiveUpdate:
         assert "__full__" not in changed
 
     def test_no_current_seeds_from_spec(self) -> None:
+        """Test no current seeds from spec."""
         doc, v, changed = apply_live_update(None, {"nodes": [{"id": "n0"}], "connections": []}, None, None)
         assert v == 1
         assert len(doc["nodes"]) == 1
         assert "__full__" in changed
 
     def test_deletion_increments_version(self) -> None:
+        """Test deletion increments version."""
         current = _make_spec(nodes=[{"id": "n1"}], version=2)
         doc, v, changed = apply_live_update(current, None, None, None, deleted_node_ids=["n1"])
         assert v == 3
@@ -180,6 +201,7 @@ class TestApplyLiveUpdate:
         assert "__full__" in changed
 
     def test_granular_nodes_none_treated_as_no_op(self) -> None:
+        """Test granular nodes none treated as no op."""
         current = _make_spec(nodes=[{"id": "n1", "text": "keep"}], version=1)
         doc, _, _changed = apply_live_update(current, None, None, None)
         assert len(doc["nodes"]) == 1
@@ -192,19 +214,23 @@ class TestApplyLiveUpdate:
 
 
 class TestLockHelpers:
+    """TestLockHelpers helper."""
     CODE = "abc-123"
     ALICE_ID = 1
     BOB_ID = 2
     NODE_ID = "n1"
 
     def test_not_locked_when_no_editors(self) -> None:
+        """Test not locked when no editors."""
         assert not node_locked_by_other_user(self.CODE, self.BOB_ID, self.NODE_ID, _no_editors(), None)
 
     def test_locked_by_other_user(self) -> None:
+        """Test locked by other user."""
         editors = _editors_with_lock(self.CODE, self.NODE_ID, self.ALICE_ID, "alice")
         assert node_locked_by_other_user(self.CODE, self.BOB_ID, self.NODE_ID, editors, None)
 
     def test_not_locked_when_same_user(self) -> None:
+        """Test not locked when same user."""
         editors = _editors_with_lock(self.CODE, self.NODE_ID, self.ALICE_ID, "alice")
         assert not node_locked_by_other_user(self.CODE, self.ALICE_ID, self.NODE_ID, editors, None)
 
@@ -216,35 +242,41 @@ class TestLockHelpers:
         assert not node_locked_by_other_user(self.CODE, self.BOB_ID, self.NODE_ID, local, redis_editors)
 
     def test_filter_granular_nodes_drops_locked(self) -> None:
+        """Test filter granular nodes drops locked."""
         editors = _editors_with_lock(self.CODE, self.NODE_ID, self.ALICE_ID, "alice")
         nodes = [{"id": self.NODE_ID, "text": "bob change"}]
         result = filter_granular_nodes_for_locks(self.CODE, self.BOB_ID, nodes, editors, None)
         assert not result
 
     def test_filter_granular_nodes_allows_unlocked(self) -> None:
+        """Test filter granular nodes allows unlocked."""
         nodes = [{"id": "n2", "text": "free"}]
         result = filter_granular_nodes_for_locks(self.CODE, self.BOB_ID, nodes, _no_editors(), None)
         assert len(result) == 1
 
     def test_filter_granular_nodes_allows_owner_edit(self) -> None:
+        """Test filter granular nodes allows owner edit."""
         editors = _editors_with_lock(self.CODE, self.NODE_ID, self.ALICE_ID, "alice")
         nodes = [{"id": self.NODE_ID, "text": "my change"}]
         result = filter_granular_nodes_for_locks(self.CODE, self.ALICE_ID, nodes, editors, None)
         assert len(result) == 1
 
     def test_filter_granular_connections_drops_if_source_locked(self) -> None:
+        """Test filter granular connections drops if source locked."""
         editors = _editors_with_lock(self.CODE, "n1", self.ALICE_ID, "alice")
         conns = [{"source": "n1", "target": "n2"}]
         result = filter_granular_connections_for_locks(self.CODE, self.BOB_ID, conns, editors, None)
         assert not result
 
     def test_filter_granular_connections_drops_if_target_locked(self) -> None:
+        """Test filter granular connections drops if target locked."""
         editors = _editors_with_lock(self.CODE, "n2", self.ALICE_ID, "alice")
         conns = [{"source": "n1", "target": "n2"}]
         result = filter_granular_connections_for_locks(self.CODE, self.BOB_ID, conns, editors, None)
         assert not result
 
     def test_filter_granular_connections_allows_when_free(self) -> None:
+        """Test filter granular connections allows when free."""
         conns = [{"source": "n3", "target": "n4"}]
         result = filter_granular_connections_for_locks(self.CODE, self.BOB_ID, conns, _no_editors(), None)
         assert len(result) == 1
@@ -292,6 +324,7 @@ class TestLockBeforeWriteContract:
         return filtered
 
     def test_locked_node_never_reaches_redis(self) -> None:
+        """Test locked node never reaches redis."""
         editors = _editors_with_lock(self.CODE, self.LOCKED_NODE, self.ALICE_ID, "alice")
         nodes = [
             {"id": self.LOCKED_NODE, "text": "bob overwrite"},
@@ -303,6 +336,7 @@ class TestLockBeforeWriteContract:
         assert self.FREE_NODE in ids
 
     def test_no_lock_all_nodes_reach_redis(self) -> None:
+        """Test no lock all nodes reach redis."""
         nodes = [{"id": "n1"}, {"id": "n2"}]
         reaching_redis = self._simulate_update(self.BOB_ID, nodes, _no_editors())
         assert len(reaching_redis) == 2
@@ -314,17 +348,21 @@ class TestLockBeforeWriteContract:
 
 
 class TestRedisKeyFormats:
+    """TestRedisKeyFormats helper."""
     def test_room_idle_kick_lock_key_format(self) -> None:
+        """Test room idle kick lock key format."""
         key = room_idle_kick_lock_key("abc-123")
         assert "abc-123" in key
         assert "lock" in key.lower() or "idle" in key.lower() or "kick" in key.lower()
 
     def test_live_flush_pending_key_format(self) -> None:
+        """Test live flush pending key format."""
         key = live_flush_pending_key("abc-123")
         assert "abc-123" in key
         assert "flush" in key.lower() or "pending" in key.lower()
 
     def test_keys_are_distinct_per_code(self) -> None:
+        """Test keys are distinct per code."""
         assert room_idle_kick_lock_key("a") != room_idle_kick_lock_key("b")
         assert live_flush_pending_key("a") != live_flush_pending_key("b")
 
@@ -344,8 +382,7 @@ class TestRestCollabGuardLogic:
 
     @pytest.mark.asyncio
     async def test_409_raised_when_active_code_exists(self) -> None:
-        from fastapi import HTTPException
-
+        """Test 409 raised when active code exists."""
         async def _get_active(_diagram_id: str) -> Optional[str]:
             return "abc-123"
 
@@ -360,6 +397,7 @@ class TestRestCollabGuardLogic:
 
     @pytest.mark.asyncio
     async def test_no_exception_when_no_active_code(self) -> None:
+        """Test no exception when no active code."""
         async def _get_active(_diagram_id: str) -> Optional[str]:
             return None
 
@@ -379,6 +417,7 @@ class TestMultiWorkerNxDedup:
     """
 
     def test_first_call_acquires(self) -> None:
+        """Test first call acquires."""
         store: Dict[str, str] = {}
 
         def redis_set_nx(key: str, value: str) -> bool:
@@ -390,6 +429,7 @@ class TestMultiWorkerNxDedup:
         assert redis_set_nx("flush:room-abc", "1") is True
 
     def test_second_call_rejected(self) -> None:
+        """Test second call rejected."""
         store: Dict[str, str] = {"flush:room-abc": "1"}
 
         def redis_set_nx(key: str, value: str) -> bool:
@@ -417,8 +457,7 @@ class TestFanoutBroadcastSemantics:
 
     @pytest.mark.asyncio
     async def test_publish_reaches_all_subscribers(self) -> None:
-        import asyncio
-
+        """Test publish reaches all subscribers."""
         received: Dict[str, List[str]] = {}
         queues: Dict[str, asyncio.Queue] = {}
         channel = "workshop:test-room"
@@ -457,8 +496,6 @@ class TestFanoutBroadcastSemantics:
         Each subscriber should receive every message (unlike XREADGROUP which
         load-balances to only one consumer).
         """
-        import asyncio
-
         total_received = 0
         queues: List[asyncio.Queue] = [asyncio.Queue() for _ in range(5)]
 
@@ -475,6 +512,7 @@ class TestFanoutBroadcastSemantics:
         assert total_received == 5
 
     def test_channel_name_is_per_room(self) -> None:
+        """Test channel name is per room."""
         key_a = live_flush_pending_key("room-a")
         key_b = live_flush_pending_key("room-b")
         assert key_a != key_b
@@ -496,29 +534,35 @@ class TestHexpireParticipants:
     """
 
     def _make_store(self) -> Dict[str, Dict[str, int]]:
+        """Make store."""
         return {}
 
     def test_hset_records_participant(self) -> None:
+        """Test hset records participant."""
         store: Dict[str, Any] = {}
         store["user:42"] = 1
         assert "user:42" in store
 
     def test_hdel_removes_participant(self) -> None:
+        """Test hdel removes participant."""
         store: Dict[str, Any] = {"user:42": 1, "user:99": 1}
         del store["user:42"]
         assert "user:42" not in store
         assert "user:99" in store
 
     def test_hlen_returns_count(self) -> None:
+        """Test hlen returns count."""
         store: Dict[str, Any] = {"user:1": 1, "user:2": 1, "user:3": 1}
         assert len(store) == 3
 
     def test_hkeys_returns_all_fields(self) -> None:
+        """Test hkeys returns all fields."""
         store: Dict[str, Any] = {"user:1": 1, "user:2": 1}
         keys = list(store.keys())
         assert set(keys) == {"user:1", "user:2"}
 
     def test_participant_count_zero_after_all_removed(self) -> None:
+        """Test participant count zero after all removed."""
         store: Dict[str, Any] = {"user:1": 1}
         del store["user:1"]
         assert len(store) == 0
@@ -528,8 +572,6 @@ class TestHexpireParticipants:
         When HEXPIRE is unsupported, the implementation falls back to EXPIRE on
         the whole key.  Validate the fallback logic never raises.
         """
-        from redis.exceptions import ResponseError
-
         class FakeRedis:
             """Minimal Redis stub that raises ResponseError on hexpire."""
 
@@ -539,37 +581,27 @@ class TestHexpireParticipants:
                 ttl: int,
                 _field: str,
             ) -> None:
+                """Hexpire."""
                 _ = (key, ttl)
                 raise ResponseError("ERR unknown command 'hexpire'")
 
             async def expire(self, _key: str, _ttl: int) -> bool:
+                """Expire."""
                 return True
 
-        import asyncio
-
         async def _run() -> None:
-            from services.online_collab.participant.online_collab_participant_ops import (
-                _hexpire_field,
-            )
-
             fake = FakeRedis()
             await _hexpire_field(fake, "participants:test", 300, "user:1")
 
         asyncio.run(_run())
 
     def test_redis_keys_include_participants_key(self) -> None:
-        from services.online_collab.redis.online_collab_redis_keys import (
-            participants_key,
-        )
-
+        """Test redis keys include participants key."""
         key = participants_key("room-xyz")
         assert "room-xyz" in key
 
     def test_participants_key_per_room_is_unique(self) -> None:
-        from services.online_collab.redis.online_collab_redis_keys import (
-            participants_key,
-        )
-
+        """Test participants key per room is unique."""
         assert participants_key("a") != participants_key("b")
 
 
@@ -588,12 +620,12 @@ class TestMergeCleanupPartitioning:
     """
 
     def _expired_rows(self) -> List[Dict[str, Any]]:
-        from datetime import UTC, datetime, timedelta
-
+        """Expired rows."""
         now = datetime.now(UTC)
         return [{"id": i, "workshop_code": f"wc-{i}", "expires_at": now - timedelta(hours=1)} for i in range(1, 6)]
 
     def test_all_expired_rows_are_returned(self) -> None:
+        """Test all expired rows are returned."""
         rows = self._expired_rows()
         assert len(rows) == 5
         for row in rows:
@@ -601,16 +633,13 @@ class TestMergeCleanupPartitioning:
             assert "id" in row
 
     def test_redis_purge_keys_derived_from_workshop_code(self) -> None:
-        from services.online_collab.redis.online_collab_redis_keys import (
-            participants_key,
-            live_spec_key,
-        )
-
+        """Test redis purge keys derived from workshop code."""
         code = "wc-test"
         assert code in participants_key(code)
         assert code in live_spec_key(code)
 
     def test_cleanup_idempotent_on_double_run(self) -> None:
+        """Test cleanup idempotent on double run."""
         cleaned: Dict[str, bool] = {}
 
         def mark_cleaned(code: str) -> bool:
@@ -637,6 +666,7 @@ class TestMergeCleanupPartitioning:
         assert code == "wc-7"
 
     def test_no_purge_when_workshop_code_is_none(self) -> None:
+        """Test no purge when workshop code is none."""
         purged: List[str] = []
 
         def maybe_purge(code: Optional[str]) -> None:
@@ -647,6 +677,7 @@ class TestMergeCleanupPartitioning:
         assert not purged
 
     def test_purge_called_for_each_expired_code(self) -> None:
+        """Test purge called for each expired code."""
         rows = self._expired_rows()
         purged: List[str] = []
 

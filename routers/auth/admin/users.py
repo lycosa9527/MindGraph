@@ -12,45 +12,45 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional, cast
 import logging
+from typing import Optional, cast
 
-from fastapi import APIRouter, Depends, HTTPException, Body, Query, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from sqlalchemy import and_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.functions import coalesce as sa_coalesce, count as sa_count, sum as sa_sum
+from sqlalchemy.sql.functions import coalesce as sa_coalesce
+from sqlalchemy.sql.functions import count as sa_count
+from sqlalchemy.sql.functions import sum as sa_sum
 
 from config.database import get_async_db
 from models.domain.auth import Organization, User
-from models.domain.messages import Messages, Language
+from models.domain.messages import Language, Messages
 from models.domain.token_usage import TokenUsage
-from services.auth.phone_uniqueness import other_user_id_with_email, other_user_id_with_phone
-from utils.email_validation import validate_email_for_api
-from services.auth.user_fk_cleanup import delete_user_fk_dependent_rows
-from services.auth.password_security import (
-    invalidate_user_cache_after_password_write,
-    revoke_refresh_tokens_and_sessions,
-)
-from services.redis.cache.redis_org_cache import org_cache
-from services.redis.cache.redis_user_cache import user_cache
-from utils.auth import hash_password
-from utils.auth.school_tier import assert_organization_has_member_capacity
-
 from services.auth.admin_user_list_rows import (
     build_admin_user_detail_payload,
     diagram_quota_for_user,
     enrich_admin_user_list_rows,
 )
-
+from services.auth.password_security import (
+    invalidate_user_cache_after_password_write,
+    revoke_refresh_tokens_and_sessions,
+)
+from services.auth.phone_uniqueness import other_user_id_with_email, other_user_id_with_phone
+from services.auth.user_fk_cleanup import delete_user_fk_dependent_rows
+from services.redis.cache.redis_org_cache import org_cache
+from services.redis.cache.redis_user_cache import user_cache
+from services.utils.error_types import DATABASE_ERRORS, REDIS_ERRORS
+from utils.auth import hash_password
 from utils.auth.admin_scope import AdminScope, assert_panel_user_readable
+from utils.auth.school_tier import assert_organization_has_member_capacity
+from utils.email_validation import validate_email_for_api
 
 from ..dependencies import (
     get_language_dependency,
     require_admin,
     require_global_users_read,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +123,7 @@ async def list_users_admin(
                 "output_tokens": int(stat.output_tokens or 0),
                 "total_tokens": int(stat.total_tokens or 0),
             }
-    except (ImportError, Exception) as e:
+    except DATABASE_ERRORS as e:
         logger.debug("TokenUsage not available yet: %s", e)
 
     result = await enrich_admin_user_list_rows(
@@ -302,7 +302,7 @@ async def update_user_admin(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update user",
         ) from err
-    except Exception as e:
+    except REDIS_ERRORS as e:
         await db.rollback()
         logger.error("[Auth] Failed to update user ID %s in database: %s", user_id, e)
         raise HTTPException(
@@ -313,13 +313,13 @@ async def update_user_admin(
     try:
         await user_cache.invalidate(user_id, old_phone, getattr(user, "email", None))
         logger.debug("[Auth] Invalidated old cache for user ID %s", user_id)
-    except Exception as e:
+    except REDIS_ERRORS as e:
         logger.warning("[Auth] Failed to invalidate cache for user ID %s: %s", user_id, e)
 
     try:
         await user_cache.cache_user(user)
         logger.info("[Auth] Updated and re-cached user ID %s", user_id)
-    except Exception as e:
+    except REDIS_ERRORS as e:
         logger.warning("[Auth] Failed to re-cache user ID %s: %s", user_id, e)
 
     if old_org_id != user.organization_id:
@@ -340,7 +340,7 @@ async def update_user_admin(
                         cast(Optional[str], old_org.code),
                         cast(Optional[str], old_org.invitation_code),
                     )
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.warning("[Auth] Failed to invalidate org cache: %s", e)
 
     org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None
@@ -387,7 +387,7 @@ async def delete_user_admin(
         await delete_user_fk_dependent_rows(db, user_id)
         await db.delete(user)
         await db.commit()
-    except Exception as e:
+    except REDIS_ERRORS as e:
         await db.rollback()
         logger.error("[Auth] Failed to delete user ID %s in database: %s", user_id, e)
         raise HTTPException(
@@ -398,7 +398,7 @@ async def delete_user_admin(
     try:
         await user_cache.invalidate(user_id, user_phone, getattr(user, "email", None))
         logger.info("[Auth] Invalidated cache for deleted user ID %s", user_id)
-    except Exception as e:
+    except REDIS_ERRORS as e:
         logger.warning("[Auth] Failed to invalidate cache for deleted user ID %s: %s", user_id, e)
 
     logger.warning("Admin %s deleted user: %s", current_user.phone, user_phone)
@@ -424,7 +424,7 @@ async def unlock_user_admin(
     try:
         await db.commit()
         await db.refresh(user)
-    except Exception as e:
+    except REDIS_ERRORS as e:
         await db.rollback()
         logger.error("[Auth] Failed to unlock user ID %s in database: %s", user_id, e)
         raise HTTPException(
@@ -436,7 +436,7 @@ async def unlock_user_admin(
         await user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
         await user_cache.cache_user(user)
         logger.info("[Auth] Unlocked and re-cached user ID %s", user.id)
-    except Exception as e:
+    except REDIS_ERRORS as e:
         logger.warning("[Auth] Failed to update cache after unlock: %s", e)
 
     logger.info("Admin %s unlocked user: %s", current_user.phone, user.phone)
@@ -489,7 +489,7 @@ async def reset_user_password_admin(
     try:
         await db.commit()
         await db.refresh(user)
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         await db.rollback()
         logger.error("[Auth] Failed to reset password in database: %s", e)
         raise HTTPException(

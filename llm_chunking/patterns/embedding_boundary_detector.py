@@ -13,6 +13,7 @@ Copyright 2024-2025 北京思源智教科技有限公司
 All Rights Reserved
 Proprietary License
 """
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 import re
 import logging
@@ -227,7 +228,7 @@ class EmbeddingBoundaryDetector:
             # Assign embeddings to sentences
             for i, embedding in enumerate(embeddings):
                 combined_sentences[i]["combined_sentence_embedding"] = embedding
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[EmbeddingBoundaryDetector] Failed to generate embeddings: %s", e)
             return []
 
@@ -369,6 +370,6 @@ class EmbeddingBoundaryDetector:
             confidence = 1.0 - (similarity_before + similarity_after) / 2.0
 
             return float(np.clip(confidence, 0.0, 1.0))
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("[EmbeddingBoundaryDetector] Failed to calculate confidence: %s", e)
             return 0.5

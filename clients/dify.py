@@ -19,19 +19,25 @@ All Rights Reserved
 Proprietary License
 """
 
-from codecs import getincrementaldecoder
-from dataclasses import dataclass
-from typing import AsyncGenerator, Dict, Any, Optional, List, Tuple
-from io import BytesIO
 import asyncio
 import json
 import logging
 import os
 import time
+from codecs import getincrementaldecoder
+from dataclasses import dataclass
+from io import BytesIO
+from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
+
 import aiohttp
 
+from clients.dify_exceptions import (
+    DifyAPIError,
+    DifyFileAccessDeniedError,
+    DifyFileNotFoundError,
+)
 from clients.dify_http_errors import parse_dify_error_response, raise_for_dify_http_error
-
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -56,12 +62,14 @@ class _DifySharedHttpPool:
 
     @classmethod
     async def _get_lock(cls) -> asyncio.Lock:
+        """Get lock."""
         if cls._lock is None:
             cls._lock = asyncio.Lock()
         return cls._lock
 
     @classmethod
     async def session_blocking(cls, api_url: str, timeout: int) -> aiohttp.ClientSession:
+        """Session blocking."""
         key = f"b:{api_url.rstrip('/')}|{timeout}|{_DIFY_AIOHTTP_READ_BUFSIZE}"
         lock = await cls._get_lock()
         async with lock:
@@ -80,6 +88,7 @@ class _DifySharedHttpPool:
 
     @classmethod
     async def session_streaming(cls, api_url: str, sock_read: int) -> aiohttp.ClientSession:
+        """Session streaming."""
         key = f"s:{api_url.rstrip('/')}|{sock_read}|{_DIFY_AIOHTTP_READ_BUFSIZE}"
         lock = await cls._get_lock()
         async with lock:
@@ -98,6 +107,7 @@ class _DifySharedHttpPool:
 
     @classmethod
     async def close_all(cls) -> None:
+        """Close all."""
         lock = await cls._get_lock()
         async with lock:
             for sess in cls._sessions.values():
@@ -108,134 +118,6 @@ class _DifySharedHttpPool:
 async def close_async_dify_shared_sessions() -> None:
     """Close pooled Dify aiohttp sessions (call during app shutdown)."""
     await _DifySharedHttpPool.close_all()
-
-
-# =========================================================================
-# Error Classes
-# =========================================================================
-
-
-class DifyAPIError(Exception):
-    """Base Dify API error"""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: Optional[int] = None,
-        error_code: Optional[str] = None,
-    ):
-        self.message = message
-        self.status_code = status_code
-        self.error_code = error_code
-        super().__init__(self.message)
-
-
-class DifyConversationNotFoundError(DifyAPIError):
-    """404: Conversation does not exist"""
-
-    def __init__(self, message: str = "Conversation does not exist"):
-        super().__init__(message, status_code=404, error_code="conversation_not_exists")
-
-
-class DifyInvalidParamError(DifyAPIError):
-    """400: Invalid parameter input"""
-
-    def __init__(self, message: str = "Invalid parameter input"):
-        super().__init__(message, status_code=400, error_code="invalid_param")
-
-
-class DifyAppUnavailableError(DifyAPIError):
-    """400: App configuration unavailable"""
-
-    def __init__(self, message: str = "App configuration unavailable"):
-        super().__init__(message, status_code=400, error_code="app_unavailable")
-
-
-class DifyProviderNotInitializeError(DifyAPIError):
-    """400: No available model credential configuration"""
-
-    def __init__(self, message: str = "No available model credential configuration"):
-        super().__init__(message, status_code=400, error_code="provider_not_initialize")
-
-
-class DifyQuotaExceededError(DifyAPIError):
-    """400: Model invocation quota insufficient"""
-
-    def __init__(self, message: str = "Model invocation quota insufficient"):
-        super().__init__(message, status_code=400, error_code="provider_quota_exceeded")
-
-
-class DifyModelNotSupportError(DifyAPIError):
-    """400: Current model unavailable"""
-
-    def __init__(self, message: str = "Current model unavailable"):
-        super().__init__(message, status_code=400, error_code="model_currently_not_support")
-
-
-class DifyWorkflowNotFoundError(DifyAPIError):
-    """400: Specified workflow version not found"""
-
-    def __init__(self, message: str = "Specified workflow version not found"):
-        super().__init__(message, status_code=400, error_code="workflow_not_found")
-
-
-class DifyDraftWorkflowError(DifyAPIError):
-    """400: Cannot use draft workflow version"""
-
-    def __init__(self, message: str = "Cannot use draft workflow version"):
-        super().__init__(message, status_code=400, error_code="draft_workflow_error")
-
-
-class DifyWorkflowIdFormatError(DifyAPIError):
-    """400: Invalid workflow_id format, expected UUID format"""
-
-    def __init__(self, message: str = "Invalid workflow_id format, expected UUID format"):
-        super().__init__(message, status_code=400, error_code="workflow_id_format_error")
-
-
-class DifyCompletionRequestError(DifyAPIError):
-    """400: Text generation failed"""
-
-    def __init__(self, message: str = "Text generation failed"):
-        super().__init__(message, status_code=400, error_code="completion_request_error")
-
-
-class DifyFileAccessDeniedError(DifyAPIError):
-    """403: File access denied or file does not belong to current application"""
-
-    def __init__(
-        self,
-        message: str = "File access denied or file does not belong to current application",
-    ):
-        super().__init__(message, status_code=403, error_code="file_access_denied")
-
-
-class DifyFileNotFoundError(DifyAPIError):
-    """404: File not found or has been deleted"""
-
-    def __init__(self, message: str = "File not found or has been deleted"):
-        super().__init__(message, status_code=404, error_code="file_not_found")
-
-
-class DifyFileTooLargeError(DifyAPIError):
-    """413: File exceeds size limit"""
-
-    def __init__(self, message: str = "File too large"):
-        super().__init__(message, status_code=413, error_code="file_too_large")
-
-
-class DifyUnsupportedFileTypeError(DifyAPIError):
-    """415: Unsupported file extension for upload"""
-
-    def __init__(self, message: str = "Unsupported file type"):
-        super().__init__(message, status_code=415, error_code="unsupported_file_type")
-
-
-class DifyS3StorageError(DifyAPIError):
-    """503: S3 / object storage errors (upload pipeline)."""
-
-    def __init__(self, message: str, *, error_code: str = "s3_connection_failed"):
-        super().__init__(message, status_code=503, error_code=error_code)
 
 
 # =========================================================================
@@ -327,6 +209,7 @@ class AsyncDifyClient:
     """Async client for interacting with Dify API using aiohttp"""
 
     def __init__(self, api_key: str, api_url: str, timeout: int = 300):
+        """ init  ."""
         self.api_key = api_key
         self.api_url = api_url.rstrip("/")
         self.timeout = timeout
@@ -488,7 +371,7 @@ class AsyncDifyClient:
                             yield chunk_data
                         except json.JSONDecodeError:
                             continue
-                        except Exception as exc:
+                        except BACKGROUND_INFRA_ERRORS as exc:
                             logger.error("Error processing SSE JSON: %s", exc)
                             continue
                 line_buffer += decoder.decode(b"", final=True)
@@ -520,7 +403,7 @@ class AsyncDifyClient:
                 "error": str(e),
                 "timestamp": int(time.time() * 1000),
             }
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Dify API async error: %s", e)
             yield {
                 "event": "error",

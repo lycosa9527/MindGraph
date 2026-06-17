@@ -2,12 +2,11 @@
 base agent module.
 """
 
+import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Tuple
-import logging
 
 from dotenv import load_dotenv
-
 
 # Load environment variables for logging configuration
 load_dotenv()

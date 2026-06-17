@@ -10,20 +10,20 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional, Callable, Union, cast
+import asyncio
 import logging
 import os
-import asyncio
 import traceback
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, List, Optional, Union, cast
 
-import tiktoken
 import semchunk
+import tiktoken
 
 from config.settings import config
 from services.llm import llm_service as llm_svc
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 try:
     from llm_chunking.chunker import LLMSemanticChunker
@@ -332,16 +332,15 @@ def _initialize_mindchunk_service():
                         "Check logs above for initialization errors."
                     )
                 logger.info("[ChunkingService] ✓ LLM service initialized successfully")
-            except Exception as init_error:
+            except BACKGROUND_INFRA_ERRORS as init_error:
                 raise RuntimeError(
                     f"[ChunkingService] Failed to initialize LLM service: {init_error}. "
                     "MindChunk cannot work without LLM service. "
                     "Check logs above for detailed error information."
                 ) from init_error
-    except RuntimeError:
-        # Re-raise RuntimeError as-is
-        raise
-    except Exception as e:
+    except RuntimeError as runtime_error:
+        raise runtime_error
+    except BACKGROUND_INFRA_ERRORS as e:
         raise RuntimeError(
             f"[ChunkingService] Failed to verify LLM service initialization: {e}. "
             "MindChunk cannot work without LLM service."
@@ -517,7 +516,7 @@ class MindChunkAdapter(BaseChunkingService):
                 len(llm_chunks) if llm_chunks else 0,
                 type(llm_chunks).__name__ if llm_chunks else "None",
             )
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error(
                 "[MindChunkAdapter] ✗ ERROR during LLM chunking for doc_id=%s: %s",
                 document_id,

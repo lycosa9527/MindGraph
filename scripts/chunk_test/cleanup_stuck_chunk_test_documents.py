@@ -12,8 +12,13 @@ import importlib
 import os
 import sys
 import traceback
-from pathlib import Path
 from datetime import datetime, timedelta
+from pathlib import Path
+
+from services.knowledge.chunk_test_document_service import (
+    ChunkTestDocumentService,
+)
+from services.utils.error_types import DATABASE_ERRORS
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -39,7 +44,7 @@ except ImportError as e:
     print("\nPlease ensure you're in the correct Python environment.")
     traceback.print_exc()
     sys.exit(1)
-except Exception as e:
+except DATABASE_ERRORS as e:
     print(f"Error setting up models: {e}")
     traceback.print_exc()
     sys.exit(1)
@@ -118,19 +123,15 @@ def cleanup_stuck_documents(user_id: int | None = None, reset_to: str = "failed"
                     db.delete(doc)
                     deleted_count += 1
                     print(f"  ✓ Deleted document {doc.id}: '{doc.file_name}'")
-                except Exception as e:
+                except DATABASE_ERRORS as e:
                     print(f"  ✗ Failed to delete document {doc.id}: {e}")
 
             db.commit()
             print(f"\n✓ Deleted {deleted_count} document(s).")
             return reset_docs
 
-        elif response == "y":
+        if response == "y":
             # Clean up Qdrant data and reset status
-            from services.knowledge.chunk_test_document_service import (
-                ChunkTestDocumentService,
-            )
-
             cleaned_qdrant_count = 0
 
             async def _cleanup_document(user_id: int, document_id: int) -> None:
@@ -155,7 +156,7 @@ def cleanup_stuck_documents(user_id: int | None = None, reset_to: str = "failed"
                         doc.error_message = None
 
                     print(f"  ✓ Cleaned up document {doc.id}: '{doc.file_name}' (Qdrant + DB)")
-                except Exception as e:
+                except DATABASE_ERRORS as e:
                     print(f"  ✗ Failed to cleanup document {doc.id}: {e}")
                     # Still reset status even if Qdrant cleanup failed
                     doc.status = reset_to
@@ -174,11 +175,10 @@ def cleanup_stuck_documents(user_id: int | None = None, reset_to: str = "failed"
                 print(f"✓ Cleaned up Qdrant data for {cleaned_qdrant_count} document(s).")
             return reset_docs
 
-        else:
-            print("\nSkipped. Documents remain in 'processing' status.")
-            return []
+        print("\nSkipped. Documents remain in 'processing' status.")
+        return []
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         print(f"\n✗ Error: {e}")
         traceback.print_exc()
         db.rollback()

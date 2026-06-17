@@ -20,12 +20,12 @@ from typing import Any, Awaitable, Dict, Optional, cast
 from redis.exceptions import RedisError
 
 from services.kitty.infra.bootstrap.kitty_diagram_vocabulary import coerce_open_desktop_payload_diagram_slug
+from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.kitty.infra.redis.kitty_redis_keys import (
     kitty_desktop_action_explicit_key,
     kitty_desktop_action_queue_key,
 )
 from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
-from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
@@ -38,6 +38,7 @@ _KITTY_DESKTOP_ACTION_MAX_AGE_SEC = 120
 
 
 def _decode_action_raw(raw: Any) -> Optional[Dict[str, Any]]:
+    """Decode action raw."""
     if not raw:
         return None
     try:
@@ -51,6 +52,7 @@ def _decode_action_raw(raw: Any) -> Optional[Dict[str, Any]]:
 
 
 def _take_optional_str(payload: Dict[str, Any], key: str, max_len: int) -> None:
+    """Take optional str."""
     raw = payload.get(key)
     if not isinstance(raw, str):
         payload.pop(key, None)
@@ -63,6 +65,7 @@ def _take_optional_str(payload: Dict[str, Any], key: str, max_len: int) -> None:
 
 
 def _normalize_open_canvas_payload(payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Normalize open canvas payload."""
     slug = coerce_open_desktop_payload_diagram_slug(payload)
     if slug is None:
         return None
@@ -74,6 +77,7 @@ def _normalize_open_canvas_payload(payload: Dict[str, Any]) -> Optional[Dict[str
 
 
 def _normalize_open_library_payload(payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Normalize open library payload."""
     raw_id = payload.get("diagram_library_id")
     if not isinstance(raw_id, str):
         return None
@@ -128,6 +132,7 @@ async def consume_kitty_desktop_action_explicit_drain(user_id: int) -> bool:
 
 
 async def _push_desktop_action(user_id: int, payload: Dict[str, Any]) -> bool:
+    """Push desktop action."""
     redis = get_async_redis()
     if redis is None:
         return False

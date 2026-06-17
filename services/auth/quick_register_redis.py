@@ -83,10 +83,12 @@ return n
 
 
 def _key(token: str) -> str:
+    """Key."""
     return f"{QUICK_REG_KEY_PREFIX}{token}"
 
 
 def _minter_key(user_id: int) -> str:
+    """Minter key."""
     return f"{MINTER_INDEX_PREFIX}{int(user_id)}"
 
 
@@ -386,22 +388,27 @@ ROOM_CODE_GUESS_MAX_PER_BIND = 40
 
 
 def _ip_bucket_32(client_ip: str) -> str:
+    """Ip bucket 32."""
     return hashlib.sha256(client_ip.encode("utf-8", errors="replace")).hexdigest()[:32]
 
 
 def _token_print_16(token: str) -> str:
+    """Token print 16."""
     return hashlib.sha256(token.encode("utf-8", errors="replace")).hexdigest()[:16]
 
 
 def _room_guess_ip_key(client_ip: str) -> str:
+    """Room guess ip key."""
     return f"{ROOM_CODE_GUESS_IP_PREFIX}{_ip_bucket_32(client_ip)}"
 
 
 def _room_guess_bind_key(client_ip: str, token: str) -> str:
+    """Room guess bind key."""
     return f"{ROOM_CODE_GUESS_BIND_PREFIX}{_ip_bucket_32(client_ip)}:{_token_print_16(token)}"
 
 
 def _redis_count_from_raw(raw: object) -> int:
+    """Redis count from raw."""
     if raw is None:
         return 0
     if isinstance(raw, bytes):

@@ -8,13 +8,14 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional, Tuple
 import logging
+from typing import Optional, Tuple
 
 from services.redis import keys as _keys
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_async_ops import AsyncRedisOps
 from services.redis.redis_client import is_redis_available
+from services.utils.error_types import REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +43,10 @@ class RedisEmailStorage:
     """Redis-based email verification code storage."""
 
     def __init__(self) -> None:
-        pass
+        """Initialize Redis email verification storage."""
 
     def _get_key(self, email: str, purpose: str = "verification") -> str:
+        """Get key."""
         norm = normalize_verification_email(email)
         return f"{EMAIL_PREFIX}{purpose}:{norm}"
 
@@ -55,6 +57,7 @@ class RedisEmailStorage:
         purpose: str = "verification",
         ttl_seconds: int = DEFAULT_EMAIL_TTL,
     ) -> bool:
+        """Store."""
         if not is_redis_available():
             logger.warning("[Email] Redis unavailable, email code NOT stored")
             return False
@@ -75,6 +78,7 @@ class RedisEmailStorage:
         return success
 
     async def verify_and_remove(self, email: str, code: str, purpose: str = "verification") -> bool:
+        """Verify and remove."""
         if not is_redis_available():
             logger.warning("[Email] Redis unavailable, cannot verify code")
             return False
@@ -101,11 +105,12 @@ class RedisEmailStorage:
                 )
             else:
                 logger.debug("[Email] No code found for %s (purpose: %s)", masked, purpose)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug("[Email] exists check failed: %s", exc)
         return False
 
     async def peek(self, email: str, purpose: str = "verification") -> Optional[str]:
+        """Peek."""
         if not is_redis_available():
             return None
 
@@ -113,6 +118,7 @@ class RedisEmailStorage:
         return await AsyncRedisOps.get(key)
 
     async def check_exists_and_get_ttl(self, email: str, purpose: str = "verification") -> Tuple[bool, int]:
+        """Check exists and get ttl."""
         if not is_redis_available():
             return False, -2
 
@@ -132,11 +138,12 @@ class RedisEmailStorage:
             ttl = results[1] if results[1] is not None else -2
 
             return exists, ttl
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.error("[Email] Pipeline execution failed: %s", exc)
             return False, -2
 
     async def remove(self, email: str, purpose: str = "verification") -> bool:
+        """Remove."""
         if not is_redis_available():
             return False
 
@@ -145,10 +152,12 @@ class RedisEmailStorage:
 
 
 class _EmailStorageHolder:
+    """_EmailStorageHolder helper."""
     instance: Optional["RedisEmailStorage"] = None
 
 
 def get_email_storage() -> RedisEmailStorage:
+    """Get email storage."""
     if _EmailStorageHolder.instance is None:
         _EmailStorageHolder.instance = RedisEmailStorage()
     return _EmailStorageHolder.instance

@@ -7,10 +7,12 @@ MARKET_PAYMENTS_EXPR = dict(builder.MARKET_CHILD_TABLES)["market_payments"]
 
 
 def test_market_payments_not_user_owned():
+    """Test market payments not user owned."""
     assert "market_payments" not in builder.USER_OWNED_TABLES
 
 
 def test_market_payments_policy_joins_orders():
+    """Test market payments policy joins orders."""
     assert "market_orders mo" in MARKET_PAYMENTS_EXPR
     assert "order_id" in MARKET_PAYMENTS_EXPR
     assert "rls_diagram_visible(mo.user_id)" in MARKET_PAYMENTS_EXPR

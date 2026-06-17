@@ -12,7 +12,6 @@ Proprietary License
 
 from typing import Any, Dict
 
-
 # ── STEM教研组 ────────────────────────────────────────────────────
 
 STEM_GROUP: Dict[str, Any] = {

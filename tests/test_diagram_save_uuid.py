@@ -16,6 +16,7 @@ def test_assign_id_for_unlimited_tier_user() -> None:
 
 
 def test_assign_id_blocked_when_trial_quota_full() -> None:
+    """Test assign id blocked when trial quota full."""
     diagram_id, error = assign_id_for_new_diagram(20, 20)
 
     assert diagram_id is None
@@ -24,6 +25,7 @@ def test_assign_id_blocked_when_trial_quota_full() -> None:
 
 
 def test_assign_id_when_trial_quota_available() -> None:
+    """Test assign id when trial quota available."""
     diagram_id, error = assign_id_for_new_diagram(20, 19)
 
     assert error is None

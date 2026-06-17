@@ -12,20 +12,20 @@ import os
 import uuid
 
 import pytest
+import redis.asyncio as redis_async
+
+from services.online_collab.redis.online_collab_redis_locks import (
+    ensure_online_collab_functions_loaded,
+    fcall_node_editing_del,
+    fcall_node_editing_set,
+)
 
 pytest.importorskip("redis.asyncio")
 
 
 @pytest.mark.asyncio
 async def test_mg_node_editing_set_merges_two_users_on_same_node() -> None:
-    import redis.asyncio as redis_async
-
-    from services.online_collab.redis.online_collab_redis_locks import (
-        ensure_online_collab_functions_loaded,
-        fcall_node_editing_del,
-        fcall_node_editing_set,
-    )
-
+    """Test mg node editing set merges two users on same node."""
     url = os.environ.get("REDIS_TEST_URL", "redis://127.0.0.1:6379/15")
     client = redis_async.from_url(url, decode_responses=True)
     try:

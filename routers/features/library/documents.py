@@ -10,39 +10,39 @@ All Rights Reserved
 Proprietary License
 """
 
-from pathlib import Path
-from typing import Optional
 import logging
 import os
+from pathlib import Path
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
 from services.library import LibraryService
-from services.library.image_path_resolver import resolve_page_image
-from services.library.library_path_utils import resolve_library_path
 from services.library.exceptions import (
     DocumentNotFoundError,
-    PageNotFoundError,
-    PageImageNotFoundError,
-    PagesDirectoryNotFoundError,
     DocumentNotImageBasedError,
+    PageImageNotFoundError,
+    PageNotFoundError,
+    PagesDirectoryNotFoundError,
 )
+from services.library.image_path_resolver import resolve_page_image
+from services.library.library_path_utils import resolve_library_path
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user
 
-from .helpers import serialize_document, require_admin, get_optional_user
+from .helpers import get_optional_user, require_admin, serialize_document
 from .models import (
-    DocumentResponse,
-    DocumentListResponse,
-    DocumentUpdate,
-    BookRegisterRequest,
     BookRegisterBatchRequest,
+    BookRegisterRequest,
+    DocumentListResponse,
+    DocumentResponse,
+    DocumentUpdate,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -447,7 +447,7 @@ async def register_books_batch(
 
         except ValueError as e:
             results["failed"].append({"folder_path": folder_path_str, "error": str(e)})
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error(
                 "[Library] Error registering folder %s: %s",
                 folder_path_str,
@@ -551,7 +551,7 @@ async def upload_cover_image(
             "message": "Cover image uploaded successfully",
         }
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[Library] Cover upload failed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

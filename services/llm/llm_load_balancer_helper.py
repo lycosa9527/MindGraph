@@ -9,8 +9,8 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Tuple, Optional, Any
 import logging
+from typing import Any, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 

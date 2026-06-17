@@ -18,15 +18,16 @@ from typing import Any, Awaitable, List, cast
 
 from redis.exceptions import RedisError, ResponseError
 
-from services.redis.redis_async_client import get_async_redis
 from services.infrastructure.monitoring.ws_metrics import record_ws_hexpire_downgrade
-from services.online_collab.spec.online_collab_live_spec_ops import maybe_flush_live_spec_when_room_empty
-from services.online_collab.spec.online_collab_live_flush import schedule_live_spec_db_flush
+from services.online_collab.core.online_collab_manager_access import get_online_collab_manager
 from services.online_collab.redis.online_collab_redis_keys import (
     code_to_diagram_key,
     mutation_idle_key,
     participants_key,
 )
+from services.online_collab.spec.online_collab_live_flush import schedule_live_spec_db_flush
+from services.online_collab.spec.online_collab_live_spec_ops import maybe_flush_live_spec_when_room_empty
+from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
 
@@ -144,10 +145,6 @@ async def remove_participant_from_online_collab(code: str, user_id: int) -> None
             code,
             count_after,
         )
-        from services.online_collab.core.online_collab_manager import (
-            get_online_collab_manager,
-        )
-
         await get_online_collab_manager().touch_leave(code)
     except (RedisError, OSError) as exc:
         logger.error(

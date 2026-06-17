@@ -7,12 +7,14 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from services.auth.sms_service import SMS_NOTIFICATION_RATE_LIMIT_MESSAGE
+from services.infrastructure.lifecycle.lifespan import _send_startup_sms_notification_once
 
 LIFESPAN_MODULE = "services.infrastructure.lifecycle.lifespan"
 
 
 @pytest.mark.asyncio
 async def test_startup_sms_keeps_lock_after_successful_send() -> None:
+    """Test startup sms keeps lock after successful send."""
     release_mock = AsyncMock()
     send_mock = AsyncMock(return_value=(True, "Notification sent to 1 phone(s)"))
     sms_middleware = AsyncMock()
@@ -43,8 +45,6 @@ async def test_startup_sms_keeps_lock_after_successful_send() -> None:
             new=release_mock,
         ),
     ):
-        from services.infrastructure.lifecycle.lifespan import _send_startup_sms_notification_once
-
         await _send_startup_sms_notification_once()
 
     send_mock.assert_awaited_once()
@@ -53,6 +53,7 @@ async def test_startup_sms_keeps_lock_after_successful_send() -> None:
 
 @pytest.mark.asyncio
 async def test_startup_sms_releases_lock_after_failed_send() -> None:
+    """Test startup sms releases lock after failed send."""
     release_mock = AsyncMock()
     send_mock = AsyncMock(return_value=(False, "SMS notification failed for all recipients"))
     sms_middleware = AsyncMock()
@@ -83,8 +84,6 @@ async def test_startup_sms_releases_lock_after_failed_send() -> None:
             new=release_mock,
         ),
     ):
-        from services.infrastructure.lifecycle.lifespan import _send_startup_sms_notification_once
-
         await _send_startup_sms_notification_once()
 
     release_mock.assert_awaited_once_with("worker-lock-token")
@@ -92,6 +91,7 @@ async def test_startup_sms_releases_lock_after_failed_send() -> None:
 
 @pytest.mark.asyncio
 async def test_startup_sms_keeps_lock_after_provider_rate_limit_failure() -> None:
+    """Test startup sms keeps lock after provider rate limit failure."""
     release_mock = AsyncMock()
     send_mock = AsyncMock(return_value=(False, SMS_NOTIFICATION_RATE_LIMIT_MESSAGE))
     sms_middleware = AsyncMock()
@@ -122,8 +122,6 @@ async def test_startup_sms_keeps_lock_after_provider_rate_limit_failure() -> Non
             new=release_mock,
         ),
     ):
-        from services.infrastructure.lifecycle.lifespan import _send_startup_sms_notification_once
-
         await _send_startup_sms_notification_once()
 
     release_mock.assert_not_awaited()

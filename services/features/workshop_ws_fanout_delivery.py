@@ -26,29 +26,33 @@ from typing import Optional
 from fastapi.websockets import WebSocketState
 
 from services.features.workshop_ws_connection_state import (
+    _SHARD_SIZE,
     ACTIVE_CONNECTIONS,
-    ACTIVE_EDITORS,
     AnyHandle,
     ViewerHandle,
-    _SHARD_SIZE,
     _evict_slow_consumer,
     _get_room_lock,
     enqueue,
     finalize_handle_writer_shutdown,
 )
+from services.features.workshop_ws_registry import ACTIVE_EDITORS
 from services.infrastructure.monitoring.ws_metrics import (
     record_ws_broadcast_latency,
     record_ws_broadcast_send_failure,
     record_ws_broadcast_shards,
 )
 
+from services.features.workshop_ws_role_change import apply_role_control_local
+from services.features.workshop_ws_shutdown_constants import (
+    ROOM_IDLE_SHUTDOWN_TYPE,
+    SESSION_ENDED_SHUTDOWN_TYPE,
+)
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+
 logger = logging.getLogger(__name__)
 
 _DEDUP_CAP = max(512, int(os.getenv("WORKSHOP_FANOUT_MSG_DEDUP", "8192")))
 _RECENT_FANOUT_IDS: OrderedDict[str, None] = OrderedDict()
-
-ROOM_IDLE_SHUTDOWN_TYPE = "room_idle_shutdown"
-SESSION_ENDED_SHUTDOWN_TYPE = "session_ended_shutdown"
 
 
 async def _close_one_handle(
@@ -62,14 +66,14 @@ async def _close_one_handle(
     """Enqueue kicked frame, stop writer/flush tasks, then close the socket."""
     try:
         await enqueue(handle, dict(kicked_payload), "kicked")
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         try:
             record_ws_broadcast_send_failure()
-        except Exception:
+        except BACKGROUND_INFRA_ERRORS:
             pass
     try:
         await finalize_handle_writer_shutdown(handle)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning(
             "[WorkshopWS] %s writer finalize failed user=%s workshop=%s: %s",
             reason,
@@ -171,14 +175,14 @@ async def _push_shard(
                     handle.qsize_high_water = max(handle.qsize_high_water, handle.send_queue.qsize())
                 except asyncio.QueueFull:
                     await _evict_slow_consumer(handle, "broadcast queue full")
-                except Exception as exc:
+                except BACKGROUND_INFRA_ERRORS as exc:
                     logger.debug(
                         "[WorkshopWS] _push_shard: put_nowait error user=%s code=%s: %s",
                         user_id,
                         code,
                         exc,
                     )
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning(
             "[WorkshopWS] _push_shard unhandled error code=%s: %s",
             code,
@@ -232,10 +236,6 @@ async def deliver_local_workshop_broadcast(
             await force_disconnect_local_workshop_session_ended(code)
             return
         if msg_type == "role_control":
-            from services.features.workshop_ws_role_change import (
-                apply_role_control_local,
-            )
-
             await apply_role_control_local(code, message)
             return
     if code not in ACTIVE_CONNECTIONS:
@@ -270,7 +270,7 @@ async def deliver_local_workshop_broadcast(
     shards = [handles[i : i + _SHARD_SIZE] for i in range(0, len(handles), _SHARD_SIZE)]
     try:
         record_ws_broadcast_shards(len(shards))
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         pass
 
     sem = asyncio.Semaphore(_FANOUT_SHARD_CONCURRENCY)
@@ -288,5 +288,5 @@ async def _record_broadcast_latency(latency_ms: float) -> None:
     """Fire-and-forget latency sample recording."""
     try:
         record_ws_broadcast_latency(latency_ms)
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         pass

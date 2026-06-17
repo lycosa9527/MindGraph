@@ -19,6 +19,7 @@ async def dispatch_alipay_notify(
     params: Mapping[str, Any],
     cfg: AlipayEnvConfig,
 ) -> str:
+    """Dispatch alipay notify."""
     notify_type = (get_notify_str(params, "notify_type") or "").lower()
     if notify_type in _AGREEMENT_NOTIFY_TYPES:
         return await apply_agreement_notify(session, params, cfg)

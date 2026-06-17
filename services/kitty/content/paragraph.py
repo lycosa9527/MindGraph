@@ -1,21 +1,19 @@
 """Paragraph processing with Qwen Plus for voice input."""
 
-from typing import Any, Dict
 import json
 import re
+from typing import Any, Dict
 
 from fastapi import WebSocket
 
 from prompts.kitty_agent import KITTY_AGENT_PROMPTS
-
-from services.llm import llm_service
-
-from services.kitty.diagram.diagram_execute import execute_diagram_update
-from services.kitty.context.messaging import safe_websocket_send
 from services.kitty.content.paragraph_batch_apply import apply_paragraph_batch_add_nodes
-from services.kitty.session.runtime_state import logger, voice_sessions
-from services.kitty.session.ops import persist_voice_session_context
+from services.kitty.context.messaging import safe_websocket_send
+from services.kitty.diagram.diagram_execute import execute_diagram_update
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
+from services.kitty.session.ops import persist_voice_session_context
+from services.kitty.session.runtime_state import logger, voice_sessions
+from services.llm import llm_service
 from utils.prompt_locale import output_language_instruction
 
 

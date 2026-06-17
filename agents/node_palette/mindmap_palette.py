@@ -6,8 +6,8 @@ Supports 2-stage progressive generation:
 2. Stage 2 (children): Generate sub-branches for selected branch
 """
 
-from typing import Optional, Dict, Any, AsyncGenerator
 import logging
+from typing import Any, AsyncGenerator, Dict, Optional
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
 from prompts.node_palette import (

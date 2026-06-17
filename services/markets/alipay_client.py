@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def build_alipay_client(cfg: AlipayEnvConfig) -> DefaultAlipayClient:
+    """Build alipay client."""
     client_config = AlipayClientConfig(sandbox_debug=cfg.sandbox)
     client_config.server_url = cfg.server_url
     client_config.app_id = cfg.app_id

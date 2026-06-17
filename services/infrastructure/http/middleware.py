@@ -11,20 +11,23 @@ Handles:
 - Request/response logging
 """
 
-import time
 import json
-import secrets
 import logging
+import secrets
+import time
 from urllib.parse import urlparse
+
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.types import ASGIApp, Receive, Scope, Send
+from fastapi.responses import JSONResponse
 from starlette.middleware.gzip import GZipResponder
+from starlette.types import ASGIApp, Receive, Scope, Send
+
 from config.settings import config
 from services.auth.security_logger import security_log
 from services.auth.vpn_geo_enforcement import maybe_enforce_vpn_cn_geo_async
 from services.infrastructure.http.feature_gate import feature_flag_gate
+from services.infrastructure.security.abuseipdb_middleware import abuseipdb_middleware
 from services.infrastructure.utils.spa_handler import (
     apply_no_cache_headers,
     is_public_static_path,
@@ -32,6 +35,7 @@ from services.infrastructure.utils.spa_handler import (
     should_apply_no_cache,
 )
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR, resolve_authenticated_user_optional
+from utils.db.rls_context import RlsContext, reset_rls_context, set_rls_context
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +149,7 @@ async def csrf_protection(request: Request, call_next):
                         request_host,
                     )
                     # Don't block - SameSite cookies will prevent CSRF
-            except Exception as e:
+            except (ValueError, AttributeError) as e:
                 logger.debug("Origin validation error (non-critical): %s", e)
 
         # Check for CSRF token in header (optional - for additional protection)
@@ -283,11 +287,13 @@ class SelectiveGZipMiddleware:
     """
 
     def __init__(self, app: ASGIApp, minimum_size: int = 1000, compresslevel: int = 9):
+        """ init  ."""
         self.app = app
         self.minimum_size = minimum_size
         self.compresslevel = compresslevel
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """ call  ."""
         if scope["type"] == "http":
             path = scope.get("path", "")
             # Check if this is a PDF file endpoint BEFORE processing
@@ -350,8 +356,6 @@ async def auth_context_middleware(request: Request, call_next):
     validation — browsers send auth cookies on same-origin asset requests, which would
     otherwise trigger hundreds of redundant Redis session checks on cold loads.
     """
-    from utils.db.rls_context import RlsContext, reset_rls_context, set_rls_context
-
     if request.method == "OPTIONS":
         return await call_next(request)
     if is_public_static_path(request.url.path):
@@ -413,9 +417,9 @@ async def log_requests(request: Request, call_next):
 
                 # Recreate request body stream for downstream consumption
                 async def _receive_body():
-                    return {"type": "http.request", "body": body}
+                    return {"type": "http.request", "body": body, "more_body": False}
 
-                request._receive = _receive_body
+                request = Request(request.scope, receive=_receive_body)
         except (json.JSONDecodeError, AttributeError, TypeError):
             pass
 
@@ -499,10 +503,6 @@ def setup_middleware(app: FastAPI):
 
     Order matters - middleware is executed in reverse order of registration.
     """
-    from services.infrastructure.security.abuseipdb_middleware import (
-        abuseipdb_middleware,
-    )
-
     # CORS Middleware
     # Extract server URL once to avoid linter warnings about constant access
     base_server_url = config.server_url

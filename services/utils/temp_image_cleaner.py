@@ -25,17 +25,20 @@ import time
 import uuid
 from pathlib import Path
 from typing import Optional
+
 import aiofiles.os  # Async file system operations
 
 try:
-    from services.redis.redis_client import is_redis_available
     from services.redis.redis_async_client import get_async_redis
+    from services.redis.redis_client import is_redis_available
 
     _REDIS_AVAILABLE = True
 except ImportError:
     get_async_redis = None
     is_redis_available = None
     _REDIS_AVAILABLE = False
+
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, FILE_IO_ERRORS, REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +65,7 @@ class CleanupLockState:
     """Encapsulates cleanup lock state to avoid global variables."""
 
     def __init__(self):
+        """ init  ."""
         self.lock_id: Optional[str] = None
 
     def generate_lock_id(self) -> str:
@@ -126,7 +130,7 @@ async def refresh_cleanup_lock() -> bool:
         logger.debug("[Cleanup] Lock lost! Holder: %s, our ID: %s", holder, lock_id)
         return False
 
-    except Exception as e:
+    except REDIS_ERRORS as e:
         logger.debug("[Cleanup] Lock refresh failed: %s", e)
         return False
 
@@ -178,7 +182,7 @@ async def acquire_cleanup_lock() -> bool:
         )
         return False
 
-    except Exception as e:
+    except REDIS_ERRORS as e:
         logger.warning("[Cleanup] Lock acquisition failed: %s, proceeding anyway", e)
         return True  # On error, proceed (better to have duplicate than no cleanup)
 
@@ -224,9 +228,9 @@ async def cleanup_temp_images(max_age_seconds: int = 86400):
                             file_path.name,
                             file_age / 3600,
                         )
-                    except Exception as e:
+                    except FILE_IO_ERRORS as e:
                         logger.error("Failed to delete %s: %s", file_path.name, e)
-            except Exception as e:
+            except FILE_IO_ERRORS as e:
                 logger.error("Failed to stat %s: %s", file_path.name, e)
 
         if deleted_count > 0:
@@ -236,7 +240,7 @@ async def cleanup_temp_images(max_age_seconds: int = 86400):
 
         return deleted_count
 
-    except Exception as e:
+    except FILE_IO_ERRORS as e:
         logger.error("Temp image cleanup failed: %s", e, exc_info=True)
         return deleted_count
 
@@ -267,7 +271,7 @@ async def start_cleanup_scheduler(interval_hours: int = 1):
             except asyncio.CancelledError:
                 logger.info("[Cleanup] Cleanup scheduler monitor stopped")
                 return
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 logger.debug("Cleanup scheduler lock acquisition retry failed: %s", exc)
 
     # This worker holds the lock - run the scheduler
@@ -290,5 +294,5 @@ async def start_cleanup_scheduler(interval_hours: int = 1):
         except asyncio.CancelledError:
             logger.info("[Cleanup] Cleanup scheduler stopped")
             break
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Cleanup scheduler error: %s", e, exc_info=True)

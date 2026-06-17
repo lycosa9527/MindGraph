@@ -28,7 +28,6 @@ from models.domain.workshop_chat import (
     ChatTopic,
     UserTopicPreference,
 )
-
 from services.utils.typing_helpers import count_pairs_by_key
 
 logger = logging.getLogger(__name__)
@@ -104,6 +103,7 @@ class TopicService:
         Dict[int, int],
         Dict[int, int],
     ]:
+        """Topic list batch data."""
         waterline = 0
         if user_id:
             result = await db.execute(
@@ -190,6 +190,7 @@ class TopicService:
         unread_pref_map: Dict[int, int],
         unread_no_pref_map: Dict[int, int],
     ) -> int:
+        """Topic unread from maps."""
         if msg_count == 0:
             return 0
         if has_pref:
@@ -203,6 +204,7 @@ class TopicService:
         unread_count: int,
         visibility_policy: str,
     ) -> Dict[str, Any]:
+        """Topic row dict."""
         return {
             "id": topic.id,
             "channel_id": topic.channel_id,

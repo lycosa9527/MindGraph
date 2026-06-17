@@ -16,6 +16,7 @@ from services.mindbot.platforms.dingtalk.api.constants import (
     PATH_ROBOT_MESSAGE_FILES_DOWNLOAD,
 )
 from services.mindbot.platforms.dingtalk.auth.oauth import get_access_token
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -90,12 +91,13 @@ async def get_message_file_download_url(
                 _sanitize_media_snippet(body_txt),
             )
             return None
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.exception("[MindBot] messageFiles/download error: %s", exc)
         return None
 
 
 async def download_url_bytes(url: str) -> Optional[bytes]:
+    """Download url bytes."""
     timeout = aiohttp.ClientTimeout(total=120)
     try:
         session = get_outbound_session()
@@ -128,7 +130,7 @@ async def download_url_bytes(url: str) -> Optional[bytes]:
                 )
                 return None
             return data
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.exception("[MindBot] media download error: %s", exc)
         return None
 

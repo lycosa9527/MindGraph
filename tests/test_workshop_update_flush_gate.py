@@ -6,11 +6,12 @@ from unittest import mock
 
 import pytest
 
+from routers.api import workshop_ws_handlers_update as hu
+
 
 @pytest.mark.asyncio
 async def test_schedule_flush_not_called_when_merge_returns_none() -> None:
-    from routers.api import workshop_ws_handlers_update as hu
-
+    """Test schedule flush not called when merge returns none."""
     mock_flush = mock.AsyncMock()
     mock_merge = mock.AsyncMock(return_value=None)
 

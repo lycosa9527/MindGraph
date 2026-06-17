@@ -11,10 +11,12 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Any, Dict, List
 import logging
 import statistics
+from typing import Any, Dict, List
+
+from services.knowledge.chunking_service import Chunk
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 np: Any = None
 HAS_NUMPY = False
@@ -35,9 +37,6 @@ try:
     HAS_EMBEDDING = True
 except ImportError:
     pass
-
-from services.knowledge.chunking_service import Chunk
-
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +101,7 @@ class DiversityEvaluator:
             # Average distance = diversity
             return float(np.mean(distances))
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("[DiversityEvaluator] Failed to calculate diversity: %s", e)
             return 0.0
 

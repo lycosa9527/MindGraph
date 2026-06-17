@@ -11,19 +11,21 @@ import time
 from typing import Optional
 from urllib.parse import urlparse
 
-logger = logging.getLogger(__name__)
+from services.utils.error_types import DATABASE_ERRORS
 
-_LIBPQ_SCHEME = re.compile(r"^postgresql\+[^/]+://", re.IGNORECASE)
+try:
+    from services.infrastructure.process.process_manager import start_postgresql_server
+except ImportError:
+    start_postgresql_server = None
 
 try:
     import psycopg2
 except ImportError:
     psycopg2 = None
 
-try:
-    from services.infrastructure.process.process_manager import start_postgresql_server
-except ImportError:
-    start_postgresql_server = None
+logger = logging.getLogger(__name__)
+
+_LIBPQ_SCHEME = re.compile(r"^postgresql\+[^/]+://", re.IGNORECASE)
 
 
 def libpq_database_url(db_url: str) -> str:
@@ -34,16 +36,19 @@ def libpq_database_url(db_url: str) -> str:
 
 
 def _parse_db_host(db_url: str) -> str:
+    """Parse db host."""
     parsed = urlparse(db_url)
     return parsed.hostname or "localhost"
 
 
 def _parse_db_port(db_url: str) -> int:
+    """Parse db port."""
     parsed = urlparse(db_url)
     return parsed.port or 5432
 
 
 def _find_process_on_port(port: int) -> Optional[int]:
+    """Find process on port."""
     if sys.platform == "win32":
         return None
     try:
@@ -62,6 +67,7 @@ def _find_process_on_port(port: int) -> Optional[int]:
 
 
 def _can_connect_postgresql(db_url: str, timeout: int = 2) -> bool:
+    """Can connect postgresql."""
     if psycopg2 is None:
         logger.error("psycopg2 not installed. Install with: pip install psycopg2-binary")
         return False
@@ -69,21 +75,23 @@ def _can_connect_postgresql(db_url: str, timeout: int = 2) -> bool:
         conn = psycopg2.connect(libpq_database_url(db_url), connect_timeout=timeout)
         conn.close()
         return True
-    except Exception:
+    except DATABASE_ERRORS:
         return False
 
 
 def _get_connection_error(db_url: str, timeout: int = 2) -> Optional[str]:
+    """Get connection error."""
     if psycopg2 is None:
         return None
     try:
         psycopg2.connect(libpq_database_url(db_url), connect_timeout=timeout)
         return None
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         return str(exc)
 
 
 def _connection_error_is_password_reject(conn_err: Optional[str]) -> bool:
+    """Connection error is password reject."""
     if not conn_err:
         return False
     return "password authentication failed" in conn_err.lower()
@@ -139,6 +147,7 @@ def ensure_postgresql_server_reachable(db_url: str) -> bool:
 
 
 def _try_start_postgresql() -> bool:
+    """Try start postgresql."""
     if start_postgresql_server is not None:
         try:
             process = start_postgresql_server()

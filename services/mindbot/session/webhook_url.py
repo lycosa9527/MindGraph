@@ -35,10 +35,12 @@ _DEFAULT_DNS_TIMEOUT = 5.0
 
 @functools.cache
 def _dns_timeout() -> float:
+    """Dns timeout."""
     return max(0.5, env_float("MINDBOT_SESSION_WEBHOOK_DNS_TIMEOUT", _DEFAULT_DNS_TIMEOUT))
 
 
 def _parse_allow_hosts() -> Optional[set[str]]:
+    """Parse allow hosts."""
     raw = os.getenv("MINDBOT_SESSION_WEBHOOK_ALLOW_HOSTS", "").strip()
     if not raw:
         return None
@@ -46,6 +48,7 @@ def _parse_allow_hosts() -> Optional[set[str]]:
 
 
 def _ip_addr_forbidden(addr: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    """Ip addr forbidden."""
     if addr.is_loopback:
         return True
     if addr.is_link_local:
@@ -64,6 +67,7 @@ def _ip_addr_forbidden(addr: ipaddress.IPv4Address | ipaddress.IPv6Address) -> b
 
 
 def _literal_ip_allowed(addr: ipaddress.IPv4Address | ipaddress.IPv6Address) -> tuple[bool, str]:
+    """Literal ip allowed."""
     if _ip_addr_forbidden(addr):
         return False, "host is a disallowed address"
     return True, ""

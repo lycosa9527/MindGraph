@@ -2,6 +2,7 @@
 
 Detects content types: theory, example, exercise, summary, code, formula.
 """
+from services.utils.error_types import JSON_PARSE_ERRORS
 
 from typing import List, Optional, Any
 import json
@@ -155,7 +156,7 @@ Return JSON:
                 json_str = response[json_start:json_end]
                 result = json.loads(json_str)
                 return result.get("content_type", "theory")
-        except Exception as e:
+        except JSON_PARSE_ERRORS as e:
             logger.warning("LLM content type detection failed: %s", e)
 
         return "theory"  # Default
@@ -222,7 +223,7 @@ Return JSON array:
                     types.append(content_type)
 
                 return types[: len(texts)]  # Ensure correct length
-        except Exception as e:
+        except JSON_PARSE_ERRORS as e:
             logger.warning("LLM batch detection failed: %s", e)
 
         return ["theory"] * len(texts)  # Default

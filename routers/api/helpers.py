@@ -2,14 +2,14 @@
 helpers module.
 """
 
-from datetime import datetime, timezone
-from typing import Optional
 import base64
 import hashlib
 import hmac
 import logging
 import os
 import time
+from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.domain.auth import User
 from models.domain.user_activity_log import UserActivityLog
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
+from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_jwt_secret, is_teacher
 
 _logger = logging.getLogger(__name__)
@@ -179,11 +180,11 @@ async def log_diagram_edit(user: User, db: AsyncSession, count: int = 1) -> None
             )
             db.add(log_entry)
         await db.commit()
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         _logger.debug("Failed to log diagram_edit: %s", exc)
         try:
             await db.rollback()
-        except Exception as rollback_exc:
+        except DATABASE_ERRORS as rollback_exc:
             _logger.debug("Rollback after activity log failure: %s", rollback_exc)
 
 

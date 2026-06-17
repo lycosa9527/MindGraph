@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.user_activity_log import UserActivityLog
+from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_current_user, is_teacher
 
 logger = logging.getLogger(__name__)
@@ -54,10 +55,10 @@ async def log_diagram_export(
         db.add(log_entry)
         await db.commit()
         return {"status": "logged"}
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.debug("Failed to log diagram_export: %s", e)
         try:
             await db.rollback()
-        except Exception as exc:
+        except DATABASE_ERRORS as exc:
             logger.debug("Rollback after export log failure: %s", exc)
         return {"status": "error"}

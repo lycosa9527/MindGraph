@@ -3,6 +3,7 @@
 Caches detected document structures in Redis + in-memory fallback
 for instant reuse without re-analysis.
 """
+from services.utils.error_types import REDIS_ERRORS
 
 from datetime import datetime
 from typing import Optional, Dict, Any
@@ -45,7 +46,7 @@ class CacheManager:
                     self.redis_client = get_redis()
                 else:
                     self.redis_client = None
-            except Exception as e:
+            except REDIS_ERRORS as e:
                 logger.warning("Redis client not available, using memory cache only: %s", e)
                 self.redis_client = None
 
@@ -76,7 +77,7 @@ class CacheManager:
                         structure = json.loads(cached_data)
                         logger.info("Retrieved structure from Redis cache: %s", document_id)
                         return structure
-            except Exception as e:
+            except REDIS_ERRORS as e:
                 logger.warning("Redis cache get failed: %s, trying memory cache", e)
 
         # Fallback to memory cache
@@ -108,7 +109,7 @@ class CacheManager:
                     structure_json = json.dumps(structure)
                     RedisOperations.set_with_ttl(cache_key, structure_json, ttl)
                     logger.info("Cached structure in Redis: %s (TTL: %ss)", document_id, ttl)
-            except Exception as e:
+            except REDIS_ERRORS as e:
                 logger.warning("Redis cache set failed: %s, using memory cache", e)
 
         # Always update memory cache as fallback
@@ -130,7 +131,7 @@ class CacheManager:
                 if RedisOperations is not None:
                     RedisOperations.delete(cache_key)
                     logger.info("Deleted structure from Redis cache: %s", document_id)
-            except Exception as e:
+            except REDIS_ERRORS as e:
                 logger.warning("Redis cache delete failed: %s", e)
 
         # Delete from memory cache
@@ -156,5 +157,5 @@ class CacheManager:
                         if keys:
                             redis.delete(*keys)
                             logger.info("Cleared %d structures from Redis cache", len(keys))
-            except Exception as e:
+            except REDIS_ERRORS as e:
                 logger.warning("Redis cache clear failed: %s", e)

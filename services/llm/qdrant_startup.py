@@ -7,7 +7,6 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
 import logging
 import os
 from urllib.parse import urlparse
@@ -18,6 +17,7 @@ from services.infrastructure.utils.launch_commands import (
     error_footer_launch_reference,
     lines_qdrant_connection_failed,
 )
+from services.utils.error_types import QDRANT_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +129,7 @@ def init_qdrant_sync() -> bool:
         logger.info("[Qdrant] Connected successfully")
         return True
 
-    except Exception as exc:
+    except QDRANT_ERRORS as exc:
         connection_info = qdrant_url if qdrant_url else f"{qdrant_host or 'localhost:6333'}"
         if qdrant_url:
             parsed = urlparse(qdrant_url)

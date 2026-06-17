@@ -10,11 +10,13 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 def test_db_rls_package_exists():
+    """Test db rls package exists."""
     path = _PROJECT_ROOT / "db_rls" / "policy_builder.py"
     assert path.is_file()
 
 
 def test_load_rls_policy_builder_exposes_device_expr():
+    """Test load rls policy builder exposes device expr."""
     builder = alembic_migration.load_rls_policy_builder()
     assert hasattr(builder, "DEVICE_EXPR")
     assert "student_id" in builder.DEVICE_EXPR

@@ -7,6 +7,8 @@ import os
 import pytest
 from sqlalchemy import text
 
+from utils.db.rls_context import RlsContext, rls_async_session
+
 pytestmark = pytest.mark.skipif(
     os.getenv("RUN_RLS_DB_TESTS", "").lower() not in ("1", "true", "yes"),
     reason="Set RUN_RLS_DB_TESTS=1 with migrated Postgres and mindgraph_app URL",
@@ -15,8 +17,7 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.mark.asyncio
 async def test_panel_global_read_sees_all_diagrams():
-    from utils.db.rls_context import RlsContext, rls_async_session
-
+    """Test panel global read sees all diagrams."""
     ctx = RlsContext(mode="panel", panel_global_read=True, user_id=1)
     async with rls_async_session(ctx) as session:
         result = await session.execute(text("SELECT count(*) FROM diagrams"))
@@ -27,8 +28,6 @@ async def test_panel_global_read_sees_all_diagrams():
 @pytest.mark.asyncio
 async def test_school_admin_panel_scoped_diagram_access():
     """School admin panel context hides diagrams outside readable + legacy org scope."""
-    from utils.db.rls_context import RlsContext, rls_async_session
-
     ctx = RlsContext(
         mode="panel",
         user_id=1,

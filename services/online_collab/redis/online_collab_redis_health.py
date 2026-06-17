@@ -30,6 +30,7 @@ from typing import Any, Dict, Optional, Tuple
 from redis.exceptions import RedisError
 
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
+from services.infrastructure.process.fatal_process_exit import fatal_startup_exit
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,7 @@ _CONFIG_KEYS = ("appendonly", "appendfsync", "maxmemory-policy")
 
 
 def _decode(val: Any) -> str:
+    """Decode."""
     if isinstance(val, (bytes, bytearray)):
         return val.decode("utf-8", errors="replace")
     return str(val) if val is not None else ""
@@ -62,6 +64,7 @@ def _parse_redis_version_tuple(version_str: str) -> Tuple[int, int, int]:
 
 
 def _collab_disabled_env() -> bool:
+    """Collab disabled env."""
     return os.getenv("COLLAB_DISABLED", "0").strip().lower() in (
         "1",
         "true",
@@ -116,7 +119,7 @@ async def check_online_collab_redis_version(redis: Any) -> None:
     except (OSError, RuntimeError, TypeError, AttributeError, ValueError) as alert_error:
         logger.error("Failed to send startup failure alert: %s", alert_error)
     logger.error("Application startup failed. %s", msg)
-    raise SystemExit(1)
+    fatal_startup_exit(1)
 
 
 def _extract(raw: Any, key: str) -> Optional[str]:
@@ -185,7 +188,8 @@ async def check_online_collab_redis_durability(redis: Any) -> Dict[str, Any]:
         issue = (
             f"Redis appendonly={appendonly!r} (expected {_RECOMMENDED_APPENDONLY!r}). "
             "Collab write-back can lose all edits since the last RDB snapshot on crash. "
-            "Enable AOF in redis.conf or cloud provider config."
+            "MindGraph sets appendonly at startup when REDIS_AOF_ENABLED=true; "
+            "otherwise enable AOF in redis.conf or cloud provider config."
         )
         report["issues"].append(issue)
         logger.warning("[WorkshopRedisHealth] %s", issue)

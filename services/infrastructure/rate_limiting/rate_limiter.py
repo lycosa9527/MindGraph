@@ -18,17 +18,17 @@ All Rights Reserved
 Proprietary License
 """
 
-from collections import deque
-from typing import Optional, Dict, Any
 import asyncio
 import logging
 import os
 import time
 import uuid
+from collections import deque
+from typing import Any, Dict, Optional
 
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
-
+from services.utils.error_types import REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -263,7 +263,7 @@ class DashscopeRateLimiter:
             if self._acquire_script_sha is None:
                 try:
                     self._acquire_script_sha = await redis.script_load(acquire_script)
-                except Exception as e:
+                except REDIS_ERRORS as e:
                     logger.error("[RateLimiter] Failed to load Lua script: %s", e)
                     raise RuntimeError(
                         f"Rate limiting requires Redis. Failed to load Lua script: {e}. "
@@ -291,7 +291,7 @@ class DashscopeRateLimiter:
                         now,
                         one_minute_ago,
                     )
-                except Exception as script_error:
+                except REDIS_ERRORS as script_error:
                     # Script might not exist (Redis restart), reload it
                     if "NOSCRIPT" in str(script_error) or "not found" in str(script_error).lower():
                         logger.warning("[RateLimiter] Lua script not found, reloading...")
@@ -310,7 +310,7 @@ class DashscopeRateLimiter:
                                 now,
                                 one_minute_ago,
                             )
-                        except Exception as retry_error:
+                        except REDIS_ERRORS as retry_error:
                             logger.error(
                                 "[RateLimiter] Failed to reload Lua script: %s",
                                 retry_error,
@@ -344,7 +344,7 @@ class DashscopeRateLimiter:
                         try:
                             await redis.hincrbyfloat(RATE_STATS_KEY, "total_wait_time", wait_duration)
                             await redis.hincrby(RATE_STATS_KEY, "total_waits", 1)
-                        except Exception as e:
+                        except REDIS_ERRORS as e:
                             logger.warning("[RateLimiter] Failed to update wait stats: %s", e)
                         # Log at INFO level if wait was significant (>1s), DEBUG otherwise
                         if wait_duration > 1.0:
@@ -380,61 +380,60 @@ class DashscopeRateLimiter:
                             current_qpm,
                             self.qpm_limit,
                         )
-                    except Exception as e:
+                    except REDIS_ERRORS as e:
                         logger.debug("[RateLimiter] Failed to get stats for logging: %s", e)
 
                     break  # Successfully acquired, exit loop
 
-                else:
-                    # Limit reached, wait and retry
-                    limit_type = result[1] if len(result) > 1 else "unknown"
-                    current_value = result[2] if len(result) > 2 else 0
+                # Limit reached, wait and retry
+                limit_type = result[1] if len(result) > 1 else "unknown"
+                current_value = result[2] if len(result) > 2 else 0
 
-                    if wait_start is None:
-                        wait_start = time.time()
-                        last_log_time = wait_start
-                        self._local_total_waits += 1
-                        provider_name = self.provider or "unknown"
-                        endpoint_name = self.endpoint or ""
-                        if limit_type == "concurrent_limit":
-                            logger.info(
-                                "[RateLimiter] %s %s Concurrent limit reached (%s/%s), waiting...",
-                                provider_name,
-                                endpoint_name,
-                                current_value,
-                                self.concurrent_limit,
-                            )
-                        elif limit_type == "qpm_limit":
-                            logger.warning(
-                                "[RateLimiter] %s %s QPM limit reached (%s/%s), waiting...",
-                                provider_name,
-                                endpoint_name,
-                                current_value,
-                                self.qpm_limit,
-                            )
-
-                    # Log periodic updates during long waits (every 5 seconds)
-                    wait_duration = time.time() - wait_start
-                    current_time = time.time()
-                    if wait_duration > 5.0 and (last_log_time is None or current_time - last_log_time >= 5.0):
-                        provider_name = self.provider or "unknown"
-                        endpoint_name = self.endpoint or ""
-                        limit_value = self.concurrent_limit if limit_type == "concurrent_limit" else self.qpm_limit
-                        logger.warning(
-                            "[RateLimiter] %s %s Still waiting for %s (%s/%s), waited %.1fs...",
+                if wait_start is None:
+                    wait_start = time.time()
+                    last_log_time = wait_start
+                    self._local_total_waits += 1
+                    provider_name = self.provider or "unknown"
+                    endpoint_name = self.endpoint or ""
+                    if limit_type == "concurrent_limit":
+                        logger.info(
+                            "[RateLimiter] %s %s Concurrent limit reached (%s/%s), waiting...",
                             provider_name,
                             endpoint_name,
-                            limit_type,
                             current_value,
-                            limit_value,
-                            wait_duration,
+                            self.concurrent_limit,
                         )
-                        last_log_time = current_time
+                    elif limit_type == "qpm_limit":
+                        logger.warning(
+                            "[RateLimiter] %s %s QPM limit reached (%s/%s), waiting...",
+                            provider_name,
+                            endpoint_name,
+                            current_value,
+                            self.qpm_limit,
+                        )
 
-                    # Wait before retrying
-                    await asyncio.sleep(0.1 if limit_type == "concurrent_limit" else 1.0)
+                # Log periodic updates during long waits (every 5 seconds)
+                wait_duration = time.time() - wait_start
+                current_time = time.time()
+                if wait_duration > 5.0 and (last_log_time is None or current_time - last_log_time >= 5.0):
+                    provider_name = self.provider or "unknown"
+                    endpoint_name = self.endpoint or ""
+                    limit_value = self.concurrent_limit if limit_type == "concurrent_limit" else self.qpm_limit
+                    logger.warning(
+                        "[RateLimiter] %s %s Still waiting for %s (%s/%s), waited %.1fs...",
+                        provider_name,
+                        endpoint_name,
+                        limit_type,
+                        current_value,
+                        limit_value,
+                        wait_duration,
+                    )
+                    last_log_time = current_time
 
-        except Exception as e:
+                # Wait before retrying
+                await asyncio.sleep(0.1 if limit_type == "concurrent_limit" else 1.0)
+
+        except REDIS_ERRORS as e:
             logger.error("[RateLimiter] Redis acquire failed: %s", e)
             raise RuntimeError(
                 f"Rate limiting requires Redis. Redis operation failed: {e}. "
@@ -540,7 +539,7 @@ class DashscopeRateLimiter:
                 self.concurrent_limit,
             )
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("[RateLimiter] Redis release failed: %s", e)
             raise
 
@@ -602,7 +601,7 @@ class DashscopeRateLimiter:
                     else:
                         stats["avg_wait_time"] = 0.0
 
-                except Exception as e:
+                except REDIS_ERRORS as e:
                     logger.warning("[RateLimiter] Failed to get Redis stats: %s", e)
                     stats["redis_stats_error"] = str(e)
         else:
@@ -645,7 +644,7 @@ class DashscopeRateLimiter:
                     self.qpm_key,
                     self.concurrent_key,
                 )
-            except Exception as e:
+            except REDIS_ERRORS as e:
                 logger.warning("[RateLimiter] Failed to clear state: %s", e)
 
     async def __aenter__(self):
@@ -662,17 +661,17 @@ class DashscopeRateLimiter:
 class RateLimiterSingleton:
     """Singleton container for rate limiter instance."""
 
-    _instance: Optional[DashscopeRateLimiter] = None
+    instance: Optional[DashscopeRateLimiter] = None
 
     @classmethod
     def get(cls) -> Optional[DashscopeRateLimiter]:
         """Get the rate limiter instance."""
-        return cls._instance
+        return cls.instance
 
     @classmethod
     def set(cls, instance: DashscopeRateLimiter) -> None:
         """Set the rate limiter instance."""
-        cls._instance = instance
+        cls.instance = instance
 
 
 def get_rate_limiter() -> Optional[DashscopeRateLimiter]:
@@ -792,10 +791,9 @@ class LoadBalancerRateLimiter:
                 "Dashscope route should use the shared Dashscope rate limiter, "
                 "not LoadBalancerRateLimiter. Pass the shared limiter separately."
             )
-        elif provider == self.PROVIDER_VOLCENGINE:
+        if provider == self.PROVIDER_VOLCENGINE:
             return self.volcengine_limiter
-        else:
-            raise ValueError(f"Unknown provider: {provider}")
+        raise ValueError(f"Unknown provider: {provider}")
 
     async def acquire(self, provider: str) -> None:
         """

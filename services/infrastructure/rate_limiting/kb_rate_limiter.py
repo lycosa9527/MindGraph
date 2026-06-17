@@ -11,12 +11,11 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Tuple, Optional
 import logging
 import os
+from typing import Optional, Tuple
 
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
-
 
 logger = logging.getLogger(__name__)
 
@@ -172,13 +171,14 @@ class KBRateLimiter:
         return await self.rate_limiter.clear("kb_upload", str(user_id))
 
 
-# Global singleton
-_kb_rate_limiter: Optional[KBRateLimiter] = None
+class _KbRateLimiterState:
+    """Process-wide KB rate limiter singleton holder."""
+
+    instance: Optional[KBRateLimiter] = None
 
 
 def get_kb_rate_limiter() -> KBRateLimiter:
     """Get or create global KB rate limiter instance."""
-    global _kb_rate_limiter
-    if _kb_rate_limiter is None:
-        _kb_rate_limiter = KBRateLimiter()
-    return _kb_rate_limiter
+    if _KbRateLimiterState.instance is None:
+        _KbRateLimiterState.instance = KBRateLimiter()
+    return _KbRateLimiterState.instance

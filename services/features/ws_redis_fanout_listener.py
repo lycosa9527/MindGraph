@@ -31,6 +31,10 @@ from typing import Any, Final, Optional, Tuple
 
 from redis.exceptions import RedisError
 
+from services.features.workshop_chat_ws_manager import chat_ws_manager
+from services.features.workshop_ws_fanout_delivery import (
+    deliver_local_workshop_broadcast,
+)
 from services.features.ws_redis_fanout_config import (
     CHAT_FANOUT_CHANNEL,
     ENVELOPE_VERSION,
@@ -39,16 +43,13 @@ from services.features.ws_redis_fanout_config import (
     set_sharded_pubsub_active,
     use_sharded_pubsub,
 )
-from services.features.workshop_chat_ws_manager import chat_ws_manager
-from services.features.workshop_ws_fanout_delivery import (
-    deliver_local_workshop_broadcast,
-)
 from services.infrastructure.monitoring.ws_metrics import (
     record_ws_fanout_chat_received,
     record_ws_fanout_delivery_queue_drop,
     record_ws_fanout_workshop_received,
 )
 from services.redis.redis_async_client import get_async_redis
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,7 @@ _KIND_WS: Final[str] = "ws"
 
 
 def _fanout_delivery_queue_maxsize() -> int:
+    """Fanout delivery queue maxsize."""
     raw = os.environ.get("WORKSHOP_FANOUT_DELIVERY_QUEUE_MAX")
     default = 8192
     if raw is None:
@@ -75,6 +77,7 @@ class _FanoutListenerState:
     __slots__ = ("listener_task", "stop_event")
 
     def __init__(self) -> None:
+        """ init  ."""
         self.listener_task: Optional[asyncio.Task] = None
         self.stop_event: Optional[asyncio.Event] = None
 
@@ -87,12 +90,13 @@ def _enqueue_fanout_payload(
     kind: str,
     payload: str,
 ) -> None:
+    """Enqueue fanout payload."""
     try:
         delivery_queue.put_nowait((kind, payload))
     except asyncio.QueueFull:
         try:
             record_ws_fanout_delivery_queue_drop()
-        except Exception:
+        except BACKGROUND_INFRA_ERRORS:
             pass
         logger.warning("[WSFanout] delivery queue full; dropping %s frame", kind)
 
@@ -117,7 +121,7 @@ async def _fanout_delivery_worker(
                 await _handle_chat_raw(payload)
             elif kind == _KIND_WS:
                 await _handle_workshop_raw(payload)
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("[WSFanout] delivery worker error kind=%s: %s", kind, exc)
         finally:
             delivery_queue.task_done()
@@ -212,7 +216,7 @@ async def _handle_workshop_raw(payload: str) -> None:
     record_ws_fanout_workshop_received()
     try:
         _inner_msg = json.loads(data_str) if data_str else {}
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         logger.debug("[WSFanout] workshop envelope inner JSON parse failed code=%s", code)
         _inner_msg = {}
     logger.debug(
@@ -341,7 +345,7 @@ async def _listener_loop_async(stop_event: asyncio.Event) -> None:
             await listen_task
         except asyncio.CancelledError:
             listener_cancelled = True
-        except BaseException as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             loop_error = exc
         finally:
             if listen_task is not None and not listen_task.done():
@@ -364,7 +368,7 @@ async def _listener_loop_async(stop_event: asyncio.Event) -> None:
             try:
                 await pubsub.unsubscribe()
                 await pubsub.aclose()
-            except Exception as exc:
+            except BACKGROUND_INFRA_ERRORS as exc:
                 logger.debug("[WSFanout] pubsub close: %s", exc)
 
         if listener_cancelled:
@@ -431,7 +435,7 @@ async def await_ws_fanout_listener_stopped(timeout: float = 5.0) -> None:
     if task is not None and not task.done():
         try:
             await asyncio.wait_for(asyncio.shield(task), timeout=timeout)
-        except (asyncio.TimeoutError, asyncio.CancelledError, Exception):
+        except (asyncio.TimeoutError, asyncio.CancelledError, *BACKGROUND_INFRA_ERRORS):
             pass
     _state.listener_task = None
     _state.stop_event = None

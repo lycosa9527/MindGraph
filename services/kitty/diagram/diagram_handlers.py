@@ -4,13 +4,12 @@ from typing import Any, Dict, Optional
 
 from fastapi import WebSocket
 
-from services.kitty.session.agent_state import kitty_agent_manager
-
 from services.kitty.context.messaging import (
     parse_double_bubble_target,
     safe_websocket_send,
     send_kitty_diagram_update,
 )
+from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.ops import get_agent_session_id
 from services.kitty.session.runtime_state import logger, voice_sessions
 

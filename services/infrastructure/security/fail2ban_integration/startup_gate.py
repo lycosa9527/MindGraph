@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Optional
 
 from config.settings import config
+from services.infrastructure.process.fatal_process_exit import fatal_startup_exit
 from services.infrastructure.security.fail2ban_integration.check import (
     check_fail2ban_install,
     is_linux,
@@ -33,10 +34,12 @@ _ENV_ETC = "FAIL2BAN_ETC"
 
 
 def _banner_line() -> str:
+    """Banner line."""
     return "=" * 80
 
 
 def _copy_paste_block() -> str:
+    """Copy paste block."""
     return "\n".join(lines_fail2ban_deploy())
 
 
@@ -99,7 +102,7 @@ def evaluate_fail2ban_startup(etc_dir: Optional[Path] = None) -> Optional[str]:
 
 
 def enforce_fail2ban_startup_or_exit(etc_dir: Optional[Path] = None) -> None:
-    """Call os._exit(1) if Fail2ban checks fail when enabled."""
+    """Call fatal_startup_exit(1) if Fail2ban checks fail when enabled."""
     message = evaluate_fail2ban_startup(etc_dir)
     if message is None:
         return
@@ -130,4 +133,4 @@ def enforce_fail2ban_startup_or_exit(etc_dir: Optional[Path] = None) -> None:
     print(body)
     print()
 
-    os._exit(1)
+    fatal_startup_exit(1)

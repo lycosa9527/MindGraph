@@ -14,7 +14,7 @@ Proprietary License
 
 import logging
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,8 +28,8 @@ from models.domain.knowledge_space import (
 from models.requests.requests_knowledge_space import RelationshipRequest
 from models.responses import RelationshipResponse
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
+from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_current_user
-
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +90,7 @@ async def create_relationship(
             context=relationship.context,
             created_at=relationship.created_at.isoformat(),
         )
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("[KnowledgeSpaceAPI] Failed to create relationship: %s", e)
         await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to create relationship") from e
@@ -166,7 +166,7 @@ async def delete_relationship(
         await db.delete(relationship)
         await db.commit()
         return {"message": "Relationship deleted successfully"}
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error(
             "[KnowledgeSpaceAPI] Failed to delete relationship %s: %s",
             relationship_id,

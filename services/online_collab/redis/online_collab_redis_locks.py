@@ -271,6 +271,7 @@ _FUNCTIONS_LOADED_CELL: list[bool | None] = [None]
 
 
 def _functions_disabled_by_env() -> bool:
+    """Functions disabled by env."""
     return os.getenv(_FUNCTIONS_DISABLED_ENV, "0") not in ("0", "false", "False", "")
 
 

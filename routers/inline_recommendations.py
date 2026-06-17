@@ -18,16 +18,17 @@ from fastapi.responses import StreamingResponse
 from agents.inline_recommendations import get_inline_recommendations_generator
 from models.domain.auth import User
 from models.requests.requests_thinking import (
-    InlineRecommendationsStartRequest,
-    InlineRecommendationsNextRequest,
     InlineRecommendationsCleanupRequest,
+    InlineRecommendationsNextRequest,
+    InlineRecommendationsStartRequest,
 )
 from services.infrastructure.http.error_handler import (
     LLMContentFilterError,
     LLMRateLimitError,
-    LLMTimeoutError,
     LLMServiceError,
+    LLMTimeoutError,
 )
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user
 from utils.chinese_language_policy import (
     collect_inline_recommendation_text_blobs,
@@ -111,7 +112,7 @@ async def _stream_recommendations(req, user: User | None, is_next: bool):
             else "AI service error. Please retry."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         error_yielded = True
         logger.error("[InlineRec] Stream error: %s", str(e), exc_info=True)
         msg = "请求失败，请重试。" if is_chinese_ui_error_language(effective_lang) else "Request failed. Please retry."

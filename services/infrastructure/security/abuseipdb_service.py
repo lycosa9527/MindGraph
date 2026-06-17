@@ -11,8 +11,6 @@ import ipaddress
 import json
 import logging
 import os
-import threading
-import time
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -20,27 +18,34 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import httpx
 from redis.exceptions import RedisError
 
+from services.infrastructure.security import ip_reputation_env_flags, ip_reputation_env_snapshot
+from services.infrastructure.security import ip_reputation_blacklist_redis as _bl_redis
 from services.infrastructure.security.abuseipdb_blacklist_parse import (
     parse_abuseipdb_blacklist_plaintext,
 )
+from services.infrastructure.security.blocklist_crowdsec_merge_hook import (
+    merge_crowdsec_after_abuseipdb_sync,
+)
+from services.infrastructure.security.ip_reputation_blacklist_redis import (
+    KEY_BLACKLIST,
+    parse_baseline_file_lines,
+    parse_retry_after_seconds,
+    pipeline_sadd_chunks_async,
+)
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
+
+clear_ip_reputation_sismember_cache = _bl_redis.clear_ip_reputation_sismember_cache
 
 logger = logging.getLogger(__name__)
 
 _DEFAULT_ABUSEIPDB_API_BASE = "https://api.abuseipdb.com/api/v2"
 
-KEY_BLACKLIST = "abuseipdb:blacklist:ips"
 KEY_BLACKLIST_META = "abuseipdb:blacklist:meta"
 KEY_CHECK_PREFIX = "abuseipdb:check:"
 KEY_REPORT_DEDUPE_PREFIX = "abuseipdb:report:dedupe:"
 
 CATEGORY_BRUTE_FORCE = 18
-
-_SISMEMBER_CACHE: Dict[str, Tuple[float, bool]] = {}
-_SISMEMBER_CACHE_LOCK = threading.Lock()
-_SISMEMBER_CACHE_MAX_ENTRIES = 8192
-_SISMEMBER_CACHE_TTL_SNAPSHOT: Optional[int] = None
 
 
 def get_abuseipdb_api_base() -> str:
@@ -56,54 +61,23 @@ def get_abuseipdb_api_base() -> str:
     return raw.rstrip("/")
 
 
-def _env_bool(name: str, default: bool = False) -> bool:
-    val = os.getenv(name, "").lower().strip()
-    if not val:
-        return default
-    return val in ("1", "true", "yes", "on")
-
-
-def _env_int(name: str, default: int) -> int:
-    raw = os.getenv(name, "").strip()
-    if not raw:
-        return default
-    try:
-        return int(raw)
-    except ValueError:
-        return default
-
-
-def abuseipdb_master_enabled() -> bool:
-    """True when AbuseIPDB features may run (requires API key)."""
-    return _env_bool("ABUSEIPDB_ENABLED", False) and bool(os.getenv("ABUSEIPDB_API_KEY", "").strip())
-
-
-def abuseipdb_check_enabled() -> bool:
-    """GET /check per IP (quota). Default off: use daily blacklist sync + Redis only."""
-    return abuseipdb_master_enabled() and _env_bool("ABUSEIPDB_CHECK_ENABLED", False)
-
-
-def abuseipdb_blacklist_lookup_enabled() -> bool:
-    return abuseipdb_master_enabled() and _env_bool("ABUSEIPDB_BLACKLIST_LOOKUP_ENABLED", True)
-
-
-def abuseipdb_report_enabled() -> bool:
-    return abuseipdb_master_enabled() and _env_bool("ABUSEIPDB_REPORT_ENABLED", True)
-
-
-def abuseipdb_blacklist_sync_enabled() -> bool:
-    return abuseipdb_master_enabled() and _env_bool("ABUSEIPDB_BLACKLIST_SYNC_ENABLED", True)
-
-
-def get_check_min_score() -> int:
-    return max(0, min(100, _env_int("ABUSEIPDB_CHECK_MIN_SCORE", 80)))
+_env_bool = ip_reputation_env_flags.env_bool
+_env_int = ip_reputation_env_flags.env_int
+abuseipdb_master_enabled = ip_reputation_env_flags.abuseipdb_master_enabled
+abuseipdb_check_enabled = ip_reputation_env_flags.abuseipdb_check_enabled
+abuseipdb_blacklist_lookup_enabled = ip_reputation_env_flags.abuseipdb_blacklist_lookup_enabled
+abuseipdb_report_enabled = ip_reputation_env_flags.abuseipdb_report_enabled
+abuseipdb_blacklist_sync_enabled = ip_reputation_env_flags.abuseipdb_blacklist_sync_enabled
+get_check_min_score = ip_reputation_env_flags.get_check_min_score
 
 
 def get_check_cache_ttl_seconds() -> int:
+    """Get check cache ttl seconds."""
     return max(60, _env_int("ABUSEIPDB_CHECK_CACHE_TTL_SECONDS", 86400))
 
 
 def get_blacklist_confidence_minimum() -> int:
+    """Get blacklist confidence minimum."""
     return max(25, min(100, _env_int("ABUSEIPDB_BLACKLIST_CONFIDENCE_MINIMUM", 75)))
 
 
@@ -113,27 +87,21 @@ def warm_sismember_cache_ttl_snapshot() -> None:
 
     Matches env snapshot timing so TTL is not re-parsed from os.environ on every request.
     """
-    global _SISMEMBER_CACHE_TTL_SNAPSHOT
-    _SISMEMBER_CACHE_TTL_SNAPSHOT = max(0, _env_int("IP_REPUTATION_SISMEMBER_CACHE_TTL_SECONDS", 0))
+    _bl_redis.warm_sismember_cache_ttl_snapshot(
+        max(0, _env_int("IP_REPUTATION_SISMEMBER_CACHE_TTL_SECONDS", 0))
+    )
 
 
 def invalidate_sismember_cache_ttl_snapshot() -> None:
     """Clear TTL snapshot (e.g. pytest); next get reads os.environ again."""
-    global _SISMEMBER_CACHE_TTL_SNAPSHOT
-    _SISMEMBER_CACHE_TTL_SNAPSHOT = None
+    _bl_redis.invalidate_sismember_cache_ttl_snapshot()
 
 
 def get_ip_reputation_sismember_cache_ttl_seconds() -> int:
     """In-process cache TTL for blacklist SISMEMBER; 0 disables caching."""
-    if _SISMEMBER_CACHE_TTL_SNAPSHOT is not None:
-        return _SISMEMBER_CACHE_TTL_SNAPSHOT
-    return max(0, _env_int("IP_REPUTATION_SISMEMBER_CACHE_TTL_SECONDS", 0))
-
-
-def clear_ip_reputation_sismember_cache() -> None:
-    """Invalidate SISMEMBER cache after blacklist mutations (sync, merge, startup)."""
-    with _SISMEMBER_CACHE_LOCK:
-        _SISMEMBER_CACHE.clear()
+    return _bl_redis.get_ip_reputation_sismember_cache_ttl_seconds(
+        max(0, _env_int("IP_REPUTATION_SISMEMBER_CACHE_TTL_SECONDS", 0))
+    )
 
 
 def _canonical_ip_for_blacklist_lookup(ip: str) -> str:
@@ -151,68 +119,13 @@ def _canonical_ip_for_blacklist_lookup(ip: str) -> str:
 
 
 def _sismember_cache_get(ip: str) -> Optional[bool]:
-    ttl = get_ip_reputation_sismember_cache_ttl_seconds()
-    if ttl <= 0:
-        return None
-    now = time.monotonic()
-    with _SISMEMBER_CACHE_LOCK:
-        entry = _SISMEMBER_CACHE.get(ip)
-        if entry is None:
-            return None
-        expires_at, value = entry
-        if now >= expires_at:
-            del _SISMEMBER_CACHE[ip]
-            return None
-        return value
+    """Sismember cache get."""
+    return _bl_redis.sismember_cache_get(ip, max(0, _env_int("IP_REPUTATION_SISMEMBER_CACHE_TTL_SECONDS", 0)))
 
 
 def _sismember_cache_set(ip: str, value: bool) -> None:
-    ttl = get_ip_reputation_sismember_cache_ttl_seconds()
-    if ttl <= 0:
-        return
-    expires_at = time.monotonic() + float(ttl)
-    with _SISMEMBER_CACHE_LOCK:
-        if len(_SISMEMBER_CACHE) >= _SISMEMBER_CACHE_MAX_ENTRIES:
-            _SISMEMBER_CACHE.clear()
-        _SISMEMBER_CACHE[ip] = (expires_at, value)
-
-
-def pipeline_sadd_chunks(
-    redis_client: Any,
-    key: str,
-    batch: List[str],
-    chunk_size: int,
-) -> int:
-    """
-    Chunked SADD into key using a single pipelined execute (one round trip for all chunks).
-
-    Returns the sum of each SADD's added count (same as sequential SADD).
-    """
-    if not batch:
-        return 0
-    pipe = redis_client.pipeline(transaction=False)
-    for i in range(0, len(batch), chunk_size):
-        chunk = batch[i : i + chunk_size]
-        pipe.sadd(key, *chunk)
-    results = pipe.execute()
-    return sum(int(x) for x in results)
-
-
-async def pipeline_sadd_chunks_async(
-    redis_client: Any,
-    key: str,
-    batch: List[str],
-    chunk_size: int,
-) -> int:
-    """Async sibling of :func:`pipeline_sadd_chunks` for the asyncio Redis client."""
-    if not batch:
-        return 0
-    async with redis_client.pipeline(transaction=False) as pipe:
-        for i in range(0, len(batch), chunk_size):
-            chunk = batch[i : i + chunk_size]
-            pipe.sadd(key, *chunk)
-        results = await pipe.execute()
-    return sum(int(x) for x in results)
+    """Sismember cache set."""
+    _bl_redis.sismember_cache_set(ip, value, max(0, _env_int("IP_REPUTATION_SISMEMBER_CACHE_TTL_SECONDS", 0)))
 
 
 def get_blacklist_limit() -> int:
@@ -242,17 +155,6 @@ def get_blacklist_sync_interval_seconds() -> int:
     return max(_BLACKLIST_SYNC_MIN_INTERVAL_SECONDS, raw)
 
 
-def parse_retry_after_seconds(response: httpx.Response) -> Optional[int]:
-    """Parse Retry-After header (seconds) if present."""
-    raw = response.headers.get("Retry-After") or response.headers.get("retry-after")
-    if not raw:
-        return None
-    try:
-        return int(str(raw).strip())
-    except ValueError:
-        return None
-
-
 def log_rate_limit_429(response: httpx.Response, endpoint: str) -> None:
     """Log AbuseIPDB 429 with optional rate-limit headers."""
     retry_after = parse_retry_after_seconds(response)
@@ -271,10 +173,12 @@ def log_rate_limit_429(response: httpx.Response, endpoint: str) -> None:
 
 
 def get_report_dedupe_ttl_seconds() -> int:
+    """Get report dedupe ttl seconds."""
     return max(3600, _env_int("ABUSEIPDB_REPORT_DEDUPE_TTL_SECONDS", 86400))
 
 
 def get_api_key() -> str:
+    """Get api key."""
     return os.getenv("ABUSEIPDB_API_KEY", "").strip()
 
 
@@ -297,22 +201,6 @@ def baseline_blacklist_path() -> Path:
             return path
         return _mindgraph_root() / path
     return _mindgraph_root() / "data" / "abuseipdb" / "blacklist_baseline.txt"
-
-
-def parse_baseline_file_lines(text: str) -> Set[str]:
-    """Parse one IP per line; skip empty lines and # comments; validate IPv4/IPv6."""
-    out: Set[str] = set()
-    for raw_line in text.splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#"):
-            continue
-        addr = line.split("%")[0].strip()
-        try:
-            ipaddress.ip_address(addr)
-        except ValueError:
-            continue
-        out.add(addr)
-    return out
 
 
 async def apply_blacklist_baseline_from_file_async() -> int:
@@ -371,6 +259,7 @@ async def apply_blacklist_baseline_from_file_async() -> int:
 
 
 def _client_headers() -> Dict[str, str]:
+    """Client headers."""
     return {
         "Key": get_api_key(),
         "Accept": "application/json",
@@ -397,7 +286,6 @@ async def is_ip_in_blacklist_set_async(ip: str) -> bool:
     """
     if not is_redis_available():
         return False
-    from services.infrastructure.security import ip_reputation_env_snapshot
 
     if not ip_reputation_env_snapshot.blacklist_lookup_active():
         return False
@@ -418,6 +306,7 @@ async def is_ip_in_blacklist_set_async(ip: str) -> bool:
 
 
 async def _get_cached_check_score_async(ip: str) -> Optional[int]:
+    """Get cached check score async."""
     if not is_redis_available():
         return None
     redis = get_async_redis()
@@ -438,6 +327,7 @@ async def _get_cached_check_score_async(ip: str) -> Optional[int]:
 
 
 async def _set_cached_check_score_async(ip: str, score: int, ttl: int) -> None:
+    """Set cached check score async."""
     if not is_redis_available():
         return
     redis = get_async_redis()
@@ -795,11 +685,7 @@ async def sync_blacklist_to_redis(force_crowdsec_merge: bool = False) -> Dict[st
     if baseline_merged:
         result["baseline_merged"] = baseline_merged
 
-    from services.infrastructure.security import crowdsec_blocklist_service
-
-    crowdsec_out = await crowdsec_blocklist_service.merge_crowdsec_blocklist_from_network(
-        force=force_crowdsec_merge,
-    )
+    crowdsec_out = await merge_crowdsec_after_abuseipdb_sync(force=force_crowdsec_merge)
     if crowdsec_out.get("ok"):
         result["crowdsec"] = {
             "count": crowdsec_out.get("count"),
@@ -813,10 +699,6 @@ async def sync_blacklist_to_redis(force_crowdsec_merge: bool = False) -> Dict[st
                 "[Blocklist] CrowdSec network merge failed after AbuseIPDB IPs were stored: %s",
                 cs_err,
             )
-
-    crowdsec_baseline = await crowdsec_blocklist_service.apply_crowdsec_baseline_from_file_async()
-    if crowdsec_baseline:
-        result["crowdsec_baseline_merged"] = crowdsec_baseline
 
     if result.get("ok"):
         clear_ip_reputation_sismember_cache()

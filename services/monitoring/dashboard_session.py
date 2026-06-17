@@ -1,12 +1,3 @@
-from datetime import datetime, timedelta, timezone
-from typing import Optional, Dict
-import json
-import logging
-import secrets
-
-from services.redis.redis_async_client import get_async_redis
-from services.redis.redis_client import is_redis_available
-
 """
 Dashboard Session Manager Service
 ==================================
@@ -31,6 +22,15 @@ All Rights Reserved
 Proprietary License
 """
 
+import json
+import logging
+import secrets
+from datetime import datetime, timedelta, timezone
+from typing import Dict, Optional
+
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +119,7 @@ class DashboardSessionManager:
 
             return token
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[DashboardSession] Error creating session: %s", e)
             # Generate token anyway for graceful degradation
             token = f"dashboard_{int(datetime.now(timezone.utc).timestamp())}_{secrets.token_hex(8)}"
@@ -193,7 +193,7 @@ class DashboardSessionManager:
                 await redis.delete(session_key)  # Clean up invalid session
                 return False
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[DashboardSession] Error verifying session: %s", e)
             return False  # Fail-closed on errors
 
@@ -223,7 +223,7 @@ class DashboardSessionManager:
                 return deleted > 0
             return False
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[DashboardSession] Error deleting session: %s", e)
             return False
 
@@ -252,18 +252,19 @@ class DashboardSessionManager:
 
             return json.loads(session_data_str)
 
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[DashboardSession] Error getting session info: %s", e)
             return None
 
 
-# Global singleton instance
-_session_manager: Optional[DashboardSessionManager] = None
+class _DashboardSessionState:
+    """Process-wide dashboard session manager singleton holder."""
+
+    instance: Optional[DashboardSessionManager] = None
 
 
 def get_dashboard_session_manager() -> DashboardSessionManager:
     """Get global dashboard session manager instance."""
-    global _session_manager
-    if _session_manager is None:
-        _session_manager = DashboardSessionManager()
-    return _session_manager
+    if _DashboardSessionState.instance is None:
+        _DashboardSessionState.instance = DashboardSessionManager()
+    return _DashboardSessionState.instance

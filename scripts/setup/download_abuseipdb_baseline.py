@@ -12,17 +12,23 @@ Set ABUSEIPDB_BLACKLIST_LIMIT higher if your plan allows (API truncates to your 
 
 from __future__ import annotations
 
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    load_dotenv = None
+
+try:
+    import httpx
+except ImportError:
+    httpx = None
+
 import os
 import sys
-from pathlib import Path
 
-
-def _project_root() -> Path:
-    return Path(__file__).resolve().parent.parent.parent
-
-
-# Project imports (run from repo root: python scripts/setup/download_abuseipdb_baseline.py)
-sys.path.insert(0, str(_project_root()))
+try:
+    from _path_setup import project_root
+except ModuleNotFoundError:
+    from scripts.setup._path_setup import project_root
 
 from services.infrastructure.security.abuseipdb_blacklist_parse import (
     parse_abuseipdb_blacklist_plaintext,
@@ -31,6 +37,7 @@ from services.infrastructure.security.abuseipdb_service import get_abuseipdb_api
 
 
 def _env_int(name: str, default: int) -> int:
+    """Env int."""
     raw = os.getenv(name, "").strip()
     if not raw:
         return default
@@ -41,23 +48,19 @@ def _env_int(name: str, default: int) -> int:
 
 
 def main() -> int:
-    try:
-        from dotenv import load_dotenv
-    except ImportError:
+    """Main."""
+    if load_dotenv is None:
         print("python-dotenv is required", file=sys.stderr)
         return 1
+    if httpx is None:
+        print("httpx is required", file=sys.stderr)
+        return 1
 
-    load_dotenv(_project_root() / ".env")
+    load_dotenv(project_root / ".env")
 
     api_key = os.getenv("ABUSEIPDB_API_KEY", "").strip()
     if not api_key:
         print("Set ABUSEIPDB_API_KEY in .env", file=sys.stderr)
-        return 1
-
-    try:
-        import httpx
-    except ImportError:
-        print("httpx is required", file=sys.stderr)
         return 1
 
     conf = max(25, min(100, _env_int("ABUSEIPDB_BLACKLIST_CONFIDENCE_MINIMUM", 75)))
@@ -88,7 +91,7 @@ def main() -> int:
     for ip in sorted(ips):
         lines.append(ip)
 
-    out_path = _project_root() / "data" / "abuseipdb" / "blacklist_baseline.txt"
+    out_path = project_root / "data" / "abuseipdb" / "blacklist_baseline.txt"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"Wrote {len(lines) - 3} IPs to {out_path}")

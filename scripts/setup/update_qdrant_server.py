@@ -203,6 +203,7 @@ def _api_ok() -> bool:
 
 
 def _systemctl(args: list[str]) -> Tuple[int, str, str]:
+    """Systemctl."""
     completed = subprocess.run(
         ["systemctl", *args],
         check=False,
@@ -271,6 +272,7 @@ def deploy_qdrant_systemd_stack(*, overwrite_config: bool = False) -> bool:
 
 
 def finish_and_verify_qdrant() -> int:
+    """Finish and verify qdrant."""
     print("[INFO] Waiting for API on port 6333...")
     if _wait_for_qdrant_api():
         print("[SUCCESS] Qdrant API is responding at http://127.0.0.1:6333")
@@ -281,6 +283,7 @@ def finish_and_verify_qdrant() -> int:
 
 
 def _extract_tarball(tar_path: str, dest_dir: str) -> Optional[str]:
+    """Extract tarball."""
     try:
         with tarfile.open(tar_path, "r:gz") as archive:
             if sys.version_info >= (3, 12):
@@ -296,6 +299,7 @@ def _extract_tarball(tar_path: str, dest_dir: str) -> Optional[str]:
 
 
 def _install_binary(source: str, dest: str, backup: bool) -> bool:
+    """Install binary."""
     if os.path.isfile(dest) and backup:
         backup_path = f"{dest}.bak"
         try:
@@ -329,6 +333,7 @@ def _systemctl_restart_qdrant(label: str) -> bool:
 
 
 def run_upgrade(version: str, no_backup: bool, dry_run: bool) -> int:
+    """Run upgrade."""
     if platform.system().lower() != "linux":
         print("[ERROR] This script only supports Linux (GitHub prebuilt binary).")
         return 1
@@ -469,6 +474,7 @@ def run_upgrade(version: str, no_backup: bool, dry_run: bool) -> int:
 
 
 def main() -> int:
+    """Main."""
     parser = argparse.ArgumentParser(
         description="MindGraph Qdrant: interactive full install or binary update.",
         epilog=(

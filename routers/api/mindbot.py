@@ -10,8 +10,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from routers.api.mindbot_callback import router as _callback_router
 from routers.api.mindbot_admin import router as _admin_router
+from routers.api.mindbot_callback import router as _callback_router
 from routers.api.mindbot_helpers import _callback_metrics_snapshot_for_user
 from routers.api.mindbot_models import MindbotUsageEventItem
 

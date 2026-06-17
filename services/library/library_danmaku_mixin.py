@@ -1,5 +1,4 @@
-"""
-Library Danmaku Mixin for MindGraph
+"""Library Danmaku Mixin for MindGraph
 
 Mixin class for danmaku operations.
 
@@ -7,16 +6,15 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
 import logging
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from sqlalchemy import func, select, update
-from sqlalchemy.sql.functions import count as sql_count
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.functions import count as sql_count
 
 from models.domain.library import (
     LibraryDanmaku,
@@ -24,7 +22,8 @@ from models.domain.library import (
     LibraryDanmakuReply,
     LibraryDocument,
 )
-
+from services.library.redis_cache import LibraryRedisCache
+from services.utils.error_types import REDIS_ERRORS
 from services.utils.typing_helpers import count_pairs_by_key
 
 logger = logging.getLogger(__name__)
@@ -63,7 +62,6 @@ class LibraryDanmakuMixin:
         """
         if page_number is not None or selected_text:
             try:
-                from services.library.redis_cache import LibraryRedisCache
 
                 redis_cache = LibraryRedisCache()
                 cached_list = await redis_cache.get_danmaku_list(
@@ -74,7 +72,7 @@ class LibraryDanmakuMixin:
                 if cached_list is not None:
                     logger.debug("[Library] Redis cache hit for danmaku doc=%s", document_id)
                     return cached_list
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logger.debug("[Library] Redis cache check failed: %s", exc)
 
         stmt = select(LibraryDanmaku).where(LibraryDanmaku.document_id == document_id, LibraryDanmaku.is_active)
@@ -156,7 +154,6 @@ class LibraryDanmakuMixin:
 
         if (page_number is not None or selected_text) and result_list:
             try:
-                from services.library.redis_cache import LibraryRedisCache
 
                 redis_cache = LibraryRedisCache()
                 await redis_cache.cache_danmaku_list(
@@ -165,7 +162,7 @@ class LibraryDanmakuMixin:
                     page_number=page_number,
                     selected_text=selected_text,
                 )
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logger.debug("[Library] Redis cache write failed: %s", exc)
 
         return result_list
@@ -256,11 +253,10 @@ class LibraryDanmakuMixin:
 
         if result_list:
             try:
-                from services.library.redis_cache import LibraryRedisCache
 
                 redis_cache = LibraryRedisCache()
                 await redis_cache.cache_recent_danmaku(limit, result_list)
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logger.debug("[Library] Redis cache write failed: %s", exc)
 
         return result_list
@@ -323,7 +319,7 @@ class LibraryDanmakuMixin:
         try:
             await self.db.commit()
             await self.db.refresh(danmaku)
-        except Exception:
+        except REDIS_ERRORS:
             await self.db.rollback()
             raise
 
@@ -338,11 +334,10 @@ class LibraryDanmakuMixin:
         )
 
         try:
-            from services.library.redis_cache import LibraryRedisCache
 
             redis_cache = LibraryRedisCache()
             redis_cache.invalidate_danmaku(document_id)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug("[Library] Redis cache invalidation failed: %s", exc)
 
         return danmaku
@@ -383,7 +378,7 @@ class LibraryDanmakuMixin:
 
         try:
             await self.db.commit()
-        except Exception:
+        except REDIS_ERRORS:
             await self.db.rollback()
             raise
 
@@ -467,7 +462,7 @@ class LibraryDanmakuMixin:
         try:
             await self.db.commit()
             await self.db.refresh(reply)
-        except Exception:
+        except REDIS_ERRORS:
             await self.db.rollback()
             raise
 
@@ -485,11 +480,10 @@ class LibraryDanmakuMixin:
             refresh_result = await self.db.execute(select(LibraryDanmaku).where(LibraryDanmaku.id == danmaku_id))
             refreshed_danmaku = refresh_result.scalar_one_or_none()
             if refreshed_danmaku:
-                from services.library.redis_cache import LibraryRedisCache
 
                 redis_cache = LibraryRedisCache()
                 redis_cache.invalidate_danmaku(refreshed_danmaku.document_id)
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug("[Library] Redis cache invalidation failed: %s", exc)
 
         return reply
@@ -528,7 +522,7 @@ class LibraryDanmakuMixin:
         )
         try:
             await self.db.commit()
-        except Exception:
+        except REDIS_ERRORS:
             await self.db.rollback()
             raise
         return True
@@ -574,7 +568,7 @@ class LibraryDanmakuMixin:
         try:
             await self.db.commit()
             await self.db.refresh(danmaku)
-        except Exception:
+        except REDIS_ERRORS:
             await self.db.rollback()
             raise
 
@@ -654,7 +648,7 @@ class LibraryDanmakuMixin:
         reply.updated_at = datetime.now(UTC)
         try:
             await self.db.commit()
-        except Exception:
+        except REDIS_ERRORS:
             await self.db.rollback()
             raise
         return True

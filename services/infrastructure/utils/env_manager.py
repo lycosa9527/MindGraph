@@ -23,14 +23,16 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Tuple
 import logging
 import os
 import shutil
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Tuple
 
 from dotenv import dotenv_values
+
+from services.utils.error_types import FILE_IO_ERRORS
 
 fcntl: Any = None
 try:
@@ -99,7 +101,7 @@ class EnvManager:
             logger.info("Read %d settings from .env", len(env_dict))
             return env_dict
 
-        except Exception as e:
+        except FILE_IO_ERRORS as e:
             logger.error("Failed to read .env file: %s", e)
             raise ValueError(f"Failed to read .env file: {e}") from e
 
@@ -121,7 +123,7 @@ class EnvManager:
 
             return lines
 
-        except Exception as e:
+        except FILE_IO_ERRORS as e:
             logger.error("Failed to read .env with comments: %s", e)
             raise ValueError(f"Failed to read .env file: {e}") from e
 
@@ -209,7 +211,7 @@ class EnvManager:
             logger.info("Successfully wrote %d settings to .env", len(settings_dict))
             return True
 
-        except Exception as e:
+        except FILE_IO_ERRORS as e:
             logger.error("Failed to write .env file: %s", e)
             # Clean up temp file if it exists
             if temp_path is not None and temp_path.exists():
@@ -253,7 +255,7 @@ class EnvManager:
 
             return str(backup_path)
 
-        except Exception as e:
+        except FILE_IO_ERRORS as e:
             logger.error("Failed to create backup: %s", e)
             raise ValueError(f"Failed to create backup: {e}") from e
 
@@ -274,7 +276,7 @@ class EnvManager:
                 old_backup.unlink()
                 logger.info("Deleted old backup: %s", old_backup.name)
 
-        except Exception as e:
+        except FILE_IO_ERRORS as e:
             logger.warning("Failed to cleanup old backups: %s", e)
 
     def validate_env(self, settings_dict: Dict[str, str]) -> Tuple[bool, List[str]]:
@@ -416,7 +418,7 @@ class EnvManager:
             logger.info("Successfully restored .env from %s", backup_filename)
             return True
 
-        except Exception as e:
+        except FILE_IO_ERRORS as e:
             logger.error("Failed to restore from backup: %s", e)
             raise ValueError(f"Failed to restore from backup: {e}") from e
 
@@ -448,7 +450,7 @@ class EnvManager:
 
             return backups
 
-        except Exception as e:
+        except FILE_IO_ERRORS as e:
             logger.error("Failed to list backups: %s", e)
             return []
 

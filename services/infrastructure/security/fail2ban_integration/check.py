@@ -52,6 +52,7 @@ def _run(
     args: List[str],
     timeout: float = 20.0,
 ) -> subprocess.CompletedProcess[str]:
+    """Run."""
     return subprocess.run(
         args,
         capture_output=True,
@@ -62,14 +63,17 @@ def _run(
 
 
 def is_linux() -> bool:
+    """Is linux."""
     return platform.system().lower() == "linux"
 
 
 def fail2ban_client_available() -> bool:
+    """Fail2ban client available."""
     return shutil.which("fail2ban-client") is not None
 
 
 def fail2ban_daemon_responding() -> bool:
+    """Fail2ban daemon responding."""
     if not fail2ban_client_available():
         return False
     result = _run(["fail2ban-client", "status"])

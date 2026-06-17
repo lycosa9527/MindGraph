@@ -20,21 +20,22 @@ Proprietary License
 """
 
 import logging
-import time
 import os
+import time
 import uuid
 from typing import Optional, Tuple
 
 from sqlalchemy import select
 
+from models.domain.auth import Organization, User
 from services.redis import keys as _keys
-from services.redis.cache.redis_user_cache import get_user_cache
 from services.redis.cache.redis_org_cache import get_org_cache
+from services.redis.cache.redis_user_cache import get_user_cache
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_async_ops import AsyncRedisOps
 from services.redis.redis_client import is_redis_available
+from services.utils.error_types import REDIS_ERRORS
 from utils.db.session_open import system_rls_session
-from models.domain.auth import User, Organization
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +95,7 @@ async def is_cache_loading_in_progress() -> bool:
 
     try:
         return await redis.exists(CACHE_LOADER_LOCK_KEY) > 0
-    except Exception:
+    except REDIS_ERRORS:
         return False
 
 
@@ -142,7 +143,7 @@ async def acquire_cache_loader_lock() -> bool:
         )
         return False  # Return False to indicate lock not acquired
 
-    except Exception as e:
+    except REDIS_ERRORS as e:
         logger.warning("[CacheLoader] Lock acquisition failed: %s, proceeding anyway", e)
         return True  # On error, proceed (better to have duplicate than no cache)
 
@@ -180,7 +181,7 @@ async def release_cache_loader_lock() -> bool:
         )
         return False
 
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.warning("[CacheLoader] Lock release failed: %s", exc)
         return False
 
@@ -217,7 +218,7 @@ async def load_all_users_to_cache() -> Tuple[int, int]:
             written = 0
             try:
                 written = await user_cache.bulk_cache_users(list(batch))
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logger.error(
                     "[CacheLoader] Bulk cache_user pipeline failed for batch ending at id %s: %s",
                     batch[-1].id,
@@ -233,7 +234,7 @@ async def load_all_users_to_cache() -> Tuple[int, int]:
                     try:
                         await user_cache.cache_user(user)
                         success_count += 1
-                    except Exception as exc:
+                    except REDIS_ERRORS as exc:
                         error_count += 1
                         logger.error(
                             "[CacheLoader] Failed to cache user ID %s: %s",
@@ -250,7 +251,7 @@ async def load_all_users_to_cache() -> Tuple[int, int]:
         logger.info("[CacheLoader] Loaded %d users into cache (%d errors)", success_count, error_count)
         return success_count, error_count
 
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.error("[CacheLoader] Failed to load users: %s", exc, exc_info=True)
         return success_count, error_count
 
@@ -283,7 +284,7 @@ async def load_all_orgs_to_cache() -> Tuple[int, int]:
             written = 0
             try:
                 written = await org_cache.bulk_cache_orgs(list(batch))
-            except Exception as exc:
+            except REDIS_ERRORS as exc:
                 logger.error(
                     "[CacheLoader] Bulk cache_org pipeline failed for batch ending at id %s: %s",
                     batch[-1].id,
@@ -299,7 +300,7 @@ async def load_all_orgs_to_cache() -> Tuple[int, int]:
                     try:
                         await org_cache.cache_org(org)
                         success_count += 1
-                    except Exception as exc:
+                    except REDIS_ERRORS as exc:
                         error_count += 1
                         logger.error(
                             "[CacheLoader] Failed to cache org ID %s: %s",
@@ -319,7 +320,7 @@ async def load_all_orgs_to_cache() -> Tuple[int, int]:
         )
         return success_count, error_count
 
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.error("[CacheLoader] Failed to load organizations: %s", exc, exc_info=True)
         return success_count, error_count
 
@@ -371,7 +372,7 @@ async def reload_cache_from_database() -> bool:
 
         return total_success > 0
 
-    except Exception as e:
+    except REDIS_ERRORS as e:
         elapsed_time = time.time() - start_time
         logger.error(
             "[CacheLoader] Cache reload failed after %.2fs: %s",

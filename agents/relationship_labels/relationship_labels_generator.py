@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def _template_lang_key(language: str) -> str:
+    """Template lang key."""
     return "zh" if is_chinese_prompt_shell_language(language) else "en"
 
 
@@ -102,6 +103,7 @@ class RelationshipLabelsGenerator:
     """
 
     def __init__(self) -> None:
+        """ init  ."""
         self.llm_service = llm_service
         self.llm_models = ["qwen", "deepseek", "doubao"]
         self.seen_labels: Dict[str, Set[str]] = {}

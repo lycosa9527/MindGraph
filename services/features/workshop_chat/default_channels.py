@@ -25,8 +25,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count as sql_count
 
 from models.domain.workshop_chat import (
-    ChatChannel,
     ChannelMember,
+    ChatChannel,
     ChatMessage,
     ChatTopic,
 )

@@ -20,9 +20,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
-from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 from models.domain.auth import User
-from models.domain.messages import Messages, Language
+from models.domain.messages import Language, Messages
 from models.requests.requests_auth import (
     ChangePasswordRequest,
     ResetPasswordWithEmailRequest,
@@ -35,16 +34,18 @@ from services.auth.password_security import (
     invalidate_user_cache_after_password_write,
     revoke_refresh_tokens_and_sessions,
 )
-from utils.email_validation import validate_email_for_api
+from services.redis.redis_email_storage import normalize_verification_email
+from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import (
     AUTH_MODE,
     EMAIL_LOGIN_CN_BLOCK_ENABLED,
-    hash_password,
     get_client_ip,
     get_current_user,
+    hash_password,
     verify_password,
 )
-from services.redis.redis_email_storage import normalize_verification_email
+from utils.db.rls_request import bind_system_bootstrap_rls_dependency
+from utils.email_validation import validate_email_for_api
 
 from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
@@ -143,7 +144,7 @@ async def reset_password_with_sms(
     # Write to database FIRST
     try:
         await db.commit()
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         await db.rollback()
         logger.error("[Auth] Failed to update password in database: %s", e)
         raise HTTPException(
@@ -203,7 +204,7 @@ async def reset_password_with_email(
 
     try:
         await db.commit()
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         await db.rollback()
         logger.error("[Auth] Failed to update password (email reset) in database: %s", exc)
         raise HTTPException(
@@ -256,7 +257,7 @@ async def set_password_with_sms(
     user.locked_until = None
     try:
         await db.commit()
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         await db.rollback()
         logger.error("[Auth] set-password-with-sms commit failed: %s", exc, exc_info=True)
         raise HTTPException(
@@ -316,7 +317,7 @@ async def change_password(
 
     try:
         await db.commit()
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         await db.rollback()
         logger.error("Failed to change password for user %s: %s", user.id, e)
         raise HTTPException(

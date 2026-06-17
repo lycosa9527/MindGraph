@@ -10,22 +10,23 @@ All Rights Reserved
 Proprietary License
 """
 
-from pathlib import Path
-from typing import List, Optional, Dict, Any, Union
 import asyncio
 import base64
 import logging
 import os
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
 import httpx
 import numpy as np
 
 from config.settings import config
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.dashscope_error_handler import (
-    handle_dashscope_response,
     DashScopeError,
-    should_retry,
     get_retry_delay,
+    handle_dashscope_response,
+    should_retry,
 )
 
 logger = logging.getLogger(__name__)
@@ -224,8 +225,7 @@ class DashScopeEmbeddingClient:
                             )
                             await asyncio.sleep(delay)
                             continue
-                        else:
-                            raise error
+                        raise error
 
                     result = response.json()
 
@@ -256,14 +256,13 @@ class DashScopeEmbeddingClient:
                         )
                         await asyncio.sleep(delay)
                         continue
-                    else:
-                        logger.error(
-                            "[DashScopeEmbedding] DashScope API error: %s (code: %s, type: %s)",
-                            e.message,
-                            e.error_code,
-                            e.error_type,
-                        )
-                        raise
+                    logger.error(
+                        "[DashScopeEmbedding] DashScope API error: %s (code: %s, type: %s)",
+                        e.message,
+                        e.error_code,
+                        e.error_type,
+                    )
+                    raise
                 except httpx.HTTPError as e:
                     status_code = None
                     if isinstance(e, httpx.HTTPStatusError):
@@ -286,10 +285,9 @@ class DashScopeEmbeddingClient:
                         )
                         await asyncio.sleep(delay)
                         continue
-                    else:
-                        logger.error("[DashScopeEmbedding] HTTP error: %s", e)
-                        raise
-                except Exception as e:
+                    logger.error("[DashScopeEmbedding] HTTP error: %s", e)
+                    raise
+                except BACKGROUND_INFRA_ERRORS as e:
                     logger.error("[DashScopeEmbedding] Error embedding texts: %s", e)
                     raise
 
@@ -340,7 +338,7 @@ class DashScopeEmbeddingClient:
                     i // self.batch_size + 1,
                     len(batch),
                 )
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.error(
                     "[DashScopeEmbedding] Failed to embed batch starting at index %d: %s",
                     i,
@@ -386,9 +384,8 @@ class DashScopeEmbeddingClient:
             )
             if embeddings and len(embeddings) > 0:
                 return embeddings[0]
-            else:
-                raise ValueError("Empty embedding response")
-        except Exception as e:
+            raise ValueError("Empty embedding response")
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[DashScopeEmbedding] Failed to embed query: %s", e)
             raise
 
@@ -415,9 +412,8 @@ class DashScopeEmbeddingClient:
             embeddings = await self._make_multimodal_request([content])
             if embeddings and len(embeddings) > 0:
                 return embeddings[0]
-            else:
-                raise ValueError("Empty embedding response")
-        except Exception as e:
+            raise ValueError("Empty embedding response")
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[DashScopeEmbedding] Failed to embed image: %s", e)
             raise
 
@@ -500,7 +496,7 @@ class DashScopeEmbeddingClient:
                         "[DashScopeEmbedding] Zero-norm embedding at index %d, skipping",
                         i,
                     )
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.error(
                     "[DashScopeEmbedding] Failed to normalize embedding at index %d: %s",
                     i,
@@ -563,8 +559,7 @@ class DashScopeEmbeddingClient:
                             )
                             await asyncio.sleep(delay)
                             continue
-                        else:
-                            raise error
+                        raise error
 
                     result = response.json()
 
@@ -573,8 +568,7 @@ class DashScopeEmbeddingClient:
                         embeddings.sort(key=lambda x: x.get("index", 0))
                         raw_embeddings = [item["embedding"] for item in embeddings]
                         return self._normalize_embeddings(raw_embeddings)
-                    else:
-                        raise ValueError(f"Unexpected response format: {result}")
+                    raise ValueError(f"Unexpected response format: {result}")
 
                 except DashScopeError as e:
                     last_error = e
@@ -589,14 +583,13 @@ class DashScopeEmbeddingClient:
                         )
                         await asyncio.sleep(delay)
                         continue
-                    else:
-                        logger.error(
-                            "[DashScopeEmbedding] DashScope API error: %s (code: %s, type: %s)",
-                            e.message,
-                            e.error_code,
-                            e.error_type,
-                        )
-                        raise
+                    logger.error(
+                        "[DashScopeEmbedding] DashScope API error: %s (code: %s, type: %s)",
+                        e.message,
+                        e.error_code,
+                        e.error_type,
+                    )
+                    raise
                 except httpx.HTTPError as e:
                     status_code = None
                     if isinstance(e, httpx.HTTPStatusError):
@@ -619,10 +612,9 @@ class DashScopeEmbeddingClient:
                         )
                         await asyncio.sleep(delay)
                         continue
-                    else:
-                        logger.error("[DashScopeEmbedding] HTTP error: %s", e)
-                        raise
-                except Exception as e:
+                    logger.error("[DashScopeEmbedding] HTTP error: %s", e)
+                    raise
+                except BACKGROUND_INFRA_ERRORS as e:
                     logger.error("[DashScopeEmbedding] Error embedding multimodal content: %s", e)
                     raise
 
@@ -631,13 +623,14 @@ class DashScopeEmbeddingClient:
         raise RuntimeError("Unexpected end of retry loop")
 
 
-# Global instance
-_embedding_client: Optional[DashScopeEmbeddingClient] = None
+class _EmbeddingClientState:
+    """Process-wide DashScope embedding client singleton holder."""
+
+    instance: Optional[DashScopeEmbeddingClient] = None
 
 
 def get_embedding_client() -> DashScopeEmbeddingClient:
     """Get global embedding client instance."""
-    global _embedding_client
-    if _embedding_client is None:
-        _embedding_client = DashScopeEmbeddingClient()
-    return _embedding_client
+    if _EmbeddingClientState.instance is None:
+        _EmbeddingClientState.instance = DashScopeEmbeddingClient()
+    return _EmbeddingClientState.instance

@@ -7,8 +7,8 @@ Session management using Redis for user sessions.
 from .redis_session_manager import (
     RedisSessionManager,
     RefreshTokenManager,
-    get_session_manager,
     get_refresh_token_manager,
+    get_session_manager,
 )
 
 __all__ = [

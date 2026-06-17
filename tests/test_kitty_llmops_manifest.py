@@ -13,6 +13,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_kitty_llmops_manifest_keys():
+    """Test kitty llmops manifest keys."""
     m = build_kitty_llmops_manifest()
     assert m["version"] == 1
     assert "patch_context" in m["hub_mutation_ops"]
@@ -24,6 +25,7 @@ def test_kitty_llmops_manifest_keys():
 
 
 def test_kitty_llmops_manifest_paths_exist_on_disk():
+    """Test kitty llmops manifest paths exist on disk."""
     missing = []
     for rel in kitty_llmops_manifest_paths():
         if rel.endswith("/"):

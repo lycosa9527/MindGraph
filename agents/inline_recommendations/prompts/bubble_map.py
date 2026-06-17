@@ -6,7 +6,7 @@ Follows concept map relationship label prompt structure (concrete examples, RULE
 
 from typing import Any, Dict, List, Optional
 
-from ._common import append_batch_note, is_chinese_inline_prompt_language, THINKING_APPROACH, thinking_locale_key
+from ._common import THINKING_APPROACH, append_batch_note, is_chinese_inline_prompt_language, thinking_locale_key
 
 
 def build_bubble_attributes_prompt(

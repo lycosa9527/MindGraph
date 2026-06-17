@@ -17,28 +17,32 @@ from services.auth.school_user_create import (
     try_parse_school_member_item,
     validate_school_member_phone,
 )
-from utils.auth.school_tier_defs import SCHOOL_TIER_LITE
-from utils.auth.role_constants import ROLE_SCHOOL_ADMIN, ROLE_SUPERADMIN
 from tests.typing_helpers import as_organization
+from utils.auth.role_constants import ROLE_SCHOOL_ADMIN, ROLE_SUPERADMIN
+from utils.auth.school_tier_defs import SCHOOL_TIER_LITE
 
 
 def test_validate_school_member_phone_rejects_invalid() -> None:
+    """Test validate school member phone rejects invalid."""
     with pytest.raises(HTTPException) as exc:
         validate_school_member_phone("123", "en")
     assert exc.value.status_code == 400
 
 
 def test_normalize_school_member_phone_accepts_formatted_values() -> None:
+    """Test normalize school member phone accepts formatted values."""
     assert normalize_school_member_phone("+86 138-0013-8000") == "13800138000"
     assert normalize_school_member_phone("1.3800138000E+10") == "13800138000"
     assert normalize_school_member_phone("13800138000.0") == "13800138000"
 
 
 def test_validate_school_member_phone_normalizes_before_checking() -> None:
+    """Test validate school member phone normalizes before checking."""
     assert validate_school_member_phone("+86 138-0013-8000", "en") == "13800138000"
 
 
 def test_parse_school_member_input_normalizes_phone_fields() -> None:
+    """Test parse school member input normalizes phone fields."""
     member = parse_school_member_input(
         {"phone": "13812345678", "name": "  Zhang San  ", "role": "teacher"},
         "en",
@@ -50,6 +54,7 @@ def test_parse_school_member_input_normalizes_phone_fields() -> None:
 
 
 def test_parse_school_member_input_accepts_email() -> None:
+    """Test parse school member input accepts email."""
     member = parse_school_member_input(
         {"email": "Teacher@Example.com", "name": "Alice", "role": "teacher"},
         "en",
@@ -60,6 +65,7 @@ def test_parse_school_member_input_accepts_email() -> None:
 
 
 def test_try_parse_school_member_item_reports_invalid_phone_for_name() -> None:
+    """Test try parse school member item reports invalid phone for name."""
     member, failure = try_parse_school_member_item(
         {"phone": "123", "name": "Alice"},
         "en",
@@ -71,6 +77,7 @@ def test_try_parse_school_member_item_reports_invalid_phone_for_name() -> None:
 
 
 def test_try_parse_school_member_item_reports_invalid_email_for_name() -> None:
+    """Test try parse school member item reports invalid email for name."""
     member, failure = try_parse_school_member_item(
         {"email": "not-an-email", "name": "Bob"},
         "en",
@@ -81,6 +88,7 @@ def test_try_parse_school_member_item_reports_invalid_email_for_name() -> None:
 
 
 def test_parse_school_member_input_rejects_manager_role_for_school_admin_actor() -> None:
+    """Test parse school member input rejects manager role for school admin actor."""
     with pytest.raises(HTTPException) as exc:
         parse_school_member_input(
             {"phone": "13812345678", "name": "Manager", "role": ROLE_SCHOOL_ADMIN},
@@ -91,6 +99,7 @@ def test_parse_school_member_input_rejects_manager_role_for_school_admin_actor()
 
 
 def test_parse_school_member_input_allows_manager_role_for_superadmin() -> None:
+    """Test parse school member input allows manager role for superadmin."""
     member = parse_school_member_input(
         {"phone": "13812345679", "name": "Manager", "role": ROLE_SCHOOL_ADMIN},
         "en",
@@ -100,6 +109,7 @@ def test_parse_school_member_input_allows_manager_role_for_superadmin() -> None:
 
 
 def test_parse_school_member_batch_deduplicates_contacts() -> None:
+    """Test parse school member batch deduplicates contacts."""
     members, failed = parse_school_member_batch(
         [
             {"phone": "13812345678", "name": "Alice"},
@@ -115,6 +125,7 @@ def test_parse_school_member_batch_deduplicates_contacts() -> None:
 
 
 def test_parse_school_member_batch_collects_invalid_rows() -> None:
+    """Test parse school member batch collects invalid rows."""
     members, failed = parse_school_member_batch(
         [
             {"phone": "13812345678", "name": "Alice"},
@@ -128,6 +139,7 @@ def test_parse_school_member_batch_collects_invalid_rows() -> None:
 
 
 def test_parse_school_member_batch_rejects_too_many_rows() -> None:
+    """Test parse school member batch rejects too many rows."""
     payload = [{"phone": f"138{index:08d}", "name": f"User{index}"} for index in range(MAX_BATCH_MEMBERS + 1)]
     with pytest.raises(HTTPException) as exc:
         parse_school_member_batch(payload, "en")
@@ -138,6 +150,7 @@ def test_parse_school_member_batch_rejects_too_many_rows() -> None:
 async def test_assert_batch_member_capacity_allows_extra_seats(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Test assert batch member capacity allows extra seats."""
     org = as_organization(type("Org", (), {"id": 1, "school_tier": SCHOOL_TIER_LITE, "extra_member_seats": 10})())
     members = [SchoolMemberInput(phone="13812345678", email=None, name="New", role="teacher")]
     db = AsyncMock()
@@ -157,6 +170,7 @@ async def test_assert_batch_member_capacity_allows_extra_seats(
 async def test_assert_batch_member_capacity_rejects_at_effective_cap(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Test assert batch member capacity rejects at effective cap."""
     org = as_organization(type("Org", (), {"id": 1, "school_tier": SCHOOL_TIER_LITE, "extra_member_seats": 10})())
     members = [SchoolMemberInput(phone="13812345678", email=None, name="New", role="teacher")]
     db = AsyncMock()

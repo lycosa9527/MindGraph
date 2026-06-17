@@ -17,7 +17,6 @@ from .bookmarks import router as bookmarks_router
 from .danmaku import router as danmaku_router
 from .documents import router as documents_router
 
-
 router = APIRouter(prefix="/api/library", tags=["Library"])
 
 router.include_router(documents_router)

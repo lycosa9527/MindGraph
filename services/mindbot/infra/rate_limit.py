@@ -70,21 +70,25 @@ _mem_counters: Dict[int, Tuple[int, float]] = {}
 
 @functools.cache
 def _mem_max_keys() -> int:
+    """Mem max keys."""
     return max(100, env_int("MINDBOT_RATE_LIMIT_MEM_MAX_KEYS", 5000))
 
 
 @functools.cache
 def _rate_limit_enabled() -> bool:
+    """Rate limit enabled."""
     return env_bool("MINDBOT_RATE_LIMIT_ENABLED", True)
 
 
 @functools.cache
 def _rate_limit_max() -> int:
+    """Rate limit max."""
     return max(1, env_int("MINDBOT_ORG_RATE_LIMIT", 200))
 
 
 @functools.cache
 def _rate_limit_window_seconds() -> int:
+    """Rate limit window seconds."""
     return max(1, env_int("MINDBOT_ORG_RATE_WINDOW_SECONDS", 60))
 
 

@@ -9,22 +9,24 @@ Handles:
 - Tiktoken encoding file caching (offline loading)
 """
 
-import os
-import sys
 import asyncio
-import signal
-import logging
 import inspect
+import logging
+import os
+import signal
+import sys
 import uuid
 from pathlib import Path
 from typing import Any
+
 from dotenv import load_dotenv
-from utils.env_utils import ensure_utf8_env_file
-from utils.tiktoken_cache import ensure_tiktoken_cache
 
 # Redis is REQUIRED - import will fail if module doesn't exist
 # This is intentional: application cannot start without Redis
 from services.redis.redis_client import get_redis, is_redis_available
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.env_utils import ensure_utf8_env_file
+from utils.tiktoken_cache import ensure_tiktoken_cache
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +123,7 @@ def _acquire_banner_lock() -> bool:
 
         return bool(acquired)
 
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         # If Redis is not available or not initialized yet, assume single worker mode
         return True
 
@@ -150,7 +152,7 @@ def _release_banner_lock() -> None:
         """
 
         redis.eval(lua_script, 1, BANNER_LOCK_KEY, worker_lock_id)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("Banner lock release failed: %s", exc)
 
 
@@ -220,7 +222,7 @@ def _is_uvicorn_reloader_process() -> bool:
                         return True
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("Uvicorn reloader process detection failed: %s", exc)
 
     # Check if we're being imported (not run directly)
@@ -306,7 +308,7 @@ class _BannerManager:
             try:
                 version_file = Path(__file__).parent.parent.parent.parent / "VERSION"
                 version = version_file.read_text().strip()
-            except Exception:
+            except BACKGROUND_INFRA_ERRORS:
                 version = "0.0.0"
 
             # Print banner using direct print() to bypass logging system
@@ -366,13 +368,13 @@ def setup_early_configuration():
                     logging.debug(
                         "Windows: Set event loop policy to WindowsProactorEventLoopPolicy for Playwright support"
                     )
-        except Exception:
+        except BACKGROUND_INFRA_ERRORS:
             # If we can't check/set, try to set it anyway
             try:
                 asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
                 if should_log_startup:
                     logging.debug("Windows: Set event loop policy to WindowsProactorEventLoopPolicy (unconditional)")
-            except Exception as e2:
+            except BACKGROUND_INFRA_ERRORS as e2:
                 if should_log_startup:
                     logging.warning("Windows: Could not set event loop policy: %s", e2)
 
@@ -411,7 +413,7 @@ def setup_early_configuration():
     # Uses Redis lock internally to ensure only one worker checks/updates cache
     try:
         ensure_tiktoken_cache()
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         # Non-critical: tiktoken will download files automatically if cache fails
         if should_log_startup:
             logging.warning("[Startup] Could not setup tiktoken cache: %s", e)

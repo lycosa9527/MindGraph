@@ -11,23 +11,23 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Any, List, Optional
 import base64
 import hashlib
 import logging
 import os
+from typing import Any, List, Optional
 
+import numpy as np
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-import numpy as np
 
 from clients.dashscope_embedding import DashScopeEmbeddingClient, get_embedding_client
 from config.settings import config
 from models.domain.knowledge_space import Embedding
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
+from services.utils.error_types import REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ class EmbeddingCache:
                     hash_preview,
                 )
                 return embedding_record.get_embedding()
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning("[EmbeddingCache] Failed to get document embedding from cache: %s", e)
 
         return None
@@ -137,7 +137,7 @@ class EmbeddingCache:
                 "[EmbeddingCache] Embedding already cached (race condition) for hash %s",
                 hash_preview,
             )
-        except Exception as e:
+        except REDIS_ERRORS as e:
             await db.rollback()
             logger.warning("[EmbeddingCache] Failed to cache document embedding: %s", e)
 
@@ -177,7 +177,7 @@ class EmbeddingCache:
                         threshold,
                     )
                     return [float(x) for x in decoded]
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug("[EmbeddingCache] VSET lookup skipped: %s", exc)
         return None
 
@@ -193,7 +193,7 @@ class EmbeddingCache:
                 *embedding_array.tolist(),
                 encoded,
             )
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.debug("[EmbeddingCache] VSET add skipped: %s", exc)
 
     async def get_query_embedding(self, query: str) -> Optional[List[float]]:
@@ -228,7 +228,7 @@ class EmbeddingCache:
                 logger.debug("[EmbeddingCache] Query embedding exact cache hit")
                 return [float(x) for x in decoded]
 
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning("[EmbeddingCache] Failed to get query embedding from cache: %s", exc)
 
         return None
@@ -291,7 +291,7 @@ class EmbeddingCache:
             # Also register in the VSET so semantically similar queries get a hit.
             await self._vset_add(redis, self._vset_key(model_name), embedding, encoded)
 
-        except Exception as exc:
+        except REDIS_ERRORS as exc:
             logger.warning("[EmbeddingCache] Failed to cache query embedding: %s", exc)
 
     async def embed_query_cached(self, query: str) -> List[float]:
@@ -352,7 +352,7 @@ class EmbeddingCache:
                 return False
 
             return True
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.warning("[EmbeddingCache] Failed to validate embedding: %s", e)
             return False
 

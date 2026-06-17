@@ -1,5 +1,11 @@
 """DingTalk MindBot building blocks: OAuth, inbound parsing, session webhook, robot OpenAPI."""
 
+from services.mindbot.platforms.dingtalk.auth.oauth import get_access_token
+from services.mindbot.platforms.dingtalk.auth.verify import (
+    compute_sign,
+    extract_dingtalk_robot_auth_headers,
+    verify_dingtalk_sign,
+)
 from services.mindbot.platforms.dingtalk.inbound.parser import (
     DingTalkInboundMessage,
     extract_dingtalk_sender_profile,
@@ -14,7 +20,6 @@ from services.mindbot.platforms.dingtalk.media.message_files import (
     fetch_message_media_bytes,
     get_message_file_download_url,
 )
-from services.mindbot.platforms.dingtalk.auth.oauth import get_access_token
 from services.mindbot.platforms.dingtalk.messaging.robot_query import (
     query_group_robot_messages,
     query_private_chat_robot_messages,
@@ -59,11 +64,6 @@ from services.mindbot.platforms.dingtalk.messaging.session_webhook import (
     openapi_robot_msg_param_for_answer,
     openapi_robot_msg_param_stream_chunk,
     sanitize_markdown_for_dingtalk,
-)
-from services.mindbot.platforms.dingtalk.auth.verify import (
-    compute_sign,
-    extract_dingtalk_robot_auth_headers,
-    verify_dingtalk_sign,
 )
 
 __all__ = [

@@ -21,6 +21,8 @@ import logging
 import sys
 from pathlib import Path
 
+from services.utils.error_types import DATABASE_ERRORS
+
 # Add project root to path before importing project modules
 _project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
@@ -158,7 +160,7 @@ def rename_library_pages(folder_path: Path, book_name: str, dry_run: bool = True
                         image_path.name,
                     )
                 )
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 logger.error("  ERROR renaming %s to temp: %s", image_path.name, e)
                 skipped_count += 1
                 continue
@@ -181,7 +183,7 @@ def rename_library_pages(folder_path: Path, book_name: str, dry_run: bool = True
                     sequential_num,
                 )
                 renamed_count += 1
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 logger.error(
                     "  ERROR renaming temp %s to %s: %s",
                     temp_path.name,

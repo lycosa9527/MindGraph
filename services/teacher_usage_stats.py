@@ -25,6 +25,7 @@ from models.domain.teacher_usage_config import (
 from models.domain.token_usage import TokenUsage
 from models.domain.user_activity_log import UserActivityLog
 from models.domain.user_usage_stats import UserUsageStats
+from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -204,7 +205,7 @@ async def save_classification_config_async(
             db.add(row)
         await db.commit()
         return True
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.exception("save_classification_config_async failed: %s", e)
         await db.rollback()
         return False
@@ -244,7 +245,7 @@ async def _get_active_dates_for_user_async(
         for row in log_result.all():
             if row.d:
                 active_dates.add(row.d)
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.debug("UserActivityLog async query failed: %s", e)
 
     return active_dates
@@ -301,7 +302,7 @@ async def compute_and_upsert_user_usage_stats_async(
 
         await db.commit()
         return True
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.exception(
             "compute_and_upsert_user_usage_stats_async failed for user %s: %s",
             user_id,

@@ -22,14 +22,31 @@ from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from utils.db.rls_context import RlsContext, rls_async_session
 from models.domain.auth import User
-from .config import AUTH_MODE, JWT_ALGORITHM
-from .jwt_secret import get_jwt_secret
-from .tokens import security, api_key_header, decode_access_token
-from .api_keys import validate_api_key, track_api_key_usage, get_api_key_record
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+
+try:
+    from services.redis.cache.redis_org_cache import org_cache
+    from services.redis.cache.redis_user_cache import user_cache
+    from services.redis.session.redis_session_manager import _hash_token as redis_hash_token
+    from services.redis.session.redis_session_manager import (
+        get_session_manager,
+    )
+except ImportError:
+    org_cache = None
+    user_cache = None
+    redis_hash_token = None
+    get_session_manager = None
+
+from utils.db.rls_context import RlsContext, rls_async_session
+
+from .api_keys import get_api_key_record, track_api_key_usage, validate_api_key
 from .auth_resolution import AUTH_CONTEXT_USER_ATTR, raise_if_org_locked_or_expired_async
+from .config import AUTH_MODE, JWT_ALGORITHM
 from .enterprise_mode import get_enterprise_user
+from .jwt_secret import get_jwt_secret
+from .tokens import api_key_header, decode_access_token, security
+from .user_tokens import validate_user_token
 
 logger = logging.getLogger(__name__)
 
@@ -42,21 +59,12 @@ _redis = SimpleNamespace(
     org_cache=None,
 )
 
-try:
-    from services.redis.session.redis_session_manager import (
-        get_session_manager,
-        _hash_token as redis_hash_token,
-    )
-    from services.redis.cache.redis_user_cache import user_cache
-    from services.redis.cache.redis_org_cache import org_cache
-
+if get_session_manager is not None:
     _redis.available = True
     _redis.get_session_manager = get_session_manager
     _redis.hash_token = redis_hash_token
     _redis.user_cache = user_cache
     _redis.org_cache = org_cache
-except ImportError:
-    pass
 
 
 async def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
@@ -111,8 +119,6 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
         )
 
     if token.startswith("mgat_"):
-        from utils.auth.user_tokens import validate_user_token
-
         account_number = request.headers.get("X-MG-Account", "").strip()
         return await validate_user_token(token, account_number, request=request)
 
@@ -232,7 +238,7 @@ async def get_user_from_cookie(token: str, db: AsyncSession) -> Optional[User]:
         else:
             logger.debug("Invalid cookie token: %s", e)
         return None
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Error validating cookie token: %s", e, exc_info=True)
         return None
 
@@ -273,8 +279,6 @@ async def get_current_user_or_api_key(
         if cached is not None:
             return cached
         if token.startswith("mgat_"):
-            from utils.auth.user_tokens import validate_user_token
-
             account_number = request.headers.get("X-MG-Account", "").strip()
             if not account_number:
                 raise HTTPException(

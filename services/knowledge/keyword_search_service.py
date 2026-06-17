@@ -9,15 +9,16 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import List, Dict, Any, Optional
 import logging
+import re
+from typing import Any, Dict, List, Optional
 
+import jieba3
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import async_engine
-
+from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,6 @@ class KeywordSearchService:
             List of keywords
         """
         try:
-            import jieba3
 
             # Extract keywords using jieba3 (modern Python 3 rewrite)
             tokenizer = jieba3.jieba3()
@@ -51,7 +51,6 @@ class KeywordSearchService:
             return keywords
         except ImportError:
             # Fallback: simple word splitting for English
-            import re
 
             words = re.findall(r"\b\w+\b", text_content.lower())
             return list(set(words))
@@ -88,7 +87,7 @@ class KeywordSearchService:
 
         try:
             return await self._search_postgresql(db, user_id, query, top_k, document_id, metadata_filter)
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("[KeywordSearch] Search failed: %s", e)
             return await self._search_like(db, user_id, query, top_k, document_id, metadata_filter)
 
@@ -240,13 +239,14 @@ class KeywordSearchService:
         return score
 
 
-# Global instance
-_keyword_search_service: Optional[KeywordSearchService] = None
+class _KeywordSearchState:
+    """Process-wide keyword search singleton holder."""
+
+    instance: Optional[KeywordSearchService] = None
 
 
 def get_keyword_search_service() -> KeywordSearchService:
     """Get global keyword search service instance."""
-    global _keyword_search_service
-    if _keyword_search_service is None:
-        _keyword_search_service = KeywordSearchService()
-    return _keyword_search_service
+    if _KeywordSearchState.instance is None:
+        _KeywordSearchState.instance = KeywordSearchService()
+    return _KeywordSearchState.instance

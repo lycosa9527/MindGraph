@@ -9,9 +9,9 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional, Any
 import asyncio
 import logging
+from typing import Any, Optional
 
 from services.infrastructure.http.error_handler import LLMTimeoutError
 
@@ -81,7 +81,7 @@ class LLMUtils:
         text = str(exc).strip()
         if text:
             return text
-        return exc.__class__.__name__
+        return type(exc).__name__
 
     @staticmethod
     def get_rate_limiter(

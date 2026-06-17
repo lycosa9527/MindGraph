@@ -1,26 +1,30 @@
 """Admin invite organizations list — scoped rows with invitation codes."""
 
-from datetime import datetime
 import logging
+from datetime import datetime
 from typing import Optional, cast
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.functions import coalesce as sa_coalesce, count as sa_count, sum as sa_sum
+from sqlalchemy.sql.functions import coalesce as sa_coalesce
+from sqlalchemy.sql.functions import count as sa_count
+from sqlalchemy.sql.functions import sum as sa_sum
 
 from config.database import get_async_db
 from models.domain.auth import Organization, User
 from models.domain.messages import Language
-from utils.auth.admin_panel_permissions import CAP_TAB_INVITES_VIEW
-from utils.auth.admin_scope import AdminScope, invite_org_filter
-from utils.auth.org_privatization import org_privatization_list_field
-from utils.auth.role_constants import SCHOOL_ADMIN_ROLES
 
 try:
     from models.domain.token_usage import TokenUsage
 except ImportError:
     TokenUsage = None
+
+from services.utils.error_types import DATABASE_ERRORS
+from utils.auth.admin_panel_permissions import CAP_TAB_INVITES_VIEW
+from utils.auth.admin_scope import AdminScope, invite_org_filter
+from utils.auth.org_privatization import org_privatization_list_field
+from utils.auth.role_constants import SCHOOL_ADMIN_ROLES
 
 from ..dependencies import get_language_dependency, require_panel_capability
 from ..helpers import utc_to_beijing_iso
@@ -99,7 +103,7 @@ async def list_invite_organizations_admin(
                     "output_tokens": int(org_stat.output_tokens or 0),
                     "total_tokens": int(org_stat.total_tokens or 0),
                 }
-        except Exception as exc:
+        except DATABASE_ERRORS as exc:
             logger.debug("TokenUsage query failed: %s", exc)
 
     result = []

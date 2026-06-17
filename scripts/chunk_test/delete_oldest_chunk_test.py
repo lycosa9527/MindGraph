@@ -8,6 +8,11 @@ import importlib
 import logging
 import os
 import sys
+import traceback
+
+from sqlalchemy import inspect, text
+
+from services.utils.error_types import DATABASE_ERRORS
 
 # Add project root to path before importing project modules
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -18,7 +23,7 @@ sys.path.insert(0, _PROJECT_ROOT)
 try:
     importlib.import_module("models.auth")
     importlib.import_module("models.knowledge_space")
-except Exception:
+except DATABASE_ERRORS:
     pass  # Models may have circular dependencies, continue anyway
 
 _config_database = importlib.import_module("config.database")
@@ -34,8 +39,6 @@ logger = logging.getLogger(__name__)
 
 def check_for_session_id_column():
     """Check if session_id column exists in the table."""
-    from sqlalchemy import inspect
-
     inspector = inspect(engine)
 
     if "chunk_test_results" not in inspector.get_table_names():
@@ -47,8 +50,6 @@ def check_for_session_id_column():
 
 def find_oldest_test_without_session_id(db):
     """Find the oldest test result without session_id."""
-    from sqlalchemy import text
-
     has_session_id_column = check_for_session_id_column()
 
     if has_session_id_column:
@@ -62,22 +63,19 @@ def find_oldest_test_without_session_id(db):
         result = db.execute(query)
         row = result.first()
         return row[0] if row else None
-    else:
-        # If column doesn't exist, get oldest test using raw SQL
-        query = text("""
-            SELECT id FROM chunk_test_results 
-            ORDER BY created_at ASC 
-            LIMIT 1
-        """)
-        result = db.execute(query)
-        row = result.first()
-        return row[0] if row else None
+    # If column doesn't exist, get oldest test using raw SQL
+    query = text("""
+        SELECT id FROM chunk_test_results 
+        ORDER BY created_at ASC 
+        LIMIT 1
+    """)
+    result = db.execute(query)
+    row = result.first()
+    return row[0] if row else None
 
 
 def get_test_info(db, test_id: int):
     """Get test information using raw SQL."""
-    from sqlalchemy import text
-
     query = text("""
         SELECT id, user_id, dataset_name, status, created_at, document_ids,
                semchunk_chunk_count, mindchunk_chunk_count
@@ -91,8 +89,6 @@ def get_test_info(db, test_id: int):
 
 def delete_test_by_id(db, test_id: int) -> bool:
     """Delete a test result by ID using raw SQL."""
-    from sqlalchemy import text
-
     # Get test info first
     test_info = get_test_info(db, test_id)
     if not test_info:
@@ -115,11 +111,9 @@ def delete_test_by_id(db, test_id: int) -> bool:
         db.commit()
         print(f"\n[SUCCESS] Successfully deleted test {test_id}")
         return True
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         db.rollback()
         print(f"[ERROR] Error deleting test {test_id}: {e}")
-        import traceback
-
         traceback.print_exc()
         return False
 
@@ -143,10 +137,8 @@ def main():
         else:
             print("Failed to delete test.")
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         print(f"[ERROR] Error: {e}")
-        import traceback
-
         traceback.print_exc()
         db.rollback()
     finally:

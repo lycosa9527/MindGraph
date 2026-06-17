@@ -8,10 +8,10 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from utils.db.session_open import system_rls_session
 from models.domain.diagrams import Diagram
-from services.online_collab.lifecycle.session_meta_cache import get_session_meta_cached
 from services.online_collab.lifecycle.online_collab_expiry import redis_ttl_seconds_for_expires_at
+from services.online_collab.lifecycle.session_meta_cache import get_session_meta_cached
+from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
 

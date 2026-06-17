@@ -8,7 +8,15 @@ import time
 from fastapi import WebSocket, WebSocketDisconnect
 
 from services.infrastructure.monitoring.ws_metrics import redis_increment_active_total
+from services.kitty.context.messaging import safe_websocket_send
 from services.kitty.omni.event_loop import run_kitty_omni_event_loop
+from services.kitty.session.event_handlers import (
+    KittySessionRuntime,
+    setup_session_event_handlers,
+)
+from services.kitty.session.events import get_session_event_bus
+from services.kitty.session.runtime_state import logger
+from services.kitty.session.session_teardown import teardown_session_event_handlers
 from services.kitty.ws.lifecycle import (
     authenticate_kitty_websocket,
     cleanup_kitty_websocket_session,
@@ -18,14 +26,7 @@ from services.kitty.ws.lifecycle import (
     run_kitty_idle_watchdog,
     start_kitty_session,
 )
-from services.kitty.context.messaging import safe_websocket_send
-from services.kitty.session.runtime_state import logger
-from services.kitty.session.event_handlers import (
-    KittySessionRuntime,
-    setup_session_event_handlers,
-    teardown_session_event_handlers,
-)
-from services.kitty.session.events import get_session_event_bus
+from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.ws_limits import kitty_ws_idle_timeout_seconds
 from utils.ws_session_registry import _registry as _ws_registry
 
@@ -163,7 +164,7 @@ async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str
         logger.error("WebSocket error: %s", exc, exc_info=True)
         try:
             await safe_websocket_send(websocket, {"type": "error", "error": str(exc)})
-        except Exception as send_exc:
+        except LLM_PIPELINE_ERRORS as send_exc:
             logger.debug("Failed to send WebSocket error response: %s", send_exc)
 
     finally:

@@ -9,11 +9,11 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
 import asyncio
 import logging
 
 from agents.inline_recommendations.generator import get_inline_recommendations_generator
+from services.utils.error_types import LLM_PIPELINE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ async def start_inline_rec_cleanup_scheduler(
         except asyncio.CancelledError:
             logger.info("[InlineRecCleanup] Cleanup scheduler cancelled")
             break
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             logger.error(
                 "[InlineRecCleanup] Error in cleanup scheduler: %s",
                 e,

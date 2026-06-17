@@ -23,8 +23,10 @@ import logging
 import sys
 from pathlib import Path
 
-from sqlalchemy import text, inspect
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
+
+from services.utils.error_types import DATABASE_ERRORS
 
 # Add project root to path before importing project modules
 _project_root = Path(__file__).resolve().parent.parent.parent
@@ -80,7 +82,7 @@ def get_table_count(db: Session, table_name: str) -> int:
     try:
         result = db.execute(text(f"SELECT COUNT(*) FROM {table_name}"))
         return result.scalar() or 0
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.warning("Error counting records in %s: %s", table_name, e)
         return 0
 
@@ -226,7 +228,7 @@ def main():
         finally:
             db.close()
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("Error: %s", e, exc_info=True)
         return 1
 

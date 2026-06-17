@@ -24,6 +24,7 @@ try:
 except ModuleNotFoundError:
     from scripts.db._path_setup import project_root
 
+
 import json
 import logging
 import os
@@ -31,7 +32,6 @@ import socket
 import subprocess
 import sys
 import time
-import importlib
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -40,27 +40,11 @@ from urllib.parse import urlparse
 from sqlalchemy import inspect, text
 
 from config.database import DATABASE_URL, engine, init_db, libpq_database_url
-
-try:
-    from dotenv import load_dotenv
-
-    env_path = project_root / ".env"
-    if env_path.exists():
-        load_dotenv(dotenv_path=env_path)
-except ImportError:
-    pass
-
-try:
-    import psycopg2
-except ImportError:
-    psycopg2 = None
-
-try:
-    importlib.import_module("rich")
-    RICH_AVAILABLE = True
-except ImportError:
-    RICH_AVAILABLE = False
-
+from services.utils.error_types import (
+    BACKGROUND_INFRA_ERRORS,
+    DATABASE_ERRORS,
+    FILE_IO_ERRORS,
+)
 from services.utils.pg_client_binaries import build_pg_dump_cmd, find_pg_client_binary
 from services.utils.pg_restore_prep import wipe_public_schema_before_restore
 
@@ -70,9 +54,40 @@ except ImportError:
     start_postgresql_server = None
 
 try:
+    from dotenv import load_dotenv
+except ImportError:
+    load_dotenv = None
+
+try:
+    import psycopg2
+except ImportError:
+    psycopg2 = None
+
+try:
+    from rich.console import Console
+    from rich.progress import (
+        BarColumn,
+        Progress,
+        SpinnerColumn,
+        TextColumn,
+        TimeElapsedColumn,
+    )
+
+    RICH_AVAILABLE = True
+except ImportError:
+    RICH_AVAILABLE = False
+    Console = None
+    BarColumn = Progress = SpinnerColumn = TextColumn = TimeElapsedColumn = None
+
+try:
     from utils.migration.sqlite.migration_verification import reset_postgresql_sequences
 except ImportError:
     reset_postgresql_sequences = None
+
+if load_dotenv is not None:
+    env_path = project_root / ".env"
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -119,7 +134,7 @@ def _find_process_on_port(port: int) -> Optional[int]:
                     candidate = line.strip()
                     if candidate.isdigit():
                         return int(candidate)
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         pass
     return None
 
@@ -149,7 +164,7 @@ def _get_process_name(pid: int) -> Optional[str]:
             )
             if result.stdout.strip():
                 return result.stdout.strip()
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         pass
     return None
 
@@ -160,7 +175,7 @@ def _parse_db_host(db_url: str) -> str:
         parsed = urlparse(db_url)
         if parsed.hostname:
             return parsed.hostname
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         pass
     return "localhost"
 
@@ -173,7 +188,7 @@ def _parse_db_port(db_url: str) -> int:
             return parsed.port
         if parsed.scheme and "postgresql" in parsed.scheme.lower():
             return 5432
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         pass
     return 5432
 
@@ -186,7 +201,7 @@ def _port_has_listener(host: str, port: int, timeout: float = 1.0) -> bool:
         result = sock.connect_ex((host, port))
         sock.close()
         return result == 0
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         return False
 
 
@@ -222,7 +237,7 @@ def _find_postgres_processes() -> List[str]:
             )
             if result.stdout.strip():
                 pids = [p.strip() for p in result.stdout.strip().split("\n") if p.strip()]
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         pass
     return pids
 
@@ -237,7 +252,7 @@ def _can_connect_postgresql(db_url: str, timeout: int = 2) -> bool:
         conn = psycopg2.connect(libpq_url, connect_timeout=timeout)
         conn.close()
         return True
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         return False
 
 
@@ -249,7 +264,7 @@ def _get_connection_error(db_url: str, timeout: int = 2) -> Optional[str]:
     try:
         psycopg2.connect(libpq_url, connect_timeout=timeout)
         return None
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         return str(e)
 
 
@@ -451,7 +466,7 @@ def get_table_row_counts(db_engine) -> Dict[str, int]:
             try:
                 result = conn.execute(text(f'SELECT COUNT(*) FROM "{table_name}"'))
                 counts[table_name] = result.scalar() or 0
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 logger.debug("Could not count %s: %s", table_name, e)
     return counts
 
@@ -465,7 +480,7 @@ def get_db_stats(db_engine) -> Tuple[int, int, int, Dict[str, int]]:
         try:
             columns = inspector.get_columns(table_name)
             total_columns += len(columns)
-        except Exception:
+        except DATABASE_ERRORS:
             pass
 
     counts = get_table_row_counts(db_engine)
@@ -482,6 +497,7 @@ class DumpImportProgress:
     """Progress bar for dump/import operations. Uses Rich when available and TTY."""
 
     def __init__(self, mode: str, total_stages: int, stage_names: Dict[int, str]):
+        """ init  ."""
         self.mode = mode
         self.total_stages = total_stages
         self.stage_names = stage_names
@@ -491,27 +507,28 @@ class DumpImportProgress:
         self.console: Any = None
 
         if self.use_rich:
-            from rich.console import Console
+            from rich.console import Console as RichConsole
             from rich.progress import (
-                BarColumn,
-                Progress,
-                SpinnerColumn,
-                TextColumn,
-                TimeElapsedColumn,
+                BarColumn as RichBarColumn,
+                Progress as RichProgress,
+                SpinnerColumn as RichSpinnerColumn,
+                TextColumn as RichTextColumn,
+                TimeElapsedColumn as RichTimeElapsedColumn,
             )
 
-            self.console = Console()
-            self.progress = Progress(
-                SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
-                BarColumn(),
-                TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-                TimeElapsedColumn(),
+            self.console = RichConsole()
+            self.progress = RichProgress(
+                RichSpinnerColumn(),
+                RichTextColumn("[progress.description]{task.description}"),
+                RichBarColumn(),
+                RichTextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+                RichTimeElapsedColumn(),
                 console=self.console,
                 expand=True,
             )
 
     def __enter__(self) -> "DumpImportProgress":
+        """ enter  ."""
         if self.use_rich and self.progress:
             self.progress.__enter__()
             self.task_id = self.progress.add_task(
@@ -521,6 +538,7 @@ class DumpImportProgress:
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """ exit  ."""
         if self.use_rich and self.progress:
             self.progress.__exit__(exc_type, exc_val, exc_tb)
 
@@ -735,7 +753,7 @@ def _read_last_import_timestamp(backup_dir: Path) -> Optional[str]:
         return None
     try:
         return path.read_text(encoding="utf-8").strip() or None
-    except Exception:
+    except FILE_IO_ERRORS:
         return None
 
 
@@ -744,7 +762,7 @@ def _write_last_import_timestamp(backup_dir: Path, ts: str) -> None:
     try:
         backup_dir.mkdir(parents=True, exist_ok=True)
         (backup_dir / ".last_import_timestamp").write_text(ts, encoding="utf-8")
-    except Exception as e:
+    except FILE_IO_ERRORS as e:
         logger.warning("Could not write last import timestamp: %s", e)
 
 
@@ -753,7 +771,7 @@ def _format_timestamp(ts: str) -> str:
     try:
         dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
         return dt.strftime("%Y-%m-%d %H:%M:%S")
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         return ts
 
 
@@ -775,7 +793,7 @@ def _confirm_overwrite(dump_ts: str, last_import_ts: Optional[str]) -> bool:
                     "\nWARNING: This will REPLACE all data in the target database. "
                     "Stop the application first. Continue? (yes/no): "
                 )
-        except Exception:
+        except BACKGROUND_INFRA_ERRORS:
             msg = (
                 "\nWARNING: This will REPLACE all data in the target database. "
                 "Stop the application first. Continue? (yes/no): "
@@ -897,7 +915,7 @@ def import_command(
                 "(older dumps may predate current ORM); seed skipped",
             )
             init_db(seed_organizations=False)
-        except Exception as exc:
+        except DATABASE_ERRORS as exc:
             logger.error(
                 "[Import] Post-restore migration failed (data was restored; "
                 "fix migrations then re-run or restore again): %s",
@@ -913,7 +931,7 @@ def import_command(
                 logger.info("PostgreSQL sequences reset")
             else:
                 logger.warning("Could not reset sequences (optional module not available)")
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.warning("Sequence reset had issues: %s", e)
         prog.update(4, "Sequences reset")
 

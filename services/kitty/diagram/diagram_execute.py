@@ -12,9 +12,9 @@ from services.kitty.diagram.diagram_handlers import (
 )
 from services.kitty.diagram.diagram_spec_sync import sync_diagram_data_to_spec_shape
 from services.kitty.diagram.hub_bridge import try_sync_voice_diagram_to_hub
-from services.kitty.session.runtime_state import logger, voice_sessions
-from services.kitty.session.events import emit_diagram_mutated
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
+from services.kitty.session.events import emit_diagram_mutated
+from services.kitty.session.runtime_state import logger, voice_sessions
 
 
 async def execute_diagram_update(

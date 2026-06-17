@@ -4,13 +4,20 @@ Celery worker management for MindGraph application.
 Handles starting and stopping Celery worker processes.
 """
 
+import atexit
 import os
+import signal
+import subprocess
 import sys
 import time
-import signal
-import atexit
-import subprocess
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
+
+from services.infrastructure.process._process_io import (
+    close_resource_stack,
+    launch_background_process,
+    open_append_text,
+)
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 if TYPE_CHECKING:
     from config.celery import celery_app
@@ -51,7 +58,7 @@ def start_celery_worker(server_state) -> Optional[subprocess.Popen[bytes]]:
                 print("[CELERY] ✓ Using existing Celery worker(s), skipping startup")
                 return None
             break
-        except Exception:
+        except BACKGROUND_INFRA_ERRORS:
             if attempt < 2:
                 time.sleep(0.5)
                 continue
@@ -89,25 +96,20 @@ def start_celery_worker(server_state) -> Optional[subprocess.Popen[bytes]]:
         celery_stdout = None
         celery_stderr = None
         if start_new_session:
-            server_state.celery_stdout_file = open(
-                os.path.join(celery_log_dir, "celery_worker.log"),
-                "a",
-                encoding="utf-8",
-                buffering=1,
-            )
-            server_state.celery_stderr_file = open(
-                os.path.join(celery_log_dir, "celery_worker_error.log"),
-                "a",
-                encoding="utf-8",
-                buffering=1,
-            )
+            stdout_path = os.path.join(celery_log_dir, "celery_worker.log")
+            stderr_path = os.path.join(celery_log_dir, "celery_worker_error.log")
+            server_state.celery_stdout_file = open_append_text(stdout_path)
+            server_state.celery_stderr_file = open_append_text(stderr_path)
             celery_stdout = server_state.celery_stdout_file
             celery_stderr = server_state.celery_stderr_file
         else:
             celery_stdout = sys.stdout
             celery_stderr = sys.stderr
 
-        server_state.celery_worker_process = subprocess.Popen(
+        launch_background_process(
+            server_state,
+            "celery_resource_stack",
+            "celery_worker_process",
             celery_cmd,
             stdout=celery_stdout,
             stderr=celery_stderr,
@@ -153,7 +155,7 @@ def start_celery_worker(server_state) -> Optional[subprocess.Popen[bytes]]:
                         print(f"[CELERY] Worker started (PID: {server_state.celery_worker_process.pid})")
                     print("[CELERY] Worker verified as ready")
                     return server_state.celery_worker_process
-            except Exception:
+            except BACKGROUND_INFRA_ERRORS:
                 if i < 9:
                     time.sleep(1)
                 else:
@@ -210,6 +212,8 @@ def stop_celery_worker(server_state) -> None:
             except (OSError, ValueError):
                 pass
             server_state.celery_stderr_file = None
+
+        close_resource_stack(server_state, "celery_resource_stack")
 
         server_state.celery_worker_process = None
         try:

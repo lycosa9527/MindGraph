@@ -26,11 +26,9 @@ from datetime import datetime
 from typing import Any, Awaitable, Callable, Coroutine, Dict, List, Optional, Tuple, cast
 
 from redis.exceptions import RedisError
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.diagrams import Diagram
-
 from services.online_collab.core.online_collab_code import (
     ONLINE_COLLAB_MAX_PARTICIPANTS,
     ONLINE_COLLAB_SESSION_TTL,
@@ -38,12 +36,30 @@ from services.online_collab.core.online_collab_code import (
     _online_collab_start_session_redis_value,
     _online_collab_start_validation_error,
 )
+from services.online_collab.core.online_collab_idle_monitor import idle_monitor_loop
+from services.online_collab.core.online_collab_join import (
+    get_active_online_collab_code_for_diagram_impl,
+    join_online_collab_by_diagram_impl,
+    join_online_collab_impl,
+)
+from services.online_collab.core.online_collab_lifecycle import (
+    cleanup_expired_online_collabs_impl,
+    start_online_collab_impl,
+)
+from services.online_collab.core.online_collab_manager_access import (
+    get_online_collab_manager,
+    register_online_collab_manager,
+)
+from services.online_collab.core.online_collab_org_listing import (
+    list_org_sessions_redis,
+)
 from services.online_collab.core.online_collab_status import (
     get_online_collab_status_for_viewer,
     list_org_online_collab_sessions_for_user,
 )
-from services.online_collab.core.online_collab_lifecycle import (
-    cleanup_expired_online_collabs_impl,
+from services.online_collab.core.online_collab_stop import (
+    stop_online_collab_for_room_idle_impl,
+    stop_online_collab_impl,
 )
 from services.online_collab.lifecycle.online_collab_expiry import (
     DURATION_TODAY,
@@ -53,6 +69,9 @@ from services.online_collab.lifecycle.online_collab_expiry import (
 from services.online_collab.lifecycle.online_collab_session_fields import (
     backfill_online_collab_expiry_if_needed,
 )
+from services.online_collab.lifecycle.online_collab_single_owner_session import (
+    stop_other_owner_online_collabs,
+)
 from services.online_collab.lifecycle.online_collab_visibility_helpers import (
     ONLINE_COLLAB_VISIBILITY_NETWORK,
     ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
@@ -60,19 +79,16 @@ from services.online_collab.lifecycle.online_collab_visibility_helpers import (
     diagram_online_collab_visibility,
     user_may_join_diagram_online_collab,
 )
+from services.online_collab.lifecycle.session_meta_cache import (
+    get_session_meta_cached,
+    invalidate_session_meta,
+)
 from services.online_collab.participant.online_collab_participant_ops import (
     ONLINE_COLLAB_PARTICIPANTS_TTL,
     get_participants_for_code,
     participant_count_for_code,
     refresh_participant_ttl_for_code,
     remove_participant_from_online_collab,
-)
-
-from services.redis.redis_async_client import get_async_redis
-from services.utils.typing_helpers import redis_hset_mapping
-from services.online_collab.lifecycle.session_meta_cache import (
-    get_session_meta_cached,
-    invalidate_session_meta,
 )
 from services.online_collab.redis.online_collab_redis_keys import (
     destroy_lock_key,
@@ -84,17 +100,16 @@ from services.online_collab.redis.online_collab_redis_keys import (
     registry_org_key,
     session_meta_key,
 )
-from services.online_collab.redis.online_collab_redis_scripts import (
-    JOIN_CAP_SCRIPT_NAME,
-    evalsha_with_reload,
-)
 from services.online_collab.redis.online_collab_redis_locks import (
     acquire_nx_lock,
     release_nx_lock,
 )
-from services.online_collab.core.online_collab_org_listing import (
-    list_org_sessions_redis,
+from services.online_collab.redis.online_collab_redis_scripts import (
+    JOIN_CAP_SCRIPT_NAME,
+    evalsha_with_reload,
 )
+from services.redis.redis_async_client import get_async_redis
+from services.utils.typing_helpers import redis_hset_mapping
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +120,7 @@ logger = logging.getLogger(__name__)
 
 
 def _redis_wait_enabled() -> bool:
+    """Redis wait enabled."""
     return os.getenv("COLLAB_REDIS_WAIT_DURABILITY", "0") not in ("0", "false", "False", "")
 
 
@@ -155,9 +171,10 @@ class OnlineCollabManager:
     """
 
     def __init__(self) -> None:
+        """ init  ."""
         self._destroy_locks: Dict[str, asyncio.Lock] = {}
         self._destroy_locks_mutex = asyncio.Lock()
-        self._idle_monitor_task: Optional[asyncio.Task] = None
+        self.idle_monitor_task: Optional[asyncio.Task] = None
 
     # ------------------------------------------------------------------
     # Session lifecycle
@@ -441,12 +458,13 @@ class OnlineCollabManager:
         except (RedisError, OSError, TypeError, RuntimeError) as exc:
             logger.debug("[OnlineCollabMgr] touch_activity Redis error code=%s: %s", code, exc)
 
-    def _redis_ttl_seconds_for_diagram(self, diagram: Diagram) -> int:
+    def redis_ttl_seconds_for_diagram(self, diagram: Diagram) -> int:
+        """Redis ttl seconds for diagram."""
         if diagram.workshop_expires_at:
             return redis_ttl_seconds_for_expires_at(diagram.workshop_expires_at)
         return ONLINE_COLLAB_SESSION_TTL
 
-    async def _finalize_join_after_load(
+    async def finalize_join_after_load(
         self,
         db: AsyncSession,
         redis: Any,
@@ -528,10 +546,7 @@ class OnlineCollabManager:
         target_org_id: Optional[int] = None,
     ) -> Tuple[Optional[str], Optional[str], Optional[datetime], int]:
         """Start collaboration session for ``diagram_id``."""
-        from services.online_collab.core.online_collab_lifecycle import (
-            start_online_collab_impl,
-        )
-
+        mgr = get_online_collab_manager()
         return await start_online_collab_impl(
             allocate_unique_code=_allocate_unique_online_collab_code,
             validation_error=_online_collab_start_validation_error,
@@ -542,14 +557,12 @@ class OnlineCollabManager:
             duration=duration,
             workshop_session_ttl=ONLINE_COLLAB_SESSION_TTL,
             target_org_id=target_org_id,
+            stop_other_owner_online_collabs=stop_other_owner_online_collabs,
+            create_session=mgr.create_session,
         )
 
     async def stop_online_collab(self, diagram_id: str, user_id: int) -> bool:
         """Owner-initiated collaboration stop."""
-        from services.online_collab.core.online_collab_lifecycle import (
-            stop_online_collab_impl,
-        )
-
         return await stop_online_collab_impl(diagram_id, user_id)
 
     async def stop_online_collab_for_room_idle(
@@ -558,10 +571,6 @@ class OnlineCollabManager:
         expected_code: str,
     ) -> bool:
         """Idle-timer initiated stop."""
-        from services.online_collab.core.online_collab_lifecycle import (
-            stop_online_collab_for_room_idle_impl,
-        )
-
         return await stop_online_collab_for_room_idle_impl(
             diagram_id,
             expected_code,
@@ -572,10 +581,6 @@ class OnlineCollabManager:
         diagram_id: str,
     ) -> Optional[str]:
         """Return active non-expired workshop code for diagram, else None."""
-        from services.online_collab.core.online_collab_join import (
-            get_active_online_collab_code_for_diagram_impl,
-        )
-
         return await get_active_online_collab_code_for_diagram_impl(diagram_id)
 
     async def join_online_collab(
@@ -584,10 +589,6 @@ class OnlineCollabManager:
         user_id: int,
     ) -> Optional[Dict[str, Any]]:
         """Join collaboration by shared code."""
-        from services.online_collab.core.online_collab_join import (
-            join_online_collab_impl,
-        )
-
         return await join_online_collab_impl(self, code, user_id)
 
     async def join_online_collab_by_diagram(
@@ -596,10 +597,6 @@ class OnlineCollabManager:
         user_id: int,
     ) -> Optional[Dict[str, Any]]:
         """Join organization-scoped session by diagram id."""
-        from services.online_collab.core.online_collab_join import (
-            join_online_collab_by_diagram_impl,
-        )
-
         return await join_online_collab_by_diagram_impl(self, diagram_id, user_id)
 
     async def get_participants(self, code: str) -> List[int]:
@@ -653,11 +650,8 @@ class OnlineCollabManager:
         """
         return await list_org_sessions_redis(org_id, db_fallback_fn)
 
-    async def _idle_monitor_loop(self) -> None:
-        from services.online_collab.core.online_collab_idle_monitor import (
-            idle_monitor_loop,
-        )
-
+    async def run_idle_monitor_loop(self) -> None:
+        """Idle monitor loop."""
         await idle_monitor_loop(self)
 
 
@@ -666,17 +660,7 @@ class OnlineCollabManager:
 # ---------------------------------------------------------------------------
 
 
-class _OnlineCollabManagerSingleton:
-    """Module-private holder so the accessor doesn't need a module-level global."""
-
-    instance: Optional[OnlineCollabManager] = None
-
-
-def get_online_collab_manager() -> OnlineCollabManager:
-    """Return the singleton OnlineCollabManager (created on first call)."""
-    if _OnlineCollabManagerSingleton.instance is None:
-        _OnlineCollabManagerSingleton.instance = OnlineCollabManager()
-    return _OnlineCollabManagerSingleton.instance
+register_online_collab_manager(OnlineCollabManager())
 
 
 def start_online_collab_manager() -> asyncio.Task[None]:
@@ -689,9 +673,9 @@ def start_online_collab_manager() -> asyncio.Task[None]:
     """
     mgr = get_online_collab_manager()
     task: asyncio.Task[None] = asyncio.create_task(
-        mgr._idle_monitor_loop(),
+        mgr.run_idle_monitor_loop(),
         name="workshop_idle_monitor",
     )
-    mgr._idle_monitor_task = task
+    mgr.idle_monitor_task = task
     logger.info("[OnlineCollabMgr] Idle monitor task created")
     return task

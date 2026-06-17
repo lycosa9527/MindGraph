@@ -39,10 +39,12 @@ def is_conda_env_active() -> bool:
 
 
 def _runtime_sudo_user() -> str:
+    """Runtime sudo user."""
     return os.environ.get("SUDO_USER", "").strip()
 
 
 def _running_as_root() -> bool:
+    """Running as root."""
     try:
         return os.geteuid() == 0
     except AttributeError:
@@ -50,6 +52,7 @@ def _running_as_root() -> bool:
 
 
 def _conda_install_roots(home: str) -> List[str]:
+    """Conda install roots."""
     return [os.path.join(home, name) for name in ("miniconda3", "anaconda3", "miniforge3", "mambaforge")]
 
 
@@ -97,21 +100,21 @@ def run_as_project_user_streaming(
     on_line: Optional[Callable[[str], None]] = None,
 ) -> int:
     """Run a command with live stdout, optionally invoking ``on_line`` per line."""
-    process = subprocess.Popen(
+    with subprocess.Popen(
         _command_as_project_user(command),
         cwd=cwd,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
         bufsize=1,
-    )
-    stdout = process.stdout
-    if stdout is not None:
-        for output in stdout:
-            line = output.rstrip("\n")
-            if on_line is not None:
-                on_line(line)
-    return process.wait()
+    ) as process:
+        stdout = process.stdout
+        if stdout is not None:
+            for output in stdout:
+                line = output.rstrip("\n")
+                if on_line is not None:
+                    on_line(line)
+        return process.wait()
 
 
 def _externally_managed_marker_paths() -> List[str]:
@@ -142,6 +145,7 @@ def is_externally_managed_environment() -> bool:
 
 
 def _conda_activation_hint() -> str:
+    """Conda activation hint."""
     env_name = conda_env_name()
     return (
         f"Activate the miniconda env first: conda activate {env_name}\n"

@@ -6,9 +6,11 @@ application settings like version, server configuration, and logging.
 
 import logging
 import os
+import socket
 import time
 from pathlib import Path
-import socket
+
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +19,7 @@ class BaseConfig:
     """Base configuration class with caching mechanism."""
 
     def __init__(self):
+        """ init  ."""
         self._cache = {}
         self._cache_timestamp = 0
         self._cache_duration = 30
@@ -47,7 +50,7 @@ class BaseConfig:
             try:
                 version_file = Path(__file__).parent.parent / "VERSION"
                 self._version = version_file.read_text().strip()
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.warning("Failed to read VERSION file: %s", e)
                 self._version = "0.0.0"
         return self._version
@@ -89,7 +92,7 @@ class BaseConfig:
                 s.close()
                 host = lan_ip
                 logger.warning("EXTERNAL_HOST not set, using LAN IP: %s", lan_ip)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Failed to determine server IP address for external access: %s", e)
             logger.error("Please set EXTERNAL_HOST environment variable with your server's public IP")
             raise RuntimeError(

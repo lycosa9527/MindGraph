@@ -6,8 +6,8 @@ All Rights Reserved
 Proprietary License
 """
 
-from email_validator import EmailNotValidError, validate_email as ev_validate
-
+from email_validator import EmailNotValidError
+from email_validator import validate_email as ev_validate
 from fastapi import HTTPException, status
 
 from models.domain.messages import Language, Messages

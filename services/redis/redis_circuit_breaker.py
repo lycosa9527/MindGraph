@@ -112,6 +112,7 @@ class RedisCircuitBreaker:
         failure_threshold: int = 5,
         cooldown_s: float = 10.0,
     ) -> None:
+        """ init  ."""
         self.failure_threshold = max(1, failure_threshold)
         self.cooldown_s = max(0.1, cooldown_s)
         self._state: _State = _State.CLOSED
@@ -203,9 +204,13 @@ class RedisCircuitBreaker:
 _BREAKER_ENABLED = _env_bool("REDIS_CIRCUIT_BREAKER", True)
 _BREAKER_FAILURE_THRESHOLD = _env_int("REDIS_CB_FAILURE_THRESHOLD", 5)
 _BREAKER_COOLDOWN_S = _env_float("REDIS_CB_COOLDOWN_S", 10.0)
-
-_BREAKER: Optional[RedisCircuitBreaker] = None
 _BREAKER_INIT_LOCK = threading.Lock()
+
+
+class _BreakerState:
+    """Process-wide circuit breaker singleton holder."""
+
+    instance: Optional[RedisCircuitBreaker] = None
 
 
 def get_breaker() -> RedisCircuitBreaker:
@@ -215,16 +220,15 @@ def get_breaker() -> RedisCircuitBreaker:
     ``REDIS_CIRCUIT_BREAKER_*`` env vars are set; the values are captured
     at first access.
     """
-    global _BREAKER
-    if _BREAKER is not None:
-        return _BREAKER
+    if _BreakerState.instance is not None:
+        return _BreakerState.instance
     with _BREAKER_INIT_LOCK:
-        if _BREAKER is None:
-            _BREAKER = RedisCircuitBreaker(
+        if _BreakerState.instance is None:
+            _BreakerState.instance = RedisCircuitBreaker(
                 failure_threshold=_BREAKER_FAILURE_THRESHOLD,
                 cooldown_s=_BREAKER_COOLDOWN_S,
             )
-    return _BREAKER
+    return _BreakerState.instance
 
 
 def is_breaker_enabled() -> bool:

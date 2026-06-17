@@ -19,10 +19,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.debateverse import DebateMessage, DebateParticipant, DebateSession
 from prompts.debateverse import (
-    get_debater_system_prompt,
-    get_judge_system_prompt,
     get_cross_exam_questioner_prompt,
     get_cross_exam_respondent_prompt,
+    get_debater_system_prompt,
+    get_judge_system_prompt,
 )
 
 logger = logging.getLogger(__name__)

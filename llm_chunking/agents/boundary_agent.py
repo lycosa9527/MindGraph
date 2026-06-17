@@ -4,6 +4,7 @@ Uses LLM to identify semantic boundaries when pattern matching
 is insufficient. Now includes embedding-based pre-filtering to
 reduce LLM calls by ~50% (from 20% to ~10% of boundaries).
 """
+from services.utils.error_types import JSON_PARSE_ERRORS
 
 from typing import List, Optional, Tuple
 import json
@@ -79,7 +80,7 @@ class BoundaryAgent:
                 if not self.embedding_detector.embedding_service.is_available():
                     logger.warning("[BoundaryAgent] Embedding service not available, disabling embedding filter")
                     self.use_embedding_filter = False
-            except Exception as e:
+            except JSON_PARSE_ERRORS as e:
                 logger.warning("[BoundaryAgent] Failed to initialize embedding detector: %s", e)
                 self.use_embedding_filter = False
 
@@ -152,7 +153,7 @@ class BoundaryAgent:
 
             return final_boundaries
 
-        except Exception as e:
+        except JSON_PARSE_ERRORS as e:
             logger.warning("LLM boundary detection failed: %s, using patterns", e)
             return pattern_boundaries
 
@@ -191,7 +192,7 @@ class BoundaryAgent:
                 try:
                     confidence = await self.embedding_detector.get_boundary_confidence(segment, start_pos, end_pos)
                     confidences.append(confidence)
-                except Exception as e:
+                except JSON_PARSE_ERRORS as e:
                     logger.debug("[BoundaryAgent] Failed to calculate confidence: %s", e)
                     # If confidence calculation fails, assume low confidence (send to LLM)
                     confidences.append(0.0)
@@ -264,7 +265,7 @@ Return JSON array:
                         boundaries_list.append([])
 
                 return boundaries_list
-        except Exception as e:
+        except JSON_PARSE_ERRORS as e:
             logger.warning("Failed to parse boundaries: %s", e)
 
         # Fallback: use pattern matching
@@ -320,7 +321,7 @@ Return JSON with refined start and end positions:
                 refined_end = max(refined_start, min(refined_end, len(text)))
 
                 return (refined_start, refined_end)
-        except Exception as e:
+        except JSON_PARSE_ERRORS as e:
             logger.warning("Boundary refinement failed: %s", e)
 
         return (start_pos, end_pos)

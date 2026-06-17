@@ -20,6 +20,7 @@ from websockets.asyncio.client import ClientConnection
 from websockets.exceptions import ConnectionClosed, ConnectionClosedError, ConnectionClosedOK
 
 from config.settings import config
+from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.ws_limits import (
     DEFAULT_MAX_WS_TEXT_BYTES,
     WebsocketMessageRateLimiter,
@@ -84,6 +85,7 @@ def build_session_update_payload(
 
 
 async def _send_audio_append(upstream: ClientConnection, audio_b64: str) -> None:
+    """Send audio append."""
     payload = {
         "event_id": f"evt_{uuid.uuid4().hex}",
         "type": "input_audio_buffer.append",
@@ -154,7 +156,7 @@ async def run_asr_relay(
             bridge_error_json("upstream_handshake", "Speech service rejected connection"),
         )
         return
-    except Exception as exc:
+    except LLM_PIPELINE_ERRORS as exc:
         logger.exception("ASR upstream connect failed (unexpected): %s", exc)
         err = bridge_error_json(
             "upstream_connect",

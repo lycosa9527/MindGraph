@@ -9,17 +9,16 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Dict, List, Optional, Tuple, Any
 import logging
+from typing import Any, Dict, List, Optional, Tuple
 
-from agents.core.base_agent import BaseAgent
 from agents.core.agent_utils import extract_json_from_response
+from agents.core.base_agent import BaseAgent
 from config.settings import Config
 from prompts import get_prompt
 from services.llm import llm_service
+from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import is_chinese_prompt_shell_language
-
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +32,7 @@ class MindMapAgent(BaseAgent):
     """
 
     def __init__(self, model="qwen"):
+        """ init  ."""
         super().__init__(model=model)
         self.config = Config()
         self.diagram_type = "mindmap"
@@ -112,7 +112,7 @@ class MindMapAgent(BaseAgent):
 
             return result
 
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             logger.error("MindMapAgent: Error generating mind map: %s", e)
             return {"success": False, "error": f"Generation failed: {str(e)}"}
 
@@ -189,7 +189,7 @@ class MindMapAgent(BaseAgent):
 
             return spec, recovery_warnings
 
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             logger.error("MindMapAgent: Error in spec generation: %s", e)
             return None, None
 
@@ -209,7 +209,7 @@ class MindMapAgent(BaseAgent):
                 return False, "At least one child branch is required"
 
             return True, "Valid mind map specification"
-        except Exception as e:
+        except LLM_PIPELINE_ERRORS as e:
             return False, f"Validation error: {str(e)}"
 
     async def enhance_spec(self, spec: Dict) -> Dict:

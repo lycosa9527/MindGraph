@@ -9,13 +9,13 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Dict, Any, Optional, Tuple, List
 import logging
 import re
 import xml.etree.ElementTree as ET
+from typing import Any, Dict, List, Optional, Tuple
 
 from services.gewe.protocols import GeweServiceBase
+from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -165,31 +165,31 @@ class MessageServiceMixin(GeweServiceBase):
         if type_name == "AddMsg":
             if msg_type == 1:
                 return data.get("Content", {}).get("string", "").strip()
-            elif msg_type == 3:
+            if msg_type == 3:
                 push_content = data.get("PushContent", "")
                 if push_content:
                     return f"[图片] {push_content}"
-            elif msg_type == 34:
+            if msg_type == 34:
                 push_content = data.get("PushContent", "")
                 if push_content:
                     return f"[语音] {push_content}"
-            elif msg_type == 43:
+            if msg_type == 43:
                 push_content = data.get("PushContent", "")
                 if push_content:
                     return f"[视频] {push_content}"
-            elif msg_type == 47:
+            if msg_type == 47:
                 push_content = data.get("PushContent", "")
                 if push_content:
                     return f"[动画表情] {push_content}"
-            elif msg_type == 48:
+            if msg_type == 48:
                 push_content = data.get("PushContent", "")
                 if push_content:
                     return f"[位置] {push_content}"
-            elif msg_type == 42:
+            if msg_type == 42:
                 push_content = data.get("PushContent", "")
                 if push_content:
                     return f"[名片] {push_content}"
-            elif msg_type == 37:
+            if msg_type == 37:
                 content_xml = data.get("Content", {}).get("string", "")
                 if content_xml:
                     try:
@@ -202,7 +202,7 @@ class MessageServiceMixin(GeweServiceBase):
                                 return f"[好友添加请求] {fromnickname}: {content}"
                     except ET.ParseError:
                         pass
-            elif msg_type == 49:
+            if msg_type == 49:
                 content_xml = data.get("Content", {}).get("string", "")
                 if content_xml:
                     try:
@@ -219,11 +219,11 @@ class MessageServiceMixin(GeweServiceBase):
 
                                 if app_type == "5":
                                     return f"[链接] {title}: {desc}" if title else None
-                                elif app_type == "6":
+                                if app_type == "6":
                                     return f"[文件] {title}" if title else None
-                                elif app_type in ("33", "36"):
+                                if app_type in ("33", "36"):
                                     return f"[小程序] {title}" if title else None
-                                elif app_type == "57":
+                                if app_type == "57":
                                     quoted_msg = self._extract_quoted_message(message_data)
                                     if quoted_msg:
                                         quoted_content = quoted_msg.get("content", "")
@@ -232,19 +232,19 @@ class MessageServiceMixin(GeweServiceBase):
                                                 return f"{title} [回复: {quoted_content}]"
                                             return f"[回复: {quoted_content}]"
                                     return title if title else "[引用消息]"
-                                elif app_type == "2000":
+                                if app_type == "2000":
                                     return "[转账消息]"
-                                elif app_type == "2001":
+                                if app_type == "2001":
                                     return "[红包消息]"
-                                elif app_type == "51":
+                                if app_type == "51":
                                     return "[视频号消息]"
                     except ET.ParseError:
                         pass
-            elif msg_type == 10000:
+            if msg_type == 10000:
                 content = data.get("Content", {}).get("string", "")
                 if content:
                     return f"[系统通知] {content}"
-            elif msg_type == 10002:
+            if msg_type == 10002:
                 content_xml = data.get("Content", {}).get("string", "")
                 if content_xml:
                     try:
@@ -272,8 +272,7 @@ class MessageServiceMixin(GeweServiceBase):
             user_name = data.get("UserName", {}).get("string", "")
             if "@chatroom" in user_name:
                 return f"[退出群聊] {user_name}"
-            else:
-                return f"[删除好友] {user_name}"
+            return f"[删除好友] {user_name}"
 
         elif type_name == "Offline":
             logger.warning("Account offline: %s", message_data.get("Wxid", ""))
@@ -464,7 +463,7 @@ class MessageServiceMixin(GeweServiceBase):
             try:
                 await self.send_image_message(app_id=app_id, to_wxid=to_wxid, img_url=image_url)
                 logger.info("Successfully sent image from URL: %s", image_url)
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 logger.error("Failed to send image %s: %s", image_url, e)
 
     async def process_incoming_message(
@@ -517,7 +516,7 @@ class MessageServiceMixin(GeweServiceBase):
                         content=content,
                         is_group=is_group,
                     )
-                except Exception as e:
+                except DATABASE_ERRORS as e:
                     logger.warning("Failed to save message to database: %s", e)
 
             should_process, text_content = self._should_process_message(message_data)
@@ -580,7 +579,7 @@ class MessageServiceMixin(GeweServiceBase):
                     try:
                         file_url = await dify_client.get_file_preview_url(file_id)
                         image_urls.append(file_url)
-                    except Exception as e:
+                    except DATABASE_ERRORS as e:
                         logger.warning("Failed to get file preview URL for %s: %s", file_id, e)
 
             logger.info(
@@ -597,6 +596,6 @@ class MessageServiceMixin(GeweServiceBase):
                 quoted_message,
             )
 
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("Error processing incoming message: %s", e, exc_info=True)
             return None, [], None, None, None

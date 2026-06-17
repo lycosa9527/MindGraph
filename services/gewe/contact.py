@@ -9,11 +9,11 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Dict, Any, Optional, List, TYPE_CHECKING
 import logging
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from services.gewe.protocols import GeweServiceBase
+from services.utils.error_types import DATABASE_ERRORS
 
 if TYPE_CHECKING:
     from services.gewe.contact_db import GeweContactDB
@@ -46,7 +46,7 @@ class ContactServiceMixin(GeweServiceBase):
                 try:
                     saved_count = await self._contact_db.save_contacts_batch(app_id=app_id, contacts=contacts)
                     logger.info("Cached %d contacts for app %s", saved_count, app_id)
-                except Exception as e:
+                except DATABASE_ERRORS as e:
                     logger.warning("Failed to cache contacts: %s", e)
 
         return response

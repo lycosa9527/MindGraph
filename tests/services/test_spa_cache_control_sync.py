@@ -16,12 +16,14 @@ _NON_SPA_EXACT = frozenset({"/health", "/healthz", "/ready", "/docs", "/redoc", 
 
 
 def _router_paths() -> list[str]:
+    """Router paths."""
     text = _ROUTER_PATH.read_text(encoding="utf-8")
     paths = re.findall(r"path:\s*['\"]([^'\"]+)['\"]", text)
     return [path for path in paths if ":" not in path and not path.startswith("*")]
 
 
 def _has_file_extension(path: str) -> bool:
+    """Has file extension."""
     segment = path.rstrip("/").split("/")[-1]
     return bool(segment) and "." in segment
 
@@ -32,6 +34,7 @@ def _has_file_extension(path: str) -> bool:
     ids=_router_paths(),
 )
 def test_vue_router_extensionless_paths_are_spa_routes(path: str) -> None:
+    """Test vue router extensionless paths are spa routes."""
     if any(path.startswith(prefix) for prefix in _NON_SPA_PREFIXES):
         pytest.skip("backend-only prefix")
     if path in _NON_SPA_EXACT:
@@ -70,6 +73,7 @@ def test_vue_router_extensionless_paths_are_spa_routes(path: str) -> None:
     ],
 )
 def test_vue_spa_served_paths_get_no_cache(path: str) -> None:
+    """Test vue spa served paths get no cache."""
     assert should_apply_no_cache(path) is True
 
 
@@ -83,4 +87,5 @@ def test_vue_spa_served_paths_get_no_cache(path: str) -> None:
     ],
 )
 def test_pwa_bootstrap_paths_get_no_cache(path: str) -> None:
+    """Test pwa bootstrap paths get no cache."""
     assert should_apply_no_cache(path) is True

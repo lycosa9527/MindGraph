@@ -13,6 +13,7 @@ from utils.auth import get_current_user
 
 
 def _make_user(role: str, organization_id: int | None = None, user_id: int = 1):
+    """Make user."""
     user = SimpleNamespace()
     user.id = user_id
     user.role = role
@@ -23,11 +24,13 @@ def _make_user(role: str, organization_id: int | None = None, user_id: int = 1):
 
 @pytest.fixture(name="client")
 def fixture_client():
+    """Fixture client."""
     return TestClient(app)
 
 
 @pytest.fixture(autouse=True)
 def clear_dependency_overrides():
+    """Clear dependency overrides."""
     app.dependency_overrides.clear()
     yield
     app.dependency_overrides.clear()
@@ -35,6 +38,7 @@ def clear_dependency_overrides():
 
 @pytest.fixture(name="trial_org_user")
 def fixture_trial_org_user(monkeypatch: pytest.MonkeyPatch):
+    """Fixture trial org user."""
     user = _make_user("teacher", organization_id=8)
 
     async def _trial_org(_db, _user):
@@ -53,6 +57,7 @@ def fixture_trial_org_user(monkeypatch: pytest.MonkeyPatch):
 
 @pytest.fixture(name="lite_org_user")
 def fixture_lite_org_user(monkeypatch: pytest.MonkeyPatch):
+    """Fixture lite org user."""
     user = _make_user("teacher", organization_id=7)
 
     async def _lite_org(_db, _user):
@@ -73,6 +78,7 @@ def test_lite_tier_denied_workshop_start(
     client: TestClient,
     lite_org_user: SimpleNamespace,
 ) -> None:
+    """Test lite tier denied workshop start."""
     app.dependency_overrides[get_current_user] = lambda: lite_org_user
     app.dependency_overrides[get_language_dependency] = lambda: "en"
 
@@ -85,6 +91,7 @@ def test_lite_tier_denied_api_token_mint(
     lite_org_user: SimpleNamespace,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Test lite tier denied api token mint."""
     app.dependency_overrides[get_current_user] = lambda: lite_org_user
     app.dependency_overrides[get_language_dependency] = lambda: "en"
 
@@ -104,6 +111,7 @@ def test_trial_tier_denied_workshop_start(
     client: TestClient,
     trial_org_user: SimpleNamespace,
 ) -> None:
+    """Test trial tier denied workshop start."""
     app.dependency_overrides[get_current_user] = lambda: trial_org_user
     app.dependency_overrides[get_language_dependency] = lambda: "en"
 
@@ -116,6 +124,7 @@ def test_trial_tier_denied_api_token_mint(
     trial_org_user: SimpleNamespace,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Test trial tier denied api token mint."""
     app.dependency_overrides[get_current_user] = lambda: trial_org_user
     app.dependency_overrides[get_language_dependency] = lambda: "en"
 

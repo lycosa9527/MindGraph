@@ -8,9 +8,9 @@ Handles server-side errors and service unavailability.
 from typing import Optional, Tuple
 
 from services.infrastructure.http.error_handler import (
-    LLMTimeoutError,
     LLMProviderError,
     LLMServiceError,
+    LLMTimeoutError,
 )
 
 

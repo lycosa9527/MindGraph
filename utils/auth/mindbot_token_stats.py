@@ -20,6 +20,11 @@ from sqlalchemy.sql.functions import sum as sa_sum
 from models.domain.auth import Organization, User
 from models.domain.mindbot_usage import MindbotUsageEvent
 from services.mindbot.errors import MindbotErrorCode
+from utils.auth.token_stats_queries import (
+    utc_date_to_beijing_key,
+    utc_hour_bucket,
+    utc_naive_hour_to_beijing_key,
+)
 
 MINDBOT_USAGE_SUCCESS_CODES = (
     MindbotErrorCode.OK.value,
@@ -28,6 +33,7 @@ MINDBOT_USAGE_SUCCESS_CODES = (
 
 
 class TokenPeriodTotals(TypedDict):
+    """TokenPeriodTotals helper."""
     input_tokens: int
     output_tokens: int
     total_tokens: int
@@ -35,6 +41,7 @@ class TokenPeriodTotals(TypedDict):
 
 
 def empty_token_period() -> TokenPeriodTotals:
+    """Empty token period."""
     return {
         "input_tokens": 0,
         "output_tokens": 0,
@@ -44,14 +51,17 @@ def empty_token_period() -> TokenPeriodTotals:
 
 
 def _effective_input_expr() -> ColumnElement:
+    """Effective input expr."""
     return sa_coalesce(MindbotUsageEvent.prompt_tokens, 0)
 
 
 def _effective_output_expr() -> ColumnElement:
+    """Effective output expr."""
     return sa_coalesce(MindbotUsageEvent.completion_tokens, 0)
 
 
 def _effective_total_expr() -> ColumnElement:
+    """Effective total expr."""
     return sa_coalesce(
         MindbotUsageEvent.total_tokens,
         sa_coalesce(MindbotUsageEvent.prompt_tokens, 0) + sa_coalesce(MindbotUsageEvent.completion_tokens, 0),
@@ -64,6 +74,7 @@ def _mindbot_usage_filters(
     created_since: Optional[datetime] = None,
     organization_id: Optional[int] = None,
 ) -> ColumnElement:
+    """Mindbot usage filters."""
     clauses = [
         MindbotUsageEvent.error_code.in_(MINDBOT_USAGE_SUCCESS_CODES),
         or_(
@@ -307,8 +318,6 @@ def merge_mindbot_daily_rows_into_tokens_by_date(
     beijing_timezone: tzinfo,
 ) -> None:
     """Add MindBot daily rows into a trends ``tokens_by_date`` map (UTC date → Beijing key)."""
-    from utils.auth.token_stats_queries import utc_date_to_beijing_key
-
     for row in mindbot_rows:
         beijing_date_str = utc_date_to_beijing_key(row.date, beijing_timezone)
         if beijing_date_str not in tokens_by_date:
@@ -354,8 +363,6 @@ async def aggregate_mindbot_tokens_by_hour(
     linked_user_id: Optional[int] = None,
 ) -> Dict[str, Dict[str, int]]:
     """Hourly MindBot totals keyed by Beijing hour string (YYYY-MM-DD HH:00:00)."""
-    from utils.auth.token_stats_queries import utc_hour_bucket, utc_naive_hour_to_beijing_key
-
     filters = _mindbot_usage_filters(
         created_since=created_since,
         organization_id=organization_id,

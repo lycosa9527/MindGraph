@@ -6,6 +6,7 @@ from typing import Any, Dict, List
 
 
 def _child_texts(children: Any) -> List[str]:
+    """Child texts."""
     if not isinstance(children, list):
         return []
     texts: List[str] = []
@@ -21,6 +22,7 @@ def _child_texts(children: Any) -> List[str]:
 
 
 def _center_text(diagram_data: Dict[str, Any]) -> str:
+    """Center text."""
     center = diagram_data.get("center")
     if isinstance(center, dict):
         raw = center.get("text")

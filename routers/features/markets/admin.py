@@ -14,14 +14,15 @@ from repositories.markets_repo import (
     MarketSubscriptionRepository,
     MarketUserLookup,
 )
-from utils.auth.admin_scope import AdminScope
 from routers.auth.dependencies import require_global_billing_read
 from routers.features.markets.helpers import require_markets_enabled
+from utils.auth.admin_scope import AdminScope
 
 router = APIRouter()
 
 
 class AdminOrderRow(BaseModel):
+    """AdminOrderRow helper."""
     id: int
     user_id: int
     user_email_or_phone: Optional[str]
@@ -37,6 +38,7 @@ class AdminOrderRow(BaseModel):
 
 
 class AdminListingRow(BaseModel):
+    """AdminListingRow helper."""
     id: int
     slug: str
     listing_kind: str
@@ -47,6 +49,7 @@ class AdminListingRow(BaseModel):
 
 
 class AdminSubscriptionRow(BaseModel):
+    """AdminSubscriptionRow helper."""
     id: int
     user_id: int
     user_email_or_phone: Optional[str]
@@ -69,6 +72,7 @@ async def admin_list_orders(
     db: AsyncSession = Depends(get_async_db),
     _scope: AdminScope = Depends(require_global_billing_read),
 ) -> list[AdminOrderRow]:
+    """Admin list orders."""
     require_markets_enabled()
     repo = MarketOrderRepository(db)
     rows = await repo.admin_list(
@@ -113,6 +117,7 @@ async def admin_list_listings(
     db: AsyncSession = Depends(get_async_db),
     _scope: AdminScope = Depends(require_global_billing_read),
 ) -> list[AdminListingRow]:
+    """Admin list listings."""
     require_markets_enabled()
     repo = MarketListingRepository(db)
     filters = [MarketListing.id > after_id] if after_id is not None else None
@@ -149,6 +154,7 @@ async def admin_list_subscriptions(
     db: AsyncSession = Depends(get_async_db),
     _scope: AdminScope = Depends(require_global_billing_read),
 ) -> list[AdminSubscriptionRow]:
+    """Admin list subscriptions."""
     require_markets_enabled()
     repo = MarketSubscriptionRepository(db)
     rows = await repo.admin_list(before_id=before_id, offset=offset, limit=limit)
@@ -178,6 +184,7 @@ async def admin_stats(
     db: AsyncSession = Depends(get_async_db),
     _scope: AdminScope = Depends(require_global_billing_read),
 ) -> dict[str, Any]:
+    """Admin stats."""
     require_markets_enabled()
     orepo = MarketOrderRepository(db)
     total_orders = await orepo.count_admin()

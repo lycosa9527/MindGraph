@@ -23,18 +23,19 @@ All Rights Reserved
 Proprietary License
 """
 
-import os
 import hashlib
 import json
 import logging
+import os
 import time
-from typing import Optional, Dict, Any
 from datetime import UTC, datetime
+from typing import Any, Dict, Optional
 
 from services.redis import keys as _keys
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_async_ops import AsyncRedisOps
 from services.redis.redis_client import is_redis_available
+from services.utils.error_types import REDIS_ERRORS
 from services.utils.typing_helpers import redis_decode_required
 
 logger = logging.getLogger(__name__)
@@ -58,14 +59,17 @@ def _hash_token(token: str) -> str:
 
 
 def _get_session_key(user_id: int) -> str:
+    """Get session key."""
     return _keys.SESSION_USER.format(user_id=user_id)
 
 
 def _get_session_set_key(user_id: int) -> str:
+    """Get session set key."""
     return _keys.SESSION_USER_SET.format(user_id=user_id)
 
 
 def _get_invalidation_notification_key(user_id: int, token_hash: str) -> str:
+    """Get invalidation notification key."""
     return _keys.SESSION_INVALIDATED.format(user_id=user_id, token_hash=token_hash)
 
 
@@ -276,7 +280,7 @@ class RedisSessionManager:
                         device_hash,
                         str(current_time),
                     )
-                except Exception as lua_exc:
+                except REDIS_ERRORS as lua_exc:
                     logger.error(
                         "[Session] Atomic store_session failed for user %s: %s",
                         user_id,
@@ -299,22 +303,22 @@ class RedisSessionManager:
 
                 logger.debug("[Session] Stored session for user %s", user_id)
                 return True
+
+            # Single session mode: Use single key-value (legacy mode)
+            session_key = _get_session_key(user_id)
+            success = await AsyncRedisOps.set_with_ttl(session_key, token_hash, SESSION_TTL_SECONDS)
+
+            if success:
+                logger.debug(
+                    "[Session] Stored session for user %s (TTL: %ss)",
+                    user_id,
+                    SESSION_TTL_SECONDS,
+                )
             else:
-                # Single session mode: Use single key-value (legacy mode)
-                session_key = _get_session_key(user_id)
-                success = await AsyncRedisOps.set_with_ttl(session_key, token_hash, SESSION_TTL_SECONDS)
+                logger.warning("[Session] Failed to store session for user %s", user_id)
 
-                if success:
-                    logger.debug(
-                        "[Session] Stored session for user %s (TTL: %ss)",
-                        user_id,
-                        SESSION_TTL_SECONDS,
-                    )
-                else:
-                    logger.warning("[Session] Failed to store session for user %s", user_id)
-
-                return success
-        except Exception as e:
+            return success
+        except REDIS_ERRORS as e:
             logger.error(
                 "[Session] Error storing session for user %s: %s",
                 user_id,
@@ -340,7 +344,7 @@ class RedisSessionManager:
             session_key = _get_session_key(user_id)
             token_hash = await AsyncRedisOps.get(session_key)
             return token_hash
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error(
                 "[Session] Error getting session token for user %s: %s",
                 user_id,
@@ -417,20 +421,19 @@ class RedisSessionManager:
                             token_preview,
                         )
                     return removed
-                else:
-                    # Remove entire set
-                    await redis.delete(session_set_key)
-                    logger.info(
-                        "[Session] Deleted entire session set: user=%s, count_was=%s",
-                        user_id,
-                        existing_count,
-                    )
-                    return True
-            else:
+                # Remove entire set
+                await redis.delete(session_set_key)
                 logger.info(
-                    "[Session] No session set found for user %s (may have expired)",
+                    "[Session] Deleted entire session set: user=%s, count_was=%s",
                     user_id,
+                    existing_count,
                 )
+                return True
+
+            logger.info(
+                "[Session] No session set found for user %s (may have expired)",
+                user_id,
+            )
 
             # Single session mode (legacy)
             session_key = _get_session_key(user_id)
@@ -445,7 +448,7 @@ class RedisSessionManager:
                 )
 
             return success
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error(
                 "[Session] Error deleting session for user %s: %s",
                 user_id,
@@ -536,11 +539,10 @@ class RedisSessionManager:
                     session_count,
                 )
                 return False
-            else:
-                logger.info(
-                    "[Session] No session set exists for user %s, checking legacy mode...",
-                    user_id,
-                )
+            logger.info(
+                "[Session] No session set exists for user %s, checking legacy mode...",
+                user_id,
+            )
 
             # Check single session mode (legacy)
             session_key = _get_session_key(user_id)
@@ -569,7 +571,7 @@ class RedisSessionManager:
                 )
 
             return is_valid
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error(
                 "[Session] Error validating session for user %s: %s",
                 user_id,
@@ -664,7 +666,7 @@ class RedisSessionManager:
                 logger.debug("[Session] No existing session to invalidate for user %s", user_id)
 
             return True
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error(
                 "[Session] Error invalidating sessions for user %s: %s",
                 user_id,
@@ -705,7 +707,7 @@ class RedisSessionManager:
                 logger.debug("[Session] Created invalidation notification for user %s", user_id)
 
             return success
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error(
                 "[Session] Error creating invalidation notification: %s",
                 e,
@@ -735,7 +737,7 @@ class RedisSessionManager:
                 return json.loads(notification_json)
 
             return None
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error(
                 "[Session] Error checking invalidation notification: %s",
                 e,
@@ -765,7 +767,7 @@ class RedisSessionManager:
                 logger.debug("[Session] Cleared invalidation notification for user %s", user_id)
 
             return success
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error(
                 "[Session] Error clearing invalidation notification: %s",
                 e,
@@ -799,12 +801,15 @@ class RefreshTokenManager:
         return is_redis_available()
 
     def _get_token_key(self, user_id: int, token_hash: bytes | str) -> str:
+        """Get token key."""
         return _keys.REFRESH_TOKEN.format(user_id=user_id, token_hash=redis_decode_required(token_hash))
 
     def _get_user_tokens_key(self, user_id: int) -> str:
+        """Get user tokens key."""
         return _keys.REFRESH_USER_SET.format(user_id=user_id)
 
     def _get_lookup_key(self, token_hash: bytes | str) -> str:
+        """Get lookup key."""
         return _keys.REFRESH_LOOKUP.format(token_hash=redis_decode_required(token_hash))
 
     async def find_user_id_from_token(self, token_hash: str) -> Optional[int]:
@@ -828,7 +833,7 @@ class RefreshTokenManager:
             if user_id_str:
                 return int(user_id_str)
             return None
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error(
                 "[RefreshToken] Error finding user_id from token hash: %s",
                 e,
@@ -884,7 +889,7 @@ class RefreshTokenManager:
 
             return revoked
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error(
                 "[RefreshToken] Error revoking device tokens for user %s: %s",
                 user_id,
@@ -960,7 +965,7 @@ class RefreshTokenManager:
             )
             return True
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error(
                 "[RefreshToken] Error storing refresh token for user %s: %s",
                 user_id,
@@ -1039,7 +1044,7 @@ class RefreshTokenManager:
                         current_device_hash,
                     )
                     return False, token_data, "Device mismatch"
-                elif not stored_device_hash:
+                if not stored_device_hash:
                     logger.info(
                         "[RefreshToken] No stored device hash, skipping device check: user=%s",
                         user_id,
@@ -1049,7 +1054,7 @@ class RefreshTokenManager:
             logger.info("[RefreshToken] VALID: user=%s, token=%s...", user_id, token_preview)
             return True, token_data, None
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error(
                 "[RefreshToken] Error validating refresh token for user %s: %s",
                 user_id,
@@ -1096,7 +1101,7 @@ class RefreshTokenManager:
 
             return deleted
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error(
                 "[RefreshToken] Error revoking refresh token for user %s: %s",
                 user_id,
@@ -1154,7 +1159,7 @@ class RefreshTokenManager:
             )
             return count
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error(
                 "[RefreshToken] Error revoking all refresh tokens for user %s: %s",
                 user_id,
@@ -1176,7 +1181,7 @@ class RefreshTokenManager:
             user_tokens_key = self._get_user_tokens_key(user_id)
             return await redis.scard(user_tokens_key)
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error(
                 "[RefreshToken] Error counting tokens for user %s: %s",
                 user_id,
@@ -1253,7 +1258,7 @@ class RefreshTokenManager:
 
             return revoked
 
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error(
                 "[RefreshToken] Error enforcing max tokens for user %s: %s",
                 user_id,
@@ -1302,21 +1307,22 @@ class RefreshTokenManager:
 
 
 # Global instances
-_session_manager = None
-_refresh_token_manager = None
+class _SessionManagerState:
+    """Process-wide Redis session manager singleton holder."""
+
+    session_manager: Optional["RedisSessionManager"] = None
+    refresh_token_manager: Optional["RefreshTokenManager"] = None
 
 
 def get_session_manager() -> RedisSessionManager:
     """Get global session manager instance."""
-    global _session_manager
-    if _session_manager is None:
-        _session_manager = RedisSessionManager()
-    return _session_manager
+    if _SessionManagerState.session_manager is None:
+        _SessionManagerState.session_manager = RedisSessionManager()
+    return _SessionManagerState.session_manager
 
 
 def get_refresh_token_manager() -> RefreshTokenManager:
     """Get global refresh token manager instance."""
-    global _refresh_token_manager
-    if _refresh_token_manager is None:
-        _refresh_token_manager = RefreshTokenManager()
-    return _refresh_token_manager
+    if _SessionManagerState.refresh_token_manager is None:
+        _SessionManagerState.refresh_token_manager = RefreshTokenManager()
+    return _SessionManagerState.refresh_token_manager

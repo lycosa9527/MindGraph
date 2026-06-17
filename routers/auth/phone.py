@@ -18,19 +18,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
-from models.domain.messages import Messages, Language
-from models.requests.requests_auth import SendChangePhoneSMSRequest, ChangePhoneRequest
-from services.redis.redis_sms_storage import get_sms_storage
-from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
+from models.domain.messages import Language, Messages
+from models.requests.requests_auth import ChangePhoneRequest, SendChangePhoneSMSRequest
 from services.auth.phone_uniqueness import other_user_id_with_phone
-from services.redis.cache.redis_user_cache import user_cache
-from services.auth.sms_middleware import get_sms_middleware, SMSServiceError
+from services.auth.sms_middleware import SMSServiceError, get_sms_middleware
 from services.auth.sms_service import (
     SMS_CODE_EXPIRY_MINUTES,
-    SMS_RESEND_INTERVAL_SECONDS,
     SMS_MAX_ATTEMPTS_PER_PHONE,
     SMS_MAX_ATTEMPTS_WINDOW_HOURS,
+    SMS_RESEND_INTERVAL_SECONDS,
 )
+from services.redis.cache.redis_user_cache import user_cache
+from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
+from services.redis.redis_sms_storage import get_sms_storage
 from utils.auth import get_current_user
 
 from .captcha import verify_captcha_with_retry
@@ -47,7 +47,7 @@ async def send_change_phone_code(
     request: SendChangePhoneSMSRequest,
     _http_request: Request,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    _db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -84,18 +84,17 @@ async def send_change_phone_code(
         if captcha_error == "expired":
             error_msg = Messages.error("captcha_expired", lang)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-        elif captcha_error == "not_found":
+        if captcha_error == "not_found":
             error_msg = Messages.error("captcha_not_found", lang)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-        elif captcha_error == "incorrect":
+        if captcha_error == "incorrect":
             error_msg = Messages.error("captcha_incorrect", lang)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-        elif captcha_error == "database_locked":
+        if captcha_error == "database_locked":
             error_msg = Messages.error("captcha_database_unavailable", lang)
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=error_msg)
-        else:
-            error_msg = Messages.error("captcha_verify_failed", lang)
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
+        error_msg = Messages.error("captcha_verify_failed", lang)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
     sms_middleware = get_sms_middleware()
 

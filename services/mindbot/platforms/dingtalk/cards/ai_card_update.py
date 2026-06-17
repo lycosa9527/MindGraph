@@ -13,12 +13,11 @@ from services.mindbot.platforms.dingtalk.api.constants import (
     PATH_CARD_STREAMING_UPDATE,
 )
 from services.mindbot.platforms.dingtalk.api.http import put_v1_json_unverified
+from services.mindbot.platforms.dingtalk.api.response import dingtalk_v1_response_ok
 from services.mindbot.platforms.dingtalk.auth.oauth import (
     get_access_token_with_error,
     invalidate_access_token_cache,
 )
-from services.mindbot.platforms.dingtalk.api.response import dingtalk_v1_response_ok
-from services.mindbot.platforms.dingtalk.messaging.session_webhook import sanitize_markdown_for_dingtalk
 from services.mindbot.platforms.dingtalk.cards.ai_card_create import (
     _clip_streaming_content,
     _dt_err,
@@ -34,6 +33,7 @@ from services.mindbot.platforms.dingtalk.cards.streaming_qps import (
     acquire_dingtalk_streaming_qps_slot,
     dingtalk_streaming_body_is_qps_throttle,
 )
+from services.mindbot.platforms.dingtalk.messaging.session_webhook import sanitize_markdown_for_dingtalk
 from utils.env_helpers import env_bool, env_int
 
 logger = logging.getLogger(__name__)
@@ -366,6 +366,7 @@ def _probe_friendly(
     dingtalk_code: Optional[str],
     dingtalk_message: Optional[str],
 ) -> Optional[str]:
+    """Probe friendly."""
     if ok:
         return None
     return describe_ai_card_failure(dingtalk_code, error_token or dingtalk_message or "")

@@ -9,25 +9,24 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Dict, Any, List, Optional
 import logging
 import math
 import time
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.knowledge_space import (
     DocumentChunk,
-    KnowledgeDocument,
-    KnowledgeSpace,
-    KnowledgeQuery,
     EvaluationDataset,
     EvaluationResult,
+    KnowledgeDocument,
+    KnowledgeQuery,
+    KnowledgeSpace,
 )
-from services.llm.rag_service import get_rag_service, RerankMode
-
+from services.llm.rag_service import RerankMode, get_rag_service
+from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +85,7 @@ class RetrievalTestService:
                     len(query_embedding),
                     timing["embedding_ms"],
                 )
-            except Exception as emb_error:
+            except DATABASE_ERRORS as emb_error:
                 timing["embedding_ms"] = (time.time() - embedding_start) * 1000
                 logger.error("[RAG] ✗ Embedding FAILED: %s", emb_error)
                 raise
@@ -106,7 +105,7 @@ class RetrievalTestService:
                     len(chunk_ids),
                     timing["search_ms"],
                 )
-            except Exception as search_error:
+            except DATABASE_ERRORS as search_error:
                 timing["search_ms"] = (time.time() - search_start) * 1000
                 logger.error("[RAG] ✗ Search FAILED: %s", search_error)
                 raise
@@ -147,7 +146,7 @@ class RetrievalTestService:
                         len(reranked),
                         timing["rerank_ms"],
                     )
-                except Exception as rerank_error:
+                except DATABASE_ERRORS as rerank_error:
                     timing["rerank_ms"] = (time.time() - rerank_start) * 1000
                     logger.error("[RAG] ✗ Rerank FAILED: %s", rerank_error)
                     raise
@@ -258,7 +257,7 @@ class RetrievalTestService:
                         "[RetrievalTest] Recorded query and cleaned up old queries. Total retrieval test queries: %d",
                         10,
                     )
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 await db.rollback()
                 logger.warning("[RetrievalTest] Failed to record query: %s", e)
 
@@ -270,7 +269,7 @@ class RetrievalTestService:
                 "stats": stats,
             }
 
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("[RetrievalTest] Test failed for user %d: %s", user_id, e)
             raise
 
@@ -601,7 +600,7 @@ class RetrievalTestService:
                 eval_result = EvaluationResult(dataset_id=dataset_id, method=method, metrics=metrics)
                 db.add(eval_result)
 
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 logger.error("[RetrievalTest] Failed to evaluate query '%s': %s", query, e)
                 continue
 

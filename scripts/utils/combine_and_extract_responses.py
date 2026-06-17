@@ -3,11 +3,11 @@
 Combine all prompts and extract agent responses to malfunctioned prompts.
 """
 
-import re
 import json
-from pathlib import Path
+import re
 from collections import defaultdict
 from datetime import datetime
+from pathlib import Path
 
 
 def parse_log_line(line):
@@ -147,6 +147,7 @@ def extract_all_prompts_with_responses(log_file):
 
 
 def main():
+    """Main."""
     log_dir = Path(r"C:\Users\roywa\Desktop\logs")
     output_dir = Path(r"C:\Users\roywa\Desktop\MG\extracted_prompts")
     output_dir.mkdir(exist_ok=True)

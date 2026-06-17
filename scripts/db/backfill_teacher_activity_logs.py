@@ -22,22 +22,24 @@ Options:
     --force     Run even if diagram_edit logs already exist (default: skip).
 """
 
-import argparse
-import sys
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
-from typing import cast
+try:
+    from _path_setup import project_root
+except ModuleNotFoundError:
+    from scripts.db._path_setup import project_root
 
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
+import argparse
+from datetime import datetime, timedelta, timezone
+from typing import cast
 
 from sqlalchemy.orm import Session
 
 from config.database import SyncSessionLocal
 from models.domain.auth import User
-from utils.auth.role_constants import TEACHER_ROLES
 from models.domain.diagrams import Diagram
 from models.domain.user_activity_log import UserActivityLog
+from utils.auth.role_constants import TEACHER_ROLES
+
+_ = project_root
 
 BEIJING_TZ = timezone(timedelta(hours=8))
 

@@ -9,10 +9,12 @@ from redis.exceptions import RedisError
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from utils.db.session_open import system_rls_session, user_rls_session
 from models.domain.diagrams import Diagram
 from services.online_collab.lifecycle.online_collab_expiry import (
     is_online_collab_expired,
+)
+from services.online_collab.lifecycle.online_collab_join_helpers import (
+    restore_online_collab_redis_from_db_row,
 )
 from services.online_collab.lifecycle.online_collab_session_fields import (
     backfill_online_collab_expiry_if_needed,
@@ -25,10 +27,8 @@ from services.online_collab.lifecycle.online_collab_visibility_helpers import (
 from services.online_collab.redis.online_collab_redis_keys import (
     code_to_diagram_key,
 )
-from services.online_collab.lifecycle.online_collab_join_helpers import (
-    restore_online_collab_redis_from_db_row,
-)
 from services.redis.redis_async_client import get_async_redis
+from utils.db.session_open import system_rls_session, user_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,7 @@ async def join_online_collab_impl(
                     diagram_id = diagram.id
                     if redis:
                         await backfill_online_collab_expiry_if_needed(diagram, db)
-                        ttl = manager._redis_ttl_seconds_for_diagram(diagram)
+                        ttl = manager.redis_ttl_seconds_for_diagram(diagram)
                         await restore_online_collab_redis_from_db_row(
                             redis,
                             code,
@@ -118,7 +118,7 @@ async def join_online_collab_impl(
             if not diagram:
                 return None
 
-            return await manager._finalize_join_after_load(
+            return await manager.finalize_join_after_load(
                 db,
                 redis,
                 diagram,

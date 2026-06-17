@@ -111,6 +111,7 @@ class MindbotConfigPayload(BaseModel):
 
 
 class MindbotConfigResponse(BaseModel):
+    """MindbotConfigResponse helper."""
     id: int
     organization_id: int
     bot_label: Optional[str]

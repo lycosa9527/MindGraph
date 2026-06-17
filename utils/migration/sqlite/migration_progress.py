@@ -13,11 +13,36 @@ Proprietary License
 """
 
 import importlib.util
-import sys
 import logging
-from typing import Optional
+import sys
+from typing import Any, Optional
 
 RICH_AVAILABLE = importlib.util.find_spec("rich") is not None
+
+Console: Any = None
+BarColumn: Any = None
+Progress: Any = None
+SpinnerColumn: Any = None
+TextColumn: Any = None
+TimeElapsedColumn: Any = None
+TimeRemainingColumn: Any = None
+
+if RICH_AVAILABLE:
+    from rich.console import Console as _Console
+    from rich.progress import BarColumn as _BarColumn
+    from rich.progress import Progress as _Progress
+    from rich.progress import SpinnerColumn as _SpinnerColumn
+    from rich.progress import TextColumn as _TextColumn
+    from rich.progress import TimeElapsedColumn as _TimeElapsedColumn
+    from rich.progress import TimeRemainingColumn as _TimeRemainingColumn
+
+    Console = _Console
+    BarColumn = _BarColumn
+    Progress = _Progress
+    SpinnerColumn = _SpinnerColumn
+    TextColumn = _TextColumn
+    TimeElapsedColumn = _TimeElapsedColumn
+    TimeRemainingColumn = _TimeRemainingColumn
 
 logger = logging.getLogger(__name__)
 
@@ -79,17 +104,15 @@ class MigrationProgressTracker:
         # Check if we can use Rich (TTY available and Rich installed)
         self.use_rich = RICH_AVAILABLE and sys.stdout.isatty()
 
-        if self.use_rich:
-            from rich.console import Console
-            from rich.progress import (
-                BarColumn,
-                Progress,
-                SpinnerColumn,
-                TextColumn,
-                TimeElapsedColumn,
-                TimeRemainingColumn,
-            )
-
+        if self.use_rich and (
+            Console is not None
+            and Progress is not None
+            and SpinnerColumn is not None
+            and TextColumn is not None
+            and BarColumn is not None
+            and TimeElapsedColumn is not None
+            and TimeRemainingColumn is not None
+        ):
             self.console = Console()
             self.progress = Progress(
                 SpinnerColumn(),

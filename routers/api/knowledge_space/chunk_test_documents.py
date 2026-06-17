@@ -10,20 +10,21 @@ import os
 import tempfile
 import threading
 
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count as sa_count
 
 from config.database import get_async_db
-from utils.db.session_open import user_rls_session
 from models.domain.auth import User
 from models.domain.knowledge_space import ChunkTestDocument, ChunkTestDocumentChunk
 from models.requests.requests_knowledge_space import ProcessSelectedRequest
-from models.responses import DocumentResponse, DocumentListResponse
+from models.responses import DocumentListResponse, DocumentResponse
 from routers.api.knowledge_space.chunk_test_utils import check_feature_enabled
 from services.knowledge.chunk_test_document_service import ChunkTestDocumentService
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS, FILE_IO_ERRORS
 from utils.auth import get_current_user
+from utils.db.session_open import user_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ async def _mark_document_failed(user_id: int, document_id: int, error: Exception
             doc.processing_progress_percent = 0
             try:
                 await db.commit()
-            except Exception as commit_err:
+            except DATABASE_ERRORS as commit_err:
                 await db.rollback()
                 logger.debug(
                     "[ChunkTestDocuments] Rollback during failure mark for document %s: %s",
@@ -79,7 +80,7 @@ def _process_chunk_test_document(user_id: int, document_id: int) -> None:
                 "[ChunkTestDocuments] Successfully completed processing document %s",
                 document_id,
             )
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error(
                 "[ChunkTestDocuments] Background processing failed for document %s: %s",
                 document_id,
@@ -92,7 +93,7 @@ def _process_chunk_test_document(user_id: int, document_id: int) -> None:
                     "[ChunkTestDocuments] Marked document %s as failed due to processing error",
                     document_id,
                 )
-            except Exception as update_error:
+            except BACKGROUND_INFRA_ERRORS as update_error:
                 logger.error(
                     "[ChunkTestDocuments] Failed to update document %s status to failed: %s",
                     document_id,
@@ -152,7 +153,7 @@ async def upload_chunk_test_document(
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
+    except FILE_IO_ERRORS as e:
         logger.error("[ChunkTestDocuments] Upload failed for user %s: %s", current_user.id, e)
         raise HTTPException(status_code=500, detail="Upload failed") from e
     finally:
@@ -231,7 +232,7 @@ async def delete_chunk_test_document(
         return {"message": "Document deleted successfully"}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error(
             "[ChunkTestDocuments] Delete failed for user %s, document %s: %s",
             current_user.id,
@@ -291,7 +292,7 @@ async def start_processing_chunk_test_documents(
                 thread.name,
             )
             processed_count += 1
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error(
                 "[ChunkTestDocuments] Failed to start processing document %s: %s",
                 doc.id,
@@ -361,7 +362,7 @@ async def process_selected_chunk_test_documents(
                 thread.name,
             )
             processed_count += 1
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error(
                 "[ChunkTestDocuments] Failed to start processing document %s: %s",
                 doc.id,

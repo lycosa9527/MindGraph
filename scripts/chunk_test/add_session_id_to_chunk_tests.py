@@ -12,6 +12,10 @@ import sys
 import traceback
 import uuid
 
+from sqlalchemy import inspect, text
+
+from services.utils.error_types import DATABASE_ERRORS
+
 # Add project root to path before importing project modules
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _PROJECT_ROOT)
@@ -28,8 +32,6 @@ logger = logging.getLogger(__name__)
 
 def check_column_exists():
     """Check if session_id column already exists."""
-    from sqlalchemy import inspect
-
     inspector = inspect(engine)
 
     if "chunk_test_results" not in inspector.get_table_names():
@@ -42,8 +44,6 @@ def check_column_exists():
 
 def add_session_id_column():
     """Add session_id column to chunk_test_results table."""
-    from sqlalchemy import text
-
     db = SessionLocal()
     try:
         # Check if column already exists
@@ -95,7 +95,7 @@ def add_session_id_column():
 
         return True
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         db.rollback()
         logger.error("Error adding session_id column: %s", e)
         traceback.print_exc()

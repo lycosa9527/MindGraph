@@ -26,9 +26,10 @@ from typing import Optional
 
 import orjson
 
+from services.redis import keys as _keys
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
-from services.redis import keys as _keys
+from services.utils.error_types import REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,7 @@ async def get_version() -> int:
         return int(val) if val else 0
     except (ValueError, TypeError):
         return 0
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.warning("[CommunityCache] Failed to read version: %s", exc)
         return 0
 
@@ -83,7 +84,7 @@ async def increment_version() -> None:
             pipe.expire(COMMUNITY_VERSION_KEY, VERSION_TTL_SECONDS)
             await pipe.execute()
         logger.debug("[CommunityCache] Version incremented")
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.warning("[CommunityCache] Failed to increment version: %s", exc)
 
 
@@ -108,7 +109,7 @@ async def get_cached_list(
     key = _list_cache_key(mine, type_filter, category, sort, page, page_size, version)
     try:
         raw = await redis.get(key)
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.debug("[CommunityCache] list get failed: %s", exc)
         return None
     if not raw:
@@ -118,7 +119,7 @@ async def get_cached_list(
     except json.JSONDecodeError:
         try:
             await redis.delete(key)
-        except Exception:
+        except REDIS_ERRORS:
             pass
         return None
 
@@ -143,7 +144,7 @@ async def set_cached_list(
     try:
         await redis.setex(key, LIST_TTL_SECONDS, orjson.dumps(data))
         return True
-    except Exception as e:
+    except REDIS_ERRORS as e:
         logger.warning("[CommunityCache] Failed to cache list: %s", e)
         return False
 
@@ -158,7 +159,7 @@ async def get_cached_post(post_id: str) -> Optional[dict]:
     key = _keys.COMMUNITY_POST.format(post_id=post_id)
     try:
         raw = await redis.get(key)
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.debug("[CommunityCache] post get failed: %s", exc)
         return None
     if not raw:
@@ -168,7 +169,7 @@ async def get_cached_post(post_id: str) -> Optional[dict]:
     except json.JSONDecodeError:
         try:
             await redis.delete(key)
-        except Exception:
+        except REDIS_ERRORS:
             pass
         return None
 
@@ -184,7 +185,7 @@ async def set_cached_post(post_id: str, data: dict) -> bool:
     try:
         await redis.setex(key, POST_TTL_SECONDS, orjson.dumps(data))
         return True
-    except Exception as e:
+    except REDIS_ERRORS as e:
         logger.warning("[CommunityCache] Failed to cache post %s: %s", post_id, e)
         return False
 
@@ -200,7 +201,7 @@ async def invalidate_post(post_id: str) -> None:
     try:
         await redis.delete(key)
         logger.debug("[CommunityCache] Invalidated post %s", post_id)
-    except Exception as exc:
+    except REDIS_ERRORS as exc:
         logger.warning("[CommunityCache] Failed to invalidate post %s: %s", post_id, exc)
 
 

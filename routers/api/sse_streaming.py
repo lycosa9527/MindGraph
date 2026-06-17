@@ -8,11 +8,11 @@ All Rights Reserved
 Proprietary License
 """
 
-from asyncio import CancelledError
-from typing import Dict, Any, Optional
 import json
 import logging
 import time
+from asyncio import CancelledError
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
@@ -27,9 +27,9 @@ from services.infrastructure.monitoring.mindmate_streaming import (
 )
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.redis_token_buffer import get_token_tracker
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user_or_api_key
 from utils.dify_mindmate_user_id import mindmate_dify_user_id
-
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ async def ai_assistant_stream(
                 },
                 user_name=getattr(current_user, "name", None),
             )
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.debug("Failed to track user activity: %s", e)
 
     # Handle Dify conversation opener trigger
@@ -130,7 +130,7 @@ async def ai_assistant_stream(
         try:
             await mindmate_streaming_begin()
             streaming_counter_held = True
-        except Exception:
+        except BACKGROUND_INFRA_ERRORS:
             logger.exception(
                 "[STREAM] mindmate_streaming_begin failed after stream_open | user=%s",
                 req.user_id,
@@ -217,7 +217,7 @@ async def ai_assistant_stream(
                         output_tokens,
                         total_tokens,
                     )
-                except Exception as track_error:
+                except BACKGROUND_INFRA_ERRORS as track_error:
                     logger.warning("[STREAM] Failed to track token usage: %s", track_error)
 
             if chunk_count == 0:
@@ -242,7 +242,7 @@ async def ai_assistant_stream(
             )
             raise
 
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.error(
                 "[STREAM] AI assistant streaming error: %s",
                 exc,

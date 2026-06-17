@@ -7,12 +7,11 @@ Handles benchmark listing, dataset updates, and test queries.
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from config.settings import config
 from models.domain.auth import User
 from services.knowledge.rag_chunk_test.test_queries import get_test_queries
-from utils.auth import get_current_user
 
 try:
     from services.knowledge.rag_chunk_test.utils.download_datasets import (
@@ -20,6 +19,9 @@ try:
     )
 except ImportError:
     download_datasets = None
+
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +94,7 @@ async def update_benchmark_datasets(_current_user: User = Depends(get_current_us
             "success": True,
             "message": "Benchmark datasets update initiated successfully",
         }
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[ChunkTestUtils] Failed to update datasets: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to update datasets") from e
 

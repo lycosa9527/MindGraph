@@ -6,13 +6,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from tests.stubs.redis8_features import install_redis8_features_stub
-
-install_redis8_features_stub()
-
-from tests.typing_helpers import mock_await_kwargs
 from services.agent_hub.scope_lifecycle import MindGraphAgentHub
 from services.kitty.infra.bootstrap.kitty_context_hydrate import resolve_mobile_open_bootstrap
+from tests.typing_helpers import mock_await_kwargs
 
 
 @pytest.mark.asyncio

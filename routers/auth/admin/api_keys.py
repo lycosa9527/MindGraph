@@ -12,9 +12,9 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import Dict, Any, List
 import logging
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
@@ -22,15 +22,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import sum as sa_sum
 
 from config.database import get_async_db
-from models.domain.auth import User, APIKey
+from models.domain.auth import APIKey, User
 from models.domain.messages import Messages
 from models.domain.token_usage import TokenUsage
 from services.redis.cache.redis_api_key_cache import api_key_cache
+from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import generate_api_key
 
 from ..dependencies import get_language_dependency, require_admin
 from ..helpers import utc_to_beijing_iso
-
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ async def list_api_keys_admin(
                     "output_tokens": 0,
                     "total_tokens": 0,
                 }
-    except (ImportError, Exception) as e:
+    except DATABASE_ERRORS as e:
         logger.debug("TokenUsage not available: %s", e)
         for key in keys:
             token_stats_by_key[key.id] = {
@@ -134,7 +134,7 @@ async def create_api_key_admin(
             key_record.expires_at = datetime.now(timezone.utc) + timedelta(days=expires_days)
             try:
                 await db.commit()
-            except Exception:
+            except DATABASE_ERRORS:
                 await db.rollback()
                 raise
 
@@ -175,7 +175,7 @@ async def update_api_key_admin(
 
     try:
         await db.commit()
-    except Exception:
+    except DATABASE_ERRORS:
         await db.rollback()
         raise
 
@@ -209,7 +209,7 @@ async def delete_api_key_admin(
     await db.delete(key_record)
     try:
         await db.commit()
-    except Exception:
+    except DATABASE_ERRORS:
         await db.rollback()
         raise
 
@@ -233,7 +233,7 @@ async def toggle_api_key_admin(
     key_record.is_active = not key_record.is_active
     try:
         await db.commit()
-    except Exception:
+    except DATABASE_ERRORS:
         await db.rollback()
         raise
 

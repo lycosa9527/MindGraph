@@ -5,12 +5,13 @@ from __future__ import annotations
 import logging
 from typing import Any, Awaitable, Callable, Optional
 
+from clients.dify_exceptions import DifyConversationNotFoundError
 from clients.dify import (
     AsyncDifyClient,
     DifyAPIError,
-    DifyConversationNotFoundError,
     DifyFile,
 )
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +91,7 @@ async def mindbot_dify_chat_blocking(
                     cids,
                 )
                 return out
-            except Exception:
+            except BACKGROUND_INFRA_ERRORS:
                 logger.exception(
                     "[MindBot] dify_blocking_retry_failed %s",
                     pipeline_ctx,
@@ -110,7 +111,7 @@ async def mindbot_dify_chat_blocking(
             exc.message,
         )
         return None
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS:
         logger.exception(
             "[MindBot] dify_blocking_failed %s",
             pipeline_ctx,

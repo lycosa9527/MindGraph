@@ -17,15 +17,14 @@ Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
 All Rights Reserved
 """
 
-from pathlib import Path
 import logging
 import mimetypes
 import os
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
-
 
 logger = logging.getLogger(__name__)
 
@@ -234,6 +233,7 @@ _PUBLIC_STATIC_EXACT_PATHS = frozenset(
 
 
 def _path_last_segment(path: str) -> str:
+    """Path last segment."""
     trimmed = path.rstrip("/")
     if not trimmed:
         return ""
@@ -241,6 +241,7 @@ def _path_last_segment(path: str) -> str:
 
 
 def _has_file_extension(path: str) -> bool:
+    """Has file extension."""
     return "." in _path_last_segment(path)
 
 

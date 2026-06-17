@@ -11,29 +11,20 @@ Verifies which users have superadmin access based on:
 Run from project root: python scripts/db/check_admin_status.py
 """
 
-import os
+try:
+    from _path_setup import project_root
+except ModuleNotFoundError:
+    from scripts.db._path_setup import project_root
+
 import sys
-from pathlib import Path
-
-# Project root on sys.path so `config` and `models` resolve when run as a script
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
-
-# Load .env before importing config
-env_path = _project_root / ".env"
-if env_path.exists():
-    with open(env_path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                key, _, value = line.partition("=")
-                os.environ.setdefault(key.strip(), value.strip().split("#")[0].strip())
 
 from config.database import SyncSessionLocal
 from models.domain.auth import User
 from utils.auth.config import ADMIN_PHONES, ADMIN_USER_IDS
 from utils.auth.role_constants import SUPERADMIN_ROLES
 from utils.auth.roles import is_admin, phone_matches_admin_env_token
+
+_ = project_root
 
 
 def main():

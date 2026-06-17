@@ -6,6 +6,7 @@ from routers.api.workshop_ws_update_schema import collab_update_schema_error
 
 
 def test_schema_accepts_minimal_granular():
+    """Test schema accepts minimal granular."""
     assert (
         collab_update_schema_error(
             {
@@ -19,6 +20,7 @@ def test_schema_accepts_minimal_granular():
 
 
 def test_schema_rejects_unknown_node_key():
+    """Test schema rejects unknown node key."""
     err = collab_update_schema_error(
         {
             "type": "update",
@@ -31,6 +33,7 @@ def test_schema_rejects_unknown_node_key():
 
 
 def test_schema_rejects_deep_nesting():
+    """Test schema rejects deep nesting."""
     deep = {"k": {"k": {"k": {"k": {"k": "too_deep"}}}}}
     err = collab_update_schema_error(
         {

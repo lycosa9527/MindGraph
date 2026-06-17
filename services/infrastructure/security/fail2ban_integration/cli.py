@@ -38,6 +38,7 @@ from services.infrastructure.security.fail2ban_integration.paths import (
 
 
 def _print_result(result: Fail2banCheckResult) -> None:
+    """Print result."""
     print(f"Platform Linux:        {result.linux}")
     print(f"fail2ban-client:       {result.fail2ban_client_on_path}")
     print(f"Daemon reachable:      {result.daemon_ok}")
@@ -63,6 +64,7 @@ def _print_result(result: Fail2banCheckResult) -> None:
 
 
 def cmd_check(etc_dir: Path) -> int:
+    """Cmd check."""
     if not is_linux():
         print("This helper is for Linux hosts only.")
         return 2
@@ -78,6 +80,7 @@ def cmd_deploy(
     proxy_host: int,
     dry_run: bool,
 ) -> int:
+    """Cmd deploy."""
     if not is_linux():
         print("This helper is for Linux hosts only.")
         return 2
@@ -116,6 +119,7 @@ def cmd_deploy(
 
 
 def cmd_reload() -> int:
+    """Cmd reload."""
     if not is_linux():
         print("This helper is for Linux hosts only.")
         return 2
@@ -130,6 +134,7 @@ def cmd_reload() -> int:
 
 
 def cmd_validate(etc_dir: Path) -> int:
+    """Cmd validate."""
     if not is_linux():
         print("This helper is for Linux hosts only.")
         return 2
@@ -158,6 +163,7 @@ def cmd_setup(
     proxy_host: int,
     dry_run: bool,
 ) -> int:
+    """Cmd setup."""
     code = cmd_deploy(etc_dir, mindgraph_root, npm_home, proxy_host, dry_run)
     if code != 0 or dry_run:
         return code
@@ -168,6 +174,7 @@ def cmd_setup(
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build parser."""
     parser = argparse.ArgumentParser(
         prog="python -m services.infrastructure.security.fail2ban_integration",
         description="MindGraph Fail2ban: check, deploy templates, reload, validate.",
@@ -229,6 +236,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Main."""
     parser = build_parser()
     args = parser.parse_args(argv)
     mindgraph_root = args.mindgraph_root or project_root_from_here()

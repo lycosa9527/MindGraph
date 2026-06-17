@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from types import SimpleNamespace
 from typing import Any, Dict, Optional, cast
 from unittest.mock import AsyncMock, patch
@@ -10,33 +11,47 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from models.domain.auth import User
-
+from services.kitty.http.handlers import (
+    kitty_rest_desktop_action_enqueue,
+    kitty_rest_desktop_action_pop,
+    kitty_rest_desktop_pairing,
+    kitty_rest_mobile_active_get,
+)
+from services.kitty.infra.desktop import (
+    kitty_desktop_action_queue as queue,
+)
 from services.kitty.infra.desktop import (
     kitty_desktop_wake_fanout,
     kitty_mobile_active,
 )
+from services.kitty.infra.desktop.kitty_desktop_wake_fanout import build_kitty_desktop_wake_payload
 from services.kitty.infra.redis import kitty_session_redis
 from services.kitty.infra.redis.kitty_redis_keys import kitty_mobile_active_key, kitty_sessionmeta_key
-from services.kitty.http.handlers import kitty_rest_mobile_active_get
 
 
 def _kitty_user(user_id: int) -> User:
+    """Kitty user."""
     return cast(User, SimpleNamespace(id=user_id))
 
 
 class _FakeRedis:
+    """_FakeRedis helper."""
     def __init__(self) -> None:
+        """ init  ."""
         self.data: Dict[str, str] = {}
 
     async def get(self, key: str) -> Optional[str]:
+        """Get."""
         return self.data.get(key)
 
     async def set(self, key: str, val: str, ex: int | None = None) -> bool:
+        """Set."""
         del ex
         self.data[key] = val
         return True
 
     async def delete(self, *keys: str) -> int:
+        """Delete."""
         removed = 0
         for key in keys:
             if key in self.data:
@@ -45,15 +60,19 @@ class _FakeRedis:
         return removed
 
     async def publish(self, channel: str, message: str) -> int:
+        """Publish."""
         del channel, message
         return 1
 
     def pipeline(self, transaction: bool = False) -> "_FakePipeline":
+        """Pipeline."""
         return _FakePipeline(self, transaction=transaction)
 
 
 class _FakePipeline:
+    """_FakePipeline helper."""
     def __init__(self, redis: _FakeRedis, transaction: bool = False) -> None:
+        """ init  ."""
         self._redis = redis
         self._transaction = transaction
         self._ops: list[tuple[Any, ...]] = []
@@ -61,22 +80,28 @@ class _FakePipeline:
         self._in_multi = False
 
     async def watch(self, key: str) -> None:
+        """Watch."""
         self._watched.add(key)
 
     async def get(self, key: str) -> Optional[str]:
+        """Get."""
         return self._redis.data.get(key)
 
     def multi(self) -> None:
+        """Multi."""
         self._in_multi = True
 
     def set(self, key: str, val: str, ex: int | None = None) -> None:
+        """Set."""
         del ex
         self._ops.append(("set", key, val))
 
     def delete(self, *keys: str) -> None:
+        """Delete."""
         self._ops.append(("delete", keys))
 
     async def execute(self) -> list[bool]:
+        """Execute."""
         if self._transaction and not self._in_multi:
             return []
         count = 0
@@ -94,19 +119,23 @@ class _FakePipeline:
         return [True] * count if count else [True]
 
     async def __aenter__(self) -> "_FakePipeline":
+        """ aenter  ."""
         return self
 
     async def __aexit__(self, *_args: Any) -> None:
+        """ aexit  ."""
         return None
 
 
 def _patch_kitty_redis(monkeypatch: pytest.MonkeyPatch, fake: _FakeRedis) -> None:
+    """Patch kitty redis."""
     monkeypatch.setattr(kitty_mobile_active, "get_async_redis", lambda: fake)
     monkeypatch.setattr(kitty_desktop_wake_fanout, "get_async_redis", lambda: fake)
 
 
 @pytest.mark.asyncio
 async def test_mark_and_read_mobile_active(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test mark and read mobile active."""
     fake = _FakeRedis()
     _patch_kitty_redis(monkeypatch, fake)
 
@@ -120,6 +149,7 @@ async def test_mark_and_read_mobile_active(monkeypatch: pytest.MonkeyPatch) -> N
 
 @pytest.mark.asyncio
 async def test_clear_mobile_scope_deletes_key_when_empty(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test clear mobile scope deletes key when empty."""
     fake = _FakeRedis()
     _patch_kitty_redis(monkeypatch, fake)
 
@@ -134,6 +164,7 @@ async def test_clear_mobile_scope_deletes_key_when_empty(monkeypatch: pytest.Mon
 
 @pytest.mark.asyncio
 async def test_clear_one_scope_keeps_others(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test clear one scope keeps others."""
     fake = _FakeRedis()
     _patch_kitty_redis(monkeypatch, fake)
 
@@ -149,6 +180,7 @@ async def test_clear_one_scope_keeps_others(monkeypatch: pytest.MonkeyPatch) -> 
 
 @pytest.mark.asyncio
 async def test_upsert_desktop_start_clears_preserved_mobile_lane(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test upsert desktop start clears preserved mobile lane."""
     fake = _FakeRedis()
     scope = "lib-diagram-uuid"
     meta_key = kitty_sessionmeta_key(scope)
@@ -180,6 +212,7 @@ async def test_upsert_desktop_start_clears_preserved_mobile_lane(monkeypatch: py
 
 @pytest.mark.asyncio
 async def test_upsert_mobile_lane_marks_user_active(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test upsert mobile lane marks user active."""
     fake = _FakeRedis()
     scope = "mobile-scope"
     monkeypatch.setattr(kitty_session_redis, "get_async_redis", lambda: fake)
@@ -205,6 +238,7 @@ async def test_upsert_mobile_lane_marks_user_active(monkeypatch: pytest.MonkeyPa
 async def test_upsert_preserve_mobile_lane_does_not_mark_without_explicit_lane(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Test upsert preserve mobile lane does not mark without explicit lane."""
     fake = _FakeRedis()
     scope = "lib-diagram-uuid"
     meta_key = kitty_sessionmeta_key(scope)
@@ -236,6 +270,7 @@ async def test_upsert_preserve_mobile_lane_does_not_mark_without_explicit_lane(
 
 @pytest.mark.asyncio
 async def test_kitty_rest_desktop_pairing_inactive_long_poll_skips_pop() -> None:
+    """Test kitty rest desktop pairing inactive long poll skips pop."""
     user = _kitty_user(5)
     pop_mock = AsyncMock(return_value={"kind": "open_canvas", "diagram_type": "mindmap"})
     with (
@@ -254,8 +289,6 @@ async def test_kitty_rest_desktop_pairing_inactive_long_poll_skips_pop() -> None
         ),
     ):
         cfg.FEATURE_KITTY_WS_ENABLED = True
-        from services.kitty.http.handlers import kitty_rest_desktop_pairing
-
         out = await kitty_rest_desktop_pairing(user, wait_sec=25)
 
     assert out["active"] is False
@@ -265,6 +298,7 @@ async def test_kitty_rest_desktop_pairing_inactive_long_poll_skips_pop() -> None
 
 @pytest.mark.asyncio
 async def test_kitty_rest_desktop_pairing_inactive_instant_pop() -> None:
+    """Test kitty rest desktop pairing inactive instant pop."""
     user = _kitty_user(5)
     pop_mock = AsyncMock(return_value={"kind": "open_library_diagram", "diagram_library_id": "abc-def-123"})
     with (
@@ -287,8 +321,6 @@ async def test_kitty_rest_desktop_pairing_inactive_instant_pop() -> None:
         ),
     ):
         cfg.FEATURE_KITTY_WS_ENABLED = True
-        from services.kitty.http.handlers import kitty_rest_desktop_pairing
-
         out = await kitty_rest_desktop_pairing(user, wait_sec=0)
 
     assert out["active"] is False
@@ -298,6 +330,7 @@ async def test_kitty_rest_desktop_pairing_inactive_instant_pop() -> None:
 
 @pytest.mark.asyncio
 async def test_kitty_rest_desktop_pairing_inactive_instant_pop_without_explicit_flag() -> None:
+    """Test kitty rest desktop pairing inactive instant pop without explicit flag."""
     user = _kitty_user(5)
     pop_mock = AsyncMock(return_value={"kind": "open_library_diagram", "diagram_library_id": "abc-def-123"})
     with (
@@ -320,8 +353,6 @@ async def test_kitty_rest_desktop_pairing_inactive_instant_pop_without_explicit_
         ),
     ):
         cfg.FEATURE_KITTY_WS_ENABLED = True
-        from services.kitty.http.handlers import kitty_rest_desktop_pairing
-
         out = await kitty_rest_desktop_pairing(user, wait_sec=0)
 
     assert out["active"] is False
@@ -331,6 +362,7 @@ async def test_kitty_rest_desktop_pairing_inactive_instant_pop_without_explicit_
 
 @pytest.mark.asyncio
 async def test_kitty_rest_desktop_pairing_active_long_poll_pop() -> None:
+    """Test kitty rest desktop pairing active long poll pop."""
     user = _kitty_user(6)
     pop_mock = AsyncMock(return_value={"kind": "open_canvas", "diagram_type": "mindmap"})
     with (
@@ -355,8 +387,6 @@ async def test_kitty_rest_desktop_pairing_active_long_poll_pop() -> None:
         ),
     ):
         cfg.FEATURE_KITTY_WS_ENABLED = True
-        from services.kitty.http.handlers import kitty_rest_desktop_pairing
-
         out = await kitty_rest_desktop_pairing(user, wait_sec=25)
 
     assert out["active"] is True
@@ -366,16 +396,18 @@ async def test_kitty_rest_desktop_pairing_active_long_poll_pop() -> None:
 
 @pytest.mark.asyncio
 async def test_pop_wait_uses_blpop_when_blocking(monkeypatch: pytest.MonkeyPatch) -> None:
-    from services.kitty.infra.desktop import kitty_desktop_action_queue as queue
-
+    """Test pop wait uses blpop when blocking."""
     class _QueueRedis:
         def __init__(self) -> None:
+            """ init  ."""
             self.blpop_timeout: int | None = None
 
         async def lpop(self, _key: str) -> None:
+            """Lpop."""
             return None
 
         async def blpop(self, _key: str, timeout: int = 0) -> None:
+            """Blpop."""
             self.blpop_timeout = timeout
             return None
 
@@ -388,6 +420,7 @@ async def test_pop_wait_uses_blpop_when_blocking(monkeypatch: pytest.MonkeyPatch
 
 @pytest.mark.asyncio
 async def test_kitty_rest_mobile_active_get_shape() -> None:
+    """Test kitty rest mobile active get shape."""
     user = _kitty_user(12)
     with (
         patch("services.kitty.http.handlers.config") as cfg,
@@ -414,6 +447,7 @@ async def test_kitty_rest_mobile_active_get_shape() -> None:
 
 @pytest.mark.asyncio
 async def test_mark_publishes_desktop_wake(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test mark publishes desktop wake."""
     fake = _FakeRedis()
     publish_mock = AsyncMock()
     _patch_kitty_redis(monkeypatch, fake)
@@ -431,6 +465,7 @@ async def test_mark_publishes_desktop_wake(monkeypatch: pytest.MonkeyPatch) -> N
 
 @pytest.mark.asyncio
 async def test_clear_publishes_inactive_wake(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test clear publishes inactive wake."""
     fake = _FakeRedis()
     publish_mock = AsyncMock()
     _patch_kitty_redis(monkeypatch, fake)
@@ -447,8 +482,7 @@ async def test_clear_publishes_inactive_wake(monkeypatch: pytest.MonkeyPatch) ->
 
 
 def test_build_desktop_wake_payload_shape() -> None:
-    from services.kitty.infra.desktop.kitty_desktop_wake_fanout import build_kitty_desktop_wake_payload
-
+    """Test build desktop wake payload shape."""
     raw = build_kitty_desktop_wake_payload({"active": True, "scopes": ["a"], "primary_scope": "a"})
     data = json.loads(raw)
     assert data["type"] == "mobile_active"
@@ -459,6 +493,7 @@ def test_build_desktop_wake_payload_shape() -> None:
 
 @pytest.mark.asyncio
 async def test_kitty_rest_desktop_action_pop_inactive_long_poll_skips_queue() -> None:
+    """Test kitty rest desktop action pop inactive long poll skips queue."""
     user = _kitty_user(8)
     pop_mock = AsyncMock(return_value={"kind": "open_canvas", "diagram_type": "mindmap"})
     with (
@@ -477,8 +512,6 @@ async def test_kitty_rest_desktop_action_pop_inactive_long_poll_skips_queue() ->
         ),
     ):
         cfg.FEATURE_KITTY_WS_ENABLED = True
-        from services.kitty.http.handlers import kitty_rest_desktop_action_pop
-
         out = await kitty_rest_desktop_action_pop(user, wait_sec=25)
 
     assert out == {"action": None}
@@ -487,6 +520,7 @@ async def test_kitty_rest_desktop_action_pop_inactive_long_poll_skips_queue() ->
 
 @pytest.mark.asyncio
 async def test_kitty_rest_desktop_action_pop_inactive_instant_pop() -> None:
+    """Test kitty rest desktop action pop inactive instant pop."""
     user = _kitty_user(8)
     pop_mock = AsyncMock(return_value={"kind": "open_library_diagram", "diagram_library_id": "abc-def-123"})
     with (
@@ -509,8 +543,6 @@ async def test_kitty_rest_desktop_action_pop_inactive_instant_pop() -> None:
         ),
     ):
         cfg.FEATURE_KITTY_WS_ENABLED = True
-        from services.kitty.http.handlers import kitty_rest_desktop_action_pop
-
         out = await kitty_rest_desktop_action_pop(user, wait_sec=0)
 
     assert out["action"]["kind"] == "open_library_diagram"
@@ -519,6 +551,7 @@ async def test_kitty_rest_desktop_action_pop_inactive_instant_pop() -> None:
 
 @pytest.mark.asyncio
 async def test_kitty_rest_mobile_active_disabled_returns_inactive() -> None:
+    """Test kitty rest mobile active disabled returns inactive."""
     user = _kitty_user(3)
     with patch("services.kitty.http.handlers.config") as cfg:
         cfg.FEATURE_KITTY_WS_ENABLED = False
@@ -529,8 +562,7 @@ async def test_kitty_rest_mobile_active_disabled_returns_inactive() -> None:
 
 @pytest.mark.asyncio
 async def test_enqueue_open_library_diagram_accepts_valid_id(monkeypatch: pytest.MonkeyPatch) -> None:
-    from services.kitty.infra.desktop import kitty_desktop_action_queue as queue
-
+    """Test enqueue open library diagram accepts valid id."""
     pushed: list[dict] = []
 
     async def _fake_push(user_id: int, payload: dict) -> bool:
@@ -555,10 +587,7 @@ async def test_enqueue_open_library_diagram_accepts_valid_id(monkeypatch: pytest
 
 @pytest.mark.asyncio
 async def test_pop_discards_stale_actions(monkeypatch: pytest.MonkeyPatch) -> None:
-    import time
-
-    from services.kitty.infra.desktop import kitty_desktop_action_queue as queue
-
+    """Test pop discards stale actions."""
     stale = json.dumps(
         {
             "kind": "open_canvas",
@@ -576,9 +605,11 @@ async def test_pop_discards_stale_actions(monkeypatch: pytest.MonkeyPatch) -> No
 
     class _QueueRedis:
         def __init__(self) -> None:
+            """ init  ."""
             self.items = [stale.encode("utf-8"), fresh.encode("utf-8")]
 
         async def lpop(self, _key: str) -> bytes | None:
+            """Lpop."""
             if not self.items:
                 return None
             return self.items.pop(0)
@@ -592,8 +623,7 @@ async def test_pop_discards_stale_actions(monkeypatch: pytest.MonkeyPatch) -> No
 
 @pytest.mark.asyncio
 async def test_enqueue_open_library_diagram_rejects_invalid_id() -> None:
-    from services.kitty.infra.desktop import kitty_desktop_action_queue as queue
-
+    """Test enqueue open library diagram rejects invalid id."""
     ok = await queue.enqueue_kitty_desktop_action(
         9,
         {"kind": "open_library_diagram", "diagram_library_id": "bad id!"},
@@ -603,6 +633,7 @@ async def test_enqueue_open_library_diagram_rejects_invalid_id() -> None:
 
 @pytest.mark.asyncio
 async def test_kitty_rest_desktop_action_enqueue_ok() -> None:
+    """Test kitty rest desktop action enqueue ok."""
     user = _kitty_user(7)
     enqueue_mock = AsyncMock(return_value=True)
     wake_mock = AsyncMock()
@@ -627,8 +658,6 @@ async def test_kitty_rest_desktop_action_enqueue_ok() -> None:
         ),
     ):
         cfg.FEATURE_KITTY_WS_ENABLED = True
-        from services.kitty.http.handlers import kitty_rest_desktop_action_enqueue
-
         out = await kitty_rest_desktop_action_enqueue(
             user,
             {

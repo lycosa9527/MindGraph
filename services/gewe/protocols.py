@@ -11,14 +11,15 @@ Proprietary License
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Set, TYPE_CHECKING
-from clients.gewe import AsyncGeweClient
+from typing import TYPE_CHECKING, Optional, Set
+
 from clients.dify import AsyncDifyClient
+from clients.gewe import AsyncGeweClient
 
 if TYPE_CHECKING:
-    from services.gewe.message_db import GeweMessageDB
     from services.gewe.contact_db import GeweContactDB
     from services.gewe.group_member_db import GeweGroupMemberDB
+    from services.gewe.message_db import GeweMessageDB
 
 
 class GeweServiceBase(ABC):

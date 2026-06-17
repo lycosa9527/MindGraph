@@ -22,17 +22,18 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
-from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 from models.domain.auth import Organization, User
-from models.domain.messages import Messages, Language
+from models.domain.messages import Language, Messages
 from models.requests.requests_auth import (
     QuickRegisterCloseRequest,
     QuickRegisterOpenRequest,
     RegisterQuickRequest,
 )
+from services.auth.phone_uniqueness import any_user_id_with_phone
 from services.auth.quick_register_redis import (
     DEFAULT_TTL_SECONDS,
     ROOM_CODE_SECRET_FIELD,
+    WORKSHOP_DEFAULT_MAX_USES,
     clear_minter_index_if_token_matches,
     clear_room_code_guess_failures,
     delete_token,
@@ -50,25 +51,25 @@ from services.auth.quick_register_redis import (
     store_token,
     workshop_release_reservation,
     workshop_reserve_or_fail,
-    WORKSHOP_DEFAULT_MAX_USES,
 )
 from services.auth.quick_register_room_code import (
-    current_room_code_from_room_secret,
     ROOM_CODE_PERIOD_SECONDS,
+    current_room_code_from_room_secret,
     verify_room_code_submitted,
 )
-from services.auth.phone_uniqueness import any_user_id_with_phone
-from services.redis.redis_distributed_lock import phone_registration_lock
-from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
-from utils.auth import get_client_ip, hash_password, is_admin, is_manager
-from utils.auth.role_constants import ROLE_TEACHER
-from utils.auth.registration_gate import http_forbid_if_registration_disabled
-from utils.auth.school_tier import assert_organization_has_member_capacity
 from services.monitoring.registration_metrics import registration_metrics
+from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
+from services.redis.redis_distributed_lock import phone_registration_lock
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.auth import get_client_ip, hash_password, is_admin, is_manager
+from utils.auth.registration_gate import http_forbid_if_registration_disabled
+from utils.auth.role_constants import ROLE_TEACHER
+from utils.auth.school_tier import assert_organization_has_member_capacity
+from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 
 from .dependencies import get_language_dependency, require_admin_or_manager
-from .registration import finalize_sms_registration_session
 from .helpers import commit_user_with_retry
+from .registration import finalize_sms_registration_session
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +87,7 @@ _DEFAULT_REGISTER_QUICK_PHONE_WINDOW = 600
 
 
 def _int_env(name: str, default: int) -> int:
+    """Int env."""
     raw = (os.environ.get(name) or "").strip()
     if not raw:
         return default
@@ -106,10 +108,12 @@ _ROOM_CODE_GET_PER_TOKEN_WINDOW = _int_env("QUICK_REG_ROOM_GET_TOKEN_WINDOW", 60
 
 
 def _token_log_id(raw: str) -> str:
+    """Token log id."""
     return hashlib.sha256(raw.encode("utf-8", errors="replace")).hexdigest()[:12]
 
 
 def _minter_id_from_token_payload(data: object) -> int:
+    """Minter id from token payload."""
     if not isinstance(data, dict):
         return 0
     raw = data.get("created_by_user_id")
@@ -122,6 +126,7 @@ def _minter_id_from_token_payload(data: object) -> int:
 
 
 def _room_code_secret_from_payload(data: object) -> str:
+    """Room code secret from payload."""
     if not isinstance(data, dict):
         return ""
     raw = data.get(ROOM_CODE_SECRET_FIELD)
@@ -474,10 +479,10 @@ async def register_quick(
             db.add(new_user)
             try:
                 retry_count = await commit_user_with_retry(db, new_user, max_retries=5, lang=lang)
-            except HTTPException:
+            except HTTPException as http_exc:
                 if reserved_workshop:
                     await workshop_release_reservation(request.quick_reg_token)
-                raise
+                raise http_exc
             if ch == "single_use":
                 deleted = await delete_token_with_retries(request.quick_reg_token)
                 if minter_id_for_token and request.quick_reg_token:
@@ -511,8 +516,6 @@ async def register_quick(
                     await refresh_workshop_channel_ttl(
                         request.quick_reg_token, minter_id_for_token, DEFAULT_TTL_SECONDS
                     )
-    except HTTPException:
-        raise
     except RuntimeError as exc:
         registration_metrics.record_failure("lock_timeout", time.time() - start_time)
         logger.warning(
@@ -523,9 +526,9 @@ async def register_quick(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=Messages.error("quick_reg_redis_unavailable", lang),
         ) from exc
-    except Exception:
+    except BACKGROUND_INFRA_ERRORS as infra_exc:
         registration_metrics.record_failure("other", time.time() - start_time)
-        raise
+        raise infra_exc
 
     if new_user is None:
         raise HTTPException(

@@ -1,5 +1,4 @@
-"""
-Benchmark Dataset Loaders for RAG Chunk Testing
+"""Benchmark Dataset Loaders for RAG Chunk Testing
 ================================================
 
 Loaders for benchmark datasets: FinanceBench, KG-RAG, FRAMES, PubMedQA.
@@ -12,13 +11,18 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Any, Dict, List, Optional
 import csv
 import json
 import logging
+from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from sqlalchemy import func, select
+
+from services.knowledge.document_cleaner import get_document_cleaner
+from services.knowledge.document_processor import get_document_processor
+from services.utils.error_types import JSON_PARSE_ERRORS
 
 load_dataset: Any = None
 HAS_DATASETS = False
@@ -120,7 +124,7 @@ class BenchmarkLoader(ABC):
                     reader = csv.DictReader(f)
                     data = list(reader)
                 return data
-        except Exception as e:
+        except JSON_PARSE_ERRORS as e:
             logger.warning("[BenchmarkLoaders] Failed to load local file %s: %s", file_path, e)
         return None
 
@@ -143,7 +147,7 @@ class BenchmarkLoader(ABC):
             if config:
                 return load_dataset(dataset_path, config)
             return load_dataset(dataset_path)
-        except Exception as e:
+        except JSON_PARSE_ERRORS as e:
             logger.error(
                 "[BenchmarkLoaders] Failed to load dataset %s from Hugging Face: %s",
                 dataset_path,
@@ -156,6 +160,7 @@ class FinanceBenchLoader(BenchmarkLoader):
     """Loader for FinanceBench dataset."""
 
     def get_dataset_name(self) -> str:
+        """Get dataset name."""
         return "FinanceBench"
 
     async def load_documents(self) -> List[Dict[str, Any]]:
@@ -294,6 +299,7 @@ class KGRAGLoader(BenchmarkLoader):
     """Loader for KG-RAG (BiomixQA) dataset."""
 
     def get_dataset_name(self) -> str:
+        """Get dataset name."""
         return "KG-RAG"
 
     async def load_documents(self) -> List[Dict[str, Any]]:
@@ -399,6 +405,7 @@ class FRAMESLoader(BenchmarkLoader):
     """Loader for FRAMES dataset."""
 
     def get_dataset_name(self) -> str:
+        """Get dataset name."""
         return "FRAMES"
 
     async def load_documents(self) -> List[Dict[str, Any]]:
@@ -510,6 +517,7 @@ class PubMedQALoader(BenchmarkLoader):
     """Loader for PubMedQA dataset."""
 
     def get_dataset_name(self) -> str:
+        """Get dataset name."""
         return "PubMedQA"
 
     async def load_documents(self) -> List[Dict[str, Any]]:
@@ -631,6 +639,7 @@ class UserDocumentLoader(BenchmarkLoader):
         self.document_ids = document_ids
 
     def get_dataset_name(self) -> str:
+        """Get dataset name."""
         return "user_documents"
 
     async def load_documents(self) -> List[Dict[str, Any]]:
@@ -638,7 +647,6 @@ class UserDocumentLoader(BenchmarkLoader):
         if not HAS_CHUNK_TEST_MODELS or ChunkTestDocument is None or ChunkTestDocumentChunk is None:
             raise ImportError("Chunk test document models not available. Cannot load user documents.")
 
-        from sqlalchemy import select, func
 
         documents = []
         for doc_id in self.document_ids:
@@ -657,8 +665,6 @@ class UserDocumentLoader(BenchmarkLoader):
                 )
                 continue
 
-            from services.knowledge.document_processor import get_document_processor
-            from services.knowledge.document_cleaner import get_document_cleaner
 
             processor = get_document_processor()
             cleaner = get_document_cleaner()

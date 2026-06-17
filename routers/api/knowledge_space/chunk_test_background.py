@@ -14,10 +14,11 @@ from typing import Any, Callable, Dict, List, Optional, Set
 from sqlalchemy import select, update
 
 from config.database import SyncSessionLocal
-from utils.db.rls_context import RlsContext, reset_rls_context, rls_sync_session, set_rls_context
-from utils.db.session_open import system_rls_session, user_rls_session
 from models.domain.knowledge_space import ChunkTestResult
 from services.knowledge.rag_chunk_test import get_rag_chunk_test_service
+from services.utils.error_types import DATABASE_ERRORS
+from utils.db.rls_context import RlsContext, reset_rls_context, rls_sync_session, set_rls_context
+from utils.db.session_open import system_rls_session, user_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -84,14 +85,14 @@ def _cleanup_active_tests():
                             "[ChunkTestBackground] Marked test %s as interrupted",
                             test_id,
                         )
-                except Exception as e:
+                except DATABASE_ERRORS as e:
                     logger.error(
                         "[ChunkTestBackground] Failed to cleanup test %s: %s",
                         test_id,
                         e,
                     )
             db.commit()
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("[ChunkTestBackground] Error during test cleanup: %s", e)
 
 
@@ -150,7 +151,7 @@ async def detect_and_mark_stuck_tests_async() -> int:
                     )
                     stuck_ids.append(test.id)
                     unregister_active_test(test.id)
-                except Exception as exc:
+                except DATABASE_ERRORS as exc:
                     logger.error(
                         "[ChunkTestBackground] Failed to schedule stuck test %s update: %s",
                         test.id,
@@ -175,7 +176,7 @@ async def detect_and_mark_stuck_tests_async() -> int:
                     stuck_count,
                 )
 
-    except Exception as exc:
+    except DATABASE_ERRORS as exc:
         logger.error(
             "[ChunkTestBackground] Error detecting stuck tests (async): %s",
             exc,
@@ -305,7 +306,7 @@ def run_test_in_background(
                     progress,
                 )
                 return True
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 logger.error(
                     "[ChunkTestBackground] Failed to update progress for test %s: %s",
                     test_id,
@@ -404,7 +405,7 @@ def run_test_in_background(
                 exc_info=True,
             )
             raise
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             if is_cancelled(test_id):
                 logger.info("[ChunkTestBackground] Test %s cancelled: %s", test_id, e)
                 result_row.status = "failed"
@@ -419,7 +420,7 @@ def run_test_in_background(
             )
             raise
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error(
             "[ChunkTestBackground] Background test failed for test %s: %s",
             test_id,
@@ -436,7 +437,7 @@ def run_test_in_background(
                 test_result.current_stage = "failed"
                 db.commit()
                 logger.info("[ChunkTestBackground] Marked test %s as failed", test_id)
-        except Exception as update_error:
+        except DATABASE_ERRORS as update_error:
             logger.error(
                 "[ChunkTestBackground] Failed to update failed status for test %s: %s",
                 test_id,
@@ -453,7 +454,7 @@ def run_test_in_background(
             try:
                 # Rollback any uncommitted transactions
                 db.rollback()
-            except Exception as rollback_error:
+            except DATABASE_ERRORS as rollback_error:
                 logger.debug(
                     "[ChunkTestBackground] Error rolling back transaction for test %s: %s",
                     test_id,
@@ -462,7 +463,7 @@ def run_test_in_background(
             try:
                 # Close the session
                 db.close()
-            except Exception as close_error:
+            except DATABASE_ERRORS as close_error:
                 logger.warning(
                     "[ChunkTestBackground] Error closing database session for test %s: %s",
                     test_id,
@@ -555,7 +556,7 @@ def run_benchmark_in_background(
                     progress,
                 )
                 return True
-            except Exception as e:
+            except DATABASE_ERRORS as e:
                 logger.error(
                     "[ChunkTestBackground] Failed to update progress for test %s: %s",
                     test_id,
@@ -656,7 +657,7 @@ def run_benchmark_in_background(
                 exc_info=True,
             )
             raise
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             if is_cancelled(test_id):
                 logger.info("[ChunkTestBackground] Test %s cancelled: %s", test_id, e)
                 result_row.status = "failed"
@@ -671,7 +672,7 @@ def run_benchmark_in_background(
             )
             raise
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error(
             "[ChunkTestBackground] Background benchmark test failed for test %s: %s",
             test_id,
@@ -688,7 +689,7 @@ def run_benchmark_in_background(
                 test_result.current_stage = "failed"
                 db.commit()
                 logger.info("[ChunkTestBackground] Marked test %s as failed", test_id)
-        except Exception as update_error:
+        except DATABASE_ERRORS as update_error:
             logger.error(
                 "[ChunkTestBackground] Failed to update failed status for test %s: %s",
                 test_id,
@@ -705,7 +706,7 @@ def run_benchmark_in_background(
             try:
                 # Rollback any uncommitted transactions
                 db.rollback()
-            except Exception as rollback_error:
+            except DATABASE_ERRORS as rollback_error:
                 logger.debug(
                     "[ChunkTestBackground] Error rolling back transaction for test %s: %s",
                     test_id,
@@ -714,7 +715,7 @@ def run_benchmark_in_background(
             try:
                 # Close the session
                 db.close()
-            except Exception as close_error:
+            except DATABASE_ERRORS as close_error:
                 logger.warning(
                     "[ChunkTestBackground] Error closing database session for test %s: %s",
                     test_id,

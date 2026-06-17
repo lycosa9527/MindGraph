@@ -92,6 +92,7 @@ def parse_inbound_message(body: dict[str, Any]) -> DingTalkInboundMessage:
 
 
 def _as_str(value: Any) -> str:
+    """As str."""
     if value is None:
         return ""
     if isinstance(value, str):
@@ -102,6 +103,7 @@ def _as_str(value: Any) -> str:
 
 
 def _content_dict(body: dict[str, Any]) -> dict[str, Any]:
+    """Content dict."""
     raw = body.get("content")
     if isinstance(raw, dict):
         return raw
@@ -109,6 +111,7 @@ def _content_dict(body: dict[str, Any]) -> dict[str, Any]:
 
 
 def _json_snippet(obj: Any) -> str:
+    """Json snippet."""
     try:
         s = json.dumps(obj, ensure_ascii=False)
     except (TypeError, ValueError):
@@ -119,6 +122,7 @@ def _json_snippet(obj: Any) -> str:
 
 
 def _normalize_msgtype(body: dict[str, Any]) -> str:
+    """Normalize msgtype."""
     raw = body.get("msgtype") or body.get("msgType")
     if not isinstance(raw, str) or not raw.strip():
         return "text"
@@ -126,6 +130,7 @@ def _normalize_msgtype(body: dict[str, Any]) -> str:
 
 
 def _is_group_conversation(body: dict[str, Any]) -> bool:
+    """Is group conversation."""
     ct = body.get("conversationType") or body.get("conversation_type")
     if ct is None:
         return False
@@ -146,6 +151,7 @@ def _strip_leading_at_mentions(text: str) -> str:
 
 
 def _maybe_strip_group_mentions(text: str, body: dict[str, Any]) -> str:
+    """Maybe strip group mentions."""
     if not _is_group_conversation(body):
         return text
     return _strip_leading_at_mentions(text)
@@ -188,6 +194,7 @@ def extract_inbound_prompt(body: dict[str, Any]) -> tuple[str, str]:
 
 
 def _clip(text: str) -> str:
+    """Clip."""
     if len(text) <= _MAX_PROMPT:
         return text
     return text[:_MAX_PROMPT] + "…"
@@ -228,6 +235,7 @@ def extract_dingtalk_sender_profile(body: dict[str, Any]) -> tuple[str, str | No
 
 
 def _extract_plain_text(body: dict[str, Any]) -> str:
+    """Extract plain text."""
     text_obj = body.get("text")
     if isinstance(text_obj, dict):
         raw = text_obj.get("content", "")
@@ -240,6 +248,7 @@ def _extract_plain_text(body: dict[str, Any]) -> str:
 
 
 def _extract_picture(body: dict[str, Any]) -> str:
+    """Extract picture."""
     cd = _content_dict(body)
     pic = _as_str(
         cd.get("pictureDownloadCode") or cd.get("picture_download_code") or body.get("pictureDownloadCode"),
@@ -263,6 +272,7 @@ def _extract_picture(body: dict[str, Any]) -> str:
 
 
 def _extract_video(body: dict[str, Any]) -> str:
+    """Extract video."""
     cd = _content_dict(body)
     vid = body.get("video")
     if isinstance(vid, dict):
@@ -277,6 +287,7 @@ def _extract_video(body: dict[str, Any]) -> str:
 
 
 def _extract_audio(body: dict[str, Any]) -> str:
+    """Extract audio."""
     cd = _content_dict(body)
     aud = body.get("audio") or body.get("voice")
     if isinstance(aud, dict):
@@ -291,6 +302,7 @@ def _extract_audio(body: dict[str, Any]) -> str:
 
 
 def _extract_file(body: dict[str, Any]) -> str:
+    """Extract file."""
     cd = _content_dict(body)
     fi = body.get("file")
     if isinstance(fi, dict):
@@ -311,6 +323,7 @@ def _extract_file(body: dict[str, Any]) -> str:
 
 
 def _extract_rich_text(body: dict[str, Any]) -> str:
+    """Extract rich text."""
     rt = body.get("richText") or body.get("rich_text")
     if rt is None:
         rt = body.get("content")
@@ -318,6 +331,7 @@ def _extract_rich_text(body: dict[str, Any]) -> str:
 
 
 def _extract_link(body: dict[str, Any]) -> str:
+    """Extract link."""
     lk = body.get("link")
     if not isinstance(lk, dict):
         lk = _content_dict(body)
@@ -340,6 +354,7 @@ def _extract_link(body: dict[str, Any]) -> str:
 
 
 def _extract_markdown(body: dict[str, Any]) -> str:
+    """Extract markdown."""
     md = body.get("markdown")
     if isinstance(md, dict):
         title = _as_str(md.get("title"))
@@ -354,6 +369,7 @@ def _extract_markdown(body: dict[str, Any]) -> str:
 
 
 def _extract_unknown(mt: str, body: dict[str, Any]) -> str:
+    """Extract unknown."""
     fallback = _extract_plain_text(body)
     if fallback:
         return f"[DingTalk msgtype={mt}]\n{fallback}"

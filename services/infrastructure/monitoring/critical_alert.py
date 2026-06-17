@@ -26,9 +26,11 @@ import os
 import time
 from typing import Coroutine, Optional
 
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+
 try:
-    from services.redis.redis_client import is_redis_available
     from services.redis.redis_async_client import get_async_redis
+    from services.redis.redis_client import is_redis_available
 
     _REDIS_AVAILABLE = True
 except ImportError:
@@ -72,6 +74,7 @@ _NON_PRODUCTION_ENVIRONMENTS = frozenset({"development", "dev", "test", "staging
 
 
 def _env_flag(name: str, default: str) -> bool:
+    """Env flag."""
     return os.getenv(name, default).lower() in ("true", "1", "yes")
 
 
@@ -160,7 +163,7 @@ class CriticalAlertService:
             key = f"{ALERT_SENT_KEY_PREFIX}{component}:{error_hash}"
             exists = await redis_client.exists(key)
             return bool(exists)
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.debug("[CriticalAlert] Failed to check alert sent status: %s", e)
             return False
 
@@ -186,7 +189,7 @@ class CriticalAlertService:
 
             key = f"{ALERT_SENT_KEY_PREFIX}{component}:{error_hash}"
             await redis_client.setex(key, cooldown_seconds, str(time.time()))
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("[CriticalAlert] Failed to mark alert as sent: %s", e)
 
     @staticmethod
@@ -272,10 +275,9 @@ class CriticalAlertService:
                     await CriticalAlertService._mark_alert_sent(component, error_hash, cooldown)
 
                 return True
-            else:
-                logger.error("[CriticalAlert] Failed to send SMS alert: %s", message)
-                return False
-        except Exception as e:
+            logger.error("[CriticalAlert] Failed to send SMS alert: %s", message)
+            return False
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[CriticalAlert] Error sending SMS alert: %s", e, exc_info=True)
             return False
 
@@ -387,7 +389,7 @@ class CriticalAlertService:
                 return True
             except RuntimeError:
                 return asyncio.run(CriticalAlertService.send_startup_failure_alert(component, error_message, details))
-        except Exception as e:
+        except BACKGROUND_INFRA_ERRORS as e:
             logger.error(
                 "[CriticalAlert] Failed to send startup failure alert: %s",
                 e,

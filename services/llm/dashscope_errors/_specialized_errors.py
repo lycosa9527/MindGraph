@@ -8,12 +8,12 @@ Handles specialized errors including WebSocket, Audio/Video, Flow, Schema, etc.
 from typing import Optional, Tuple
 
 from services.infrastructure.http.error_handler import (
+    LLMContentFilterError,
     LLMInvalidParameterError,
     LLMProviderError,
+    LLMQuotaExhaustedError,
     LLMServiceError,
     LLMTimeoutError,
-    LLMContentFilterError,
-    LLMQuotaExhaustedError,
 )
 
 

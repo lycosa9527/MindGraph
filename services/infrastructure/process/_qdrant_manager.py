@@ -4,18 +4,20 @@ Qdrant server management for MindGraph application.
 Handles starting and stopping Qdrant server processes.
 """
 
+import atexit
 import logging
 import os
+import signal
+import subprocess
 import sys
 import time
-import signal
-import atexit
-import subprocess
 import urllib.request
 from typing import Optional
 
 from services.infrastructure.process._port_utils import check_port_in_use
+from services.infrastructure.process._process_io import close_resource_stack, launch_background_process
 from services.llm.qdrant_startup import parse_qdrant_host_port
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +45,7 @@ def _get_process_name(pid: int) -> Optional[str]:
                 parts = result.stdout.strip().split(",")
                 if len(parts) > 0:
                     return parts[0].strip('"').lower()
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("Process name lookup via tasklist failed: %s", exc)
     else:
         try:
@@ -56,7 +58,7 @@ def _get_process_name(pid: int) -> Optional[str]:
             )
             if result.stdout.strip():
                 return result.stdout.strip().lower()
-        except Exception as exc:
+        except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("Process name lookup via ps failed: %s", exc)
     return None
 
@@ -74,9 +76,9 @@ def _verify_qdrant_on_port(host: str, port: int) -> bool:
     """
     try:
         url = f"http://{host}:{port}/collections"
-        urllib.request.urlopen(url, timeout=2)
-        return True
-    except Exception:
+        with urllib.request.urlopen(url, timeout=2):
+            return True
+    except BACKGROUND_INFRA_ERRORS:
         return False
 
 
@@ -120,10 +122,13 @@ def start_qdrant_server(server_state) -> Optional[subprocess.Popen[bytes]]:
                 print("[QDRANT] Process appears to be Qdrant, waiting for readiness...")
                 for i in range(10):
                     try:
-                        urllib.request.urlopen(f"http://{qdrant_host}:{qdrant_port}/collections", timeout=2)
-                        print(f"[QDRANT] ✓ Using existing Qdrant server (PID: {pid})")
-                        return None
-                    except Exception:
+                        with urllib.request.urlopen(
+                            f"http://{qdrant_host}:{qdrant_port}/collections",
+                            timeout=2,
+                        ):
+                            print(f"[QDRANT] ✓ Using existing Qdrant server (PID: {pid})")
+                            return None
+                    except BACKGROUND_INFRA_ERRORS:
                         if i < 9:
                             time.sleep(1)
                         else:
@@ -141,10 +146,10 @@ def start_qdrant_server(server_state) -> Optional[subprocess.Popen[bytes]]:
                 sys.exit(1)
 
     try:
-        urllib.request.urlopen(f"http://{qdrant_host}:{qdrant_port}/collections", timeout=2)
-        print(f"[QDRANT] Qdrant server is already running on {qdrant_host}:{qdrant_port}")
-        return None
-    except Exception as exc:
+        with urllib.request.urlopen(f"http://{qdrant_host}:{qdrant_port}/collections", timeout=2):
+            print(f"[QDRANT] Qdrant server is already running on {qdrant_host}:{qdrant_port}")
+            return None
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("Qdrant pre-start connectivity check failed: %s", exc)
 
     if sys.platform != "win32":
@@ -159,10 +164,10 @@ def start_qdrant_server(server_state) -> Optional[subprocess.Popen[bytes]]:
                 print("[QDRANT] Qdrant systemd service is active (waiting for readiness...)")
                 for i in range(10):
                     try:
-                        urllib.request.urlopen("http://localhost:6333/collections", timeout=1)
-                        print("[QDRANT] Qdrant systemd service is ready")
-                        return None
-                    except Exception:
+                        with urllib.request.urlopen("http://localhost:6333/collections", timeout=1):
+                            print("[QDRANT] Qdrant systemd service is ready")
+                            return None
+                    except BACKGROUND_INFRA_ERRORS:
                         if i < 9:
                             time.sleep(1)
                         else:
@@ -201,7 +206,10 @@ def start_qdrant_server(server_state) -> Optional[subprocess.Popen[bytes]]:
     qdrant_cmd = [qdrant_binary]
 
     try:
-        server_state.qdrant_process = subprocess.Popen(
+        launch_background_process(
+            server_state,
+            "qdrant_resource_stack",
+            "qdrant_process",
             qdrant_cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -222,10 +230,10 @@ def start_qdrant_server(server_state) -> Optional[subprocess.Popen[bytes]]:
         time.sleep(2)
 
         try:
-            urllib.request.urlopen("http://localhost:6333/collections", timeout=2)
-            print(f"[QDRANT] Server started successfully (PID: {server_state.qdrant_process.pid})")
-            return server_state.qdrant_process
-        except Exception:
+            with urllib.request.urlopen("http://localhost:6333/collections", timeout=2):
+                print(f"[QDRANT] Server started successfully (PID: {server_state.qdrant_process.pid})")
+                return server_state.qdrant_process
+        except BACKGROUND_INFRA_ERRORS:
             print("[ERROR] Qdrant server process started but not responding on port 6333")
             print("        Check if port 6333 is available: lsof -i :6333")
             print("        Application cannot start without Qdrant.")
@@ -263,6 +271,7 @@ def stop_qdrant_server(server_state) -> None:
                 server_state.qdrant_process.kill()
             except (OSError, ProcessLookupError):
                 pass
+        close_resource_stack(server_state, "qdrant_resource_stack")
         server_state.qdrant_process = None
         try:
             print("[QDRANT] Server stopped")

@@ -23,6 +23,7 @@ from services.kitty.infra.control.kitty_control_fanout import (
 )
 from services.kitty.infra.control.kitty_observability import kitty_extra
 from services.redis.redis_async_client import get_async_redis
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ class KittyControlListenerRuntime:
     __slots__ = ("task", "stop_event")
 
     def __init__(self) -> None:
+        """ init  ."""
         self.task: Optional[asyncio.Task[None]] = None
         self.stop_event: Optional[asyncio.Event] = None
 
@@ -50,6 +52,7 @@ def is_kitty_control_listener_enabled() -> bool:
 
 
 async def _listen_loop(stop_event: asyncio.Event, local_instance: str) -> None:
+    """Listen loop."""
     ch = kitty_control_channel()
     while not stop_event.is_set():
         client = get_async_redis()
@@ -75,7 +78,7 @@ async def _listen_loop(stop_event: asyncio.Event, local_instance: str) -> None:
                     continue
                 try:
                     await handle_kitty_control_message(data, local_instance)
-                except Exception as exc:
+                except BACKGROUND_INFRA_ERRORS as exc:
                     record_kitty_control_dispatch_exception()
                     logger.warning(
                         "[KittyControl] dispatch error: %s",
@@ -108,6 +111,7 @@ async def _listen_loop(stop_event: asyncio.Event, local_instance: str) -> None:
 
 
 async def _supervisor(stop_event: asyncio.Event) -> None:
+    """Supervisor."""
     local_instance = get_kitty_control_instance_id()
     while not stop_event.is_set():
         try:
@@ -149,7 +153,7 @@ async def await_kitty_control_listener_stopped(timeout: float = 5.0) -> None:
     if task is not None and not task.done():
         try:
             await asyncio.wait_for(asyncio.shield(task), timeout=timeout)
-        except (asyncio.TimeoutError, asyncio.CancelledError, Exception):
+        except (asyncio.TimeoutError, asyncio.CancelledError, *BACKGROUND_INFRA_ERRORS):
             pass
     LISTENER_RUNTIME.task = None
     LISTENER_RUNTIME.stop_event = None

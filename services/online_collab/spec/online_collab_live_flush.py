@@ -18,12 +18,12 @@ from typing import Dict
 
 from redis.exceptions import RedisError
 
-from services.redis.redis_async_client import get_async_redis
-from services.online_collab.spec.online_collab_live_spec_ops import flush_live_spec_to_db
 from services.online_collab.redis.online_collab_redis_keys import (
     live_flush_pending_key,
     live_last_db_flush_key,
 )
+from services.online_collab.spec.online_collab_live_spec_ops import flush_live_spec_to_db
+from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
 

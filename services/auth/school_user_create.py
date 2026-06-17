@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import UTC, datetime
 import re
 import secrets
 import unicodedata
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
 
-from email_validator import EmailNotValidError, validate_email as ev_validate
+from email_validator import EmailNotValidError
+from email_validator import validate_email as ev_validate
 from fastapi import HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,6 +37,7 @@ MAX_MEMBER_NAME_LENGTH = 200
 
 @dataclass(frozen=True)
 class SchoolMemberInput:
+    """SchoolMemberInput helper."""
     phone: str | None
     email: str | None
     name: str
@@ -43,11 +45,13 @@ class SchoolMemberInput:
 
     @property
     def contact_key(self) -> str:
+        """Contact key."""
         return self.phone or self.email or ""
 
 
 @dataclass(frozen=True)
 class SchoolMemberBatchFailure:
+    """SchoolMemberBatchFailure helper."""
     index: int
     phone: str | None
     email: str | None
@@ -56,6 +60,7 @@ class SchoolMemberBatchFailure:
 
 
 def normalize_school_member_phone(phone: str) -> str:
+    """Normalize school member phone."""
     normalized_cell = unicodedata.normalize("NFKC", str(phone or "").strip())
     trimmed = normalized_cell.strip()
     if re.fullmatch(r"[\d.]+[eE][+\-]?\d+", trimmed):
@@ -71,6 +76,7 @@ def normalize_school_member_phone(phone: str) -> str:
 
 
 def validate_school_member_phone(phone: str, lang: Language) -> str:
+    """Validate school member phone."""
     normalized = normalize_school_member_phone(phone)
     if not normalized:
         raise HTTPException(
@@ -86,6 +92,7 @@ def validate_school_member_phone(phone: str, lang: Language) -> str:
 
 
 def try_normalize_school_member_email(email: str) -> str | None:
+    """Try normalize school member email."""
     value = str(email or "").strip()
     if not value:
         return None
@@ -96,6 +103,7 @@ def try_normalize_school_member_email(email: str) -> str | None:
 
 
 def validate_school_member_email(email: str, lang: Language) -> str:
+    """Validate school member email."""
     normalized = try_normalize_school_member_email(email)
     if not normalized:
         raise HTTPException(
@@ -106,6 +114,7 @@ def validate_school_member_email(email: str, lang: Language) -> str:
 
 
 def validate_school_member_name(name: str, lang: Language) -> str:
+    """Validate school member name."""
     normalized = str(name or "").strip()
     if not normalized or len(normalized) < 2:
         raise HTTPException(
@@ -131,6 +140,7 @@ def validate_school_member_role(
     *,
     actor_role: str | None = None,
 ) -> str:
+    """Validate school member role."""
     role = normalize_role(str(raw_role or ROLE_TEACHER))
     if role not in ALLOWED_SCHOOL_MEMBER_ROLES:
         raise HTTPException(
@@ -152,6 +162,7 @@ def _batch_failure_from_item(
     name: str,
     detail: str,
 ) -> SchoolMemberBatchFailure:
+    """Batch failure from item."""
     raw_phone = item.get("phone")
     raw_email = item.get("email")
     phone = str(raw_phone).strip() if raw_phone is not None and str(raw_phone).strip() else None
@@ -171,6 +182,7 @@ def try_parse_school_member_item(
     *,
     actor_role: str | None = None,
 ) -> tuple[SchoolMemberInput | None, SchoolMemberBatchFailure | None]:
+    """Try parse school member item."""
     name_raw = str(item.get("name", "") or "").strip()
     raw_phone = item.get("phone")
     raw_email = item.get("email")
@@ -243,6 +255,7 @@ def parse_school_member_input(
     *,
     actor_role: str | None = None,
 ) -> SchoolMemberInput:
+    """Parse school member input."""
     if not isinstance(raw, dict):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -268,6 +281,7 @@ def parse_school_member_batch(
     *,
     actor_role: str | None = None,
 ) -> tuple[list[SchoolMemberInput], list[SchoolMemberBatchFailure]]:
+    """Parse school member batch."""
     if not isinstance(raw_members, list) or not raw_members:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -337,6 +351,7 @@ async def assert_batch_member_capacity(
     members: list[SchoolMemberInput],
     lang: Language,
 ) -> None:
+    """Assert batch member capacity."""
     current_members = await member_count_for_org(db, int(org.id))
     max_members = member_limit_for_org(org)
     if not is_unlimited_member_limit(max_members) and current_members + len(members) > max_members:
@@ -364,6 +379,7 @@ async def create_school_member_user(
     member: SchoolMemberInput,
     lang: Language,
 ) -> User:
+    """Create school member user."""
     if member.phone and await any_user_id_with_phone(member.phone) is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -401,6 +417,7 @@ async def create_school_member_batch(
     members: list[SchoolMemberInput],
     lang: Language,
 ) -> tuple[list[User], list[SchoolMemberBatchFailure], int]:
+    """Create school member batch."""
     phones = [member.phone for member in members if member.phone]
     emails = [member.email for member in members if member.email]
     contact_filters = []
@@ -466,6 +483,7 @@ def batch_result_payload(
     *,
     skipped_count: int = 0,
 ) -> dict[str, Any]:
+    """Batch result payload."""
     created_count = len(created)
     failed_count = len(failed)
     if failed_count == 0 and created_count == 0 and skipped_count > 0:

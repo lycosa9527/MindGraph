@@ -16,7 +16,6 @@ from copy import deepcopy
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from models.domain.diagrams import Diagram
-
 from services.online_collab.spec.online_collab_live_spec_json import (
     json_get_live_spec,
     json_set_live_spec,
@@ -26,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 def _parse_db_spec(diagram: Diagram) -> Dict[str, Any]:
+    """Parse db spec."""
     raw = diagram.spec
     if raw is None:
         return {}
@@ -67,6 +67,7 @@ def _merge_node_patches(
     patches: List[Dict[str, Any]],
     skip_node_ids: Optional[Set[str]] = None,
 ) -> List[Dict[str, Any]]:
+    """Merge node patches."""
     skip = skip_node_ids or set()
     by_index = {str(n.get("id")): i for i, n in enumerate(existing_nodes) if n.get("id")}
     for patch in patches:
@@ -100,6 +101,7 @@ def _merge_connection_patches(
     conns: List[Dict[str, Any]],
     patches: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
+    """Merge connection patches."""
     for patch in patches:
         if not isinstance(patch, dict):
             continue

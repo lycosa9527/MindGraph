@@ -10,16 +10,16 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional
 import logging
+from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from models import Messages, get_request_language
 from models.domain.auth import User
 from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short_lived
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user_or_api_key
-
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,7 @@ router = APIRouter(tags=["api"])
 
 
 def _organization_id_for_user(user: Optional[User]) -> Optional[int]:
+    """Organization id for user."""
     if user is None:
         return None
     org_id = getattr(user, "organization_id", None)
@@ -103,9 +104,7 @@ async def upload_file_to_dify(
             },
         }
 
-    except HTTPException:
-        raise
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Dify upload error: %s", e)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -127,6 +126,6 @@ async def get_dify_parameters(
 
     try:
         return await client.get_app_parameters()
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Dify parameters error: %s", e)
         raise HTTPException(status_code=503, detail="Failed to connect to AI service") from e

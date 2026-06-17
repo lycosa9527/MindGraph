@@ -19,8 +19,6 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
-from typing import Optional, Tuple
 import hashlib
 import hmac
 import json
@@ -29,11 +27,13 @@ import os
 import random
 import string
 import time
+from datetime import datetime
+from typing import Optional, Tuple
 
 import httpx
 
-from models.domain.messages import Messages, Language
-
+from models.domain.messages import Language, Messages
+from services.utils.error_types import HTTP_CLIENT_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -391,11 +391,10 @@ class SMSService:
                     phone_masked = phone[:3] + "****" + phone[-4:]
                     logger.info("SMS sent successfully to %s for %s", phone_masked, purpose)
                     return True, "Verification code sent successfully", code
-                else:
-                    error_code = status.get("Code", "Unknown")
-                    error_msg = status.get("Message", "Unknown error")
-                    logger.error("SMS send failed: %s - %s", error_code, error_msg)
-                    return False, self._translate_error_code(error_code, lang), None
+                error_code = status.get("Code", "Unknown")
+                error_msg = status.get("Message", "Unknown error")
+                logger.error("SMS send failed: %s - %s", error_code, error_msg)
+                return False, self._translate_error_code(error_code, lang), None
 
             logger.error("Unexpected SMS response structure: %s", resp_data)
             return (
@@ -413,7 +412,7 @@ class SMSService:
         except SMSServiceError as e:
             logger.error("SMS service error: %s", e)
             return False, str(e), None
-        except Exception as e:
+        except HTTP_CLIENT_ERRORS as e:
             logger.error("Unexpected SMS error: %s", e)
             return False, "SMS service error. Please try again later.", None
 
@@ -549,7 +548,7 @@ class SMSService:
         except SMSServiceError as e:
             logger.error("SMS alert service error: %s", e)
             return False, str(e)
-        except Exception as e:
+        except HTTP_CLIENT_ERRORS as e:
             logger.error("Unexpected SMS alert error: %s", e, exc_info=True)
             return False, "SMS alert service error"
 
@@ -707,7 +706,7 @@ class SMSService:
         except SMSServiceError as e:
             logger.error("SMS notification service error: %s", e)
             return False, str(e)
-        except Exception as e:
+        except HTTP_CLIENT_ERRORS as e:
             logger.error("Unexpected SMS notification error: %s", e, exc_info=True)
             return False, "SMS notification service error"
 

@@ -18,16 +18,17 @@ All Rights Reserved
 Proprietary License
 """
 
-from pathlib import Path
-from typing import Dict, Any, Optional
 import asyncio
 import base64
 import json
 import logging
 import re
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 from config.settings import Config
 from services.infrastructure.utils.browser import BrowserContextManager
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, FILE_IO_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ def get_font_base64(font_filename: str) -> str:
         else:
             logger.debug("[ExportPNG] Font file not found: %s", font_path)
             return ""
-    except Exception as e:
+    except FILE_IO_ERRORS as e:
         logger.warning("[ExportPNG] Failed to load font %s: %s", font_filename, e)
         return ""
 
@@ -160,7 +161,7 @@ async def export_png_core(
                 d3_js_content = f.read()
             logger.debug("[ExportPNG] D3.js loaded (%s bytes)", len(d3_js_content))
             d3_script_tag = f"<script>{d3_js_content}</script>"
-        except Exception as e:
+        except FILE_IO_ERRORS as e:
             logger.error("[ExportPNG] Failed to load D3.js: %s", e)
             raise RuntimeError(f"Local D3.js library not available at {d3_js_path}") from e
 
@@ -368,7 +369,7 @@ async def export_png_core(
                                     )
                     embedded_js_content[key] = content
                 logger.debug("[ExportPNG] JS file '%s' loaded (%s bytes)", key, len(content))
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.error("[ExportPNG] Failed to load JS file '%s': %s", key, e)
                 raise RuntimeError(f"Required JavaScript file '{key}' not available at {path}") from e
 
@@ -455,7 +456,7 @@ async def export_png_core(
                     "[ExportPNG] Loaded renderer-dispatcher.js (%s bytes)",
                     len(renderer_dispatcher_js),
                 )
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.error("[ExportPNG] Failed to load renderer-dispatcher.js: %s", e)
                 raise RuntimeError(
                     f"Required JavaScript file 'renderer-dispatcher.js' not available at {renderer_dispatcher_path}"
@@ -555,7 +556,7 @@ async def export_png_core(
                         "topicFontSize": dimensions.get("topicFontSize", 18),
                         "charFontSize": dimensions.get("charFontSize", 14),
                     }
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.warning("[ExportPNG] Failed to apply recommended dimensions: %s", e)
 
         # Build font-face declarations only for fonts that exist
@@ -819,7 +820,7 @@ async def export_png_core(
                                     filename,
                                 )
                                 return
-                            except Exception as e:
+                            except BACKGROUND_INFRA_ERRORS as e:
                                 logger.error(
                                     "[ExportPNG] Failed to read renderer file %s: %s",
                                     filename,
@@ -880,7 +881,7 @@ async def export_png_core(
             try:
                 await page.set_content(html, timeout=timeout_ms)
                 logger.debug("[ExportPNG] HTML content loaded successfully")
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.error("[ExportPNG] Failed to set HTML content: %s", e)
                 raise
 
@@ -917,7 +918,7 @@ async def export_png_core(
             try:
                 await page.wait_for_selector("svg", timeout=5000)
                 logger.debug("[ExportPNG] SVG element found")
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.error("[ExportPNG] Timeout waiting for SVG element: %s", e)
                 # Log console messages and errors for debugging
                 if console_messages:
@@ -947,7 +948,7 @@ async def export_png_core(
             try:
                 element = await page.wait_for_selector("svg", timeout=10000)
                 logger.debug("[ExportPNG] SVG element found successfully")
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.error("[ExportPNG] Timeout waiting for SVG element: %s", e)
                 element = await page.query_selector("svg")  # Try one more time
 
@@ -978,7 +979,7 @@ async def export_png_core(
                     timeout=2000,
                 )
                 logger.debug("[ExportPNG] Element ready for screenshot")
-            except Exception as e:
+            except BACKGROUND_INFRA_ERRORS as e:
                 logger.warning(
                     "[ExportPNG] Element not ready for screenshot within 2s timeout: %s",
                     e,
@@ -993,6 +994,6 @@ async def export_png_core(
         logger.info("[ExportPNG] PNG generated successfully: %s bytes", len(screenshot_bytes))
         return screenshot_bytes
 
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[ExportPNG] Error during PNG export: %s", e, exc_info=True)
         raise

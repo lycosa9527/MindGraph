@@ -8,12 +8,12 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-from typing import Dict, Optional, Any
 import logging
+from typing import Any, Dict, Optional
 
 from services.monitoring.performance_tracker import performance_tracker
 from services.redis.redis_token_buffer import get_token_tracker
+from services.utils.error_types import REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +82,7 @@ class LLMMetricsTracker:
                 response_time=duration,
                 success=success,
             )
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.debug("[LLMMetricsTracker] Token tracking failed (non-critical): %s", e)
 
     def record_performance_metrics(

@@ -2,7 +2,6 @@
 
 Extracted from knowledge_space_service.py to reduce complexity.
 """
-
 import logging
 import shutil
 from pathlib import Path
@@ -12,11 +11,11 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.knowledge_space import (
+    DocumentVersion,
     KnowledgeDocument,
     KnowledgeSpace,
-    DocumentVersion,
 )
-
+from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +89,7 @@ async def rollback_document(
         )
         return document
 
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("[KnowledgeSpace] Failed to rollback document %s: %s", document_id, e)
         document.status = "failed"
         document.error_message = str(e)

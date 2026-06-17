@@ -11,13 +11,15 @@ All Rights Reserved
 Proprietary License
 """
 
-import sqlite3
 import logging
 import shutil
+import sqlite3
 import time
-from pathlib import Path
 from datetime import datetime
-from typing import Optional, Any
+from pathlib import Path
+from typing import Any, Optional
+
+from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +94,7 @@ def backup_sqlite_database(sqlite_path: Path, progress_tracker: Optional[Any] = 
                 checkpoint_cursor.close()
                 checkpoint_conn.close()
                 logger.info("[Migration] WAL checkpoint completed - backup will be consistent")
-            except Exception as checkpoint_error:
+            except DATABASE_ERRORS as checkpoint_error:
                 logger.warning(
                     "[Migration] WAL checkpoint failed (proceeding anyway): %s",
                     checkpoint_error,
@@ -124,7 +126,7 @@ def backup_sqlite_database(sqlite_path: Path, progress_tracker: Optional[Any] = 
 
         logger.info("[Migration] Backup created: %s (consistent, self-contained)", backup_path)
         return backup_path
-    except Exception as e:
+    except DATABASE_ERRORS as e:
         logger.error("[Migration] Failed to backup SQLite database: %s", e)
         return None
 
@@ -154,7 +156,7 @@ def move_sqlite_database_to_backup(sqlite_path: Path, sqlite_conn: Optional[sqli
         try:
             sqlite_conn.close()
             logger.debug("[Migration] Closed SQLite connection before move")
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.warning("[Migration] Error closing SQLite connection: %s", e)
 
     # Wait a moment for file handles to release
@@ -196,14 +198,14 @@ def move_sqlite_database_to_backup(sqlite_path: Path, sqlite_conn: Optional[sqli
                 try:
                     wal_path.unlink()
                     logger.debug("[Migration] Removed WAL file (no longer needed)")
-                except Exception as e:
+                except DATABASE_ERRORS as e:
                     logger.debug("[Migration] Could not remove WAL file: %s", e)
 
             if shm_path.exists():
                 try:
                     shm_path.unlink()
                     logger.debug("[Migration] Removed SHM file (no longer needed)")
-                except Exception as e:
+                except DATABASE_ERRORS as e:
                     logger.debug("[Migration] Could not remove SHM file: %s", e)
 
             logger.info("[Migration] SQLite database moved to backup: %s", moved_path)
@@ -227,7 +229,7 @@ def move_sqlite_database_to_backup(sqlite_path: Path, sqlite_conn: Optional[sqli
                     e,
                 )
                 return False
-        except Exception as e:
+        except DATABASE_ERRORS as e:
             logger.error("[Migration] Unexpected error moving SQLite database: %s", e)
             return False
 

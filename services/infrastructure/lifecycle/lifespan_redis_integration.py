@@ -13,22 +13,14 @@ import logging
 import os
 
 from config.settings import config
+from services.features.ws_pg_notify_fanout import stop_pg_notify_listener
 from services.features.ws_redis_fanout_listener import (
     await_ws_fanout_listener_stopped,
     start_ws_fanout_listener,
     stop_ws_fanout_listener,
 )
-from services.kitty.infra.control.kitty_control_secret import warmup_kitty_control_secret_async
-from services.kitty.infra.control.kitty_control_listener import (
-    await_kitty_control_listener_stopped,
-    start_kitty_control_listener,
-    stop_kitty_control_listener,
-)
-from services.kitty.infra.guards.kitty_production_guards import (
-    KittyProductionGuardError,
-    validate_kitty_production_guards,
-)
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
+from services.infrastructure.process.fatal_process_exit import fatal_startup_exit
 from services.infrastructure.security.abuseipdb_service import (
     warm_sismember_cache_ttl_snapshot,
 )
@@ -36,7 +28,20 @@ from services.infrastructure.security.ip_reputation_env_snapshot import (
     log_ip_reputation_startup_summary,
     warm_ip_reputation_env_snapshot,
 )
+from services.kitty.infra.control.kitty_control_listener import (
+    await_kitty_control_listener_stopped,
+    start_kitty_control_listener,
+    stop_kitty_control_listener,
+)
+from services.kitty.infra.control.kitty_control_secret import warmup_kitty_control_secret_async
+from services.kitty.infra.guards.kitty_production_guards import (
+    KittyProductionGuardError,
+    validate_kitty_production_guards,
+)
+from services.online_collab.redis import online_collab_redis_health as collab_redis_health
+from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import RedisStartupError, close_redis_sync, init_redis_sync
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +51,12 @@ class CollabProductionGuardError(RuntimeError):
 
 
 def _env_truthy(name: str, default: str = "0") -> bool:
+    """Env truthy."""
     return os.getenv(name, default).strip().lower() in ("1", "true", "yes", "on")
 
 
 def _validate_collab_production_guards() -> None:
+    """Validate collab production guards."""
     if os.getenv("ENVIRONMENT", "production").strip().lower() != "production":
         return
 
@@ -95,7 +102,7 @@ async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
         loop = asyncio.get_running_loop()
         try:
             start_ws_fanout_listener(loop)
-        except Exception as ws_fan_exc:
+        except BACKGROUND_INFRA_ERRORS as ws_fan_exc:
             if is_main_worker:
                 logger.warning(
                     "[LIFESPAN] WebSocket Redis fan-out listener: %s",
@@ -103,7 +110,7 @@ async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
                 )
         try:
             start_kitty_control_listener(loop)
-        except Exception as kitty_fan_exc:
+        except BACKGROUND_INFRA_ERRORS as kitty_fan_exc:
             if is_main_worker:
                 logger.warning(
                     "[LIFESPAN] Kitty control Redis listener: %s",
@@ -111,15 +118,10 @@ async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
                 )
         if is_main_worker:
             try:
-                from services.redis.redis_async_client import get_async_redis
-                from services.online_collab.redis import (
-                    online_collab_redis_health as collab_redis_health,
-                )
-
                 redis_async = get_async_redis()
                 await collab_redis_health.check_online_collab_redis_version(redis_async)
                 await collab_redis_health.check_online_collab_redis_durability(redis_async)
-            except Exception as health_exc:
+            except (*BACKGROUND_INFRA_ERRORS, *REDIS_ERRORS) as health_exc:
                 logger.warning(
                     "[LIFESPAN] Workshop Redis durability check skipped: %s",
                     health_exc,
@@ -141,10 +143,10 @@ async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
                     else "Application cannot start without Redis. Check Redis connection and configuration."
                 ),
             )
-        except Exception as alert_error:
+        except BACKGROUND_INFRA_ERRORS as alert_error:
             logger.error("Failed to send startup failure alert: %s", alert_error)
         logger.error("Application startup failed. Exiting.")
-        os._exit(1)
+        fatal_startup_exit(1)
 
 
 async def stop_fanout_listeners(is_main_worker: bool) -> None:
@@ -152,22 +154,18 @@ async def stop_fanout_listeners(is_main_worker: bool) -> None:
     try:
         stop_ws_fanout_listener()
         await await_ws_fanout_listener_stopped(timeout=5.0)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         if is_main_worker:
             logger.warning("Failed to stop WebSocket fan-out listener: %s", exc)
     try:
         stop_kitty_control_listener()
         await await_kitty_control_listener_stopped(timeout=5.0)
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         if is_main_worker:
             logger.warning("Failed to stop Kitty control listener: %s", exc)
     try:
-        from services.features.ws_pg_notify_fanout import (
-            stop_pg_notify_listener,
-        )
-
         stop_pg_notify_listener()
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         if is_main_worker:
             logger.warning("Failed to stop PG NOTIFY listener: %s", exc)
 
@@ -178,6 +176,6 @@ def close_redis_connection(is_main_worker: bool) -> None:
         close_redis_sync()
         if is_main_worker:
             logger.info("Redis connection closed")
-    except Exception as exc:
+    except (*BACKGROUND_INFRA_ERRORS, *REDIS_ERRORS) as exc:
         if is_main_worker:
             logger.warning("Failed to close Redis: %s", exc)

@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from services.mindbot.errors import MindbotErrorCode
 from utils.auth.mindbot_token_stats import (
     MINDBOT_USAGE_SUCCESS_CODES,
     TokenPeriodTotals,
@@ -14,15 +15,16 @@ from utils.auth.mindbot_token_stats import (
     merge_mindbot_tokens_into_top_user_rows,
     merge_org_token_stats,
 )
-from services.mindbot.errors import MindbotErrorCode
 
 
 def test_success_codes_match_mindbot_ok_and_accepted():
+    """Test success codes match mindbot ok and accepted."""
     assert MindbotErrorCode.OK.value in MINDBOT_USAGE_SUCCESS_CODES
     assert MindbotErrorCode.ACCEPTED.value in MINDBOT_USAGE_SUCCESS_CODES
 
 
 def test_add_token_period_sums_fields():
+    """Test add token period sums fields."""
     base = {"input_tokens": 10, "output_tokens": 20, "total_tokens": 30}
     extra: TokenPeriodTotals = {
         "input_tokens": 1,
@@ -35,6 +37,7 @@ def test_add_token_period_sums_fields():
 
 
 def test_add_service_period_includes_request_count():
+    """Test add service period includes request count."""
     base = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "request_count": 2}
     extra = empty_token_period()
     extra["input_tokens"] = 5
@@ -47,6 +50,7 @@ def test_add_service_period_includes_request_count():
 
 
 def test_merge_org_token_stats_adds_and_creates():
+    """Test merge org token stats adds and creates."""
     base = {
         "School A": {
             "org_id": 1,
@@ -79,6 +83,7 @@ def test_merge_org_token_stats_adds_and_creates():
 
 
 def test_merge_mindbot_hourly_into_tokens_by_hour():
+    """Test merge mindbot hourly into tokens by hour."""
     tokens_by_hour = {"2026-06-06 10:00:00": {"total": 1, "input": 0, "output": 1}}
     mindbot = {"2026-06-06 10:00:00": {"total": 5, "input": 2, "output": 3}}
     merge_mindbot_hourly_into_tokens_by_hour(tokens_by_hour, mindbot)
@@ -88,6 +93,7 @@ def test_merge_mindbot_hourly_into_tokens_by_hour():
 
 @pytest.mark.asyncio
 async def test_merge_mindbot_tokens_into_top_user_rows_reorders_by_total():
+    """Test merge mindbot tokens into top user rows reorders by total."""
     rows = [
         {"id": 1, "name": "A", "total_tokens": 100, "input_tokens": 0, "output_tokens": 0},
         {"id": 2, "name": "B", "total_tokens": 50, "input_tokens": 0, "output_tokens": 0},
@@ -117,6 +123,7 @@ async def test_merge_mindbot_tokens_into_top_user_rows_reorders_by_total():
 
 @pytest.mark.asyncio
 async def test_merge_mindbot_tokens_promotes_linked_user():
+    """Test merge mindbot tokens promotes linked user."""
     rows = [{"id": 1, "name": "A", "total_tokens": 10}]
     mindbot: dict[int, TokenPeriodTotals] = {
         99: {

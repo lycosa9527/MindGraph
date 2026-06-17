@@ -15,15 +15,16 @@ import logging
 from typing import Optional
 
 from fastapi import Depends, Header, HTTPException, Query, Request, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
-from models.domain.messages import Messages, get_request_language, Language
-from services.redis.session.redis_session_manager import get_session_manager
+from models.domain.messages import Language, Messages, get_request_language
 from services.redis.cache.redis_user_cache import user_cache
+from services.redis.session.redis_session_manager import get_session_manager
+from services.utils.error_types import REDIS_ERRORS
 from utils.auth import (
     can_access_workshop_chat,
     decode_access_token,
@@ -33,9 +34,6 @@ from utils.auth import (
     is_superadmin,
     user_has_feature_access,
 )
-from utils.auth.admin_scope import AdminScope, build_admin_scope_async
-from utils.db.rls_context import RlsContext, apply_rls_context_async, set_rls_context
-from utils.db.rls_request import bind_panel_superadmin_rls
 from utils.auth.admin_panel_permissions import (
     CAP_SCOPE_GLOBAL,
     CAP_SCOPE_INVITED_ORGS,
@@ -48,8 +46,10 @@ from utils.auth.admin_panel_permissions import (
     CAP_TAB_USERS_EDIT,
     CAP_TAB_USERS_VIEW,
 )
+from utils.auth.admin_scope import AdminScope, build_admin_scope_async
 from utils.auth.roles import is_management_panel_user
-
+from utils.db.rls_context import RlsContext, apply_rls_context_async, set_rls_context
+from utils.db.rls_request import bind_panel_superadmin_rls
 
 # Optional security scheme (auto_error=False means no 401 if missing)
 security_optional = HTTPBearer(auto_error=False)
@@ -109,7 +109,7 @@ async def get_current_user_optional(
     except JWTError:
         # Token decode failed
         return None
-    except Exception as e:
+    except REDIS_ERRORS as e:
         logger.debug("[Auth] Optional auth failed: %s", e)
         return None
 
@@ -243,6 +243,7 @@ async def require_workshop_chat_access(
 
 
 def _assert_global_scope(scope: AdminScope, lang: Language) -> None:
+    """Assert global scope."""
     if CAP_SCOPE_GLOBAL not in scope.capabilities:
         error_msg = Messages.error("admin_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
@@ -260,6 +261,7 @@ def require_management_panel(
 
 
 def _assert_invite_org_scope(scope: AdminScope, lang: Language) -> None:
+    """Assert invite org scope."""
     if CAP_SCOPE_GLOBAL in scope.capabilities:
         return
     if CAP_SCOPE_INVITED_ORGS in scope.capabilities:
@@ -314,6 +316,7 @@ def require_global_users_edit(
     scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_EDIT)),
     lang: Language = Depends(get_language_dependency),
 ) -> AdminScope:
+    """Require global users edit."""
     _assert_global_scope(scope, lang)
     return scope
 
@@ -322,6 +325,7 @@ def require_global_organizations_read(
     scope: AdminScope = Depends(require_panel_capability(CAP_TAB_ORGANIZATIONS_VIEW)),
     lang: Language = Depends(get_language_dependency),
 ) -> AdminScope:
+    """Require global organizations read."""
     _assert_global_scope(scope, lang)
     return scope
 
@@ -330,6 +334,7 @@ def require_global_organizations_edit(
     scope: AdminScope = Depends(require_panel_capability(CAP_TAB_ORGANIZATIONS_EDIT)),
     lang: Language = Depends(get_language_dependency),
 ) -> AdminScope:
+    """Require global organizations edit."""
     _assert_global_scope(scope, lang)
     return scope
 
@@ -338,6 +343,7 @@ def require_global_billing_read(
     scope: AdminScope = Depends(require_panel_capability(CAP_TAB_BILLING_VIEW)),
     lang: Language = Depends(get_language_dependency),
 ) -> AdminScope:
+    """Require global billing read."""
     _assert_global_scope(scope, lang)
     return scope
 

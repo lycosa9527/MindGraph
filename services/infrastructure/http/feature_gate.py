@@ -28,6 +28,7 @@ _PATH_FLAG_ATTRS: tuple[tuple[str, str], ...] = (
 
 
 def _feature_enabled(attr_name: str) -> bool:
+    """Feature enabled."""
     return bool(getattr(config, attr_name, False))
 
 

@@ -11,18 +11,19 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional, Tuple
 import asyncio
 import base64
 import logging
 import random
 import uuid
+from typing import Optional, Tuple
 
-from fastapi import APIRouter, HTTPException, Header, Request, Response, status
+from fastapi import APIRouter, Header, HTTPException, Request, Response, status
 
-from models.domain.messages import Messages, get_request_language, Language
+from models.domain.messages import Language, Messages, get_request_language
 from services.auth.captcha_storage import get_captcha_storage
 from services.redis.rate_limiting.redis_rate_limiter import check_captcha_rate_limit
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 from utils.auth import CAPTCHA_SESSION_COOKIE_NAME, RATE_LIMIT_WINDOW_MINUTES, is_https
 
 logger = logging.getLogger(__name__)
@@ -154,7 +155,7 @@ async def generate_captcha(
         # Rate limit by session token (Redis-backed, shared across workers)
         try:
             is_allowed, _ = await check_captcha_rate_limit(session_token)
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("Error checking captcha rate limit: %s", e, exc_info=True)
             # Fail open - allow captcha generation if rate limit check fails
             is_allowed = True
@@ -165,10 +166,7 @@ async def generate_captcha(
             error_lang: Language = get_request_language(x_language, accept_language)
             error_msg = Messages.error("too_many_login_attempts", error_lang, RATE_LIMIT_WINDOW_MINUTES)
             raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
-    except HTTPException:
-        # Re-raise HTTP exceptions (rate limit, etc.)
-        raise
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Error in captcha generation (before generation): %s", e, exc_info=True)
         accept_language_err = request.headers.get("Accept-Language", "")
         error_lang_err: Language = get_request_language(x_language, accept_language_err)
@@ -205,7 +203,7 @@ async def generate_captcha(
         try:
             storage = _ensure_captcha_storage()
             success = await storage.store(session_id, code, expires_in_seconds=300)
-        except Exception as e:
+        except REDIS_ERRORS as e:
             logger.error("Exception storing captcha %s: %s", session_id, e, exc_info=True)
             success = False
 
@@ -228,10 +226,7 @@ async def generate_captcha(
             "captcha_id": session_id,
             "captcha_image": f"data:image/svg+xml;base64,{img_base64}",
         }
-    except HTTPException:
-        # Re-raise HTTP exceptions
-        raise
-    except Exception as e:
+    except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Error generating captcha: %s", e, exc_info=True)
         accept_language_exc = request.headers.get("Accept-Language", "")
         error_lang_exc: Language = get_request_language(x_language, accept_language_exc)

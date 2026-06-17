@@ -38,6 +38,7 @@ async def _recv_type(
     timeout: float,
     max_frames: int = 12,
 ) -> dict[str, Any] | None:
+    """Recv type."""
     for _ in range(max_frames):
         raw = await asyncio.wait_for(ws.recv(), timeout=timeout)
         try:
@@ -50,6 +51,7 @@ async def _recv_type(
 
 
 def _probe_update_payload(diagram_id: str, client_name: str) -> dict[str, Any]:
+    """Probe update payload."""
     node_id = os.environ.get("COLLAB_PROBE_NODE_ID", "collab-probe-node")
     return {
         "type": "update",
@@ -73,6 +75,7 @@ async def _one_probe_client(
     require_full_cycle: bool,
     client_name: str,
 ) -> bool:
+    """One probe client."""
     payload: Any
     try:
         async with asyncio.timeout(timeout):
@@ -125,6 +128,7 @@ async def run_dual_collab_ws_probe(
 
 
 def main() -> None:
+    """Main."""
     logging.basicConfig(level=os.environ.get("LOG_LEVEL", "WARNING"))
     parser = argparse.ArgumentParser(description="Canary dual-client collab WS probe")
     parser.add_argument(

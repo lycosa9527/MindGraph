@@ -9,14 +9,11 @@ from typing import Any, Optional
 
 import aiohttp
 
+from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.mindbot.infra.http_client import (
     get_outbound_session,
     get_pinned_outbound_session,
 )
-from models.domain.mindbot_config import OrganizationMindbotConfig
-from services.mindbot.telemetry.pipeline_log import session_webhook_host
-from utils.env_helpers import env_bool
-
 from services.mindbot.platforms.dingtalk import (
     build_session_webhook_payload,
     openapi_robot_msg_param_for_answer,
@@ -31,6 +28,9 @@ from services.mindbot.platforms.dingtalk.auth.oauth import (
     get_access_token_with_error,
     invalidate_access_token_cache,
 )
+from services.mindbot.telemetry.pipeline_log import session_webhook_host
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.env_helpers import env_bool
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +47,7 @@ def _sanitize_webhook_snippet(body_txt: str, max_len: int = 400) -> str:
 
 
 def is_group_conversation(body: dict[str, Any]) -> bool:
+    """Is group conversation."""
     ct = body.get("conversationType") or body.get("conversation_type")
     if ct is None:
         return False
@@ -185,7 +186,7 @@ async def _do_post_session_webhook(
                 )
                 return False
             await r.read()
-    except Exception as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.exception(
             "[MindBot] outbound_session_webhook_error %s host=%s: %s",
             pipeline_ctx,

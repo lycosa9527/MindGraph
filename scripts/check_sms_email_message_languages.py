@@ -23,10 +23,12 @@ KEYWORDS = (
 
 
 def is_sms_email_key(name: str) -> bool:
+    """Is sms email key."""
     return any(k in name for k in KEYWORDS)
 
 
 def main() -> None:
+    """Main."""
     in_errors = False
     current_key: str | None = None
     block: list[str] = []

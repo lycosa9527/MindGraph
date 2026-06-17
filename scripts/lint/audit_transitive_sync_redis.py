@@ -59,6 +59,7 @@ EXCLUDED_PARTS = {
 
 
 def _iter_python_files(root: Path) -> Iterable[Path]:
+    """Iter python files."""
     for candidate in sorted(root.rglob("*.py")):
         parts = set(candidate.parts)
         if parts & EXCLUDED_PARTS:
@@ -67,6 +68,7 @@ def _iter_python_files(root: Path) -> Iterable[Path]:
 
 
 def _is_sync_redis_call(call: ast.Call) -> bool:
+    """Is sync redis call."""
     func = call.func
     if isinstance(func, ast.Name) and func.id == "get_redis":
         return True
@@ -96,6 +98,7 @@ class _SyncHelperCollector(ast.NodeVisitor):
     """Find sync def helpers that contain synchronous Redis calls."""
 
     def __init__(self, qualified_module: str) -> None:
+        """ init  ."""
         self._qualified_module = qualified_module
         self._scope: List[str] = []
         self._async_depth = 0
@@ -103,16 +106,19 @@ class _SyncHelperCollector(ast.NodeVisitor):
         self.local_sync_helpers: Set[str] = set()
 
     def _qualify(self, name: str) -> str:
+        """Qualify."""
         if self._scope:
             return ".".join(self._scope + [name])
         return name
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        """Visit classdef."""
         self._scope.append(node.name)
         self.generic_visit(node)
         self._scope.pop()
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        """Visit asyncfunctiondef."""
         self._scope.append(node.name)
         self._async_depth += 1
         try:
@@ -122,6 +128,7 @@ class _SyncHelperCollector(ast.NodeVisitor):
             self._scope.pop()
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        """Visit functiondef."""
         self._scope.append(node.name)
         contains_sync_redis = self._function_contains_sync_redis(node)
         if contains_sync_redis and self._async_depth == 0:
@@ -132,10 +139,12 @@ class _SyncHelperCollector(ast.NodeVisitor):
         self._scope.pop()
 
     def _qualify_current(self) -> str:
+        """Qualify current."""
         return ".".join(self._scope)
 
     @staticmethod
     def _function_contains_sync_redis(func: ast.FunctionDef) -> bool:
+        """Function contains sync redis."""
         for descendant in ast.walk(func):
             if isinstance(descendant, ast.Call) and _is_sync_redis_call(descendant):
                 return True
@@ -151,6 +160,7 @@ class _AsyncCallerScanner(ast.NodeVisitor):
         path: str,
         sync_helper_names: Set[str],
     ) -> None:
+        """ init  ."""
         self._lines = source_lines
         self._path = path
         self._sync_names = sync_helper_names
@@ -158,9 +168,11 @@ class _AsyncCallerScanner(ast.NodeVisitor):
         self.findings: List[Tuple[int, str, str]] = []
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        """Visit functiondef."""
         self.generic_visit(node)
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        """Visit asyncfunctiondef."""
         self._async_depth += 1
         try:
             self.generic_visit(node)
@@ -168,6 +180,7 @@ class _AsyncCallerScanner(ast.NodeVisitor):
             self._async_depth -= 1
 
     def visit_Call(self, node: ast.Call) -> None:
+        """Visit call."""
         if self._async_depth > 0:
             target_name: Optional[str] = None
             if isinstance(node.func, ast.Name):
@@ -185,6 +198,7 @@ class _AsyncCallerScanner(ast.NodeVisitor):
 
 
 def _collect_sync_helpers(repo_root: Path, scan_paths: Sequence[str]) -> Dict[str, Set[str]]:
+    """Collect sync helpers."""
     per_file: Dict[str, Set[str]] = {}
     for raw in scan_paths:
         target = (repo_root / raw).resolve()
@@ -212,6 +226,7 @@ def _scan_async_callers(
     scan_paths: Sequence[str],
     per_file_sync_helpers: Dict[str, Set[str]],
 ) -> List[Tuple[str, int, str, str]]:
+    """Scan async callers."""
     findings: List[Tuple[str, int, str, str]] = []
     for raw in scan_paths:
         target = (repo_root / raw).resolve()
@@ -240,6 +255,7 @@ def _scan_async_callers(
 
 
 def main() -> int:
+    """Main."""
     repo_root = Path(__file__).resolve().parent.parent.parent
     scan_paths = list(DEFAULT_SCAN_PATHS)
 
