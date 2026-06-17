@@ -1,5 +1,9 @@
 """
 Online collaboration backend package (diagram sessions, Redis, WebSockets).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from services.online_collab.core.online_collab_code import generate_online_collab_code

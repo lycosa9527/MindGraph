@@ -4,6 +4,10 @@ Adapts embedding generation to different chunk types:
 - General: Embed each chunk independently
 - Parent-Child: Embed only child chunks, store parent in payload
 - Q&A: Embed questions (or Q&A pairs)
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS

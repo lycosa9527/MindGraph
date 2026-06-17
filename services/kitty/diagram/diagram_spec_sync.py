@@ -1,4 +1,9 @@
-"""Keep diagram_data children[] aligned with type-specific spec fields for desktop sync."""
+"""Keep diagram_data children[] aligned with type-specific spec fields for desktop sync.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 from __future__ import annotations
 

@@ -2,6 +2,10 @@
 
 Key: usertoken:hash:{sha256(raw)[:32]} -> JSON {user_id, expires_at, is_active, token_hash_full}
 TTL: 7 days (aligned with default token lifetime).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import hashlib

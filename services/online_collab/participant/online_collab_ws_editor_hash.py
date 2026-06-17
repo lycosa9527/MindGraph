@@ -18,7 +18,7 @@ the TTL window, without waiting for the whole session's 24 h key expiry.
 HEXPIRE is supported on Redis 7.4+. On older servers the HEXPIRE call is
 skipped (the key itself still has the session-wide TTL via whole-key EXPIRE).
 
-Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """

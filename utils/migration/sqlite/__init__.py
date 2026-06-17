@@ -7,6 +7,10 @@ This package contains utilities for SQLite migrations:
 - Progress tracking
 - Table migration functions
 - Utility functions (path detection, locks, etc.)
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from .migration_backup import backup_sqlite_database, move_sqlite_database_to_backup

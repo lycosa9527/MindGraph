@@ -2,6 +2,10 @@
 
 Matches DingTalk docs and common Flask samples: ``Base64(HmacSHA256(key=app_secret,
 msg=timestamp + "\\n" + app_secret))``, timestamp skew window (default 1 hour in ms).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

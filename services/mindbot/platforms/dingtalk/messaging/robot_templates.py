@@ -2,6 +2,10 @@
 
 Templates align with:
 https://open.dingtalk.com/document/orgapp/the-message-types-of-the-robot-sends-messages
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

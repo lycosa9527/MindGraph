@@ -4,6 +4,10 @@ Redis cache for the feature org/user access map (shared across workers).
 Database remains source of truth. Reads try Redis first; on miss, load Postgres
 and populate Redis. Admin writes refresh Redis from the in-memory payload after
 commit (no stale reads). TTL is a safety net if invalidation is missed.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import json

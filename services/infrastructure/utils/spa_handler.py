@@ -13,8 +13,9 @@ Environment Variables:
     - ENVIRONMENT=development: Automatically disables Vue SPA serving in auto mode
     - VITE_DEV_PORT: Automatically disables Vue SPA serving in auto mode
 
-Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
+Proprietary License
 """
 
 import logging

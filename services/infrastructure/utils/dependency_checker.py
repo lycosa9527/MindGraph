@@ -6,6 +6,10 @@ Handles checking for required dependencies:
 - Celery (Python package + Redis + Qdrant dependencies)
 - Qdrant (Python package + server binary/service)
 - PostgreSQL (Python package + server binaries)
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import importlib.util

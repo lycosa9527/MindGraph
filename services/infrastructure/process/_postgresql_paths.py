@@ -2,6 +2,10 @@
 PostgreSQL path resolution and binary finding utilities.
 
 Handles WSL detection, path resolution, and finding PostgreSQL binaries.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import logging

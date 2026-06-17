@@ -1,5 +1,8 @@
-"""
-Process I/O helpers for subprocess log redirection and background launches.
+"""Process I/O helpers for subprocess log redirection and background launches.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import os

@@ -7,6 +7,10 @@ Orchestrates the complete chunking workflow:
 3. Pattern-based chunking (80% of chunks)
 4. LLM refinement for unclear boundaries (20% of chunks)
 5. Validate and return chunks
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS

@@ -4,7 +4,7 @@ Redis storage for ephemeral quick-registration channel tokens.
 Tokens are server-minted opaque strings bound to an organization.
 Single-use: removed after successful registration or explicit close.
 
-Copyright 2024-2026 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """

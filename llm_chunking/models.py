@@ -6,6 +6,10 @@ Defines chunk structures for different chunking strategies:
 - Parent-Child: Hierarchical chunks
 - Q&A: Question-answer pairs
 - Teaching: Enhanced chunks for educational content
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from dataclasses import dataclass, field

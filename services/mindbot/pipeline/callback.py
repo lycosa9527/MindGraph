@@ -1,4 +1,9 @@
-"""Process DingTalk HTTP robot callbacks: Dify reply (SSE streaming or blocking) + outbound."""
+"""Process DingTalk HTTP robot callbacks: Dify reply (SSE streaming or blocking) + outbound.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 from __future__ import annotations
 

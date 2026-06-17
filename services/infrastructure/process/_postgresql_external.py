@@ -2,6 +2,10 @@
 Start or reuse local system/external PostgreSQL (never ``initdb``).
 
 Used when ``DATABASE_URL`` selects an RLS runtime role or ``POSTGRESQL_MANAGED_BY_APP=false``.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

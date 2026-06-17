@@ -4,6 +4,10 @@ Central registry of all SQLAlchemy ORM models.
 Importing this module ensures every table is registered on ``Base.metadata``.
 Used by Alembic ``env.py`` for autogenerate and by ``config.database.init_db``
 to guarantee model visibility before seeding.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from models.domain.auth import (

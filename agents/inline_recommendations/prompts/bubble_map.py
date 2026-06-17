@@ -2,6 +2,10 @@
 
 Aligned with agents/node_palette/bubble_map_palette.py.
 Follows concept map relationship label prompt structure (concrete examples, RULES, OUTPUT).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from typing import Any, Dict, List, Optional

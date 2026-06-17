@@ -4,7 +4,7 @@ Idle monitoring for workshop / online-collaboration sessions.
 Scans idle_scores periodically, evaluates zombie / expiry / silence, emits
 warnings, and tears down sessions via the manager kick API.
 
-Copyright 2024-2025 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """

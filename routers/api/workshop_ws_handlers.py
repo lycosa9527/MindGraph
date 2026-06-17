@@ -1,4 +1,10 @@
-"""Message handlers for canvas collaboration WebSocket (public facade)."""
+"""
+Message handlers for canvas collaboration WebSocket (public facade).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 from typing import Any, Dict, List
 

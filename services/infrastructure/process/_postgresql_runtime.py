@@ -3,6 +3,10 @@ PostgreSQL startup configuration derived from ``.env``.
 
 Single source of truth for whether MindGraph may ``initdb`` / spawn a local
 ``postgres`` subprocess vs connect-only to an existing system/external cluster.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

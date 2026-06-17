@@ -2,6 +2,10 @@
 Supported MindGraph UI (interface) locale codes.
 
 Keep in sync with `code` values in frontend/src/i18n/supportedUiLocales.ts (`SUPPORTED_UI_LOCALES`).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 UI_LANGUAGE_CODES = frozenset(

@@ -14,6 +14,10 @@ Exponential backoff
 ``poll_dify_conv_key_async`` starts at ``step_initial_ms`` and doubles on every miss
 (capped at ``POLL_STEP_MAX_MS``).  This drastically reduces Redis GET traffic compared
 to a fixed 50 ms step — at most ~8 calls over a 3-second window vs up to 60.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

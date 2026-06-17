@@ -3,6 +3,10 @@ Router Registration Module
 
 Centralized router registration for all FastAPI routes.
 This module handles the registration order and conditional feature flags.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import importlib
@@ -24,7 +28,7 @@ from routers.admin import database_router as admin_database
 from routers.admin import env_router as admin_env
 from routers.admin import logs_router as admin_logs
 from routers.admin import realtime_router as admin_realtime
-from routers.core import cache, changelog, pages, update_notification
+from routers.core import changelog, pages, update_notification
 from routers.core.health import router as health_router
 from routers.core.vue_spa import router as vue_spa
 from routers.features import askonce, kitty, school_zone
@@ -137,7 +141,6 @@ def register_routers(app: FastAPI) -> None:
     # API routes must be registered BEFORE vue_spa catch-all route
     # Authentication & utility routes (loginByXz, favicon)
     app.include_router(pages)
-    app.include_router(cache)
     app.include_router(api.router)
 
     if config.FEATURE_MCP_HTTP:

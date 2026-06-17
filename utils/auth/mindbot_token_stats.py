@@ -3,6 +3,10 @@
 DingTalk bot traffic uses the same Dify stack as web MindMate but is stored in
 ``mindbot_usage_events``. These helpers fold that usage into platform totals and
 the MindMate service bucket.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

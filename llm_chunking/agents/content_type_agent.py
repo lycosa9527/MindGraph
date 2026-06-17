@@ -1,6 +1,10 @@
 """Content type detection agent for teaching materials.
 
 Detects content types: theory, example, exercise, summary, code, formula.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from services.utils.error_types import JSON_PARSE_ERRORS

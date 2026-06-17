@@ -3,6 +3,10 @@ Guard uvicorn reload watcher against self-referential project symlinks.
 
 On WSL, an accidental ``MindGraph -> project root`` symlink breaks watchfiles with
 "File system loop found" and prevents auto-reload from starting.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

@@ -7,6 +7,10 @@ removed entirely, and while streaming we emit nothing until a block is complete
 
 Native Dify ``agent_thought`` payloads are merged in ``format_mindbot_reply_for_dingtalk``
 when enabled; see ``services.mindbot.core.chain_of_thought_policy``.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

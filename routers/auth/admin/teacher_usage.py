@@ -8,6 +8,10 @@ Admin-only endpoint for teacher engagement classification:
 
 Reads from user_usage_stats (pre-computed). Groups: unused, continuous,
 rejection, stopped, intermittent.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import logging

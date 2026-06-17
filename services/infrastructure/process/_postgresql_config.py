@@ -9,6 +9,10 @@ The generated ``postgresql.conf`` is tuned for MindGraph workloads:
 - ``pg_stat_statements`` + ``auto_explain`` preloaded for observability
 - Conservative idle/statement timeouts to prevent stuck FastAPI handlers
   from holding pool connections indefinitely
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import ctypes

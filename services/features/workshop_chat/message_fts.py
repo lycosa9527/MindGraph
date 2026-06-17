@@ -3,6 +3,10 @@ PostgreSQL full-text search helpers for workshop chat messages.
 
 Uses ``simple`` text search config (language-agnostic tokenization). Falls back
 to ILIKE when the database is not PostgreSQL (e.g. SQLite in tests).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

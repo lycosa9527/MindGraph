@@ -4,6 +4,10 @@ Shared workshop WebSocket connection registry.
 Holds process-local room/handle maps and per-room asyncio locks without
 importing metrics or connection-handle implementation details (breaks the
 ``workshop_ws_connection_state`` ↔ ``ws_metrics`` import cycle).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

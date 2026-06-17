@@ -6,6 +6,10 @@ Used for LLMOps manifesting and contract tests. ``channel`` values:
 - ``ws_action`` — ``safe_websocket_send`` action / diagram_update to active client only.
 - ``omni`` primary path (plus optional WS).
 - ``desktop_queue`` — Redis FIFO for desktop SPA navigation (not diagram mutation).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

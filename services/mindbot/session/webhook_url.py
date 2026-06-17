@@ -13,6 +13,10 @@ Return value: ``(ok: bool, reason: str, pinned_ip: str)``
 
 Callers should pass ``pinned_ip`` to :func:`post_session_webhook` so it uses an
 ``aiohttp`` resolver that returns the pinned address without re-resolving DNS.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

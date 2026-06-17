@@ -6,6 +6,10 @@ https://github.com/open-dingtalk/DingTalk-Callback-Crypto/blob/main/DingCallback
 
 Parameters follow DingTalk docs: ``token`` and ``encoding_aes_key`` from the console;
 ``owner_key`` is appKey, corpId, or suiteKey depending on app type (same as upstream).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

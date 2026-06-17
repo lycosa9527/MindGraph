@@ -16,8 +16,9 @@ Public API:
     analyze_pg_dump()  – preview what the merge would do
     merge_pg_dump()    – execute the full merge
 
-Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
-All Rights Reserved -- Proprietary License
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import logging

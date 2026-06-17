@@ -5,6 +5,10 @@ Defines three main structure types:
 - GeneralStructure: Flat chunks (default)
 - ParentChildStructure: Hierarchical chunks (parent-child)
 - QAStructure: Question-answer pairs
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from abc import ABC, abstractmethod

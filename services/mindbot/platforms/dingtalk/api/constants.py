@@ -3,6 +3,10 @@
 See:
 https://open.dingtalk.com/document/orgapp-server/api-overview
 https://open.dingtalk.com/document/development/bots-send-query-and-recall-group-chat-messages
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

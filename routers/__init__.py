@@ -7,7 +7,6 @@ This package contains all FastAPI route modules organized by functionality.
 Routers:
 - api/: Main API endpoints package (diagrams, LLM, agents) - refactored into modular structure
 - pages.py: Template rendering routes (HTML pages)
-- cache.py: JavaScript cache status endpoints
 - auth.py: Authentication endpoints
 - admin_env.py: Admin environment settings
 - admin_logs.py: Admin log streaming
@@ -27,13 +26,12 @@ from . import api, auth, inline_recommendations, node_palette, public_dashboard,
 from .admin import env_router as admin_env
 from .admin import logs_router as admin_logs
 from .admin import realtime_router as admin_realtime
-from .core import cache, pages, update_notification, vue_spa
+from .core import pages, update_notification, vue_spa
 from .features import askonce, debateverse, gewe, kitty, library, school_zone
 
 __all__ = [
     "api",
     "pages",
-    "cache",
     "auth",
     "admin_env",
     "admin_logs",

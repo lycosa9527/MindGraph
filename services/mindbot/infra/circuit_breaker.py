@@ -36,6 +36,10 @@ MINDBOT_CIRCUIT_BREAKER_FAILURE_THRESHOLD default 5  (failures within window to 
 MINDBOT_CIRCUIT_BREAKER_RESET_SECONDS    default 60  (window size / seconds before probe)
 MINDBOT_CIRCUIT_BREAKER_MAX_KEYS         default 2000 (max in-memory breaker entries;
                                           oldest evicted when full)
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

@@ -1,5 +1,9 @@
 """
 Block-based positioning system and flexible layout calculator for brace maps.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from typing import Any, Dict, List, Tuple, Union

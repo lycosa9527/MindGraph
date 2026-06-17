@@ -1,4 +1,10 @@
-"""Normalize query and limit for ILIKE message search (Zulip-style narrow)."""
+"""
+Normalize query and limit for ILIKE message search (Zulip-style narrow).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 from typing import Optional, Tuple
 

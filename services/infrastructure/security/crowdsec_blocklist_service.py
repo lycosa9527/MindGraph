@@ -4,6 +4,10 @@ CrowdSec Console blocklist merge (Raw IP List integration).
 Fetches plaintext IPs from the integration endpoint and SADDs into the shared Redis
 blacklist set used with AbuseIPDB. See:
 https://docs.crowdsec.net/u/integrations/rawiplist/
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

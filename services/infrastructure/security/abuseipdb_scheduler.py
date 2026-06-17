@@ -4,6 +4,10 @@ Daily AbuseIPDB / CrowdSec blocklist sync (Redis-coordinated single worker).
 Uses the same coordination idea as backup_scheduler: one worker holds the lock.
 Scheduled runs align with BACKUP_HOUR (default 3:00 local time), matching the DB backup
 and COS upload window for easier log correlation.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

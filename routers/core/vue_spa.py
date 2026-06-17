@@ -3,8 +3,9 @@
 FastAPI router for serving Vue 3 SPA in production mode.
 This router is conditionally included when Vue SPA is available.
 
-Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
-All Rights Reserved.
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import logging

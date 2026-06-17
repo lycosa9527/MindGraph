@@ -1,4 +1,9 @@
-"""MindGraph Agent Hub — orchestration for multi-channel agents (P0: Kitty voice scope)."""
+"""MindGraph Agent Hub — orchestration for multi-channel agents (P0: Kitty voice scope).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 from services.agent_hub.matrix_bus import (
     DiagramCommandBus,

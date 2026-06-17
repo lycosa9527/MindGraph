@@ -3,7 +3,7 @@ Workshop status and organization-listing queries.
 
 Extracted from ``WorkshopService`` to keep file sizes within limit.
 
-Copyright 2024-2025 鍖椾含鎬濇簮鏅烘暀绉戞妧鏈夐檺鍏徃 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """

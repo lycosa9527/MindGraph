@@ -2,6 +2,10 @@
 AbuseIPDB integration: IP reputation check, reporting, and blacklist sync.
 
 Uses AbuseIPDB API v2 (https://docs.abuseipdb.com/).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

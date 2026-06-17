@@ -2,6 +2,10 @@
 
 This module provides rate limiting configurations for Dashscope, ARK, SMS,
 and load balancing.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import logging

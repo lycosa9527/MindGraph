@@ -3,6 +3,10 @@ Brace map helper classes.
 
 Contains ContextManager, CollisionDetector, LLMHybridProcessor,
 and ContextAwareAlgorithmSelector used by the brace map agent.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from datetime import datetime

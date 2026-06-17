@@ -4,6 +4,10 @@
 mobile Kitty can align ``/ws/kitty/{scope}`` with the PC. This is **not** a channel for diagram
 content or ``diagram_data`` — canvas truth for edits lives in **Agent Hub** /
 ``kitty:live_spec`` (see ``apply_diagram_spec_mutation`` and desktop ``live_context`` poll).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

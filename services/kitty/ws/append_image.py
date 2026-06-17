@@ -10,6 +10,10 @@ Omni realtime **vision** path:
    paragraph processing when applicable.
 
 Hub / ``kitty:live_spec`` updates follow normal ``patch_context`` / voice diagram sync.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

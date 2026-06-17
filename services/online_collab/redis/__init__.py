@@ -1,1 +1,6 @@
-"""Redis keys, Lua locks, Redis 8 feature helpers."""
+"""Redis keys, Lua locks, Redis 8 feature helpers.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""

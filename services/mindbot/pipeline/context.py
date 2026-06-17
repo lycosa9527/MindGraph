@@ -8,6 +8,10 @@ Callable type aliases:
     RecordUsageCallable: async (outcome, *, reply_text, dify_conversation_id, usage, streaming)
     HdrCallable:         (error_code) -> dict[str, str]
     RedisBindDifyConvCallable: async (...) -> None
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

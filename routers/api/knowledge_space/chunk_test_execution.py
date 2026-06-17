@@ -2,6 +2,10 @@
 Chunk test execution endpoints.
 
 Handles test creation, progress tracking, and results retrieval.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import logging

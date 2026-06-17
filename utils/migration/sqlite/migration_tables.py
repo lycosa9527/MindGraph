@@ -23,7 +23,8 @@ try:
 except ImportError:
     _psycopg2_execute_values = None
 
-from models.domain.auth import Base
+from models.domain.registry import Base
+
 from services.utils.error_types import DATABASE_ERRORS
 from utils.migration.sqlite.migration_table_helpers import (
     build_insert_sql,
@@ -31,98 +32,23 @@ from utils.migration.sqlite.migration_table_helpers import (
     handle_foreign_key_violations,
 )
 
-# Import community models so they are registered with Base.metadata for table creation
-try:
-    from models.domain.community import (
-        CommunityPost,
-        CommunityPostComment,
-        CommunityPostLike,
-    )
-
-    _ = CommunityPost.__tablename__
-    _ = CommunityPostComment.__tablename__
-    _ = CommunityPostLike.__tablename__
-except ImportError:
-    pass
-
-# Import library models
-try:
-    from models.domain.library import (
-        LibraryBookmark,
-        LibraryDanmaku,
-        LibraryDanmakuLike,
-        LibraryDanmakuReply,
-        LibraryDocument,
-    )
-
-    _ = LibraryDocument.__tablename__
-    _ = LibraryDanmaku.__tablename__
-    _ = LibraryDanmakuLike.__tablename__
-    _ = LibraryDanmakuReply.__tablename__
-    _ = LibraryBookmark.__tablename__
-except ImportError:
-    pass
-
-# Import user activity/usage models
-try:
-    from models.domain.teacher_usage_config import TeacherUsageConfig
-    from models.domain.user_activity_log import UserActivityLog
-    from models.domain.user_usage_stats import UserUsageStats
-
-    _ = UserActivityLog.__tablename__
-    _ = UserUsageStats.__tablename__
-    _ = TeacherUsageConfig.__tablename__
-except ImportError:
-    pass
-
-# Import gewe models
-try:
-    from models.domain.gewe_contact import GeweContact
-    from models.domain.gewe_group_member import GeweGroupMember
-    from models.domain.gewe_message import GeweMessage
-
-    _ = GeweMessage.__tablename__
-    _ = GeweContact.__tablename__
-    _ = GeweGroupMember.__tablename__
-except ImportError:
-    pass
-
-# Import workshop chat models
-try:
-    from models.domain.workshop_chat import (
-        ChannelMember,
-        ChatChannel,
-        ChatMessage,
-        ChatTopic,
-        DirectMessage,
-        FileAttachment,
-        MessageReaction,
-        StarredMessage,
-        UserTopicPreference,
-    )
-
-    _ = ChatChannel.__tablename__
-    _ = ChannelMember.__tablename__
-    _ = ChatTopic.__tablename__
-    _ = ChatMessage.__tablename__
-    _ = DirectMessage.__tablename__
-    _ = MessageReaction.__tablename__
-    _ = StarredMessage.__tablename__
-    _ = FileAttachment.__tablename__
-    _ = UserTopicPreference.__tablename__
-except ImportError:
-    pass
-
 if _psycopg2_execute_values is not None:
     execute_values = _psycopg2_execute_values
     PSYCOPG2_AVAILABLE = True
 else:
 
-    def _execute_values_unavailable(*_args: Any, **_kwargs: Any) -> list[Any] | None:
-        """Execute values unavailable."""
+    def execute_values(
+        cur: Any,
+        sql: str,
+        argslist: Any,
+        template: str | None = None,
+        page_size: int = 100,
+        fetch: bool = False,
+    ) -> list[Any] | None:
+        """Bulk insert helper unavailable without psycopg2."""
+        _ = (cur, sql, argslist, template, page_size, fetch)
         raise RuntimeError("psycopg2 is required for PostgreSQL migration")
 
-    execute_values = _execute_values_unavailable
     PSYCOPG2_AVAILABLE = False
 
 logger = logging.getLogger(__name__)

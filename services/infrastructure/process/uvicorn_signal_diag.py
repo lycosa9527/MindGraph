@@ -4,6 +4,10 @@ Diagnostics for Uvicorn multiprocess mode (SIGHUP-driven worker reloads).
 Linux does not expose the sending PID for signals to Python handlers. When
 SIGHUP triggers a reload, we log parent cmdline, session id, and cgroup so
 operators can correlate with systemd scope, SSH session, or deploy scripts.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

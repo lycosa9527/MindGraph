@@ -4,6 +4,10 @@ MindGraph maps per-chat scopes (1:1, internal group, cross-org) to visibility.
 This is finer-grained than AstrBot's typical ``display_reasoning_text`` /
 ``show_reasoning`` flags on the provider or agent runner; behavior aligns with
 AstrBot's idea of gating a separate reasoning channel before it reaches the user.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

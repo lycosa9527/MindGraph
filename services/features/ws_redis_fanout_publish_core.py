@@ -2,6 +2,10 @@
 Redis publish helpers for WebSocket fan-out (core transport, no PG NOTIFY).
 
 Leaf module: no imports from pg_notify or fanout delivery to avoid cycles.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

@@ -1,4 +1,10 @@
-"""Kitty Agent WebSocket route registration and REST endpoints."""
+"""
+Kitty Agent WebSocket route registration and REST endpoints.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 from fastapi import Body, Depends, HTTPException, Query, WebSocket
 

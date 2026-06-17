@@ -2,6 +2,10 @@
 
 Analyzes first 30 pages to detect document structure and determine
 optimal chunking strategy (General, Parent-Child, or Q&A).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from services.utils.error_types import JSON_PARSE_ERRORS

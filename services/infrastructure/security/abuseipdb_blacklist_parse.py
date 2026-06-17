@@ -2,6 +2,10 @@
 Parse AbuseIPDB GET /api/v2/blacklist JSON responses.
 
 See https://docs.abuseipdb.com/ — ``data`` is a list of objects with ``ipAddress``.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

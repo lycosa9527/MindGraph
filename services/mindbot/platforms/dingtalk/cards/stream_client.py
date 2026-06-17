@@ -13,6 +13,10 @@ Operations
 - Clients are cleared only on process shutdown (``stop_all``). After **mass credential
   churn** or rotating many distinct apps in one long-lived worker, **restart uvicorn
   workers** so stale entries are dropped (rare in production).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

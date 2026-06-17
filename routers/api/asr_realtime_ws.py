@@ -13,6 +13,10 @@ Then use the same client events as the API doc (or short aliases):
 Downstream: DashScope server events forwarded verbatim.
 
 Not exposed: Manual mode (``turn_detection``: null + ``input_audio_buffer.commit``).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import contextlib

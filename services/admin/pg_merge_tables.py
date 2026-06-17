@@ -10,8 +10,9 @@ Defines the merge configuration for every database table:
 The generic ``merge_table()`` function processes a single table
 from the staging database into the live database using the config.
 
-Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
-All Rights Reserved -- Proprietary License
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import logging

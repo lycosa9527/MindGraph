@@ -2,6 +2,10 @@
 Redis server management for MindGraph application.
 
 Handles starting Redis server via systemctl or manual startup.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import logging

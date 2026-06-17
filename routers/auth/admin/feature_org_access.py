@@ -1,4 +1,10 @@
-"""Admin API for DB-backed per-feature organization and user access rules."""
+"""
+Admin API for DB-backed per-feature organization and user access rules.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 import logging
 from typing import Dict

@@ -4,8 +4,9 @@ PostgreSQL Dump / Restore Service (web-triggered)
 Wraps pg_dump and pg_restore for the admin Database tab.
 All dump files are saved to / read from the project ``backup/`` folder.
 
-Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
-All Rights Reserved -- Proprietary License
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import json

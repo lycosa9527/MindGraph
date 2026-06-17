@@ -12,7 +12,7 @@ under clustering. The flag must be set identically across all workers in the
 deployment; a rolling flip between tagged and untagged layouts will leave
 orphan keys until the session TTL expires.
 
-Copyright 2024-2025 鍖椾含鎬濇簮鏅烘暀绉戞妧鏈夐檺鍏徃 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """

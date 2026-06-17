@@ -1,4 +1,10 @@
-"""Pure helpers for diagram persistence error messages (no DB imports)."""
+"""
+Pure helpers for diagram persistence error messages (no DB imports).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 
 def describe_diagram_db_error(exc: Exception) -> str:

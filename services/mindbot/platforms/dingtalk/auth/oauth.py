@@ -10,6 +10,10 @@ fetches a fresh token; all others wait and then read it from the cache.
 In-process locks are stored in an LRU map capped by ``MINDBOT_OAUTH_LOCK_MAP_MAX``
 (default 2048) so worker memory stays bounded when many distinct org credentials
 appear over the process lifetime.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

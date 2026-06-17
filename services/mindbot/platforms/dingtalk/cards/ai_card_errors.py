@@ -4,6 +4,10 @@ Official references:
 - Streaming update: https://open.dingtalk.com/document/development/api-streamingupdate
 - Create and deliver: DingTalk ``POST /v1.0/card/instances/createAndDeliver`` error table
   (互动卡片 / 创建并投放卡片).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

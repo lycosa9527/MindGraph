@@ -4,6 +4,10 @@ Kitty control-plane shared secret management.
 Auto-generated and stored in Redis (multi-worker safe), with optional file backup
 for recovery after Redis flush. Explicit ``KITTY_CONTROL_SHARED_SECRET`` in the
 environment still overrides Redis when set.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

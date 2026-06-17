@@ -2,6 +2,10 @@
 
 Caches detected document structures in Redis + in-memory fallback
 for instant reuse without re-analysis.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from services.utils.error_types import REDIS_ERRORS

@@ -16,7 +16,7 @@ Elevated to P0 because the entire write-back design depends on these
 guarantees. Failures here never raise — they only warn so the application
 still starts (for non-collab workloads) while ops is alerted.
 
-Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """

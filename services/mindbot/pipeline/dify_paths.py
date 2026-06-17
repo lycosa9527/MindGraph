@@ -6,6 +6,10 @@ and AI-card wire text use ``format_mindbot_reply_for_dingtalk``; when CoT is sho
 ``agent_thought`` from Dify is merged there if not already present in tag blocks.
 ``message_replace`` clears native thought in ``dify_stream`` and resets the stream
 filter plus AI card buffer in ``on_dify_message_replace``.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

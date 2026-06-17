@@ -3,6 +3,10 @@ Process-lifetime snapshot of IP reputation env flags (read once after Redis init
 
 Avoids repeated os.getenv / branching on the hot middleware path. Tests should reset
 via invalidate_ip_reputation_env_snapshot() when monkeypatching related env vars.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

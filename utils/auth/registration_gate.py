@@ -4,6 +4,10 @@ Central guard for HTTP registration endpoints controlled by REGISTRATION_ENABLED
 Covers signup routes and OTP issuance/verification used only for signup
 (``purpose=register`` on SMS/email), including peek endpoints ``/sms/verify`` and
 ``/email/verify``.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from fastapi import HTTPException, status

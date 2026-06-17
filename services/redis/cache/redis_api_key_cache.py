@@ -8,6 +8,10 @@ Key schema:
 
 Reduces Postgres load on the hot path: validate + track usage → 3 DB queries
 per authenticated request → 0–1 DB queries (miss only) + 1 Redis INCR.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import hashlib

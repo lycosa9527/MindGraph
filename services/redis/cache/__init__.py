@@ -2,6 +2,10 @@
 Redis Cache Services
 
 Cache-related Redis operations for diagrams, organizations, users, and cache loading.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 # Note: Classes are not exported here as they're not used.

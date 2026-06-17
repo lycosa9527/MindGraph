@@ -3,6 +3,10 @@ DashScope Error Parsers
 =======================
 
 Modular error parsing for Alibaba Cloud DashScope API errors.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from ._400_errors import parse_400_errors

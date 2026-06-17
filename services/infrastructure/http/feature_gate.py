@@ -4,6 +4,10 @@ Runtime feature-flag gate for HTTP requests.
 After reloading .env into the process, ``config.FEATURE_*`` may change while
 routers registered at startup remain mounted. This middleware blocks requests
 to feature-specific URL prefixes when the corresponding flag is false.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from fastapi import Request

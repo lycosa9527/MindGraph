@@ -2,6 +2,10 @@
 Feature Routers
 
 Feature-specific endpoints for various application features.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from .askonce import router as askonce_router

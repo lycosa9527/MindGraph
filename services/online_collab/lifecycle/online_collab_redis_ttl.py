@@ -1,4 +1,9 @@
-"""Redis TTL for workshop keys derived from diagram session expiry."""
+"""Redis TTL for workshop keys derived from diagram session expiry.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 import asyncio
 import logging

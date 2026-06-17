@@ -11,6 +11,10 @@ on open.dingtalk.com (receive-message-1, message-types-supported-by-enterprise-i
 OpenAPI fallback (``/v1.0/robot/groupMessages/send`` and ``oToMessages/batchSend``) uses
 ``openapi_robot_msg_param_for_answer`` so ``msgKey`` / ``msgParam`` stay aligned with the
 same templates (``sampleText``, ``sampleMarkdown``, etc.).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

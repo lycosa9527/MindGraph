@@ -4,7 +4,7 @@ Each UTC hour we store the maximum ``active_dify_streaming`` (summed across
 workers) seen during admin ``/admin/performance/live`` polls, then return the
 largest of the last 24 hourly values.
 
-Copyright 2024-2026 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """

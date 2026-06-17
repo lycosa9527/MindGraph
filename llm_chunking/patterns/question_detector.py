@@ -5,6 +5,10 @@ Detects question boundaries using patterns:
 - Numbered questions: "Question 1:", "Q1:", "1."
 - Multiple choice: Questions with A), B), C), D)
 - True/False: Questions with True/False options
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import re

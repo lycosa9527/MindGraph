@@ -1,4 +1,9 @@
-"""Direct voice session dict lookups without lifecycle side effects."""
+"""Direct voice session dict lookups without lifecycle side effects.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 from __future__ import annotations
 

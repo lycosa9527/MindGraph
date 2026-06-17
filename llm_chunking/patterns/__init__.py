@@ -1,4 +1,9 @@
-"""Pattern-based detection for fast boundary identification."""
+"""Pattern-based detection for fast boundary identification.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 from llm_chunking.patterns.pattern_matcher import PatternMatcher
 from llm_chunking.patterns.toc_detector import TOCDetector

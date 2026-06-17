@@ -5,8 +5,9 @@ Single implementation shared by admin export/import, CLI dump/import, scheduled
 backups, and PG-merge staging restore. Honors PG_BIN_DIR; scans common Linux
 layout (versions 18–12), then PATH (which / where).
 
-Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
-All Rights Reserved -- Proprietary License
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import os

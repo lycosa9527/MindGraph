@@ -7,8 +7,9 @@ a SQLite export file and the running PostgreSQL database.
 These are extracted from sqlite_merge_service to keep file sizes under
 the 800-line limit.
 
-Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
-All Rights Reserved -- Proprietary License
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import logging

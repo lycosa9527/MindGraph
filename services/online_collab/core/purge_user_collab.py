@@ -4,6 +4,10 @@ Best-effort cleanup of in-process workshop editor maps when a user is deleted.
 Redis-backed participant/editor state is removed when sessions expire or when
 rooms are purged; this hook prevents ghost "still editing" entries in the
 local ACTIVE_EDITORS map on the worker that served the user.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

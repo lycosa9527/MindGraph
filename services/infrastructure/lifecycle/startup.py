@@ -7,6 +7,10 @@ Handles:
 - Signal handler registration for graceful shutdown
 - Logs directory creation
 - Tiktoken encoding file caching (offline loading)
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import asyncio

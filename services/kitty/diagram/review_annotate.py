@@ -2,6 +2,10 @@
 Structured diagram review for Kitty voice: annotate nodes needing edits (ids + reasons).
 
 Uses a compact LLM JSON pass paired with heuristic resolution to vue-flow ``node_id`` values.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

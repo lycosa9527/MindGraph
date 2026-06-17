@@ -8,6 +8,10 @@ Accepted payload kinds:
 This queue must **not** carry full diagram specs or hub patches — avoid duplicating diagram
 mutation alongside ``apply_diagram_spec_mutation`` / ``live_spec``; use hub + Redis live spec
 for authoritative canvas state.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

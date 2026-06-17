@@ -5,6 +5,10 @@ Generates nodes for Multi Flow Map with TWO fixed tabs:
 2. Effects: individual effect nodes
 
 When mode='both', generates causes and effects concurrently (like double bubble).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import asyncio

@@ -12,6 +12,10 @@ and Dify upload are implemented in ``pipeline.callback`` when Client ID is confi
 Parse the raw ``body`` dict **once** at the callback entry point and carry the
 structured message through the pipeline.  This eliminates repeated ``.get()``
 chains across ``callback.py``, ``text.py``, and ``education/metrics.py``.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

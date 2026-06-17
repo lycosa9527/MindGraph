@@ -7,7 +7,7 @@ ownership check, DB-row transition and fan-out broadcast flow 鈥?separating
 them here keeps ``workshop_service.py`` under the per-file 600-800 line cap
 dictated by the code-style rules.
 
-Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """

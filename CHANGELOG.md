@@ -5,9 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.45] - 2026-06-17
+
+> **Canonical copyright headers across application Python modules.**
+
+### Changed
+
+- **Backend — proprietary notices** — Added or normalized the Beijing Siyuan Zhijiao copyright block inside module docstrings across application Python (`services/`, `routers/`, `agents/`, `config/`, `utils/`, `models/`, `clients/`, `tasks/`, `repositories/`, `llm_chunking/`, `db_rls/`, `main.py`); fixed non-standard variants (English-only, mojibake UTF-8, `#` comment placement, 2024–2026 year range).
+
+### Fixed
+
+- **fail2ban_integration package** — Restored missing opening `"""` in [`__init__.py`](services/infrastructure/security/fail2ban_integration/__init__.py) after docstring copyright insert.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.45).
+
 ## [5.117.44] - 2026-06-17
 
 > **Full-repo pylint gate, four-rule hardening completion, config import-cycle splits, and workshop WS module extraction.**
+
+### Removed
+
+- **Legacy JS cache routes** — Orphaned `/cache/status`, `/cache/performance`, and `/cache/modular` endpoints removed ([`routers/core/cache.py`](routers/core/cache.py)); superseded by Vue SPA asset serving since v5.0.0. Redis health remains at `/health/redis`; admin Performance tab covers server memory.
 
 ### Added
 
@@ -30,6 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **PostgreSQL startup (`.env`-driven)** — [`_postgresql_runtime.py`](services/infrastructure/process/_postgresql_runtime.py) derives connect-only vs app-managed mode from `DATABASE_URL` (RLS roles → never `initdb`); system cluster start via [`_postgresql_external.py`](services/infrastructure/process/_postgresql_external.py); `PG_CONNECT_ERRORS` in dependency check; `DATABASE_URL` verified after RLS bootstrap ([`postgres_app_startup.py`](scripts/db/postgres_app_startup.py)).
+- **basedpyright — dump/import script** — Rich progress bar optional imports in [`dump_import_postgres.py`](scripts/db/dump_import_postgres.py) use the same top-level alias pattern as migration progress (fixes `reportOptionalCall` in CI).
+- **basedpyright — psycopg2 stubs** — [`types-psycopg2`](https://pypi.org/project/types-psycopg2/) in [`requirements.txt`](requirements.txt) (typeshed stubs for optional legacy `psycopg2` imports; fixes `reportMissingModuleSource` in CI).
 - **Inline suppressions** — Remaining `# type: ignore` in optional-import fallbacks replaced with module-top `try`/`ImportError` aliases; [`lint_no_inline_disables.py`](scripts/lint/lint_no_inline_disables.py) passes on the production tree.
 - **Redis async startup** — Split sync vs async SCH kwargs in [`redis_connection_options.py`](services/redis/redis_connection_options.py): redis-py 8.0.0 accepts ``maint_notifications_config`` on sync connections only; async pools use ``redis_async_connection_options()`` so lifespan no longer crashes on first command. CI guard [`lint_redis_connection_options.py`](scripts/lint/lint_redis_connection_options.py) and [`test_redis_connection_options.py`](tests/test_redis_connection_options.py) prevent regression.
 

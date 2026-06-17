@@ -1,4 +1,10 @@
-"""Async repository for market (市场) tables."""
+"""
+Async repository for market (市场) tables.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 from datetime import UTC, datetime
 from typing import Optional, Sequence

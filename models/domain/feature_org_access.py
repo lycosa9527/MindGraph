@@ -1,4 +1,10 @@
-"""Pydantic models for per-feature organization/user access rules."""
+"""
+Pydantic models for per-feature organization/user access rules.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 from pydantic import BaseModel, Field
 

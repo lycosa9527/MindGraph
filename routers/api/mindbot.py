@@ -4,6 +4,10 @@ This module aggregates the callback and admin sub-routers into a single
 ``router`` instance registered by ``routers.api.__init__``.
 
 Backward-compatible re-exports keep existing test imports working.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

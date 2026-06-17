@@ -12,6 +12,10 @@ Two backends are supported:
   - ``json`` (legacy fallback): single STRING key holding a JSON blob of
     the entire editor map. O(map) serialize per change. Use only on Redis
     versions that do not support HEXPIRE.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

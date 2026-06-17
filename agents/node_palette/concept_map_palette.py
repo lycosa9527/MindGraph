@@ -4,6 +4,10 @@ Concept map palette module.
 Concept Map specific node palette generator.
 Supports multi-domain tabs (Novak-style branches), root-anchored concepts per domain,
 and one-shot domain-label bootstrap via LLM chat.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import logging

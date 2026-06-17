@@ -3,6 +3,10 @@
 ``track_api_key_usage`` increments ``apikey:usage:{key_id}`` in Redis for
 performance.  This module drains those deltas into ``api_keys.usage_count``
 so admin dashboards and quota checks stay accurate.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

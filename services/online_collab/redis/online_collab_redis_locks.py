@@ -7,7 +7,7 @@ native cached function (parsed + compiled into bytecode) instead of
 re-interpreting a Lua script on every call. On older servers we transparently
 fall back to ``EVAL``.
 
-Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """

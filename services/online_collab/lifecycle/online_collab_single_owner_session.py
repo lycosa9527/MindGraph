@@ -8,6 +8,10 @@ stop path (flush + fan-out kick + Redis purge).
 Parallel starts on two diagrams for the same owner can race briefly; a
 diagram-scoped NX start lock partially serialises contention. Further
 cross-diagram guarding can be layered later if QA finds duplicate codes.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

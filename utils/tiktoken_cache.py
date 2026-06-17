@@ -7,6 +7,10 @@ that directory is used and no network access is required.
 Otherwise downloads and caches tiktoken encoding files locally to avoid repeated
 downloads from Azure Blob Storage on application startup. Checks for new versions
 using HTTP headers (ETag/Last-Modified) and only downloads when needed.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import json

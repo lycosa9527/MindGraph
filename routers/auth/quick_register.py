@@ -3,7 +3,7 @@ Quick registration channel: time-limited tokens for org-bound registration.
 
 Uses a rotating 6-digit room code (HMAC, 30s) — no SMS on this path.
 
-Copyright 2024-2026 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """

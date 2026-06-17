@@ -6,6 +6,10 @@ across all workers (no data loss on worker crash), consumer-group delivery for
 at-least-once processing, periodic batch flush to database, graceful fallback
 to per-worker memory buffer. Key schema: tokens:stream -> Redis Stream,
 tokens:stats -> hash of total_written, total_dropped, batches.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import asyncio

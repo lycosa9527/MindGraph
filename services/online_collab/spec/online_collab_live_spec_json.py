@@ -5,7 +5,7 @@ Live-spec reads and writes use ``JSON.GET``, ``JSON.SET``, and ``JSON.MERGE``.
 The application requires Redis >= 8.0 at startup when collab is enabled
 (see :func:`check_online_collab_redis_version`).
 
-Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """

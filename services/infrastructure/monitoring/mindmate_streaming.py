@@ -4,7 +4,7 @@ Each open streaming response body increments the counter; ``finally`` decrements
 so the admin payload can report live cluster load (per-worker values merged with
 a sum, same pattern as MindBot).
 
-Copyright 2024-2026 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """

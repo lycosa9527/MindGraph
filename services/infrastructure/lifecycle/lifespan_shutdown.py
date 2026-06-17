@@ -4,7 +4,7 @@ Graceful shutdown sequence extracted from FastAPI lifespan (modular teardown).
 Ordering note: Redis pub/sub fan-out listeners stop before draining local WebSockets
 so in-flight broadcasts are not enqueueing onto sockets that then receive GOING_AWAY.
 
-Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """

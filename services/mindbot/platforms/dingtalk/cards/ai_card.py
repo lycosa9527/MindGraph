@@ -5,6 +5,10 @@ Implementation is split across:
 - ``ai_card_update`` — streaming updates, receiver mode, mark-error, admin probe
 
 All names are re-exported from this module so callers do not need to change.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

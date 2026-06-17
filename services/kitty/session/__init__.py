@@ -1,4 +1,9 @@
-"""Voice session lifecycle, event bus, memory, scope locks, and diagram state mirror."""
+"""Voice session lifecycle, event bus, memory, scope locks, and diagram state mirror.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 from services.kitty.session.agent_state import (
     AgentState,

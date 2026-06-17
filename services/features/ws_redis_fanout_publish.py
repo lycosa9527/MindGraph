@@ -2,6 +2,10 @@
 Redis publish helpers for WebSocket fan-out (PG NOTIFY fallback wrapper).
 
 Re-exports core publish helpers and schedules PG NOTIFY when Redis publish fails.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

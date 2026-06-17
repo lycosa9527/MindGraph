@@ -1,4 +1,10 @@
-"""Mask secrets for safe admin API display."""
+"""
+Mask secrets for safe admin API display.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 
 def mask_secret(secret: str, head: int = 4, tail: int = 4) -> str:

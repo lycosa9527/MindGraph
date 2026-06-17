@@ -6,6 +6,10 @@ Protocol:
      modalities=["text"], input_audio_format="pcm16".
   2. Continuous input_audio_buffer.append — base64 PCM16 audio chunks.
   DashScope auto-detects VAD; no session.finish needed; session stays alive until client disconnects.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

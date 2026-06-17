@@ -1,4 +1,10 @@
-"""Check B2C market access for product gating."""
+"""
+Check B2C market access for product gating.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 from sqlalchemy.ext.asyncio import AsyncSession
 

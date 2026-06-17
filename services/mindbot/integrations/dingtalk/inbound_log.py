@@ -14,6 +14,10 @@ All inbound logging is **off by default** for production safety.
 Set ``MINDBOT_LOG_CALLBACK_INBOUND=1`` for one compact INFO line per request.
 Set ``MINDBOT_LOG_CALLBACK_INBOUND_FULL=1`` for full inbound body at DEBUG.
 Set ``MINDBOT_LOG_CALLBACK_DEBUG=1`` for full body dumps including failures (PII risk).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

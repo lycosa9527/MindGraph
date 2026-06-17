@@ -1,4 +1,9 @@
-"""Shared MindBot pipeline pieces (Redis keys, Dify entrypoint for future platforms)."""
+"""Shared MindBot pipeline pieces (Redis keys, Dify entrypoint for future platforms).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 from services.mindbot.core.dify_reply import mindbot_dify_chat_blocking
 from services.mindbot.core.dify_stream import (

@@ -1,4 +1,9 @@
-"""Map persisted library specs (non-``nodes`` native shapes) to pseudo-nodes for Kitty hydrate."""
+"""Map persisted library specs (non-``nodes`` native shapes) to pseudo-nodes for Kitty hydrate.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 from __future__ import annotations
 

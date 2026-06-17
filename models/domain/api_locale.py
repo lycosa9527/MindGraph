@@ -1,6 +1,10 @@
 """API response locale codes aligned with SPA tier-27 interface (``X-Language``).
 
 These codes match ``INTERFACE_LANGUAGE_PICKER_CODES`` in ``frontend/src/i18n/locales.ts``.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

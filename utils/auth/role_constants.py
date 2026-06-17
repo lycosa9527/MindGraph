@@ -4,6 +4,10 @@ User role constants and capability scaffolding for MindGraph.
 Seven canonical account roles across platform (B2B ops), school org (B2B),
 and personal consumer (B2C) tiers. Detailed enforcement of invite codes,
 AI quotas, and tiered entitlements is deferred to later phases.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from typing import Final

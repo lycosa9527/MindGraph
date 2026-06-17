@@ -3,6 +3,10 @@
 Encapsulates the mutable state that tracks whether an AI card has been
 created, its accumulated markdown buffer, the current DingTalk access token,
 and the update mode (``stream`` vs ``receiver``).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

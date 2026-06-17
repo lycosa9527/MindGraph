@@ -1,4 +1,9 @@
-"""DingTalk MindBot building blocks: OAuth, inbound parsing, session webhook, robot OpenAPI."""
+"""DingTalk MindBot building blocks: OAuth, inbound parsing, session webhook, robot OpenAPI.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 from services.mindbot.platforms.dingtalk.auth.oauth import get_access_token
 from services.mindbot.platforms.dingtalk.auth.verify import (

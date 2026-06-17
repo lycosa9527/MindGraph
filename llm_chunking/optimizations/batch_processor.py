@@ -2,6 +2,10 @@
 
 Groups multiple items into batches for efficient LLM API calls.
 Reduces API calls by 10x (10 items per batch).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from typing import List, TypeVar, Callable, Awaitable, Optional

@@ -25,6 +25,7 @@ except ModuleNotFoundError:
     from scripts.db._path_setup import project_root
 
 
+import importlib.util
 import json
 import logging
 import os
@@ -63,21 +64,29 @@ try:
 except ImportError:
     psycopg2 = None
 
-try:
-    from rich.console import Console
-    from rich.progress import (
-        BarColumn,
-        Progress,
-        SpinnerColumn,
-        TextColumn,
-        TimeElapsedColumn,
-    )
+RICH_AVAILABLE = importlib.util.find_spec("rich") is not None
 
-    RICH_AVAILABLE = True
-except ImportError:
-    RICH_AVAILABLE = False
-    Console = None
-    BarColumn = Progress = SpinnerColumn = TextColumn = TimeElapsedColumn = None
+Console: Any = None
+BarColumn: Any = None
+Progress: Any = None
+SpinnerColumn: Any = None
+TextColumn: Any = None
+TimeElapsedColumn: Any = None
+
+if RICH_AVAILABLE:
+    from rich.console import Console as _Console
+    from rich.progress import BarColumn as _BarColumn
+    from rich.progress import Progress as _Progress
+    from rich.progress import SpinnerColumn as _SpinnerColumn
+    from rich.progress import TextColumn as _TextColumn
+    from rich.progress import TimeElapsedColumn as _TimeElapsedColumn
+
+    Console = _Console
+    BarColumn = _BarColumn
+    Progress = _Progress
+    SpinnerColumn = _SpinnerColumn
+    TextColumn = _TextColumn
+    TimeElapsedColumn = _TimeElapsedColumn
 
 try:
     from utils.migration.sqlite.migration_verification import reset_postgresql_sequences
@@ -506,7 +515,14 @@ class DumpImportProgress:
         self.task_id: Any = None
         self.console: Any = None
 
-        if self.use_rich:
+        if self.use_rich and (
+            Console is not None
+            and Progress is not None
+            and SpinnerColumn is not None
+            and TextColumn is not None
+            and BarColumn is not None
+            and TimeElapsedColumn is not None
+        ):
             self.console = Console()
             self.progress = Progress(
                 SpinnerColumn(),

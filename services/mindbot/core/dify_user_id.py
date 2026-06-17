@@ -1,4 +1,9 @@
-"""Dify ``user`` id and Redis scope for MindBot (per staff; group chats isolated per user)."""
+"""Dify ``user`` id and Redis scope for MindBot (per staff; group chats isolated per user).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 from __future__ import annotations
 

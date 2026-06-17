@@ -7,6 +7,10 @@ others skip scheduling until the key expires (LIVE_FLUSH_DEBOUNCE_SEC).
 
 Flush interval is kept short (<=10 s) to minimise the data-loss window if Redis
 evicts the live_spec key under memory pressure.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

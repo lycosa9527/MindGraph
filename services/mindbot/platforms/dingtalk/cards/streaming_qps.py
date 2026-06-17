@@ -22,6 +22,10 @@ Multi-worker guidance (DingTalk "分布式限流"):
   Restart is required to apply changes to MINDBOT_DINGTALK_STREAMING_QPS_PER_APP or
   MINDBOT_DINGTALK_STREAMING_QPS_WINDOW_MS — values are read once at first limiter
   creation and cached; a warning is logged if a later call supplies different values.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

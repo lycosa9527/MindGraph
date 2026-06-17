@@ -4,6 +4,10 @@ Authoring backlog: each message in ``bundled_messages.py`` may only define ``zh`
 ``expand_message_bundle`` fills other ``API_MESSAGE_LOCALE_CODES`` from ``en``. Native copy for
 those codes is added by extending the per-key dicts in ``bundled_messages.py`` (generated source),
 not by changing this expander alone.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

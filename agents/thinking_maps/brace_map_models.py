@@ -2,6 +2,10 @@
 Brace map models and data structures.
 
 Contains enums, dataclasses, and configuration constants used by the brace map agent.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from dataclasses import dataclass

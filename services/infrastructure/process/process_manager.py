@@ -7,6 +7,10 @@ Handles starting and stopping required services:
 - Qdrant server (subprocess or systemd service)
 - PostgreSQL server (subprocess or systemd service)
 - Signal handlers for graceful shutdown
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import os

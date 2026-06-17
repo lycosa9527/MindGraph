@@ -3,6 +3,10 @@ Database Migration Utilities
 
 PostgreSQL schema management is now handled by Alembic (see ``alembic/``).
 This package retains SQLite and SQLite-to-PostgreSQL data migration helpers.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from .sqlite import (

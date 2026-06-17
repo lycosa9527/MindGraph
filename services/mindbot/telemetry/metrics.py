@@ -3,6 +3,10 @@
 Each of the three accumulator dicts is capped at ``MINDBOT_METRICS_MAX_KEYS``
 (default 10 000) using an LRU-style ``OrderedDict``; when inserting a new key
 beyond the cap the oldest entry is evicted so memory is bounded.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

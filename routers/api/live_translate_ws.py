@@ -10,6 +10,10 @@ Then continuous audio:
 
 No session.finish — the session stays open until the client closes the socket.
 All DashScope server events forwarded verbatim; key event for text-only mode: response.text.done.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import contextlib

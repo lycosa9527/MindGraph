@@ -2,6 +2,10 @@
 Env-configured superadmin detection (ADMIN_PHONES / ADMIN_USER_IDS).
 
 Kept separate from roles.py and admin_panel_permissions.py to avoid import cycles.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

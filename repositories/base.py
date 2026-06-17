@@ -7,6 +7,10 @@ Write methods are flush-only by default so that multiple repository calls can
 participate in a single transaction managed by the caller.  Pass
 ``commit=True`` only when the repository is the sole owner of the transaction
 (e.g. standalone background tasks).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from typing import Any, Generic, Optional, Sequence, Type, TypeVar

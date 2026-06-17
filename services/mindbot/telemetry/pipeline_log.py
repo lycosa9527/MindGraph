@@ -16,6 +16,10 @@ Usage::
 The ``pipeline_ctx`` string (for human-readable log lines) and the structured
 ``extra`` fields are complementary: use ``pipeline_ctx`` in the message body,
 use ``extra`` for machine filtering.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

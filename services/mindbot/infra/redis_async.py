@@ -11,6 +11,10 @@ Key design principle: ``redis_setnx_ttl`` returns ``Optional[bool]``
 (True/False/None) so callers can distinguish "key already existed" (False)
 from "Redis error" (None).  This prevents silent message drops when Redis is
 temporarily unreachable.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations

@@ -1,4 +1,10 @@
-"""Workshop WebSocket broadcast helpers (fan-out vs in-memory)."""
+"""
+Workshop WebSocket broadcast helpers (fan-out vs in-memory).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 
 from services.features.workshop_ws_broadcast import (
     broadcast_to_all,

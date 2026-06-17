@@ -5,6 +5,10 @@ Combines:
 1. PDF outline extraction (if available)
 2. Heading pattern detection
 3. LLM inference (for complex cases)
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 import re
