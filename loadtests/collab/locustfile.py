@@ -117,6 +117,7 @@ class CanvasCollabWsUser(User):
     _jwt: str = ""
     _room_cards: List[Tuple[str, int]] = []
     _uri: str = ""
+    _sock: websocket.WebSocket | None = None
 
     def _record_ws_request(
         self,
@@ -164,7 +165,7 @@ class CanvasCollabWsUser(User):
         path_segment = quote(room_code, safe="")
         self._uri = f"{ws_base}/api/ws/canvas-collab/{path_segment}?{query}"
 
-        self._sock: websocket.WebSocket | None = None
+        self._sock = None
         try:
             sock = websocket.create_connection(self._uri, timeout=45)
             sock.send(json.dumps({"type": "join"}))

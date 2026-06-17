@@ -10,6 +10,7 @@ from services.infrastructure.process._postgresql_runtime import (
 
 
 def test_rls_runtime_user_is_connect_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    """RLS runtime user uses connect-only mode without subprocess spawn."""
     monkeypatch.setenv(
         "DATABASE_URL",
         "postgresql://mindgraph_app:mindgraph_password@localhost:5432/mindgraph",
@@ -23,6 +24,7 @@ def test_rls_runtime_user_is_connect_only(monkeypatch: pytest.MonkeyPatch) -> No
 
 
 def test_legacy_user_allows_app_managed_spawn(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Legacy DB user with POSTGRESQL_MANAGED_BY_APP enables subprocess spawn."""
     monkeypatch.setenv(
         "DATABASE_URL",
         "postgresql://mindgraph_user:mindgraph_password@localhost:5432/mindgraph",
@@ -35,6 +37,7 @@ def test_legacy_user_allows_app_managed_spawn(monkeypatch: pytest.MonkeyPatch) -
 
 
 def test_managed_false_disables_spawn_even_for_legacy_user(monkeypatch: pytest.MonkeyPatch) -> None:
+    """POSTGRESQL_MANAGED_BY_APP=false disables spawn for legacy user."""
     monkeypatch.setenv(
         "DATABASE_URL",
         "postgresql://mindgraph_user:mindgraph_password@localhost:5432/mindgraph",
@@ -45,6 +48,7 @@ def test_managed_false_disables_spawn_even_for_legacy_user(monkeypatch: pytest.M
 
 
 def test_remote_host_is_external(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Non-local DATABASE_URL host is treated as external with no subprocess."""
     monkeypatch.setenv(
         "DATABASE_URL",
         "postgresql://mindgraph_app:secret@db.example.com:5432/mindgraph",
@@ -56,6 +60,7 @@ def test_remote_host_is_external(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_postgresql_port_env_overrides_database_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    """POSTGRESQL_PORT env overrides the port parsed from DATABASE_URL."""
     monkeypatch.setenv(
         "DATABASE_URL",
         "postgresql://mindgraph_app:secret@localhost:5432/mindgraph",
@@ -66,6 +71,7 @@ def test_postgresql_port_env_overrides_database_url(monkeypatch: pytest.MonkeyPa
 
 
 def test_connection_probe_host_normalises_localhost() -> None:
+    """connection_probe_host maps localhost to 127.0.0.1 for TCP probes."""
     config = PostgresRuntimeConfig(
         database_url="postgresql://mindgraph_app:p@localhost:5432/mindgraph",
         host="localhost",

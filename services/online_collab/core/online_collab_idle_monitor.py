@@ -70,7 +70,7 @@ class _IdleKickTarget(Protocol):
         expected_code: str,
     ) -> bool:
         """Stop collab for a room when idle timeout fires."""
-        ...
+        raise NotImplementedError
 
 
 async def broadcast_idle_warning(code: str, deadline_unix: int) -> None:

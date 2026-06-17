@@ -7,6 +7,7 @@ from services.infrastructure.process._postgresql_runtime import PostgresRuntimeC
 
 
 def test_verify_runtime_database_connection_success(monkeypatch: pytest.MonkeyPatch) -> None:
+    """verify_runtime_database_connection returns ok when connect probe succeeds."""
     config = PostgresRuntimeConfig(
         database_url="postgresql://mindgraph_app:p@localhost:5432/mindgraph",
         host="localhost",
@@ -27,6 +28,7 @@ def test_verify_runtime_database_connection_success(monkeypatch: pytest.MonkeyPa
 
 
 def test_verify_runtime_database_connection_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    """verify_runtime_database_connection reports failure when connect probe fails."""
     config = PostgresRuntimeConfig(
         database_url="postgresql://mindgraph_app:p@localhost:5432/mindgraph",
         host="localhost",

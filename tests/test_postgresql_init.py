@@ -32,16 +32,18 @@ def _app_managed_mode(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_prepare_data_directory_removes_stale_config(tmp_path: Path) -> None:
+    """Uninitialized data dir with stale config files is cleared before initdb."""
     data_path = tmp_path / "postgresql"
     data_path.mkdir()
     (data_path / "pg_hba.conf").write_text("host all all 127.0.0.1/32 trust\n", encoding="utf-8")
 
     _prepare_data_directory_for_initdb(data_path)
 
-    assert list(data_path.iterdir()) == []
+    assert not list(data_path.iterdir())
 
 
 def test_prepare_data_directory_skips_initialized_cluster(tmp_path: Path) -> None:
+    """Initialized cluster (PG_VERSION present) is left untouched."""
     data_path = tmp_path / "postgresql"
     data_path.mkdir()
     (data_path / "PG_VERSION").write_text("18\n", encoding="utf-8")
@@ -54,6 +56,7 @@ def test_prepare_data_directory_skips_initialized_cluster(tmp_path: Path) -> Non
 
 
 def test_prepare_data_directory_rejects_partial_cluster(tmp_path: Path) -> None:
+    """Partial cluster without PG_VERSION exits with SystemExit."""
     data_path = tmp_path / "postgresql"
     data_path.mkdir()
     (data_path / "base").mkdir()
@@ -66,6 +69,7 @@ def test_prepare_data_directory_refuses_connect_only_mode(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    """Connect-only runtime role refuses to prepare a data directory for initdb."""
     monkeypatch.setattr(
         "services.infrastructure.process._postgresql_init.load_postgres_runtime_config",
         lambda: PostgresRuntimeConfig(

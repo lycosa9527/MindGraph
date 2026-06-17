@@ -8,6 +8,7 @@ from services.infrastructure.process import _postgresql_paths as pg_paths
 
 
 def test_is_initialized_cluster(tmp_path: Path) -> None:
+    """is_initialized_cluster is true only when PG_VERSION exists."""
     data_dir = tmp_path / "postgresql"
     data_dir.mkdir()
     assert pg_paths.is_initialized_cluster(data_dir) is False
@@ -16,6 +17,7 @@ def test_is_initialized_cluster(tmp_path: Path) -> None:
 
 
 def test_find_system_cluster_prefers_matching_port(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """find_system_postgresql_cluster selects the cluster whose port matches."""
     main18 = tmp_path / "pg18" / "main"
     main16 = tmp_path / "pg16" / "main"
     main18.mkdir(parents=True)

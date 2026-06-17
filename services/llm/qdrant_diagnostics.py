@@ -20,19 +20,19 @@ logger = logging.getLogger(__name__)
 
 
 class _QdrantDiagnosticsHost(Protocol):
-    """_QdrantDiagnosticsHost helper."""
+    """Host interface expected by QdrantDiagnosticsMixin."""
 
     client: AsyncQdrantClient
     use_compression: bool
-    compression_type: str | None
+    compression_type: str
 
     async def get_user_collection(self, user_id: int) -> str | None:
         """Return the Qdrant collection name for a user, if any."""
+        raise NotImplementedError
 
     def _get_collection_name(self, user_id: int) -> str:
         """Build the default collection name for a user id."""
-        ...
-
+        raise NotImplementedError
 
 def _empty_compression_metrics(error: str | None = None) -> Dict[str, Any]:
     """Default metrics dict when collection is missing or on error."""
@@ -99,7 +99,7 @@ def _build_compression_metrics(
     }
 
 
-class QdrantDiagnosticsMixin(_QdrantDiagnosticsHost):
+class QdrantDiagnosticsMixin:
     """
     Compression metrics and collection diagnostics for QdrantService.
 
@@ -107,7 +107,7 @@ class QdrantDiagnosticsMixin(_QdrantDiagnosticsHost):
     get_user_collection (async), _get_collection_name.
     """
 
-    async def get_compression_metrics(self, user_id: int) -> Dict[str, Any]:
+    async def get_compression_metrics(self: "_QdrantDiagnosticsHost", user_id: int) -> Dict[str, Any]:
         """
         Get compression metrics for user's collection.
 
@@ -145,7 +145,7 @@ class QdrantDiagnosticsMixin(_QdrantDiagnosticsHost):
             logger.error("[Qdrant] Failed to get compression metrics for user %s: %s", user_id, exc)
             return _empty_compression_metrics(str(exc))
 
-    async def get_diagnostics(self, user_id: int) -> Dict[str, Any]:
+    async def get_diagnostics(self: "_QdrantDiagnosticsHost", user_id: int) -> Dict[str, Any]:
         """
         Get diagnostic information for user's Qdrant collection.
 

@@ -116,6 +116,11 @@ class QdrantService(QdrantDiagnosticsMixin):
     Supports SQ8 compression for ~4x storage savings.
     """
 
+    client: AsyncQdrantClient
+    collection_prefix: str
+    compression_type: str
+    use_compression: bool
+
     def __init__(self):
         """
         Initialize async Qdrant client (server mode only).
