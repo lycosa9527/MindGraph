@@ -42,6 +42,11 @@ class HunyuanClient:
         self.model_name = "hunyuan-turbo"  # Using standard model name
         self.timeout = 60  # seconds
 
+        if not self.api_key:
+            raise ValueError(
+                "HUNYUAN_API_KEY not configured. Please set HUNYUAN_API_KEY in your environment variables."
+            )
+
         # DIVERSITY FIX: Highest temperature for HunYuan for maximum variation
         self.default_temperature = 1.2
 

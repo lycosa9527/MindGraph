@@ -55,6 +55,11 @@ class DoubaoClient:
         self.model_name = config.DOUBAO_MODEL
         self.timeout = 60  # seconds
 
+        if not self.api_key:
+            raise ValueError(
+                "ARK_API_KEY not configured for DoubaoClient. Please set ARK_API_KEY in your environment variables."
+            )
+
         # DIVERSITY FIX: Moderate temperature for Doubao
         self.default_temperature = 0.8
 
