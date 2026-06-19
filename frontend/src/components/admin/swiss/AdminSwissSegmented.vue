@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="T extends string | number">
 /**
  * Stone segmented control — plain buttons with radiogroup semantics.
- * Styles: admin-swiss-controls.css → .admin-swiss-segmented / .admin-swiss-segment
+ * Styles: admin-swiss-segmented.css → .admin-swiss-segmented / .admin-swiss-segment
  * Reference: LanguageSettingsModal canvas mode toggle (classic / new).
  */
 export type AdminSwissSegmentOption<T extends string | number = string | number> = {
@@ -57,4 +57,4 @@ const model = defineModel<T>({ required: true })
   </div>
 </template>
 
-<style src="@/styles/admin-swiss-controls.css"></style>
+<style src="@/styles/admin-swiss-segmented.css"></style>

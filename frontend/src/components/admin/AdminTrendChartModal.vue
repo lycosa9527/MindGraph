@@ -1049,7 +1049,7 @@ onBeforeUnmount(() => {
 
 <style>
 @import '@/styles/admin-mindbot-swiss-dialog-chrome.css';
-@import '@/styles/admin-swiss-controls.css';
+@import '@/styles/admin-user-trend-swiss.css';
 </style>
 
 <style scoped>

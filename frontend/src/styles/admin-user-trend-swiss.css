@@ -1,0 +1,118 @@
+/**
+ * User token trend modal — light stone shell (admin users tab).
+ * Global plain CSS (no :deep) for unscoped imports and lightningcss minify.
+ */
+@import './admin-swiss-segmented.css';
+
+.admin-swiss-btn.el-button {
+  --el-button-bg-color: #e7e5e4;
+  --el-button-border-color: #d6d3d1;
+  --el-button-text-color: #1c1917;
+  --el-button-hover-bg-color: #d6d3d1;
+  --el-button-hover-border-color: #a8a29e;
+  --el-button-hover-text-color: #1c1917;
+  --el-button-active-bg-color: #a8a29e;
+  --el-button-active-border-color: #78716c;
+  min-height: 28px;
+  padding: 0 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-radius: 9999px;
+}
+
+.admin-user-trend-swiss.el-dialog {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--swiss-border, #e7e5e4);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.08),
+    0 4px 6px -4px rgba(0, 0, 0, 0.06);
+}
+
+.admin-user-trend-swiss .el-dialog__header {
+  margin: 0;
+  padding: 1rem 1.25rem 0.75rem;
+}
+
+.admin-user-trend-swiss .el-dialog__headerbtn {
+  top: 0.85rem;
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.admin-user-trend-swiss .el-dialog__headerbtn .el-dialog__close {
+  color: var(--swiss-subtle, #a8a29e);
+  font-size: 1rem;
+}
+
+.admin-user-trend-swiss .el-dialog__headerbtn:hover .el-dialog__close {
+  color: var(--swiss-ink, #1c1917);
+}
+
+.admin-user-trend-swiss .el-dialog__body {
+  padding: 1rem 1.25rem 0.25rem;
+}
+
+.admin-user-trend-swiss .el-dialog__footer {
+  padding: 0.75rem 1.25rem 1rem;
+}
+
+.admin-user-trend-swiss__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem 0.65rem;
+  padding-inline-end: 1.75rem;
+}
+
+.admin-user-trend-swiss__glyph {
+  color: var(--swiss-subtle, #a8a29e);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+}
+
+.admin-user-trend-swiss__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--swiss-ink, #1c1917);
+  line-height: 1.35;
+}
+
+.admin-user-trend-swiss__divider {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 0.85rem;
+  align-self: center;
+  background: var(--swiss-border-strong, #d6d3d1);
+}
+
+.admin-user-trend-swiss__name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--swiss-ink, #1c1917);
+  line-height: 1.35;
+}
+
+.admin-user-trend-swiss__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.admin-user-trend-swiss .admin-swiss-btn.el-button {
+  font-weight: 500;
+  border-radius: 6px;
+}
+
+.admin-user-trend-swiss .admin-swiss-btn.el-button--default {
+  --el-button-text-color: #57534e;
+  --el-button-hover-text-color: var(--swiss-ink, #1c1917);
+  --el-button-hover-bg-color: var(--swiss-hover, #f5f5f4);
+  --el-button-border-color: var(--swiss-border-strong, #d6d3d1);
+  --el-button-hover-border-color: var(--swiss-subtle, #a8a29e);
+}
