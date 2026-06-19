@@ -356,3 +356,198 @@ html.dark .admin-swiss-switch.el-switch :deep(.el-switch__core .el-switch__actio
   opacity: 0.42;
   cursor: not-allowed;
 }
+
+/*
+ * Stone segmented control — plain buttons (not ElSegmented / ElRadioButton).
+ * Reference: LanguageSettingsModal canvas mode toggle; active segment uses ink fill.
+ */
+.admin-swiss-segmented {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  max-width: 100%;
+  border-radius: 6px;
+  border: 1px solid var(--swiss-border-strong, #d6d3d1);
+  background: var(--swiss-inset, #fafaf9);
+  overflow: hidden;
+}
+
+.admin-swiss-segmented--block {
+  display: flex;
+  width: 100%;
+}
+
+.admin-swiss-segment {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0.5rem 0.65rem;
+  min-height: 2rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
+  color: var(--swiss-muted, #78716c);
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+/* Equal-width segments for short labels (e.g. HTML / JSON / ZIP). */
+.admin-swiss-segmented--equal {
+  display: inline-flex;
+}
+
+.admin-swiss-segmented--equal .admin-swiss-segment {
+  flex: 1 1 0;
+  min-width: 3.5rem;
+}
+
+.admin-swiss-segmented--fit .admin-swiss-segment {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding-inline: 0.75rem;
+}
+
+.admin-swiss-segment + .admin-swiss-segment {
+  border-left: 1px solid var(--swiss-border-strong, #d6d3d1);
+}
+
+.admin-swiss-segment:not(.is-active):hover {
+  color: var(--swiss-ink, #1c1917);
+  background: var(--swiss-hover, #f5f5f4);
+}
+
+.admin-swiss-segment.is-active {
+  color: var(--swiss-surface, #ffffff);
+  font-weight: 600;
+  background: var(--swiss-ink, #1c1917);
+}
+
+.admin-swiss-segment:focus {
+  outline: none;
+}
+
+.admin-swiss-segment:focus-visible {
+  outline: 2px solid var(--swiss-muted, #78716c);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+html.dark .admin-swiss-segment.is-active {
+  color: #1c1917;
+  background: #f9fafb;
+}
+
+/*
+ * User token trend modal — light stone shell (admin users tab).
+ * Segmented tabs use .admin-swiss-segmented (classic / new canvas pattern).
+ */
+.admin-user-trend-swiss.el-dialog {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--swiss-border, #e7e5e4);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.08),
+    0 4px 6px -4px rgba(0, 0, 0, 0.06);
+}
+
+.admin-user-trend-swiss .el-dialog__header {
+  margin: 0;
+  padding: 1rem 1.25rem 0.75rem;
+}
+
+.admin-user-trend-swiss .el-dialog__headerbtn {
+  top: 0.85rem;
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.admin-user-trend-swiss .el-dialog__headerbtn .el-dialog__close {
+  color: var(--swiss-subtle, #a8a29e);
+  font-size: 1rem;
+}
+
+.admin-user-trend-swiss .el-dialog__headerbtn:hover .el-dialog__close {
+  color: var(--swiss-ink, #1c1917);
+}
+
+.admin-user-trend-swiss .el-dialog__body {
+  padding: 1rem 1.25rem 0.25rem;
+}
+
+.admin-user-trend-swiss .el-dialog__footer {
+  padding: 0.75rem 1.25rem 1rem;
+}
+
+.admin-user-trend-swiss__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem 0.65rem;
+  padding-inline-end: 1.75rem;
+}
+
+.admin-user-trend-swiss__glyph {
+  color: var(--swiss-subtle, #a8a29e);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+}
+
+.admin-user-trend-swiss__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--swiss-ink, #1c1917);
+  line-height: 1.35;
+}
+
+.admin-user-trend-swiss__divider {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 0.85rem;
+  align-self: center;
+  background: var(--swiss-border-strong, #d6d3d1);
+}
+
+.admin-user-trend-swiss__name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--swiss-ink, #1c1917);
+  line-height: 1.35;
+}
+
+.admin-user-trend-swiss__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.admin-user-trend-swiss .admin-swiss-btn.el-button {
+  font-weight: 500;
+  border-radius: 6px;
+}
+
+.admin-user-trend-swiss .admin-swiss-btn.el-button--default {
+  --el-button-text-color: #57534e;
+  --el-button-hover-text-color: var(--swiss-ink, #1c1917);
+  --el-button-hover-bg-color: var(--swiss-hover, #f5f5f4);
+  --el-button-border-color: var(--swiss-border-strong, #d6d3d1);
+  --el-button-hover-border-color: var(--swiss-subtle, #a8a29e);
+}

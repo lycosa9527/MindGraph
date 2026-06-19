@@ -48,7 +48,12 @@ import {
   fetchAdminMarketsOrders,
   fetchAdminMarketsStats,
   fetchAdminMarketsSubscriptions,
+  fetchMindMateExportConversations,
+  fetchMindMateExportJob,
+  fetchMindMateExportUsers,
   type AdminUsersQuery,
+  type MindMateExportFilters,
+  type MindMateExportJobStatus,
 } from './adminApi'
 import { ADMIN_STALE_MS, adminKeys } from './adminKeys'
 
@@ -693,5 +698,80 @@ export function useAdminConfigFeatures(options?: { enabled?: MaybeRefOrGetter<bo
     queryFn: fetchAdminConfigFeatures,
     staleTime: ADMIN_STALE_MS.default,
     enabled: options?.enabled,
+  })
+}
+
+// ============================================================================
+// MindMate 记录导出
+// ============================================================================
+
+export function useMindMateExportUsers(
+  orgId: MaybeRefOrGetter<number | null | undefined>,
+  options?: { enabled?: MaybeRefOrGetter<boolean> }
+) {
+  return useQuery({
+    queryKey: computed(() => adminKeys.mindmateExport.users(toValue(orgId) ?? null)),
+    queryFn: () => fetchMindMateExportUsers(toValue(orgId) ?? null),
+    staleTime: ADMIN_STALE_MS.organizations,
+    enabled: options?.enabled,
+  })
+}
+
+export function useMindMateExportConversations(
+  filters: MaybeRefOrGetter<MindMateExportFilters>,
+  options?: { enabled?: MaybeRefOrGetter<boolean> }
+) {
+  return useQuery({
+    queryKey: computed(() => {
+      const f = toValue(filters)
+      return adminKeys.mindmateExport.conversations({
+        scope: f.scope ?? 'whole',
+        org_id: f.orgId ?? null,
+        user_ids: f.userIds && f.userIds.length ? f.userIds.join(',') : undefined,
+        start: f.start ?? undefined,
+        end: f.end ?? undefined,
+      })
+    }),
+    queryFn: () => fetchMindMateExportConversations(toValue(filters)),
+    staleTime: ADMIN_STALE_MS.default,
+    enabled: options?.enabled,
+  })
+}
+
+const ACTIVE_MINDMATE_EXPORT_JOB_STATUSES: MindMateExportJobStatus[] = [
+  'pending',
+  'running',
+]
+
+export function useMindMateExportJob(
+  jobId: MaybeRefOrGetter<number | null | undefined>,
+  options?: {
+    enabled?: MaybeRefOrGetter<boolean>
+    refetchInterval?: number | false
+  }
+) {
+  const pollMs = options?.refetchInterval ?? 2000
+  return useQuery({
+    queryKey: computed(() => adminKeys.mindmateExport.job(toValue(jobId) ?? 0)),
+    queryFn: () => {
+      const id = toValue(jobId)
+      if (id == null) {
+        throw new Error('Export job id is required')
+      }
+      return fetchMindMateExportJob(id)
+    },
+    staleTime: 0,
+    refetchInterval: (query) => {
+      const status = query.state.data?.job.status
+      if (status != null && ACTIVE_MINDMATE_EXPORT_JOB_STATUSES.includes(status)) {
+        return pollMs
+      }
+      return false
+    },
+    enabled: computed(() => {
+      const id = toValue(jobId)
+      const extraEnabled = options?.enabled == null ? true : toValue(options.enabled)
+      return extraEnabled && id != null
+    }),
   })
 }

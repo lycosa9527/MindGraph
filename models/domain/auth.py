@@ -70,6 +70,10 @@ class Organization(Base):
 
     dify_api_base_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     dify_api_key: Mapped[str | None] = mapped_column(Text, nullable=True)
+    dify_api_base_url_2: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    dify_api_key_2: Mapped[str | None] = mapped_column(Text, nullable=True)
+    dify_active_server: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    dify_failover_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     dify_timeout_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=300)
     show_chain_of_thought_oto: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     show_chain_of_thought_internal_group: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

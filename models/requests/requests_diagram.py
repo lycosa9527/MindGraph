@@ -246,6 +246,21 @@ class GenerateDingTalkRequest(BaseModel):
     llm: Optional[LLMModel] = Field(LLMModel.QWEN, description="LLM model to use")
     diagram_type: Optional[DiagramType] = Field(None, description="Force specific diagram type")
     dimension_preference: Optional[str] = Field(None, description="Dimension preference hint")
+    dify_user_id: Optional[str] = Field(
+        None,
+        max_length=256,
+        description="Dify sys.user_id fallback when X-MG-Dify-User header unavailable",
+    )
+    mg_dify_user: Optional[str] = Field(
+        None,
+        max_length=256,
+        description="Same as dify_user_id; use {{inputs.mg_dify_user}} from MindMate/MindBot stream inputs",
+    )
+    conversation_id: Optional[str] = Field(
+        None,
+        max_length=100,
+        description="Optional Dify sys.conversation_id for logging and correlation",
+    )
 
     @field_validator("language")
     @classmethod
@@ -305,15 +320,19 @@ class WebContentMindmapPngRequest(WebContentGenerateRequest):
 class CanvasDocumentMindmapRequest(BaseModel):
     """Canvas document summary panel — text paste, local file, or web URL fetch."""
 
-    page_content: str = Field("", max_length=32000, description="Document or pasted text")
+    page_content: str = Field(default="", max_length=32000, description="Document or pasted text")
     content_format: Literal["text/plain", "text/markdown"] = Field(
-        "text/plain",
+        default="text/plain",
         description="Whether page_content is plain text or markdown",
     )
-    page_title: Optional[str] = Field(None, max_length=500, description="Document title if available")
-    page_url: Optional[str] = Field(None, max_length=500, description="Fetch page text from URL when content empty")
+    page_title: Optional[str] = Field(default=None, max_length=500, description="Document title if available")
+    page_url: Optional[str] = Field(
+        default=None,
+        max_length=500,
+        description="Fetch page text from URL when content empty",
+    )
     language: str = Field(
-        "zh",
+        default="zh",
         description="Language code for prompts and output (prompt output registry)",
     )
 

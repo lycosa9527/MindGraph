@@ -16,11 +16,11 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials
 
 from models.domain.auth import User
-from routers.auth.dependencies import require_admin
+from routers.auth.dependencies import require_settings_library
 from utils.auth import get_current_user
 from utils.auth.tokens import security
 
-__all__ = ["serialize_document", "require_admin", "get_optional_user"]
+__all__ = ["serialize_document", "require_settings_library", "get_optional_user"]
 
 
 def serialize_document(document) -> dict:

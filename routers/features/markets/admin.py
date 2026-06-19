@@ -12,7 +12,6 @@ from fastapi import APIRouter, Depends, Query, Response
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_async_db
 from models.domain.markets import MarketListing
 from repositories.markets_repo import (
     MarketListingRepository,
@@ -20,7 +19,7 @@ from repositories.markets_repo import (
     MarketSubscriptionRepository,
     MarketUserLookup,
 )
-from routers.auth.dependencies import require_global_billing_read
+from routers.auth.dependencies import get_async_db_with_request_rls, require_global_billing_read
 from routers.features.markets.helpers import require_markets_enabled
 from utils.auth.admin_scope import AdminScope
 
@@ -72,14 +71,14 @@ class AdminSubscriptionRow(BaseModel):
 @router.get("/admin/orders", response_model=list[AdminOrderRow])
 async def admin_list_orders(
     response: Response,
+    _scope: AdminScope = Depends(require_global_billing_read),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
     status: Optional[str] = None,
     before_id: Optional[int] = Query(
         None, ge=1, description="Keyset cursor: id of the last row from the previous page."
     ),
     offset: int = Query(0, ge=0, description="Legacy offset; ignored when before_id is supplied."),
     limit: int = Query(50, ge=1, le=200),
-    db: AsyncSession = Depends(get_async_db),
-    _scope: AdminScope = Depends(require_global_billing_read),
 ) -> list[AdminOrderRow]:
     """Admin list orders."""
     require_markets_enabled()
@@ -118,13 +117,13 @@ async def admin_list_orders(
 @router.get("/admin/listings", response_model=list[AdminListingRow])
 async def admin_list_listings(
     response: Response,
+    _scope: AdminScope = Depends(require_global_billing_read),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
     after_id: Optional[int] = Query(
         None, ge=1, description="Keyset cursor: id of the last row from the previous page."
     ),
     offset: int = Query(0, ge=0, description="Legacy offset; ignored when after_id is supplied."),
     limit: int = Query(100, ge=1, le=500),
-    db: AsyncSession = Depends(get_async_db),
-    _scope: AdminScope = Depends(require_global_billing_read),
 ) -> list[AdminListingRow]:
     """Admin list listings."""
     require_markets_enabled()
@@ -155,13 +154,13 @@ async def admin_list_listings(
 @router.get("/admin/subscriptions", response_model=list[AdminSubscriptionRow])
 async def admin_list_subscriptions(
     response: Response,
+    _scope: AdminScope = Depends(require_global_billing_read),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
     before_id: Optional[int] = Query(
         None, ge=1, description="Keyset cursor: id of the last row from the previous page."
     ),
-    offset: int = Query(0, ge=0, description="Legacy offset; ignored when before_id is supplied."),
+    offset: int = Query(0, ge=0, description="Legacy offset; ignored when after_id is supplied."),
     limit: int = Query(50, ge=1, le=200),
-    db: AsyncSession = Depends(get_async_db),
-    _scope: AdminScope = Depends(require_global_billing_read),
 ) -> list[AdminSubscriptionRow]:
     """Admin list subscriptions."""
     require_markets_enabled()
@@ -190,8 +189,8 @@ async def admin_list_subscriptions(
 
 @router.get("/admin/stats", response_model=dict[str, Any])
 async def admin_stats(
-    db: AsyncSession = Depends(get_async_db),
     _scope: AdminScope = Depends(require_global_billing_read),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> dict[str, Any]:
     """Admin stats."""
     require_markets_enabled()

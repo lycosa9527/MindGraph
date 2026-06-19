@@ -62,6 +62,7 @@ from services.online_collab.spec.online_collab_live_spec import (
 )
 from services.redis.cache._redis_diagram_cache_helpers import MAX_SPEC_SIZE_KB
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
+from services.admin.user_usage_activity import schedule_user_usage_activity
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 from utils.auth import get_current_user
@@ -245,6 +246,16 @@ async def create_diagram(
         raise HTTPException(status_code=500, detail="Diagram created but failed to retrieve")
 
     logger.info("[Diagrams] Created diagram %s for user %s", diagram_id, current_user.id)
+
+    schedule_user_usage_activity(
+        user_id=int(current_user.id),
+        organization_id=user_org_id,
+        source="mindgraph",
+        action="diagram_save",
+        title=diagram.get("title") or req.title,
+        diagram_type=diagram.get("diagram_type") or req.diagram_type,
+        diagram_id=diagram_id,
+    )
 
     return DiagramResponse(
         id=diagram["id"],

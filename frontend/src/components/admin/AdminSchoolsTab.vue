@@ -219,6 +219,10 @@ const trendOrg = ref<{
   extra_member_seats?: number
   dify_api_base_url?: string | null
   dify_api_key_masked?: string | null
+  dify_api_base_url_2?: string | null
+  dify_api_key_2_masked?: string | null
+  dify_active_server?: number
+  dify_failover_enabled?: boolean
   dify_timeout_seconds?: number
   dingtalk_ai_card_streaming_max_chars?: number
   show_chain_of_thought?: boolean
@@ -273,6 +277,10 @@ function openTrendModal(
     extra_member_seats: (row.extra_member_seats as number | undefined) ?? 0,
     dify_api_base_url: row.dify_api_base_url as string | null | undefined,
     dify_api_key_masked: row.dify_api_key_masked as string | null | undefined,
+    dify_api_base_url_2: row.dify_api_base_url_2 as string | null | undefined,
+    dify_api_key_2_masked: row.dify_api_key_2_masked as string | null | undefined,
+    dify_active_server: (row.dify_active_server as number | undefined) ?? 1,
+    dify_failover_enabled: (row.dify_failover_enabled as boolean | undefined) ?? true,
     dify_timeout_seconds: (row.dify_timeout_seconds as number | undefined) ?? 300,
     dingtalk_ai_card_streaming_max_chars:
       (row.dingtalk_ai_card_streaming_max_chars as number | undefined) ?? 6500,
@@ -310,6 +318,10 @@ function syncTrendOrgFromSchools() {
       extra_member_seats: (updated.extra_member_seats as number | undefined) ?? 0,
       dify_api_base_url: updated.dify_api_base_url as string | null | undefined,
       dify_api_key_masked: updated.dify_api_key_masked as string | null | undefined,
+      dify_api_base_url_2: updated.dify_api_base_url_2 as string | null | undefined,
+      dify_api_key_2_masked: updated.dify_api_key_2_masked as string | null | undefined,
+      dify_active_server: (updated.dify_active_server as number | undefined) ?? 1,
+      dify_failover_enabled: (updated.dify_failover_enabled as boolean | undefined) ?? true,
       dify_timeout_seconds: (updated.dify_timeout_seconds as number | undefined) ?? 300,
       dingtalk_ai_card_streaming_max_chars:
         (updated.dingtalk_ai_card_streaming_max_chars as number | undefined) ?? 6500,
@@ -631,6 +643,10 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
       :org-extra-member-seats="trendOrg?.extra_member_seats ?? 0"
       :org-dify-api-base-url="trendOrg?.dify_api_base_url"
       :org-dify-api-key-masked="trendOrg?.dify_api_key_masked"
+      :org-dify-api-base-url2="trendOrg?.dify_api_base_url_2"
+      :org-dify-api-key2-masked="trendOrg?.dify_api_key_2_masked"
+      :org-dify-active-server="trendOrg?.dify_active_server"
+      :org-dify-failover-enabled="trendOrg?.dify_failover_enabled"
       :org-dify-timeout-seconds="trendOrg?.dify_timeout_seconds"
       :org-dingtalk-ai-card-streaming-max-chars="trendOrg?.dingtalk_ai_card_streaming_max_chars"
       :org-show-chain-of-thought="trendOrg?.show_chain_of_thought"

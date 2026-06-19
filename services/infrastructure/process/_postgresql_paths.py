@@ -37,6 +37,31 @@ def linux_native_cluster_dir() -> Path:
     return (Path.home() / ".mindgraph" / "postgresql").resolve()
 
 
+def ubuntu_persistent_cluster_dir() -> Path:
+    """Persistent MindGraph cluster on Ubuntu/Debian when the app runs as root."""
+    return Path("/var/lib/postgresql/mindgraph")
+
+
+def read_cluster_port(data_path: Path, default: int = 5432) -> int:
+    """Read ``port`` from ``postgresql.conf`` when present."""
+    conf_path = data_path / "postgresql.conf"
+    if not conf_path.is_file():
+        return default
+    try:
+        for line in conf_path.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#"):
+                continue
+            if stripped.startswith("port"):
+                _, _, value = stripped.partition("=")
+                port_text = value.strip()
+                if port_text.isdigit():
+                    return int(port_text)
+    except OSError:
+        pass
+    return default
+
+
 def find_system_postgresql_cluster(port: Optional[int] = None) -> Optional[Tuple[Path, str]]:
     """
     Locate a distro-managed PostgreSQL cluster (e.g. ``/var/lib/postgresql/18/main``).
@@ -64,7 +89,7 @@ def find_system_postgresql_cluster(port: Optional[int] = None) -> Optional[Tuple
                     version = fields[0]
                     cluster_port = int(fields[2])
                     data_dir = Path(fields[5])
-                    if data_dir.is_dir():
+                    if is_initialized_cluster(data_dir):
                         matches.append((data_dir, version, cluster_port))
     except (FileNotFoundError, subprocess.SubprocessError, ValueError, OSError) as exc:
         logger.debug("pg_lsclusters cluster detection failed: %s", exc)
@@ -88,7 +113,7 @@ def find_system_postgresql_cluster(port: Optional[int] = None) -> Optional[Tuple
         if not version_dir.is_dir() or not version_dir.name.isdigit():
             continue
         main = version_dir / "main"
-        if main.is_dir():
+        if is_initialized_cluster(main):
             return main, version_dir.name
     return None
 

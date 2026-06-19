@@ -40,7 +40,8 @@ export function useAdminHeaderBreadcrumb(options: {
   const { t } = useLanguage()
   const authStore = useAuthStore()
   const adminPanel = useAdminPanelStore()
-  const { featureSmartResponse, featureTeacherUsage, featureKittyAgent } = useFeatureFlags()
+  const { featureSmartResponse, featureTeacherUsage, featureKittyAgent, featureMindmateExport } =
+    useFeatureFlags()
   const { effectiveOrgId, canViewSettingsSubtab } = useAdminAccess()
   const orgsQuery = useAdminOrganizations({
     enabled: computed(() => options.activeTab.value === 'users'),
@@ -117,6 +118,7 @@ export function useAdminHeaderBreadcrumb(options: {
         featureSmartResponse: featureSmartResponse.value,
         featureTeacherUsage: featureTeacherUsage.value,
         featureKittyAgent: featureKittyAgent.value,
+        featureMindmateExport: featureMindmateExport.value,
       }
       const subtabName =
         resolveFeatureDevSubtab(options.route.query.subtab as string, featureDevVisibility) ??

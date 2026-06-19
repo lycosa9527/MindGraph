@@ -28,6 +28,10 @@ const props = defineProps<{
    */
   lightBackdrop?: boolean
   /**
+   * Dedicated `/auth` route: primary sign-in button reads “同意协议并登录”.
+   */
+  authPage?: boolean
+  /**
    * When true, clicking outside the modal does nothing (no backdrop dismiss).
    * Use on dedicated auth pages where dismissing the modal has no sensible fallback.
    */
@@ -57,6 +61,7 @@ const {
   showPassword,
   showConfirmPassword,
   isVisible,
+  loginSubmitLabel,
   pageHeaderTitle,
   closeModal,
   switchLoginRegisterTab,
@@ -127,6 +132,9 @@ watch(
 onBeforeUnmount(() => {
   disposeLoginCatWalk?.()
 })
+
+/** `/auth`: footer legal link sits below the modal — overlay must not swallow clicks. */
+const passThroughFooterClicks = computed(() => Boolean(props.lightBackdrop && props.persistent))
 </script>
 
 <template>
@@ -136,7 +144,10 @@ onBeforeUnmount(() => {
         v-if="isVisible"
         ref="loginModalOverlayRef"
         class="login-modal-overlay fixed inset-0 z-1000 overflow-y-auto overscroll-y-contain"
-        :class="{ 'pointer-events-auto': authStore.showSessionExpiredModal }"
+        :class="{
+          'pointer-events-auto': authStore.showSessionExpiredModal,
+          'pointer-events-none': passThroughFooterClicks,
+        }"
       >
         <!-- Full-screen scrim (skipped on /auth so the route background shows through) -->
         <div
@@ -155,7 +166,10 @@ onBeforeUnmount(() => {
           @click.self="handleBackdropClick"
         >
           <!-- Modal -->
-          <div class="relative w-full max-w-sm">
+          <div
+            class="relative w-full max-w-sm"
+            :class="{ 'pointer-events-auto': passThroughFooterClicks }"
+          >
             <!-- Card (cat-walk patrol bounds) -->
             <div
               ref="loginModalCardRef"
@@ -368,7 +382,7 @@ onBeforeUnmount(() => {
                     v-if="isLoading"
                     class="w-4 h-4 animate-spin"
                   />
-                  {{ isLoading ? t('auth.modal.loggingIn') : t('auth.login') }}
+                  {{ isLoading ? t('auth.modal.loggingIn') : loginSubmitLabel }}
                 </button>
 
                 <!-- Links -->
@@ -789,7 +803,7 @@ onBeforeUnmount(() => {
                       v-if="isLoading"
                       class="w-4 h-4 animate-spin"
                     />
-                    {{ isLoading ? t('auth.modal.loggingIn') : t('auth.login') }}
+                    {{ isLoading ? t('auth.modal.loggingIn') : loginSubmitLabel }}
                   </button>
 
                   <div class="text-center">

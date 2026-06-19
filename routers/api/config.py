@@ -81,6 +81,7 @@ class FeatureFlagsResponse(BaseModel):
     feature_workshop_chat: bool
     feature_markets: bool
     feature_mindbot: bool
+    feature_mindmate_export: bool
     feature_kitty_agent: bool
     workshop_chat_preview_org_ids: list[int]
     feature_org_access: dict[str, FeatureOrgAccessEntry] = Field(default_factory=dict)
@@ -123,6 +124,7 @@ async def get_feature_flags(
         feature_workshop_chat=config.FEATURE_WORKSHOP_CHAT,
         feature_markets=config.FEATURE_MARKETS,
         feature_mindbot=config.FEATURE_MINDBOT,
+        feature_mindmate_export=config.FEATURE_MINDMATE_EXPORT,
         feature_kitty_agent=kitty_agent_flag,
         workshop_chat_preview_org_ids=sorted(config.WORKSHOP_CHAT_PREVIEW_ORG_IDS),
         feature_org_access=access_map,

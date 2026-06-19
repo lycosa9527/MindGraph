@@ -6,6 +6,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import AdminKittyLlmopsTab from '@/components/admin/AdminKittyLlmopsTab.vue'
+import AdminMindMateExportPanel from '@/components/admin/AdminMindMateExportPanel.vue'
 import SmartResponsePanel from '@/components/admin/SmartResponsePanel.vue'
 import TeacherUsagePanel from '@/components/admin/TeacherUsagePanel.vue'
 import {
@@ -19,13 +20,15 @@ import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 const route = useRoute()
 const router = useRouter()
 const { canViewSettingsSubtab } = useAdminAccess()
-const { featureSmartResponse, featureTeacherUsage, featureKittyAgent } = useFeatureFlags()
+const { featureSmartResponse, featureTeacherUsage, featureKittyAgent, featureMindmateExport } =
+  useFeatureFlags()
 
 const visibilityOptions = computed(() => ({
   canViewSettingsSubtab,
   featureSmartResponse: featureSmartResponse.value,
   featureTeacherUsage: featureTeacherUsage.value,
   featureKittyAgent: featureKittyAgent.value,
+  featureMindmateExport: featureMindmateExport.value,
 }))
 
 const activeSubtab = ref<FeatureDevSubtab | null>(
@@ -71,12 +74,14 @@ watch(
     <AdminKittyLlmopsTab v-if="activeSubtab === 'kitty_llmops'" />
     <SmartResponsePanel v-else-if="activeSubtab === 'smart_response'" />
     <TeacherUsagePanel v-else-if="activeSubtab === 'teacher_usage'" />
+    <AdminMindMateExportPanel v-else-if="activeSubtab === 'mindmate_export'" />
   </div>
 </template>
 
 <style scoped>
 .embedded-feature-dev-body :deep(.smart-response-page),
-.embedded-feature-dev-body :deep(.teacher-usage-page) {
+.embedded-feature-dev-body :deep(.teacher-usage-page),
+.embedded-feature-dev-body :deep(.mindmate-export-page) {
   padding: 0;
 }
 </style>

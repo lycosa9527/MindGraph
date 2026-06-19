@@ -5,6 +5,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.118.0] - 2026-06-19
+
+> **Dual Dify server failover, MindMate 记录导出 (sync + Celery background jobs), per-user daily token cap, and admin user activity timeline.**
+
+### Added
+
+- **Dual Dify servers per school** — `Organization` now stores a second Dify server (`dify_api_base_url_2` / `dify_api_key_2`), a primary/active selector (`dify_active_server`), and a `dify_failover_enabled` flag (migration `rev_0058_dify_dual_server`). 组织管理 / MindMate鉴权 gains an Element Plus segmented control to edit each server's URL + key with its own auth test, an active-server selector, and an auto-failover switch.
+- **Heartbeat failover for live MindMate chat** — A background poller probes each org's configured Dify servers (~30s) and records health in Redis with anti-flap hysteresis (`redis_dify_server_health_cache.py`). `resolve_mindmate_dify_client` prefers the active server, fails over to the standby when the active is unhealthy, and switches back on recovery.
+- **MindMate 记录导出** — New admin subtab under 新功能开发 (gated by `FEATURE_MINDMATE_EXPORT` + per-org `feature_org_access` + the `tab.settings.mindmate_export` capability). View and export Dify conversation history for a single user, multiple users, or a whole school over a date range. History is collected from **both** Dify servers over the Service API (full pagination), merged and deduped by conversation id, and rendered as WeChat/Telegram-style chat bubbles with a per-conversation server badge.
+- **MindMate export — background Celery jobs** — Large exports (whole-school scope, more than `MINDMATE_EXPORT_SYNC_MAX_USERS` users, or more than `MINDMATE_EXPORT_SYNC_MAX_CONVERSATIONS` conversations) run as persisted Celery tasks (`mindmate_export_jobs`, migrations `rev_0062` / RLS `rev_0063`). Batched user/message collection writes JSONL checkpoints; admins can pause, resume, or cancel; live progress streams over SSE (Redis pub/sub); completed artifacts download as HTML / JSON / ZIP; artifacts expire after `MINDMATE_EXPORT_ARTIFACT_TTL_SECONDS` (default 24h) with periodic cleanup (`temp_export_cleaner.py`).
+- **MindMate export — verification** — Post-collect reconciliation compares expected vs actual scope; job statuses include `completed_with_gaps` and `failed_verification`; optional spot-check sampling (`MINDMATE_EXPORT_VERIFY_SPOT_CHECK_N`); verification report embedded in JSON/ZIP artifacts (`MINDMATE_EXPORT_BLOCK_ON_GAPS` to fail hard on gaps).
+- **Export formats** — JSON (full-fidelity source of truth, including the source server) and a self-contained HTML transcript (inline CSS, scrollable bubbles, opens offline), plus a ZIP of both. Each download is audited via the security logger (who exported which org/users/range/format).
+- **Per-user daily token cap** — Authenticated LLM usage (`token_usage` paths) is capped at **1,000,000 tokens per user per Beijing calendar day** by default (`USER_DAILY_TOKEN_CAP`; set `0` to disable). Enforcement uses a Redis daily counter with pre-flight checks on `LLMService`, MindMate SSE, and Kitty Omni voice; admin user APIs expose `token_used_today` / `token_remaining_today`.
+- **用户管理 — 活动记录** — Clicking a user in 用户管理 now opens a tabbed modal: **Token 趋势** (unchanged chart) plus **活动记录**, a curated timeline of MindGraph diagram topics, MindMate Q&A previews, and DingTalk chat/diagram activity (stored in `user_usage_activities` with 120-char previews, migrations `rev_0060` / RLS `rev_0061`). Historical MindGraph saves can be backfilled via `scripts/db/backfill_user_usage_activities.py`.
+- **Auth — Software Agreement** — `/auth` footer opens a combined Terms of Use & Privacy Policy modal ([`SoftwareAgreementModal.vue`](frontend/src/components/auth/SoftwareAgreementModal.vue), [`authSoftwareAgreement.ts`](frontend/src/content/authSoftwareAgreement.ts); locale bundles `auth.softwareAgreement*`).
+- **Docs — Celery setup** — [`docs/CELERY_SETUP.md`](docs/CELERY_SETUP.md) operator guide (Redis broker DB 1, app-managed worker, MindMate export jobs, RLS bootstrap on worker import).
+
+### Changed
+
+- **MindMate export — hybrid routing** — Small scopes stay synchronous in-request; larger scopes auto-route to background jobs ([`export_routing.py`](services/dify/export/export_routing.py), [`export_config.py`](services/dify/export/export_config.py)).
+- **Admin user modal** — Token chart extracted to [`AdminUserTokenUsageTab.vue`](frontend/src/components/admin/AdminUserTokenUsageTab.vue); activity timeline in [`AdminUserActivityTab.vue`](frontend/src/components/admin/AdminUserActivityTab.vue); shared [`AdminSwissSegmented.vue`](frontend/src/components/admin/swiss/AdminSwissSegmented.vue) for filter toggles.
+- **Error handling** — Added a narrow `DIFY_API_ERRORS` tuple in `services/utils/error_types.py` for failure-tolerant Dify Service API collection (one user/server error never aborts an export).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.118.0).
+
+## [5.117.47] - 2026-06-18
+
+> **MindMate / DingTalk diagram library unity — QR bind, library save, canvas entry.**
+
+### Added
+
+- **DingTalk QR bind** — Account modal **绑定账户** mints a QR; any channel that receives the QR (MindBot picture today) calls universal `claim_dingtalk_qr_bind`; one user ↔ one DingTalk staff per org (`dingtalk_staff_links`, migration 0056).
+- **Library save on `/api/generate_dingtalk`** — Resolves user via JWT, `X-MG-Dify-User` / `dify_user_id` / `mg_dify_user`, or DingTalk bind table; embeds `![mg:uuid](url)` and `<!-- mg-diagram-id:uuid -->` in responses.
+- **MindMate / MindBot Dify inputs** — Streams inject `mg_dify_user` (and `mg_conversation_id` when known) so the Dify HTTP tool can forward `{{inputs.mg_dify_user}}` to the generation endpoint.
+- **MindMate canvas button** — **在画布中编辑** below generated diagram images when a library uuid is present in message markdown.
+- **Ops** — [`docs/ops/dify_generate_dingtalk_header.md`](docs/ops/dify_generate_dingtalk_header.md): Dify HTTP tool forwards `conversation_id` / `sys.user_id`; MindGraph session registry bridges MindMate/MindBot callers to library save (custom header optional).
+
+### Changed
+
+- **Diagram cross-user alignment** — `generate_dingtalk` resolves `organization_id` with Dify-key users; validates `mg_user_{id}` against `users`; structured library-save skip logging (`no_user`, `unbound_staff`, `limit_reached`, `save_error`).
+- **MindMate canvas entry** — Library-uuid-only button (removed `POST /api/diagrams/materialize_from_generation` and 24h Redis `dingtalk_gen:*` cache); auth required before navigate.
+- **MindBot DingTalk skip notices** — Redis skip registry + MindBot outbound prepends teacher-facing library-save errors (zh/en); plain-streaming sends a follow-up notice chunk when needed.
+- **Canvas library load errors** — Toast + URL cleanup when `?diagramId=` fetch fails; MindMate **图库已满** hint wired to `mindmate.diagramLibraryFull`.
+- **generate_dingtalk skip notices** — When library save is skipped, plain-text responses include a short user-facing line (`unbound_staff`, `no_user`, `save_error`, `limit_reached`) in request language; MindMate shows a UI hint only for legacy messages without an embedded notice.
+- **MindBot pipeline** — Picture pre-flight tries bind QR decode before Dify; bind replies use plain markdown outbound.
+- **DingTalk bind QR security** — Rotating 30s HMAC code embedded in QR (`?t=…&c=…`), same model as quick registration room codes; atomic Redis consume; guess-rate limits per staff/token.
+- **MindMate library reclaim** — Web MindMate auto-saves generate_dingtalk previews for the logged-in user when Dify strips library ids; preview outcome registry stores diagram id + reclaimable spec.
+- **Import layout** — Diagram library save helpers moved to `services/diagram/` (fixes `helpers.py` vs `helpers/` package shadowing that broke app startup).
+
 ## [5.117.46] - 2026-06-18
 
 > **Language settings modal — light Swiss stone shell and segmented canvas toggle.**

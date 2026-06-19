@@ -106,6 +106,7 @@ const underlineLineStyle = computed((): CSSProperties => {
   const { textGap } = mindMapUnderlineContentPadding()
   return {
     backgroundColor: lineColor,
+    opacity: MIND_MAP_GEOMETRY.edgeStrokeOpacity,
     marginTop: `${textGap}px`,
     height: `${MINDMAP_UNDERLINE_STROKE_WIDTH}px`,
   }

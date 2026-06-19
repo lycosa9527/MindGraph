@@ -18,7 +18,7 @@ from sqlalchemy.sql.functions import count as sa_count
 from models.domain.auth import Organization, User
 from models.domain.diagrams import Diagram
 from models.domain.markets import MarketEntitlement, MarketSubscription
-from routers.auth.helpers import utc_to_beijing_iso
+from utils.auth.token_stats_queries import utc_to_beijing_iso
 from utils.auth.org_subscription import effective_school_tier_for_org
 from utils.auth.role_constants import normalize_role
 from utils.auth.school_tier import (
@@ -26,6 +26,7 @@ from utils.auth.school_tier import (
     is_unlimited_diagram_limit,
     max_diagrams_for_tier,
 )
+from utils.auth.user_daily_token_quota import daily_token_quota_fields, resolve_daily_usage_map
 
 _ACTIVE_SUBSCRIPTION_STATUSES = ("pending", "active", "past_due")
 
@@ -95,6 +96,7 @@ def build_admin_user_detail_payload(
     user: User,
     org: Optional[Organization],
     diagram_count: int,
+    token_used_today: int = 0,
 ) -> dict[str, Any]:
     """Serialize one user for admin edit modal (full phone/email, quota fields)."""
     quota = diagram_quota_from_count(diagram_count, _max_diagrams_for_user(user, org))
@@ -112,6 +114,7 @@ def build_admin_user_detail_payload(
         "created_at": utc_to_beijing_iso(user.created_at),
         "email_login_whitelisted_from_cn": getattr(user, "email_login_whitelisted_from_cn", False),
         **quota,
+        **daily_token_quota_fields(token_used_today),
     }
 
 
@@ -190,6 +193,7 @@ def build_admin_user_list_row(
     token_stats: dict[str, int],
     diagram_count: int,
     paid_benefit: dict[str, Any],
+    token_used_today: int = 0,
 ) -> dict[str, Any]:
     """Serialize one user for admin user-management tables."""
     max_diagrams = _max_diagrams_for_user(user, org)
@@ -218,6 +222,7 @@ def build_admin_user_list_row(
         "paid_benefit_permanent": permanent,
         "paid_benefit_expires_at": None if permanent else utc_to_beijing_iso(benefit_dt),
         "email_login_whitelisted_from_cn": getattr(user, "email_login_whitelisted_from_cn", False),
+        **daily_token_quota_fields(token_used_today),
     }
 
 
@@ -231,6 +236,7 @@ async def enrich_admin_user_list_rows(
     user_ids = [int(user.id) for user in users]
     diagram_counts = await _diagram_counts_by_user(db, user_ids)
     paid_benefits = await _paid_benefit_by_user(db, user_ids)
+    daily_usage_by_user = await resolve_daily_usage_map(db, user_ids)
     rows: list[dict[str, Any]] = []
     for user in users:
         uid = int(user.id)
@@ -246,6 +252,7 @@ async def enrich_admin_user_list_rows(
                 token_stats,
                 diagram_counts.get(uid, 0),
                 paid_benefits.get(uid, {"expires_at": None, "permanent": False}),
+                token_used_today=daily_usage_by_user.get(uid, 0),
             )
         )
     return rows

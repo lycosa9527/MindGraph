@@ -22,7 +22,11 @@ import urllib.request
 from types import ModuleType
 from typing import Optional
 
-from services.infrastructure.process._postgresql_paths import find_system_postgresql_cluster
+from services.infrastructure.process._postgresql_discovery import discover_ranked_clusters
+from services.infrastructure.process._postgresql_paths import (
+    find_system_postgresql_cluster,
+    read_cluster_port,
+)
 from services.infrastructure.process._postgresql_runtime import load_postgres_runtime_config
 from services.redis.redis_connection_options import redis_connection_options
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, PG_CONNECT_ERRORS
@@ -353,6 +357,16 @@ def check_postgresql_installed() -> tuple[bool, str]:
             main_path, version = system_cluster
             return True, (
                 f"PostgreSQL ready for {config.mode_label} (system cluster {main_path}, version {version}, not running)"
+            )
+        ranked = discover_ranked_clusters(config, verify_database=False)
+        best_on_port = next(
+            (path for path in ranked if read_cluster_port(path) == config.port),
+            None,
+        )
+        if best_on_port is not None:
+            return True, (
+                f"PostgreSQL ready for {config.mode_label} "
+                f"(cluster {best_on_port}, port {config.port}, not running)"
             )
         if postgres_binary_found:
             version_msg = f" (version {postgres_version})" if postgres_version else ""

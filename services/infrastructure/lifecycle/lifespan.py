@@ -30,6 +30,7 @@ from fastapi import FastAPI
 from agents.inline_recommendations import start_inline_rec_cleanup_scheduler
 from config.celery import CeleryStartupError, init_celery_worker_check
 from config.settings import config
+from services.dify.dify_health_poller import start_dify_health_poller
 from services.auth.geoip_country import log_geolite_country_mmdb_startup_status
 from services.auth.sms_middleware import get_sms_middleware
 from services.auth.sms_service import SMS_NOTIFICATION_RATE_LIMIT_MESSAGE
@@ -77,6 +78,7 @@ from services.redis.redis_distributed_lock import (
 from services.utils.backup_scheduler import start_backup_scheduler
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from services.utils.temp_image_cleaner import start_cleanup_scheduler
+from services.utils.temp_export_cleaner import start_export_cleanup_scheduler
 from utils.auth import AUTH_MODE, warmup_jwt_secret_async
 from utils.auth.config import ADMIN_PHONES
 from utils.dependency_checker import DependencyError, check_system_dependencies
@@ -363,6 +365,15 @@ async def lifespan(fastapi_app: FastAPI):
         if is_main_worker:
             logger.warning("Failed to start cleanup scheduler: %s", e)
 
+    export_cleanup_task = None
+    try:
+        export_cleanup_task = asyncio.create_task(start_export_cleanup_scheduler(interval_hours=1))
+        if is_main_worker:
+            logger.debug("Temp export cleanup scheduler started")
+    except BACKGROUND_INFRA_ERRORS as e:
+        if is_main_worker:
+            logger.warning("Failed to start export cleanup scheduler: %s", e)
+
     # Start workshop subsystem: cleanup scheduler + Lua script preload + idle monitor.
     workshop_cleanup_task, session_manager_task = await start_online_collab_subsystem_async(is_main_worker)
 
@@ -401,6 +412,15 @@ async def lifespan(fastapi_app: FastAPI):
     except BACKGROUND_INFRA_ERRORS as e:
         if worker_id == "0" or not worker_id:
             logger.warning("Failed to start AbuseIPDB blacklist scheduler: %s", e)
+
+    dify_health_poller_task: Optional[asyncio.Task] = None
+    try:
+        dify_health_poller_task = asyncio.create_task(start_dify_health_poller())
+        if is_main_worker:
+            logger.debug("Dify dual-server health poller started")
+    except BACKGROUND_INFRA_ERRORS as e:
+        if is_main_worker:
+            logger.warning("Failed to start Dify health poller: %s", e)
 
     # PDF auto-import removed - no longer needed for image-based viewing
     # Documents are now registered via register_image_folders.py script
@@ -497,6 +517,8 @@ async def lifespan(fastapi_app: FastAPI):
         process_monitor_task=process_monitor_task,
         health_monitor_task=health_monitor_task,
         api_key_usage_flush_task=api_key_usage_flush_task,
+        dify_health_poller_task=dify_health_poller_task,
+        export_cleanup_task=export_cleanup_task,
     )
 
     # Yield control to application

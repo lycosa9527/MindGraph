@@ -16,8 +16,10 @@ from typing import Any, Optional
 
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from models.domain.mindbot_usage import MindbotUsageEvent
+from repositories.dingtalk_staff_link_repo import DingtalkStaffLinkRepository
 from services.mindbot.errors import MindbotErrorCode
 from services.mindbot.platforms.dingtalk import extract_dingtalk_sender_profile
+from services.admin.user_usage_activity import record_user_usage_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.db.rls_context import RlsContext, rls_async_session
 from utils.env_helpers import env_bool
@@ -64,6 +66,23 @@ async def persist_mindbot_usage_event(
     pt = usage.get("prompt_tokens") if usage else None
     ct = usage.get("completion_tokens") if usage else None
     tt = usage.get("total_tokens") if usage else None
+
+    linked_user_id: Optional[int] = None
+    if staff_id:
+        ctx_lookup = RlsContext.for_mindbot_service(
+            organization_id=int(cfg.organization_id),
+            callback_token=getattr(cfg, "public_callback_token", None),
+        )
+        try:
+            async with rls_async_session(ctx_lookup) as session:
+                repo = DingtalkStaffLinkRepository(session)
+                linked_user_id = await repo.resolve_user_id_for_staff(
+                    int(cfg.organization_id),
+                    staff_id,
+                )
+        except BACKGROUND_INFRA_ERRORS:
+            linked_user_id = None
+
     row = MindbotUsageEvent(
         organization_id=cfg.organization_id,
         mindbot_config_id=cfg.id,
@@ -89,7 +108,7 @@ async def persist_mindbot_usage_event(
         dingtalk_chat_scope=_clip_opt(dingtalk_chat_scope, 16),
         inbound_msg_type=_clip_opt(inbound_msg_type, 32),
         conversation_user_turn=conversation_user_turn,
-        linked_user_id=None,
+        linked_user_id=linked_user_id,
     )
     ctx = RlsContext.for_mindbot_service(
         organization_id=int(cfg.organization_id),
@@ -118,3 +137,16 @@ async def persist_mindbot_usage_event(
         len(text_in),
         len(reply_text),
     )
+    if linked_user_id is not None and linked_user_id > 0:
+        success = error_code in (MindbotErrorCode.OK, MindbotErrorCode.ACCEPTED)
+        await record_user_usage_activity(
+            user_id=int(linked_user_id),
+            organization_id=int(cfg.organization_id),
+            source="dingtalk",
+            action="chat_turn",
+            prompt_preview=text_in,
+            reply_preview=reply_text,
+            conversation_id=dify_conversation_id,
+            total_tokens=tt,
+            success=success,
+        )

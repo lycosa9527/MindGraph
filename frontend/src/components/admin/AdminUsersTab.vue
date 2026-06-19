@@ -7,10 +7,11 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useAdminUsersSchoolFilterRoute } from '@/composables/admin/useAdminUsersSchoolFilterRoute'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
+import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminUsers } from '@/composables/queries'
 import type { AdminUsersQuery } from '@/composables/queries/adminApi'
-import { useAdminPanelStore, useAuthStore } from '@/stores'
+import { useAdminPanelStore } from '@/stores'
 
 import AdminSwissPagination from './AdminSwissPagination.vue'
 import AdminTrendChartModal from './AdminTrendChartModal.vue'
@@ -26,7 +27,7 @@ const props = withDefaults(
   }
 )
 
-const authStore = useAuthStore()
+const { can } = useAdminAccess()
 const adminPanel = useAdminPanelStore()
 const { on: onAdminEvent } = useAdminEventBus('AdminUsersTab')
 const { orgFilter, syncOrgFilterToRoute, onOrgFilterChange: applyOrgFilterChange } =
@@ -142,7 +143,7 @@ function doSearch() {
 function resetFilters() {
   searchQuery.value = ''
   orgFilter.value = ''
-  if (authStore.isSuperAdmin) {
+  if (can('scope.global')) {
     syncOrgFilterToRoute('')
   }
 }

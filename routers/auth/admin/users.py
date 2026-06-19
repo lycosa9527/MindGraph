@@ -7,6 +7,10 @@ Admin-only user management endpoints:
 - PUT /admin/users/{user_id}/unlock - Unlock user account
 - PUT /admin/users/{user_id}/reset-password - Reset user password
 
+Access split (intentional):
+- GET list → ``require_global_users_read`` (superadmin / platform_bd global scope)
+- Mutations → ``require_admin`` (super-admin only; school managers use school_users.py)
+
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
@@ -32,6 +36,7 @@ from services.auth.admin_user_list_rows import (
     diagram_quota_for_user,
     enrich_admin_user_list_rows,
 )
+from utils.auth.user_daily_token_quota import resolve_daily_usage
 from services.auth.password_security import (
     invalidate_user_cache_after_password_write,
     revoke_refresh_tokens_and_sessions,
@@ -176,10 +181,12 @@ async def get_user_admin(
     )
 
     diagram_counts = await diagram_quota_for_user(db, user_id)
+    token_used_today = await resolve_daily_usage(user_id)
     return build_admin_user_detail_payload(
         user,
         org,
         diagram_counts["diagram_count"],
+        token_used_today=token_used_today,
     )
 
 

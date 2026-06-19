@@ -24,6 +24,7 @@ import aiofiles
 import aiofiles.os
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, PlainTextResponse, Response
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from agents.core.agent_utils import extract_json_from_response
 from agents.core.learning_sheet import (
@@ -31,6 +32,7 @@ from agents.core.learning_sheet import (
     _detect_learning_sheet_from_prompt,
 )
 from config.settings import config
+from config.database import get_async_db
 from models import (
     ExportPNGRequest,
     GenerateDingTalkRequest,
@@ -43,9 +45,28 @@ from prompts import get_prompt
 from services.llm import llm_service
 from services.monitoring.activity_stream import get_activity_stream_service
 from services.redis.redis_token_buffer import get_token_tracker
+from services.diagram.dify_user_resolve import (
+    library_save_limit_notice,
+    library_save_skip_reason,
+    library_save_skip_user_notice,
+    resolve_diagram_save_identity,
+)
+from services.diagram.generation_library_save import SAVE_LIMIT_REACHED, try_save_diagram_to_library
+from services.diagram.generation_library_claim import (
+    CLAIM_ERROR_LIMIT,
+    CLAIM_ERROR_NOT_FOUND,
+    CLAIM_ERROR_NO_SPEC,
+    CLAIM_ERROR_SAVE,
+    claim_generation_preview_for_user,
+)
+from services.diagram.generation_skip_registry import (
+    get_generation_library_skip,
+    store_generation_preview_outcome,
+)
+from services.admin.user_usage_activity import schedule_user_usage_activity
+from services.diagram.library_save_user_notices import library_save_user_notice
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
-from utils.auth import get_current_user_or_api_key
-
+from utils.auth import get_current_user, get_current_user_or_api_key
 from .helpers import (
     build_public_temp_image_url,
     check_endpoint_rate_limit,
@@ -349,6 +370,25 @@ async def generate_png_from_prompt(
             except BACKGROUND_INFRA_ERRORS as e:
                 logger.debug("Failed to broadcast activity: %s", e)
 
+        if user_id:
+            topic_for_activity = prompt[:50]
+            if diagram_type == "double_bubble_map" and isinstance(spec, dict):
+                left = spec.get("left", "")
+                right = spec.get("right", "")
+                if left and right:
+                    topic_for_activity = f"{left} vs {right}" if language != "zh" else f"{left}和{right}"
+                elif left or right:
+                    topic_for_activity = str(left or right)
+            schedule_user_usage_activity(
+                user_id=int(user_id),
+                organization_id=organization_id,
+                source="mindgraph",
+                action="diagram_generate",
+                title=topic_for_activity or None,
+                prompt_preview=prompt or None,
+                diagram_type=diagram_type,
+            )
+
         return Response(
             content=screenshot_bytes,
             media_type="image/png",
@@ -366,6 +406,7 @@ async def generate_dingtalk_png(
     request: Request,
     x_language: Optional[str] = None,
     current_user: Optional[User] = Depends(get_current_user_or_api_key),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Generate PNG for DingTalk integration using simplified prompt-to-diagram agent.
@@ -389,12 +430,9 @@ async def generate_dingtalk_png(
             language,
         )
 
-        # Handle current_user
-        user_id = None
-        organization_id = None
-        if current_user and hasattr(current_user, "id"):
-            user_id = current_user.id
-            organization_id = getattr(current_user, "organization_id", None)
+        save_identity = await resolve_diagram_save_identity(db, request, current_user, req)
+        user_id = save_identity.user_id
+        organization_id = save_identity.organization_id
 
         # Detect learning sheet from prompt
         is_learning_sheet = _detect_learning_sheet_from_prompt(prompt, language)
@@ -564,11 +602,51 @@ async def generate_dingtalk_png(
         # Save PNG to temp directory (ASYNC file I/O)
         TEMP_IMAGES_DIR.mkdir(exist_ok=True)
 
-        # Generate unique filename
+        # Generate unique filename (unique_id keys Redis skip metadata for MindBot)
         unique_id = uuid.uuid4().hex[:8]
         timestamp = int(time.time())
         filename = f"dingtalk_{unique_id}_{timestamp}.png"
         temp_path = TEMP_IMAGES_DIR / filename
+
+        save_title = prompt[:50].strip() or "Diagram"
+        saved_id = await try_save_diagram_to_library(
+            user_id,
+            title=save_title,
+            diagram_type=diagram_type,
+            spec=spec if isinstance(spec, dict) else {},
+            language=language,
+            organization_id=organization_id,
+            http_request_id=getattr(getattr(request, "state", None), "request_id", None),
+            log_prefix="generate_dingtalk",
+        )
+        skip_reason = library_save_skip_reason(
+            user_id=user_id,
+            saved_id=saved_id,
+            dify_user_key=save_identity.dify_user_key,
+        )
+        if skip_reason:
+            log_fn = logger.warning if skip_reason == "no_user" else logger.info
+            log_fn(
+                "[GenerateDingTalk] Library save skipped reason=%s user_id=%s dify_key=%s "
+                "(Dify tool should pass conversation_id={{sys.conversation_id}} or dify_user_id={{sys.user_id}})",
+                skip_reason,
+                user_id,
+                save_identity.dify_user_key[:64] if save_identity.dify_user_key else "none",
+            )
+
+        stored_diagram_id = saved_id if saved_id and saved_id != SAVE_LIMIT_REACHED else None
+        await store_generation_preview_outcome(
+            unique_id,
+            reason=skip_reason,
+            language=language,
+            diagram_id=stored_diagram_id,
+            diagram_type=diagram_type,
+            title=save_title,
+            spec=spec if isinstance(spec, dict) and not stored_diagram_id else None,
+            user_id=user_id,
+            organization_id=organization_id,
+            db=db,
+        )
 
         # Write PNG content to file using aiofiles (100% async, non-blocking)
         async with aiofiles.open(temp_path, "wb") as f:
@@ -576,19 +654,83 @@ async def generate_dingtalk_png(
 
         # Generate signed URL for security (24 hour expiration)
         signed_path = generate_signed_url(filename, expiration_seconds=86400)
+        if stored_diagram_id:
+            # Survives in Dify message history when alt text / HTML comments are stripped.
+            signed_path = f"{signed_path}&mgdid={stored_diagram_id}"
 
-        # Build plain text response in ![](url) format (empty alt text)
         image_url = build_public_temp_image_url(request, signed_path)
 
-        plain_text = f"![]({image_url})"
+        # Alt text carries library id (Dify often strips HTML comments from assistant markdown).
+        if saved_id and saved_id != SAVE_LIMIT_REACHED:
+            plain_text = f"![mg:{saved_id}]({image_url})\n<!-- mg-diagram-id:{saved_id} -->"
+        else:
+            plain_text = f"![]({image_url})"
+            if saved_id == SAVE_LIMIT_REACHED:
+                plain_text += f"\n{library_save_limit_notice(language)}"
+            else:
+                notice = library_save_skip_user_notice(skip_reason, language)
+                if notice:
+                    plain_text += f"\n{notice}"
 
-        logger.info("[GenerateDingTalk] Success: %s", image_url)
+        logger.info("[GenerateDingTalk] Success: %s saved=%s", image_url, saved_id or "none")
+
+        if user_id is not None and int(user_id) > 0:
+            schedule_user_usage_activity(
+                user_id=int(user_id),
+                organization_id=organization_id,
+                source="dingtalk",
+                action="dingtalk_diagram",
+                title=save_title,
+                prompt_preview=prompt,
+                diagram_type=diagram_type,
+                diagram_id=stored_diagram_id,
+            )
 
         return PlainTextResponse(content=plain_text)
 
     except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[GenerateDingTalk] Error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=Messages.error("generation_failed", lang, str(e))) from e
+
+
+@router.get("/generation_library_skip/{unique_id}")
+async def read_generation_library_skip(unique_id: str) -> dict[str, str]:
+    """Return library-save outcome metadata for a generate_dingtalk temp PNG id."""
+    data = await get_generation_library_skip(unique_id)
+    if not data:
+        raise HTTPException(status_code=404, detail="Skip metadata not found")
+    reason = data.get("reason", "")
+    language = data.get("language", "zh")
+    diagram_id = data.get("diagram_id", "")
+    notice = ""
+    if reason:
+        notice = library_save_user_notice(reason, language, audience="mindmate")
+    result: dict[str, str] = {
+        "reason": reason,
+        "language": language,
+        "notice": notice,
+    }
+    if diagram_id:
+        result["diagram_id"] = diagram_id
+    return result
+
+
+@router.post("/generation_library_claim/{unique_id}")
+async def claim_generation_library_preview(
+    unique_id: str,
+    current_user: User = Depends(get_current_user),
+) -> dict[str, str]:
+    """Save a pending generate_dingtalk preview into the logged-in user's library."""
+    diagram_id, err_code = await claim_generation_preview_for_user(unique_id, current_user)
+    if err_code == CLAIM_ERROR_NOT_FOUND:
+        raise HTTPException(status_code=404, detail="Preview metadata not found")
+    if err_code == CLAIM_ERROR_NO_SPEC:
+        raise HTTPException(status_code=409, detail="Preview is not reclaimable")
+    if err_code == CLAIM_ERROR_LIMIT:
+        raise HTTPException(status_code=409, detail="Diagram library is full")
+    if err_code == CLAIM_ERROR_SAVE:
+        raise HTTPException(status_code=500, detail="Library save failed")
+    return {"diagram_id": diagram_id or ""}
 
 
 @router.get("/temp_images/{filepath:path}")
@@ -633,6 +775,13 @@ async def serve_temp_image(filepath: str, sig: Optional[str] = None, exp: Option
         if sig and exp:
             # Signed URL but file doesn't exist - likely deleted by cleaner
             logger.debug("Temp image file not found (may have been cleaned): %s", filename)
+        elif filename.startswith("dingtalk_"):
+            logger.warning(
+                "[GenerateDingTalk] Temp PNG missing locally: %s "
+                "(Dify HTTP tool may target another MindGraph host, or EXTERNAL_BASE_URL "
+                "on the generating server pointed at localhost while files live elsewhere)",
+                filename,
+            )
         raise HTTPException(status_code=404, detail="Image not found or expired")
 
     # Step 2: Verify signed URL if signature provided (new format)

@@ -8,6 +8,8 @@ Proprietary License
 import json
 from typing import Any, Dict, List, Optional
 
+from models.domain.messages import Language
+
 from fastapi import WebSocket
 
 from services.kitty.infra.bootstrap.kitty_diagram_vocabulary import (
@@ -328,7 +330,7 @@ async def send_kitty_diagram_update(
     return sent
 
 
-def resolve_voice_interaction_language(context: Dict[str, Any]) -> str:
+def resolve_voice_interaction_language(context: Dict[str, Any]) -> Language:
     """Omni instruction language: default Chinese unless client sets English UI."""
     raw = context.get("interaction_language")
     if raw is None:

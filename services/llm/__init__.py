@@ -17,7 +17,7 @@ import logging
 import time
 from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
-from services.infrastructure.http.error_handler import LLMServiceError
+from services.infrastructure.http.error_handler import LLMServiceError, UserDailyTokenCapExceededError
 from services.infrastructure.utils.client_manager import client_manager
 from services.llm.llm_health import LLMHealthChecker
 from services.llm.llm_load_balancer_helper import LLMLoadBalancerHelper
@@ -30,6 +30,7 @@ from services.llm.llm_utils import LLMUtils
 from services.monitoring.performance_tracker import performance_tracker
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from services.utils.prompt_manager import prompt_manager
+from utils.auth.user_daily_token_quota import assert_user_daily_token_budget
 
 logger = logging.getLogger(__name__)
 
@@ -202,6 +203,8 @@ class LLMService:
         start_time = time.time()
         provider: str | None = None
 
+        await assert_user_daily_token_budget(user_id, estimated_tokens=max_tokens)
+
         # Build messages with RAG context injection
         chat_messages = await self.message_builder.build_with_rag(
             prompt=prompt,
@@ -361,6 +364,8 @@ class LLMService:
         """
         start_time = time.time()
         provider: str | None = None
+
+        await assert_user_daily_token_budget(kwargs.get("user_id"), estimated_tokens=max_tokens)
 
         # Build messages (no RAG for chat_with_usage - caller handles tracking)
         chat_messages = self.message_builder.build_chat_messages(
@@ -530,6 +535,8 @@ class LLMService:
         """
         start_time = time.time()
         provider: str | None = None
+
+        await assert_user_daily_token_budget(user_id, estimated_tokens=max_tokens)
 
         # Enhance prompt with RAG for streaming (if enabled)
         if use_knowledge_base and user_id and messages is None:

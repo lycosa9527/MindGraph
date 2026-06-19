@@ -15,6 +15,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
+      - name: Install system deps (QR bind)
+        run: sudo apt-get update && sudo apt-get install -y libzbar0
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Ruff (lint + format)
@@ -23,6 +25,11 @@ jobs:
           ruff format --check .
       - name: No inline lint suppressions
         run: python scripts/lint/lint_no_inline_disables.py
+      - name: RLS session and dependency-order guards
+        run: |
+          python scripts/lint/lint_rls_session.py
+          python scripts/lint/lint_rls_dep_order.py
+          python scripts/lint/lint_admin_panel_access.py
       - name: Redis async connection options guard
         run: python scripts/lint/lint_redis_connection_options.py
       - name: Pylint four-rule audit (AST baseline)
@@ -44,7 +51,11 @@ jobs:
             tests/test_workshop_editor_redis_merge.py tests/test_ws_fanout.py \
             tests/test_collab_synthetic_probe.py tests/test_workshop_join_resume_tokens.py \
             tests/test_organization_mindmate_avatar.py tests/test_org_subscription.py \
-            tests/test_school_tier.py
+            tests/test_school_tier.py tests/test_dify_user_key.py tests/test_dingtalk_bind_qr.py \
+            tests/test_mindbot_bind_messages.py tests/test_dingtalk_bind_imports.py \
+            tests/test_generate_dingtalk_identity.py tests/test_library_save_user_notices.py \
+            tests/test_generation_skip_registry.py tests/test_mindbot_library_save_reply.py \
+            tests/test_user_daily_token_quota.py tests/test_llm_daily_token_cap.py
 
   frontend:
     runs-on: ubuntu-latest
@@ -65,5 +76,5 @@ jobs:
         run: npm run check:dep0205
       - name: CLI script smoke (native Node type stripping)
         run: npm run check:scripts
-      - name: Vitest (workshop reconnect)
-        run: npx vitest run tests/useWorkshopReconnect.spec.ts
+      - name: Vitest (workshop reconnect + diagram meta)
+        run: npx vitest run tests/useWorkshopReconnect.spec.ts tests/mindmateDiagramMeta.spec.ts

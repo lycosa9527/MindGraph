@@ -66,6 +66,8 @@ class LifespanBackgroundTasks:
     process_monitor_task: Optional[asyncio.Task] = None
     health_monitor_task: Optional[asyncio.Task] = None
     api_key_usage_flush_task: Optional[asyncio.Task] = None
+    dify_health_poller_task: Optional[asyncio.Task] = None
+    export_cleanup_task: Optional[asyncio.Task] = None
 
 
 async def run_lifespan_shutdown(
@@ -102,6 +104,15 @@ async def run_lifespan_shutdown(
             pass
         if is_main_worker:
             logger.debug("Temp image cleanup scheduler stopped")
+
+    if holdings.export_cleanup_task:
+        holdings.export_cleanup_task.cancel()
+        try:
+            await holdings.export_cleanup_task
+        except asyncio.CancelledError:
+            pass
+        if is_main_worker:
+            logger.debug("Temp export cleanup scheduler stopped")
 
     if holdings.workshop_cleanup_task:
         holdings.workshop_cleanup_task.cancel()
@@ -143,6 +154,15 @@ async def run_lifespan_shutdown(
             await holdings.abuseipdb_scheduler_task
         except asyncio.CancelledError:
             pass
+
+    if holdings.dify_health_poller_task:
+        holdings.dify_health_poller_task.cancel()
+        try:
+            await holdings.dify_health_poller_task
+        except asyncio.CancelledError:
+            pass
+        if is_main_worker:
+            logger.debug("Dify health poller stopped")
 
     if holdings.process_monitor_task:
         try:

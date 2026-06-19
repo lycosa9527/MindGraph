@@ -1003,6 +1003,11 @@ ERRORS = {
         "en": "Trial schools allow up to {} saved diagrams per teacher. Delete one to save a new diagram.",
         "zh-tw": "體驗版每位教師最多保存 {} 張導圖，請刪除後再保存",
     },
+    "daily_token_limit_reached": {
+        "zh": "今日 AI 用量已达上限（每日 {} tokens），请明天再试",
+        "en": "Daily AI usage limit reached ({} tokens per day). Please try again tomorrow.",
+        "zh-tw": "今日 AI 用量已達上限（每日 {} tokens），請明天再試",
+    },
     "failed_generate_invitation_code": {
         "zh": "生成唯一邀请码失败",
         "en": "Failed to generate unique invitation code",

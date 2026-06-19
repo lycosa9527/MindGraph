@@ -27,10 +27,10 @@ from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from config.settings import config
-from models.domain.auth import User
 from services.infrastructure.utils.env_manager import EnvManager
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
-from utils.auth import get_current_user, is_admin
+from routers.auth.dependencies import require_tab_settings_edit
+from utils.auth.admin_scope import AdminScope
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +46,8 @@ def reload_runtime_config_from_dotenv() -> None:
     config.refresh_env_cache()
 
 
-@router.get("/settings", dependencies=[Depends(get_current_user)])
-async def get_env_settings(current_user: User = Depends(get_current_user)):
+@router.get("/settings", dependencies=[Depends(require_tab_settings_edit)])
+async def get_env_settings(scope: AdminScope = Depends(require_tab_settings_edit)):
     """
     Get all environment settings with metadata (ADMIN ONLY)
 
@@ -60,9 +60,6 @@ async def get_env_settings(current_user: User = Depends(get_current_user)):
         - Hides DATABASE_URL completely
         - JWT_SECRET_KEY is auto-managed via Redis (not in .env)
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     try:
         env_manager = EnvManager()
 
@@ -96,7 +93,7 @@ async def get_env_settings(current_user: User = Depends(get_current_user)):
             # Not sensitive, return as-is
             masked_settings[key] = value
 
-        logger.info("Admin %s accessed environment settings", current_user.phone)
+        logger.info("Admin %s accessed environment settings", scope.actor.phone)
 
         return {"settings": masked_settings, "schema": schema}
 
@@ -108,8 +105,8 @@ async def get_env_settings(current_user: User = Depends(get_current_user)):
         ) from e
 
 
-@router.put("/settings", dependencies=[Depends(get_current_user)])
-async def update_env_settings(request: Dict[str, str], current_user: User = Depends(get_current_user)):
+@router.put("/settings", dependencies=[Depends(require_tab_settings_edit)])
+async def update_env_settings(request: Dict[str, str], scope: AdminScope = Depends(require_tab_settings_edit)):
     """
     Update environment settings in .env file (ADMIN ONLY)
 
@@ -138,9 +135,6 @@ async def update_env_settings(request: Dict[str, str], current_user: User = Depe
             "warning": "Server restart required for changes to take effect"
         }
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     # Security: Prevent modification of critical settings via web UI
     # Note: JWT_SECRET_KEY is now auto-managed via Redis (not in .env)
     forbidden_keys = ["DATABASE_URL"]
@@ -210,7 +204,7 @@ async def update_env_settings(request: Dict[str, str], current_user: User = Depe
 
         logger.warning(
             "Admin %s updated .env settings: %s",
-            current_user.phone,
+            scope.actor.phone,
             ", ".join(masked_keys),
         )
 
@@ -232,8 +226,11 @@ async def update_env_settings(request: Dict[str, str], current_user: User = Depe
         ) from e
 
 
-@router.post("/validate", dependencies=[Depends(get_current_user)])
-async def validate_env_settings(request: Dict[str, str], current_user: User = Depends(get_current_user)):
+@router.post("/validate", dependencies=[Depends(require_tab_settings_edit)])
+async def validate_env_settings(
+    request: Dict[str, str],
+    _scope: AdminScope = Depends(require_tab_settings_edit),
+):
     """
     Validate settings without writing to file (ADMIN ONLY)
 
@@ -251,9 +248,6 @@ async def validate_env_settings(request: Dict[str, str], current_user: User = De
             "errors": ["list", "of", "errors"] or []
         }
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     try:
         env_manager = EnvManager()
         is_valid, errors = env_manager.validate_env(request)
@@ -268,8 +262,8 @@ async def validate_env_settings(request: Dict[str, str], current_user: User = De
         ) from e
 
 
-@router.get("/backups", dependencies=[Depends(get_current_user)])
-async def list_env_backups(current_user: User = Depends(get_current_user)):
+@router.get("/backups", dependencies=[Depends(require_tab_settings_edit)])
+async def list_env_backups(scope: AdminScope = Depends(require_tab_settings_edit)):
     """
     List all available .env backup files (ADMIN ONLY)
 
@@ -287,14 +281,11 @@ async def list_env_backups(current_user: User = Depends(get_current_user)):
 
     Sorted by timestamp (newest first)
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     try:
         env_manager = EnvManager()
         backups = env_manager.list_backups()
 
-        logger.info("Admin %s listed %d backups", current_user.phone, len(backups))
+        logger.info("Admin %s listed %d backups", scope.actor.phone, len(backups))
 
         return backups
 
@@ -306,8 +297,8 @@ async def list_env_backups(current_user: User = Depends(get_current_user)):
         ) from e
 
 
-@router.post("/restore", dependencies=[Depends(get_current_user)])
-async def restore_env_from_backup(backup_filename: str, current_user: User = Depends(get_current_user)):
+@router.post("/restore", dependencies=[Depends(require_tab_settings_edit)])
+async def restore_env_from_backup(backup_filename: str, scope: AdminScope = Depends(require_tab_settings_edit)):
     """
     Restore .env from a backup file (ADMIN ONLY)
 
@@ -331,14 +322,11 @@ async def restore_env_from_backup(backup_filename: str, current_user: User = Dep
     - Admin authentication required
     - Audit logging
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     # Security: Validate filename to prevent path traversal
     if not backup_filename or ".." in backup_filename or "/" in backup_filename or "\\" in backup_filename:
         logger.warning(
             "Admin %s attempted invalid backup filename: %s",
-            current_user.phone,
+            scope.actor.phone,
             backup_filename,
         )
         raise HTTPException(
@@ -356,7 +344,7 @@ async def restore_env_from_backup(backup_filename: str, current_user: User = Dep
             reload_runtime_config_from_dotenv()
             logger.warning(
                 "Admin %s restored .env from backup: %s",
-                current_user.phone,
+                scope.actor.phone,
                 backup_filename,
             )
 
@@ -391,8 +379,8 @@ async def restore_env_from_backup(backup_filename: str, current_user: User = Dep
         ) from e
 
 
-@router.get("/schema", dependencies=[Depends(get_current_user)])
-async def get_env_schema(current_user: User = Depends(get_current_user)):
+@router.get("/schema", dependencies=[Depends(require_tab_settings_edit)])
+async def get_env_schema(_scope: AdminScope = Depends(require_tab_settings_edit)):
     """
     Get environment settings schema metadata (ADMIN ONLY)
 
@@ -406,9 +394,6 @@ async def get_env_schema(current_user: User = Depends(get_current_user)):
 
     Used by frontend to dynamically generate settings form.
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     try:
         env_manager = EnvManager()
         schema = env_manager.get_env_schema()
@@ -423,9 +408,9 @@ async def get_env_schema(current_user: User = Depends(get_current_user)):
         ) from e
 
 
-@router.post("/reload-runtime", dependencies=[Depends(get_current_user)])
+@router.post("/reload-runtime", dependencies=[Depends(require_tab_settings_edit)])
 async def reload_runtime_env(
-    current_user: User = Depends(get_current_user),
+    scope: AdminScope = Depends(require_tab_settings_edit),
 ):
     """
     Reload .env into ``os.environ`` and clear the in-process config cache (ADMIN ONLY).
@@ -434,16 +419,13 @@ async def reload_runtime_env(
     process picks up new values without a full process restart. Router modules that
     were not imported at startup still require a restart to appear.
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     try:
         env_manager = EnvManager()
         env_path = env_manager.env_path.resolve()
         reload_runtime_config_from_dotenv()
         logger.warning(
             "Admin %s triggered runtime .env reload (%s)",
-            current_user.phone,
+            scope.actor.phone,
             env_path,
         )
         return {

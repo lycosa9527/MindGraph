@@ -39,6 +39,7 @@ USER_OWNED_TABLES = [
     "user_api_tokens",
     "user_usage_stats",
     "user_activity_log",
+    "user_usage_activities",
     "debate_sessions",
     "library_bookmarks",
     "market_orders",
@@ -405,6 +406,12 @@ def iter_all_table_policies() -> list[tuple[str, str]]:
             "user_id = rls_current_user_id() OR rls_is_panel_mode()",
         )
     )
+    rows.append(
+        (
+            "mindmate_export_jobs",
+            "created_by_user_id = rls_current_user_id() OR rls_platform_admin_only()",
+        )
+    )
     return rows
 
 
@@ -438,6 +445,7 @@ def all_rls_tables() -> list[str]:
             "teacher_usage_config",
             "dashboard_activities",
             "market_listings",
+            "mindmate_export_jobs",
         ]
     )
     return tables

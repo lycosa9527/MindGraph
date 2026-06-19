@@ -265,6 +265,15 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_MINDBOT", "True").lower() == "true"
 
     @property
+    def FEATURE_MINDMATE_EXPORT(self):
+        """Enable the MindMate 记录导出 admin subtab (view/export Dify conversation history).
+
+        Disabled by default. Set FEATURE_MINDMATE_EXPORT=True in .env to enable.
+        Per-org rollout is additionally gated via feature_org_access.
+        """
+        return self._get_cached_value("FEATURE_MINDMATE_EXPORT", "False").lower() == "true"
+
+    @property
     def MINDBOT_DIFY_HEALTH_BASE_URL(self) -> str:
         """Dify app API base (no trailing slash) for admin GET /parameters probe."""
         raw = (

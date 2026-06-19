@@ -1,5 +1,9 @@
 """Org-scoped user management for the school dashboard (admin or school manager).
 
+Reference implementation for "super-admin OR school manager": uses
+``require_panel_capability(CAP_TAB_USERS_VIEW|EDIT)`` + ``AdminScope`` org filtering.
+See ``routers/auth/admin/users.py`` for global super-admin-only user ops.
+
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
@@ -27,6 +31,7 @@ from services.auth.admin_user_list_rows import (
     diagram_quota_for_user,
     enrich_admin_user_list_rows,
 )
+from utils.auth.user_daily_token_quota import resolve_daily_usage
 from services.auth.phone_uniqueness import other_user_id_with_phone
 from services.auth.school_dashboard_logger import get_school_dashboard_logger
 from services.auth.school_user_create import (
@@ -338,10 +343,12 @@ async def get_school_user(
     sd_log.info("[SchoolDashboard] user read", extra={"sd_event": "school_user_read"})
 
     diagram_counts = await diagram_quota_for_user(db, user_id)
+    token_used_today = await resolve_daily_usage(user_id)
     return build_admin_user_detail_payload(
         user,
         org,
         diagram_counts["diagram_count"],
+        token_used_today=token_used_today,
     )
 
 

@@ -25,11 +25,11 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 
-from models.domain.auth import User
+from routers.auth.dependencies import require_settings_performance
 from services.infrastructure.monitoring.ws_metrics import get_ws_metrics_snapshot
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
-from utils.auth import get_current_user, is_admin
+from utils.auth.admin_scope import AdminScope
 from utils.ws_session_registry import _registry as _ws_registry
 
 logger = logging.getLogger(__name__)
@@ -47,17 +47,14 @@ HEARTBEAT_INTERVAL = 10  # Send heartbeat every N seconds
 _active_sse_connections: dict[int, int] = {}
 
 
-@router.get("/stats", dependencies=[Depends(get_current_user)])
-async def get_realtime_stats(current_user: User = Depends(get_current_user)):
+@router.get("/stats", dependencies=[Depends(require_settings_performance)])
+async def get_realtime_stats(_scope: AdminScope = Depends(require_settings_performance)):
     """
     Get current real-time statistics (ADMIN ONLY)
 
     Returns:
         Dict with stats: active_users_count, unique_users_count, etc.
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     try:
         tracker = get_activity_tracker()
         stats = await tracker.get_stats()
@@ -72,17 +69,14 @@ async def get_realtime_stats(current_user: User = Depends(get_current_user)):
         ) from e
 
 
-@router.get("/active-users", dependencies=[Depends(get_current_user)])
-async def get_active_users(current_user: User = Depends(get_current_user)):
+@router.get("/active-users", dependencies=[Depends(require_settings_performance)])
+async def get_active_users(_scope: AdminScope = Depends(require_settings_performance)):
     """
     Get list of currently active users (ADMIN ONLY)
 
     Returns:
         List of active user sessions
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     try:
         tracker = get_activity_tracker()
         active_users = await tracker.get_active_users()
@@ -102,10 +96,10 @@ async def get_active_users(current_user: User = Depends(get_current_user)):
         ) from e
 
 
-@router.get("/activities", dependencies=[Depends(get_current_user)])
+@router.get("/activities", dependencies=[Depends(require_settings_performance)])
 async def get_recent_activities(
     limit: int = Query(100, ge=1, le=500, description="Number of activities to return"),
-    current_user: User = Depends(get_current_user),
+    _scope: AdminScope = Depends(require_settings_performance),
 ):
     """
     Get recent activity history (ADMIN ONLY)
@@ -116,9 +110,6 @@ async def get_recent_activities(
     Returns:
         List of recent activities
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     try:
         tracker = get_activity_tracker()
         activities = await tracker.get_recent_activities(limit=limit)
@@ -133,8 +124,8 @@ async def get_recent_activities(
         ) from e
 
 
-@router.get("/stream", dependencies=[Depends(get_current_user)])
-async def stream_realtime_updates(current_user: User = Depends(get_current_user)):
+@router.get("/stream", dependencies=[Depends(require_settings_performance)])
+async def stream_realtime_updates(scope: AdminScope = Depends(require_settings_performance)):
     """
     Stream real-time user activity updates using Server-Sent Events (ADMIN ONLY)
 
@@ -158,16 +149,14 @@ async def stream_realtime_updates(current_user: User = Depends(get_current_user)
             console.log(data);
         };
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     # Rate limiting: Check concurrent connections
-    user_id = current_user.id
+    user_id = scope.actor.id
+    admin_phone = scope.actor.phone
     current_connections = _active_sse_connections.get(user_id, 0)
     if current_connections >= MAX_CONCURRENT_SSE_CONNECTIONS:
         logger.warning(
             "Admin %s exceeded max concurrent SSE connections (%s)",
-            current_user.phone,
+            admin_phone,
             MAX_CONCURRENT_SSE_CONNECTIONS,
         )
         raise HTTPException(
@@ -179,7 +168,7 @@ async def stream_realtime_updates(current_user: User = Depends(get_current_user)
     _active_sse_connections[user_id] = current_connections + 1
     logger.info(
         "Admin %s started realtime stream (connections: %s)",
-        current_user.phone,
+        admin_phone,
         _active_sse_connections[user_id],
     )
 
@@ -307,7 +296,7 @@ async def stream_realtime_updates(current_user: User = Depends(get_current_user)
                 heartbeat_counter += 1
 
         except asyncio.CancelledError:
-            logger.info("Realtime stream cancelled for admin %s", current_user.phone)
+            logger.info("Realtime stream cancelled for admin %s", admin_phone)
             return
         except BACKGROUND_INFRA_ERRORS as e:
             logger.error("Error in realtime stream: %s", e, exc_info=True)
@@ -323,7 +312,7 @@ async def stream_realtime_updates(current_user: User = Depends(get_current_user)
                     del _active_sse_connections[user_id]
                 logger.debug(
                     "Admin %s SSE connection closed (remaining: %s)",
-                    current_user.phone,
+                    admin_phone,
                     _active_sse_connections.get(user_id, 0),
                 )
 
@@ -338,8 +327,8 @@ async def stream_realtime_updates(current_user: User = Depends(get_current_user)
     )
 
 
-@router.get("/ws-sessions", dependencies=[Depends(get_current_user)])
-async def get_ws_sessions(current_user: User = Depends(get_current_user)):
+@router.get("/ws-sessions", dependencies=[Depends(require_settings_performance)])
+async def get_ws_sessions(_scope: AdminScope = Depends(require_settings_performance)):
     """
     Snapshot of all active WebSocket sessions on this worker (ADMIN ONLY).
 
@@ -351,9 +340,6 @@ async def get_ws_sessions(current_user: User = Depends(get_current_user)):
     Useful for live debugging: find stuck sessions, check user connection counts,
     or verify that sessions are being cleaned up correctly.
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     try:
         registry_snapshot = _ws_registry.snapshot()
         metrics_snapshot = await get_ws_metrics_snapshot()

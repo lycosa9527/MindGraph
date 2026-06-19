@@ -30,14 +30,25 @@ export function resolveMindMapNodeStyle(
   return { ...preservedStyles?.[nodeId], ...data?.style }
 }
 
-function nodeBoxSize(node: FlowNodeLike): { w: number; h: number } {
+/** DOM-measured size from the shared Pinia store (same source the layout uses). */
+export type MeasuredNodeSize = { width?: number; height?: number } | undefined
+
+/**
+ * Resolve the node box size, preferring the Pinia-measured dimensions that drive
+ * the layout. This keeps connector endpoints on the exact pixel the layout
+ * anchored to, instead of vue-flow's independently-measured `node.dimensions`
+ * (which can lag or round differently and fall back to the stale estimate).
+ */
+function nodeBoxSize(node: FlowNodeLike, measured?: MeasuredNodeSize): { w: number; h: number } {
   const data = node.data
   return {
     w:
+      measured?.width ??
       node.dimensions?.width ??
       (data?.estimatedWidth as number | undefined) ??
       MIND_MAP_GEOMETRY.minWidth,
     h:
+      measured?.height ??
       node.dimensions?.height ??
       (data?.estimatedHeight as number | undefined) ??
       MIND_MAP_GEOMETRY.minHeight,
@@ -64,14 +75,15 @@ export function resolveMindMapEdgeEndpoint(
   node: FlowNodeLike | undefined,
   role: 'source' | 'target',
   fallback: { x: number; y: number },
-  mergedStyle?: NodeStyle
+  mergedStyle?: NodeStyle,
+  measured?: MeasuredNodeSize
 ): { x: number; y: number } {
   if (!node?.position) return fallback
 
   const shape = resolveNodeShape(mergedStyle ?? node.data?.style, true)
   if (shape !== 'underline') return fallback
 
-  const { w, h } = nodeBoxSize(node)
+  const { w, h } = nodeBoxSize(node, measured)
   const y = mindMapConnectionAnchorY(node.position.y, h, shape)
 
   if (node.id === 'topic') {
@@ -94,32 +106,4 @@ export function resolveMindMapEdgeEndpoint(
 
   x = joinOverlapX(x, side, role)
   return { x, y }
-}
-
-export function isMindMapUnderlineNode(
-  nodeId: string | undefined,
-  data: MindGraphNodeData | undefined,
-  preservedStyles?: Record<string, NodeStyle>
-): boolean {
-  return resolveNodeShape(resolveMindMapNodeStyle(nodeId, data, preservedStyles), true) === 'underline'
-}
-
-/**
- * Underline parent → box/rounded child: keep branch horizontal at the underline Y
- * (avoid a vertical "step" before the child). Multi-child groups still use the bus.
- */
-export function alignMindMapBranchTargetY(
-  sourceAnchorY: number,
-  target: { x: number; y: number },
-  sourceNodeId: string,
-  targetNodeId: string,
-  sourceData: MindGraphNodeData | undefined,
-  targetData: MindGraphNodeData | undefined,
-  preservedStyles: Record<string, NodeStyle> | undefined,
-  siblingCount: number
-): { x: number; y: number } {
-  if (siblingCount > 1) return target
-  if (!isMindMapUnderlineNode(sourceNodeId, sourceData, preservedStyles)) return target
-  if (isMindMapUnderlineNode(targetNodeId, targetData, preservedStyles)) return target
-  return { x: target.x, y: sourceAnchorY }
 }

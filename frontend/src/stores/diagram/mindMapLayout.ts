@@ -9,8 +9,6 @@ import {
 import {
   estimateNodeWidth as estimateBranchWidth,
   estimateTopicNodeWidth,
-  measureBranchNodeHeight,
-  measureBranchNodeUnderlineHeight,
 } from '@/stores/specLoader/mindMap'
 import { computeSymmetricRootStartYs } from '@/utils/mindMapSideStacking'
 import { resolveNodeShape } from '@/utils/nodeShapeStyle'
@@ -99,20 +97,24 @@ function getNodeWidth(node: DiagramNode, nodeWidths: Record<string, number>): nu
   return measured !== undefined ? Math.max(measured, estimated) : estimated
 }
 
+/**
+ * Resolve the node's vertical size, mirroring the edge renderer's height source
+ * (`nodeBoxSize` in mindMapEdgeEndpoints): trust the DOM-measured height, falling
+ * back to the build-time estimate only before the first measurement.
+ *
+ * The earlier `Math.max(measured, estimate)` clamped underline nodes (~24px) up to
+ * their stale rounded-shape estimate (~34px), so the layout anchored connectors at a
+ * height the node never renders at — drifting the bracket center by the size delta.
+ */
 function getNodeHeight(
   nodeId: string,
   nodeMap: Map<string, DiagramNode>,
   nodeHeights: Record<string, number>
 ): number {
   const measured = nodeHeights[nodeId]
+  if (measured !== undefined) return measured
   const node = nodeMap.get(nodeId)
-  const shape = resolveNodeShape(node?.style, true)
-  const measureHeight =
-    shape === 'underline' ? measureBranchNodeUnderlineHeight : measureBranchNodeHeight
-  const freshEstimate = node?.text ? measureHeight(node.text, nodeId) : DEFAULT_NODE_HEIGHT
-  const stored = (node?.data?.estimatedHeight as number | undefined) ?? DEFAULT_NODE_HEIGHT
-  const estimated = Math.max(stored, freshEstimate)
-  return measured !== undefined ? Math.max(measured, estimated) : estimated
+  return (node?.data?.estimatedHeight as number | undefined) ?? DEFAULT_NODE_HEIGHT
 }
 
 function getNodeAnchorY(
@@ -127,6 +129,7 @@ function getNodeAnchorY(
   return mindMapConnectionAnchorY(nodeTopY, h, shape)
 }
 
+/** Top-left Y for a node whose connection anchor (underline / center) should sit at anchorY. */
 function getNodeTopYForAnchor(
   nodeId: string,
   anchorY: number,
@@ -339,12 +342,14 @@ function correctYPositions(
         if (i > 0) y += MINDMAP_SIBLING_GAP
         y = assignSubtreeY(kids[i], y)
       }
-      const childTop = newY.get(kids[0]) ?? startY
+      const firstKid = kids[0]
       const lastKid = kids[kids.length - 1]
-      const lastKidH = getNodeHeight(lastKid, nodeMap, nodeHeights)
-      const childBottom = (newY.get(lastKid) ?? startY) + lastKidH
-      const childCenter = (childTop + childBottom) / 2
-      newY.set(nodeId, getNodeTopYForAnchor(nodeId, childCenter, nodeMap, nodeHeights))
+      const firstKidTopY = newY.get(firstKid) ?? startY
+      const lastKidTopY = newY.get(lastKid) ?? startY
+      const firstAnchorY = getNodeAnchorY(firstKid, firstKidTopY, nodeMap, nodeHeights)
+      const lastAnchorY = getNodeAnchorY(lastKid, lastKidTopY, nodeMap, nodeHeights)
+      const anchorCenter = (firstAnchorY + lastAnchorY) / 2
+      newY.set(nodeId, getNodeTopYForAnchor(nodeId, anchorCenter, nodeMap, nodeHeights))
       return y
     }
 

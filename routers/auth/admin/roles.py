@@ -34,7 +34,9 @@ from utils.auth.role_constants import (
 )
 from utils.auth.school_tier import assert_organization_has_manager_capacity
 
-from ..dependencies import get_language_dependency, require_admin
+from utils.auth.admin_scope import AdminScope
+
+from ..dependencies import get_language_dependency, require_settings_roles
 from ..helpers import utc_to_beijing_iso
 
 logger = logging.getLogger(__name__)
@@ -88,7 +90,7 @@ def _user_for_admin_env_token(user_pool: dict[int, User], token: str) -> User | 
     return None
 
 
-@router.get("/admin/admins", dependencies=[Depends(require_admin)])
+@router.get("/admin/admins", dependencies=[Depends(require_settings_roles)])
 async def list_admins(
     db: AsyncSession = Depends(get_async_db),
 ):
@@ -176,7 +178,7 @@ def _mask_user_phone(phone: str | None) -> str:
     return phone or ""
 
 
-@router.get("/admin/platform-role-members", dependencies=[Depends(require_admin)])
+@router.get("/admin/platform-role-members", dependencies=[Depends(require_settings_roles)])
 async def list_platform_role_members(
     role: str = Query(..., description="platform_bd or expert"),
     db: AsyncSession = Depends(get_async_db),
@@ -209,11 +211,11 @@ async def list_platform_role_members(
     return {"members": result}
 
 
-@router.put("/admin/users/{user_id}/role", dependencies=[Depends(require_admin)])
+@router.put("/admin/users/{user_id}/role", dependencies=[Depends(require_settings_roles)])
 async def update_user_role(
     user_id: int,
     role: str = Query(..., description="New canonical role slug"),
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_settings_roles),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -290,13 +292,13 @@ async def update_user_role(
         logger.warning("[Auth] Failed to invalidate/cache user %s: %s", user_id, e)
 
     if role == ROLE_SUPERADMIN:
-        logger.info("Superadmin %s granted superadmin role to user %s", current_user.phone, user.phone)
+        logger.info("Superadmin %s granted superadmin role to user %s", scope.actor.phone, user.phone)
     elif old_role == ROLE_SUPERADMIN:
-        logger.info("Superadmin %s revoked superadmin role from user %s", current_user.phone, user.phone)
+        logger.info("Superadmin %s revoked superadmin role from user %s", scope.actor.phone, user.phone)
     else:
         logger.info(
             "Superadmin %s changed role for user %s from %s to %s",
-            current_user.phone,
+            scope.actor.phone,
             user.phone,
             old_role,
             role,

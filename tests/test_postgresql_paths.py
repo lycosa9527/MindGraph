@@ -22,6 +22,8 @@ def test_find_system_cluster_prefers_matching_port(monkeypatch: pytest.MonkeyPat
     main16 = tmp_path / "pg16" / "main"
     main18.mkdir(parents=True)
     main16.mkdir(parents=True)
+    (main18 / "PG_VERSION").write_text("18\n", encoding="utf-8")
+    (main16 / "PG_VERSION").write_text("16\n", encoding="utf-8")
 
     class _LsclustersResult:
         returncode = 0

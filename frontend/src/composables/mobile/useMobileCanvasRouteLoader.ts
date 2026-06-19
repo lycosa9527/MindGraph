@@ -51,7 +51,7 @@ export interface UseMobileCanvasRouteLoaderOptions {
 }
 
 export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOptions): {
-  loadDiagramFromLibrary: (diagramId: string) => Promise<void>
+  loadDiagramFromLibrary: (diagramId: string) => Promise<boolean>
 } {
   const route = useRoute()
   const router = useRouter()
@@ -73,10 +73,17 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
     onCollabClear,
   } = options
 
-  async function loadDiagramFromLibrary(diagramId: string): Promise<void> {
-    const diagram = await savedDiagramsStore.getDiagram(diagramId)
-    if (!diagram) return
-
+  async function loadDiagramFromLibrary(diagramId: string): Promise<boolean> {
+    const result = await savedDiagramsStore.getDiagram(diagramId)
+    if (!result.ok) {
+      notifyError(translate('canvas.library.diagramNotFound'))
+      const nextQuery = { ...route.query }
+      delete nextQuery.diagramId
+      delete nextQuery.diagram_id
+      await router.replace({ path: route.path, query: nextQuery })
+      return false
+    }
+    const diagram = result.diagram
     savedDiagramsStore.setActiveDiagram(diagramId)
     diagramStore.clearHistory()
 
@@ -94,7 +101,10 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
     if (loaded) {
       const key = diagramTypeKeyFromDiagramType(diagram.diagram_type)
       if (key) uiStore.setSelectedChartType(key)
+      return true
     }
+    notifyError(translate('canvas.library.diagramNotFound'))
+    return false
   }
 
   onMounted(async () => {

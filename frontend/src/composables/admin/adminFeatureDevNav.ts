@@ -3,7 +3,11 @@
  */
 import { settingsSubtabRequiresCapabilities } from '@/utils/adminCapabilities'
 
-export type FeatureDevSubtab = 'smart_response' | 'kitty_llmops' | 'teacher_usage'
+export type FeatureDevSubtab =
+  | 'smart_response'
+  | 'kitty_llmops'
+  | 'teacher_usage'
+  | 'mindmate_export'
 
 export interface FeatureDevNavLeafItem {
   kind: 'leaf'
@@ -17,6 +21,7 @@ export const FEATURE_DEV_NAV_ITEMS: readonly FeatureDevNavItem[] = [
   { kind: 'leaf', name: 'smart_response', labelKey: 'sidebar.smartResponse' },
   { kind: 'leaf', name: 'kitty_llmops', labelKey: 'admin.kittyLlmopsTab' },
   { kind: 'leaf', name: 'teacher_usage', labelKey: 'sidebar.teacherUsage' },
+  { kind: 'leaf', name: 'mindmate_export', labelKey: 'admin.mindmateExport.navLabel' },
 ]
 
 export interface FeatureDevNavVisibilityOptions {
@@ -24,6 +29,7 @@ export interface FeatureDevNavVisibilityOptions {
   featureSmartResponse: boolean
   featureTeacherUsage: boolean
   featureKittyAgent: boolean
+  featureMindmateExport: boolean
 }
 
 /** Smart Response admin UI is not production-ready; hide until device flows ship. */
@@ -45,6 +51,9 @@ function canViewLeaf(name: FeatureDevSubtab, options: FeatureDevNavVisibilityOpt
     return false
   }
   if (name === 'kitty_llmops' && !options.featureKittyAgent) {
+    return false
+  }
+  if (name === 'mindmate_export' && !options.featureMindmateExport) {
     return false
   }
   return true
@@ -96,6 +105,7 @@ export const LEGACY_FEATURE_DEV_SETTINGS_SUBTABS: readonly string[] = [
   'smart_response',
   'kitty_llmops',
   'teacher_usage',
+  'mindmate_export',
 ]
 
 export function hasVisibleFeatureDevNav(options: FeatureDevNavVisibilityOptions): boolean {

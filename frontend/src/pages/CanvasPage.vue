@@ -805,8 +805,10 @@ watch(
   },
   async (newId, oldId) => {
     if (newId && typeof newId === 'string' && newId !== oldId) {
-      await loadDiagramFromLibrary(newId)
-      void checkAndReconnectWorkshop(newId)
+      const loaded = await loadDiagramFromLibrary(newId)
+      if (loaded) {
+        void checkAndReconnectWorkshop(newId)
+      }
     } else if (!newId && oldId) {
       // Route dropped the diagramId — clear stale snapshot badges
       snapshotHistory.clearSnapshots()
@@ -880,8 +882,10 @@ onMounted(async () => {
         ? diagramIdRaw[0]
         : undefined
   if (diagramId) {
-    await loadDiagramFromLibrary(String(diagramId))
-    void checkAndReconnectWorkshop(String(diagramId))
+    const loaded = await loadDiagramFromLibrary(String(diagramId))
+    if (loaded) {
+      void checkAndReconnectWorkshop(String(diagramId))
+    }
     return
   }
 

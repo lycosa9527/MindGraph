@@ -29,10 +29,11 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel
 
 from models.domain.auth import User
-from routers.auth.dependencies import require_admin
+from routers.auth.dependencies import require_tab_settings_edit
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, FILE_IO_ERRORS
 from services.utils.update_notifier import update_notifier
 from utils.auth import get_current_user
+from utils.auth.admin_scope import AdminScope
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +152,7 @@ async def dismiss_update_notification(current_user: User = Depends(get_current_u
 
 
 @router.get("/api/admin/update-notification")
-async def get_notification_config(_current_user: User = Depends(require_admin)):
+async def get_notification_config(_scope: AdminScope = Depends(require_tab_settings_edit)):
     """
     Get full notification configuration (ADMIN ONLY).
 
@@ -186,7 +187,7 @@ async def get_notification_config(_current_user: User = Depends(require_admin)):
 @router.put("/api/admin/update-notification")
 async def set_notification_config(
     request: NotificationSetRequest,
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_tab_settings_edit),
 ):
     """
     Set or update notification configuration (ADMIN ONLY).
@@ -208,7 +209,7 @@ async def set_notification_config(
 
         logger.info(
             "Admin %s updated notification: enabled=%s",
-            current_user.phone,
+            scope.actor.phone,
             request.enabled,
         )
 
@@ -226,7 +227,7 @@ async def set_notification_config(
 
 
 @router.delete("/api/admin/update-notification")
-async def disable_notification(current_user: User = Depends(require_admin)):
+async def disable_notification(scope: AdminScope = Depends(require_tab_settings_edit)):
     """
     Disable the update notification (ADMIN ONLY).
 
@@ -235,7 +236,7 @@ async def disable_notification(current_user: User = Depends(require_admin)):
     try:
         notification = await update_notifier.disable_notification()
 
-        logger.info("Admin %s disabled update notification", current_user.phone)
+        logger.info("Admin %s disabled update notification", scope.actor.phone)
 
         return {"message": "Notification disabled", "notification": notification}
 
@@ -248,7 +249,7 @@ async def disable_notification(current_user: User = Depends(require_admin)):
 
 
 @router.post("/api/admin/update-notification/reset-dismissed")
-async def reset_dismissed(current_user: User = Depends(require_admin)):
+async def reset_dismissed(scope: AdminScope = Depends(require_tab_settings_edit)):
     """
     Reset all dismissed states (ADMIN ONLY).
 
@@ -258,7 +259,7 @@ async def reset_dismissed(current_user: User = Depends(require_admin)):
         success = await update_notifier.clear_dismissed()
 
         if success:
-            logger.info("Admin %s reset all dismissed states", current_user.phone)
+            logger.info("Admin %s reset all dismissed states", scope.actor.phone)
             return {"message": "All dismissed states cleared"}
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -276,7 +277,7 @@ async def reset_dismissed(current_user: User = Depends(require_admin)):
 @router.post("/api/admin/update-notification/upload-image")
 async def upload_announcement_image(
     file: UploadFile = File(...),
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_tab_settings_edit),
 ):
     """
     Upload an image for the announcement (ADMIN ONLY).
@@ -311,7 +312,7 @@ async def upload_announcement_image(
         # Return URL path
         image_url = f"/static/announcement_images/{filename}"
 
-        logger.info("Admin %s uploaded announcement image: %s", _current_user.phone, filename)
+        logger.info("Admin %s uploaded announcement image: %s", _scope.actor.phone, filename)
 
         return {"url": image_url, "filename": filename}
 

@@ -100,6 +100,13 @@ export default {
   'mindmate.noHistory': 'No history',
   'mindmate.noHistoryPanel': 'No conversation history',
   'mindmate.suggestionLabel': 'Try asking me:',
+  'mindmate.openInCanvas': 'Edit in canvas',
+  'mindmate.openCanvasFailed': 'Could not open diagram in canvas.',
+  'mindmate.openCanvasLoginRequired': 'Sign in to open this diagram in the canvas.',
+  'mindmate.openCanvasNoLibraryId': 'Diagram was not saved to your library. Sign in and try again.',
+  'mindmate.openCanvasSaveRetry':
+    'Could not save this diagram to your library automatically. Regenerate; contact your administrator if it persists.',
+  'mindmate.diagramLibraryFull': 'Diagram library is full. Delete old diagrams and try again.',
   'mindmate.tooltip.copy': 'Copy',
   'mindmate.tooltip.dislike': 'Dislike',
   'mindmate.tooltip.edit': 'Edit',

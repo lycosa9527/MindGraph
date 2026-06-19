@@ -2,6 +2,9 @@
 
 Admin-only API endpoints for library management: scan, register, and visibility.
 
+Access: super-admin only (``require_admin``). Capability: ``CAP_SETTINGS_LIBRARY``.
+Migrate to ``require_panel_capability`` when touching routes here.
+
 Author: lycosa9527
 Made by: MindSpring Team
 
@@ -21,7 +24,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
-from models.domain.auth import User
 from models.domain.library import LibraryDocument
 from services.library import LibraryService
 from services.library.image_path_resolver import (
@@ -37,7 +39,9 @@ from services.library.library_path_utils import (
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS, FILE_IO_ERRORS
 
-from .helpers import require_admin
+from utils.auth.admin_scope import AdminScope
+
+from .helpers import require_settings_library
 from .models import DocumentVisibilityUpdate, RenameRequest
 
 logger = logging.getLogger(__name__)
@@ -168,7 +172,7 @@ def _collect_disk_books(
 
 @router.get("/admin/scan")
 async def scan_library_folders(
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_settings_library),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
@@ -178,7 +182,7 @@ async def scan_library_folders(
     LibraryDocument in the database.  Entries that exist only in the DB
     (folder missing on disk) are flagged as orphaned.
     """
-    service = LibraryService(db, user_id=current_user.id)
+    service = LibraryService(db, user_id=scope.actor.id)
     library_dir = service.storage_dir
     project_root = Path.cwd()
 
@@ -222,7 +226,7 @@ async def scan_library_folders(
 
 @router.post("/admin/repair")
 async def repair_library_paths(
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_settings_library),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
@@ -238,7 +242,7 @@ async def repair_library_paths(
 
     Returns counts of updated and skipped documents.
     """
-    service = LibraryService(db, user_id=current_user.id)
+    service = LibraryService(db, user_id=scope.actor.id)
     library_dir = service.storage_dir
     project_root = Path.cwd()
 
@@ -289,7 +293,7 @@ async def repair_library_paths(
             "updated": updated,
             "skipped": skipped,
             "errors": errors,
-            "admin_user_id": current_user.id,
+            "admin_user_id": scope.actor.id,
         },
     )
     return {"updated": updated, "skipped": skipped, "errors": errors}
@@ -299,7 +303,7 @@ async def repair_library_paths(
 async def update_document_visibility(
     document_id: int,
     data: DocumentVisibilityUpdate,
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_settings_library),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
@@ -328,7 +332,7 @@ async def update_document_visibility(
             detail="Failed to update document visibility",
         ) from exc
 
-    service = LibraryService(db, user_id=current_user.id)
+    service = LibraryService(db, user_id=scope.actor.id)
     await service.invalidate_document_cache(document_id)
 
     logger.info(
@@ -336,7 +340,7 @@ async def update_document_visibility(
         extra={
             "document_id": document_id,
             "is_active": data.is_active,
-            "admin_user_id": current_user.id,
+            "admin_user_id": scope.actor.id,
         },
     )
     return {
@@ -430,7 +434,7 @@ def _execute_rename(folder_path: Path, plan: list) -> tuple:
 @router.post("/admin/rename-pages")
 async def rename_book_pages(
     data: RenameRequest,
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_settings_library),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
@@ -448,7 +452,7 @@ async def rename_book_pages(
             detail="Invalid folder name 'must be a direct subfolder of storage/library/",
         )
 
-    service = LibraryService(db, user_id=current_user.id)
+    service = LibraryService(db, user_id=scope.actor.id)
     library_dir = service.storage_dir
     folder_path = (library_dir / data.folder_name).resolve()
 
@@ -490,7 +494,7 @@ async def rename_book_pages(
                 "folder": data.folder_name,
                 "renamed": renamed_count,
                 "errors": error_count,
-                "admin_user_id": current_user.id,
+                "admin_user_id": scope.actor.id,
             },
         )
     else:
@@ -513,7 +517,7 @@ async def rename_book_pages(
 @router.post("/admin/documents/{document_id}/generate-cover")
 async def generate_document_cover(
     document_id: int,
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_settings_library),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
@@ -522,7 +526,7 @@ async def generate_document_cover(
     Overwrites any existing cover file, updates the DB record, and invalidates
     the document cache so readers see the new cover immediately.
     """
-    service = LibraryService(db, user_id=current_user.id)
+    service = LibraryService(db, user_id=scope.actor.id)
     try:
         cover_path = service.regenerate_cover(document_id)
     except ValueError as exc:
@@ -539,7 +543,7 @@ async def generate_document_cover(
 
     logger.info(
         "[Library] Cover regenerated",
-        extra={"document_id": document_id, "admin_user_id": current_user.id},
+        extra={"document_id": document_id, "admin_user_id": scope.actor.id},
     )
     return {
         "document_id": document_id,
@@ -558,7 +562,7 @@ async def delete_document_record(
         False,
         description="When True, also remove the book folder and all page images from disk",
     ),
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_settings_library),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
@@ -579,7 +583,7 @@ async def delete_document_record(
             detail="Document not found",
         )
 
-    service = LibraryService(db, user_id=current_user.id)
+    service = LibraryService(db, user_id=scope.actor.id)
 
     # Commit the DB deletion first; only clean up disk/cache after the record is gone.
     try:
@@ -629,7 +633,7 @@ async def delete_document_record(
         extra={
             "document_id": document_id,
             "deleted_files": deleted_folder,
-            "admin_user_id": current_user.id,
+            "admin_user_id": scope.actor.id,
         },
     )
     return {

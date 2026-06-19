@@ -11,6 +11,7 @@ import { ElButton } from 'element-plus'
 import { Close } from '@element-plus/icons-vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
@@ -18,6 +19,7 @@ import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 import ApiTokenModal from './ApiTokenModal.vue'
 import AvatarSelectModal from './AvatarSelectModal.vue'
+import BindDingTalkAccountModal from './BindDingTalkAccountModal.vue'
 import ChangePasswordModal from './ChangePasswordModal.vue'
 import ChangePhoneModal from './ChangePhoneModal.vue'
 import SetPasswordWithSmsModal from './SetPasswordWithSmsModal.vue'
@@ -35,6 +37,7 @@ const emit = defineEmits<{
 }>()
 
 const authStore = useAuthStore()
+const { featureMindbot } = useFeatureFlags()
 const { canUseApiToken, canUseChromeExtension, showAccountPlugins } = useSchoolTierFeatures()
 
 const isVisible = computed({
@@ -47,6 +50,14 @@ const showChangePhoneModal = ref(false)
 const showChangePasswordModal = ref(false)
 const showSetPasswordSmsModal = ref(false)
 const showApiTokenModal = ref(false)
+const showBindDingTalkModal = ref(false)
+const dingtalkBindStatus = ref<{
+  linked: boolean
+  mindbot_available: boolean
+  dingtalk_staff_id?: string | null
+} | null>(null)
+const dingtalkBindLoading = ref(false)
+const dingtalkUnbindLoading = ref(false)
 const nameEdit = ref('')
 const nameSaving = ref(false)
 
@@ -64,6 +75,78 @@ const userPhone = computed(() => {
   return phone
 })
 const userOrg = computed(() => authStore.user?.schoolName || '')
+
+const showDingtalkBindSection = computed(
+  () => !!authStore.user?.schoolId && featureMindbot.value
+)
+
+const canMintDingtalkBind = computed(
+  () => dingtalkBindStatus.value?.mindbot_available === true
+)
+
+const dingtalkLinked = computed(() => dingtalkBindStatus.value?.linked === true)
+
+const dingtalkStaffMasked = computed(
+  () => dingtalkBindStatus.value?.dingtalk_staff_id || ''
+)
+
+async function fetchDingtalkBindStatus() {
+  if (!authStore.user?.schoolId || !featureMindbot.value) {
+    dingtalkBindStatus.value = null
+    return
+  }
+  dingtalkBindLoading.value = true
+  try {
+    const res = await apiRequest('/api/auth/dingtalk-bind/status', { method: 'GET' })
+    if (res.ok) {
+      dingtalkBindStatus.value = (await res.json()) as typeof dingtalkBindStatus.value
+    } else {
+      dingtalkBindStatus.value = { linked: false, mindbot_available: false }
+    }
+  } catch {
+    dingtalkBindStatus.value = { linked: false, mindbot_available: false }
+  } finally {
+    dingtalkBindLoading.value = false
+  }
+}
+
+function openBindDingTalkModal() {
+  if (!canMintDingtalkBind.value) {
+    notify.warning(t('auth.dingtalkBindNoMindbot'))
+    return
+  }
+  showBindDingTalkModal.value = true
+}
+
+function handleDingtalkBindLinked() {
+  void fetchDingtalkBindStatus()
+  emit('success')
+}
+
+async function unbindDingtalk() {
+  if (!dingtalkLinked.value || dingtalkUnbindLoading.value) {
+    return
+  }
+  dingtalkUnbindLoading.value = true
+  try {
+    const res = await apiRequest('/api/auth/dingtalk-bind/unbind', { method: 'POST' })
+    if (res.ok) {
+      notify.success(t('auth.dingtalkBindUnbindSuccess'))
+      await fetchDingtalkBindStatus()
+      emit('success')
+      return
+    }
+    if (res.status === 429) {
+      notify.warning(t('auth.dingtalkBindPollRateLimited'))
+      return
+    }
+    notify.error(t('auth.dingtalkBindUnbindError'))
+  } catch {
+    notify.error(t('auth.dingtalkBindUnbindError'))
+  } finally {
+    dingtalkUnbindLoading.value = false
+  }
+}
 const currentAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
 
 /** Quick registration: server-only password until user sets one via SMS. */
@@ -127,13 +210,16 @@ async function saveDisplayName() {
 }
 
 watch(
-  () => props.visible,
-  (v) => {
-    if (v) {
+  () => [props.visible, featureMindbot.value] as const,
+  ([visible, mindbotEnabled]) => {
+    if (visible) {
       const u = (authStore.user?.username || '').trim()
       const looksLikeName =
         u.length >= 2 && u.length <= 32 && !/^\d{11}$/.test(u) && !/^\d+$/.test(u)
       nameEdit.value = looksLikeName ? u : ''
+      if (mindbotEnabled && authStore.user?.schoolId) {
+        void fetchDingtalkBindStatus()
+      }
     }
   }
 )
@@ -189,9 +275,6 @@ watch(
                   </el-button>
                 </div>
               </div>
-
-              <!-- Divider -->
-              <div class="border-t border-stone-200" />
 
               <!-- User Information (Read-only fields) -->
               <div class="space-y-4">
@@ -287,6 +370,58 @@ watch(
                   />
                 </div>
 
+                <div v-if="showDingtalkBindSection">
+                  <label class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2">
+                    {{ t('auth.dingtalkBindSection') }}
+                  </label>
+                  <div class="flex flex-col gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <el-button
+                        v-if="dingtalkLinked"
+                        round
+                        size="small"
+                        class="account-action-btn account-action-btn--linked shrink-0"
+                        disabled
+                      >
+                        {{ t('auth.dingtalkBindLinkedButton') }}
+                      </el-button>
+                      <el-button
+                        v-else
+                        round
+                        size="small"
+                        class="account-action-btn shrink-0"
+                        :loading="dingtalkBindLoading"
+                        :disabled="!canMintDingtalkBind"
+                        @click="openBindDingTalkModal"
+                      >
+                        {{ t('auth.dingtalkBindButton') }}
+                      </el-button>
+                      <el-button
+                        v-if="dingtalkLinked"
+                        round
+                        size="small"
+                        class="account-action-btn account-action-btn--unbind shrink-0"
+                        :loading="dingtalkUnbindLoading"
+                        @click="unbindDingtalk"
+                      >
+                        {{ t('auth.dingtalkBindUnbind') }}
+                      </el-button>
+                    </div>
+                    <p
+                      v-if="dingtalkLinked && dingtalkStaffMasked"
+                      class="text-xs text-stone-500 m-0"
+                    >
+                      {{ t('auth.dingtalkBindLinkedLabel', { staff: dingtalkStaffMasked }) }}
+                    </p>
+                    <p
+                      v-else-if="!dingtalkBindLoading && !canMintDingtalkBind && !dingtalkLinked"
+                      class="text-xs text-stone-500 m-0"
+                    >
+                      {{ t('auth.dingtalkBindNoMindbot') }}
+                    </p>
+                  </div>
+                </div>
+
                 <div v-if="showAccountPlugins">
                   <label
                     class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2"
@@ -359,6 +494,12 @@ watch(
     <ApiTokenModal
       v-if="canUseApiToken"
       v-model:visible="showApiTokenModal"
+    />
+
+    <BindDingTalkAccountModal
+      v-model="showBindDingTalkModal"
+      :linked-staff-id="dingtalkStaffMasked"
+      @linked="handleDingtalkBindLinked"
     />
   </Teleport>
 </template>
@@ -465,5 +606,28 @@ watch(
   --el-button-active-border-color: #1c1917;
   font-weight: 500;
   letter-spacing: 0.02em;
+}
+
+.account-action-btn--linked {
+  --el-button-bg-color: #e7e5e4;
+  --el-button-text-color: #78716c;
+  --el-button-border-color: #d6d3d1;
+  --el-button-hover-bg-color: #e7e5e4;
+  --el-button-hover-text-color: #78716c;
+  --el-button-hover-border-color: #d6d3d1;
+  --el-button-active-bg-color: #e7e5e4;
+  --el-button-active-border-color: #d6d3d1;
+  cursor: not-allowed;
+}
+
+.account-action-btn--unbind {
+  --el-button-bg-color: #ffffff;
+  --el-button-text-color: #44403c;
+  --el-button-border-color: #d6d3d1;
+  --el-button-hover-bg-color: #fafaf9;
+  --el-button-hover-text-color: #292524;
+  --el-button-hover-border-color: #a8a29e;
+  --el-button-active-bg-color: #f5f5f4;
+  --el-button-active-border-color: #78716c;
 }
 </style>

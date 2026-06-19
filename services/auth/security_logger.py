@@ -50,6 +50,8 @@ class SecurityLogger:
     ACCESS_DENIED = "ACCESS_DENIED"
     INPUT_VALIDATION_FAILED = "INPUT_VALIDATION_FAILED"
     SUSPICIOUS_ACTIVITY = "SUSPICIOUS_ACTIVITY"
+    DATA_EXPORT = "DATA_EXPORT"
+    DATA_ACCESS = "DATA_ACCESS"
 
     def _log(self, level: int, event_type: str, message: str, **context):
         """Internal logging method with consistent format."""
@@ -184,6 +186,40 @@ class SecurityLogger:
         self._log(
             logging.WARNING,
             self.SUSPICIOUS_ACTIVITY,
+            description,
+            user_id=user_id,
+            ip=ip,
+            **extra_context,
+        )
+
+    def data_export(
+        self,
+        description: str,
+        user_id: Optional[int] = None,
+        ip: Optional[str] = None,
+        **extra_context,
+    ):
+        """Log a data export (who exported which org/users/range/format)."""
+        self._log(
+            logging.INFO,
+            self.DATA_EXPORT,
+            description,
+            user_id=user_id,
+            ip=ip,
+            **extra_context,
+        )
+
+    def data_access(
+        self,
+        description: str,
+        user_id: Optional[int] = None,
+        ip: Optional[str] = None,
+        **extra_context,
+    ):
+        """Log read access to sensitive admin data (lists, transcripts)."""
+        self._log(
+            logging.INFO,
+            self.DATA_ACCESS,
             description,
             user_id=user_id,
             ip=ip,

@@ -122,6 +122,60 @@ def cleanup_stale_pid_file(data_path: Path) -> None:
             pass
 
 
+def postgres_system_user_exists() -> bool:
+    """Return True when the ``postgres`` OS user exists (Linux only)."""
+    if sys.platform == "win32":
+        return False
+    try:
+        result = subprocess.run(
+            ["id", "-u", "postgres"],
+            capture_output=True,
+            timeout=2,
+            check=False,
+        )
+        return result.returncode == 0
+    except (subprocess.SubprocessError, FileNotFoundError):
+        return False
+
+
+def launch_command_as_postgres(cmd: list[str]) -> list[str]:
+    """Prefix ``cmd`` with ``sudo -u postgres`` when running as root on Linux."""
+    is_root = False
+    try:
+        is_root = os.geteuid() == 0
+    except AttributeError:
+        is_root = False
+    if is_root and postgres_system_user_exists():
+        return ["sudo", "-u", "postgres", *cmd]
+    return cmd
+
+
+def cluster_postmaster_pid(data_path: Path) -> Optional[int]:
+    """Return the live postmaster PID for ``data_path``, or None if not running."""
+    pid_file = data_path / "postmaster.pid"
+    if not pid_file.exists():
+        return None
+    try:
+        with open(pid_file, "r", encoding="utf-8") as pid_handle:
+            pid_text = pid_handle.readline().strip()
+        if not pid_text.isdigit():
+            return None
+        pid = int(pid_text)
+    except (OSError, ValueError):
+        return None
+
+    if sys.platform == "win32":
+        return pid
+
+    try:
+        os.kill(pid, 0)
+        return pid
+    except ProcessLookupError:
+        return None
+    except PermissionError:
+        return pid
+
+
 def ensure_postgres_directory_ownership(data_path: Path) -> bool:
     """
     Ensure postgres user exists and owns the PostgreSQL data directory.

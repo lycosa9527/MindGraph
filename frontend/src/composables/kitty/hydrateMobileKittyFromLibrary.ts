@@ -26,14 +26,14 @@ export async function hydrateMobileKittyFromLibrary(diagramId: string): Promise<
   const savedDiagramsStore = useSavedDiagramsStore()
   const diagramStore = useDiagramStore()
   const diagram = await savedDiagramsStore.getDiagram(trimmed)
-  if (!diagram) {
+  if (!diagram.ok) {
     return false
   }
-  const dt = normalizeDiagramType(String(diagram.diagram_type ?? ''))
+  const dt = normalizeDiagramType(String(diagram.diagram.diagram_type ?? ''))
   if (dt == null) {
     return false
   }
-  const spec = diagram.spec
+  const spec = diagram.diagram.spec
   if (spec == null || typeof spec !== 'object') {
     return false
   }

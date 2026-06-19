@@ -20,6 +20,7 @@ from services.infrastructure.http.error_handler import (
     LLMRateLimitError,
     LLMServiceError,
     LLMTimeoutError,
+    UserDailyTokenCapExceededError,
 )
 from services.utils.error_types import (
     DATABASE_ERRORS,
@@ -50,6 +51,7 @@ _LLM_ERROR_MAP: dict[Type[Exception], str] = {
     LLMTimeoutError: "timeout",
     LLMInvalidParameterError: "invalid_parameter",
     LLMQuotaExhaustedError: "quota_exhausted",
+    UserDailyTokenCapExceededError: "daily_token_cap",
     LLMModelNotFoundError: "model_not_found",
     LLMAccessDeniedError: "access_denied",
     LLMServiceError: "service_error",
@@ -72,6 +74,10 @@ _ERROR_MESSAGES: dict[str, tuple[str, str]] = {
     "quota_exhausted": (
         "配额已用完，请检查账户。",
         "Quota exhausted. Please check account.",
+    ),
+    "daily_token_cap": (
+        "今日 AI 用量已达上限，请明天再试。",
+        "Daily AI usage limit reached. Please try again tomorrow.",
     ),
     "model_not_found": (
         "模型不存在，请检查配置。",

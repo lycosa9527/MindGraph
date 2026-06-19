@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from utils.db.rls_context import RlsContext, rls_async_session
 
 
@@ -31,3 +33,14 @@ def system_rls_session():
 def panel_superadmin_rls_session(user: Any):
     """Panel superadmin rls session."""
     return rls_async_session(RlsContext.panel_superadmin(user))
+
+
+async def release_open_transaction(db: AsyncSession) -> None:
+    """Commit an open read transaction before awaiting slow external I/O.
+
+    Request-scoped FastAPI sessions stay open until the handler returns. End any
+    in-flight transaction before long upstream HTTP (Dify export, SSE, etc.) so
+    Postgres does not hit idle_in_transaction_session_timeout.
+    """
+    if db.in_transaction():
+        await db.commit()

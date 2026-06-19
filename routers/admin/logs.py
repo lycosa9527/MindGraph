@@ -24,32 +24,29 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 
-from models.domain.auth import User
+from routers.auth.dependencies import require_settings_performance
 from services.monitoring.log_streamer import LogStreamer
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
-from utils.auth import get_current_user, is_admin
+from utils.auth.admin_scope import AdminScope
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/auth/admin/logs", tags=["Admin - Logs"])
 
 
-@router.get("/files", dependencies=[Depends(get_current_user)])
-async def list_log_files(current_user: User = Depends(get_current_user)):
+@router.get("/files", dependencies=[Depends(require_settings_performance)])
+async def list_log_files(scope: AdminScope = Depends(require_settings_performance)):
     """
     List available log files (ADMIN ONLY)
 
     Returns:
         List of log files with metadata (name, size, modified time)
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     try:
         log_streamer = LogStreamer()
         log_files = log_streamer.get_log_files()
 
-        logger.info("Admin %s listed log files", current_user.phone)
+        logger.info("Admin %s listed log files", scope.actor.phone)
 
         return log_files
 
@@ -61,12 +58,12 @@ async def list_log_files(current_user: User = Depends(get_current_user)):
         ) from e
 
 
-@router.get("/read", dependencies=[Depends(get_current_user)])
+@router.get("/read", dependencies=[Depends(require_settings_performance)])
 async def read_log_file(
     source: str = Query("app", description="Log source (app, uvicorn, error)"),
     start_line: int = Query(0, ge=0, description="Starting line number"),
     num_lines: int = Query(100, ge=1, le=1000, description="Number of lines to read"),
-    current_user: User = Depends(get_current_user),
+    scope: AdminScope = Depends(require_settings_performance),
 ):
     """
     Read a range of lines from a log file (ADMIN ONLY)
@@ -79,16 +76,13 @@ async def read_log_file(
     Returns:
         List of parsed log entries
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     try:
         log_streamer = LogStreamer()
         entries = await log_streamer.read_log_file(source, start_line, num_lines)
 
         logger.info(
             "Admin %s read %d log lines from %s",
-            current_user.phone,
+            scope.actor.phone,
             len(entries),
             source,
         )
@@ -103,12 +97,12 @@ async def read_log_file(
         ) from e
 
 
-@router.get("/stream", dependencies=[Depends(get_current_user)])
+@router.get("/stream", dependencies=[Depends(require_settings_performance)])
 async def stream_logs(
     source: str = Query("app", description="Log source (app, uvicorn, error, all)"),
     follow: bool = Query(True, description="Continue watching for new lines"),
     max_lines: int = Query(100, ge=1, le=1000, description="Max historical lines"),
-    current_user: User = Depends(get_current_user),
+    scope: AdminScope = Depends(require_settings_performance),
 ):
     """
     Stream logs in real-time using Server-Sent Events (ADMIN ONLY)
@@ -131,12 +125,9 @@ async def stream_logs(
             console.log(logEntry);
         };
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     logger.info(
         "Admin %s started log stream: source=%s, follow=%s",
-        current_user.phone,
+        scope.actor.phone,
         source,
         follow,
     )
@@ -156,7 +147,7 @@ async def stream_logs(
                 await asyncio.sleep(0.01)
 
         except asyncio.CancelledError:
-            logger.info("Log stream cancelled for admin %s", current_user.phone)
+            logger.info("Log stream cancelled for admin %s", scope.actor.phone)
             yield 'data: {"message": "Stream closed"}\n\n'
         except (OSError, IOError, ValueError) as e:
             logger.error("Error in log stream: %s", e)
@@ -180,11 +171,11 @@ async def stream_logs(
     )
 
 
-@router.get("/tail", dependencies=[Depends(get_current_user)])
+@router.get("/tail", dependencies=[Depends(require_settings_performance)])
 async def tail_logs(
     source: str = Query("app", description="Log source (app, uvicorn, error)"),
     lines: int = Query(50, ge=1, le=500, description="Number of last lines to read"),
-    current_user: User = Depends(get_current_user),
+    scope: AdminScope = Depends(require_settings_performance),
 ):
     """
     Get last N lines from a log file (like `tail -n`) (ADMIN ONLY)
@@ -196,9 +187,6 @@ async def tail_logs(
     Returns:
         List of parsed log entries
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     try:
         log_streamer = LogStreamer()
 
@@ -211,7 +199,7 @@ async def tail_logs(
         # Take last N entries
         result = entries[-lines:] if len(entries) > lines else entries
 
-        logger.info("Admin %s tailed %d lines from %s", current_user.phone, len(result), source)
+        logger.info("Admin %s tailed %d lines from %s", scope.actor.phone, len(result), source)
 
         return result
 
@@ -223,12 +211,12 @@ async def tail_logs(
         ) from e
 
 
-@router.get("/search", dependencies=[Depends(get_current_user)])
+@router.get("/search", dependencies=[Depends(require_settings_performance)])
 async def search_logs(
     query: str = Query(..., min_length=1, description="Search query"),
     source: str = Query("app", description="Log source (app, uvicorn, error)"),
     max_results: int = Query(100, ge=1, le=500, description="Max results"),
-    current_user: User = Depends(get_current_user),
+    scope: AdminScope = Depends(require_settings_performance),
 ):
     """
     Search log files for matching lines (ADMIN ONLY)
@@ -241,9 +229,6 @@ async def search_logs(
     Returns:
         List of matching log entries
     """
-    if not is_admin(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
     try:
         log_streamer = LogStreamer()
         query_lower = query.lower()
@@ -260,7 +245,7 @@ async def search_logs(
 
         logger.info(
             "Admin %s searched logs: query='%s', source=%s, results=%d",
-            current_user.phone,
+            scope.actor.phone,
             query,
             source,
             len(results),

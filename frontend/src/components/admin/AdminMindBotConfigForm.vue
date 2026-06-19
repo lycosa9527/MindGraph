@@ -7,6 +7,7 @@ import { computed, ref, watch } from 'vue'
 import { DocumentCopy, MagicStick, Refresh } from '@element-plus/icons-vue'
 
 import AdminMindBotUsagePanel from '@/components/admin/AdminMindBotUsagePanel.vue'
+import AdminMindbotSwissSegmented from '@/components/admin/swiss/AdminMindbotSwissSegmented.vue'
 import type {
   MindbotConfigFormState,
   MindbotConfigRow,
@@ -90,6 +91,11 @@ const difySourceChoice = computed<DifySourceChoice>({
     form.value.use_org_dify_settings = choice === 'org'
   },
 })
+
+const difySourceOptions = computed(() => [
+  { label: t('admin.mindbot.difySourceSchoolDefault'), value: 'org' as const },
+  { label: t('admin.mindbot.difySourceCustom'), value: 'custom' as const },
+])
 
 const effectiveTab = computed({
   get: () => props.embeddedPane ?? dialogTab.value,
@@ -478,17 +484,14 @@ defineExpose({
                 <span :class="dingtalkFieldLabelClass">
                   {{ t('admin.mindbot.sectionDifySource') }}
                 </span>
-                <el-radio-group
-                  v-model="difySourceChoice"
-                  class="mindbot-dify-source-radio flex-1 min-w-0"
-                >
-                  <el-radio-button value="org">
-                    {{ t('admin.mindbot.difySourceSchoolDefault') }}
-                  </el-radio-button>
-                  <el-radio-button value="custom">
-                    {{ t('admin.mindbot.difySourceCustom') }}
-                  </el-radio-button>
-                </el-radio-group>
+                <div class="flex-1 min-w-0 w-full">
+                  <AdminMindbotSwissSegmented
+                    v-model="difySourceChoice"
+                    :options="difySourceOptions"
+                    block
+                    :aria-label="t('admin.mindbot.sectionDifySource')"
+                  />
+                </div>
               </div>
               <div
                 v-if="showSchoolCustomDifyFields"

@@ -76,6 +76,7 @@ playwright>=1.60.0
 Pillow>=12.2.0  # Image processing (also used for OCR in Personal Knowledge Space)
 PyMuPDF>=1.27.2  # PDF rendering for library cover extraction (fitz module)
 qrcode[pil]>=8.2  # QR code generation (requires Pillow)
+pyzbar>=0.1.9  # QR decode for DingTalk bind (requires system libzbar0)
 
 # ============================================================================
 # SYSTEM MONITORING & UTILITIES

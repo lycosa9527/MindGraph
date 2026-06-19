@@ -19,6 +19,7 @@ from models.domain.auth import UpdateNotificationDismissed
 from models.domain.community import CommunityPost, CommunityPostComment, CommunityPostLike
 from models.domain.device import Device
 from models.domain.diagrams import Diagram
+from models.domain.dingtalk_staff_link import DingtalkStaffLink
 from models.domain.feature_access_control import FeatureAccessUserGrant
 from models.domain.knowledge_space import KnowledgeSpace
 from models.domain.library import (
@@ -37,6 +38,7 @@ from models.domain.school_zone import (
 )
 from models.domain.token_usage import TokenUsage
 from models.domain.user_activity_log import UserActivityLog
+from models.domain.user_usage_activity import UserUsageActivity
 from models.domain.user_api_token import UserAPIToken
 from models.domain.user_usage_stats import UserUsageStats
 from models.domain.workshop_chat import ChatTopic
@@ -183,6 +185,11 @@ async def _delete_workshop_for_user(db: AsyncSession, user_id: int) -> None:
         await db.execute(text("DELETE FROM chat_channels WHERE created_by = :uid"), uid)
 
 
+async def _delete_dingtalk_staff_links_for_user(db: AsyncSession, user_id: int) -> None:
+    """Delete DingTalk staff links for user."""
+    await db.execute(delete(DingtalkStaffLink).where(DingtalkStaffLink.user_id == user_id))
+
+
 async def delete_user_fk_dependent_rows(db: AsyncSession, user_id: int) -> None:
     """
     Delete child rows and null FKs that would block ``DELETE FROM users`` for this id.
@@ -202,6 +209,8 @@ async def delete_user_fk_dependent_rows(db: AsyncSession, user_id: int) -> None:
     await db.execute(delete(PinnedConversation).where(PinnedConversation.user_id == user_id))
     await db.execute(delete(UserUsageStats).where(UserUsageStats.user_id == user_id))
     await db.execute(delete(UserActivityLog).where(UserActivityLog.user_id == user_id))
+    await db.execute(delete(UserUsageActivity).where(UserUsageActivity.user_id == user_id))
+    await _delete_dingtalk_staff_links_for_user(db, user_id)
     await db.execute(delete(Diagram).where(Diagram.user_id == user_id))
 
     await _delete_community_for_user(db, user_id)

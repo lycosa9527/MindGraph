@@ -1,5 +1,16 @@
 /**
  * Management panel capabilities — mirrors backend admin_panel_permissions.py
+ *
+ * Access control quick reference (keep in sync with backend):
+ * - "super-admin only" → cap in SUPERADMIN_CAPS only; API: require_admin or
+ *   require_panel_capability('tab.settings.*')
+ * - "school manager only" → cap in SCHOOL_ADMIN_CAPS only
+ * - "super-admin OR school manager" → cap in both SUPERADMIN_CAPS and
+ *   SCHOOL_ADMIN_CAPS; API: require_panel_capability (preferred) or
+ *   require_admin_or_manager_with_rls on legacy routes
+ * - UI hiding: settingsSubtabRequiresCapabilities() / canViewFeatureDevTab()
+ *
+ * Full cookbook: routers/auth/dependencies.py module docstring.
  */
 
 import type { UserRole } from '@/types'
@@ -28,6 +39,7 @@ export type AdminCapability =
   | 'tab.settings.gewe'
   | 'tab.settings.kitty_llmops'
   | 'tab.settings.mindbot'
+  | 'tab.settings.mindmate_export'
   | 'tab.settings.smart_response'
   | 'tab.settings.teacher_usage'
   | 'scope.global'
@@ -44,6 +56,7 @@ export interface AdminCapabilitiesPayload {
 }
 
 const SUPERADMIN_CAPS: AdminCapability[] = [
+  // All panel + settings capabilities (super-admin only unless also listed below).
   'panel.access',
   'tab.data_center.view',
   'tab.data_center.edit',
@@ -67,6 +80,7 @@ const SUPERADMIN_CAPS: AdminCapability[] = [
   'tab.settings.gewe',
   'tab.settings.kitty_llmops',
   'tab.settings.mindbot',
+  'tab.settings.mindmate_export',
   'tab.settings.smart_response',
   'tab.settings.teacher_usage',
   'scope.global',
@@ -94,6 +108,7 @@ const EXPERT_CAPS: AdminCapability[] = [
 ]
 
 const SCHOOL_ADMIN_CAPS: AdminCapability[] = [
+  // School manager: org-scoped member management + school dashboard.
   'panel.access',
   'tab.school_dashboard.view',
   'tab.users.view',
@@ -179,7 +194,12 @@ export function isDataCenterTabReadOnly(caps: AdminCapability[]): boolean {
   return true
 }
 
-const FEATURE_DEV_SUBTABS = ['smart_response', 'kitty_llmops', 'teacher_usage'] as const
+const FEATURE_DEV_SUBTABS = [
+  'smart_response',
+  'kitty_llmops',
+  'teacher_usage',
+  'mindmate_export',
+] as const
 
 export function canViewFeatureDevTab(caps: AdminCapability[]): boolean {
   return FEATURE_DEV_SUBTABS.some((subtab) =>
@@ -191,6 +211,7 @@ export function settingsSubtabRequiresCapabilities(subtab: string): AdminCapabil
   const map: Record<string, AdminCapability[]> = {
     features: ['tab.settings.features'],
     roles: ['tab.settings.roles'],
+    tokens: ['tab.settings.tokens'],
     library: ['tab.settings.library'],
     database: ['tab.settings.database'],
     performance: ['tab.settings.performance'],
@@ -199,6 +220,7 @@ export function settingsSubtabRequiresCapabilities(subtab: string): AdminCapabil
     mindbot: ['tab.settings.mindbot'],
     smart_response: ['tab.settings.smart_response'],
     teacher_usage: ['tab.settings.teacher_usage'],
+    mindmate_export: ['tab.settings.mindmate_export'],
   }
   return map[subtab] ?? ['tab.settings.view']
 }

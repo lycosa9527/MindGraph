@@ -887,6 +887,70 @@ export default {
   'admin.schoolName': 'School Name',
   'admin.schoolNameRequired': 'School name is required',
   'admin.schools': 'Schools',
+  'admin.schoolDifyServer1': 'Server 1',
+  'admin.schoolDifyServer2': 'Server 2',
+  'admin.schoolDifyActiveServer': 'Active server',
+  'admin.schoolDifyFailover': 'Auto failover',
+  'admin.schoolDifyDualServerHint': 'Configure two Dify servers per school.',
+  'admin.mindmateExport.navLabel': 'MindMate export',
+  'admin.mindmateExport.title': 'MindMate conversation export',
+  'admin.mindmateExport.description': 'View and export MindMate conversation history.',
+  'admin.mindmateExport.privacyNotice': 'This view exposes real message content.',
+  'admin.mindmateExport.orgLabel': 'School',
+  'admin.mindmateExport.orgPlaceholder': 'Select a school',
+  'admin.mindmateExport.scopeLabel': 'Scope',
+  'admin.mindmateExport.scopeAll': 'All schools',
+  'admin.mindmateExport.scopeWholeOrg': 'Whole school',
+  'admin.mindmateExport.scopeUsers': 'Selected users',
+  'admin.mindmateExport.orgAllSchools': 'All schools (scope: All)',
+  'admin.mindmateExport.selectUsersFirst': 'Select at least one user.',
+  'admin.mindmateExport.channelWeb': 'Web',
+  'admin.mindmateExport.channelMindbot': 'DingTalk',
+  'admin.mindmateExport.usersLabel': 'Users',
+  'admin.mindmateExport.usersPlaceholder': 'Select users',
+  'admin.mindmateExport.dateRangeLabel': 'Date & time range',
+  'admin.mindmateExport.startDateTime': 'Start',
+  'admin.mindmateExport.endDateTime': 'End',
+  'admin.mindmateExport.dateTimeHint':
+    'Use a quick preset or pick start/end date and time. Leave empty (All) for full history.',
+  'admin.mindmateExport.startDate': 'Start date',
+  'admin.mindmateExport.endDate': 'End date',
+  'admin.mindmateExport.loadConversations': 'Load conversations',
+  'admin.mindmateExport.loading': 'Loading…',
+  'admin.mindmateExport.conversationsTitle': 'Conversations',
+  'admin.mindmateExport.conversationCount': '{count} conversations',
+  'admin.mindmateExport.noConversations': 'No conversations.',
+  'admin.mindmateExport.truncatedNotice': 'Results were truncated (max {max}).',
+  'admin.mindmateExport.conversationsTruncatedNotice': 'Conversation list was capped.',
+  'admin.mindmateExport.truncatedDownloadTitle': 'Export may be incomplete',
+  'admin.mindmateExport.truncatedDownloadConfirm': 'Export exceeds the {max}-user limit. Continue?',
+  'admin.mindmateExport.loadPrompt': 'Set filters and click Load conversations.',
+  'admin.mindmateExport.serverBadge': 'Server {server}',
+  'admin.mindmateExport.viewTranscript': 'Select a conversation.',
+  'admin.mindmateExport.transcriptTitle': 'Transcript',
+  'admin.mindmateExport.noMessages': 'No messages.',
+  'admin.mindmateExport.roleUser': 'User',
+  'admin.mindmateExport.roleAssistant': 'MindMate',
+  'admin.mindmateExport.feedbackLabel': 'Feedback',
+  'admin.mindmateExport.formatLabel': 'Format',
+  'admin.mindmateExport.formatHtml': 'HTML',
+  'admin.mindmateExport.formatJson': 'JSON',
+  'admin.mindmateExport.formatZip': 'ZIP',
+  'admin.mindmateExport.download': 'Download',
+  'admin.mindmateExport.downloadSuccess': 'Export downloaded.',
+  'admin.mindmateExport.downloadError': 'Export failed.',
+  'admin.mindmateExport.loadError': 'Failed to load conversations.',
+  'admin.mindmateExport.selectOrgFirst': 'Select a school first.',
+  'admin.mindmateExport.verifyPass': 'Verification passed',
+  'admin.mindmateExport.verifyGaps': 'Verification gaps',
+  'admin.mindmateExport.verifyFail': 'Verification failed',
+  'admin.mindmateExport.jobProgress': 'Export job {percent}% — {stage}',
+  'admin.mindmateExport.jobPause': 'Pause',
+  'admin.mindmateExport.jobResume': 'Resume',
+  'admin.mindmateExport.jobCancel': 'Cancel job',
+  'admin.mindmateExport.jobDownload': 'Download export',
+  'admin.mindmateExport.requiresJobNotice': 'This scope is large; use a background export job.',
+  'admin.mindmateExport.loadMore': 'Load more',
   'admin.search': 'Search',
   'admin.searchUserByNameOrPhone': 'Search by name or phone',
   'admin.userSearchFailed': 'User search failed',
@@ -902,6 +966,7 @@ export default {
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
   'admin.thisMonth': 'This Month',
   'admin.thisWeek': 'This Week',
+  'admin.thisYear': 'This Year',
   'admin.title': 'Admin Panel',
   'admin.today': 'Today',
   'admin.todayRegistrations': "Today's Registrations",
@@ -941,6 +1006,52 @@ export default {
   'admin.trendTokens':
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
   'admin.trendUserTokens':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.tabLabel':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.tabUsage':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.filterAll':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.filterMindgraph':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.filterMindmate':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.filterDingtalk':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.colTime':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.colProduct':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.colSummary':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.colTokens':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.askPrefix':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.answerPrefix':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.generate':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.dingtalkGenerate':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.save':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.sourceMindgraph':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.sourceMindmate':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.sourceDingtalk':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.failedSuffix':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.empty':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.loadError':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.loadMore':
+    "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
+  'admin.userActivityTab.privacyNotice':
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",
   'admin.trendUsers':
     "'__TEST__' IS AN INVALID TARGET LANGUAGE . EXAMPLE: LANGPAIR=EN|IT USING 2 LETTER ISO OR RFC3066 LIKE ZH-CN. ALMOST ALL LANGUAGES SUPPORTED BUT SOME MAY HAVE NO CONTENT",

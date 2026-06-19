@@ -498,6 +498,10 @@ async def update_organization_admin(
     if (
         "dify_api_base_url" in request
         or "dify_api_key" in request
+        or "dify_api_base_url_2" in request
+        or "dify_api_key_2" in request
+        or "dify_active_server" in request
+        or "dify_failover_enabled" in request
         or "dify_timeout_seconds" in request
         or "show_chain_of_thought" in request
         or "show_chain_of_thought_oto" in request

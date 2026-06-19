@@ -16,6 +16,7 @@ export function useAdminPanelTabs(options?: { loadOnMount?: boolean }) {
     featureSmartResponse,
     featureTeacherUsage,
     featureKittyAgent,
+    featureMindmateExport,
   } = useFeatureFlags()
   const { can, canViewTab, canViewSettingsSubtab, loadCapabilities } = useAdminAccess()
 
@@ -32,6 +33,7 @@ export function useAdminPanelTabs(options?: { loadOnMount?: boolean }) {
       featureSmartResponse: featureSmartResponse.value,
       featureTeacherUsage: featureTeacherUsage.value,
       featureKittyAgent: featureKittyAgent.value,
+      featureMindmateExport: featureMindmateExport.value,
     })
     if (!featureDevVisible) {
       visible = visible.filter((tab) => tab.name !== 'feature_dev')

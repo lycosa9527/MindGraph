@@ -276,6 +276,10 @@ class ConceptMapAgent(BaseAgent):
         language: str,
         concept_map_topic: str = "",
         link_direction: str | None = None,
+        user_id: int | None = None,
+        organization_id: int | None = None,
+        request_type: str = "diagram_generation",
+        endpoint_path: str | None = None,
         **_kwargs: Any,
     ) -> Dict[str, Any]:
         """Generate only the relationship label between two concepts."""
@@ -311,7 +315,15 @@ class ConceptMapAgent(BaseAgent):
         logger.debug("Concept map relationship prompt (first 500 chars): %.500s", prompt_template)
 
         try:
-            response = await llm_service.chat(prompt=prompt_template, model=self.model, timeout=15.0)
+            response = await llm_service.chat(
+                prompt=prompt_template,
+                model=self.model,
+                timeout=15.0,
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path,
+            )
             raw = (response or "").strip()
             logger.debug("Concept map relationship LLM raw response: %r", raw)
             if raw.startswith("```"):

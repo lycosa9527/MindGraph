@@ -258,7 +258,7 @@ celery_app = Celery(
     "mindgraph",
     broker=BROKER_URL,
     backend=BACKEND_URL,
-    include=["tasks.knowledge_space_tasks"],  # Register tasks
+    include=["tasks.knowledge_space_tasks", "tasks.mindmate_export_tasks"],  # Register tasks
 )
 
 # Celery configuration
@@ -280,6 +280,7 @@ celery_app.conf.update(
     # Task queues (like Dify's queue isolation)
     task_routes={
         "knowledge_space.*": {"queue": "knowledge"},
+        "mindmate_export.*": {"queue": "default"},
     },
     # Default queue
     task_default_queue="default",

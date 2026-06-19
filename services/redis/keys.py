@@ -70,6 +70,14 @@ FEATURE_ORG_ACCESS = "cache:feature_org_access:v1"
 TTL_FEATURE_ACCESS = 86_400
 
 # ---------------------------------------------------------------------------
+# Dify dual-server health  (redis_dify_server_health_cache.py)
+# ---------------------------------------------------------------------------
+DIFY_SERVER_HEALTH = "dify:health:{org_id}:{server}"
+DIFY_HEALTH_POLLER_LOCK = "dify:health:poller:lock"
+TTL_DIFY_SERVER_HEALTH = 300  # safety net; poller refreshes every ~30 s
+TTL_DIFY_HEALTH_POLLER_LOCK = 90
+
+# ---------------------------------------------------------------------------
 # Cache loader lock  (redis_cache_loader.py)
 # ---------------------------------------------------------------------------
 CACHE_LOADER_LOCK = "cache:loader:lock"
@@ -106,6 +114,10 @@ TTL_RATE_DEFAULT = int(os.getenv("RATE_LIMIT_DEFAULT_WINDOW_MINUTES", "15")) * 6
 TOKENS_STREAM = "tokens:stream"
 TOKENS_STATS = "tokens:stats"
 # No TTL — stream is consumed by background worker
+
+# Per-user daily token cap enforcement (redis_user_daily_token.py)
+USER_DAILY_TOKENS = "tokens:daily:user:{user_id}:{beijing_date}"
+TTL_USER_DAILY_TOKENS = 90_000  # 25 h — covers Beijing midnight rollover
 
 # ---------------------------------------------------------------------------
 # Distributed locks  (redis_distributed_lock.py)

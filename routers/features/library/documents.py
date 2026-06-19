@@ -35,7 +35,9 @@ from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user
 
-from .helpers import get_optional_user, require_admin, serialize_document
+from utils.auth.admin_scope import AdminScope
+
+from .helpers import get_optional_user, require_settings_library, serialize_document
 from .models import (
     BookRegisterBatchRequest,
     BookRegisterRequest,
@@ -305,7 +307,7 @@ async def get_document_page_image(
 @router.post("/books/register", response_model=DocumentResponse)
 async def register_book(
     data: BookRegisterRequest,
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_settings_library),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
@@ -321,7 +323,7 @@ async def register_book(
     - A relative path from storage/library/ (e.g., "my_book")
     - An absolute path to a folder
     """
-    service = LibraryService(db, user_id=current_user.id)
+    service = LibraryService(db, user_id=scope.actor.id)
 
     # Resolve folder path - SECURITY: Only allow paths within storage/library/
     folder_path = Path(data.folder_path)
@@ -373,7 +375,7 @@ async def register_book(
 @router.post("/books/register-batch")
 async def register_books_batch(
     data: BookRegisterBatchRequest,
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_settings_library),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
@@ -382,7 +384,7 @@ async def register_books_batch(
     Accepts a list of folder paths and registers each one.
     Returns a summary of successful and failed registrations.
     """
-    service = LibraryService(db, user_id=current_user.id)
+    service = LibraryService(db, user_id=scope.actor.id)
 
     results = {"successful": [], "failed": []}
 
@@ -468,13 +470,13 @@ async def register_books_batch(
 async def update_document(
     document_id: int,
     data: DocumentUpdate,
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_settings_library),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
     Update document metadata (admin only, for future admin panel).
     """
-    service = LibraryService(db, user_id=current_user.id)
+    service = LibraryService(db, user_id=scope.actor.id)
     document = await service.update_document(document_id=document_id, title=data.title, description=data.description)
 
     if not document:
@@ -492,13 +494,13 @@ async def update_document(
 async def upload_cover_image(
     document_id: int,
     file: UploadFile = File(...),
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_settings_library),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
     Upload/update cover image (admin only, for future admin panel).
     """
-    service = LibraryService(db, user_id=current_user.id)
+    service = LibraryService(db, user_id=scope.actor.id)
     document = await service.get_document(document_id)
 
     if not document:
@@ -603,13 +605,13 @@ async def get_cover_image(
 @router.delete("/documents/{document_id}")
 async def delete_document(
     document_id: int,
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_settings_library),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
     Delete a document (admin only, for future admin panel).
     """
-    service = LibraryService(db, user_id=current_user.id)
+    service = LibraryService(db, user_id=scope.actor.id)
     deleted = await service.delete_document(document_id)
 
     if not deleted:

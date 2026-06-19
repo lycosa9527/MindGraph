@@ -21,6 +21,7 @@ def split_sql_statements(sql: str) -> list[str]:
 
 
 def rls_functions_upgrade_statements() -> list[str]:
+    """Return the RLS helper ``CREATE OR REPLACE`` statements in dependency order."""
     return split_sql_statements(RLS_FUNCTIONS_UPGRADE)
 
 
@@ -234,24 +235,6 @@ AS $$
     END
 $$;
 
-CREATE OR REPLACE FUNCTION rls_same_org_users(target_user_id bigint)
-RETURNS boolean
-LANGUAGE sql
-STABLE
-PARALLEL SAFE
-AS $$
-    SELECT target_user_id IS NOT NULL
-        AND rls_current_user_id() IS NOT NULL
-        AND EXISTS (
-            SELECT 1
-            FROM users viewer
-            JOIN users target ON viewer.organization_id = target.organization_id
-            WHERE viewer.id = rls_current_user_id()
-              AND target.id = target_user_id
-              AND viewer.organization_id IS NOT NULL
-        )
-$$;
-
 CREATE OR REPLACE FUNCTION rls_lookup_user_organization_id(target_user_id bigint)
 RETURNS bigint
 LANGUAGE sql
@@ -260,6 +243,19 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
     SELECT organization_id FROM users WHERE id = target_user_id
+$$;
+
+CREATE OR REPLACE FUNCTION rls_same_org_users(target_user_id bigint)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+PARALLEL SAFE
+AS $$
+    SELECT target_user_id IS NOT NULL
+        AND rls_current_user_id() IS NOT NULL
+        AND rls_lookup_user_organization_id(rls_current_user_id()) IS NOT NULL
+        AND rls_lookup_user_organization_id(target_user_id)
+            = rls_lookup_user_organization_id(rls_current_user_id())
 $$;
 
 CREATE OR REPLACE FUNCTION rls_user_visible(target_user_id bigint)

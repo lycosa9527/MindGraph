@@ -19,6 +19,39 @@ from models.domain.token_usage import TokenUsage
 BEIJING_TIMEZONE = timezone(timedelta(hours=8))
 
 
+def beijing_date_key(now: Optional[datetime] = None) -> str:
+    """Compact Beijing calendar date for Redis daily token keys (YYYYMMDD)."""
+    beijing_now = now if now is not None else datetime.now(BEIJING_TIMEZONE)
+    if beijing_now.tzinfo is None:
+        beijing_now = beijing_now.replace(tzinfo=BEIJING_TIMEZONE)
+    else:
+        beijing_now = beijing_now.astimezone(BEIJING_TIMEZONE)
+    return beijing_now.strftime("%Y%m%d")
+
+
+def get_beijing_today_start_utc(now: Optional[datetime] = None) -> datetime:
+    """Today's start (00:00 Beijing) as naive UTC for ``token_usage`` queries."""
+    beijing_now = now if now is not None else datetime.now(BEIJING_TIMEZONE)
+    if beijing_now.tzinfo is None:
+        beijing_now = beijing_now.replace(tzinfo=BEIJING_TIMEZONE)
+    else:
+        beijing_now = beijing_now.astimezone(BEIJING_TIMEZONE)
+    beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
+    return beijing_today_start.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+def utc_to_beijing_iso(utc_dt: Optional[datetime]) -> Optional[str]:
+    """Convert UTC datetime to Beijing time ISO string."""
+    if not utc_dt:
+        return None
+    if utc_dt.tzinfo is None:
+        utc_dt_tz = utc_dt.replace(tzinfo=timezone.utc)
+    else:
+        utc_dt_tz = utc_dt
+    beijing_dt = utc_dt_tz.astimezone(BEIJING_TIMEZONE)
+    return beijing_dt.isoformat()
+
+
 class BeijingPeriodStarts(TypedDict):
     """BeijingPeriodStarts helper."""
 

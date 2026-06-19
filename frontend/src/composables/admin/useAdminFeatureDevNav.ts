@@ -25,6 +25,7 @@ export function useAdminFeatureDevNav(options: {
   featureSmartResponse: Ref<boolean>
   featureTeacherUsage: Ref<boolean>
   featureKittyAgent: Ref<boolean>
+  featureMindmateExport: Ref<boolean>
   currentAdminTab: ComputedRef<string | null>
 }) {
   const router = useRouter()
@@ -36,6 +37,7 @@ export function useAdminFeatureDevNav(options: {
     featureSmartResponse: options.featureSmartResponse.value,
     featureTeacherUsage: options.featureTeacherUsage.value,
     featureKittyAgent: options.featureKittyAgent.value,
+    featureMindmateExport: options.featureMindmateExport.value,
   }))
 
   const currentFeatureDevSubtab = computed((): FeatureDevSubtab | null => {

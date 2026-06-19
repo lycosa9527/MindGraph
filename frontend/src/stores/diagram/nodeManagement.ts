@@ -2,12 +2,14 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { i18n } from '@/i18n'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
+import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import { recalculateBubbleMapLayout, recalculateMultiFlowMapLayout } from '../specLoader'
 import {
   estimateNodeWidth as estimateMindMapBranchWidth,
   measureBranchNodeHeight as measureMindMapBranchHeight,
+  measureBranchNodeUnderlineHeight as measureMindMapBranchUnderlineHeight,
 } from '../specLoader/mindMap'
 import { applyTreeMapTopicLayoutToNodes } from '../specLoader/treeMapTopicLayout'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
@@ -236,8 +238,30 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
         updates.style.fontWeight !== undefined ||
         updates.style.fontStyle !== undefined ||
         updates.style.fontFamily !== undefined ||
-        updates.style.textColor !== undefined)
+        updates.style.textColor !== undefined ||
+        updates.style.nodeShape !== undefined)
     ) {
+      // A shape switch changes the measured box (e.g. underline ≈ 10px shorter than
+      // rounded). Refresh the shape-aware estimate so the pre-measurement layout pass
+      // and connector anchors use the new shape's height instead of the stale one,
+      // avoiding a misaligned frame before the ResizeObserver re-measures.
+      if (updates.style.nodeShape !== undefined && nodeId !== 'topic') {
+        const refreshed = ctx.data.value.nodes[nodeIndex]
+        const text = refreshed.text ?? ''
+        const newShape = resolveNodeShape(refreshed.style, true)
+        const freshHeight =
+          newShape === 'underline'
+            ? measureMindMapBranchUnderlineHeight(text, nodeId)
+            : measureMindMapBranchHeight(text, nodeId)
+        ctx.data.value.nodes[nodeIndex] = {
+          ...refreshed,
+          data: {
+            ...refreshed.data,
+            estimatedWidth: estimateMindMapBranchWidth(text, nodeId),
+            estimatedHeight: freshHeight,
+          },
+        }
+      }
       delete ctx.nodeDimensions.value[nodeId]
       delete ctx.mindMapNodeWidths.value[nodeId]
       delete ctx.mindMapNodeHeights.value[nodeId]

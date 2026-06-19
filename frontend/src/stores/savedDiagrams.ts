@@ -28,6 +28,16 @@ import { useDiagramStore } from './diagram'
 import { useLLMResultsStore } from './llmResults'
 import { usePanelsStore } from './panels'
 import { getDefaultTemplate, loadSpecForDiagramType } from './specLoader'
+
+export type GetDiagramFailureReason =
+  | 'not_found'
+  | 'forbidden'
+  | 'network'
+  | 'unauthenticated'
+
+export type GetDiagramResult =
+  | { ok: true; diagram: SavedDiagramFull }
+  | { ok: false; reason: GetDiagramFailureReason; status: number | null }
 import { useUIStore } from './ui'
 
 // Security constants - must match backend limits
@@ -260,24 +270,52 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     }
   }
 
-  async function getDiagram(diagramId: string): Promise<SavedDiagramFull | null> {
-    if (!authStore.isAuthenticated) return null
+  function removeDiagramFromLocalList(diagramId: string): void {
+    diagrams.value = diagrams.value.filter((d) => d.id !== diagramId)
+    if (total.value > 0) {
+      total.value--
+    }
+    if (currentDiagramId.value === diagramId) {
+      currentDiagramId.value = null
+    }
+    if (activeDiagramId.value === diagramId) {
+      activeDiagramId.value = null
+    }
+  }
+
+  async function getDiagram(diagramId: string): Promise<GetDiagramResult> {
+    if (!authStore.isAuthenticated) {
+      return { ok: false, reason: 'unauthenticated', status: null }
+    }
 
     try {
       const response = await authFetch(`/api/diagrams/${diagramId}`)
 
       if (!response.ok) {
         if (response.status === 401) {
-          authStore.handleTokenExpired('您的登录已过期，请重新登录')
-          return null
+          authStore.handleTokenExpired(
+            i18n.global.t('auth.sessionExpired') as string
+          )
+          return { ok: false, reason: 'unauthenticated', status: 401 }
         }
-        throw new Error(`Failed to fetch diagram: ${response.status}`)
+        if (response.status === 404) {
+          console.warn(
+            `[SavedDiagrams] Diagram ${diagramId} not found (404), removing from local list`
+          )
+          removeDiagramFromLocalList(diagramId)
+          return { ok: false, reason: 'not_found', status: 404 }
+        }
+        if (response.status === 403) {
+          return { ok: false, reason: 'forbidden', status: 403 }
+        }
+        return { ok: false, reason: 'network', status: response.status }
       }
 
-      return await response.json()
+      const diagram: SavedDiagramFull = await response.json()
+      return { ok: true, diagram }
     } catch (e) {
       console.error('[SavedDiagrams] Get diagram error:', e)
-      return null
+      return { ok: false, reason: 'network', status: null }
     }
   }
 

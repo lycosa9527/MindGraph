@@ -936,6 +936,49 @@
   font-style: italic;
 }
 
+/* Canvas entry — Swiss stone pill below generated diagram images */
+.mindmate-canvas-btn.el-button {
+  --el-button-bg-color: #fafaf9;
+  --el-button-border-color: #d6d3d1;
+  --el-button-text-color: #1c1917;
+  --el-button-hover-bg-color: #f5f5f4;
+  --el-button-hover-border-color: #a8a29e;
+  --el-button-hover-text-color: #1c1917;
+  --el-button-active-bg-color: #e7e5e4;
+  --el-button-active-border-color: #78716c;
+  min-height: 28px;
+  padding: 0 0.875rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 9999px;
+}
+
+.dark .mindmate-canvas-btn.el-button {
+  --el-button-bg-color: #292524;
+  --el-button-border-color: #57534e;
+  --el-button-text-color: #fafaf9;
+  --el-button-hover-bg-color: #44403c;
+  --el-button-hover-border-color: #78716c;
+  --el-button-hover-text-color: #fafaf9;
+  --el-button-active-bg-color: #1c1917;
+  --el-button-active-border-color: #a8a29e;
+}
+
+.mindmate-library-save-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  color: #78716c;
+}
+
+.dark .mindmate-library-save-hint {
+  color: #a8a29e;
+}
+
 /* MindMate Avatar Styles */
 .mindmate-avatar {
   border-radius: 8px;

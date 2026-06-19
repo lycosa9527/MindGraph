@@ -23,8 +23,11 @@ from starlette.requests import ClientDisconnect
 from starlette.types import ExceptionHandler
 
 from config.settings import config
+from models import get_request_language
+from services.infrastructure.http.error_handler import UserDailyTokenCapExceededError
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.auth.user_daily_token_quota import daily_token_limit_message
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +120,16 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         status_code=exc.status_code,
         content={"detail": exc.detail},  # Use "detail" to match FastAPI standard
     )
+
+
+async def user_daily_token_cap_handler(request: Request, exc: UserDailyTokenCapExceededError):
+    """Handle per-user daily token cap exceeded (429)."""
+    path = getattr(request.url, "path", "") if request and request.url else ""
+    accept_language = request.headers.get("Accept-Language", "") if request else ""
+    lang = get_request_language(None, accept_language)
+    detail = daily_token_limit_message(lang, exc.cap)
+    logger.info("Daily token cap exceeded on %s: used=%s cap=%s", path, exc.used, exc.cap)
+    return JSONResponse(status_code=429, content={"detail": detail})
 
 
 async def general_exception_handler(request: Request, exc: Exception):
@@ -221,4 +234,8 @@ def setup_exception_handlers(app: FastAPI):
     app.add_exception_handler(RequestValidationError, cast(ExceptionHandler, validation_exception_handler))
     app.add_exception_handler(ClientDisconnect, cast(ExceptionHandler, client_disconnect_handler))
     app.add_exception_handler(HTTPException, cast(ExceptionHandler, http_exception_handler))
+    app.add_exception_handler(
+        UserDailyTokenCapExceededError,
+        cast(ExceptionHandler, user_daily_token_cap_handler),
+    )
     app.add_exception_handler(Exception, cast(ExceptionHandler, general_exception_handler))

@@ -134,7 +134,7 @@ export function mindMapConnectionAnchorY(
   return nodeTopY + nodeHeight / 2
 }
 
-/** Top-left Y for a node whose connection anchor should sit at anchorY. */
+/** Inverse of mindMapConnectionAnchorY: top-left Y so the connection anchor sits at anchorY. */
 export function mindMapNodeTopYForAnchorY(
   anchorY: number,
   nodeHeight: number,

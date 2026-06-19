@@ -13,6 +13,7 @@ from typing import Any, AsyncIterator
 
 from fastapi import WebSocket
 
+from services.infrastructure.http.error_handler import UserDailyTokenCapExceededError
 from services.kitty.context.messaging import (
     build_greeting_message,
     resolve_voice_interaction_language,
@@ -22,6 +23,7 @@ from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.kitty.session.events import KittyEvent, SessionEventBus, emit_kitty_session_event
 from services.kitty.session.omni_client_access import get_session_omni_client
 from services.kitty.session.runtime_state import logger, voice_sessions
+from utils.auth.user_daily_token_quota import daily_token_limit_message
 
 
 async def run_kitty_omni_event_loop(
@@ -138,6 +140,18 @@ async def run_kitty_omni_event_loop(
                 if forwarded:
                     continue
 
+    except UserDailyTokenCapExceededError as cap_exc:
+        session = voice_sessions.get(voice_session_id)
+        sess_ctx = session.get("context", {}) if session else {}
+        greeting_lang = resolve_voice_interaction_language(sess_ctx if isinstance(sess_ctx, dict) else {})
+        await safe_websocket_send(
+            websocket,
+            {
+                "type": "error",
+                "error": daily_token_limit_message(greeting_lang, cap_exc.cap),
+                "error_type": "daily_token_cap",
+            },
+        )
     except (RuntimeError, ConnectionError, AttributeError, ValueError) as exc:
         logger.error("Omni event error: %s", exc, exc_info=True)
         await safe_websocket_send(websocket, {"type": "error", "error": str(exc)})

@@ -9,6 +9,8 @@ Admin-only endpoint for teacher engagement classification:
 Reads from user_usage_stats (pre-computed). Groups: unused, continuous,
 rejection, stopped, intermittent.
 
+Access: super-admin only via ``require_settings_teacher_usage``.
+
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
@@ -39,7 +41,7 @@ from services.teacher_usage_stats import (
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth.role_constants import TEACHER_ROLES
 
-from ..dependencies import require_admin
+from ..dependencies import require_settings_teacher_usage
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +96,7 @@ def _get_group_key(tier1: str | None, tier2: str | None) -> str:
     return "intermittent"
 
 
-@router.get("/admin/teacher-usage", dependencies=[Depends(require_admin)])
+@router.get("/admin/teacher-usage", dependencies=[Depends(require_settings_teacher_usage)])
 async def get_teacher_usage(
     db: AsyncSession = Depends(get_async_db),
 ) -> dict[str, Any]:
@@ -260,7 +262,7 @@ async def get_teacher_usage(
 
 @router.get(
     "/admin/teacher-usage/users",
-    dependencies=[Depends(require_admin)],
+    dependencies=[Depends(require_settings_teacher_usage)],
 )
 async def get_teacher_usage_users(
     db: AsyncSession = Depends(get_async_db),
@@ -367,7 +369,7 @@ async def get_teacher_usage_users(
 
 @router.get(
     "/admin/teacher-usage/user/{user_id}/weekly-tokens",
-    dependencies=[Depends(require_admin)],
+    dependencies=[Depends(require_settings_teacher_usage)],
 )
 async def get_user_weekly_tokens(
     user_id: int,
@@ -412,7 +414,7 @@ async def get_user_weekly_tokens(
 
 @router.get(
     "/admin/teacher-usage/user/{user_id}/detail",
-    dependencies=[Depends(require_admin)],
+    dependencies=[Depends(require_settings_teacher_usage)],
 )
 async def get_user_detail(
     user_id: int,
@@ -619,7 +621,7 @@ async def get_user_detail(
     }
 
 
-@router.get("/admin/teacher-usage/config", dependencies=[Depends(require_admin)])
+@router.get("/admin/teacher-usage/config", dependencies=[Depends(require_settings_teacher_usage)])
 async def get_teacher_usage_config(
     db: AsyncSession = Depends(get_async_db),
 ) -> dict[str, Any]:
@@ -627,7 +629,7 @@ async def get_teacher_usage_config(
     return await get_classification_config_async(db)
 
 
-@router.put("/admin/teacher-usage/config", dependencies=[Depends(require_admin)])
+@router.put("/admin/teacher-usage/config", dependencies=[Depends(require_settings_teacher_usage)])
 async def put_teacher_usage_config(
     body: ClassificationThresholds,
     db: AsyncSession = Depends(get_async_db),
@@ -657,7 +659,7 @@ async def _run_recompute(db: AsyncSession) -> tuple[int, int]:
     return success, failed
 
 
-@router.post("/admin/teacher-usage/recompute", dependencies=[Depends(require_admin)])
+@router.post("/admin/teacher-usage/recompute", dependencies=[Depends(require_settings_teacher_usage)])
 async def post_teacher_usage_recompute(
     db: AsyncSession = Depends(get_async_db),
 ) -> dict[str, Any]:

@@ -35,6 +35,10 @@ from services.infrastructure.monitoring.health_checks import (
 from services.infrastructure.monitoring.health_checks.processes import (
     processes_health_payload,
 )
+from services.infrastructure.monitoring.redis_info_cache import (
+    cached_redis_info as _cached_redis_info,
+    fetch_redis_memory_stats as _fetch_redis_memory_stats,
+)
 from services.infrastructure.monitoring.ws_metrics import (
     collab_ws_metrics_alerts,
     get_ws_metrics_snapshot,
@@ -91,50 +95,6 @@ def _update_overall_status(current_status: str, current_code: int, check_status:
 async def _check_application_health() -> Dict[str, Any]:
     """Check application health status."""
     return await check_application_health()
-
-
-_REDIS_INFO_TTL_S = 5.0
-_redis_info_cache: Dict[str, tuple] = {}
-_redis_info_lock = asyncio.Lock()
-
-
-async def _cached_redis_info(redis_client: Any, section: str) -> Dict[str, Any]:
-    """Per-process TTL cache around ``INFO`` (G12).
-
-    The health endpoint can be polled aggressively by load balancers and
-    orchestrators (every second is common).  Each ``INFO`` call serialises a
-    full server snapshot inside Redis and is one of the slowest read commands
-    available — caching the result for a few seconds removes the foot-gun
-    without hiding genuine outages (the cache is flushed once stale).
-    """
-    now = time.monotonic()
-    cached = _redis_info_cache.get(section)
-    if cached is not None and (now - cached[0]) < _REDIS_INFO_TTL_S:
-        return cached[1]
-
-    async with _redis_info_lock:
-        cached = _redis_info_cache.get(section)
-        if cached is not None and (time.monotonic() - cached[0]) < _REDIS_INFO_TTL_S:
-            return cached[1]
-        try:
-            data = await redis_client.info(section)
-        except REDIS_ERRORS as exc:
-            logger.debug("Redis INFO(%s) fetch failed: %s", section, exc)
-            data = {}
-        _redis_info_cache[section] = (time.monotonic(), data or {})
-        return _redis_info_cache[section][1]
-
-
-async def _fetch_redis_memory_stats(redis_client: Any) -> Dict[str, Any]:
-    """Fetch memory stats from Redis INFO memory section using the async client."""
-    mem_info = await _cached_redis_info(redis_client, "memory")
-    if not mem_info:
-        return {}
-    return {
-        "used_memory_human": mem_info.get("used_memory_human", "unknown"),
-        "used_memory_peak_human": mem_info.get("used_memory_peak_human", "unknown"),
-        "mem_fragmentation_ratio": mem_info.get("mem_fragmentation_ratio", None),
-    }
 
 
 async def _fetch_redis_hotkeys(redis_client: Any) -> Any:

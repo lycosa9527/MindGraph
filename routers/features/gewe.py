@@ -2,6 +2,9 @@
 
 API endpoints for Gewe WeChat integration with Dify AI responses (admin only).
 
+Access: super-admin only (``require_admin``). Capability key: ``CAP_SETTINGS_GEWE``.
+Migrate to ``require_panel_capability`` when touching routes here.
+
 @author lycosa9527
 @made_by MindSpring Team
 
@@ -21,7 +24,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.gewe import GeweAPIError
 from config.database import get_async_db
-from models.domain.auth import User
 from models.domain.gewe_responses import (
     GeweCallbackResponse,
     GeweContactInfoResponse,
@@ -30,9 +32,10 @@ from models.domain.gewe_responses import (
     GeweLoginStatusResponse,
     GeweMessageSendResponse,
 )
-from routers.auth.dependencies import require_admin
+from routers.auth.dependencies import require_settings_gewe
 from services.gewe import GeweService
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
+from utils.auth.admin_scope import AdminScope
 from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 
 logger = logging.getLogger(__name__)
@@ -173,7 +176,7 @@ class GeweSavePreferencesRequest(BaseModel):
 @router.post("/login/qrcode", response_model=GeweLoginQrCodeResponse)
 async def get_gewe_login_qrcode(
     data: GeweLoginQrCodeRequest,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_gewe),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
@@ -265,7 +268,7 @@ async def get_gewe_login_qrcode(
 @router.post("/login/check", response_model=GeweLoginStatusResponse)
 async def check_gewe_login(
     data: GeweCheckLoginRequest,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_gewe),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
@@ -299,7 +302,7 @@ async def check_gewe_login(
 @router.post("/callback/set", response_model=GeweCallbackResponse)
 async def set_gewe_callback(
     data: GeweSetCallbackRequest,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_gewe),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
@@ -327,7 +330,7 @@ async def set_gewe_callback(
 @router.post("/message/send", response_model=GeweMessageSendResponse)
 async def send_gewe_message(
     data: GeweSendMessageRequest,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_gewe),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
@@ -356,7 +359,7 @@ async def send_gewe_message(
 @router.post("/contacts/list", response_model=GeweContactListResponse)
 async def get_gewe_contacts(
     data: GeweGetContactsRequest,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_gewe),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
@@ -384,7 +387,7 @@ async def get_gewe_contacts(
 @router.post("/contacts/info", response_model=GeweContactInfoResponse)
 async def get_gewe_contacts_info(
     data: GeweGetContactsInfoRequest,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_gewe),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
@@ -409,7 +412,10 @@ async def get_gewe_contacts_info(
 
 
 @router.get("/login/info")
-async def get_gewe_login_info(_current_user: User = Depends(require_admin), db: AsyncSession = Depends(get_async_db)):
+async def get_gewe_login_info(
+    _scope: AdminScope = Depends(require_settings_gewe),
+    db: AsyncSession = Depends(get_async_db),
+):
     """
     Get saved login info (app_id and wxid) (admin only).
     """
@@ -431,7 +437,7 @@ async def get_gewe_login_info(_current_user: User = Depends(require_admin), db: 
 
 @router.get("/config/status")
 async def get_gewe_config_status(
-    _current_user: User = Depends(require_admin), db: AsyncSession = Depends(get_async_db)
+    _scope: AdminScope = Depends(require_settings_gewe), db: AsyncSession = Depends(get_async_db)
 ):
     """
     Get Gewe configuration status (admin only).
@@ -475,7 +481,7 @@ async def get_gewe_config_status(
 @router.post("/preferences/save")
 async def save_gewe_preferences(
     data: GeweSavePreferencesRequest,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_gewe),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
@@ -500,7 +506,10 @@ async def save_gewe_preferences(
 
 
 @router.get("/preferences")
-async def get_gewe_preferences(_current_user: User = Depends(require_admin), db: AsyncSession = Depends(get_async_db)):
+async def get_gewe_preferences(
+    _scope: AdminScope = Depends(require_settings_gewe),
+    db: AsyncSession = Depends(get_async_db),
+):
     """
     Get user preferences (region_id and device_type) (admin only).
     """
@@ -519,7 +528,10 @@ async def get_gewe_preferences(_current_user: User = Depends(require_admin), db:
 
 
 @router.post("/device/reset")
-async def reset_gewe_device_id(_current_user: User = Depends(require_admin), db: AsyncSession = Depends(get_async_db)):
+async def reset_gewe_device_id(
+    _scope: AdminScope = Depends(require_settings_gewe),
+    db: AsyncSession = Depends(get_async_db),
+):
     """
     Reset device ID by clearing saved login info (admin only).
     This will allow creating a new device on next login.

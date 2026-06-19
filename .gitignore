@@ -223,12 +223,27 @@ static/
 # These are user uploads, images, PDFs, and other library content, not part of the codebase
 storage/library/
 
-# Documentation
+# Documentation — ship operator/setup guides; ignore local drafts and bulky assets
 docs/*
+!docs/API_REFERENCE.md
+!docs/DIAGRAM_TYPE_TABLE.md
+!docs/IP2REGION_PATCH_GUIDE.md
+!docs/REDIS_SETUP.md
+!docs/QDRANT_SETUP.md
+!docs/POSTGRES_SETUP.md
+!docs/CELERY_SETUP.md
+!docs/FAIL2BAN_SETUP.md
+!docs/NODE_NVM_SETUP.md
+!docs/VUE_SETUP.md
+!docs/db-*.md
+!docs/architecture/
+docs/architecture/*
+!docs/architecture/**/*.md
 !docs/operations/
 docs/operations/*
 !docs/operations/online-collab-runbook.md
 !docs/operations/online-collab-grafana-dashboard.json
+!docs/operations/UVICORN_RESOURCE_TRACKER.md
 # ruff
 .ruff_cache/
 

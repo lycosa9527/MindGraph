@@ -15,7 +15,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_async_db
 from config.settings import config
 from models.domain.auth import Organization, User
 from models.domain.mindbot_config import OrganizationMindbotConfig
@@ -45,7 +44,10 @@ from routers.api.mindbot_models import (
     MindbotUsageEventItem,
 )
 from routers.auth.admin.organization_dify import apply_org_dify_fields_to_mindbot_config
-from routers.auth.dependencies import require_admin, require_mindbot_admin_access
+from routers.auth.dependencies import (
+    get_async_db_with_request_rls,
+    require_mindbot_admin_access,
+)
 from services.mindbot.dify.service_health import check_dify_app_api_reachable
 from services.mindbot.errors import MindbotErrorCode
 from services.mindbot.platforms.dingtalk.cards.ai_card import probe_ai_card_streaming_update_api
@@ -53,8 +55,6 @@ from services.mindbot.session.callback_token import new_public_callback_token
 from services.mindbot.telemetry.metrics import mindbot_long_lived_maps_snapshot
 from services.mindbot.telemetry.usage import mindbot_usage_tracking_enabled
 from services.utils.typing_helpers import mapping_int
-from utils.auth.roles import is_admin
-
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -87,7 +87,7 @@ async def _get_config_or_404(
 
 @router.get("/admin/internal/memory-footprint", response_model=MindbotMemoryFootprintResponse)
 async def admin_mindbot_memory_footprint(
-    user: User = Depends(require_admin),
+    user: User = Depends(require_mindbot_admin_access),
 ) -> MindbotMemoryFootprintResponse:
     """
     Long-lived in-process MindBot maps (OAuth lock LRU, DingTalk Stream clients) plus
@@ -105,15 +105,15 @@ async def admin_mindbot_memory_footprint(
 
 @router.get("/admin/dify-service-status", response_model=DifyServiceStatusResponse)
 async def admin_dify_service_status(
-    user: User = Depends(require_mindbot_admin_access),
+    _user: User = Depends(require_mindbot_admin_access),
 ) -> DifyServiceStatusResponse:
     """Probe configured Dify app API (GET /parameters); does not expose secrets."""
     _require_mindbot_feature()
     base = config.MINDBOT_DIFY_HEALTH_BASE_URL
     key = config.MINDBOT_DIFY_HEALTH_API_KEY
-    probe_url = f"{base}/parameters" if base and is_admin(user) else None
+    probe_url = f"{base}/parameters" if base else None
     online, http_status, err = await check_dify_app_api_reachable(base, key)
-    err_out = _dify_probe_error_for_user(err, is_platform_admin=is_admin(user))
+    err_out = _dify_probe_error_for_user(err, is_platform_admin=True)
     return DifyServiceStatusResponse(
         online=online,
         http_status=http_status,
@@ -129,8 +129,8 @@ async def admin_dify_service_status(
 
 @router.get("/admin/configs", response_model=list[MindbotConfigResponse])
 async def admin_list_mindbot_configs(
-    db: AsyncSession = Depends(get_async_db),
-    user: User = Depends(require_mindbot_admin_access),
+    _user: User = Depends(require_mindbot_admin_access),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
     limit: int = Query(200, ge=1, le=200),
     after_id: Optional[int] = Query(
         None,
@@ -140,21 +140,15 @@ async def admin_list_mindbot_configs(
     """Admin list mindbot configs."""
     _require_mindbot_feature()
     repo = MindbotConfigRepository(db)
-    if is_admin(user):
-        rows = await repo.list_all(limit=limit, after_id=after_id)
-        return [_to_response(r) for r in rows]
-    oid = getattr(user, "organization_id", None)
-    if oid is None:
-        return []
-    rows = await repo.list_by_organization_id(int(oid))
-    return [_to_response(r, school_manager_view=True) for r in rows]
+    rows = await repo.list_all(limit=limit, after_id=after_id)
+    return [_to_response(r) for r in rows]
 
 
 @router.post("/admin/configs", response_model=MindbotConfigResponse, status_code=status.HTTP_201_CREATED)
 async def admin_create_mindbot_config(
     payload: MindbotConfigCreatePayload,
-    db: AsyncSession = Depends(get_async_db),
-    user: User = Depends(require_admin),
+    user: User = Depends(require_mindbot_admin_access),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> MindbotConfigResponse:
     """Create a new MindBot config for an organization (up to 5 per school)."""
     _require_mindbot_feature()
@@ -262,22 +256,22 @@ async def admin_create_mindbot_config(
 @router.get("/admin/configs/{config_id}", response_model=MindbotConfigResponse)
 async def admin_get_mindbot_config(
     config_id: int,
-    db: AsyncSession = Depends(get_async_db),
     user: User = Depends(require_mindbot_admin_access),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> MindbotConfigResponse:
     """Admin get mindbot config."""
     _require_mindbot_feature()
     row = await _get_config_or_404(config_id, db)
     _ensure_org_scope(user, row.organization_id)
-    return _to_response(row, school_manager_view=not is_admin(user))
+    return _to_response(row)
 
 
 @router.put("/admin/configs/{config_id}", response_model=MindbotConfigResponse)
 async def admin_update_mindbot_config(
     config_id: int,
     payload: MindbotConfigPayload,
-    db: AsyncSession = Depends(get_async_db),
-    user: User = Depends(require_admin),
+    user: User = Depends(require_mindbot_admin_access),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> MindbotConfigResponse:
     """Admin update mindbot config."""
     _require_mindbot_feature()
@@ -400,8 +394,8 @@ async def admin_update_mindbot_config(
 async def admin_move_mindbot_config(
     config_id: int,
     payload: MindbotMovePayload,
-    db: AsyncSession = Depends(get_async_db),
-    user: User = Depends(require_admin),
+    user: User = Depends(require_mindbot_admin_access),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> MindbotConfigResponse:
     """
     Platform admins only: reassign this bot row to another organization.
@@ -464,8 +458,8 @@ async def admin_move_mindbot_config(
 @router.delete("/admin/configs/{config_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def admin_delete_mindbot_config(
     config_id: int,
-    db: AsyncSession = Depends(get_async_db),
-    user: User = Depends(require_admin),
+    user: User = Depends(require_mindbot_admin_access),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> Response:
     """Admin delete mindbot config."""
     _require_mindbot_feature()
@@ -497,8 +491,8 @@ async def admin_delete_mindbot_config(
 )
 async def admin_rotate_mindbot_callback_token(
     config_id: int,
-    db: AsyncSession = Depends(get_async_db),
-    user: User = Depends(require_admin),
+    user: User = Depends(require_mindbot_admin_access),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> MindbotConfigResponse:
     """Issue a new public callback token; DingTalk must use the new callback URL."""
     _require_mindbot_feature()
@@ -530,8 +524,8 @@ async def admin_rotate_mindbot_callback_token(
 @router.get("/admin/configs/{config_id}/dify-health", response_model=DifyServiceStatusResponse)
 async def admin_org_dify_health(
     config_id: int,
-    db: AsyncSession = Depends(get_async_db),
     user: User = Depends(require_mindbot_admin_access),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> DifyServiceStatusResponse:
     """Probe the bot's own Dify app API (GET /parameters); does not expose secrets."""
     _require_mindbot_feature()
@@ -541,7 +535,7 @@ async def admin_org_dify_health(
         row.dify_api_base_url.strip(),
         row.dify_api_key.strip(),
     )
-    err_out = _dify_probe_error_for_user(err, is_platform_admin=is_admin(user))
+    err_out = _dify_probe_error_for_user(err, is_platform_admin=True)
     logger.info(
         "[MindBot] org_dify_health_probe config_id=%s organization_id=%s user_id=%s online=%s http_status=%s",
         config_id,
@@ -566,8 +560,8 @@ async def admin_ai_card_streaming_status(
     config_id: int,
     template_id: Optional[str] = Query(None, max_length=128),
     dingtalk_client_id: Optional[str] = Query(None, max_length=128),
-    db: AsyncSession = Depends(get_async_db),
     user: User = Depends(require_mindbot_admin_access),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> DingtalkAiCardStreamingStatusResponse:
     """
     Server-side probe: ``PUT /v1.0/card/streaming`` with a random ``outTrackId``.
@@ -625,8 +619,8 @@ async def admin_ai_card_streaming_status(
 )
 async def admin_list_mindbot_usage_events(
     organization_id: int,
-    db: AsyncSession = Depends(get_async_db),
     user: User = Depends(require_mindbot_admin_access),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
     limit: int = Query(50, ge=1, le=100),
     before_id: Optional[int] = Query(None),
     dingtalk_staff_id: Optional[str] = Query(None),
@@ -653,8 +647,8 @@ async def admin_list_mindbot_usage_events(
 async def admin_get_mindbot_usage_event(
     organization_id: int,
     event_id: int,
-    db: AsyncSession = Depends(get_async_db),
     user: User = Depends(require_mindbot_admin_access),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> MindbotUsageEventItem:
     """Admin get mindbot usage event."""
     _require_mindbot_feature()
@@ -680,8 +674,8 @@ async def admin_get_mindbot_usage_event(
 )
 async def admin_list_mindbot_usage_thread_events(
     organization_id: int,
-    db: AsyncSession = Depends(get_async_db),
     user: User = Depends(require_mindbot_admin_access),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
     dingtalk_staff_id: str = Query(..., min_length=1),
     dingtalk_conversation_id: Optional[str] = Query(None),
     dify_conversation_id: Optional[str] = Query(None),

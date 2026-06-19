@@ -36,6 +36,7 @@ from .messages import Messages, Language, get_request_language
 from .token_usage import TokenUsage
 from .dashboard_activity import DashboardActivity
 from .user_activity_log import UserActivityLog
+from .user_usage_activity import UserUsageActivity
 from .user_usage_stats import UserUsageStats
 from .debateverse import (
     DebateSession,
@@ -94,6 +95,7 @@ __all__ = [
     "DashboardActivity",
     # User Activity / Usage Stats
     "UserActivityLog",
+    "UserUsageActivity",
     "UserUsageStats",
     # Debateverse
     "DebateSession",

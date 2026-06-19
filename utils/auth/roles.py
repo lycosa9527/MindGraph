@@ -51,6 +51,7 @@ FEATURE_KEY_TO_CONFIG_ATTR = {
     "feature_workshop_chat": "FEATURE_WORKSHOP_CHAT",
     "feature_markets": "FEATURE_MARKETS",
     "feature_mindbot": "FEATURE_MINDBOT",
+    "feature_mindmate_export": "FEATURE_MINDMATE_EXPORT",
     "feature_kitty_agent": "FEATURE_KITTY_AGENT",
 }
 
@@ -173,14 +174,16 @@ async def user_has_feature_access(current_user, feature_key: str) -> bool:
     Whether the user may use this feature (global FEATURE_* + DB rules).
 
     Superadmins always pass when the global flag is on. School admins pass for
-    every feature except ``feature_mindbot``: for MindBot, school admins are
-    subject to ``feature_access_*`` grants (same as regular users).
+    every feature except ``feature_mindbot`` and ``feature_mindmate_export``:
+    for those (both expose per-org conversation data), school admins are subject
+    to ``feature_access_*`` grants (same as regular users).
     """
     if not _global_feature_flag_enabled(feature_key):
         return False
     if is_superadmin(current_user):
         return True
-    if is_school_admin(current_user) and feature_key != "feature_mindbot":
+    _grant_gated_features = {"feature_mindbot", "feature_mindmate_export"}
+    if is_school_admin(current_user) and feature_key not in _grant_gated_features:
         return True
     doc = await _get_feature_access_map_cached() or {}
     entry = doc.get(feature_key)

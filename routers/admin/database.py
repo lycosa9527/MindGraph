@@ -26,8 +26,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
 from config.database import DATABASE_URL, engine, libpq_database_url
-from models.domain.auth import User
-from routers.auth.dependencies import require_admin
+from routers.auth.dependencies import require_settings_database
+from utils.auth.admin_scope import AdminScope
 from services.admin.database_export_service import (
     DUMP_EXT,
     DUMP_PREFIX,
@@ -83,7 +83,7 @@ class FilenameBody(BaseModel):
 
 @router.get("/stats")
 async def database_stats(
-    _admin: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_database),
 ) -> Dict[str, Any]:
     """Current PostgreSQL table row counts and summary."""
     try:
@@ -98,7 +98,7 @@ async def database_stats(
 
 @router.get("/scan")
 async def scan_files(
-    _admin: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_database),
 ) -> Dict[str, Any]:
     """Scan backup/ folder for SQLite and PG dump files."""
     return await asyncio.to_thread(scan_backup_folder, BACKUP_DIR)
@@ -106,7 +106,7 @@ async def scan_files(
 
 @router.get("/dumps")
 async def list_dumps(
-    _admin: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_database),
 ):
     """List available PostgreSQL dump files in backup/."""
     return await asyncio.to_thread(list_pg_dumps, BACKUP_DIR)
@@ -115,7 +115,7 @@ async def list_dumps(
 @router.post("/analyze")
 def analyze_sqlite_file(
     body: FilenameBody,
-    _admin: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_database),
 ) -> Dict[str, Any]:
     """Analyze a SQLite file vs the running PostgreSQL database."""
     _validate_sqlite_filename(body.filename)
@@ -140,7 +140,7 @@ def analyze_sqlite_file(
 @router.post("/cleanup-sqlite-orphans")
 def cleanup_sqlite_orphans_endpoint(
     body: FilenameBody,
-    _admin: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_database),
 ) -> Dict[str, Any]:
     """Delete orphaned records from a SQLite file before merging."""
     _validate_sqlite_filename(body.filename)
@@ -169,7 +169,7 @@ def cleanup_sqlite_orphans_endpoint(
 @router.post("/merge")
 def merge_sqlite(
     body: FilenameBody,
-    _admin: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_database),
 ) -> Dict[str, Any]:
     """Merge a SQLite file into the running PostgreSQL database."""
     _validate_sqlite_filename(body.filename)
@@ -193,7 +193,7 @@ def merge_sqlite(
 
 @router.get("/orphans")
 def detect_orphans(
-    _admin: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_database),
 ) -> Dict[str, int]:
     """Detect orphaned FK references in the current PostgreSQL database."""
     try:
@@ -208,7 +208,7 @@ def detect_orphans(
 
 @router.post("/cleanup-orphans")
 def cleanup_orphans(
-    _admin: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_database),
 ) -> Dict[str, int]:
     """Clean up orphaned FK references in the PostgreSQL database."""
     try:
@@ -223,7 +223,7 @@ def cleanup_orphans(
 
 @router.post("/export")
 def export_dump(
-    _admin: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_database),
 ) -> Dict[str, Any]:
     """Run pg_dump and save the file to backup/."""
     try:
@@ -245,7 +245,7 @@ def export_dump(
 @router.post("/import-dump")
 def import_dump(
     body: FilenameBody,
-    _admin: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_database),
 ) -> Dict[str, Any]:
     """Restore a PG dump file from backup/ into the database. WARNING: replaces all data."""
     _validate_dump_filename(body.filename)
@@ -281,7 +281,7 @@ def import_dump(
 @router.post("/analyze-dump")
 def analyze_dump_file(
     body: FilenameBody,
-    _admin: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_database),
 ) -> Dict[str, Any]:
     """Analyze a PG dump for merge preview (user/org matching, per-table counts)."""
     _validate_dump_filename(body.filename)
@@ -312,7 +312,7 @@ def analyze_dump_file(
 @router.post("/merge-dump")
 def merge_dump_file(
     body: FilenameBody,
-    _admin: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_database),
 ) -> Dict[str, Any]:
     """Merge a PG dump into the live database (non-destructive, ID-remapped)."""
     _validate_dump_filename(body.filename)

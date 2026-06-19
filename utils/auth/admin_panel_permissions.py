@@ -4,6 +4,20 @@ Management panel capability keys and role → capability mapping.
 Single config source for tab visibility and admin API access scaffolding.
 Tune role tab sets here without changing Vue or router components.
 
+Adding a new panel feature (checklist)
+--------------------------------------
+1. Define ``CAP_*`` constant below (e.g. ``CAP_SETTINGS_FOO``).
+2. Add to the right role frozenset:
+   - superadmin-only → ``_SUPERADMIN_CAPS`` / ``_ALL_SETTINGS_CAPS``
+   - school manager too → also ``_SCHOOL_ADMIN_CAPS``
+   - platform BD read-only → ``_PLATFORM_BD_CAPS`` (rare for settings)
+3. Mirror the cap in ``frontend/src/utils/adminCapabilities.ts``.
+4. Protect API routes with ``require_panel_capability(CAP_*)`` from
+   ``routers.auth.dependencies`` (not raw ``is_superadmin()``).
+5. Optional ``FEATURE_*`` env flag → add thin dep like ``require_mindbot_admin_access``.
+
+Product term → role slug: super-admin = ``superadmin``; school manager = ``school_admin``.
+
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
@@ -51,6 +65,7 @@ CAP_SETTINGS_PERFORMANCE: Final[str] = "tab.settings.performance"
 CAP_SETTINGS_GEWE: Final[str] = "tab.settings.gewe"
 CAP_SETTINGS_KITTY_LLMOPS: Final[str] = "tab.settings.kitty_llmops"
 CAP_SETTINGS_MINDBOT: Final[str] = "tab.settings.mindbot"
+CAP_SETTINGS_MINDMATE_EXPORT: Final[str] = "tab.settings.mindmate_export"
 CAP_SETTINGS_SMART_RESPONSE: Final[str] = "tab.settings.smart_response"
 CAP_SETTINGS_TEACHER_USAGE: Final[str] = "tab.settings.teacher_usage"
 
@@ -71,12 +86,14 @@ _ALL_SETTINGS_CAPS: frozenset[str] = frozenset(
         CAP_SETTINGS_GEWE,
         CAP_SETTINGS_KITTY_LLMOPS,
         CAP_SETTINGS_MINDBOT,
+        CAP_SETTINGS_MINDMATE_EXPORT,
         CAP_SETTINGS_SMART_RESPONSE,
         CAP_SETTINGS_TEACHER_USAGE,
     }
 )
 
 _SUPERADMIN_CAPS: frozenset[str] = (
+    # Platform super-admin: all panel tabs + every settings / 新功能开发 subtab.
     frozenset(
         {
             CAP_PANEL_ACCESS,
@@ -124,6 +141,7 @@ _EXPERT_CAPS: frozenset[str] = frozenset(
 
 _SCHOOL_ADMIN_CAPS: frozenset[str] = frozenset(
     {
+        # School manager (学校管理员): org-scoped dashboard + member management only.
         CAP_PANEL_ACCESS,
         CAP_TAB_SCHOOL_DASHBOARD_VIEW,
         CAP_TAB_USERS_VIEW,

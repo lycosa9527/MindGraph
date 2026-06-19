@@ -60,6 +60,7 @@ from models.domain.school_zone import (
 from models.domain.pinned_conversations import PinnedConversation
 from models.domain.dashboard_activity import DashboardActivity
 from models.domain.user_activity_log import UserActivityLog
+from models.domain.user_usage_activity import UserUsageActivity
 from models.domain.user_usage_stats import UserUsageStats
 from models.domain.teacher_usage_config import TeacherUsageConfig
 from models.domain.library import (
@@ -98,6 +99,9 @@ from models.domain.markets import (
 )
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from models.domain.mindbot_usage import MindbotUsageEvent
+from models.domain.dingtalk_staff_link import DingtalkStaffLink
+from models.domain.generation_preview_link import GenerationPreviewLink
+from models.domain.mindmate_export_job import MindmateExportJob
 
 __all__ = [
     "Base",
@@ -140,6 +144,7 @@ __all__ = [
     "PinnedConversation",
     "DashboardActivity",
     "UserActivityLog",
+    "UserUsageActivity",
     "UserUsageStats",
     "TeacherUsageConfig",
     "LibraryDocument",
@@ -170,4 +175,7 @@ __all__ = [
     "MarketSubscription",
     "OrganizationMindbotConfig",
     "MindbotUsageEvent",
+    "DingtalkStaffLink",
+    "GenerationPreviewLink",
+    "MindmateExportJob",
 ]

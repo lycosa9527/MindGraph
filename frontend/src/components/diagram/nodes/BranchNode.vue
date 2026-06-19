@@ -148,14 +148,23 @@ const underlineTextStyle = computed((): CSSProperties => {
 
 const underlineLineStyle = computed((): CSSProperties => {
   const style = resolvedStyle.value
-  const lineColor = isMindMap.value
-    ? style.borderColor || resolveMindMapTopicBorderColor(null)
-    : style.borderColor ||
-      (isTreeMap.value && treeMapGroupColors.value
-        ? treeMapGroupColors.value.border
-        : mindMapThemeColors.value.border) ||
-      '#4e79a7'
   const { textGap } = mindMapUnderlineContentPadding()
+  if (isMindMap.value) {
+    return {
+      backgroundColor: resolveMindMapTopicBorderColor(
+        diagramStore.data?.nodes?.find((n) => n.id === 'topic')
+      ),
+      opacity: MIND_MAP_GEOMETRY.edgeStrokeOpacity,
+      marginTop: `${textGap}px`,
+      height: `${MINDMAP_UNDERLINE_STROKE_WIDTH}px`,
+    }
+  }
+  const lineColor =
+    style.borderColor ||
+    (isTreeMap.value && treeMapGroupColors.value
+      ? treeMapGroupColors.value.border
+      : mindMapThemeColors.value.border) ||
+    '#4e79a7'
   return {
     backgroundColor: lineColor,
     marginTop: `${textGap}px`,

@@ -29,6 +29,7 @@ from . import (
     session,
     sms,
 )
+from .dingtalk_bind import router as dingtalk_bind_router
 from .admin import admin_router
 from .dependencies import (
     get_language_dependency,
@@ -71,6 +72,7 @@ router.include_router(preferences.router)
 router.include_router(avatar.router)
 router.include_router(phone.router)
 router.include_router(personal_token.router)
+router.include_router(dingtalk_bind_router)
 router.include_router(admin_router)
 
 # Export router and utilities

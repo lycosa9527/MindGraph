@@ -86,6 +86,7 @@ def get_table_migration_order() -> List[str]:
         "library_bookmarks",  # References library_documents, users
         # User activity and usage (depend on users)
         "user_activity_log",  # References users
+        "user_usage_activities",  # References users, organizations
         "user_usage_stats",  # References users
         "teacher_usage_config",  # No foreign keys
         # Gewe/WeChat tables (standalone, no FK to users)

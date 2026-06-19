@@ -18,6 +18,8 @@ python -m pylint path/to/module.py
 python -m basedpyright .
 ```
 
+**DingTalk QR bind:** `pyzbar` requires system `libzbar0` (`sudo apt-get install -y libzbar0` on Debian/Ubuntu). All bind ingress channels must use `services.auth.dingtalk_bind_service.claim_dingtalk_qr_bind`; one MindGraph user ↔ one DingTalk staff per org — see [`docs/architecture/dingtalk_account_binding.md`](docs/architecture/dingtalk_account_binding.md).
+
 ## Cursor Cloud specific instructions
 
 Cloud agents run on **Ubuntu Linux** (not WSL). Python 3.13 and Node.js 26 are preinstalled via `.cursor/environment.json`.
@@ -34,7 +36,8 @@ Cloud agents run on **Ubuntu Linux** (not WSL). Python 3.13 and Node.js 26 are p
 Most CI tests need only pip packages (no live Redis/PostgreSQL):
 
 ```bash
-python -m pytest -q tests/test_collab_ws_json_limits.py tests/test_workshop_update_flush_gate.py \
+python -m pytest -q tests/test_user_daily_token_quota.py tests/test_llm_daily_token_cap.py \
+ tests/test_collab_ws_json_limits.py tests/test_workshop_update_flush_gate.py \
   tests/test_workshop_ws_integration.py tests/test_online_collab_phase8.py \
   tests/test_workshop_collab_backend.py tests/test_collab_palette_sync.py \
   tests/test_workshop_editor_redis_merge.py tests/test_ws_fanout.py \
@@ -99,6 +102,7 @@ Starting `python main.py` requires secrets and services configured in the Cursor
 | `REDIS_URL` | Sessions, collab, cache |
 | `DATABASE_URL` | PostgreSQL (or SQLite for limited local runs) |
 | `QDRANT_HOST` | Knowledge Space RAG |
+| `USER_DAILY_TOKEN_CAP` | Per-user daily LLM token limit (default `1000000`; `0` disables) |
 
 Default port: **9527**. Alembic migrations run on startup.
 

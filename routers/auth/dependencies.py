@@ -6,6 +6,52 @@ FastAPI dependencies for authentication endpoints:
 - Language detection dependency
 - Admin access requirement dependency
 
+Management panel access control (read this before adding admin routes)
+-----------------------------------------------------------------------
+Canonical capability map: ``utils.auth.admin_panel_permissions`` (backend)
+and ``frontend/src/utils/adminCapabilities.ts`` (UI mirror — keep in sync).
+
+When product says …                    Use on API routes …
+-------------------                    ---------------------
+"super-admin only"                     ``Depends(require_admin)`` for platform
+                                       internals (settings, DB, API keys), OR
+                                       ``Depends(require_panel_capability(CAP_*))``
+                                       for panel tabs/subtabs (preferred — hides
+                                       UI and API together via capability keys).
+                                       Add the cap to ``_SUPERADMIN_CAPS`` only.
+
+"school manager only"                  ``Depends(require_school_admin)`` (alias
+                                       ``require_manager``). Rare alone — most
+                                       school flows use capabilities instead.
+                                       Add cap to ``_SCHOOL_ADMIN_CAPS`` only.
+
+"super-admin OR school manager"        Prefer ``Depends(require_panel_capability(
+                                       CAP_TAB_USERS_EDIT))`` (etc.) — returns
+                                       ``AdminScope`` with org scope for managers.
+                                       Legacy/shared routes without scope:
+                                       ``Depends(require_admin_or_manager_with_rls)``.
+
+"any management panel role"            ``Depends(require_management_panel)`` or
+                                       ``Depends(get_admin_scope)`` (roles 1–4:
+                                       superadmin, platform_bd, expert,
+                                       school_admin).
+
+"global platform read (BD / researcher)"  ``require_global_*`` helpers — capability
+                                       plus ``scope.global`` (not school_admin).
+
+"settings / 新功能开发 subtab"          ``require_panel_capability(CAP_SETTINGS_*)``.
+                                       Today many subtabs still use ``require_admin``
+                                       directly — equivalent for superadmin-only
+                                       tabs but inconsistent with UI gating; migrate
+                                       when touching those files.
+
+"sensitive feature + FEATURE_* flag"   Thin wrapper like ``require_mindbot_admin_access``
+                                       or ``require_mindmate_export_access``: superadmin
+                                       gate + ``user_has_feature_access``.
+
+RLS: declare auth deps **before** ``get_async_db`` / use
+``get_async_db_with_request_rls`` with ``get_admin_scope``.
+
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
@@ -37,12 +83,24 @@ from utils.auth import (
 from utils.auth.admin_panel_permissions import (
     CAP_SCOPE_GLOBAL,
     CAP_SCOPE_INVITED_ORGS,
+    CAP_SETTINGS_DATABASE,
+    CAP_SETTINGS_FEATURES,
+    CAP_SETTINGS_GEWE,
+    CAP_SETTINGS_KITTY_LLMOPS,
+    CAP_SETTINGS_LIBRARY,
+    CAP_SETTINGS_PERFORMANCE,
+    CAP_SETTINGS_ROLES,
+    CAP_SETTINGS_SMART_RESPONSE,
+    CAP_SETTINGS_TEACHER_USAGE,
+    CAP_SETTINGS_TOKENS,
     CAP_TAB_BILLING_VIEW,
     CAP_TAB_DATA_CENTER_VIEW,
     CAP_TAB_INVITES_EDIT,
     CAP_TAB_ORGANIZATIONS_EDIT,
     CAP_TAB_ORGANIZATIONS_VIEW,
     CAP_TAB_SCHOOL_DASHBOARD_VIEW,
+    CAP_TAB_SETTINGS_EDIT,
+    CAP_TAB_SETTINGS_VIEW,
     CAP_TAB_USERS_EDIT,
     CAP_TAB_USERS_VIEW,
 )
@@ -129,15 +187,18 @@ def get_language_dependency(request: Request, x_language: Optional[str] = Header
     return get_request_language(x_language, accept_language)
 
 
+# --- Role-based gates (coarse; use when capability keys do not apply) -------------
+
+
 def require_superadmin(
     request: Request,
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ) -> User:
     """
-    FastAPI dependency to require superadmin (full platform admin) access.
+    Super-admin only (平台超管). Binds panel superadmin RLS.
 
-    Raises HTTPException 403 if user is not superadmin.
+    Product "super-admin only" → this or ``require_admin`` (alias below).
     """
     if not is_superadmin(current_user):
         error_msg = Messages.error("admin_access_required", lang)
@@ -151,11 +212,7 @@ def require_admin(
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ) -> User:
-    """
-    FastAPI dependency to require admin access (alias for superadmin).
-
-    Raises HTTPException 403 if user is not superadmin.
-    """
+    """Alias for ``require_superadmin`` — same gate, shorter name in routers."""
     return require_superadmin(request, current_user, lang)
 
 
@@ -164,10 +221,11 @@ def require_school_admin(
     lang: Language = Depends(get_language_dependency),
 ) -> User:
     """
-    FastAPI dependency to require school admin access.
+    School manager only (学校管理员 / ``school_admin`` role).
 
-    Raises HTTPException 403 if user is not a school admin.
-    Note: Superadmins are NOT school admins — use require_admin_or_manager for shared access.
+    Superadmins are NOT school admins. For "super-admin OR school manager" use
+    ``require_admin_or_manager`` / ``require_admin_or_manager_with_rls`` or a
+    panel capability (preferred).
     """
     if not is_school_admin(current_user):
         error_msg = Messages.error("manager_access_required", lang)
@@ -179,7 +237,7 @@ def require_manager(
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ) -> User:
-    """Alias for require_school_admin — legacy name preserved."""
+    """Alias for ``require_school_admin`` — product term "school manager"."""
     return require_school_admin(current_user, lang)
 
 
@@ -188,24 +246,29 @@ def require_admin_or_manager(
     lang: Language = Depends(get_language_dependency),
 ) -> User:
     """
-    FastAPI dependency to require admin OR manager access.
+    Super-admin OR school manager (no RLS bind).
 
-    Used for routes that both admin and manager can access.
-    Admin sees all data, manager sees org-scoped data.
-
-    Args:
-        current_user: Current authenticated user (from get_current_user)
-        lang: User language (from get_language_dependency)
-
-    Returns:
-        User object (guaranteed to be admin or manager)
-
-    Raises:
-        HTTPException: 403 if user is neither admin nor manager
+    Prefer ``require_admin_or_manager_with_rls`` or ``get_admin_scope`` for new
+    panel routes — they set org scope and capabilities correctly.
     """
     if not is_admin_or_manager(current_user):
         error_msg = Messages.error("elevated_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    return current_user
+
+
+async def require_admin_or_manager_with_rls(
+    request: Request,
+    current_user: User = Depends(require_admin_or_manager),
+) -> User:
+    """
+    Super-admin OR school manager with RLS.
+
+    Product "super-admin or school manager" on legacy routes (e.g. quick_register,
+    workshop channels). New panel APIs should use ``require_panel_capability`` instead.
+    """
+    if is_superadmin(current_user):
+        bind_panel_superadmin_rls(request, current_user)
     return current_user
 
 
@@ -214,12 +277,47 @@ async def require_mindbot_admin_access(
     lang: Language = Depends(get_language_dependency),
 ) -> User:
     """
-    MindBot admin UI/API: superadmin only, plus feature_org_access for MindBot.
+    Template for superadmin-only + ``FEATURE_*`` gated panel features.
+
+    Pair with ``CAP_SETTINGS_MINDBOT`` in ``admin_panel_permissions`` and UI.
     """
     if not await user_has_feature_access(current_user, "feature_mindbot"):
         error_msg = Messages.error("mindbot_feature_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     return current_user
+
+
+async def require_mindmate_export_access(
+    current_user: User = Depends(require_admin),
+    lang: Language = Depends(get_language_dependency),
+) -> User:
+    """
+    Superadmin-only MindMate export; see ``require_mindbot_admin_access`` template.
+
+    UI cap: ``CAP_SETTINGS_MINDMATE_EXPORT`` (superadmin role only).
+    """
+    if not await user_has_feature_access(current_user, "feature_mindmate_export"):
+        error_msg = Messages.error("elevated_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    return current_user
+
+
+async def get_async_db_with_request_rls(
+    request: Request,
+    db: AsyncSession = Depends(get_async_db),
+) -> AsyncSession:
+    """
+    Apply ``request.state.rls_context`` on the open DB transaction.
+
+    Auth dependencies (``require_admin``, ``require_mindbot_admin_access``,
+    ``get_admin_scope``) bind panel scope on ``request.state``. Declare them
+    **before** this dependency so ``get_async_db`` opens with the correct context;
+    this call refreshes SET LOCAL when ``after_begin`` already ran with a stale context.
+    """
+    ctx = getattr(request.state, "rls_context", None)
+    if ctx is not None:
+        await apply_rls_context_async(db, ctx)
+    return db
 
 
 async def require_workshop_chat_access(
@@ -235,10 +333,13 @@ async def require_workshop_chat_access(
     if not await can_access_workshop_chat(current_user):
         error_msg = Messages.error("elevated_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
-    request.state.rls_context = RlsContext.from_user(
-        current_user,
-        allow_global_channels=True,
-    )
+    if is_superadmin(current_user):
+        bind_panel_superadmin_rls(request, current_user)
+    else:
+        request.state.rls_context = RlsContext.from_user(
+            current_user,
+            allow_global_channels=True,
+        )
     return current_user
 
 
@@ -249,11 +350,14 @@ def _assert_global_scope(scope: AdminScope, lang: Language) -> None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
 
+# --- Capability-based gates (preferred for panel tabs; sync with Vue) ------------
+
+
 def require_management_panel(
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ) -> User:
-    """Require access to the unified management panel (roles 1–4)."""
+    """Any management panel role (superadmin, platform_bd, expert, school_admin)."""
     if not is_management_panel_user(current_user):
         error_msg = Messages.error("admin_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
@@ -275,9 +379,13 @@ async def get_admin_scope(
     organization_id: Optional[int] = Query(None),
     current_user: User = Depends(require_management_panel),
     lang: Language = Depends(get_language_dependency),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> AdminScope:
-    """Resolve AdminScope for management panel API handlers."""
+    """
+    Base dependency for panel routes — resolves capabilities, org scope, and RLS.
+
+    Stack ``require_panel_capability(CAP_*)`` on top for tab/subtab checks.
+    """
     scope = await build_admin_scope_async(
         current_user,
         organization_id=organization_id,
@@ -291,7 +399,12 @@ async def get_admin_scope(
 
 
 def require_panel_capability(capability: str):
-    """Factory: dependency requiring a specific panel capability."""
+    """
+    Factory: require one capability key from ``admin_panel_permissions``.
+
+    Primary tool for "who can see this tab/API". Example: school manager user
+    CRUD → ``CAP_TAB_USERS_EDIT``; superadmin settings subtab → ``CAP_SETTINGS_*``.
+    """
 
     def _dependency(
         scope: AdminScope = Depends(get_admin_scope),
@@ -365,7 +478,11 @@ def require_school_dashboard_read(
     scope: AdminScope = Depends(get_admin_scope),
     lang: Language = Depends(get_language_dependency),
 ) -> AdminScope:
-    """School dashboard stats: school_admin or global data-center roles."""
+    """
+    Super-admin OR school manager dashboard (and platform_bd data-center view).
+
+    Example of capability composition without a single cap key.
+    """
     scope.assert_any_capability(
         frozenset({CAP_TAB_SCHOOL_DASHBOARD_VIEW, CAP_TAB_DATA_CENTER_VIEW}),
         lang,
@@ -392,3 +509,16 @@ def require_admin_stats_read(
 
 
 require_global_dashboard_readonly = require_global_data_center_read
+
+require_settings_features = require_panel_capability(CAP_SETTINGS_FEATURES)
+require_settings_roles = require_panel_capability(CAP_SETTINGS_ROLES)
+require_settings_tokens = require_panel_capability(CAP_SETTINGS_TOKENS)
+require_settings_library = require_panel_capability(CAP_SETTINGS_LIBRARY)
+require_settings_database = require_panel_capability(CAP_SETTINGS_DATABASE)
+require_settings_performance = require_panel_capability(CAP_SETTINGS_PERFORMANCE)
+require_settings_gewe = require_panel_capability(CAP_SETTINGS_GEWE)
+require_settings_kitty_llmops = require_panel_capability(CAP_SETTINGS_KITTY_LLMOPS)
+require_settings_teacher_usage = require_panel_capability(CAP_SETTINGS_TEACHER_USAGE)
+require_settings_smart_response = require_panel_capability(CAP_SETTINGS_SMART_RESPONSE)
+require_tab_settings_view = require_panel_capability(CAP_TAB_SETTINGS_VIEW)
+require_tab_settings_edit = require_panel_capability(CAP_TAB_SETTINGS_EDIT)

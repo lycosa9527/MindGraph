@@ -31,6 +31,7 @@ interface FeatureFlagsResponse {
   feature_workshop_chat: boolean
   feature_markets: boolean
   feature_mindbot: boolean
+  feature_mindmate_export: boolean
   feature_kitty_agent: boolean
   workshop_chat_preview_org_ids: number[]
   feature_org_access: Record<string, FeatureOrgAccessEntry>
@@ -78,6 +79,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_workshop_chat: false,
           feature_markets: false,
           feature_mindbot: false,
+          feature_mindmate_export: false,
           feature_kitty_agent: false,
           workshop_chat_preview_org_ids: [],
           feature_org_access: {},
@@ -93,6 +95,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_org_access: raw.feature_org_access ?? {},
         feature_markets: raw.feature_markets ?? false,
         feature_mindbot: raw.feature_mindbot ?? false,
+        feature_mindmate_export: raw.feature_mindmate_export ?? false,
         feature_kitty_agent: raw.feature_kitty_agent ?? false,
       }
       flags.value = data
@@ -121,6 +124,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_workshop_chat: false,
         feature_markets: false,
         feature_mindbot: false,
+        feature_mindmate_export: false,
         feature_kitty_agent: false,
         workshop_chat_preview_org_ids: [],
         feature_org_access: {},

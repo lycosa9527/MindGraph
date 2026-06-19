@@ -3,7 +3,7 @@
  * Attendee quick registration after scanning facilitator QR: same shell as LoginModal
  * (light backdrop on /auth, back row, close control).
  */
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { Close } from '@element-plus/icons-vue'
 
@@ -43,6 +43,9 @@ function handleBackdropClick() {
   }
   closeModal()
 }
+
+/** `/auth`: footer legal link sits below the modal — overlay must not swallow clicks. */
+const passThroughFooterClicks = computed(() => Boolean(props.lightBackdrop && props.persistent))
 
 onMounted(async () => {
   if (!props.quickRegToken) {
@@ -132,6 +135,7 @@ async function submitQuickRegister() {
       <div
         v-if="quickRegToken"
         class="login-modal-overlay fixed inset-0 z-1000 overflow-y-auto overscroll-y-contain"
+        :class="{ 'pointer-events-none': passThroughFooterClicks }"
       >
         <div
           v-if="!lightBackdrop"
@@ -147,7 +151,10 @@ async function submitQuickRegister() {
           "
           @click.self="handleBackdropClick"
         >
-          <div class="relative w-full max-w-sm">
+          <div
+            class="relative w-full max-w-sm"
+            :class="{ 'pointer-events-auto': passThroughFooterClicks }"
+          >
             <div class="bg-white rounded-xl shadow-2xl overflow-hidden relative">
               <el-button
                 class="close-btn"

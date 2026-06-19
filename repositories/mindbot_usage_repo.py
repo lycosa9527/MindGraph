@@ -8,7 +8,9 @@ Proprietary License
 
 from __future__ import annotations
 
-from sqlalchemy import select
+from datetime import datetime
+
+from sqlalchemy import distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.mindbot_usage import MindbotUsageEvent
@@ -32,6 +34,7 @@ class MindbotUsageRepository:
         before_id: int | None,
         dingtalk_staff_id: str | None,
     ) -> list[MindbotUsageEvent]:
+        """Return recent usage events for one organization."""
         q = select(MindbotUsageEvent).where(
             MindbotUsageEvent.organization_id == organization_id,
         )
@@ -51,6 +54,7 @@ class MindbotUsageRepository:
         organization_id: int,
         event_id: int,
     ) -> MindbotUsageEvent | None:
+        """Return one usage event by primary key within an org."""
         q = select(MindbotUsageEvent).where(
             MindbotUsageEvent.organization_id == organization_id,
             MindbotUsageEvent.id == event_id,
@@ -96,3 +100,170 @@ class MindbotUsageRepository:
         q = q.order_by(MindbotUsageEvent.id.desc()).limit(min(limit, 100))
         result = await self._session.execute(q)
         return list(result.scalars().all())
+
+    async def distinct_config_ids_for_staff(
+        self,
+        organization_id: int,
+        dingtalk_staff_id: str,
+    ) -> set[int]:
+        """MindBot config ids that handled events for this staff member."""
+        staff = _clip(dingtalk_staff_id, 128)
+        if not staff:
+            return set()
+        stmt = (
+            select(distinct(MindbotUsageEvent.mindbot_config_id))
+            .where(
+                MindbotUsageEvent.organization_id == int(organization_id),
+                MindbotUsageEvent.dingtalk_staff_id == staff,
+                MindbotUsageEvent.mindbot_config_id.is_not(None),
+            )
+        )
+        rows = (await self._session.execute(stmt)).scalars().all()
+        return {int(value) for value in rows if value is not None}
+
+    async def distinct_staff_for_users(
+        self,
+        organization_id: int,
+        user_ids: list[int],
+    ) -> list[tuple[str, str | None]]:
+        """Distinct staff ids linked to MindGraph users via usage events."""
+        if not user_ids:
+            return []
+        uid_set = {int(uid) for uid in user_ids if int(uid) > 0}
+        if not uid_set:
+            return []
+        nick_col = func.max(MindbotUsageEvent.sender_nick).label("nick")
+        stmt = (
+            select(MindbotUsageEvent.dingtalk_staff_id, nick_col)
+            .where(
+                MindbotUsageEvent.organization_id == int(organization_id),
+                MindbotUsageEvent.linked_user_id.in_(uid_set),
+            )
+            .group_by(MindbotUsageEvent.dingtalk_staff_id)
+        )
+        rows = (await self._session.execute(stmt)).all()
+        out: list[tuple[str, str | None]] = []
+        for staff_raw, nick_raw in rows:
+            staff = (staff_raw or "").strip()[:128]
+            if not staff:
+                continue
+            nick = (nick_raw or "").strip() or None
+            out.append((staff, nick))
+        return out
+
+    async def distinct_staff_map_for_users(
+        self,
+        organization_id: int,
+        user_ids: list[int],
+    ) -> dict[int, list[tuple[str, str | None]]]:
+        """Map each linked MindGraph user id to distinct DingTalk staff ids."""
+        if not user_ids:
+            return {}
+        uid_set = {int(uid) for uid in user_ids if int(uid) > 0}
+        if not uid_set:
+            return {}
+        nick_col = func.max(MindbotUsageEvent.sender_nick).label("nick")
+        stmt = (
+            select(
+                MindbotUsageEvent.linked_user_id,
+                MindbotUsageEvent.dingtalk_staff_id,
+                nick_col,
+            )
+            .where(
+                MindbotUsageEvent.organization_id == int(organization_id),
+                MindbotUsageEvent.linked_user_id.in_(uid_set),
+            )
+            .group_by(
+                MindbotUsageEvent.linked_user_id,
+                MindbotUsageEvent.dingtalk_staff_id,
+            )
+        )
+        rows = (await self._session.execute(stmt)).all()
+        out: dict[int, list[tuple[str, str | None]]] = {uid: [] for uid in uid_set}
+        for uid_raw, staff_raw, nick_raw in rows:
+            uid = int(uid_raw)
+            staff = (staff_raw or "").strip()[:128]
+            if not staff:
+                continue
+            nick = (nick_raw or "").strip() or None
+            out.setdefault(uid, []).append((staff, nick))
+        return out
+
+    async def distinct_unbound_staff_for_org(
+        self,
+        organization_id: int,
+        *,
+        exclude_staff_ids: set[str] | None = None,
+        start: datetime | None = None,
+        end: datetime | None = None,
+        limit: int = 500,
+    ) -> list[tuple[str, str | None]]:
+        """Staff with MindBot usage but no linked MindGraph user in events."""
+        nick_col = func.max(MindbotUsageEvent.sender_nick).label("nick")
+        base = select(MindbotUsageEvent.dingtalk_staff_id, nick_col).where(
+            MindbotUsageEvent.organization_id == int(organization_id),
+            MindbotUsageEvent.linked_user_id.is_(None),
+        )
+        if start is not None:
+            base = base.where(MindbotUsageEvent.created_at >= start)
+        if end is not None:
+            base = base.where(MindbotUsageEvent.created_at <= end)
+        stmt = (
+            base.group_by(MindbotUsageEvent.dingtalk_staff_id)
+            .order_by(MindbotUsageEvent.dingtalk_staff_id)
+            .limit(min(max(1, limit), 500))
+        )
+        rows = (await self._session.execute(stmt)).all()
+        excluded = exclude_staff_ids or set()
+        out: list[tuple[str, str | None]] = []
+        for staff_raw, nick_raw in rows:
+            staff = (staff_raw or "").strip()[:128]
+            if not staff or staff in excluded:
+                continue
+            nick = (nick_raw or "").strip() or None
+            out.append((staff, nick))
+        return out
+
+    async def distinct_unbound_staff_all_orgs(
+        self,
+        *,
+        exclude_staff_by_org: dict[int, set[str]] | None = None,
+        start: datetime | None = None,
+        end: datetime | None = None,
+        limit: int = 500,
+    ) -> list[tuple[int, str, str | None]]:
+        """Unbound staff rows across organizations (org_id, staff_id, nick)."""
+        nick_col = func.max(MindbotUsageEvent.sender_nick).label("nick")
+        base = select(
+            MindbotUsageEvent.organization_id,
+            MindbotUsageEvent.dingtalk_staff_id,
+            nick_col,
+        ).where(MindbotUsageEvent.linked_user_id.is_(None))
+        if start is not None:
+            base = base.where(MindbotUsageEvent.created_at >= start)
+        if end is not None:
+            base = base.where(MindbotUsageEvent.created_at <= end)
+        stmt = (
+            base.group_by(
+                MindbotUsageEvent.organization_id,
+                MindbotUsageEvent.dingtalk_staff_id,
+            )
+            .order_by(
+                MindbotUsageEvent.organization_id,
+                MindbotUsageEvent.dingtalk_staff_id,
+            )
+            .limit(min(max(1, limit), 500))
+        )
+        rows = (await self._session.execute(stmt)).all()
+        excluded_map = exclude_staff_by_org or {}
+        out: list[tuple[int, str, str | None]] = []
+        for org_raw, staff_raw, nick_raw in rows:
+            org_id = int(org_raw)
+            staff = (staff_raw or "").strip()[:128]
+            if not staff:
+                continue
+            if staff in excluded_map.get(org_id, set()):
+                continue
+            nick = (nick_raw or "").strip() or None
+            out.append((org_id, staff, nick))
+        return out

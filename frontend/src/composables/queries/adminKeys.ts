@@ -39,6 +39,8 @@ export const adminKeys = {
     [...adminKeys.all, 'trends-organization', params ?? {}] as const,
   trendsUser: (params?: Record<string, string | number | boolean | null | undefined>) =>
     [...adminKeys.all, 'trends-user', params ?? {}] as const,
+  userActivity: (userId: number, params?: Record<string, string | number | boolean | null | undefined>) =>
+    [...adminKeys.all, 'user-activity', userId, params ?? {}] as const,
 
   schoolStats: (organizationId: number) =>
     [...adminKeys.all, 'school-stats', organizationId] as const,
@@ -108,5 +110,19 @@ export const adminKeys = {
   kittyLlmops: {
     all: () => [...adminKeys.all, 'kitty-llmops'] as const,
     architecture: () => [...adminKeys.all, 'kitty-llmops', 'architecture'] as const,
+  },
+
+  mindmateExport: {
+    all: () => [...adminKeys.all, 'mindmate-export'] as const,
+    users: (orgId: number | null) =>
+      [...adminKeys.all, 'mindmate-export', 'users', orgId ?? null] as const,
+    conversations: (params?: Record<string, string | number | null | undefined>) =>
+      [...adminKeys.all, 'mindmate-export', 'conversations', params ?? {}] as const,
+    messages: (conversationId: string, server: number) =>
+      [...adminKeys.all, 'mindmate-export', 'messages', conversationId, server] as const,
+    jobs: (limit?: number) =>
+      [...adminKeys.all, 'mindmate-export', 'jobs', limit ?? 20] as const,
+    job: (jobId: number) =>
+      [...adminKeys.all, 'mindmate-export', 'job', jobId] as const,
   },
 }

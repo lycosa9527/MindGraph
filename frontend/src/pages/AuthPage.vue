@@ -182,6 +182,7 @@ onBeforeUnmount(() => {
     <LoginModal
       v-else
       v-model:visible="showLoginModal"
+      auth-page
       light-backdrop
       persistent
       @success="onLoginSuccess"

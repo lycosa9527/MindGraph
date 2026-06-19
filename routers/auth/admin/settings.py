@@ -16,17 +16,18 @@ import os
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from models.domain.auth import User
 from models.domain.messages import Messages
 
-from ..dependencies import get_language_dependency, require_admin
+from utils.auth.admin_scope import AdminScope
+
+from ..dependencies import get_language_dependency, require_tab_settings_edit, require_tab_settings_view
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
-@router.get("/admin/settings", dependencies=[Depends(require_admin)])
+@router.get("/admin/settings", dependencies=[Depends(require_tab_settings_view)])
 async def get_settings_admin():
     """Get system settings from .env (ADMIN ONLY)"""
     env_path = ".env"
@@ -53,10 +54,10 @@ async def get_settings_admin():
     return settings
 
 
-@router.put("/admin/settings", dependencies=[Depends(require_admin)])
+@router.put("/admin/settings", dependencies=[Depends(require_tab_settings_edit)])
 async def update_settings_admin(
     request: dict,
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_tab_settings_edit),
     lang: str = Depends(get_language_dependency),
 ):
     """Update system settings in .env (ADMIN ONLY)"""
@@ -91,7 +92,7 @@ async def update_settings_admin(
         f.writelines(lines)
 
     updated_keys_list = list(request.keys())
-    logger.warning("Admin %s updated .env settings: %s", current_user.phone, updated_keys_list)
+    logger.warning("Admin %s updated .env settings: %s", scope.actor.phone, updated_keys_list)
 
     return {
         "message": Messages.success("settings_updated", lang),

@@ -12,7 +12,6 @@ import { Delete, Loading } from '@element-plus/icons-vue'
 
 import type { Chart as ChartInstance } from 'chart.js'
 
-import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { queryErrorMessage } from '@/composables/admin/useQueryErrorNotification'
 import { useScopedAbort } from '@/composables/core/useScopedAbort'
@@ -55,6 +54,8 @@ import AdminSchoolDifySettings from './AdminSchoolDifySettings.vue'
 import AdminSchoolMindBotTab from './AdminSchoolMindBotTab.vue'
 import AdminSchoolOrgGeneralTab from './AdminSchoolOrgGeneralTab.vue'
 import AdminSchoolTokenUsageTab from './AdminSchoolTokenUsageTab.vue'
+import AdminUserActivityTab from './AdminUserActivityTab.vue'
+import AdminUserTokenUsageTab from './AdminUserTokenUsageTab.vue'
 
 type SchoolDialogTab =
   | 'usage'
@@ -63,6 +64,8 @@ type SchoolDialogTab =
   | 'mindbot_log'
   | 'mindbot_monitor'
   | 'general'
+
+type UserDialogTab = 'usage' | 'activity'
 
 const MIND_BOT_SCHOOL_TABS = new Set<SchoolDialogTab>([
   'mindbot_dingtalk',
@@ -84,6 +87,10 @@ const props = defineProps<{
   orgExtraMemberSeats?: number
   orgDifyApiBaseUrl?: string | null
   orgDifyApiKeyMasked?: string | null
+  orgDifyApiBaseUrl2?: string | null
+  orgDifyApiKey2Masked?: string | null
+  orgDifyActiveServer?: number
+  orgDifyFailoverEnabled?: boolean
   orgDifyTimeoutSeconds?: number
   orgDingtalkAiCardStreamingMaxChars?: number
   orgShowChainOfThought?: boolean
@@ -145,6 +152,12 @@ function mindbotEmbeddedPane(
 }
 
 const schoolDialogTab = ref<SchoolDialogTab>('usage')
+const userDialogTab = ref<UserDialogTab>('usage')
+
+const userDialogTabOptions = computed(() => [
+  { label: t('admin.userActivityTab.tabUsage'), value: 'usage' as const },
+  { label: t('admin.userActivityTab.tabLabel'), value: 'activity' as const },
+])
 
 const activeMindbotPane = computed(() => mindbotEmbeddedPane(schoolDialogTab.value))
 
@@ -212,8 +225,8 @@ function onSchoolModalVisibleChange(visible: boolean): void {
 const chartTitle = ref('')
 const chartLoading = ref(false)
 const chartHasData = ref(true)
-const chartRef = ref<HTMLCanvasElement | null>(null)
 const tokenUsageTabRef = ref<InstanceType<typeof AdminSchoolTokenUsageTab> | null>(null)
+const userTokenTabRef = ref<InstanceType<typeof AdminUserTokenUsageTab> | null>(null)
 const mindmateDifyRef = ref<InstanceType<typeof AdminSchoolDifySettings> | null>(null)
 let chartInstance: ChartInstance<'line'> | null = null
 
@@ -233,7 +246,10 @@ function chartCanvasElement(): HTMLCanvasElement | null {
   if (props.type === 'org') {
     return tokenUsageTabRef.value?.chartRef ?? null
   }
-  return chartRef.value
+  if (props.type === 'user') {
+    return userTokenTabRef.value?.chartRef ?? null
+  }
+  return null
 }
 
 const periodCards = ref({ today: '-', week: '-', month: '-', total: '-' })
@@ -395,6 +411,7 @@ async function load() {
   if (!props.visible) return
   if (props.type === 'org' && !props.orgName) return
   if (props.type === 'user' && props.userId == null) return
+  if (props.type === 'user' && userDialogTab.value !== 'usage') return
   chartLoading.value = true
   periodCards.value = { today: '-', week: '-', month: '-', total: '-' }
   const signal = beginChartRequest()
@@ -411,7 +428,7 @@ async function load() {
         await loadOrgTokenCards(signal, resolvedOrgId)
       }
     } else {
-      chartTitle.value = `${t('admin.trendUserTokens')}: ${props.userName ?? ''}`
+      chartTitle.value = t('admin.trendUserTokens')
       const data = await loadUserChart(signal)
       chartLoading.value = false
       await nextTick()
@@ -647,8 +664,12 @@ watch(
       period.value = props.initialTrendPeriod ?? 'week'
       if (props.type === 'org') {
         schoolDialogTab.value = props.initialSchoolTab ?? 'usage'
+      } else {
+        userDialogTab.value = 'usage'
       }
-      void load()
+      if (props.type !== 'user' || userDialogTab.value === 'usage') {
+        void load()
+      }
       if (props.type === 'org' && props.orgId) {
         displayNameEdit.value = props.orgDisplayName ?? ''
         orgActiveState.value = props.orgIsActive ?? true
@@ -676,8 +697,23 @@ watch(
 )
 
 watch(schoolDialogTab, (tab) => {
-  if (tab === 'general' && props.visible && props.type === 'org' && props.orgId) {
+  if (props.type !== 'org' || !props.visible) {
+    return
+  }
+  if (tab === 'usage') {
+    void load()
+  }
+  if (tab === 'general' && props.orgId) {
     loadGeneralTabData()
+  }
+})
+
+watch(userDialogTab, (tab) => {
+  if (props.type !== 'user' || !props.visible) {
+    return
+  }
+  if (tab === 'usage') {
+    void load()
   }
 })
 
@@ -777,6 +813,10 @@ onBeforeUnmount(() => {
               :org-id="orgId"
               :dify-api-base-url="orgDifyApiBaseUrl"
               :dify-api-key-masked="orgDifyApiKeyMasked"
+              :dify-api-base-url2="orgDifyApiBaseUrl2"
+              :dify-api-key2-masked="orgDifyApiKey2Masked"
+              :dify-active-server="orgDifyActiveServer"
+              :dify-failover-enabled="orgDifyFailoverEnabled"
               :dify-timeout-seconds="orgDifyTimeoutSeconds"
               :dingtalk-ai-card-streaming-max-chars="orgDingtalkAiCardStreamingMaxChars"
               :show-chain-of-thought="orgShowChainOfThought"
@@ -932,78 +972,72 @@ onBeforeUnmount(() => {
   <el-dialog
     v-else
     :model-value="visible"
-    :title="chartTitle"
-    class="admin-org-dialog"
-    width="720px"
+    class="admin-user-trend-swiss admin-org-dialog school-settings-dialog"
+    width="min(760px, 94vw)"
     destroy-on-close
+    append-to-body
     align-center
     @update:model-value="(v: boolean) => emit('update:visible', v)"
     @close="handleClose"
   >
-    <div
-      v-if="chartLoading"
-      class="flex justify-center items-center h-64"
-    >
-      <el-icon
-        class="is-loading"
-        :size="32"
-      >
-        <Loading />
-      </el-icon>
-    </div>
-    <template v-else>
-      <div
-        v-if="!chartHasData"
-        class="flex justify-center items-center h-64 text-gray-500 dark:text-gray-400"
-      >
-        {{ t('admin.trendChartNoData') }}
-      </div>
-      <div
-        v-else
-        class="relative h-64 min-h-[220px] sm:min-h-[256px] w-full min-w-0"
-      >
-        <canvas
-          ref="chartRef"
-          class="block w-full h-full"
+    <template #header>
+      <div class="admin-user-trend-swiss__header">
+        <span
+          class="admin-user-trend-swiss__glyph"
+          aria-hidden="true"
+        >◇</span>
+        <span class="admin-user-trend-swiss__title">{{ t('admin.trendUserTokens') }}</span>
+        <span
+          v-if="userName"
+          class="admin-user-trend-swiss__divider"
+          aria-hidden="true"
         />
-      </div>
-      <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <div class="grid grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-4 gap-3">
-          <AdminSwissPeriodCard
-            :label="t('admin.today')"
-            :value="periodCards.today"
-            :active="period === 'today'"
-            theme="storage"
-            @click="switchPeriod('today')"
-          />
-          <AdminSwissPeriodCard
-            :label="t('admin.pastWeek')"
-            :value="periodCards.week"
-            :active="period === 'week'"
-            theme="storage"
-            @click="switchPeriod('week')"
-          />
-          <AdminSwissPeriodCard
-            :label="t('admin.pastMonth')"
-            :value="periodCards.month"
-            :active="period === 'month'"
-            theme="storage"
-            @click="switchPeriod('month')"
-          />
-          <AdminSwissPeriodCard
-            :label="t('admin.allTime')"
-            :value="periodCards.total"
-            :active="period === 'total'"
-            theme="storage"
-            @click="switchPeriod('total')"
-          />
-        </div>
+        <span
+          v-if="userName"
+          class="admin-user-trend-swiss__name"
+        >{{ userName }}</span>
       </div>
     </template>
+    <div class="admin-user-trend-swiss__stack">
+      <div
+        class="admin-swiss-segmented admin-swiss-segmented--block"
+        role="radiogroup"
+        :aria-label="t('admin.trendUserTokens')"
+      >
+        <button
+          v-for="opt in userDialogTabOptions"
+          :key="opt.value"
+          type="button"
+          role="radio"
+          class="admin-swiss-segment"
+          :class="{ 'is-active': userDialogTab === opt.value }"
+          :aria-checked="userDialogTab === opt.value"
+          @click="userDialogTab = opt.value"
+        >
+          {{ opt.label }}
+        </button>
+      </div>
+      <AdminUserTokenUsageTab
+        v-show="userDialogTab === 'usage'"
+        ref="userTokenTabRef"
+        class="user-trend-dialog-pane"
+        :chart-loading="chartLoading"
+        :chart-has-data="chartHasData"
+        :period="period"
+        :period-cards="periodCards"
+        @switchPeriod="switchPeriod"
+      />
+      <AdminUserActivityTab
+        v-if="userDialogTab === 'activity'"
+        class="user-trend-dialog-pane"
+        :user-id="userId"
+        :can-load="visible && userDialogTab === 'activity'"
+      />
+    </div>
     <template #footer>
       <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:flex-wrap">
         <el-button
-          class="admin-org-pill-btn-ghost w-full sm:w-auto"
+          class="admin-swiss-btn w-full sm:w-auto"
           @click="close"
         >
           {{ t('common.close') }}
@@ -1015,6 +1049,7 @@ onBeforeUnmount(() => {
 
 <style>
 @import '@/styles/admin-mindbot-swiss-dialog-chrome.css';
+@import '@/styles/admin-swiss-controls.css';
 </style>
 
 <style scoped>
@@ -1027,6 +1062,10 @@ onBeforeUnmount(() => {
 
 .school-dialog-tabs :deep(.el-tabs__content) {
   padding-top: 12px;
+}
+
+.user-trend-dialog-pane {
+  min-width: 0;
 }
 
 .admin-org-dialog {

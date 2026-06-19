@@ -114,6 +114,22 @@ async def process_paragraph_with_qwen_plus(
         )
         prompt = prompt + output_language_instruction(language)
 
+        session = voice_sessions.get(voice_session_id) or {}
+        user_id_raw = session.get("user_id")
+        user_id: int | None = None
+        if user_id_raw is not None:
+            try:
+                user_id = int(user_id_raw)
+            except (TypeError, ValueError):
+                user_id = None
+        organization_id_raw = session.get("organization_id")
+        organization_id: int | None = None
+        if organization_id_raw is not None:
+            try:
+                organization_id = int(organization_id_raw)
+            except (TypeError, ValueError):
+                organization_id = None
+
         # Use Qwen Plus (generation model) for paragraph processing
         response = await llm_service.chat(
             prompt=prompt,
@@ -121,6 +137,10 @@ async def process_paragraph_with_qwen_plus(
             temperature=0.3,  # Lower temperature for more consistent extraction
             max_tokens=1500,  # Allow longer responses for multiple nodes
             timeout=30.0,
+            user_id=user_id,
+            organization_id=organization_id,
+            request_type="voice_command_tools",
+            endpoint_path="/ws/kitty",
         )
 
         logger.debug("Qwen Plus response: %s...", response[:200])

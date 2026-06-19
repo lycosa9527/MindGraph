@@ -1,4 +1,5 @@
 import { type ComputedRef } from 'vue'
+import { useRouter } from 'vue-router'
 
 import {
   diagramSpecLikelyNeedsMarkdownPipeline,
@@ -22,11 +23,12 @@ export function useCanvasPageLibrarySnapshots(options: {
   snapshotHistory: SnapshotHistoryApi
   isDiagramOwner?: ComputedRef<boolean>
 }): {
-  loadDiagramFromLibrary: (diagramId: string) => Promise<void>
+  loadDiagramFromLibrary: (diagramId: string) => Promise<boolean>
   handleSnapshotRecall: (versionNumber: number) => Promise<void>
   handleSnapshotDelete: (versionNumber: number) => Promise<void>
 } {
   const { diagramAutoSave, snapshotHistory, isDiagramOwner } = options
+  const router = useRouter()
   const diagramStore = useDiagramStore()
   const savedDiagramsStore = useSavedDiagramsStore()
   const llmResultsStore = useLLMResultsStore()
@@ -34,46 +36,57 @@ export function useCanvasPageLibrarySnapshots(options: {
   const notify = useNotifications()
   const { t } = useLanguage()
 
-  async function loadDiagramFromLibrary(diagramId: string): Promise<void> {
-    diagramStore.resetSessionEditCount()
-    const diagram = await savedDiagramsStore.getDiagram(diagramId)
-    if (diagram) {
-      savedDiagramsStore.setActiveDiagram(diagramId)
-      diagramStore.clearHistory()
-
-      const spec = diagram.spec as Record<string, unknown>
-      const llmResults = spec?.llm_results as
-        | { results?: Record<string, unknown>; selectedModel?: string }
-        | undefined
-      let specForLoad = spec
-      if (llmResults?.results && typeof llmResults.results === 'object') {
-        llmResultsStore.restoreFromSaved(
-          llmResults as { results?: Record<string, LLMResult>; selectedModel?: string },
-          diagram.diagram_type
-        )
-        specForLoad = { ...spec }
-        delete (specForLoad as Record<string, unknown>).llm_results
-      } else {
-        llmResultsStore.clearCache()
-      }
-
-      eventBus.emit('diagram:loaded_from_library', {
-        diagramId,
-        diagramType: diagram.diagram_type,
-      })
-      if (diagramSpecLikelyNeedsMarkdownPipeline(specForLoad)) {
-        await loadDiagramMarkdownPipeline({ bumpLayout: false })
-      }
-      const loaded = diagramStore.loadFromSpec(specForLoad, diagram.diagram_type as DiagramType)
-
-      if (loaded) {
-        uiStore.setSelectedChartType(
-          Object.entries(diagramTypeMap).find(([_, v]) => v === diagram.diagram_type)?.[0] ||
-            diagram.diagram_type
-        )
-      }
-      snapshotHistory.setActiveVersion(null)
+  async function loadDiagramFromLibrary(diagramId: string): Promise<boolean> {
+    const result = await savedDiagramsStore.getDiagram(diagramId)
+    if (!result.ok) {
+      notify.error(t('canvas.library.diagramNotFound'))
+      const nextQuery = { ...router.currentRoute.value.query }
+      delete nextQuery.diagramId
+      delete nextQuery.diagram_id
+      await router.replace({ path: router.currentRoute.value.path, query: nextQuery })
+      return false
     }
+    const diagram = result.diagram
+    diagramStore.resetSessionEditCount()
+    savedDiagramsStore.setActiveDiagram(diagramId)
+    diagramStore.clearHistory()
+
+    const spec = diagram.spec as Record<string, unknown>
+    const llmResults = spec?.llm_results as
+      | { results?: Record<string, unknown>; selectedModel?: string }
+      | undefined
+    let specForLoad = spec
+    if (llmResults?.results && typeof llmResults.results === 'object') {
+      llmResultsStore.restoreFromSaved(
+        llmResults as { results?: Record<string, LLMResult>; selectedModel?: string },
+        diagram.diagram_type
+      )
+      specForLoad = { ...spec }
+      delete (specForLoad as Record<string, unknown>).llm_results
+    } else {
+      llmResultsStore.clearCache()
+    }
+
+    eventBus.emit('diagram:loaded_from_library', {
+      diagramId,
+      diagramType: diagram.diagram_type,
+    })
+    if (diagramSpecLikelyNeedsMarkdownPipeline(specForLoad)) {
+      await loadDiagramMarkdownPipeline({ bumpLayout: false })
+    }
+    const loaded = diagramStore.loadFromSpec(specForLoad, diagram.diagram_type as DiagramType)
+
+    if (loaded) {
+      uiStore.setSelectedChartType(
+        Object.entries(diagramTypeMap).find(([_, v]) => v === diagram.diagram_type)?.[0] ||
+          diagram.diagram_type
+      )
+    } else {
+      notify.error(t('canvas.library.diagramNotFound'))
+      return false
+    }
+    snapshotHistory.setActiveVersion(null)
+    return true
   }
 
   function resolveDiagramTypeForRecall(): DiagramType | null {

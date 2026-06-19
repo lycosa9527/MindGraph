@@ -22,14 +22,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import sum as sa_sum
 
 from config.database import get_async_db
-from models.domain.auth import APIKey, User
+from models.domain.auth import APIKey
 from models.domain.messages import Messages
 from models.domain.token_usage import TokenUsage
 from services.redis.cache.redis_api_key_cache import api_key_cache
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import generate_api_key
 
-from ..dependencies import get_language_dependency, require_admin
+from utils.auth.admin_scope import AdminScope
+
+from ..dependencies import get_language_dependency, require_settings_tokens
 from ..helpers import utc_to_beijing_iso
 
 logger = logging.getLogger(__name__)
@@ -37,10 +39,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/admin/api_keys", dependencies=[Depends(require_admin)])
+@router.get("/admin/api_keys", dependencies=[Depends(require_settings_tokens)])
 async def list_api_keys_admin(
     _request: Request,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_tokens),
     db: AsyncSession = Depends(get_async_db),
     _lang: str = Depends(get_language_dependency),
 ) -> List[Dict[str, Any]]:
@@ -108,11 +110,11 @@ async def list_api_keys_admin(
     return result
 
 
-@router.post("/admin/api_keys", dependencies=[Depends(require_admin)])
+@router.post("/admin/api_keys", dependencies=[Depends(require_settings_tokens)])
 async def create_api_key_admin(
     request_body: dict,
     _http_request: Request,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_tokens),
     db: AsyncSession = Depends(get_async_db),
     lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
@@ -147,12 +149,12 @@ async def create_api_key_admin(
     }
 
 
-@router.put("/admin/api_keys/{key_id}", dependencies=[Depends(require_admin)])
+@router.put("/admin/api_keys/{key_id}", dependencies=[Depends(require_settings_tokens)])
 async def update_api_key_admin(
     key_id: int,
     request_body: dict,
     _http_request: Request,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_tokens),
     db: AsyncSession = Depends(get_async_db),
     lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
@@ -191,11 +193,11 @@ async def update_api_key_admin(
     }
 
 
-@router.delete("/admin/api_keys/{key_id}", dependencies=[Depends(require_admin)])
+@router.delete("/admin/api_keys/{key_id}", dependencies=[Depends(require_settings_tokens)])
 async def delete_api_key_admin(
     key_id: int,
     _request: Request,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_tokens),
     db: AsyncSession = Depends(get_async_db),
     lang: str = Depends(get_language_dependency),
 ) -> Dict[str, str]:
@@ -216,11 +218,11 @@ async def delete_api_key_admin(
     return {"message": f"API key '{key_name}' deleted successfully"}
 
 
-@router.put("/admin/api_keys/{key_id}/toggle", dependencies=[Depends(require_admin)])
+@router.put("/admin/api_keys/{key_id}/toggle", dependencies=[Depends(require_settings_tokens)])
 async def toggle_api_key_admin(
     key_id: int,
     _request: Request,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_tokens),
     db: AsyncSession = Depends(get_async_db),
     lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:

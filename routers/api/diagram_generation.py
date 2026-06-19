@@ -20,6 +20,7 @@ from models import GenerateRequest, GenerateResponse, Messages, get_request_lang
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
 from services.monitoring.activity_stream import get_activity_stream_service
+from services.admin.user_usage_activity import schedule_user_usage_activity
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user_or_api_key, is_superadmin
@@ -226,6 +227,28 @@ async def generate_graph(
                 )
             except BACKGROUND_INFRA_ERRORS as e:
                 logger.debug("Failed to broadcast activity: %s", e)
+
+        if user_id and request_type != "autocomplete":
+            topic_for_activity = prompt[:50] if prompt else ""
+            if diagram_type == "double_bubble_map":
+                spec_data = result.get("spec", {})
+                if isinstance(spec_data, dict):
+                    left = spec_data.get("left", "")
+                    right = spec_data.get("right", "")
+                    if left and right:
+                        topic_for_activity = f"{left} vs {right}"
+                    elif left or right:
+                        topic_for_activity = str(left or right)
+            dtype_value = req.diagram_type.value if req.diagram_type else str(diagram_type)
+            schedule_user_usage_activity(
+                user_id=int(user_id),
+                organization_id=organization_id,
+                source="mindgraph",
+                action="diagram_generate",
+                title=topic_for_activity or None,
+                prompt_preview=prompt or None,
+                diagram_type=dtype_value,
+            )
 
         # Add metadata
         result["llm_model"] = llm_model

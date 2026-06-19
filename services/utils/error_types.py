@@ -140,3 +140,26 @@ HTTP_CLIENT_ERRORS: Tuple[Type[Exception], ...] = (
     TypeError,
     UnicodeDecodeError,
 )
+
+try:
+    from clients.dify_exceptions import DifyAPIError as _DifyAPIError
+except ImportError:
+    _DifyAPIError = _FallbackSQLAlchemyError
+
+try:
+    from aiohttp import ClientError as _AiohttpClientError
+except ImportError:
+    _AiohttpClientError = _FallbackSQLAlchemyError
+
+# Dify Service API calls (per-app HTTPS) — used by the MindMate export collector
+DIFY_API_ERRORS: Tuple[Type[Exception], ...] = (
+    _DifyAPIError,
+    _AiohttpClientError,
+    ConnectionError,
+    TimeoutError,
+    OSError,
+    RuntimeError,
+    ValueError,
+    TypeError,
+    KeyError,
+)

@@ -137,6 +137,11 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
         "pk_type": "serial",
         "fk_remaps": {"user_id": "users"},
     },
+    "user_usage_activities": {
+        "order": 2,
+        "pk_type": "serial",
+        "fk_remaps": {"user_id": "users", "organization_id": "organizations"},
+    },
     "dashboard_activities": {
         "order": 2,
         "pk_type": "serial",

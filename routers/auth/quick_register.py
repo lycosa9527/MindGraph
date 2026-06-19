@@ -3,6 +3,9 @@ Quick registration channel: time-limited tokens for org-bound registration.
 
 Uses a rotating 6-digit room code (HMAC, 30s) — no SMS on this path.
 
+Access: super-admin OR school manager via ``require_admin_or_manager_with_rls``
+(legacy pattern — see dependencies.py cookbook).
+
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
@@ -22,6 +25,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
+from routers.auth.dependencies import get_async_db_with_request_rls
 from models.domain.auth import Organization, User
 from models.domain.messages import Language, Messages
 from models.requests.requests_auth import (
@@ -67,7 +71,11 @@ from utils.auth.role_constants import ROLE_TEACHER
 from utils.auth.school_tier import assert_organization_has_member_capacity
 from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 
-from .dependencies import get_language_dependency, require_admin_or_manager
+from .dependencies import (
+    get_language_dependency,
+    require_admin_or_manager,
+    require_admin_or_manager_with_rls,
+)
 from .helpers import commit_user_with_retry
 from .registration import finalize_sms_registration_session
 
@@ -213,8 +221,8 @@ async def quick_register_room_code(
 async def quick_register_open(
     request_body: QuickRegisterOpenRequest,
     http_request: Request,
-    current_user: User = Depends(require_admin_or_manager),
-    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(require_admin_or_manager_with_rls),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
     lang: Language = Depends(get_language_dependency),
 ):
     """Mint a short-lived token bound to an organization (managers: own org; admins: body org_id)."""

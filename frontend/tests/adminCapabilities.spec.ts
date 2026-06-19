@@ -28,6 +28,7 @@ describe('adminCapabilities', () => {
     expect(caps).not.toContain('tab.organizations.view')
     expect(caps).not.toContain('tab.invites.view')
     expect(caps).not.toContain('tab.settings.view')
+    expect(caps).not.toContain('tab.settings.mindmate_export')
     expect(visibleDataCenterViews(caps)).toEqual(['school_dashboard'])
     expect(isDataCenterTabReadOnly(caps)).toBe(false)
   })

@@ -21,13 +21,17 @@ from clients.dify import DifyFile
 from models import AIAssistantRequest, Messages, get_request_language
 from models.domain.auth import User
 from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short_lived
+from services.admin.user_usage_activity import schedule_user_usage_activity
+from services.diagram.generation_session_registry import register_generation_session
 from services.infrastructure.monitoring.mindmate_streaming import (
     mindmate_streaming_begin,
     mindmate_streaming_end,
 )
+from services.infrastructure.http.error_handler import UserDailyTokenCapExceededError
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.redis_token_buffer import get_token_tracker
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.auth.user_daily_token_quota import assert_user_daily_token_budget, daily_token_limit_message
 from utils.auth import get_current_user_or_api_key
 from utils.dify_mindmate_user_id import mindmate_dify_user_id
 
@@ -110,6 +114,20 @@ async def ai_assistant_stream(
 
     dify_user_id = mindmate_dify_user_id(current_user) if current_user and hasattr(current_user, "id") else req.user_id
 
+    stream_inputs: Dict[str, Any] = dict(req.inputs or {})
+    stream_inputs["mg_dify_user"] = dify_user_id
+    if req.conversation_id:
+        stream_inputs["mg_conversation_id"] = req.conversation_id
+
+    if current_user and hasattr(current_user, "id"):
+        await register_generation_session(
+            channel="mindmate",
+            dify_user_id=dify_user_id,
+            user_id=int(current_user.id),
+            organization_id=organization_id_for_tracking,
+            conversation_id=req.conversation_id,
+        )
+
     async def generate():
         """Async generator function for SSE streaming."""
         logger.debug("[GENERATOR] Async generator function called - starting execution")
@@ -126,6 +144,8 @@ async def ai_assistant_stream(
         start_time = time.time()
         captured_usage: Dict[str, Any] = {}
         captured_conversation_id: Optional[str] = None
+        reply_parts: list[str] = []
+        skip_activity_log = message.lower() == "start" and not req.conversation_id
 
         try:
             await mindmate_streaming_begin()
@@ -142,6 +162,19 @@ async def ai_assistant_stream(
             }
             yield f"data: {json.dumps(err)}\n\n"
             return
+
+        if user_id_for_tracking is not None:
+            try:
+                await assert_user_daily_token_budget(user_id_for_tracking, lang=lang)
+            except UserDailyTokenCapExceededError as cap_exc:
+                err = {
+                    "event": "error",
+                    "error": daily_token_limit_message(lang, cap_exc.cap),
+                    "error_type": "daily_token_cap",
+                    "timestamp": int(time.time() * 1000),
+                }
+                yield f"data: {json.dumps(err)}\n\n"
+                return
 
         try:
             client = dify_client
@@ -167,7 +200,7 @@ async def ai_assistant_stream(
                 user_id=dify_user_id,
                 conversation_id=req.conversation_id,
                 files=dify_files,
-                inputs=req.inputs,
+                inputs=stream_inputs,
                 auto_generate_name=req.auto_generate_name,
                 workflow_id=req.workflow_id,
                 trace_id=req.trace_id,
@@ -178,6 +211,14 @@ async def ai_assistant_stream(
 
                 if chunk.get("conversation_id"):
                     captured_conversation_id = chunk.get("conversation_id")
+                    if current_user and hasattr(current_user, "id"):
+                        await register_generation_session(
+                            channel="mindmate",
+                            dify_user_id=dify_user_id,
+                            user_id=int(current_user.id),
+                            organization_id=organization_id_for_tracking,
+                            conversation_id=captured_conversation_id,
+                        )
 
                 if event_type == "message_end":
                     metadata = chunk.get("metadata", {})
@@ -186,16 +227,23 @@ async def ai_assistant_stream(
                         captured_usage = usage
                         logger.debug("[STREAM] Captured Dify usage: %s", usage)
 
+                if event_type == "message":
+                    answer_part = chunk.get("answer")
+                    if isinstance(answer_part, str) and answer_part:
+                        reply_parts.append(answer_part)
+
                 yield f"data: {json.dumps(chunk)}\n\n"
 
             logger.debug("[STREAM] Streaming completed. Total chunks: %s", chunk_count)
 
+            activity_total_tokens: Optional[int] = None
             if captured_usage:
                 try:
                     token_tracker = get_token_tracker()
                     input_tokens = captured_usage.get("prompt_tokens", 0)
                     output_tokens = captured_usage.get("completion_tokens", 0)
                     total_tokens = captured_usage.get("total_tokens", input_tokens + output_tokens)
+                    activity_total_tokens = int(total_tokens) if total_tokens is not None else None
                     response_time = time.time() - start_time
 
                     await token_tracker.track_usage(
@@ -219,6 +267,18 @@ async def ai_assistant_stream(
                     )
                 except BACKGROUND_INFRA_ERRORS as track_error:
                     logger.warning("[STREAM] Failed to track token usage: %s", track_error)
+
+            if user_id_for_tracking and not skip_activity_log:
+                schedule_user_usage_activity(
+                    user_id=int(user_id_for_tracking),
+                    organization_id=organization_id_for_tracking,
+                    source="mindmate",
+                    action="chat_turn",
+                    prompt_preview=message,
+                    reply_preview="".join(reply_parts) or None,
+                    conversation_id=captured_conversation_id or req.conversation_id,
+                    total_tokens=activity_total_tokens,
+                )
 
             if chunk_count == 0:
                 logger.warning(

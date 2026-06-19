@@ -21,7 +21,7 @@ type LoginModalEmit = {
 }
 
 export function useLoginModal(
-  props: { visible: boolean; persistent?: boolean },
+  props: { visible: boolean; lightBackdrop?: boolean; authPage?: boolean; persistent?: boolean },
   emit: LoginModalEmit
 ) {
   const authStore = useAuthStore()
@@ -118,6 +118,11 @@ export function useLoginModal(
     get: () => props.visible,
     set: (value) => emit('update:visible', value),
   })
+
+  /** `/auth` only: primary sign-in CTA acknowledges terms. */
+  const loginSubmitLabel = computed(() =>
+    props.authPage ? t('auth.loginAgreeTerms') : t('auth.login')
+  )
 
   const pageHeaderTitle = computed(() => {
     if (currentView.value === 'sms-login') {
@@ -868,6 +873,7 @@ export function useLoginModal(
     showPassword,
     showConfirmPassword,
     isVisible,
+    loginSubmitLabel,
     pageHeaderTitle,
     closeModal,
     switchLoginRegisterTab,

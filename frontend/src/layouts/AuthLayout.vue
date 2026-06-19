@@ -2,16 +2,21 @@
 /**
  * Auth Layout - Centered card layout for login/auth pages
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { Moon, Sunny } from '@element-plus/icons-vue'
 
+import { SoftwareAgreementModal } from '@/components/auth'
+import { useLanguage } from '@/composables'
 import { toolbarShortForUiCode } from '@/i18n/locales'
 import { useUIStore } from '@/stores'
 
 const route = useRoute()
 const uiStore = useUIStore()
+const { t } = useLanguage()
+
+const showSoftwareAgreementModal = ref(false)
 
 /** `/auth`: no brand row, no manual language control — locale comes from browser on that page. */
 const authLayoutMinimal = computed(() => route.meta.authLayoutMinimal === true)
@@ -98,9 +103,26 @@ const icpRegistrationNumber = '京ICP备2025126228号'
       :class="authLayoutMinimal ? 'text-stone-400' : 'text-white/40'"
     >
       <template v-if="authLayoutMinimal">
-        <p class="text-xs text-stone-400">
-          {{ icpRegistrationNumber }}
-        </p>
+        <div
+          class="auth-footer-legal flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-stone-400"
+        >
+          <span>{{ icpRegistrationNumber }}</span>
+          <span
+            class="text-stone-300"
+            aria-hidden="true"
+          >·</span>
+          <span>
+            {{ t('auth.softwareAgreementConsentPrefix') }}
+            <button
+              type="button"
+              class="auth-footer-legal__link"
+              @click="showSoftwareAgreementModal = true"
+            >
+              {{ t('auth.softwareAgreementLink') }}
+            </button>
+          </span>
+        </div>
+        <SoftwareAgreementModal v-model:visible="showSoftwareAgreementModal" />
       </template>
       <template v-else>
         <p>MindGraph Pro - Intelligent Diagram Creation</p>
@@ -269,5 +291,27 @@ const icpRegistrationNumber = '京ICP备2025126228号'
 
 .auth-layout:not(.auth-layout--minimal) :deep(.el-form-item__label) {
   color: rgba(255, 255, 255, 0.8);
+}
+
+.auth-footer-legal__link {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: rgb(68 64 60);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.auth-footer-legal__link:hover {
+  color: rgb(28 25 23);
+}
+
+.auth-footer-legal__link:focus-visible {
+  outline: 2px solid rgb(120 113 108);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 </style>

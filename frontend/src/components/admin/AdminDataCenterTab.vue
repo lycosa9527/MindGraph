@@ -18,7 +18,7 @@ import {
 } from '@/composables/admin/adminDataCenterViews'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useLanguage } from '@/composables'
-import { useAdminPanelStore, useAuthStore } from '@/stores'
+import { useAdminPanelStore } from '@/stores'
 
 const props = defineProps<{
   readOnly?: boolean
@@ -26,7 +26,6 @@ const props = defineProps<{
 
 const route = useRoute()
 const { t } = useLanguage()
-const authStore = useAuthStore()
 const adminPanel = useAdminPanelStore()
 const { selectedOrgId } = storeToRefs(adminPanel)
 const { can, capabilities, effectiveOrgId, isReadOnly } = useAdminAccess()
@@ -67,7 +66,7 @@ const showGlobalView = computed(() => {
   if (dataCenterViewQuery.value === 'operations' && can('scope.global')) {
     return true
   }
-  if (can('scope.global') && authStore.isSuperAdmin && selectedOrgId.value != null) {
+  if (can('scope.global') && selectedOrgId.value != null) {
     return false
   }
   return can('scope.global')
@@ -77,7 +76,7 @@ const activeOrgId = computed(() => {
   if (can('scope.org')) {
     return effectiveOrgId.value
   }
-  if (authStore.isSuperAdmin && selectedOrgId.value != null) {
+  if (can('scope.global') && selectedOrgId.value != null) {
     return selectedOrgId.value
   }
   return effectiveOrgId.value

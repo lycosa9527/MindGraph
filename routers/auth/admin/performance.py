@@ -19,15 +19,17 @@ import psutil
 from fastapi import APIRouter, Depends
 
 from config.settings import config
-from models.domain.auth import User
-from routers.auth.dependencies import require_admin
-from routers.core.health import _cached_redis_info, _fetch_redis_memory_stats
+from routers.auth.dependencies import require_settings_performance
 from services.infrastructure.monitoring.mindbot_streaming_peak_24h import (
     record_and_read_mindbot_streaming_peak_24h,
 )
 from services.infrastructure.monitoring.mindmate_streaming import mindmate_streaming_snapshot
 from services.infrastructure.monitoring.mindmate_streaming_peak_24h import (
     record_and_read_mindmate_streaming_peak_24h,
+)
+from services.infrastructure.monitoring.redis_info_cache import (
+    cached_redis_info as _cached_redis_info,
+    fetch_redis_memory_stats as _fetch_redis_memory_stats,
 )
 from services.infrastructure.monitoring.worker_perf_redis import load_all_worker_perf_snapshots
 from services.infrastructure.monitoring.ws_metrics import get_ws_metrics_snapshot
@@ -36,6 +38,7 @@ from services.mindbot.pipeline.callback import mindbot_concurrency_snapshot
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
+from utils.auth.admin_scope import AdminScope
 
 logger = logging.getLogger(__name__)
 
@@ -533,7 +536,7 @@ def _pick_app_cluster(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 @router.get("/admin/performance/live")
 async def get_admin_performance_live(
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_performance),
 ) -> Dict[str, Any]:
     """Aggregated live metrics for the admin Performance tab (poll every 1–2s)."""
     live_worker = await build_worker_perf_payload_async()

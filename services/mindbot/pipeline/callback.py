@@ -16,6 +16,7 @@ from typing import Any, Optional
 
 from clients.dify import AsyncDifyClient, DifyFile
 from models.domain.mindbot_config import OrganizationMindbotConfig
+from services.diagram.generation_session_registry import register_generation_session
 from services.mindbot.core.conv_gate import (
     conv_gate_enabled,
     conv_gate_poll_total_ms,
@@ -24,6 +25,7 @@ from services.mindbot.core.conv_gate import (
     redis_acquire_conv_gate_async,
     redis_release_conv_gate_async,
 )
+from services.mindbot.bind.picture_handler import try_handle_bind_picture
 from services.mindbot.core.dify_reply import mindbot_dify_chat_blocking
 from services.mindbot.dify.usage_parse import parse_dify_usage_from_blocking_response
 from services.mindbot.education.metrics import (
@@ -544,7 +546,18 @@ async def execute_mindbot_pipeline(
         await _redis_delete_async(conv_key)
 
     stale_cb = _on_stale_dify_conversation if redis_ok else None
-    dify_inputs = _parse_dify_inputs_from_config(cfg)
+    parsed_inputs = _parse_dify_inputs_from_config(cfg)
+    dify_inputs: dict[str, Any] = dict(parsed_inputs) if parsed_inputs else {}
+    dify_inputs["mg_dify_user"] = dify_user_id
+    if dify_conv:
+        dify_inputs["mg_conversation_id"] = dify_conv
+
+    await register_generation_session(
+        channel="mindbot",
+        dify_user_id=dify_user_id,
+        organization_id=cfg.organization_id,
+        conversation_id=dify_conv,
+    )
 
     def _hdr(code: MindbotErrorCode) -> dict[str, str]:
         return hdr_for_cfg(cfg, code)
@@ -562,6 +575,20 @@ async def execute_mindbot_pipeline(
         pipeline_ctx=pipeline_ctx,
         msg_id=msg_id_for_usage or "",
     )
+
+    bind_result = await try_handle_bind_picture(
+        cfg=cfg,
+        body=body,
+        inbound_msg_type=inbound_msg_type,
+        sender_staff_id=sender_staff,
+        session_webhook_valid=session_webhook_valid,
+        session_webhook_pinned_ip=session_webhook_pinned_ip,
+        pipeline_ctx=pipeline_ctx,
+        record_usage=_record_usage,
+        hdr_for_code=_hdr,
+    )
+    if bind_result is not None:
+        return bind_result
 
     cb_key = str(cfg.id)
     _streaming = _dify_streaming_enabled()
@@ -697,6 +724,7 @@ async def execute_mindbot_pipeline(
                     resp=resp,
                     usage_block=usage_block,
                     raw_sw=raw_sw,
+                    dify_user_id=dify_user_id,
                 )
             finally:
                 _ACTIVE_BLOCKING_SEMAPHORE.release()

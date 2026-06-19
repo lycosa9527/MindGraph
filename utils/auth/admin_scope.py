@@ -32,7 +32,13 @@ from utils.db.rls_context import to_rls_session_vars as _admin_scope_to_rls_sess
 
 @dataclass(frozen=True)
 class AdminScope:
-    """Resolved access scope for a management-panel API request."""
+    """
+    Resolved access scope for a management-panel API request.
+
+    Prefer capability checks (``assert_capability``) over raw role tests.
+    Obtained via ``get_admin_scope`` / ``require_panel_capability`` in
+    ``routers.auth.dependencies``.
+    """
 
     actor: Any
     role: str

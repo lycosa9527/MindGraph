@@ -332,6 +332,7 @@ export default {
   'canvas.toolbar.snapshotTooLarge': '快照过大（最大 {max} KB）。请精简图示内容后重试。',
   'canvas.toolbar.snapshotRateLimited': '快照操作过于频繁，请稍候再试。',
   'canvas.toolbar.snapshotDiagramNotFound': '未找到图示。请刷新页面或从资料库打开。',
+  'canvas.library.diagramNotFound': '未找到图示，可能已被删除。请从图库打开其他导图。',
   'canvas.toolbar.snapshotConflict': '无法保存快照（冲突）。请重试。',
   'canvas.toolbar.newAssociation': '新联想',
   'canvas.toolbar.newAttribute': '新属性',

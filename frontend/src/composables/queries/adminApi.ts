@@ -499,6 +499,43 @@ export async function fetchAdminStatsTrendsUser(
   return adminFetchJson(`/api/auth/admin/stats/trends/user${buildQuery(params)}`, { signal })
 }
 
+export interface AdminUserActivityItem {
+  id: number
+  userId: number
+  organizationId: number | null
+  source: string
+  action: string
+  title: string | null
+  promptPreview: string | null
+  replyPreview: string | null
+  diagramType: string | null
+  diagramId: string | null
+  conversationId: string | null
+  totalTokens: number | null
+  success: boolean
+  createdAt: string
+}
+
+export interface AdminUserActivityResponse {
+  items: AdminUserActivityItem[]
+  hasMore: boolean
+}
+
+export async function fetchAdminUserActivity(
+  userId: number,
+  params?: {
+    source?: string
+    limit?: number
+    before_id?: number
+  },
+  signal?: AbortSignal
+): Promise<AdminUserActivityResponse> {
+  return adminFetchJson(
+    `/api/auth/admin/users/${userId}/activity${buildQuery(params ?? {})}`,
+    { signal }
+  )
+}
+
 export async function fetchAdminSchoolStats(
   organizationId: number,
   signal?: AbortSignal
@@ -964,4 +1001,244 @@ export async function renameAdminLibraryPages(
     method: 'POST',
     body: JSON.stringify(body),
   })
+}
+
+// ============================================================================
+// MindMate 记录导出 (export Dify conversation history)
+// ============================================================================
+
+export interface MindMateExportUser {
+  id: number
+  label: string
+}
+
+export interface MindMateExportConversation {
+  conversation_id: string
+  name: string
+  server: number
+  organization_id: number
+  dify_user: string
+  user_id: number | null
+  user_label: string
+  channel: 'web' | 'mindbot' | string
+  mindbot_config_id: number | null
+  endpoint_source: string
+  created_at: number
+  updated_at: number
+}
+
+export interface MindMateExportBubble {
+  role: string
+  text: string
+  created_at: number
+  message_id: string
+  files: Record<string, unknown>[]
+  feedback: string | null
+}
+
+export interface MindMateExportFilters {
+  scope?: 'all' | 'whole' | 'users'
+  orgId?: number | null
+  userIds?: number[]
+  start?: number | null
+  end?: number | null
+  cursor?: string | null
+  limit?: number
+}
+
+export interface MindMateExportConversationsResponse {
+  organization_id: number | null
+  scope: string
+  users_total: number
+  users_scanned: number
+  targets_count: number
+  conversations_total: number
+  partial_failures: number
+  requires_job: boolean
+  warnings: string[]
+  conversations: MindMateExportConversation[]
+  next_cursor: string | null
+  has_more: boolean
+  verification_status: string
+}
+
+export type MindMateExportJobStatus =
+  | 'pending'
+  | 'running'
+  | 'paused'
+  | 'cancelled'
+  | 'failed'
+  | 'failed_verification'
+  | 'completed'
+  | 'completed_with_gaps'
+
+export interface MindMateExportJob {
+  id: number
+  status: MindMateExportJobStatus
+  current_stage: string | null
+  progress_percent: number
+  progress_detail: Record<string, unknown>
+  filters: Record<string, unknown>
+  verification_report: Record<string, unknown> | null
+  artifact_format: string | null
+  artifact_size_bytes: number | null
+  artifact_sha256: string | null
+  error_message: string | null
+  expires_at: string | null
+  created_at: string | null
+  updated_at: string | null
+}
+
+export interface MindMateExportDownloadResult {
+  blob: Blob
+  filename: string
+  verification: string
+}
+
+function exportFilterQuery(filters: MindMateExportFilters): string {
+  return buildQuery({
+    scope: filters.scope ?? 'whole',
+    org_id: filters.orgId ?? undefined,
+    user_ids: filters.userIds && filters.userIds.length ? filters.userIds.join(',') : undefined,
+    start: filters.start ?? undefined,
+    end: filters.end ?? undefined,
+    cursor: filters.cursor ?? undefined,
+    limit: filters.limit ?? undefined,
+  })
+}
+
+export async function fetchMindMateExportUsers(
+  orgId?: number | null
+): Promise<{ organization_id: number; users: MindMateExportUser[] }> {
+  return adminFetchJson(`/api/admin/mindmate-export/users${buildQuery({ org_id: orgId ?? undefined })}`)
+}
+
+export async function fetchMindMateExportConversations(
+  filters: MindMateExportFilters
+): Promise<MindMateExportConversationsResponse> {
+  return adminFetchJson(`/api/admin/mindmate-export/conversations${exportFilterQuery(filters)}`)
+}
+
+export async function fetchMindMateExportMessages(
+  conversationId: string,
+  params: {
+    server: number
+    difyUser: string
+    orgId: number
+    channel?: string
+    mindbotConfigId?: number | null
+  }
+): Promise<{
+  conversation_id: string
+  server: number
+  organization_id: number
+  mindbot_config_id: number | null
+  bubbles: MindMateExportBubble[]
+}> {
+  const qs = buildQuery({
+    server: params.server,
+    dify_user: params.difyUser,
+    org_id: params.orgId,
+    channel: params.channel ?? undefined,
+    mindbot_config_id: params.mindbotConfigId ?? undefined,
+  })
+  return adminFetchJson(
+    `/api/admin/mindmate-export/conversations/${encodeURIComponent(conversationId)}/messages${qs}`
+  )
+}
+
+export async function downloadMindMateExport(
+  filters: MindMateExportFilters,
+  format: 'html' | 'json' | 'zip'
+): Promise<MindMateExportDownloadResult> {
+  const qs = buildQuery({
+    scope: filters.scope ?? 'whole',
+    org_id: filters.orgId ?? undefined,
+    user_ids: filters.userIds && filters.userIds.length ? filters.userIds.join(',') : undefined,
+    start: filters.start ?? undefined,
+    end: filters.end ?? undefined,
+    format,
+  })
+  const res = await apiRequest(`/api/admin/mindmate-export/download${qs}`)
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(httpErrorDetail(data) || 'Export download failed')
+  }
+  const disposition = res.headers.get('Content-Disposition') || ''
+  const match = disposition.match(/filename="?([^"]+)"?/)
+  const filename = match ? match[1] : `mindmate-export.${format}`
+  const verification = res.headers.get('X-MG-Export-Verification') || ''
+  const blob = await res.blob()
+  return { blob, filename, verification }
+}
+
+function mindMateExportJobBody(
+  filters: MindMateExportFilters,
+  format: 'html' | 'json' | 'zip',
+  orgName?: string | null
+): Record<string, unknown> {
+  return {
+    scope: filters.scope ?? 'whole',
+    org_id: filters.orgId ?? undefined,
+    user_ids: filters.userIds ?? [],
+    start: filters.start ?? undefined,
+    end: filters.end ?? undefined,
+    format,
+    org_name: orgName ?? undefined,
+  }
+}
+
+export async function createMindMateExportJob(
+  filters: MindMateExportFilters,
+  format: 'html' | 'json' | 'zip',
+  orgName?: string | null
+): Promise<{ job: MindMateExportJob }> {
+  return adminFetchJson('/api/admin/mindmate-export/jobs', {
+    method: 'POST',
+    body: JSON.stringify(mindMateExportJobBody(filters, format, orgName)),
+  })
+}
+
+export async function fetchMindMateExportJob(jobId: number): Promise<{ job: MindMateExportJob }> {
+  return adminFetchJson(`/api/admin/mindmate-export/jobs/${jobId}`)
+}
+
+export async function listMindMateExportJobs(
+  limit = 20
+): Promise<{ jobs: MindMateExportJob[] }> {
+  return adminFetchJson(`/api/admin/mindmate-export/jobs${buildQuery({ limit })}`)
+}
+
+export async function pauseMindMateExportJob(
+  jobId: number
+): Promise<{ job: MindMateExportJob }> {
+  return adminFetchJson(`/api/admin/mindmate-export/jobs/${jobId}/pause`, { method: 'POST' })
+}
+
+export async function resumeMindMateExportJob(
+  jobId: number
+): Promise<{ job: MindMateExportJob }> {
+  return adminFetchJson(`/api/admin/mindmate-export/jobs/${jobId}/resume`, { method: 'POST' })
+}
+
+export async function cancelMindMateExportJob(
+  jobId: number
+): Promise<{ job: MindMateExportJob }> {
+  return adminFetchJson(`/api/admin/mindmate-export/jobs/${jobId}/cancel`, { method: 'POST' })
+}
+
+export async function downloadMindMateExportJob(
+  jobId: number
+): Promise<MindMateExportDownloadResult> {
+  const res = await apiRequest(`/api/admin/mindmate-export/jobs/${jobId}/download`)
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(httpErrorDetail(data) || 'Export job download failed')
+  }
+  const disposition = res.headers.get('Content-Disposition') || ''
+  const match = disposition.match(/filename="?([^"]+)"?/)
+  const filename = match ? match[1] : `mindmate-export-job-${jobId}.zip`
+  const verification = res.headers.get('X-MG-Export-Verification') || ''
+  const blob = await res.blob()
+  return { blob, filename, verification }
 }

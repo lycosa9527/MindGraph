@@ -15,7 +15,7 @@ from services.auth.geoip_country import (
     is_geolite_country_mmdb_file_present,
 )
 
-from ..dependencies import require_admin
+from ..dependencies import require_tab_settings_view
 
 router = APIRouter()
 
@@ -31,7 +31,7 @@ class GeoliteStatusResponse(BaseModel):
 @router.get(
     "/admin/system/geolite",
     response_model=GeoliteStatusResponse,
-    dependencies=[Depends(require_admin)],
+    dependencies=[Depends(require_tab_settings_view)],
 )
 async def get_geolite_status() -> GeoliteStatusResponse:
     """Return whether GeoLite2-Country.mmdb exists and where it is expected."""

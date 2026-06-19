@@ -30,6 +30,7 @@ from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import _RedisCapabilities, is_redis_available
 from services.teacher_usage_stats import compute_and_upsert_user_usage_stats_async
 from services.utils.error_types import REDIS_ERRORS
+from services.redis.cache.redis_user_daily_token import record_tracked_daily_tokens
 from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
@@ -507,7 +508,10 @@ class RedisTokenBuffer:
                 "created_at": datetime.now(UTC).isoformat(),
             }
 
-            return await self._push_record(record)
+            pushed = await self._push_record(record)
+            if pushed and success and user_id is not None:
+                await record_tracked_daily_tokens(user_id, total_tokens)
+            return pushed
 
         except REDIS_ERRORS as e:
             logger.error("[TokenBuffer] Failed to buffer record: %s", e)

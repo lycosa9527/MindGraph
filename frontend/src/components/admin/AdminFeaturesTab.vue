@@ -49,6 +49,7 @@ interface FeatureFlagsPayload extends AdminFeatureFlagsPayload {
   feature_workshop_chat: boolean
   feature_markets: boolean
   feature_mindbot: boolean
+  feature_mindmate_export: boolean
   feature_kitty_agent: boolean
   feature_org_access?: Record<string, FeatureOrgAccessEntry>
 }
@@ -86,6 +87,12 @@ const ROWS: RowDef[] = [
     envKey: 'FEATURE_MINDBOT',
     labelKey: 'admin.feature.mindbot',
     hintKey: 'admin.feature.mindbotHint',
+  },
+  {
+    apiKey: 'feature_mindmate_export',
+    envKey: 'FEATURE_MINDMATE_EXPORT',
+    labelKey: 'admin.feature.mindmateExport',
+    hintKey: 'admin.feature.mindmateExportHint',
   },
   {
     apiKey: 'feature_community',

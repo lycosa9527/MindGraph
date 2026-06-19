@@ -21,6 +21,7 @@ import uuid
 from typing import Any, Awaitable, Callable, Optional
 
 from clients.dify import AsyncDifyClient, DifyFile
+from services.diagram.generation_session_registry import register_generation_session
 from services.mindbot.core.chain_of_thought_policy import effective_show_chain_of_thought
 from services.mindbot.core.dify_stream import (
     mindbot_consume_dify_stream_batched,
@@ -31,6 +32,10 @@ from services.mindbot.core.reply_thinking import (
     MindbotThinkingStreamFilter,
     format_mindbot_reply_for_dingtalk,
     native_reasoning_from_dify_blocking_response,
+)
+from services.mindbot.diagram.library_save_reply import (
+    enrich_dingtalk_reply_with_library_save_notice,
+    extract_prepended_library_save_notice,
 )
 from services.mindbot.errors import MindbotErrorCode
 from services.mindbot.outbound.media import (
@@ -298,11 +303,16 @@ async def run_streaming_dify_branch(
         on_stream_started=release_semaphore_slot,
     )
     full_str = full if isinstance(full, str) else ""
-    formatted_full = format_mindbot_reply_for_dingtalk(
+    formatted_pre_enrich = format_mindbot_reply_for_dingtalk(
         full_str,
         show_chain_of_thought=eff_show_cot,
         chain_of_thought_max_chars=int(cfg.chain_of_thought_max_chars),
         native_reasoning=native_reasoning,
+    )
+    formatted_full = await enrich_dingtalk_reply_with_library_save_notice(formatted_pre_enrich)
+    plain_stream_notice_prefix = extract_prepended_library_save_notice(
+        formatted_pre_enrich,
+        formatted_full,
     )
     use_cum_for_reply = not err_tok and ((card_state.created and card_state.use_card) or card_state.buffer_only)
     reply_text = (
@@ -315,6 +325,8 @@ async def run_streaming_dify_branch(
         if use_cum_for_reply
         else formatted_full
     )
+    if use_cum_for_reply:
+        reply_text = await enrich_dingtalk_reply_with_library_save_notice(reply_text)
     tracker_complete_recorded = False
     skip_terminal_mark_complete = False
     # Cross-org buffer path: send the complete accumulated response as one message.
@@ -485,6 +497,12 @@ async def run_streaming_dify_branch(
             new_conv.strip(),
             CONV_KEY_TTL_SECONDS,
         )
+        await register_generation_session(
+            channel="mindbot",
+            dify_user_id=user_id,
+            organization_id=cfg.organization_id,
+            conversation_id=new_conv.strip(),
+        )
     _rp = reply_text[:80].replace("\n", " ")
     _re = "…" if len(reply_text) > 80 else ""
     logger.info(
@@ -496,6 +514,22 @@ async def run_streaming_dify_branch(
     )
     if not tracker_complete_recorded and not skip_terminal_mark_complete:
         await mark_complete(msg_id, pipeline_ctx)
+    if (
+        not err_tok
+        and plain_stream_notice_prefix
+        and not use_cum_for_reply
+        and not card_state.buffer_only
+        and not card_state.plain_fallback_pending
+        and full_str.strip()
+    ):
+        await send_one_reply_chunk(
+            cfg,
+            body,
+            session_webhook_valid,
+            plain_stream_notice_prefix,
+            pipeline_ctx=pipeline_ctx,
+            pinned_ip=session_webhook_pinned_ip,
+        )
     await record_usage(
         MindbotErrorCode.OK,
         reply_text=reply_text,
@@ -512,6 +546,7 @@ async def run_blocking_send_branch(
     resp: dict[str, Any],
     usage_block: Optional[dict[str, int]],
     raw_sw: Any,
+    dify_user_id: str = "",
 ) -> tuple[int, dict[str, str]]:
     """Send blocking Dify answer to DingTalk (session webhook and/or OpenAPI)."""
     cfg = ctx.cfg
@@ -537,6 +572,7 @@ async def run_blocking_send_branch(
         chain_of_thought_max_chars=int(cfg.chain_of_thought_max_chars),
         native_reasoning=native_blocking,
     )
+    answer = await enrich_dingtalk_reply_with_library_save_notice(answer)
     new_conv = (resp or {}).get("conversation_id")
     dify_cid_block: Optional[str] = None
     if isinstance(new_conv, str) and new_conv.strip():
@@ -547,6 +583,13 @@ async def run_blocking_send_branch(
             new_conv.strip(),
             CONV_KEY_TTL_SECONDS,
         )
+        if dify_user_id.strip():
+            await register_generation_session(
+                channel="mindbot",
+                dify_user_id=dify_user_id,
+                organization_id=cfg.organization_id,
+                conversation_id=new_conv.strip(),
+            )
 
     async def attachments_after_answer_ok() -> None:
         await send_blocking_response_attachments(

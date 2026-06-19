@@ -20,7 +20,8 @@ from sqlalchemy.orm import selectinload
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.device import Device
-from routers.auth.dependencies import require_admin
+from routers.auth.dependencies import require_settings_smart_response
+from utils.auth.admin_scope import AdminScope
 from utils.auth import get_current_user
 from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 
@@ -85,7 +86,7 @@ async def register_device(
 @router.get("", response_model=List[DeviceResponse])
 async def list_devices(
     status_filter: Optional[str] = None,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_smart_response),
     db: AsyncSession = Depends(get_async_db),
 ):
     """List all devices (superadmin only — Smart Response admin panel)."""
@@ -108,7 +109,7 @@ async def list_devices(
 
 @router.get("/unassigned", response_model=List[DeviceResponse])
 async def list_unassigned_devices(
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_smart_response),
     db: AsyncSession = Depends(get_async_db),
 ):
     """List unassigned devices (superadmin only)."""
@@ -141,7 +142,7 @@ async def get_device(
 async def assign_device(
     watch_id: str,
     body: DeviceAssignRequest,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_smart_response),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Assign device to student (superadmin only)."""
@@ -177,7 +178,7 @@ async def assign_device(
 @router.delete("/{watch_id}/assign")
 async def unassign_device(
     watch_id: str,
-    _current_user: User = Depends(require_admin),
+    _scope: AdminScope = Depends(require_settings_smart_response),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Unassign device from student (superadmin only)."""

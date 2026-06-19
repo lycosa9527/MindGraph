@@ -13,9 +13,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
-from models.domain.auth import User
 from models.domain.feature_org_access import FeatureOrgAccessEntry
-from routers.auth.dependencies import require_admin
+from routers.auth.dependencies import require_settings_features
+from utils.auth.admin_scope import AdminScope
 from services.feature_access.repository import (
     load_feature_org_access_session,
     replace_feature_org_access,
@@ -28,19 +28,19 @@ router = APIRouter()
 
 @router.get("/admin/feature-org-access")
 async def get_feature_org_access_admin(
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_settings_features),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Return all feature access rules (admin only)."""
     data = await load_feature_org_access_session(db)
-    logger.info("Admin %s read feature org access (%d keys)", current_user.phone, len(data))
+    logger.info("Admin %s read feature org access (%d keys)", scope.actor.phone, len(data))
     return data
 
 
 @router.put("/admin/feature-org-access")
 async def put_feature_org_access_admin(
     body: Dict[str, FeatureOrgAccessEntry],
-    current_user: User = Depends(require_admin),
+    scope: AdminScope = Depends(require_settings_features),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Replace feature access rules (admin only)."""
@@ -53,7 +53,7 @@ async def put_feature_org_access_admin(
         ) from exc
     logger.info(
         "Admin %s updated feature org access (%d keys)",
-        current_user.phone,
+        scope.actor.phone,
         len(body),
     )
     return {"message": "Feature org access updated", "keys": list(body.keys())}

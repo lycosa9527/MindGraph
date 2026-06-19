@@ -14,7 +14,6 @@ import {
   computeMindMapSharedTrunkX,
 } from '@/utils/mindMapOrthogonalPath'
 import {
-  alignMindMapBranchTargetY,
   mindMapBranchSide,
   resolveMindMapEdgeEndpoint,
   resolveMindMapNodeStyle,
@@ -32,13 +31,23 @@ const preservedNodeStyles = computed(
   () => (diagramStore.data?._node_styles ?? {}) as Record<string, NodeStyle>
 )
 
+/** Shared Pinia DOM measurements — the single source of truth the layout also uses. */
+const measuredDimensions = computed(
+  () => diagramStore.nodeDimensions as Record<string, { width: number; height: number }>
+)
+
+function measuredSize(nodeId: string | undefined): { width: number; height: number } | undefined {
+  if (!nodeId) return undefined
+  return measuredDimensions.value[nodeId]
+}
+
 function edgeEndpoint(
   node: (typeof vueFlowNodes.value)[number] | undefined,
   role: 'source' | 'target',
   fallback: { x: number; y: number }
 ) {
   const style = resolveMindMapNodeStyle(node?.id, node?.data as MindGraphNodeData | undefined, preservedNodeStyles.value)
-  return resolveMindMapEdgeEndpoint(node, role, fallback, style)
+  return resolveMindMapEdgeEndpoint(node, role, fallback, style, measuredSize(node?.id))
 }
 
 const isFromTopic = computed(() => props.source === 'topic')
@@ -64,11 +73,14 @@ const topicAnchor = computed(() => {
   const topicNode = vueFlowNodes.value.find((n) => n.id === 'topic')
   if (!topicNode?.position) return null
 
+  const topicMeasured = measuredSize('topic')
   const w =
+    topicMeasured?.width ??
     topicNode.dimensions?.width ??
     (topicNode.data?.estimatedWidth as number | undefined) ??
     120
   const h =
+    topicMeasured?.height ??
     topicNode.dimensions?.height ??
     (topicNode.data?.estimatedHeight as number | undefined) ??
     48
@@ -105,17 +117,7 @@ function resolveTargetPoint(
   node: (typeof vueFlowNodes.value)[number] | undefined,
   fallback: { x: number; y: number }
 ) {
-  const base = edgeEndpoint(node, 'target', fallback)
-  return alignMindMapBranchTargetY(
-    anchorPoint.value.y,
-    base,
-    props.source,
-    node?.id ?? props.target,
-    sourceNode.value?.data as MindGraphNodeData | undefined,
-    node?.data as MindGraphNodeData | undefined,
-    preservedNodeStyles.value,
-    siblingEdges.value.length
-  )
+  return edgeEndpoint(node, 'target', fallback)
 }
 
 const targetPoint = computed(() =>
@@ -196,7 +198,7 @@ const edgeStyle = computed(() => ({
     : (props.data?.style?.strokeWidth ?? MIND_MAP_GEOMETRY.edgeStrokeWidth),
   strokeOpacity: isHovered.value ? 1 : MIND_MAP_GEOMETRY.edgeStrokeOpacity,
   strokeDasharray: props.data?.style?.strokeDasharray || 'none',
-  strokeLinecap: 'round' as const,
+  strokeLinecap: 'butt' as const,
   strokeLinejoin: 'round' as const,
   transition: 'stroke-width 0.15s ease, stroke-opacity 0.15s ease',
 }))

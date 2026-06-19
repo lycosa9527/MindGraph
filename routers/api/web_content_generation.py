@@ -32,6 +32,7 @@ from models.domain.auth import User
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.api.vueflow_screenshot import capture_diagram_screenshot
 from services.knowledge.document_processor import DocumentProcessor
+from services.admin.user_usage_activity import schedule_user_usage_activity
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.utils.error_types import REDIS_ERRORS
 from utils.auth import get_current_user, get_current_user_or_api_key
@@ -215,6 +216,18 @@ async def _generate_mindmap_from_resolved_content(
         detail = result.get("error") or "Generation failed"
         raise HTTPException(status_code=500, detail=detail)
 
+    if user_id:
+        title_preview = (page_title or page_url or "").strip()[:200] or None
+        schedule_user_usage_activity(
+            user_id=int(user_id),
+            organization_id=organization_id,
+            source="mindgraph",
+            action="diagram_generate",
+            title=title_preview,
+            prompt_preview=title_preview,
+            diagram_type="mind_map",
+        )
+
     return result
 
 
@@ -224,6 +237,7 @@ async def _try_save_to_library(
     diagram_data: dict,
     language: str,
     http_request_id: Optional[str],
+    organization_id: Optional[int] = None,
 ) -> Optional[str]:
     """Save generated spec to the user's diagram library.
 
@@ -244,6 +258,7 @@ async def _try_save_to_library(
             spec=diagram_data,
             language=language,
             thumbnail=None,
+            organization_id=organization_id,
         )
         if save_ok and new_id:
             return str(new_id)
@@ -505,7 +520,14 @@ async def web_content_mindmap_png(
             width=req.width or 1200,
             height=req.height or 800,
         ),
-        _try_save_to_library(user_id, title, diagram_data, req.language, http_request_id),
+        _try_save_to_library(
+            user_id,
+            title,
+            diagram_data,
+            req.language,
+            http_request_id,
+            organization_id,
+        ),
         return_exceptions=True,
     )
 
@@ -532,6 +554,18 @@ async def web_content_mindmap_png(
         response_headers["X-MG-Diagram-Id"] = saved_diagram_id
     if save_error_type:
         response_headers["X-MG-Save-Error"] = save_error_type
+
+    if user_id:
+        schedule_user_usage_activity(
+            user_id=int(user_id),
+            organization_id=organization_id,
+            source="mindgraph",
+            action="diagram_generate",
+            title=title,
+            prompt_preview=title,
+            diagram_type="mind_map",
+            diagram_id=saved_diagram_id,
+        )
 
     return Response(
         content=screenshot_bytes,

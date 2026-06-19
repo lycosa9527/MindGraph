@@ -181,11 +181,13 @@ def lines_fail2ban_deploy() -> list[str]:
 def lines_celery_recovery() -> list[str]:
     """Lines celery recovery."""
     return [
-        "Start a worker from the MindGraph repo (conda env active):",
-        f"  {CELERY_WORKER_CMD}",
+        "MindGraph manages Celery — start or restart the stack with:",
+        "  python main.py",
         "",
-        'Or run "python main.py" so the server launcher can start stack components.',
         "Redis must be running (Celery broker).",
+        "",
+        "Debug only (standalone worker, conda env active):",
+        f"  {CELERY_WORKER_CMD}",
     ]
 
 

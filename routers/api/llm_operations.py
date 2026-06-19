@@ -191,6 +191,9 @@ async def generate_multi_parallel(
     language = req.language
     diagram_type = req.diagram_type.value if req.diagram_type and hasattr(req.diagram_type, "value") else None
 
+    user_id = current_user.id if current_user and hasattr(current_user, "id") else None
+    organization_id = getattr(current_user, "organization_id", None) if current_user else None
+
     logger.debug(
         "[generate_multi_parallel] Starting parallel generation with %d models",
         len(models),
@@ -214,6 +217,9 @@ async def generate_multi_parallel(
                     forced_diagram_type=diagram_type,
                     dimension_preference=req.dimension_preference if hasattr(req, "dimension_preference") else None,
                     model=model,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    endpoint_path="/api/generate_multi_parallel",
                 )
 
                 duration = time.time() - model_start
@@ -335,6 +341,9 @@ async def generate_multi_progressive(
     language = req.language
     diagram_type = req.diagram_type.value if req.diagram_type and hasattr(req.diagram_type, "value") else None
 
+    user_id = current_user.id if current_user and hasattr(current_user, "id") else None
+    organization_id = getattr(current_user, "organization_id", None) if current_user else None
+
     logger.debug(
         "[generate_multi_progressive] Starting progressive generation with %d models",
         len(models),
@@ -357,6 +366,9 @@ async def generate_multi_progressive(
                         forced_diagram_type=diagram_type,
                         dimension_preference=req.dimension_preference if hasattr(req, "dimension_preference") else None,
                         model=model,
+                        user_id=user_id,
+                        organization_id=organization_id,
+                        endpoint_path="/api/generate_multi_progressive",
                     )
 
                     duration = time.time() - model_start

@@ -211,11 +211,9 @@ function onClose(): void {
     </template>
 
     <div class="language-settings-swiss__stack">
-      <div class="language-settings-swiss__inset">
-        <ElCheckbox v-model="matchPromptToInterface">
-          {{ t('settings.language.matchPrompt') }}
-        </ElCheckbox>
-      </div>
+      <ElCheckbox v-model="matchPromptToInterface">
+        {{ t('settings.language.matchPrompt') }}
+      </ElCheckbox>
 
       <section>
         <div class="language-settings-swiss__kicker">
@@ -357,6 +355,20 @@ function onClose(): void {
   min-width: 0;
 }
 
+.prompt-lang-select :deep(.el-select__wrapper.is-focused) {
+  border-color: #78716c;
+  box-shadow: 0 0 0 1px #d6d3d1;
+}
+
+.prompt-lang-select :deep(.el-select__caret) {
+  color: #78716c;
+}
+
+.prompt-lang-select :deep(.el-select__input) {
+  caret-color: #1c1917;
+  font-family: inherit;
+}
+
 .prompt-lang-select :deep(.el-select__selection) {
   font-family: v-bind('multiscriptFontFamily');
 }
@@ -364,10 +376,6 @@ function onClose(): void {
 .prompt-lang-select :deep(.el-select__selected-item) {
   font-family: inherit;
   min-width: 0;
-}
-
-.prompt-lang-select :deep(.el-select__input) {
-  font-family: inherit;
 }
 
 /*

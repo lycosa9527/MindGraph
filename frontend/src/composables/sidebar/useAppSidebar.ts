@@ -62,6 +62,7 @@ export function useAppSidebar() {
     featureSmartResponse,
     featureTeacherUsage,
     featureKittyAgent,
+    featureMindmateExport,
     featureWorkshopChat,
     featureMindbot,
     workshopChatPreviewOrgIds,
@@ -253,6 +254,7 @@ export function useAppSidebar() {
     featureSmartResponse,
     featureTeacherUsage,
     featureKittyAgent,
+    featureMindmateExport,
     currentAdminTab,
   })
 

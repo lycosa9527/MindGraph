@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+
+import { useRoute, useRouter } from 'vue-router'
 
 import { ElAvatar, ElButton, ElIcon, ElInput, ElTooltip } from 'element-plus'
 
@@ -7,9 +9,20 @@ import { CopyDocument, Edit, RefreshRight, Share } from '@element-plus/icons-vue
 
 import { ThumbsDown, ThumbsUp } from '@lucide/vue'
 
-import { useLanguage } from '@/composables'
+import { useLanguage, useNotifications } from '@/composables'
 import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'
 import type { FeedbackRating, MindMateMessage } from '@/composables/mindmate/useMindMate'
+import { useAuthStore } from '@/stores/auth'
+import { authFetch } from '@/utils/api'
+import { canvasEditorPathForRoute } from '@/utils/canvasBackNavigation'
+import {
+  extractMindmatePreviewUniqueId,
+  hasGeneratedDiagramImage,
+  needsLibraryFullHint,
+  needsLibrarySaveHint,
+  parseMindmateDiagramLibraryId,
+  rewriteMindmateTempImageUrls,
+} from '@/utils/mindmateDiagramMeta'
 
 import MindmateAgentAvatar from './MindmateAgentAvatar.vue'
 
@@ -37,10 +50,194 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
+const notify = useNotifications()
+const authStore = useAuthStore()
+const route = useRoute()
+const router = useRouter()
 
-const { html: renderedMarkdownHtml } = useRenderedMarkdown(() => props.message.content, {
-  stripThinkBlocks: true,
+const resolvedLibraryId = ref<string | null>(null)
+
+const libraryDiagramId = computed(() => {
+  if (props.message.role !== 'assistant' || props.message.isStreaming) {
+    return null
+  }
+  return parseMindmateDiagramLibraryId(props.message.content) ?? resolvedLibraryId.value
 })
+
+const showCanvasButton = computed(() => libraryDiagramId.value !== null)
+
+const showLibrarySaveHint = computed(() => {
+  if (props.message.role !== 'assistant' || props.message.isStreaming || !props.isLastAssistant) {
+    return false
+  }
+  if (resolvedLibraryId.value) {
+    return false
+  }
+  return needsLibrarySaveHint(props.message.content)
+})
+
+const showLibraryFullHint = computed(() => {
+  if (props.message.role !== 'assistant' || props.message.isStreaming || !props.isLastAssistant) {
+    return false
+  }
+  return needsLibraryFullHint(props.message.content)
+})
+
+/** Preview image present but no embedded library uuid — resolve via skip/claim API. */
+const needsLibraryIdResolve = computed(() => {
+  if (props.message.role !== 'assistant' || props.message.isStreaming) {
+    return false
+  }
+  const content = props.message.content
+  return hasGeneratedDiagramImage(content) && parseMindmateDiagramLibraryId(content) === null
+})
+
+const librarySaveHintText = ref<string | null>(null)
+let libraryMetaRequestId = 0
+
+const previewMetaCache = new Map<
+  string,
+  { diagramId?: string; notice?: string; missing?: boolean }
+>()
+
+async function tryClaimLibraryPreview(uniqueId: string): Promise<string | null> {
+  if (!authStore.isAuthenticated) {
+    return null
+  }
+  try {
+    const claimRes = await authFetch(
+      `/api/generation_library_claim/${encodeURIComponent(uniqueId)}`,
+      { method: 'POST' }
+    )
+    if (!claimRes.ok) {
+      return null
+    }
+    const claimData = (await claimRes.json()) as { diagram_id?: string }
+    const claimed = claimData.diagram_id?.trim()
+    return claimed || null
+  } catch {
+    return null
+  }
+}
+
+watch(
+  () => [needsLibraryIdResolve.value, props.message.content, props.isLastAssistant] as const,
+  async ([needsResolve, content, isLastAssistant]) => {
+    if (!needsResolve) {
+      resolvedLibraryId.value = null
+      librarySaveHintText.value = null
+      return
+    }
+    const uniqueId = extractMindmatePreviewUniqueId(content)
+    if (!uniqueId) {
+      resolvedLibraryId.value = null
+      librarySaveHintText.value = null
+      return
+    }
+    const cached = previewMetaCache.get(uniqueId)
+    if (cached?.diagramId) {
+      resolvedLibraryId.value = cached.diagramId
+      librarySaveHintText.value = null
+      return
+    }
+    if (cached?.missing) {
+      resolvedLibraryId.value = null
+      librarySaveHintText.value = null
+      return
+    }
+    const requestId = ++libraryMetaRequestId
+    try {
+      const response = await fetch(
+        `/api/generation_library_skip/${encodeURIComponent(uniqueId)}`,
+        { credentials: 'same-origin' }
+      )
+      if (requestId !== libraryMetaRequestId) {
+        return
+      }
+      if (!response.ok) {
+        previewMetaCache.set(uniqueId, { missing: true })
+        resolvedLibraryId.value = null
+        librarySaveHintText.value = null
+        return
+      }
+      const data = (await response.json()) as {
+        notice?: string
+        diagram_id?: string
+        reason?: string
+      }
+      const diagramId = data.diagram_id?.trim()
+      if (diagramId) {
+        previewMetaCache.set(uniqueId, { diagramId })
+        resolvedLibraryId.value = diagramId
+        librarySaveHintText.value = null
+        return
+      }
+      if (
+        authStore.isAuthenticated &&
+        (data.reason === 'no_user' || data.reason === 'save_error')
+      ) {
+        const claimed = await tryClaimLibraryPreview(uniqueId)
+        if (requestId !== libraryMetaRequestId) {
+          return
+        }
+        if (claimed) {
+          previewMetaCache.set(uniqueId, { diagramId: claimed })
+          resolvedLibraryId.value = claimed
+          librarySaveHintText.value = null
+          return
+        }
+      }
+      const notice = data.notice?.trim()
+      if (notice) {
+        previewMetaCache.set(uniqueId, { notice })
+        librarySaveHintText.value = isLastAssistant ? notice : null
+        resolvedLibraryId.value = null
+        return
+      }
+      previewMetaCache.set(uniqueId, { missing: true })
+      resolvedLibraryId.value = null
+      librarySaveHintText.value = null
+    } catch {
+      if (requestId === libraryMetaRequestId) {
+        resolvedLibraryId.value = null
+        librarySaveHintText.value = null
+      }
+    }
+  },
+  { immediate: true }
+)
+
+const openingCanvas = ref(false)
+
+async function openInCanvas() {
+  const diagramId = libraryDiagramId.value
+  if (!diagramId || openingCanvas.value) {
+    return
+  }
+  if (!authStore.isAuthenticated) {
+    notify.warning(t('mindmate.openCanvasLoginRequired'))
+    await router.push({ path: '/auth', query: { redirect: route.fullPath } })
+    return
+  }
+  openingCanvas.value = true
+  try {
+    const canvasPath = canvasEditorPathForRoute(route.path)
+    await router.push({ path: canvasPath, query: { diagramId } })
+  } catch {
+    notify.error(t('mindmate.openCanvasFailed'))
+  } finally {
+    openingCanvas.value = false
+  }
+}
+
+const { html: renderedMarkdownHtml } = useRenderedMarkdown(
+  () =>
+    rewriteMindmateTempImageUrls(
+      props.message.content,
+      typeof window !== 'undefined' ? window.location.host : undefined
+    ),
+  { stripThinkBlocks: true }
+)
 
 // Local editing state
 const localEditingContent = ref(props.editingContent || props.message.content)
@@ -204,6 +401,31 @@ function handleMarkdownClick(event: MouseEvent) {
                 v-html="renderedMarkdownHtml"
               />
               <!-- eslint-enable vue/no-v-html -->
+              <div
+                v-if="showCanvasButton"
+                class="mt-2"
+              >
+                <ElButton
+                  size="small"
+                  class="mindmate-canvas-btn"
+                  :loading="openingCanvas"
+                  @click="openInCanvas"
+                >
+                  {{ t('mindmate.openInCanvas') }}
+                </ElButton>
+              </div>
+              <p
+                v-else-if="showLibraryFullHint"
+                class="mindmate-library-save-hint mt-2"
+              >
+                {{ t('mindmate.diagramLibraryFull') }}
+              </p>
+              <p
+                v-else-if="showLibrarySaveHint && librarySaveHintText"
+                class="mindmate-library-save-hint mt-2"
+              >
+                {{ librarySaveHintText }}
+              </p>
               <!-- Streaming cursor -->
               <span
                 v-if="message.isStreaming"

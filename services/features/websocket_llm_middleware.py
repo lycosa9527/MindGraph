@@ -30,6 +30,7 @@ from services.infrastructure.rate_limiting.rate_limiter import DashscopeRateLimi
 from services.monitoring.performance_tracker import performance_tracker
 from services.redis.redis_token_buffer import get_token_tracker
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.auth.user_daily_token_quota import assert_user_daily_token_budget
 
 logger = logging.getLogger(__name__)
 
@@ -151,6 +152,7 @@ class WebSocketLLMMiddleware:
             )
 
         async with _optional_rate_limit(self.rate_limiter if self.enable_rate_limiting else None):
+            await assert_user_daily_token_budget(user_id)
             try:
                 # Prepare context for connection
                 ctx = {

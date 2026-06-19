@@ -7,12 +7,25 @@ from utils.auth.admin_panel_permissions import (
     CAP_PANEL_ACCESS,
     CAP_SCOPE_GLOBAL,
     CAP_SCOPE_INVITED_ORGS,
+    CAP_SETTINGS_DATABASE,
+    CAP_SETTINGS_FEATURES,
+    CAP_SETTINGS_GEWE,
+    CAP_SETTINGS_KITTY_LLMOPS,
+    CAP_SETTINGS_LIBRARY,
+    CAP_SETTINGS_MINDMATE_EXPORT,
+    CAP_SETTINGS_MINDBOT,
+    CAP_SETTINGS_PERFORMANCE,
+    CAP_SETTINGS_ROLES,
+    CAP_SETTINGS_SMART_RESPONSE,
+    CAP_SETTINGS_TEACHER_USAGE,
+    CAP_SETTINGS_TOKENS,
     CAP_TAB_BILLING_VIEW,
     CAP_TAB_DATA_CENTER_VIEW,
     CAP_TAB_INVITES_EDIT,
     CAP_TAB_INVITES_VIEW,
     CAP_TAB_ORGANIZATIONS_VIEW,
     CAP_TAB_SCHOOL_DASHBOARD_VIEW,
+    CAP_TAB_SETTINGS_EDIT,
     CAP_TAB_SETTINGS_VIEW,
     CAP_TAB_USERS_EDIT,
     CAP_TAB_USERS_VIEW,
@@ -53,6 +66,7 @@ def test_school_admin_has_school_member_caps_without_global_scope():
     assert CAP_TAB_DATA_CENTER_VIEW not in caps
     assert CAP_TAB_INVITES_VIEW not in caps
     assert CAP_TAB_SETTINGS_VIEW not in caps
+    assert CAP_SETTINGS_MINDMATE_EXPORT not in caps
     assert CAP_SCOPE_GLOBAL not in caps
 
 
@@ -61,6 +75,7 @@ def test_superadmin_has_users_tab():
     caps = capabilities_for_role("superadmin")
     assert CAP_TAB_USERS_VIEW in caps
     assert CAP_SCOPE_GLOBAL in caps
+    assert CAP_SETTINGS_MINDMATE_EXPORT in caps
 
 
 def test_expert_invites_only():
@@ -221,3 +236,32 @@ def test_all_seven_roles_have_capability_config():
     """Test all seven roles have capability config."""
     validate_role_panel_config()
     assert len(ROLE_PANEL_CAPABILITIES) == len(ALL_USER_ROLES)
+
+
+_ALL_SETTINGS_CAPABILITY_KEYS = frozenset(
+    {
+        CAP_TAB_SETTINGS_VIEW,
+        CAP_TAB_SETTINGS_EDIT,
+        CAP_SETTINGS_FEATURES,
+        CAP_SETTINGS_ROLES,
+        CAP_SETTINGS_TOKENS,
+        CAP_SETTINGS_LIBRARY,
+        CAP_SETTINGS_DATABASE,
+        CAP_SETTINGS_PERFORMANCE,
+        CAP_SETTINGS_GEWE,
+        CAP_SETTINGS_KITTY_LLMOPS,
+        CAP_SETTINGS_MINDBOT,
+        CAP_SETTINGS_MINDMATE_EXPORT,
+        CAP_SETTINGS_SMART_RESPONSE,
+        CAP_SETTINGS_TEACHER_USAGE,
+    }
+)
+
+
+def test_all_settings_caps_superadmin_only():
+    """Every CAP_SETTINGS_* / settings tab cap is superadmin-only today."""
+    super_caps = capabilities_for_role("superadmin")
+    school_caps = capabilities_for_role("school_admin")
+    for cap in _ALL_SETTINGS_CAPABILITY_KEYS:
+        assert cap in super_caps
+        assert cap not in school_caps

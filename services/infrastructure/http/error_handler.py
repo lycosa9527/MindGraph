@@ -24,6 +24,24 @@ class LLMServiceError(Exception):
     """Base exception for LLM service errors."""
 
 
+class UserDailyTokenCapExceededError(LLMServiceError):
+    """Raised when an authenticated user exceeds the daily token budget."""
+
+    def __init__(
+        self,
+        cap: int,
+        used: int,
+        user_message: Optional[str] = None,
+    ):
+        """Initialize with cap, current usage, and optional localized message."""
+        self.cap = cap
+        self.used = used
+        self.user_message = user_message or (
+            f"Daily token usage limit reached ({cap:,} tokens per day)."
+        )
+        super().__init__(self.user_message)
+
+
 class LLMTimeoutError(LLMServiceError):
     """Raised when LLM call times out."""
 
