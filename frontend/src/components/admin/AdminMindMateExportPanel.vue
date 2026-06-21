@@ -44,8 +44,8 @@ const datePickerKey = ref(0)
 const exportFormat = ref<ExportFormat>('html')
 
 const dateTimeDefaultRange: [Date, Date] = [
-  new Date(2000, 0, 1, 8, 0, 0),
-  new Date(2000, 0, 1, 18, 0, 0),
+  new Date(2000, 0, 1, 0, 0, 0),
+  new Date(2000, 0, 1, 0, 0, 0),
 ]
 
 const scopeOptions = computed(() => [
@@ -112,20 +112,48 @@ watch(scopeMode, (mode) => {
 // ---------------------------------------------------------------------------
 // Conversations
 // ---------------------------------------------------------------------------
+function startOfDay(value: Date): Date {
+  const day = new Date(value)
+  day.setHours(0, 0, 0, 0)
+  return day
+}
+
+function endOfDay(value: Date): Date {
+  const day = new Date(value)
+  day.setHours(23, 59, 59, 999)
+  return day
+}
+
+function isMidnight(value: Date): boolean {
+  return (
+    value.getHours() === 0 &&
+    value.getMinutes() === 0 &&
+    value.getSeconds() === 0 &&
+    value.getMilliseconds() === 0
+  )
+}
+
+/** Date-only picks (00:00 default time) span full calendar days; explicit times are kept. */
+function normalizeExportRange(from: Date, to: Date): { start: Date; end: Date } {
+  return {
+    start: isMidnight(from) ? startOfDay(from) : new Date(from.getTime()),
+    end: isMidnight(to) ? endOfDay(to) : new Date(to.getTime()),
+  }
+}
+
 function rangeEpoch(): { start: number | null; end: number | null } {
   if (!dateRange.value) {
     return { start: null, end: null }
   }
   const [from, to] = dateRange.value
-  const start = from ? Math.floor(from.getTime() / 1000) : null
-  const end = to ? Math.floor(to.getTime() / 1000) : null
-  return { start, end }
-}
-
-function startOfDay(value: Date): Date {
-  const day = new Date(value)
-  day.setHours(0, 0, 0, 0)
-  return day
+  if (!from || !to) {
+    return { start: null, end: null }
+  }
+  const { start, end } = normalizeExportRange(from, to)
+  return {
+    start: Math.floor(start.getTime() / 1000),
+    end: Math.floor(end.getTime() / 1000),
+  }
 }
 
 function startOfWeekMonday(value: Date): Date {

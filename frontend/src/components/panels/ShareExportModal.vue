@@ -18,6 +18,7 @@ import {
 import type { MindMateMessage } from '@/composables/mindmate/useMindMate'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useAuthStore } from '@/stores'
+import { claimThinkingCoinEvent } from '@/utils/claimThinkingCoinEvent'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 const props = defineProps<{
@@ -202,6 +203,7 @@ async function exportAsPng() {
     link.click()
 
     notify.success(t('panels.share.exportOk'))
+    void claimThinkingCoinEvent('mindmate_share')
     closeDialog()
   } catch (error) {
     console.error('Failed to export PNG:', error)

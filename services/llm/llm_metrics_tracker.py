@@ -133,6 +133,7 @@ class LLMMetricsTracker:
         success: bool,
         duration: float,
         error: Optional[str] = None,
+        skip_token_buffer: bool = False,
     ) -> None:
         """
         Track all metrics (tokens, performance, provider) in one call.
@@ -148,9 +149,10 @@ class LLMMetricsTracker:
             success: Whether request succeeded
             duration: Request duration in seconds
             error: Optional error message if failed
+            skip_token_buffer: When True, skip async token buffer (sync insert elsewhere)
         """
         # Track token usage
-        if usage_data:
+        if usage_data and not skip_token_buffer:
             await self.track_token_usage(
                 model=model,
                 usage_data=usage_data,

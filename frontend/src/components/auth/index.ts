@@ -4,6 +4,7 @@
 export { default as LoginModal } from './LoginModal.vue'
 export { default as AccountInfoModal } from './AccountInfoModal.vue'
 export { default as UpdateLogModal } from './UpdateLogModal.vue'
+export { default as ThinkingCoinsModal } from './ThinkingCoinsModal.vue'
 export { default as SoftwareAgreementModal } from './SoftwareAgreementModal.vue'
 export { default as AvatarSelectModal } from './AvatarSelectModal.vue'
 export { default as ChangePasswordModal } from './ChangePasswordModal.vue'

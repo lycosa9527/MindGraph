@@ -181,6 +181,7 @@ export default {
   'meta.pageTitle.schoolZone': 'School zone',
   'meta.pageTitle.smartResponse': 'Smart response',
   'meta.pageTitle.template': 'Templates',
+  'meta.pageTitle.thinkingCoinsUpgrade': 'Upgrade membership',
   'meta.pageTitle.teacherUsage': 'Teacher usage',
   'meta.pageTitle.workshopChat': 'Workshop chat',
   'publicDashboard.networkError': 'Network error, failed to load dashboard',

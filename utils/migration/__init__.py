@@ -1,40 +1,11 @@
 """
-Database Migration Utilities
-
-PostgreSQL schema management is now handled by Alembic (see ``alembic/``).
-This package retains SQLite and SQLite-to-PostgreSQL data migration helpers.
+PostgreSQL migration utilities (sequence reset).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """
 
-from .sqlite import (
-    MIGRATION_MARKER_FILE,
-    MigrationProgressTracker,
-    backup_sqlite_database,
-    get_sqlite_db_path,
-    get_table_migration_order,
-    is_migration_completed,
-    is_postgresql_empty,
-    load_migration_progress,
-    move_sqlite_database_to_backup,
-    save_migration_progress,
-    verify_migration,
-)
-from .sqlite_to_postgresql import migrate_sqlite_to_postgresql
+from utils.migration.pg_sequence_reset import reset_postgresql_sequences
 
-__all__ = [
-    "migrate_sqlite_to_postgresql",
-    "backup_sqlite_database",
-    "move_sqlite_database_to_backup",
-    "MigrationProgressTracker",
-    "load_migration_progress",
-    "save_migration_progress",
-    "get_table_migration_order",
-    "verify_migration",
-    "get_sqlite_db_path",
-    "is_migration_completed",
-    "is_postgresql_empty",
-    "MIGRATION_MARKER_FILE",
-]
+__all__ = ["reset_postgresql_sequences"]

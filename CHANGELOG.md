@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.119.0] - 2026-06-21
+
+> **Thinking coins (思维币) — trial-teacher wallet, earn tasks, AI spend metering, and admin economy tab; PostgreSQL-only database stack.**
+
+### Added
+
+- **Thinking coin wallet** — Per-user balance + append-only ledger (`thinking_coin_wallets`, `thinking_coin_ledger`; migrations `rev_0065`–`rev_0069` with RLS); signup grant, daily check-in, referral/case rewards, and configurable AI spend costs ([`thinking_coin.py`](models/domain/thinking_coin.py), [`wallet_service.py`](services/auth/thinking_coin/wallet_service.py)).
+- **Earn tasks** — Admin-configurable task registry (auto-login, usage-daily, client-event, navigate, custom CTA handlers); seeded exploration tasks (MindMate share, diagram export/save/translate/snapshot, learning sheet, workshop join) with daily/monthly earn caps ([`task_registry.py`](services/auth/thinking_coin/task_registry.py), [`client_event_service.py`](services/auth/thinking_coin/client_event_service.py)).
+- **LLM spend wiring** — Trial-org teachers/school admins debit thinking coins instead of the daily token cap for MindMate turns, diagram generation, and canvas assist (autocomplete / node palette); pre-flight `ThinkingCoinInsufficientError` with localized modal ([`usage_wire.py`](services/auth/thinking_coin/usage_wire.py), [`services/llm/__init__.py`](services/llm/__init__.py)).
+- **User API** — `GET /api/thinking-coins/wallet`, `/ledger`, `/checkin`, `POST /claim-event` ([`thinking_coins.py`](routers/auth/thinking_coins.py)).
+- **Admin economy tab** — 系统设置 → 思维币: task CRUD, cost/cap settings, wallet preview ([`AdminThinkingCoinsTab.vue`](frontend/src/components/admin/AdminThinkingCoinsTab.vue), [`thinking_coins.py`](routers/auth/admin/thinking_coins.py)).
+- **Frontend UX** — Sidebar balance widget + task promo, wallet modal (ledger + subscription reference), upgrade page/panel, insufficient-balance listener across canvas/MindMate flows ([`ThinkingCoinsModal.vue`](frontend/src/components/auth/ThinkingCoinsModal.vue), [`AppSidebarAccountFooter.vue`](frontend/src/components/sidebar/AppSidebarAccountFooter.vue)).
+- **Feature flag** — `FEATURE_THINKING_COINS` (default off; trial-tier teachers/school admins only).
+
+### Changed
+
+- **PostgreSQL-only** — Removed SQLite migration CLI, merge/orphan services, and legacy `utils/migration/sqlite*` tree; docs and `env.example` now require PostgreSQL ([`README.md`](README.md), [`AGENTS.md`](AGENTS.md)).
+- **Admin database tab** — PostgreSQL merge/orphan/export paths refactored into `pg_merge_*`, `pg_orphan_service`, `pg_sequence_reset`, and `pg_backup_manifest`; simplified UI ([`AdminDatabaseTab.vue`](frontend/src/components/admin/AdminDatabaseTab.vue)).
+- **Backup scheduler** — PostgreSQL dump/import uses manifest-aware paths and improved failure logging.
+
+### Fixed
+
+- **MindMate export — dual Dify servers (MindBot)** — Org-linked MindBot export now queries every configured org Dify server (1 and 2), matching web export failover/history coverage.
+- **MindMate export — date-only range** — Admin date picker defaults to 00:00; date-only selections normalize to full calendar days (start 00:00:00, end 23:59:59) instead of 08:00–18:00.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.119.0).
+
 ## [5.118.3] - 2026-06-21
 
 > **MindMate export — DingTalk group + cross-org coverage, activity-window filtering, usage telemetry supplement.**

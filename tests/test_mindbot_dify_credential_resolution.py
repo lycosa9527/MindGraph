@@ -11,6 +11,7 @@ from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.mindbot.dify.credential_resolution import (
     distinct_mindbot_endpoints_for_org,
     resolve_mindbot_config_credentials,
+    resolve_mindbot_config_endpoints,
 )
 from tests.typing_helpers import as_organization, as_type
 
@@ -40,7 +41,7 @@ def _cfg(**overrides: object) -> OrganizationMindbotConfig:
 
 
 def test_resolve_mindbot_config_credentials_org_linked() -> None:
-    """Org-linked bot uses live org primary credentials."""
+    """Org-linked bot uses live org primary (server 1) credentials."""
     org = _org()
     cfg = _cfg(use_org_dify_settings=True)
     creds = resolve_mindbot_config_credentials(cfg, org)
@@ -48,6 +49,23 @@ def test_resolve_mindbot_config_credentials_org_linked() -> None:
     assert creds.api_url == "https://org.example/v1"
     assert creds.api_key == "org-key"
     assert creds.mindbot_config_id == 11
+    assert creds.server == 1
+
+
+def test_resolve_mindbot_config_endpoints_org_linked_dual_server() -> None:
+    """Org-linked export queries every configured org Dify server."""
+    org = _org(
+        dify_api_base_url_2="https://org2.example/v1",
+        dify_api_key_2="org-key-2",
+    )
+    cfg = _cfg(use_org_dify_settings=True)
+    endpoints = resolve_mindbot_config_endpoints(cfg, org)
+    assert len(endpoints) == 2
+    assert endpoints[0].server == 1
+    assert endpoints[0].api_url == "https://org.example/v1"
+    assert endpoints[1].server == 2
+    assert endpoints[1].api_url == "https://org2.example/v1"
+    assert endpoints[0].mindbot_config_id == endpoints[1].mindbot_config_id == 11
 
 
 def test_resolve_mindbot_config_credentials_custom_bot() -> None:

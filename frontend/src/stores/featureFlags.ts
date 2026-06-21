@@ -34,6 +34,7 @@ interface FeatureFlagsResponse {
   feature_mindmate_export: boolean
   feature_kitty_agent: boolean
   feature_auth_pixel_battle: boolean
+  feature_thinking_coins: boolean
   workshop_chat_preview_org_ids: number[]
   feature_org_access: Record<string, FeatureOrgAccessEntry>
 }
@@ -83,6 +84,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_mindmate_export: false,
           feature_kitty_agent: false,
           feature_auth_pixel_battle: false,
+          feature_thinking_coins: false,
           workshop_chat_preview_org_ids: [],
           feature_org_access: {},
         }
@@ -100,6 +102,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_mindmate_export: raw.feature_mindmate_export ?? false,
         feature_kitty_agent: raw.feature_kitty_agent ?? false,
         feature_auth_pixel_battle: raw.feature_auth_pixel_battle ?? false,
+        feature_thinking_coins: raw.feature_thinking_coins ?? false,
       }
       flags.value = data
       lastFetchTime.value = now
@@ -130,6 +133,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_mindmate_export: false,
         feature_kitty_agent: false,
         feature_auth_pixel_battle: false,
+        feature_thinking_coins: false,
         workshop_chat_preview_org_ids: [],
         feature_org_access: {},
       }

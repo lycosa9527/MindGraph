@@ -2,7 +2,7 @@
 
 ## Project overview
 
-MindGraph is an AI-powered diagram generation platform: Python 3.13 + FastAPI backend, Vue 3 + TypeScript frontend, PostgreSQL/SQLite, Redis, and Qdrant.
+MindGraph is an AI-powered diagram generation platform: Python 3.13 + FastAPI backend, Vue 3 + TypeScript frontend, PostgreSQL, Redis, and Qdrant.
 
 Repository: https://github.com/lycosa9527/MindGraph
 
@@ -100,7 +100,7 @@ Starting `python main.py` requires secrets and services configured in the Cursor
 |----------|---------|
 | `QWEN_API_KEY` | DashScope LLM |
 | `REDIS_URL` | Sessions, collab, cache |
-| `DATABASE_URL` | PostgreSQL (or SQLite for limited local runs) |
+| `DATABASE_URL` | PostgreSQL |
 | `QDRANT_HOST` | Knowledge Space RAG |
 | `USER_DAILY_TOKEN_CAP` | Per-user daily LLM token limit (default `1000000`; `0` disables) |
 

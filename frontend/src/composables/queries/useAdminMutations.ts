@@ -7,10 +7,8 @@ import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
 import {
   addAdminOrganizationManager,
-  analyzeAdminDatabase,
   analyzeAdminDatabaseDump,
   cleanupAdminDatabaseOrphans,
-  cleanupAdminSqliteOrphans,
   createAdminApiKey,
   createAdminMindbotConfig,
   createAdminOrganization,
@@ -25,7 +23,6 @@ import {
   exportAdminDatabase,
   generateAdminLibraryDocumentCover,
   importAdminDatabaseDump,
-  mergeAdminDatabase,
   mergeAdminDatabaseDump,
   moveAdminMindbotConfig,
   probeAdminMindmateDifyHealthDraft,
@@ -431,37 +428,6 @@ export function useScanAdminDatabase() {
     mutationFn: scanAdminDatabase,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminKeys.database.all() })
-    },
-  })
-}
-
-export function useAnalyzeAdminDatabase() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: analyzeAdminDatabase,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.database.all() })
-    },
-  })
-}
-
-export function useCleanupAdminSqliteOrphans() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: cleanupAdminSqliteOrphans,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.database.all() })
-    },
-  })
-}
-
-export function useMergeAdminDatabase() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: mergeAdminDatabase,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.database.all() })
-      invalidateStats(queryClient)
     },
   })
 }

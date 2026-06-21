@@ -40,6 +40,7 @@ export function useFeatureFlags() {
   const featureMindbot = computed(() => data.value?.feature_mindbot ?? false)
   const featureMindmateExport = computed(() => data.value?.feature_mindmate_export ?? false)
   const featureKittyAgent = computed(() => data.value?.feature_kitty_agent ?? false)
+  const featureThinkingCoins = computed(() => data.value?.feature_thinking_coins ?? false)
   const workshopChatPreviewOrgIds = computed(() => data.value?.workshop_chat_preview_org_ids ?? [])
   const featureOrgAccess = computed(() => data.value?.feature_org_access ?? {})
 
@@ -61,6 +62,7 @@ export function useFeatureFlags() {
     featureMindbot,
     featureMindmateExport,
     featureKittyAgent,
+    featureThinkingCoins,
     workshopChatPreviewOrgIds,
     featureOrgAccess,
     isLoading,

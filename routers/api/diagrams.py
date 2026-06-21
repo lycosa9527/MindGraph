@@ -33,6 +33,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
+from config.db_sessions import open_async_session
 from models.domain.auth import User
 from models.domain.diagram_snapshots import DiagramSnapshot
 from models.domain.diagrams import Diagram
@@ -63,6 +64,7 @@ from services.online_collab.spec.online_collab_live_spec import (
 from services.redis.cache._redis_diagram_cache_helpers import MAX_SPEC_SIZE_KB
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.admin.user_usage_activity import schedule_user_usage_activity
+from services.auth.thinking_coin.client_event_service import claim_client_event_for_user
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 from utils.auth import get_current_user
@@ -73,6 +75,7 @@ from utils.auth.school_tier import (
     parse_diagram_save_limit_error,
     user_has_school_tier_feature,
 )
+from utils.auth.thinking_coin_config import EVENT_DIAGRAM_SAVE, EVENT_DIAGRAM_SNAPSHOT
 from utils.db.session_open import actor_rls_session, user_rls_session
 
 from .helpers import (
@@ -256,6 +259,9 @@ async def create_diagram(
         diagram_type=diagram.get("diagram_type") or req.diagram_type,
         diagram_id=diagram_id,
     )
+
+    async with open_async_session() as db:
+        await claim_client_event_for_user(db, current_user, EVENT_DIAGRAM_SAVE)
 
     return DiagramResponse(
         id=diagram["id"],
@@ -754,6 +760,7 @@ async def take_snapshot(
         new_version,
         diagram_id,
     )
+    await claim_client_event_for_user(db, current_user, EVENT_DIAGRAM_SNAPSHOT)
     return SnapshotMetadata(
         id=snapshot.id,
         version_number=snapshot.version_number,

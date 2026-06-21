@@ -26,6 +26,7 @@ from . import (
     stats,
     stats_trends,
     teacher_usage,
+    thinking_coins,
     user_activity,
     users,
 )
@@ -46,6 +47,7 @@ admin_router.include_router(performance.router)
 admin_router.include_router(errors.router)
 admin_router.include_router(api_keys.router)
 admin_router.include_router(teacher_usage.router)
+admin_router.include_router(thinking_coins.router)
 admin_router.include_router(user_activity.router)
 admin_router.include_router(feature_org_access.router)
 admin_router.include_router(geolite.router)

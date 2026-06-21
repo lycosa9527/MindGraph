@@ -25,12 +25,12 @@ from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, Callable, Dict, Optional
 
 from config.settings import config
+from services.auth.thinking_coin.usage_wire import assert_llm_usage_budget
 from services.infrastructure.http.error_handler import LLMServiceError
 from services.infrastructure.rate_limiting.rate_limiter import DashscopeRateLimiter, get_rate_limiter
 from services.monitoring.performance_tracker import performance_tracker
 from services.redis.redis_token_buffer import get_token_tracker
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
-from utils.auth.user_daily_token_quota import assert_user_daily_token_budget
 
 logger = logging.getLogger(__name__)
 
@@ -152,7 +152,7 @@ class WebSocketLLMMiddleware:
             )
 
         async with _optional_rate_limit(self.rate_limiter if self.enable_rate_limiting else None):
-            await assert_user_daily_token_budget(user_id)
+            await assert_llm_usage_budget(user_id, organization_id, request_type)
             try:
                 # Prepare context for connection
                 ctx = {

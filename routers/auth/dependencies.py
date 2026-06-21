@@ -93,6 +93,7 @@ from utils.auth.admin_panel_permissions import (
     CAP_SETTINGS_ROLES,
     CAP_SETTINGS_SMART_RESPONSE,
     CAP_SETTINGS_TEACHER_USAGE,
+    CAP_SETTINGS_THINKING_COINS,
     CAP_SETTINGS_TOKENS,
     CAP_TAB_BILLING_VIEW,
     CAP_TAB_DATA_CENTER_VIEW,
@@ -518,6 +519,7 @@ require_settings_library = require_panel_capability(CAP_SETTINGS_LIBRARY)
 require_settings_database = require_panel_capability(CAP_SETTINGS_DATABASE)
 require_settings_performance = require_panel_capability(CAP_SETTINGS_PERFORMANCE)
 require_settings_errors = require_panel_capability(CAP_SETTINGS_ERRORS)
+require_settings_thinking_coins = require_panel_capability(CAP_SETTINGS_THINKING_COINS)
 require_settings_gewe = require_panel_capability(CAP_SETTINGS_GEWE)
 require_settings_kitty_llmops = require_panel_capability(CAP_SETTINGS_KITTY_LLMOPS)
 require_settings_teacher_usage = require_panel_capability(CAP_SETTINGS_TEACHER_USAGE)

@@ -27,6 +27,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_async_db
 from models import Language, Messages, User, get_request_language
 from models.requests.requests_auth import UpdateProfileNameRequest
+from services.auth.thinking_coin.checkin_service import ensure_wallet_bootstrap
+from services.auth.thinking_coin.eligibility import user_eligible_for_thinking_coins
+from services.auth.thinking_coin.wallet_payload import build_wallet_payload
 from services.auth.vpn_geo_enforcement import record_vpn_refresh_last_ip
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
@@ -50,6 +53,7 @@ from utils.auth import (
     hash_refresh_token,
     is_https,
 )
+from utils.auth.thinking_coin_config import feature_thinking_coins_enabled
 from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 
 from .dependencies import get_language_dependency
@@ -291,7 +295,10 @@ async def refresh_token(request: Request, response: Response):
 
 
 @router.get("/me")
-async def get_me(current_user: User = Depends(get_current_user)):
+async def get_me(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+):
     """
     Get current authenticated user profile
     """
@@ -312,6 +319,16 @@ async def get_me(current_user: User = Depends(get_current_user)):
             logger.error("Error determining user role: %s", role_error, exc_info=True)
             role = "teacher"  # Default fallback
 
+        thinking_coins = {"balance": 0, "eligible": False}
+        if feature_thinking_coins_enabled():
+            if user_eligible_for_thinking_coins(current_user, org):
+                await ensure_wallet_bootstrap(db, current_user, org)
+            wallet_payload = await build_wallet_payload(db, current_user, org)
+            thinking_coins = {
+                "balance": wallet_payload.get("balance", 0),
+                "eligible": wallet_payload.get("eligible", False),
+            }
+
         return {
             "id": current_user.id,
             "phone": current_user.phone,
@@ -321,6 +338,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
             "role": role,
             "login_password_set": getattr(current_user, "login_password_set", True),
             "organization": organization_session_payload(org),
+            "thinking_coins": thinking_coins,
             "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
             "last_login": (current_user.last_login.isoformat() if current_user.last_login else None),
             "ui_language": getattr(current_user, "ui_language", None),

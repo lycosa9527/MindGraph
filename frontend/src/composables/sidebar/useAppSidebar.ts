@@ -5,6 +5,7 @@ import type { InjectionKey } from 'vue'
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { formatThinkingCoinBalance } from '@/composables/auth/useThinkingCoins'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAdminPanelTabs } from '@/composables/admin/useAdminPanelTabs'
@@ -24,6 +25,8 @@ import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
 import { useAskOnceStore } from '@/stores/askonce'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
+import type { ThinkingCoinEarnTask, ThinkingCoinsWallet } from '@/types/thinkingCoins'
+import { apiRequestJson } from '@/utils/apiClient'
 import { userCanAccessMindbotAdmin } from '@/utils/mindbotAccess'
 import { getRolePillStyle } from '@/utils/userRoleDisplay'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
@@ -67,6 +70,7 @@ export function useAppSidebar() {
     featureMindbot,
     workshopChatPreviewOrgIds,
     featureOrgAccess,
+    featureThinkingCoins,
   } = useFeatureFlags()
 
   const isCollapsed = computed(() => uiStore.sidebarCollapsed)
@@ -182,6 +186,15 @@ export function useAppSidebar() {
     )
   })
 
+  const thinkingCoinsEligible = computed(
+    () => featureThinkingCoins.value && authStore.user?.thinkingCoins?.eligible === true
+  )
+  const thinkingCoinsBalance = computed(() => authStore.user?.thinkingCoins?.balance ?? 0)
+
+  const thinkingCoinsBalanceFormatted = computed(() =>
+    formatThinkingCoinBalance(thinkingCoinsBalance.value)
+  )
+
   const userName = computed(() => authStore.user?.username || '')
   const userRolePill = computed(() => {
     if (!authStore.user?.role) {
@@ -217,8 +230,39 @@ export function useAppSidebar() {
 
   const showLoginModal = ref(false)
   const showAccountModal = ref(false)
+  const showThinkingCoinsModal = ref(false)
+  const thinkingCoinsModalTab = ref<'wallet' | 'subscription'>('wallet')
   const showUpdateLogModal = ref(false)
   const showLanguageSettingsModal = ref(false)
+  const thinkingCoinEarnTasks = ref<ThinkingCoinEarnTask[]>([])
+  let thinkingCoinWalletFetchGeneration = 0
+
+  async function refreshThinkingCoinEarnTasks(): Promise<void> {
+    if (!thinkingCoinsEligible.value) {
+      thinkingCoinEarnTasks.value = []
+      return
+    }
+    const generation = ++thinkingCoinWalletFetchGeneration
+    try {
+      const data = await apiRequestJson<ThinkingCoinsWallet>('/api/auth/thinking-coins/wallet', {
+        method: 'GET',
+      })
+      if (generation !== thinkingCoinWalletFetchGeneration) {
+        return
+      }
+      thinkingCoinEarnTasks.value = data.earn_tasks ?? []
+      if (data.eligible) {
+        authStore.patchThinkingCoinsSummary({
+          balance: data.balance,
+          eligible: data.eligible,
+        })
+      }
+    } catch {
+      if (generation === thinkingCoinWalletFetchGeneration) {
+        thinkingCoinEarnTasks.value = []
+      }
+    }
+  }
 
   function toggleSidebar() {
     uiStore.toggleSidebar()
@@ -363,6 +407,21 @@ export function useAppSidebar() {
     showLoginModal.value = true
   }
 
+  function openThinkingCoinsUpgrade() {
+    void refreshThinkingCoinEarnTasks()
+    void router.push('/thinking-coins/upgrade')
+  }
+
+  function openThinkingCoinsModal(tab: 'wallet' | 'subscription' = 'wallet') {
+    if (tab === 'subscription') {
+      openThinkingCoinsUpgrade()
+      return
+    }
+    thinkingCoinsModalTab.value = tab
+    showThinkingCoinsModal.value = true
+    void refreshThinkingCoinEarnTasks()
+  }
+
   function openAccountModal() {
     showAccountModal.value = true
   }
@@ -487,6 +546,23 @@ export function useAppSidebar() {
     { immediate: true }
   )
 
+  watch(
+    () =>
+      [
+        thinkingCoinsEligible.value,
+        authStore.user?.id ?? null,
+      ] as const,
+    ([eligible]) => {
+      if (eligible) {
+        void refreshThinkingCoinEarnTasks()
+        return
+      }
+      thinkingCoinWalletFetchGeneration += 1
+      thinkingCoinEarnTasks.value = []
+    },
+    { immediate: true }
+  )
+
   return {
     t,
     router,
@@ -550,12 +626,21 @@ export function useAppSidebar() {
     userAvatar,
     showLoginModal,
     showAccountModal,
+    showThinkingCoinsModal,
+    thinkingCoinsModalTab,
+    thinkingCoinsEligible,
+    thinkingCoinsBalance,
+    thinkingCoinsBalanceFormatted,
+    thinkingCoinEarnTasks,
+    refreshThinkingCoinEarnTasks,
     showUpdateLogModal,
     showLanguageSettingsModal,
     toggleSidebar,
     setMode,
     openLoginModal,
     openAccountModal,
+    openThinkingCoinsModal,
+    openThinkingCoinsUpgrade,
     openUpdateLogModal,
     openLanguageSettingsModal,
     handleLogout,

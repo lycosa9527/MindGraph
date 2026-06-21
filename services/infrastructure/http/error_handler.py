@@ -42,6 +42,23 @@ class UserDailyTokenCapExceededError(LLMServiceError):
         super().__init__(self.user_message)
 
 
+class ThinkingCoinInsufficientError(LLMServiceError):
+    """Raised when a trial user lacks thinking coins for an AI action."""
+
+    def __init__(
+        self,
+        balance: int,
+        cost: int,
+        user_message: Optional[str] = None,
+    ):
+        self.balance = balance
+        self.cost = cost
+        self.user_message = user_message or (
+            f"Insufficient thinking coins (balance {balance}, need {cost})."
+        )
+        super().__init__(self.user_message)
+
+
 class LLMTimeoutError(LLMServiceError):
     """Raised when LLM call times out."""
 

@@ -3,8 +3,8 @@ Effective Dify credentials for MindBot config rows (export and read-time resolut
 
 Mirrors runtime callback semantics: each ``OrganizationMindbotConfig`` stores
 resolved URL/key at save time when ``use_org_dify_settings`` is true; export
-re-resolves org-linked bots from the live org row so custom per-bot apps are
-included.
+re-resolves org-linked bots from every configured org Dify server (1 and 2)
+so custom per-bot apps and dual-server history are included.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -22,7 +22,7 @@ from models.domain.auth import Organization
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from repositories.mindbot_repo import MindbotConfigRepository
 from repositories.mindbot_usage_repo import MindbotUsageRepository
-from services.dify.dify_servers import org_server_credentials, primary_server_no
+from services.dify.dify_servers import configured_dify_servers
 from services.dify.org_mindmate_client import global_mindmate_dify_credentials
 from utils.dify_user_key import parse_mindbot_dify_key
 
@@ -30,48 +30,88 @@ __all__ = [
     "MindbotDifyEndpoint",
     "distinct_mindbot_endpoints_for_org",
     "resolve_mindbot_config_credentials",
+    "resolve_mindbot_config_endpoints",
     "staff_id_from_mindbot_dify_user",
 ]
 
 
 @dataclass(frozen=True)
 class MindbotDifyEndpoint:
-    """One distinct Dify app used by MindBot in an organization."""
+    """One Dify Service API origin used by MindBot (export / read-time resolution)."""
 
     mindbot_config_id: int
     api_key: str
     api_url: str
+    server: int = 1
 
 
-def _org_linked_dify_credentials(org: Organization) -> tuple[str, str]:
-    """Primary org MindMate server credentials, else global .env fallback."""
-    selected = primary_server_no(org)
-    creds = org_server_credentials(org, selected)
-    if creds is not None:
-        return creds
-    return global_mindmate_dify_credentials()
+def _org_linked_dify_endpoints(
+    org: Organization,
+    mindbot_config_id: int,
+) -> List[MindbotDifyEndpoint]:
+    """All configured org Dify servers, else one global .env fallback endpoint."""
+    servers = configured_dify_servers(org)
+    if servers:
+        return [
+            MindbotDifyEndpoint(
+                mindbot_config_id=mindbot_config_id,
+                api_key=entry.api_key,
+                api_url=entry.api_url,
+                server=entry.server,
+            )
+            for entry in servers
+        ]
+    api_key, api_url = global_mindmate_dify_credentials()
+    if not api_key or not api_url:
+        return []
+    return [
+        MindbotDifyEndpoint(
+            mindbot_config_id=mindbot_config_id,
+            api_key=api_key,
+            api_url=api_url,
+            server=1,
+        )
+    ]
+
+
+def resolve_mindbot_config_endpoints(
+    cfg: OrganizationMindbotConfig,
+    org: Organization,
+) -> List[MindbotDifyEndpoint]:
+    """Return effective Dify endpoints for one MindBot config row."""
+    config_id = getattr(cfg, "id", None)
+    if config_id is None:
+        return []
+    cfg_id = int(config_id)
+    if bool(getattr(cfg, "use_org_dify_settings", True)):
+        return _org_linked_dify_endpoints(org, cfg_id)
+
+    api_key = (getattr(cfg, "dify_api_key", None) or "").strip()
+    api_url = (getattr(cfg, "dify_api_base_url", None) or "").strip()
+    if not api_key or not api_url:
+        return []
+    return [
+        MindbotDifyEndpoint(
+            mindbot_config_id=cfg_id,
+            api_key=api_key,
+            api_url=api_url,
+            server=1,
+        )
+    ]
 
 
 def resolve_mindbot_config_credentials(
     cfg: OrganizationMindbotConfig,
     org: Organization,
 ) -> Optional[MindbotDifyEndpoint]:
-    """Return effective Dify credentials for one MindBot config row."""
-    if bool(getattr(cfg, "use_org_dify_settings", True)):
-        api_key, api_url = _org_linked_dify_credentials(org)
-    else:
-        api_key = (getattr(cfg, "dify_api_key", None) or "").strip()
-        api_url = (getattr(cfg, "dify_api_base_url", None) or "").strip()
-    if not api_key or not api_url:
+    """Return the primary MindBot Dify endpoint (server 1 when org-linked)."""
+    endpoints = resolve_mindbot_config_endpoints(cfg, org)
+    if not endpoints:
         return None
-    config_id = getattr(cfg, "id", None)
-    if config_id is None:
-        return None
-    return MindbotDifyEndpoint(
-        mindbot_config_id=int(config_id),
-        api_key=api_key,
-        api_url=api_url,
-    )
+    for endpoint in endpoints:
+        if int(endpoint.server) == 1:
+            return endpoint
+    return endpoints[0]
 
 
 def _dedupe_endpoints(endpoints: List[MindbotDifyEndpoint]) -> List[MindbotDifyEndpoint]:
@@ -116,9 +156,7 @@ async def distinct_mindbot_endpoints_for_org(
         cfg_id = int(cfg.id)
         if allowed_config_ids is not None and cfg_id not in allowed_config_ids:
             continue
-        creds = resolve_mindbot_config_credentials(cfg, org)
-        if creds is not None:
-            resolved.append(creds)
+        resolved.extend(resolve_mindbot_config_endpoints(cfg, org))
     return _dedupe_endpoints(resolved)
 
 

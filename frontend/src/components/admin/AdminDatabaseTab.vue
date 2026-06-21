@@ -8,18 +8,13 @@ import { useLanguage, useNotifications } from '@/composables'
 import {
   useAdminDatabaseOrphans,
   useAdminDatabaseStats,
-  useAnalyzeAdminDatabase,
   useAnalyzeAdminDatabaseDump,
   useCleanupAdminDatabaseOrphans,
-  useCleanupAdminSqliteOrphans,
   useExportAdminDatabase,
   useImportAdminDatabaseDump,
-  useMergeAdminDatabase,
   useMergeAdminDatabaseDump,
   useScanAdminDatabase,
 } from '@/composables/queries'
-
-// ── types ────────────────────────────────────────────────────────────
 
 interface BackupFile {
   name: string
@@ -29,29 +24,7 @@ interface BackupFile {
 }
 
 interface ScanResult {
-  sqlite: BackupFile[]
   pg_dumps: BackupFile[]
-}
-
-interface AnalysisResult {
-  sqlite_tables: Record<string, number>
-  orphans: Record<string, number>
-  user_mapping: Record<string, number>
-  org_mapping: Record<string, number>
-  new_users: number
-  matched_users: number
-  new_orgs: number
-  matched_orgs: number
-  skipped_tables: string[]
-  merge_preview: Record<string, { total: number; new: number; skip: number }>
-}
-
-interface MergeResult {
-  tables: Record<
-    string,
-    { inserted: number; skipped: number; orphaned?: number; rejected?: number }
-  >
-  elapsed_seconds: number
 }
 
 interface PgStats {
@@ -70,17 +43,25 @@ interface PgDumpAnalysis {
   staging_tables: Record<string, number>
   merge_tables: string[]
   skipped_tables: string[]
-  per_table: Record<string, { staging_rows: number; live_rows: number }>
+  per_table: Record<
+    string,
+    {
+      staging_rows: number
+      live_rows: number
+      new_rows: number
+      duplicate_rows: number
+      orphaned_rows: number
+    }
+  >
 }
 
 interface PgDumpMergeResult {
   success: boolean
   tables: Record<string, { inserted: number; skipped: number; orphaned: number }>
   elapsed_seconds: number
+  stats_recomputed_users?: number
   file_warning?: string
 }
-
-// ── composables ──────────────────────────────────────────────────────
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -88,31 +69,17 @@ const notify = useNotifications()
 const statsQuery = useAdminDatabaseStats()
 const orphansQuery = useAdminDatabaseOrphans({ enabled: false })
 const scanDatabase = useScanAdminDatabase()
-const analyzeDatabase = useAnalyzeAdminDatabase()
-const cleanupSqliteOrphans = useCleanupAdminSqliteOrphans()
-const mergeDatabase = useMergeAdminDatabase()
 const exportDatabase = useExportAdminDatabase()
 const importDatabaseDump = useImportAdminDatabaseDump()
 const analyzeDatabaseDump = useAnalyzeAdminDatabaseDump()
 const mergeDatabaseDump = useMergeAdminDatabaseDump()
 const cleanupDatabaseOrphans = useCleanupAdminDatabaseOrphans()
 
-// ── state ────────────────────────────────────────────────────────────
-
 const isLoadingStats = ref(false)
 const pgStats = ref<PgStats | null>(null)
 
 const isScanning = ref(false)
 const scanResult = ref<ScanResult | null>(null)
-
-const selectedSqlite = ref<string | null>(null)
-const isAnalyzing = ref(false)
-const analysis = ref<AnalysisResult | null>(null)
-
-const isCleaningSqliteOrphans = ref(false)
-
-const isMerging = ref(false)
-const mergeResult = ref<MergeResult | null>(null)
 
 const isExporting = ref(false)
 const isImporting = ref(false)
@@ -126,18 +93,6 @@ const pgDumpMergeResult = ref<PgDumpMergeResult | null>(null)
 const isDetectingOrphans = ref(false)
 const orphans = ref<Record<string, number> | null>(null)
 const isCleaningOrphans = ref(false)
-
-// ── computed ─────────────────────────────────────────────────────────
-
-const hasSqliteOrphans = computed(() => {
-  if (!analysis.value?.orphans) return false
-  return Object.values(analysis.value.orphans).some((v) => v > 0)
-})
-
-const totalSqliteOrphans = computed(() => {
-  if (!analysis.value?.orphans) return 0
-  return Object.values(analysis.value.orphans).reduce((s, v) => s + v, 0)
-})
 
 const hasOrphans = computed(() => {
   if (!orphans.value) return false
@@ -172,8 +127,6 @@ const pgMergeResultTableData = computed(() => {
     .map(([name, v]) => ({ name, ...v }))
 })
 
-// ── helpers ──────────────────────────────────────────────────────────
-
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`
@@ -183,8 +136,6 @@ function formatBytes(bytes: number): string {
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString()
 }
-
-// ── API calls ────────────────────────────────────────────────────────
 
 async function loadStats() {
   isLoadingStats.value = true
@@ -200,9 +151,6 @@ async function loadStats() {
 
 async function scanBackup() {
   isScanning.value = true
-  analysis.value = null
-  mergeResult.value = null
-  selectedSqlite.value = null
   pgDumpAnalysis.value = null
   pgDumpMergeResult.value = null
   selectedDump.value = null
@@ -212,89 +160,6 @@ async function scanBackup() {
     notify.error(t('admin.database.scanError'))
   } finally {
     isScanning.value = false
-  }
-}
-
-async function analyzeSqlite(filename: string) {
-  selectedSqlite.value = filename
-  isAnalyzing.value = true
-  analysis.value = null
-  mergeResult.value = null
-  try {
-    analysis.value = (await analyzeDatabase.mutateAsync({ filename })) as unknown as AnalysisResult
-  } catch (err: unknown) {
-    console.error('[AdminDB] analyze error:', err)
-    const message = err instanceof Error ? err.message : t('admin.database.analyzeError')
-    notify.error(message)
-  } finally {
-    isAnalyzing.value = false
-  }
-}
-
-async function cleanSqliteOrphans() {
-  if (!selectedSqlite.value) return
-  const filename = selectedSqlite.value
-
-  try {
-    await ElMessageBox.confirm(
-      `Delete ${totalSqliteOrphans.value} orphaned records from the SQLite file? This modifies the file on disk.`,
-      'Clean SQLite Orphans',
-      {
-        confirmButtonText: t('admin.confirm'),
-        cancelButtonText: t('admin.cancel'),
-        type: 'warning',
-      }
-    )
-  } catch (err: unknown) {
-    if (err === 'cancel' || err === 'close') return
-    console.error('[AdminDB] ElMessageBox error:', err)
-    return
-  }
-
-  isCleaningSqliteOrphans.value = true
-  try {
-    const result = (await cleanupSqliteOrphans.mutateAsync({ filename })) as Record<string, number>
-    const total = Object.values(result).reduce((s, v) => s + v, 0)
-    notify.success(`Cleaned ${total} orphaned records from SQLite`)
-    await analyzeSqlite(filename)
-  } catch (err: unknown) {
-    console.error('[AdminDB] SQLite orphan cleanup error:', err)
-    notify.error('SQLite orphan cleanup failed')
-  } finally {
-    isCleaningSqliteOrphans.value = false
-  }
-}
-
-async function executeMerge() {
-  if (!selectedSqlite.value) return
-  const filename = selectedSqlite.value
-
-  try {
-    await ElMessageBox.confirm(
-      t('admin.database.mergeConfirmMsg'),
-      t('admin.database.mergeConfirmTitle'),
-      {
-        confirmButtonText: t('admin.confirm'),
-        cancelButtonText: t('admin.cancel'),
-        type: 'warning',
-      }
-    )
-  } catch (err: unknown) {
-    if (err === 'cancel' || err === 'close') return
-    console.error('[AdminDB] ElMessageBox error:', err)
-    return
-  }
-
-  isMerging.value = true
-  try {
-    mergeResult.value = (await mergeDatabase.mutateAsync({ filename })) as unknown as MergeResult
-    notify.success(t('admin.database.mergeSuccess'))
-    loadStats()
-  } catch (err: unknown) {
-    console.error('[AdminDB] merge error:', err)
-    notify.error(t('admin.database.mergeError'))
-  } finally {
-    isMerging.value = false
   }
 }
 
@@ -439,16 +304,14 @@ async function cleanOrphans() {
   }
 }
 
-// ── lifecycle ────────────────────────────────────────────────────────
-
 onMounted(() => {
   loadStats()
+  scanBackup()
 })
 </script>
 
 <template>
   <div class="admin-database-tab space-y-6">
-    <!-- ═══ Section 1: DB Overview ═══ -->
     <el-card shadow="never">
       <template #header>
         <div class="flex items-center justify-between">
@@ -516,241 +379,6 @@ onMounted(() => {
       />
     </el-card>
 
-    <!-- ═══ Section 2: SQLite Merge ═══ -->
-    <el-card shadow="never">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <span class="font-semibold">{{ t('admin.database.sqliteMerge') }}</span>
-          <el-button
-            size="small"
-            :loading="isScanning"
-            @click="scanBackup"
-          >
-            {{ t('admin.database.scanBackup') }}
-          </el-button>
-        </div>
-      </template>
-
-      <p class="text-gray-500 text-sm mb-4">{{ t('admin.database.sqliteMergeDesc') }}</p>
-
-      <!-- file list -->
-      <template v-if="scanResult">
-        <div
-          v-if="scanResult.sqlite.length === 0"
-          class="text-gray-400 text-sm py-4 text-center"
-        >
-          {{ t('admin.database.noSqliteFiles') }}
-        </div>
-
-        <el-table
-          v-else
-          :data="scanResult.sqlite"
-          size="small"
-          stripe
-        >
-          <el-table-column
-            prop="name"
-            :label="t('admin.database.fileName')"
-          />
-          <el-table-column
-            :label="t('admin.database.fileSize')"
-            width="120"
-            align="right"
-          >
-            <template #default="{ row }">{{ formatBytes(row.size_bytes) }}</template>
-          </el-table-column>
-          <el-table-column
-            :label="t('admin.database.modified')"
-            width="180"
-          >
-            <template #default="{ row }">{{ formatDate(row.modified_at) }}</template>
-          </el-table-column>
-          <el-table-column
-            :label="t('admin.actions')"
-            width="120"
-            align="center"
-          >
-            <template #default="{ row }">
-              <el-button
-                size="small"
-                type="primary"
-                :loading="isAnalyzing && selectedSqlite === row.name"
-                @click="analyzeSqlite(row.name)"
-              >
-                {{ t('admin.database.analyze') }}
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </template>
-
-      <!-- analysis result -->
-      <template v-if="analysis && !mergeResult">
-        <el-divider />
-        <h4 class="font-medium mb-3">{{ t('admin.database.analysisResult') }}</h4>
-
-        <!-- summary cards -->
-        <div class="grid grid-cols-4 gap-3 mb-4">
-          <AdminSwissKpiCard
-            :title="t('admin.database.matchedUsers')"
-            :value="analysis.matched_users"
-            theme="members"
-            compact
-          />
-          <AdminSwissKpiCard
-            :title="t('admin.database.newUsers')"
-            :value="analysis.new_users"
-            theme="success"
-            compact
-          />
-          <AdminSwissKpiCard
-            :title="t('admin.database.matchedOrgs')"
-            :value="analysis.matched_orgs"
-            theme="members"
-            compact
-          />
-          <AdminSwissKpiCard
-            :title="t('admin.database.newOrgs')"
-            :value="analysis.new_orgs"
-            theme="success"
-            compact
-          />
-        </div>
-
-        <!-- orphans -->
-        <div
-          v-if="Object.keys(analysis.orphans).length > 0"
-          class="mb-4"
-        >
-          <h5 class="text-sm font-medium text-orange-600 mb-2">
-            {{ t('admin.database.orphansFound') }}
-          </h5>
-          <div
-            v-for="(count, label) in analysis.orphans"
-            :key="label"
-            class="text-sm text-gray-600"
-          >
-            {{ label }}: <span class="font-mono text-orange-600">{{ count }}</span>
-          </div>
-          <el-button
-            v-if="hasSqliteOrphans"
-            type="warning"
-            size="small"
-            class="mt-2"
-            :loading="isCleaningSqliteOrphans"
-            @click="cleanSqliteOrphans"
-          >
-            {{ t('admin.database.cleanSqliteOrphans') }} ({{ totalSqliteOrphans }})
-          </el-button>
-        </div>
-
-        <!-- per-table preview -->
-        <el-table
-          :data="Object.entries(analysis.merge_preview).map(([name, v]) => ({ name, ...v }))"
-          size="small"
-          stripe
-        >
-          <el-table-column
-            prop="name"
-            :label="t('admin.database.tableName')"
-          />
-          <el-table-column
-            prop="total"
-            :label="t('admin.database.sqliteTotal')"
-            width="120"
-            align="right"
-          >
-            <template #default="{ row }">{{ row.total.toLocaleString() }}</template>
-          </el-table-column>
-          <el-table-column
-            prop="new"
-            :label="t('admin.database.toInsert')"
-            width="120"
-            align="right"
-          >
-            <template #default="{ row }">
-              <span class="text-green-600 font-medium">{{ row.new.toLocaleString() }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column
-            prop="skip"
-            :label="t('admin.database.toSkip')"
-            width="120"
-            align="right"
-          >
-            <template #default="{ row }">
-              <span class="text-gray-400">{{ row.skip.toLocaleString() }}</span>
-            </template>
-          </el-table-column>
-        </el-table>
-
-        <div class="mt-4 flex justify-end">
-          <el-button
-            type="primary"
-            :loading="isMerging"
-            @click="executeMerge"
-          >
-            {{ t('admin.database.executeMerge') }}
-          </el-button>
-        </div>
-      </template>
-
-      <!-- merge result -->
-      <template v-if="mergeResult">
-        <el-divider />
-        <el-result
-          icon="success"
-          :title="t('admin.database.mergeComplete')"
-          :sub-title="`${mergeResult.elapsed_seconds}s`"
-        />
-        <el-table
-          :data="Object.entries(mergeResult.tables).map(([name, v]) => ({ name, ...v }))"
-          size="small"
-          stripe
-        >
-          <el-table-column
-            prop="name"
-            :label="t('admin.database.tableName')"
-          />
-          <el-table-column
-            :label="t('admin.database.inserted')"
-            width="120"
-            align="right"
-          >
-            <template #default="{ row }">
-              <span class="text-green-600 font-medium">{{ row.inserted }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column
-            :label="t('admin.database.skipped')"
-            width="120"
-            align="right"
-          >
-            <template #default="{ row }">{{ row.skipped }}</template>
-          </el-table-column>
-          <el-table-column
-            :label="t('admin.database.orphaned')"
-            width="120"
-            align="right"
-          >
-            <template #default="{ row }">
-              <span :class="row.orphaned ? 'text-orange-500' : ''">{{ row.orphaned ?? '-' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column
-            label="Rejected"
-            width="120"
-            align="right"
-          >
-            <template #default="{ row }">
-              <span :class="row.rejected ? 'text-red-500' : ''">{{ row.rejected ?? '-' }}</span>
-            </template>
-          </el-table-column>
-        </el-table>
-      </template>
-    </el-card>
-
-    <!-- ═══ Section 3: PG Export / Import / Merge ═══ -->
     <el-card shadow="never">
       <template #header>
         <div class="flex items-center justify-between">
@@ -761,7 +389,7 @@ onMounted(() => {
               :loading="isScanning"
               @click="scanBackup"
             >
-              {{ t('admin.refresh') }}
+              {{ t('admin.database.scanBackup') }}
             </el-button>
             <el-button
               size="small"
@@ -836,7 +464,6 @@ onMounted(() => {
         {{ t('admin.database.noDumpFiles') }}
       </div>
 
-      <!-- PG dump analysis result -->
       <template v-if="pgDumpAnalysis && !pgDumpMergeResult">
         <el-divider />
         <h4 class="font-medium mb-3">{{ t('admin.database.pgAnalysisResult') }}</h4>
@@ -879,7 +506,7 @@ onMounted(() => {
         <el-table
           :data="pgDumpAnalysisTableData"
           size="small"
-          max-height="300"
+          max-height="360"
           stripe
         >
           <el-table-column
@@ -889,7 +516,7 @@ onMounted(() => {
           <el-table-column
             prop="staging_rows"
             :label="t('admin.database.pgStagingRows')"
-            width="140"
+            width="120"
             align="right"
           >
             <template #default="{ row }">{{ row.staging_rows.toLocaleString() }}</template>
@@ -897,10 +524,40 @@ onMounted(() => {
           <el-table-column
             prop="live_rows"
             :label="t('admin.database.pgLiveRows')"
-            width="140"
+            width="120"
             align="right"
           >
             <template #default="{ row }">{{ row.live_rows.toLocaleString() }}</template>
+          </el-table-column>
+          <el-table-column
+            prop="new_rows"
+            :label="t('admin.database.pgNewRows')"
+            width="100"
+            align="right"
+          >
+            <template #default="{ row }">
+              <span class="text-green-600 font-medium">{{ row.new_rows.toLocaleString() }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="duplicate_rows"
+            :label="t('admin.database.pgDuplicateRows')"
+            width="110"
+            align="right"
+          >
+            <template #default="{ row }">{{ row.duplicate_rows.toLocaleString() }}</template>
+          </el-table-column>
+          <el-table-column
+            prop="orphaned_rows"
+            :label="t('admin.database.pgOrphanedRows')"
+            width="100"
+            align="right"
+          >
+            <template #default="{ row }">
+              <span :class="row.orphaned_rows ? 'text-orange-500' : ''">
+                {{ row.orphaned_rows.toLocaleString() }}
+              </span>
+            </template>
           </el-table-column>
         </el-table>
 
@@ -915,7 +572,6 @@ onMounted(() => {
         </div>
       </template>
 
-      <!-- PG dump merge result -->
       <template v-if="pgDumpMergeResult">
         <el-divider />
         <el-result
@@ -932,6 +588,14 @@ onMounted(() => {
           class="mb-4"
           :closable="false"
         />
+
+        <p
+          v-if="pgDumpMergeResult.stats_recomputed_users"
+          class="text-sm text-gray-600 mb-3"
+        >
+          {{ t('admin.database.pgStatsRecomputed') }}:
+          {{ pgDumpMergeResult.stats_recomputed_users }}
+        </p>
 
         <el-table
           :data="pgMergeResultTableData"
@@ -972,7 +636,6 @@ onMounted(() => {
       </template>
     </el-card>
 
-    <!-- ═══ Section 4: Orphan Cleanup ═══ -->
     <el-card shadow="never">
       <template #header>
         <div class="flex items-center justify-between">
@@ -1024,4 +687,3 @@ onMounted(() => {
     </el-card>
   </div>
 </template>
-

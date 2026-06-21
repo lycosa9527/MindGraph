@@ -12,6 +12,7 @@ from typing import Optional
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from sqlalchemy import select
 
+from config.db_sessions import open_async_session
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
 from models.domain.messages import Language
@@ -20,12 +21,14 @@ from models.requests.requests_diagram import (
     WorkshopStartRequest,
 )
 from routers.auth.dependencies import get_language_dependency
+from services.auth.thinking_coin.client_event_service import claim_client_event_for_user
 from services.online_collab.core.online_collab_manager import get_online_collab_manager
 from utils.auth import get_current_user
 from utils.auth.school_tier import (
     TIER_FEATURE_ONLINE_COLLAB,
     assert_user_has_school_tier_feature,
 )
+from utils.auth.thinking_coin_config import EVENT_WORKSHOP_JOIN
 from utils.db.session_open import actor_rls_session, user_rls_session
 
 from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
@@ -213,6 +216,9 @@ async def join_workshop(
         workshop_info["diagram_id"],
     )
 
+    async with open_async_session() as db:
+        await claim_client_event_for_user(db, current_user, EVENT_WORKSHOP_JOIN)
+
     return {
         "success": True,
         "workshop": workshop_info,
@@ -263,6 +269,9 @@ async def join_workshop_organization(
         current_user.id,
         body.diagram_id,
     )
+
+    async with open_async_session() as db:
+        await claim_client_event_for_user(db, current_user, EVENT_WORKSHOP_JOIN)
 
     return {
         "success": True,

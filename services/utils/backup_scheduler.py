@@ -45,24 +45,23 @@ from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import get_redis, is_redis_available
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
+from services.utils.pg_backup_manifest import (
+    build_pg_dump_manifest,
+    prepare_pg_dump_rls,
+    resolve_stats_engine,
+)
 from services.utils.pg_client_binaries import (
     build_pg_dump_cmd,
     find_pg_client_binary,
+    log_pg_dump_failure,
     pg_tools_connection_username,
     pg_tools_libpq_url,
 )
 
 try:
-    from config.database import DATABASE_URL, engine
+    from config.database import DATABASE_URL
 except ImportError:
     DATABASE_URL = ""
-    engine = None
-
-try:
-    from sqlalchemy import inspect, text
-except ImportError:
-    inspect = None
-    text = None
 
 try:
     from qcloud_cos import CosConfig, CosS3Client
@@ -596,6 +595,11 @@ def backup_postgresql_database(backup_path: Path) -> bool:
         if not backup_path.suffix:
             backup_path = backup_path.with_suffix(".dump")
 
+        rls_ok, rls_msg = prepare_pg_dump_rls()
+        if not rls_ok:
+            logger.error("[Backup] RLS bootstrap failed before pg_dump: %s", rls_msg)
+            return False
+
         dump_user = pg_tools_connection_username(db_url)
         logger.info(
             "[Backup] Starting PostgreSQL backup using pg_dump (connection user=%s)",
@@ -621,8 +625,7 @@ def backup_postgresql_database(backup_path: Path) -> bool:
         )
 
         if result.returncode != 0:
-            error_msg = result.stderr or result.stdout or "Unknown error"
-            logger.error("[Backup] pg_dump failed: %s", error_msg)
+            log_pg_dump_failure(result.stderr or result.stdout or "Unknown error")
             if backup_path.exists():
                 backup_path.unlink()
             return False
@@ -1284,37 +1287,11 @@ def _write_backup_manifest(backup_path: Path) -> Optional[Path]:
         Path to the manifest file, or None on failure.
     """
     try:
-        if engine is None or inspect is None or text is None:
-            return None
-
-        pg_inspector = inspect(engine)
-        table_names = sorted(pg_inspector.get_table_names())
-        counts: Dict[str, int] = {}
-
-        with engine.connect() as conn:
-            for table in table_names:
-                try:
-                    result = conn.execute(text(f'SELECT COUNT(*) FROM "{table}"'))
-                    counts[table] = result.scalar() or 0
-                except DATABASE_ERRORS:
-                    counts[table] = -1
-
-        total_columns = 0
-        for table in table_names:
-            try:
-                total_columns += len(pg_inspector.get_columns(table))
-            except DATABASE_ERRORS:
-                pass
-
-        manifest: Dict[str, Any] = {
-            "dump_file": backup_path.name,
-            "timestamp": datetime.now().isoformat(),
-            "size_bytes": backup_path.stat().st_size,
-            "tables": counts,
-            "total_tables": len(table_names),
-            "total_columns": total_columns,
-            "total_records": sum(v for v in counts.values() if v >= 0),
-        }
+        stats_engine = resolve_stats_engine(bootstrap_rls=False)
+        try:
+            manifest = build_pg_dump_manifest(backup_path, stats_engine)
+        finally:
+            stats_engine.dispose()
 
         manifest_path = Path(f"{backup_path}.manifest.json")
         manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")

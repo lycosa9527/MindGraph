@@ -23,6 +23,7 @@ import { useDiagramTranslateUiStore } from '@/stores/diagramTranslateUi'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { useUIStore } from '@/stores/ui'
 import { authFetch } from '@/utils/api'
+import { claimThinkingCoinEvent } from '@/utils/claimThinkingCoinEvent'
 import { consumeDiagramTranslateNdjsonStream } from '@/utils/diagramTranslateStream'
 import { canvasTranslateTargetForUiLocale } from '@/utils/translateLanguages'
 
@@ -358,6 +359,7 @@ export function useCanvasToolbarApps() {
       } else if (diagramStore.hasPreservedLearningSheet()) {
         diagramStore.applyLearningSheetView()
         notify.success(t('canvas.toolbar.learningSheetRestored'))
+        void claimThinkingCoinEvent('learning_sheet_enable')
       } else {
         const spec = diagramStore.getSpecForSave()
         if (spec && diagramStore.type) {
@@ -370,6 +372,7 @@ export function useCanvasToolbarApps() {
             diagramStore.type
           )
           notify.success(t('canvas.toolbar.switchedLearningSheetMode'))
+          void claimThinkingCoinEvent('learning_sheet_enable')
         }
       }
       return

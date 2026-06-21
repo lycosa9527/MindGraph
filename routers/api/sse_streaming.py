@@ -27,11 +27,20 @@ from services.infrastructure.monitoring.mindmate_streaming import (
     mindmate_streaming_begin,
     mindmate_streaming_end,
 )
-from services.infrastructure.http.error_handler import UserDailyTokenCapExceededError
+from services.infrastructure.http.error_handler import (
+    ThinkingCoinInsufficientError,
+    UserDailyTokenCapExceededError,
+)
+from services.auth.thinking_coin.token_usage_link import build_mindmate_usage_snapshot
+from services.auth.thinking_coin.usage_wire import (
+    assert_llm_usage_budget,
+    thinking_coin_post_llm_success,
+    thinking_coins_apply_to_user,
+)
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.redis_token_buffer import get_token_tracker
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
-from utils.auth.user_daily_token_quota import assert_user_daily_token_budget, daily_token_limit_message
+from utils.auth.user_daily_token_quota import daily_token_limit_message
 from utils.auth import get_current_user_or_api_key
 from utils.dify_mindmate_user_id import mindmate_dify_user_id
 
@@ -165,12 +174,28 @@ async def ai_assistant_stream(
 
         if user_id_for_tracking is not None:
             try:
-                await assert_user_daily_token_budget(user_id_for_tracking, lang=lang)
+                await assert_llm_usage_budget(
+                    user_id_for_tracking,
+                    organization_id_for_tracking,
+                    "mindmate",
+                    lang=lang,
+                )
             except UserDailyTokenCapExceededError as cap_exc:
                 err = {
                     "event": "error",
                     "error": daily_token_limit_message(lang, cap_exc.cap),
                     "error_type": "daily_token_cap",
+                    "timestamp": int(time.time() * 1000),
+                }
+                yield f"data: {json.dumps(err)}\n\n"
+                return
+            except ThinkingCoinInsufficientError as coin_exc:
+                err = {
+                    "event": "error",
+                    "error": coin_exc.user_message,
+                    "error_type": "thinking_coin_insufficient",
+                    "balance": coin_exc.balance,
+                    "cost": coin_exc.cost,
                     "timestamp": int(time.time() * 1000),
                 }
                 yield f"data: {json.dumps(err)}\n\n"
@@ -237,28 +262,43 @@ async def ai_assistant_stream(
             logger.debug("[STREAM] Streaming completed. Total chunks: %s", chunk_count)
 
             activity_total_tokens: Optional[int] = None
-            if captured_usage:
+            usage_snapshot = None
+            if captured_usage and user_id_for_tracking is not None:
                 try:
-                    token_tracker = get_token_tracker()
                     input_tokens = captured_usage.get("prompt_tokens", 0)
                     output_tokens = captured_usage.get("completion_tokens", 0)
                     total_tokens = captured_usage.get("total_tokens", input_tokens + output_tokens)
                     activity_total_tokens = int(total_tokens) if total_tokens is not None else None
                     response_time = time.time() - start_time
-
-                    await token_tracker.track_usage(
-                        model_alias="dify",
-                        input_tokens=input_tokens,
-                        output_tokens=output_tokens,
-                        total_tokens=total_tokens,
-                        request_type="mindmate",
-                        user_id=user_id_for_tracking,
-                        organization_id=organization_id_for_tracking,
-                        conversation_id=captured_conversation_id or req.conversation_id,
-                        endpoint_path="/api/ai_assistant/stream",
-                        response_time=response_time,
-                        success=True,
+                    coins_user = await thinking_coins_apply_to_user(
+                        user_id_for_tracking,
+                        organization_id_for_tracking,
                     )
+                    if coins_user:
+                        usage_snapshot = build_mindmate_usage_snapshot(
+                            user_id=int(user_id_for_tracking),
+                            organization_id=organization_id_for_tracking,
+                            conversation_id=captured_conversation_id or req.conversation_id,
+                            input_tokens=int(input_tokens),
+                            output_tokens=int(output_tokens),
+                            total_tokens=int(total_tokens) if total_tokens is not None else None,
+                            response_time=response_time,
+                        )
+                    else:
+                        token_tracker = get_token_tracker()
+                        await token_tracker.track_usage(
+                            model_alias="dify",
+                            input_tokens=input_tokens,
+                            output_tokens=output_tokens,
+                            total_tokens=total_tokens,
+                            request_type="mindmate",
+                            user_id=user_id_for_tracking,
+                            organization_id=organization_id_for_tracking,
+                            conversation_id=captured_conversation_id or req.conversation_id,
+                            endpoint_path="/api/ai_assistant/stream",
+                            response_time=response_time,
+                            success=True,
+                        )
                     logger.debug(
                         "[STREAM] Tracked Dify token usage: input=%s, output=%s, total=%s",
                         input_tokens,
@@ -267,6 +307,17 @@ async def ai_assistant_stream(
                     )
                 except BACKGROUND_INFRA_ERRORS as track_error:
                     logger.warning("[STREAM] Failed to track token usage: %s", track_error)
+
+            if user_id_for_tracking is not None:
+                try:
+                    await thinking_coin_post_llm_success(
+                        user_id_for_tracking,
+                        organization_id_for_tracking,
+                        "mindmate",
+                        usage_snapshot,
+                    )
+                except BACKGROUND_INFRA_ERRORS as coin_error:
+                    logger.warning("[STREAM] Thinking coin settle failed: %s", coin_error)
 
             if user_id_for_tracking and not skip_activity_log:
                 schedule_user_usage_activity(

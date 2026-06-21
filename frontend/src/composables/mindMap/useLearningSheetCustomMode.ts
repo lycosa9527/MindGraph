@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { notify } from '@/composables/core/notifications'
 import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores'
+import { claimThinkingCoinEvent } from '@/utils/claimThinkingCoinEvent'
 
 /** Hammer pick mode — survives panel close so user can focus on canvas. */
 export const learningSheetPickActive = ref(false)
@@ -84,6 +85,7 @@ export function useLearningSheetCustomMode() {
     // Always sync flags + rebuild answers from actually blanked nodes (clears stale metadata).
     diagramStore.setLearningSheetMode(true)
     customPickActive.value = true
+    void claimThinkingCoinEvent('learning_sheet_enable')
   }
 
   function startRandomLearningSheet(): void {
@@ -103,6 +105,7 @@ export function useLearningSheetCustomMode() {
         diagramStore.type
       )
       notify.success(t('canvas.toolbar.switchedLearningSheetMode'))
+      void claimThinkingCoinEvent('learning_sheet_enable')
     }
   }
 

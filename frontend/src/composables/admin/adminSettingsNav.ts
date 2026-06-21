@@ -3,7 +3,15 @@
  */
 import { settingsSubtabRequiresCapabilities } from '@/utils/adminCapabilities'
 
-export type SettingsSubtab = 'features' | 'roles' | 'database' | 'performance' | 'library' | 'gewe' | 'errors'
+export type SettingsSubtab =
+  | 'features'
+  | 'roles'
+  | 'database'
+  | 'performance'
+  | 'library'
+  | 'gewe'
+  | 'errors'
+  | 'thinking_coins'
 
 export interface SettingsNavLeafItem {
   kind: 'leaf'
@@ -19,6 +27,7 @@ export const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
   { kind: 'leaf', name: 'database', labelKey: 'admin.database.tab' },
   { kind: 'leaf', name: 'performance', labelKey: 'admin.performance.tab' },
   { kind: 'leaf', name: 'errors', labelKey: 'admin.errors.tab' },
+  { kind: 'leaf', name: 'thinking_coins', labelKey: 'thinkingCoins.admin.tab' },
   { kind: 'leaf', name: 'library', labelKey: 'admin.library' },
   { kind: 'leaf', name: 'gewe', labelKey: 'admin.geweWechat' },
 ]

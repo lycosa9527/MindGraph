@@ -1,6 +1,7 @@
 /**
  * SSE consumer for POST /api/generate_graph/stream (auto-complete phase colors).
  */
+import { eventBus } from '@/composables/core/useEventBus'
 
 export type GenerateGraphStreamPhase = 'accepted' | 'waiting' | 'streaming'
 
@@ -88,6 +89,9 @@ export async function consumeGenerateGraphStream(
         } else if (event === 'error') {
           const message =
             typeof data.message === 'string' ? data.message : 'Request failed'
+          if (data.error_type === 'thinking_coin_insufficient') {
+            eventBus.emit('thinking_coins:insufficient', {})
+          }
           callbacks.onError?.(message)
         }
       }

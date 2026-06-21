@@ -21,9 +21,15 @@ from sqlalchemy.engine import Engine
 
 from config.database import init_db, libpq_database_url
 from services.utils.error_types import DATABASE_ERRORS
+from services.utils.pg_backup_manifest import (
+    build_pg_dump_manifest,
+    prepare_pg_dump_rls,
+    resolve_stats_engine,
+)
 from services.utils.pg_client_binaries import (
     build_pg_dump_cmd,
     find_pg_client_binary,
+    log_pg_dump_failure,
     pg_tools_connection_username,
 )
 from services.utils.pg_restore_prep import wipe_public_schema_before_restore
@@ -41,15 +47,14 @@ _find_pg_binary = find_pg_client_binary
 
 def scan_backup_folder(backup_dir: Path) -> Dict[str, List[Dict[str, Any]]]:
     """
-    Scan the backup folder for SQLite (*.db*) and PG dump (*.dump) files.
+    Scan the backup folder for PG dump (*.dump) files.
 
-    Returns ``{"sqlite": [...], "pg_dumps": [...]}``, each item a dict
-    with ``name``, ``size_bytes``, ``modified_at``.
+    Returns ``{"pg_dumps": [...]}``, each item a dict with ``name``, ``size_bytes``,
+    ``modified_at``.
     """
     if not backup_dir.exists():
-        return {"sqlite": [], "pg_dumps": []}
+        return {"pg_dumps": []}
 
-    sqlite_files: List[Dict[str, Any]] = []
     pg_dumps: List[Dict[str, Any]] = []
 
     for entry in sorted(backup_dir.iterdir()):
@@ -62,9 +67,7 @@ def scan_backup_folder(backup_dir: Path) -> Dict[str, List[Dict[str, Any]]]:
             "modified_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
         }
 
-        if ".db" in entry.name and not entry.name.endswith(DUMP_EXT):
-            sqlite_files.append(info)
-        elif entry.name.endswith(DUMP_EXT) and entry.name.startswith(f"{DUMP_PREFIX}."):
+        if entry.name.endswith(DUMP_EXT) and entry.name.startswith(f"{DUMP_PREFIX}."):
             manifest_path = backup_dir / f"{entry.name}.manifest.json"
             if manifest_path.exists():
                 try:
@@ -74,9 +77,8 @@ def scan_backup_folder(backup_dir: Path) -> Dict[str, List[Dict[str, Any]]]:
                     pass
             pg_dumps.append(info)
 
-    sqlite_files.sort(key=lambda f: f["modified_at"], reverse=True)
     pg_dumps.sort(key=lambda f: f["modified_at"], reverse=True)
-    return {"sqlite": sqlite_files, "pg_dumps": pg_dumps}
+    return {"pg_dumps": pg_dumps}
 
 
 # ── DB stats ─────────────────────────────────────────────────────────
@@ -111,52 +113,12 @@ def get_pg_stats(pg_engine: Engine) -> Dict[str, Any]:
     }
 
 
-# ── manifest ──────────────────────────────────────────────────────────
-
-
-def _build_manifest(
-    filename: str,
-    dump_path: Path,
-    pg_engine: Optional[Engine] = None,
-) -> Dict[str, Any]:
-    """Build a manifest dict for a pg_dump backup file."""
-    manifest: Dict[str, Any] = {
-        "dump_file": filename,
-        "timestamp": datetime.now(tz=UTC).isoformat(),
-        "size_bytes": dump_path.stat().st_size,
-    }
-    if pg_engine is None:
-        return manifest
-
-    try:
-        counts = _get_row_counts(pg_engine)
-        manifest["tables"] = counts
-
-        pg_inspector = inspect(pg_engine)
-        all_tables = pg_inspector.get_table_names()
-        total_cols = 0
-        for tbl in all_tables:
-            try:
-                total_cols += len(pg_inspector.get_columns(tbl))
-            except DATABASE_ERRORS:
-                pass
-
-        manifest["total_tables"] = len(all_tables)
-        manifest["total_columns"] = total_cols
-        manifest["total_records"] = sum(v for v in counts.values() if v >= 0)
-    except DATABASE_ERRORS:
-        pass
-
-    return manifest
-
-
 # ── export (pg_dump) ─────────────────────────────────────────────────
 
 
 def export_postgres_dump(
     db_url: str,
     backup_dir: Path,
-    pg_engine: Optional[Engine] = None,
 ) -> Dict[str, Any]:
     """
     Run ``pg_dump`` and save the output to ``backup/``.
@@ -167,6 +129,10 @@ def export_postgres_dump(
     pg_dump = _find_pg_binary("pg_dump")
     if not pg_dump:
         return {"success": False, "error": "pg_dump not found on server"}
+
+    rls_ok, rls_msg = prepare_pg_dump_rls()
+    if not rls_ok:
+        return {"success": False, "error": f"RLS bootstrap failed: {rls_msg}"}
 
     backup_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M%S")
@@ -186,7 +152,7 @@ def export_postgres_dump(
     )
 
     if result.returncode != 0:
-        logger.error("pg_dump failed: %s", result.stderr or result.stdout)
+        log_pg_dump_failure(result.stderr or result.stdout or "")
         if dump_path.exists():
             dump_path.unlink()
         return {
@@ -197,7 +163,16 @@ def export_postgres_dump(
     if not dump_path.exists() or dump_path.stat().st_size == 0:
         return {"success": False, "error": "Dump file empty or missing"}
 
-    manifest = _build_manifest(filename, dump_path, pg_engine)
+    stats_engine = resolve_stats_engine(bootstrap_rls=False)
+    try:
+        manifest = build_pg_dump_manifest(
+            dump_path,
+            stats_engine,
+            dump_file=filename,
+        )
+    finally:
+        stats_engine.dispose()
+
     manifest_path = backup_dir / f"{filename}.manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2))
 
@@ -239,58 +214,70 @@ def import_postgres_dump(
     if not dump_path.exists():
         return {"success": False, "error": f"File not found: {filename}"}
 
-    if not wipe_public_schema_before_restore(db_url, pg_engine):
-        return {
-            "success": False,
-            "error": "Failed to prepare database (drop public schema)",
-        }
+    rls_ok, rls_msg = prepare_pg_dump_rls()
+    if not rls_ok:
+        return {"success": False, "error": f"RLS bootstrap failed: {rls_msg}"}
 
-    cmd = [
-        pg_restore,
-        "--no-owner",
-        "--single-transaction",
-        "-d",
-        libpq_database_url(db_url),
-        str(dump_path),
-    ]
-    result = subprocess.run(
-        cmd,
-        capture_output=True,
-        timeout=3600,
-        check=False,
-        text=True,
-    )
-
-    if result.returncode != 0:
-        stderr = (result.stderr or "")[:500]
-        logger.error(
-            "pg_restore failed (exit %d): %s",
-            result.returncode,
-            stderr,
-        )
-        return {"success": False, "error": stderr}
+    owns_stats_engine = pg_engine is None
+    restore_engine = pg_engine
+    if restore_engine is None:
+        restore_engine = resolve_stats_engine(bootstrap_rls=False)
 
     try:
-        logger.info("[DBImport] Applying Alembic migrations after restore (schema may predate current ORM)")
-        _run_alembic_after_pg_restore()
-    except DATABASE_ERRORS as exc:
-        logger.error("[DBImport] Post-restore migration failed: %s", exc, exc_info=True)
-        return {
-            "success": False,
-            "error": (
-                "pg_restore finished but upgrading schema to current revision failed. "
-                f"Database may be inconsistent. Details: {exc}"
-            )[:2000],
-        }
+        if not wipe_public_schema_before_restore(db_url, restore_engine):
+            return {
+                "success": False,
+                "error": "Failed to prepare database (drop public schema)",
+            }
 
-    if pg_engine is not None:
+        cmd = [
+            pg_restore,
+            "--no-owner",
+            "--single-transaction",
+            "-d",
+            libpq_database_url(db_url),
+            str(dump_path),
+        ]
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            timeout=3600,
+            check=False,
+            text=True,
+        )
+
+        if result.returncode != 0:
+            stderr = (result.stderr or "")[:500]
+            logger.error(
+                "pg_restore failed (exit %d): %s",
+                result.returncode,
+                stderr,
+            )
+            return {"success": False, "error": stderr}
+
         try:
-            _reset_all_sequences(pg_engine)
+            logger.info("[DBImport] Applying Alembic migrations after restore (schema may predate current ORM)")
+            _run_alembic_after_pg_restore()
+        except DATABASE_ERRORS as exc:
+            logger.error("[DBImport] Post-restore migration failed: %s", exc, exc_info=True)
+            return {
+                "success": False,
+                "error": (
+                    "pg_restore finished but upgrading schema to current revision failed. "
+                    f"Database may be inconsistent. Details: {exc}"
+                )[:2000],
+            }
+
+        try:
+            _reset_all_sequences(restore_engine)
         except DATABASE_ERRORS as exc:
             logger.debug("[DBImport] Sequence reset failed: %s", exc)
 
-    logger.info("[DBImport] Restored %s successfully", filename)
-    return {"success": True, "filename": filename}
+        logger.info("[DBImport] Restored %s successfully", filename)
+        return {"success": True, "filename": filename}
+    finally:
+        if owns_stats_engine:
+            restore_engine.dispose()
 
 
 # ── list dumps ────────────────────────────────────────────────────────
@@ -339,19 +326,6 @@ def _run_alembic_after_pg_restore() -> None:
     table happens to be empty.
     """
     init_db(seed_organizations=False)
-
-
-def _get_row_counts(pg_engine: Engine) -> Dict[str, int]:
-    """Get row counts."""
-    pg_inspector = inspect(pg_engine)
-    counts: Dict[str, int] = {}
-    with pg_engine.connect() as conn:
-        for table in pg_inspector.get_table_names():
-            try:
-                counts[table] = conn.execute(text(f'SELECT COUNT(*) FROM "{table}"')).scalar() or 0
-            except DATABASE_ERRORS:
-                pass
-    return counts
 
 
 def _reset_all_sequences(pg_engine: Engine) -> None:

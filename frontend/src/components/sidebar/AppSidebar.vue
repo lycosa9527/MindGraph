@@ -11,7 +11,9 @@ import { ElButton } from 'element-plus'
 import { PanelLeftClose } from '@lucide/vue'
 
 import { AccountInfoModal, LoginModal, UpdateLogModal } from '@/components/auth'
+import ThinkingCoinsModal from '@/components/auth/ThinkingCoinsModal.vue'
 import LanguageSettingsModal from '@/components/settings/LanguageSettingsModal.vue'
+import { useThinkingCoinInsufficientListener } from '@/composables/auth/useThinkingCoinInsufficientListener'
 import { appSidebarInjectionKey, useAppSidebar } from '@/composables/sidebar/useAppSidebar'
 
 import AppSidebarAccountFooter from './AppSidebarAccountFooter.vue'
@@ -21,11 +23,15 @@ import LogoQrScanModal from './LogoQrScanModal.vue'
 const sidebar = useAppSidebar()
 provide(appSidebarInjectionKey, sidebar)
 
+useThinkingCoinInsufficientListener(() => sidebar.openThinkingCoinsUpgrade())
+
 const {
   isCollapsed,
   showLanguageSettingsModal,
   showLoginModal,
   showAccountModal,
+  showThinkingCoinsModal,
+  thinkingCoinsModalTab,
   showUpdateLogModal,
   authStore,
   isAuthenticated,
@@ -177,6 +183,10 @@ onBeforeUnmount(() => {
       @success="authStore.checkAuth()"
     />
     <UpdateLogModal v-model:visible="showUpdateLogModal" />
+    <ThinkingCoinsModal
+      v-model:visible="showThinkingCoinsModal"
+      :initial-tab="thinkingCoinsModalTab"
+    />
     <LogoQrScanModal
       :visible="showLogoQrScan"
       @close="closeLogoQrScan"

@@ -151,6 +151,31 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
   return response
 }
 
+function parseApiErrorDetail(payload: unknown, fallback: string): string {
+  if (payload && typeof payload === 'object' && 'detail' in payload) {
+    const detail = (payload as { detail?: unknown }).detail
+    if (typeof detail === 'string' && detail.trim()) {
+      return detail
+    }
+  }
+  return fallback
+}
+
+/**
+ * JSON API request — parses the body and throws on non-OK responses.
+ */
+export async function apiRequestJson<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const response = await apiRequest(endpoint, options)
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null)
+    throw new Error(parseApiErrorDetail(payload, response.statusText || 'Request failed'))
+  }
+  return response.json() as Promise<T>
+}
+
 /**
  * Make an authenticated GET request
  */

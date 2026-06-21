@@ -37,6 +37,7 @@ export type AdminCapability =
   | 'tab.settings.database'
   | 'tab.settings.performance'
   | 'tab.settings.errors'
+  | 'tab.settings.thinking_coins'
   | 'tab.settings.gewe'
   | 'tab.settings.kitty_llmops'
   | 'tab.settings.mindbot'
@@ -79,6 +80,7 @@ const SUPERADMIN_CAPS: AdminCapability[] = [
   'tab.settings.database',
   'tab.settings.performance',
   'tab.settings.errors',
+  'tab.settings.thinking_coins',
   'tab.settings.gewe',
   'tab.settings.kitty_llmops',
   'tab.settings.mindbot',
@@ -218,6 +220,7 @@ export function settingsSubtabRequiresCapabilities(subtab: string): AdminCapabil
     database: ['tab.settings.database'],
     performance: ['tab.settings.performance'],
     errors: ['tab.settings.errors'],
+    thinking_coins: ['tab.settings.thinking_coins'],
     gewe: ['tab.settings.gewe'],
     kitty_llmops: ['tab.settings.kitty_llmops'],
     mindbot: ['tab.settings.mindbot'],

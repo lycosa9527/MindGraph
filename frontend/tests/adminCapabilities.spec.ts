@@ -9,6 +9,7 @@ import {
   roleHasPanelAccess,
   tabEditCapability,
   tabRequiresCapabilities,
+  settingsSubtabRequiresCapabilities,
 } from '@/utils/adminCapabilities'
 import { visibleDataCenterViews } from '@/composables/admin/adminDataCenterViews'
 
@@ -87,5 +88,11 @@ describe('adminCapabilities', () => {
   it('canViewUsersTab requires global scope', () => {
     expect(canViewUsersTab(['tab.users.view', 'scope.global'])).toBe(true)
     expect(canViewUsersTab(['tab.users.view', 'scope.org'])).toBe(false)
+  })
+
+  it('thinking_coins settings subtab maps to dedicated capability', () => {
+    expect(settingsSubtabRequiresCapabilities('thinking_coins')).toEqual([
+      'tab.settings.thinking_coins',
+    ])
   })
 })

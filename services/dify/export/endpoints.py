@@ -69,19 +69,17 @@ def _org_creds_to_endpoints(org_id: int, creds: List[DifyServerCreds]) -> List[E
 
 
 def _mindbot_to_endpoints(org_id: int, items: List[MindbotDifyEndpoint]) -> List[ExportDifyEndpoint]:
-    out: List[ExportDifyEndpoint] = []
-    for index, item in enumerate(items, start=1):
-        out.append(
-            ExportDifyEndpoint(
-                organization_id=org_id,
-                source="mindbot_config",
-                server=index,
-                mindbot_config_id=item.mindbot_config_id,
-                api_key=item.api_key,
-                api_url=item.api_url,
-            )
+    return [
+        ExportDifyEndpoint(
+            organization_id=org_id,
+            source="mindbot_config",
+            server=int(item.server),
+            mindbot_config_id=item.mindbot_config_id,
+            api_key=item.api_key,
+            api_url=item.api_url,
         )
-    return out
+        for item in items
+    ]
 
 
 async def endpoints_for_target(

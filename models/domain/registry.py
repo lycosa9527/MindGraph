@@ -20,6 +20,14 @@ from models.domain.auth import (
 )
 from models.domain.user_api_token import UserAPIToken
 from models.domain.token_usage import TokenUsage
+from models.domain.thinking_coin import (
+    ThinkingCoinCheckin,
+    ThinkingCoinDailyActivity,
+    ThinkingCoinEarnTask,
+    ThinkingCoinLedger,
+    ThinkingCoinSetting,
+    ThinkingCoinWallet,
+)
 from models.domain.diagrams import Diagram
 from models.domain.diagram_snapshots import DiagramSnapshot
 from models.domain.knowledge_space import (

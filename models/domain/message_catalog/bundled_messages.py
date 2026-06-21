@@ -1008,6 +1008,11 @@ ERRORS = {
         "en": "Daily AI usage limit reached ({} tokens per day). Please try again tomorrow.",
         "zh-tw": "今日 AI 用量已達上限（每日 {} tokens），請明天再試",
     },
+    "thinking_coin_insufficient": {
+        "zh": "思维币不足（当前 {}，本次需要 {}），请完成任务或明天再来",
+        "en": "Insufficient thinking coins (balance {}, need {}). Complete tasks or try again later.",
+        "zh-tw": "思維幣不足（當前 {}，本次需要 {}），請完成任務或明天再來",
+    },
     "failed_generate_invitation_code": {
         "zh": "生成唯一邀请码失败",
         "en": "Failed to generate unique invitation code",

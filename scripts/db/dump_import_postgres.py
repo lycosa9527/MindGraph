@@ -39,17 +39,25 @@ from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 import psycopg
-from sqlalchemy import inspect, text
 
-from config.database import DATABASE_URL, engine, init_db, libpq_database_url
+from config.database import DATABASE_URL, init_db, libpq_database_url
 from services.utils.error_types import (
     BACKGROUND_INFRA_ERRORS,
     DATABASE_ERRORS,
     FILE_IO_ERRORS,
 )
+from services.utils.pg_backup_manifest import (
+    build_pg_dump_manifest,
+    collect_db_stats,
+    collect_table_row_counts,
+    prepare_pg_dump_rls,
+    resolve_stats_engine,
+)
 from services.utils.pg_client_binaries import (
     build_pg_dump_cmd,
     find_pg_client_binary,
+    log_pg_dump_failure,
+    pg_tools_connection_username,
     pg_tools_libpq_url,
 )
 from services.utils.pg_restore_prep import wipe_public_schema_before_restore
@@ -89,7 +97,7 @@ if RICH_AVAILABLE:
     TimeElapsedColumn = _TimeElapsedColumn
 
 try:
-    from utils.migration.sqlite.migration_verification import reset_postgresql_sequences
+    from utils.migration.pg_sequence_reset import reset_postgresql_sequences
 except ImportError:
     reset_postgresql_sequences = None
 
@@ -458,37 +466,28 @@ def ensure_postgresql_running(db_url: str) -> bool:
 find_pg_binary = find_pg_client_binary
 
 
-def get_table_row_counts(db_engine) -> Dict[str, int]:
-    """Query row counts for each table. Returns {table: count}."""
-    counts: Dict[str, int] = {}
-    inspector = inspect(db_engine)
-    existing_tables = set(inspector.get_table_names())
+def _prepare_pg_dump_cli() -> Optional[int]:
+    """
+    Bootstrap RLS env for standalone CLI dump/import.
 
-    with db_engine.connect() as conn:
-        for table_name in existing_tables:
-            try:
-                result = conn.execute(text(f'SELECT COUNT(*) FROM "{table_name}"'))
-                counts[table_name] = result.scalar() or 0
-            except DATABASE_ERRORS as e:
-                logger.debug("Could not count %s: %s", table_name, e)
-    return counts
+    Returns an exit code on failure, or None when migrate URL is ready.
+    """
+    if "postgresql" not in (DATABASE_URL or "").lower():
+        return None
 
+    rls_ok, rls_msg = prepare_pg_dump_rls()
+    if not rls_ok:
+        logger.error(
+            "RLS bootstrap failed for pg_dump: %s. "
+            "Set DATABASE_MIGRATION_URL=mindgraph_migrate in .env — see env.example.",
+            rls_msg,
+        )
+        return 1
 
-def get_db_stats(db_engine) -> Tuple[int, int, int, Dict[str, int]]:
-    """Get tables, columns, total records. Returns (tables, columns, records, counts)."""
-    inspector = inspect(db_engine)
-    existing_tables = set(inspector.get_table_names())
-    total_columns = 0
-    for table_name in existing_tables:
-        try:
-            columns = inspector.get_columns(table_name)
-            total_columns += len(columns)
-        except DATABASE_ERRORS:
-            pass
-
-    counts = get_table_row_counts(db_engine)
-    total_records = sum(counts.values())
-    return len(existing_tables), total_columns, total_records, counts
+    migrate_url = pg_tools_libpq_url()
+    dump_user = pg_tools_connection_username(migrate_url)
+    logger.info("pg_dump/pg_restore using migrate-capable URL (user=%s)", dump_user)
+    return None
 
 
 def log_db_summary(tables: int, columns: int, records: int) -> None:
@@ -571,7 +570,7 @@ def run_dump(db_url: str, backup_path: Path) -> bool:
     result = subprocess.run(cmd, capture_output=True, timeout=3600, check=False, text=True)
 
     if result.returncode != 0:
-        logger.error("pg_dump failed: %s", result.stderr or result.stdout)
+        log_pg_dump_failure(result.stderr or result.stdout or "")
         if backup_path.exists():
             backup_path.unlink()
         return False
@@ -681,61 +680,68 @@ def dump_command(live: bool) -> int:
         logger.error("DATABASE_URL is not PostgreSQL")
         return 1
 
-    if not ensure_postgresql_running(DATABASE_URL):
-        return 1
+    prep_err = _prepare_pg_dump_cli()
+    if prep_err is not None:
+        return prep_err
 
-    tables, columns, total_records, counts = get_db_stats(engine)
-    if not counts:
-        logger.error("No tables found in database - cannot dump")
+    migrate_url = pg_tools_libpq_url()
+    if not ensure_postgresql_running(migrate_url):
         return 1
-    log_db_summary(tables, columns, total_records)
-    logger.info("Table row counts: %s", counts)
 
     timestamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M%S")
     backup_path = BACKUP_DIR / f"{DUMP_PREFIX}.{timestamp}{DUMP_EXT}"
 
-    if not live:
-        logger.info("[DRY RUN] Would dump to %s", backup_path)
-        logger.info(
-            "[DRY RUN] Would export: %d tables, %d columns, %d records",
-            tables,
-            columns,
-            total_records,
-        )
-        return 0
-
-    dump_stages = {
-        0: "Connecting",
-        1: "Getting database stats",
-        2: "Running pg_dump",
-        3: "Writing manifest",
-        4: "Verifying dump",
-        5: "Complete",
-    }
-    with DumpImportProgress("Dump", 5, dump_stages) as prog:
-        prog.update(0, "Connected")
-        prog.update(1, "Stats collected")
-        if not run_dump(pg_tools_libpq_url(), backup_path):
+    stats_engine = resolve_stats_engine(bootstrap_rls=False)
+    try:
+        tables, columns, total_records, counts = collect_db_stats(stats_engine)
+        if not counts:
+            logger.error("No tables found in database - cannot dump")
             return 1
-        prog.update(2, "pg_dump done")
+        log_db_summary(tables, columns, total_records)
+        logger.info("Table row counts: %s", counts)
 
-        manifest = {
-            "dump_file": backup_path.name,
-            "timestamp": datetime.now(tz=UTC).isoformat(),
-            "source": DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else "unknown",
-            "tables": counts,
-            "total_tables": tables,
-            "total_columns": columns,
-            "total_records": total_records,
+        if not live:
+            logger.info("[DRY RUN] Would dump to %s", backup_path)
+            logger.info(
+                "[DRY RUN] Would export: %d tables, %d columns, %d records",
+                tables,
+                columns,
+                total_records,
+            )
+            return 0
+
+        dump_stages = {
+            0: "Connecting",
+            1: "Getting database stats",
+            2: "Running pg_dump",
+            3: "Writing manifest",
+            4: "Verifying dump",
+            5: "Complete",
         }
-        manifest_path = backup_path.with_suffix(backup_path.suffix + ".manifest.json")
-        with open(manifest_path, "w", encoding="utf-8") as f:
-            json.dump(manifest, f, indent=2)
-        prog.update(3, "Manifest written")
+        verified = False
+        with DumpImportProgress("Dump", 5, dump_stages) as prog:
+            prog.update(0, "Connected")
+            prog.update(1, "Stats collected")
+            if not run_dump(migrate_url, backup_path):
+                return 1
+            prog.update(2, "pg_dump done")
 
-        verified = verify_dump(backup_path)
-        prog.update(4, "Verified" if verified else "Verify failed")
-        prog.update(5, "Complete")
+            source = DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else "unknown"
+            manifest = build_pg_dump_manifest(
+                backup_path,
+                stats_engine,
+                source=source,
+            )
+            manifest_path = backup_path.with_suffix(backup_path.suffix + ".manifest.json")
+            with open(manifest_path, "w", encoding="utf-8") as f:
+                json.dump(manifest, f, indent=2)
+            prog.update(3, "Manifest written")
+
+            verified = verify_dump(backup_path)
+            prog.update(4, "Verified" if verified else "Verify failed")
+            prog.update(5, "Complete")
+    finally:
+        stats_engine.dispose()
 
     if verified:
         logger.info("Dump verified: %s", backup_path.name)
@@ -825,7 +831,22 @@ def import_command(
     such as run_migrations.py can pass a resolved backup folder after loading .env.
     """
     db_url = db_url or pg_tools_libpq_url()
-    db_engine = db_engine or engine
+    return _import_command_body(
+        live,
+        db_url=db_url,
+        stats_engine=db_engine,
+        backup_dir=backup_dir,
+    )
+
+
+def _import_command_body(
+    live: bool,
+    *,
+    db_url: str,
+    stats_engine: Any,
+    backup_dir: Optional[Path],
+) -> int:
+    """Import flow implementation."""
     bdir = backup_dir or BACKUP_DIR
 
     if "postgresql" not in (db_url or "").lower():
@@ -874,105 +895,119 @@ def import_command(
         logger.info("[DRY RUN] Would REPLACE all existing data (prompt on execute)")
         return 0
 
+    prep_err = _prepare_pg_dump_cli()
+    if prep_err is not None:
+        return prep_err
+
     if not ensure_postgresql_running(db_url):
         return 1
 
-    current_counts = get_table_row_counts(db_engine)
-    manifest_tables_set = set(expected_counts.keys())
-    current_tables = set(current_counts.keys())
-    dump_newer_tables = manifest_tables_set - current_tables
-    if dump_newer_tables:
-        logger.info(
-            "Dump has newer schema: %d table(s) not in DB - restore will create: %s",
-            len(dump_newer_tables),
-            ", ".join(sorted(dump_newer_tables)[:5]) + ("..." if len(dump_newer_tables) > 5 else ""),
-        )
+    owns_stats_engine = stats_engine is None
+    if owns_stats_engine:
+        stats_engine = resolve_stats_engine(bootstrap_rls=False)
 
-    if not _confirm_overwrite(dump_ts or "", last_import_ts):
-        logger.info("Import cancelled")
-        return 0
-
-    import_stages = {
-        0: "Checking manifest",
-        1: "Checking schema",
-        2: "Running pg_restore",
-        3: "Alembic upgrade",
-        4: "Resetting sequences",
-        5: "Verifying counts",
-        6: "Complete",
-    }
-    with DumpImportProgress("Import", 6, import_stages) as prog:
-        prog.update(0, "Manifest loaded")
-        prog.update(1, "Schema checked")
-        if not run_restore(db_url, dump_path, db_engine):
-            return 1
-        if db_engine is not None:
-            db_engine.dispose()
-        prog.update(2, "pg_restore done")
-
-        try:
+    try:
+        current_counts = collect_table_row_counts(stats_engine)
+        manifest_tables_set = set(expected_counts.keys())
+        current_tables = set(current_counts.keys())
+        dump_newer_tables = manifest_tables_set - current_tables
+        if dump_newer_tables:
             logger.info(
-                "[Import] Applying Alembic migrations after restore "
-                "(older dumps may predate current ORM); seed skipped",
+                "Dump has newer schema: %d table(s) not in DB - restore will create: %s",
+                len(dump_newer_tables),
+                ", ".join(sorted(dump_newer_tables)[:5]) + ("..." if len(dump_newer_tables) > 5 else ""),
             )
-            init_db(seed_organizations=False)
-        except DATABASE_ERRORS as exc:
-            logger.error(
-                "[Import] Post-restore migration failed (data was restored; "
-                "fix migrations then re-run or restore again): %s",
-                exc,
-                exc_info=True,
-            )
-            return 1
-        prog.update(3, "Alembic upgrade done")
 
-        try:
-            if reset_postgresql_sequences:
-                reset_postgresql_sequences(db_engine)
-                logger.info("PostgreSQL sequences reset")
-            else:
-                logger.warning("Could not reset sequences (optional module not available)")
-        except DATABASE_ERRORS as e:
-            logger.warning("Sequence reset had issues: %s", e)
-        prog.update(4, "Sequences reset")
+        if not _confirm_overwrite(dump_ts or "", last_import_ts):
+            logger.info("Import cancelled")
+            return 0
 
-        actual_counts = get_table_row_counts(db_engine)
-        prog.update(5, "Verifying counts")
-        prog.update(6, "Complete")
-
-    missing_tables: List[str] = []
-    count_mismatches: List[Tuple[str, int, int]] = []
-    for table, expected in expected_counts.items():
-        actual = actual_counts.get(table, -1)
-        if actual == -1:
-            missing_tables.append(table)
-        elif actual != expected:
-            count_mismatches.append((table, expected, actual))
-
-    extra_tables = set(actual_counts.keys()) - set(expected_counts.keys())
-    if extra_tables:
-        logger.warning(
-            "DB has %d extra table(s) not in manifest: %s",
-            len(extra_tables),
-            ", ".join(sorted(extra_tables)[:10]) + ("..." if len(extra_tables) > 10 else ""),
+        logger.info(
+            "Manifest row counts use migrate-role stats; pre-RLS-fix manifests may fail verification",
         )
 
-    if missing_tables:
-        logger.error("Tables missing after restore: %s", ", ".join(sorted(missing_tables)))
-        return 1
+        import_stages = {
+            0: "Checking manifest",
+            1: "Checking schema",
+            2: "Running pg_restore",
+            3: "Alembic upgrade",
+            4: "Resetting sequences",
+            5: "Verifying counts",
+            6: "Complete",
+        }
+        with DumpImportProgress("Import", 6, import_stages) as prog:
+            prog.update(0, "Manifest loaded")
+            prog.update(1, "Schema checked")
+            if not run_restore(db_url, dump_path, stats_engine):
+                return 1
+            prog.update(2, "pg_restore done")
 
-    if count_mismatches:
-        logger.error("Row count mismatch after restore:")
-        for table, exp, act in count_mismatches:
-            logger.error("  %s: expected %d, got %d", table, exp, act)
-        return 1
+            try:
+                logger.info(
+                    "[Import] Applying Alembic migrations after restore "
+                    "(older dumps may predate current ORM); seed skipped",
+                )
+                init_db(seed_organizations=False)
+            except DATABASE_ERRORS as exc:
+                logger.error(
+                    "[Import] Post-restore migration failed (data was restored; "
+                    "fix migrations then re-run or restore again): %s",
+                    exc,
+                    exc_info=True,
+                )
+                return 1
+            prog.update(3, "Alembic upgrade done")
 
-    tables, columns, total_records, _ = get_db_stats(db_engine)
-    log_db_summary(tables, columns, total_records)
-    logger.info("Import complete. All table counts match manifest.")
-    if dump_ts:
-        _write_last_import_timestamp(bdir, dump_ts)
-    return 0
+            try:
+                if reset_postgresql_sequences:
+                    reset_postgresql_sequences(stats_engine)
+                    logger.info("PostgreSQL sequences reset")
+                else:
+                    logger.warning("Could not reset sequences (optional module not available)")
+            except DATABASE_ERRORS as e:
+                logger.warning("Sequence reset had issues: %s", e)
+            prog.update(4, "Sequences reset")
+
+            actual_counts = collect_table_row_counts(stats_engine)
+            prog.update(5, "Verifying counts")
+            prog.update(6, "Complete")
+
+        missing_tables: List[str] = []
+        count_mismatches: List[Tuple[str, int, int]] = []
+        for table, expected in expected_counts.items():
+            actual = actual_counts.get(table, -1)
+            if actual == -1:
+                missing_tables.append(table)
+            elif actual != expected:
+                count_mismatches.append((table, expected, actual))
+
+        extra_tables = set(actual_counts.keys()) - set(expected_counts.keys())
+        if extra_tables:
+            logger.warning(
+                "DB has %d extra table(s) not in manifest: %s",
+                len(extra_tables),
+                ", ".join(sorted(extra_tables)[:10]) + ("..." if len(extra_tables) > 10 else ""),
+            )
+
+        if missing_tables:
+            logger.error("Tables missing after restore: %s", ", ".join(sorted(missing_tables)))
+            return 1
+
+        if count_mismatches:
+            logger.error("Row count mismatch after restore:")
+            for table, exp, act in count_mismatches:
+                logger.error("  %s: expected %d, got %d", table, exp, act)
+            return 1
+
+        tables, columns, total_records, _ = collect_db_stats(stats_engine)
+        log_db_summary(tables, columns, total_records)
+        logger.info("Import complete. All table counts match manifest.")
+        if dump_ts:
+            _write_last_import_timestamp(bdir, dump_ts)
+        return 0
+    finally:
+        if owns_stats_engine and stats_engine is not None:
+            stats_engine.dispose()
 
 
 def prompt_dump_or_import() -> Optional[str]:

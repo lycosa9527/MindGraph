@@ -18,8 +18,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.user_activity_log import UserActivityLog
+from services.auth.thinking_coin.client_event_service import claim_client_event_for_user
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_current_user, is_teacher
+from utils.auth.thinking_coin_config import EVENT_DIAGRAM_EXPORT
 
 logger = logging.getLogger(__name__)
 
@@ -43,22 +45,41 @@ async def log_diagram_export(
 
     Called by frontend after successful client-side export (PNG/SVG/PDF/JSON).
     """
-    if not is_teacher(current_user):
-        return {"status": "skipped", "reason": "not_teacher"}
+    status = "skipped"
+    reason: str | None = None
+
+    if is_teacher(current_user):
+        try:
+            log_entry = UserActivityLog(
+                user_id=current_user.id,
+                activity_type="diagram_export",
+                created_at=datetime.now(UTC),
+            )
+            db.add(log_entry)
+            await db.commit()
+            status = "logged"
+        except DATABASE_ERRORS as exc:
+            logger.debug("Failed to log diagram_export: %s", exc)
+            try:
+                await db.rollback()
+            except DATABASE_ERRORS as rollback_exc:
+                logger.debug("Rollback after export log failure: %s", rollback_exc)
+            status = "error"
+    else:
+        reason = "not_teacher"
 
     try:
-        log_entry = UserActivityLog(
-            user_id=current_user.id,
-            activity_type="diagram_export",
-            created_at=datetime.now(UTC),
+        credited, _balance, _slug = await claim_client_event_for_user(
+            db,
+            current_user,
+            EVENT_DIAGRAM_EXPORT,
         )
-        db.add(log_entry)
-        await db.commit()
-        return {"status": "logged"}
-    except DATABASE_ERRORS as e:
-        logger.debug("Failed to log diagram_export: %s", e)
-        try:
-            await db.rollback()
-        except DATABASE_ERRORS as exc:
-            logger.debug("Rollback after export log failure: %s", exc)
-        return {"status": "error"}
+        if credited > 0 and status == "skipped":
+            status = "rewarded"
+    except DATABASE_ERRORS as exc:
+        logger.debug("Failed to claim diagram_export thinking coins: %s", exc)
+
+    payload: dict[str, str] = {"status": status}
+    if reason is not None:
+        payload["reason"] = reason
+    return payload

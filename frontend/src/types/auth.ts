@@ -37,6 +37,11 @@ export interface SchoolTierFeatures {
   api_token: boolean
 }
 
+export interface ThinkingCoinsSummary {
+  balance: number
+  eligible: boolean
+}
+
 export interface User {
   id: string
   username: string
@@ -70,6 +75,8 @@ export interface User {
   schoolTierFeatures?: SchoolTierFeatures | null
   /** True when the school contract end date has passed (tier downgraded to trial) */
   subscriptionExpired?: boolean
+  /** Trial-teacher thinking coin wallet summary from /me */
+  thinkingCoins?: ThinkingCoinsSummary
 }
 
 /**
@@ -108,6 +115,10 @@ export interface BackendUser {
   match_prompt_to_ui?: boolean
   allows_simplified_chinese?: boolean
   login_password_set?: boolean
+  thinking_coins?: {
+    balance?: number
+    eligible?: boolean
+  }
   user?: {
     id?: string | number
     phone?: string

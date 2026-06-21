@@ -31,7 +31,12 @@ from services.llm.llm_utils import LLMUtils
 from services.monitoring.performance_tracker import performance_tracker
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from services.utils.prompt_manager import prompt_manager
-from utils.auth.user_daily_token_quota import assert_user_daily_token_budget
+from services.auth.thinking_coin.usage_wire import (
+    assert_llm_usage_budget,
+    thinking_coin_post_llm_success,
+    thinking_coins_apply_to_user,
+)
+from services.auth.thinking_coin.token_usage_link import build_token_usage_snapshot
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +133,30 @@ class LLMService:
         logger.info("[LLMService] Cleaning up...")
         self.client_manager.cleanup()
         logger.info("[LLMService] Cleanup complete")
+
+    async def _settle_thinking_coins_after_success(
+        self,
+        user_id: Optional[int],
+        organization_id: Optional[int],
+        request_type: str,
+        usage_data: dict[str, Any],
+        metadata: dict[str, Any],
+        model: str,
+        duration: float,
+    ) -> None:
+        """Debit thinking coins and sync-insert token_usage when eligible."""
+        coins_user = await thinking_coins_apply_to_user(user_id, organization_id)
+        usage_snapshot = (
+            build_token_usage_snapshot(usage_data, metadata, model, duration)
+            if coins_user and usage_data
+            else None
+        )
+        await thinking_coin_post_llm_success(
+            user_id,
+            organization_id,
+            request_type,
+            usage_snapshot,
+        )
 
     # ============================================================================
     # BASIC METHODS
@@ -234,7 +263,12 @@ class LLMService:
         start_time = time.time()
         provider: str | None = None
 
-        await assert_user_daily_token_budget(user_id, estimated_tokens=max_tokens)
+        await assert_llm_usage_budget(
+            user_id,
+            organization_id,
+            request_type,
+            estimated_tokens=max_tokens,
+        )
 
         # Build messages with RAG context injection
         chat_messages = await self.message_builder.build_with_rag(
@@ -314,6 +348,7 @@ class LLMService:
                 "conversation_id": conversation_id,
                 "http_request_id": http_request_id,
             }
+            coins_user = await thinking_coins_apply_to_user(user_id, organization_id)
             await self.metrics_tracker.track_all(
                 model=model,
                 usage_data=usage_data,
@@ -322,6 +357,16 @@ class LLMService:
                 load_balancer=self.load_balancer,
                 success=True,
                 duration=duration,
+                skip_token_buffer=coins_user,
+            )
+            await self._settle_thinking_coins_after_success(
+                user_id,
+                organization_id,
+                request_type,
+                usage_data if isinstance(usage_data, dict) else {},
+                metadata,
+                model,
+                duration,
             )
 
             return content
@@ -408,7 +453,15 @@ class LLMService:
         start_time = time.time()
         provider: str | None = None
 
-        await assert_user_daily_token_budget(kwargs.get("user_id"), estimated_tokens=max_tokens)
+        req_type = str(kwargs.get("request_type", "diagram_generation"))
+        req_user_id = kwargs.get("user_id")
+        req_org_id = kwargs.get("organization_id")
+        await assert_llm_usage_budget(
+            req_user_id,
+            req_org_id,
+            req_type,
+            estimated_tokens=max_tokens,
+        )
 
         # Build messages (no RAG for chat_with_usage - caller handles tracking)
         chat_messages = self.message_builder.build_chat_messages(
@@ -481,6 +534,22 @@ class LLMService:
                     success=True,
                     duration=duration,
                 )
+
+            coin_metadata = {
+                "user_id": req_user_id,
+                "organization_id": req_org_id,
+                "request_type": req_type,
+            }
+            usage_dict = usage_data if isinstance(usage_data, dict) else {}
+            await self._settle_thinking_coins_after_success(
+                req_user_id,
+                req_org_id,
+                req_type,
+                usage_dict,
+                coin_metadata,
+                model,
+                duration,
+            )
 
             return content, usage_data
 
@@ -586,7 +655,12 @@ class LLMService:
         start_time = time.time()
         provider: str | None = None
 
-        await assert_user_daily_token_budget(user_id, estimated_tokens=max_tokens)
+        await assert_llm_usage_budget(
+            user_id,
+            organization_id,
+            request_type,
+            estimated_tokens=max_tokens,
+        )
 
         # Enhance prompt with RAG for streaming (if enabled)
         if use_knowledge_base and user_id and messages is None:
@@ -685,6 +759,7 @@ class LLMService:
                 "session_id": session_id,
                 "conversation_id": conversation_id,
             }
+            coins_user = await thinking_coins_apply_to_user(user_id, organization_id)
             await self.metrics_tracker.track_all(
                 model=model,
                 usage_data=usage_data,
@@ -693,6 +768,16 @@ class LLMService:
                 load_balancer=self.load_balancer,
                 success=True,
                 duration=duration,
+                skip_token_buffer=coins_user,
+            )
+            await self._settle_thinking_coins_after_success(
+                user_id,
+                organization_id,
+                request_type,
+                usage_data if isinstance(usage_data, dict) else {},
+                metadata,
+                model,
+                duration,
             )
 
         except ValueError as value_error:

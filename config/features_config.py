@@ -274,6 +274,14 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_MINDMATE_EXPORT", "False").lower() == "true"
 
     @property
+    def FEATURE_THINKING_COINS(self):
+        """Enable thinking coin (思维币) wallet for trial school teachers.
+
+        Disabled by default. Set FEATURE_THINKING_COINS=True in .env to enable.
+        """
+        return self._get_cached_value("FEATURE_THINKING_COINS", "False").lower() == "true"
+
+    @property
     def FEATURE_AUTH_PIXEL_BATTLE(self):
         """Enable retro pixel-art battle background on /auth (test / easter-egg).
 

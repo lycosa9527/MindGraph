@@ -2,31 +2,22 @@
 PG-to-PG Merge Service
 
 Orchestrates non-destructive merge of a PostgreSQL dump into the live
-database via a temporary staging database:
-
-1. Create a staging database and pg_restore the dump into it.
-2. Build user (by phone) and org (by code) ID mappings.
-3. Merge every table in FK-safe order, remapping IDs.
-4. Drop the staging database.
-
-RLS: dumps use ``pg_dump --no-policies``; after restore, run ``alembic upgrade head`` as
-``mindgraph_migrate`` so policies come from rev_0042–0048, not from the dump file.
-
-Public API:
-    analyze_pg_dump()  – preview what the merge would do
-    merge_pg_dump()    – execute the full merge
+database via a temporary staging database.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """
 
+from __future__ import annotations
+
+import asyncio
 import logging
 import subprocess
 import uuid as uuid_mod
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Set
 from urllib.parse import urlparse, urlunparse
 
 import psycopg
@@ -35,26 +26,17 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.pool import NullPool
 
-from services.admin.pg_merge_tables import (
-    SKIP_TABLES,
-    merge_table,
-    ordered_table_names,
-    reset_all_sequences,
-)
+from config.database import AsyncSessionLocal
+from services.admin.pg_merge_config import SKIP_TABLES, STATS_RECOMPUTE_TABLES, ordered_table_names
+from services.admin.pg_merge_table_ops import merge_table, preview_table, reset_all_sequences
+from services.teacher_usage_stats import compute_and_upsert_user_usage_stats_async
 from services.utils.error_types import DATABASE_ERRORS
 from services.utils.pg_client_binaries import find_pg_client_binary, pg_tools_libpq_url
 
 logger = logging.getLogger(__name__)
 
 _STAGING_PREFIX = "mindgraph_merge_staging_"
-
-# Migrate credentials in libpq format (BYPASSRLS for staging restore).
 _MIGRATE_DB_URL = pg_tools_libpq_url()
-
-
-# ---------------------------------------------------------------------------
-# URL helpers
-# ---------------------------------------------------------------------------
 
 
 def _replace_db_name(db_url: str, new_db: str) -> str:
@@ -73,11 +55,6 @@ def _sqla_url(libpq_url: str) -> str:
 def _admin_url() -> str:
     """Migrate credentials pointed at the postgres system DB for CREATE/DROP DATABASE."""
     return _replace_db_name(_MIGRATE_DB_URL, "postgres")
-
-
-# ---------------------------------------------------------------------------
-# Staging database lifecycle
-# ---------------------------------------------------------------------------
 
 
 def _create_staging_db() -> str:
@@ -171,20 +148,11 @@ def _staging_engine(staging_url: str) -> Engine:
     return create_engine(_sqla_url(staging_url), poolclass=NullPool)
 
 
-# ---------------------------------------------------------------------------
-# Mapping builders
-# ---------------------------------------------------------------------------
-
-
 def _build_root_mappings(
     staging_eng: Engine,
     live_eng: Engine,
 ) -> Dict[str, Dict[int, int]]:
-    """Build org (by code) and user (by phone) ID mappings.
-
-    Returns ``{"organizations": {staging_id: live_id, ...},
-               "users": {staging_id: live_id, ...}}``.
-    """
+    """Build org (by code) and user (by phone) ID mappings."""
     id_maps: Dict[str, Dict[int, int]] = {}
 
     with live_eng.connect() as conn:
@@ -234,20 +202,28 @@ def _count_tables(engine: Engine) -> Dict[str, int]:
     return counts
 
 
-# ---------------------------------------------------------------------------
-# Analyze
-# ---------------------------------------------------------------------------
+async def _recompute_usage_stats_async(user_ids: Set[int]) -> int:
+    """Recompute user_usage_stats for affected users after merge."""
+    recomputed = 0
+    async with AsyncSessionLocal() as db:
+        for user_id in sorted(user_ids):
+            if await compute_and_upsert_user_usage_stats_async(user_id, db):
+                recomputed += 1
+    return recomputed
+
+
+def _recompute_usage_stats(user_ids: Set[int]) -> int:
+    """Sync wrapper for stats recompute after merge."""
+    if not user_ids:
+        return 0
+    return asyncio.run(_recompute_usage_stats_async(user_ids))
 
 
 def analyze_pg_dump(
     dump_path: Path,
     live_engine: Engine,
 ) -> Dict[str, Any]:
-    """Restore a dump to staging, analyse it, then drop staging.
-
-    Returns a dict with user/org match stats, per-table row counts
-    from the staging dump, and the list of tables that will be merged.
-    """
+    """Restore a dump to staging, analyse it, then drop staging."""
     staging_url = _create_staging_db()
     staging_eng: Optional[Engine] = None
     try:
@@ -272,11 +248,25 @@ def analyze_pg_dump(
         staging_org_total = staging_counts.get("organizations", 0)
         staging_user_total = staging_counts.get("users", 0)
 
+        id_maps: Dict[str, Dict] = {}
         per_table: Dict[str, Dict[str, int]] = {}
-        for table in mergeable:
-            per_table[table] = {
-                "staging_rows": staging_counts.get(table, 0),
-                "live_rows": live_counts.get(table, 0),
+
+        for table_name in ordered_table_names():
+            if table_name not in mergeable:
+                continue
+            preview = preview_table(
+                table_name,
+                staging_eng,
+                live_engine,
+                id_maps,
+                simulate_ids=True,
+            )
+            per_table[table_name] = {
+                "staging_rows": staging_counts.get(table_name, 0),
+                "live_rows": live_counts.get(table_name, 0),
+                "new_rows": preview["new_rows"],
+                "duplicate_rows": preview["duplicate_rows"],
+                "orphaned_rows": preview["orphaned_rows"],
             }
 
         return {
@@ -296,20 +286,11 @@ def analyze_pg_dump(
         _drop_staging_db(staging_url)
 
 
-# ---------------------------------------------------------------------------
-# Merge
-# ---------------------------------------------------------------------------
-
-
 def merge_pg_dump(
     dump_path: Path,
     live_engine: Engine,
 ) -> Dict[str, Any]:
-    """Full PG-to-PG merge: staging → map → merge → cleanup.
-
-    Returns ``{"success": True, "tables": {table: stats}, ...}``
-    or ``{"success": False, "error": "..."}`` on failure.
-    """
+    """Full PG-to-PG merge: staging → map → merge → cleanup."""
     started = datetime.now(tz=UTC)
     staging_url = _create_staging_db()
     staging_eng: Optional[Engine] = None
@@ -325,6 +306,7 @@ def merge_pg_dump(
         id_maps: Dict[str, Dict] = {}
         results: Dict[str, Dict[str, int]] = {}
         file_warning = False
+        stats_user_ids: Set[int] = set()
 
         for table_name in ordered_table_names():
             if table_name not in staging_tables:
@@ -337,13 +319,24 @@ def merge_pg_dump(
                 live_engine,
                 id_maps,
             )
-            results[table_name] = table_result
+            clean_result = {
+                k: v
+                for k, v in table_result.items()
+                if not k.startswith("_")
+            }
+            results[table_name] = clean_result
+
+            if table_name in STATS_RECOMPUTE_TABLES and table_result.get("inserted", 0) > 0:
+                for uid in table_result.get("_inserted_user_ids", []):
+                    if isinstance(uid, int):
+                        stats_user_ids.add(uid)
 
             if table_name in ("file_attachments", "library_documents"):
                 if table_result.get("inserted", 0) > 0:
                     file_warning = True
 
         reset_all_sequences(live_engine)
+        stats_recomputed = _recompute_usage_stats(stats_user_ids)
 
         elapsed = (datetime.now(tz=UTC) - started).total_seconds()
         logger.info("[PGMerge] Full merge completed in %.1fs", elapsed)
@@ -352,6 +345,7 @@ def merge_pg_dump(
             "success": True,
             "tables": results,
             "elapsed_seconds": round(elapsed, 1),
+            "stats_recomputed_users": stats_recomputed,
         }
         if file_warning:
             response["file_warning"] = (

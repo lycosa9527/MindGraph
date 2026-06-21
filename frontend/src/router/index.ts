@@ -236,6 +236,12 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'main', requiresAuth: true, ...pageTitle('libraryBookmark') },
   },
   {
+    path: '/thinking-coins/upgrade',
+    name: 'ThinkingCoinsUpgrade',
+    component: () => import('@/pages/ThinkingCoinsUpgradePage.vue'),
+    meta: { requiresAuth: true, layout: 'main', ...pageTitle('thinkingCoinsUpgrade') },
+  },
+  {
     path: '/gewe',
     redirect: (to) => ({
       path: '/admin',
@@ -448,6 +454,14 @@ router.beforeEach(async (to, from) => {
   }
   if (to.name === 'Library' && !featureFlagsStore.getFeatureLibrary()) {
     return { name: 'MindMate' }
+  }
+  if (to.name === 'ThinkingCoinsUpgrade') {
+    if (!featureFlagsStore.flags?.feature_thinking_coins) {
+      return { name: 'MindMate' }
+    }
+    if (authStore.user?.thinkingCoins?.eligible !== true) {
+      return { name: 'MindMate' }
+    }
   }
   // Guest-only routes (/auth, /bayi/passkey; /login redirects to /auth): confirm session, then app home
   if (to.meta.guestOnly) {

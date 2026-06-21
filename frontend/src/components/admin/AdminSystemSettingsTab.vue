@@ -10,6 +10,7 @@ import AdminDatabaseTab from '@/components/admin/AdminDatabaseTab.vue'
 import AdminFeaturesTab from '@/components/admin/AdminFeaturesTab.vue'
 import AdminLibraryTab from '@/components/admin/AdminLibraryTab.vue'
 import AdminPerformanceTab from '@/components/admin/AdminPerformanceTab.vue'
+import AdminThinkingCoinsTab from '@/components/admin/AdminThinkingCoinsTab.vue'
 import AdminRolesTab from '@/components/admin/AdminRolesTab.vue'
 import GeweLoginComponent from '@/components/admin/GeweLoginComponent.vue'
 import {
@@ -79,6 +80,7 @@ watch(
     <AdminDatabaseTab v-else-if="activeSubtab === 'database'" />
     <AdminPerformanceTab v-else-if="activeSubtab === 'performance'" />
     <AdminErrorsTab v-else-if="activeSubtab === 'errors'" />
+    <AdminThinkingCoinsTab v-else-if="activeSubtab === 'thinking_coins'" />
     <GeweLoginComponent v-else-if="activeSubtab === 'gewe'" />
   </div>
 </template>

@@ -4,6 +4,7 @@
 import type { Ref } from 'vue'
 
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
+import { eventBus } from '@/composables/core/useEventBus'
 import type { usePanelsStore } from '@/stores'
 import { authFetch } from '@/utils/api'
 
@@ -198,6 +199,9 @@ export async function streamNodePaletteBatch(
               await new Promise<void>((r) => requestAnimationFrame(() => r()))
             } else if (data.event === 'error') {
               const msg = data.message ?? 'Unknown error'
+              if (data.error_type === 'thinking_coin_insufficient') {
+                eventBus.emit('thinking_coins:insufficient', {})
+              }
               if (!fetchSignal.aborted) {
                 errorMessage.value = msg
                 onError?.(msg)

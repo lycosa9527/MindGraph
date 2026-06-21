@@ -71,7 +71,7 @@ AI-powered diagram generation platform. Transform natural language into professi
 |-------|--------------|
 | **Frontend** | Vue 3.5, TypeScript, Vite 7, Tailwind CSS 4, Pinia, Vue Flow, KaTeX |
 | **Backend** | Python 3.13, FastAPI, Uvicorn, Alembic |
-| **Data** | PostgreSQL (JSONB), SQLite, Redis 8+, Qdrant |
+| **Data** | PostgreSQL (JSONB), Redis 8+, Qdrant |
 | **AI** | LangGraph, Dashscope (Qwen), Volcengine (Doubao, DeepSeek, Kimi) |
 
 ---
@@ -84,7 +84,7 @@ AI-powered diagram generation platform. Transform natural language into professi
 - Node.js and npm (latest; see [docs/NODE_NVM_SETUP.md](docs/NODE_NVM_SETUP.md))
 - Redis 7.0+ (8.6+ recommended for key-memory histograms and VSET)
 - Qdrant (for Knowledge Space)
-- PostgreSQL (recommended) or SQLite
+- PostgreSQL
 
 ### Installation
 

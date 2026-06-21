@@ -1,15 +1,7 @@
 """Admin Database Management Router.
 
-Endpoints for:
-- Current PostgreSQL statistics
-- Scanning the backup/ folder for SQLite and PG dump files
-- Analyzing a SQLite file against the running PG database
-- Merging SQLite data into PostgreSQL (with ID remapping)
-- Cleaning up orphaned records in PostgreSQL
-- Exporting / importing PostgreSQL dumps (all in backup/)
-- Analyzing / merging PG dumps non-destructively (PG-to-PG merge)
-
-Security: all endpoints require admin role.
+Endpoints for PostgreSQL stats, backup scan, PG dump export/import/merge,
+and live-database orphan cleanup.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -40,13 +32,8 @@ from services.admin.pg_merge_service import (
     analyze_pg_dump,
     merge_pg_dump,
 )
-from services.admin.sqlite_merge_service import (
-    analyze_sqlite,
-    merge_sqlite_into_postgres,
-)
-from services.admin.sqlite_orphan_service import (
+from services.admin.pg_orphan_service import (
     cleanup_pg_orphans,
-    cleanup_sqlite_orphans,
     detect_pg_orphans,
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, FILE_IO_ERRORS
@@ -70,16 +57,10 @@ def _pg_tools_connection_uri() -> str:
     return pg_tools_libpq_url()
 
 
-# ── request bodies ────────────────────────────────────────────────────
-
-
 class FilenameBody(BaseModel):
     """Request body carrying a backup filename."""
 
     filename: str
-
-
-# ── endpoints ─────────────────────────────────────────────────────────
 
 
 @router.get("/stats")
@@ -101,7 +82,7 @@ async def database_stats(
 async def scan_files(
     _scope: AdminScope = Depends(require_settings_database),
 ) -> Dict[str, Any]:
-    """Scan backup/ folder for SQLite and PG dump files."""
+    """Scan backup/ folder for PG dump files."""
     return await asyncio.to_thread(scan_backup_folder, BACKUP_DIR)
 
 
@@ -111,85 +92,6 @@ async def list_dumps(
 ):
     """List available PostgreSQL dump files in backup/."""
     return await asyncio.to_thread(list_pg_dumps, BACKUP_DIR)
-
-
-@router.post("/analyze")
-def analyze_sqlite_file(
-    body: FilenameBody,
-    _scope: AdminScope = Depends(require_settings_database),
-) -> Dict[str, Any]:
-    """Analyze a SQLite file vs the running PostgreSQL database."""
-    _validate_sqlite_filename(body.filename)
-
-    sqlite_path = BACKUP_DIR / body.filename
-    if not sqlite_path.exists():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"File not found: {body.filename}",
-        )
-
-    try:
-        return analyze_sqlite(sqlite_path, engine)
-    except BACKGROUND_INFRA_ERRORS as exc:
-        logger.error("[AdminDB] analyze failed: %s", exc, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(exc),
-        ) from exc
-
-
-@router.post("/cleanup-sqlite-orphans")
-def cleanup_sqlite_orphans_endpoint(
-    body: FilenameBody,
-    _scope: AdminScope = Depends(require_settings_database),
-) -> Dict[str, Any]:
-    """Delete orphaned records from a SQLite file before merging."""
-    _validate_sqlite_filename(body.filename)
-
-    sqlite_path = BACKUP_DIR / body.filename
-    if not sqlite_path.exists():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"File not found: {body.filename}",
-        )
-
-    try:
-        return cleanup_sqlite_orphans(sqlite_path)
-    except BACKGROUND_INFRA_ERRORS as exc:
-        logger.error(
-            "[AdminDB] SQLite orphan cleanup failed: %s",
-            exc,
-            exc_info=True,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(exc),
-        ) from exc
-
-
-@router.post("/merge")
-def merge_sqlite(
-    body: FilenameBody,
-    _scope: AdminScope = Depends(require_settings_database),
-) -> Dict[str, Any]:
-    """Merge a SQLite file into the running PostgreSQL database."""
-    _validate_sqlite_filename(body.filename)
-
-    sqlite_path = BACKUP_DIR / body.filename
-    if not sqlite_path.exists():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"File not found: {body.filename}",
-        )
-
-    try:
-        return merge_sqlite_into_postgres(sqlite_path, engine)
-    except BACKGROUND_INFRA_ERRORS as exc:
-        logger.error("[AdminDB] merge failed: %s", exc, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(exc),
-        ) from exc
 
 
 @router.get("/orphans")
@@ -228,7 +130,7 @@ def export_dump(
 ) -> Dict[str, Any]:
     """Run pg_dump and save the file to backup/."""
     try:
-        result = export_postgres_dump(_pg_tools_connection_uri(), BACKUP_DIR, pg_engine=engine)
+        result = export_postgres_dump(_pg_tools_connection_uri(), BACKUP_DIR)
         if not result["success"]:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -263,7 +165,6 @@ def import_dump(
             _pg_tools_connection_uri(),
             BACKUP_DIR,
             body.filename,
-            pg_engine=engine,
         )
         if not result["success"]:
             raise HTTPException(
@@ -341,25 +242,12 @@ def merge_dump_file(
         ) from exc
 
 
-# ── helpers ───────────────────────────────────────────────────────────
-
-
 def _reject_path_traversal(filename: str) -> None:
     """Reject filenames containing path-traversal sequences."""
     if ".." in filename or "/" in filename or "\\" in filename:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid filename",
-        )
-
-
-def _validate_sqlite_filename(filename: str) -> None:
-    """Reject path-traversal attempts and non-SQLite file names."""
-    _reject_path_traversal(filename)
-    if ".db" not in filename:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Not a SQLite database file",
         )
 
 

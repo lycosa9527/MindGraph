@@ -97,3 +97,20 @@ def build_pg_dump_cmd(pg_dump: str, output_path: Path, db_url: str) -> List[str]
         str(output_path),
         libpq_database_url(db_url),
     ]
+
+
+def log_pg_dump_failure(stderr: str) -> None:
+    """Log pg_dump stderr and operator hints when RLS or privileges block the dump."""
+    message = stderr or "pg_dump failed with no stderr output"
+    logger.error("pg_dump failed: %s", message)
+    lower = message.lower()
+    if (
+        "permission denied" in lower
+        or "row-level security" in lower
+        or "must be owner" in lower
+        or "insufficient privilege" in lower
+    ):
+        logger.error(
+            "Hint: set DATABASE_MIGRATION_URL to mindgraph_migrate (BYPASSRLS) in .env — "
+            "see env.example. pg_dump cannot copy RLS-protected tables as mindgraph_app.",
+        )

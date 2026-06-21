@@ -24,11 +24,13 @@ from models import GenerateRequest, GenerateResponse, Messages, get_request_lang
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
 from services.admin.user_usage_activity import schedule_user_usage_activity
+from services.auth.thinking_coin.usage_wire import thinking_coin_post_diagram_generation
 from services.infrastructure.http.error_handler import (
     LLMContentFilterError,
     LLMRateLimitError,
     LLMServiceError,
     LLMTimeoutError,
+    ThinkingCoinInsufficientError,
 )
 from services.monitoring.activity_stream import get_activity_stream_service
 from services.redis.redis_activity_tracker import get_activity_tracker
@@ -253,6 +255,15 @@ async def _finalize_generate_graph_result(result: dict[str, Any], prepared: dict
             diagram_type=dtype_value,
         )
 
+        try:
+            await thinking_coin_post_diagram_generation(
+                int(user_id),
+                organization_id,
+                result,
+            )
+        except BACKGROUND_INFRA_ERRORS as exc:
+            logger.debug("Failed to credit learning sheet diagram earn: %s", exc)
+
     result["llm_model"] = llm_model
     result["request_id"] = request_id
     return result
@@ -277,6 +288,16 @@ async def _stream_generate_graph_events(prepared: dict[str, Any]):
             )
             final = await _finalize_generate_graph_result(result, prepared)
             await queue.put({"event": "complete", **final})
+        except ThinkingCoinInsufficientError as coin_exc:
+            await queue.put(
+                {
+                    "event": "error",
+                    "message": coin_exc.user_message,
+                    "error_type": "thinking_coin_insufficient",
+                    "balance": coin_exc.balance,
+                    "cost": coin_exc.cost,
+                }
+            )
         except LLMContentFilterError as e:
             msg = getattr(e, "user_message", None) or Messages.error("internal_error", lang)
             await queue.put({"event": "error", "message": msg})

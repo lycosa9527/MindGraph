@@ -24,7 +24,10 @@ from starlette.types import ExceptionHandler
 
 from config.settings import config
 from models import get_request_language
-from services.infrastructure.http.error_handler import UserDailyTokenCapExceededError
+from services.infrastructure.http.error_handler import (
+    ThinkingCoinInsufficientError,
+    UserDailyTokenCapExceededError,
+)
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.monitoring.error_reporting import record_exception, record_failure
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -143,6 +146,26 @@ async def user_daily_token_cap_handler(request: Request, exc: UserDailyTokenCapE
     return JSONResponse(status_code=429, content={"detail": detail})
 
 
+async def thinking_coin_insufficient_handler(request: Request, exc: ThinkingCoinInsufficientError):
+    """Handle insufficient thinking coins for trial users (402)."""
+    path = getattr(request.url, "path", "") if request and request.url else ""
+    logger.info(
+        "Thinking coin insufficient on %s: balance=%s cost=%s",
+        path,
+        exc.balance,
+        exc.cost,
+    )
+    return JSONResponse(
+        status_code=402,
+        content={
+            "detail": exc.user_message,
+            "error_type": "thinking_coin_insufficient",
+            "balance": exc.balance,
+            "cost": exc.cost,
+        },
+    )
+
+
 async def general_exception_handler(request: Request, exc: Exception):
     """Handle all unhandled exceptions"""
     exception_type = type(exc).__name__
@@ -258,5 +281,9 @@ def setup_exception_handlers(app: FastAPI):
     app.add_exception_handler(
         UserDailyTokenCapExceededError,
         cast(ExceptionHandler, user_daily_token_cap_handler),
+    )
+    app.add_exception_handler(
+        ThinkingCoinInsufficientError,
+        cast(ExceptionHandler, thinking_coin_insufficient_handler),
     )
     app.add_exception_handler(Exception, cast(ExceptionHandler, general_exception_handler))

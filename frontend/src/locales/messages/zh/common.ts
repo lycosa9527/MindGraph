@@ -184,6 +184,7 @@ export default {
   'meta.pageTitle.schoolZone': '学校专区',
   'meta.pageTitle.smartResponse': '智能应答',
   'meta.pageTitle.template': '模板',
+  'meta.pageTitle.thinkingCoinsUpgrade': '升级会员',
   'meta.pageTitle.teacherUsage': '教师使用度',
   'meta.pageTitle.workshopChat': '工作坊聊天',
   'publicDashboard.networkError': '网络错误，加载仪表盘失败',

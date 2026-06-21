@@ -252,6 +252,15 @@ export const useAuthStore = defineStore('auth', () => {
         ? backendUser.match_prompt_to_ui
         : undefined
 
+    const thinkingCoinsRaw = backendUser.thinking_coins
+    const thinkingCoins =
+      thinkingCoinsRaw && typeof thinkingCoinsRaw === 'object'
+        ? {
+            balance: Number(thinkingCoinsRaw.balance ?? 0),
+            eligible: thinkingCoinsRaw.eligible === true,
+          }
+        : undefined
+
     return {
       id: String(backendUser.id || backendUser.user?.id || ''),
       username:
@@ -275,7 +284,22 @@ export const useAuthStore = defineStore('auth', () => {
       schoolTier: schoolTier ?? null,
       schoolTierFeatures: schoolTierFeatures ?? null,
       subscriptionExpired: subscriptionExpired ?? false,
+      thinkingCoins,
     }
+  }
+
+  function patchThinkingCoinsSummary(summary: { balance: number; eligible: boolean }): void {
+    if (!user.value) {
+      return
+    }
+    user.value = {
+      ...user.value,
+      thinkingCoins: {
+        balance: summary.balance,
+        eligible: summary.eligible,
+      },
+    }
+    sessionStorage.setItem(USER_KEY, JSON.stringify(user.value))
   }
 
   const subscriptionExpiredNotified = ref(false)
@@ -1053,6 +1077,7 @@ export const useAuthStore = defineStore('auth', () => {
     refreshUserProfile,
     loadAdminCapabilities,
     patchSchoolDisplayName,
+    patchThinkingCoinsSummary,
     fetchCaptcha,
     startSessionMonitoring,
     stopSessionMonitoring,

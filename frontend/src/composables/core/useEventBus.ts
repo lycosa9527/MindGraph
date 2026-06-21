@@ -377,6 +377,7 @@ export type EventTypes = {
   'mindmate:message_completed': { conversationId?: string }
   'mindmate:error': { error: string }
   'mindmate:stream_error': { error: string | undefined; error_type?: string; message?: string }
+  'thinking_coins:insufficient': Record<string, never>
   'mindmate:file_uploaded': { file: unknown }
   'mindmate:file_received': { id?: string; type?: string; url?: string; belongs_to?: string }
   'mindmate:workflow_event': {

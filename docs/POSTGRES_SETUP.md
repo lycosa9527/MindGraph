@@ -301,15 +301,6 @@ sudo journalctl -u postgresql -n 100
 sudo tail -f /var/log/postgresql/postgresql-18-main.log
 ```
 
-## Migration from SQLite
-
-After PostgreSQL and RLS setup:
-
-```bash
-# DATABASE_URL must point to PostgreSQL in .env
-PYTHONPATH=. python scripts/db/migrate_sqlite_to_postgresql.py
-```
-
 ## Supported Ubuntu versions
 
 The official PostgreSQL APT repository supports Ubuntu Noble (24.04), Jammy (22.04), Focal (20.04), and Mantic (23.10).

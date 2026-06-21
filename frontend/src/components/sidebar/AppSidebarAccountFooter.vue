@@ -2,17 +2,21 @@
 /**
  * Sidebar bottom: login CTA or user menu with account actions.
  */
-import { computed, inject, reactive, ref } from 'vue'
+import { computed, inject, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import {
   ChevronDown,
+  Coins,
+  Flame,
+  Gift,
   Languages,
   Link2,
   LogIn,
   LogOut,
   ScrollText,
   Share2,
+  Star,
   Upload,
   UserRound,
 } from '@lucide/vue'
@@ -22,20 +26,31 @@ import SidebarQuoteMarquee from '@/components/sidebar/SidebarQuoteMarquee.vue'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 import { useSidebarPhilosophyQuote } from '@/composables/sidebar/useSidebarPhilosophyQuote'
+import { useSidebarThinkingCoinTaskPromo } from '@/composables/sidebar/useSidebarThinkingCoinTaskPromo'
 import { usePwaInstall } from '@/composables/usePwaInstall'
 import { isMindGraphLandingPath } from '@/utils/canvasBackNavigation'
 
-const _raw = inject(appSidebarInjectionKey)
-if (!_raw) {
+const sidebarCtx = inject(appSidebarInjectionKey)
+if (!sidebarCtx) {
   throw new Error('AppSidebarAccountFooter must be used inside AppSidebar')
 }
-const s = reactive(_raw)
+const s = reactive(sidebarCtx)
 const route = useRoute()
 const showShareSiteModal = ref(false)
 const { triggerImport } = useDiagramImport()
 const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.path))
 const { showPwaInstall, handlePwaInstall } = usePwaInstall((key) => s.t(key))
 const { quote } = useSidebarPhilosophyQuote()
+const { promoTitle, promoReward, taskPromoKey, showInviteAccent } = useSidebarThinkingCoinTaskPromo(
+  sidebarCtx.thinkingCoinEarnTasks,
+  () => s.t('thinkingCoins.invitePromo')
+)
+
+onMounted(() => {
+  if (sidebarCtx.thinkingCoinsEligible.value) {
+    void sidebarCtx.refreshThinkingCoinEarnTasks()
+  }
+})
 </script>
 
 <template>
@@ -65,6 +80,96 @@ const { quote } = useSidebarPhilosophyQuote()
 
     <!-- Authenticated: Show user info with dropdown -->
     <template v-else>
+      <!-- Thinking coins widget (trial teachers only) -->
+      <div
+        v-if="s.thinkingCoinsEligible"
+        :class="s.isCollapsed ? 'px-2 pt-2' : 'px-2.5 pt-2.5 pb-2'"
+      >
+        <div
+          v-if="!s.isCollapsed"
+          class="tc-sidebar-widget"
+        >
+          <div class="flex items-center justify-between gap-2.5">
+            <button
+              type="button"
+              class="tc-balance-label min-w-0"
+              @click="s.openThinkingCoinsUpgrade()"
+            >
+              <span class="leading-tight truncate">
+                <span class="text-xs font-medium text-stone-600">{{ s.t('thinkingCoins.balanceUnit') }}:</span>
+                <span class="text-base font-bold tabular-nums tracking-tight text-stone-900">
+                  {{ s.thinkingCoinsBalanceFormatted }}
+                </span>
+              </span>
+            </button>
+            <div class="tc-upgrade-orbit shrink-0">
+              <span
+                class="tc-upgrade-orbit__ring"
+                aria-hidden="true"
+              />
+              <button
+                type="button"
+                class="tc-sidebar-upgrade"
+                @click="s.openThinkingCoinsUpgrade()"
+              >
+                <Star class="h-3 w-3 fill-current" />
+                {{ s.t('thinkingCoins.upgrade') }}
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="tc-sidebar-promo mt-2.5 flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left transition hover:brightness-[0.98]"
+            @click="s.openThinkingCoinsUpgrade()"
+          >
+            <Gift class="h-4 w-4 shrink-0 text-orange-500" />
+            <div class="tc-task-promo-viewport min-w-0 flex-1">
+              <Transition
+                name="tc-task-fade"
+                mode="out-in"
+              >
+                <span
+                  :key="taskPromoKey"
+                  class="tc-task-promo-line block truncate text-xs font-medium text-stone-700"
+                >
+                  {{ promoTitle }}
+                </span>
+              </Transition>
+            </div>
+            <Transition
+              name="tc-task-fade"
+              mode="out-in"
+            >
+              <Flame
+                v-if="showInviteAccent"
+                :key="`${taskPromoKey}-flame`"
+                class="h-4 w-4 shrink-0 text-orange-500"
+              />
+              <span
+                v-else
+                :key="`${taskPromoKey}-reward`"
+                class="shrink-0 text-xs font-bold tabular-nums text-orange-500"
+              >
+                +{{ promoReward }}
+              </span>
+            </Transition>
+          </button>
+        </div>
+        <el-tooltip
+          v-else
+          :content="`${s.t('thinkingCoins.balanceUnit')}: ${s.thinkingCoinsBalanceFormatted}`"
+          placement="right"
+        >
+          <button
+            type="button"
+            class="flex w-full items-center justify-center rounded-xl bg-white p-2.5 shadow-[0_1px_2px_rgba(28,25,23,0.05),0_4px_14px_rgba(28,25,23,0.06)] transition-colors hover:bg-amber-50"
+            @click="s.openThinkingCoinsUpgrade()"
+          >
+            <Coins class="h-4 w-4 text-amber-600" />
+          </button>
+        </el-tooltip>
+      </div>
+
       <el-dropdown
         v-if="!s.isCollapsed"
         trigger="click"
@@ -293,6 +398,152 @@ const { quote } = useSidebarPhilosophyQuote()
 
 .user-dropdown {
   width: 100%;
+}
+
+.tc-sidebar-widget {
+  min-width: 0;
+  padding: 0.625rem 0.75rem;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow:
+    0 1px 2px rgba(28, 25, 23, 0.05),
+    0 4px 14px rgba(28, 25, 23, 0.06);
+}
+
+.tc-balance-label {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.tc-balance-label:focus-visible {
+  outline: 2px solid #d6d3d1;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.tc-sidebar-promo {
+  background: #fff8eb;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.tc-sidebar-promo:focus-visible {
+  outline: 2px solid #fcd34d;
+  outline-offset: 1px;
+}
+
+.tc-upgrade-orbit {
+  position: relative;
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 9999px;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.tc-upgrade-orbit__ring {
+  position: absolute;
+  inset: -120%;
+  z-index: 0;
+  background: conic-gradient(
+    from 0deg,
+    #ef4444 0deg,
+    #f97316 52deg,
+    #eab308 104deg,
+    #22c55e 156deg,
+    #06b6d4 208deg,
+    #3b82f6 260deg,
+    #a855f7 312deg,
+    #ef4444 360deg
+  );
+  animation: tc-upgrade-rainbow-travel 2.8s linear infinite;
+}
+
+.tc-sidebar-upgrade {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: none;
+  border-radius: 9999px;
+  padding: 0.3125rem 0.6875rem;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #fff;
+  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  box-shadow: 0 1px 2px rgba(234, 88, 12, 0.2);
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.tc-upgrade-orbit:hover .tc-sidebar-upgrade {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(234, 88, 12, 0.25);
+}
+
+@keyframes tc-upgrade-rainbow-travel {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tc-upgrade-orbit__ring {
+    animation: none;
+    inset: 0;
+    background: linear-gradient(90deg, #f59e0b, #ea580c);
+  }
+}
+
+.tc-task-promo-viewport {
+  position: relative;
+  height: 1.125rem;
+  overflow: hidden;
+}
+
+.tc-task-promo-line {
+  line-height: 1.125rem;
+}
+
+.tc-task-fade-enter-active,
+.tc-task-fade-leave-active {
+  transition:
+    opacity 0.28s ease,
+    transform 0.28s ease;
+}
+
+.tc-task-fade-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.tc-task-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tc-task-fade-enter-active,
+  .tc-task-fade-leave-active {
+    transition: opacity 0.12s ease;
+  }
+
+  .tc-task-fade-enter-from,
+  .tc-task-fade-leave-to {
+    transform: none;
+  }
 }
 </style>
 

@@ -811,32 +811,6 @@ export async function fetchAdminDatabaseOrphans(): Promise<Record<string, unknow
   return adminFetchJson('/api/auth/admin/database/orphans')
 }
 
-export async function analyzeAdminDatabase(
-  body: Record<string, unknown>
-): Promise<Record<string, unknown>> {
-  return adminFetchJson('/api/auth/admin/database/analyze', {
-    method: 'POST',
-    body: JSON.stringify(body),
-  })
-}
-
-export async function cleanupAdminSqliteOrphans(
-  body: Record<string, unknown>
-): Promise<Record<string, unknown>> {
-  return adminFetchJson('/api/auth/admin/database/cleanup-sqlite-orphans', {
-    method: 'POST',
-    body: JSON.stringify(body),
-  })
-}
-
-export async function mergeAdminDatabase(
-  body: Record<string, unknown>
-): Promise<Record<string, unknown>> {
-  return adminFetchJson('/api/auth/admin/database/merge', {
-    method: 'POST',
-    body: JSON.stringify(body),
-  })
-}
 
 export async function exportAdminDatabase(): Promise<Record<string, unknown>> {
   return adminFetchJson('/api/auth/admin/database/export', { method: 'POST' })

@@ -15,6 +15,7 @@ export { authFetch } from './api'
 // New API client with automatic token refresh
 export {
   apiRequest,
+  apiRequestJson,
   apiGet,
   apiPost,
   apiPut,

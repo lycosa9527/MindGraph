@@ -24,10 +24,13 @@ from models.requests.requests_canvas_translate import (
     TranslateNodeLabelRequest,
     TranslateNodeLabelResponse,
 )
+from config.db_sessions import open_async_session
+from services.auth.thinking_coin.client_event_service import claim_client_event_for_user
 from services.infrastructure.http.error_handler import LLMServiceError
 from services.llm import llm_service
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, JSON_PARSE_ERRORS
 from utils.auth import get_current_user_or_api_key, is_superadmin
+from utils.auth.thinking_coin_config import EVENT_DIAGRAM_TRANSLATE
 
 from .diagram_generation import _query_diagram_ownership
 from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
@@ -161,6 +164,17 @@ def _ndjson_line(obj: dict) -> bytes:
     return json.dumps(obj, ensure_ascii=False).encode("utf-8") + b"\n"
 
 
+async def _claim_diagram_translate_earn(current_user: Optional[User]) -> None:
+    """Credit once-per-day translate exploration reward."""
+    if current_user is None:
+        return
+    try:
+        async with open_async_session() as db:
+            await claim_client_event_for_user(db, current_user, EVENT_DIAGRAM_TRANSLATE)
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.debug("Failed to claim diagram_translate thinking coins: %s", exc)
+
+
 async def _translate_diagram_labels_ndjson(
     req: TranslateDiagramLabelsRequest,
     *,
@@ -168,6 +182,7 @@ async def _translate_diagram_labels_ndjson(
     script_rules: str,
     user_id: Optional[int],
     organization_id: Optional[int],
+    current_user: Optional[User] = None,
 ) -> AsyncIterator[bytes]:
     """
     Translate in small unique-text chunks; emit one NDJSON row per diagram item as chunks complete.
@@ -206,6 +221,7 @@ async def _translate_diagram_labels_ndjson(
                         "translated_text": translated,
                     }
                 )
+        await _claim_diagram_translate_earn(current_user)
         yield _ndjson_line({"event": "done"})
     except LLMServiceError as exc:
         logger.warning("canvas_translate stream LLM error: %s", exc)
@@ -377,6 +393,7 @@ async def translate_diagram_labels(
             )
         )
 
+    await _claim_diagram_translate_earn(current_user)
     return TranslateDiagramLabelsResponse(translations=results)
 
 
@@ -414,6 +431,7 @@ async def translate_diagram_labels_stream(
             script_rules=script_rules,
             user_id=user_id,
             organization_id=organization_id,
+            current_user=current_user,
         ),
         media_type="application/x-ndjson",
     )
