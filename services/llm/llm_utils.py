@@ -67,6 +67,13 @@ class LLMUtils:
         return timeouts.get(model, 120.0)
 
     @staticmethod
+    def is_no_retry_model(model: str, actual_model: str) -> bool:
+        """Doubao / ark-doubao: single attempt, fail fast (no with_retry)."""
+        if model == "doubao":
+            return True
+        return actual_model == "ark-doubao"
+
+    @staticmethod
     def format_request_failure(exc: BaseException) -> str:
         """
         Human-readable failure text for logs and LLMServiceError.

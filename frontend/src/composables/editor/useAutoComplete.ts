@@ -25,9 +25,14 @@ import { computed } from 'vue'
 
 import { eventBus, useLanguage, useNotifications } from '@/composables'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
-import { useDiagramStore, useLLMResultsStore } from '@/stores'
+import { useDiagramStore, useLLMResultsStore, type ModelLoadPhase } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { authFetch } from '@/utils/api'
+import {
+  consumeGenerateGraphStream,
+  type GenerateGraphCompletePayload,
+  type GenerateGraphStreamPhase,
+} from '@/utils/generateGraphStream'
 
 // LLM Models to use for parallel generation
 const LLM_MODELS = ['qwen', 'deepseek', 'doubao'] as const
@@ -400,6 +405,84 @@ export function useAutoComplete() {
   }
 
   /**
+   * Map SSE stream phase events to per-model button load phases.
+   */
+  function mapStreamPhaseToModelPhase(phase: GenerateGraphStreamPhase): ModelLoadPhase {
+    if (phase === 'accepted') {
+      return 'sending'
+    }
+    if (phase === 'waiting') {
+      return 'waiting'
+    }
+    return 'streaming'
+  }
+
+  function parseGenerateResponse(
+    result: GenerateGraphCompletePayload | Record<string, unknown>,
+    model: string,
+    requestBody: Record<string, unknown>,
+    elapsed: number
+  ): {
+    model: string
+    success: boolean
+    spec?: Record<string, unknown>
+    diagramType?: string
+    error?: string
+    elapsed: number
+  } {
+    const specPayload = result.spec as { success?: boolean; error?: string } | undefined
+    const specLooksLikeError =
+      specPayload &&
+      typeof specPayload === 'object' &&
+      specPayload.success === false &&
+      typeof specPayload.error === 'string'
+
+    if (result.success && result.spec && !specLooksLikeError) {
+      let diagramType = result.diagram_type || requestBody.diagram_type
+      if (diagramType === 'mind_map') {
+        diagramType = 'mindmap'
+      }
+
+      return {
+        model,
+        success: true,
+        spec: result.spec as Record<string, unknown>,
+        diagramType: typeof diagramType === 'string' ? diagramType : undefined,
+        elapsed,
+      }
+    }
+
+    const nestedSpecError = specLooksLikeError && specPayload ? specPayload.error : undefined
+    return {
+      model,
+      success: false,
+      error:
+        nestedSpecError ||
+        (typeof result.error === 'string' ? result.error : undefined) ||
+        'Unknown error',
+      elapsed,
+    }
+  }
+
+  function parseHttpErrorDetail(detail: unknown): string | undefined {
+    if (typeof detail === 'string') {
+      return detail
+    }
+    if (Array.isArray(detail)) {
+      return detail
+        .map((item) => (typeof item === 'object' && item && 'msg' in item ? item.msg : undefined))
+        .filter(Boolean)
+        .join('; ')
+    }
+    return undefined
+  }
+
+  async function readHttpErrorMessage(response: Response): Promise<string> {
+    const errorData = await response.json().catch(() => ({ detail: 'Request failed' }))
+    return parseHttpErrorDetail(errorData.detail) || `HTTP ${response.status}`
+  }
+
+  /**
    * Generate diagram from a single LLM (internal)
    */
   async function generateFromSingleLLM(
@@ -417,6 +500,58 @@ export function useAutoComplete() {
     const startTime = Date.now()
 
     try {
+      const streamResponse = await authFetch('/api/generate_graph/stream', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...requestBody,
+          llm: model,
+        }),
+        signal,
+      })
+
+      if (streamResponse.ok) {
+        let streamError: string | undefined
+        let completePayload: GenerateGraphCompletePayload | undefined
+
+        const { usedStream } = await consumeGenerateGraphStream(
+          streamResponse,
+          {
+            onPhase: (phase) => {
+              llmResultsStore.setModelPhase(model, mapStreamPhaseToModelPhase(phase))
+            },
+            onComplete: (payload) => {
+              completePayload = payload
+            },
+            onError: (message) => {
+              streamError = message
+            },
+          },
+          signal
+        )
+
+        if (usedStream) {
+          const elapsed = (Date.now() - startTime) / 1000
+          if (streamError) {
+            llmResultsStore.setModelPhase(model, 'error')
+            return { model, success: false, error: streamError, elapsed }
+          }
+          if (completePayload) {
+            const parsed = parseGenerateResponse(completePayload, model, requestBody, elapsed)
+            if (!parsed.success) {
+              llmResultsStore.setModelPhase(model, 'error')
+            }
+            return parsed
+          }
+          llmResultsStore.setModelPhase(model, 'error')
+          return { model, success: false, error: 'Stream ended without result', elapsed }
+        }
+      } else if (streamResponse.status >= 400 && streamResponse.status < 500) {
+        const elapsed = (Date.now() - startTime) / 1000
+        const errorMessage = await readHttpErrorMessage(streamResponse)
+        llmResultsStore.setModelPhase(model, 'error')
+        return { model, success: false, error: errorMessage, elapsed }
+      }
+
       const response = await authFetch('/api/generate_graph', {
         method: 'POST',
         body: JSON.stringify({
@@ -429,61 +564,31 @@ export function useAutoComplete() {
       const elapsed = (Date.now() - startTime) / 1000
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Request failed' }))
-        const detail = errorData.detail
-        const detailText =
-          typeof detail === 'string'
-            ? detail
-            : Array.isArray(detail)
-              ? detail.map((d: { msg?: string }) => d.msg).filter(Boolean).join('; ')
-              : undefined
+        const detailText = await readHttpErrorMessage(response)
+        llmResultsStore.setModelPhase(model, 'error')
         return {
           model,
           success: false,
-          error: detailText || `HTTP ${response.status}`,
+          error: detailText,
           elapsed,
         }
       }
 
       const result = await response.json()
-
-      const specPayload = result.spec as { success?: boolean; error?: string } | undefined
-      const specLooksLikeError =
-        specPayload &&
-        typeof specPayload === 'object' &&
-        specPayload.success === false &&
-        typeof specPayload.error === 'string'
-
-      if (result.success && result.spec && !specLooksLikeError) {
-        let diagramType = result.diagram_type || requestBody.diagram_type
-        if (diagramType === 'mind_map') {
-          diagramType = 'mindmap'
-        }
-
-        return {
-          model,
-          success: true,
-          spec: result.spec,
-          diagramType,
-          elapsed,
-        }
-      } else {
-        const nestedSpecError =
-          specLooksLikeError && specPayload ? specPayload.error : undefined
-        return {
-          model,
-          success: false,
-          error: nestedSpecError || result.error || 'Unknown error',
-          elapsed,
-        }
+      const parsed = parseGenerateResponse(result, model, requestBody, elapsed)
+      if (!parsed.success) {
+        llmResultsStore.setModelPhase(model, 'error')
       }
+      return parsed
     } catch (error) {
       const elapsed = (Date.now() - startTime) / 1000
 
       if (error instanceof Error && error.name === 'AbortError') {
+        llmResultsStore.setModelPhase(model, 'error')
         return { model, success: false, error: 'Cancelled', elapsed }
       }
 
+      llmResultsStore.setModelPhase(model, 'error')
       return {
         model,
         success: false,
@@ -547,6 +652,9 @@ export function useAutoComplete() {
       diagram_type: diagramStore.type,
       language,
       request_type: 'autocomplete',
+    }
+    if (instructions) {
+      requestBody.generation_instructions = instructions
     }
     const activeId = savedDiagramsStore.activeDiagramId
     if (activeId) {

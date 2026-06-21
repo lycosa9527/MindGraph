@@ -372,6 +372,7 @@ export type EventTypes = {
   'mindmate:closed': Record<string, never>
   'mindmate:send_message': { message: string }
   'mindmate:message_sending': { message: string; files?: unknown[] }
+  'mindmate:load_phase': { phase: string }
   'mindmate:message_chunk': { chunk: string }
   'mindmate:message_completed': { conversationId?: string }
   'mindmate:error': { error: string }

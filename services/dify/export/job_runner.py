@@ -19,6 +19,7 @@ from services.auth.security_logger import security_log
 from services.dify.export.collect_service import (
     CollectOptions,
     CollectResult,
+    _dedupe_summaries,
     collect_conversation_summaries_batch,
     collect_messages_for_summaries,
 )
@@ -222,6 +223,7 @@ async def _run_export_job_inner(job_id: int, user_id: int) -> None:
                     break
 
                 include_unbound = users_done + len(page) >= users_total
+                include_cross_org = after_user_id_int is None
                 target_result = await build_export_targets(
                     db,
                     page,
@@ -230,6 +232,7 @@ async def _run_export_job_inner(job_id: int, user_id: int) -> None:
                     start=start,
                     end=end,
                     include_unbound=include_unbound,
+                    include_cross_org=include_cross_org,
                 )
                 targets_total += len(target_result.targets)
                 all_collect.warnings.extend(target_result.warnings)
@@ -282,7 +285,7 @@ async def _run_export_job_inner(job_id: int, user_id: int) -> None:
             job.verification_expected = expected
             await db.commit()
 
-            summaries = await load_summaries_jsonl(job_id)
+            summaries = _dedupe_summaries(await load_summaries_jsonl(job_id))
             all_collect.summaries = summaries
             all_collect.warnings = await load_warnings_jsonl(job_id)
             all_collect.target_results = await load_target_results_jsonl(job_id)

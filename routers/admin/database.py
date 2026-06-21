@@ -25,9 +25,8 @@ from typing import Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
-from config.database import DATABASE_URL, engine, libpq_database_url
+from config.database import engine
 from routers.auth.dependencies import require_settings_database
-from utils.auth.admin_scope import AdminScope
 from services.admin.database_export_service import (
     DUMP_EXT,
     DUMP_PREFIX,
@@ -51,6 +50,8 @@ from services.admin.sqlite_orphan_service import (
     detect_pg_orphans,
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, FILE_IO_ERRORS
+from services.utils.pg_client_binaries import pg_tools_libpq_url
+from utils.auth.admin_scope import AdminScope
 
 logger = logging.getLogger(__name__)
 
@@ -65,8 +66,8 @@ BACKUP_DIR = Path(_backup_dir_env) if Path(_backup_dir_env).is_absolute() else _
 
 
 def _pg_tools_connection_uri() -> str:
-    """Libpq URI for pg_dump/pg_restore — same DB as ``config.database`` (engine)."""
-    return libpq_database_url(DATABASE_URL)
+    """Libpq URI for pg_dump/pg_restore — migrate role (BYPASSRLS), not runtime app role."""
+    return pg_tools_libpq_url()
 
 
 # ── request bodies ────────────────────────────────────────────────────

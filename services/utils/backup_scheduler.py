@@ -44,7 +44,13 @@ from typing import Any, Dict, List, Optional
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import get_redis, is_redis_available
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
-from services.utils.pg_client_binaries import build_pg_dump_cmd, find_pg_client_binary
+from services.infrastructure.monitoring.critical_alert import CriticalAlertService
+from services.utils.pg_client_binaries import (
+    build_pg_dump_cmd,
+    find_pg_client_binary,
+    pg_tools_connection_username,
+    pg_tools_libpq_url,
+)
 
 try:
     from config.database import DATABASE_URL, engine
@@ -576,9 +582,8 @@ def backup_postgresql_database(backup_path: Path) -> bool:
         True if backup succeeded, False otherwise
     """
     try:
-        # Parse PostgreSQL connection URL
-        # Format: postgresql://user:password@host:port/database
-        db_url = DATABASE_URL
+        # Migrate role (BYPASSRLS) — runtime DATABASE_URL cannot dump RLS tables.
+        db_url = pg_tools_libpq_url()
         if not db_url or "postgresql" not in db_url.lower():
             logger.error("[Backup] Not a PostgreSQL database URL")
             return False
@@ -591,7 +596,11 @@ def backup_postgresql_database(backup_path: Path) -> bool:
         if not backup_path.suffix:
             backup_path = backup_path.with_suffix(".dump")
 
-        logger.info("[Backup] Starting PostgreSQL backup using pg_dump...")
+        dump_user = pg_tools_connection_username(db_url)
+        logger.info(
+            "[Backup] Starting PostgreSQL backup using pg_dump (connection user=%s)",
+            dump_user,
+        )
 
         pg_dump_binary = find_pg_client_binary("pg_dump")
         if not pg_dump_binary:
@@ -1412,6 +1421,21 @@ def get_next_backup_time() -> datetime:
     return next_backup
 
 
+async def _notify_scheduled_backup_failure(error_message: str) -> None:
+    """Send deduplicated SMS alert when scheduled backup fails."""
+    try:
+        await CriticalAlertService.send_runtime_error_alert(
+            component="Backup",
+            error_message=error_message,
+            details=(
+                "Scheduled PostgreSQL backup failed. Verify DATABASE_MIGRATION_URL uses "
+                "mindgraph_migrate (BYPASSRLS) and pg_dump can COPY RLS-protected tables."
+            ),
+        )
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.warning("[Backup] Failed to send backup failure alert: %s", exc)
+
+
 async def start_backup_scheduler():
     """
     Start the automatic backup scheduler.
@@ -1507,12 +1531,14 @@ async def start_backup_scheduler():
                     logger.info("[Backup] Scheduled backup completed successfully")
                 else:
                     logger.error("[Backup] Scheduled backup failed")
+                    await _notify_scheduled_backup_failure("Scheduled PostgreSQL backup failed")
             except BACKGROUND_INFRA_ERRORS as e:
                 logger.error(
                     "[Backup] Scheduled backup failed with exception: %s",
                     e,
                     exc_info=True,
                 )
+                await _notify_scheduled_backup_failure(f"Scheduled backup exception: {e}")
 
             # Refresh lock after backup completes
             await refresh_backup_scheduler_lock_async()

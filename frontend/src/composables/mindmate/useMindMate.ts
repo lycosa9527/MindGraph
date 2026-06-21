@@ -18,10 +18,20 @@ import { computed, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
 
 import { useAuthStore, useMindMateStore } from '@/stores'
+import type { ModelLoadPhase } from '@/stores/llmResults'
+import { consumeSseDataLines } from '@/utils/mindMateSseStream'
 import { mindmateDifyUserIdFromSession } from '@/utils/mindmateDifyUserId'
 
 import { eventBus } from '../core/useEventBus'
 import { difyKeys, useAppParameters, useGenerateTitle } from '../queries'
+import {
+  mindMateLoadPhaseOnAbort,
+  mindMateLoadPhaseOnComplete,
+  mindMateLoadPhaseOnError,
+  mindMateLoadPhaseOnFirstToken,
+  mindMateLoadPhaseOnSendStart,
+  mindMateLoadPhaseOnStreamOpen,
+} from './mindMateLoadPhase'
 
 // ============================================================================
 // Types
@@ -138,6 +148,7 @@ export function useMindMate(options: MindMateOptions = {}) {
   const streamingBuffer = ref('')
   const currentStreamingId = ref<string | null>(null)
   const abortController = ref<AbortController | null>(null)
+  let streamGeneration = 0
 
   // File upload state
   const pendingFiles = ref<MindMateFile[]>([])
@@ -155,6 +166,72 @@ export function useMindMate(options: MindMateOptions = {}) {
 
   const isStreaming = computed(() => state.value === 'streaming')
   const isLoading = computed(() => state.value === 'loading')
+  const loadPhase = computed(() => mindMateStore.loadPhase)
+  const isGenerating = computed(() => mindMateStore.isGenerating)
+
+  function applyLoadPhase(phase: ModelLoadPhase): void {
+    mindMateStore.setLoadPhase(phase)
+  }
+
+  function beginAssistantStreaming(): void {
+    if (mindMateStore.loadPhase === 'streaming') {
+      return
+    }
+    applyLoadPhase(mindMateLoadPhaseOnFirstToken())
+    state.value = 'streaming'
+  }
+
+  function isActiveStreamGeneration(generation: number): boolean {
+    return generation === streamGeneration
+  }
+
+  function finalizeStreamSuccess(generation: number): void {
+    if (!isActiveStreamGeneration(generation)) {
+      return
+    }
+    if (currentStreamingId.value) {
+      updateMessage(currentStreamingId.value, streamingBuffer.value, false)
+    }
+    state.value = 'idle'
+    applyLoadPhase(mindMateLoadPhaseOnComplete())
+    currentStreamingId.value = null
+    streamingBuffer.value = ''
+    abortController.value = null
+    eventBus.emit('mindmate:message_completed', {
+      conversationId: conversationId.value ?? undefined,
+    })
+    onMessageComplete?.()
+  }
+
+  function finalizeStreamAbort(generation: number): void {
+    if (!isActiveStreamGeneration(generation)) {
+      return
+    }
+    if (currentStreamingId.value) {
+      updateMessage(currentStreamingId.value, streamingBuffer.value, false)
+    }
+    state.value = 'idle'
+    applyLoadPhase(mindMateLoadPhaseOnAbort())
+    currentStreamingId.value = null
+    streamingBuffer.value = ''
+    abortController.value = null
+  }
+
+  function finalizeStreamError(generation: number, errorMsg: string, removePlaceholder: boolean): void {
+    if (!isActiveStreamGeneration(generation)) {
+      return
+    }
+    if (removePlaceholder && currentStreamingId.value) {
+      messages.value = messages.value.filter((m) => m.id !== currentStreamingId.value)
+    }
+    state.value = 'error'
+    applyLoadPhase(mindMateLoadPhaseOnError())
+    currentStreamingId.value = null
+    streamingBuffer.value = ''
+    abortController.value = null
+    eventBus.emit('mindmate:error', { error: errorMsg })
+    onError?.(errorMsg)
+  }
   const hasMessages = computed(() => messages.value.length > 0)
   const lastMessage = computed(() => messages.value[messages.value.length - 1] || null)
 
@@ -334,6 +411,9 @@ export function useMindMate(options: MindMateOptions = {}) {
       abortController.value.abort()
     }
 
+    streamGeneration += 1
+    const activeGeneration = streamGeneration
+
     // Create new abort controller
     abortController.value = new AbortController()
 
@@ -361,6 +441,7 @@ export function useMindMate(options: MindMateOptions = {}) {
     pendingFiles.value = []
 
     state.value = 'loading'
+    applyLoadPhase(mindMateLoadPhaseOnSendStart())
     streamingBuffer.value = ''
     currentStreamingId.value = null
 
@@ -407,87 +488,58 @@ export function useMindMate(options: MindMateOptions = {}) {
         throw new Error('No response body')
       }
 
-      const decoder = new TextDecoder()
-      state.value = 'streaming'
+      applyLoadPhase(mindMateLoadPhaseOnStreamOpen())
 
-      // Create streaming message placeholder
+      // Placeholder bubble while waiting for first token (state stays loading until then)
       currentStreamingId.value = addMessage('assistant', '', true)
 
-      // Recursive read function
-      const readChunk = async (): Promise<void> => {
-        const { done, value } = await reader.read()
+      await consumeSseDataLines(
+        reader,
+        (payload) => handleStreamEvent(payload as unknown as SSEData, activeGeneration),
+        abortController.value.signal
+      )
 
-        if (done) {
-          // Stream complete
-          if (currentStreamingId.value) {
-            updateMessage(currentStreamingId.value, streamingBuffer.value, false)
-          }
-
-          state.value = 'idle'
-          currentStreamingId.value = null
-          streamingBuffer.value = ''
-          abortController.value = null
-
-          eventBus.emit('mindmate:message_completed', {
-            conversationId: conversationId.value ?? undefined,
-          })
-          onMessageComplete?.()
-          return
-        }
-
-        // Decode chunk
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data: SSEData = JSON.parse(line.slice(6))
-              handleStreamEvent(data)
-            } catch {
-              // Skip malformed JSON
-            }
-          }
-        }
-
-        // Continue reading
-        await readChunk()
+      if (
+        isActiveStreamGeneration(activeGeneration) &&
+        loadPhase.value !== 'error' &&
+        loadPhase.value !== 'idle'
+      ) {
+        finalizeStreamSuccess(activeGeneration)
       }
-
-      await readChunk()
     } catch (error) {
-      // Ignore abort errors (user cancelled)
+      // Ignore abort errors (user cancelled / stopGeneration already reset UI)
       if (error instanceof Error && error.name === 'AbortError') {
-        if (currentStreamingId.value) {
-          updateMessage(currentStreamingId.value, streamingBuffer.value, false)
+        if (isActiveStreamGeneration(activeGeneration)) {
+          finalizeStreamAbort(activeGeneration)
         }
-        state.value = 'idle'
-        currentStreamingId.value = null
-        streamingBuffer.value = ''
-        abortController.value = null
         return
       }
 
       const errorMsg = error instanceof Error ? error.message : 'Unknown error'
-      state.value = 'error'
-
-      // Remove streaming message if exists
-      if (currentStreamingId.value) {
-        messages.value = messages.value.filter((m) => m.id !== currentStreamingId.value)
-      }
-
-      currentStreamingId.value = null
-      streamingBuffer.value = ''
-      abortController.value = null
-
-      eventBus.emit('mindmate:error', { error: errorMsg })
-      onError?.(errorMsg)
+      finalizeStreamError(activeGeneration, errorMsg, true)
     }
   }
 
   function stopGeneration(): void {
-    if (abortController.value) {
-      abortController.value.abort()
+    if (loadPhase.value === 'idle' && state.value === 'idle' && !abortController.value) {
+      return
+    }
+
+    streamGeneration += 1
+
+    if (currentStreamingId.value) {
+      updateMessage(currentStreamingId.value, streamingBuffer.value, false)
+    }
+
+    applyLoadPhase(mindMateLoadPhaseOnComplete())
+    state.value = 'idle'
+    streamingBuffer.value = ''
+    currentStreamingId.value = null
+
+    const controller = abortController.value
+    abortController.value = null
+    if (controller) {
+      controller.abort()
     }
   }
 
@@ -556,10 +608,16 @@ export function useMindMate(options: MindMateOptions = {}) {
     }
   }
 
-  function handleStreamEvent(data: SSEData): void {
+  function handleStreamEvent(data: SSEData, generation: number): boolean {
+    if (!isActiveStreamGeneration(generation)) {
+      return false
+    }
+
     switch (data.event) {
       case 'message':
         if (data.answer) {
+          beginAssistantStreaming()
+
           streamingBuffer.value += data.answer
 
           if (currentStreamingId.value) {
@@ -613,14 +671,16 @@ export function useMindMate(options: MindMateOptions = {}) {
 
         streamingBuffer.value = ''
         currentStreamingId.value = null
-        abortController.value = null
 
         // Fetch Dify's auto-generated title after second message (with 1-second delay)
         if (mindMateStore.messageCount === 2 && conversationId.value) {
           const convId = conversationId.value
           setTimeout(() => {
             const { mutate: generateTitle } = useGenerateTitle()
-            generateTitle(convId)
+            generateTitle({
+              convId,
+              difyUser: mindMateStore.getConversationDifyUser(convId),
+            })
           }, 1000)
         }
         break
@@ -628,6 +688,7 @@ export function useMindMate(options: MindMateOptions = {}) {
       case 'message_replace':
         // Replace entire message content (used by Dify for content edits)
         if (data.answer && currentStreamingId.value) {
+          beginAssistantStreaming()
           streamingBuffer.value = data.answer
           updateMessage(currentStreamingId.value, streamingBuffer.value, true)
         }
@@ -683,6 +744,7 @@ export function useMindMate(options: MindMateOptions = {}) {
         currentStreamingId.value = null
         abortController.value = null
         state.value = 'error'
+        applyLoadPhase(mindMateLoadPhaseOnError())
 
         eventBus.emit('mindmate:stream_error', {
           error: typeof data.error === 'string' ? data.error : undefined,
@@ -690,9 +752,14 @@ export function useMindMate(options: MindMateOptions = {}) {
           message: errorMsg,
         })
         onError?.(errorMsg)
-        break
+        return false
       }
+
+      default:
+        break
     }
+
+    return true
   }
 
   // =========================================================================
@@ -732,6 +799,7 @@ export function useMindMate(options: MindMateOptions = {}) {
   function startNewSession(sessionId: string): void {
     // Check if new session
     if (diagramSessionId.value !== sessionId) {
+      stopGeneration()
       diagramSessionId.value = sessionId
       conversationId.value = null
       hasGreeted.value = false
@@ -744,6 +812,7 @@ export function useMindMate(options: MindMateOptions = {}) {
     streamingBuffer.value = ''
     currentStreamingId.value = null
     state.value = 'idle'
+    applyLoadPhase(mindMateLoadPhaseOnComplete())
   }
 
   function resetConversation(): void {
@@ -767,22 +836,24 @@ export function useMindMate(options: MindMateOptions = {}) {
    * Load a specific conversation's messages
    */
   async function loadConversation(convId: string): Promise<void> {
-    // Abort any ongoing stream first
-    if (abortController.value) {
-      abortController.value.abort()
-    }
+    stopGeneration()
 
     state.value = 'loading'
     isLoadingHistory.value = true
     clearMessages()
 
+    const difyUser = mindMateStore.getConversationDifyUser(convId)
+
     try {
       // Use Vue Query to fetch messages (will use cache if available)
       const difyMessages = await queryClient.fetchQuery({
-        queryKey: difyKeys.messages(convId),
+        queryKey: difyKeys.messages(convId, difyUser),
         queryFn: async () => {
+          const query = difyUser
+            ? `?limit=100&dify_user=${encodeURIComponent(difyUser)}`
+            : '?limit=100'
           // Use fetch with credentials (token in httpOnly cookie)
-          const response = await fetch(`/api/dify/conversations/${convId}/messages?limit=100`, {
+          const response = await fetch(`/api/dify/conversations/${convId}/messages${query}`, {
             credentials: 'same-origin',
           })
 
@@ -817,6 +888,7 @@ export function useMindMate(options: MindMateOptions = {}) {
       onError?.('Failed to load conversation')
     } finally {
       state.value = 'idle'
+      applyLoadPhase(mindMateLoadPhaseOnComplete())
       isLoadingHistory.value = false
     }
   }
@@ -936,13 +1008,9 @@ export function useMindMate(options: MindMateOptions = {}) {
   // =========================================================================
 
   function destroy(): void {
-    // 1. Abort any ongoing SSE stream
-    if (abortController.value) {
-      abortController.value.abort()
-      abortController.value = null
-    }
+    stopGeneration()
 
-    // 2. Revoke blob URLs for pending files
+    // Revoke blob URLs for pending files
     pendingFiles.value.forEach((f) => {
       if (f.preview_url) URL.revokeObjectURL(f.preview_url)
     })
@@ -959,6 +1027,7 @@ export function useMindMate(options: MindMateOptions = {}) {
     streamingBuffer.value = ''
     currentStreamingId.value = null
     state.value = 'idle'
+    applyLoadPhase(mindMateLoadPhaseOnComplete())
   }
 
   onUnmounted(() => {
@@ -972,6 +1041,7 @@ export function useMindMate(options: MindMateOptions = {}) {
   return {
     // State
     state,
+    loadPhase,
     messages,
     conversationId,
     diagramSessionId,
@@ -991,6 +1061,7 @@ export function useMindMate(options: MindMateOptions = {}) {
     // Computed
     isStreaming,
     isLoading,
+    isGenerating,
     hasMessages,
     lastMessage,
 

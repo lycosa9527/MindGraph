@@ -131,6 +131,8 @@ def _load_summaries_jsonl_blocking(job_id: int) -> List[ExportConversationSummar
                     updated_at=int(raw.get("updated_at") or 0),
                     mindbot_config_id=raw.get("mindbot_config_id"),
                     endpoint_source=str(raw.get("endpoint_source") or "org_server"),
+                    dingtalk_chat_scope=raw.get("dingtalk_chat_scope"),
+                    dingtalk_conversation_id=raw.get("dingtalk_conversation_id"),
                 )
             )
     return out
@@ -280,6 +282,8 @@ def _load_conversations_jsonl_blocking(job_id: int) -> List[ExportConversation]:
                 updated_at=int(raw.get("updated_at") or 0),
                 mindbot_config_id=raw.get("mindbot_config_id"),
                 endpoint_source=str(raw.get("endpoint_source") or "org_server"),
+                dingtalk_chat_scope=raw.get("dingtalk_chat_scope"),
+                dingtalk_conversation_id=raw.get("dingtalk_conversation_id"),
                 bubbles=[
                     ExportBubble(
                         role=str(item.get("role") or "user"),

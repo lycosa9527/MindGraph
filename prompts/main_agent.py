@@ -175,6 +175,52 @@ TOPIC_EXTRACTION_ZH = """从用户输入中提取核心主题词。
 
 请只返回纯净的主题词（不要包含：的、气泡图、思维导图、圆圈图、树形图、等图表类型词）："""
 
+PROMPT_REQUIREMENTS_BASE_EN = """You extract structured requirements from a user prompt for diagram generation.
+The diagram type is already resolved as: {diagram_type}
+
+Topic extraction rules (central subject only — not diagram type words):
+{topic_extraction_rules}
+
+Shared rules:
+1. Parse sections after "User requirements:" or "【用户要求】" — requirements after the marker override context before it.
+2. Set structure_mode to "fixed" when the user lists explicit branches, steps, categories, parts, attributes, context items, causes, effects, or analogy pairs.
+3. Set structure_mode to "free" when only a topic/subject (and optional tone hints) is given.
+4. If structure_mode is "fixed", include type-native node lists using ONLY the field names in the schema below.
+5. constraints: optional tone, audience, or detail hints (both cases).
+6. clarity: "clear" or "unclear" — use "unclear" only for empty or meaningless input.
+7. Output ONLY valid JSON — no markdown, no explanation.
+
+Type-specific schema and examples:
+{requirements_schema}
+
+User input:
+"{user_prompt}"
+
+Return ONLY the JSON object:"""
+
+PROMPT_REQUIREMENTS_BASE_ZH = """你从用户输入中提取结构化需求，用于图表生成。
+图表类型已确定为：{diagram_type}
+
+主题提取规则（只提取中心主题，不要图表类型词）：
+{topic_extraction_rules}
+
+通用规则：
+1. 解析"【用户要求】"或"User requirements:"之后的段落——标记后的内容优先于标记前的上下文。
+2. 当用户明确列出分支、步骤、类别、部分、特征、联想词、原因、结果或类比对时，structure_mode 设为 "fixed"。
+3. 当用户只给出主题/中心词（及可选的语气/细节提示）时，structure_mode 设为 "free"。
+4. structure_mode 为 "fixed" 时，必须包含下方 schema 中的原生字段名列表。
+5. constraints：可选的语气、受众或详细程度提示（两种情况均可）。
+6. clarity："clear" 或 "unclear"——仅对空输入或无意义内容使用 "unclear"。
+7. 只输出有效 JSON——不要 markdown，不要解释。
+
+本类型的 schema 与示例：
+{requirements_schema}
+
+用户输入：
+"{user_prompt}"
+
+只返回 JSON 对象："""
+
 # Main agent prompt registry
 MAIN_AGENT_PROMPTS = {
     # Concept generation
@@ -186,4 +232,7 @@ MAIN_AGENT_PROMPTS = {
     # Topic extraction
     "topic_extraction_generation_en": TOPIC_EXTRACTION_EN,
     "topic_extraction_generation_zh": TOPIC_EXTRACTION_ZH,
+    # Prompt requirements extraction (stage 2)
+    "prompt_requirements_generation_en": PROMPT_REQUIREMENTS_BASE_EN,
+    "prompt_requirements_generation_zh": PROMPT_REQUIREMENTS_BASE_ZH,
 }

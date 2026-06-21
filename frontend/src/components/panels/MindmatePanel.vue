@@ -5,6 +5,7 @@
  * Features: Markdown rendering, code highlighting, message actions, stop generation
  */
 import { computed, nextTick, onActivated, onMounted, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 
 import { ElButton, ElIcon } from 'element-plus'
 
@@ -48,6 +49,7 @@ const notify = useNotifications()
 const authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
 const uiStore = useUIStore()
+const { loadPhase: mindMateLoadPhase } = storeToRefs(mindMateStore)
 
 const { displayName: defaultMindMateTitle } = useMindMateBranding()
 
@@ -74,7 +76,9 @@ const hoveredMessageId = ref<string | null>(null)
 const showShareModal = ref(false)
 
 // Computed for loading state
-const isLoading = computed(() => mindMate.isLoading.value || mindMate.isStreaming.value)
+const isLoading = computed(
+  () => mindMateStore.isGenerating || mindMate.isLoading.value || mindMate.isStreaming.value
+)
 
 // User avatar from auth store
 const userAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
@@ -390,6 +394,7 @@ function isLastAssistantMessage(messageId: string): boolean {
       :show-welcome="showWelcome"
       :is-loading="mindMate.isLoading.value"
       :is-streaming="mindMate.isStreaming.value"
+      :load-phase="mindMateLoadPhase"
       :is-loading-history="mindMate.isLoadingHistory.value"
       :editing-message-id="editingMessageId"
       :editing-content="editingContent"

@@ -1365,6 +1365,8 @@ THINKING_MAP_PROMPTS = {
     "tree_map_agent_generation_zh": TREE_MAP_GENERATION_ZH,
     "tree_map_agent_fixed_dimension_en": TREE_MAP_FIXED_DIMENSION_EN,
     "tree_map_agent_fixed_dimension_zh": TREE_MAP_FIXED_DIMENSION_ZH,
+    "tree_map_agent_dimension_only_en": TREE_MAP_DIMENSION_ONLY_EN,
+    "tree_map_agent_dimension_only_zh": TREE_MAP_DIMENSION_ONLY_ZH,
     "flow_map_agent_generation_en": FLOW_MAP_GENERATION_EN,
     "flow_map_agent_generation_zh": FLOW_MAP_GENERATION_ZH,
     "brace_map_agent_generation_en": BRACE_MAP_GENERATION_EN,

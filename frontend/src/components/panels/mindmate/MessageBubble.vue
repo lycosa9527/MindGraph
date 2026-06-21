@@ -13,6 +13,7 @@ import { useLanguage, useNotifications } from '@/composables'
 import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'
 import type { FeedbackRating, MindMateMessage } from '@/composables/mindmate/useMindMate'
 import { useAuthStore } from '@/stores/auth'
+import type { ModelLoadPhase } from '@/stores/llmResults'
 import { authFetch } from '@/utils/api'
 import { canvasEditorPathForRoute } from '@/utils/canvasBackNavigation'
 import {
@@ -35,6 +36,7 @@ const props = defineProps<{
   isLastAssistant?: boolean
   hasPreviousUserMessage?: boolean
   isLoading?: boolean
+  agentLoadPhase?: ModelLoadPhase
 }>()
 
 const emit = defineEmits<{
@@ -318,6 +320,7 @@ function handleMarkdownClick(event: MouseEvent) {
         <MindmateAgentAvatar
           :size="40"
           avatar-class="mindmate-avatar flex-shrink-0"
+          :phase="agentLoadPhase ?? 'idle'"
         />
       </template>
 

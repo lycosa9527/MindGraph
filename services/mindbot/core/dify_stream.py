@@ -21,6 +21,7 @@ from services.mindbot.core.dify_sse_parse import (
     workflow_outputs_file_hints,
 )
 from services.mindbot.dify.usage_parse import parse_dify_usage_from_stream_event
+from services.monitoring.error_reporting import record_failure
 from utils.env_helpers import env_bool, env_float, env_int
 
 logger = logging.getLogger(__name__)
@@ -337,6 +338,17 @@ async def mindbot_consume_dify_stream_batched(
                 err,
                 code,
                 status,
+            )
+            record_failure(
+                source="mindbot",
+                component="DifyStream",
+                message=str(err),
+                exception_type="DifyStreamError",
+                tags={
+                    "pipeline_ctx": pipeline_ctx,
+                    "code": code,
+                    "status": status,
+                },
             )
             return full, conv_id, "dify_error", usage_snapshot, native_reasoning_accum
 

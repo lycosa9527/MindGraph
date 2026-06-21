@@ -20,6 +20,7 @@ from clients.dify import AsyncDifyClient
 from models.domain.auth import Organization
 from services.dify.export.endpoints import ExportDifyEndpoint, endpoints_for_target
 from services.dify.export.export_config import LIST_PAGE_DEFAULT, LIST_PAGE_MAX
+from services.dify.export.time_range import conversation_overlaps_export_range
 from services.dify.export.transcript import (
     ExportBubble,
     ExportBundle,
@@ -29,6 +30,7 @@ from services.dify.export.transcript import (
     split_message_to_bubbles,
 )
 from services.dify.export.types import ControlCallback, ProgressCallback, TargetFetchResult, UserTarget
+from services.dify.export.usage_supplement import supplement_mindbot_summaries_from_usage
 from services.utils.error_types import DIFY_API_ERRORS
 from utils.db.session_open import release_open_transaction, system_rls_session
 
@@ -155,6 +157,16 @@ def _within_range(created_at: int, start: Optional[int], end: Optional[int]) -> 
     return True
 
 
+def _conversation_in_export_range(
+    created_at: int,
+    updated_at: int,
+    start: Optional[int],
+    end: Optional[int],
+) -> bool:
+    """Include conversations with any activity overlapping the export window."""
+    return conversation_overlaps_export_range(created_at, updated_at, start, end)
+
+
 async def _should_continue(options: Optional[CollectOptions]) -> bool:
     if options is None or options.control is None:
         return True
@@ -208,7 +220,7 @@ async def _summaries_for_target_endpoint(
     for conv in page.items:
         created = conversation_created_at(conv)
         updated = int(conv.get("updated_at") or created)
-        if not _within_range(created, start, end):
+        if not _conversation_in_export_range(created, updated, start, end):
             continue
         conv_id = str(conv.get("id") or "")
         out.append(
@@ -384,6 +396,15 @@ async def collect_conversation_summaries_batch(
             warnings.extend(fetch_meta.fetch_errors)
 
     deduped = _dedupe_summaries(flat)
+    deduped, usage_warnings = await supplement_mindbot_summaries_from_usage(
+        db,
+        targets,
+        deduped,
+        start=start,
+        end=end,
+    )
+    if usage_warnings:
+        warnings.extend(usage_warnings)
     if options and options.progress:
         options.progress("fetching_conversations", len(deduped), len(deduped), {})
     return CollectResult(
@@ -444,6 +465,8 @@ async def _conversation_with_bubbles(
         endpoint_source=summary.endpoint_source,
         created_at=summary.created_at,
         updated_at=summary.updated_at,
+        dingtalk_chat_scope=summary.dingtalk_chat_scope,
+        dingtalk_conversation_id=summary.dingtalk_conversation_id,
         bubbles=bubbles,
     )
     return conv, complete, warning

@@ -346,6 +346,40 @@ function channelLabel(channel: string): string {
     : t('admin.mindmateExport.channelWeb')
 }
 
+function chatScopeLabel(scope: string | null | undefined): string | null {
+  if (!scope) {
+    return null
+  }
+  const normalized = scope.trim().toLowerCase()
+  if (normalized === 'group') {
+    return t('admin.mindmateExport.chatScopeGroup')
+  }
+  if (normalized === 'cross_org_group') {
+    return t('admin.mindmateExport.chatScopeCrossOrg')
+  }
+  if (normalized === 'oto' || normalized === '1:1') {
+    return t('admin.mindmateExport.chatScopeOto')
+  }
+  return scope
+}
+
+function chatScopeClass(scope: string | null | undefined): string {
+  if (!scope) {
+    return ''
+  }
+  const normalized = scope.trim().toLowerCase()
+  if (normalized === 'cross_org_group') {
+    return 'is-cross-org'
+  }
+  if (normalized === 'group') {
+    return 'is-group'
+  }
+  if (normalized === 'oto' || normalized === '1:1') {
+    return 'is-oto'
+  }
+  return 'is-group'
+}
+
 function conversationKey(conv: MindMateExportConversation): string {
   return `${conv.organization_id}:${conv.server}:${conv.dify_user}:${conv.conversation_id}`
 }
@@ -883,6 +917,13 @@ async function download(): Promise<void> {
                 :class="conv.channel === 'mindbot' ? 'is-mindbot' : 'is-web'"
               >
                 {{ channelLabel(conv.channel) }}
+              </span>
+              <span
+                v-if="chatScopeLabel(conv.dingtalk_chat_scope)"
+                class="mindmate-export-chat-scope-badge"
+                :class="chatScopeClass(conv.dingtalk_chat_scope)"
+              >
+                {{ chatScopeLabel(conv.dingtalk_chat_scope) }}
               </span>
               <span
                 class="mindmate-export-server-badge"
@@ -1430,6 +1471,30 @@ async function download(): Promise<void> {
 .mindmate-export-channel-badge.is-mindbot {
   background: var(--swiss-geek-cyan-soft, #ecfeff);
   color: var(--swiss-geek-cyan-ui, #0e7490);
+}
+
+.mindmate-export-chat-scope-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.mindmate-export-chat-scope-badge.is-group {
+  background: #e6fcf5;
+  color: #087f5b;
+}
+
+.mindmate-export-chat-scope-badge.is-cross-org {
+  background: #fff0f6;
+  color: #c2255c;
+}
+
+.mindmate-export-chat-scope-badge.is-oto {
+  background: #f3f0ff;
+  color: #5f3dc4;
 }
 
 .mindmate-export-conv-time {

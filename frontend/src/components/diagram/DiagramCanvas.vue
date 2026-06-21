@@ -141,17 +141,6 @@ const vueFlowWrapper = ref<HTMLElement | null>(null)
 const canvasContainer = ref<HTMLElement | null>(null)
 
 const {
-  showExportToCommunityModal,
-  getExportContainer,
-  getExportTitle,
-  getExportSpec,
-  exportByFormat,
-} = useDiagramCanvasExport({
-  vueFlowWrapper,
-  diagramStore,
-})
-
-const {
   onNodesChange,
   onNodeClick,
   onNodeDoubleClick,
@@ -319,6 +308,22 @@ const {
   nodesLength,
 })
 
+const {
+  showExportToCommunityModal,
+  getExportContainer,
+  getExportTitle,
+  getExportSpec,
+  exportByFormat,
+  prepareForCommunityExport,
+  restoreViewportAfterCommunityExport,
+} = useDiagramCanvasExport({
+  vueFlowWrapper,
+  diagramStore,
+  fitForExport,
+  getViewport,
+  setViewport,
+})
+
 function handleViewportChangeWithToolbar(
   ...args: Parameters<typeof handleViewportChange>
 ) {
@@ -431,6 +436,8 @@ onMounted(() => {
     emit,
     exportByFormat,
     showExportToCommunityModal,
+    prepareForCommunityExport,
+    restoreViewportAfterCommunityExport,
     regenerateForNodeIfNeeded,
   })
   if (props.panOnDragButtons) {
@@ -591,6 +598,8 @@ defineExpose({
       :get-container="getExportContainer"
       :get-diagram-spec="getExportSpec"
       :get-title="getExportTitle"
+      :prepare-for-thumbnail="prepareForCommunityExport"
+      :restore-after-thumbnail="restoreViewportAfterCommunityExport"
       :diagram-type="diagramStore.type || 'mind_map'"
     />
   </div>

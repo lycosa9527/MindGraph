@@ -1,6 +1,8 @@
 /**
  * Light admin header controls — stone pill style (matches admin-new-school-btn).
+ * Segmented control styles: admin-swiss-segmented.css (user-trend modal imports its own sheet).
  */
+@import './admin-swiss-segmented.css';
 
 .admin-swiss-glyph {
   color: #a8a29e;
@@ -356,6 +358,3 @@ html.dark .admin-swiss-switch.el-switch :deep(.el-switch__core .el-switch__actio
   opacity: 0.42;
   cursor: not-allowed;
 }
-
-/* Segmented + user-trend modal styles: admin-swiss-segmented.css, admin-user-trend-swiss.css */
-@import './admin-user-trend-swiss.css';

@@ -11,10 +11,17 @@ Proprietary License
 
 import logging
 import time
+from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, cast
 
 from agents.concept_maps.concept_map_agent import ConceptMapAgent
 from agents.core.diagram_detection import _detect_diagram_type_from_prompt
+from agents.core.prompt_requirements import (
+    build_generation_user_message,
+    extract_prompt_requirements,
+    map_to_agent_params,
+    merge_agent_params,
+)
 from agents.core.learning_sheet import (
     _clean_prompt_for_learning_sheet,
     _detect_learning_sheet_from_prompt,
@@ -43,6 +50,9 @@ logger = logging.getLogger(__name__)
 CONCEPT_MAX_LENGTH = 100
 
 
+PhaseEmitter = Callable[[str], Awaitable[None]]
+
+
 async def _generate_spec_with_agent(
     user_prompt: str,
     diagram_type: str,
@@ -59,6 +69,11 @@ async def _generate_spec_with_agent(
     fixed_dimension=None,
     # Tree map and brace map: dimension-only mode (user has dimension but no topic)
     dimension_only_mode=None,
+    # Prompt understanding layer (stage 2)
+    structure_mode: str = "free",
+    fixed_nodes: dict | None = None,
+    constraints: str = "",
+    phase_emit: PhaseEmitter | None = None,
 ) -> dict:
     """
     Generate specification using the appropriate specialized agent.
@@ -138,6 +153,7 @@ async def _generate_spec_with_agent(
                 existing_analogies=existing_analogies,
                 fixed_dimension=fixed_dimension,
                 dimension_preference=dimension_preference,
+                phase_emit=phase_emit,
             )
         # Bridge map Mode 3: Relationship-only mode (no pairs, but has fixed dimension)
         elif diagram_type == "bridge_map" and fixed_dimension and not existing_analogies:
@@ -156,6 +172,7 @@ async def _generate_spec_with_agent(
                 existing_analogies=None,
                 fixed_dimension=fixed_dimension,
                 dimension_preference=dimension_preference,
+                phase_emit=phase_emit,
             )
         # Tree map and brace map: Three-scenario system (similar to bridge_map)
         # Scenario 1: Topic only → handled by standard generation below
@@ -182,6 +199,7 @@ async def _generate_spec_with_agent(
                         endpoint_path=endpoint_path,
                         fixed_dimension=fixed_dimension,
                         dimension_only_mode=True,
+                        phase_emit=phase_emit,
                     )
                 else:
                     brace_agent = BraceMapAgent(model=model)
@@ -195,6 +213,7 @@ async def _generate_spec_with_agent(
                         endpoint_path=endpoint_path,
                         fixed_dimension=fixed_dimension,
                         dimension_only_mode=True,
+                        phase_emit=phase_emit,
                     )
             else:
                 # Scenario 2: Topic + dimension mode
@@ -214,6 +233,7 @@ async def _generate_spec_with_agent(
                         request_type=request_type,
                         endpoint_path=endpoint_path,
                         fixed_dimension=fixed_dimension,
+                        phase_emit=phase_emit,
                     )
                 else:
                     brace_agent = BraceMapAgent(model=model)
@@ -226,6 +246,7 @@ async def _generate_spec_with_agent(
                         request_type=request_type,
                         endpoint_path=endpoint_path,
                         fixed_dimension=fixed_dimension,
+                        phase_emit=phase_emit,
                     )
         # For brace maps, tree maps, and bridge maps (without fixed dimension), pass dimension_preference if available
         elif diagram_type in ("brace_map", "tree_map", "bridge_map") and dimension_preference:
@@ -244,6 +265,7 @@ async def _generate_spec_with_agent(
                     organization_id=organization_id,
                     request_type=request_type,
                     endpoint_path=endpoint_path,
+                    phase_emit=phase_emit,
                 )
             elif diagram_type == "tree_map":
                 logger.debug(
@@ -259,6 +281,7 @@ async def _generate_spec_with_agent(
                     organization_id=organization_id,
                     request_type=request_type,
                     endpoint_path=endpoint_path,
+                    phase_emit=phase_emit,
                 )
             else:  # bridge_map
                 logger.debug(
@@ -274,6 +297,7 @@ async def _generate_spec_with_agent(
                     organization_id=organization_id,
                     request_type=request_type,
                     endpoint_path=endpoint_path,
+                    phase_emit=phase_emit,
                 )
         else:
             # For agents that don't support dimension_preference or other special parameters
@@ -282,6 +306,10 @@ async def _generate_spec_with_agent(
                 "organization_id": organization_id,
                 "request_type": request_type,
                 "endpoint_path": endpoint_path,
+                "phase_emit": phase_emit,
+                "structure_mode": structure_mode,
+                "fixed_nodes": fixed_nodes or {},
+                "constraints": constraints,
             }
             result = await agent.generate_graph(user_prompt, language, **basic_kwargs)
 
@@ -333,6 +361,7 @@ async def agent_graph_workflow_with_styles(
     # RAG integration: use knowledge space context
     use_rag=False,
     rag_top_k=5,
+    phase_emit: PhaseEmitter | None = None,
 ):
     """
     Simplified agent workflow that directly calls specialized agents.
@@ -385,6 +414,7 @@ auto-complete - user has dimension but no topic (generate topic and children)
                 organization_id=organization_id,
                 request_type=request_type or "autocomplete",
                 endpoint_path=endpoint_path,
+                phase_emit=phase_emit,
             )
             if isinstance(result, dict) and "relationship_label" in result:
                 return result
@@ -446,6 +476,41 @@ auto-complete - user has dimension but no topic (generate topic and children)
                     "show_guidance": True,
                 }
 
+        # Stage 2: extract type-native requirements from raw prompt (before learning sheet / RAG)
+        requirements_start = time.time()
+        parsed = await extract_prompt_requirements(
+            user_prompt,
+            diagram_type,
+            language,
+            model,
+            user_id=user_id,
+            organization_id=organization_id,
+            request_type=request_type,
+            endpoint_path=endpoint_path,
+            phase_emit=phase_emit,
+        )
+        agent_params = merge_agent_params(
+            {
+                "fixed_dimension": fixed_dimension,
+                "existing_analogies": existing_analogies,
+                "dimension_only_mode": dimension_only_mode,
+                "dimension_preference": dimension_preference,
+            },
+            map_to_agent_params(diagram_type, parsed),
+        )
+        generation_central = parsed.central_for_type(diagram_type) or user_prompt.strip()
+        topic_time = time.time() - requirements_start
+        logger.info(
+            "Requirements extraction completed in %.2fs: structure_mode=%s, central=%r",
+            topic_time,
+            agent_params.structure_mode,
+            generation_central[:80] if generation_central else "",
+        )
+
+        effective_fixed_dimension = agent_params.fixed_dimension
+        effective_existing_analogies = agent_params.existing_analogies
+        effective_dimension_only_mode = agent_params.dimension_only_mode
+
         # Continue to full spec generation for both free-form and forced diagram type
         # Add learning sheet detection
         is_learning_sheet = _detect_learning_sheet_from_prompt(user_prompt, language)
@@ -458,6 +523,7 @@ auto-complete - user has dimension but no topic (generate topic and children)
 
         # RAG Integration: Retrieve relevant context from Knowledge Space if enabled
         rag_context = None
+        rag_context_block = ""
         if use_rag and user_id:
             try:
                 rag_service = RAGService()
@@ -511,30 +577,30 @@ auto-complete - user has dimension but no topic (generate topic and children)
             except LLM_PIPELINE_ERRORS as e:
                 logger.warning("[RAG] Failed to retrieve context: %s", e, exc_info=True)
 
-        # Enhance prompt with RAG context if available
         if rag_context:
             if is_chinese_prompt_shell_language(language):
-                enhanced_prompt = f"""用户请求：{generation_prompt}
-
-相关背景知识（来自用户的知识库）：
+                rag_context_block = f"""相关背景知识（来自用户的知识库）：
 {rag_context}
 
 请基于以上背景知识生成更准确、更详细的图表。"""
             else:
-                enhanced_prompt = f"""User Request: {generation_prompt}
-
-Relevant Context (from user's knowledge base):
+                rag_context_block = f"""Relevant Context (from user's knowledge base):
 {rag_context}
 
 Please generate a more accurate and detailed diagram based on the above context."""
+            logger.debug("[RAG] Prepared %d characters of context block", len(rag_context))
 
-            logger.debug("[RAG] Enhanced prompt with %d characters of context", len(rag_context))
-            generation_prompt = enhanced_prompt
+        agent_user_message = build_generation_user_message(
+            generation_central,
+            agent_params,
+            language,
+            rag_context_block,
+        )
 
         # Generate specification using the appropriate agent
         generation_start = time.time()
         spec = await _generate_spec_with_agent(
-            generation_prompt,
+            agent_user_message,
             diagram_type,
             language,
             dimension_preference=dimension_preference if dimension_preference else None,
@@ -544,11 +610,15 @@ Please generate a more accurate and detailed diagram based on the above context.
             organization_id=organization_id,
             request_type=request_type,
             endpoint_path=endpoint_path,
-            # Bridge map specific
-            existing_analogies=existing_analogies,
-            fixed_dimension=fixed_dimension,
+            # Bridge map specific (merged NL + API)
+            existing_analogies=effective_existing_analogies,
+            fixed_dimension=effective_fixed_dimension,
             # Tree map and brace map: dimension-only mode
-            dimension_only_mode=dimension_only_mode,
+            dimension_only_mode=effective_dimension_only_mode,
+            structure_mode=agent_params.structure_mode,
+            fixed_nodes=agent_params.fixed_nodes,
+            constraints=agent_params.constraints,
+            phase_emit=phase_emit,
         )
         generation_time = time.time() - generation_start
         logger.info(
@@ -593,11 +663,12 @@ Please generate a more accurate and detailed diagram based on the above context.
             "success": True,
             "spec": spec,
             "diagram_type": diagram_type,
-            "topics": [],  # No longer extracted
-            "style_preferences": {},  # No longer extracted
+            "topics": [generation_central] if generation_central else [],
+            "structure_mode": agent_params.structure_mode,
+            "style_preferences": {},
             "language": language,
-            "is_learning_sheet": is_learning_sheet,  # NEW
-            "hidden_node_percentage": hidden_percentage,  # NEW
+            "is_learning_sheet": is_learning_sheet,
+            "hidden_node_percentage": hidden_percentage,
         }
 
         total_time = time.time() - workflow_start_time

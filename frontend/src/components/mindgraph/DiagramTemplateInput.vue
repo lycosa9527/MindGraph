@@ -263,9 +263,9 @@ const templateParts = computed(() => {
         v-if="selectedType === '选择具体图示'"
         :model-value="uiStore.freeInputValue"
         type="textarea"
-        :rows="2"
+        :rows="4"
         size="large"
-        :maxlength="50"
+        :maxlength="MAX_PROMPT_LENGTH"
         show-word-limit
         :placeholder="t('landing.template.freePlaceholder')"
         :disabled="!authStore.isAuthenticated"

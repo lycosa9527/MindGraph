@@ -14,6 +14,7 @@ import logging
 from fastapi import APIRouter, HTTPException, Request
 
 from models import FrontendLogBatchRequest, FrontendLogRequest
+from services.monitoring.error_reporting import record_failure
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 
 logger = logging.getLogger(__name__)
@@ -68,6 +69,18 @@ async def frontend_log(req: FrontendLogRequest, request: Request):
         message = message[:10000] + "... [truncated]"
 
     frontend_logger.log(level, "[FRONTEND] %s", message)
+
+    if level >= logging.ERROR:
+        client_component = (req.source or "browser").strip()[:128] or "browser"
+        client_tags = {"client_source": req.source} if req.source else None
+        record_failure(
+            source="frontend",
+            component=client_component,
+            message=message,
+            severity="error",
+            exception_type="FrontendError",
+            tags=client_tags,
+        )
 
     return {"status": "logged"}
 
@@ -131,5 +144,17 @@ async def frontend_log_batch(req: FrontendLogBatchRequest, request: Request):
             message = message[:10000] + "... [truncated]"
 
         frontend_logger.log(level, "[FRONTEND] %s", message)
+
+        if level >= logging.ERROR:
+            client_component = (log_entry.source or "browser").strip()[:128] or "browser"
+            client_tags = {"client_source": log_entry.source} if log_entry.source else None
+            record_failure(
+                source="frontend",
+                component=client_component,
+                message=message,
+                severity="error",
+                exception_type="FrontendError",
+                tags=client_tags,
+            )
 
     return {"status": "logged", "count": req.batch_size}

@@ -22,8 +22,18 @@ from typing import Optional, Tuple
 import httpx
 
 from models.domain.messages import Language, Messages
+from services.monitoring.error_reporting import record_failure
 
 logger = logging.getLogger(__name__)
+
+
+def _record_ses_provider_failure(message: str, *, exception_type: str = "SESServiceError") -> None:
+    record_failure(
+        source="auth",
+        component="SESService",
+        message=message,
+        exception_type=exception_type,
+    )
 
 _DEFAULT_TEMPLATE_ID = "123456"
 
@@ -231,13 +241,16 @@ class SESService:
             response = await client.post(endpoint, content=payload, headers=headers)
         except httpx.TimeoutException:
             logger.error("SES request timeout")
+            _record_ses_provider_failure("SES request timeout", exception_type="TimeoutException")
             return False, Messages.error("email_error_timeout", lang), None
         except httpx.HTTPError as exc:
             logger.error("SES HTTP error: %s", exc)
+            _record_ses_provider_failure(f"SES HTTP error: {exc}", exception_type="HTTPError")
             return False, Messages.error("email_error_http", lang), None
 
         if response.status_code != 200:
             logger.error("SES API non-200: %s %s", response.status_code, response.text[:200])
+            _record_ses_provider_failure(f"SES API non-200: {response.status_code}")
             return False, Messages.error("email_error_http", lang), None
 
         try:
@@ -255,6 +268,7 @@ class SESService:
             err = resp_data["Error"]
             error_code = err.get("Code", "Unknown")
             logger.error("SES API error: %s - %s", error_code, err.get("Message", ""))
+            _record_ses_provider_failure(f"SES API error: {error_code}")
             return False, self._translate_error_code(error_code, lang), None
 
         if resp_data.get("MessageId"):

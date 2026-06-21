@@ -777,10 +777,10 @@ def _remove_js_comments_safely(text: str) -> str:
 
 def _escape_chinese_quotes_in_strings(text: str) -> str:
     """
-    Escape Chinese quotation marks that appear inside JSON string values.
+    Escape Chinese quotation marks and raw control characters inside JSON string values.
 
-    Chinese quotation marks (" and ") break JSON parsing when they appear inside
-    string values because the parser thinks the string has ended.
+    Chinese quotation marks (" and ") and unescaped tabs/newlines break JSON parsing
+    when they appear inside string values.
 
     This function identifies JSON string values and escapes Chinese quotes inside them.
 
@@ -820,11 +820,17 @@ def _escape_chinese_quotes_in_strings(text: str) -> str:
             continue
 
         if in_string:
-            # Inside string - escape Chinese quotation marks
+            # Inside string - escape characters that break JSON parsing
             if char == "\u201c":  # Chinese left double quotation mark "
                 result.append('\\"')
             elif char == "\u201d":  # Chinese right double quotation mark "
                 result.append('\\"')
+            elif char == "\t":
+                result.append("\\t")
+            elif char == "\n":
+                result.append("\\n")
+            elif char == "\r":
+                result.append("\\r")
             else:
                 result.append(char)
             i += 1

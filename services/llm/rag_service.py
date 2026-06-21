@@ -38,6 +38,7 @@ from services.infrastructure.rate_limiting.kb_rate_limiter import get_kb_rate_li
 from services.knowledge.keyword_search_service import get_keyword_search_service
 from services.llm.embedding_cache import get_embedding_cache
 from services.llm.qdrant_service import get_qdrant_service
+from services.monitoring.error_reporting import record_exception
 from services.utils.error_types import QDRANT_ERRORS
 
 try:
@@ -508,6 +509,12 @@ class RAGService:
 
         except QDRANT_ERRORS as e:
             logger.error("[RAGService] Failed to retrieve context: %s", e)
+            record_exception(
+                source="rag",
+                component="RAGService",
+                exc=e,
+                tags={"user_id": user_id, "operation": "retrieve_context"},
+            )
             try:
                 result = await db.execute(select(KnowledgeSpace).where(KnowledgeSpace.user_id == user_id))
                 space = result.scalar_one_or_none()
@@ -694,6 +701,12 @@ class RAGService:
 
         except QDRANT_ERRORS as e:
             logger.error("[RAGService] Hybrid search failed: %s", e)
+            record_exception(
+                source="rag",
+                component="RAGService",
+                exc=e,
+                tags={"user_id": user_id, "operation": "hybrid_search"},
+            )
             return await self.vector_search(db, user_id, query, top_k, metadata_filter)
 
     async def _vector_search_with_scores(

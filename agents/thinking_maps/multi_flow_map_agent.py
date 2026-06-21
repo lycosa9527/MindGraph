@@ -17,10 +17,10 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 from agents.core.agent_utils import extract_json_from_response
+from agents.core.llm_spec_stream import dispatch_llm_chat
 from agents.core.base_agent import BaseAgent
 from config.settings import config
 from prompts import get_prompt
-from services.llm import llm_service
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
@@ -50,6 +50,7 @@ class MultiFlowMapAgent(BaseAgent):
             "organization_id": kwargs.get("organization_id"),
             "request_type": kwargs.get("request_type", "diagram_generation"),
             "endpoint_path": kwargs.get("endpoint_path"),
+            "phase_emit": kwargs.get("phase_emit"),
         }
         try:
             spec = await self._generate_multi_flow_map_spec(
@@ -59,6 +60,7 @@ class MultiFlowMapAgent(BaseAgent):
                 organization_id=token_kwargs["organization_id"],
                 request_type=token_kwargs["request_type"],
                 endpoint_path=token_kwargs["endpoint_path"],
+                phase_emit=token_kwargs["phase_emit"],
             )
             if not spec:
                 return {
@@ -104,6 +106,7 @@ class MultiFlowMapAgent(BaseAgent):
         organization_id: Optional[int] = None,
         request_type: str = "diagram_generation",
         endpoint_path: Optional[str] = None,
+        phase_emit=None,
     ) -> Optional[Dict]:
         """Generate the multi-flow map specification using LLM."""
         try:
@@ -122,13 +125,13 @@ class MultiFlowMapAgent(BaseAgent):
             )
 
             # Call middleware directly - clean and efficient!
-            response = await llm_service.chat(
+            response = await dispatch_llm_chat(
+                phase_emit=phase_emit,
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
                 max_tokens=1000,
                 temperature=config.LLM_TEMPERATURE,
-                # Token tracking parameters
                 user_id=user_id,
                 organization_id=organization_id,
                 request_type=request_type,

@@ -1,0 +1,7 @@
+{
+  "whole": "人体",
+  "structure_mode": "fixed",
+  "parts": ["头部", "躯干", "四肢"],
+  "clarity": "clear",
+  "constraints": ""
+}

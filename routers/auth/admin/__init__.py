@@ -13,6 +13,7 @@ from fastapi import APIRouter
 
 from . import (
     api_keys,
+    errors,
     feature_org_access,
     geolite,
     invites,
@@ -42,6 +43,7 @@ admin_router.include_router(settings.router)
 admin_router.include_router(stats.router)
 admin_router.include_router(stats_trends.router)
 admin_router.include_router(performance.router)
+admin_router.include_router(errors.router)
 admin_router.include_router(api_keys.router)
 admin_router.include_router(teacher_usage.router)
 admin_router.include_router(user_activity.router)

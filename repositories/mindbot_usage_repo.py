@@ -8,16 +8,41 @@ Proprietary License
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 
 from sqlalchemy import distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.mindbot_usage import MindbotUsageEvent
+from services.mindbot.errors import MindbotErrorCode
 
 
 def _clip(s: str, max_len: int) -> str:
     return s.strip()[:max_len]
+
+
+_SUCCESS_ERROR_CODES = (
+    MindbotErrorCode.OK.value,
+    MindbotErrorCode.ACCEPTED.value,
+)
+
+
+@dataclass(frozen=True)
+class MindbotExportThread:
+    """One DingTalk/Dify thread row aggregated from MindBot usage telemetry."""
+
+    organization_id: int
+    dify_user_key: str
+    dify_conversation_id: str
+    mindbot_config_id: int | None
+    dingtalk_conversation_id: str | None
+    dingtalk_chat_scope: str | None
+    dingtalk_staff_id: str
+    sender_nick: str | None
+    linked_user_id: int | None
+    first_event_at: datetime
+    last_event_at: datetime
 
 
 class MindbotUsageRepository:
@@ -222,6 +247,163 @@ class MindbotUsageRepository:
                 continue
             nick = (nick_raw or "").strip() or None
             out.append((staff, nick))
+        return out
+
+    async def distinct_staff_for_org_with_usage(
+        self,
+        organization_id: int,
+        *,
+        start: datetime | None = None,
+        end: datetime | None = None,
+        limit: int = 500,
+    ) -> list[tuple[str, str | None]]:
+        """Distinct DingTalk staff ids with successful MindBot usage in one org."""
+        org_id = int(organization_id)
+        nick_col = func.max(MindbotUsageEvent.sender_nick).label("nick")
+        last_col = func.max(MindbotUsageEvent.created_at).label("last_event_at")
+        base = select(MindbotUsageEvent.dingtalk_staff_id, nick_col, last_col).where(
+            MindbotUsageEvent.organization_id == org_id,
+            MindbotUsageEvent.error_code.in_(_SUCCESS_ERROR_CODES),
+        )
+        if start is not None:
+            base = base.where(MindbotUsageEvent.created_at >= start)
+        if end is not None:
+            base = base.where(MindbotUsageEvent.created_at <= end)
+        stmt = (
+            base.group_by(MindbotUsageEvent.dingtalk_staff_id)
+            .order_by(last_col.desc())
+            .limit(min(max(1, limit), 500))
+        )
+        rows = (await self._session.execute(stmt)).all()
+        out: list[tuple[str, str | None]] = []
+        for staff_raw, nick_raw, _last in rows:
+            staff = (staff_raw or "").strip()[:128]
+            if not staff:
+                continue
+            nick = (nick_raw or "").strip() or None
+            out.append((staff, nick))
+        return out
+
+    async def list_dify_threads_for_export(
+        self,
+        organization_id: int,
+        *,
+        staff_ids: set[str] | None = None,
+        chat_scopes: set[str] | None = None,
+        start: datetime | None = None,
+        end: datetime | None = None,
+        limit: int = 5000,
+    ) -> list[MindbotExportThread]:
+        """
+        Distinct MindBot Dify threads for export supplement (group + 1:1).
+
+        Aggregates successful usage rows by ``dify_user_key`` and
+        ``dify_conversation_id``. Filter by ``staff_ids`` and/or ``chat_scopes``.
+        When ``start`` / ``end`` are set, only events inside the window are
+        inside the window are considered (at least one in-range turn qualifies
+        the thread); export then fetches the full conversation from Dify.
+        """
+        org_id = int(organization_id)
+        nick_col = func.max(MindbotUsageEvent.sender_nick).label("sender_nick")
+        linked_col = func.max(MindbotUsageEvent.linked_user_id).label("linked_user_id")
+        config_col = func.max(MindbotUsageEvent.mindbot_config_id).label("mindbot_config_id")
+        dt_conv_col = func.max(MindbotUsageEvent.dingtalk_conversation_id).label(
+            "dingtalk_conversation_id"
+        )
+        chat_scope_col = func.max(MindbotUsageEvent.dingtalk_chat_scope).label(
+            "dingtalk_chat_scope"
+        )
+        first_col = func.min(MindbotUsageEvent.created_at).label("first_event_at")
+        last_col = func.max(MindbotUsageEvent.created_at).label("last_event_at")
+
+        base = (
+            select(
+                MindbotUsageEvent.organization_id,
+                MindbotUsageEvent.dify_user_key,
+                MindbotUsageEvent.dify_conversation_id,
+                MindbotUsageEvent.dingtalk_staff_id,
+                config_col,
+                dt_conv_col,
+                chat_scope_col,
+                nick_col,
+                linked_col,
+                first_col,
+                last_col,
+            )
+            .where(
+                MindbotUsageEvent.organization_id == org_id,
+                MindbotUsageEvent.dify_conversation_id.is_not(None),
+                MindbotUsageEvent.dify_conversation_id != "",
+                MindbotUsageEvent.error_code.in_(_SUCCESS_ERROR_CODES),
+            )
+            .group_by(
+                MindbotUsageEvent.organization_id,
+                MindbotUsageEvent.dify_user_key,
+                MindbotUsageEvent.dify_conversation_id,
+                MindbotUsageEvent.dingtalk_staff_id,
+            )
+        )
+
+        if staff_ids:
+            staff_list = [_clip(staff, 128) for staff in staff_ids if (staff or "").strip()]
+            if staff_list:
+                base = base.where(MindbotUsageEvent.dingtalk_staff_id.in_(staff_list))
+            elif chat_scopes is None:
+                return []
+
+        if chat_scopes:
+            scope_list = [
+                _clip(scope, 16) for scope in chat_scopes if (scope or "").strip()
+            ]
+            if not scope_list:
+                return []
+            base = base.where(MindbotUsageEvent.dingtalk_chat_scope.in_(scope_list))
+
+        if start is not None:
+            base = base.where(MindbotUsageEvent.created_at >= start)
+        if end is not None:
+            base = base.where(MindbotUsageEvent.created_at <= end)
+
+        stmt = (
+            base.order_by(last_col.desc())
+            .limit(min(max(1, limit), 5000))
+        )
+        rows = (await self._session.execute(stmt)).all()
+        out: list[MindbotExportThread] = []
+        for row in rows:
+            dify_conv = (row.dify_conversation_id or "").strip()[:128]
+            dify_user = (row.dify_user_key or "").strip()[:256]
+            staff = (row.dingtalk_staff_id or "").strip()[:128]
+            if not dify_conv or not dify_user or not staff:
+                continue
+            config_raw = row.mindbot_config_id
+            config_id = int(config_raw) if config_raw is not None else None
+            dt_conv = (row.dingtalk_conversation_id or "").strip() or None
+            if dt_conv:
+                dt_conv = dt_conv[:256]
+            scope = (row.dingtalk_chat_scope or "").strip() or None
+            if scope:
+                scope = scope[:16]
+            nick = (row.sender_nick or "").strip() or None
+            if nick:
+                nick = nick[:256]
+            linked_raw = row.linked_user_id
+            linked_id = int(linked_raw) if linked_raw is not None else None
+            out.append(
+                MindbotExportThread(
+                    organization_id=org_id,
+                    dify_user_key=dify_user,
+                    dify_conversation_id=dify_conv,
+                    mindbot_config_id=config_id,
+                    dingtalk_conversation_id=dt_conv,
+                    dingtalk_chat_scope=scope,
+                    dingtalk_staff_id=staff,
+                    sender_nick=nick,
+                    linked_user_id=linked_id,
+                    first_event_at=row.first_event_at,
+                    last_event_at=row.last_event_at,
+                )
+            )
         return out
 
     async def distinct_unbound_staff_all_orgs(

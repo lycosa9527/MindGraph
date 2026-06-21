@@ -30,6 +30,10 @@ const props = withDefaults(
     getContainer?: () => HTMLElement | null
     getDiagramSpec?: () => Record<string, unknown> | null
     getTitle?: () => string
+    /** Fit canvas + wait for fonts before rasterizing thumbnail (canvas share flow). */
+    prepareForThumbnail?: () => Promise<void>
+    /** Restore viewport after share modal closes (canvas share flow). */
+    restoreAfterThumbnail?: () => void
     diagramType: string
     initialPost?: (CommunityPost & { spec?: unknown }) | null
   }>(),
@@ -37,6 +41,8 @@ const props = withDefaults(
     getContainer: () => null,
     getDiagramSpec: () => null,
     getTitle: () => '',
+    prepareForThumbnail: undefined,
+    restoreAfterThumbnail: undefined,
   }
 )
 
@@ -67,6 +73,15 @@ function categoryLabelKey(k: (typeof CATEGORY_CATALOG)[number]['key']): string {
 }
 
 watch(
+  () => props.visible,
+  (visible) => {
+    if (!visible) {
+      props.restoreAfterThumbnail?.()
+    }
+  }
+)
+
+watch(
   () => [props.visible, props.initialPost] as const,
   ([visible, post]) => {
     if (visible) {
@@ -94,6 +109,9 @@ async function generateThumbnail(): Promise<Blob | null> {
     return null
   }
   try {
+    if (props.prepareForThumbnail) {
+      await props.prepareForThumbnail()
+    }
     const { toBlob } = await import('html-to-image')
     const blob = await toBlob(container, getDiagramCanvasHtmlToImageOptions())
     return blob

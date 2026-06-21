@@ -33,6 +33,7 @@ from services.mindbot.education.metrics import (
     dingtalk_chat_scope,
 )
 from services.mindbot.errors import MindbotErrorCode, mindbot_error_headers
+from services.monitoring.error_reporting import record_exception
 from services.mindbot.infra.circuit_breaker import (
     record_dify_failure,
     record_dify_success,
@@ -746,6 +747,15 @@ async def run_pipeline_background(ctx: MindbotPipelineContext) -> None:
     except BACKGROUND_INFRA_ERRORS as exc:
         logger.exception("[MindBot] run_pipeline_background failed: %s", exc)
         mindbot_metrics.record_error_code(MindbotErrorCode.PIPELINE_INTERNAL_ERROR.value)
+        record_exception(
+            source="mindbot",
+            component="pipeline_background",
+            exc=exc,
+            tags={
+                "organization_id": ctx.cfg.organization_id,
+                "error_code": MindbotErrorCode.PIPELINE_INTERNAL_ERROR.value,
+            },
+        )
 
 
 async def process_dingtalk_callback(

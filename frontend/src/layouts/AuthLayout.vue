@@ -2,27 +2,47 @@
 /**
  * Auth Layout - Centered card layout for login/auth pages
  */
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { Moon, Sunny } from '@element-plus/icons-vue'
 
-import { SoftwareAgreementModal } from '@/components/auth'
+import { AuthPixelBattleBg, SoftwareAgreementModal } from '@/components/auth'
 import { useLanguage } from '@/composables'
 import { toolbarShortForUiCode } from '@/i18n/locales'
-import { useUIStore } from '@/stores'
+import { useFeatureFlagsStore, useUIStore } from '@/stores'
 
 const route = useRoute()
 const uiStore = useUIStore()
+const featureFlagsStore = useFeatureFlagsStore()
 const { t } = useLanguage()
 
 const showSoftwareAgreementModal = ref(false)
+const flagsReady = ref(false)
 
 /** `/auth`: no brand row, no manual language control — locale comes from browser on that page. */
 const authLayoutMinimal = computed(() => route.meta.authLayoutMinimal === true)
 
+const showPixelBattle = computed(
+  () => flagsReady.value && featureFlagsStore.getFeatureAuthPixelBattle()
+)
+
 /** `/auth`: same animated canvas as international landing (gallery section). */
-const authMinimalGreyClass = 'auth-layout--minimal auth-layout--landing-bg select-none'
+const authMinimalGreyClass = computed(() => {
+  if (showPixelBattle.value) {
+    return 'auth-layout--minimal auth-layout--pixel-battle select-none'
+  }
+  return 'auth-layout--minimal auth-layout--landing-bg select-none'
+})
+
+onMounted(() => {
+  if (!authLayoutMinimal.value) {
+    return
+  }
+  void featureFlagsStore.fetchFlags().finally(() => {
+    flagsReady.value = true
+  })
+})
 
 /** Beijing MIIT ICP filing (same as `MainLayout`). */
 const icpRegistrationNumber = '京ICP备2025126228号'
@@ -37,6 +57,7 @@ const icpRegistrationNumber = '京ICP备2025126228号'
         : 'bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900'
     "
   >
+    <AuthPixelBattleBg v-if="authLayoutMinimal && showPixelBattle" />
     <!-- Header (hidden on /auth — Swiss minimal route) -->
     <header
       v-if="!authLayoutMinimal"
@@ -139,6 +160,18 @@ const icpRegistrationNumber = '京ICP备2025126228号'
 
 .auth-card {
   position: relative;
+}
+
+.auth-layout--minimal.auth-layout--pixel-battle {
+  isolation: isolate;
+  color-scheme: dark;
+  background-color: rgb(5 5 12);
+}
+
+.auth-layout--minimal.auth-layout--pixel-battle > main,
+.auth-layout--minimal.auth-layout--pixel-battle > footer {
+  position: relative;
+  z-index: 1;
 }
 
 /* Minimal /auth: animated canvas (mirrors `InternationalLanding` / gallery). */

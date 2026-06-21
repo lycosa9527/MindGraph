@@ -18,7 +18,7 @@ import logging
 import time
 import uuid
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional, Tuple
 
 import aiofiles
 import aiofiles.os
@@ -27,6 +27,10 @@ from fastapi.responses import FileResponse, PlainTextResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agents.core.agent_utils import extract_json_from_response
+from agents.core.prompt_to_diagram_result import (
+    is_llm_clarification_dict,
+    normalize_prompt_to_diagram_result,
+)
 from agents.core.learning_sheet import (
     _clean_prompt_for_learning_sheet,
     _detect_learning_sheet_from_prompt,
@@ -86,6 +90,61 @@ def _prompt_meta_for_log(text: str) -> str:
         return "len=0"
     digest = hashlib.sha256(stripped.encode("utf-8")).hexdigest()[:12]
     return f"len={len(stripped)} sha256_12={digest}"
+
+
+def _resolve_prompt_to_diagram_payload(
+    result: Any,
+    *,
+    endpoint_label: str,
+    lang: str,
+) -> Tuple[dict, str]:
+    """Normalize LLM JSON and return (spec, diagram_type) or raise HTTPException."""
+    if isinstance(result, dict) and result.get("_error") == "non_json_response":
+        logger.warning("%s LLM returned non-JSON response asking for more info", endpoint_label)
+        raise HTTPException(
+            status_code=400,
+            detail=Messages.error("generate_png_unclear_intent", lang=lang),
+        )
+
+    if isinstance(result, dict) and is_llm_clarification_dict(result):
+        logger.warning(
+            "%s LLM returned clarification/error dict keys=%s",
+            endpoint_label,
+            list(result.keys()),
+        )
+        raise HTTPException(
+            status_code=400,
+            detail=Messages.error("generate_png_unclear_intent", lang=lang),
+        )
+
+    normalized = normalize_prompt_to_diagram_result(result)
+    if not normalized or "spec" not in normalized:
+        keys = list(result.keys()) if isinstance(result, dict) else None
+        logger.error(
+            "%s Invalid response format from LLM: type=%s keys=%s",
+            endpoint_label,
+            type(result),
+            keys,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=Messages.error("generate_png_unclear_intent", lang=lang),
+        )
+
+    spec = normalized.get("spec", {})
+    diagram_type = normalized.get("diagram_type", "bubble_map")
+    if diagram_type == "mindmap":
+        diagram_type = "mind_map"
+
+    if isinstance(spec, dict) and spec.get("error"):
+        error_from_spec = spec.get("error")
+        logger.warning("%s Spec contains error field: %s", endpoint_label, error_from_spec)
+        raise HTTPException(
+            status_code=400,
+            detail=Messages.error("generate_png_unclear_intent", lang=lang),
+        )
+
+    return spec, diagram_type
 
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -261,38 +320,11 @@ async def generate_png_from_prompt(
 
         # Extract JSON from response
         result = extract_json_from_response(response)
-
-        # Check for non-JSON response (LLM asking for more information)
-        if isinstance(result, dict) and result.get("_error") == "non_json_response":
-            logger.warning("[GeneratePNG] LLM returned non-JSON response asking for more info")
-            raise HTTPException(
-                status_code=400,
-                detail=Messages.error("generate_png_unclear_intent", lang=lang),
-            )
-
-        # Check if JSON extraction failed
-        if not isinstance(result, dict) or "spec" not in result:
-            logger.error("[GeneratePNG] Invalid response format from LLM: %s", type(result))
-            raise HTTPException(
-                status_code=500,
-                detail=Messages.error("generate_png_unclear_intent", lang=lang),
-            )
-
-        spec = result.get("spec", {})
-        diagram_type = result.get("diagram_type", "bubble_map")
-
-        # Normalize diagram type
-        if diagram_type == "mindmap":
-            diagram_type = "mind_map"
-
-        # Check if spec contains an error field (from LLM)
-        if isinstance(spec, dict) and spec.get("error"):
-            error_from_spec = spec.get("error")
-            logger.warning("[GeneratePNG] Spec contains error field: %s", error_from_spec)
-            raise HTTPException(
-                status_code=400,
-                detail=Messages.error("generate_png_unclear_intent", lang=lang),
-            )
+        spec, diagram_type = _resolve_prompt_to_diagram_payload(
+            result,
+            endpoint_label="[GeneratePNG]",
+            lang=lang,
+        )
 
         # Add learning sheet metadata to spec object so renderers can access it
         if isinstance(spec, dict):
@@ -490,38 +522,11 @@ async def generate_dingtalk_png(
 
         # Extract JSON from response
         result = extract_json_from_response(response)
-
-        # Check for non-JSON response (LLM asking for more information)
-        if isinstance(result, dict) and result.get("_error") == "non_json_response":
-            logger.warning("[GenerateDingTalk] LLM returned non-JSON response asking for more info")
-            raise HTTPException(
-                status_code=400,
-                detail=Messages.error("generate_png_unclear_intent", lang=lang),
-            )
-
-        # Check if JSON extraction failed
-        if not isinstance(result, dict) or "spec" not in result:
-            logger.error("[GenerateDingTalk] Invalid response format from LLM: %s", type(result))
-            raise HTTPException(
-                status_code=500,
-                detail=Messages.error("generate_png_unclear_intent", lang=lang),
-            )
-
-        spec = result.get("spec", {})
-        diagram_type = result.get("diagram_type", "bubble_map")
-
-        # Normalize diagram type
-        if diagram_type == "mindmap":
-            diagram_type = "mind_map"
-
-        # Check if spec contains an error field (from LLM)
-        if isinstance(spec, dict) and spec.get("error"):
-            error_from_spec = spec.get("error")
-            logger.warning("[GenerateDingTalk] Spec contains error field: %s", error_from_spec)
-            raise HTTPException(
-                status_code=400,
-                detail=Messages.error("generate_png_unclear_intent", lang=lang),
-            )
+        spec, diagram_type = _resolve_prompt_to_diagram_payload(
+            result,
+            endpoint_label="[GenerateDingTalk]",
+            lang=lang,
+        )
 
         # Add learning sheet metadata to spec object so renderers can access it
         if isinstance(spec, dict):

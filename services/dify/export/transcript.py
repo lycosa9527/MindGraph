@@ -61,11 +61,13 @@ class ExportConversation:
     updated_at: int
     mindbot_config_id: Optional[int] = None
     endpoint_source: str = "org_server"
+    dingtalk_chat_scope: Optional[str] = None
+    dingtalk_conversation_id: Optional[str] = None
     bubbles: List[ExportBubble] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         """Serialize conversation to a JSON-ready dict."""
-        return {
+        payload = {
             "conversation_id": self.conversation_id,
             "name": self.name,
             "server": self.server,
@@ -80,6 +82,11 @@ class ExportConversation:
             "updated_at": self.updated_at,
             "bubbles": [b.to_dict() for b in self.bubbles],
         }
+        if self.dingtalk_chat_scope:
+            payload["dingtalk_chat_scope"] = self.dingtalk_chat_scope
+        if self.dingtalk_conversation_id:
+            payload["dingtalk_conversation_id"] = self.dingtalk_conversation_id
+        return payload
 
 
 @dataclass
@@ -98,10 +105,12 @@ class ExportConversationSummary:
     updated_at: int
     mindbot_config_id: Optional[int] = None
     endpoint_source: str = "org_server"
+    dingtalk_chat_scope: Optional[str] = None
+    dingtalk_conversation_id: Optional[str] = None
 
     def to_dict(self) -> dict:
         """Serialize summary to a JSON-ready dict."""
-        return {
+        payload = {
             "conversation_id": self.conversation_id,
             "name": self.name,
             "server": self.server,
@@ -115,6 +124,11 @@ class ExportConversationSummary:
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
+        if self.dingtalk_chat_scope:
+            payload["dingtalk_chat_scope"] = self.dingtalk_chat_scope
+        if self.dingtalk_conversation_id:
+            payload["dingtalk_conversation_id"] = self.dingtalk_conversation_id
+        return payload
 
 
 @dataclass
@@ -190,6 +204,9 @@ body {
   background: #eef2ff; color: #3b5bdb; border: 1px solid #dbe1ff;
 }
 .badge.s2 { background: #fff4e6; color: #d9480f; border-color: #ffe0c2; }
+.badge.scope-group { background: #e6fcf5; color: #087f5b; border-color: #c3fae8; }
+.badge.scope-cross-org { background: #fff0f6; color: #c2255c; border-color: #ffdeeb; }
+.badge.scope-oto { background: #f3f0ff; color: #5f3dc4; border-color: #e5dbff; }
 .bubbles { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
 .row { display: flex; }
 .row.user { justify-content: flex-end; }
@@ -244,9 +261,34 @@ def _render_bubble(bubble: ExportBubble) -> str:
     return "".join(parts)
 
 
+def _chat_scope_badge(scope: Optional[str]) -> str:
+    """Render a DingTalk chat-scope pill when scope metadata is present."""
+    if not scope:
+        return ""
+    normalized = scope.strip().lower()
+    labels = {
+        "group": "DingTalk group",
+        "cross_org_group": "Cross-org group",
+        "oto": "DingTalk 1:1",
+        "1:1": "DingTalk 1:1",
+    }
+    css = {
+        "group": "scope-group",
+        "cross_org_group": "scope-cross-org",
+        "oto": "scope-oto",
+        "1:1": "scope-oto",
+    }
+    label = labels.get(normalized, scope)
+    css_class = css.get(normalized, "scope-group")
+    return (
+        f'<span class="badge {css_class}">{html.escape(label)}</span>'
+    )
+
+
 def _render_conversation(conv: ExportConversation) -> str:
     """Render one conversation card."""
     server_badge = f'<span class="badge s{conv.server}">Server {conv.server}</span>'
+    scope_badge = _chat_scope_badge(conv.dingtalk_chat_scope)
     title = html.escape(conv.name or conv.conversation_id)
     sub = html.escape(
         f"{conv.user_label} · {_fmt_ts(conv.created_at)}"
@@ -256,7 +298,7 @@ def _render_conversation(conv: ExportConversation) -> str:
         bubbles_html = '<div class="empty">No messages</div>'
     return (
         '<section class="conv"><div class="conv-card">'
-        f'<div class="conv-title"><strong>{title}</strong>{server_badge}'
+        f'<div class="conv-title"><strong>{title}</strong>{scope_badge}{server_badge}'
         f'<span class="conv-sub">{sub}</span></div>'
         f'<div class="bubbles">{bubbles_html}</div>'
         "</div></section>"

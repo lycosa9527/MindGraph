@@ -22,6 +22,7 @@ from qdrant_client.http.models import Distance
 from config.settings import config
 from services.llm.qdrant_diagnostics import QdrantDiagnosticsMixin
 from services.llm.qdrant_startup import parse_qdrant_host_port
+from services.monitoring.error_reporting import record_exception
 from services.utils.error_types import QDRANT_ERRORS
 
 # QuantizationType availability varies by qdrant-client version; resolve at runtime.
@@ -287,6 +288,12 @@ class QdrantService(QdrantDiagnosticsMixin):
 
         except QDRANT_ERRORS as exc:
             logger.error("[Qdrant] Failed to create collection for user %s: %s", user_id, exc)
+            record_exception(
+                source="rag",
+                component="QdrantService",
+                exc=exc,
+                tags={"user_id": user_id, "operation": "create_collection"},
+            )
             raise
 
     async def get_user_collection(self, user_id: int, chunking_method: Optional[str] = None) -> Optional[str]:
@@ -370,6 +377,12 @@ class QdrantService(QdrantDiagnosticsMixin):
             logger.info("[Qdrant] Added %s embeddings for user %s", len(chunk_ids), user_id)
         except QDRANT_ERRORS as exc:
             logger.error("[Qdrant] Failed to add embeddings for user %s: %s", user_id, exc)
+            record_exception(
+                source="rag",
+                component="QdrantService",
+                exc=exc,
+                tags={"user_id": user_id, "operation": "add_embeddings"},
+            )
             raise
 
     async def search(
@@ -452,6 +465,12 @@ class QdrantService(QdrantDiagnosticsMixin):
 
         except QDRANT_ERRORS as exc:
             logger.error("[Qdrant] Search failed for user %s: %s", user_id, exc)
+            record_exception(
+                source="rag",
+                component="QdrantService",
+                exc=exc,
+                tags={"user_id": user_id, "operation": "search"},
+            )
             raise
 
     async def delete_chunks(

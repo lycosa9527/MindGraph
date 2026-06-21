@@ -13,6 +13,15 @@ import { canvasPathForImportNavigation } from '@/utils/canvasBackNavigation'
 import { CMAP_PARSE_FAILED, decodeCmapToConceptMapSpec } from '@/utils/cmapImport'
 import { MG_FILE_NOT_ENCRYPTED, decodeMgFileToJsonText } from '@/utils/mgInterchange'
 
+export type DiagramImportExtension = 'mg' | 'cmap'
+
+const MG_ONLY_IMPORT: readonly DiagramImportExtension[] = ['mg']
+const CONCEPT_MAP_IMPORT: readonly DiagramImportExtension[] = ['mg', 'cmap']
+
+function extensionsToAcceptAttr(extensions: readonly DiagramImportExtension[]): string {
+  return extensions.map((ext) => `.${ext}`).join(',')
+}
+
 function isValidMindGraphEncryptedExport(obj: unknown): obj is Record<string, unknown> {
   if (!obj || typeof obj !== 'object') return false
   const spec = obj as Record<string, unknown>
@@ -62,12 +71,24 @@ export function useDiagramImport() {
   const notify = useNotifications()
   const diagramStore = useDiagramStore()
 
-  async function parseImportFile(file: File): Promise<Record<string, unknown> | null> {
+  async function parseImportFile(
+    file: File,
+    allowedExtensions: readonly DiagramImportExtension[]
+  ): Promise<Record<string, unknown> | null> {
     const lowerName = file.name.toLowerCase()
     const isMg = lowerName.endsWith('.mg')
     const isCmap = lowerName.endsWith('.cmap')
-    const isJson = lowerName.endsWith('.json')
-    if (!isMg && !isCmap && !isJson) {
+    const allowedMg = allowedExtensions.includes('mg')
+    const allowedCmap = allowedExtensions.includes('cmap')
+    if (isCmap && !allowedCmap) {
+      notify.error(t('canvas.import.invalidFile'))
+      return null
+    }
+    if (isMg && !allowedMg) {
+      notify.error(t('canvas.import.invalidFile'))
+      return null
+    }
+    if (!isMg && !isCmap) {
       notify.error(t('canvas.import.invalidFile'))
       return null
     }
@@ -89,15 +110,6 @@ export function useDiagramImport() {
         }
         return spec
       }
-      if (isJson) {
-        const text = new TextDecoder().decode(buffer)
-        const parsed = JSON.parse(text) as unknown
-        if (!isValidImportedDiagramSpec(parsed)) {
-          notify.error(t('canvas.import.invalidFile'))
-          return null
-        }
-        return parsed
-      }
       const text = await decodeMgFileToJsonText(buffer)
       const parsed = JSON.parse(text) as unknown
       if (!isValidImportedDiagramSpec(parsed)) {
@@ -118,15 +130,17 @@ export function useDiagramImport() {
     }
   }
 
-  /** Import on the canvas page without navigation (mind-map toolbar). */
-  function triggerImportInPlace(): void {
+  /** Import on the canvas page without navigation (toolbar). */
+  function triggerImportInPlace(
+    allowedExtensions: readonly DiagramImportExtension[] = MG_ONLY_IMPORT
+  ): void {
     const input = document.createElement('input')
     input.type = 'file'
-    input.accept = '.mg,.json,.cmap'
+    input.accept = extensionsToAcceptAttr(allowedExtensions)
     input.onchange = async () => {
       const file = input.files?.[0]
       if (!file) return
-      const spec = await parseImportFile(file)
+      const spec = await parseImportFile(file, allowedExtensions)
       if (!spec) return
       const diagramType = spec.type as DiagramType
       if (diagramStore.loadFromSpec(spec, diagramType)) {
@@ -138,14 +152,18 @@ export function useDiagramImport() {
     input.click()
   }
 
+  function triggerConceptMapImportInPlace(): void {
+    triggerImportInPlace(CONCEPT_MAP_IMPORT)
+  }
+
   function triggerImport(): void {
     const input = document.createElement('input')
     input.type = 'file'
-    input.accept = '.mg,.cmap'
+    input.accept = extensionsToAcceptAttr(CONCEPT_MAP_IMPORT)
     input.onchange = async () => {
       const file = input.files?.[0]
       if (!file) return
-      const spec = await parseImportFile(file)
+      const spec = await parseImportFile(file, CONCEPT_MAP_IMPORT)
       if (!spec) return
       try {
         sessionStorage.setItem(IMPORT_SPEC_KEY, JSON.stringify(spec))
@@ -161,5 +179,5 @@ export function useDiagramImport() {
     input.click()
   }
 
-  return { triggerImport, triggerImportInPlace }
+  return { triggerImport, triggerImportInPlace, triggerConceptMapImportInPlace }
 }

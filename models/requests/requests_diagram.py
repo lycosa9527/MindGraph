@@ -110,6 +110,11 @@ class GenerateRequest(BaseModel):
             "'target_to_source' (B→A), 'both' (bidirectional), 'none' (parallel/no arrow)"
         ),
     )
+    generation_instructions: Optional[str] = Field(
+        None,
+        max_length=5000,
+        description="Optional generation requirements separate from the main prompt (canvas one-sentence)",
+    )
 
     @field_validator("language")
     @classmethod

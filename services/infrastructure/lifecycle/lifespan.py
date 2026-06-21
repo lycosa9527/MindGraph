@@ -77,6 +77,7 @@ from services.redis.redis_distributed_lock import (
 )
 from services.utils.backup_scheduler import start_backup_scheduler
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from services.monitoring.error_retention_scheduler import start_error_retention_scheduler
 from services.utils.temp_image_cleaner import start_cleanup_scheduler
 from services.utils.temp_export_cleaner import start_export_cleanup_scheduler
 from utils.auth import AUTH_MODE, warmup_jwt_secret_async
@@ -373,6 +374,15 @@ async def lifespan(fastapi_app: FastAPI):
     except BACKGROUND_INFRA_ERRORS as e:
         if is_main_worker:
             logger.warning("Failed to start export cleanup scheduler: %s", e)
+
+    error_retention_task = None
+    try:
+        error_retention_task = asyncio.create_task(start_error_retention_scheduler(interval_hours=24))
+        if is_main_worker:
+            logger.debug("Error retention scheduler started")
+    except BACKGROUND_INFRA_ERRORS as e:
+        if is_main_worker:
+            logger.warning("Failed to start error retention scheduler: %s", e)
 
     # Start workshop subsystem: cleanup scheduler + Lua script preload + idle monitor.
     workshop_cleanup_task, session_manager_task = await start_online_collab_subsystem_async(is_main_worker)

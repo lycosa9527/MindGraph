@@ -15,9 +15,9 @@ import logging
 
 from agents.core.base_agent import BaseAgent
 from agents.core.agent_utils import extract_json_from_response
+from agents.core.llm_spec_stream import dispatch_llm_chat
 from config.settings import Config
 from prompts import get_prompt
-from services.llm import llm_service
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
@@ -68,14 +68,18 @@ class MindMapAgent(BaseAgent):
     ) -> Dict[str, Any]:
         """Generate a mind map from a prompt."""
         try:
-            # Generate the initial mind map specification
+            structure_mode = kwargs.get("structure_mode", "free")
+            fixed_nodes = kwargs.get("fixed_nodes") or {}
             spec, recovery_warnings = await self._generate_mind_map_spec(
                 user_prompt,
                 language,
+                structure_mode=structure_mode,
+                fixed_nodes=fixed_nodes,
                 user_id=user_id,
                 organization_id=organization_id,
                 request_type=request_type,
                 endpoint_path=endpoint_path,
+                phase_emit=kwargs.get("phase_emit"),
             )
             if not spec:
                 return {
@@ -83,8 +87,10 @@ class MindMapAgent(BaseAgent):
                     "error": "Failed to generate mind map specification",
                 }
 
-            # Validate the generated spec
-            is_valid, validation_msg = self.validate_output(spec)
+            is_valid, validation_msg = self.validate_output(
+                spec,
+                fixed_branch_labels=fixed_nodes.get("children") if structure_mode == "fixed" else None,
+            )
             if not is_valid:
                 logger.warning("MindMapAgent: Validation failed: %s", validation_msg)
                 if recovery_warnings:
@@ -117,31 +123,56 @@ class MindMapAgent(BaseAgent):
             logger.error("MindMapAgent: Error generating mind map: %s", e)
             return {"success": False, "error": f"Generation failed: {str(e)}"}
 
+    def _build_user_prompt_message(
+        self,
+        prompt: str,
+        language: str,
+        fixed_nodes: Dict[str, Any],
+    ) -> str:
+        """Build LLM user message."""
+        children = fixed_nodes.get("children")
+        if isinstance(children, list) and children:
+            labels = ", ".join(str(c) for c in children if str(c).strip())
+            if is_chinese_prompt_shell_language(language):
+                return (
+                    f"请为以下描述创建思维导图：{prompt}\n\n"
+                    f"用户指定的主分支（必须原样使用）：{labels}"
+                )
+            return (
+                f"Please create a mind map for the following description: {prompt}\n\n"
+                f"User-specified main branches (use EXACT labels): {labels}"
+            )
+        if is_chinese_prompt_shell_language(language):
+            return f"请为以下描述创建一个思维导图：{prompt}"
+        return f"Please create a mind map for the following description: {prompt}"
+
     async def _generate_mind_map_spec(
         self,
         prompt: str,
         language: str,
-        # Token tracking parameters
+        structure_mode: str = "free",
+        fixed_nodes: Optional[Dict[str, Any]] = None,
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
         request_type: str = "diagram_generation",
         endpoint_path: Optional[str] = None,
+        phase_emit=None,
     ) -> Tuple[Optional[Dict[str, Any]], Optional[List[str]]]:
         """Generate the mind map specification using LLM."""
+        fixed_nodes = fixed_nodes or {}
         try:
-            system_prompt = get_prompt("mind_map", language, "generation")
+            has_fixed_children = structure_mode == "fixed" and fixed_nodes.get("children")
+            prompt_type = "fixed_children" if has_fixed_children else "generation"
+            system_prompt = get_prompt("mind_map", language, prompt_type)
 
             if not system_prompt:
-                logger.error("MindMapAgent: No prompt found for language %s", language)
+                logger.error("MindMapAgent: No prompt found for language %s type %s", language, prompt_type)
                 return None, None
 
-            user_prompt = (
-                f"请为以下描述创建一个思维导图：{prompt}"
-                if is_chinese_prompt_shell_language(language)
-                else f"Please create a mind map for the following description: {prompt}"
-            )
+            user_prompt = self._build_user_prompt_message(prompt, language, fixed_nodes)
 
-            response = await llm_service.chat(
+            response = await dispatch_llm_chat(
+                phase_emit=phase_emit,
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
@@ -194,7 +225,11 @@ class MindMapAgent(BaseAgent):
             logger.error("MindMapAgent: Error in spec generation: %s", e)
             raise
 
-    def validate_output(self, output: Dict[str, Any]) -> Tuple[bool, str]:
+    def validate_output(
+        self,
+        output: Dict[str, Any],
+        fixed_branch_labels: Optional[List[str]] = None,
+    ) -> Tuple[bool, str]:
         """Validate a mind map specification."""
         try:
             if not output or not isinstance(output, dict):
@@ -208,6 +243,15 @@ class MindMapAgent(BaseAgent):
 
             if not output["children"]:
                 return False, "At least one child branch is required"
+
+            if fixed_branch_labels:
+                expected = [str(label).strip() for label in fixed_branch_labels if str(label).strip()]
+                actual = [self._get_node_text(child).strip() for child in output["children"] if isinstance(child, dict)]
+                if len(actual) != len(expected):
+                    return False, f"Expected {len(expected)} main branches, got {len(actual)}"
+                for idx, label in enumerate(expected):
+                    if idx >= len(actual) or actual[idx] != label:
+                        return False, f"Branch {idx + 1} must be '{label}'"
 
             return True, "Valid mind map specification"
         except LLM_PIPELINE_ERRORS as e:

@@ -26,6 +26,7 @@ from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.pinned_conversations import PinnedConversation
 from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short_lived
+from services.dify.unified_conversations import list_unified_conversations, resolve_client_and_dify_user
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user
 from utils.dify_mindmate_user_id import mindmate_dify_user_id
@@ -75,36 +76,52 @@ async def list_conversations(
     last_id: Optional[str] = Query(None, description="Last conversation ID for pagination"),
     limit: int = Query(20, ge=1, le=100, description="Number of conversations to return"),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     List user's conversations from Dify.
 
-    Returns conversations sorted by updated_at (newest first).
+    Returns conversations sorted by updated_at (newest first), merged across
+    web MindMate and bound DingTalk MindBot identities when applicable.
     Each conversation includes:
     - id: Conversation ID
     - name: Auto-generated or custom title
     - created_at: Creation timestamp
     - updated_at: Last activity timestamp
+    - channel: ``web`` or ``mindbot``
+    - dify_user: Dify API user key (pass to message/delete/rename endpoints)
     """
     try:
-        client = await _resolve_dify_client(current_user)
-        dify_user_id = get_dify_user_id(current_user)
-
-        result = await client.get_conversations(
-            user_id=dify_user_id, last_id=last_id, limit=limit, sort_by="-updated_at"
+        rows, has_more = await list_unified_conversations(
+            db,
+            current_user,
+            limit=limit,
+            last_id=last_id,
         )
 
+        data = [
+            {
+                "id": row.id,
+                "name": row.name,
+                "created_at": row.created_at,
+                "updated_at": row.updated_at,
+                "channel": row.channel,
+                "dify_user": row.dify_user,
+            }
+            for row in rows
+        ]
+
         logger.debug(
-            "Fetched %d conversations for user %s",
-            len(result.get("data", [])),
+            "Fetched %d unified conversations for user %s",
+            len(data),
             current_user.id,
         )
 
         return {
             "success": True,
-            "data": result.get("data", []),
-            "has_more": result.get("has_more", False),
-            "limit": result.get("limit", limit),
+            "data": data,
+            "has_more": has_more,
+            "limit": limit,
         }
 
     except BACKGROUND_INFRA_ERRORS as e:
@@ -115,7 +132,9 @@ async def list_conversations(
 @router.delete("/dify/conversations/{conversation_id}")
 async def delete_conversation(
     conversation_id: str,
+    dify_user: Optional[str] = Query(None, description="Dify user key from conversation list"),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Delete a conversation from Dify.
@@ -123,8 +142,12 @@ async def delete_conversation(
     This permanently removes the conversation and all its messages.
     """
     try:
-        client = await _resolve_dify_client(current_user)
-        dify_user_id = get_dify_user_id(current_user)
+        client, dify_user_id = await resolve_client_and_dify_user(
+            db,
+            current_user,
+            conversation_id,
+            dify_user_hint=dify_user,
+        )
 
         await client.delete_conversation(conversation_id=conversation_id, user_id=dify_user_id)
 
@@ -141,7 +164,9 @@ async def delete_conversation(
 async def rename_conversation(
     conversation_id: str,
     request: RenameRequest,
+    dify_user: Optional[str] = Query(None, description="Dify user key from conversation list"),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Rename a conversation or auto-generate a title.
@@ -150,8 +175,12 @@ async def rename_conversation(
     Otherwise, use the provided name.
     """
     try:
-        client = await _resolve_dify_client(current_user)
-        dify_user_id = get_dify_user_id(current_user)
+        client, dify_user_id = await resolve_client_and_dify_user(
+            db,
+            current_user,
+            conversation_id,
+            dify_user_hint=dify_user,
+        )
 
         result = await client.rename_conversation(
             conversation_id=conversation_id,
@@ -174,7 +203,9 @@ async def get_conversation_messages(
     conversation_id: str,
     first_id: Optional[str] = Query(None, description="First message ID for pagination"),
     limit: int = Query(20, ge=1, le=100, description="Number of messages to return"),
+    dify_user: Optional[str] = Query(None, description="Dify user key from conversation list"),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get messages for a specific conversation.
@@ -187,8 +218,12 @@ async def get_conversation_messages(
     - created_at: Timestamp
     """
     try:
-        client = await _resolve_dify_client(current_user)
-        dify_user_id = get_dify_user_id(current_user)
+        client, dify_user_id = await resolve_client_and_dify_user(
+            db,
+            current_user,
+            conversation_id,
+            dify_user_hint=dify_user,
+        )
 
         result = await client.get_messages(
             conversation_id=conversation_id,

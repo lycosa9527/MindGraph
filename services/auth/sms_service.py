@@ -33,9 +33,19 @@ from typing import Optional, Tuple
 import httpx
 
 from models.domain.messages import Language, Messages
+from services.monitoring.error_reporting import record_failure
 from services.utils.error_types import HTTP_CLIENT_ERRORS
 
 logger = logging.getLogger(__name__)
+
+
+def _record_sms_provider_failure(message: str, *, exception_type: str = "SMSServiceError") -> None:
+    record_failure(
+        source="auth",
+        component="SMSService",
+        message=message,
+        exception_type=exception_type,
+    )
 
 
 def _is_sms_provider_rate_limit(error_code: str, error_message: str) -> bool:
@@ -344,6 +354,10 @@ class SMSService:
                     response.status_code,
                     response_preview,
                 )
+                _record_sms_provider_failure(
+                    f"SMS API non-200: {response.status_code}",
+                    exception_type="SMSHTTPError",
+                )
                 return (
                     False,
                     "SMS service error. Please try again later or contact support.",
@@ -360,6 +374,7 @@ class SMSService:
                     e,
                     response_preview,
                 )
+                _record_sms_provider_failure("Failed to parse SMS response as JSON")
                 return (
                     False,
                     "SMS service error. Please try again later or contact support.",
@@ -381,6 +396,7 @@ class SMSService:
                 error_code = resp_data["Error"].get("Code", "Unknown")
                 error_msg = resp_data["Error"].get("Message", "Unknown error")
                 logger.error("SMS API error: %s - %s", error_code, error_msg)
+                _record_sms_provider_failure(f"SMS API error: {error_code} - {error_msg}")
                 return False, self._translate_error_code(error_code, lang), None
 
             # Check send status in SendStatusSet
@@ -394,6 +410,7 @@ class SMSService:
                 error_code = status.get("Code", "Unknown")
                 error_msg = status.get("Message", "Unknown error")
                 logger.error("SMS send failed: %s - %s", error_code, error_msg)
+                _record_sms_provider_failure(f"SMS send failed: {error_code} - {error_msg}")
                 return False, self._translate_error_code(error_code, lang), None
 
             logger.error("Unexpected SMS response structure: %s", resp_data)
@@ -405,9 +422,11 @@ class SMSService:
 
         except httpx.TimeoutException:
             logger.error("SMS request timeout")
+            _record_sms_provider_failure("SMS request timeout", exception_type="TimeoutException")
             return False, "SMS service timeout. Please try again.", None
         except httpx.HTTPError as e:
             logger.error("SMS HTTP error: %s", e)
+            _record_sms_provider_failure(f"SMS HTTP error: {e}", exception_type="HTTPError")
             return False, "SMS service error. Please try again later.", None
         except SMSServiceError as e:
             logger.error("SMS service error: %s", e)

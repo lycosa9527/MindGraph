@@ -12,11 +12,11 @@ import logging
 from typing import Any, Dict, Optional, Tuple
 
 from agents.core.agent_utils import extract_json_from_response
+from agents.core.llm_spec_stream import dispatch_llm_chat
 from agents.core.base_agent import BaseAgent
 from agents.core.topic_extraction import extract_double_bubble_topics_llm
 from config.settings import config
 from prompts import get_prompt
-from services.llm import llm_service
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
@@ -60,6 +60,9 @@ class DoubleBubbleMapAgent(BaseAgent):
             "organization_id": kwargs.get("organization_id"),
             "request_type": kwargs.get("request_type", "diagram_generation"),
             "endpoint_path": kwargs.get("endpoint_path"),
+            "phase_emit": kwargs.get("phase_emit"),
+            "fixed_nodes": kwargs.get("fixed_nodes") or {},
+            "structure_mode": kwargs.get("structure_mode", "free"),
         }
         try:
             logger.debug("DoubleBubbleMapAgent: Starting double bubble map generation")
@@ -125,9 +128,18 @@ class DoubleBubbleMapAgent(BaseAgent):
 
     async def _generate_double_bubble_map_spec(self, prompt: str, language: str, **token_kwargs: Any) -> Optional[Dict]:
         """Generate the double bubble map specification using LLM."""
+        fixed_nodes = token_kwargs.pop("fixed_nodes", None) or {}
+        token_kwargs.pop("structure_mode", None)
         try:
-            topics = await extract_double_bubble_topics_llm(prompt, language, self.model)
-            logger.debug("DoubleBubbleMapAgent: Extracted topics: %s", topics)
+            left = str(fixed_nodes.get("left", "")).strip()
+            right = str(fixed_nodes.get("right", "")).strip()
+            if left and right:
+                separator = "和" if is_chinese_prompt_shell_language(language) else " and "
+                topics = f"{left}{separator}{right}"
+                logger.debug("DoubleBubbleMapAgent: Using fixed topics: %s", topics)
+            else:
+                topics = await extract_double_bubble_topics_llm(prompt, language, self.model)
+                logger.debug("DoubleBubbleMapAgent: Extracted topics: %s", topics)
             system_prompt = get_prompt("double_bubble_map_agent", language, "generation")
             if not system_prompt:
                 logger.error("DoubleBubbleMapAgent: No prompt found for language %s", language)
@@ -144,7 +156,7 @@ class DoubleBubbleMapAgent(BaseAgent):
                 "diagram_type": "double_bubble_map",
                 **token_kwargs,
             }
-            response = await llm_service.chat(**chat_kwargs)
+            response = await dispatch_llm_chat(**chat_kwargs)
             if isinstance(response, dict):
                 return response
             return await self._extract_spec_from_response(response, user_prompt, language, chat_kwargs)
@@ -199,7 +211,7 @@ class DoubleBubbleMapAgent(BaseAgent):
             f"Do not ask for more information. If the prompt is unclear, "
             f"make reasonable assumptions and generate the JSON spec."
         )
-        retry_response = await llm_service.chat(**{**chat_kwargs, "prompt": retry_prompt})
+        retry_response = await dispatch_llm_chat(**{**chat_kwargs, "prompt": retry_prompt})
         if isinstance(retry_response, dict):
             return retry_response
         spec = extract_json_from_response(str(retry_response))

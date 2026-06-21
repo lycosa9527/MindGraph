@@ -21,6 +21,7 @@ from services.mindbot.platforms.dingtalk.api.response import (
     dingtalk_v1_response_ok,
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from services.monitoring.error_reporting import record_exception
 
 logger = logging.getLogger(__name__)
 
@@ -131,6 +132,12 @@ async def _v1_json_request(
             path,
             type(exc).__name__,
             exc,
+        )
+        record_exception(
+            source="mindbot",
+            component="DingTalkAPI",
+            exc=exc,
+            tags={"path": path},
         )
         return 0, None
 

@@ -15,6 +15,7 @@ import time
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from services.infrastructure.http.error_handler import error_handler
+from services.llm.llm_utils import LLMUtils
 
 logger = logging.getLogger(__name__)
 
@@ -55,38 +56,26 @@ class LLMRequestExecutor:
             LLMServiceError: If request fails after retries
         """
         if rate_limiter:
-            # Time rate limiter operations to diagnose delays
-            rate_limit_start = time.time()
-            async with rate_limiter:
-                rate_limit_duration = time.time() - rate_limit_start
-                # Always log rate limiter timing for Kimi to diagnose delays
-                if model == "kimi" or rate_limit_duration > 0.1:
-                    logger.info(
-                        "[LLMRequestExecutor] Rate limiter acquire: %.3fs for %s (%s)",
-                        rate_limit_duration,
-                        model,
-                        actual_model,
-                    )
-
-                # Execute with retry and timeout
-                api_start = time.time()
-                response = await LLMRequestExecutor._execute_api_call(
-                    client=client,
-                    messages=messages,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                    timeout=timeout,
-                    **kwargs,
+            request_start = time.time()
+            response = await LLMRequestExecutor._execute_api_call(
+                client=client,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                timeout=timeout,
+                model=model,
+                actual_model=actual_model,
+                rate_limiter=rate_limiter,
+                **kwargs,
+            )
+            request_duration = time.time() - request_start
+            if model == "kimi" or request_duration > 2.0:
+                logger.info(
+                    "[LLMRequestExecutor] Rate-limited request duration: %.2fs for %s (%s)",
+                    request_duration,
+                    model,
+                    actual_model,
                 )
-                api_duration = time.time() - api_start
-                # Always log API timing for Kimi to diagnose delays
-                if model == "kimi" or api_duration > 2.0:
-                    logger.info(
-                        "[LLMRequestExecutor] API call duration: %.2fs for %s (%s)",
-                        api_duration,
-                        model,
-                        actual_model,
-                    )
         else:
             # No rate limiting
             response = await LLMRequestExecutor._execute_api_call(
@@ -95,6 +84,8 @@ class LLMRequestExecutor:
                 temperature=temperature,
                 max_tokens=max_tokens,
                 timeout=timeout,
+                model=model,
+                actual_model=actual_model,
                 **kwargs,
             )
 
@@ -108,6 +99,9 @@ class LLMRequestExecutor:
         temperature: Optional[float],
         max_tokens: int,
         timeout: float,
+        model: str,
+        actual_model: str,
+        rate_limiter: Optional[Any] = None,
         **kwargs,
     ) -> Any:
         """
@@ -118,14 +112,17 @@ class LLMRequestExecutor:
             messages: List of message dicts
             temperature: Sampling temperature
             max_tokens: Maximum tokens
-            timeout: Request timeout
+            timeout: Per-attempt timeout in seconds
+            model: Logical model name
+            actual_model: Physical model name after load balancing
+            rate_limiter: Optional limiter acquired once per attempt (not for whole retry loop)
             **kwargs: Additional parameters
 
         Returns:
             Raw API response
         """
 
-        async def _call():
+        async def _raw_call():
             # DeepSeek and Kimi use async_chat_completion
             if hasattr(client, "async_chat_completion"):
                 return await client.async_chat_completion(
@@ -142,8 +139,19 @@ class LLMRequestExecutor:
                 **kwargs,
             )
 
-        # Properly await with_retry inside timeout
-        return await asyncio.wait_for(error_handler.with_retry(_call), timeout=timeout)
+        async def _guarded_raw_call():
+            if rate_limiter:
+                async with rate_limiter:
+                    return await _raw_call()
+            return await _raw_call()
+
+        if LLMUtils.is_no_retry_model(model, actual_model):
+            return await asyncio.wait_for(_guarded_raw_call(), timeout=timeout)
+
+        async def _call_with_timeout():
+            return await asyncio.wait_for(_guarded_raw_call(), timeout=timeout)
+
+        return await error_handler.with_retry(_call_with_timeout)
 
     @staticmethod
     async def execute_stream_request(

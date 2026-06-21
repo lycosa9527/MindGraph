@@ -22,6 +22,7 @@ from sqlalchemy import select
 from config.celery import celery_app
 from models.domain.knowledge_space import DocumentBatch, KnowledgeDocument
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
+from services.monitoring.error_reporting import record_exception_from_celery
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.db.rls_context import RlsContext, rls_async_session, rls_sync_session
 
@@ -218,6 +219,14 @@ def process_document_task(self, user_id: int, document_id: int):
                 exc_info=True,
             )
 
+        if self.request.retries >= self.max_retries:
+            record_exception_from_celery(
+                source="background",
+                component="KnowledgeSpaceTask",
+                exc=e,
+                tags={"document_id": document_id, "user_id": user_id, "task": "process_document"},
+            )
+
         raise self.retry(exc=e, countdown=60 * (2**self.request.retries))
     finally:
         logger.info(
@@ -244,6 +253,13 @@ def update_document_task(self, user_id: int, document_id: int):
             user_id,
             e,
         )
+        if self.request.retries >= self.max_retries:
+            record_exception_from_celery(
+                source="background",
+                component="KnowledgeSpaceTask",
+                exc=e,
+                tags={"document_id": document_id, "user_id": user_id, "task": "update_document"},
+            )
         raise self.retry(exc=e, countdown=60 * (2**self.request.retries))
 
 
@@ -296,4 +312,11 @@ def batch_process_documents_task(self, user_id: int, batch_id: int):
             e,
         )
         _mark_batch_failed_sync(user_id, batch_id, e)
+        if self.request.retries >= self.max_retries:
+            record_exception_from_celery(
+                source="background",
+                component="KnowledgeSpaceTask",
+                exc=e,
+                tags={"batch_id": batch_id, "user_id": user_id, "task": "batch_process_documents"},
+            )
         raise self.retry(exc=e, countdown=60 * (2**self.request.retries))

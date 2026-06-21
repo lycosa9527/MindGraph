@@ -1,0 +1,7 @@
+{
+  "title": "制作咖啡",
+  "structure_mode": "fixed",
+  "steps": ["磨豆", "萃取", "打奶泡", "拉花"],
+  "clarity": "clear",
+  "constraints": ""
+}

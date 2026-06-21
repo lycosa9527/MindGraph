@@ -19,15 +19,21 @@ import {
   Wand2,
 } from '@lucide/vue'
 
+import {
+  tryCollabGuardedRedo,
+  tryCollabGuardedUndo,
+} from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
 import { useCanvasReset } from '@/composables/canvasPage/useCanvasReset'
 import { useCanvasToolbarApps } from '@/composables/canvasToolbar'
+import { useFeatureFlags } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
 import { MIND_MAP_THEMES, resolveMindMapThemeId, type MindMapThemeId } from '@/config/mindMapThemes'
-import { useDiagramStore } from '@/stores'
+import { CANVAS_STANDARD_EXPORT_MENU_ITEMS, CANVAS_COMMUNITY_EXPORT_MENU_ITEM } from '@/config/canvasExportMenu'
+import { useAuthStore, useDiagramStore } from '@/stores'
 
 import MindMapStructureIcon from './MindMapStructureIcon.vue'
 
@@ -36,7 +42,13 @@ withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
 const { t } = useLanguage()
 const notify = useNotifications()
 const diagramStore = useDiagramStore()
+const authStore = useAuthStore()
+const { featureCommunity } = useFeatureFlags()
 const { triggerImportInPlace } = useDiagramImport()
+
+const showCommunityExport = computed(
+  () => featureCommunity.value && authStore.isAuthenticated
+)
 
 const { handleAddChild, handleAddSibling, handleDeleteNode, handleAddBranch } = useNodeActions({
   registerEventBusListeners: false,
@@ -78,11 +90,11 @@ const activeTheme = computed(
 const themeShortLabel = computed(() => t(activeTheme.value.nameKey))
 
 function handleUndo() {
-  diagramStore.undo()
+  tryCollabGuardedUndo()
 }
 
 function handleRedo() {
-  diagramStore.redo()
+  tryCollabGuardedRedo()
 }
 
 function handleStructurePick(mode: 'balanced' | 'right') {
@@ -282,7 +294,7 @@ function handleAddChildClick() {
           <ChevronDown class="mm-btn__chevron" />
         </button>
         <template #dropdown>
-          <div class="mm-panel mm-panel--list">
+          <div class="mm-panel mm-panel--list mm-panel--scrollable">
             <button
               v-for="theme in MIND_MAP_THEMES"
               :key="theme.id"
@@ -340,7 +352,7 @@ function handleAddChildClick() {
           <button
             type="button"
             class="mm-btn"
-            @click="triggerImportInPlace"
+            @click="() => triggerImportInPlace()"
           >
             <Upload class="w-4 h-4 text-gray-500" />
             <span class="mm-btn__label">{{ t('canvas.toolbar.import') }}</span>
@@ -364,25 +376,23 @@ function handleAddChildClick() {
           <template #dropdown>
             <div class="mm-panel mm-panel--list">
               <button
+                v-for="item in CANVAS_STANDARD_EXPORT_MENU_ITEMS"
+                :key="item.command"
                 type="button"
                 class="mm-list-item"
-                @click="handleExportCommand('png')"
+                :class="{ 'mm-list-item--divided': item.divided }"
+                @click="handleExportCommand(item.command)"
               >
-                {{ t('canvas.topBar.exportPng') }}
+                {{ t(item.labelKey) }}
               </button>
               <button
+                v-if="showCommunityExport"
                 type="button"
                 class="mm-list-item"
-                @click="handleExportCommand('svg')"
+                :class="{ 'mm-list-item--divided': CANVAS_COMMUNITY_EXPORT_MENU_ITEM.divided }"
+                @click="handleExportCommand(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.command)"
               >
-                {{ t('canvas.topBar.exportSvg') }}
-              </button>
-              <button
-                type="button"
-                class="mm-list-item mm-list-item--divided"
-                @click="handleExportCommand('mg')"
-              >
-                {{ t('canvas.topBar.exportJson') }}
+                {{ t(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.labelKey) }}
               </button>
             </div>
           </template>
@@ -675,6 +685,11 @@ function handleAddChildClick() {
   flex-direction: column;
   padding: 4px;
   min-width: 160px;
+}
+
+.mm-panel--scrollable {
+  max-height: min(420px, 70vh);
+  overflow-y: auto;
 }
 
 .mm-list-item {

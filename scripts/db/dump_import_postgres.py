@@ -47,7 +47,11 @@ from services.utils.error_types import (
     DATABASE_ERRORS,
     FILE_IO_ERRORS,
 )
-from services.utils.pg_client_binaries import build_pg_dump_cmd, find_pg_client_binary
+from services.utils.pg_client_binaries import (
+    build_pg_dump_cmd,
+    find_pg_client_binary,
+    pg_tools_libpq_url,
+)
 from services.utils.pg_restore_prep import wipe_public_schema_before_restore
 
 try:
@@ -711,7 +715,7 @@ def dump_command(live: bool) -> int:
     with DumpImportProgress("Dump", 5, dump_stages) as prog:
         prog.update(0, "Connected")
         prog.update(1, "Stats collected")
-        if not run_dump(DATABASE_URL, backup_path):
+        if not run_dump(pg_tools_libpq_url(), backup_path):
             return 1
         prog.update(2, "pg_dump done")
 
@@ -820,7 +824,7 @@ def import_command(
     Optional kwargs override module globals (DATABASE_URL, engine, BACKUP_DIR) so callers
     such as run_migrations.py can pass a resolved backup folder after loading .env.
     """
-    db_url = db_url or DATABASE_URL
+    db_url = db_url or pg_tools_libpq_url()
     db_engine = db_engine or engine
     bdir = backup_dir or BACKUP_DIR
 

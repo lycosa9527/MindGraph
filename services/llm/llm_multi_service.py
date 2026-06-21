@@ -16,6 +16,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from services.infrastructure.http.error_handler import LLMServiceError
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
+from services.monitoring.error_reporting import record_failure
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 
 logger = logging.getLogger(__name__)
@@ -456,6 +457,13 @@ class LLMMultiService:
 
         # All failed
         logger.error("[LLMMultiService] All models failed in race")
+        record_failure(
+            source="llm",
+            component="LLMMultiService",
+            message="All LLM models failed - complete LLM service outage",
+            severity="critical",
+            exception_type="LLMServiceError",
+        )
         try:
             await CriticalAlertService.send_runtime_error_alert(
                 component="LLM",
@@ -464,6 +472,7 @@ class LLMMultiService:
                     "All configured LLM models are unavailable. "
                     "Check API keys, network connectivity, and provider status."
                 ),
+                persist_error=False,
             )
         except LLM_PIPELINE_ERRORS as alert_error:
             logger.error("[LLMMultiService] Failed to send critical alert: %s", alert_error)

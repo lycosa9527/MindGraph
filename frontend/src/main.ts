@@ -21,6 +21,7 @@ import router from './router'
 import { useUIStore } from './stores/ui'
 import { isGuestAuthPath } from './utils/authRedirect'
 import { bindPwaInstallListeners } from './utils/pwaInstall'
+import { installFrontendErrorReporting } from './utils/installFrontendErrorReporting'
 // Styles
 import './styles/index.css'
 
@@ -75,11 +76,7 @@ async function bootstrap(): Promise<void> {
   })
   app.use(VueQueryPlugin, { queryClient })
 
-  app.config.errorHandler = (err, instance, info) => {
-    console.error('Vue Error:', err)
-    console.error('Component:', instance)
-    console.error('Info:', info)
-  }
+  installFrontendErrorReporting(app)
 
   // Avoid flashing DefaultLayout on `/` before the guard redirects (e.g. to `/mindmate`).
   await router.isReady()

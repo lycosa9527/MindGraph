@@ -189,7 +189,11 @@ async function handleRenameConversation(convId: string): Promise<void> {
       // Update store optimistically
       mindMateStore.renameConversation(convId, value.trim())
       // Call mutation to update server and invalidate cache
-      renameConv({ convId, name: value.trim() })
+      renameConv({
+        convId,
+        name: value.trim(),
+        difyUser: conv?.dify_user,
+      })
     }
   } catch {
     // User cancelled
@@ -212,7 +216,8 @@ async function handleDeleteConversation(convId: string): Promise<void> {
     // Update store optimistically
     mindMateStore.deleteConversation(convId)
     // Call mutation to update server and invalidate cache
-    deleteConv(convId)
+    const conv = conversations.value.find((item) => item.id === convId)
+    deleteConv({ convId, difyUser: conv?.dify_user })
   } catch {
     // User cancelled
   }

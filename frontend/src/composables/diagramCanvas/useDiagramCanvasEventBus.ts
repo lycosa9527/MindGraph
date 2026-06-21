@@ -37,6 +37,8 @@ export interface DiagramCanvasEventBusContext {
   emit: (e: 'nodeDoubleClick', node: MindGraphNode) => void
   exportByFormat: (format: string) => Promise<void>
   showExportToCommunityModal: Ref<boolean>
+  prepareForCommunityExport: () => Promise<void>
+  restoreViewportAfterCommunityExport: () => void
   regenerateForNodeIfNeeded: (nodeId: string) => void
 }
 
@@ -83,6 +85,8 @@ export function useDiagramCanvasEventBus(): {
       emit,
       exportByFormat,
       showExportToCommunityModal,
+      prepareForCommunityExport,
+      restoreViewportAfterCommunityExport,
       regenerateForNodeIfNeeded,
     } = ctx
 
@@ -168,6 +172,7 @@ export function useDiagramCanvasEventBus(): {
         }
 
         if (format === 'community') {
+          await prepareForCommunityExport()
           showExportToCommunityModal.value = true
           return
         }

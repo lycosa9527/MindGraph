@@ -29,6 +29,14 @@ from typing import Coroutine, Optional
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 try:
+    from services.monitoring.error_reporting import record_failure
+
+    _ERROR_COLLECTOR_AVAILABLE = True
+except ImportError:
+    record_failure = None
+    _ERROR_COLLECTOR_AVAILABLE = False
+
+try:
     from services.redis.redis_async_client import get_async_redis
     from services.redis.redis_client import is_redis_available
 
@@ -200,6 +208,7 @@ class CriticalAlertService:
         details: Optional[str] = None,
         bypass_cooldown: bool = False,
         cooldown_seconds: Optional[int] = None,
+        persist_error: bool = True,
     ) -> bool:
         """
         Send critical SMS alert to admin phones.
@@ -213,10 +222,21 @@ class CriticalAlertService:
             details: Optional additional details (stack trace, context, etc.)
             bypass_cooldown: If True, bypass cooldown check (for startup failures)
             cooldown_seconds: Custom cooldown period (default: CRITICAL_ALERT_COOLDOWN_SECONDS)
+            persist_error: When False, skip error collection (caller already persisted)
 
         Returns:
             True if alert was sent, False if skipped (cooldown or already sent)
         """
+        if persist_error and _ERROR_COLLECTOR_AVAILABLE and record_failure is not None:
+            record_failure(
+                source="application",
+                component=component,
+                message=error_message,
+                severity="critical",
+                exception_type=error_type,
+                stacktrace=details,
+            )
+
         if not admin_sms_alerts_enabled():
             logger.debug("[CriticalAlert] Admin SMS alerts disabled for this environment")
             return False
@@ -305,7 +325,13 @@ class CriticalAlertService:
         )
 
     @staticmethod
-    async def send_runtime_error_alert(component: str, error_message: str, details: Optional[str] = None) -> bool:
+    async def send_runtime_error_alert(
+        component: str,
+        error_message: str,
+        details: Optional[str] = None,
+        *,
+        persist_error: bool = True,
+    ) -> bool:
         """
         Send alert for runtime critical error.
 
@@ -315,6 +341,7 @@ class CriticalAlertService:
             component: Component name
             error_message: Error message
             details: Optional additional details
+            persist_error: When False, skip error collection (caller already persisted)
 
         Returns:
             True if alert was sent, False if skipped (cooldown)
@@ -326,6 +353,7 @@ class CriticalAlertService:
             details=details,
             bypass_cooldown=False,
             cooldown_seconds=CRITICAL_ALERT_COOLDOWN_SECONDS,
+            persist_error=persist_error,
         )
 
     @staticmethod
@@ -365,6 +393,7 @@ class CriticalAlertService:
             details=details,
             bypass_cooldown=False,
             cooldown_seconds=CRITICAL_ALERT_EXCEPTION_COOLDOWN_SECONDS,
+            persist_error=False,
         )
 
     @staticmethod

@@ -99,6 +99,34 @@ def test_render_html_is_self_contained_and_escaped() -> None:
     assert "Server 2" in page
 
 
+def test_render_html_shows_dingtalk_chat_scope_badge() -> None:
+    """MindBot group scope renders a labeled badge in the HTML transcript."""
+    conv = ExportConversation(
+        conversation_id="c1",
+        name="Group chat",
+        server=1,
+        organization_id=42,
+        dify_user="mindbot_5_staff",
+        user_id=7,
+        user_label="Alice · DingTalk",
+        channel="mindbot",
+        created_at=1700000000,
+        updated_at=1700000100,
+        dingtalk_chat_scope="cross_org_group",
+        bubbles=[],
+    )
+    page = render_html(
+        ExportBundle(
+            organization_id=42,
+            organization_name="Test School",
+            scope="whole-org",
+            conversations=[conv],
+        )
+    )
+    assert "Cross-org group" in page
+    assert "scope-cross-org" in page
+
+
 def test_render_html_empty_bundle() -> None:
     """An empty bundle still renders a valid page with an empty notice."""
     page = render_html(

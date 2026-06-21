@@ -63,8 +63,11 @@ let markdownResizeObserver: ResizeObserver | null = null
 function findContentElement(): HTMLElement | null {
   const root = circleNodeRef.value
   if (!root) return null
+  // Prefer intrinsic text blocks. Measuring `.inline-edit-display` is wrong when it is
+  // stretched to the full circle width (plain labels without markdown/KaTeX).
   return (
     (root.querySelector('.diagram-node-md') as HTMLElement | null) ??
+    (root.querySelector('.inline-edit-plain') as HTMLElement | null) ??
     (root.querySelector('.inline-edit-display') as HTMLElement | null)
   )
 }
@@ -366,7 +369,7 @@ function handleBranchMovePointerUp(): void {
         text-align="center"
         :text-decoration="data.style?.textDecoration || 'none'"
         :text-class="isTopicNode ? 'py-2' : 'px-2 py-1'"
-        :full-width="isTopicNode"
+        :full-width="isTopicNode && !isCircularTopic"
         :center-block-in-circle="isCircularTopic"
         :no-wrap="!!data.style?.noWrap"
         auto-wrap

@@ -253,6 +253,10 @@ const getModelState = (modelKey: string) => {
   return llmResultsStore.modelStates[modelKey] || 'idle'
 }
 
+const getModelPhase = (modelKey: string) => {
+  return llmResultsStore.modelPhases[modelKey] || 'idle'
+}
+
 // Check if model is the currently selected one
 const isSelectedModel = (modelKey: string) => {
   return llmResultsStore.selectedModel === modelKey
@@ -332,10 +336,18 @@ const modelColors = LLM_MODEL_COLORS
 // Button class based on state
 function getButtonClass(modelKey: string): string {
   const state = getModelState(modelKey)
+  const phase = getModelPhase(modelKey)
   const classes = ['model-btn', `model-btn-${modelKey}`]
 
   if (state === 'loading') {
     classes.push('loading')
+    if (phase === 'sending') {
+      classes.push('phase-sending')
+    } else if (phase === 'waiting') {
+      classes.push('phase-waiting')
+    } else {
+      classes.push('phase-streaming')
+    }
   } else if (state === 'ready') {
     classes.push('ready')
     if (isSelectedModel(modelKey)) {
@@ -810,16 +822,15 @@ function getButtonStyle(modelKey: string) {
   color: #f97316 !important;
 }
 
-/* Loading: model-colored traveling border, solid inner (no spinner) */
+/* Loading: model-colored traveling border + full-button fill (no spinner) */
 .model-btn.loading {
   border-color: transparent !important;
-  background-color: transparent !important;
   /* Match idle button padding so outer height matches siblings (avoids vertical drift in the row) */
   padding: 3px 9px;
   cursor: wait;
   overflow: visible;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .model-btn.loading::before {
@@ -846,15 +857,52 @@ function getButtonStyle(modelKey: string) {
   display: flex;
   align-items: center;
   gap: 3px;
-  padding: 0;
-  border-radius: 5px;
   position: relative;
   z-index: 1;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
-.model-btn.loading.model-btn-qwen::before {
+.model-btn.loading.phase-sending {
+  background-color: rgba(16, 185, 129, 0.12) !important;
+  color: #10b981 !important;
+}
+
+.model-btn.loading.phase-sending::before {
+  background: conic-gradient(
+    from var(--model-ring-angle) at 50% 50%,
+    rgba(16, 185, 129, 0.15) 0deg,
+    rgba(16, 185, 129, 0.08) 50deg,
+    #86efac 130deg,
+    #22c55e 180deg,
+    #4ade80 230deg,
+    rgba(16, 185, 129, 0.08) 310deg,
+    rgba(16, 185, 129, 0.15) 360deg
+  );
+}
+
+.model-btn.loading.phase-waiting {
+  background-color: rgba(59, 130, 246, 0.12) !important;
+  color: #3b82f6 !important;
+}
+
+.model-btn.loading.phase-waiting::before {
+  background: conic-gradient(
+    from var(--model-ring-angle) at 50% 50%,
+    rgba(16, 185, 129, 0.15) 0deg,
+    rgba(16, 185, 129, 0.08) 50deg,
+    #93c5fd 130deg,
+    #3b82f6 180deg,
+    #60a5fa 230deg,
+    rgba(16, 185, 129, 0.08) 310deg,
+    rgba(16, 185, 129, 0.15) 360deg
+  );
+}
+
+.model-btn.loading.phase-streaming.model-btn-qwen {
+  background-color: rgba(99, 102, 241, 0.12) !important;
+  color: #6366f1 !important;
+}
+
+.model-btn.loading.phase-streaming.model-btn-qwen::before {
   background: conic-gradient(
     from var(--model-ring-angle) at 50% 50%,
     rgba(99, 102, 241, 0.2) 0deg,
@@ -867,13 +915,12 @@ function getButtonStyle(modelKey: string) {
   );
 }
 
-.model-btn.loading.model-btn-qwen .model-btn-content {
-  background-color: rgba(99, 102, 241, 0.12);
-  border: 1px solid rgba(99, 102, 241, 0.28);
-  color: #6366f1;
+.model-btn.loading.phase-streaming.model-btn-deepseek {
+  background-color: rgba(16, 185, 129, 0.12) !important;
+  color: #10b981 !important;
 }
 
-.model-btn.loading.model-btn-deepseek::before {
+.model-btn.loading.phase-streaming.model-btn-deepseek::before {
   background: conic-gradient(
     from var(--model-ring-angle) at 50% 50%,
     rgba(16, 185, 129, 0.2) 0deg,
@@ -886,13 +933,12 @@ function getButtonStyle(modelKey: string) {
   );
 }
 
-.model-btn.loading.model-btn-deepseek .model-btn-content {
-  background-color: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.28);
-  color: #10b981;
+.model-btn.loading.phase-streaming.model-btn-doubao {
+  background-color: rgba(249, 115, 22, 0.12) !important;
+  color: #f97316 !important;
 }
 
-.model-btn.loading.model-btn-doubao::before {
+.model-btn.loading.phase-streaming.model-btn-doubao::before {
   background: conic-gradient(
     from var(--model-ring-angle) at 50% 50%,
     rgba(249, 115, 22, 0.2) 0deg,
@@ -903,12 +949,6 @@ function getButtonStyle(modelKey: string) {
     rgba(226, 232, 240, 0.85) 305deg,
     rgba(249, 115, 22, 0.2) 360deg
   );
-}
-
-.model-btn.loading.model-btn-doubao .model-btn-content {
-  background-color: rgba(249, 115, 22, 0.12);
-  border: 1px solid rgba(249, 115, 22, 0.28);
-  color: #f97316;
 }
 
 @keyframes model-ring-spin {
@@ -1013,7 +1053,43 @@ function getButtonStyle(modelKey: string) {
   color: #93c5fd;
 }
 
-.dark .model-btn.loading.model-btn-qwen::before {
+.dark .model-btn.loading.phase-sending {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  color: #34d399 !important;
+}
+
+.dark .model-btn.loading.phase-sending::before {
+  background: conic-gradient(
+    from var(--model-ring-angle) at 50% 50%,
+    rgba(52, 211, 153, 0.12) 0deg,
+    rgba(31, 41, 55, 0.9) 50deg,
+    #4ade80 130deg,
+    #16a34a 180deg,
+    #86efac 230deg,
+    rgba(31, 41, 55, 0.9) 310deg,
+    rgba(52, 211, 153, 0.12) 360deg
+  );
+}
+
+.dark .model-btn.loading.phase-waiting {
+  background-color: rgba(37, 99, 235, 0.18) !important;
+  color: #60a5fa !important;
+}
+
+.dark .model-btn.loading.phase-waiting::before {
+  background: conic-gradient(
+    from var(--model-ring-angle) at 50% 50%,
+    rgba(52, 211, 153, 0.12) 0deg,
+    rgba(31, 41, 55, 0.9) 50deg,
+    #60a5fa 130deg,
+    #2563eb 180deg,
+    #38bdf8 230deg,
+    rgba(31, 41, 55, 0.9) 310deg,
+    rgba(52, 211, 153, 0.12) 360deg
+  );
+}
+
+.dark .model-btn.loading.phase-streaming.model-btn-qwen::before {
   background: conic-gradient(
     from var(--model-ring-angle) at 50% 50%,
     rgba(99, 102, 241, 0.25) 0deg,
@@ -1026,13 +1102,12 @@ function getButtonStyle(modelKey: string) {
   );
 }
 
-.dark .model-btn.loading.model-btn-qwen .model-btn-content {
-  background-color: rgba(99, 102, 241, 0.18);
-  border-color: rgba(129, 140, 248, 0.35);
-  color: #a5b4fc;
+.dark .model-btn.loading.phase-streaming.model-btn-qwen {
+  background-color: rgba(99, 102, 241, 0.18) !important;
+  color: #a5b4fc !important;
 }
 
-.dark .model-btn.loading.model-btn-deepseek::before {
+.dark .model-btn.loading.phase-streaming.model-btn-deepseek::before {
   background: conic-gradient(
     from var(--model-ring-angle) at 50% 50%,
     rgba(16, 185, 129, 0.25) 0deg,
@@ -1045,13 +1120,12 @@ function getButtonStyle(modelKey: string) {
   );
 }
 
-.dark .model-btn.loading.model-btn-deepseek .model-btn-content {
-  background-color: rgba(16, 185, 129, 0.18);
-  border-color: rgba(52, 211, 153, 0.35);
-  color: #34d399;
+.dark .model-btn.loading.phase-streaming.model-btn-deepseek {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  color: #34d399 !important;
 }
 
-.dark .model-btn.loading.model-btn-doubao::before {
+.dark .model-btn.loading.phase-streaming.model-btn-doubao::before {
   background: conic-gradient(
     from var(--model-ring-angle) at 50% 50%,
     rgba(249, 115, 22, 0.25) 0deg,
@@ -1064,10 +1138,9 @@ function getButtonStyle(modelKey: string) {
   );
 }
 
-.dark .model-btn.loading.model-btn-doubao .model-btn-content {
-  background-color: rgba(249, 115, 22, 0.18);
-  border-color: rgba(251, 146, 60, 0.35);
-  color: #fb923c;
+.dark .model-btn.loading.phase-streaming.model-btn-doubao {
+  background-color: rgba(249, 115, 22, 0.18) !important;
+  color: #fb923c !important;
 }
 
 .dark .model-btn.ready {

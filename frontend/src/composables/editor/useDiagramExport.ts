@@ -6,10 +6,13 @@ import { ref } from 'vue'
 
 import { useNotifications } from '@/composables'
 import { useLanguage } from '@/composables/core/useLanguage'
-import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useUIStore } from '@/stores/ui'
 import { apiRequest } from '@/utils/apiClient'
 import { getDiagramCanvasHtmlToImageOptions } from '@/utils/diagramHtmlToImage'
+import {
+  prepareDiagramCanvasForRasterCapture,
+  waitForDiagramExportFonts,
+} from '@/utils/diagramExportPrep'
 import { encodeMgFileContents } from '@/utils/mgInterchange'
 
 function sanitizeFilename(name: string): string {
@@ -57,10 +60,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
 
   /** Ensures UI + KaTeX webfonts are ready before rasterizing the canvas (node labels may include math). */
   async function waitForExportFonts(): Promise<void> {
-    await ensureFontsForLanguageCode(uiStore.promptLanguage)
-    if (typeof document !== 'undefined' && document.fonts?.ready) {
-      await document.fonts.ready
-    }
+    await waitForDiagramExportFonts(uiStore.promptLanguage)
   }
 
   async function loadHtmlToImage(): Promise<typeof import('html-to-image')> {

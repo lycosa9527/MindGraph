@@ -18,6 +18,7 @@ import time
 from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
 from services.infrastructure.http.error_handler import LLMServiceError, UserDailyTokenCapExceededError
+from services.monitoring.error_reporting import record_failure
 from services.infrastructure.utils.client_manager import client_manager
 from services.llm.llm_health import LLMHealthChecker
 from services.llm.llm_load_balancer_helper import LLMLoadBalancerHelper
@@ -69,6 +70,36 @@ class LLMService:
         self.doubao_rate_limiter = None
 
         logger.info("[LLMService] Initialized")
+
+    @staticmethod
+    def _record_chat_failure(
+        *,
+        detail: str,
+        exc: BaseException,
+        model: str,
+        provider: str | None,
+        request_type: str = "",
+        organization_id: int | None = None,
+        user_id: int | None = None,
+        endpoint_path: str | None = None,
+        request_id: str | None = None,
+    ) -> None:
+        record_failure(
+            source="llm",
+            component="LLMService",
+            message=detail,
+            severity="error",
+            exception_type=type(exc).__name__,
+            tags={
+                "model": model,
+                "provider": provider or "",
+                "request_type": request_type,
+                "organization_id": organization_id,
+            },
+            user_id=user_id,
+            http_path=endpoint_path,
+            request_id=request_id,
+        )
 
     def initialize(self) -> None:
         """Initialize LLM Service (called at app startup)."""
@@ -325,6 +356,18 @@ class LLMService:
                 error=detail,
             )
 
+            self._record_chat_failure(
+                detail=detail,
+                exc=e,
+                model=model,
+                provider=provider,
+                request_type=request_type,
+                organization_id=organization_id,
+                user_id=user_id,
+                endpoint_path=endpoint_path,
+                request_id=http_request_id,
+            )
+
             raise LLMServiceError(f"Chat failed for model {model}: {detail}") from e
 
     async def chat_with_usage(
@@ -463,6 +506,13 @@ class LLMService:
                     duration=duration,
                     error=detail,
                 )
+
+            self._record_chat_failure(
+                detail=detail,
+                exc=e,
+                model=model,
+                provider=provider,
+            )
 
             raise LLMServiceError(f"Chat failed for model {model}: {detail}") from e
 
@@ -671,6 +721,17 @@ class LLMService:
                 success=False,
                 duration=duration,
                 error=detail,
+            )
+
+            self._record_chat_failure(
+                detail=detail,
+                exc=e,
+                model=model,
+                provider=provider,
+                request_type=request_type,
+                organization_id=organization_id,
+                user_id=user_id,
+                endpoint_path=endpoint_path,
             )
 
             raise LLMServiceError(f"Chat stream failed for model {model}: {detail}") from e

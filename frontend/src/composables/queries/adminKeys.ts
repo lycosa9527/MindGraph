@@ -107,6 +107,15 @@ export const adminKeys = {
     live: () => [...adminKeys.all, 'performance', 'live'] as const,
   },
 
+  errors: {
+    all: () => [...adminKeys.all, 'errors'] as const,
+    summary: () => [...adminKeys.all, 'errors', 'summary'] as const,
+    events: (params?: Record<string, string | number | undefined>) =>
+      [...adminKeys.all, 'errors', 'events', params ?? {}] as const,
+    groups: (params?: Record<string, string | number | undefined>) =>
+      [...adminKeys.all, 'errors', 'groups', params ?? {}] as const,
+  },
+
   kittyLlmops: {
     all: () => [...adminKeys.all, 'kitty-llmops'] as const,
     architecture: () => [...adminKeys.all, 'kitty-llmops', 'architecture'] as const,

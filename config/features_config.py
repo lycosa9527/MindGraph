@@ -274,6 +274,14 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_MINDMATE_EXPORT", "False").lower() == "true"
 
     @property
+    def FEATURE_AUTH_PIXEL_BATTLE(self):
+        """Enable retro pixel-art battle background on /auth (test / easter-egg).
+
+        Disabled by default. Set FEATURE_AUTH_PIXEL_BATTLE=True in .env to enable.
+        """
+        return self._get_cached_value("FEATURE_AUTH_PIXEL_BATTLE", "False").lower() == "true"
+
+    @property
     def MINDBOT_DIFY_HEALTH_BASE_URL(self) -> str:
         """Dify app API base (no trailing slash) for admin GET /parameters probe."""
         raw = (

@@ -20,7 +20,10 @@ from repositories.dingtalk_staff_link_repo import DingtalkStaffLinkRepository
 from repositories.mindbot_usage_repo import MindbotUsageRepository
 from services.dify.export.export_config import USER_BATCH_SIZE
 from services.dify.export.types import ExportScope, UserTarget
-from services.mindbot.core.dify_user_id import mindbot_dify_user_id_for_chat
+from services.mindbot.core.dify_user_id import (
+    CROSS_ORG_STAFF_PLACEHOLDER,
+    mindbot_dify_user_id_for_chat,
+)
 from utils.dify_mindmate_user_id import mindmate_dify_user_id
 
 UNBOUND_STAFF_CAP = 500
@@ -125,6 +128,28 @@ def _mindbot_label(base: str, *, unbound: bool = False) -> str:
     return f"{base} · DingTalk"
 
 
+def _ensure_cross_org_mindbot_targets(
+    targets: List[UserTarget],
+    seen_dify: Set[str],
+    covered_staff_by_org: Dict[int, Set[str]],
+    org_ids: Set[int],
+) -> None:
+    """Always export the shared cross-org (LWCP) Dify user per org."""
+    for org_key in sorted(org_ids):
+        staff = CROSS_ORG_STAFF_PLACEHOLDER
+        if staff in covered_staff_by_org.get(org_key, set()):
+            continue
+        _append_mindbot_target(
+            targets,
+            seen_dify,
+            organization_id=org_key,
+            staff_id=staff,
+            user_id=None,
+            label=_mindbot_label("Cross-org DingTalk groups", unbound=True),
+        )
+        covered_staff_by_org.setdefault(org_key, set()).add(staff)
+
+
 def _append_mindbot_target(
     targets: List[UserTarget],
     seen_dify: Set[str],
@@ -173,6 +198,7 @@ async def build_export_targets(
     start: Optional[int] = None,
     end: Optional[int] = None,
     include_unbound: bool = True,
+    include_cross_org: bool = True,
 ) -> ExportTargetResult:
     """Expand users + org MindBot staff into web/mindbot Dify identities."""
     if not users and scope == "users":
@@ -261,6 +287,22 @@ async def build_export_targets(
             )
             covered_staff_by_org.setdefault(org_key, set()).add(staff_id)
 
+    if include_cross_org:
+        if scope in ("whole", "users") and org_id is not None:
+            _ensure_cross_org_mindbot_targets(
+                targets,
+                seen_dify,
+                covered_staff_by_org,
+                {int(org_id)},
+            )
+        elif scope == "all" and users_by_org:
+            _ensure_cross_org_mindbot_targets(
+                targets,
+                seen_dify,
+                covered_staff_by_org,
+                set(users_by_org.keys()),
+            )
+
     if not include_unbound:
         return ExportTargetResult(targets=targets, warnings=warnings, users_loaded=len(users))
 
@@ -268,6 +310,28 @@ async def build_export_targets(
     end_dt = _epoch_to_datetime(end)
 
     if scope == "whole" and org_id is not None:
+        usage_staff = await usage_repo.distinct_staff_for_org_with_usage(
+            int(org_id),
+            start=start_dt,
+            end=end_dt,
+            limit=UNBOUND_STAFF_CAP,
+        )
+        org_covered = covered_staff_by_org.get(int(org_id), set())
+        for staff_id, nick in usage_staff:
+            if staff_id in org_covered:
+                continue
+            nick_label = (nick or staff_id).strip()
+            _append_mindbot_target(
+                targets,
+                seen_dify,
+                organization_id=int(org_id),
+                staff_id=staff_id,
+                user_id=None,
+                label=_mindbot_label(nick_label, unbound=True),
+            )
+            org_covered.add(staff_id)
+        covered_staff_by_org[int(org_id)] = org_covered
+
         unbound = await usage_repo.distinct_unbound_staff_for_org(
             int(org_id),
             exclude_staff_ids=covered_staff_by_org.get(int(org_id), set()),
@@ -314,6 +378,33 @@ async def build_export_targets(
         warnings=warnings,
         users_loaded=len(users),
     )
+
+
+async def build_user_dify_targets(db: AsyncSession, user: User) -> List[UserTarget]:
+    """Web MindMate + bound DingTalk MindBot Dify identities for one user."""
+    org_raw = getattr(user, "organization_id", None)
+    uid = int(user.id)
+    if org_raw is None:
+        web_dify = mindmate_dify_user_id(user)
+        return [
+            UserTarget(
+                organization_id=0,
+                user_id=uid,
+                dify_user=web_dify,
+                label=user_label(user),
+                channel="web",
+            )
+        ]
+    org_id = int(org_raw)
+    result = await build_export_targets(
+        db,
+        [user],
+        scope="users",
+        org_id=org_id,
+        include_unbound=False,
+        include_cross_org=False,
+    )
+    return result.targets
 
 
 def export_scope_label(scope: ExportScope, org_id: Optional[int], user_count: int) -> str:

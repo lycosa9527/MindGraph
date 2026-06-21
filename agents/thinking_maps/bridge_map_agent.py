@@ -14,10 +14,10 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 from agents.core.agent_utils import extract_json_from_response
+from agents.core.llm_spec_stream import dispatch_llm_chat
 from agents.core.base_agent import BaseAgent
 from config.settings import config
 from prompts import get_prompt
-from services.llm import llm_service
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
@@ -66,6 +66,7 @@ class BridgeMapAgent(BaseAgent):
             organization_id = kwargs.get("organization_id")
             request_type = kwargs.get("request_type", "diagram_generation")
             endpoint_path = kwargs.get("endpoint_path")
+            phase_emit = kwargs.get("phase_emit")
 
             logger.debug("BridgeMapAgent: Starting bridge map generation for prompt")
 
@@ -97,6 +98,7 @@ class BridgeMapAgent(BaseAgent):
                     request_type=request_type,
                     endpoint_path=endpoint_path,
                     fixed_dimension=fixed_dimension,
+                    phase_emit=phase_emit,
                 )
             elif fixed_dimension:
                 # Case 3: Relationship-only mode - user provided ONLY the relationship, no pairs
@@ -111,6 +113,7 @@ class BridgeMapAgent(BaseAgent):
                     organization_id=organization_id,
                     request_type=request_type,
                     endpoint_path=endpoint_path,
+                    phase_emit=phase_emit,
                 )
             else:
                 # Case 4: Full generation mode - no pairs, no fixed dimension
@@ -122,6 +125,7 @@ class BridgeMapAgent(BaseAgent):
                     organization_id=organization_id,
                     request_type=request_type,
                     endpoint_path=endpoint_path,
+                    phase_emit=phase_emit,
                 )
 
             if not spec:
@@ -228,6 +232,7 @@ class BridgeMapAgent(BaseAgent):
         organization_id: Optional[int] = None,
         request_type: str = "diagram_generation",
         endpoint_path: Optional[str] = None,
+        phase_emit=None,
     ) -> Optional[Dict]:
         """Generate the bridge map specification using LLM."""
         try:
@@ -270,13 +275,13 @@ class BridgeMapAgent(BaseAgent):
 
             # Call middleware directly - clean and efficient!
             logger.debug("Calling LLM for bridge map generation...")
-            response = await llm_service.chat(
+            response = await dispatch_llm_chat(
+                phase_emit=phase_emit,
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
                 max_tokens=1000,
                 temperature=config.LLM_TEMPERATURE,
-                # Token tracking parameters
                 user_id=user_id,
                 organization_id=organization_id,
                 request_type=request_type,
@@ -344,6 +349,7 @@ class BridgeMapAgent(BaseAgent):
         endpoint_path: Optional[str] = None,
         # Fixed dimension: user has already specified this relationship, do NOT change it
         fixed_dimension: Optional[str] = None,
+        phase_emit=None,
     ) -> Optional[Dict]:
         """
         Identify the relationship pattern from existing analogy pairs and generate more pairs.
@@ -468,11 +474,12 @@ class BridgeMapAgent(BaseAgent):
 
             # Call LLM to identify relationship and generate new pairs
 
-            response = await llm_service.chat(
+            response = await dispatch_llm_chat(
+                phase_emit=phase_emit,
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
-                max_tokens=800,  # Increased for generating pairs
+                max_tokens=800,
                 temperature=config.LLM_TEMPERATURE,
                 user_id=user_id,
                 organization_id=organization_id,
@@ -597,6 +604,7 @@ class BridgeMapAgent(BaseAgent):
         organization_id: Optional[int] = None,
         request_type: str = "diagram_generation",
         endpoint_path: Optional[str] = None,
+        phase_emit=None,
     ) -> Optional[Dict]:
         """
         Generate bridge map pairs from a relationship pattern only (no existing pairs).
@@ -639,7 +647,8 @@ class BridgeMapAgent(BaseAgent):
 
             # Call LLM
 
-            response = await llm_service.chat(
+            response = await dispatch_llm_chat(
+                phase_emit=phase_emit,
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,

@@ -16,6 +16,7 @@ All Rights Reserved
 Proprietary License
 """
 
+import asyncio
 import logging
 import os
 import platform
@@ -154,9 +155,9 @@ def _compare_versions(version1: str, version2: str) -> int:
         return 0
 
 
-def _get_playwright_chromium_executable() -> Optional[str]:
+def _get_playwright_chromium_executable_sync() -> Optional[str]:
     """
-    Get the path to Playwright's managed Chromium executable.
+    Get the path to Playwright's managed Chromium executable (sync; run in thread from async).
 
     Returns:
         str or None: Path to Chromium executable, or None if not found
@@ -169,6 +170,11 @@ def _get_playwright_chromium_executable() -> Optional[str]:
     except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("Playwright Chromium executable lookup failed: %s", exc)
     return None
+
+
+def _get_playwright_chromium_executable() -> Optional[str]:
+    """Sync alias for Playwright Chromium path lookup."""
+    return _get_playwright_chromium_executable_sync()
 
 
 def _get_local_chromium_executable():
@@ -210,17 +216,16 @@ def _get_local_chromium_executable():
     return None
 
 
-def _get_best_chromium_executable() -> Optional[str]:
+def _select_best_chromium_executable(
+    local_chromium: Optional[str],
+    playwright_chromium: Optional[str],
+) -> Optional[str]:
     """
-    Get the best available Chromium executable, preferring newer version.
-    Compares local packed browser vs Playwright's managed browser.
+    Pick the best Chromium executable from local bundle vs Playwright managed.
 
     Returns:
         str or None: Path to best Chromium executable, or None if not found
     """
-    local_chromium = _get_local_chromium_executable()
-    playwright_chromium = _get_playwright_chromium_executable()
-
     # If only one is available, use it
     if local_chromium and not playwright_chromium:
         logger.debug("Using local Chromium (Playwright browser not found): %s", local_chromium)
@@ -305,6 +310,21 @@ def _get_best_chromium_executable() -> Optional[str]:
     # Versions are equal, prefer local (faster, no download needed)
     logger.debug("Using local Chromium (v%s) - same version as Playwright", local_version)
     return local_chromium
+
+
+def _get_best_chromium_executable() -> Optional[str]:
+    """Sync: best Chromium path (Playwright lookup uses sync API)."""
+    return _select_best_chromium_executable(
+        _get_local_chromium_executable(),
+        _get_playwright_chromium_executable_sync(),
+    )
+
+
+async def _get_best_chromium_executable_async() -> Optional[str]:
+    """Async: Playwright path lookup runs in a worker thread."""
+    local_chromium = _get_local_chromium_executable()
+    playwright_chromium = await asyncio.to_thread(_get_playwright_chromium_executable_sync)
+    return _select_best_chromium_executable(local_chromium, playwright_chromium)
 
 
 async def log_browser_diagnostics():
@@ -412,7 +432,7 @@ class BrowserContextManager:
             raise
 
         # Get best available Chromium (compares versions, prefers newer)
-        chromium_executable = _get_best_chromium_executable()
+        chromium_executable = await _get_best_chromium_executable_async()
         launch_options = {
             "headless": True,
             "args": [

@@ -5,6 +5,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import AdminErrorsTab from '@/components/admin/AdminErrorsTab.vue'
 import AdminDatabaseTab from '@/components/admin/AdminDatabaseTab.vue'
 import AdminFeaturesTab from '@/components/admin/AdminFeaturesTab.vue'
 import AdminLibraryTab from '@/components/admin/AdminLibraryTab.vue'
@@ -77,6 +78,7 @@ watch(
     <AdminLibraryTab v-else-if="activeSubtab === 'library'" />
     <AdminDatabaseTab v-else-if="activeSubtab === 'database'" />
     <AdminPerformanceTab v-else-if="activeSubtab === 'performance'" />
+    <AdminErrorsTab v-else-if="activeSubtab === 'errors'" />
     <GeweLoginComponent v-else-if="activeSubtab === 'gewe'" />
   </div>
 </template>

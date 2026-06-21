@@ -1,9 +1,7 @@
 /**
  * MindMate Store - Pinia store for shared MindMate conversation state
  *
- * This store manages conversation list and current conversation state
- * that is shared between ChatHistory sidebar and MindmatePanel.
- *
+ * Conversation list, title, and LLM load phase (avatar ring) live here.
  * Message handling and SSE streaming remain in the useMindMate composable.
  */
 import { computed, ref } from 'vue'
@@ -11,6 +9,8 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import type { ModelLoadPhase } from '@/stores/llmResults'
+import { isLlmGenerating } from '@/utils/llmLoadPhase'
 
 // ============================================================================
 // Types
@@ -22,6 +22,8 @@ export interface MindMateConversation {
   created_at: number
   updated_at: number
   is_pinned?: boolean
+  channel?: 'web' | 'mindbot'
+  dify_user?: string
 }
 
 // Cached message structure (raw Dify format)
@@ -57,6 +59,9 @@ export const useMindMateStore = defineStore('mindmate', () => {
   const isLoadingConversations = ref(false)
   const messageCount = ref(0)
 
+  /** Avatar / status ring phase (sending → waiting → streaming → idle). */
+  const loadPhase = ref<ModelLoadPhase>('idle')
+
   // Message cache for prefetched conversations (convId -> messages)
   const messageCache = ref<Map<string, CachedDifyMessage[]>>(new Map())
   const prefetchingConversations = ref<Set<string>>(new Set())
@@ -71,6 +76,21 @@ export const useMindMateStore = defineStore('mindmate', () => {
     if (!currentConversationId.value) return null
     return conversations.value.find((c) => c.id === currentConversationId.value) || null
   })
+
+  const isGenerating = computed(() => isLlmGenerating(loadPhase.value))
+
+  // =========================================================================
+  // Load phase (LLM avatar ring)
+  // =========================================================================
+
+  function setLoadPhase(phase: ModelLoadPhase): void {
+    loadPhase.value = phase
+    eventBus.emit('mindmate:load_phase', { phase })
+  }
+
+  function resetLoadPhase(): void {
+    setLoadPhase('idle')
+  }
 
   // =========================================================================
   // Helpers
@@ -200,6 +220,14 @@ export const useMindMateStore = defineStore('mindmate', () => {
       is_pinned: pinnedIds.has(conv.id),
     }))
     sortConversations()
+  }
+
+  /**
+   * Resolve Dify user key for a conversation (web or bound DingTalk MindBot).
+   */
+  function getConversationDifyUser(convId: string): string | undefined {
+    const conv = conversations.value.find((item) => item.id === convId)
+    return conv?.dify_user?.trim() || undefined
   }
 
   /**
@@ -419,6 +447,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
     conversationTitle.value = 'MindMate'
     isLoadingConversations.value = false
     messageCount.value = 0
+    resetLoadPhase()
     messageCache.value.clear()
     prefetchingConversations.value.clear()
     clearAllMessagesFromStorage()
@@ -437,11 +466,17 @@ export const useMindMateStore = defineStore('mindmate', () => {
     isLoadingConversations,
     messageCount,
 
+    // LLM load phase (avatar ring)
+    loadPhase,
+    isGenerating,
+
     // Computed
     hasConversations,
     currentConversation,
 
     // Actions
+    setLoadPhase,
+    resetLoadPhase,
     syncConversationsFromQuery,
     setCurrentConversation,
     deleteConversation,
@@ -457,5 +492,6 @@ export const useMindMateStore = defineStore('mindmate', () => {
     // Message cache actions
     getCachedMessages,
     clearMessageCache,
+    getConversationDifyUser,
   }
 })

@@ -26,6 +26,7 @@ from config.settings import config
 from models import get_request_language
 from services.infrastructure.http.error_handler import UserDailyTokenCapExceededError
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
+from services.monitoring.error_reporting import record_exception, record_failure
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth.user_daily_token_quota import daily_token_limit_message
 
@@ -116,6 +117,16 @@ async def http_exception_handler(request: Request, exc: HTTPException):
             logger.warning("HTTP %s: %s", exc.status_code, exc.detail)
     else:
         logger.warning("HTTP %s: %s", exc.status_code, exc.detail)
+        if exc.status_code >= 500:
+            record_failure(
+                source="application",
+                component="http_exception",
+                message=str(exc.detail),
+                severity="error",
+                exception_type="HTTPException",
+                http_path=path,
+                http_status=exc.status_code,
+            )
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail},  # Use "detail" to match FastAPI standard
@@ -154,6 +165,16 @@ async def general_exception_handler(request: Request, exc: Exception):
     stack_trace = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
 
     logger.error("Unhandled exception: %s: %s", exception_type, exception_message, exc_info=True)
+
+    record_exception(
+        source="application",
+        component="unhandled_exception",
+        exc=exc,
+        severity="critical" if _is_critical_exception(exception_type, exception_message) else "error",
+        http_path=request_path,
+        http_status=500,
+        request_id=getattr(getattr(request, "state", None), "request_id", None),
+    )
 
     error_response = {"error": "An unexpected error occurred. Please try again later."}
 

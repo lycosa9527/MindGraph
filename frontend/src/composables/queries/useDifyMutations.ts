@@ -38,11 +38,23 @@ async function pinConversationAPI(convId: string): Promise<{ is_pinned: boolean 
   return await response.json()
 }
 
-async function deleteConversationAPI(convId: string): Promise<void> {
-  const response = await fetch(`/api/dify/conversations/${convId}`, {
-    method: 'DELETE',
-    credentials: 'same-origin',
-  })
+function appendDifyUserQuery(url: string, difyUser?: string): string {
+  const trimmed = difyUser?.trim()
+  if (!trimmed) {
+    return url
+  }
+  const separator = url.includes('?') ? '&' : '?'
+  return `${url}${separator}dify_user=${encodeURIComponent(trimmed)}`
+}
+
+async function deleteConversationAPI(convId: string, difyUser?: string): Promise<void> {
+  const response = await fetch(
+    appendDifyUserQuery(`/api/dify/conversations/${convId}`, difyUser),
+    {
+      method: 'DELETE',
+      credentials: 'same-origin',
+    }
+  )
 
   if (!response.ok) {
     if (response.status === 401) {
@@ -52,13 +64,20 @@ async function deleteConversationAPI(convId: string): Promise<void> {
   }
 }
 
-async function renameConversationAPI(convId: string, name: string): Promise<{ name: string }> {
-  const response = await fetch(`/api/dify/conversations/${convId}/name`, {
-    method: 'POST',
-    credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, auto_generate: false }),
-  })
+async function renameConversationAPI(
+  convId: string,
+  name: string,
+  difyUser?: string
+): Promise<{ name: string }> {
+  const response = await fetch(
+    appendDifyUserQuery(`/api/dify/conversations/${convId}/name`, difyUser),
+    {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, auto_generate: false }),
+    }
+  )
 
   if (!response.ok) {
     if (response.status === 401) {
@@ -71,13 +90,16 @@ async function renameConversationAPI(convId: string, name: string): Promise<{ na
   return result.data || { name }
 }
 
-async function generateTitleAPI(convId: string): Promise<{ name: string }> {
-  const response = await fetch(`/api/dify/conversations/${convId}/name`, {
-    method: 'POST',
-    credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ auto_generate: true }),
-  })
+async function generateTitleAPI(convId: string, difyUser?: string): Promise<{ name: string }> {
+  const response = await fetch(
+    appendDifyUserQuery(`/api/dify/conversations/${convId}/name`, difyUser),
+    {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ auto_generate: true }),
+    }
+  )
 
   if (!response.ok) {
     if (response.status === 401) {
@@ -119,12 +141,13 @@ export function useDeleteConversation() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (convId: string) => deleteConversationAPI(convId),
-    onSuccess: (_, convId) => {
+    mutationFn: ({ convId, difyUser }: { convId: string; difyUser?: string }) =>
+      deleteConversationAPI(convId, difyUser),
+    onSuccess: (_, { convId, difyUser }) => {
       // Invalidate conversations list
       queryClient.invalidateQueries({ queryKey: difyKeys.conversations() })
       // Remove messages cache for this conversation
-      queryClient.removeQueries({ queryKey: difyKeys.messages(convId) })
+      queryClient.removeQueries({ queryKey: difyKeys.messages(convId, difyUser) })
     },
   })
 }
@@ -137,8 +160,8 @@ export function useRenameConversation() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ convId, name }: { convId: string; name: string }) =>
-      renameConversationAPI(convId, name),
+    mutationFn: ({ convId, name, difyUser }: { convId: string; name: string; difyUser?: string }) =>
+      renameConversationAPI(convId, name, difyUser),
     onSuccess: () => {
       // Invalidate conversations list to get updated name
       queryClient.invalidateQueries({ queryKey: difyKeys.conversations() })
@@ -155,7 +178,8 @@ export function useGenerateTitle() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (convId: string) => generateTitleAPI(convId),
+    mutationFn: ({ convId, difyUser }: { convId: string; difyUser?: string }) =>
+      generateTitleAPI(convId, difyUser),
     onSuccess: () => {
       // Invalidate conversations list to get generated title
       queryClient.invalidateQueries({ queryKey: difyKeys.conversations() })

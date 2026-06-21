@@ -18,6 +18,8 @@ from redis.exceptions import RedisError, WatchError
 from sqlalchemy import text as sql_text
 from sqlalchemy.exc import SQLAlchemyError
 
+from services.monitoring.error_reporting import record_exception
+
 from services.infrastructure.monitoring.ws_metrics import record_ws_redisjson_failure_total
 from services.online_collab.common.online_collab_json_offload import dumps_maybe_offload
 from services.online_collab.db.online_collab_stmt_cache import (
@@ -512,6 +514,12 @@ async def _flush_live_spec_to_db_impl(code: str, diagram_id: str) -> bool:
             return True
         except (RedisError, OSError, RuntimeError, TypeError, ValueError, AttributeError, SQLAlchemyError) as exc:
             logger.error("[LiveSpec] flush failed: %s", exc, exc_info=True)
+            record_exception(
+                source="collab",
+                component="LiveSpec",
+                exc=exc,
+                tags={"diagram_id": diagram_id, "code": code},
+            )
             await db.rollback()
             return False
 

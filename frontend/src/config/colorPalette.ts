@@ -74,3 +74,35 @@ export const STYLE_PRESET_PALETTES: StylePresetColors[] = [
   PRESET_BUSINESS,
   PRESET_VIBRANT,
 ]
+
+/** ColorHunt curated presets (reused by mind-map theme picker). */
+export const COLORHUNT_PRESET_SIMPLE = PRESET_SIMPLE
+export const COLORHUNT_PRESET_CREATIVE = PRESET_CREATIVE
+export const COLORHUNT_PRESET_BUSINESS = PRESET_BUSINESS
+export const COLORHUNT_PRESET_VIBRANT = PRESET_VIBRANT
+
+/**
+ * Tropical pastel — coral, yellow, mint, ocean blue.
+ * Source: https://colorhunt.co/palette/ff6b6b-ffe66d-4ecdc4-45b7d1
+ */
+export const COLORHUNT_PRESET_SUNSET: StylePresetColors = {
+  backgroundColor: '#D8F5F0',
+  textColor: '#1B4D59',
+  borderColor: '#4ECDC4',
+  topicBackgroundColor: '#45B7D1',
+  topicTextColor: '#ffffff',
+  topicBorderColor: '#2A6F87',
+}
+
+/**
+ * Soft rose warmth — cream, blush, coral pink.
+ * Source: https://colorhunt.co/palette/ffecd2-fcb7af-ff8fab-f88379
+ */
+export const COLORHUNT_PRESET_ROSE_WARM: StylePresetColors = {
+  backgroundColor: '#FFECD2',
+  textColor: '#7C2D12',
+  borderColor: '#FF8FAB',
+  topicBackgroundColor: '#F88379',
+  topicTextColor: '#ffffff',
+  topicBorderColor: '#C2410C',
+}

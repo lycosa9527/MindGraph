@@ -33,6 +33,7 @@ interface FeatureFlagsResponse {
   feature_mindbot: boolean
   feature_mindmate_export: boolean
   feature_kitty_agent: boolean
+  feature_auth_pixel_battle: boolean
   workshop_chat_preview_org_ids: number[]
   feature_org_access: Record<string, FeatureOrgAccessEntry>
 }
@@ -81,6 +82,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_mindbot: false,
           feature_mindmate_export: false,
           feature_kitty_agent: false,
+          feature_auth_pixel_battle: false,
           workshop_chat_preview_org_ids: [],
           feature_org_access: {},
         }
@@ -97,6 +99,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_mindbot: raw.feature_mindbot ?? false,
         feature_mindmate_export: raw.feature_mindmate_export ?? false,
         feature_kitty_agent: raw.feature_kitty_agent ?? false,
+        feature_auth_pixel_battle: raw.feature_auth_pixel_battle ?? false,
       }
       flags.value = data
       lastFetchTime.value = now
@@ -126,6 +129,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_mindbot: false,
         feature_mindmate_export: false,
         feature_kitty_agent: false,
+        feature_auth_pixel_battle: false,
         workshop_chat_preview_org_ids: [],
         feature_org_access: {},
       }
@@ -208,6 +212,10 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     return flags.value?.feature_kitty_agent ?? false
   }
 
+  function getFeatureAuthPixelBattle(): boolean {
+    return flags.value?.feature_auth_pixel_battle ?? false
+  }
+
   /**
    * Initialize flags (call this early in app lifecycle)
    */
@@ -241,6 +249,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     getFeatureMarkets,
     getFeatureMindbot,
     getFeatureKittyAgent,
+    getFeatureAuthPixelBattle,
     getWorkshopChatPreviewOrgIds,
     init,
     markStale,

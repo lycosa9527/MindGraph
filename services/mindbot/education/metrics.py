@@ -11,6 +11,7 @@ from typing import Any, Optional
 
 from services.mindbot.core.redis_keys import TURN_COUNT_PREFIX, TURN_COUNT_TTL_SECONDS
 from services.mindbot.infra.redis_async import redis_incr_with_ttl
+from services.mindbot.platforms.dingtalk.cards.ai_card_create import is_cross_org_group_body
 from utils.env_helpers import env_bool
 
 
@@ -21,11 +22,13 @@ def education_metrics_enabled() -> bool:
 
 def dingtalk_chat_scope(body: dict[str, Any]) -> str:
     """
-    Return ``group`` (group chat), ``oto`` (one-to-one), or ``unknown``.
+    Return ``cross_org_group``, ``group``, ``oto``, or ``unknown``.
 
-    DingTalk ``conversationType`` / ``conversation_type`` is often ``2`` or ``group``
-    for groups; other values are treated as one-to-one.
+    Cross-org IM groups use LWCP sender tokens (no ``senderStaffId``). Internal groups
+    have normal staff ids. DingTalk ``conversationType`` ``2`` / ``group`` marks groups.
     """
+    if is_cross_org_group_body(body):
+        return "cross_org_group"
     ct = body.get("conversationType") or body.get("conversation_type")
     if ct is None:
         return "unknown"

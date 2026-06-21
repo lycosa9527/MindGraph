@@ -10,13 +10,19 @@ All Rights Reserved
 Proprietary License
 """
 
+import logging
 import os
 import subprocess
 import sys
 from pathlib import Path
 from typing import List, Optional
 
-from config.database import libpq_database_url
+from sqlalchemy.engine import make_url
+
+from config.database import DATABASE_MIGRATION_URL, libpq_database_url
+from scripts.db.migration_urls import ROLE_APP, resolve_migration_database_url
+
+logger = logging.getLogger(__name__)
 
 
 def find_pg_client_binary(name: str) -> Optional[str]:
@@ -53,11 +59,34 @@ def find_pg_client_binary(name: str) -> Optional[str]:
     return None
 
 
+def pg_tools_connection_username(db_url: str) -> str:
+    """Return PostgreSQL username from a libpq/SQLAlchemy URL (for logging only)."""
+    return make_url(db_url).username or "unknown"
+
+
+def pg_tools_libpq_url() -> str:
+    """
+    Libpq URI for pg_dump and pg_restore.
+
+    Uses a migrate-capable PostgreSQL role (``mindgraph_migrate``, BYPASSRLS).
+    ``--no-policies`` only excludes policies from the archive; pg_dump still
+    runs queries as the connection role and must bypass RLS to copy protected
+    tables such as ``api_keys``.
+    """
+    dump_url = DATABASE_MIGRATION_URL
+    if (make_url(dump_url).username or "") == ROLE_APP:
+        dump_url, source = resolve_migration_database_url()
+        logger.info("pg_dump/pg_restore using migrate-capable URL (%s)", source)
+    return libpq_database_url(dump_url)
+
+
 def build_pg_dump_cmd(pg_dump: str, output_path: Path, db_url: str) -> List[str]:
     """
     Build pg_dump argv aligned with admin export and Alembic RLS backup policy.
 
-    Uses custom format, no owner/oids, and --no-policies so dumps work under RLS.
+    Uses custom format, no owner/oids, and --no-policies. Callers must pass a
+    migrate-capable URL (see ``pg_tools_libpq_url()``); the app runtime role
+    cannot read RLS-protected tables during COPY.
     """
     return [
         pg_dump,

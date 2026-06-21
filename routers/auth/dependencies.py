@@ -84,6 +84,7 @@ from utils.auth.admin_panel_permissions import (
     CAP_SCOPE_GLOBAL,
     CAP_SCOPE_INVITED_ORGS,
     CAP_SETTINGS_DATABASE,
+    CAP_SETTINGS_ERRORS,
     CAP_SETTINGS_FEATURES,
     CAP_SETTINGS_GEWE,
     CAP_SETTINGS_KITTY_LLMOPS,
@@ -516,6 +517,7 @@ require_settings_tokens = require_panel_capability(CAP_SETTINGS_TOKENS)
 require_settings_library = require_panel_capability(CAP_SETTINGS_LIBRARY)
 require_settings_database = require_panel_capability(CAP_SETTINGS_DATABASE)
 require_settings_performance = require_panel_capability(CAP_SETTINGS_PERFORMANCE)
+require_settings_errors = require_panel_capability(CAP_SETTINGS_ERRORS)
 require_settings_gewe = require_panel_capability(CAP_SETTINGS_GEWE)
 require_settings_kitty_llmops = require_panel_capability(CAP_SETTINGS_KITTY_LLMOPS)
 require_settings_teacher_usage = require_panel_capability(CAP_SETTINGS_TEACHER_USAGE)

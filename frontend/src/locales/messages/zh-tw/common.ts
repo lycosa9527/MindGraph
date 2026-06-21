@@ -199,7 +199,12 @@ export default {
   'settings.version.chinese': '專業模式',
   'settings.version.international': '簡潔模式',
   'landing.international.subtitle': '宇宙中最強大的AI思維圖示生成軟件',
-  'landing.international.promptPlaceholder': '輸入主題或簡要說明，也可在下方選擇圖示類型…',
+  'landing.international.promptPlaceholder':
+    '描述主題或結構要求，例如「北京三日遊，四個分支：衣食住行」…',
+  'landing.international.examplesTitle': '靈感推薦',
+  'landing.international.example1': '北京三日遊計劃，四個分支：衣、食、住、行',
+  'landing.international.example2': '用 SWOT 分析「新產品上市」：優勢、劣勢、機會、威脅',
+  'landing.international.example3': '製作咖啡的流程：磨豆、萃取、打奶泡、拉花',
   'landing.international.sectionTitle': '八大思維圖示',
   'landing.international.advancedDiagramsTitle': '進階圖示',
   'landing.international.modules': '功能模塊',

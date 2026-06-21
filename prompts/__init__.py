@@ -19,6 +19,7 @@ from .mind_maps import MIND_MAP_PROMPTS
 from .main_agent import MAIN_AGENT_PROMPTS
 from .kitty_agent import KITTY_AGENT_PROMPTS
 from .prompt_to_diagram_agent import PROMPT_TO_DIAGRAM_PROMPTS
+from .requirements_schemas import get_requirements_schema, normalize_diagram_type_for_requirements
 
 
 # Unified prompt registry

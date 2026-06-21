@@ -38,6 +38,7 @@ from services.infrastructure.monitoring.ws_metrics import (
     record_ws_resync_rate_limit_check_failure,
     record_ws_viewer_resync,
 )
+from services.monitoring.error_reporting import record_exception
 from services.online_collab.core.online_collab_manager import get_online_collab_manager
 from services.online_collab.core.online_collab_status import (
     diagram_title_for_active_workshop,
@@ -385,6 +386,12 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
                 await handler(ctx, message)
             except BACKGROUND_INFRA_ERRORS as exc:
                 logger.exception("[CanvasCollabWS] handler %s raised: %s", msg_type, exc)
+                record_exception(
+                    source="collab",
+                    component="CanvasCollabWS",
+                    exc=exc,
+                    tags={"msg_type": msg_type},
+                )
                 await ctx_send(
                     ctx,
                     {

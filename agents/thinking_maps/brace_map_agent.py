@@ -10,9 +10,9 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
+from agents.core.llm_spec_stream import dispatch_llm_chat
 from config.settings import config
 from prompts import get_prompt
-from services.llm import llm_service
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
@@ -80,6 +80,7 @@ class BraceMapAgent(BaseAgent):
         organization_id = kwargs.get("organization_id")
         request_type = kwargs.get("request_type", "diagram_generation")
         endpoint_path = kwargs.get("endpoint_path")
+        phase_emit = kwargs.get("phase_emit")
         try:
             # Three-scenario system (similar to bridge_map):
             # Scenario 1: Topic only 鈫?standard generation
@@ -98,6 +99,7 @@ class BraceMapAgent(BaseAgent):
                     organization_id=organization_id,
                     request_type=request_type,
                     endpoint_path=endpoint_path,
+                    phase_emit=phase_emit,
                 )
             else:
                 # Scenario 1 or 2: Standard generation or fixed dimension with topic
@@ -110,6 +112,7 @@ class BraceMapAgent(BaseAgent):
                     request_type=request_type,
                     endpoint_path=endpoint_path,
                     fixed_dimension=fixed_dimension,
+                    phase_emit=phase_emit,
                 )
             if not spec:
                 return {
@@ -156,6 +159,7 @@ class BraceMapAgent(BaseAgent):
         endpoint_path: Optional[str] = None,
         # Fixed dimension: user has already specified this, do NOT change it
         fixed_dimension: Optional[str] = None,
+        phase_emit=None,
     ) -> Optional[Dict]:
         """Generate the brace map specification using LLM."""
         try:
@@ -236,13 +240,13 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                         user_prompt = f"Please create a brace map for the following description: {prompt}"
 
             # Call middleware directly - clean and efficient!
-            response = await llm_service.chat(
+            response = await dispatch_llm_chat(
+                phase_emit=phase_emit,
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
                 max_tokens=1000,
                 temperature=config.LLM_TEMPERATURE,
-                # Token tracking parameters
                 user_id=user_id,
                 organization_id=organization_id,
                 request_type=request_type,
@@ -293,7 +297,8 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                             f"and generate the JSON specification directly."
                         )
 
-                    retry_response = await llm_service.chat(
+                    retry_response = await dispatch_llm_chat(
+                        phase_emit=phase_emit,
                         prompt=retry_user_prompt,
                         model=self.model,
                         system_message=system_prompt,
@@ -359,6 +364,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
         organization_id: Optional[int] = None,
         request_type: str = "diagram_generation",
         endpoint_path: Optional[str] = None,
+        phase_emit=None,
     ) -> Optional[Dict]:
         """
         Generate brace map from a decomposition dimension only (no topic).
@@ -403,7 +409,8 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
             logger.debug("User prompt: %s", user_prompt)
 
             # Call LLM
-            response = await llm_service.chat(
+            response = await dispatch_llm_chat(
+                phase_emit=phase_emit,
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
@@ -447,7 +454,8 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                             f"Generate the JSON specification directly based on the decomposition dimension."
                         )
 
-                    retry_response = await llm_service.chat(
+                    retry_response = await dispatch_llm_chat(
+                        phase_emit=phase_emit,
                         prompt=retry_user_prompt,
                         model=self.model,
                         system_message=system_prompt,

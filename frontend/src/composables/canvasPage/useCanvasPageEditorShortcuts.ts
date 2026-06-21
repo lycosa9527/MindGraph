@@ -1,6 +1,15 @@
 import type { Ref } from 'vue'
 
-import { nodeIdsDiffBetweenDiagrams } from '@/composables/canvasPage/diagramDiff'
+import {
+  resolveEnterKeyEvent,
+  resolveTabKeyEvent,
+} from '@/composables/canvasPage/canvasPageEditorShortcutRouting'
+import {
+  bindCanvasCollabHistoryContext,
+  tryCollabGuardedRedo,
+  tryCollabGuardedUndo,
+} from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
+import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useEditorShortcuts, useKeyboard } from '@/composables/core/useKeyboard'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -13,7 +22,7 @@ import {
   mindMapArrowKeyToDirection,
   resolveMindMapNavStartId,
 } from '@/composables/mindMap/mindMapArrowNavigation'
-import { useAuthStore, useDiagramStore } from '@/stores'
+import { useAuthStore, useDiagramStore, usePanelsStore } from '@/stores'
 
 type ActiveEditorEntry = { user_id: number }
 type DiagramAutoSaveApi = ReturnType<typeof useDiagramAutoSave>
@@ -29,6 +38,11 @@ export function useCanvasPageEditorShortcuts(options: {
   const authStore = useAuthStore()
   const notify = useNotifications()
   const { t } = useLanguage()
+
+  bindCanvasCollabHistoryContext(workshopCode, activeEditors)
+
+  const panelsStore = usePanelsStore()
+  const { activeTool, closeActiveTool } = useMindMapSideToolbarState()
 
   function isTypingInInput(): boolean {
     const active = document.activeElement as HTMLElement
@@ -83,8 +97,9 @@ export function useCanvasPageEditorShortcuts(options: {
   function handleTabKey(event: KeyboardEvent) {
     if (event.repeat) return
     if (isTypingInInput()) return
-    if (isMindMapDiagramType(diagramStore.type)) {
-      eventBus.emit('diagram:add_child_requested', {})
+    const routed = resolveTabKeyEvent(diagramStore.type)
+    if (routed) {
+      eventBus.emit(routed, {})
       return
     }
     handleAddBranchKey()
@@ -93,8 +108,9 @@ export function useCanvasPageEditorShortcuts(options: {
   function handleEnterKey(event: KeyboardEvent) {
     if (event.repeat) return
     if (isTypingInInput()) return
-    if (isMindMapDiagramType(diagramStore.type)) {
-      eventBus.emit('diagram:add_sibling_requested', {})
+    const routed = resolveEnterKeyEvent(diagramStore.type)
+    if (routed) {
+      eventBus.emit(routed, {})
       return
     }
     handleAddChildKey()
@@ -103,7 +119,7 @@ export function useCanvasPageEditorShortcuts(options: {
   function handleSpaceEditKey(event: KeyboardEvent) {
     if (event.repeat) return
     if (isTypingInInput()) return
-    if (!isMindMapDiagramType(diagramStore.type)) return
+    if (diagramStore.type === 'concept_map') return
     const selectedId = diagramStore.selectedNodes[0]
     if (!selectedId) return
     eventBus.emit('node:edit_requested', { nodeId: selectedId })
@@ -132,52 +148,33 @@ export function useCanvasPageEditorShortcuts(options: {
 
   function handleUndoKey() {
     if (isTypingInInput()) return
-    if (!diagramStore.canUndo) {
-      return
-    }
-    if (workshopCode.value) {
-      const prevEntry = diagramStore.history[diagramStore.historyIndex - 1]
-      const cur = diagramStore.data
-      if (prevEntry?.data && cur) {
-        const changed = nodeIdsDiffBetweenDiagrams(
-          cur,
-          prevEntry.data as { nodes?: { id: string }[] }
-        )
-        for (const nid of changed) {
-          const ed = activeEditors.value.get(nid)
-          if (ed && ed.user_id !== Number(authStore.user?.id)) {
-            notify.warning(t('notification.collabUndoBlocked'))
-            return
-          }
-        }
-      }
-    }
-    diagramStore.undo()
+    tryCollabGuardedUndo()
   }
 
   function handleRedoKey() {
     if (isTypingInInput()) return
-    if (!diagramStore.canRedo) {
+    tryCollabGuardedRedo()
+  }
+
+  function handleEscapeKey() {
+    if (isTypingInInput()) return
+    if (activeTool.value) {
+      closeActiveTool()
       return
     }
-    if (workshopCode.value) {
-      const nextEntry = diagramStore.history[diagramStore.historyIndex + 1]
-      const cur = diagramStore.data
-      if (nextEntry?.data && cur) {
-        const changed = nodeIdsDiffBetweenDiagrams(
-          cur,
-          nextEntry.data as { nodes?: { id: string }[] }
-        )
-        for (const nid of changed) {
-          const ed = activeEditors.value.get(nid)
-          if (ed && ed.user_id !== Number(authStore.user?.id)) {
-            notify.warning(t('notification.collabRedoBlocked'))
-            return
-          }
-        }
-      }
+    if (panelsStore.mindmatePanel.isOpen) {
+      panelsStore.closeMindmate()
+      return
     }
-    diagramStore.redo()
+    if (panelsStore.nodePalettePanel.isOpen) {
+      panelsStore.closeNodePalette()
+      return
+    }
+    if (panelsStore.propertyPanel.isOpen) {
+      panelsStore.closePropertyPanel()
+      return
+    }
+    diagramStore.clearSelection()
   }
 
   function handleClearNodeTextKey() {
@@ -253,6 +250,7 @@ export function useCanvasPageEditorShortcuts(options: {
     redo: handleRedoKey,
     save: handleSaveKey,
     delete: handleDeleteKey,
+    escape: handleEscapeKey,
     addNode: handleAddNodeKey,
     clearNodeText: handleClearNodeTextKey,
   })

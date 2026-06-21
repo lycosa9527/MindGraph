@@ -5,6 +5,7 @@
  * Reuses MindmatePanel internals but with a custom mobile header.
  */
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 
 import { Home, Menu, Plus } from '@lucide/vue'
@@ -27,6 +28,7 @@ const { promptLanguage, t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
+const { loadPhase: mindMateLoadPhase } = storeToRefs(mindMateStore)
 const voiceStore = useVoiceStore()
 
 const { displayName, avatarUrl } = useMindMateBranding('md')
@@ -60,7 +62,9 @@ const hoveredMessageId = ref<string | null>(null)
 const showHistoryDrawer = ref(false)
 const showShareModal = ref(false)
 
-const isLoading = computed(() => mindMate.isLoading.value || mindMate.isStreaming.value)
+const isLoading = computed(
+  () => mindMateStore.isGenerating || mindMate.isLoading.value || mindMate.isStreaming.value
+)
 
 const userAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
 
@@ -376,6 +380,7 @@ onUnmounted(() => {
         :show-welcome="false"
         :is-loading="mindMate.isLoading.value"
         :is-streaming="mindMate.isStreaming.value"
+        :load-phase="mindMateLoadPhase"
         :is-loading-history="mindMate.isLoadingHistory.value"
         :editing-message-id="editingMessageId"
         :editing-content="editingContent"

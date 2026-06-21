@@ -7,6 +7,7 @@ import logging
 
 from config.celery import celery_app
 from services.dify.export.job_runner import run_export_job
+from services.monitoring.error_reporting import record_exception_from_celery
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
@@ -29,5 +30,11 @@ def run_mindmate_export_job(self, job_id: int, user_id: int) -> None:
             job_id,
             exc,
             exc_info=True,
+        )
+        record_exception_from_celery(
+            source="background",
+            component="MindMateExportTask",
+            exc=exc,
+            tags={"job_id": job_id, "user_id": user_id},
         )
         raise

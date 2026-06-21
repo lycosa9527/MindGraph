@@ -102,6 +102,7 @@ from models.domain.mindbot_usage import MindbotUsageEvent
 from models.domain.dingtalk_staff_link import DingtalkStaffLink
 from models.domain.generation_preview_link import GenerationPreviewLink
 from models.domain.mindmate_export_job import MindmateExportJob
+from models.domain.error_event import ErrorEvent, ErrorGroup
 
 __all__ = [
     "Base",
@@ -178,4 +179,6 @@ __all__ = [
     "DingtalkStaffLink",
     "GenerationPreviewLink",
     "MindmateExportJob",
+    "ErrorEvent",
+    "ErrorGroup",
 ]

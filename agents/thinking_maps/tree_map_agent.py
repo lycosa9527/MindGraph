@@ -23,6 +23,7 @@ import logging
 from typing import Any, Dict, Optional, Tuple
 
 from agents.core.agent_utils import extract_json_from_response
+from agents.core.llm_spec_stream import dispatch_llm_chat, llm_dispatch_kwargs
 from agents.core.base_agent import BaseAgent
 from agents.thinking_maps.tree_map_helpers import (
     clean_text,
@@ -31,7 +32,6 @@ from agents.thinking_maps.tree_map_helpers import (
 )
 from config.settings import config
 from prompts import get_prompt
-from services.llm import llm_service
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
@@ -61,6 +61,7 @@ class TreeMapAgent(BaseAgent):
             "organization_id": kwargs.get("organization_id"),
             "request_type": kwargs.get("request_type", "diagram_generation"),
             "endpoint_path": kwargs.get("endpoint_path"),
+            "phase_emit": kwargs.get("phase_emit"),
         }
         try:
             # Three-scenario system (similar to bridge_map):
@@ -85,10 +86,7 @@ class TreeMapAgent(BaseAgent):
                     language,
                     dimension_preference,
                     fixed_dimension=fixed_dimension,
-                    user_id=llm_kwargs["user_id"],
-                    organization_id=llm_kwargs["organization_id"],
-                    request_type=llm_kwargs["request_type"],
-                    endpoint_path=llm_kwargs["endpoint_path"],
+                    **llm_kwargs,
                 )
             if not spec:
                 return {
@@ -235,14 +233,8 @@ class TreeMapAgent(BaseAgent):
             "Do not ask for more information. If the prompt is unclear, "
             "make reasonable assumptions and generate the JSON specification directly."
         )
-        retry_response = await llm_service.chat(
-            prompt=retry_prompt,
-            model=self.model,
-            system_message=system_prompt,
-            max_tokens=1000,
-            temperature=config.LLM_TEMPERATURE,
-            diagram_type="tree_map",
-            **llm_kwargs,
+        retry_response = await dispatch_llm_chat(
+            **llm_dispatch_kwargs(llm_kwargs, prompt=retry_prompt, model=self.model, system_message=system_prompt, max_tokens=1000, temperature=config.LLM_TEMPERATURE, diagram_type="tree_map"),
         )
         if isinstance(retry_response, dict):
             return retry_response
@@ -266,14 +258,16 @@ class TreeMapAgent(BaseAgent):
             if not prompts_result:
                 return None
             system_prompt, user_prompt = prompts_result
-            response = await llm_service.chat(
-                prompt=user_prompt,
-                model=self.model,
-                system_message=system_prompt,
-                max_tokens=1000,
-                temperature=config.LLM_TEMPERATURE,
-                diagram_type="tree_map",
-                **llm_kwargs,
+            response = await dispatch_llm_chat(
+                **llm_dispatch_kwargs(
+                    llm_kwargs,
+                    prompt=user_prompt,
+                    model=self.model,
+                    system_message=system_prompt,
+                    max_tokens=1000,
+                    temperature=config.LLM_TEMPERATURE,
+                    diagram_type="tree_map",
+                ),
             )
 
             if not response:
@@ -344,17 +338,17 @@ class TreeMapAgent(BaseAgent):
 
             # Call LLM
 
-            response = await llm_service.chat(
-                prompt=user_prompt,
-                model=self.model,
-                system_message=system_prompt,
-                max_tokens=1000,
-                temperature=config.LLM_TEMPERATURE,
-                diagram_type="tree_map",
-                **llm_kwargs,
+            response = await dispatch_llm_chat(
+                **llm_dispatch_kwargs(
+                    llm_kwargs,
+                    prompt=user_prompt,
+                    model=self.model,
+                    system_message=system_prompt,
+                    max_tokens=1000,
+                    temperature=config.LLM_TEMPERATURE,
+                    diagram_type="tree_map",
+                ),
             )
-
-            response_str = str(response) if response else "None"
             response_preview = response_str[:500] + "..." if response and len(response_str) > 500 else response_str
             logger.debug("LLM response: %s", response_preview)
 

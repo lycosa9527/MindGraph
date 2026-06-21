@@ -11,10 +11,14 @@ from typing import Any
 
 from services.mindbot.education.metrics import dingtalk_chat_scope
 
+# Cross-org (LWCP) group senders share one Dify ``user`` per org — see ``mindbot_dify_user_id_for_chat``.
+CROSS_ORG_STAFF_PLACEHOLDER = "unknown"
+
 
 def mindbot_is_group_dingtalk_chat(body: dict[str, Any], chat_type: str) -> bool:
     """True when the conversation is a DingTalk group (not 1:1)."""
-    return chat_type == "group" or dingtalk_chat_scope(body) == "group"
+    scope = dingtalk_chat_scope(body)
+    return chat_type == "group" or scope in ("group", "cross_org_group")
 
 
 def mindbot_dify_user_id_for_chat(organization_id: int, sender_staff_id: str) -> str:

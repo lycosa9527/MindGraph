@@ -23,6 +23,8 @@ export interface DifyConversation {
   name: string
   created_at: number
   updated_at: number
+  channel?: 'web' | 'mindbot'
+  dify_user?: string
 }
 
 export interface DifyMessage {
@@ -94,10 +96,24 @@ async function fetchPinnedConversations(): Promise<Set<string>> {
   return new Set(result.data || [])
 }
 
-async function fetchConversationMessages(convId: string): Promise<DifyMessage[]> {
-  const response = await fetch(`/api/dify/conversations/${convId}/messages?limit=100`, {
-    credentials: 'same-origin',
-  })
+function difyUserSearchParam(difyUser?: string): string {
+  const trimmed = difyUser?.trim()
+  if (!trimmed) {
+    return ''
+  }
+  return `&dify_user=${encodeURIComponent(trimmed)}`
+}
+
+async function fetchConversationMessages(
+  convId: string,
+  difyUser?: string
+): Promise<DifyMessage[]> {
+  const response = await fetch(
+    `/api/dify/conversations/${convId}/messages?limit=100${difyUserSearchParam(difyUser)}`,
+    {
+      credentials: 'same-origin',
+    }
+  )
 
   if (!response.ok) {
     if (response.status === 401) {
@@ -167,16 +183,17 @@ export function usePinnedConversations() {
  * Fetch messages for a specific conversation
  * Stale time: 5 minutes
  */
-export function useConversationMessages(convId: string | null) {
+export function useConversationMessages(convId: string | null, difyUser?: string | null) {
   const authStore = useAuthStore()
+  const resolvedDifyUser = difyUser?.trim() || undefined
 
   return useQuery({
-    queryKey: difyKeys.messages(convId || ''),
+    queryKey: difyKeys.messages(convId || '', resolvedDifyUser),
     queryFn: () => {
       if (!convId) {
         throw new Error('Conversation id is required')
       }
-      return fetchConversationMessages(convId)
+      return fetchConversationMessages(convId, resolvedDifyUser)
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     enabled: !!authStore.user && !!convId,

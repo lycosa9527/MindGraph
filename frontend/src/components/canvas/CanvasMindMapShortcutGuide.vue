@@ -7,60 +7,15 @@ import { computed, onMounted, ref } from 'vue'
 import { ChevronDown, ChevronUp, Hand, Keyboard, MousePointer2 } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
+import { MIND_MAP_SHORTCUT_GUIDE_ROWS } from '@/config/mindMapShortcutGuide'
 
 const STORAGE_KEY = 'mindgraph.mindmap.shortcutGuide.expanded'
-
-type ShortcutRow =
-  | {
-      id: string
-      labelKey: string
-      kind: 'keys'
-      keys: string[]
-    }
-  | {
-      id: string
-      labelKey: string
-      kind: 'edit'
-    }
-  | {
-      id: string
-      labelKey: string
-      kind: 'arrows'
-    }
-  | {
-      id: string
-      labelKey: string
-      kind: 'hint'
-      hintKey: string
-      icon: 'mouse' | 'hand'
-    }
 
 const { t } = useLanguage()
 
 const expanded = ref(true)
 
-const rows = computed((): ShortcutRow[] => [
-  { id: 'tab', labelKey: 'canvas.shortcutGuide.addChild', kind: 'keys', keys: ['Tab'] },
-  { id: 'enter', labelKey: 'canvas.shortcutGuide.addSibling', kind: 'keys', keys: ['Enter'] },
-  { id: 'edit', labelKey: 'canvas.shortcutGuide.editText', kind: 'edit' },
-  { id: 'delete', labelKey: 'canvas.shortcutGuide.deleteNode', kind: 'keys', keys: ['Delete', 'Backspace'] },
-  { id: 'arrows', labelKey: 'canvas.shortcutGuide.selectNav', kind: 'arrows' },
-  { id: 'undo', labelKey: 'canvas.shortcutGuide.undo', kind: 'keys', keys: ['Ctrl+Z'] },
-  {
-    id: 'multiSelect',
-    labelKey: 'canvas.shortcutGuide.multiSelect',
-    kind: 'hint',
-    hintKey: 'canvas.shortcutGuide.multiSelectHint',
-    icon: 'mouse',
-  },
-  {
-    id: 'canvasPan',
-    labelKey: 'canvas.shortcutGuide.canvasPan',
-    kind: 'hint',
-    hintKey: 'canvas.shortcutGuide.canvasPanHint',
-    icon: 'hand',
-  },
-])
+const rows = computed(() => MIND_MAP_SHORTCUT_GUIDE_ROWS)
 
 onMounted(() => {
   try {
@@ -139,7 +94,9 @@ function toggleExpanded(): void {
           </button>
         </div>
 
-        <ul class="flex flex-col gap-1 px-2 pb-1.5 pt-0">
+        <ul
+          class="flex max-h-[min(50vh,17.5rem)] flex-col gap-1 overflow-y-auto px-2 pb-1.5 pt-0"
+        >
           <li
             v-for="row in rows"
             :key="row.id"

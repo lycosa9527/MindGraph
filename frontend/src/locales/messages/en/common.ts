@@ -199,7 +199,14 @@ export default {
   'settings.version.chinese': 'Professional mode',
   'settings.version.international': 'Simplified mode',
   'landing.international.subtitle': 'The Most Powerful AI Thinking Diagram Software in the Universe',
-  'landing.international.promptPlaceholder': 'Enter a topic or short description—or pick a diagram type below…',
+  'landing.international.promptPlaceholder':
+    'Describe your topic or structure—e.g. a 3-day Beijing trip with four branches: clothing, food, lodging, transport…',
+  'landing.international.examplesTitle': 'Inspiration',
+  'landing.international.example1':
+    '3-day Beijing trip plan with four branches: clothing, food, lodging, transport',
+  'landing.international.example2':
+    'SWOT analysis for a new product launch: strengths, weaknesses, opportunities, threats',
+  'landing.international.example3': 'Coffee-making steps: grind, extract, steam milk, latte art',
   'landing.international.sectionTitle': 'Eight Thinking Maps',
   'landing.international.advancedDiagramsTitle': 'Advanced diagrams',
   'landing.international.modules': 'Modules',

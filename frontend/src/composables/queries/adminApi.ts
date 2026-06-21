@@ -889,6 +889,120 @@ export async function fetchAdminPerformanceLive(
 }
 
 // ============================================================================
+// Error collection
+// ============================================================================
+
+export interface AdminErrorEventItem {
+  id: number
+  group_id: number
+  fingerprint: string
+  severity: string
+  source: string
+  component: string
+  exception_type: string
+  message: string
+  request_id?: string | null
+  user_id?: number | null
+  http_path?: string | null
+  http_status?: number | null
+  created_at: string
+  tags?: Record<string, unknown> | null
+}
+
+export interface AdminErrorSummaryResponse {
+  total_events_24h: number
+  total_events_7d: number
+  by_severity_24h: Record<string, number>
+  by_source_24h: Record<string, number>
+  top_groups_24h: Array<Record<string, unknown>>
+  alert_config: Record<string, unknown>
+}
+
+export interface AdminErrorEventsQuery {
+  page?: number
+  page_size?: number
+  severity?: string
+  source?: string
+  hours?: number
+}
+
+export interface AdminErrorEventsResponse {
+  events: AdminErrorEventItem[]
+  page: number
+  page_size: number
+  total: number
+  total_pages: number
+}
+
+export interface AdminErrorGroupItem {
+  id: number
+  fingerprint: string
+  severity: string
+  source: string
+  component: string
+  exception_type: string
+  sample_message: string
+  occurrence_count: number
+  first_seen_at: string
+  last_seen_at: string
+  muted: boolean
+}
+
+export interface AdminErrorGroupsQuery {
+  page?: number
+  page_size?: number
+  severity?: string
+  source?: string
+  hours?: number
+}
+
+export interface AdminErrorGroupsResponse {
+  groups: AdminErrorGroupItem[]
+  page: number
+  page_size: number
+  total: number
+  total_pages: number
+}
+
+export async function fetchAdminErrorSummary(signal?: AbortSignal): Promise<AdminErrorSummaryResponse> {
+  return adminFetchJson('/api/auth/admin/errors/summary', { signal })
+}
+
+export async function fetchAdminErrorEvents(
+  query: AdminErrorEventsQuery = {},
+  signal?: AbortSignal
+): Promise<AdminErrorEventsResponse> {
+  return adminFetchJson(
+    `/api/auth/admin/errors/events${buildQuery(query as Record<string, string | number | boolean | null | undefined>)}`,
+    { signal }
+  )
+}
+
+export async function fetchAdminErrorEventDetail(
+  eventId: number,
+  signal?: AbortSignal
+): Promise<AdminErrorEventItem & { stacktrace?: string | null }> {
+  return adminFetchJson(`/api/auth/admin/errors/events/${eventId}`, { signal })
+}
+
+export async function fetchAdminErrorGroups(
+  query: AdminErrorGroupsQuery = {},
+  signal?: AbortSignal
+): Promise<AdminErrorGroupsResponse> {
+  return adminFetchJson(
+    `/api/auth/admin/errors/groups${buildQuery(query as Record<string, string | number | boolean | null | undefined>)}`,
+    { signal }
+  )
+}
+
+export async function muteAdminErrorGroup(groupId: number, muted: boolean): Promise<void> {
+  await adminFetchJson(`/api/auth/admin/errors/groups/${groupId}/mute`, {
+    method: 'PUT',
+    body: JSON.stringify({ muted }),
+  })
+}
+
+// ============================================================================
 // Kitty LLMOps
 // ============================================================================
 
@@ -1025,6 +1139,8 @@ export interface MindMateExportConversation {
   endpoint_source: string
   created_at: number
   updated_at: number
+  dingtalk_chat_scope?: string | null
+  dingtalk_conversation_id?: string | null
 }
 
 export interface MindMateExportBubble {

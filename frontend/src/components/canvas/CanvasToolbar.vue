@@ -6,7 +6,7 @@ import { computed, ref } from 'vue'
 
 import { ElButton, ElTooltip } from 'element-plus'
 
-import { ArrowDownUp, Brush } from '@lucide/vue'
+import { ArrowDownUp, Brush, Upload } from '@lucide/vue'
 
 import { useCanvasToolbarApps, useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
@@ -14,7 +14,12 @@ import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimit
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import {
+  tryCollabGuardedRedo,
+  tryCollabGuardedUndo,
+} from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
+import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useDiagramStore, useUIStore } from '@/stores'
 import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
 
@@ -41,6 +46,7 @@ const props = withDefaults(defineProps<{ embedded?: boolean; compactToolbar?: bo
 
 const { t } = useLanguage()
 const notify = useNotifications()
+const { triggerConceptMapImportInPlace } = useDiagramImport()
 
 const diagramStore = useDiagramStore()
 const uiStore = useUIStore()
@@ -139,11 +145,11 @@ function handleMathInsertConfirm(latex: string): void {
 }
 
 function handleUndo() {
-  diagramStore.undo()
+  tryCollabGuardedUndo()
 }
 
 function handleRedo() {
-  diagramStore.redo()
+  tryCollabGuardedRedo()
 }
 
 function handleToggleOrientation() {
@@ -324,6 +330,22 @@ function handleToggleOrientation() {
           v-if="!diagramStore.collabSessionActive || isConceptMap"
           class="divider"
         />
+
+        <ElTooltip
+          v-if="isConceptMap"
+          :content="t('canvas.toolbar.import')"
+          placement="bottom"
+          :disabled="!compactToolbar"
+        >
+          <ElButton
+            text
+            size="small"
+            @click="triggerConceptMapImportInPlace"
+          >
+            <Upload class="w-4 h-4 text-gray-500" />
+            <span v-if="!compactToolbar">{{ t('canvas.toolbar.import') }}</span>
+          </ElButton>
+        </ElTooltip>
 
         <CanvasToolbarMoreAppsDropdown
           :compact="compactToolbar"

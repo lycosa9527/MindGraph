@@ -21,7 +21,11 @@ from sqlalchemy.engine import Engine
 
 from config.database import init_db, libpq_database_url
 from services.utils.error_types import DATABASE_ERRORS
-from services.utils.pg_client_binaries import build_pg_dump_cmd, find_pg_client_binary
+from services.utils.pg_client_binaries import (
+    build_pg_dump_cmd,
+    find_pg_client_binary,
+    pg_tools_connection_username,
+)
 from services.utils.pg_restore_prep import wipe_public_schema_before_restore
 
 logger = logging.getLogger(__name__)
@@ -168,6 +172,9 @@ def export_postgres_dump(
     timestamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M%S")
     filename = f"{DUMP_PREFIX}.{timestamp}{DUMP_EXT}"
     dump_path = backup_dir / filename
+
+    dump_user = pg_tools_connection_username(db_url)
+    logger.info("[DBExport] Running pg_dump (connection user=%s)", dump_user)
 
     cmd = build_pg_dump_cmd(pg_dump, dump_path, db_url)
     result = subprocess.run(

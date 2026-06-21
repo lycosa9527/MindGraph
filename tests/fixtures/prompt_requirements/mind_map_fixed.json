@@ -1,0 +1,7 @@
+{
+  "topic": "北京三日游计划",
+  "structure_mode": "fixed",
+  "children": ["衣", "食", "住", "行"],
+  "clarity": "clear",
+  "constraints": ""
+}

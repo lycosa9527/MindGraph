@@ -3,7 +3,7 @@
  */
 import { settingsSubtabRequiresCapabilities } from '@/utils/adminCapabilities'
 
-export type SettingsSubtab = 'features' | 'roles' | 'database' | 'performance' | 'library' | 'gewe'
+export type SettingsSubtab = 'features' | 'roles' | 'database' | 'performance' | 'library' | 'gewe' | 'errors'
 
 export interface SettingsNavLeafItem {
   kind: 'leaf'
@@ -18,6 +18,7 @@ export const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
   { kind: 'leaf', name: 'roles', labelKey: 'admin.roleControl' },
   { kind: 'leaf', name: 'database', labelKey: 'admin.database.tab' },
   { kind: 'leaf', name: 'performance', labelKey: 'admin.performance.tab' },
+  { kind: 'leaf', name: 'errors', labelKey: 'admin.errors.tab' },
   { kind: 'leaf', name: 'library', labelKey: 'admin.library' },
   { kind: 'leaf', name: 'gewe', labelKey: 'admin.geweWechat' },
 ]

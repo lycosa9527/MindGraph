@@ -1,34 +1,28 @@
 /**
- * Mindmap branch color palette - 20 colors for nodes and connection lines.
- * Each entry: light fill for node background, darker same-hue border for visibility.
- * Borders are 1–2 shades darker than fill for clear contrast (e.g. light blue → dark blue).
+ * Mind-map branch color palette — 12 hues for nodes and connection lines.
+ *
+ * Radix UI Colors light scales (MIT, https://www.radix-ui.com/colors):
+ * step 3 fills on canvas, step 8 borders for readable contrast.
  */
 export interface MindmapBranchColor {
   fill: string
   border: string
 }
 
+/** Twelve Radix accent scales — one hue per primary branch family. */
 export const MINDMAP_BRANCH_COLORS: MindmapBranchColor[] = [
-  { fill: '#eff6ff', border: '#93c5fd' },
-  { fill: '#ecfdf5', border: '#6ee7b7' },
-  { fill: '#fff7ed', border: '#fdba74' },
-  { fill: '#fdf2f8', border: '#f9a8d4' },
-  { fill: '#f5f3ff', border: '#c4b5fd' },
-  { fill: '#ecfeff', border: '#67e8f9' },
-  { fill: '#fefce8', border: '#fde047' },
-  { fill: '#fafaf9', border: '#CBD5E1' },
-  { fill: '#eef2ff', border: '#a5b4fc' },
-  { fill: '#f0fdf4', border: '#86efac' },
-  { fill: '#fff1f2', border: '#fda4af' },
-  { fill: '#ffffff', border: '#CBD5E1' },
-  { fill: '#f0fdfa', border: '#5eead4' },
-  { fill: '#fef9c3', border: '#facc15' },
-  { fill: '#faf5ff', border: '#d8b4fe' },
-  { fill: '#f0f9ff', border: '#7dd3fc' },
-  { fill: '#fce7f3', border: '#f0abfc' },
-  { fill: '#f7fee7', border: '#bef264' },
-  { fill: '#f8fafc', border: '#CBD5E1' },
-  { fill: '#fff7ed', border: '#fdba74' },
+  { fill: '#e6f4fe', border: '#5eb1ef' }, // blue
+  { fill: '#def7f9', border: '#3db9cf' }, // cyan
+  { fill: '#e0f8f3', border: '#53b9ab' }, // teal
+  { fill: '#e6f7ed', border: '#56ba9f' }, // jade
+  { fill: '#e9f6e9', border: '#65ba74' }, // grass
+  { fill: '#fff7c2', border: '#e2a336' }, // amber
+  { fill: '#ffefd6', border: '#ec9455' }, // orange
+  { fill: '#ffe9f0', border: '#e093b2' }, // crimson
+  { fill: '#fee9f5', border: '#dd93c2' }, // pink
+  { fill: '#fbebfb', border: '#cf91d8' }, // plum
+  { fill: '#f4f0fe', border: '#aa99ec' }, // violet
+  { fill: '#edf2fe', border: '#8da4ef' }, // indigo
 ]
 
 export function getMindmapBranchColor(branchIndex: number): MindmapBranchColor {

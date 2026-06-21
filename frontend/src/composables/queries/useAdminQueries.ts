@@ -28,6 +28,11 @@ import {
   fetchAdminOrganizations,
   fetchAdminOrganizationUsers,
   fetchAdminPerformanceLive,
+  fetchAdminErrorSummary,
+  fetchAdminErrorEvents,
+  fetchAdminErrorGroups,
+  type AdminErrorEventsQuery,
+  type AdminErrorGroupsQuery,
   fetchAdminPlatformRoleMembers,
   fetchAdminSchoolStats,
   fetchAdminSchoolTokenStats,
@@ -660,6 +665,43 @@ export function useAdminPerformanceLive(options?: {
     queryFn: ({ signal }) => fetchAdminPerformanceLive(signal),
     staleTime: ADMIN_STALE_MS.performance,
     refetchInterval: options?.refetchInterval ?? false,
+    enabled: options?.enabled,
+  })
+}
+
+// ============================================================================
+// Error collection
+// ============================================================================
+
+export function useAdminErrorSummary(options?: { enabled?: MaybeRefOrGetter<boolean> }) {
+  return useQuery({
+    queryKey: adminKeys.errors.summary(),
+    queryFn: ({ signal }) => fetchAdminErrorSummary(signal),
+    staleTime: ADMIN_STALE_MS.default,
+    enabled: options?.enabled,
+  })
+}
+
+export function useAdminErrorEvents(
+  query: MaybeRefOrGetter<AdminErrorEventsQuery>,
+  options?: { enabled?: MaybeRefOrGetter<boolean> }
+) {
+  return useQuery({
+    queryKey: computed(() => adminKeys.errors.events(toValue(query) as Record<string, string | number>)),
+    queryFn: ({ signal }) => fetchAdminErrorEvents(toValue(query), signal),
+    staleTime: ADMIN_STALE_MS.default,
+    enabled: options?.enabled,
+  })
+}
+
+export function useAdminErrorGroups(
+  query: MaybeRefOrGetter<AdminErrorGroupsQuery>,
+  options?: { enabled?: MaybeRefOrGetter<boolean> }
+) {
+  return useQuery({
+    queryKey: computed(() => adminKeys.errors.groups(toValue(query) as Record<string, string | number>)),
+    queryFn: ({ signal }) => fetchAdminErrorGroups(toValue(query), signal),
+    staleTime: ADMIN_STALE_MS.default,
     enabled: options?.enabled,
   })
 }

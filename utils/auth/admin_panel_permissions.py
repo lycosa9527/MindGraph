@@ -68,6 +68,7 @@ CAP_SETTINGS_MINDBOT: Final[str] = "tab.settings.mindbot"
 CAP_SETTINGS_MINDMATE_EXPORT: Final[str] = "tab.settings.mindmate_export"
 CAP_SETTINGS_SMART_RESPONSE: Final[str] = "tab.settings.smart_response"
 CAP_SETTINGS_TEACHER_USAGE: Final[str] = "tab.settings.teacher_usage"
+CAP_SETTINGS_ERRORS: Final[str] = "tab.settings.errors"
 
 CAP_SCOPE_GLOBAL: Final[str] = "scope.global"
 CAP_SCOPE_ORG: Final[str] = "scope.org"
@@ -89,6 +90,7 @@ _ALL_SETTINGS_CAPS: frozenset[str] = frozenset(
         CAP_SETTINGS_MINDMATE_EXPORT,
         CAP_SETTINGS_SMART_RESPONSE,
         CAP_SETTINGS_TEACHER_USAGE,
+        CAP_SETTINGS_ERRORS,
     }
 )
 

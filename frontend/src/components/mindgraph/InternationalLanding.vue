@@ -136,6 +136,16 @@ const advancedDiagramCards: LandingDiagramCard[] = [
 // ── Prompt generation ──
 
 const promptText = ref('')
+
+const landingExampleKeys = [
+  'landing.international.example1',
+  'landing.international.example2',
+  'landing.international.example3',
+] as const
+
+function applyLandingExample(key: (typeof landingExampleKeys)[number]): void {
+  promptText.value = t(key)
+}
 const isGenerating = ref(false)
 const landingAbortControllers = ref<AbortController[]>([])
 
@@ -370,12 +380,13 @@ onMounted(() => {
           class="intl-prompt-wrapper"
           :class="{ 'intl-prompt-generating': isGenerating }"
         >
-          <input
+          <textarea
             v-model="promptText"
-            type="text"
             class="intl-prompt-input"
             :placeholder="t('landing.international.promptPlaceholder')"
             :disabled="isGenerating"
+            rows="4"
+            :maxlength="MAX_PROMPT_LENGTH"
             @keydown="handlePromptKeydown"
             @focus="handlePromptFocus"
           />
@@ -409,6 +420,18 @@ onMounted(() => {
               />
               <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>
+          </button>
+        </div>
+
+        <div class="intl-prompt-chips">
+          <button
+            v-for="key in landingExampleKeys"
+            :key="key"
+            type="button"
+            class="intl-prompt-chip"
+            @click="applyLandingExample(key)"
+          >
+            {{ t(key) }}
           </button>
         </div>
 
@@ -813,11 +836,13 @@ onMounted(() => {
 .intl-prompt-wrapper {
   position: relative;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
+  gap: 8px;
   background: var(--el-bg-color, #fff);
-  border-radius: 50px;
+  border-radius: 24px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
   transition: all 0.3s ease;
+  padding: 8px 8px 8px 0;
 }
 
 .intl-prompt-wrapper:focus-within {
@@ -835,12 +860,15 @@ onMounted(() => {
   flex: 1;
   border: none;
   outline: none;
-  padding: 18px 28px;
+  padding: 14px 20px;
   font-size: 16px;
+  line-height: 1.5;
   font-family: inherit;
   background: transparent;
   color: var(--el-text-color-primary, #333);
-  border-radius: 50px;
+  border-radius: 20px;
+  resize: none;
+  min-height: 96px;
 }
 
 .intl-prompt-input::placeholder {
@@ -869,6 +897,31 @@ onMounted(() => {
 .intl-prompt-send:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.intl-prompt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 0 4px;
+}
+
+.intl-prompt-chip {
+  border: 1px solid var(--el-border-color-lighter, #e7e5e4);
+  background: var(--el-bg-color, #fff);
+  color: var(--el-text-color-regular, #57534e);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.intl-prompt-chip:hover {
+  background: var(--el-fill-color-light, #f5f5f4);
+  border-color: var(--el-color-primary-light-5, #c4b5fd);
 }
 
 /* ── Gallery (background + wind live on .intl-scroll + .intl-landing) ── */

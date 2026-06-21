@@ -539,7 +539,17 @@ export default {
   'landing.diagramGrid.sectionTitle': '在畫布中創建',
   'landing.diagramGrid.tree_map.desc': '分類與歸納',
   'landing.diagramGrid.tree_map.title': '樹形圖',
-  'landing.template.freePlaceholder': '描述你的圖示，或從下方選擇具體圖示模板…',
+  'landing.template.freePlaceholder':
+    '描述主題或結構要求，例如分支、步驟、分類…或從下方選擇圖示模板',
+  'canvas.mindMapOneSentence.intro':
+    '輸入主題，或說明分支數量、分類維度、步驟等結構要求',
+  'canvas.mindMapOneSentence.requirementsPlaceholder':
+    '例如：北京三日遊計劃，四個分支：衣、食、住、行',
+  'canvas.mindMapOneSentence.examplesTitle': '靈感推薦',
+  'canvas.mindMapOneSentence.generateButton': '開始生成',
+  'canvas.mindMapOneSentence.example1': '北京三日遊計劃，四個分支：衣、食、住、行',
+  'canvas.mindMapOneSentence.example2': '用 SWOT 分析「新產品上市」：優勢、劣勢、機會、威脅',
+  'canvas.mindMapOneSentence.example3': '小學科學課「水的三態變化」，語言簡單，每級不超過 6 個字',
   'landing.template.slot.criterion': '分類標準',
   'landing.template.slot.event': '事件',
   'landing.template.slot.itemA': '事物A',

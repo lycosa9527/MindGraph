@@ -5,6 +5,122 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.118.3] - 2026-06-21
+
+> **MindMate export — DingTalk group + cross-org coverage, activity-window filtering, usage telemetry supplement.**
+
+### Fixed
+
+- **MindMate export — DingTalk group & 1:1 threads** — School and user exports now merge MindBot threads from `mindbot_usage_events` when the Dify conversation list omits per-group `conversation_id` rows (same Dify user, separate Redis-bound threads).
+- **MindMate export — cross-org (LWCP) groups** — Whole-school, all-schools, and org-scoped user exports always include the shared `mindbot_{org}_unknown` Dify identity; usage supplement also queries `dingtalk_chat_scope=cross_org_group` so external-group chats are not dropped.
+- **MindMate export — date range** — Conversation inclusion uses activity overlap (`created_at`/`updated_at` or usage event timestamps); matched threads fetch full message history (no per-bubble date clip).
+- **MindMate export — background jobs** — Cross-org target is collected on the first user batch only (avoids duplicate Dify list fetches); summary JSONL checkpoints are deduped before message fetch.
+
+### Changed
+
+- **MindMate export — UI & artifacts** — Conversation list and downloaded HTML show DingTalk chat-scope badges (group / cross-org group / 1:1); JSON/ZIP carry `dingtalk_chat_scope` and `dingtalk_conversation_id` metadata.
+- **MindBot telemetry** — `dingtalk_chat_scope()` records `cross_org_group` for LWCP senders (aligned with `CROSS_ORG_STAFF_PLACEHOLDER` / `mindbot_{org}_unknown`).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.118.3).
+
+## [5.118.2] - 2026-06-20
+
+> **Prompt understanding layer — landing + canvas one-sentence generate extract topic and fixed structure before agent spec generation.**
+
+### Added
+
+- **Requirements extraction (stage 2)** — After diagram classification, `extract_prompt_requirements` parses type-native JSON (`structure_mode`, central topic, fixed branches/steps/categories) via centralized prompts in [`prompts/requirements_schemas.py`](prompts/requirements_schemas.py) and [`agents/core/prompt_requirements.py`](agents/core/prompt_requirements.py).
+- **Workflow wiring** — [`workflow.py`](agents/core/workflow.py) merges NL requirements with API fields (`fixed_dimension`, `existing_analogies`); agents receive clean central topic plus optional fixed-structure context; RAG stays a separate user-message block.
+- **Mind map Case 2** — `mind_map_fixed_children_{en|zh}` prompt + `MindMapAgent` branch validates user-specified main branch labels verbatim.
+- **API field** — Optional `generation_instructions` on `GenerateRequest`; canvas auto-complete sends it separately (concat fallback retained).
+- **Richer inputs** — International landing textarea + inspiration chips; classic landing removes 50-char cap; canvas one-sentence examples and copy updated (zh/en/zh-tw).
+
+> **App-wide structured error collection — admin Errors tab across LLM, MindBot, RAG, collab, Celery, auth, and production frontend.**
+
+### Added
+
+- **Error reporting helper** — [`error_reporting.py`](services/monitoring/error_reporting.py) centralizes `record_failure` / `record_exception` for all subsystems; Celery-safe `record_exception_from_celery`.
+- **PostgreSQL persistence** — `error_groups` / `error_events` tables (migration `rev_0064_error_collection`); fingerprint grouping, occurrence counts, and stacktrace storage ([`error_collector.py`](services/monitoring/error_collector.py), [`error_event.py`](models/domain/error_event.py)).
+- **Admin Errors tab** — 系统设置 → 错误收集: Swiss KPI summary, event vs grouped views, severity/source/time filters, detail dialog, and group mute ([`AdminErrorsTab.vue`](frontend/src/components/admin/AdminErrorsTab.vue), [`errors.py`](routers/auth/admin/errors.py)).
+- **Retention & alerting** — Daily purge of events older than `ERROR_RETENTION_DAYS` (default 90) via [`error_retention_scheduler.py`](services/monitoring/error_retention_scheduler.py); threshold-based webhook/DingTalk robot alerts through [`alert_dispatcher.py`](services/monitoring/alert_dispatcher.py) (`ERROR_ALERT_*` in [`env.example`](env.example)).
+- **Subsystem hooks** — Structured errors from LLM (`chat` / `chat_stream` / `chat_with_usage`), MindBot/Dify/DingTalk, knowledge-space & MindMate export tasks, RAG/Qdrant, workshop collab WS, live-spec flush, SMS/SES provider failures.
+- **Production frontend reporting** — Vue `errorHandler`, `window.onerror`, and `unhandledrejection` POST to `/api/frontend_log` (prod only; deduped; skips headless export) via [`installFrontendErrorReporting.ts`](frontend/src/utils/installFrontendErrorReporting.ts).
+- **Admin source filters** — Errors tab filters: `application`, `llm`, `frontend`, `background`, `mindbot`, `rag`, `collab`, `auth`.
+
+### Fixed
+
+- **Critical alert persistence** — Error collection no longer gated on SMS being enabled; unhandled exceptions no longer double-record when SMS alerts fire.
+- **CSS import order** — `@import` for admin Swiss styles moved to top of [`admin-swiss-controls.css`](frontend/src/styles/admin-swiss-controls.css).
+
+> **Auto-complete LLM buttons — per-model phase colors via SSE (green → blue → model color).**
+
+### Added
+
+- **Auto-complete stream API** — `POST /api/generate_graph/stream` emits SSE phase events (`accepted`, `waiting`, `streaming`, `complete` / `error`) for canvas auto-complete only; JSON `POST /api/generate_graph` unchanged for landing, subgraph, and other callers ([`diagram_generation.py`](routers/api/diagram_generation.py)).
+- **LLM phase dispatch** — [`llm_spec_stream.py`](agents/core/llm_spec_stream.py) routes autocomplete agents through `chat_stream` with phase signals; thinking-map and mind-map `_generate_*_spec` paths updated.
+- **Frontend phase UI** — `llmResultsStore.modelPhases` drives AIModelSelector traveling-ring colors (sending / waiting / streaming); [`useAutoComplete`](frontend/src/composables/editor/useAutoComplete.ts) consumes SSE with JSON fallback on non-stream responses.
+- **Shared phase ring** — [`LlmPhaseRing.vue`](frontend/src/components/shared/LlmPhaseRing.vue) and [`llmLoadPhase.ts`](frontend/src/utils/llmLoadPhase.ts) reused by canvas model buttons and MindMate avatar.
+
+### Fixed
+
+- **Mind map auto-complete streaming** — `MindMapAgent` now passes `phase_emit` into spec generation (previously referenced undefined `kwargs`, breaking stream phases on mind maps).
+- **LLM results teardown** — `clearCache()` aborts registered in-flight auto-complete controllers and resets model phases (prevents orphaned loading states).
+
+> **MindMate — unified web + DingTalk history and load-phase avatar ring.**
+
+### Added
+
+- **Unified conversation list** — [`unified_conversations.py`](services/dify/unified_conversations.py) merges web MindMate and bound DingTalk MindBot identities; list rows include `channel` (`web` | `mindbot`) and `dify_user` for message/rename/delete routing ([`dify_conversations.py`](routers/api/dify_conversations.py)).
+- **MindMate load phases** — [`mindMateLoadPhase.ts`](frontend/src/composables/mindmate/mindMateLoadPhase.ts) drives the same sending / waiting / streaming ring on [`MindmateAgentAvatar.vue`](frontend/src/components/panels/mindmate/MindmateAgentAvatar.vue) during chat SSE.
+
+### Changed
+
+- **Chat history mutations** — Sidebar rename/delete pass `dify_user` so MindBot conversations route to the correct Dify identity ([`ChatHistory.vue`](frontend/src/components/sidebar/ChatHistory.vue)).
+
+> **Mind map themes, canvas export prep, and circle-map topic sizing.**
+
+### Added
+
+- **Mind map palette expansion** — Nord (Frost/Aurora/Polar Night), Radix light scales (teal, jade, cyan, violet, mauve, crimson, amber), and ColorHunt Sunset/Rose Warm presets with verifiable `sourceNote` on each theme ([`mindMapThemes.ts`](frontend/src/config/mindMapThemes.ts), [`nordMindMapPresets.ts`](frontend/src/config/nordMindMapPresets.ts), [`radixMindMapPresets.ts`](frontend/src/config/radixMindMapPresets.ts)).
+- **Shared canvas export menu** — [`canvasExportMenu.ts`](frontend/src/config/canvasExportMenu.ts) unifies PNG/SVG/PDF/MG dropdown items between CanvasTopBar and mind-map toolbar.
+- **Raster export prep** — [`diagramExportPrep.ts`](frontend/src/utils/diagramExportPrep.ts) fits canvas for capture, waits for fonts/paint, and restores viewport after community share ([`useDiagramCanvasExport.ts`](frontend/src/composables/diagramCanvas/useDiagramCanvasExport.ts)).
+- **Auth pixel battle** — Optional retro canvas background on `/auth` (black cat vs Ultraman), gated by `FEATURE_AUTH_PIXEL_BATTLE` ([`AuthPixelBattleBg.vue`](frontend/src/components/auth/AuthPixelBattleBg.vue), [`authPixelBattle.ts`](frontend/src/utils/mascot/authPixelBattle.ts)).
+
+### Fixed
+
+- **Circle map topic radius** — Topic text measurement prefers intrinsic plain/markdown blocks instead of full-width inline-edit display, fixing oversized circular topic nodes ([`CircleNode.vue`](frontend/src/components/diagram/nodes/CircleNode.vue)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.118.2).
+
+## [5.118.1] - 2026-06-19
+
+> **Production log hardening — scheduled backup alerts, LLM retry/timeouts, JSON tab escape, DingTalk response normalization, Playwright async lookup.**
+
+### Added
+
+- **Backup — failure visibility** — Scheduled pg_dump logs the connection username before export; failures trigger SMS via `CriticalAlertService.send_runtime_error_alert` ([`backup_scheduler.py`](services/utils/backup_scheduler.py)). Admin manual export logs the same username ([`database_export_service.py`](services/admin/database_export_service.py)).
+- **Backup — ops docs** — [`env.example`](env.example) documents that `DATABASE_MIGRATION_URL` must use the `mindgraph_migrate` role (BYPASSRLS) for pg_dump after RLS on `api_keys`.
+- **LLM — doubao no-retry** — `LLMUtils.is_no_retry_model()`; doubao / ark-doubao fail fast with a single attempt (no burst backoff/retry).
+- **Prompt-to-diagram normalizer** — [`prompt_to_diagram_result.py`](agents/core/prompt_to_diagram_result.py) wraps bare LLM spec dicts; shared [`_resolve_prompt_to_diagram_payload()`](routers/api/png_export.py) for `/api/generate_png` and `/api/generate_dingtalk`.
+
+### Changed
+
+- **LLM executor — per-attempt timeout and rate limiting** — Non-doubao models apply `asyncio.wait_for` inside each `with_retry` attempt (timeouts can actually retry); rate limiter slots are acquired per attempt, not held for the full retry loop ([`llm_request_executor.py`](services/llm/llm_request_executor.py)).
+- **Playwright — async Chromium lookup** — Best executable selection runs in `asyncio.to_thread` from async browser context ([`browser.py`](services/infrastructure/utils/browser.py)).
+
+### Fixed
+
+- **JSON parser — control chars in strings** — Tabs, newlines, and carriage returns inside JSON string literals are escaped before `json.loads` (production flow-map failures) ([`json_parser.py`](agents/core/json_parser.py)).
+- **GenerateDingTalk — invalid LLM shape** — Bare spec dicts without `diagram_type`/`spec` wrapper no longer 500; clarification/error dicts return 400 with the same user-facing message as generate_png.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.118.1).
+
 ## [5.118.0] - 2026-06-19
 
 > **Dual Dify server failover, MindMate 记录导出 (sync + Celery background jobs), per-user daily token cap, and admin user activity timeline.**

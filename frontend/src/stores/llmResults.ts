@@ -23,6 +23,21 @@ import { useSavedDiagramsStore } from './savedDiagrams'
 // Types
 export type ModelState = 'idle' | 'loading' | 'ready' | 'error'
 
+/** In-flight auto-complete phases for per-model button colors (AIModelSelector). */
+export type ModelLoadPhase =
+  | 'idle'
+  | 'sending'
+  | 'waiting'
+  | 'streaming'
+  | 'ready'
+  | 'error'
+
+const IDLE_PHASES: Record<string, ModelLoadPhase> = {
+  qwen: 'idle',
+  deepseek: 'idle',
+  doubao: 'idle',
+}
+
 export interface LLMResult {
   success: boolean
   spec?: Record<string, unknown>
@@ -57,6 +72,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     deepseek: 'idle',
     doubao: 'idle',
   })
+  const modelPhases = ref<Record<string, ModelLoadPhase>>({ ...IDLE_PHASES })
   const selectedModel = ref<string | null>(null)
   const isGenerating = ref(false)
   const sessionId = ref<string | null>(null)
@@ -106,6 +122,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       if (results.value[model]) {
         delete results.value[model]
         modelStates.value[model] = 'idle'
+        modelPhases.value[model] = 'idle'
       }
       return null
     }
@@ -119,6 +136,18 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       timestamp: Date.now(),
     }
     modelStates.value[model] = result.success ? 'ready' : 'error'
+    modelPhases.value[model] = result.success ? 'ready' : 'error'
+  }
+
+  function setModelPhase(model: string, phase: ModelLoadPhase): void {
+    modelPhases.value[model] = phase
+  }
+
+  function resetModelPhases(modelsToReset?: string[]): void {
+    const target = modelsToReset ?? [...MODELS]
+    target.forEach((model) => {
+      modelPhases.value[model] = 'idle'
+    })
   }
 
   // Set model state
@@ -190,14 +219,10 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     return false
   }
 
-  // Clear all cached results
+  // Clear all cached results and abort any in-flight auto-complete requests.
   function clearCache(): void {
+    cancelAllRequests()
     results.value = {}
-    modelStates.value = {
-      qwen: 'idle',
-      deepseek: 'idle',
-      doubao: 'idle',
-    }
     selectedModel.value = null
     totalModels.value = null
   }
@@ -214,6 +239,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     })
     abortControllers.value = []
     setAllModelsState('idle')
+    resetModelPhases()
     isGenerating.value = false
   }
 
@@ -244,6 +270,9 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     const targetModels = modelsToRun || [...MODELS]
     totalModels.value = targetModels.length
     setAllModelsState('loading', targetModels)
+    targetModels.forEach((model) => {
+      modelPhases.value[model] = 'sending'
+    })
   }
 
   // Handle successful model result
@@ -306,6 +335,13 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     Object.entries(modelStates.value).forEach(([model, state]) => {
       if (state === 'loading') {
         modelStates.value[model] = 'idle'
+        if (
+          modelPhases.value[model] === 'sending' ||
+          modelPhases.value[model] === 'waiting' ||
+          modelPhases.value[model] === 'streaming'
+        ) {
+          modelPhases.value[model] = 'idle'
+        }
       }
     })
   }
@@ -388,6 +424,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       if (r && r.success && r.spec) {
         results.value[model] = { ...r, timestamp: Date.now() }
         modelStates.value[model] = 'ready'
+        modelPhases.value[model] = 'ready'
       }
     })
     const sel = saved.selectedModel
@@ -398,6 +435,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     // State
     results,
     modelStates,
+    modelPhases,
     selectedModel,
     isGenerating,
     contentChangeIsFromModelSwitch,
@@ -416,6 +454,8 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     getValidResult,
     storeResult,
     setModelState,
+    setModelPhase,
+    resetModelPhases,
     setAllModelsState,
     switchToModel,
     setSelectedModel,

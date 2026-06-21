@@ -35,7 +35,6 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.pool import NullPool
 
-from config.database import DATABASE_URL, libpq_database_url
 from services.admin.pg_merge_tables import (
     SKIP_TABLES,
     merge_table,
@@ -43,14 +42,14 @@ from services.admin.pg_merge_tables import (
     reset_all_sequences,
 )
 from services.utils.error_types import DATABASE_ERRORS
-from services.utils.pg_client_binaries import find_pg_client_binary
+from services.utils.pg_client_binaries import find_pg_client_binary, pg_tools_libpq_url
 
 logger = logging.getLogger(__name__)
 
 _STAGING_PREFIX = "mindgraph_merge_staging_"
 
-# App credentials in libpq format (same source as FastAPI / Alembic).
-_APP_DB_URL = libpq_database_url(DATABASE_URL)
+# Migrate credentials in libpq format (BYPASSRLS for staging restore).
+_MIGRATE_DB_URL = pg_tools_libpq_url()
 
 
 # ---------------------------------------------------------------------------
@@ -72,8 +71,8 @@ def _sqla_url(libpq_url: str) -> str:
 
 
 def _admin_url() -> str:
-    """App credentials pointed at the postgres system DB for CREATE/DROP DATABASE."""
-    return _replace_db_name(_APP_DB_URL, "postgres")
+    """Migrate credentials pointed at the postgres system DB for CREATE/DROP DATABASE."""
+    return _replace_db_name(_MIGRATE_DB_URL, "postgres")
 
 
 # ---------------------------------------------------------------------------
@@ -98,7 +97,7 @@ def _create_staging_db() -> str:
         raise
 
     logger.info("[PGMerge] Created staging database: %s", staging_name)
-    return _replace_db_name(_APP_DB_URL, staging_name)
+    return _replace_db_name(_MIGRATE_DB_URL, staging_name)
 
 
 def _restore_to_staging(staging_url: str, dump_path: Path) -> bool:

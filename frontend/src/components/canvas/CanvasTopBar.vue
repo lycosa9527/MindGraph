@@ -38,6 +38,7 @@ import {
 import type { SnapshotMetadata } from '@/composables'
 import { useLanguage } from '@/composables'
 import { CANVAS_TOP_BAR } from '@/config/uiConfig'
+import { CANVAS_STANDARD_EXPORT_MENU_ITEMS, CANVAS_COMMUNITY_EXPORT_MENU_ITEM } from '@/config/canvasExportMenu'
 import { useAuthStore, useDiagramStore, usePanelsStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { CANVAS_ENTRY_PATH_KEY, isMindGraphLandingPath } from '@/utils/canvasBackNavigation'
@@ -480,32 +481,37 @@ async function handleReset() {
               </ElButton>
               <template #dropdown>
                 <ElDropdownMenu>
-                  <ElDropdownItem command="png">
-                    <ImageDown class="w-4 h-4 mr-2 text-emerald-500" />
-                    {{ t('canvas.topBar.exportPng') }}
-                  </ElDropdownItem>
-                  <ElDropdownItem command="svg">
-                    <FileImage class="w-4 h-4 mr-2 text-violet-500" />
-                    {{ t('canvas.topBar.exportSvg') }}
-                  </ElDropdownItem>
-                  <ElDropdownItem command="pdf">
-                    <FileText class="w-4 h-4 mr-2 text-red-500" />
-                    {{ t('canvas.topBar.exportPdf') }}
-                  </ElDropdownItem>
                   <ElDropdownItem
-                    divided
-                    command="mg"
+                    v-for="item in CANVAS_STANDARD_EXPORT_MENU_ITEMS"
+                    :key="item.command"
+                    :command="item.command"
+                    :divided="item.divided"
                   >
-                    <FileJson class="w-4 h-4 mr-2 text-amber-500" />
-                    {{ t('canvas.topBar.exportJson') }}
+                    <ImageDown
+                      v-if="item.command === 'png'"
+                      class="w-4 h-4 mr-2 text-emerald-500"
+                    />
+                    <FileImage
+                      v-else-if="item.command === 'svg'"
+                      class="w-4 h-4 mr-2 text-violet-500"
+                    />
+                    <FileText
+                      v-else-if="item.command === 'pdf'"
+                      class="w-4 h-4 mr-2 text-red-500"
+                    />
+                    <FileJson
+                      v-else-if="item.command === 'mg'"
+                      class="w-4 h-4 mr-2 text-amber-500"
+                    />
+                    {{ t(item.labelKey) }}
                   </ElDropdownItem>
                   <ElDropdownItem
                     v-if="featureCommunity && authStore.isAuthenticated"
-                    divided
-                    command="community"
+                    :divided="CANVAS_COMMUNITY_EXPORT_MENU_ITEM.divided"
+                    :command="CANVAS_COMMUNITY_EXPORT_MENU_ITEM.command"
                   >
                     <Share2 class="w-4 h-4 mr-2 text-rose-500" />
-                    {{ t('canvas.topBar.shareCommunity') }}
+                    {{ t(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.labelKey) }}
                   </ElDropdownItem>
                 </ElDropdownMenu>
               </template>

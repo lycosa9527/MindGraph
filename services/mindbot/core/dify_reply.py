@@ -16,6 +16,7 @@ from clients.dify import (
     DifyAPIError,
     DifyFile,
 )
+from services.monitoring.error_reporting import record_exception, record_failure
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
@@ -96,15 +97,27 @@ async def mindbot_dify_chat_blocking(
                     cids,
                 )
                 return out
-            except BACKGROUND_INFRA_ERRORS:
+            except BACKGROUND_INFRA_ERRORS as retry_exc:
                 logger.exception(
                     "[MindBot] dify_blocking_retry_failed %s",
                     pipeline_ctx,
+                )
+                record_exception(
+                    source="mindbot",
+                    component="DifyReply",
+                    exc=retry_exc,
+                    tags={"pipeline_ctx": pipeline_ctx},
                 )
                 return None
         logger.exception(
             "[MindBot] dify_blocking_conversation_missing %s",
             pipeline_ctx,
+        )
+        record_failure(
+            source="mindbot",
+            component="DifyReply",
+            message=f"Dify conversation missing: {pipeline_ctx}",
+            exception_type="DifyConversationNotFoundError",
         )
         return None
     except DifyAPIError as exc:
@@ -115,10 +128,27 @@ async def mindbot_dify_chat_blocking(
             exc.error_code,
             exc.message,
         )
+        record_failure(
+            source="mindbot",
+            component="DifyReply",
+            message=exc.message,
+            exception_type="DifyAPIError",
+            tags={
+                "pipeline_ctx": pipeline_ctx,
+                "status_code": exc.status_code,
+                "error_code": exc.error_code,
+            },
+        )
         return None
-    except BACKGROUND_INFRA_ERRORS:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.exception(
             "[MindBot] dify_blocking_failed %s",
             pipeline_ctx,
+        )
+        record_exception(
+            source="mindbot",
+            component="DifyReply",
+            exc=exc,
+            tags={"pipeline_ctx": pipeline_ctx},
         )
         return None

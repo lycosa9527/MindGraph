@@ -78,6 +78,30 @@ def _endpoint(server: int = 1, url: str = "u1") -> ExportDifyEndpoint:
     )
 
 
+def test_conversation_in_export_range_uses_activity_overlap() -> None:
+    """Export window includes conversations with any activity in the period."""
+    from services.dify.export.collect_service import _conversation_in_export_range
+
+    # Last update inside window
+    assert _conversation_in_export_range(100, 500, 400, 600) is True
+    # Long thread: created before window, updated after — still active in window
+    assert _conversation_in_export_range(100, 900, 400, 600) is True
+    # Entirely before window
+    assert _conversation_in_export_range(100, 200, 400, 600) is False
+    # Entirely after window
+    assert _conversation_in_export_range(700, 800, 400, 600) is False
+    assert _conversation_in_export_range(100, 500, None, None) is True
+
+
+def test_activity_overlaps_range() -> None:
+    """Shared overlap helper treats bounds as inclusive."""
+    from services.dify.export.time_range import activity_overlaps_range
+
+    assert activity_overlaps_range(100, 900, 400, 600) is True
+    assert activity_overlaps_range(500, 500, 500, 500) is True
+    assert activity_overlaps_range(100, 200, 400, 600) is False
+
+
 def test_within_range_is_inclusive_and_open_ended() -> None:
     """Range filter is inclusive and treats None bounds as open."""
     assert _within_range(100, None, None) is True
