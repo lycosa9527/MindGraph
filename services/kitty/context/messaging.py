@@ -8,9 +8,9 @@ Proprietary License
 import json
 from typing import Any, Dict, List, Optional
 
-from models.domain.messages import Language
-
 from fastapi import WebSocket
+
+from models.domain.messages import Language
 
 from services.kitty.infra.bootstrap.kitty_diagram_vocabulary import (
     KITTY_DIAGRAM_CATALOG_PROMPT,

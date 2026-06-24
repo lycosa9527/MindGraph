@@ -11,6 +11,7 @@ from repositories.user_usage_activity_repo import UserUsageActivityRepository
 
 @pytest.mark.asyncio
 async def test_list_for_user_applies_source_filter() -> None:
+    """User activity listing applies the source filter in SQL."""
     session = MagicMock()
     row = UserUsageActivity(
         id=1,
@@ -34,6 +35,7 @@ async def test_list_for_user_applies_source_filter() -> None:
 
 @pytest.mark.asyncio
 async def test_list_for_organization_applies_source_filter() -> None:
+    """Organization activity listing applies the source filter in SQL."""
     session = MagicMock()
     row = UserUsageActivity(
         id=2,

@@ -15,6 +15,7 @@ from services.dify.export.verify import (
 
 
 def test_reconcile_pass_when_counts_match() -> None:
+    """Reconciliation passes when user and message counts match expectations."""
     expected = build_scope_manifest(
         scope="whole",
         org_id=5,
@@ -65,6 +66,7 @@ def test_reconcile_pass_when_counts_match() -> None:
 
 
 def test_reconcile_gaps_on_partial_failures() -> None:
+    """Partial fetch failures produce gap entries in the reconcile report."""
     expected = build_scope_manifest(
         scope="whole",
         org_id=5,
@@ -100,6 +102,7 @@ def test_reconcile_gaps_on_partial_failures() -> None:
 
 
 def test_artifact_integrity_sha256() -> None:
+    """Artifact SHA256 is recorded and completed status is derived from the report."""
     expected = build_scope_manifest(
         scope="whole",
         org_id=1,

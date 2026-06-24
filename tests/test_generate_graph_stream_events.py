@@ -15,6 +15,7 @@ from routers.api.diagram_generation import _stream_generate_graph_events
 
 @pytest.mark.asyncio
 async def test_stream_emits_detecting_requirements_progress_and_complete() -> None:
+    """SSE stream emits detecting, requirements, progress, and complete events."""
     prepared = {
         "lang": "en",
         "prompt": "classify animals",
@@ -89,6 +90,7 @@ async def test_stream_emits_detecting_requirements_progress_and_complete() -> No
 
 @pytest.mark.asyncio
 async def test_stream_cancel_event_set_on_disconnect() -> None:
+    """Disconnecting the SSE client sets the pipeline cancel event."""
     prepared = {
         "lang": "en",
         "prompt": "topic",

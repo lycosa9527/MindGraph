@@ -221,31 +221,38 @@ async def test_build_export_targets_always_includes_cross_org_identity(
 
     class _LinkRepo:
         async def map_for_users(self, org_id: int, user_ids: list[int]):
+            """Return DingTalk staff links for the requested users."""
             del org_id, user_ids
             return {7: link}
 
         async def map_for_users_all_orgs(self, user_ids: list[int]):
+            """Return cross-org staff links (empty for this scenario)."""
             del user_ids
             return {}
 
     class _UsageRepo:
         async def distinct_staff_for_users(self, org_id: int, user_ids: list[int]):
+            """Return distinct staff ids with usage for selected users."""
             del org_id, user_ids
             return []
 
         async def distinct_staff_map_for_users(self, org_id: int, user_ids: list[int]):
+            """Return per-user staff id lists from usage telemetry."""
             del org_id, user_ids
             return {7: []}
 
         async def distinct_staff_for_org_with_usage(self, *args, **kwargs):
+            """Return org-wide staff ids with MindBot usage."""
             del args, kwargs
             return []
 
         async def distinct_unbound_staff_for_org(self, *args, **kwargs):
+            """Return unbound staff ids for the organization."""
             del args, kwargs
             return []
 
         async def distinct_unbound_staff_all_orgs(self, *args, **kwargs):
+            """Return unbound staff ids across all organizations."""
             del args, kwargs
             return []
 
@@ -280,15 +287,18 @@ async def test_build_export_targets_users_scope_includes_cross_org(
 
     class _LinkRepo:
         async def map_for_users(self, org_id: int, user_ids: list[int]):
+            """Return DingTalk staff links for the requested users."""
             del org_id, user_ids
             return {7: link}
 
         async def map_for_users_all_orgs(self, user_ids: list[int]):
+            """Return cross-org staff links (empty for this scenario)."""
             del user_ids
             return {}
 
     class _UsageRepo:
         async def distinct_staff_map_for_users(self, org_id: int, user_ids: list[int]):
+            """Return per-user staff id lists from usage telemetry."""
             del org_id, user_ids
             return {7: []}
 
@@ -321,15 +331,18 @@ async def test_build_export_targets_can_skip_cross_org(
 
     class _LinkRepo:
         async def map_for_users(self, org_id: int, user_ids: list[int]):
+            """Return DingTalk staff links for the requested users."""
             del org_id, user_ids
             return {}
 
         async def map_for_users_all_orgs(self, user_ids: list[int]):
+            """Return cross-org staff links (empty for this scenario)."""
             del user_ids
             return {}
 
     class _UsageRepo:
         async def distinct_staff_map_for_users(self, org_id: int, user_ids: list[int]):
+            """Return per-user staff id lists from usage telemetry."""
             del org_id, user_ids
             return {7: []}
 

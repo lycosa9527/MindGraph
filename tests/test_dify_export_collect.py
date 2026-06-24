@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-import main as _main_app
-
-assert _main_app.app.title
-
 from typing import Dict, List, Optional
 from unittest.mock import MagicMock
 
 import pytest
+
+import main as _main_app
+
+assert _main_app.app.title
 
 from clients.dify import AsyncDifyClient
 import services.dify.export.collect_service as collect
@@ -40,7 +40,7 @@ class FakeDifyClient:
         self._message_pages = message_pages or {}
         self._raise = raise_on_conversations
         self._conv_call = 0
-        self._message_calls: dict[str, list[Optional[str]]] = {}
+        self.message_calls: dict[str, list[Optional[str]]] = {}
 
     async def get_conversations(self, _user: str, last_id: Optional[str] = None, limit: int = 100):
         """Return the next prepared conversation page (mirrors the Dify client API)."""
@@ -55,7 +55,8 @@ class FakeDifyClient:
 
     async def get_messages(self, conversation_id: str, _user: str, first_id: Optional[str] = None, limit: int = 100):
         """Return the prepared message page for a conversation id."""
-        self._message_calls.setdefault(conversation_id, []).append(first_id)
+        del limit
+        self.message_calls.setdefault(conversation_id, []).append(first_id)
         pages = self._message_pages.get(conversation_id, [])
         if not pages:
             return {"data": [], "has_more": False}
@@ -141,7 +142,7 @@ async def test_fetch_all_messages_uses_oldest_id_for_pagination() -> None:
     page = await _fetch_all_messages(as_type(client, AsyncDifyClient), "conv1", "mg_user_1")
     assert [message["id"] for message in page.items] == ["m0", "m1", "m2"]
     assert page.pagination_complete is True
-    assert client._message_calls["conv1"] == [None, "m1"]
+    assert client.message_calls["conv1"] == [None, "m1"]
 
 
 @pytest.mark.asyncio

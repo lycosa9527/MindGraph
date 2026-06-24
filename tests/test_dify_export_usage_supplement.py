@@ -69,6 +69,7 @@ async def test_supplement_adds_missing_group_thread(monkeypatch: pytest.MonkeyPa
 
     class _UsageRepo:
         async def list_dify_threads_for_export(self, org_id: int, **kwargs):
+            """Return prepared MindBot usage threads for export supplement."""
             del org_id, kwargs
             return [_thread()]
 
@@ -105,6 +106,7 @@ async def test_supplement_labels_cross_org_group(monkeypatch: pytest.MonkeyPatch
 
     class _UsageRepo:
         async def list_dify_threads_for_export(self, org_id: int, **kwargs):
+            """Return prepared MindBot usage threads for export supplement."""
             del org_id, kwargs
             return [_thread(scope="cross_org_group", conv_id="dify-xorg-1")]
 
@@ -154,6 +156,7 @@ async def test_supplement_enriches_existing_row_with_chat_scope(
 
     class _UsageRepo:
         async def list_dify_threads_for_export(self, org_id: int, **kwargs):
+            """Return prepared MindBot usage threads for export supplement."""
             del org_id, kwargs
             return [_thread()]
 

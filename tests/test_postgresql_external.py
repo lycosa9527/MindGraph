@@ -107,7 +107,7 @@ def test_ensure_local_external_falls_back_to_system_then_remaining_ranked(
     monkeypatch.setattr(pg_ext, "postgresql_accepts_connections", lambda host, port: False)
     monkeypatch.setattr(pg_ext, "discover_ranked_cluster_details", lambda cfg: [unverified])
 
-    def _ranked_start(items: list[RankedCluster], port: int) -> bool:
+    def _ranked_start(items: list[RankedCluster], _port: int) -> bool:
         label = "verified" if items and items[0].has_database else "all"
         calls.append(label)
         return label == "all"

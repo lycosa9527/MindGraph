@@ -45,6 +45,7 @@ async def test_list_unified_conversations_merges_web_and_mindbot(
             self.dify_user = dify_user
 
         async def get_conversations(self, user_id: str, **kwargs):
+            """Return canned conversation pages keyed by dify user id."""
             del kwargs
             assert user_id == self.dify_user
             if user_id == "mg_user_7":

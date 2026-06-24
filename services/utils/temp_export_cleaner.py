@@ -23,7 +23,6 @@ from models.domain.mindmate_export_job import MindmateExportJob
 from services.dify.export.export_config import STUCK_JOB_SECONDS
 from services.dify.export.job_storage import TEMP_EXPORTS_DIR, remove_job_dir
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS, REDIS_ERRORS
-from utils.db.rls_context import RlsContext, rls_async_session
 
 try:
     from services.redis.redis_async_client import get_async_redis
@@ -34,6 +33,8 @@ except ImportError:
     get_async_redis = None
     is_redis_available = None
     _REDIS_AVAILABLE = False
+
+from utils.db.rls_context import RlsContext, rls_async_session
 
 logger = logging.getLogger(__name__)
 

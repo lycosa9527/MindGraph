@@ -154,11 +154,12 @@ def _base_id_maps() -> dict[str, dict[int, int]]:
     }
 
 
+@pytest.mark.usefixtures("nullable_fk_patch")
 def test_token_usage_preview_counts(
-    nullable_fk_patch: None,
     live_engine: Engine,
     staging_engine: Engine,
 ) -> None:
+    """Preview counts new, duplicate, and orphaned token_usage rows."""
     id_maps = _base_id_maps()
     preview = preview_table("token_usage", staging_engine, live_engine, id_maps)
     assert preview == {"new_rows": 1, "duplicate_rows": 1, "orphaned_rows": 0}
@@ -167,7 +168,7 @@ def test_token_usage_preview_counts(
 @pytest.fixture(name="orm_row_patch")
 def _orm_row_patch(monkeypatch: pytest.MonkeyPatch) -> None:
     """SQLite returns DATETIME as str; PostgreSQL staging restores real datetimes."""
-    original = pg_merge_table_ops._row_for_orm_table
+    original = getattr(pg_merge_table_ops, "_row_for_orm_table")
 
     def _coerce_datetimes(table, values):
         row = original(table, values)
@@ -182,12 +183,12 @@ def _orm_row_patch(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(pg_merge_table_ops, "_row_for_orm_table", _coerce_datetimes)
 
 
+@pytest.mark.usefixtures("nullable_fk_patch", "orm_row_patch")
 def test_token_usage_merge_is_idempotent(
-    nullable_fk_patch: None,
-    orm_row_patch: None,
     live_engine: Engine,
     staging_engine: Engine,
 ) -> None:
+    """Second merge pass skips rows already inserted from staging."""
     id_maps = _base_id_maps()
     first = merge_table("token_usage", staging_engine, live_engine, id_maps)
     assert first["inserted"] == 1
@@ -208,11 +209,12 @@ def test_token_usage_merge_is_idempotent(
     assert count == 2
 
 
+@pytest.mark.usefixtures("nullable_fk_patch")
 def test_update_notifications_preserve_pk_skips_conflicts(
-    nullable_fk_patch: None,
     live_engine: Engine,
     staging_engine: Engine,
 ) -> None:
+    """Conflicting update_notifications primary keys are skipped, not overwritten."""
     id_maps = _base_id_maps()
     result = merge_table("update_notifications", staging_engine, live_engine, id_maps)
     assert result["inserted"] == 1

@@ -20,6 +20,7 @@ from services.dify.export.types import TargetFetchResult
 
 @pytest.mark.asyncio
 async def test_summaries_jsonl_roundtrip() -> None:
+    """Summaries append to JSONL and reload with the same fields."""
     job_id = 999001
     remove_job_dir(job_id)
     summary = ExportConversationSummary(
@@ -44,6 +45,7 @@ async def test_summaries_jsonl_roundtrip() -> None:
 
 @pytest.mark.asyncio
 async def test_target_results_and_warnings_jsonl() -> None:
+    """Target results and warnings round-trip through JSONL checkpoints."""
     job_id = 999002
     remove_job_dir(job_id)
     result = TargetFetchResult(
@@ -68,6 +70,7 @@ async def test_target_results_and_warnings_jsonl() -> None:
 
 
 def test_export_job_dir_creates_directory() -> None:
+    """export_job_dir creates a per-job working directory."""
     job_id = 999003
     remove_job_dir(job_id)
     path = export_job_dir(job_id)

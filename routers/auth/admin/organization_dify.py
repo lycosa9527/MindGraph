@@ -266,6 +266,30 @@ def _apply_dify_pair_on_update(
         _validate_dify_pair(base_url, key_raw, lang, url_field, key_field)
 
 
+ORG_DIFY_UPDATE_REQUEST_KEYS = frozenset(
+    {
+        "dify_api_base_url",
+        "dify_api_key",
+        "dify_api_base_url_2",
+        "dify_api_key_2",
+        "dify_active_server",
+        "dify_failover_enabled",
+        "dify_timeout_seconds",
+        "show_chain_of_thought",
+        "show_chain_of_thought_oto",
+        "show_chain_of_thought_internal_group",
+        "show_chain_of_thought_cross_org_group",
+        "chain_of_thought_max_chars",
+        "dingtalk_ai_card_streaming_max_chars",
+    }
+)
+
+
+def request_updates_dify_settings(request: dict) -> bool:
+    """Return True when the org update body touches MindMate Dify fields."""
+    return bool(ORG_DIFY_UPDATE_REQUEST_KEYS.intersection(request))
+
+
 def apply_dify_on_update(org: Organization, request: dict, lang: Language) -> None:
     """Apply MindMate Dify fields (both servers + selection) on organization update."""
     _apply_dify_pair_on_update(org, request, lang, "dify_api_base_url", "dify_api_key")

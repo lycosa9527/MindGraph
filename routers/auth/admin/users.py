@@ -36,7 +36,6 @@ from services.auth.admin_user_list_rows import (
     diagram_quota_for_user,
     enrich_admin_user_list_rows,
 )
-from utils.auth.user_daily_token_quota import resolve_daily_usage
 from services.auth.password_security import (
     invalidate_user_cache_after_password_write,
     revoke_refresh_tokens_and_sessions,
@@ -48,6 +47,7 @@ from services.redis.cache.redis_user_cache import user_cache
 from services.utils.error_types import DATABASE_ERRORS, REDIS_ERRORS
 from utils.auth import hash_password
 from utils.auth.admin_scope import AdminScope, assert_panel_user_readable
+from utils.auth.user_daily_token_quota import resolve_daily_usage
 from utils.auth.school_tier import assert_organization_has_member_capacity
 from utils.email_validation import validate_email_for_api
 

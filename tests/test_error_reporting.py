@@ -11,6 +11,7 @@ from services.monitoring.error_reporting import (
 
 
 def test_record_failure_builds_record_and_enqueues():
+    """record_failure builds an ErrorRecord and forwards it to the collector."""
     with patch("services.monitoring.error_reporting.ErrorCollectorService.record") as mock_record:
         record_failure(
             source="llm",
@@ -31,6 +32,7 @@ def test_record_failure_builds_record_and_enqueues():
 
 
 def test_record_exception_includes_stacktrace():
+    """record_exception captures exception type, message, and stacktrace."""
     with patch("services.monitoring.error_reporting.ErrorCollectorService.record") as mock_record:
         try:
             raise ValueError("boom")
@@ -49,6 +51,7 @@ def test_record_exception_includes_stacktrace():
 
 
 def test_record_exception_from_celery_runs_async_persist():
+    """Celery error reporting delegates to the async persistence helper."""
     exc = RuntimeError("celery fail")
     with patch(
         "services.monitoring.error_reporting.record_error_async",
@@ -71,6 +74,7 @@ def test_record_exception_from_celery_runs_async_persist():
 
 
 def test_record_failure_skips_when_collection_disabled():
+    """Error collection is skipped when globally disabled."""
     with patch("services.monitoring.error_reporting.error_collection_enabled", return_value=False):
         with patch("services.monitoring.error_reporting.ErrorCollectorService.record") as mock_record:
             record_failure(source="llm", component="x", message="msg")
@@ -78,6 +82,7 @@ def test_record_failure_skips_when_collection_disabled():
 
 
 def test_record_failure_normalizes_invalid_severity():
+    """Unknown severity values fall back to error."""
     with patch("services.monitoring.error_reporting.ErrorCollectorService.record") as mock_record:
         record_failure(
             source="application",

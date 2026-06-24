@@ -12,6 +12,7 @@ def should_use_background_job(
     *,
     conversation_count: int | None = None,
 ) -> bool:
+    """Return True when export should run as a background job instead of inline sync."""
     if scope == "all":
         return True
     if user_count > SYNC_MAX_USERS:

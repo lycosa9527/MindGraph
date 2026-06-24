@@ -11,6 +11,7 @@ from agents.core.workflow import _generate_spec_with_agent
 
 
 def test_tree_map_fixed_children_routes_standard_with_structure_kwargs() -> None:
+    """Fixed tree_map children route through the standard agent with structure kwargs."""
     route = resolve_agent_generate_route(
         diagram_type="tree_map",
         structure_mode="fixed",
@@ -26,6 +27,7 @@ def test_tree_map_fixed_children_routes_standard_with_structure_kwargs() -> None
 
 
 def test_brace_map_fixed_parts_routes_standard_with_structure_kwargs() -> None:
+    """Fixed brace_map parts route through the standard agent with structure kwargs."""
     route = resolve_agent_generate_route(
         diagram_type="brace_map",
         structure_mode="fixed",
@@ -38,6 +40,7 @@ def test_brace_map_fixed_parts_routes_standard_with_structure_kwargs() -> None:
 
 
 def test_tree_map_dimension_only_without_fixed_lists_uses_dimension_branch() -> None:
+    """Dimension-only tree_map requests use the fixed-dimension branch."""
     route = resolve_agent_generate_route(
         diagram_type="tree_map",
         structure_mode="free",
@@ -50,6 +53,7 @@ def test_tree_map_dimension_only_without_fixed_lists_uses_dimension_branch() -> 
 
 @pytest.mark.asyncio
 async def test_generate_spec_with_agent_passes_fixed_structure_to_tree_agent() -> None:
+    """Fixed structure kwargs are forwarded to the tree map agent."""
     captured: dict = {}
 
     async def fake_generate_graph(_prompt: str, _language: str, **kwargs) -> dict:

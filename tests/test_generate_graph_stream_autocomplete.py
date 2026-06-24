@@ -23,6 +23,7 @@ async def _fake_chat_stream(**_kwargs: Any):
 
 @pytest.mark.asyncio
 async def test_dispatch_llm_chat_emits_waiting_then_streaming() -> None:
+    """Streaming chat emits waiting then streaming phase events."""
     phases: list[str] = []
 
     async def phase_emit(event: str) -> None:
@@ -44,6 +45,7 @@ async def test_dispatch_llm_chat_emits_waiting_then_streaming() -> None:
 
 @pytest.mark.asyncio
 async def test_dispatch_llm_chat_without_phase_emit_uses_blocking_chat() -> None:
+    """Without phase_emit, dispatch uses blocking chat instead of stream."""
     with patch(
         "agents.core.llm_spec_stream.llm_service.chat",
         new=AsyncMock(return_value='{"topic": "X"}'),
@@ -60,6 +62,7 @@ async def test_dispatch_llm_chat_without_phase_emit_uses_blocking_chat() -> None
 
 @pytest.mark.asyncio
 async def test_dispatch_llm_chat_strips_phase_emit_from_llm_kwargs() -> None:
+    """phase_emit is not forwarded to the underlying LLM client."""
     captured: dict[str, Any] = {}
 
     async def fake_stream(**kwargs: Any):
@@ -86,6 +89,7 @@ async def test_dispatch_llm_chat_strips_phase_emit_from_llm_kwargs() -> None:
 
 @pytest.mark.asyncio
 async def test_mind_map_agent_passes_phase_emit_to_dispatch() -> None:
+    """MindMapAgent forwards phase_emit through dispatch_llm_chat."""
     phases: list[str] = []
 
     async def phase_emit(event: str) -> None:
@@ -115,6 +119,7 @@ async def test_mind_map_agent_passes_phase_emit_to_dispatch() -> None:
 
 @pytest.mark.asyncio
 async def test_mind_map_agent_uses_fixed_children_prompt_for_case2() -> None:
+    """Fixed children structure selects the fixed_children prompt template."""
     captured: dict[str, Any] = {}
 
     def fake_get_prompt(_diagram_type: str, _language: str, prompt_type: str) -> str:
@@ -150,6 +155,7 @@ async def test_mind_map_agent_uses_fixed_children_prompt_for_case2() -> None:
 
 @pytest.mark.asyncio
 async def test_stream_generate_graph_events_phase_order() -> None:
+    """Autocomplete SSE stream emits accepted, waiting, streaming, then complete."""
     prepared = {
         "lang": "en",
         "prompt": "photosynthesis",
@@ -204,6 +210,7 @@ async def test_stream_generate_graph_events_phase_order() -> None:
 
 
 def test_build_workflow_kwargs_uses_user_prompt_not_prompt() -> None:
+    """Workflow kwargs use user_prompt and omit the raw prompt field."""
     req = GenerateRequest.model_validate(
         {
             "prompt": "circle topic",

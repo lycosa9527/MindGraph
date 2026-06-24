@@ -5,6 +5,7 @@ from services.mindbot.errors import MindbotErrorCode
 
 
 def test_bind_reply_contains_actionable_text() -> None:
+    """Bind reply messages include user-facing success and expiry text."""
     expired = bind_reply_text(MindbotErrorCode.BIND_TOKEN_EXPIRED)
     assert "过期" in expired or "過期" in expired or "expired" in expired.lower()
 
