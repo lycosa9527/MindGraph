@@ -30,6 +30,25 @@ MIN_CHAIN_OF_THOUGHT_MAX_CHARS = 0
 MAX_CHAIN_OF_THOUGHT_MAX_CHARS = 32000
 
 
+def _coerce_int(raw: object, default: int) -> int:
+    """Parse an int from JSON/request body values."""
+    if isinstance(raw, bool):
+        return default
+    if isinstance(raw, int):
+        return raw
+    if isinstance(raw, float) and raw.is_integer():
+        return int(raw)
+    if isinstance(raw, str):
+        stripped = raw.strip()
+        if not stripped:
+            return default
+        try:
+            return int(stripped)
+        except ValueError:
+            return default
+    return default
+
+
 def org_dify_behavior_fields(org: Organization) -> dict[str, Any]:
     """Shared MindBot/MindMate Dify behavior settings stored on the organization."""
     return {
@@ -89,10 +108,7 @@ def _probe_server_from_body(body: Optional[dict]) -> Optional[int]:
     if not body:
         return None
     raw = body.get("server")
-    try:
-        value = int(raw)  # type: ignore[arg-type]
-    except (TypeError, ValueError):
-        return None
+    value = _coerce_int(raw, 0)
     return value if value in (1, 2) else None
 
 
@@ -207,10 +223,7 @@ def _apply_dify_server_selection(org: Organization, request: dict) -> None:
     """Apply active-server selector and failover toggle from a request payload."""
     if "dify_active_server" in request:
         raw = request.get("dify_active_server")
-        try:
-            value = int(raw)  # type: ignore[arg-type]
-        except (TypeError, ValueError):
-            value = 1
+        value = _coerce_int(raw, 1)
         setattr(org, "dify_active_server", value if value in (1, 2) else 1)
     if "dify_failover_enabled" in request:
         setattr(org, "dify_failover_enabled", bool(request.get("dify_failover_enabled")))

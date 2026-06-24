@@ -2,7 +2,6 @@
 
 from unittest.mock import AsyncMock, patch
 
-import models.domain.registry  # noqa: F401 — register ORM mappers for tests
 import pytest
 
 from services.admin.user_usage_activity import record_user_usage_activity

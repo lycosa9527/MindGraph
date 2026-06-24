@@ -3,7 +3,6 @@
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
-import models.domain.registry  # noqa: F401 — register ORM mappers for tests
 import pytest
 
 from models.domain.user_usage_activity import UserUsageActivity

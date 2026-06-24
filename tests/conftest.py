@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import importlib
+
 from tests.stubs.redis8_features import install_redis8_features_stub
 
 install_redis8_features_stub()
+importlib.import_module("models.domain.registry")
 
 
 def pytest_configure(config) -> None:
