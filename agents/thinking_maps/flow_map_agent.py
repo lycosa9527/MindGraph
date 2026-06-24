@@ -310,9 +310,7 @@ class FlowMapAgent(BaseAgent):
 
             retry_spec = extract_json_from_response(str(retry_response))
             if isinstance(retry_spec, dict) and retry_spec.get("_error") == "non_json_response":
-                logger.error(
-                    "FlowMapAgent: Retry also returned non-JSON response. Giving up after 1 retry attempt."
-                )
+                logger.error("FlowMapAgent: Retry also returned non-JSON response. Giving up after 1 retry attempt.")
                 return None
 
             if not retry_spec or (isinstance(retry_spec, dict) and retry_spec.get("_error")):
