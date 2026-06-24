@@ -11,7 +11,7 @@ import { ArrowLeft, Home } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { preloadMarkdownRendererForRoute } from '@/composables/core/useMarkdown'
-import { CANVAS_ENTRY_PATH_KEY, isMindGraphLandingPath } from '@/utils/canvasBackNavigation'
+import { navigateBackFromCanvas } from '@/utils/canvasBackNavigation'
 
 const route = useRoute()
 const router = useRouter()
@@ -38,17 +38,7 @@ const hideHeader = computed(
 const showBackButton = computed(() => route.name === 'MobileCanvas')
 
 function goBack() {
-  const entry = sessionStorage.getItem(CANVAS_ENTRY_PATH_KEY)
-  if (
-    entry &&
-    isMindGraphLandingPath(entry) &&
-    typeof window !== 'undefined' &&
-    window.history.length > 1
-  ) {
-    router.back()
-    return
-  }
-  router.replace({ path: '/m/mindgraph' })
+  navigateBackFromCanvas(router, route.path)
 }
 
 const pageTitle = computed(() => {

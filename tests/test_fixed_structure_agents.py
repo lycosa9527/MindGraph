@@ -139,13 +139,23 @@ async def test_brace_map_agent_uses_fixed_parts_prompt() -> None:
 async def test_flow_map_agent_uses_fixed_steps_prompt() -> None:
     """Flow map Case 2 selects fixed_steps prompt and validates output."""
     captured: dict[str, Any] = {}
+    call_count = 0
 
     def fake_get_prompt(_diagram_type: str, _language: str, prompt_type: str) -> str:
         captured["prompt_type"] = prompt_type
         return "system {topic}"
 
     async def fake_dispatch(**_kwargs: Any) -> str:
-        return '{"title":"制作咖啡","steps":["磨豆","萃取","打奶泡"]}'
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return '{"title":"制作咖啡","steps":["磨豆","萃取","打奶泡"]}'
+        return (
+            '{"title":"制作咖啡","steps":["磨豆","萃取","打奶泡"],'
+            '"substeps":[{"step":"磨豆","substeps":["选豆","研磨"]},'
+            '{"step":"萃取","substeps":["预热","萃取"]},'
+            '{"step":"打奶泡","substeps":["蒸奶","拉花"]}]}'
+        )
 
     agent = FlowMapAgent(model="qwen")
     with patch("agents.thinking_maps.flow_map_agent.get_prompt", side_effect=fake_get_prompt):
@@ -161,7 +171,9 @@ async def test_flow_map_agent_uses_fixed_steps_prompt() -> None:
             )
 
     assert captured.get("prompt_type") == "fixed_steps"
+    assert call_count == 2
     assert result["success"] is True
+    assert result["spec"]["_agent"]["hasSubsteps"] is True
 
 
 @pytest.mark.asyncio

@@ -38,6 +38,20 @@ from utils.text_width_estimate import estimate_text_width_px
 logger = logging.getLogger(__name__)
 
 
+def _spec_has_substeps(spec: Dict[str, Any]) -> bool:
+    """True when spec contains at least one non-empty substep list."""
+    substeps_raw = spec.get("substeps") or spec.get("sub_steps") or spec.get("subSteps") or []
+    if not isinstance(substeps_raw, list):
+        return False
+    for entry in substeps_raw:
+        if not isinstance(entry, dict):
+            continue
+        sub_list = entry.get("substeps") or entry.get("sub_steps") or entry.get("subSteps") or []
+        if isinstance(sub_list, list) and any(str(s).strip() for s in sub_list):
+            return True
+    return False
+
+
 class FlowMapAgent(BaseAgent):
     """Utility agent to improve flow map specs before rendering."""
 
@@ -177,79 +191,143 @@ class FlowMapAgent(BaseAgent):
                 logger.error("FlowMapAgent: No response from LLM")
                 return None
 
-            # Extract JSON from response
-            # Check if response is already a dictionary (from mock client)
-            if isinstance(response, dict):
-                spec = response
-            else:
-                # Try to extract JSON from string response
-                response_str = str(response)
-                spec = extract_json_from_response(response_str)
+            spec = await self._extract_spec_from_response(
+                response=response,
+                user_prompt=user_prompt,
+                language=language,
+                system_prompt=system_prompt,
+                phase_emit=phase_emit,
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path,
+            )
+            if spec is None:
+                return None
 
-                # Check if we got a non-JSON response error
-                if isinstance(spec, dict) and spec.get("_error") == "non_json_response":
-                    # LLM returned non-JSON asking for more info - retry with more explicit prompt
-                    logger.warning(
-                        "FlowMapAgent: LLM returned non-JSON response asking for more info. "
-                        "Retrying with explicit JSON-only prompt."
+            if fixed_steps and not _spec_has_substeps(spec):
+                logger.warning(
+                    "FlowMapAgent: Fixed steps mode returned no substeps; retrying with explicit substep requirement."
+                )
+                retry_suffix = (
+                    "\n\n重要：必须为每个指定步骤生成 2-4 个子步骤。"
+                    "返回包含 substeps 数组的完整 JSON，substeps[].step 与 steps[] 完全一致。"
+                    if is_chinese_prompt_shell_language(language)
+                    else (
+                        "\n\nIMPORTANT: Generate 2-4 substeps for EACH specified step. "
+                        "Return complete JSON with a substeps array; substeps[].step must match steps[] exactly."
                     )
-
-                    # Retry with more explicit prompt emphasizing JSON-only output
-                    retry_user_prompt = (
-                        f"{user_prompt}\n\n"
-                        f"重要：你必须只返回有效的JSON格式，不要询问更多信息。"
-                        f"如果提示不清楚，请根据提示内容做出合理假设并直接生成JSON规范。"
-                        if is_chinese_prompt_shell_language(language)
-                        else (
-                            f"{user_prompt}\n\n"
-                            f"IMPORTANT: You MUST respond with valid JSON only. "
-                            f"Do not ask for more information. "
-                            f"If the prompt is unclear, make reasonable assumptions "
-                            f"and generate the JSON specification directly."
-                        )
-                    )
-
-                    retry_response = await dispatch_llm_chat(
+                )
+                retry_response = await dispatch_llm_chat(
+                    phase_emit=phase_emit,
+                    prompt=user_prompt + retry_suffix,
+                    model=self.model,
+                    system_message=system_prompt,
+                    max_tokens=1000,
+                    temperature=config.LLM_TEMPERATURE,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    request_type=request_type,
+                    endpoint_path=endpoint_path,
+                    diagram_type="flow_map",
+                )
+                if retry_response:
+                    retry_spec = await self._extract_spec_from_response(
+                        response=retry_response,
+                        user_prompt=user_prompt + retry_suffix,
+                        language=language,
+                        system_prompt=system_prompt,
                         phase_emit=phase_emit,
-                        prompt=retry_user_prompt,
-                        model=self.model,
-                        system_message=system_prompt,
-                        max_tokens=1000,
-                        temperature=config.LLM_TEMPERATURE,
                         user_id=user_id,
                         organization_id=organization_id,
                         request_type=request_type,
                         endpoint_path=endpoint_path,
-                        diagram_type="flow_map",
                     )
-
-                    # Try extraction again
-                    if isinstance(retry_response, dict):
-                        spec = retry_response
-                    else:
-                        spec = extract_json_from_response(str(retry_response))
-
-                        # If still non-JSON, return None
-                        if isinstance(spec, dict) and spec.get("_error") == "non_json_response":
-                            logger.error(
-                                "FlowMapAgent: Retry also returned non-JSON response. Giving up after 1 retry attempt."
-                            )
-                            return None
-
-                if not spec or (isinstance(spec, dict) and spec.get("_error")):
-                    # Log the actual response for debugging
-                    response_preview = response_str[:500] + "..." if len(response_str) > 500 else response_str
-                    logger.error(
-                        "FlowMapAgent: Failed to extract JSON from LLM response. Response preview: %s",
-                        response_preview,
-                    )
-                    return None
+                    if retry_spec is not None:
+                        spec = retry_spec
 
             return spec
 
         except LLM_PIPELINE_ERRORS as e:
             logger.error("FlowMapAgent: Error in spec generation: %s", e)
             return None
+
+    async def _extract_spec_from_response(
+        self,
+        response: Any,
+        user_prompt: str,
+        language: str,
+        system_prompt: str,
+        phase_emit,
+        user_id: Optional[int],
+        organization_id: Optional[int],
+        request_type: str,
+        endpoint_path: Optional[str],
+    ) -> Optional[Dict]:
+        """Extract JSON spec from LLM response; retry once on non-JSON ask-for-info replies."""
+        if isinstance(response, dict):
+            return response
+
+        response_str = str(response)
+        spec = extract_json_from_response(response_str)
+
+        if isinstance(spec, dict) and spec.get("_error") == "non_json_response":
+            logger.warning(
+                "FlowMapAgent: LLM returned non-JSON response asking for more info. "
+                "Retrying with explicit JSON-only prompt."
+            )
+
+            retry_user_prompt = (
+                f"{user_prompt}\n\n"
+                f"重要：你必须只返回有效的JSON格式，不要询问更多信息。"
+                f"如果提示不清楚，请根据提示内容做出合理假设并直接生成JSON规范。"
+                if is_chinese_prompt_shell_language(language)
+                else (
+                    f"{user_prompt}\n\n"
+                    f"IMPORTANT: You MUST respond with valid JSON only. "
+                    f"Do not ask for more information. "
+                    f"If the prompt is unclear, make reasonable assumptions "
+                    f"and generate the JSON specification directly."
+                )
+            )
+
+            retry_response = await dispatch_llm_chat(
+                phase_emit=phase_emit,
+                prompt=retry_user_prompt,
+                model=self.model,
+                system_message=system_prompt,
+                max_tokens=1000,
+                temperature=config.LLM_TEMPERATURE,
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path,
+                diagram_type="flow_map",
+            )
+
+            if isinstance(retry_response, dict):
+                return retry_response
+
+            retry_spec = extract_json_from_response(str(retry_response))
+            if isinstance(retry_spec, dict) and retry_spec.get("_error") == "non_json_response":
+                logger.error(
+                    "FlowMapAgent: Retry also returned non-JSON response. Giving up after 1 retry attempt."
+                )
+                return None
+
+            if not retry_spec or (isinstance(retry_spec, dict) and retry_spec.get("_error")):
+                return None
+            return retry_spec
+
+        if not spec or (isinstance(spec, dict) and spec.get("_error")):
+            response_preview = response_str[:500] + "..." if len(response_str) > 500 else response_str
+            logger.error(
+                "FlowMapAgent: Failed to extract JSON from LLM response. Response preview: %s",
+                response_preview,
+            )
+            return None
+
+        return spec
 
     def validate_output(
         self,

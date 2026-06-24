@@ -41,7 +41,7 @@ import { CANVAS_TOP_BAR } from '@/config/uiConfig'
 import { CANVAS_STANDARD_EXPORT_MENU_ITEMS, CANVAS_COMMUNITY_EXPORT_MENU_ITEM } from '@/config/canvasExportMenu'
 import { useAuthStore, useDiagramStore, usePanelsStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
-import { CANVAS_ENTRY_PATH_KEY, isMindGraphLandingPath } from '@/utils/canvasBackNavigation'
+import { navigateBackFromCanvas } from '@/utils/canvasBackNavigation'
 
 const { resetToDefaultTemplate } = useCanvasReset()
 
@@ -210,17 +210,7 @@ watch(
 )
 
 function handleBack() {
-  const entry = sessionStorage.getItem(CANVAS_ENTRY_PATH_KEY)
-  if (
-    entry &&
-    isMindGraphLandingPath(entry) &&
-    typeof window !== 'undefined' &&
-    window.history.length > 1
-  ) {
-    router.back()
-    return
-  }
-  router.replace({ name: 'MindGraph' })
+  navigateBackFromCanvas(router, route.path)
 }
 
 function handleFileNameClick() {
