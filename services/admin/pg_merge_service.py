@@ -26,12 +26,12 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.pool import NullPool
 
-from config.database import AsyncSessionLocal
 from services.admin.pg_merge_config import SKIP_TABLES, STATS_RECOMPUTE_TABLES, ordered_table_names
 from services.admin.pg_merge_table_ops import merge_table, preview_table, reset_all_sequences
 from services.teacher_usage_stats import compute_and_upsert_user_usage_stats_async
 from services.utils.error_types import DATABASE_ERRORS
 from services.utils.pg_client_binaries import find_pg_client_binary, pg_tools_libpq_url
+from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -205,7 +205,7 @@ def _count_tables(engine: Engine) -> Dict[str, int]:
 async def _recompute_usage_stats_async(user_ids: Set[int]) -> int:
     """Recompute user_usage_stats for affected users after merge."""
     recomputed = 0
-    async with AsyncSessionLocal() as db:
+    async with system_rls_session() as db:
         for user_id in sorted(user_ids):
             if await compute_and_upsert_user_usage_stats_async(user_id, db):
                 recomputed += 1
