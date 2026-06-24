@@ -149,9 +149,8 @@ watch(
     }
     const requestId = ++libraryMetaRequestId
     try {
-      const response = await fetch(
-        `/api/generation_library_skip/${encodeURIComponent(uniqueId)}`,
-        { credentials: 'same-origin' }
+      const response = await authFetch(
+        `/api/generation_library_skip/${encodeURIComponent(uniqueId)}`
       )
       if (requestId !== libraryMetaRequestId) {
         return

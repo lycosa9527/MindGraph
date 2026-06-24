@@ -1,5 +1,5 @@
 /**
- * sv UI �?community
+ * sv UI � community
  */
 
 export default {

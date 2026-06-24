@@ -1,5 +1,5 @@
 /**
- * af UI �?mindmate
+ * af UI � mindmate
  */
 
 export default {
@@ -8,6 +8,7 @@ export default {
   'aiModel.enableAi': 'Aktiveer AI',
   'aiModel.inlineRecTooltip': 'Druk op Tab terwyl u \'n knop redigeer vir AI-aanbevelings',
   'aiModel.label': 'AI-model',
+  'aiModel.cancelGeneration': 'Cancel generation',
   'aiModel.readyCount': '{count} is gereed',
   'aiModel.relationshipsBadge': 'Verwantskappe',
   'aiModel.relationshipsTooltip': 'Sleep om konsepte te koppel—die AI sal verwantskappe genereer',
@@ -35,6 +36,7 @@ export default {
   'autoComplete.enterTopicFirst': 'Voer asseblief eers die onderwerpinhoud in',
   'autoComplete.generationFailedRetry': 'Die generering het misluk, probeer asseblief weer',
   'autoComplete.generationInProgress': 'Generering is besig, wag asseblief',
+  'autoComplete.generationInstructionsLabel': 'User requirements:',
   'autoComplete.modelsReadyCount': '{success}/{total}-modelle is gereed',
   'autoComplete.noDiagramData': 'Geen diagramdata nie',
   'autoComplete.selectDiagramType': 'Kies asseblief die diagramtipe',
@@ -86,6 +88,12 @@ export default {
   'mindmate.noHistory': 'Geen geskiedenis nie',
   'mindmate.noHistoryPanel': 'Geen gespreksgeskiedenis nie',
   'mindmate.suggestionLabel': 'Probeer my vra:',
+  'mindmate.openInCanvas': 'Edit in canvas',
+  'mindmate.openCanvasFailed': 'Could not open diagram in canvas.',
+  'mindmate.openCanvasLoginRequired': 'Sign in to open this diagram in the canvas.',
+  'mindmate.openCanvasNoLibraryId': 'Diagram was not saved to your library. Sign in and try again.',
+  'mindmate.openCanvasSaveRetry': 'Could not save this diagram to your library automatically. Regenerate; contact your administrator if it persists.',
+  'mindmate.diagramLibraryFull': 'Diagram library is full. Delete old diagrams and try again.',
   'mindmate.tooltip.copy': 'Kopieer',
   'mindmate.tooltip.dislike': 'Werk nie vir my nie',
   'mindmate.tooltip.edit': 'Wysig',

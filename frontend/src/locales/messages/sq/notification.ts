@@ -1,5 +1,5 @@
 /**
- * sq UI �?notification
+ * sq UI � notification
  */
 
 export default {

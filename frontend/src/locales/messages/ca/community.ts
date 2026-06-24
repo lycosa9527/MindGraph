@@ -1,5 +1,5 @@
 /**
- * ca UI �?community
+ * ca UI � community
  */
 
 export default {

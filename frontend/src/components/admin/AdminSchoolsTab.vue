@@ -228,7 +228,7 @@ const trendOrg = ref<{
   show_chain_of_thought?: boolean
   mindmate_agent_name?: string | null
   mindmate_agent_avatar_url?: string | null
-  initial_tab?: 'usage' | 'general'
+  initial_tab?: 'usage' | 'teachers' | 'activity' | 'general'
   initial_trend_period?: 'today' | 'week' | 'month' | 'total'
 } | null>(null)
 
@@ -263,7 +263,7 @@ function orgShowChainOfThought(row: Record<string, unknown>): boolean {
 
 function openTrendModal(
   row: Record<string, unknown>,
-  initialTab: 'usage' | 'general' = 'usage',
+  initialTab: 'usage' | 'teachers' | 'activity' | 'general' = 'usage',
   initialTrendPeriod: 'today' | 'week' | 'month' | 'total' = 'week'
 ) {
   trendOrg.value = {
@@ -383,7 +383,17 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
           min-width="120"
           show-overflow-tooltip
           class-name="admin-schools-col-text"
-        />
+        >
+          <template #default="{ row }">
+            <button
+              type="button"
+              class="admin-schools-link text-left max-w-full truncate"
+              @click="openTrendModal(row, 'usage')"
+            >
+              {{ row.name }}
+            </button>
+          </template>
+        </el-table-column>
         <el-table-column
           column-key="is_privatized"
           min-width="96"

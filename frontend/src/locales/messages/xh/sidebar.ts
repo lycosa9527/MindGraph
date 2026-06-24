@@ -1,5 +1,5 @@
 /**
- * xh UI �?sidebar
+ * xh UI � sidebar
  */
 
 export default {

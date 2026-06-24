@@ -21,7 +21,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Optional, cast
 
-from fastapi import APIRouter, Body, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import coalesce as sa_coalesce
@@ -37,6 +37,7 @@ try:
 except ImportError:
     TokenUsage = None
 
+from services.admin.user_usage_activity import activity_to_admin_dict, list_org_usage_activities
 from services.auth.user_fk_cleanup import delete_user_fk_dependent_rows
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
@@ -813,6 +814,62 @@ async def list_all_managers(
         )
 
     return {"managers": result}
+
+
+@router.get("/admin/organizations/{org_id}/activity")
+async def list_organization_activity_admin(
+    org_id: int,
+    scope: AdminScope = Depends(require_global_organizations_read),
+    db: AsyncSession = Depends(get_async_db),
+    lang: Language = Depends(get_language_dependency),
+    source: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=100),
+    before_id: Optional[int] = Query(None),
+):
+    """Paginated curated activity timeline for one organization (admin panel)."""
+    org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
+    if not org:
+        error_msg = Messages.error("organization_not_found", lang, org_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+    await assert_panel_org_readable(scope, org_id, db, lang)
+
+    if source is not None and source.strip() and source.strip() not in (
+        "mindgraph",
+        "mindmate",
+        "dingtalk",
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="source must be mindgraph, mindmate, or dingtalk",
+        )
+
+    rows = await list_org_usage_activities(
+        db,
+        org_id,
+        source=source,
+        limit=limit,
+        before_id=before_id,
+    )
+    user_ids = {int(row.user_id) for row in rows}
+    names_by_user_id: dict[int, str] = {}
+    if user_ids:
+        user_rows = (
+            await db.execute(select(User.id, User.name, User.phone).where(User.id.in_(user_ids)))
+        ).all()
+        for user_row in user_rows:
+            display = user_row.name or user_row.phone or ""
+            names_by_user_id[int(user_row.id)] = display
+
+    items = []
+    for row in rows:
+        payload = activity_to_admin_dict(row)
+        payload["userName"] = names_by_user_id.get(int(row.user_id), "")
+        items.append(payload)
+
+    return {
+        "items": items,
+        "hasMore": len(items) >= limit,
+    }
 
 
 @router.get("/admin/organizations/{org_id}/users")

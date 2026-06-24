@@ -7,24 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.120.0] - 2026-06-25
+
+> **Mind map v2 canvas (dev flag), File Center, generate pipeline hardening, classic/v2 separation, Dify multi-slot health failover, and admin school activity tabs.**
+
 ### Added
 
-- **Mind map v2 canvas (opt-in)** — New side-toolbar chrome, File Center (knowledge packages with package-scoped RAG), subgraph preview bar, and orthogonal edges when users select the new canvas in Language settings; classic canvas remains the default.
+- **Mind map v2 canvas (dev flag)** — Side-toolbar chrome, File Center, subgraph preview bar, and orthogonal edges when `FEATURE_MINDMAP_V2_CANVAS=True` and the user opts in via Language settings; classic canvas remains the default.
+- **Mind map v2 visual design** — Theme presets (`mindMapThemes`), node shapes (rectangle / oval / underline), unified connection stroke in v2; dual `_mindmap_canvas.legacy` / `.v2` style buckets with mode-switch reconciliation ([`mindmap_v2_separation.md`](docs/architecture/mindmap_v2_separation.md)).
 - **File Center API** — Knowledge packages CRUD, source ingest (file, text, web), and wiki endpoints under `/api/knowledge-space/packages`; Alembic migration `rev_0070` adds package fields.
 - **Landing generate_graph SSE** — Stream now emits `detecting`, `requirements`, and `progress` (with resolved topic and diagram type) in addition to `accepted`, `waiting`, and `streaming`.
 - **Generate pipeline** — Typed event contract (`GenerateGraphEvent`) and `run_generate_pipeline` entry point with cooperative cancellation when the client disconnects.
 - **Canvas autocomplete** — Cancel control on the 3-LLM model selector while generation is in flight.
+- **Admin org activity tab** — School modal activity timeline with cursor pagination and source filter (MindGraph / MindMate / DingTalk); `GET /admin/organizations/{org_id}/activity` ([`AdminOrgActivityTab.vue`](frontend/src/components/admin/AdminOrgActivityTab.vue)).
+- **Admin school teachers tab** — School modal members list sorted by all-time token usage with role pills ([`AdminSchoolTeachersTab.vue`](frontend/src/components/admin/AdminSchoolTeachersTab.vue)).
+- **Dify multi-slot health poller** — Schema-driven server slots, deduped probe plan, Redis health cache with failure threshold, and configurable poll interval / max age / concurrency; MindMate routing uses stale-aware failover partner selection ([`dify_health_poller.py`](services/dify/dify_health_poller.py)).
 
 ### Changed
 
+- **Mind map v2 canvas (dev flag)** — Classic canvas remains the default; v2 chrome is gated behind `FEATURE_MINDMAP_V2_CANVAS` (off by default). The classic/new toggle in Language settings is hidden unless the flag is enabled.
 - **Classic mind map default** — `mindMapCanvasMode` defaults to `legacy`; v2 layout and orthogonal edges apply only when explicitly opted in.
 - **Collab AI policy** — `generate_graph` and inline recommendations return 403 for all users (except superadmin) when the diagram is in a live workshop session.
+- **Dify server helpers** — Generalized from hard-coded slots 1+2 to ORM schema-driven slots with `failover_partner_server` for arbitrary two-slot pairs ([`dify_servers.py`](services/dify/dify_servers.py)).
+- **i18n** — `thinkingCoins` message namespace synced across all locale bundles.
 
 ### Fixed
 
 - **Fixed-structure templates (tree/brace/flow)** — Fixed label lists (`children`, `parts`, `steps`) are enforced even when a dimension or dimension preference is also present; structure kwargs are passed on every agent route.
 - **Landing error UX** — Validation and generation failures include `error_type` and optional `show_guidance`; stream HTTP 5xx responses no longer fall through to a duplicate JSON retry.
 - **File Center** — Web ingest requires page content; RAG UI and auto-expand require a saved diagram linked to the package.
+- **Generation library claim** — Preview outcomes record owner user/org; claim rejects mismatched authenticated users as not-found to avoid leaking preview existence ([`generation_library_claim.py`](services/diagram/generation_library_claim.py)).
+- **MindMate library card metadata** — Library skip lookup uses authenticated fetch so metadata loads for signed-in users ([`MessageBubble.vue`](frontend/src/components/panels/mindmate/MessageBubble.vue)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.120.0).
 
 ## [5.119.0] - 2026-06-21
 

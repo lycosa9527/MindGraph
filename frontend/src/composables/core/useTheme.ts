@@ -6,7 +6,9 @@
 import { type Ref, computed } from 'vue'
 
 import { useUIStore } from '@/stores/ui'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import type { DiagramType, NodeStyle } from '@/types'
+import { effectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 
 // Default themes matching the old StyleManager
 const LEGACY_MINDMAP_THEME = {
@@ -306,6 +308,7 @@ export interface UseThemeOptions {
  */
 export function useTheme(options: UseThemeOptions = {}) {
   const uiStore = useUIStore()
+  const featureFlagsStore = useFeatureFlagsStore()
 
   const diagramType = computed(() => {
     const type = options.diagramType
@@ -318,7 +321,13 @@ export function useTheme(options: UseThemeOptions = {}) {
 
     // Start with default theme
     let defaultTheme = DEFAULT_THEMES[type] || {}
-    if ((type === 'mindmap' || type === 'mind_map') && uiStore.mindMapCanvasMode === 'v2') {
+    if (
+      (type === 'mindmap' || type === 'mind_map') &&
+      effectiveMindMapCanvasMode(
+        uiStore.mindMapCanvasMode,
+        featureFlagsStore.getFeatureMindmapV2Canvas()
+      ) === 'v2'
+    ) {
       defaultTheme = V2_MINDMAP_THEME
     }
 

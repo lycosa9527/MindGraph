@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from types import SimpleNamespace
 from typing import Optional, cast
 
@@ -17,11 +18,12 @@ from services.redis.cache.redis_dify_server_health_cache import (
 
 
 def _health(online: bool, failures: int) -> DifyServerHealth:
+    now = time.time()
     return DifyServerHealth(
         online=online,
         consecutive_failures=failures,
-        last_ok_at=None,
-        last_checked_at=1.0,
+        last_ok_at=now if online else None,
+        last_checked_at=now,
     )
 
 
@@ -122,6 +124,55 @@ async def test_resolver_uses_standby_when_primary_unconfigured(
     org.dify_api_key = None
     monkeypatch.setattr(resolver, "get_server_health", fake_health)
     assert await resolver.select_active_dify_server(org) == 2
+
+
+@pytest.mark.asyncio
+async def test_resolver_fails_over_for_one_and_three_pair(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """School on servers 1+3 fails over from 1 to 3 when primary is down."""
+    from services.dify.dify_server_schema import clear_dify_server_schema_cache, organization_dify_server_slots
+
+    clear_dify_server_schema_cache()
+    monkeypatch.setattr(
+        "services.dify.dify_server_schema._organization_column_names",
+        lambda: frozenset(
+            {
+                "dify_api_base_url",
+                "dify_api_key",
+                "dify_api_base_url_2",
+                "dify_api_key_2",
+                "dify_api_base_url_3",
+                "dify_api_key_3",
+            }
+        ),
+    )
+    organization_dify_server_slots.cache_clear()
+
+    async def fake_health(_org_id: int, server: int) -> Optional[DifyServerHealth]:
+        if server == 1:
+            return _health(False, HEALTH_FAILURE_THRESHOLD)
+        if server == 3:
+            return _health(True, 0)
+        return None
+
+    org = cast(
+        Organization,
+        SimpleNamespace(
+            id=42,
+            dify_api_base_url="https://s1/v1",
+            dify_api_key="k1",
+            dify_api_base_url_2=None,
+            dify_api_key_2=None,
+            dify_api_base_url_3="https://s3/v1",
+            dify_api_key_3="k3",
+            dify_active_server=1,
+            dify_failover_enabled=True,
+        ),
+    )
+    monkeypatch.setattr(resolver, "get_server_health", fake_health)
+    assert await resolver.select_active_dify_server(org) == 3
+    clear_dify_server_schema_cache()
 
 
 @pytest.mark.asyncio

@@ -57,6 +57,7 @@ import { useMobileCanvasEventHandlers } from '@/composables/mobile/useMobileCanv
 import { useMobileCanvasInlineRecBar } from '@/composables/mobile/useMobileCanvasInlineRecBar'
 import { useMobileCanvasRouteLoader } from '@/composables/mobile/useMobileCanvasRouteLoader'
 import { useMobileCanvasToolbar } from '@/composables/mobile/useMobileCanvasToolbar'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import {
   useAuthStore,
   useConceptMapRelationshipStore,
@@ -113,13 +114,11 @@ useKittyVoiceSelectionBus('MobileCanvasPage')
 const chartType = computed(() => uiStore.selectedChartType)
 const diagramType = computed<DiagramType | null>(() => diagramTypeFromKey(chartType.value))
 const isConceptMap = computed(() => diagramStore.type === 'concept_map')
-const isMindMap = computed(
-  () => diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map'
-)
+const useMindMapV2 = useMindMapV2Chrome()
 const fitViewOnInit = computed(
   () =>
     !isConceptMap.value &&
-    !(isMindMap.value && uiStore.mindMapCanvasMode === 'v2')
+    !useMindMapV2.value
 )
 
 const tabReady = computed(() => {

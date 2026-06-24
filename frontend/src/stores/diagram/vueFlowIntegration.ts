@@ -14,6 +14,9 @@ import {
 } from '@/types/vueflow'
 
 import { useUIStore } from '@/stores/ui'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { resolveLegacyMindMapConnectionStrokeColor } from '@/config/mindMapGeometry'
+import { effectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 
 import {
   recalculateBraceMapLayout,
@@ -35,7 +38,14 @@ import type { DiagramContext } from './types'
 
 export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
   const uiStore = useUIStore()
+  const featureFlagsStore = useFeatureFlagsStore()
   const { mindMapCanvasMode } = storeToRefs(uiStore)
+  const effectiveMindMapMode = computed(() =>
+    effectiveMindMapCanvasMode(
+      mindMapCanvasMode.value,
+      featureFlagsStore.getFeatureMindmapV2Canvas()
+    )
+  )
 
   const circleMapLayoutNodes = computed(() => {
     if (ctx.type.value !== 'circle_map' || !ctx.data.value?.nodes) return []
@@ -131,7 +141,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       void ctx.mindMapRecalcTrigger.value
 
       const connections = ctx.data.value.connections ?? []
-      const useV2Layout = mindMapCanvasMode.value === 'v2'
+      const useV2Layout = effectiveMindMapMode.value === 'v2'
       const collapsedPaths = useV2Layout ? getMindMapCollapsedPaths(ctx.data.value) : []
       const collapsedNodeIds = useV2Layout
         ? getMindMapCollapsedNodeIds(
@@ -237,15 +247,40 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     if (ctx.type.value === 'circle_map') return []
 
     if (!ctx.data.value?.connections) return []
-    const defaultEdgeType = getEdgeTypeForDiagram(ctx.type.value, mindMapCanvasMode.value)
+    const defaultEdgeType = getEdgeTypeForDiagram(ctx.type.value, effectiveMindMapMode.value)
     const diagramType = ctx.type.value
     const nodes = ctx.data.value.nodes ?? []
 
+    const isLegacyMindMap =
+      (diagramType === 'mindmap' || diagramType === 'mind_map') &&
+      effectiveMindMapMode.value === 'legacy'
+    const isV2MindMap =
+      (diagramType === 'mindmap' || diagramType === 'mind_map') &&
+      effectiveMindMapMode.value === 'v2'
+
     const edges = ctx.data.value.connections.map((conn) => {
-      const effectiveConn =
+      let effectiveConn =
         diagramType === 'concept_map' ? augmentConnectionWithOptimalHandles(conn, nodes) : conn
 
-      const edgeType = (effectiveConn.edgeType as MindGraphEdgeType) || defaultEdgeType
+      if (isLegacyMindMap) {
+        effectiveConn = {
+          ...effectiveConn,
+          style: {
+            ...(effectiveConn.style || {}),
+            strokeColor: resolveLegacyMindMapConnectionStrokeColor(
+              effectiveConn,
+              nodes,
+              ctx.data.value?.connections
+            ),
+          },
+        }
+      }
+
+      const edgeType = isLegacyMindMap
+        ? 'curved'
+        : isV2MindMap
+          ? 'mindmapOrthogonal'
+          : ((effectiveConn.edgeType as MindGraphEdgeType) || defaultEdgeType)
       const edge = connectionToVueFlowEdge(effectiveConn, edgeType)
       if (diagramType && edge.data) {
         edge.data = { ...edge.data, diagramType }

@@ -1,5 +1,5 @@
 /**
- * ar UI �?notification
+ * ar UI � notification
  */
 
 export default {

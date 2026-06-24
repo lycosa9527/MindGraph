@@ -612,7 +612,9 @@ defineExpose({
 .diagram-canvas--learning-sheet-pick :deep(.branch-node),
 .diagram-canvas--learning-sheet-pick :deep(.topic-node),
 .diagram-canvas--learning-sheet-pick :deep(.mind-map-node),
+.diagram-canvas--learning-sheet-pick :deep(.mind-map-legacy-node),
 .diagram-canvas--learning-sheet-pick :deep(.mind-map-topic-node),
+.diagram-canvas--learning-sheet-pick :deep(.topic-node.pill-shape),
 .diagram-canvas--learning-sheet-pick :deep(.inline-editable-text),
 .diagram-canvas--learning-sheet-pick :deep(.inline-edit-display),
 .diagram-canvas--learning-sheet-pick :deep(.cursor-grab) {
@@ -627,6 +629,8 @@ html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .vue-flow__node
 html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .branch-node,
 html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .topic-node,
 html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .mind-map-node,
+html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .mind-map-legacy-node,
+html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .topic-node.pill-shape,
 html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .inline-editable-text,
 html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .inline-edit-display,
 html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .cursor-grab {

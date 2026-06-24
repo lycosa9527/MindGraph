@@ -2,7 +2,9 @@
  * Mind-map default geometric specifications (initial render & unstyled nodes).
  * Golden-ratio aesthetic baseline for typography, padding, borders, and edges.
  */
-import type { DiagramNode } from '@/types'
+import { getMindmapBranchColor } from '@/config/mindmapColors'
+import type { Connection, DiagramNode } from '@/types'
+import type { MindMapCanvasMode } from '@/stores/ui'
 
 export const MIND_MAP_GEOMETRY = {
   /** Depth 2+ branch / leaf labels */
@@ -161,4 +163,91 @@ export function syncMindMapConnectionStrokeColors(
   connections.forEach((conn) => {
     conn.style = { ...(conn.style || {}), strokeColor }
   })
+}
+
+function branchIndexFromNode(node: DiagramNode | undefined): number | null {
+  if (!node) return null
+  const fromData = node.data?.branchIndex
+  if (typeof fromData === 'number' && Number.isFinite(fromData)) {
+    return fromData
+  }
+  return null
+}
+
+function branchIndexFromConnectionTree(
+  startNodeId: string,
+  nodeById: Map<string, DiagramNode>,
+  parentByTarget: Map<string, string>
+): number | null {
+  let current: string | undefined = startNodeId
+  while (current && current !== 'topic') {
+    const fromNode = branchIndexFromNode(nodeById.get(current))
+    if (fromNode != null) {
+      return fromNode
+    }
+    current = parentByTarget.get(current)
+  }
+  return null
+}
+
+/** Classic canvas: per-branch palette stroke on curved connectors. */
+export function resolveLegacyMindMapConnectionStrokeColor(
+  connection: Connection,
+  nodes: DiagramNode[],
+  allConnections?: Connection[]
+): string {
+  const nodeById = new Map(nodes.map((node) => [node.id, node]))
+  const targetIndex = branchIndexFromNode(nodeById.get(connection.target))
+  if (targetIndex != null) {
+    return getMindmapBranchColor(targetIndex).border
+  }
+  const sourceIndex = branchIndexFromNode(nodeById.get(connection.source))
+  if (sourceIndex != null) {
+    return getMindmapBranchColor(sourceIndex).border
+  }
+
+  if (allConnections?.length) {
+    const parentByTarget = new Map<string, string>()
+    for (const conn of allConnections) {
+      parentByTarget.set(conn.target, conn.source)
+    }
+    const fromTree =
+      branchIndexFromConnectionTree(connection.target, nodeById, parentByTarget) ??
+      branchIndexFromConnectionTree(connection.source, nodeById, parentByTarget)
+    if (fromTree != null) {
+      return getMindmapBranchColor(fromTree).border
+    }
+  }
+
+  return getMindmapBranchColor(0).border
+}
+
+/** Classic canvas: restore per-branch stroke colors on all connections. */
+export function syncLegacyMindMapConnectionStrokeColors(
+  connections: Connection[],
+  nodes: DiagramNode[]
+): void {
+  for (const conn of connections) {
+    conn.style = {
+      ...(conn.style || {}),
+      strokeColor: resolveLegacyMindMapConnectionStrokeColor(conn, nodes, connections),
+    }
+  }
+}
+
+/** Sync mind-map connection stroke colors for the active canvas mode. */
+export function syncMindMapConnectionStrokeColorsForCanvasMode(
+  connections: Connection[],
+  nodes: DiagramNode[],
+  mode: MindMapCanvasMode
+): void {
+  if (mode === 'v2') {
+    const topic = nodes.find((node) => node.id === 'topic')
+    syncMindMapConnectionStrokeColors(
+      connections,
+      resolveMindMapTopicBorderColor(topic)
+    )
+    return
+  }
+  syncLegacyMindMapConnectionStrokeColors(connections, nodes)
 }

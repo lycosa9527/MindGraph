@@ -1,5 +1,5 @@
 /**
- * tk UI �?notification
+ * tk UI � notification
  */
 
 export default {

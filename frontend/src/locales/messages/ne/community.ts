@@ -1,5 +1,5 @@
 /**
- * ne UI �?community
+ * ne UI � community
  */
 
 export default {

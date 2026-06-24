@@ -1,5 +1,5 @@
 /**
- * uz UI �?sidebar
+ * uz UI � sidebar
  */
 
 export default {

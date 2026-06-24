@@ -1,5 +1,7 @@
 import type { useDiagramStore } from '@/stores/diagram'
 import type { useUIStore } from '@/stores/ui'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { effectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 
 export function isMindMapDiagramType(type: string | null | undefined): boolean {
   return type === 'mindmap' || type === 'mind_map'
@@ -21,7 +23,14 @@ export function isMindMapManualViewport(
   diagramStore: ReturnType<typeof useDiagramStore>,
   uiStore: ReturnType<typeof useUIStore>
 ): boolean {
-  return isMindMapDiagramType(diagramStore.type) && uiStore.mindMapCanvasMode === 'v2'
+  const featureFlagsStore = useFeatureFlagsStore()
+  return (
+    isMindMapDiagramType(diagramStore.type) &&
+    effectiveMindMapCanvasMode(
+      uiStore.mindMapCanvasMode,
+      featureFlagsStore.getFeatureMindmapV2Canvas()
+    ) === 'v2'
+  )
 }
 
 /** Diagram types that skip programmatic auto-fit unless userInitiated / forExport. */

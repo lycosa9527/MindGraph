@@ -162,7 +162,7 @@ async def run_lifespan_shutdown(
         except asyncio.CancelledError:
             pass
         if is_main_worker:
-            logger.debug("Dify health poller stopped")
+            logger.debug("[Dify Failover] Background health checks stopped")
 
     if holdings.process_monitor_task:
         try:

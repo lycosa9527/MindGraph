@@ -536,6 +536,30 @@ export async function fetchAdminUserActivity(
   )
 }
 
+export interface AdminOrgActivityItem extends AdminUserActivityItem {
+  userName?: string | null
+}
+
+export interface AdminOrgActivityResponse {
+  items: AdminOrgActivityItem[]
+  hasMore: boolean
+}
+
+export async function fetchAdminOrgActivity(
+  orgId: number,
+  params?: {
+    source?: string
+    limit?: number
+    before_id?: number
+  },
+  signal?: AbortSignal
+): Promise<AdminOrgActivityResponse> {
+  return adminFetchJson(
+    `/api/auth/admin/organizations/${orgId}/activity${buildQuery(params ?? {})}`,
+    { signal }
+  )
+}
+
 export async function fetchAdminSchoolStats(
   organizationId: number,
   signal?: AbortSignal

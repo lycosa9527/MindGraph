@@ -1,6 +1,7 @@
 import type { MindMapThemeId } from '@/config/mindMapThemes'
 import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
 import type { DiagramNode, NodeStyle } from '@/types'
+import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 
 import { emitEvent } from './events'
 import type { DiagramContext } from './types'
@@ -78,6 +79,7 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
     })
     const diagramType = data.value?.type
     if (
+      readMindMapV2VisualDesignActive() &&
       data.value?.connections &&
       (diagramType === 'mindmap' || diagramType === 'mind_map')
     ) {

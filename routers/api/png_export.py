@@ -700,8 +700,12 @@ async def generate_dingtalk_png(
 
 
 @router.get("/generation_library_skip/{unique_id}")
-async def read_generation_library_skip(unique_id: str) -> dict[str, str]:
+async def read_generation_library_skip(
+    unique_id: str,
+    current_user: User = Depends(get_current_user),
+) -> dict[str, str]:
     """Return library-save outcome metadata for a generate_dingtalk temp PNG id."""
+    _ = current_user
     data = await get_generation_library_skip(unique_id)
     if not data:
         raise HTTPException(status_code=404, detail="Skip metadata not found")

@@ -1,5 +1,5 @@
 /**
- * th UI �?mindmate
+ * th UI � mindmate
  */
 
 export default {
@@ -8,6 +8,7 @@ export default {
   'aiModel.enableAi': 'เปิดใช้งาน AI',
   'aiModel.inlineRecTooltip': 'กด Tab ขณะแก้ไขโหนดเพื่อรับคำแนะนำ AI',
   'aiModel.label': 'โมเดล AI',
+  'aiModel.cancelGeneration': 'Cancel generation',
   'aiModel.readyCount': '{count} พร้อม',
   'aiModel.relationshipsBadge': 'ความสัมพันธ์',
   'aiModel.relationshipsTooltip': 'ลากเพื่อเชื่อมโยงแนวคิด—AI จะสร้างความสัมพันธ์',
@@ -35,6 +36,7 @@ export default {
   'autoComplete.enterTopicFirst': 'กรุณาใส่เนื้อหาหัวข้อก่อน',
   'autoComplete.generationFailedRetry': 'การสร้างล้มเหลว กรุณาลองอีกครั้ง',
   'autoComplete.generationInProgress': 'กำลังสร้าง กรุณารอ',
+  'autoComplete.generationInstructionsLabel': 'User requirements:',
   'autoComplete.modelsReadyCount': '{success}/{total} โมเดลพร้อม',
   'autoComplete.noDiagramData': 'ไม่มีข้อมูลไดอะแกรม',
   'autoComplete.selectDiagramType': 'กรุณาเลือกประเภทไดอะแกรม',
@@ -86,6 +88,12 @@ export default {
   'mindmate.noHistory': 'ไม่มีประวัติ',
   'mindmate.noHistoryPanel': 'ไม่มีประวัติบทสนทนา',
   'mindmate.suggestionLabel': 'ลองถามฉัน:',
+  'mindmate.openInCanvas': 'Edit in canvas',
+  'mindmate.openCanvasFailed': 'Could not open diagram in canvas.',
+  'mindmate.openCanvasLoginRequired': 'Sign in to open this diagram in the canvas.',
+  'mindmate.openCanvasNoLibraryId': 'Diagram was not saved to your library. Sign in and try again.',
+  'mindmate.openCanvasSaveRetry': 'Could not save this diagram to your library automatically. Regenerate; contact your administrator if it persists.',
+  'mindmate.diagramLibraryFull': 'Diagram library is full. Delete old diagrams and try again.',
   'mindmate.tooltip.copy': 'คัดลอก',
   'mindmate.tooltip.dislike': 'ไม่ชอบ',
   'mindmate.tooltip.edit': 'แก้ไข',

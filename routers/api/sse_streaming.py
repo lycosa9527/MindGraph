@@ -234,8 +234,13 @@ async def ai_assistant_stream(
                 event_type = chunk.get("event", "unknown")
                 logger.debug("[STREAM] Received chunk %s: %s", chunk_count, event_type)
 
-                if chunk.get("conversation_id"):
-                    captured_conversation_id = chunk.get("conversation_id")
+                chunk_conversation_id = chunk.get("conversation_id")
+                if chunk_conversation_id and chunk_conversation_id != captured_conversation_id:
+                    # New conversations have no id until Dify assigns one mid-stream; register the
+                    # conversation-keyed session once it first appears so the generate_dingtalk tool
+                    # can correlate by conversation_id (the start-of-stream dify_user_id registration
+                    # already covers the first turn). Guard avoids re-writing on every chunk.
+                    captured_conversation_id = chunk_conversation_id
                     if current_user and hasattr(current_user, "id"):
                         await register_generation_session(
                             channel="mindmate",

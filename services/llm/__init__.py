@@ -17,7 +17,7 @@ import logging
 import time
 from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
-from services.infrastructure.http.error_handler import LLMServiceError, UserDailyTokenCapExceededError
+from services.infrastructure.http.error_handler import LLMServiceError
 from services.monitoring.error_reporting import record_failure
 from services.infrastructure.utils.client_manager import client_manager
 from services.llm.llm_health import LLMHealthChecker

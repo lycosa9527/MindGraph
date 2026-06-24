@@ -30,6 +30,7 @@ import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
 import { ANIMATION } from '@/config/uiConfig'
 import { useDiagramStore } from '@/stores'
 import type { MindGraphNode } from '@/types'
+import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 
 const DEFAULT_NODE_WIDTH = 120
@@ -202,7 +203,9 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     const nodeEl = document.querySelector(
       `.vue-flow__node[data-id="${CSS.escape(nodeId)}"]`
     ) as HTMLElement | null
-    const branchEl = nodeEl?.querySelector('.branch-node, .mind-map-node') as HTMLElement | null
+    const branchEl = nodeEl?.querySelector(
+      '.branch-node, .mind-map-node, .mind-map-legacy-node'
+    ) as HTMLElement | null
     if (!branchEl) return null
 
     const zoom = getViewport().zoom || 1
@@ -256,9 +259,12 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
         : {}
 
     const theme = getMindMapThemeForDiagram(diagramStore.data)
-    const nodeShape = resolveNodeShape(dataStyle as never, true)
-    const isUnderline = nodeShape === 'underline'
-    const fontSizePx = dataStyle.fontSize ?? mindMapBranchFontSize(nodeId)
+    const v2Visuals = readMindMapV2VisualDesignActive()
+    const branchIndex = (node.data?.branchIndex as number | undefined) ?? 0
+    const branchPalette = getMindmapBranchColor(branchIndex)
+    const nodeShape = v2Visuals ? resolveNodeShape(dataStyle as never, true) : 'oval'
+    const isUnderline = v2Visuals && nodeShape === 'underline'
+    const fontSizePx = dataStyle.fontSize ?? (v2Visuals ? mindMapBranchFontSize(nodeId) : 16)
     const fontSize =
       typeof fontSizePx === 'number' ? `${fontSizePx}px` : String(fontSizePx ?? '16px')
 
@@ -269,14 +275,15 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
       backgroundColor: String(
         dataStyle.backgroundColor ??
           vueStyle.backgroundColor ??
-          (isUnderline ? 'transparent' : theme.backgroundColor)
+          (isUnderline ? 'transparent' : v2Visuals ? theme.backgroundColor : branchPalette.fill)
       ),
-      textColor: String(dataStyle.textColor ?? vueStyle.color ?? theme.textColor),
+      textColor: String(dataStyle.textColor ?? vueStyle.color ?? (v2Visuals ? theme.textColor : '#333333')),
       borderColor: String(
         dataStyle.borderColor ??
           vueStyle.borderColor ??
-          resolveMindMapTopicBorderColor(null) ??
-          theme.borderColor
+          (v2Visuals
+            ? resolveMindMapTopicBorderColor(null) ?? theme.borderColor
+            : branchPalette.border)
       ),
       fontSize,
       fontWeight: String(dataStyle.fontWeight ?? vueStyle.fontWeight ?? 'normal'),

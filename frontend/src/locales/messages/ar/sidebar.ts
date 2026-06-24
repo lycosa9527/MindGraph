@@ -1,5 +1,5 @@
 /**
- * ar UI �?sidebar
+ * ar UI � sidebar
  */
 
 export default {

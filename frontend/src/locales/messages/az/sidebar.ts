@@ -1,5 +1,5 @@
 /**
- * az UI �?sidebar
+ * az UI � sidebar
  */
 
 export default {

@@ -209,6 +209,25 @@ async def list_user_usage_activities(
     )
 
 
+async def list_org_usage_activities(
+    db: AsyncSession,
+    organization_id: int,
+    *,
+    source: Optional[str] = None,
+    limit: int = 50,
+    before_id: Optional[int] = None,
+) -> list[UserUsageActivity]:
+    """Admin list: newest first for one organization with optional source filter."""
+    repo = UserUsageActivityRepository(db)
+    src = source.strip().lower() if isinstance(source, str) and source.strip() else None
+    return await repo.list_for_organization(
+        organization_id=int(organization_id),
+        limit=limit,
+        before_id=before_id,
+        source=src,
+    )
+
+
 def activity_to_admin_dict(row: UserUsageActivity) -> dict[str, Any]:
     """Serialize one row for admin JSON (camelCase keys)."""
     created = row.created_at

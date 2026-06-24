@@ -1,5 +1,5 @@
 /**
- * ka UI �?community
+ * ka UI � community
  */
 
 export default {

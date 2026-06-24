@@ -8,6 +8,7 @@ import { computed, ref, watch } from 'vue'
 import { ElCheckbox } from 'element-plus'
 
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import {
@@ -29,6 +30,7 @@ const uiStore = useUIStore()
 const authStore = useAuthStore()
 const { t } = useLanguage()
 const notify = useNotifications()
+const { featureMindmapV2Canvas } = useFeatureFlags()
 
 const draftUi = ref<Language>(uiStore.language)
 const draftPrompt = ref<PromptLanguage>(uiStore.promptLanguage)
@@ -173,10 +175,14 @@ async function save(): Promise<void> {
   if (!matchPromptToInterface.value) {
     uiStore.setPromptLanguage(promptForPersist)
   }
-  const prevMindMapMode = uiStore.mindMapCanvasMode
-  uiStore.setMindMapCanvasMode(draftMindMapCanvasMode.value)
-  if (prevMindMapMode !== draftMindMapCanvasMode.value) {
-    notify.info(t('settings.language.mindMapCanvasRefreshHint'))
+  if (featureMindmapV2Canvas.value) {
+    const prevMindMapMode = uiStore.mindMapCanvasMode
+    uiStore.setMindMapCanvasMode(draftMindMapCanvasMode.value)
+    if (prevMindMapMode !== draftMindMapCanvasMode.value) {
+      notify.info(t('settings.language.mindMapCanvasRefreshHint'))
+    }
+  } else if (uiStore.mindMapCanvasMode === 'v2') {
+    uiStore.setMindMapCanvasMode('legacy')
   }
   uiStore.setUiLanguageExplicit(true)
   visible.value = false
@@ -286,7 +292,7 @@ function onClose(): void {
         </el-select>
       </section>
 
-      <section>
+      <section v-if="featureMindmapV2Canvas">
         <div class="language-settings-swiss__kicker">
           <span>{{ t('settings.language.mindMapCanvas') }}</span>
         </div>

@@ -375,9 +375,8 @@ async def lifespan(fastapi_app: FastAPI):
         if is_main_worker:
             logger.warning("Failed to start export cleanup scheduler: %s", e)
 
-    error_retention_task = None
     try:
-        error_retention_task = asyncio.create_task(start_error_retention_scheduler(interval_hours=24))
+        asyncio.create_task(start_error_retention_scheduler(interval_hours=24))
         if is_main_worker:
             logger.debug("Error retention scheduler started")
     except BACKGROUND_INFRA_ERRORS as e:
@@ -425,12 +424,15 @@ async def lifespan(fastapi_app: FastAPI):
 
     dify_health_poller_task: Optional[asyncio.Task] = None
     try:
+        from services.dify.dify_server_schema import clear_dify_server_schema_cache
+
+        clear_dify_server_schema_cache()
         dify_health_poller_task = asyncio.create_task(start_dify_health_poller())
         if is_main_worker:
-            logger.debug("Dify dual-server health poller started")
+            logger.debug("[Dify Failover] Dual-server health check task scheduled")
     except BACKGROUND_INFRA_ERRORS as e:
         if is_main_worker:
-            logger.warning("Failed to start Dify health poller: %s", e)
+            logger.warning("[Dify Failover] Could not start background health checks: %s", e)
 
     # PDF auto-import removed - no longer needed for image-based viewing
     # Documents are now registered via register_image_folders.py script

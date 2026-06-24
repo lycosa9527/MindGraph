@@ -113,6 +113,10 @@ export type EventTypes = {
   /** Increment diagram store layoutRecalcTrigger (e.g. after lazy-loaded KaTeX/markdown pipeline). */
   'diagram:layout_recalc_bump': Record<string, never>
   'diagram:branch_moved': Record<string, never>
+  'mindmap:canvas_mode_changed': {
+    previousMode: 'legacy' | 'v2'
+    newMode: 'legacy' | 'v2'
+  }
   'snapshot:requested': Record<string, never>
   'diagram:workshop_snapshot_applied': Record<string, never>
   'concept_map:link_drop': { sourceId: string; targetId: string; linkedFromConnectionId?: string }

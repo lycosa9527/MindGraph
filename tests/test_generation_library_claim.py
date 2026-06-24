@@ -59,3 +59,86 @@ async def test_claim_without_spec_not_reclaimable() -> None:
         diagram_id, err = await claim_generation_preview_for_user("deadbeef", user)
     assert diagram_id is None
     assert err == CLAIM_ERROR_NO_SPEC
+
+
+@pytest.mark.asyncio
+async def test_claim_rejects_when_owner_mismatch() -> None:
+    """A preview owned by another user is treated as not found."""
+    user = MagicMock()
+    user.id = 3
+    user.organization_id = 5
+    with patch(
+        "services.diagram.generation_library_claim.get_generation_preview_outcome",
+        new=AsyncMock(
+            return_value={
+                "reason": "save_error",
+                "spec": {"topic": "x"},
+                "user_id": 99,
+            }
+        ),
+    ):
+        diagram_id, err = await claim_generation_preview_for_user("deadbeef", user)
+    assert diagram_id is None
+    assert err == CLAIM_ERROR_NOT_FOUND
+
+
+@pytest.mark.asyncio
+async def test_claim_allows_when_owner_unset() -> None:
+    """A preview with no recorded owner (no_user) stays claimable by any user."""
+    user = MagicMock()
+    user.id = 3
+    user.organization_id = 5
+    with (
+        patch(
+            "services.diagram.generation_library_claim.get_generation_preview_outcome",
+            new=AsyncMock(
+                return_value={
+                    "reason": "no_user",
+                    "spec": {"topic": "x"},
+                    "user_id": None,
+                }
+            ),
+        ),
+        patch(
+            "services.diagram.generation_library_claim.try_save_diagram_to_library",
+            new=AsyncMock(return_value="550e8400-e29b-41d4-a716-446655440000"),
+        ),
+        patch(
+            "services.diagram.generation_library_claim.update_generation_preview_diagram_id",
+            new=AsyncMock(return_value=True),
+        ),
+    ):
+        diagram_id, err = await claim_generation_preview_for_user("deadbeef", user)
+    assert err == ""
+    assert diagram_id == "550e8400-e29b-41d4-a716-446655440000"
+
+
+@pytest.mark.asyncio
+async def test_claim_allows_when_owner_matches() -> None:
+    """The recorded owner can claim their own preview."""
+    user = MagicMock()
+    user.id = 3
+    user.organization_id = 5
+    with (
+        patch(
+            "services.diagram.generation_library_claim.get_generation_preview_outcome",
+            new=AsyncMock(
+                return_value={
+                    "reason": "save_error",
+                    "spec": {"topic": "x"},
+                    "user_id": 3,
+                }
+            ),
+        ),
+        patch(
+            "services.diagram.generation_library_claim.try_save_diagram_to_library",
+            new=AsyncMock(return_value="550e8400-e29b-41d4-a716-446655440000"),
+        ),
+        patch(
+            "services.diagram.generation_library_claim.update_generation_preview_diagram_id",
+            new=AsyncMock(return_value=True),
+        ),
+    ):
+        diagram_id, err = await claim_generation_preview_for_user("deadbeef", user)
+    assert err == ""
+    assert diagram_id == "550e8400-e29b-41d4-a716-446655440000"

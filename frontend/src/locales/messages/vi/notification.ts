@@ -1,5 +1,5 @@
 /**
- * vi UI �?notification
+ * vi UI � notification
  */
 
 export default {

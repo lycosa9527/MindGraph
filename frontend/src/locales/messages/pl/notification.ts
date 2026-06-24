@@ -1,5 +1,5 @@
 /**
- * pl UI �?notification
+ * pl UI � notification
  */
 
 export default {

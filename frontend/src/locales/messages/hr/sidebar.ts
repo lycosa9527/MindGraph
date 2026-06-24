@@ -1,5 +1,5 @@
 /**
- * hr UI �?sidebar
+ * hr UI � sidebar
  */
 
 export default {

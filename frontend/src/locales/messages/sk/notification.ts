@@ -1,5 +1,5 @@
 /**
- * sk UI �?notification
+ * sk UI � notification
  */
 
 export default {

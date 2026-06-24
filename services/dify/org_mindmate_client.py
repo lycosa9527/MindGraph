@@ -18,13 +18,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.dify import AsyncDifyClient
 from models.domain.auth import Organization
+from services.dify.dify_health_logging import LOG_PREFIX, org_label, server_label
+from services.dify.dify_failover_routing import choose_failover_route, is_health_fresh
 from services.dify.dify_servers import (
     DifyServerCreds,
     configured_dify_servers,
     failover_enabled,
+    failover_partner_server,
     org_server_credentials,
     primary_server_no,
-    standby_server_no,
 )
 from services.redis.cache.redis_dify_server_health_cache import get_server_health
 from utils.db.session_open import system_rls_session
@@ -61,32 +63,45 @@ async def select_active_dify_server(org: Organization) -> Optional[int]:
     Choose the live Dify server for an org with active/standby failover.
 
     Prefers the configured primary; when failover is enabled and the primary is
-    considered down (per the health cache) while the standby is usable, returns
-    the standby. The primary is preferred again as soon as it recovers.
+    considered down (per the health cache) while the partner slot is usable,
+    returns the partner. The primary is preferred again as soon as it recovers.
+
+    The partner follows the school's own configured pair (1+2, 2+3, 1+3, etc.).
     """
     primary = primary_server_no(org)
-    standby = standby_server_no(primary)
+    partner = failover_partner_server(org)
     primary_creds = org_server_credentials(org, primary)
-    standby_creds = org_server_credentials(org, standby)
+    partner_creds = org_server_credentials(org, partner) if partner is not None else None
 
     if primary_creds is None:
-        return standby if standby_creds is not None else None
-    if not failover_enabled(org) or standby_creds is None:
+        if partner_creds is not None:
+            return partner
+        configured = configured_dify_servers(org)
+        return configured[0].server if configured else None
+    if not failover_enabled(org) or partner is None or partner_creds is None:
         return primary
 
     primary_health = await get_server_health(org.id, primary)
-    if primary_health is None or not primary_health.considered_down:
-        return primary
-
-    standby_health = await get_server_health(org.id, standby)
-    if standby_health is None or not standby_health.considered_down:
-        logger.info(
-            "[Dify] Org %s failing over from server %s to server %s (primary unhealthy)",
-            org.id,
-            primary,
-            standby,
-        )
-        return standby
+    partner_health = await get_server_health(org.id, partner) if partner is not None else None
+    route = choose_failover_route(primary, partner, primary_health, partner_health)
+    if route == partner and route != primary:
+        if primary_health is not None and not is_health_fresh(primary_health):
+            logger.warning(
+                "%s %s: MindMate routed to %s; %s health data is stale.",
+                LOG_PREFIX,
+                org_label(org),
+                server_label(partner, "standby"),
+                server_label(primary, "primary"),
+            )
+        else:
+            logger.debug(
+                "%s %s: MindMate request routed to %s because %s is offline.",
+                LOG_PREFIX,
+                org_label(org),
+                server_label(partner, "standby"),
+                server_label(primary, "primary"),
+            )
+        return partner
     return primary
 
 

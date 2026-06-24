@@ -104,7 +104,6 @@ export async function consumeGenerateGraphStream(
         }
         const event = data.event
         if (isStreamPhase(event)) {
-          callbacks.onPhase?.(event)
           if (event === 'progress') {
             callbacks.onProgress?.({
               topic: typeof data.topic === 'string' ? data.topic : undefined,
@@ -112,6 +111,7 @@ export async function consumeGenerateGraphStream(
                 typeof data.diagram_type === 'string' ? data.diagram_type : undefined,
             })
           }
+          callbacks.onPhase?.(event)
         } else if (event === 'complete') {
           completePayload = data as GenerateGraphCompletePayload
           callbacks.onComplete?.(completePayload)

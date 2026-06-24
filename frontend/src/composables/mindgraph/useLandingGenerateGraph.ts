@@ -38,14 +38,58 @@ type LandingPhaseToastKey =
 
 type LandingNotifyPhase = GenerateGraphStreamPhase | 'client_sent'
 
+export type LandingPhaseToastBucket = LandingPhaseToastKey | 'generating_detail' | 'silent'
+
+/** Map stream phases to toast buckets so identical messages are not shown twice. */
+export function resolveLandingPhaseToastBucket(
+  phase: LandingNotifyPhase
+): LandingPhaseToastBucket {
+  if (phase === 'waiting' || phase === 'progress') {
+    return 'generating_detail'
+  }
+  if (phase === 'streaming') {
+    return 'silent'
+  }
+  if (phase === 'client_sent' || phase === 'accepted') {
+    return 'landing.international.phaseServerReceived'
+  }
+  const keyMap: Record<
+    Exclude<LandingNotifyPhase, 'waiting' | 'progress' | 'streaming' | 'client_sent' | 'accepted'>,
+    LandingPhaseToastKey
+  > = {
+    detecting: 'landing.international.phasePleaseWait',
+    requirements: 'landing.international.phasePleaseWait',
+  }
+  return keyMap[phase]
+}
+
+/** Whether a toast bucket should fire given buckets already shown this generation. */
+export function shouldShowLandingPhaseToast(
+  toastBucket: LandingPhaseToastBucket,
+  shownToastBuckets: ReadonlySet<LandingPhaseToastBucket>
+): boolean {
+  if (toastBucket === 'silent') {
+    return false
+  }
+  if (shownToastBuckets.has(toastBucket)) {
+    return false
+  }
+  if (
+    toastBucket === 'landing.international.phasePleaseWait' &&
+    shownToastBuckets.has('generating_detail')
+  ) {
+    return false
+  }
+  return true
+}
+
 export function useLandingGenerateGraph(options: {
   t: UseLanguageTranslate
   notify: ReturnType<typeof useNotifications>
 }) {
   const loadPhase = ref<ModelLoadPhase>('idle')
   const isGenerating = ref(false)
-  let lastNotifiedPhase: LandingNotifyPhase | null = null
-  let generatingDetailToastShown = false
+  let shownToastBuckets = new Set<LandingPhaseToastBucket>()
   let activeAbortController: AbortController | null = null
   let activeRequestBody: Record<string, unknown> | null = null
   let serverProgressTopic: string | undefined
@@ -53,39 +97,26 @@ export function useLandingGenerateGraph(options: {
 
   function resetLoadPhase(): void {
     loadPhase.value = 'idle'
-    lastNotifiedPhase = null
-    generatingDetailToastShown = false
+    shownToastBuckets = new Set()
     activeRequestBody = null
     serverProgressTopic = undefined
     serverProgressDiagramType = undefined
   }
 
   function notifyPhase(phase: LandingNotifyPhase): void {
-    if (phase === lastNotifiedPhase) {
+    const toastBucket = resolveLandingPhaseToastBucket(phase)
+    if (!shouldShowLandingPhaseToast(toastBucket, shownToastBuckets)) {
       return
     }
-    lastNotifiedPhase = phase
-    const keyMap: Record<LandingNotifyPhase, LandingPhaseToastKey> = {
-      client_sent: 'landing.international.phaseRequestSent',
-      accepted: 'landing.international.phaseServerReceived',
-      detecting: 'landing.international.phasePleaseWait',
-      requirements: 'landing.international.phasePleaseWait',
-      progress: 'landing.international.phasePleaseWait',
-      waiting: 'landing.international.phasePleaseWait',
-      streaming: 'landing.international.phasePleaseWait',
-    }
-    if (phase === 'waiting' || phase === 'progress') {
+    shownToastBuckets.add(toastBucket)
+    if (toastBucket === 'generating_detail') {
       notifyGeneratingDetail()
       return
     }
-    options.notify.info(String(options.t(keyMap[phase])), 3500)
+    options.notify.info(String(options.t(toastBucket)), 3500)
   }
 
   function notifyGeneratingDetail(): void {
-    if (generatingDetailToastShown) {
-      return
-    }
-    generatingDetailToastShown = true
     const topic =
       serverProgressTopic ||
       topicPreviewFromPrompt(activeRequestBody?.prompt) ||
@@ -191,7 +222,7 @@ export function useLandingGenerateGraph(options: {
 
     isGenerating.value = true
     activeRequestBody = requestBody
-    generatingDetailToastShown = false
+    shownToastBuckets = new Set()
     serverProgressTopic = undefined
     serverProgressDiagramType = undefined
     const payload = {
@@ -225,7 +256,6 @@ export function useLandingGenerateGraph(options: {
               if (metadata.diagram_type) {
                 serverProgressDiagramType = metadata.diagram_type
               }
-              notifyPhase('progress')
             },
             onComplete: (result) => {
               completePayload = result

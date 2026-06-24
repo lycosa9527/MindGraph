@@ -85,6 +85,25 @@ describe('consumeGenerateGraphStream', () => {
     expect(result.usedStream).toBe(false)
   })
 
+  it('invokes onProgress before onPhase for progress events', async () => {
+    const order: string[] = []
+
+    const response = sseResponse([
+      'data: {"event":"progress","topic":"Animals","diagram_type":"tree_map"}',
+    ])
+
+    await consumeGenerateGraphStream(response, {
+      onProgress: () => {
+        order.push('progress-metadata')
+      },
+      onPhase: (phase) => {
+        order.push(`phase:${phase}`)
+      },
+    })
+
+    expect(order).toEqual(['progress-metadata', 'phase:progress'])
+  })
+
   it('invokes onError for error events', async () => {
     let errorMessage = ''
     const response = sseResponse(['data: {"event":"error","message":"Rate limited"}'])

@@ -1,5 +1,5 @@
 /**
- * ig UI �?community
+ * ig UI � community
  */
 
 export default {

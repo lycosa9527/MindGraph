@@ -1,5 +1,5 @@
 /**
- * tn UI �?notification
+ * tn UI � notification
  */
 
 export default {

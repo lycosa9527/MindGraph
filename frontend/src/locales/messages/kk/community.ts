@@ -1,5 +1,5 @@
 /**
- * kk UI �?community
+ * kk UI � community
  */
 
 export default {

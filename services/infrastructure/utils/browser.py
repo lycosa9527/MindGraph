@@ -320,11 +320,41 @@ def _get_best_chromium_executable() -> Optional[str]:
     )
 
 
+class _ChromiumExecutableHolder:
+    """Process-wide cache for the resolved Chromium executable path.
+
+    Resolution can launch Chromium via the sync Playwright API to compare versions,
+    so it must run off the event loop and only once per process.
+    """
+
+    def __init__(self) -> None:
+        self.resolved = False
+        self.path: Optional[str] = None
+
+
+_CHROMIUM_EXECUTABLE_HOLDER = _ChromiumExecutableHolder()
+
+
 async def _get_best_chromium_executable_async() -> Optional[str]:
-    """Async: Playwright path lookup runs in a worker thread."""
+    """Async: resolve the best Chromium path off the event loop, cached per process.
+
+    ``_select_best_chromium_executable`` may launch Chromium through the sync Playwright
+    API to compare versions, which raises when run inside the asyncio loop, so the whole
+    resolution runs in a worker thread.
+    """
+    holder = _CHROMIUM_EXECUTABLE_HOLDER
+    if holder.resolved:
+        return holder.path
     local_chromium = _get_local_chromium_executable()
     playwright_chromium = await asyncio.to_thread(_get_playwright_chromium_executable_sync)
-    return _select_best_chromium_executable(local_chromium, playwright_chromium)
+    best = await asyncio.to_thread(
+        _select_best_chromium_executable,
+        local_chromium,
+        playwright_chromium,
+    )
+    holder.path = best
+    holder.resolved = True
+    return best
 
 
 async def log_browser_diagnostics():

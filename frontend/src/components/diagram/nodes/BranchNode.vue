@@ -15,6 +15,7 @@ import {
   handleLearningSheetPickNodeClick,
   isLearningSheetCustomPickActive,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
@@ -42,6 +43,7 @@ const props = defineProps<MindGraphNodeProps>()
 
 const diagramStore = useDiagramStore()
 const branchNodeRef = ref<HTMLDivElement | null>(null)
+const useMindMapV2Visuals = useMindMapV2Chrome()
 
 // Get theme defaults matching old StyleManager
 const { getNodeStyle } = useTheme({
@@ -54,6 +56,9 @@ const isMindMap = computed(
 
 // Determine if this is a child node (deeper in hierarchy)
 const isChild = computed(() => {
+  if (isMindMap.value && !useMindMapV2Visuals.value) {
+    return props.data.nodeType === 'branch' && props.data.parentId
+  }
   if (isMindMap.value) {
     return mindMapBranchDepth(props.id) >= 2
   }
@@ -109,21 +114,36 @@ const useAutoWrap = computed(() => !isTreeMap.value && !isBridgeMap.value)
 // Check if this is a bridge map node (should be text-only, including first pair)
 const isBridgeMap = computed(() => props.data.diagramType === 'bridge_map')
 
-const nodeShape = computed(() => resolveNodeShape(resolvedStyle.value, isMindMap.value))
+const mindmapBranchColors = computed(() => {
+  const index = (props.data.branchIndex as number) ?? 0
+  return getMindmapBranchColor(index)
+})
+
+const nodeShape = computed(() =>
+  useMindMapV2Visuals.value ? resolveNodeShape(resolvedStyle.value, isMindMap.value) : 'oval'
+)
 const isUnderlineShape = computed(() => isMindMap.value && nodeShape.value === 'underline')
 
-const defaultMindMapTheme = computed(() => getMindMapThemeForDiagram(diagramStore.data))
+const defaultMindMapTheme = computed(() =>
+  useMindMapV2Visuals.value ? getMindMapThemeForDiagram(diagramStore.data) : null
+)
 
 const resolvedStyle = computed(() => ({
   ...(diagramStore.data?._node_styles?.[props.id] || {}),
   ...(props.data.style || {}),
 }))
 
-const mindMapThemeColors = computed(() => ({
-  fill: defaultMindMapTheme.value.backgroundColor,
-  border: defaultMindMapTheme.value.borderColor,
-  text: defaultMindMapTheme.value.textColor,
-}))
+const mindMapThemeColors = computed(() => {
+  const theme = defaultMindMapTheme.value
+  if (!theme) {
+    return { fill: '', border: '', text: '' }
+  }
+  return {
+    fill: theme.backgroundColor,
+    border: theme.borderColor,
+    text: theme.textColor,
+  }
+})
 
 const contentJustifyClass = computed(() => 'justify-center')
 
@@ -179,6 +199,43 @@ const nodeStyle = computed((): CSSProperties => {
   const shouldHaveShadow = !isBridgeMap.value
 
   const style = resolvedStyle.value
+
+  // Classic canvas: pill nodes with per-branch palette colors (pre-v2 design).
+  if (isMindMap.value && !useMindMapV2Visuals.value) {
+    const bgColor = shouldHaveBackground
+      ? mindmapBranchColors.value.fill ||
+        style.backgroundColor ||
+        defaultStyle.value.backgroundColor ||
+        '#e3f2fd'
+      : 'transparent'
+    const borderColor = shouldHaveBorder
+      ? mindmapBranchColors.value.border ||
+        style.borderColor ||
+        defaultStyle.value.borderColor ||
+        '#4e79a7'
+      : 'transparent'
+    const borderWidth = shouldHaveBorder
+      ? (style.borderWidth ?? defaultStyle.value.borderWidth ?? 3)
+      : 0
+    const borderStyleVal = shouldHaveBorder ? style.borderStyle || 'solid' : 'solid'
+
+    const legacy: CSSProperties = {
+      backgroundColor: bgColor,
+      ...(shouldHaveBorder
+        ? getBorderStyleProps(borderColor, borderWidth, borderStyleVal, { backgroundColor: bgColor })
+        : { borderColor: 'transparent', borderWidth: '0px', borderStyle: 'none' }),
+      color: style.textColor || defaultStyle.value.textColor || '#333333',
+      fontFamily: style.fontFamily || DIAGRAM_NODE_FONT_STACK,
+      fontSize: `${style.fontSize || defaultStyle.value.fontSize || 16}px`,
+      fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'normal',
+      fontStyle: style.fontStyle || 'normal',
+      textDecoration: style.textDecoration || 'none',
+      borderRadius: '9999px',
+      boxShadow: shouldHaveShadow ? undefined : 'none',
+    }
+    return legacy
+  }
+
   const bgColor = shouldHaveBackground
     ? style.backgroundColor ||
       (isTreeMap.value && treeMapGroupColors.value
@@ -379,10 +436,11 @@ function handleBranchNodeClick(event: MouseEvent): void {
       contentJustifyClass,
       {
         'tree-map-node': isTreeMap,
-        'mind-map-node': isMindMap,
+        'mind-map-node': isMindMap && useMindMapV2Visuals,
+        'mind-map-legacy-node': isMindMap && !useMindMapV2Visuals,
         'mind-map-underline-node': isUnderlineShape,
         'border-none': isBridgeMap,
-        'px-4 py-2': !isMindMap,
+        'px-4 py-2': !isMindMap || !useMindMapV2Visuals,
         'cursor-grab': !isSheetPickActive,
         'branch-node--sheet-pick': isSheetPickActive,
         'branch-node--subgraph-preview': isSubgraphPreview,

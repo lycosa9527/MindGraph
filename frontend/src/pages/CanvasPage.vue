@@ -330,15 +330,26 @@ const showZoomControls = computed(() => {
   return !(rel || rootPick || focusPick || inlineRecActiveNodeId.value)
 })
 
+const useMindMapV2 = useMindMapV2Chrome()
+
+const isMindMapCanvas = computed(() => isMindMapDiagramType(diagramStore.type))
+
+eventBus.onWithOwner(
+  'mindmap:canvas_mode_changed',
+  ({ previousMode, newMode }) => {
+    if (isMindMapDiagramType(diagramStore.type)) {
+      diagramStore.reconcileMindMapCanvasMode(previousMode, newMode)
+    }
+  },
+  'CanvasPage'
+)
+
 const fitViewOnInit = computed(() => {
   const type = diagramStore.type
   if (type === 'concept_map') return false
-  if (isMindMapDiagramType(type) && uiStore.mindMapCanvasMode === 'v2') return false
+  if (useMindMapV2.value) return false
   return true
 })
-
-const isMindMapCanvas = computed(() => isMindMapDiagramType(diagramStore.type))
-const useMindMapV2 = useMindMapV2Chrome()
 
 const featureKnowledgeSpaceFlag = computed(() => featureFlagsStore.getFeatureKnowledgeSpace())
 const fileCenterEnabled = computed(

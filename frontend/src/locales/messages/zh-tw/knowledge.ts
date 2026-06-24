@@ -1,8 +1,14 @@
 /**
- * zh-tw UI �?knowledge
+ * zh-tw UI � knowledge
  */
 
 export default {
+  'fileCenterLibrary.title': 'Packages',
+  'fileCenterLibrary.subtitle': 'Source collections grouped by diagram (File Center).',
+  'fileCenterLibrary.openDiagram': 'Open diagram',
+  'fileCenterLibrary.badgeCanvas': 'Canvas',
+  'fileCenterLibrary.badgeExtension': 'Extension',
+  'fileCenterLibrary.badgeUpload': 'Upload',
   'chunkTest.history.confirmDeleteBody': '確定要刪除這個測試記錄嗎？此操作不可撤銷。',
   'chunkTest.history.confirmDeleteTitle': '刪除測試',
   'chunkTest.history.delete': '刪除',

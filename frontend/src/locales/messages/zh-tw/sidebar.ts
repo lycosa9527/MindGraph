@@ -1,5 +1,5 @@
 /**
- * zh-tw UI �?sidebar
+ * zh-tw UI � sidebar
  */
 
 export default {

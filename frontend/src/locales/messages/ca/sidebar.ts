@@ -1,5 +1,5 @@
 /**
- * ca UI �?sidebar
+ * ca UI � sidebar
  */
 
 export default {

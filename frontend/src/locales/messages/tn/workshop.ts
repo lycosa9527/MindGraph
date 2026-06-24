@@ -1,5 +1,5 @@
 /**
- * tn UI �?workshop
+ * tn UI � workshop
  */
 
 export default {

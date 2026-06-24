@@ -1,5 +1,5 @@
 /**
- * dv UI �?community
+ * dv UI � community
  */
 
 export default {

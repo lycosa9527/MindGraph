@@ -1,5 +1,5 @@
 /**
- * vi UI �?sidebar
+ * vi UI � sidebar
  */
 
 export default {

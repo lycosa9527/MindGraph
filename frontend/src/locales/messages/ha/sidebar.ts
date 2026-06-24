@@ -1,5 +1,5 @@
 /**
- * ha UI �?sidebar
+ * ha UI � sidebar
  */
 
 export default {

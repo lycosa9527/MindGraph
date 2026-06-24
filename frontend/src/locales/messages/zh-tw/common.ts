@@ -1,5 +1,5 @@
 /**
- * zh-tw UI �?common
+ * zh-tw UI � common
  */
 
 export default {
@@ -181,6 +181,7 @@ export default {
   'meta.pageTitle.schoolZone': '學校專區',
   'meta.pageTitle.smartResponse': '智能應答',
   'meta.pageTitle.template': '模板',
+  'meta.pageTitle.thinkingCoinsUpgrade': 'Upgrade membership',
   'meta.pageTitle.teacherUsage': '教師使用度',
   'meta.pageTitle.workshopChat': '工作坊聊天',
   'publicDashboard.networkError': '網絡錯誤，加載儀表盤失敗',
@@ -199,24 +200,19 @@ export default {
   'settings.version.chinese': '專業模式',
   'settings.version.international': '簡潔模式',
   'landing.international.subtitle': '宇宙中最強大的AI思維圖示生成軟件',
-  'landing.international.promptPlaceholder':
-    '描述主題並指定圖示類型，例如「用流程圖展示測量密度的實驗步驟」…',
+  'landing.international.promptPlaceholder': '描述主題並指定圖示類型，例如「用流程圖展示測量密度的實驗步驟」…',
   'landing.international.examplesTitle': '靈感推薦',
   'landing.international.example1': '生成一張關於「光合作用」的思維導圖',
-  'landing.international.example2':
-    '用樹形圖分類「脊椎動物」，四個分支：魚類、兩棲類、爬行類、哺乳類',
-  'landing.international.example3':
-    '用流程圖展示「測量物體密度」的實驗步驟：稱質量、量體積、計算、記錄結論',
+  'landing.international.example2': '用樹形圖分類「脊椎動物」，四個分支：魚類、兩棲類、爬行類、哺乳類',
+  'landing.international.example3': '用流程圖展示「測量物體密度」的實驗步驟：稱質量、量體積、計算、記錄結論',
   'landing.international.example4': '用雙氣泡圖比較「植物細胞」與「動物細胞」的異同',
-  'landing.international.example5':
-    '用括號圖分解「一元二次方程」：標準式、判別式、求根公式、圖像與根的關係',
+  'landing.international.example5': '用括號圖分解「一元二次方程」：標準式、判別式、求根公式、圖像與根的關係',
   'landing.international.example6': '生成氣泡圖，描述「牛頓三大定律」的關鍵概念',
   'landing.international.phaseRequestSent': '請求已發送',
   'landing.international.phaseServerReceived': '伺服器已收到請求',
   'landing.international.phaseGenerating': '正在生成圖示…',
   'landing.international.phasePleaseWait': '請稍候，AI 正在組織內容',
-  'landing.international.generatingWithTopic':
-    '主題：{topic}，正在生成{diagramType}，請稍候',
+  'landing.international.generatingWithTopic': '主題：{topic}，正在生成{diagramType}，請稍候',
   'landing.international.topicUnknown': '您的主題',
   'landing.international.diagramTypePending': '圖示',
   'landing.international.errorRateLimit': '請求過於頻繁，請稍後再試',

@@ -1,5 +1,5 @@
 /**
- * ug UI �?community
+ * ug UI � community
  */
 
 export default {

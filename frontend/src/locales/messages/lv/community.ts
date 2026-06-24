@@ -1,5 +1,5 @@
 /**
- * lv UI �?community
+ * lv UI � community
  */
 
 export default {

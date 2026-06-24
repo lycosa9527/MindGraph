@@ -1,5 +1,5 @@
 /**
- * ne UI �?notification
+ * ne UI � notification
  */
 
 export default {

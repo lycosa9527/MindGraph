@@ -1,5 +1,5 @@
 /**
- * dv UI �?workshop
+ * dv UI � workshop
  */
 
 export default {

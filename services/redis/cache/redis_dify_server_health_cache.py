@@ -28,6 +28,43 @@ logger = logging.getLogger(__name__)
 
 # Consecutive failed probes before a server is treated as down (anti-flap).
 HEALTH_FAILURE_THRESHOLD = 2
+MAX_CONSECUTIVE_FAILURES = 64
+
+_RECORD_PROBE_LUA = """
+local raw = redis.call('GET', KEYS[1])
+local prev_failures = 0
+local prev_last_ok = false
+if raw then
+  local ok, data = pcall(cjson.decode, raw)
+  if ok and type(data) == 'table' then
+    prev_failures = tonumber(data.consecutive_failures) or 0
+    prev_last_ok = data.last_ok_at
+  end
+end
+local now = tonumber(ARGV[1])
+local online = ARGV[2] == '1'
+local max_failures = tonumber(ARGV[3])
+local ttl = tonumber(ARGV[4])
+local failures = 0
+local last_ok = prev_last_ok
+if online then
+  failures = 0
+  last_ok = now
+else
+  failures = prev_failures + 1
+  if failures > max_failures then
+    failures = max_failures
+  end
+end
+local payload = cjson.encode({
+  online = online,
+  consecutive_failures = failures,
+  last_ok_at = last_ok,
+  last_checked_at = now
+})
+redis.call('SETEX', KEYS[1], ttl, payload)
+return payload
+"""
 
 
 @dataclass(frozen=True)
@@ -67,6 +104,27 @@ def _deserialize(text: str) -> Optional[DifyServerHealth]:
         return None
 
 
+def _snapshot_from_probe(online: bool, previous: Optional[DifyServerHealth]) -> DifyServerHealth:
+    """Compute the next snapshot locally (fallback when Redis is unavailable)."""
+    now = time.time()
+    prev_failures = previous.consecutive_failures if previous else 0
+    prev_last_ok = previous.last_ok_at if previous else None
+    if online:
+        return DifyServerHealth(
+            online=True,
+            consecutive_failures=0,
+            last_ok_at=now,
+            last_checked_at=now,
+        )
+    failures = min(prev_failures + 1, MAX_CONSECUTIVE_FAILURES)
+    return DifyServerHealth(
+        online=False,
+        consecutive_failures=failures,
+        last_ok_at=prev_last_ok,
+        last_checked_at=now,
+    )
+
+
 async def get_server_health(org_id: int, server: int) -> Optional[DifyServerHealth]:
     """Return the cached health snapshot, or None on miss / Redis unavailable."""
     if not is_redis_available():
@@ -86,49 +144,48 @@ async def get_server_health(org_id: int, server: int) -> Optional[DifyServerHeal
     return _deserialize(text)
 
 
-async def record_probe_result(org_id: int, server: int, online: bool) -> DifyServerHealth:
+async def record_probe_result(
+    org_id: int,
+    server: int,
+    online: bool,
+    *,
+    previous: Optional[DifyServerHealth] = None,
+) -> DifyServerHealth:
     """
-    Fold a new probe outcome into the cached snapshot and persist it.
+    Fold a new probe outcome into the cached snapshot and persist it atomically.
 
-    Reads the previous snapshot to maintain the consecutive-failure counter used
-    for anti-flap hysteresis, then writes the updated snapshot back with TTL.
+    When *previous* is supplied the poller avoids a redundant Redis GET. The
+    Lua script still reads the latest value at write time for correctness under
+    concurrent writers.
     """
-    now = time.time()
-    previous = await get_server_health(org_id, server)
-    prev_failures = previous.consecutive_failures if previous else 0
-    prev_last_ok = previous.last_ok_at if previous else None
-
-    if online:
-        snapshot = DifyServerHealth(
-            online=True,
-            consecutive_failures=0,
-            last_ok_at=now,
-            last_checked_at=now,
-        )
-    else:
-        snapshot = DifyServerHealth(
-            online=False,
-            consecutive_failures=prev_failures + 1,
-            last_ok_at=prev_last_ok,
-            last_checked_at=now,
-        )
+    if previous is None:
+        previous = await get_server_health(org_id, server)
 
     if not is_redis_available():
-        return snapshot
+        return _snapshot_from_probe(online, previous)
     redis = get_async_redis()
     if not redis:
-        return snapshot
+        return _snapshot_from_probe(online, previous)
+
+    now = time.time()
     try:
-        payload = json.dumps(
-            {
-                "online": snapshot.online,
-                "consecutive_failures": snapshot.consecutive_failures,
-                "last_ok_at": snapshot.last_ok_at,
-                "last_checked_at": snapshot.last_checked_at,
-            },
-            ensure_ascii=False,
+        payload = await redis.eval(
+            _RECORD_PROBE_LUA,
+            1,
+            _cache_key(org_id, server),
+            str(now),
+            "1" if online else "0",
+            str(MAX_CONSECUTIVE_FAILURES),
+            str(_keys.TTL_DIFY_SERVER_HEALTH),
         )
-        await redis.setex(_cache_key(org_id, server), _keys.TTL_DIFY_SERVER_HEALTH, payload)
     except REDIS_ERRORS as exc:
         logger.debug("Dify server health write failed: %s", exc)
-    return snapshot
+        return _snapshot_from_probe(online, previous)
+
+    if isinstance(payload, bytes):
+        payload = payload.decode("utf-8")
+    if isinstance(payload, str):
+        snapshot = _deserialize(payload)
+        if snapshot is not None:
+            return snapshot
+    return _snapshot_from_probe(online, previous)

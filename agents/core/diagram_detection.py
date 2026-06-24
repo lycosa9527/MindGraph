@@ -11,7 +11,6 @@ Proprietary License
 import logging
 import re
 
-from agents.core.agent_utils import extract_json_from_response
 from agents.core.llm_spec_stream import dispatch_llm_chat
 from agents.core.utils import validate_inputs
 from prompts import get_prompt

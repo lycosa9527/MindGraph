@@ -1,5 +1,5 @@
 /**
- * sr UI �?notification
+ * sr UI � notification
  */
 
 export default {

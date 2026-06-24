@@ -1,5 +1,5 @@
 /**
- * tk UI �?sidebar
+ * tk UI � sidebar
  */
 
 export default {

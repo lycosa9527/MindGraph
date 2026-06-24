@@ -1,5 +1,5 @@
 /**
- * fi UI �?notification
+ * fi UI � notification
  */
 
 export default {

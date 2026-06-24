@@ -1,5 +1,5 @@
 /**
- * es UI �?notification
+ * es UI � notification
  */
 
 export default {

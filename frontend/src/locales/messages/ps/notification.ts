@@ -1,5 +1,5 @@
 /**
- * ps UI �?notification
+ * ps UI � notification
  */
 
 export default {

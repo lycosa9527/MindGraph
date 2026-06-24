@@ -31,6 +31,7 @@ export function useFeatureFlags() {
   const featureSchoolZone = computed(() => data.value?.feature_school_zone ?? false)
   const featureDebateverse = computed(() => data.value?.feature_debateverse ?? false)
   const featureKnowledgeSpace = computed(() => data.value?.feature_knowledge_space ?? false)
+  const featureMindmapV2Canvas = computed(() => data.value?.feature_mindmap_v2_canvas ?? false)
   const featureLibrary = computed(() => data.value?.feature_library ?? false)
   const featureGewe = computed(() => data.value?.feature_gewe ?? false)
   const featureSmartResponse = computed(() => data.value?.feature_smart_response ?? false)
@@ -53,6 +54,7 @@ export function useFeatureFlags() {
     featureSchoolZone,
     featureDebateverse,
     featureKnowledgeSpace,
+    featureMindmapV2Canvas,
     featureLibrary,
     featureGewe,
     featureSmartResponse,

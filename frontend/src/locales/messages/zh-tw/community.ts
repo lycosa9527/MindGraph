@@ -1,5 +1,5 @@
 /**
- * zh-tw UI �?community
+ * zh-tw UI � community
  */
 
 export default {

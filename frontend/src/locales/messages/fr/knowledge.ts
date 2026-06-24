@@ -1,8 +1,14 @@
 /**
- * fr UI �?knowledge
+ * fr UI � knowledge
  */
 
 export default {
+  'fileCenterLibrary.title': 'Packages',
+  'fileCenterLibrary.subtitle': 'Source collections grouped by diagram (File Center).',
+  'fileCenterLibrary.openDiagram': 'Open diagram',
+  'fileCenterLibrary.badgeCanvas': 'Canvas',
+  'fileCenterLibrary.badgeExtension': 'Extension',
+  'fileCenterLibrary.badgeUpload': 'Upload',
   'chunkTest.history.confirmDeleteBody': 'Êtes-vous sûr de vouloir supprimer ce test ? Cette action est irréversible.',
   'chunkTest.history.confirmDeleteTitle': 'Supprimer le test',
   'chunkTest.history.delete': 'Supprimer',

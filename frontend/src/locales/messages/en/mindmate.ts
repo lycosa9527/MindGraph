@@ -1,5 +1,5 @@
 /**
- * en UI — mindmate
+ * en UI � mindmate
  */
 
 export default {
@@ -13,33 +13,25 @@ export default {
   'aiModel.relationshipsBadge': 'Relationships',
   'aiModel.relationshipsTooltip': 'Drag to link concepts—AI will generate relationships',
   'aiModel.tabFocusBadge': 'Tab focus',
-  'aiModel.tabFocusTooltip':
-    'Press Tab while editing the focus question to validate; then pick alternatives in the bar (− / =)',
+  'aiModel.tabFocusTooltip': 'Press Tab while editing the focus question to validate; then pick alternatives in the bar (− / =)',
   'aiModel.tabFocusQuestionBadge': 'Tab — focus question',
-  'aiModel.conceptMapFocusQuestionTabTooltip':
-    'While the focus question is selected or being edited: press Tab to run AI check (enter a substantive question first; sign-in required).',
+  'aiModel.conceptMapFocusQuestionTabTooltip': 'While the focus question is selected or being edited: press Tab to run AI check (enter a substantive question first; sign-in required).',
   'aiModel.tabRecBadge': 'Tab rec',
   'aiModel.tabContentRecBadge': 'Tab — content',
   'aiModel.tabRelationshipRecBadge': 'Tab — relationship',
-  'aiModel.conceptMapConceptTabTooltip':
-    'Edit mode (isolated concept): press Tab for alternative wordings (topic must be set).',
-  'aiModel.conceptMapRelationshipTabTooltip':
-    'Edit mode or selection mode (linked concept): press Tab for focal-link relationship suggestions.',
+  'aiModel.conceptMapConceptTabTooltip': 'Edit mode (isolated concept): press Tab for alternative wordings (topic must be set).',
+  'aiModel.conceptMapRelationshipTabTooltip': 'Edit mode or selection mode (linked concept): press Tab for focal-link relationship suggestions.',
   'aiModel.tooltip.clickDeselect': 'Click to deselect {name}',
   'aiModel.tooltip.clickSelect': 'Click to select {name}',
   'aiModel.tooltip.clickSwitch': 'Click to switch to {name} result',
   'aiModel.tooltip.generating': '{name} generating...',
   'aiModel.tooltip.modelFailed': '{name} generation failed',
   'aiModel.tooltip.showingResult': 'Currently showing {name} result',
-  'aiModel.hostPickBadgeTooltip':
-    'Host is editing this model’s version of the diagram (multi-model view)',
+  'aiModel.hostPickBadgeTooltip': 'Host is editing this model’s version of the diagram (multi-model view)',
   'aiModel.hostPickBadgeAria': 'Host is editing using {name}',
-  'autoComplete.collabOwnerOnly':
-    'Only the diagram owner can use AI generation during collaboration',
-  'autoComplete.conceptMapRealtime':
-    'Concept maps use real-time relationship suggestions; create links to generate',
-  'autoComplete.doubleBubbleNeedBothTopics':
-    'Please fill in both left and right topics before generating',
+  'autoComplete.collabOwnerOnly': 'Only the diagram owner can use AI generation during collaboration',
+  'autoComplete.conceptMapRealtime': 'Concept maps use real-time relationship suggestions; create links to generate',
+  'autoComplete.doubleBubbleNeedBothTopics': 'Please fill in both left and right topics before generating',
   'autoComplete.doubleBubbleTopicPair': '{left} vs {right}',
   'autoComplete.enterTopicFirst': 'Please enter topic content first',
   'autoComplete.generationFailedRetry': 'Generation failed, please try again',
@@ -51,18 +43,15 @@ export default {
   'conceptMapPicker.currentFocusQuestion': 'Current focus question',
   'conceptMapPicker.currentRootConcept': 'Current root concept',
   'conceptMapPicker.focusAlternativesHint': 'Alternatives ({pageSize} per page, adaptive height)',
-  'conceptMapPicker.rootAlternativesHint':
-    'Root alternatives ({pageSize} per page, adaptive height)',
+  'conceptMapPicker.rootAlternativesHint': 'Root alternatives ({pageSize} per page, adaptive height)',
   'conceptMapPicker.suggestionsEmpty': 'No suggestions yet. Press = for more.',
   'focusQuestion.alternativesAria': 'Alternative focus questions',
   'focusQuestion.cannotReadStream': 'Could not read suggestion stream',
   'focusQuestion.confirm': 'Confirm and open canvas',
   'focusQuestion.emptyOwn': '(empty)',
-  'focusQuestion.help':
-    'A focus question is the specific issue your map addresses. It sets scope—for a map about “water”, examples could be “How does water cycle on Earth?” or “What are water’s physical properties?”',
+  'focusQuestion.help': 'A focus question is the specific issue your map addresses. It sets scope—for a map about “water”, examples could be “How does water cycle on Earth?” or “What are water’s physical properties?”',
   'focusQuestion.loadMoreFailed': 'Could not load more',
-  'focusQuestion.loginHint':
-    'Sign in to validate with AI and get suggestions. You can still enter a question and continue.',
+  'focusQuestion.loginHint': 'Sign in to validate with AI and get suggestions. You can still enter a question and continue.',
   'focusQuestion.needValidate': 'Run AI check or skip AI first',
   'focusQuestion.networkError': 'Network error',
   'focusQuestion.noResult': 'No result',
@@ -71,16 +60,14 @@ export default {
   'focusQuestion.placeholder': 'Type your focus question…',
   'focusQuestion.skip': 'Skip',
   'focusQuestion.suggestionsEmpty': 'No suggestions yet. Press = to fetch another batch.',
-  'focusQuestion.suggestionsHint':
-    'Alternatives (5 per page: − prev, = next; at last page = loads more)',
+  'focusQuestion.suggestionsHint': 'Alternatives (5 per page: − prev, = next; at last page = loads more)',
   'focusQuestion.suggestionsRequestFailed': 'Suggestions request failed',
   'focusQuestion.title': 'Standard mode · What focus question should this concept map answer?',
   'focusQuestion.tooShort': 'Please enter a short focus question',
   'focusQuestion.validate': 'AI check',
   'focusQuestion.validationRequestFailed': 'Validation request failed',
   'focusQuestion.weakLabel': 'Weak',
-  'mindmate.defaultSuggestion1':
-    'What cognitive conflicts can I design for a parallelogram lesson?',
+  'mindmate.defaultSuggestion1': 'What cognitive conflicts can I design for a parallelogram lesson?',
   'mindmate.defaultSuggestion10': 'How to use situational teaching in history class?',
   'mindmate.defaultSuggestion11': 'What safety issues should be noted in physics experiments?',
   'mindmate.defaultSuggestion12': 'How to design homework that matches student cognitive level?',
@@ -105,8 +92,7 @@ export default {
   'mindmate.openCanvasFailed': 'Could not open diagram in canvas.',
   'mindmate.openCanvasLoginRequired': 'Sign in to open this diagram in the canvas.',
   'mindmate.openCanvasNoLibraryId': 'Diagram was not saved to your library. Sign in and try again.',
-  'mindmate.openCanvasSaveRetry':
-    'Could not save this diagram to your library automatically. Regenerate; contact your administrator if it persists.',
+  'mindmate.openCanvasSaveRetry': 'Could not save this diagram to your library automatically. Regenerate; contact your administrator if it persists.',
   'mindmate.diagramLibraryFull': 'Diagram library is full. Delete old diagrams and try again.',
   'mindmate.tooltip.copy': 'Copy',
   'mindmate.tooltip.dislike': 'Dislike',
@@ -115,7 +101,7 @@ export default {
   'mindmate.tooltip.regenerate': 'Regenerate',
   'mindmate.tooltip.share': 'Share',
   'mindmate.untitled': 'Untitled',
-  'mindmate.welcome': "Hello {username}, I'm {agentName}, your thinking teaching partner",
+  'mindmate.welcome': 'Hello {username}, I\'m {agentName}, your thinking teaching partner',
   'mindmate.welcomeSubtitle': 'AI virtual teaching research platform — think anywhere, anytime',
   'nodePalette.bridgeAnalogy': 'Analogy',
   'nodePalette.bridgeSource': 'Source',
@@ -127,8 +113,7 @@ export default {
   'nodePalette.error.couldNotGenerateBranches': 'Could not generate branches',
   'nodePalette.error.createDiagramFirst': 'Please create a diagram first',
   'nodePalette.error.enterTopicText': 'Please enter text for the topic node',
-  'nodePalette.error.replacePlaceholder':
-    'Please enter a real topic, replace the default placeholder',
+  'nodePalette.error.replacePlaceholder': 'Please enter a real topic, replace the default placeholder',
   'nodePalette.fallbackTopicA': 'Topic A',
   'nodePalette.fallbackTopicB': 'Topic B',
   'nodePalette.finish': 'Finish',
@@ -174,8 +159,7 @@ export default {
   'panels.share.title': 'Share Conversation',
   'rootConceptModal.addBranchAria': 'Add branch',
   'rootConceptModal.addBranchTooltip': 'Add branch (avoid duplicates)',
-  'rootConceptModal.helpFooter':
-    'Each tab is one knowledge branch; concepts can link to the root and cross-link later. Drag to the canvas to auto-link to the root.',
+  'rootConceptModal.helpFooter': 'Each tab is one knowledge branch; concepts can link to the root and cross-link later. Drag to the canvas to auto-link to the root.',
   'rootConceptModal.splittingLoading': 'Splitting branches and generating concepts…',
   'rootConceptModal.tabTitleRoot': 'Root concept: {text}',
   'rootConceptModal.title': 'Root concept',

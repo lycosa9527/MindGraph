@@ -7,6 +7,7 @@ import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
 import { useDiagramStore } from '@/stores'
 import { type BorderStyleType, getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { colorToHex, hexToRgba, parseAlphaFromColor } from '@/utils/colorFormat'
+import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 
 export function useCanvasToolbarFormatting(options?: {
   silentUpdates?: boolean
@@ -239,6 +240,7 @@ export function useCanvasToolbarFormatting(options?: {
     })
     const diagramType = diagramStore.type
     if (
+      readMindMapV2VisualDesignActive() &&
       updates.borderColor &&
       (diagramType === 'mindmap' || diagramType === 'mind_map') &&
       ids.includes('topic') &&

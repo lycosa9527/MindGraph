@@ -6,6 +6,7 @@ import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEl
 import { handleKittyAddNodeWithRecommendationsRequest } from '@/composables/kitty/kittyAddNodeWithRecommendations'
 import { resolveKittyChildNodeId } from '@/composables/kitty/kittyDiagramChildren'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
+import { isMindMapDiagramType } from '@/utils/conceptMapDesktopViewport'
 import type { useAuthStore } from '@/stores/auth'
 import type { useDiagramStore } from '@/stores/diagram'
 import type { useInlineRecommendationsStore } from '@/stores/inlineRecommendations'
@@ -187,6 +188,16 @@ export function useMobileCanvasEventHandlers(
         translate,
         notifyWarning,
       })
+    },
+    OWNER
+  )
+
+  eventBus.onWithOwner(
+    'mindmap:canvas_mode_changed',
+    ({ previousMode, newMode }) => {
+      if (isMindMapDiagramType(diagramStore.type)) {
+        diagramStore.reconcileMindMapCanvasMode(previousMode, newMode)
+      }
     },
     OWNER
   )

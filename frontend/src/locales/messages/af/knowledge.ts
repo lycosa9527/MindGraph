@@ -1,8 +1,14 @@
 /**
- * af UI �?knowledge
+ * af UI � knowledge
  */
 
 export default {
+  'fileCenterLibrary.title': 'Packages',
+  'fileCenterLibrary.subtitle': 'Source collections grouped by diagram (File Center).',
+  'fileCenterLibrary.openDiagram': 'Open diagram',
+  'fileCenterLibrary.badgeCanvas': 'Canvas',
+  'fileCenterLibrary.badgeExtension': 'Extension',
+  'fileCenterLibrary.badgeUpload': 'Upload',
   'chunkTest.history.confirmDeleteBody': 'Is u seker dat u hierdie toets wil skrap? Hierdie kan nie ongedaan gemaak word nie.',
   'chunkTest.history.confirmDeleteTitle': 'Skrap Toets',
   'chunkTest.history.delete': 'Skrap',

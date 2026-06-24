@@ -1,5 +1,5 @@
 /**
- * cs UI �?notification
+ * cs UI � notification
  */
 
 export default {

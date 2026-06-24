@@ -1,11 +1,16 @@
-import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
+import {
+  syncLegacyMindMapConnectionStrokeColors,
+  syncMindMapConnectionStrokeColors,
+  syncMindMapConnectionStrokeColorsForCanvasMode,
+} from '@/config/mindMapGeometry'
 import {
   getMindMapThemeById,
   mindMapStyleFromTheme,
   resolveMindMapThemeId,
   type MindMapThemeId,
 } from '@/config/mindMapThemes'
-import type { Connection, DiagramNode, NodeStyle } from '@/types'
+import type { Connection, DiagramNode, DiagramType, NodeStyle } from '@/types'
+import { readEffectiveMindMapCanvasMode, readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 
 function branchGlobalIndex(nodeId: string): number {
   return parseInt(nodeId.split('-')[3] ?? '0', 10)
@@ -146,6 +151,7 @@ export function applyMindMapStylesByPath(
   stylesByPath: Map<string, NodeStyle>,
   themeId?: MindMapThemeId | string | null
 ): Record<string, NodeStyle> {
+  const v2Visuals = readMindMapV2VisualDesignActive()
   const defaultTheme = getMindMapThemeById(resolveMindMapThemeId(themeId))
   const nodeStyles: Record<string, NodeStyle> = {}
   for (const node of nodes) {
@@ -155,7 +161,7 @@ export function applyMindMapStylesByPath(
     if (preserved) {
       node.style = { ...(node.style || {}), ...preserved }
       nodeStyles[node.id] = { ...preserved }
-    } else {
+    } else if (v2Visuals) {
       const inheritedShape =
         resolveParentNodeShape(key, stylesByPath, nodes, connections) ??
         resolvePriorSiblingNodeShape(key, stylesByPath)
@@ -167,13 +173,33 @@ export function applyMindMapStylesByPath(
       nodeStyles[node.id] = { ...node.style }
     }
   }
-  const topicBorder =
-    nodes.find((n) => n.id === 'topic')?.style?.borderColor ??
-    stylesByPath.get('topic')?.borderColor
-  if (topicBorder) {
-    syncMindMapConnectionStrokeColors(connections, topicBorder)
+  if (v2Visuals) {
+    const topicBorder =
+      nodes.find((n) => n.id === 'topic')?.style?.borderColor ??
+      stylesByPath.get('topic')?.borderColor
+    if (topicBorder) {
+      syncMindMapConnectionStrokeColors(connections, topicBorder)
+    }
+  } else {
+    syncLegacyMindMapConnectionStrokeColors(connections, nodes)
   }
   return nodeStyles
+}
+
+/** Reconcile persisted connection stroke colors when canvas mode changes or diagram reloads. */
+export function resyncMindMapConnectionStrokeColorsForActiveMode(
+  diagramType: DiagramType | null,
+  nodes: DiagramNode[] | undefined,
+  connections: Connection[] | undefined
+): boolean {
+  if (!nodes?.length || !connections?.length) return false
+  if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return false
+  syncMindMapConnectionStrokeColorsForCanvasMode(
+    connections,
+    nodes,
+    readEffectiveMindMapCanvasMode()
+  )
+  return true
 }
 
 /** Preserve visual styles when mind-map tree is rebuilt (add/remove/reload). */
