@@ -245,7 +245,6 @@ declare module 'vue' {
     MindGraphLanguageSwitcher: typeof import('./components/mindgraph/MindGraphLanguageSwitcher.vue')['default']
     MindMapCollapseToggleOverlay: typeof import('./components/diagram/MindMapCollapseToggleOverlay.vue')['default']
     MindMapDirectionalAddOverlay: typeof import('./components/diagram/MindMapDirectionalAddOverlay.vue')['default']
-    MindMapDocumentSummaryPanel: typeof import('./components/canvas/MindMapDocumentSummaryPanel.vue')['default']
     MindMapOneSentencePanel: typeof import('./components/canvas/MindMapOneSentencePanel.vue')['default']
     MindMapOrthogonalEdge: typeof import('./components/diagram/edges/MindMapOrthogonalEdge.vue')['default']
     MindMapPresentationSideToolbar: typeof import('./components/canvas/MindMapPresentationSideToolbar.vue')['default']

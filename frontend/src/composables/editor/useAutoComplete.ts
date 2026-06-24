@@ -433,6 +433,7 @@ export function useAutoComplete() {
     spec?: Record<string, unknown>
     diagramType?: string
     error?: string
+    errorType?: string
     elapsed: number
   } {
     const specPayload = result.spec as { success?: boolean; error?: string } | undefined
@@ -808,7 +809,7 @@ export function useAutoComplete() {
 
       if (successCount === 0) {
         const failedModel = modelsToRun.find(
-          (model) => llmResultsStore.results[model]?.phase === 'error'
+          (model) => llmResultsStore.results[model]?.success === false
         )
         const firstModelError = failedModel
           ? llmResultsStore.results[failedModel]?.error

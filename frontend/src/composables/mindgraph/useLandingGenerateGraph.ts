@@ -3,6 +3,7 @@
  */
 import { ref } from 'vue'
 
+import type { UseLanguageTranslate } from '@/composables/core/useLanguage'
 import type { useNotifications } from '@/composables/core/useNotifications'
 import {
   extractFailureFromPayload,
@@ -38,7 +39,7 @@ type LandingPhaseToastKey =
 type LandingNotifyPhase = GenerateGraphStreamPhase | 'client_sent'
 
 export function useLandingGenerateGraph(options: {
-  t: (key: string, params?: Record<string, unknown>) => string
+  t: UseLanguageTranslate
   notify: ReturnType<typeof useNotifications>
 }) {
   const loadPhase = ref<ModelLoadPhase>('idle')
