@@ -412,7 +412,7 @@ def _prepare_migration_cli() -> tuple[Engine, Path] | int:
 
 
 def run_status_check() -> int:
-    """Status-only entry (used by ``check_migration_status.py``)."""
+    """Status-only entry (menu option 3)."""
     print("=" * 60)
     print("MindGraph — migration / RLS status")
     print("=" * 60)

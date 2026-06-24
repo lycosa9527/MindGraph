@@ -11,19 +11,8 @@ _INLINE_SUPPRESSION = re.compile(
     re.IGNORECASE,
 )
 
-_ALLOWED_PARTS = {
-    "typings",
-    "alembic",
-    "versions",
-    "scripts/lint/strip_inline_disables.py",
-}
-
-
-def _is_allowed(path: Path, root: Path) -> bool:
+def _is_allowed(path: Path, _root: Path) -> bool:
     """Is allowed."""
-    rel = path.relative_to(root).as_posix()
-    if rel.endswith("scripts/lint/strip_inline_disables.py"):
-        return True
     parts = set(path.parts)
     if "typings" in parts:
         return True

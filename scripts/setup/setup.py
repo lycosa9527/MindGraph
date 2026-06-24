@@ -344,7 +344,7 @@ MIN_REDIS_VERSION = (8, 6, 0)
 MIN_POSTGRESQL_VERSION = (18, 3, 0)
 
 # Qdrant server binary from GitHub Releases (see docs/QDRANT_SETUP.md).
-# Keep aligned with scripts/setup/update_qdrant_server.py DEFAULT_QDRANT_VERSION and qdrant-client.
+# Keep aligned with qdrant-client pin in requirements.txt.
 QDRANT_GITHUB_VERSION = "1.18.1"
 QDRANT_LOCAL_BIN = "/usr/local/bin/qdrant"
 QDRANT_CONFIG_PATH = "/etc/qdrant/config.yaml"
@@ -2685,14 +2685,10 @@ def print_next_steps() -> None:
         "    3. Knowledge Space: set QDRANT_HOST (e.g. localhost:6333) if using RAG; "
         "full setup runs Qdrant on Linux+sudo (docs/QDRANT_SETUP.md)"
     )
-    print(
-        "    4. Optional: python scripts/setup/dashboard_install.py — ip2region xdb, "
-        "map/static assets (scripts/setup/setup_ip2region.md)"
-    )
-    print("    5. Activate miniconda (Linux/macOS/WSL):")
+    print("    4. Activate miniconda (Linux/macOS/WSL):")
     print("       conda activate mindgraph")
-    print("    6. Run: python main.py")
-    print("    7. Open http://localhost:9527 in your browser")
+    print("    5. Run: python main.py")
+    print("    6. Open http://localhost:9527 in your browser")
 
     # Show platform-specific hints
     os_name = platform.system().lower()

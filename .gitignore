@@ -137,10 +137,6 @@ tests/images/
 tests/results/
 tests/specs/
 tests/html_viewer/
-test/images/
-test/results/
-test/specs/
-test/html_viewer/
 
 # Coverage reports
 htmlcov/

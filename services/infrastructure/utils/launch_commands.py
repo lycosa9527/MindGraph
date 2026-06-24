@@ -233,7 +233,7 @@ def lines_optional_feature_packages() -> list[str]:
 
     Sweep: dependency_checker, ip_geolocation, geoip_country, bayi_mode, backup_scheduler,
     chunk_comparator, rag_service, download_datasets, prompt_output_languages,
-    dashboard_install, provision_infra, etc.
+    prompt_output_languages, etc.
     """
     return [
         "Optional / feature-specific (module log strings):",
@@ -245,7 +245,6 @@ def lines_optional_feature_packages() -> list[str]:
         "IP / Geo:",
         "  pip install py-ip2region",
         "  pip install geoip2",
-        "  python scripts/setup/dashboard_install.py   # ip2region xdb + dashboard assets",
         "GeoLite2-Country.mmdb (overseas email / GeoIP):",
         f"  Info: {GEOLITE_MAXMIND_INFO_URL}",
         "  Copy GeoLite2-Country.mmdb to data/ or set GEOIP_MAXMIND_COUNTRY_PATH",
