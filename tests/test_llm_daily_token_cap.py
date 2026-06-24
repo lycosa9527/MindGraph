@@ -17,7 +17,7 @@ async def test_chat_raises_when_daily_cap_exceeded() -> None:
     cap_error = UserDailyTokenCapExceededError(cap=1_000_000, used=1_000_000, user_message="limit")
 
     with patch(
-        "services.llm.assert_user_daily_token_budget",
+        "services.llm.assert_llm_usage_budget",
         new=AsyncMock(side_effect=cap_error),
     ):
         with pytest.raises(UserDailyTokenCapExceededError):
@@ -30,9 +30,14 @@ async def test_chat_invokes_budget_check_with_user_id_none() -> None:
     cap_error = UserDailyTokenCapExceededError(cap=1, used=1)
     mock_assert = AsyncMock(side_effect=cap_error)
 
-    with patch("services.llm.assert_user_daily_token_budget", new=mock_assert):
+    with patch("services.llm.assert_llm_usage_budget", new=mock_assert):
         service = LLMService()
         with pytest.raises(UserDailyTokenCapExceededError):
             await service.chat(prompt="hello", model="qwen", user_id=None)
 
-    mock_assert.assert_awaited_once_with(None, estimated_tokens=2000)
+    mock_assert.assert_awaited_once_with(
+        None,
+        None,
+        "diagram_generation",
+        estimated_tokens=2000,
+    )
