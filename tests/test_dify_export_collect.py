@@ -14,11 +14,13 @@ import pytest
 from clients.dify import AsyncDifyClient
 import services.dify.export.collect_service as collect
 from services.dify.export.collect_service import (
+    _conversation_in_export_range,
     _dedupe_summaries,
     _fetch_all_messages,
     _within_range,
     collect_conversation_summaries,
 )
+from services.dify.export.time_range import activity_overlaps_range
 from services.dify.export.types import UserTarget
 from services.dify.export.endpoints import ExportDifyEndpoint
 from services.dify.export.transcript import ExportConversationSummary
@@ -78,8 +80,6 @@ def _endpoint(server: int = 1, url: str = "u1") -> ExportDifyEndpoint:
 
 def test_conversation_in_export_range_uses_activity_overlap() -> None:
     """Export window includes conversations with any activity in the period."""
-    from services.dify.export.collect_service import _conversation_in_export_range
-
     # Last update inside window
     assert _conversation_in_export_range(100, 500, 400, 600) is True
     # Long thread: created before window, updated after — still active in window
@@ -93,8 +93,6 @@ def test_conversation_in_export_range_uses_activity_overlap() -> None:
 
 def test_activity_overlaps_range() -> None:
     """Shared overlap helper treats bounds as inclusive."""
-    from services.dify.export.time_range import activity_overlaps_range
-
     assert activity_overlaps_range(100, 900, 400, 600) is True
     assert activity_overlaps_range(500, 500, 500, 500) is True
     assert activity_overlaps_range(100, 200, 400, 600) is False

@@ -31,6 +31,7 @@ from agents.inline_recommendations import start_inline_rec_cleanup_scheduler
 from config.celery import CeleryStartupError, init_celery_worker_check
 from config.settings import config
 from services.dify.dify_health_poller import start_dify_health_poller
+from services.dify.dify_server_schema import clear_dify_server_schema_cache
 from services.auth.geoip_country import log_geolite_country_mmdb_startup_status
 from services.auth.sms_middleware import get_sms_middleware
 from services.auth.sms_service import SMS_NOTIFICATION_RATE_LIMIT_MESSAGE
@@ -424,8 +425,6 @@ async def lifespan(fastapi_app: FastAPI):
 
     dify_health_poller_task: Optional[asyncio.Task] = None
     try:
-        from services.dify.dify_server_schema import clear_dify_server_schema_cache
-
         clear_dify_server_schema_cache()
         dify_health_poller_task = asyncio.create_task(start_dify_health_poller())
         if is_main_worker:

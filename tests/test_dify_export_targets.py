@@ -12,7 +12,11 @@ import main as _main_app
 
 assert _main_app.app.title
 
-from services.dify.export.target_resolution import build_export_targets, count_export_users
+from services.dify.export.target_resolution import (
+    build_export_targets,
+    build_user_dify_targets,
+    count_export_users,
+)
 from tests.typing_helpers import as_type, as_user
 
 
@@ -67,8 +71,6 @@ async def test_build_user_dify_targets_web_and_mindbot(monkeypatch: pytest.Monke
         "services.dify.export.target_resolution.MindbotUsageRepository",
         lambda _db: _UsageRepo(),
     )
-
-    from services.dify.export.target_resolution import build_user_dify_targets
 
     targets = await build_user_dify_targets(MagicMock(), as_user(user))
     assert len(targets) == 2

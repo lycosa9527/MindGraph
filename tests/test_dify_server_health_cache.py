@@ -10,6 +10,7 @@ import pytest
 
 import services.dify.org_mindmate_client as resolver
 from models.domain.auth import Organization
+from services.dify.dify_server_schema import clear_dify_server_schema_cache, organization_dify_server_slots
 from services.redis.cache.redis_dify_server_health_cache import (
     HEALTH_FAILURE_THRESHOLD,
     DifyServerHealth,
@@ -129,8 +130,6 @@ async def test_resolver_fails_over_for_one_and_three_pair(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """School on servers 1+3 fails over from 1 to 3 when primary is down."""
-    from services.dify.dify_server_schema import clear_dify_server_schema_cache, organization_dify_server_slots
-
     clear_dify_server_schema_cache()
     monkeypatch.setattr(
         "services.dify.dify_server_schema._organization_column_names",

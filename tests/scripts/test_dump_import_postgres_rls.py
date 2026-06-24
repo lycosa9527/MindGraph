@@ -7,6 +7,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import config.database as cfg
+
 from services.utils.pg_backup_manifest import (
     StatsEngineResolutionError,
     build_pg_dump_manifest,
@@ -85,8 +87,6 @@ def test_resolve_stats_engine_uses_migration_url(monkeypatch) -> None:
     """resolve_stats_engine configures env and builds engine from DATABASE_MIGRATION_URL."""
     migrate = "postgresql+psycopg://mindgraph_migrate:secret@localhost:5432/mindgraph"
     mock_engine = MagicMock()
-
-    import config.database as cfg
 
     monkeypatch.setattr(cfg, "DATABASE_MIGRATION_URL", migrate)
 
