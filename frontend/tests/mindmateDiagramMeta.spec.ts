@@ -2,12 +2,15 @@ import { describe, expect, it } from 'vitest'
 
 import {
   extractMindmatePreviewUniqueId,
+  extractFirstMarkdownImageUrl,
   hasGeneratedDiagramImage,
   hasLibraryFullNotice,
+  isImagePrimaryAnswer,
   needsLibraryFullHint,
   needsLibrarySaveHint,
   parseMindmateDiagramLibraryId,
   rewriteMindmateTempImageUrls,
+  stripMindmateDiagramIdComments,
 } from '@/utils/mindmateDiagramMeta'
 
 describe('parseMindmateDiagramLibraryId', () => {
@@ -35,6 +38,38 @@ describe('parseMindmateDiagramLibraryId', () => {
 
   it('returns null for unrelated markdown', () => {
     expect(parseMindmateDiagramLibraryId('hello world')).toBeNull()
+  })
+})
+
+describe('stripMindmateDiagramIdComments', () => {
+  it('removes all mg-diagram-id HTML comments from display markdown', () => {
+    const content =
+      '![](https://x/t.png)\n<!-- mg-diagram-id:abc-123 --> <!-- mg-diagram-id:def-456 -->'
+    expect(stripMindmateDiagramIdComments(content)).toBe('![](https://x/t.png)')
+    expect(parseMindmateDiagramLibraryId(content)).toBe('abc-123')
+  })
+})
+
+describe('extractFirstMarkdownImageUrl', () => {
+  it('returns rewritten same-origin url for temp diagram png', () => {
+    const content =
+      '![mg:abc](http://localhost:9527/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=x)'
+    expect(extractFirstMarkdownImageUrl(content, 'localhost:41732')).toBe(
+      '/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=x'
+    )
+  })
+})
+
+describe('isImagePrimaryAnswer', () => {
+  it('returns true for diagram-only markdown', () => {
+    const content = '![](https://host/temp_images/dingtalk_deadbeef_1710000000.png?sig=x)'
+    expect(isImagePrimaryAnswer(content)).toBe(true)
+  })
+
+  it('returns false when prose accompanies the image', () => {
+    const content =
+      'Here is your diagram:\n![](https://host/temp_images/dingtalk_deadbeef_1710000000.png)'
+    expect(isImagePrimaryAnswer(content)).toBe(false)
   })
 })
 

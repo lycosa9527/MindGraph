@@ -132,6 +132,7 @@ export function useMindMate(options: MindMateOptions = {}) {
 
   // Fetch app parameters (opening statement, suggested questions)
   const { data: appParams } = useAppParameters()
+  const { mutate: generateTitle } = useGenerateTitle()
 
   // =========================================================================
   // State (local to this composable instance)
@@ -634,7 +635,6 @@ export function useMindMate(options: MindMateOptions = {}) {
           mindMateStore.setCurrentConversation(data.conversation_id)
 
           // Optimistic update: Add new conversation to Vue Query cache
-          const queryClient = useQueryClient()
           const now = Math.floor(Date.now() / 1000) // Use seconds like Dify
           const newConv = {
             id: data.conversation_id,
@@ -676,7 +676,6 @@ export function useMindMate(options: MindMateOptions = {}) {
         if (mindMateStore.messageCount === 2 && conversationId.value) {
           const convId = conversationId.value
           setTimeout(() => {
-            const { mutate: generateTitle } = useGenerateTitle()
             generateTitle({
               convId,
               difyUser: mindMateStore.getConversationDifyUser(convId),

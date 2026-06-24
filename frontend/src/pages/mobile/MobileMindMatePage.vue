@@ -22,6 +22,7 @@ import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
 import { useAuthStore, useMindMateStore, useVoiceStore } from '@/stores'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
+import { copyMindmateAssistantMessage } from '@/utils/copyMindmateMessage'
 
 const router = useRouter()
 const { promptLanguage, t } = useLanguage()
@@ -201,7 +202,10 @@ function stopGeneration() {
 
 async function copyMessage(content: string) {
   try {
-    await navigator.clipboard.writeText(content)
+    await copyMindmateAssistantMessage(
+      content,
+      typeof window !== 'undefined' ? window.location.host : undefined
+    )
     notify.success(t('notification.copied'))
   } catch {
     notify.error(t('notification.copyFailed'))

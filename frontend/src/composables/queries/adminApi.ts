@@ -96,6 +96,15 @@ export interface AdminStatsResponse {
   token_stats_by_org_mindgraph?: Record<string, unknown>
   token_stats_by_org_mindmate?: Record<string, unknown>
   top_users_by_tokens_today?: Array<Record<string, unknown>>
+  token_rankings?: Record<
+    string,
+    {
+      by_org?: Record<string, unknown>
+      by_org_mindgraph?: Record<string, unknown>
+      by_org_mindmate?: Record<string, unknown>
+      top_users?: Array<Record<string, unknown>>
+    }
+  >
 }
 
 export interface AdminServicePeriodStats {

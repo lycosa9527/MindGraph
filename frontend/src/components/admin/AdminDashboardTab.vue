@@ -1,12 +1,13 @@
 <script setup lang="ts">
 /**
  * Admin Dashboard Tab — stats from GET /api/auth/admin/stats.
- * School and user token rankings use today (Beijing time); stat cards open Chart.js trends.
+ * School and user token rankings support today / week / month / total (Beijing time).
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
 import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
+import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import AdminSwissServiceCard from '@/components/admin/swiss/AdminSwissServiceCard.vue'
 import AdminTokenOverviewRow from '@/components/admin/AdminTokenOverviewRow.vue'
 import AdminTokenUsageByServicePanel from '@/components/admin/AdminTokenUsageByServicePanel.vue'
@@ -103,9 +104,6 @@ interface OrgStats {
   total_tokens: number
   org_id?: number
 }
-const tokenStatsByOrg = ref<Record<string, OrgStats>>({})
-const tokenStatsByOrgMindgraph = ref<Record<string, OrgStats>>({})
-const tokenStatsByOrgMindmate = ref<Record<string, OrgStats>>({})
 
 function parseOrgTokenStats(byOrg: Record<string, unknown>): Record<string, OrgStats> {
   return Object.fromEntries(
@@ -130,13 +128,62 @@ function topOrgsFromStats(byOrg: Record<string, OrgStats>) {
     .slice(0, 10)
 }
 
-const topOrgsByTokens = computed(() => topOrgsFromStats(tokenStatsByOrg.value))
-const topOrgsByMindgraph = computed(() => topOrgsFromStats(tokenStatsByOrgMindgraph.value))
-const topOrgsByMindmate = computed(() => topOrgsFromStats(tokenStatsByOrgMindmate.value))
+type RankingPeriod = 'today' | 'week' | 'month' | 'total'
 
-const topUsersByTokens = ref<
-  { id: number; name: string; phone: string; total_tokens: number; organization_name: string }[]
->([])
+type TopUserRow = {
+  id: number
+  name: string
+  phone: string
+  total_tokens: number
+  organization_name: string
+}
+
+type PeriodRankings = {
+  byOrg: Record<string, OrgStats>
+  byOrgMindgraph: Record<string, OrgStats>
+  byOrgMindmate: Record<string, OrgStats>
+  topUsers: TopUserRow[]
+}
+
+function emptyPeriodRankings(): PeriodRankings {
+  return {
+    byOrg: {},
+    byOrgMindgraph: {},
+    byOrgMindmate: {},
+    topUsers: [],
+  }
+}
+
+const rankingsByPeriod = ref<Record<RankingPeriod, PeriodRankings>>({
+  today: emptyPeriodRankings(),
+  week: emptyPeriodRankings(),
+  month: emptyPeriodRankings(),
+  total: emptyPeriodRankings(),
+})
+
+const schoolRankingPeriod = ref<RankingPeriod>('today')
+const userRankingPeriod = ref<RankingPeriod>('today')
+
+const rankingPeriodOptions = computed(() => [
+  { label: t('admin.today'), value: 'today' as const },
+  { label: t('admin.thisWeek'), value: 'week' as const },
+  { label: t('admin.thisMonth'), value: 'month' as const },
+  { label: t('admin.allTime'), value: 'total' as const },
+])
+
+const topOrgsByTokens = computed(() =>
+  topOrgsFromStats(rankingsByPeriod.value[schoolRankingPeriod.value].byOrg)
+)
+const topOrgsByMindgraph = computed(() =>
+  topOrgsFromStats(rankingsByPeriod.value[schoolRankingPeriod.value].byOrgMindgraph)
+)
+const topOrgsByMindmate = computed(() =>
+  topOrgsFromStats(rankingsByPeriod.value[schoolRankingPeriod.value].byOrgMindmate)
+)
+
+const topUsersByTokens = computed(
+  () => rankingsByPeriod.value[userRankingPeriod.value].topUsers
+)
 
 const trendModalVisible = ref(false)
 const trendChartTitle = ref('')
@@ -174,24 +221,8 @@ function formatChartLabel(value: number): string {
   return String(value)
 }
 
-function applyStatsPayload(data: Record<string, unknown>): void {
-  stats.value = {
-    totalUsers: (data.total_users as number | undefined) ?? 0,
-    totalOrganizations: (data.total_organizations as number | undefined) ?? 0,
-    recentRegistrations: (data.recent_registrations as number | undefined) ?? 0,
-    totalTokens:
-      ((data.token_stats as { total_tokens?: number } | undefined)?.total_tokens) ?? 0,
-  }
-  tokenStatsByOrg.value = parseOrgTokenStats(
-    (data.token_stats_by_org ?? {}) as Record<string, unknown>
-  )
-  tokenStatsByOrgMindgraph.value = parseOrgTokenStats(
-    (data.token_stats_by_org_mindgraph ?? {}) as Record<string, unknown>
-  )
-  tokenStatsByOrgMindmate.value = parseOrgTokenStats(
-    (data.token_stats_by_org_mindmate ?? {}) as Record<string, unknown>
-  )
-  const rawTop = data.top_users_by_tokens_today as
+function parseTopUsers(raw: unknown): TopUserRow[] {
+  const rows = raw as
     | {
         id?: number
         name?: string
@@ -200,13 +231,69 @@ function applyStatsPayload(data: Record<string, unknown>): void {
         organization_name?: string
       }[]
     | undefined
-  topUsersByTokens.value = (rawTop ?? []).map((u) => ({
+  return (rows ?? []).map((u) => ({
     id: Number(u.id) || 0,
     name: String(u.name ?? ''),
     phone: String(u.phone ?? ''),
     total_tokens: Number(u.total_tokens ?? 0),
     organization_name: String(u.organization_name ?? ''),
   }))
+}
+
+function applyRankingsPayload(data: Record<string, unknown>): void {
+  const nested = data.token_rankings as
+    | Record<
+        string,
+        {
+          by_org?: Record<string, unknown>
+          by_org_mindgraph?: Record<string, unknown>
+          by_org_mindmate?: Record<string, unknown>
+          top_users?: unknown
+        }
+      >
+    | undefined
+
+  if (nested) {
+    for (const period of ['today', 'week', 'month', 'total'] as RankingPeriod[]) {
+      const bucket = nested[period]
+      if (!bucket) {
+        continue
+      }
+      rankingsByPeriod.value[period] = {
+        byOrg: parseOrgTokenStats((bucket.by_org ?? {}) as Record<string, unknown>),
+        byOrgMindgraph: parseOrgTokenStats(
+          (bucket.by_org_mindgraph ?? {}) as Record<string, unknown>
+        ),
+        byOrgMindmate: parseOrgTokenStats(
+          (bucket.by_org_mindmate ?? {}) as Record<string, unknown>
+        ),
+        topUsers: parseTopUsers(bucket.top_users),
+      }
+    }
+    return
+  }
+
+  rankingsByPeriod.value.today = {
+    byOrg: parseOrgTokenStats((data.token_stats_by_org ?? {}) as Record<string, unknown>),
+    byOrgMindgraph: parseOrgTokenStats(
+      (data.token_stats_by_org_mindgraph ?? {}) as Record<string, unknown>
+    ),
+    byOrgMindmate: parseOrgTokenStats(
+      (data.token_stats_by_org_mindmate ?? {}) as Record<string, unknown>
+    ),
+    topUsers: parseTopUsers(data.top_users_by_tokens_today),
+  }
+}
+
+function applyStatsPayload(data: Record<string, unknown>): void {
+  stats.value = {
+    totalUsers: (data.total_users as number | undefined) ?? 0,
+    totalOrganizations: (data.total_organizations as number | undefined) ?? 0,
+    recentRegistrations: (data.recent_registrations as number | undefined) ?? 0,
+    totalTokens:
+      ((data.token_stats as { total_tokens?: number } | undefined)?.total_tokens) ?? 0,
+  }
+  applyRankingsPayload(data)
 }
 
 watch(
@@ -717,10 +804,7 @@ onBeforeUnmount(() => {
         v-if="showTokenRankings"
         class="mt-6"
       >
-        <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
-          <p class="text-sm text-gray-500 dark:text-gray-400 flex-1 min-w-[200px]">
-            {{ t('admin.rankingBeijingTodayHint') }}
-          </p>
+        <div class="flex flex-wrap items-center justify-end gap-3 mb-3">
           <el-button
             text
             size="small"
@@ -736,9 +820,17 @@ onBeforeUnmount(() => {
         >
           <AdminSwissServiceCard theme="mindgraph">
             <template #header>
-              <span class="swiss-stat-card__service-title">{{
-                t('admin.topSchoolsByMindGraphTokens')
-              }}</span>
+              <div class="flex flex-wrap items-center justify-between gap-2 w-full">
+                <span class="swiss-stat-card__service-title">{{
+                  t('admin.topSchoolsByMindGraphTokens')
+                }}</span>
+                <AdminSwissSegmented
+                  v-model="schoolRankingPeriod"
+                  fit
+                  :options="rankingPeriodOptions"
+                  :aria-label="t('admin.topSchoolsByMindGraphTokens')"
+                />
+              </div>
             </template>
             <el-table
               :data="topOrgsByMindgraph"
@@ -753,7 +845,14 @@ onBeforeUnmount(() => {
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500 hover:underline"
-                    @click="showOrganizationTrendChart(row.name, row.orgId, 'today', 'mindgraph')"
+                    @click="
+                      showOrganizationTrendChart(
+                        row.name,
+                        row.orgId,
+                        schoolRankingPeriod,
+                        'mindgraph'
+                      )
+                    "
                   >
                     {{ row.name }}
                   </span>
@@ -767,7 +866,14 @@ onBeforeUnmount(() => {
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500"
-                    @click="showOrganizationTrendChart(row.name, row.orgId, 'today', 'mindgraph')"
+                    @click="
+                      showOrganizationTrendChart(
+                        row.name,
+                        row.orgId,
+                        schoolRankingPeriod,
+                        'mindgraph'
+                      )
+                    "
                   >
                     {{ formatNumber(row.tokens) }}
                   </span>
@@ -778,9 +884,17 @@ onBeforeUnmount(() => {
 
           <AdminSwissServiceCard theme="mindmate">
             <template #header>
-              <span class="swiss-stat-card__service-title">{{
-                t('admin.topSchoolsByMindMateTokens')
-              }}</span>
+              <div class="flex flex-wrap items-center justify-between gap-2 w-full">
+                <span class="swiss-stat-card__service-title">{{
+                  t('admin.topSchoolsByMindMateTokens')
+                }}</span>
+                <AdminSwissSegmented
+                  v-model="schoolRankingPeriod"
+                  fit
+                  :options="rankingPeriodOptions"
+                  :aria-label="t('admin.topSchoolsByMindMateTokens')"
+                />
+              </div>
             </template>
             <el-table
               :data="topOrgsByMindmate"
@@ -795,7 +909,14 @@ onBeforeUnmount(() => {
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500 hover:underline"
-                    @click="showOrganizationTrendChart(row.name, row.orgId, 'today', 'mindmate')"
+                    @click="
+                      showOrganizationTrendChart(
+                        row.name,
+                        row.orgId,
+                        schoolRankingPeriod,
+                        'mindmate'
+                      )
+                    "
                   >
                     {{ row.name }}
                   </span>
@@ -809,7 +930,14 @@ onBeforeUnmount(() => {
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500"
-                    @click="showOrganizationTrendChart(row.name, row.orgId, 'today', 'mindmate')"
+                    @click="
+                      showOrganizationTrendChart(
+                        row.name,
+                        row.orgId,
+                        schoolRankingPeriod,
+                        'mindmate'
+                      )
+                    "
                   >
                     {{ formatNumber(row.tokens) }}
                   </span>
@@ -824,7 +952,15 @@ onBeforeUnmount(() => {
         >
           <el-card shadow="hover">
             <template #header>
-              <span class="font-medium">{{ t('admin.topSchoolsByTokens') }}</span>
+              <div class="flex flex-wrap items-center justify-between gap-2 w-full">
+                <span class="font-medium">{{ t('admin.topSchoolsByTokens') }}</span>
+                <AdminSwissSegmented
+                  v-model="schoolRankingPeriod"
+                  fit
+                  :options="rankingPeriodOptions"
+                  :aria-label="t('admin.topSchoolsByTokens')"
+                />
+              </div>
             </template>
             <el-table
               :data="topOrgsByTokens"
@@ -839,7 +975,7 @@ onBeforeUnmount(() => {
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500 hover:underline"
-                    @click="showOrganizationTrendChart(row.name, row.orgId, 'today')"
+                    @click="showOrganizationTrendChart(row.name, row.orgId, schoolRankingPeriod)"
                   >
                     {{ row.name }}
                   </span>
@@ -853,7 +989,7 @@ onBeforeUnmount(() => {
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500"
-                    @click="showOrganizationTrendChart(row.name, row.orgId, 'today')"
+                    @click="showOrganizationTrendChart(row.name, row.orgId, schoolRankingPeriod)"
                   >
                     {{ formatNumber(row.tokens) }}
                   </span>
@@ -864,7 +1000,15 @@ onBeforeUnmount(() => {
 
           <el-card shadow="hover">
             <template #header>
-              <span class="font-medium">{{ t('admin.topUsersByTokens') }}</span>
+              <div class="flex flex-wrap items-center justify-between gap-2 w-full">
+                <span class="font-medium">{{ t('admin.topUsersByTokens') }}</span>
+                <AdminSwissSegmented
+                  v-model="userRankingPeriod"
+                  fit
+                  :options="rankingPeriodOptions"
+                  :aria-label="t('admin.topUsersByTokens')"
+                />
+              </div>
             </template>
             <el-table
               :data="topUsersByTokens"
@@ -880,7 +1024,7 @@ onBeforeUnmount(() => {
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500 hover:underline"
-                    @click="showUserTokenTrend(row.name, row.id, 'today')"
+                    @click="showUserTokenTrend(row.name, row.id, userRankingPeriod)"
                   >
                     {{ row.name }}
                   </span>
@@ -909,7 +1053,7 @@ onBeforeUnmount(() => {
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500"
-                    @click="showUserTokenTrend(row.name, row.id, 'today')"
+                    @click="showUserTokenTrend(row.name, row.id, userRankingPeriod)"
                   >
                     {{ formatNumber(row.total_tokens) }}
                   </span>

@@ -23,6 +23,7 @@ import {
   needsLibrarySaveHint,
   parseMindmateDiagramLibraryId,
   rewriteMindmateTempImageUrls,
+  stripMindmateDiagramIdComments,
 } from '@/utils/mindmateDiagramMeta'
 
 import MindmateAgentAvatar from './MindmateAgentAvatar.vue'
@@ -233,9 +234,11 @@ async function openInCanvas() {
 
 const { html: renderedMarkdownHtml } = useRenderedMarkdown(
   () =>
-    rewriteMindmateTempImageUrls(
-      props.message.content,
-      typeof window !== 'undefined' ? window.location.host : undefined
+    stripMindmateDiagramIdComments(
+      rewriteMindmateTempImageUrls(
+        props.message.content,
+        typeof window !== 'undefined' ? window.location.host : undefined
+      )
     ),
   { stripThinkBlocks: true }
 )
@@ -403,21 +406,8 @@ function handleMarkdownClick(event: MouseEvent) {
                 v-html="renderedMarkdownHtml"
               />
               <!-- eslint-enable vue/no-v-html -->
-              <div
-                v-if="showCanvasButton"
-                class="mt-2"
-              >
-                <ElButton
-                  size="small"
-                  class="mindmate-canvas-btn"
-                  :loading="openingCanvas"
-                  @click="openInCanvas"
-                >
-                  {{ t('mindmate.openInCanvas') }}
-                </ElButton>
-              </div>
               <p
-                v-else-if="showLibraryFullHint"
+                v-if="showLibraryFullHint"
                 class="mindmate-library-save-hint mt-2"
               >
                 {{ t('mindmate.diagramLibraryFull') }}
@@ -550,6 +540,17 @@ function handleMarkdownClick(event: MouseEvent) {
                 <ElIcon :size="18"><Share /></ElIcon>
               </ElButton>
             </ElTooltip>
+
+            <!-- Open in canvas -->
+            <ElButton
+              v-if="showCanvasButton"
+              size="small"
+              class="mindmate-canvas-btn action-bar-canvas-btn"
+              :loading="openingCanvas"
+              @click="openInCanvas"
+            >
+              {{ t('mindmate.openInCanvas') }}
+            </ElButton>
           </div>
         </template>
       </div>

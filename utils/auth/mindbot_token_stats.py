@@ -167,11 +167,12 @@ async def aggregate_mindbot_token_totals(
     }
 
 
-async def aggregate_mindbot_tokens_by_org_today(
+async def aggregate_mindbot_tokens_by_org(
     db: AsyncSession,
-    today_start: datetime,
+    created_since: Optional[datetime] = None,
 ) -> Dict[str, Dict[str, Any]]:
-    """Per-organization MindBot token usage for the current Beijing calendar day."""
+    """Per-organization MindBot token usage since created_since (all-time when None)."""
+    filters = _mindbot_usage_filters(created_since=created_since)
     rows = (
         await db.execute(
             select(
@@ -184,7 +185,7 @@ async def aggregate_mindbot_tokens_by_org_today(
             )
             .select_from(MindbotUsageEvent)
             .join(Organization, Organization.id == MindbotUsageEvent.organization_id)
-            .where(_mindbot_usage_filters(created_since=today_start))
+            .where(filters)
             .group_by(Organization.id, Organization.name)
         )
     ).all()
@@ -200,6 +201,14 @@ async def aggregate_mindbot_tokens_by_org_today(
                 "request_count": int(org_stat.request_count or 0),
             }
     return by_org
+
+
+async def aggregate_mindbot_tokens_by_org_today(
+    db: AsyncSession,
+    today_start: datetime,
+) -> Dict[str, Dict[str, Any]]:
+    """Per-organization MindBot token usage for the current Beijing calendar day."""
+    return await aggregate_mindbot_tokens_by_org(db, created_since=today_start)
 
 
 async def aggregate_mindbot_tokens_by_linked_user(
