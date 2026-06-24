@@ -229,9 +229,7 @@ async def build_export_targets(
         if org_id is not None:
             link_map = {
                 (int(org_id), int(uid)): row
-                for uid, row in (
-                    await link_repo.map_for_users(int(org_id), [int(user.id) for user in users])
-                ).items()
+                for uid, row in (await link_repo.map_for_users(int(org_id), [int(user.id) for user in users])).items()
             }
 
     historical_by_org = await _historical_staff_by_org(usage_repo, users_by_org)
@@ -340,9 +338,7 @@ async def build_export_targets(
             limit=UNBOUND_STAFF_CAP,
         )
         if len(unbound) >= UNBOUND_STAFF_CAP:
-            warnings.append(
-                f"unbound_staff_capped: org={org_id} limit={UNBOUND_STAFF_CAP}"
-            )
+            warnings.append(f"unbound_staff_capped: org={org_id} limit={UNBOUND_STAFF_CAP}")
         for staff_id, nick in unbound:
             nick_label = (nick or staff_id).strip()
             _append_mindbot_target(

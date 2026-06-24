@@ -319,11 +319,7 @@ def merge_pg_dump(
                 live_engine,
                 id_maps,
             )
-            clean_result = {
-                k: v
-                for k, v in table_result.items()
-                if not k.startswith("_")
-            }
+            clean_result = {k: v for k, v in table_result.items() if not k.startswith("_")}
             results[table_name] = clean_result
 
             if table_name in STATS_RECOMPUTE_TABLES and table_result.get("inserted", 0) > 0:

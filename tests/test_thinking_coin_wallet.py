@@ -15,9 +15,7 @@ async def test_debit_wallet_raises_when_insufficient() -> None:
     db = AsyncMock()
     wallet = MagicMock()
     wallet.balance = 3
-    db.execute = AsyncMock(
-        return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=wallet))
-    )
+    db.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=wallet)))
 
     with pytest.raises(ValueError, match="insufficient_thinking_coins"):
         await wallet_mod.debit_wallet(db, 1, 6, "ai_spend")

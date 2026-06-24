@@ -92,6 +92,13 @@ watch(dingtalkApiKeysDialogVisible, (open) => {
   }
 })
 
+function onRefresh(): void {
+  emit('refresh')
+  if (props.showDingtalk) {
+    void apiKeysQuery.refetch()
+  }
+}
+
 watch(
   () => props.showDingtalk,
   (show) => {
@@ -132,7 +139,7 @@ function onDingtalkCardKeydown(e: KeyboardEvent): void {
           <el-button
             text
             size="small"
-            @click="emit('refresh')"
+            @click="onRefresh"
           >
             <el-icon class="mr-1"><Refresh /></el-icon>
             {{ t('common.refresh') }}

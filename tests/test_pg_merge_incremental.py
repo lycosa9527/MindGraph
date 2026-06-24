@@ -90,14 +90,9 @@ def _live_engine() -> Engine:
     )
     _create_merge_tables(engine)
     with engine.begin() as conn:
+        conn.execute(text("INSERT INTO organizations (id, code, name) VALUES (1, 'org-a', 'Org A')"))
         conn.execute(
-            text("INSERT INTO organizations (id, code, name) VALUES (1, 'org-a', 'Org A')")
-        )
-        conn.execute(
-            text(
-                "INSERT INTO users (id, phone, password_hash, role) "
-                "VALUES (1, '10000000001', 'hash', 'teacher')"
-            )
+            text("INSERT INTO users (id, phone, password_hash, role) VALUES (1, '10000000001', 'hash', 'teacher')")
         )
         conn.execute(
             text(
@@ -127,14 +122,9 @@ def _staging_engine() -> Engine:
     )
     _create_merge_tables(engine)
     with engine.begin() as conn:
+        conn.execute(text("INSERT INTO organizations (id, code, name) VALUES (1, 'org-a', 'Org A')"))
         conn.execute(
-            text("INSERT INTO organizations (id, code, name) VALUES (1, 'org-a', 'Org A')")
-        )
-        conn.execute(
-            text(
-                "INSERT INTO users (id, phone, password_hash, role) "
-                "VALUES (1, '10000000001', 'hash', 'teacher')"
-            )
+            text("INSERT INTO users (id, phone, password_hash, role) VALUES (1, '10000000001', 'hash', 'teacher')")
         )
         conn.execute(
             text(
@@ -229,7 +219,5 @@ def test_update_notifications_preserve_pk_skips_conflicts(
     assert result["skipped"] == 1
 
     with live_engine.connect() as conn:
-        rows = conn.execute(
-            text("SELECT id, title FROM update_notifications ORDER BY id")
-        ).fetchall()
+        rows = conn.execute(text("SELECT id, title FROM update_notifications ORDER BY id")).fetchall()
     assert rows == [(1, "Live"), (2, "Staging new")]

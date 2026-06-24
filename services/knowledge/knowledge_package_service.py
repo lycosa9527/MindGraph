@@ -312,9 +312,7 @@ class KnowledgePackageService:
         )
         count = result.scalar_one()
         if count >= self.ks.max_documents:
-            raise ValueError(
-                f"Maximum {self.ks.max_documents} documents allowed. Please delete a source first."
-            )
+            raise ValueError(f"Maximum {self.ks.max_documents} documents allowed. Please delete a source first.")
 
     async def _unique_file_name(self, space_id: int, title: str, source_kind: str) -> str:
         base = _slugify_title(title, fallback=source_kind or "source")

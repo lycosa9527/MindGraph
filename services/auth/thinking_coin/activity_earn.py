@@ -87,11 +87,15 @@ async def completed_usage_slugs_today(db: AsyncSession, user_id: int) -> set[str
     """Task slugs already earned today via usage_daily."""
     activity_date = beijing_date_today()
     rows = (
-        await db.execute(
-            select(ThinkingCoinDailyActivity.task_slug).where(
-                ThinkingCoinDailyActivity.user_id == user_id,
-                ThinkingCoinDailyActivity.activity_date == activity_date,
+        (
+            await db.execute(
+                select(ThinkingCoinDailyActivity.task_slug).where(
+                    ThinkingCoinDailyActivity.user_id == user_id,
+                    ThinkingCoinDailyActivity.activity_date == activity_date,
+                )
             )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return set(rows)

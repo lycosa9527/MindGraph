@@ -256,9 +256,7 @@ async def put_settings(
         "cost_canvas_assist": body.cost_canvas_assist,
     }
     for key, value in mapping.items():
-        row = (
-            await db.execute(select(ThinkingCoinSetting).where(ThinkingCoinSetting.key == key))
-        ).scalar_one_or_none()
+        row = (await db.execute(select(ThinkingCoinSetting).where(ThinkingCoinSetting.key == key))).scalar_one_or_none()
         if row is None:
             db.add(ThinkingCoinSetting(key=key, value_int=value))
         else:

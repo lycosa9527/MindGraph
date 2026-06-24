@@ -42,7 +42,5 @@ def organization_has_dify_credentials_clause():
 
 async def load_orgs_with_dify_credentials(db: AsyncSession) -> List[Organization]:
     """Return schools with at least one configured Dify server slot."""
-    result = await db.execute(
-        select(Organization).where(organization_has_dify_credentials_clause())
-    )
+    result = await db.execute(select(Organization).where(organization_has_dify_credentials_clause()))
     return list(result.scalars().all())

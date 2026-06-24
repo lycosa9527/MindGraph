@@ -59,9 +59,7 @@ def reset_postgresql_sequences(pg_engine: Any) -> None:
                     if int_max is None:
                         continue
 
-                    seq_result = conn.execute(
-                        text(f"SELECT pg_get_serial_sequence('{table_name}', '{pk_col}')")
-                    )
+                    seq_result = conn.execute(text(f"SELECT pg_get_serial_sequence('{table_name}', '{pk_col}')"))
                     sequence_name = seq_result.scalar()
                     if not sequence_name:
                         continue

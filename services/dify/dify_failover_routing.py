@@ -58,11 +58,7 @@ def choose_failover_route(
         return primary
 
     # Anti-flap: a fresh primary that failed once is not yet considered down.
-    if (
-        primary_health is not None
-        and is_health_fresh(primary_health)
-        and not primary_health.considered_down
-    ):
+    if primary_health is not None and is_health_fresh(primary_health) and not primary_health.considered_down:
         return primary
 
     if server_is_routable(partner_health):

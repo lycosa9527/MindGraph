@@ -6,6 +6,8 @@ import { computed, ref, watch } from 'vue'
 
 import { Loading } from '@element-plus/icons-vue'
 
+import AdminSwissPagination from '@/components/admin/AdminSwissPagination.vue'
+import AdminTrendChartModal from '@/components/admin/AdminTrendChartModal.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { fetchAdminUsers } from '@/composables/queries/adminApi'
 import { schoolTierFromUserRow, userRolePillView } from '@/utils/userRoleDisplay'
@@ -18,11 +20,15 @@ const props = defineProps<{
 const { t } = useLanguage()
 const notify = useNotifications()
 
+const PAGE_SIZE = 15
+
 const users = ref<Record<string, unknown>[]>([])
 const loading = ref(false)
-const loadingMore = ref(false)
 const page = ref(1)
+const total = ref(0)
 const totalPages = ref(1)
+const teacherTrendVisible = ref(false)
+const teacherTrendUser = ref<{ name: string; id?: number } | null>(null)
 
 function tokenTotal(row: Record<string, unknown>): number {
   const stats = row.token_stats as { total_tokens?: number } | undefined
@@ -59,56 +65,78 @@ const sortedUsers = computed(() =>
   [...users.value].sort((a, b) => tokenTotal(b) - tokenTotal(a))
 )
 
-async function loadUsers(append: boolean): Promise<void> {
+const pageInfo = computed(() => {
+  if (total.value <= 0) {
+    return t('admin.listRangeEmpty')
+  }
+  const start = (page.value - 1) * PAGE_SIZE + 1
+  const end = Math.min(page.value * PAGE_SIZE, total.value)
+  return t('admin.listRange', { start, end, total: total.value })
+})
+
+async function loadUsers(): Promise<void> {
   const orgId = props.orgId
   if (orgId == null || orgId <= 0 || !props.canLoad) {
     return
   }
-  if (append) {
-    loadingMore.value = true
-  } else {
-    loading.value = true
-    page.value = 1
-  }
+  loading.value = true
   try {
     const data = await fetchAdminUsers({
       organization_id: orgId,
       page: page.value,
-      page_size: 100,
+      page_size: PAGE_SIZE,
     })
-    const batch = data.users ?? []
-    if (append) {
-      users.value = [...users.value, ...batch]
-    } else {
-      users.value = batch
-    }
+    users.value = data.users ?? []
+    total.value = data.pagination?.total ?? 0
     totalPages.value = data.pagination?.total_pages ?? 1
   } catch {
     notify.error(t('admin.schoolTeachersTab.loadError'))
-    if (!append) {
-      users.value = []
-    }
+    users.value = []
+    total.value = 0
+    totalPages.value = 1
   } finally {
     loading.value = false
-    loadingMore.value = false
   }
 }
 
-function loadNextPage(): void {
-  if (page.value >= totalPages.value) {
+function goToPreviousPage(): void {
+  if (page.value > 1) {
+    page.value -= 1
+    void loadUsers()
+  }
+}
+
+function goToNextPage(): void {
+  if (page.value < totalPages.value) {
+    page.value += 1
+    void loadUsers()
+  }
+}
+
+function openTeacherTrend(row: Record<string, unknown>): void {
+  const rawId = row.id
+  const userId = typeof rawId === 'number' ? rawId : Number(rawId)
+  if (!Number.isFinite(userId) || userId <= 0) {
+    notify.warning(t('admin.userTrendRequiresId'))
     return
   }
-  page.value += 1
-  void loadUsers(true)
+  teacherTrendUser.value = {
+    name: displayName(row),
+    id: userId,
+  }
+  teacherTrendVisible.value = true
 }
 
 watch(
   () => [props.orgId, props.canLoad] as const,
   ([orgId, canLoad]) => {
+    page.value = 1
     if (orgId != null && orgId > 0 && canLoad) {
-      void loadUsers(false)
+      void loadUsers()
     } else {
       users.value = []
+      total.value = 0
+      totalPages.value = 1
     }
   },
   { immediate: true }
@@ -119,7 +147,7 @@ watch(
   <div class="school-teachers-tab space-y-3">
     <div
       v-if="loading"
-      class="flex justify-center items-center h-48"
+      class="school-modal-loading flex justify-center items-center h-48"
     >
       <el-icon
         class="is-loading"
@@ -131,7 +159,7 @@ watch(
 
     <div
       v-else-if="sortedUsers.length === 0"
-      class="flex justify-center items-center h-48 text-gray-500 dark:text-gray-400 text-sm"
+      class="school-modal-empty"
     >
       {{ t('admin.schoolTeachersTab.empty') }}
     </div>
@@ -140,16 +168,16 @@ watch(
       v-else
       class="overflow-x-auto"
     >
-      <table class="w-full text-sm border-collapse">
+      <table class="school-modal-table">
         <thead>
-          <tr class="text-left text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-            <th class="py-2 pr-3 font-medium min-w-[8rem]">
+          <tr class="school-modal-table__head-row">
+            <th class="school-modal-table__head-cell school-modal-table__head-cell--wide">
               {{ t('admin.schoolTeachersTab.colName') }}
             </th>
-            <th class="py-2 pr-3 font-medium whitespace-nowrap">
+            <th class="school-modal-table__head-cell">
               {{ t('admin.schoolTeachersTab.colRole') }}
             </th>
-            <th class="py-2 font-medium whitespace-nowrap text-right">
+            <th class="school-modal-table__head-cell school-modal-table__head-cell--right">
               {{ t('admin.schoolTeachersTab.colTokens') }}
             </th>
           </tr>
@@ -158,18 +186,23 @@ watch(
           <tr
             v-for="row in sortedUsers"
             :key="String(row.id)"
-            class="border-b border-gray-100 dark:border-gray-800 align-top"
+            class="school-modal-table__row school-modal-table__row--clickable"
+            role="button"
+            tabindex="0"
+            :aria-label="t('admin.schoolTeachersTab.openUserTrend', { name: displayName(row) })"
+            @click="openTeacherTrend(row)"
+            @keydown.enter="openTeacherTrend(row)"
           >
-            <td class="py-2 pr-3 text-gray-800 dark:text-gray-100">
-              <div class="font-medium">{{ displayName(row) }}</div>
+            <td class="school-modal-table__cell">
+              <div class="school-modal-table__name">{{ displayName(row) }}</div>
               <div
                 v-if="row.phone"
-                class="text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                class="school-modal-table__sub"
               >
                 {{ row.phone }}
               </div>
             </td>
-            <td class="py-2 pr-3 whitespace-nowrap">
+            <td class="school-modal-table__cell whitespace-nowrap">
               <span
                 v-if="rolePillForRow(row)"
                 class="inline-flex max-w-full items-center rounded-full border px-2 py-0.5 text-xs font-medium"
@@ -181,9 +214,9 @@ watch(
               >
                 {{ rolePillForRow(row)?.label }}
               </span>
-              <span v-else>—</span>
+              <span v-else class="school-modal-table__sub">—</span>
             </td>
-            <td class="py-2 whitespace-nowrap text-right tabular-nums text-gray-700 dark:text-gray-200">
+            <td class="school-modal-table__cell school-modal-table__cell--right">
               {{ formatNumber(tokenTotal(row)) }}
             </td>
           </tr>
@@ -191,17 +224,22 @@ watch(
       </table>
     </div>
 
-    <div
-      v-if="page < totalPages && sortedUsers.length > 0 && !loading"
-      class="flex justify-center pt-2"
-    >
-      <el-button
-        size="small"
-        :loading="loadingMore"
-        @click="loadNextPage"
-      >
-        {{ t('admin.schoolTeachersTab.loadMore') }}
-      </el-button>
-    </div>
+    <AdminSwissPagination
+      v-if="sortedUsers.length > 0 && totalPages > 1 && !loading"
+      class="school-modal-pagination"
+      :page-info="pageInfo"
+      :page="page"
+      :total-pages="totalPages"
+      @previous="goToPreviousPage"
+      @next="goToNextPage"
+    />
+
+    <AdminTrendChartModal
+      v-model:visible="teacherTrendVisible"
+      type="user"
+      :user-name="teacherTrendUser?.name"
+      :user-id="teacherTrendUser?.id"
+      initial-trend-period="total"
+    />
   </div>
 </template>

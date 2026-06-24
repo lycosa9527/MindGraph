@@ -188,13 +188,17 @@ async def error_collection_summary(scope: AdminScope = Depends(require_settings_
             by_source = {str(src): int(count) for src, count in source_rows}
 
             top_groups_rows = (
-                await session.execute(
-                    select(ErrorGroup)
-                    .where(ErrorGroup.last_seen_at >= since_24h)
-                    .order_by(ErrorGroup.occurrence_count.desc(), ErrorGroup.last_seen_at.desc())
-                    .limit(10)
+                (
+                    await session.execute(
+                        select(ErrorGroup)
+                        .where(ErrorGroup.last_seen_at >= since_24h)
+                        .order_by(ErrorGroup.occurrence_count.desc(), ErrorGroup.last_seen_at.desc())
+                        .limit(10)
+                    )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
 
         logger.info("Admin %s viewed error collection summary", scope.actor.phone)
         return ErrorSummaryResponse(
@@ -239,14 +243,18 @@ async def list_error_events(
                 (await session.execute(select(func.count()).select_from(ErrorEvent).where(*filters))).scalar_one()
             )
             rows = (
-                await session.execute(
-                    select(ErrorEvent)
-                    .where(*filters)
-                    .order_by(ErrorEvent.created_at.desc())
-                    .offset((page - 1) * page_size)
-                    .limit(page_size)
+                (
+                    await session.execute(
+                        select(ErrorEvent)
+                        .where(*filters)
+                        .order_by(ErrorEvent.created_at.desc())
+                        .offset((page - 1) * page_size)
+                        .limit(page_size)
+                    )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
 
         logger.info("Admin %s listed error events page=%s", scope.actor.phone, page)
         meta = _pagination(total, page, page_size)
@@ -304,14 +312,18 @@ async def list_error_groups(
                 (await session.execute(select(func.count()).select_from(ErrorGroup).where(*filters))).scalar_one()
             )
             rows = (
-                await session.execute(
-                    select(ErrorGroup)
-                    .where(*filters)
-                    .order_by(ErrorGroup.last_seen_at.desc(), ErrorGroup.occurrence_count.desc())
-                    .offset((page - 1) * page_size)
-                    .limit(page_size)
+                (
+                    await session.execute(
+                        select(ErrorGroup)
+                        .where(*filters)
+                        .order_by(ErrorGroup.last_seen_at.desc(), ErrorGroup.occurrence_count.desc())
+                        .offset((page - 1) * page_size)
+                        .limit(page_size)
+                    )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
 
         logger.info("Admin %s listed error groups page=%s", scope.actor.phone, page)
         meta = _pagination(total, page, page_size)
@@ -333,9 +345,7 @@ async def mute_error_group(
     """Mute or unmute alert notifications for a fingerprint group."""
     try:
         async with open_async_session() as session:
-            result = await session.execute(
-                update(ErrorGroup).where(ErrorGroup.id == group_id).values(muted=body.muted)
-            )
+            result = await session.execute(update(ErrorGroup).where(ErrorGroup.id == group_id).values(muted=body.muted))
             await session.commit()
         if result_rowcount(result) == 0:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Error group not found")

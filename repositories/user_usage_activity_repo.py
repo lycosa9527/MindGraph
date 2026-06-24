@@ -57,9 +57,7 @@ class UserUsageActivityRepository:
         source: Optional[str],
     ) -> list[UserUsageActivity]:
         """Newest-first cursor pagination for one organization."""
-        q = select(UserUsageActivity).where(
-            UserUsageActivity.organization_id == int(organization_id)
-        )
+        q = select(UserUsageActivity).where(UserUsageActivity.organization_id == int(organization_id))
         if source is not None and source.strip() in _VALID_SOURCES:
             q = q.where(UserUsageActivity.source == source.strip())
         if before_id is not None:

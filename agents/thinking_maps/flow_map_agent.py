@@ -65,11 +65,7 @@ class FlowMapAgent(BaseAgent):
         }
         structure_mode = kwargs.get("structure_mode", "free")
         fixed_nodes = kwargs.get("fixed_nodes") or {}
-        fixed_step_labels = (
-            fixed_labels_from_nodes(fixed_nodes, "steps")
-            if structure_mode == "fixed"
-            else None
-        )
+        fixed_step_labels = fixed_labels_from_nodes(fixed_nodes, "steps") if structure_mode == "fixed" else None
         try:
             spec = await self._generate_flow_map_spec(
                 user_prompt,
@@ -95,9 +91,7 @@ class FlowMapAgent(BaseAgent):
             )
             if not is_valid:
                 logger.warning("FlowMapAgent: Validation failed: %s", validation_msg)
-                return agent_validation_failure(
-                    f"Generated invalid specification: {validation_msg}"
-                )
+                return agent_validation_failure(f"Generated invalid specification: {validation_msg}")
 
             # Enhance the spec with layout and dimensions
             enhanced_result = await self.enhance_spec(spec)
@@ -134,10 +128,7 @@ class FlowMapAgent(BaseAgent):
     ) -> Optional[Dict]:
         """Generate the flow map specification using LLM."""
         fixed_nodes = fixed_nodes or {}
-        fixed_steps = (
-            structure_mode == "fixed"
-            and fixed_labels_from_nodes(fixed_nodes, "steps")
-        )
+        fixed_steps = structure_mode == "fixed" and fixed_labels_from_nodes(fixed_nodes, "steps")
         try:
             prompt_type = "fixed_steps" if fixed_steps else "generation"
             system_prompt = get_prompt("flow_map_agent", language, prompt_type)
@@ -280,11 +271,7 @@ class FlowMapAgent(BaseAgent):
                 return False, "Missing or invalid steps"
 
             if fixed_step_labels:
-                expected = [
-                    str(label).strip()
-                    for label in fixed_step_labels
-                    if str(label).strip()
-                ]
+                expected = [str(label).strip() for label in fixed_step_labels if str(label).strip()]
                 actual = extract_part_names(steps)
                 ok, msg = validate_fixed_labels(actual, expected, "steps")
                 if not ok:

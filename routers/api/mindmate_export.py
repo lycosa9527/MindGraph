@@ -198,10 +198,10 @@ async def list_export_users(
     resolved_org = int(org_id)
     await _ensure_org_exists(db, resolved_org, lang)
     rows = (
-        await db.execute(
-            select(User).where(User.organization_id == resolved_org).order_by(User.id.desc())
-        )
-    ).scalars().all()
+        (await db.execute(select(User).where(User.organization_id == resolved_org).order_by(User.id.desc())))
+        .scalars()
+        .all()
+    )
     security_log.data_access(
         "MindMate export user list",
         user_id=int(current_user.id),
@@ -495,8 +495,7 @@ async def download_export(
         end=end,
     )
     logger.info(
-        "[MindMateExport] sync download user=%s org=%s scope=%s fmt=%s "
-        "conversations=%s verification=%s",
+        "[MindMateExport] sync download user=%s org=%s scope=%s fmt=%s conversations=%s verification=%s",
         current_user.id,
         resolved_org,
         export_scope,

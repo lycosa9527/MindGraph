@@ -66,11 +66,7 @@ def _outcome_from_link_row(row: GenerationPreviewLink) -> dict[str, Any]:
     diagram_raw = row.diagram_id
     diagram_id = diagram_raw.strip() if isinstance(diagram_raw, str) and diagram_raw.strip() else ""
     user_id = int(row.user_id) if isinstance(row.user_id, int) and row.user_id > 0 else None
-    org_id = (
-        int(row.organization_id)
-        if isinstance(row.organization_id, int) and row.organization_id > 0
-        else None
-    )
+    org_id = int(row.organization_id) if isinstance(row.organization_id, int) and row.organization_id > 0 else None
     return {
         "reason": (row.skip_reason or "").strip(),
         "language": (row.language or "zh").strip() or "zh",

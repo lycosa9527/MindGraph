@@ -163,9 +163,7 @@ class AlertDispatcher:
         try:
             async with open_async_session() as session:
                 muted = (
-                    await session.execute(
-                        select(ErrorGroup.muted).where(ErrorGroup.fingerprint == fingerprint)
-                    )
+                    await session.execute(select(ErrorGroup.muted).where(ErrorGroup.fingerprint == fingerprint))
                 ).scalar_one_or_none()
             return bool(muted)
         except BACKGROUND_INFRA_ERRORS as db_error:

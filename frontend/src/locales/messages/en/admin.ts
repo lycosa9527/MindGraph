@@ -921,6 +921,8 @@ export default {
   'admin.schoolTeachersTab.empty': 'No members in this school',
   'admin.schoolTeachersTab.loadError': 'Failed to load teachers',
   'admin.schoolTeachersTab.loadMore': 'Load more',
+  'admin.schoolTeachersTab.openUserTrend': 'View token usage and activity for {name}',
+  'admin.schoolModalPageInfo': 'Page {page} of {totalPages}',
   'admin.orgActivityTab.filterAll': 'All',
   'admin.orgActivityTab.filterMindgraph': 'MindGraph',
   'admin.orgActivityTab.filterMindmate': 'MindMate',

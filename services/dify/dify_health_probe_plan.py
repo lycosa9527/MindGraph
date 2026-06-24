@@ -80,9 +80,7 @@ def build_deduped_probe_plan(orgs: List[Organization]) -> DifyProbePlan:
                 continue
             api_key, api_url = creds
             target = DifyProbeTarget(api_url=api_url, api_key=api_key)
-            grouped[probe_target_key(target)].append(
-                DifyProbeAssignment(org_id=org.id, server=server, target=target)
-            )
+            grouped[probe_target_key(target)].append(DifyProbeAssignment(org_id=org.id, server=server, target=target))
             server_slot_count += 1
             slot_used = True
             contributing_org_ids.add(org.id)

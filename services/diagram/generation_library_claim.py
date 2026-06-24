@@ -41,11 +41,7 @@ async def claim_generation_preview_for_user(
     # user. Previews with no recorded owner (e.g. no_user / unbound_staff) stay claimable by
     # any authenticated user. Treat a mismatch as not-found to avoid leaking preview existence.
     recorded_user_id = outcome.get("user_id")
-    if (
-        isinstance(recorded_user_id, int)
-        and recorded_user_id > 0
-        and recorded_user_id != int(current_user.id)
-    ):
+    if isinstance(recorded_user_id, int) and recorded_user_id > 0 and recorded_user_id != int(current_user.id):
         return None, CLAIM_ERROR_NOT_FOUND
 
     existing_id = outcome.get("diagram_id")

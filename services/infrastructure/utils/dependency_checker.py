@@ -365,8 +365,7 @@ def check_postgresql_installed() -> tuple[bool, str]:
         )
         if best_on_port is not None:
             return True, (
-                f"PostgreSQL ready for {config.mode_label} "
-                f"(cluster {best_on_port}, port {config.port}, not running)"
+                f"PostgreSQL ready for {config.mode_label} (cluster {best_on_port}, port {config.port}, not running)"
             )
         if postgres_binary_found:
             version_msg = f" (version {postgres_version})" if postgres_version else ""

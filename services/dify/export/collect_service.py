@@ -142,9 +142,7 @@ async def _fetch_all_messages(
             break
     else:
         pagination_complete = False
-        warning = (
-            f"dify_pagination_cap: messages conv={conversation_id} user={dify_user} pages={MAX_PAGES}"
-        )
+        warning = f"dify_pagination_cap: messages conv={conversation_id} user={dify_user} pages={MAX_PAGES}"
     collected.sort(key=_message_sort_key)
     return FetchPageResult(items=collected, pagination_complete=pagination_complete, warning=warning)
 
@@ -368,15 +366,11 @@ async def collect_conversation_summaries_batch(
             )
         endpoints = endpoint_cache[cache_key]
         if not endpoints:
-            warnings.append(
-                f"no Dify endpoints for org={target.organization_id} channel={target.channel}"
-            )
+            warnings.append(f"no Dify endpoints for org={target.organization_id} channel={target.channel}")
             skipped_targets += 1
             continue
         for endpoint in endpoints:
-            tasks.append(
-                _summaries_for_target_endpoint(target, endpoint, start, end, semaphore)
-            )
+            tasks.append(_summaries_for_target_endpoint(target, endpoint, start, end, semaphore))
 
     if not tasks:
         return CollectResult(

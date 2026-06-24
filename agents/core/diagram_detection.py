@@ -41,7 +41,7 @@ _TYPE_ALIASES = {
 
 
 def _normalize_type_token(token: str) -> str | None:
-    cleaned = token.strip().lower().strip('"`\'.,;:')
+    cleaned = token.strip().lower().strip("\"`'.,;:")
     if not cleaned or cleaned == "unclear":
         return cleaned or None
     if cleaned in VALID_DIAGRAM_TYPES:

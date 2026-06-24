@@ -41,6 +41,7 @@ interface AdminApiKeyRow {
   description: string | null
   quota_limit: number | null
   usage_count: number
+  dingtalk_request_count?: number
   is_active: boolean
   created_at: string | null
   last_used_at: string | null
@@ -286,7 +287,7 @@ function cancelCreate(): void {
               align="right"
             >
               <template #default="{ row }">
-                {{ (row.usage_count ?? 0).toLocaleString() }}
+                {{ (row.dingtalk_request_count ?? row.usage_count ?? 0).toLocaleString() }}
               </template>
             </el-table-column>
             <el-table-column

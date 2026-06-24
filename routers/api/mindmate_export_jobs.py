@@ -70,13 +70,17 @@ async def list_export_jobs(
 ):
     """Recent export jobs for the current admin."""
     rows = (
-        await db.execute(
-            select(MindmateExportJob)
-            .where(MindmateExportJob.created_by_user_id == int(current_user.id))
-            .order_by(MindmateExportJob.id.desc())
-            .limit(limit)
+        (
+            await db.execute(
+                select(MindmateExportJob)
+                .where(MindmateExportJob.created_by_user_id == int(current_user.id))
+                .order_by(MindmateExportJob.id.desc())
+                .limit(limit)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     security_log.data_access(
         "MindMate export job list",
         user_id=int(current_user.id),

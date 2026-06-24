@@ -14,14 +14,11 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Insert daily_earn_cap when missing (existing deployments after 0065)."""
     conn = op.get_bind()
-    exists = conn.execute(
-        sa.text("SELECT 1 FROM thinking_coin_settings WHERE key = 'daily_earn_cap'")
-    ).scalar()
+    exists = conn.execute(sa.text("SELECT 1 FROM thinking_coin_settings WHERE key = 'daily_earn_cap'")).scalar()
     if exists is None:
         op.execute(
             sa.text(
-                "INSERT INTO thinking_coin_settings (key, value_int, value_text) "
-                "VALUES ('daily_earn_cap', 100, NULL)"
+                "INSERT INTO thinking_coin_settings (key, value_int, value_text) VALUES ('daily_earn_cap', 100, NULL)"
             )
         )
 

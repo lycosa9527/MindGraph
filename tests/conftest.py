@@ -13,4 +13,3 @@ def pytest_configure(config) -> None:
         "markers",
         "integration: live tests requiring external services (LLM, Redis)",
     )
-

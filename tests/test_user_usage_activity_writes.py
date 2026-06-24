@@ -29,9 +29,7 @@ async def test_record_persists_row() -> None:
         session.commit = AsyncMock()
         mock_session.return_value.__aenter__ = AsyncMock(return_value=session)
         mock_session.return_value.__aexit__ = AsyncMock(return_value=False)
-        with patch(
-            "services.admin.user_usage_activity.UserUsageActivityRepository"
-        ) as repo_cls:
+        with patch("services.admin.user_usage_activity.UserUsageActivityRepository") as repo_cls:
             repo_cls.return_value.insert = insert_mock
             await record_user_usage_activity(
                 user_id=7,

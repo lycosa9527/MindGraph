@@ -14,6 +14,7 @@ from services.utils.pg_backup_manifest import (
     resolve_stats_engine,
 )
 
+
 def test_build_pg_dump_manifest_includes_size_bytes_and_tables(tmp_path: Path) -> None:
     """Manifest matches shared contract: size_bytes, tables, totals."""
     dump_path = tmp_path / "mindgraph.postgresql.20260101_120000.dump"
@@ -22,7 +23,9 @@ def test_build_pg_dump_manifest_includes_size_bytes_and_tables(tmp_path: Path) -
     mock_engine = MagicMock()
     mock_inspector = MagicMock()
     mock_inspector.get_table_names.return_value = ["diagrams", "users"]
-    mock_inspector.get_columns.side_effect = lambda name: [{"name": "id"}] if name == "diagrams" else [{"name": "id"}, {"name": "phone"}]
+    mock_inspector.get_columns.side_effect = lambda name: (
+        [{"name": "id"}] if name == "diagrams" else [{"name": "id"}, {"name": "phone"}]
+    )
 
     mock_conn = MagicMock()
     mock_result = MagicMock()

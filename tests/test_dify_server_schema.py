@@ -10,6 +10,7 @@ from services.dify.dify_server_schema import (
     server_slot_field_names,
 )
 
+
 def test_organization_slots_include_legacy_server_one() -> None:
     """Server 1 is discovered from legacy dify_api_* columns."""
     slots = organization_dify_server_slots()

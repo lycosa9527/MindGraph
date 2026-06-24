@@ -90,11 +90,7 @@ class BraceMapAgent(BaseAgent):
         phase_emit = kwargs.get("phase_emit")
         structure_mode = kwargs.get("structure_mode", "free")
         fixed_nodes = kwargs.get("fixed_nodes") or {}
-        fixed_part_labels = (
-            fixed_labels_from_nodes(fixed_nodes, "parts")
-            if structure_mode == "fixed"
-            else None
-        )
+        fixed_part_labels = fixed_labels_from_nodes(fixed_nodes, "parts") if structure_mode == "fixed" else None
         try:
             # Three-scenario system (similar to bridge_map):
             # Scenario 1: Topic only 鈫?standard generation
@@ -143,9 +139,7 @@ class BraceMapAgent(BaseAgent):
             )
             if not is_valid:
                 logger.warning("BraceMapAgent: Validation failed: %s", validation_msg)
-                return agent_validation_failure(
-                    f"Generated invalid specification: {validation_msg}"
-                )
+                return agent_validation_failure(f"Generated invalid specification: {validation_msg}")
 
             # Enhance the spec with layout and dimensions
             enhanced_result = await self.enhance_spec(spec)
@@ -183,10 +177,7 @@ class BraceMapAgent(BaseAgent):
     ) -> Optional[Dict]:
         """Generate the brace map specification using LLM."""
         fixed_nodes = fixed_nodes or {}
-        fixed_parts = (
-            structure_mode == "fixed"
-            and fixed_labels_from_nodes(fixed_nodes, "parts")
-        )
+        fixed_parts = structure_mode == "fixed" and fixed_labels_from_nodes(fixed_nodes, "parts")
         try:
             # Choose prompt based on fixed parts, fixed dimension, or standard generation
             if fixed_dimension and not fixed_parts:
@@ -581,11 +572,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
 
             if fixed_part_labels:
                 normalized = self._normalize_field_names(output)
-                expected = [
-                    str(label).strip()
-                    for label in fixed_part_labels
-                    if str(label).strip()
-                ]
+                expected = [str(label).strip() for label in fixed_part_labels if str(label).strip()]
                 actual = extract_part_names(normalized.get("parts"))
                 ok, msg = validate_fixed_labels(actual, expected, "parts")
                 if not ok:

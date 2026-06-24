@@ -81,11 +81,7 @@ def traffic_route_sentence(
         standby_down = standby_health is not None and standby_health.considered_down
         if primary_down and standby_down:
             return "MindMate stays on main server (both servers unreachable)."
-        if (
-            primary_health is not None
-            and not primary_health.online
-            and not primary_health.considered_down
-        ):
+        if primary_health is not None and not primary_health.online and not primary_health.considered_down:
             return "MindMate still uses main server (failover not triggered yet)."
         return "MindMate uses main server."
     if active_route is None:

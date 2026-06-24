@@ -24,10 +24,7 @@ def test_extract_bind_token_from_url() -> None:
 def test_extract_bind_payload_includes_rotating_code() -> None:
     token = "abc123XYZ"
     code = "042816"
-    url = (
-        f"https://mindgraph.example{BIND_PATH_MARKER}"
-        f"?{BIND_QUERY_PARAM}={token}&{BIND_QUERY_CODE_PARAM}={code}"
-    )
+    url = f"https://mindgraph.example{BIND_PATH_MARKER}?{BIND_QUERY_PARAM}={token}&{BIND_QUERY_CODE_PARAM}={code}"
     assert extract_bind_payload_from_text(url) == (token, code)
 
 

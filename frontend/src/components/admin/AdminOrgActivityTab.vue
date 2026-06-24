@@ -6,6 +6,7 @@ import { computed, ref, watch } from 'vue'
 
 import { Loading } from '@element-plus/icons-vue'
 
+import AdminSwissPagination from '@/components/admin/AdminSwissPagination.vue'
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useScopedAbort } from '@/composables/core/useScopedAbort'
@@ -32,12 +33,13 @@ const notify = useNotifications()
 const uiStore = useUIStore()
 const { beginRequest, abort: abortActivityRequests } = useScopedAbort()
 
+const PAGE_SIZE = 15
+
 const sourceFilter = ref<SourceFilter>('all')
-const items = ref<AdminOrgActivityItem[]>([])
+const page = ref(1)
+const pagesCache = ref<AdminOrgActivityItem[][]>([])
+const pageHasMore = ref<boolean[]>([])
 const loading = ref(false)
-const loadingMore = ref(false)
-const beforeId = ref<number | null>(null)
-const hasMore = ref(true)
 
 const sourceFilterOptions = computed(() => [
   { label: t('admin.orgActivityTab.filterAll'), value: 'all' as const },
@@ -86,34 +88,67 @@ function userLabel(row: AdminOrgActivityItem): string {
   return name || `#${row.userId}`
 }
 
-async function loadPage(append: boolean): Promise<void> {
+const currentItems = computed(() => pagesCache.value[page.value - 1] ?? [])
+
+const hasMore = computed(() => pageHasMore.value[page.value - 1] ?? false)
+
+const totalPages = computed(() => {
+  if (hasMore.value) {
+    return page.value + 1
+  }
+  return Math.max(page.value, pagesCache.value.length, 1)
+})
+
+const pageInfo = computed(() => {
+  const batch = currentItems.value
+  if (batch.length === 0) {
+    return t('admin.listRangeEmpty')
+  }
+  const start = (page.value - 1) * PAGE_SIZE + 1
+  const end = (page.value - 1) * PAGE_SIZE + batch.length
+  if (hasMore.value) {
+    return t('admin.schoolModalPageInfo', { page: page.value, totalPages: totalPages.value })
+  }
+  return t('admin.listRange', { start, end, total: end })
+})
+
+async function fetchActivityPage(pageNumber: number): Promise<AdminOrgActivityItem[]> {
+  const orgId = props.orgId
+  if (orgId == null || orgId <= 0 || !props.canLoad) {
+    return []
+  }
+  const signal = beginRequest()
+  const params: Record<string, string | number | undefined> = { limit: PAGE_SIZE }
+  if (sourceFilter.value !== 'all') {
+    params.source = sourceFilter.value
+  }
+  if (pageNumber > 1) {
+    const previousPage = pagesCache.value[pageNumber - 2]
+    const cursor = previousPage?.[previousPage.length - 1]?.id
+    if (cursor != null) {
+      params.before_id = cursor
+    }
+  }
+  const data = await fetchAdminOrgActivity(orgId, params, signal)
+  const nextHasMore = [...pageHasMore.value]
+  nextHasMore[pageNumber - 1] = Boolean(data.hasMore)
+  pageHasMore.value = nextHasMore.slice(0, pageNumber)
+  return data.items ?? []
+}
+
+async function loadCurrentPage(forceFetch = false): Promise<void> {
   const orgId = props.orgId
   if (orgId == null || orgId <= 0 || !props.canLoad) {
     return
   }
-  if (append) {
-    loadingMore.value = true
-  } else {
-    loading.value = true
+  const cached = pagesCache.value[page.value - 1]
+  if (cached && !forceFetch) {
+    return
   }
+  loading.value = true
   try {
-    const signal = beginRequest()
-    const params: Record<string, string | number | undefined> = { limit: 50 }
-    if (sourceFilter.value !== 'all') {
-      params.source = sourceFilter.value
-    }
-    if (append && beforeId.value != null) {
-      params.before_id = beforeId.value
-    }
-    const data = await fetchAdminOrgActivity(orgId, params, signal)
-    const batch = data.items ?? []
-    if (append) {
-      items.value = [...items.value, ...batch]
-    } else {
-      items.value = batch
-    }
-    hasMore.value = Boolean(data.hasMore)
-    beforeId.value = batch.length > 0 ? batch[batch.length - 1].id : null
+    const batch = await fetchActivityPage(page.value)
+    pagesCache.value = [...pagesCache.value.slice(0, page.value - 1), batch]
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') {
       return
@@ -121,15 +156,29 @@ async function loadPage(append: boolean): Promise<void> {
     notify.error(t('admin.orgActivityTab.loadError'))
   } finally {
     loading.value = false
-    loadingMore.value = false
   }
 }
 
 function resetAndLoad(): void {
-  items.value = []
-  beforeId.value = null
-  hasMore.value = true
-  void loadPage(false)
+  page.value = 1
+  pagesCache.value = []
+  pageHasMore.value = []
+  void loadCurrentPage(true)
+}
+
+function goToPreviousPage(): void {
+  if (page.value <= 1) {
+    return
+  }
+  page.value -= 1
+}
+
+function goToNextPage(): void {
+  if (page.value >= totalPages.value) {
+    return
+  }
+  page.value += 1
+  void loadCurrentPage()
 }
 
 watch(
@@ -139,7 +188,9 @@ watch(
     if (orgId != null && orgId > 0 && canLoad) {
       resetAndLoad()
     } else {
-      items.value = []
+      pagesCache.value = []
+      pageHasMore.value = []
+      page.value = 1
     }
   },
   { immediate: true }
@@ -169,7 +220,7 @@ watch(sourceFilter, () => {
 
     <div
       v-if="loading"
-      class="flex justify-center items-center h-40"
+      class="school-modal-loading flex justify-center items-center h-40"
     >
       <el-icon
         class="is-loading"
@@ -180,8 +231,8 @@ watch(sourceFilter, () => {
     </div>
 
     <div
-      v-else-if="items.length === 0"
-      class="flex justify-center items-center h-40 text-gray-500 dark:text-gray-400 text-sm"
+      v-else-if="currentItems.length === 0"
+      class="school-modal-empty h-40"
     >
       {{ t('admin.orgActivityTab.empty') }}
     </div>
@@ -190,49 +241,47 @@ watch(sourceFilter, () => {
       v-else
       class="overflow-x-auto"
     >
-      <table class="w-full text-sm border-collapse">
+      <table class="school-modal-table">
         <thead>
-          <tr class="text-left text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-            <th class="py-2 pr-3 font-medium whitespace-nowrap">
+          <tr class="school-modal-table__head-row">
+            <th class="school-modal-table__head-cell">
               {{ t('admin.orgActivityTab.colTime') }}
             </th>
-            <th class="py-2 pr-3 font-medium whitespace-nowrap">
+            <th class="school-modal-table__head-cell">
               {{ t('admin.orgActivityTab.colUser') }}
             </th>
-            <th class="py-2 pr-3 font-medium whitespace-nowrap">
+            <th class="school-modal-table__head-cell">
               {{ t('admin.orgActivityTab.colProduct') }}
             </th>
-            <th class="py-2 pr-3 font-medium min-w-[12rem]">
+            <th class="school-modal-table__head-cell min-w-[12rem]">
               {{ t('admin.orgActivityTab.colSummary') }}
             </th>
-            <th class="py-2 font-medium whitespace-nowrap text-right">
+            <th class="school-modal-table__head-cell school-modal-table__head-cell--right">
               {{ t('admin.orgActivityTab.colTokens') }}
             </th>
           </tr>
         </thead>
         <tbody>
           <tr
-            v-for="row in items"
+            v-for="row in currentItems"
             :key="row.id"
-            class="border-b border-gray-100 dark:border-gray-800 align-top"
+            class="school-modal-table__row"
           >
-            <td class="py-2 pr-3 whitespace-nowrap text-xs text-gray-600 dark:text-gray-300">
+            <td class="school-modal-table__cell school-modal-table__time">
               {{ formatTime(row.createdAt) }}
             </td>
-            <td class="py-2 pr-3 whitespace-nowrap text-xs text-gray-700 dark:text-gray-200">
+            <td class="school-modal-table__cell school-modal-table__user">
               {{ userLabel(row) }}
             </td>
-            <td class="py-2 pr-3 whitespace-nowrap">
-              <span
-                class="inline-block text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
-              >
+            <td class="school-modal-table__cell whitespace-nowrap">
+              <span class="school-modal-badge">
                 {{ sourceBadge(row) }}
               </span>
             </td>
-            <td class="py-2 pr-3 text-gray-800 dark:text-gray-100 break-words">
+            <td class="school-modal-table__cell school-modal-table__summary">
               {{ rowSummary(row) }}
             </td>
-            <td class="py-2 whitespace-nowrap text-right text-xs text-gray-600 dark:text-gray-300">
+            <td class="school-modal-table__cell school-modal-table__tokens">
               {{ formatTokens(row.totalTokens) }}
             </td>
           </tr>
@@ -240,18 +289,15 @@ watch(sourceFilter, () => {
       </table>
     </div>
 
-    <div
-      v-if="hasMore && items.length > 0 && !loading"
-      class="flex justify-center pt-2"
-    >
-      <el-button
-        size="small"
-        :loading="loadingMore"
-        @click="loadPage(true)"
-      >
-        {{ t('admin.orgActivityTab.loadMore') }}
-      </el-button>
-    </div>
+    <AdminSwissPagination
+      v-if="currentItems.length > 0 && totalPages > 1 && !loading"
+      class="school-modal-pagination"
+      :page-info="pageInfo"
+      :page="page"
+      :total-pages="totalPages"
+      @previous="goToPreviousPage"
+      @next="goToNextPage"
+    />
   </div>
 </template>
 
@@ -270,7 +316,6 @@ watch(sourceFilter, () => {
   margin: 0;
   font-size: 0.75rem;
   line-height: 1.45;
-  color: var(--swiss-muted, #78716c);
 }
 
 .org-activity-tab-filter {

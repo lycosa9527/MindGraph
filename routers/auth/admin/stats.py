@@ -41,6 +41,7 @@ from utils.auth.mindbot_token_stats import (
     aggregate_mindbot_tokens_by_org,
     merge_org_token_stats,
 )
+from utils.auth.api_key_usage_stats import GENERATE_DINGTALK_ENDPOINT
 from utils.auth.school_tier import school_dashboard_quotas_payload
 
 from ..dependencies import (
@@ -639,7 +640,7 @@ async def get_token_stats_admin(
             )
 
         _dingtalk_path = and_(
-            TokenUsage.endpoint_path == "/api/generate_dingtalk",
+            TokenUsage.endpoint_path == GENERATE_DINGTALK_ENDPOINT,
             TokenUsage.success,
         )
         for d_key, d_since in (

@@ -288,13 +288,8 @@ async def _run_deduped_probes(plan: DifyProbePlan) -> Dict[Tuple[str, str], _Pro
     if not plan.unique_targets:
         return {}
     semaphore = asyncio.Semaphore(DIFY_PROBE_CONCURRENCY)
-    outcomes = await asyncio.gather(
-        *(_probe_unique_target(target, semaphore) for target in plan.unique_targets)
-    )
-    return {
-        probe_target_key(target): outcome
-        for target, outcome in zip(plan.unique_targets, outcomes, strict=True)
-    }
+    outcomes = await asyncio.gather(*(_probe_unique_target(target, semaphore) for target in plan.unique_targets))
+    return {probe_target_key(target): outcome for target, outcome in zip(plan.unique_targets, outcomes, strict=True)}
 
 
 async def _apply_assignment(

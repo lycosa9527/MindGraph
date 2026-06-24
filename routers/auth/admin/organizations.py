@@ -833,10 +833,15 @@ async def list_organization_activity_admin(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
     await assert_panel_org_readable(scope, org_id, db, lang)
 
-    if source is not None and source.strip() and source.strip() not in (
-        "mindgraph",
-        "mindmate",
-        "dingtalk",
+    if (
+        source is not None
+        and source.strip()
+        and source.strip()
+        not in (
+            "mindgraph",
+            "mindmate",
+            "dingtalk",
+        )
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -853,9 +858,7 @@ async def list_organization_activity_admin(
     user_ids = {int(row.user_id) for row in rows}
     names_by_user_id: dict[int, str] = {}
     if user_ids:
-        user_rows = (
-            await db.execute(select(User.id, User.name, User.phone).where(User.id.in_(user_ids)))
-        ).all()
+        user_rows = (await db.execute(select(User.id, User.name, User.phone).where(User.id.in_(user_ids)))).all()
         for user_row in user_rows:
             display = user_row.name or user_row.phone or ""
             names_by_user_id[int(user_row.id)] = display

@@ -147,9 +147,7 @@ class LLMService:
         """Debit thinking coins and sync-insert token_usage when eligible."""
         coins_user = await thinking_coins_apply_to_user(user_id, organization_id)
         usage_snapshot = (
-            build_token_usage_snapshot(usage_data, metadata, model, duration)
-            if coins_user and usage_data
-            else None
+            build_token_usage_snapshot(usage_data, metadata, model, duration) if coins_user and usage_data else None
         )
         await thinking_coin_post_llm_success(
             user_id,

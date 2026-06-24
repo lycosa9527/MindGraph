@@ -11,6 +11,7 @@ _INLINE_SUPPRESSION = re.compile(
     re.IGNORECASE,
 )
 
+
 def _is_allowed(path: Path, _root: Path) -> bool:
     """Is allowed."""
     parts = set(path.parts)

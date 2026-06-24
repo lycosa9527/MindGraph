@@ -654,9 +654,7 @@ def reset_all_sequences(live_engine: Engine) -> None:
                         sp.rollback()
                         continue
                     conn.execute(
-                        text(
-                            f'SELECT setval(:seq, COALESCE((SELECT MAX("{pk_col}") FROM "{table_name}"), 1))'
-                        ),
+                        text(f'SELECT setval(:seq, COALESCE((SELECT MAX("{pk_col}") FROM "{table_name}"), 1))'),
                         {"seq": seq_name},
                     )
                     sp.commit()

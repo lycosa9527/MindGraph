@@ -58,7 +58,4 @@ class GenerationPreviewLink(Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<GenerationPreviewLink preview={self.preview_id!r} "
-            f"diagram={self.diagram_id!r} user={self.user_id}>"
-        )
+        return f"<GenerationPreviewLink preview={self.preview_id!r} diagram={self.diagram_id!r} user={self.user_id}>"

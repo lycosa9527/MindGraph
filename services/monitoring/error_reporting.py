@@ -16,16 +16,18 @@ from services.monitoring.error_collector import ErrorCollectorService, record_er
 from services.monitoring.error_alert_config import error_collection_enabled
 from services.monitoring.error_record import ErrorRecord
 
-VALID_ERROR_SOURCES = frozenset({
-    "application",
-    "llm",
-    "frontend",
-    "background",
-    "mindbot",
-    "rag",
-    "collab",
-    "auth",
-})
+VALID_ERROR_SOURCES = frozenset(
+    {
+        "application",
+        "llm",
+        "frontend",
+        "background",
+        "mindbot",
+        "rag",
+        "collab",
+        "auth",
+    }
+)
 
 _VALID_SEVERITIES = frozenset({"debug", "info", "warning", "error", "critical"})
 

@@ -46,8 +46,7 @@ KNOWLEDGE_WIKI_COMPILE_SYSTEM_EN = (
     "You are a knowledge wiki compiler. You maintain a compact set of markdown "
     "notes for a research package made of multiple sources. Given the existing "
     "wiki pages and a newly added source, you update the overview and create or "
-    "revise topic pages so the package reads as one coherent, cross-linked wiki.\n\n"
-    + _WIKI_OUTPUT_SCHEMA
+    "revise topic pages so the package reads as one coherent, cross-linked wiki.\n\n" + _WIKI_OUTPUT_SCHEMA
 )
 
 KNOWLEDGE_WIKI_COMPILE_SYSTEM_ZH = (

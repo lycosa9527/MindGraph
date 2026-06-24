@@ -58,12 +58,7 @@ _lock_state = ExportCleanupLockState()
 
 
 async def _acquire_lock() -> bool:
-    if (
-        not _REDIS_AVAILABLE
-        or is_redis_available is None
-        or get_async_redis is None
-        or not is_redis_available()
-    ):
+    if not _REDIS_AVAILABLE or is_redis_available is None or get_async_redis is None or not is_redis_available():
         return True
     try:
         redis = await get_async_redis()
@@ -84,18 +79,20 @@ async def _mark_stuck_jobs(now: datetime) -> int:
     marked = 0
     async with rls_async_session(RlsContext.system_bootstrap()) as db:
         rows = (
-            await db.execute(
-                select(MindmateExportJob).where(
-                    MindmateExportJob.status.in_(("running", "pending")),
-                    MindmateExportJob.updated_at < stuck_before,
+            (
+                await db.execute(
+                    select(MindmateExportJob).where(
+                        MindmateExportJob.status.in_(("running", "pending")),
+                        MindmateExportJob.updated_at < stuck_before,
+                    )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         for job in rows:
             job.status = "failed"
-            job.error_message = (
-                f"Export job stalled (no progress for {STUCK_JOB_SECONDS}s)"
-            )[:2000]
+            job.error_message = (f"Export job stalled (no progress for {STUCK_JOB_SECONDS}s)")[:2000]
             job.updated_at = now
             marked += 1
         if rows:
@@ -112,13 +109,17 @@ async def cleanup_expired_exports() -> int:
     await _mark_stuck_jobs(now)
     async with rls_async_session(RlsContext.system_bootstrap()) as db:
         rows = (
-            await db.execute(
-                select(MindmateExportJob).where(
-                    MindmateExportJob.expires_at.is_not(None),
-                    MindmateExportJob.expires_at < now,
+            (
+                await db.execute(
+                    select(MindmateExportJob).where(
+                        MindmateExportJob.expires_at.is_not(None),
+                        MindmateExportJob.expires_at < now,
+                    )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         for job in rows:
             remove_job_dir(int(job.id))
             removed += 1

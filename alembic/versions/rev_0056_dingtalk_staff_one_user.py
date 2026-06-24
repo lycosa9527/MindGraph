@@ -17,10 +17,7 @@ def upgrade() -> None:
     if not inspector.has_table("dingtalk_staff_links"):
         return
 
-    unique_names = {
-        uc["name"]
-        for uc in inspector.get_unique_constraints("dingtalk_staff_links")
-    }
+    unique_names = {uc["name"] for uc in inspector.get_unique_constraints("dingtalk_staff_links")}
     if "uq_dingtalk_staff_links_org_user" in unique_names:
         return
 

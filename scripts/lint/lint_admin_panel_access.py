@@ -11,9 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ROUTERS = ROOT / "routers"
 
 REQUIRE_ADMIN_DEP = re.compile(r"Depends\(\s*require_admin\s*\)")
-INLINE_IS_ADMIN = re.compile(
-    r"if\s+not\s+is_admin\(\s*current_user\s*\)|is_admin\(\s*current_user\s*\)"
-)
+INLINE_IS_ADMIN = re.compile(r"if\s+not\s+is_admin\(\s*current_user\s*\)|is_admin\(\s*current_user\s*\)")
 
 # Product / legacy routes — not management-panel ACL (see admin access sweep plan).
 SKIP_FILES = frozenset(
@@ -48,7 +46,7 @@ def _line_no(text: str, index: int) -> int:
 def _in_users_mutation_block(text: str, match_start: int) -> bool:
     """True when match sits under an allowlisted users.py mutation route."""
     block_start = max(text.rfind("\n@router", 0, match_start), 0)
-    block = text[block_start:match_start + 200]
+    block = text[block_start : match_start + 200]
     return bool(USERS_MUTATION_ALLOW.search(block))
 
 
@@ -61,9 +59,7 @@ def _scan_require_admin(path: Path, text: str) -> list[str]:
         if rel == "routers/auth/admin/users.py" and _in_users_mutation_block(text, match.start()):
             continue
         line = _line_no(text, match.start())
-        violations.append(
-            f"{rel}:{line}: Depends(require_admin) — use require_panel_capability(CAP_*) helper"
-        )
+        violations.append(f"{rel}:{line}: Depends(require_admin) — use require_panel_capability(CAP_*) helper")
     return violations
 
 
@@ -74,13 +70,12 @@ def _scan_inline_is_admin(path: Path, text: str) -> list[str]:
     violations: list[str] = []
     for match in INLINE_IS_ADMIN.finditer(text):
         line = _line_no(text, match.start())
-        if rel == "routers/auth/admin/stats.py" and "get_admin_status" in text[
-            max(0, text.rfind("\n@", 0, match.start())) : match.start() + 80
-        ]:
+        if (
+            rel == "routers/auth/admin/stats.py"
+            and "get_admin_status" in text[max(0, text.rfind("\n@", 0, match.start())) : match.start() + 80]
+        ):
             continue
-        violations.append(
-            f"{rel}:{line}: inline is_admin(current_user) — use Depends(require_* cap helper)"
-        )
+        violations.append(f"{rel}:{line}: inline is_admin(current_user) — use Depends(require_* cap helper)")
     return violations
 
 

@@ -11,13 +11,13 @@ def test_compute_fingerprint_stable_for_same_input():
         exception_type="ValueError",
         component="LLMService",
         message="chat failed",
-        stacktrace="File \"a.py\", line 1\nValueError: chat failed",
+        stacktrace='File "a.py", line 1\nValueError: chat failed',
     )
     second = compute_fingerprint(
         exception_type="ValueError",
         component="LLMService",
         message="chat failed",
-        stacktrace="File \"a.py\", line 1\nValueError: chat failed",
+        stacktrace='File "a.py", line 1\nValueError: chat failed',
     )
     assert first == second
     assert len(first) == 32

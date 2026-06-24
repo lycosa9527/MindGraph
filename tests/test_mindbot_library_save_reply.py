@@ -55,10 +55,7 @@ async def test_enrich_skips_when_library_uuid_present() -> None:
 @pytest.mark.asyncio
 async def test_enrich_skips_when_notice_already_present() -> None:
     """No duplicate when Dify answer already includes skip text."""
-    answer = (
-        "![](https://host/temp_images/dingtalk_cafebabe_1710000000.png)\n"
-        "Diagram preview only — bind DingTalk"
-    )
+    answer = "![](https://host/temp_images/dingtalk_cafebabe_1710000000.png)\nDiagram preview only — bind DingTalk"
     with patch(
         "services.mindbot.diagram.library_save_reply.get_generation_library_skip",
         new=AsyncMock(),

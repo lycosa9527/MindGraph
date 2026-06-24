@@ -171,8 +171,7 @@ def _check_target_result(target_result: TargetFetchResult, gaps: List[Verificati
             VerificationGap(
                 code="dify_fetch_error",
                 detail=(
-                    f"user={target_result.dify_user} "
-                    f"endpoint={target_result.endpoint_source}/{target_result.server}"
+                    f"user={target_result.dify_user} endpoint={target_result.endpoint_source}/{target_result.server}"
                 ),
             )
         )
@@ -181,8 +180,7 @@ def _check_target_result(target_result: TargetFetchResult, gaps: List[Verificati
             VerificationGap(
                 code="incomplete_pagination",
                 detail=(
-                    f"user={target_result.dify_user} "
-                    f"endpoint={target_result.endpoint_source}/{target_result.server}"
+                    f"user={target_result.dify_user} endpoint={target_result.endpoint_source}/{target_result.server}"
                 ),
             )
         )

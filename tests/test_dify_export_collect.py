@@ -51,9 +51,7 @@ class FakeDifyClient:
             return {"data": [], "has_more": False}
         return self._conversation_pages[idx]
 
-    async def get_messages(
-        self, conversation_id: str, _user: str, first_id: Optional[str] = None, limit: int = 100
-    ):
+    async def get_messages(self, conversation_id: str, _user: str, first_id: Optional[str] = None, limit: int = 100):
         """Return the prepared message page for a conversation id."""
         self._message_calls.setdefault(conversation_id, []).append(first_id)
         pages = self._message_pages.get(conversation_id, [])
@@ -184,9 +182,7 @@ async def test_collect_summaries_merges_across_servers(monkeypatch: pytest.Monke
     monkeypatch.setattr(collect, "endpoints_for_target", fake_endpoints)
     monkeypatch.setattr(collect, "_client_for", lambda endpoint: clients[endpoint.api_url])
 
-    targets = [
-        UserTarget(organization_id=42, user_id=7, dify_user="mg_user_7", label="Alice", channel="web")
-    ]
+    targets = [UserTarget(organization_id=42, user_id=7, dify_user="mg_user_7", label="Alice", channel="web")]
     db = MagicMock()
     db.in_transaction.return_value = False
     result = await collect_conversation_summaries(db, targets)
@@ -222,9 +218,7 @@ async def test_collect_summaries_tolerates_server_failure(monkeypatch: pytest.Mo
     monkeypatch.setattr(collect, "endpoints_for_target", fake_endpoints)
     monkeypatch.setattr(collect, "_client_for", lambda endpoint: clients[endpoint.api_url])
 
-    targets = [
-        UserTarget(organization_id=42, user_id=7, dify_user="mg_user_7", label="Alice", channel="web")
-    ]
+    targets = [UserTarget(organization_id=42, user_id=7, dify_user="mg_user_7", label="Alice", channel="web")]
     db = MagicMock()
     db.in_transaction.return_value = False
     result = await collect_conversation_summaries(db, targets)

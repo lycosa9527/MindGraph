@@ -58,7 +58,4 @@ class DingtalkStaffLink(Base):
     user = relationship("User", foreign_keys=[user_id], lazy="select")
 
     def __repr__(self) -> str:
-        return (
-            f"<DingtalkStaffLink org={self.organization_id} "
-            f"staff={self.dingtalk_staff_id!r} user_id={self.user_id}>"
-        )
+        return f"<DingtalkStaffLink org={self.organization_id} staff={self.dingtalk_staff_id!r} user_id={self.user_id}>"

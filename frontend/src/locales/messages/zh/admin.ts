@@ -970,6 +970,8 @@ export default {
   'admin.schoolTeachersTab.empty': '该学校暂无成员',
   'admin.schoolTeachersTab.loadError': '加载教师列表失败',
   'admin.schoolTeachersTab.loadMore': '加载更多',
+  'admin.schoolTeachersTab.openUserTrend': '查看 {name} 的 Token 用量与活动',
+  'admin.schoolModalPageInfo': '第 {page} / {totalPages} 页',
   'admin.orgActivityTab.filterAll': '全部',
   'admin.orgActivityTab.filterMindgraph': 'MindGraph',
   'admin.orgActivityTab.filterMindmate': 'MindMate',

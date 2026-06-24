@@ -406,6 +406,7 @@ async function renderChart(data: {
     inputLabel: t('admin.inputTokens'),
     outputLabel: t('admin.outputTokens'),
     existingInstance: chartInstance,
+    colorScheme: props.type === 'org' ? 'dark' : 'light',
   })
   chartInstance = result.instance
   chartHasData.value = result.hasData
@@ -1083,6 +1084,7 @@ onBeforeUnmount(() => {
 
 <style>
 @import '@/styles/admin-mindbot-swiss-dialog-chrome.css';
+@import '@/styles/admin-school-modal-content.css';
 @import '@/styles/admin-user-trend-swiss.css';
 </style>
 

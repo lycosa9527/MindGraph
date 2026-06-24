@@ -17,11 +17,7 @@ logger = logging.getLogger(__name__)
 async def get_or_create_wallet(db: AsyncSession, user_id: int) -> ThinkingCoinWallet:
     """Fetch wallet row, creating with zero balance if missing."""
     wallet = (
-        await db.execute(
-            select(ThinkingCoinWallet)
-            .where(ThinkingCoinWallet.user_id == user_id)
-            .with_for_update()
-        )
+        await db.execute(select(ThinkingCoinWallet).where(ThinkingCoinWallet.user_id == user_id).with_for_update())
     ).scalar_one_or_none()
     if wallet is not None:
         return wallet

@@ -56,6 +56,7 @@ from services.mindbot.session.callback_token import new_public_callback_token
 from services.mindbot.telemetry.metrics import mindbot_long_lived_maps_snapshot
 from services.mindbot.telemetry.usage import mindbot_usage_tracking_enabled
 from services.utils.typing_helpers import mapping_int
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()

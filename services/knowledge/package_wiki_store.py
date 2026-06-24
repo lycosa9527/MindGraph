@@ -82,9 +82,7 @@ def read_page(user_id: int, package_id: int, slug: str) -> Optional[str]:
         return None
 
 
-def find_relevant_pages(
-    user_id: int, package_id: int, query: str, top_k: int = 3
-) -> List[Dict[str, Any]]:
+def find_relevant_pages(user_id: int, package_id: int, query: str, top_k: int = 3) -> List[Dict[str, Any]]:
     """Find wiki pages whose title or slug best matches a query (substring score).
 
     A lightweight match by title/slug keywords — no embeddings. The overview

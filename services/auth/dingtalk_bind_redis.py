@@ -306,10 +306,7 @@ async def is_bind_code_guess_blocked(staff_id: str, token: str) -> bool:
         return False
     n_staff = _redis_count_from_raw(raw_staff)
     n_token = _redis_count_from_raw(raw_token)
-    return (
-        n_staff >= _BIND_CODE_GUESS_MAX_PER_STAFF
-        or n_token >= _BIND_CODE_GUESS_MAX_PER_TOKEN
-    )
+    return n_staff >= _BIND_CODE_GUESS_MAX_PER_STAFF or n_token >= _BIND_CODE_GUESS_MAX_PER_TOKEN
 
 
 async def record_bind_code_guess_failure(staff_id: str, token: str) -> None:

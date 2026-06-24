@@ -40,7 +40,7 @@ defineExpose({ chartRef })
       </el-icon>
     </div>
     <template v-else>
-      <div class="relative h-56 min-h-[220px] w-full min-w-0">
+      <div class="school-modal-chart-panel relative h-60 min-h-[240px] w-full min-w-0">
         <canvas
           ref="chartRef"
           class="block w-full h-full"

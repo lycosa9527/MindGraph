@@ -76,13 +76,7 @@ async def _process_document_async(user_id: int, document_id: int) -> None:
                     doc.processing_progress,
                 )
 
-        if (
-            chunk_count > 0
-            and doc
-            and doc.batch_id
-            and doc.status == "completed"
-            and config.FILE_CENTER_WIKI_COMPILE
-        ):
+        if chunk_count > 0 and doc and doc.batch_id and doc.status == "completed" and config.FILE_CENTER_WIKI_COMPILE:
             batch = await db.get(DocumentBatch, doc.batch_id)
             if batch and batch.name:
                 compile_package_wiki_task.delay(user_id, doc.batch_id, document_id)

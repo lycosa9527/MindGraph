@@ -15,12 +15,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Seed four exploration tasks; daily cap 135 (core 60 + explore 75)."""
     conn = op.get_bind()
-    conn.execute(
-        sa.text(
-            "UPDATE thinking_coin_settings SET value_int = 135 "
-            "WHERE key = 'daily_earn_cap'"
-        )
-    )
+    conn.execute(sa.text("UPDATE thinking_coin_settings SET value_int = 135 WHERE key = 'daily_earn_cap'"))
 
     tasks_table = sa.table(
         "thinking_coin_earn_tasks",

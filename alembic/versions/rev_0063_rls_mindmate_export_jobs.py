@@ -21,12 +21,7 @@ def upgrade() -> None:
         return
     op.execute(sa.text(f'ALTER TABLE "{_TABLE}" ENABLE ROW LEVEL SECURITY'))
     op.execute(sa.text(f'ALTER TABLE "{_TABLE}" FORCE ROW LEVEL SECURITY'))
-    op.execute(
-        sa.text(
-            f'CREATE POLICY "{_POLICY}" ON "{_TABLE}" '
-            f"FOR ALL USING ({_EXPR}) WITH CHECK ({_EXPR})"
-        )
-    )
+    op.execute(sa.text(f'CREATE POLICY "{_POLICY}" ON "{_TABLE}" FOR ALL USING ({_EXPR}) WITH CHECK ({_EXPR})'))
 
 
 def downgrade() -> None:

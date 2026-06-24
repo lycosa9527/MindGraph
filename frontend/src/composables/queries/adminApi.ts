@@ -146,6 +146,8 @@ export interface AdminApiKeyRow {
   description: string | null
   quota_limit: number | null
   usage_count: number
+  /** Successful POST /api/generate_dingtalk calls (TokenUsage; same source as dingtalk card). */
+  dingtalk_request_count?: number
   is_active: boolean
   created_at: string | null
   last_used_at: string | null

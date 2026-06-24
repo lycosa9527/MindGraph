@@ -91,9 +91,7 @@ class ThinkingCoinCheckin(Base):
         default=lambda: datetime.now(UTC),
     )
 
-    __table_args__ = (
-        UniqueConstraint("user_id", "checkin_date", name="uq_thinking_coin_checkins_user_date"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "checkin_date", name="uq_thinking_coin_checkins_user_date"),)
 
 
 class ThinkingCoinDailyActivity(Base):

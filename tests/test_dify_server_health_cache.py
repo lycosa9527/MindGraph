@@ -36,9 +36,7 @@ def test_considered_down_requires_threshold() -> None:
 
 def test_deserialize_round_trip_and_bad_input() -> None:
     """Snapshot JSON deserializes; malformed input yields None."""
-    snap = _deserialize(
-        '{"online": true, "consecutive_failures": 0, "last_ok_at": 1.0, "last_checked_at": 2.0}'
-    )
+    snap = _deserialize('{"online": true, "consecutive_failures": 0, "last_ok_at": 1.0, "last_checked_at": 2.0}')
     assert snap is not None
     assert snap.online is True
     assert _deserialize("not json") is None
