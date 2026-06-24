@@ -21,6 +21,7 @@ from fastapi import APIRouter
 # Import sub-routers from the knowledge_space package
 # Using importlib to avoid naming conflict
 documents = importlib.import_module("routers.api.knowledge_space.documents")
+packages = importlib.import_module("routers.api.knowledge_space.packages")
 queries = importlib.import_module("routers.api.knowledge_space.queries")
 metadata = importlib.import_module("routers.api.knowledge_space.metadata")
 relationships = importlib.import_module("routers.api.knowledge_space.relationships")
@@ -36,6 +37,7 @@ router = APIRouter(prefix="/knowledge-space", tags=["knowledge-space"])
 
 # Include all sub-routers
 router.include_router(documents.router)
+router.include_router(packages.router)
 router.include_router(queries.router)
 router.include_router(metadata.router)
 router.include_router(relationships.router)

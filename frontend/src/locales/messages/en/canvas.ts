@@ -575,7 +575,8 @@ export default {
   'canvas.mindMapSideToolbar.waterfall': 'Concept parking lot',
   'canvas.mindMapWaterfall.panelHint':
     'Select nodes to generate branch suggestions with AI.\nHold Ctrl to multi-select nodes.\nWith no selection, suggestions are based on the central topic.',
-  'canvas.mindMapWaterfall.emptyHint': 'No suggestions yet. Select nodes on the canvas or tap Refresh.',
+  'canvas.mindMapWaterfall.emptyHint':
+    'No suggestions yet. Select nodes on the canvas or tap Refresh.',
   'canvas.mindMapWaterfall.dragHint':
     'Click to multi-select, then drag onto a map node to insert. Drop on empty canvas to add a top-level branch.',
   'canvas.mindMapWaterfall.historyAddFromPalette': 'Add nodes from concept parking lot',
@@ -602,12 +603,15 @@ export default {
     'Paste paper excerpts, book summaries, meeting notes, requirements, and more.',
   'canvas.mindMapDocumentSummary.imageUploadLabel': 'Upload image:',
   'canvas.mindMapDocumentSummary.uploadImageHint': 'Click to upload JPG or PNG',
-  'canvas.mindMapDocumentSummary.uploadImageSubhint': 'We extract text from the image automatically',
-  'canvas.mindMapDocumentSummary.imageOcrHint': 'Works with note screenshots, whiteboard photos, and scans.',
+  'canvas.mindMapDocumentSummary.uploadImageSubhint':
+    'We extract text from the image automatically',
+  'canvas.mindMapDocumentSummary.imageOcrHint':
+    'Works with note screenshots, whiteboard photos, and scans.',
   'canvas.mindMapDocumentSummary.removeImage': 'Remove image',
   'canvas.mindMapDocumentSummary.webLinkLabel': 'Web link:',
   'canvas.mindMapDocumentSummary.webUrlPlaceholder': 'Paste an article, blog, or news URL',
-  'canvas.mindMapDocumentSummary.webLinkHint': 'We fetch the page text and build a mind map structure.',
+  'canvas.mindMapDocumentSummary.webLinkHint':
+    'We fetch the page text and build a mind map structure.',
   'canvas.mindMapDocumentSummary.generateButton': 'Generate mind map',
   'canvas.mindMapDocumentSummary.generateSuccess': 'Mind map generated',
   'canvas.mindMapDocumentSummary.generateFailed': 'Generation failed. Please try again.',
@@ -619,7 +623,38 @@ export default {
   'canvas.mindMapDocumentSummary.docTooLarge': 'File is too large. Maximum size is 20MB.',
   'canvas.mindMapSideToolbar.learningSheet': 'Learning sheet',
   'canvas.mindMapSideToolbar.oneSentence': 'One-sentence generate',
-  'canvas.mindMapSideToolbar.documentSummary': 'Document summary',
+  'canvas.mindMapSideToolbar.documentSummary': 'File Center',
+  'fileCenter.intro':
+    'A package is a curated set of sources for this diagram. Add files, notes, or web pages — the diagram completes its branches from these sources.',
+  'fileCenter.defaultPackageName': 'Untitled package',
+  'fileCenter.packageNameLabel': 'Package name',
+  'fileCenter.createPackage': 'Create package',
+  'fileCenter.deletePackage': 'Delete package',
+  'fileCenter.confirmDeletePackage':
+    'Delete this package and all of its sources? This cannot be undone.',
+  'fileCenter.corpusStatus': '{completed} of {total} sources indexed',
+  'fileCenter.noSources': 'No sources yet. Add one below.',
+  'fileCenter.addSource': 'Add source',
+  'fileCenter.tabFile': 'File',
+  'fileCenter.tabPaste': 'Paste',
+  'fileCenter.tabWeb': 'Web',
+  'fileCenter.uploadHint': 'Upload PDF, DOCX, images, audio…',
+  'fileCenter.pasteTitlePlaceholder': 'Title (optional)',
+  'fileCenter.pastePlaceholder': 'Paste notes or text to add as a source…',
+  'fileCenter.webUrlPlaceholder': 'https://example.com/article',
+  'fileCenter.webContentPlaceholder': 'Paste or type the page text to index as a source…',
+  'fileCenter.saveDiagramForRag': 'Save this diagram to link the package and enable RAG retrieval.',
+  'fileCenter.statusReady': 'Ready · RAG active',
+  'fileCenter.statusIndexing': 'Indexing…',
+  'fileCenter.statusFailed': 'Failed',
+  'fileCenter.chunkingTooltip': 'Chunking engine and mode (H = hierarchical)',
+  'fileCenter.featureDisabledTitle': 'Knowledge Space is disabled',
+  'fileCenter.featureDisabledHint': 'Enable the Knowledge Space feature to use File Center.',
+  'fileCenter.createFailed': 'Failed to create package',
+  'fileCenter.updateFailed': 'Failed to update package',
+  'fileCenter.deleteFailed': 'Delete failed',
+  'fileCenter.uploadFailed': 'Upload failed',
+  'fileCenter.ingestFailed': 'Failed to add source',
   'canvas.mindMapSideToolbar.closeOutline': 'Close outline',
   'canvas.mindMapSideToolbar.outlineEmpty': 'No nodes yet',
   'canvas.mindMapSideToolbar.aiGenerateTab': 'AI Generate',
@@ -637,7 +672,8 @@ export default {
   'canvas.mindMapSideToolbar.deleteBranch': 'Delete branch',
   'canvas.mindMapSideToolbar.expandBranch': 'Expand branch',
   'canvas.mindMapSideToolbar.collapseBranch': 'Collapse branch',
-  'canvas.mindMapSideToolbar.aiGenerateDesc': 'Expand the mind map from the current topic in one sentence.',
+  'canvas.mindMapSideToolbar.aiGenerateDesc':
+    'Expand the mind map from the current topic in one sentence.',
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Enable learning sheet',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Exit learning sheet',
   'canvas.mindMapSideToolbar.learningSheetIntro':
@@ -649,7 +685,8 @@ export default {
   'canvas.mindMapSideToolbar.learningSheetCustomDesc':
     'Cursor becomes a hammer — click nodes to blank; click again to restore.',
   'canvas.mindMapSideToolbar.learningSheetActiveStatus': 'Active · {count} node(s) blanked',
-  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel': 'Pick mode · click nodes on the canvas',
+  'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel':
+    'Pick mode · click nodes on the canvas',
   'canvas.mindMapSideToolbar.learningSheetPickTitle': 'Custom blank mode',
   'canvas.mindMapSideToolbar.learningSheetPickHint':
     'Click to blank, click again to restore · {count} blanked · Esc to exit',

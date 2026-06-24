@@ -20,8 +20,10 @@ from celery import group
 from sqlalchemy import select
 
 from config.celery import celery_app
+from config.settings import config
 from models.domain.knowledge_space import DocumentBatch, KnowledgeDocument
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
+from services.knowledge.package_wiki_compiler import compile_package_wiki
 from services.monitoring.error_reporting import record_exception_from_celery
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.db.rls_context import RlsContext, rls_async_session, rls_sync_session
@@ -73,6 +75,23 @@ async def _process_document_async(user_id: int, document_id: int) -> None:
                     doc.status,
                     doc.processing_progress,
                 )
+
+        if (
+            chunk_count > 0
+            and doc
+            and doc.batch_id
+            and doc.status == "completed"
+            and config.FILE_CENTER_WIKI_COMPILE
+        ):
+            batch = await db.get(DocumentBatch, doc.batch_id)
+            if batch and batch.name:
+                compile_package_wiki_task.delay(user_id, doc.batch_id, document_id)
+
+
+async def _compile_package_wiki_async(user_id: int, package_id: int, document_id: int) -> None:
+    """Compile/update the File Center package wiki for a freshly indexed source."""
+    async with rls_async_session(RlsContext.for_celery_user(user_id)) as db:
+        await compile_package_wiki(db, user_id, package_id, document_id)
 
 
 async def _mark_document_failed_async(document_id: int, error: Exception) -> None:
@@ -233,6 +252,26 @@ def process_document_task(self, user_id: int, document_id: int):
             "[KnowledgeSpaceTask] ===== Finished processing document %s =====",
             document_id,
         )
+
+
+@celery_app.task(name="knowledge_space.compile_package_wiki", bind=True, max_retries=2)
+def compile_package_wiki_task(self, user_id: int, package_id: int, document_id: int):
+    """Compile the File Center package wiki after a source is indexed (v2a, opt-in).
+
+    Best-effort: the wiki is an additive layer over chunk RAG, so failures are
+    logged and retried a couple of times but never surfaced to the user.
+    """
+    try:
+        asyncio.run(_compile_package_wiki_async(user_id, package_id, document_id))
+    except BACKGROUND_INFRA_ERRORS as e:
+        logger.warning(
+            "[KnowledgeSpaceTask] Wiki compile failed for package=%s doc=%s: %s",
+            package_id,
+            document_id,
+            e,
+        )
+        if self.request.retries < self.max_retries:
+            raise self.retry(exc=e, countdown=60 * (2**self.request.retries))
 
 
 @celery_app.task(name="knowledge_space.update_document", bind=True, max_retries=3)

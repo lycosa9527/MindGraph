@@ -40,6 +40,38 @@ class ProcessSelectedRequest(BaseModel):
     document_ids: List[int] = Field(..., min_length=1)
 
 
+class PackageCreateRequest(BaseModel):
+    """Request model for creating a File Center package."""
+
+    name: str = Field(..., min_length=1, max_length=200)
+    diagram_id: Optional[str] = Field(default=None, max_length=36)
+    source: str = Field(default="canvas", pattern="^(canvas|knowledge_space|chrome_extension)$")
+
+
+class PackageUpdateRequest(BaseModel):
+    """Request model for renaming or relinking a package."""
+
+    name: Optional[str] = Field(default=None, max_length=200)
+    diagram_id: Optional[str] = Field(default=None, max_length=36)
+
+
+class PackageIngestTextRequest(BaseModel):
+    """Request model for ingesting pasted text into a package."""
+
+    content: str = Field(..., min_length=1, max_length=200000)
+    title: Optional[str] = Field(default=None, max_length=200)
+    language: Optional[str] = Field(default=None, max_length=10)
+
+
+class PackageIngestWebRequest(BaseModel):
+    """Request model for ingesting a web content snapshot into a package."""
+
+    page_content: str = Field(..., min_length=1, max_length=200000)
+    page_url: Optional[str] = Field(default=None, max_length=2000)
+    page_title: Optional[str] = Field(default=None, max_length=300)
+    language: Optional[str] = Field(default=None, max_length=10)
+
+
 class QueryFeedbackRequest(BaseModel):
     """Request model for submitting query feedback."""
 

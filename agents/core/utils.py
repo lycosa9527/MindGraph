@@ -44,6 +44,28 @@ def create_error_response(message: str, error_type: str = "generation", context:
     return error_response
 
 
+def normalize_generate_graph_failure(result: dict) -> dict:
+    """Promote nested spec errors to top-level error/error_type for API consumers."""
+    if result.get("success") is not False:
+        return result
+    spec = result.get("spec")
+    error = result.get("error")
+    error_type = result.get("error_type")
+    if isinstance(spec, dict):
+        spec_error = spec.get("error")
+        if isinstance(spec_error, str) and spec_error.strip() and not error:
+            error = spec_error.strip()
+        spec_type = spec.get("error_type")
+        if isinstance(spec_type, str) and spec_type.strip() and not error_type:
+            error_type = spec_type.strip()
+    result["error"] = error if isinstance(error, str) and error.strip() else "Generation failed"
+    if error_type:
+        result["error_type"] = error_type
+    if result.get("show_guidance") is None and error_type in ("validation", "generation", "workflow"):
+        result["show_guidance"] = True
+    return result
+
+
 def validate_inputs(user_prompt: str, language: str) -> None:
     """
     Validate input parameters for agent functions.

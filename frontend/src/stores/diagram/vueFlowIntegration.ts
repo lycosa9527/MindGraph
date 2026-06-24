@@ -1,5 +1,7 @@
 import { computed } from 'vue'
 
+import { storeToRefs } from 'pinia'
+
 import {
   augmentConnectionWithOptimalHandles,
   splitMixedArrowHandleGroups,
@@ -10,6 +12,8 @@ import {
   diagramNodeToVueFlowNode,
   vueFlowNodeToDiagramNode,
 } from '@/types/vueflow'
+
+import { useUIStore } from '@/stores/ui'
 
 import {
   recalculateBraceMapLayout,
@@ -25,10 +29,14 @@ import {
   getMindMapCollapsedNodeIds,
   getMindMapCollapsedPaths,
 } from './mindMapCollapse'
-import { recalculateMindMapColumnPositions } from './mindMapLayout'
+import { recalculateMindMapLegacyColumnPositions } from './mindMapLayoutLegacy'
+import { recalculateMindMapV2ColumnPositions } from './mindMapLayout'
 import type { DiagramContext } from './types'
 
 export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
+  const uiStore = useUIStore()
+  const { mindMapCanvasMode } = storeToRefs(uiStore)
+
   const circleMapLayoutNodes = computed(() => {
     if (ctx.type.value !== 'circle_map' || !ctx.data.value?.nodes) return []
     void ctx.layoutRecalcTrigger.value
@@ -123,13 +131,19 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       void ctx.mindMapRecalcTrigger.value
 
       const connections = ctx.data.value.connections ?? []
-      const collapsedPaths = getMindMapCollapsedPaths(ctx.data.value)
-      const collapsedNodeIds = getMindMapCollapsedNodeIds(
-        ctx.data.value.nodes,
-        connections,
-        collapsedPaths
-      )
-      const { nodes: correctedNodes, gaps } = recalculateMindMapColumnPositions(
+      const useV2Layout = mindMapCanvasMode.value === 'v2'
+      const collapsedPaths = useV2Layout ? getMindMapCollapsedPaths(ctx.data.value) : []
+      const collapsedNodeIds = useV2Layout
+        ? getMindMapCollapsedNodeIds(
+            ctx.data.value.nodes,
+            connections,
+            collapsedPaths
+          )
+        : new Set<string>()
+      const recalculate = useV2Layout
+        ? recalculateMindMapV2ColumnPositions
+        : recalculateMindMapLegacyColumnPositions
+      const { nodes: correctedNodes, gaps } = recalculate(
         ctx.data.value.nodes,
         ctx.mindMapTopicActualWidth.value,
         ctx.mindMapNodeWidths.value,
@@ -223,7 +237,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     if (ctx.type.value === 'circle_map') return []
 
     if (!ctx.data.value?.connections) return []
-    const defaultEdgeType = getEdgeTypeForDiagram(ctx.type.value)
+    const defaultEdgeType = getEdgeTypeForDiagram(ctx.type.value, mindMapCanvasMode.value)
     const diagramType = ctx.type.value
     const nodes = ctx.data.value.nodes ?? []
 

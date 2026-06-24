@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.auth.thinking_coin import task_registry as registry_mod
 from utils.auth.thinking_coin_config import (
@@ -20,7 +23,7 @@ async def test_get_cost_for_request_type_defaults(monkeypatch: pytest.MonkeyPatc
         return {}
 
     monkeypatch.setattr(registry_mod, "load_settings_map", empty_settings)
-    cost = await registry_mod.get_cost_for_request_type(None, "mindmate")
+    cost = await registry_mod.get_cost_for_request_type(cast(AsyncSession, None), "mindmate")
     assert cost == THINKING_COIN_COST_MINDMATE_TURN_DEFAULT
 
 
@@ -33,7 +36,7 @@ async def test_get_signup_grant_default(monkeypatch: pytest.MonkeyPatch) -> None
         return {}
 
     monkeypatch.setattr(registry_mod, "load_settings_map", empty_settings)
-    grant = await registry_mod.get_signup_grant(None)
+    grant = await registry_mod.get_signup_grant(cast(AsyncSession, None))
     assert grant == THINKING_COIN_SIGNUP_GRANT_DEFAULT
 
 

@@ -10,6 +10,7 @@ import {
   tryCollabGuardedUndo,
 } from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useEditorShortcuts, useKeyboard } from '@/composables/core/useKeyboard'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -42,6 +43,7 @@ export function useCanvasPageEditorShortcuts(options: {
   bindCanvasCollabHistoryContext(workshopCode, activeEditors)
 
   const panelsStore = usePanelsStore()
+  const useMindMapV2 = useMindMapV2Chrome()
   const { activeTool, closeActiveTool } = useMindMapSideToolbarState()
 
   function isTypingInInput(): boolean {
@@ -127,6 +129,7 @@ export function useCanvasPageEditorShortcuts(options: {
 
   function handleMindMapArrowKey(key: string) {
     if (isTypingInInput()) return
+    if (!useMindMapV2.value) return
     if (!isMindMapDiagramType(diagramStore.type)) return
     const direction = mindMapArrowKeyToDirection(key)
     if (!direction) return
@@ -158,7 +161,7 @@ export function useCanvasPageEditorShortcuts(options: {
 
   function handleEscapeKey() {
     if (isTypingInInput()) return
-    if (activeTool.value) {
+    if (useMindMapV2.value && activeTool.value) {
       closeActiveTool()
       return
     }

@@ -153,7 +153,8 @@ export interface MindMapColumnResult {
  * X: Each node is placed one rankSeparation beyond its parent (not a global depth column).
  * Y: DOM-measured heights re-stack siblings and re-center parents on their children.
  */
-export function recalculateMindMapColumnPositions(
+/** V2 mind map column layout (underline anchors, symmetric stacking). */
+export function recalculateMindMapV2ColumnPositions(
   nodes: DiagramNode[],
   topicWidth: number | null,
   nodeWidths: Record<string, number>,

@@ -1,5 +1,7 @@
 import { type MaybeRefOrGetter, computed, toValue } from 'vue'
 
+import { storeToRefs } from 'pinia'
+
 import { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
 import { useDiagramStore } from '@/stores'
 import { useCanvasNodeIndicatorsStore } from '@/stores/canvasNodeIndicators'
@@ -7,6 +9,7 @@ import {
   getMindMapCollapseHiddenIds,
   getMindMapCollapsedPaths,
 } from '@/stores/diagram/mindMapCollapse'
+import { useUIStore } from '@/stores/ui'
 
 export interface UseDiagramCanvasNodesEdgesOptions {
   diagramStore: ReturnType<typeof useDiagramStore>
@@ -17,11 +20,13 @@ export interface UseDiagramCanvasNodesEdgesOptions {
 export function useDiagramCanvasNodesEdges(options: UseDiagramCanvasNodesEdgesOptions) {
   const { diagramStore, branchMove, collabLockedNodeIds } = options
   const indicatorStore = useCanvasNodeIndicatorsStore()
+  const { mindMapCanvasMode } = storeToRefs(useUIStore())
 
   const storeNodes = computed(() => diagramStore.vueFlowNodes)
   const storeEdges = computed(() => diagramStore.vueFlowEdges)
 
   const mindMapCollapseHiddenIds = computed(() => {
+    if (mindMapCanvasMode.value !== 'v2') return new Set<string>()
     const dtype = diagramStore.type
     if (dtype !== 'mindmap' && dtype !== 'mind_map') return new Set<string>()
     const data = diagramStore.data

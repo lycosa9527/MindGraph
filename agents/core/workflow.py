@@ -9,13 +9,23 @@ All Rights Reserved
 Proprietary License
 """
 
+import asyncio
 import logging
 import time
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING, cast
+from contextlib import nullcontext
+from typing import TYPE_CHECKING
 
 from agents.concept_maps.concept_map_agent import ConceptMapAgent
 from agents.core.diagram_detection import _detect_diagram_type_from_prompt
+from agents.core.generate_events import (
+    EventEmitter,
+    GenerateGraphEvent,
+    emit_progress,
+    phase_emitter_from_event_emitter,
+)
+from agents.core.agent_result import artifact_metadata, artifact_to_spec_or_error, normalize_agent_generation_result
+from agents.core.agent_routing import AgentGenerateRoute, resolve_agent_generate_route
 from agents.core.prompt_requirements import (
     build_generation_user_message,
     extract_prompt_requirements,
@@ -36,6 +46,8 @@ from agents.thinking_maps.double_bubble_map_agent import DoubleBubbleMapAgent
 from agents.thinking_maps.flow_map_agent import FlowMapAgent
 from agents.thinking_maps.multi_flow_map_agent import MultiFlowMapAgent
 from agents.thinking_maps.tree_map_agent import TreeMapAgent
+from services.knowledge.package_rag_scope import resolve_diagram_rag_scope
+from services.llm.rag_context_state import suppress_implicit_rag
 from services.llm.rag_service import RAGService
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.db.session_open import user_rls_session
@@ -51,6 +63,81 @@ CONCEPT_MAX_LENGTH = 100
 
 
 PhaseEmitter = Callable[[str], Awaitable[None]]
+
+
+def _check_cancelled(cancel_event: asyncio.Event | None) -> None:
+    """Raise when the client has disconnected and generation should stop."""
+    if cancel_event is not None and cancel_event.is_set():
+        raise asyncio.CancelledError("Diagram generation cancelled")
+
+
+async def _emit_typed(event_emit: EventEmitter | None, event: GenerateGraphEvent) -> None:
+    if event_emit is not None:
+        await event_emit(event)
+
+
+def _instantiate_agent(diagram_type: str, model: str):
+    """Create the specialized agent for a diagram type."""
+    if diagram_type == "bubble_map":
+        return BubbleMapAgent(model=model)
+    if diagram_type == "bridge_map":
+        logger.debug("Bridge map agent selection started")
+        agent = BridgeMapAgent(model=model)
+        logger.debug("BridgeMapAgent imported and instantiated successfully")
+        return agent
+    if diagram_type == "tree_map":
+        return TreeMapAgent(model=model)
+    if diagram_type == "circle_map":
+        return CircleMapAgent(model=model)
+    if diagram_type == "double_bubble_map":
+        return DoubleBubbleMapAgent(model=model)
+    if diagram_type == "flow_map":
+        return FlowMapAgent(model=model)
+    if diagram_type == "brace_map":
+        return BraceMapAgent(model=model)
+    if diagram_type == "multi_flow_map":
+        return MultiFlowMapAgent(model=model)
+    if diagram_type in ("mind_map", "mindmap"):
+        return MindMapAgent(model=model)
+    if diagram_type == "concept_map":
+        return ConceptMapAgent(model=model)
+    return BubbleMapAgent(model=model)
+
+
+async def _invoke_agent_route(
+    diagram_type: str,
+    model: str,
+    user_prompt: str,
+    language: str,
+    route: AgentGenerateRoute,
+) -> dict:
+    """Dispatch generate_graph using the resolved route."""
+    kwargs = route.kwargs
+    mode = route.mode
+
+    if mode in ("bridge_pairs", "bridge_dimension_only"):
+        bridge_agent = BridgeMapAgent(model=model)
+        return await bridge_agent.generate_graph(user_prompt, language, **kwargs)
+
+    if mode == "tree_brace_fixed_dimension":
+        if diagram_type == "tree_map":
+            tree_agent = TreeMapAgent(model=model)
+            return await tree_agent.generate_graph(user_prompt, language, **kwargs)
+        brace_agent = BraceMapAgent(model=model)
+        return await brace_agent.generate_graph(user_prompt, language, **kwargs)
+
+    if mode == "dimension_preference":
+        if diagram_type == "brace_map":
+            brace_agent = BraceMapAgent(model=model)
+            return await brace_agent.generate_graph(user_prompt, language, **kwargs)
+        if diagram_type == "tree_map":
+            tree_agent = TreeMapAgent(model=model)
+            return await tree_agent.generate_graph(user_prompt, language, **kwargs)
+        bridge_agent = BridgeMapAgent(model=model)
+        return await bridge_agent.generate_graph(user_prompt, language, **kwargs)
+
+    agent = _instantiate_agent(diagram_type, model)
+    return await agent.generate_graph(user_prompt, language, **kwargs)
 
 
 async def _generate_spec_with_agent(
@@ -90,245 +177,40 @@ async def _generate_spec_with_agent(
         fixed_dimension: For bridge map auto-complete - user-specified relationship pattern that should NOT be changed
 
     Returns:
-        dict: Generated specification
+        dict: Normalized agent artifact (spec and optional warning metadata)
     """
     try:
-        # Import and instantiate the appropriate agent with model
-        if diagram_type == "bubble_map":
-            agent = BubbleMapAgent(model=model)
-        elif diagram_type == "bridge_map":
-            logger.debug("Bridge map agent selection started")
-            agent = BridgeMapAgent(model=model)
-            logger.debug("BridgeMapAgent imported and instantiated successfully")
-        elif diagram_type == "tree_map":
-            agent = TreeMapAgent(model=model)
-        elif diagram_type == "circle_map":
-            agent = CircleMapAgent(model=model)
-        elif diagram_type == "double_bubble_map":
-            agent = DoubleBubbleMapAgent(model=model)
-        elif diagram_type == "flow_map":
-            agent = FlowMapAgent(model=model)
-        elif diagram_type == "brace_map":
-            agent = BraceMapAgent(model=model)
-        elif diagram_type == "multi_flow_map":
-            agent = MultiFlowMapAgent(model=model)
-        elif diagram_type in ("mind_map", "mindmap"):
-            agent = MindMapAgent(model=model)
-        elif diagram_type == "concept_map":
-            agent = ConceptMapAgent(model=model)
-        else:
-            # Fallback to bubble map
-            agent = BubbleMapAgent(model=model)
-
-        # Generate using the agent
         logger.debug("Calling %s agent", diagram_type)
         logger.debug("User prompt: %s", user_prompt)
         logger.debug("Language: %s", language)
 
-        # Bridge map special handling - Three template system:
-        # Mode 1: Only pairs provided → identify relationship
-        # Mode 2: Pairs + relationship provided → keep as-is
-        # Mode 3: Only relationship provided → generate pairs
-        if diagram_type == "bridge_map" and existing_analogies:
-            # Mode 1 or 2: Has existing pairs
-            if fixed_dimension:
-                logger.debug(
-                    "Bridge map Mode 2: Pairs + Relationship - preserving %d pairs with FIXED dimension '%s'",
-                    len(existing_analogies),
-                    fixed_dimension,
-                )
-            else:
-                logger.debug(
-                    "Bridge map Mode 1: Only pairs - will identify relationship from %d pairs",
-                    len(existing_analogies),
-                )
-            bridge_agent = cast(BridgeMapAgent, agent)
-            result = await bridge_agent.generate_graph(
-                user_prompt,
-                language,
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path,
-                existing_analogies=existing_analogies,
-                fixed_dimension=fixed_dimension,
-                dimension_preference=dimension_preference,
-                phase_emit=phase_emit,
-            )
-        # Bridge map Mode 3: Relationship-only mode (no pairs, but has fixed dimension)
-        elif diagram_type == "bridge_map" and fixed_dimension and not existing_analogies:
-            logger.debug(
-                "Bridge map Mode 3: Relationship-only - generating pairs for '%s'",
-                fixed_dimension,
-            )
-            bridge_agent = cast(BridgeMapAgent, agent)
-            result = await bridge_agent.generate_graph(
-                user_prompt,
-                language,
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path,
-                existing_analogies=None,
-                fixed_dimension=fixed_dimension,
-                dimension_preference=dimension_preference,
-                phase_emit=phase_emit,
-            )
-        # Tree map and brace map: Three-scenario system (similar to bridge_map)
-        # Scenario 1: Topic only → handled by standard generation below
-        # Scenario 2: Topic + dimension → fixed_dimension mode (topic exists)
-        # Scenario 3: Dimension only (no topic) → dimension_only_mode
-        elif diagram_type in ("tree_map", "brace_map") and fixed_dimension:
-            # Create agent in branch so Pylint infers concrete type (avoids E1123)
-            if dimension_only_mode:
-                # Scenario 3: Dimension-only mode - user has dimension but no topic
-                logger.debug(
-                    "%s dimension-only mode: generating topic and children for dimension '%s'",
-                    diagram_type,
-                    fixed_dimension,
-                )
-                if diagram_type == "tree_map":
-                    tree_agent = TreeMapAgent(model=model)
-                    result = await tree_agent.generate_graph(
-                        user_prompt,
-                        language,
-                        dimension_preference=fixed_dimension,
-                        user_id=user_id,
-                        organization_id=organization_id,
-                        request_type=request_type,
-                        endpoint_path=endpoint_path,
-                        fixed_dimension=fixed_dimension,
-                        dimension_only_mode=True,
-                        phase_emit=phase_emit,
-                    )
-                else:
-                    brace_agent = BraceMapAgent(model=model)
-                    result = await brace_agent.generate_graph(
-                        user_prompt,
-                        language,
-                        dimension_preference=fixed_dimension,
-                        user_id=user_id,
-                        organization_id=organization_id,
-                        request_type=request_type,
-                        endpoint_path=endpoint_path,
-                        fixed_dimension=fixed_dimension,
-                        dimension_only_mode=True,
-                        phase_emit=phase_emit,
-                    )
-            else:
-                # Scenario 2: Topic + dimension mode
-                logger.debug(
-                    "%s auto-complete mode with FIXED dimension '%s' (topic exists)",
-                    diagram_type,
-                    fixed_dimension,
-                )
-                if diagram_type == "tree_map":
-                    tree_agent = TreeMapAgent(model=model)
-                    result = await tree_agent.generate_graph(
-                        user_prompt,
-                        language,
-                        dimension_preference=fixed_dimension,
-                        user_id=user_id,
-                        organization_id=organization_id,
-                        request_type=request_type,
-                        endpoint_path=endpoint_path,
-                        fixed_dimension=fixed_dimension,
-                        phase_emit=phase_emit,
-                    )
-                else:
-                    brace_agent = BraceMapAgent(model=model)
-                    result = await brace_agent.generate_graph(
-                        user_prompt,
-                        language,
-                        dimension_preference=fixed_dimension,
-                        user_id=user_id,
-                        organization_id=organization_id,
-                        request_type=request_type,
-                        endpoint_path=endpoint_path,
-                        fixed_dimension=fixed_dimension,
-                        phase_emit=phase_emit,
-                    )
-        # For brace maps, tree maps, and bridge maps (without fixed dimension), pass dimension_preference if available
-        elif diagram_type in ("brace_map", "tree_map", "bridge_map") and dimension_preference:
-            # Create agent in branch so Pylint infers concrete type (avoids E1123)
-            if diagram_type == "brace_map":
-                logger.debug(
-                    "Passing decomposition dimension preference to brace map agent: %s",
-                    dimension_preference,
-                )
-                brace_agent = BraceMapAgent(model=model)
-                result = await brace_agent.generate_graph(
-                    user_prompt,
-                    language,
-                    dimension_preference=dimension_preference,
-                    user_id=user_id,
-                    organization_id=organization_id,
-                    request_type=request_type,
-                    endpoint_path=endpoint_path,
-                    phase_emit=phase_emit,
-                )
-            elif diagram_type == "tree_map":
-                logger.debug(
-                    "Passing classification dimension preference to tree map agent: %s",
-                    dimension_preference,
-                )
-                tree_agent = TreeMapAgent(model=model)
-                result = await tree_agent.generate_graph(
-                    user_prompt,
-                    language,
-                    dimension_preference=dimension_preference,
-                    user_id=user_id,
-                    organization_id=organization_id,
-                    request_type=request_type,
-                    endpoint_path=endpoint_path,
-                    phase_emit=phase_emit,
-                )
-            else:  # bridge_map
-                logger.debug(
-                    "Passing analogy relationship pattern preference to bridge map agent: %s",
-                    dimension_preference,
-                )
-                bridge_agent = BridgeMapAgent(model=model)
-                result = await bridge_agent.generate_graph(
-                    user_prompt,
-                    language,
-                    dimension_preference=dimension_preference,
-                    user_id=user_id,
-                    organization_id=organization_id,
-                    request_type=request_type,
-                    endpoint_path=endpoint_path,
-                    phase_emit=phase_emit,
-                )
-        else:
-            # For agents that don't support dimension_preference or other special parameters
-            basic_kwargs = {
-                "user_id": user_id,
-                "organization_id": organization_id,
-                "request_type": request_type,
-                "endpoint_path": endpoint_path,
-                "phase_emit": phase_emit,
-                "structure_mode": structure_mode,
-                "fixed_nodes": fixed_nodes or {},
-                "constraints": constraints,
-            }
-            result = await agent.generate_graph(user_prompt, language, **basic_kwargs)
+        route = resolve_agent_generate_route(
+            diagram_type=diagram_type,
+            structure_mode=structure_mode,
+            fixed_nodes=fixed_nodes,
+            constraints=constraints,
+            fixed_dimension=fixed_dimension,
+            dimension_only_mode=dimension_only_mode,
+            dimension_preference=dimension_preference,
+            existing_analogies=existing_analogies,
+            user_id=user_id,
+            organization_id=organization_id,
+            request_type=request_type,
+            endpoint_path=endpoint_path,
+            phase_emit=phase_emit,
+        )
+        logger.debug("Agent route mode: %s", route.mode)
 
-        logger.debug("Agent result type: %s", type(result))
-        result_keys = list(result.keys()) if isinstance(result, dict) else "Not a dict"
-        logger.debug("Agent result keys: %s", result_keys)
-
-        # Extract spec from agent result if wrapped
-        if isinstance(result, dict):
-            if "spec" in result:
-                logger.debug("Result contains 'spec' key, returning spec")
-                return result["spec"]
-            if "error" not in result:
-                logger.debug("Result contains no error, returning as-is")
-                return result
-            logger.error("Result contains error: %s", result.get("error"))
-
-        logger.debug("Returning raw result")
-        return result
+        result = await _invoke_agent_route(
+            diagram_type,
+            model,
+            user_prompt,
+            language,
+            route,
+        )
+        artifact = normalize_agent_generation_result(result)
+        logger.debug("Agent artifact keys: %s", list(artifact.keys()))
+        return artifact
 
     except LLM_PIPELINE_ERRORS as e:
         logger.error("Agent instantiation/generation failed for %s: %s", diagram_type, e)
@@ -361,7 +243,12 @@ async def agent_graph_workflow_with_styles(
     # RAG integration: use knowledge space context
     use_rag=False,
     rag_top_k=5,
+    # File Center: diagram-linked package scoping for RAG
+    diagram_id=None,
+    rag_document_ids=None,
     phase_emit: PhaseEmitter | None = None,
+    event_emit: EventEmitter | None = None,
+    cancel_event: asyncio.Event | None = None,
 ):
     """
     Simplified agent workflow that directly calls specialized agents.
@@ -388,6 +275,7 @@ auto-complete - user has dimension but no topic (generate topic and children)
     """
     logger.debug("Starting simplified graph workflow")
     workflow_start_time = time.time()
+    agent_phase_emit = phase_emitter_from_event_emitter(event_emit) or phase_emit
 
     # Initialize timing variables
     detection_time = 0.0
@@ -425,6 +313,7 @@ auto-complete - user has dimension but no topic (generate topic and children)
 
         # Validate inputs
         validate_inputs(user_prompt, language)
+        _check_cancelled(cancel_event)
 
         # Use forced diagram type if provided, otherwise detect from prompt
         if forced_diagram_type:
@@ -436,17 +325,21 @@ auto-complete - user has dimension but no topic (generate topic and children)
             }
             logger.debug("Using forced diagram type: %s", diagram_type)
         else:
+            await _emit_typed(
+                event_emit,
+                GenerateGraphEvent(event="detecting", model=model),
+            )
             # LLM-based diagram type detection for semantic understanding
             detection_start = time.time()
             detection_result = await _detect_diagram_type_from_prompt(
                 user_prompt,
                 language,
                 model,
-                # Token tracking parameters
                 user_id=user_id,
                 organization_id=organization_id,
                 request_type=request_type,
                 endpoint_path=endpoint_path,
+                phase_emit=agent_phase_emit,
             )
             detection_time = time.time() - detection_start
             diagram_type = detection_result["diagram_type"]
@@ -456,27 +349,16 @@ auto-complete - user has dimension but no topic (generate topic and children)
                 diagram_type,
                 detection_result["clarity"],
             )
-
-            # Check if prompt is too complex/unclear and should show guidance modal
             if detection_result["clarity"] == "very_unclear" and not detection_result["has_topic"]:
-                logger.warning("Prompt is too complex or unclear: '%s'", user_prompt)
-                return {
-                    "success": False,
-                    "error_type": "prompt_too_complex",
-                    "error": "Unable to understand the request",
-                    "spec": create_error_response(
-                        "Prompt is too complex or unclear",
-                        "prompt_too_complex",
-                        {"user_prompt": user_prompt},
-                    ),
-                    "diagram_type": "mind_map",
-                    "topics": [],
-                    "style_preferences": {},
-                    "language": language,
-                    "show_guidance": True,
-                }
+                logger.warning(
+                    "Prompt failed validation during detection: %r — using mind_map",
+                    user_prompt[:80],
+                )
+                diagram_type = "mind_map"
+                detection_result["diagram_type"] = "mind_map"
 
         # Stage 2: extract type-native requirements from raw prompt (before learning sheet / RAG)
+        _check_cancelled(cancel_event)
         requirements_start = time.time()
         parsed = await extract_prompt_requirements(
             user_prompt,
@@ -487,7 +369,7 @@ auto-complete - user has dimension but no topic (generate topic and children)
             organization_id=organization_id,
             request_type=request_type,
             endpoint_path=endpoint_path,
-            phase_emit=phase_emit,
+            phase_emit=agent_phase_emit,
         )
         agent_params = merge_agent_params(
             {
@@ -500,6 +382,12 @@ auto-complete - user has dimension but no topic (generate topic and children)
         )
         generation_central = parsed.central_for_type(diagram_type) or user_prompt.strip()
         topic_time = time.time() - requirements_start
+        await emit_progress(
+            event_emit,
+            topic=generation_central[:80] if generation_central else user_prompt[:80],
+            diagram_type=diagram_type,
+            model=model,
+        )
         logger.info(
             "Requirements extraction completed in %.2fs: structure_mode=%s, central=%r",
             topic_time,
@@ -524,15 +412,43 @@ auto-complete - user has dimension but no topic (generate topic and children)
         # RAG Integration: Retrieve relevant context from Knowledge Space if enabled
         rag_context = None
         rag_context_block = ""
+
+        # File Center: scope retrieval to a diagram's linked package when present.
+        # Explicit rag_document_ids win; otherwise resolve from the diagram link.
+        rag_metadata_filter = None
+        package_rag_active = False
+        resolved_document_ids = None
+        if rag_document_ids:
+            resolved_document_ids = [int(doc_id) for doc_id in rag_document_ids]
+        elif diagram_id and user_id:
+            try:
+                async with user_rls_session(int(user_id)) as scope_db:
+                    scope = await resolve_diagram_rag_scope(scope_db, int(user_id), str(diagram_id))
+                if scope and scope.has_corpus:
+                    resolved_document_ids = scope.document_ids
+                    logger.info(
+                        "[RAG] Package scope for diagram %s: %d completed source(s)",
+                        diagram_id,
+                        len(resolved_document_ids),
+                    )
+            except LLM_PIPELINE_ERRORS as e:
+                logger.warning("[RAG] Failed to resolve package scope for diagram %s: %s", diagram_id, e)
+
+        if resolved_document_ids:
+            rag_metadata_filter = {"document_id": resolved_document_ids}
+            package_rag_active = True
+            use_rag = True  # auto-enable when a diagram's package has a corpus
+
         if use_rag and user_id:
             try:
                 rag_service = RAGService()
                 async with user_rls_session(int(user_id)) as db:
                     if await rag_service.has_knowledge_base(db, user_id):
                         logger.info(
-                            "[RAG] Retrieving context for user %d, top_k=%d",
+                            "[RAG] Retrieving context for user %d, top_k=%d, scoped=%s",
                             user_id,
                             rag_top_k,
+                            package_rag_active,
                         )
 
                         rag_context_chunks = await rag_service.retrieve_context(
@@ -547,6 +463,7 @@ auto-complete - user has dimension but no topic (generate topic and children)
                                 "stage": "generation",
                                 "diagram_type": diagram_type,
                             },
+                            metadata_filter=rag_metadata_filter,
                         )
 
                         if rag_context_chunks:
@@ -597,29 +514,31 @@ Please generate a more accurate and detailed diagram based on the above context.
             rag_context_block,
         )
 
-        # Generate specification using the appropriate agent
+        # Generate specification using the appropriate agent.
+        # When package-scoped RAG is active, suppress implicit whole-library RAG
+        # inside agent LLM calls so retrieval stays scoped to the package only.
         generation_start = time.time()
-        spec = await _generate_spec_with_agent(
-            agent_user_message,
-            diagram_type,
-            language,
-            dimension_preference=dimension_preference if dimension_preference else None,
-            model=model,
-            # Token tracking parameters
-            user_id=user_id,
-            organization_id=organization_id,
-            request_type=request_type,
-            endpoint_path=endpoint_path,
-            # Bridge map specific (merged NL + API)
-            existing_analogies=effective_existing_analogies,
-            fixed_dimension=effective_fixed_dimension,
-            # Tree map and brace map: dimension-only mode
-            dimension_only_mode=effective_dimension_only_mode,
-            structure_mode=agent_params.structure_mode,
-            fixed_nodes=agent_params.fixed_nodes,
-            constraints=agent_params.constraints,
-            phase_emit=phase_emit,
-        )
+        _check_cancelled(cancel_event)
+        rag_guard = suppress_implicit_rag() if package_rag_active else nullcontext()
+        with rag_guard:
+            agent_artifact = await _generate_spec_with_agent(
+                agent_user_message,
+                diagram_type,
+                language,
+                dimension_preference=dimension_preference if dimension_preference else None,
+                model=model,
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path,
+                existing_analogies=effective_existing_analogies,
+                fixed_dimension=effective_fixed_dimension,
+                dimension_only_mode=effective_dimension_only_mode,
+                structure_mode=agent_params.structure_mode,
+                fixed_nodes=agent_params.fixed_nodes,
+                constraints=agent_params.constraints,
+                phase_emit=agent_phase_emit,
+            )
         generation_time = time.time() - generation_start
         logger.info(
             "Diagram generation completed in %.2fs for %s",
@@ -627,9 +546,12 @@ Please generate a more accurate and detailed diagram based on the above context.
             diagram_type,
         )
 
+        agent_meta = artifact_metadata(agent_artifact)
+        spec = artifact_to_spec_or_error(agent_artifact)
+
         if not spec or (isinstance(spec, dict) and spec.get("error")):
             logger.error("Failed to generate spec for %s", diagram_type)
-            return {
+            failure: dict = {
                 "success": False,
                 "spec": spec
                 or create_error_response(
@@ -644,6 +566,14 @@ Please generate a more accurate and detailed diagram based on the above context.
                 "is_learning_sheet": is_learning_sheet,
                 "hidden_node_percentage": 0,
             }
+            if isinstance(spec, dict):
+                if spec.get("error_type"):
+                    failure["error_type"] = spec["error_type"]
+                if spec.get("show_guidance") is not None:
+                    failure["show_guidance"] = spec["show_guidance"]
+                if spec.get("error"):
+                    failure["error"] = spec["error"]
+            return failure
 
         # Calculate hidden percentage for learning sheets (20%)
         hidden_percentage = 0.2 if is_learning_sheet else 0
@@ -669,6 +599,7 @@ Please generate a more accurate and detailed diagram based on the above context.
             "language": language,
             "is_learning_sheet": is_learning_sheet,
             "hidden_node_percentage": hidden_percentage,
+            **agent_meta,
         }
 
         total_time = time.time() - workflow_start_time

@@ -362,6 +362,13 @@ class InlineRecommendationsGenerator:
             yield {"event": "error", "message": "Failed to build prompt"}
             return
 
+        # File Center: prepend package-scoped RAG context so suggestions are
+        # grounded in the diagram's curated sources (caller suppresses
+        # whole-library RAG to keep retrieval scoped to the package).
+        rag_context = opts.get("rag_context")
+        if rag_context:
+            prep["prompt"] = f"{rag_context}\n\n{prep['prompt']}"
+
         logger.debug(
             "[InlineRec] Batch %d | Session: %s | Type: %s | Stage: %s",
             prep["batch_num"],

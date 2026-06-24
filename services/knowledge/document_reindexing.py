@@ -15,7 +15,7 @@ from config.settings import config
 from models.domain.knowledge_space import DocumentChunk, KnowledgeDocument
 from services.knowledge.chunking_service import ChunkingService
 from services.llm.embedding_cache import get_embedding_cache
-from services.utils.error_types import DATABASE_ERRORS
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +69,39 @@ def chunk_text_for_reindexing(
         chunk_overlap or 50,
     )
 
+    # Re-upload replaces content; drop any stale cached structure (MindChunk).
+    if chunking_engine == "mindchunk" and hasattr(chunking_service, "invalidate_structure"):
+        chunking_service.invalidate_structure(document.id)
+
+    def _default_chunk() -> List[Any]:
+        """Default-engine chunking with a semchunk fallback when MindChunk fails/empties."""
+        kwargs = {
+            "metadata": {"document_id": document.id},
+            "separator": separator,
+            "extract_structure": True,
+            "page_info": page_info,
+            "language": document.language,
+        }
+        try:
+            result = chunking_service.chunk_text(cleaned_text, **kwargs)
+        except BACKGROUND_INFRA_ERRORS as mindchunk_error:
+            if chunking_engine != "mindchunk":
+                raise
+            logger.warning(
+                "[RAG] MindChunk reindex failed for doc_id=%s (%s); falling back to semchunk",
+                document.id,
+                mindchunk_error,
+            )
+            result = None
+        if not result and chunking_engine == "mindchunk":
+            fallback_service = ChunkingService(
+                chunk_size=chunk_size or 500,
+                overlap=chunk_overlap or 50,
+                mode="automatic",
+            )
+            result = fallback_service.chunk_text(cleaned_text, **kwargs)
+        return result or []
+
     # Chunk text
     try:
         if mode == "hierarchical":
@@ -92,14 +125,7 @@ def chunk_text_for_reindexing(
                     "falling back to default automatic chunking for doc_id=%s",
                     document.id,
                 )
-                new_chunks = chunking_service.chunk_text(
-                    cleaned_text,
-                    metadata={"document_id": document.id},
-                    separator=separator,
-                    extract_structure=True,
-                    page_info=page_info,
-                    language=document.language,
-                )
+                new_chunks = _default_chunk()
         elif mode == "custom" and (chunk_size or chunk_overlap or separator):
             if chunking_engine == "semchunk":
                 custom_chunking = ChunkingService(
@@ -121,24 +147,10 @@ def chunk_text_for_reindexing(
                     "falling back to default automatic chunking for doc_id=%s",
                     document.id,
                 )
-                new_chunks = chunking_service.chunk_text(
-                    cleaned_text,
-                    metadata={"document_id": document.id},
-                    separator=separator,
-                    extract_structure=True,
-                    page_info=page_info,
-                    language=document.language,
-                )
+                new_chunks = _default_chunk()
         else:
             # Default chunking (respects CHUNKING_ENGINE)
-            new_chunks = chunking_service.chunk_text(
-                cleaned_text,
-                metadata={"document_id": document.id},
-                separator=separator,
-                extract_structure=True,
-                page_info=page_info,
-                language=document.language,
-            )
+            new_chunks = _default_chunk()
     except DATABASE_ERRORS as chunk_error:
         error_msg = f"文本分块失败: {str(chunk_error)}"
         logger.error(

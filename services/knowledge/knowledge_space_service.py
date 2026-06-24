@@ -29,6 +29,7 @@ from models.domain.knowledge_space import (
     KnowledgeSpace,
 )
 from services.infrastructure.rate_limiting.kb_rate_limiter import get_kb_rate_limiter
+from services.knowledge.chunking_policy import resolve_chunking_policy
 from services.knowledge.chunking_service import get_chunking_service
 from services.knowledge.document_batch_service import batch_upload_documents as batch_upload_documents_helper
 from services.knowledge.document_batch_service import update_batch_progress as update_batch_progress_helper
@@ -144,7 +145,12 @@ class KnowledgeSpaceService:
         return result.scalar_one()
 
     async def upload_document(
-        self, file_name: str, file_path: str, file_type: str, file_size: int
+        self,
+        file_name: str,
+        file_path: str,
+        file_type: str,
+        file_size: int,
+        batch_id: Optional[int] = None,
     ) -> KnowledgeDocument:
         """
         Upload document (creates record, actual processing happens in background).
@@ -154,6 +160,7 @@ class KnowledgeSpaceService:
             file_path: Temporary file path
             file_type: MIME type
             file_size: File size in bytes
+            batch_id: Optional File Center package (DocumentBatch) to attach the source to
 
         Returns:
             KnowledgeDocument instance
@@ -193,6 +200,7 @@ class KnowledgeSpaceService:
             file_type=file_type,
             file_size=file_size,
             status="pending",
+            batch_id=batch_id,
         )
         self.db.add(document)
         await self.db.commit()
@@ -212,6 +220,44 @@ class KnowledgeSpaceService:
             self.user_id,
         )
         return document
+
+    async def _apply_file_center_chunking_policy(
+        self, document: KnowledgeDocument, processing_rules: Optional[dict]
+    ) -> Optional[dict]:
+        """Apply the per-source chunking policy for File Center package sources.
+
+        For sources that belong to a named package (File Center), choose the
+        chunking mode by file type — hierarchical for PDF/DOCX, flat for web and
+        pasted text — unless the space pins an explicit mode. The resolved engine
+        and mode are recorded on the document so the UI can surface them. Plain
+        Knowledge Space uploads (no package) keep their existing behavior.
+        """
+        if document.batch_id is None:
+            return processing_rules
+
+        result = await self.db.execute(select(DocumentBatch).where(DocumentBatch.id == document.batch_id))
+        batch = result.scalars().first()
+        if not batch or not batch.name:
+            return processing_rules
+
+        policy = resolve_chunking_policy(document.file_type, processing_rules)
+        effective_rules = dict(processing_rules or {})
+        effective_rules["mode"] = policy.mode
+
+        metadata = dict(document.doc_metadata or {})
+        metadata["chunking_engine"] = policy.engine
+        metadata["chunking_mode"] = policy.mode
+        document.doc_metadata = metadata
+        await self.db.commit()
+
+        logger.info(
+            "[FileCenter] Chunking policy doc_id=%s type=%s → mode=%s engine=%s",
+            document.id,
+            document.file_type,
+            policy.mode,
+            policy.engine,
+        )
+        return effective_rules
 
     async def process_document(self, document_id: int) -> None:
         """
@@ -260,6 +306,7 @@ class KnowledgeSpaceService:
             result = await self.db.execute(select(KnowledgeSpace).where(KnowledgeSpace.id == document.space_id))
             space = result.scalars().first()
             processing_rules = space.processing_rules if space and space.processing_rules else None
+            processing_rules = await self._apply_file_center_chunking_policy(document, processing_rules)
 
             try:
                 cleaned_text, page_info = await extract_and_clean_text(
@@ -291,6 +338,7 @@ class KnowledgeSpaceService:
                 processing_rules,
                 page_info,
                 document_id,
+                user_id=self.user_id,
             )
 
             if len(chunks) == 0:
@@ -784,6 +832,7 @@ class KnowledgeSpaceService:
             result = await self.db.execute(select(KnowledgeSpace).where(KnowledgeSpace.id == document.space_id))
             space = result.scalars().first()
             processing_rules = space.processing_rules if space and space.processing_rules else None
+            processing_rules = await self._apply_file_center_chunking_policy(document, processing_rules)
 
             try:
                 cleaned_text, page_info = await extract_and_clean_text(

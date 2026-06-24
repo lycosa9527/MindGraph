@@ -7,11 +7,12 @@ All Rights Reserved
 Proprietary License
 """
 
-from services.utils.error_types import JSON_PARSE_ERRORS
-
-from typing import List, Optional, Any
 import json
 import logging
+from typing import Any, List, Optional
+
+from llm_chunking.ingest_context import ingest_chat_kwargs
+from services.utils.error_types import JSON_PARSE_ERRORS
 
 try:
     from services.llm import llm_service as default_llm_service
@@ -152,7 +153,9 @@ Return JSON:
             return "theory"
 
         try:
-            response = await self.llm_service.chat(prompt=prompt, model="qwen", temperature=0.3, max_tokens=100)
+            response = await self.llm_service.chat(
+                prompt=prompt, temperature=0.3, max_tokens=100, **ingest_chat_kwargs()
+            )
 
             # Parse JSON
             json_start = response.find("{")
@@ -213,7 +216,9 @@ Return JSON array:
             return ["theory"] * len(texts)
 
         try:
-            response = await self.llm_service.chat(prompt=prompt, model="qwen", temperature=0.3, max_tokens=500)
+            response = await self.llm_service.chat(
+                prompt=prompt, temperature=0.3, max_tokens=500, **ingest_chat_kwargs()
+            )
 
             # Parse JSON
             json_start = response.find("[")

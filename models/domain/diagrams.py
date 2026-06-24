@@ -53,6 +53,15 @@ class Diagram(Base):
     diagram_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     language: Mapped[str] = mapped_column(String(10), default="zh")
 
+    # File Center: optional link to the knowledge "package" (DocumentBatch) whose
+    # sources scope RAG retrieval for this diagram's completion. NULL = no package.
+    knowledge_package_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("document_batches.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
     # The actual diagram data — stored as JSONB for native parsing and GIN indexing.
     spec: Mapped[dict] = mapped_column(pg.JSONB, nullable=False)
 

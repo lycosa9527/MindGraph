@@ -27,6 +27,26 @@
     "message": "產生心智圖",
     "description": "主按鈕"
   },
+  "fileCenterSectionLabel": {
+    "message": "儲存到檔案中心",
+    "description": "檔案中心區域標題"
+  },
+  "fileCenterPackageLabel": {
+    "message": "資料包",
+    "description": "資料包選擇標籤"
+  },
+  "btnSaveToFileCenter": {
+    "message": "將網頁儲存到資料包",
+    "description": "將網頁內容儲存到檔案中心資料包的按鈕"
+  },
+  "fileCenterUntitled": {
+    "message": "未命名資料包",
+    "description": "資料包預設名稱"
+  },
+  "statusSavedToFileCenter": {
+    "message": "已儲存到檔案中心，開始索引。",
+    "description": "儲存網頁到資料包後的狀態"
+  },
   "btnSettings": {
     "message": "設定",
     "description": "設定按鈕"

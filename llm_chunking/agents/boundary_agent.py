@@ -9,14 +9,14 @@ All Rights Reserved
 Proprietary License
 """
 
-from services.utils.error_types import JSON_PARSE_ERRORS
-
-from typing import List, Optional, Tuple
 import json
 import logging
+from typing import List, Optional, Tuple
 
+from llm_chunking.ingest_context import ingest_chat_kwargs
 from llm_chunking.patterns.embedding_boundary_detector import EmbeddingBoundaryDetector
 from llm_chunking.patterns.pattern_matcher import PatternMatcher
+from services.utils.error_types import JSON_PARSE_ERRORS
 
 try:
     from services.llm import llm_service as default_llm_service
@@ -144,7 +144,9 @@ class BoundaryAgent:
         batch_prompt = self._build_batch_prompt(filtered_segments, context)
 
         try:
-            response = await self.llm_service.chat(prompt=batch_prompt, model="qwen", temperature=0.3, max_tokens=2000)
+            response = await self.llm_service.chat(
+                prompt=batch_prompt, temperature=0.3, max_tokens=2000, **ingest_chat_kwargs()
+            )
 
             # Parse boundaries from response
             llm_boundaries = self._parse_boundaries(response, filtered_segments)
@@ -309,7 +311,9 @@ Return JSON with refined start and end positions:
 """
 
         try:
-            response = await self.llm_service.chat(prompt=prompt, model="qwen", temperature=0.3, max_tokens=200)
+            response = await self.llm_service.chat(
+                prompt=prompt, temperature=0.3, max_tokens=200, **ingest_chat_kwargs()
+            )
 
             # Parse response
             json_start = response.find("{")

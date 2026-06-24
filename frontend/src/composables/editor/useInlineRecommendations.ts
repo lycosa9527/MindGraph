@@ -8,7 +8,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
-import { useDiagramStore, useInlineRecommendationsStore } from '@/stores'
+import { useDiagramStore, useInlineRecommendationsStore, useSavedDiagramsStore } from '@/stores'
 import type { Connection, DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
 import { getConceptMapPrimaryIncidentConnection } from '@/utils/conceptMapInlineRec'
@@ -254,6 +254,7 @@ async function streamRecommendations(
 export function useInlineRecommendations() {
   const diagramStore = useDiagramStore()
   const store = useInlineRecommendationsStore()
+  const savedDiagramsStore = useSavedDiagramsStore()
   const { t, promptLanguage } = useLanguage()
   const notify = useNotifications()
 
@@ -371,6 +372,11 @@ export function useInlineRecommendations() {
       return { success: false, error: 'Already generating' }
     }
 
+    if (diagramStore.collabSessionActive) {
+      notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
+      return { success: false, error: 'Collab active' }
+    }
+
     const dt = diagramStore.type
     const normalizedDt = dt === 'mind_map' ? 'mindmap' : dt
     if (
@@ -412,6 +418,9 @@ export function useInlineRecommendations() {
       })),
       language: promptLanguage.value,
       count: 10,
+      ...(savedDiagramsStore.activeDiagramId
+        ? { diagram_id: savedDiagramsStore.activeDiagramId }
+        : {}),
       ...(educationalContext && { educational_context: educationalContext }),
     }
 
@@ -500,6 +509,9 @@ export function useInlineRecommendations() {
       })),
       language: promptLanguage.value,
       count: 10,
+      ...(savedDiagramsStore.activeDiagramId
+        ? { diagram_id: savedDiagramsStore.activeDiagramId }
+        : {}),
       ...(educationalContext && { educational_context: educationalContext }),
     }
 

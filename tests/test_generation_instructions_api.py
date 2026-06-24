@@ -10,11 +10,13 @@ from models.common import LLMModel
 
 def test_generate_request_accepts_generation_instructions() -> None:
     """GenerateRequest should expose optional generation_instructions."""
-    req = GenerateRequest(
-        prompt="中心主题",
-        generation_instructions="四个分支：衣、食、住、行",
-        language="zh",
-        llm=LLMModel.QWEN,
+    req = GenerateRequest.model_validate(
+        {
+            "prompt": "中心主题",
+            "generation_instructions": "四个分支：衣、食、住、行",
+            "language": "zh",
+            "llm": LLMModel.QWEN,
+        }
     )
     assert req.generation_instructions == "四个分支：衣、食、住、行"
 

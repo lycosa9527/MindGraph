@@ -41,6 +41,41 @@ describe('consumeGenerateGraphStream', () => {
     expect(completePayload?.diagram_type).toBe('mindmap')
   })
 
+  it('maps detecting, requirements, progress, and complete metadata', async () => {
+    const phases: string[] = []
+    let progressTopic = ''
+    let progressDiagramType = ''
+
+    const response = sseResponse([
+      'data: {"event":"accepted"}',
+      'data: {"event":"detecting"}',
+      'data: {"event":"requirements"}',
+      'data: {"event":"progress","topic":"Animals","diagram_type":"tree_map"}',
+      'data: {"event":"waiting"}',
+      'data: {"event":"streaming","model":"qwen"}',
+      'data: {"event":"complete","success":true,"diagram_type":"tree_map","show_guidance":false}',
+    ])
+
+    await consumeGenerateGraphStream(response, {
+      onPhase: (phase) => phases.push(phase),
+      onProgress: (metadata) => {
+        progressTopic = metadata.topic ?? ''
+        progressDiagramType = metadata.diagram_type ?? ''
+      },
+    })
+
+    expect(phases).toEqual([
+      'accepted',
+      'detecting',
+      'requirements',
+      'progress',
+      'waiting',
+      'streaming',
+    ])
+    expect(progressTopic).toBe('Animals')
+    expect(progressDiagramType).toBe('tree_map')
+  })
+
   it('returns usedStream=false for non-SSE responses', async () => {
     const response = new Response(JSON.stringify({ success: true }), {
       headers: { 'content-type': 'application/json' },

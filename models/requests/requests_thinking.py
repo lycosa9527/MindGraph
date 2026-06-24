@@ -301,6 +301,10 @@ class InlineRecommendationsStartRequest(BaseModel):
         default=None,
         description="Educational context (raw_message, grade, subject) for prompt enrichment",
     )
+    diagram_id: Optional[str] = Field(
+        default=None,
+        description="Saved diagram id; when its File Center package has indexed sources, scope RAG to them",
+    )
 
     @field_validator("language")
     @classmethod
@@ -335,6 +339,10 @@ class InlineRecommendationsNextRequest(BaseModel):
     educational_context: Optional[Dict[str, Any]] = Field(
         default=None,
         description="Educational context for prompt enrichment",
+    )
+    diagram_id: Optional[str] = Field(
+        default=None,
+        description="Saved diagram id; when its File Center package has indexed sources, scope RAG to them",
     )
 
     @field_validator("language")

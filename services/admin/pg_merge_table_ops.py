@@ -59,12 +59,12 @@ def _build_dedup_lookup(
     if dedup_fingerprint:
         with live_engine.connect() as conn:
             rows = conn.execute(text(f'SELECT * FROM "{table_name}"')).mappings().all()
-        lookup: Dict[Any, Any] = {}
+        fingerprint_lookup: Dict[Any, Any] = {}
         for row in rows:
             key = fingerprint_key(dedup_fingerprint, dict(row))
             if key is not None:
-                lookup[key] = row[pk_col]
-        return lookup
+                fingerprint_lookup[key] = row[pk_col]
+        return fingerprint_lookup
 
     return {}
 
@@ -430,7 +430,7 @@ def merge_table(
     staging_engine: Engine,
     live_engine: Engine,
     id_maps: Dict[str, Dict],
-) -> Dict[str, int]:
+) -> Dict[str, Any]:
     """Merge a single table from staging into live."""
     config = TABLE_MERGE_CONFIG[table_name]
     pk_col = config.get("pk_column", "id")
@@ -629,10 +629,10 @@ def merge_table(
         skipped,
         orphaned,
     )
-    result = {"inserted": inserted, "skipped": skipped, "orphaned": orphaned}
+    merge_result: Dict[str, Any] = {"inserted": inserted, "skipped": skipped, "orphaned": orphaned}
     if inserted_user_ids:
-        result["_inserted_user_ids"] = inserted_user_ids
-    return result
+        merge_result["_inserted_user_ids"] = inserted_user_ids
+    return merge_result
 
 
 def reset_all_sequences(live_engine: Engine) -> None:

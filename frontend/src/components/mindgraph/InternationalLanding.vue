@@ -16,12 +16,13 @@ import { Check, Globe, PanelLeftOpen } from '@lucide/vue'
 
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
 import { useLanguage, useNotifications } from '@/composables'
+import { useLandingGenerateGraph } from '@/composables/mindgraph/useLandingGenerateGraph'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useAuthStore, useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
 import { useLiveTranslationStore } from '@/stores/liveTranslation'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
-import { authFetch } from '@/utils/api'
+
 import { TRANSLATE_LANGUAGES } from '@/utils/translateLanguages'
 
 import DiagramPreviewSvg from './DiagramPreviewSvg.vue'
@@ -30,7 +31,7 @@ import MindGraphCollabPanel from './MindGraphCollabPanel.vue'
 import MindGraphLanguageSwitcher from './MindGraphLanguageSwitcher.vue'
 
 const MAX_PROMPT_LENGTH = 10000
-const LANDING_LLM_MODELS = ['qwen', 'deepseek', 'kimi', 'doubao'] as const
+const LANDING_LLM_MODEL = 'qwen'
 
 const route = useRoute()
 const router = useRouter()
@@ -40,6 +41,17 @@ const authStore = useAuthStore()
 const uiStore = useUIStore()
 const diagramStore = useDiagramStore()
 const notify = useNotifications()
+const {
+  loadPhase,
+  isGenerating,
+  generateLandingGraph,
+  beginGeneration,
+  endGeneration,
+  abortGeneration,
+} = useLandingGenerateGraph({
+  t,
+  notify,
+})
 const liveTranslationStore = useLiveTranslationStore()
 const {
   enabled: translationOn,
@@ -141,17 +153,39 @@ const landingExampleKeys = [
   'landing.international.example1',
   'landing.international.example2',
   'landing.international.example3',
+  'landing.international.example4',
+  'landing.international.example5',
+  'landing.international.example6',
 ] as const
+
+const activeExampleIndex = ref(0)
+const EXAMPLE_ROTATE_MS = 5000
+let exampleRotateTimer: ReturnType<typeof setInterval> | null = null
 
 function applyLandingExample(key: (typeof landingExampleKeys)[number]): void {
   promptText.value = t(key)
 }
-const isGenerating = ref(false)
-const landingAbortControllers = ref<AbortController[]>([])
+
+function applyActiveLandingExample(): void {
+  applyLandingExample(landingExampleKeys[activeExampleIndex.value])
+}
+
+function startExampleRotation(): void {
+  if (exampleRotateTimer) return
+  exampleRotateTimer = setInterval(() => {
+    activeExampleIndex.value = (activeExampleIndex.value + 1) % landingExampleKeys.length
+  }, EXAMPLE_ROTATE_MS)
+}
+
+function stopExampleRotation(): void {
+  if (!exampleRotateTimer) return
+  clearInterval(exampleRotateTimer)
+  exampleRotateTimer = null
+}
 
 async function handlePromptSubmit() {
   const text = promptText.value.trim()
-  if (!text) return
+  if (!text || isGenerating.value) return
   if (!authStore.isAuthenticated) {
     authStore.handleTokenExpired(undefined, undefined)
     return
@@ -163,51 +197,40 @@ async function handlePromptSubmit() {
     return
   }
 
-  landingAbortControllers.value = LANDING_LLM_MODELS.map(() => new AbortController())
+  const abortController = beginGeneration()
+  stopExampleRotation()
 
-  async function fetchWithModel(model: string, index: number) {
-    const response = await authFetch('/api/generate_graph', {
-      method: 'POST',
-      body: JSON.stringify({ prompt: text, language: promptLanguage.value, llm: model }),
-      signal: landingAbortControllers.value[index].signal,
-    })
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({ detail: 'Request failed' }))
-      throw new Error(err.detail || `HTTP ${response.status}`)
-    }
-    const result = await response.json()
-    if (result.success && result.spec) {
-      landingAbortControllers.value.forEach((c, j) => j !== index && c.abort())
-      return { model, result }
-    }
-    throw new Error(result.error || 'Generation failed')
-  }
-
-  isGenerating.value = true
   try {
-    const promises = LANDING_LLM_MODELS.map((model, i) => fetchWithModel(model, i))
-    const { model: winningModel, result } = await Promise.any(promises)
-    const finalType = result.diagram_type as DiagramType | undefined
-    if (!finalType) throw new Error('No diagram type specified')
+    const outcome = await generateLandingGraph(
+      {
+        prompt: text,
+        language: promptLanguage.value,
+        llm: LANDING_LLM_MODEL,
+      },
+      abortController.signal
+    )
+
+    if (!outcome.ok) {
+      return
+    }
 
     diagramStore.clearHistory()
-    const loaded = diagramStore.loadFromSpec(result.spec, finalType)
+    const loaded = diagramStore.loadFromSpec(outcome.result.spec!, outcome.diagramType as DiagramType)
     if (loaded) {
       useLLMResultsStore().reset()
-      notify.success(t('diagramTemplate.generated', { model: winningModel }))
       router.push({ path: '/canvas' })
     } else {
-      throw new Error('Failed to load diagram data')
+      notify.error(t('diagramTemplate.generationFailed'))
     }
   } catch (error) {
-    if (error instanceof Error && error.name === 'AggregateError') {
-      notify.error(t('diagramTemplate.allModelsFailed'))
-    } else {
-      const msg = error instanceof Error ? error.message : t('diagramTemplate.generationFailed')
-      notify.error(msg)
+    if (error instanceof Error && error.name === 'AbortError') {
+      return
     }
+    const msg = error instanceof Error ? error.message : t('diagramTemplate.generationFailed')
+    notify.error(msg)
   } finally {
-    isGenerating.value = false
+    endGeneration()
+    startExampleRotation()
   }
 }
 
@@ -250,8 +273,8 @@ function handleDiagramSelect(diagram: SavedDiagram) {
 
 onUnmounted(() => {
   document.removeEventListener('mousedown', handleClickOutside)
-  landingAbortControllers.value.forEach((c) => c.abort())
-  landingAbortControllers.value = []
+  stopExampleRotation()
+  abortGeneration()
 })
 
 // ── Card click ──
@@ -267,6 +290,7 @@ const collabPanelRef = ref<InstanceType<typeof MindGraphCollabPanel> | null>(nul
 
 onMounted(() => {
   document.addEventListener('mousedown', handleClickOutside)
+  startExampleRotation()
   const joinWorkshopCode = route.query.join_workshop as string | undefined
   if (!joinWorkshopCode) {
     return
@@ -376,63 +400,79 @@ onMounted(() => {
         ref="promptSectionRef"
         class="intl-prompt-section"
       >
-        <div
-          class="intl-prompt-wrapper"
-          :class="{ 'intl-prompt-generating': isGenerating }"
+        <LlmPhaseRing
+          :phase="loadPhase"
+          :active="isGenerating"
+          border-radius="999px"
+          streaming-variant="qwen"
+          ring-padding="3px"
+          class="intl-prompt-ring"
         >
-          <textarea
-            v-model="promptText"
-            class="intl-prompt-input"
-            :placeholder="t('landing.international.promptPlaceholder')"
-            :disabled="isGenerating"
-            rows="4"
-            :maxlength="MAX_PROMPT_LENGTH"
-            @keydown="handlePromptKeydown"
-            @focus="handlePromptFocus"
-          />
-          <button
-            class="intl-prompt-send"
-            :disabled="!promptText.trim() || isGenerating || !authStore.isAuthenticated"
-            @click="handlePromptSubmit"
+          <div
+            class="intl-prompt-wrapper"
+            :class="{ 'intl-prompt-generating': isGenerating }"
           >
-            <ElIcon
-              v-if="isGenerating"
-              class="is-loading"
+            <input
+              v-model="promptText"
+              type="text"
+              class="intl-prompt-input"
+              :placeholder="t('landing.international.promptPlaceholder')"
+              :disabled="isGenerating"
+              :maxlength="MAX_PROMPT_LENGTH"
+              @keydown="handlePromptKeydown"
+              @focus="handlePromptFocus"
+            />
+            <button
+              class="intl-prompt-send"
+              :disabled="!promptText.trim() || isGenerating || !authStore.isAuthenticated"
+              @click="handlePromptSubmit"
             >
-              <Loading />
-            </ElIcon>
-            <svg
-              v-else
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <line
-                x1="22"
-                y1="2"
-                x2="11"
-                y2="13"
-              />
-              <polygon points="22 2 15 22 11 13 2 9 22 2" />
-            </svg>
-          </button>
-        </div>
+              <ElIcon
+                v-if="isGenerating"
+                class="is-loading"
+              >
+                <Loading />
+              </ElIcon>
+              <svg
+                v-else
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line
+                  x1="22"
+                  y1="2"
+                  x2="11"
+                  y2="13"
+                />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+            </button>
+          </div>
+        </LlmPhaseRing>
 
-        <div class="intl-prompt-chips">
-          <button
-            v-for="key in landingExampleKeys"
-            :key="key"
-            type="button"
-            class="intl-prompt-chip"
-            @click="applyLandingExample(key)"
-          >
-            {{ t(key) }}
-          </button>
+        <div class="intl-prompt-suggestions">
+          <div class="intl-prompt-suggestions-rotator">
+            <transition
+              name="intl-suggestion-rotate"
+              mode="out-in"
+            >
+              <button
+                :key="landingExampleKeys[activeExampleIndex]"
+                type="button"
+                class="intl-prompt-suggestion"
+                :disabled="isGenerating"
+                @click="applyActiveLandingExample"
+              >
+                {{ t(landingExampleKeys[activeExampleIndex]) }}
+              </button>
+            </transition>
+          </div>
         </div>
 
         <!-- Saved-diagram dropdown -->
@@ -833,16 +873,26 @@ onMounted(() => {
   transform: translateY(-4px);
 }
 
+.intl-prompt-ring {
+  width: 100%;
+  display: block;
+}
+
+.intl-prompt-ring :deep(.llm-phase-ring) {
+  width: 100%;
+  display: block;
+}
+
 .intl-prompt-wrapper {
   position: relative;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 8px;
   background: var(--el-bg-color, #fff);
-  border-radius: 24px;
+  border-radius: 999px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
   transition: all 0.3s ease;
-  padding: 8px 8px 8px 0;
+  padding: 6px 6px 6px 0;
 }
 
 .intl-prompt-wrapper:focus-within {
@@ -860,15 +910,14 @@ onMounted(() => {
   flex: 1;
   border: none;
   outline: none;
-  padding: 14px 20px;
+  padding: 0 20px;
+  height: 44px;
   font-size: 16px;
-  line-height: 1.5;
+  line-height: 44px;
   font-family: inherit;
   background: transparent;
   color: var(--el-text-color-primary, #333);
-  border-radius: 20px;
-  resize: none;
-  min-height: 96px;
+  min-width: 0;
 }
 
 .intl-prompt-input::placeholder {
@@ -878,14 +927,14 @@ onMounted(() => {
 .intl-prompt-send {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  margin-right: 6px;
+  margin-right: 4px;
   color: #fff;
   flex-shrink: 0;
   transition: opacity 0.2s;
@@ -899,15 +948,28 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-.intl-prompt-chips {
+.intl-prompt-suggestions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  justify-content: center;
   margin-top: 12px;
   padding: 0 4px;
+  height: 32px;
+  overflow: hidden;
 }
 
-.intl-prompt-chip {
+.intl-prompt-suggestions-rotator {
+  position: relative;
+  max-width: 100%;
+  height: 32px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.intl-prompt-suggestion {
+  display: inline-block;
+  max-width: 100%;
   border: 1px solid var(--el-border-color-lighter, #e7e5e4);
   background: var(--el-bg-color, #fff);
   color: var(--el-text-color-regular, #57534e);
@@ -916,12 +978,45 @@ onMounted(() => {
   font-size: 13px;
   line-height: 1.4;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
-.intl-prompt-chip:hover {
+.intl-prompt-suggestion:hover {
   background: var(--el-fill-color-light, #f5f5f4);
   border-color: var(--el-color-primary-light-5, #c4b5fd);
+  color: var(--el-text-color-regular, #57534e);
+}
+
+.intl-prompt-suggestion:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.intl-suggestion-rotate-enter-active,
+.intl-suggestion-rotate-leave-active {
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
+}
+
+.intl-suggestion-rotate-leave-active {
+  position: absolute;
+}
+
+.intl-suggestion-rotate-enter-from {
+  opacity: 0;
+  transform: translateX(48px);
+}
+
+.intl-suggestion-rotate-leave-to {
+  opacity: 0;
+  transform: translateX(-48px);
 }
 
 /* ── Gallery (background + wind live on .intl-scroll + .intl-landing) ── */

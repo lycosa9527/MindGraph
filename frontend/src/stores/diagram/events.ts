@@ -2,6 +2,8 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import type { DiagramNode, DiagramType, MindGraphEdgeType } from '@/types'
 
+import type { MindMapCanvasMode } from '@/stores/ui'
+
 import type { DiagramEvent, DiagramEventType, EventCallback, MindMapCurveExtents } from './types'
 
 const eventSubscribers = new Map<DiagramEventType | '*', Set<EventCallback>>()
@@ -60,9 +62,12 @@ export function subscribeToDiagramEvents(
   }
 }
 
-export function getEdgeTypeForDiagram(diagramType: DiagramType | null): MindGraphEdgeType {
+export function getEdgeTypeForDiagram(
+  diagramType: DiagramType | null,
+  mindMapCanvasMode: MindMapCanvasMode = 'legacy'
+): MindGraphEdgeType {
   if (diagramType === 'mindmap' || diagramType === 'mind_map') {
-    return 'mindmapOrthogonal'
+    return mindMapCanvasMode === 'v2' ? 'mindmapOrthogonal' : 'curved'
   }
   if (!diagramType) return 'curved'
 

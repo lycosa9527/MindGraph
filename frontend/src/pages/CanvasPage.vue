@@ -20,7 +20,7 @@
  * - LLM completed: flush and save once
  * - Auto-updates if diagram is already in library; auto-saves new if slots available
  */
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
@@ -29,14 +29,14 @@ import {
   AIModelSelector,
   CanvasChrome,
   CanvasMindMapShortcutGuide,
-  MindMapSidePanel,
-  MindMapSideToolbar,
   CanvasTopBar,
   ConceptMapFocusReviewPicker,
   ConceptMapLabelPicker,
   ConceptMapRootConceptPicker,
   InlineRecommendationsPicker,
   MindMapPresentationSideToolbar,
+  MindMapSidePanel,
+  MindMapSideToolbar,
   MindMapSlideOverlay,
   ZoomControls,
 } from '@/components/canvas'
@@ -63,6 +63,7 @@ import {
   useNotifications,
   useSnapshotHistory,
 } from '@/composables'
+import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import {
   applyCanvasKittySeedFromRoute,
   canvasKittySeedQueryKeysPresent,
@@ -80,7 +81,6 @@ import { useCanvasPageMountedHandlers } from '@/composables/canvasPage/useCanvas
 import { useCanvasPagePresentation } from '@/composables/canvasPage/useCanvasPagePresentation'
 import { useCanvasPageTabRecIndicator } from '@/composables/canvasPage/useCanvasPageTabRecIndicator'
 import { useCanvasPageWorkshopCollab } from '@/composables/canvasPage/useCanvasPageWorkshopCollab'
-import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
 import {
   canvasVirtualKeyboardOpen,
@@ -88,16 +88,6 @@ import {
   toggleCanvasVirtualKeyboard,
 } from '@/composables/canvasToolbar'
 import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
-import { useMindMapSlidePresentation } from '@/composables/mindMap/useMindMapSlidePresentation'
-import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
-import {
-  PRESENTATION_BOARD_THICKNESS_SCALE,
-  presentationBoardColorStroke,
-  type PresentationBoardColorId,
-  type PresentationBoardThickness,
-} from '@/config/presentationPen'
-import { usePresentationPointerStore } from '@/stores/presentationPointer'
-import type { MindMapPresentationToolId } from '@/types/diagram'
 import {
   bindMindMapExternalPanelClose,
   useMindMapSideToolbarState,
@@ -107,15 +97,27 @@ import {
   loadDiagramMarkdownPipeline,
 } from '@/composables/core/diagramMarkdownPipeline'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
+import { useMindMapRagBranchExpand } from '@/composables/editor/useMindMapRagBranchExpand'
+import {
+  createFileCenterActivePackage,
+  FILE_CENTER_ACTIVE_PACKAGE_KEY,
+} from '@/composables/fileCenter/useFileCenterActivePackage'
 import { handleKittyAddNodeWithRecommendationsRequest } from '@/composables/kitty/kittyAddNodeWithRecommendations'
 import { resolveKittyChildNodeId } from '@/composables/kitty/kittyDiagramChildren'
 import { useKittyDesktopVoiceCommandLog } from '@/composables/kitty/useKittyDesktopVoiceCommandLog'
 import { useKittyDesktopWorkflowDebug } from '@/composables/kitty/useKittyDesktopWorkflowDebug'
 import { useKittyDiagramReviewAnnotationBus } from '@/composables/kitty/useKittyDiagramReviewAnnotationBus'
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
+import { useMindMapSlidePresentation } from '@/composables/mindMap/useMindMapSlidePresentation'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { IMPORT_SPEC_KEY, SAVE } from '@/config'
+import {
+  PRESENTATION_BOARD_THICKNESS_SCALE,
+  type PresentationBoardColorId,
+  type PresentationBoardThickness,
+  presentationBoardColorStroke,
+} from '@/config/presentationPen'
 import { FIT_PADDING, PANEL, PANEL_INSET } from '@/config/uiConfig'
-import { isMindMapDiagramType } from '@/utils/conceptMapDesktopViewport'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { intlLocaleForUiCode } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
@@ -132,8 +134,12 @@ import {
 } from '@/stores'
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
+import { usePresentationPointerStore } from '@/stores/presentationPointer'
+import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
+import type { MindMapPresentationToolId } from '@/types/diagram'
+import { isMindMapDiagramType } from '@/utils/conceptMapDesktopViewport'
 
 const route = useRoute()
 const router = useRouter()
@@ -280,11 +286,7 @@ function handlePresentationEscape(event: KeyboardEvent): void {
   if (useMindMapV2.value && mindMapPresentationTool.value === 'slides') return
   if (event.key !== 'Escape') return
   const active = document.activeElement as HTMLElement
-  if (
-    active?.tagName === 'INPUT' ||
-    active?.tagName === 'TEXTAREA' ||
-    active?.isContentEditable
-  ) {
+  if (active?.tagName === 'INPUT' || active?.tagName === 'TEXTAREA' || active?.isContentEditable) {
     return
   }
   event.preventDefault()
@@ -338,11 +340,19 @@ const fitViewOnInit = computed(() => {
 const isMindMapCanvas = computed(() => isMindMapDiagramType(diagramStore.type))
 const useMindMapV2 = useMindMapV2Chrome()
 
+const featureKnowledgeSpaceFlag = computed(() => featureFlagsStore.getFeatureKnowledgeSpace())
+const fileCenterEnabled = computed(
+  () => featureKnowledgeSpaceFlag.value && useMindMapV2.value
+)
+provide(
+  FILE_CENTER_ACTIVE_PACKAGE_KEY,
+  createFileCenterActivePackage(fileCenterEnabled)
+)
+const ragBranchExpandEnabled = computed(() => fileCenterEnabled.value)
+useMindMapRagBranchExpand(ragBranchExpandEnabled)
+
 const isMindMapPresentationMode = computed(
-  () =>
-    useMindMapV2.value &&
-    presentationRailOpen.value &&
-    canUsePresentationTools.value
+  () => useMindMapV2.value && presentationRailOpen.value && canUsePresentationTools.value
 )
 
 /** All diagram types use the simplified 4-tool presentation rail when open. */
@@ -357,8 +367,7 @@ const presentationPenColor = ref(presentationBoardColorStroke('red'))
 const presentationPointerStore = usePresentationPointerStore()
 
 const slidePresentation = useMindMapSlidePresentation({
-  active: () =>
-    isMindMapPresentationMode.value && mindMapPresentationTool.value === 'slides',
+  active: () => isMindMapPresentationMode.value && mindMapPresentationTool.value === 'slides',
   onExitPresentation: () => handleStartPresentationWithTier(),
 })
 
@@ -404,10 +413,7 @@ watch(
   }
 )
 
-bindMindMapExternalPanelClose(
-  () => panelsStore.nodePalettePanel.isOpen,
-  closeActiveTool
-)
+bindMindMapExternalPanelClose(() => panelsStore.nodePalettePanel.isOpen, closeActiveTool)
 
 watch(
   () => diagramStore.type,
@@ -1021,6 +1027,7 @@ onUnmounted(() => {
   snapshotHistory.clearSnapshots()
   useLLMResultsStore().reset()
   usePanelsStore().reset()
+  useMindMapSubgraphPreviewStore().clear()
   uiStore.setSelectedChartType('选择具体图示')
   uiStore.setFreeInputValue('')
   resetPresentationStateOnLeave()
@@ -1042,9 +1049,7 @@ onUnmounted(() => {
         showSimplifiedPresentationRail && mindMapPresentationTool === 'slides',
       'presentation-highlighter-mode': false,
       'presentation-pen-mode':
-        canUsePresentationTools &&
-        presentationRailOpen &&
-        mindMapPresentationTool === 'pen',
+        canUsePresentationTools && presentationRailOpen && mindMapPresentationTool === 'pen',
       'presentation-timer-mode': false,
     }"
   >
@@ -1052,9 +1057,7 @@ onUnmounted(() => {
     <Transition name="laser-fade">
       <div
         v-if="
-          canUsePresentationTools &&
-          presentationRailOpen &&
-          mindMapPresentationTool === 'laser'
+          canUsePresentationTools && presentationRailOpen && mindMapPresentationTool === 'laser'
         "
         class="laser-cursor"
         :style="laserCursorStyle"
@@ -1224,65 +1227,67 @@ onUnmounted(() => {
       v-if="showBottomBar"
       class="canvas-bottom-controls absolute bottom-3 left-0 right-0 z-20 flex justify-center px-2 sm:px-4 pointer-events-none"
     >
-      <div class="bottom-bar-cluster pointer-events-auto flex items-end gap-2 sm:gap-3 max-w-[95vw] min-w-0">
+      <div
+        class="bottom-bar-cluster pointer-events-auto flex items-end gap-2 sm:gap-3 max-w-[95vw] min-w-0"
+      >
         <CanvasMindMapShortcutGuide v-if="showMindMapShortcutGuide" />
         <div
           class="bottom-controls-card flex flex-col items-center md:flex-row md:flex-nowrap md:items-center gap-1.5 md:gap-0 rounded-xl shadow-lg p-1 md:p-1.5 border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md w-fit min-w-0 shrink-0"
         >
-        <!-- shrink-0: AI block + focus picker width follows content (no flex-1 stretch) -->
-        <div
-          class="ai-selector-wrap flex shrink-0 justify-center md:justify-center min-w-0 order-2 md:order-1"
-        >
-          <AIModelSelector
-            :host-displayed-llm-model="remoteHostDisplayedLlmModel"
-            :is-collab-guest="isCollabGuest"
-            @model-change="handleModelChange"
+          <!-- shrink-0: AI block + focus picker width follows content (no flex-1 stretch) -->
+          <div
+            class="ai-selector-wrap flex shrink-0 justify-center md:justify-center min-w-0 order-2 md:order-1"
+          >
+            <AIModelSelector
+              :host-displayed-llm-model="remoteHostDisplayedLlmModel"
+              :is-collab-guest="isCollabGuest"
+              @model-change="handleModelChange"
+            />
+          </div>
+          <ConceptMapLabelPicker
+            v-if="diagramStore.type === 'concept_map' && relationshipActiveEntry"
+            class="label-picker-wrap order-3 flex-1 min-w-0"
           />
-        </div>
-        <ConceptMapLabelPicker
-          v-if="diagramStore.type === 'concept_map' && relationshipActiveEntry"
-          class="label-picker-wrap order-3 flex-1 min-w-0"
-        />
-        <ConceptMapRootConceptPicker
-          v-else-if="
-            diagramStore.type === 'concept_map' &&
-            rootConceptReviewStore.showPicker &&
-            !relationshipActiveEntry
-          "
-          class="label-picker-wrap order-3 shrink-0 w-fit max-w-[min(95vw,640px)] min-w-0"
-        />
-        <ConceptMapFocusReviewPicker
-          v-else-if="diagramStore.type === 'concept_map' && focusReviewStore.showPicker"
-          class="label-picker-wrap order-3 shrink-0 w-fit max-w-[min(95vw,640px)] min-w-0"
-        />
-        <InlineRecommendationsPicker
-          v-else-if="inlineRecActiveNodeId"
-          class="label-picker-wrap order-3 flex-1 min-w-0"
-        />
-        <div
-          v-if="showZoomControls"
-          class="bottom-controls-divider hidden md:block order-1 md:order-2 w-px h-[22px] mx-2 bg-gray-200 dark:bg-gray-600 shrink-0 self-center"
-        />
-        <div
-          v-if="showZoomControls"
-          class="zoom-controls-wrap flex shrink-0 order-1 md:order-3"
-        >
-          <ZoomControls
-            :zoom="canvasZoom"
-            :presentation-rail-open="presentationRailOpen"
-            :workshop-code="workshopCode"
-            :is-collab-guest="isCollabGuest"
-            :allow-presentation-tools="canUsePresentationTools"
-            :allow-online-collab="canUseOnlineCollab"
-            @zoomChange="handleZoomChange"
-            @zoomIn="handleZoomIn"
-            @zoomOut="handleZoomOut"
-            @fitToScreen="handleFitToScreen"
-            @handToolToggle="handleHandToolToggle"
-            @startPresentation="handleStartPresentationWithTier"
-            @openCollab="handleOpenCollab"
+          <ConceptMapRootConceptPicker
+            v-else-if="
+              diagramStore.type === 'concept_map' &&
+              rootConceptReviewStore.showPicker &&
+              !relationshipActiveEntry
+            "
+            class="label-picker-wrap order-3 shrink-0 w-fit max-w-[min(95vw,640px)] min-w-0"
           />
-        </div>
+          <ConceptMapFocusReviewPicker
+            v-else-if="diagramStore.type === 'concept_map' && focusReviewStore.showPicker"
+            class="label-picker-wrap order-3 shrink-0 w-fit max-w-[min(95vw,640px)] min-w-0"
+          />
+          <InlineRecommendationsPicker
+            v-else-if="inlineRecActiveNodeId"
+            class="label-picker-wrap order-3 flex-1 min-w-0"
+          />
+          <div
+            v-if="showZoomControls"
+            class="bottom-controls-divider hidden md:block order-1 md:order-2 w-px h-[22px] mx-2 bg-gray-200 dark:bg-gray-600 shrink-0 self-center"
+          />
+          <div
+            v-if="showZoomControls"
+            class="zoom-controls-wrap flex shrink-0 order-1 md:order-3"
+          >
+            <ZoomControls
+              :zoom="canvasZoom"
+              :presentation-rail-open="presentationRailOpen"
+              :workshop-code="workshopCode"
+              :is-collab-guest="isCollabGuest"
+              :allow-presentation-tools="canUsePresentationTools"
+              :allow-online-collab="canUseOnlineCollab"
+              @zoomChange="handleZoomChange"
+              @zoomIn="handleZoomIn"
+              @zoomOut="handleZoomOut"
+              @fitToScreen="handleFitToScreen"
+              @handToolToggle="handleHandToolToggle"
+              @startPresentation="handleStartPresentationWithTier"
+              @openCollab="handleOpenCollab"
+            />
+          </div>
         </div>
       </div>
     </div>

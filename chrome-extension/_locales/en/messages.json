@@ -27,6 +27,26 @@
     "message": "Generate",
     "description": "Primary button"
   },
+  "fileCenterSectionLabel": {
+    "message": "Save to File Center",
+    "description": "File Center section label"
+  },
+  "fileCenterPackageLabel": {
+    "message": "Package",
+    "description": "Package picker label"
+  },
+  "btnSaveToFileCenter": {
+    "message": "Save page to package",
+    "description": "Button to save page content into a File Center package"
+  },
+  "fileCenterUntitled": {
+    "message": "Untitled package",
+    "description": "Fallback package name"
+  },
+  "statusSavedToFileCenter": {
+    "message": "Saved to File Center. Indexing started.",
+    "description": "Status after saving page into a package"
+  },
   "btnSettings": {
     "message": "Settings",
     "description": "Settings button"

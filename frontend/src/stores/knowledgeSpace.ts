@@ -17,6 +17,8 @@ export interface KnowledgeDocument {
   error_message?: string | null
   processing_progress?: string | null
   processing_progress_percent?: number
+  chunking_engine?: string | null
+  chunking_mode?: string | null
   created_at: string
   updated_at: string
 }

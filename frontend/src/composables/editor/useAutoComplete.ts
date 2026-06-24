@@ -29,6 +29,11 @@ import { useDiagramStore, useLLMResultsStore, type ModelLoadPhase } from '@/stor
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { authFetch } from '@/utils/api'
 import {
+  extractFailureFromPayload,
+  resolveGenerateGraphErrorMessage,
+  shouldNotifyGenerateGraphError,
+} from '@/utils/generateGraphErrors'
+import {
   consumeGenerateGraphStream,
   type GenerateGraphCompletePayload,
   type GenerateGraphStreamPhase,
@@ -452,16 +457,39 @@ export function useAutoComplete() {
       }
     }
 
-    const nestedSpecError = specLooksLikeError && specPayload ? specPayload.error : undefined
+    const failure = extractFailureFromPayload(result)
+    if (failure) {
+      return {
+        model,
+        success: false,
+        error: failure.error,
+        errorType: failure.errorType,
+        elapsed,
+      }
+    }
+
     return {
       model,
       success: false,
-      error:
-        nestedSpecError ||
-        (typeof result.error === 'string' ? result.error : undefined) ||
-        'Unknown error',
+      error: 'Unknown error',
       elapsed,
     }
+  }
+
+  function formatModelFailureMessage(
+    rawError: string,
+    errorType?: string
+  ): string {
+    const message = resolveGenerateGraphErrorMessage(
+      rawError,
+      errorType,
+      t,
+      'autoComplete.generationFailedRetry'
+    )
+    if (message === t('autoComplete.generationFailedRetry')) {
+      return message
+    }
+    return `${t('autoComplete.generationFailedRetry')}：${message}`
   }
 
   function parseHttpErrorDetail(detail: unknown): string | undefined {
@@ -495,6 +523,7 @@ export function useAutoComplete() {
     spec?: Record<string, unknown>
     diagramType?: string
     error?: string
+    errorType?: string
     elapsed: number
   }> {
     const startTime = Date.now()
@@ -545,6 +574,11 @@ export function useAutoComplete() {
           llmResultsStore.setModelPhase(model, 'error')
           return { model, success: false, error: 'Stream ended without result', elapsed }
         }
+      } else if (streamResponse.status >= 500) {
+        const elapsed = (Date.now() - startTime) / 1000
+        const errorMessage = await readHttpErrorMessage(streamResponse)
+        llmResultsStore.setModelPhase(model, 'error')
+        return { model, success: false, error: errorMessage, elapsed }
       } else if (streamResponse.status >= 400 && streamResponse.status < 500) {
         const elapsed = (Date.now() - startTime) / 1000
         const errorMessage = await readHttpErrorMessage(streamResponse)
@@ -734,9 +768,16 @@ export function useAutoComplete() {
               })
             }
           } else {
-            llmResultsStore.handleModelError(model, result.error || 'Unknown error', result.elapsed)
-            if (import.meta.env.DEV) {
-              console.warn(`[AutoComplete] ${model} failed: ${result.error}`)
+            const displayError = formatModelFailureMessage(
+              result.error || 'Unknown error',
+              result.errorType
+            )
+            llmResultsStore.handleModelError(model, displayError, result.elapsed)
+            if (
+              import.meta.env.DEV &&
+              shouldNotifyGenerateGraphError(result.error || '', result.errorType)
+            ) {
+              console.warn(`[AutoComplete] ${model} failed: ${displayError}`)
             }
           }
         } catch (err) {
@@ -766,12 +807,16 @@ export function useAutoComplete() {
       onAllComplete?.(successCount, totalCount)
 
       if (successCount === 0) {
-        const firstModelError = modelsToRun
-          .map((model) => llmResultsStore.results[model]?.error)
-          .find((msg) => typeof msg === 'string' && msg.trim().length > 0)
-        const errorMsg = firstModelError
-          ? `${t('autoComplete.generationFailedRetry')}：${firstModelError}`
-          : t('autoComplete.generationFailedRetry')
+        const failedModel = modelsToRun.find(
+          (model) => llmResultsStore.results[model]?.phase === 'error'
+        )
+        const firstModelError = failedModel
+          ? llmResultsStore.results[failedModel]?.error
+          : undefined
+        const errorMsg =
+          typeof firstModelError === 'string' && firstModelError.trim()
+            ? firstModelError
+            : t('autoComplete.generationFailedRetry')
         notify.error(errorMsg)
         options.onError?.(errorMsg)
         return { success: false, error: firstModelError || 'All models failed' }

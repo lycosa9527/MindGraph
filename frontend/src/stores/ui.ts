@@ -97,7 +97,7 @@ export const useUIStore = defineStore('ui', () => {
   const browserLocaleHintDismissed = ref(false)
   const uiVersion = ref<UiVersion>(detectDefaultUiVersion())
   /** Mind map canvas chrome: legacy (Option 1) or v2 side-toolbar layout (Option 2). */
-  const mindMapCanvasMode = ref<MindMapCanvasMode>('v2')
+  const mindMapCanvasMode = ref<MindMapCanvasMode>('legacy')
   const isMobile = ref(false)
   const sidebarCollapsed = ref(false)
 

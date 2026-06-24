@@ -185,7 +185,7 @@ async def test_stream_generate_graph_events_phase_order() -> None:
 
     events: list[dict[str, Any]] = []
     with patch(
-        "routers.api.diagram_generation.agent_graph_workflow_with_styles",
+        "routers.api.diagram_generation.run_generate_pipeline",
         new=AsyncMock(side_effect=fake_workflow),
     ):
         with patch(
@@ -204,12 +204,14 @@ async def test_stream_generate_graph_events_phase_order() -> None:
 
 
 def test_build_workflow_kwargs_uses_user_prompt_not_prompt() -> None:
-    req = GenerateRequest(
-        prompt="circle topic",
-        diagram_type=DiagramType.CIRCLE_MAP,
-        language="zh",
-        llm=LLMModel.QWEN,
-        request_type="autocomplete",
+    req = GenerateRequest.model_validate(
+        {
+            "prompt": "circle topic",
+            "diagram_type": DiagramType.CIRCLE_MAP,
+            "language": "zh",
+            "llm": LLMModel.QWEN,
+            "request_type": "autocomplete",
+        }
     )
     prepared = {
         "prompt": "circle topic",

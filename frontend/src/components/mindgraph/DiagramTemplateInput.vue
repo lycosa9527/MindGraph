@@ -13,6 +13,7 @@ import { Close, Loading, Promotion } from '@element-plus/icons-vue'
 import { ChevronDown } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { useLandingGenerateGraph } from '@/composables/mindgraph/useLandingGenerateGraph'
 import {
   DIAGRAM_TEMPLATES,
   getDiagramTemplateBody,
@@ -22,12 +23,10 @@ import {
   useUIStore,
 } from '@/stores'
 import type { DiagramType } from '@/types'
-import { authFetch } from '@/utils/api'
 
 const MAX_PROMPT_LENGTH = 10000
 
-// LLMs to use for parallel generation (first-success-wins)
-const LANDING_LLM_MODELS = ['qwen', 'deepseek', 'kimi', 'doubao'] as const
+const LANDING_LLM_MODEL = 'qwen'
 
 const uiStore = useUIStore()
 const authStore = useAuthStore()
@@ -35,11 +34,19 @@ const diagramStore = useDiagramStore()
 const router = useRouter()
 const { promptLanguage, t } = useLanguage()
 const notify = useNotifications()
+const {
+  loadPhase,
+  isGenerating,
+  generateLandingGraph,
+  beginGeneration,
+  endGeneration,
+  abortGeneration,
+} = useLandingGenerateGraph({
+  t,
+  notify,
+})
 
-const isGenerating = ref(false)
-
-// AbortControllers for in-flight generation; aborted on unmount to avoid leaks
-const landingAbortControllers = ref<AbortController[]>([])
+// Aborted on unmount to avoid leaks
 
 // Map Chinese diagram type names to DiagramType for URL
 const diagramTypeMap: Record<string, DiagramType> = {
@@ -120,16 +127,20 @@ function handleFreeInputFocus() {
 }
 
 async function generateFromLanding() {
+  if (isGenerating.value) return
+
   const isSpecificDiagram = selectedType.value !== '选择具体图示'
   const diagramTypeParam = isSpecificDiagram ? diagramTypeMap[selectedType.value] : null
 
-  const requestText = uiStore.getTemplateText().trim()
-  if (!requestText) return
+  const topicText = isSpecificDiagram
+    ? uiStore.getTemplateTopic().trim() || uiStore.getTemplateText().trim()
+    : uiStore.getTemplateText().trim()
+  if (!topicText) return
 
-  if (requestText.length > MAX_PROMPT_LENGTH) {
+  if (topicText.length > MAX_PROMPT_LENGTH) {
     notify.error(
       t('diagramTemplate.promptTooLong', {
-        length: requestText.length,
+        length: topicText.length,
         max: MAX_PROMPT_LENGTH,
       })
     )
@@ -137,7 +148,7 @@ async function generateFromLanding() {
   }
 
   const requestBody: Record<string, unknown> = {
-    prompt: requestText,
+    prompt: topicText,
     diagram_type: diagramTypeParam,
     language: promptLanguage.value,
   }
@@ -149,65 +160,48 @@ async function generateFromLanding() {
     if (fixedDim) requestBody.fixed_dimension = fixedDim
   }
 
-  landingAbortControllers.value = LANDING_LLM_MODELS.map(() => new AbortController())
+  const abortController = beginGeneration()
 
-  async function fetchWithModel(model: string, index: number) {
-    const response = await authFetch('/api/generate_graph', {
-      method: 'POST',
-      body: JSON.stringify({ ...requestBody, llm: model }),
-      signal: landingAbortControllers.value[index].signal,
-    })
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({ detail: 'Request failed' }))
-      throw new Error(err.detail || `HTTP ${response.status}`)
-    }
-
-    const result = await response.json()
-    if (result.success && result.spec) {
-      landingAbortControllers.value.forEach((c, j) => j !== index && c.abort())
-      return { model, result }
-    }
-    throw new Error(result.error || 'Generation failed')
-  }
-
-  isGenerating.value = true
   try {
-    const promises = LANDING_LLM_MODELS.map((model, i) => fetchWithModel(model, i))
+    const outcome = await generateLandingGraph(
+      { ...requestBody, llm: LANDING_LLM_MODEL },
+      abortController.signal
+    )
 
-    const { model: winningModel, result } = await Promise.any(promises)
-    const finalDiagramType = (result.diagram_type as DiagramType) || diagramTypeParam
+    if (!outcome.ok) {
+      return
+    }
+
+    const finalDiagramType =
+      (outcome.diagramType as DiagramType) || (diagramTypeParam as DiagramType | null)
     if (!finalDiagramType) {
-      throw new Error('No diagram type specified')
+      notify.error(t('diagramTemplate.generationFailed'))
+      return
     }
 
     diagramStore.clearHistory()
-    const loaded = diagramStore.loadFromSpec(result.spec, finalDiagramType)
+    const loaded = diagramStore.loadFromSpec(outcome.result.spec!, finalDiagramType)
     if (loaded) {
       useLLMResultsStore().reset()
-      notify.success(t('diagramTemplate.generated', { model: winningModel }))
       router.push({ path: '/canvas' })
     } else {
-      throw new Error('Failed to load diagram data')
+      notify.error(t('diagramTemplate.generationFailed'))
     }
   } catch (error) {
-    if (error instanceof Error && error.name === 'AggregateError') {
-      const msg = t('diagramTemplate.allModelsFailed')
-      notify.error(msg)
-    } else {
-      console.error('Generate from landing failed:', error)
-      const errorMessage =
-        error instanceof Error ? error.message : t('diagramTemplate.generationFailed')
-      notify.error(errorMessage)
+    if (error instanceof Error && error.name === 'AbortError') {
+      return
     }
+    console.error('Generate from landing failed:', error)
+    notify.error(
+      error instanceof Error ? error.message : t('diagramTemplate.generationFailed')
+    )
   } finally {
-    isGenerating.value = false
+    endGeneration()
   }
 }
 
 onUnmounted(() => {
-  landingAbortControllers.value.forEach((c) => c.abort())
-  landingAbortControllers.value = []
+  abortGeneration()
 })
 
 async function handleSubmit() {
@@ -268,7 +262,7 @@ const templateParts = computed(() => {
         :maxlength="MAX_PROMPT_LENGTH"
         show-word-limit
         :placeholder="t('landing.template.freePlaceholder')"
-        :disabled="!authStore.isAuthenticated"
+        :disabled="!authStore.isAuthenticated || isGenerating"
         class="mindgraph-free-input"
         @update:model-value="uiStore.setFreeInputValue"
         @focus="handleFreeInputFocus"
@@ -312,7 +306,7 @@ const templateParts = computed(() => {
               :placeholder="slotPlaceholder(part.name)"
               size="small"
               class="template-slot-input"
-              :disabled="!authStore.isAuthenticated"
+              :disabled="!authStore.isAuthenticated || isGenerating"
               @update:model-value="(v: string) => uiStore.setTemplateSlot(part.name, v)"
               @focus="handleFreeInputFocus"
             />
@@ -327,7 +321,7 @@ const templateParts = computed(() => {
       <div class="relative w-1/4 min-w-[150px]">
         <select
           :value="selectedType"
-          :disabled="!authStore.isAuthenticated"
+          :disabled="!authStore.isAuthenticated || isGenerating"
           class="diagram-type-select w-full appearance-none bg-white border border-blue-500 rounded-md py-2 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           @change="handleTypeChange(($event.target as HTMLSelectElement).value)"
           @focus="!authStore.isAuthenticated && authStore.handleTokenExpired(undefined, undefined)"
@@ -346,19 +340,27 @@ const templateParts = computed(() => {
       </div>
 
       <!-- Submit button: Element Plus primary when enabled, grey when empty -->
-      <ElButton
-        :type="canSubmit ? 'primary' : 'default'"
-        :loading="isGenerating"
-        :loading-icon="Loading"
-        :disabled="!canSubmit || isGenerating"
-        circle
-        class="submit-btn"
-        @click="handleSubmit"
+      <LlmPhaseRing
+        :phase="loadPhase"
+        :active="isGenerating"
+        border-radius="50%"
+        streaming-variant="qwen"
+        ring-padding="2px"
       >
-        <ElIcon v-if="!isGenerating">
-          <Promotion />
-        </ElIcon>
-      </ElButton>
+        <ElButton
+          :type="canSubmit ? 'primary' : 'default'"
+          :loading="isGenerating"
+          :loading-icon="Loading"
+          :disabled="!canSubmit || isGenerating"
+          circle
+          class="submit-btn"
+          @click="handleSubmit"
+        >
+          <ElIcon v-if="!isGenerating">
+            <Promotion />
+          </ElIcon>
+        </ElButton>
+      </LlmPhaseRing>
     </div>
   </div>
 </template>

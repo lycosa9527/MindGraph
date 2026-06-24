@@ -8,6 +8,7 @@ export default {
   'aiModel.enableAi': 'Enable AI',
   'aiModel.inlineRecTooltip': 'Press Tab while editing node for AI recommendations',
   'aiModel.label': 'AI Model',
+  'aiModel.cancelGeneration': 'Cancel generation',
   'aiModel.readyCount': '{count} ready',
   'aiModel.relationshipsBadge': 'Relationships',
   'aiModel.relationshipsTooltip': 'Drag to link concepts—AI will generate relationships',

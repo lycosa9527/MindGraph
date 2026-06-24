@@ -6,14 +6,14 @@ import { computed } from 'vue'
 
 import { Hammer, Package, Shuffle, X } from '@lucide/vue'
 
-import SidebarOutline from './SidebarOutline.vue'
-import MindMapWaterfallPanel from './MindMapWaterfallPanel.vue'
-import MindMapOneSentencePanel from './MindMapOneSentencePanel.vue'
-import MindMapDocumentSummaryPanel from './MindMapDocumentSummaryPanel.vue'
-
 import { useLanguage } from '@/composables'
 import { type MindMapSideToolId } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
+
+import FileCenterPanel from './FileCenterPanel.vue'
+import MindMapOneSentencePanel from './MindMapOneSentencePanel.vue'
+import MindMapWaterfallPanel from './MindMapWaterfallPanel.vue'
+import SidebarOutline from './SidebarOutline.vue'
 
 const props = defineProps<{
   tool: MindMapSideToolId
@@ -81,7 +81,7 @@ function handleExitLearningSheet(): void {
     @close="handleClose"
   />
 
-  <MindMapDocumentSummaryPanel
+  <FileCenterPanel
     v-else-if="tool === 'document_summary'"
     @close="handleClose"
   />
@@ -91,7 +91,9 @@ function handleExitLearningSheet(): void {
     class="mind-map-side-panel pointer-events-auto absolute inset-y-3 left-3 z-40 flex w-80 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
     :aria-label="panelTitle"
   >
-    <header class="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 bg-gray-50/50 px-3 py-3">
+    <header
+      class="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 bg-gray-50/50 px-3 py-3"
+    >
       <h3 class="truncate text-sm font-semibold tracking-wide text-gray-800">
         {{ panelTitle }}
       </h3>

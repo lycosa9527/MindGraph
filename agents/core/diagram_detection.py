@@ -9,13 +9,82 @@ Proprietary License
 """
 
 import logging
+import re
 
+from agents.core.agent_utils import extract_json_from_response
+from agents.core.llm_spec_stream import dispatch_llm_chat
 from agents.core.utils import validate_inputs
 from prompts import get_prompt
-from services.llm import llm_service
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 
 logger = logging.getLogger(__name__)
+
+VALID_DIAGRAM_TYPES = frozenset(
+    {
+        "circle_map",
+        "bubble_map",
+        "double_bubble_map",
+        "brace_map",
+        "bridge_map",
+        "tree_map",
+        "flow_map",
+        "multi_flow_map",
+        "mind_map",
+    }
+)
+
+_TYPE_ALIASES = {
+    "mindmap": "mind_map",
+    "mind-map": "mind_map",
+    "tree-map": "tree_map",
+    "flow-map": "flow_map",
+}
+
+
+def _normalize_type_token(token: str) -> str | None:
+    cleaned = token.strip().lower().strip('"`\'.,;:')
+    if not cleaned or cleaned == "unclear":
+        return cleaned or None
+    if cleaned in VALID_DIAGRAM_TYPES:
+        return cleaned
+    return _TYPE_ALIASES.get(cleaned)
+
+
+def _extract_diagram_type_from_llm_response(raw: str) -> str | None:
+    """Parse the first valid diagram type token from an LLM classification response."""
+    cleaned = raw.strip().lower()
+    if not cleaned:
+        return None
+
+    direct = _normalize_type_token(cleaned)
+    if direct in VALID_DIAGRAM_TYPES or direct == "unclear":
+        return direct
+
+    for token in re.split(r"[\s,;]+", cleaned):
+        normalized = _normalize_type_token(token)
+        if normalized in VALID_DIAGRAM_TYPES:
+            return normalized
+
+    for dtype in sorted(VALID_DIAGRAM_TYPES, key=len, reverse=True):
+        if dtype in cleaned:
+            return dtype
+
+    if "unclear" in cleaned:
+        return "unclear"
+
+    return None
+
+
+def _default_detection_result(
+    diagram_type: str = "mind_map",
+    clarity: str = "unclear",
+    has_topic: bool = True,
+) -> dict:
+    return {
+        "diagram_type": diagram_type,
+        "clarity": clarity,
+        "has_topic": has_topic,
+    }
 
 
 async def _detect_diagram_type_from_prompt(
@@ -27,6 +96,7 @@ async def _detect_diagram_type_from_prompt(
     organization_id=None,
     request_type="diagram_generation",
     endpoint_path=None,
+    phase_emit=None,
 ) -> dict:
     """
     LLM-based diagram type detection using semantic understanding.
@@ -41,70 +111,40 @@ async def _detect_diagram_type_from_prompt(
               clarity can be 'clear', 'unclear', or 'very_unclear'
     """
     try:
-        # Validate inputs
         validate_inputs(user_prompt, language)
 
-        # Check if prompt is too vague or complex (basic heuristics before LLM)
         prompt_words = user_prompt.strip().split()
         is_too_short = len(prompt_words) < 2
         is_too_long = len(prompt_words) > 100
 
-        # Get classification prompt from centralized system
         classification_prompt = get_prompt("classification", language, "generation")
         classification_prompt = classification_prompt.format(user_prompt=user_prompt)
 
-        # Use middleware directly - clean and efficient!
-        response = await llm_service.chat(
+        response = await dispatch_llm_chat(
+            phase_emit=phase_emit,
             prompt=classification_prompt,
             model=model,
             max_tokens=50,
             temperature=0.3,
-            # Token tracking parameters
             user_id=user_id,
             organization_id=organization_id,
             request_type=request_type,
             endpoint_path=endpoint_path,
         )
+        response_text = str(response) if not isinstance(response, dict) else str(response.get("content", response))
 
-        # Extract diagram type from response
-        detected_type = response.strip().lower()
-
-        # Validate the detected type - only include working diagram types
-        # 8 thinking maps + 1 mindmap (concept_map is work in progress)
-        valid_types = {
-            "circle_map",
-            "bubble_map",
-            "double_bubble_map",
-            "brace_map",
-            "bridge_map",
-            "tree_map",
-            "flow_map",
-            "multi_flow_map",
-            "mind_map",
-        }
-
-        # Determine clarity based on LLM response and heuristics
+        detected_type = _extract_diagram_type_from_llm_response(response_text)
         clarity = "clear"
         has_topic = True
 
-        # Check if LLM explicitly returned "unclear"
-        if detected_type == "unclear":
-            clarity = "very_unclear"
-            has_topic = False
-            detected_type = "mind_map"  # Default fallback
-            logger.warning("LLM explicitly returned 'unclear' for prompt: '%s'", user_prompt)
-        elif detected_type not in valid_types:
-            # LLM returned something invalid
-            clarity = "very_unclear"
-            has_topic = False
-            detected_type = "mind_map"  # Default fallback
-            logger.warning(
-                "LLM returned invalid type '%s', prompt may be too complex: '%s'",
-                detected_type,
-                user_prompt,
+        if detected_type == "unclear" or detected_type is None:
+            clarity = "unclear"
+            detected_type = "mind_map"
+            logger.info(
+                "Classification ambiguous for prompt %r — defaulting to mind_map",
+                user_prompt[:80],
             )
         elif is_too_short or is_too_long:
-            # Prompt length is suspicious
             clarity = "unclear"
             logger.debug("Prompt length is suspicious (words: %d)", len(prompt_words))
 
@@ -115,24 +155,16 @@ async def _detect_diagram_type_from_prompt(
         }
 
         logger.debug(
-            "LLM classification: '%s' -> %s (clarity: %s)",
-            user_prompt,
+            "LLM classification: %r -> %s (clarity: %s)",
+            user_prompt[:80],
             detected_type,
             clarity,
         )
         return result
 
-    except ValueError as e:
-        logger.error("Input validation failed: %s", e)
-        return {
-            "diagram_type": "mind_map",
-            "clarity": "very_unclear",
-            "has_topic": False,
-        }
-    except LLM_PIPELINE_ERRORS as e:
-        logger.error("LLM classification failed: %s", e)
-        return {
-            "diagram_type": "mind_map",
-            "clarity": "very_unclear",
-            "has_topic": False,
-        }
+    except ValueError as exc:
+        logger.error("Input validation failed: %s", exc)
+        return _default_detection_result(clarity="very_unclear", has_topic=False)
+    except LLM_PIPELINE_ERRORS as exc:
+        logger.error("LLM classification failed: %s", exc)
+        return _default_detection_result()

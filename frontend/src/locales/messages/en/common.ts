@@ -201,13 +201,43 @@ export default {
   'settings.version.international': 'Simplified mode',
   'landing.international.subtitle': 'The Most Powerful AI Thinking Diagram Software in the Universe',
   'landing.international.promptPlaceholder':
-    'Describe your topic or structure—e.g. a 3-day Beijing trip with four branches: clothing, food, lodging, transport…',
+    'Describe a topic and diagram type—e.g. “Use a flow map for density lab steps”…',
   'landing.international.examplesTitle': 'Inspiration',
-  'landing.international.example1':
-    '3-day Beijing trip plan with four branches: clothing, food, lodging, transport',
+  'landing.international.example1': 'Create a mind map about photosynthesis',
   'landing.international.example2':
-    'SWOT analysis for a new product launch: strengths, weaknesses, opportunities, threats',
-  'landing.international.example3': 'Coffee-making steps: grind, extract, steam milk, latte art',
+    'Use a tree map to classify vertebrates: fish, amphibians, reptiles, mammals',
+  'landing.international.example3':
+    'Use a flow map for a density lab: measure mass, measure volume, calculate, record results',
+  'landing.international.example4':
+    'Use a double bubble map to compare plant cells and animal cells',
+  'landing.international.example5':
+    'Use a brace map to break down quadratic equations: standard form, discriminant, quadratic formula, graph and roots',
+  'landing.international.example6':
+    'Create a bubble map describing key ideas in Newton’s three laws of motion',
+  'landing.international.phaseRequestSent': 'Request sent',
+  'landing.international.phaseServerReceived': 'Server received your request',
+  'landing.international.phaseGenerating': 'Generating your diagram…',
+  'landing.international.phasePleaseWait': 'Please wait — AI is composing content',
+  'landing.international.generatingWithTopic':
+    'Topic: {topic}. Generating {diagramType} — please wait.',
+  'landing.international.topicUnknown': 'your topic',
+  'landing.international.diagramTypePending': 'diagram',
+  'landing.international.errorRateLimit':
+    'Too many requests. Please wait a moment and try again.',
+  'landing.international.errorTimeout':
+    'Generation timed out. Please try again.',
+  'landing.international.errorContentFilter':
+    'Content could not be processed. Please rephrase your prompt.',
+  'landing.international.errorValidation':
+    'Could not understand the prompt. Try adding a topic and diagram type.',
+  'landing.international.errorGeneration':
+    'Diagram generation failed. Please try again.',
+  'landing.international.errorInternal':
+    'Something went wrong on our side. Please try again later.',
+  'landing.international.errorStreamEmpty':
+    'Generation ended without a result. Please try again.',
+  'landing.international.phaseCompleteNavigate':
+    'Diagram generated successfully — opening canvas…',
   'landing.international.sectionTitle': 'Eight Thinking Maps',
   'landing.international.advancedDiagramsTitle': 'Advanced diagrams',
   'landing.international.modules': 'Modules',

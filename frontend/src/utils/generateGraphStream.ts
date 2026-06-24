@@ -3,7 +3,13 @@
  */
 import { eventBus } from '@/composables/core/useEventBus'
 
-export type GenerateGraphStreamPhase = 'accepted' | 'waiting' | 'streaming'
+export type GenerateGraphStreamPhase =
+  | 'accepted'
+  | 'detecting'
+  | 'requirements'
+  | 'progress'
+  | 'waiting'
+  | 'streaming'
 
 export interface GenerateGraphCompletePayload {
   success?: boolean
@@ -11,16 +17,25 @@ export interface GenerateGraphCompletePayload {
   diagram_type?: string
   language?: string
   error?: string
+  error_type?: string
+  show_guidance?: boolean
+  warning?: string
   llm_model?: string
   request_id?: string
   is_learning_sheet?: boolean
   hidden_node_percentage?: number
 }
 
+export interface GenerateGraphProgressMetadata {
+  topic?: string
+  diagram_type?: string
+}
+
 export interface GenerateGraphStreamCallbacks {
   onPhase?: (phase: GenerateGraphStreamPhase) => void
+  onProgress?: (metadata: GenerateGraphProgressMetadata) => void
   onComplete?: (payload: GenerateGraphCompletePayload) => void
-  onError?: (message: string) => void
+  onError?: (message: string, errorType?: string) => void
 }
 
 function parseSseDataLine(line: string): Record<string, unknown> | null {
@@ -35,7 +50,14 @@ function parseSseDataLine(line: string): Record<string, unknown> | null {
 }
 
 function isStreamPhase(value: unknown): value is GenerateGraphStreamPhase {
-  return value === 'accepted' || value === 'waiting' || value === 'streaming'
+  return (
+    value === 'accepted' ||
+    value === 'detecting' ||
+    value === 'requirements' ||
+    value === 'progress' ||
+    value === 'waiting' ||
+    value === 'streaming'
+  )
 }
 
 /**
@@ -83,16 +105,25 @@ export async function consumeGenerateGraphStream(
         const event = data.event
         if (isStreamPhase(event)) {
           callbacks.onPhase?.(event)
+          if (event === 'progress') {
+            callbacks.onProgress?.({
+              topic: typeof data.topic === 'string' ? data.topic : undefined,
+              diagram_type:
+                typeof data.diagram_type === 'string' ? data.diagram_type : undefined,
+            })
+          }
         } else if (event === 'complete') {
           completePayload = data as GenerateGraphCompletePayload
           callbacks.onComplete?.(completePayload)
         } else if (event === 'error') {
           const message =
             typeof data.message === 'string' ? data.message : 'Request failed'
-          if (data.error_type === 'thinking_coin_insufficient') {
+          const errorType =
+            typeof data.error_type === 'string' ? data.error_type : undefined
+          if (errorType === 'thinking_coin_insufficient') {
             eventBus.emit('thinking_coins:insufficient', {})
           }
-          callbacks.onError?.(message)
+          callbacks.onError?.(message, errorType)
         }
       }
     }

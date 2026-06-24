@@ -4,14 +4,18 @@ import { storeToRefs } from 'pinia'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
-import { useDiagramStore } from '@/stores'
+import { useDiagramStore, useSavedDiagramsStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
 import {
-  useMindMapSubgraphPreviewStore,
   type MindMapSubgraphSnapshot,
+  useMindMapSubgraphPreviewStore,
 } from '@/stores/mindMapSubgraphPreview'
 import { loadMindMapSpec } from '@/stores/specLoader/mindMap'
 import { authFetch } from '@/utils/api'
+import {
+  extractFailureFromPayload,
+  resolveGenerateGraphErrorMessage,
+} from '@/utils/generateGraphErrors'
 import {
   buildMindMapSpecFromDiagram,
   extractBranchesFromGeneratedSpec,
@@ -20,19 +24,26 @@ import {
 
 const SUBGRAPH_LLM = 'qwen'
 
-function extractApiError(detail: unknown): string | undefined {
-  if (typeof detail === 'string') return detail
-  if (Array.isArray(detail)) {
-    return detail
-      .map((d) => (typeof d === 'object' && d && 'msg' in d ? String((d as { msg?: string }).msg) : ''))
-      .filter(Boolean)
-      .join('; ')
+function formatSubgraphErrorMessage(
+  rawError: string,
+  errorType: string | undefined,
+  t: (key: string) => string
+): string {
+  const message = resolveGenerateGraphErrorMessage(
+    rawError,
+    errorType,
+    t,
+    'canvas.subgraphPreview.generationFailed'
+  )
+  if (message === t('canvas.subgraphPreview.generationFailed')) {
+    return message
   }
-  return undefined
+  return `${t('canvas.subgraphPreview.generationFailed')}：${message}`
 }
 
 export function useMindMapSubgraphSuggest() {
   const diagramStore = useDiagramStore()
+  const savedDiagramsStore = useSavedDiagramsStore()
   const authStore = useAuthStore()
   const previewStore = useMindMapSubgraphPreviewStore()
   const { isGenerating, hasPreview, anchorNodeId } = storeToRefs(previewStore)
@@ -81,6 +92,9 @@ export function useMindMapSubgraphSuggest() {
     previewStore.beginGeneration(nodeId)
 
     try {
+      // When the diagram is linked to a File Center package, sending diagram_id
+      // lets the backend scope RAG retrieval to that package's sources.
+      const diagramId = savedDiagramsStore.activeDiagramId
       const response = await authFetch('/api/generate_graph', {
         method: 'POST',
         body: JSON.stringify({
@@ -89,37 +103,34 @@ export function useMindMapSubgraphSuggest() {
           language: promptLanguage.value,
           request_type: 'autocomplete',
           llm: SUBGRAPH_LLM,
+          ...(diagramId ? { diagram_id: diagramId } : {}),
         }),
       })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: 'Request failed' }))
-        const message = extractApiError(errorData.detail) || `HTTP ${response.status}`
-        notify.error(`${t('canvas.subgraphPreview.generationFailed')}：${message}`)
+        const failure = extractFailureFromPayload(errorData)
+        const message = failure
+          ? formatSubgraphErrorMessage(failure.error, failure.errorType, t)
+          : formatSubgraphErrorMessage(`HTTP ${response.status}`, undefined, t)
+        notify.error(message)
         previewStore.finishGenerationWithoutPreview()
         return
       }
 
       const result = await response.json()
-      const specPayload = result.spec as { success?: boolean; error?: string } | undefined
-      const specLooksLikeError =
-        specPayload &&
-        typeof specPayload === 'object' &&
-        specPayload.success === false &&
-        typeof specPayload.error === 'string'
-
-      if (!result.success || !result.spec || specLooksLikeError) {
-        const nestedError = specLooksLikeError ? specPayload?.error : result.error
+      const payloadFailure = extractFailureFromPayload(result)
+      if (payloadFailure) {
         notify.error(
-          nestedError
-            ? `${t('canvas.subgraphPreview.generationFailed')}：${nestedError}`
-            : t('canvas.subgraphPreview.generationFailed')
+          formatSubgraphErrorMessage(payloadFailure.error, payloadFailure.errorType, t)
         )
         previewStore.finishGenerationWithoutPreview()
         return
       }
 
-      const generatedBranches = extractBranchesFromGeneratedSpec(result.spec as Record<string, unknown>)
+      const generatedBranches = extractBranchesFromGeneratedSpec(
+        result.spec as Record<string, unknown>
+      )
       if (generatedBranches.length === 0) {
         notify.warning(t('canvas.subgraphPreview.emptyResult'))
         previewStore.finishGenerationWithoutPreview()
@@ -183,7 +194,8 @@ export function useMindMapSubgraphSuggest() {
         previewStore.finishGenerationWithoutPreview()
         return
       }
-      const message = error instanceof Error ? error.message : t('canvas.subgraphPreview.generationFailed')
+      const message =
+        error instanceof Error ? error.message : t('canvas.subgraphPreview.generationFailed')
       notify.error(message)
       previewStore.finishGenerationWithoutPreview()
     }

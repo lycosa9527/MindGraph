@@ -24,6 +24,21 @@ from services.utils.error_types import DATABASE_ERRORS
 logger = logging.getLogger(__name__)
 
 
+def _append_document_id_clause(sql: str, params: Dict[str, Any], document_id: Any) -> str:
+    """Append a document_id filter clause, supporting a single id or a list of ids."""
+    if isinstance(document_id, (list, tuple)):
+        ids = [did for did in document_id if did is not None]
+        if not ids:
+            return sql
+        placeholders = ", ".join(f":doc_id_{i}" for i in range(len(ids)))
+        for i, did in enumerate(ids):
+            params[f"doc_id_{i}"] = did
+        return sql + f" AND dc.document_id IN ({placeholders})"
+    sql += " AND dc.document_id = :document_id"
+    params["document_id"] = document_id
+    return sql
+
+
 class KeywordSearchService:
     """
     Keyword search service using PostgreSQL full-text search.
@@ -119,13 +134,11 @@ class KeywordSearchService:
         params: Dict[str, Any] = {"user_id": user_id, "query": query}
 
         if document_id:
-            sql += " AND dc.document_id = :document_id"
-            params["document_id"] = document_id
+            sql = _append_document_id_clause(sql, params, document_id)
 
         if metadata_filter:
             if "document_id" in metadata_filter and not document_id:
-                sql += " AND dc.document_id = :document_id"
-                params["document_id"] = metadata_filter["document_id"]
+                sql = _append_document_id_clause(sql, params, metadata_filter["document_id"])
             if "document_type" in metadata_filter:
                 sql += " AND kd.file_type = :document_type"
                 params["document_type"] = metadata_filter["document_type"]
@@ -183,13 +196,11 @@ class KeywordSearchService:
             params[f"keyword{i}"] = f"%{keyword}%"
 
         if document_id:
-            sql += " AND dc.document_id = :document_id"
-            params["document_id"] = document_id
+            sql = _append_document_id_clause(sql, params, document_id)
 
         if metadata_filter:
             if "document_id" in metadata_filter and not document_id:
-                sql += " AND dc.document_id = :document_id"
-                params["document_id"] = metadata_filter["document_id"]
+                sql = _append_document_id_clause(sql, params, metadata_filter["document_id"])
             if "document_type" in metadata_filter:
                 sql += " AND kd.file_type = :document_type"
                 params["document_type"] = metadata_filter["document_type"]

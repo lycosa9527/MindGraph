@@ -1315,6 +1315,82 @@ effects: ["结果1", "结果2", "结果3", "结果4"]
 """
 # 【雅萱改动结束】
 
+TREE_MAP_FIXED_CHILDREN_EN = """You are completing a tree map where the user has ALREADY SPECIFIED the top-level category labels.
+
+CRITICAL: Category labels are FIXED — use each label verbatim as the top-level child "text". Do NOT rename, reorder, add, or remove categories.
+Expand 2-4 sub-items under each category only.
+
+Output JSON with: topic, dimension (short phrase for the classification method), children (array), alternative_dimensions (array).
+Each child: {"text": "<EXACT user label>", "children": [{"text": "..."}]}
+
+Rules:
+- Top-level child count MUST equal the number of user-specified labels
+- Use EXACT user labels as top-level "text" values
+- Sub-items may be creative but must relate to the parent category"""
+
+TREE_MAP_FIXED_CHILDREN_ZH = """你正在完成一个树形图，用户已经指定了顶层分类标签。
+
+重要：顶层分类标签已固定——每个标签必须原样作为顶层 child 的 text，不能增删、重命名或重排。
+只在每个分类下扩展 2-4 个子项。
+
+输出 JSON：topic、dimension（分类方法短语）、children 数组、alternative_dimensions 数组。
+每个 child：{"text": "<用户标签原文>", "children": [{"text": "..."}]}
+
+规则：
+- 顶层分类数量必须等于用户指定标签数量
+- 顶层 text 必须使用用户标签原文
+- 子项可创造性展开，但必须与父分类相关"""
+
+BRACE_MAP_FIXED_PARTS_EN = """You are completing a brace map where the user has ALREADY SPECIFIED the part labels.
+
+CRITICAL: Part names are FIXED — use each label verbatim as parts[].name. Do NOT rename, reorder, add, or remove parts.
+Expand 2-4 subparts under each part only.
+
+Output JSON with: whole, dimension, parts (array), alternative_dimensions (array).
+Each part: {"name": "<EXACT user label>", "subparts": [{"name": "..."}]}
+
+Rules:
+- Part count MUST equal the number of user-specified labels
+- Use EXACT user labels as parts[].name
+- Subparts may be creative but must relate to the parent part"""
+
+BRACE_MAP_FIXED_PARTS_ZH = """你正在完成一个括号图，用户已经指定了部分名称标签。
+
+重要：部分名称已固定——每个标签必须原样作为 parts[].name，不能增删、重命名或重排。
+只在每个部分下扩展 2-4 个子部分。
+
+输出 JSON：whole、dimension、parts 数组、alternative_dimensions 数组。
+每个 part：{"name": "<用户标签原文>", "subparts": [{"name": "..."}]}
+
+规则：
+- 部分数量必须等于用户指定标签数量
+- parts[].name 必须使用用户标签原文
+- 子部分可创造性展开，但必须与父部分相关"""
+
+FLOW_MAP_FIXED_STEPS_EN = """You are completing a flow map where the user has ALREADY SPECIFIED the main step labels.
+
+CRITICAL: Step labels are FIXED — use each label verbatim as steps[] strings in order. Do NOT rename, reorder, add, or remove steps.
+You may add optional substeps under each step if helpful.
+
+Output JSON with: title, steps (array of strings), optional substeps array.
+
+Rules:
+- Step count MUST equal the number of user-specified labels
+- steps[] MUST use EXACT user labels in the same order
+- Substeps are optional and must relate to their step"""
+
+FLOW_MAP_FIXED_STEPS_ZH = """你正在完成一个流程图，用户已经指定了主要步骤标签。
+
+重要：步骤标签已固定——必须按顺序原样写入 steps[]，不能增删、重命名或重排。
+如有需要，可在各步骤下添加 substeps。
+
+输出 JSON：title、steps（字符串数组）、可选 substeps。
+
+规则：
+- 步骤数量必须等于用户指定标签数量
+- steps[] 必须按顺序使用用户标签原文
+- 子步骤可选，且必须与对应步骤相关"""
+
 # ============================================================================
 # PROMPT REGISTRY
 # ============================================================================
@@ -1367,10 +1443,16 @@ THINKING_MAP_PROMPTS = {
     "tree_map_agent_fixed_dimension_zh": TREE_MAP_FIXED_DIMENSION_ZH,
     "tree_map_agent_dimension_only_en": TREE_MAP_DIMENSION_ONLY_EN,
     "tree_map_agent_dimension_only_zh": TREE_MAP_DIMENSION_ONLY_ZH,
+    "tree_map_agent_fixed_children_en": TREE_MAP_FIXED_CHILDREN_EN,
+    "tree_map_agent_fixed_children_zh": TREE_MAP_FIXED_CHILDREN_ZH,
     "flow_map_agent_generation_en": FLOW_MAP_GENERATION_EN,
     "flow_map_agent_generation_zh": FLOW_MAP_GENERATION_ZH,
+    "flow_map_agent_fixed_steps_en": FLOW_MAP_FIXED_STEPS_EN,
+    "flow_map_agent_fixed_steps_zh": FLOW_MAP_FIXED_STEPS_ZH,
     "brace_map_agent_generation_en": BRACE_MAP_GENERATION_EN,
     "brace_map_agent_generation_zh": BRACE_MAP_GENERATION_ZH,
+    "brace_map_agent_fixed_parts_en": BRACE_MAP_FIXED_PARTS_EN,
+    "brace_map_agent_fixed_parts_zh": BRACE_MAP_FIXED_PARTS_ZH,
     "brace_map_agent_fixed_dimension_en": BRACE_MAP_FIXED_DIMENSION_EN,
     "brace_map_agent_fixed_dimension_zh": BRACE_MAP_FIXED_DIMENSION_ZH,
     "brace_map_agent_dimension_only_en": BRACE_MAP_DIMENSION_ONLY_EN,

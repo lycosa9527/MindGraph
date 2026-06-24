@@ -15,9 +15,9 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Literal, Optional
 
 from agents.core.agent_utils import extract_json_from_response
+from agents.core.llm_spec_stream import dispatch_llm_chat
 from prompts import get_prompt
 from prompts.requirements_schemas import get_requirements_schema, normalize_diagram_type_for_requirements
-from services.llm import llm_service
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
@@ -322,6 +322,15 @@ def map_to_agent_params(diagram_type: str, parsed: ParsedRequirements) -> AgentR
     return params
 
 
+def _has_fixed_structure_lists(fixed_nodes: Dict[str, Any]) -> bool:
+    """True when fixed_nodes contains non-empty children/parts/steps lists."""
+    for key in ("children", "parts", "steps"):
+        value = fixed_nodes.get(key)
+        if isinstance(value, list) and value:
+            return True
+    return False
+
+
 def merge_agent_params(
     api_kwargs: Dict[str, Any],
     extracted: AgentRequirementParams,
@@ -348,7 +357,16 @@ def merge_agent_params(
         merged.structure_mode = "fixed"
 
     api_dim_pref = api_kwargs.get("dimension_preference")
-    if not merged.fixed_dimension and isinstance(api_dim_pref, str) and api_dim_pref.strip():
+    has_lists = (
+        merged.structure_mode == "fixed"
+        and _has_fixed_structure_lists(merged.fixed_nodes)
+    )
+    if (
+        not merged.fixed_dimension
+        and not has_lists
+        and isinstance(api_dim_pref, str)
+        and api_dim_pref.strip()
+    ):
         merged.fixed_dimension = api_dim_pref.strip()
 
     return merged
@@ -412,7 +430,8 @@ async def extract_prompt_requirements(
             topic_extraction_rules=topic_rules,
         )
 
-        response = await llm_service.chat(
+        response = await dispatch_llm_chat(
+            phase_emit=phase_emit,
             prompt=prompt,
             model=model,
             max_tokens=800,

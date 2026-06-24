@@ -3,6 +3,12 @@
  */
 
 export default {
+  'fileCenterLibrary.title': '资料包',
+  'fileCenterLibrary.subtitle': '按图表分组的来源集合（文件中心）。',
+  'fileCenterLibrary.openDiagram': '打开图表',
+  'fileCenterLibrary.badgeCanvas': '画布',
+  'fileCenterLibrary.badgeExtension': '扩展',
+  'fileCenterLibrary.badgeUpload': '上传',
   'chunkTest.history.confirmDeleteBody': '确定要删除这个测试记录吗？此操作不可撤销。',
   'chunkTest.history.confirmDeleteTitle': '删除测试',
   'chunkTest.history.delete': '删除',

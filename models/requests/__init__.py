@@ -38,6 +38,10 @@ from .requests_auth import (
 )
 from .requests_knowledge_space import (
     ProcessSelectedRequest,
+    PackageCreateRequest,
+    PackageUpdateRequest,
+    PackageIngestTextRequest,
+    PackageIngestWebRequest,
     RetrievalTestRequest,
     QueryFeedbackRequest,
     QueryTemplateRequest,
@@ -81,6 +85,10 @@ __all__ = [
     "PasskeyVerifyRequest",
     # Knowledge Space Requests
     "ProcessSelectedRequest",
+    "PackageCreateRequest",
+    "PackageUpdateRequest",
+    "PackageIngestTextRequest",
+    "PackageIngestWebRequest",
     "RetrievalTestRequest",
     "QueryFeedbackRequest",
     "QueryTemplateRequest",

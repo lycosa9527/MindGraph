@@ -63,6 +63,7 @@ def test_record_exception_from_celery_runs_async_persist():
         )
     assert event_id == 99
     mock_async.assert_awaited_once()
+    assert mock_async.await_args is not None
     record = mock_async.await_args[0][0]
     assert record.source == "background"
     assert record.component == "KnowledgeSpaceTask"

@@ -10,7 +10,6 @@ All Rights Reserved
 Proprietary License
 """
 
-import base64
 import logging
 import mimetypes
 import re
@@ -18,6 +17,8 @@ import zipfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from services.knowledge import document_ocr
+from services.knowledge.audio_transcription import AUDIO_EXTENSIONS, transcribe_audio_file
 from services.utils.error_types import FILE_IO_ERRORS
 
 logger = logging.getLogger(__name__)
@@ -70,26 +71,6 @@ try:
 
     _docx_document_cls = _docx_document_import
     _docx_available = True
-except ImportError:
-    pass
-
-_httpx_mod: Any = None
-_httpx_available = False
-try:
-    import httpx as _httpx_import
-
-    _httpx_mod = _httpx_import
-    _httpx_available = True
-except ImportError:
-    pass
-
-_settings_config: Any = None
-_config_available = False
-try:
-    from config.settings import config as _settings_config_import
-
-    _settings_config = _settings_config_import
-    _config_available = True
 except ImportError:
     pass
 
@@ -187,6 +168,9 @@ class DocumentProcessor:
             "application/vnd.openxmlformats-officedocument.presentationml.presentation": self._extract_pptx,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": self._extract_xlsx,
         }
+        # Audio sources are transcribed to text via DashScope recording-file ASR.
+        for audio_mime in set(AUDIO_EXTENSIONS.values()):
+            self.supported_types[audio_mime] = self._extract_audio
 
     def validate_file_content(self, file_path: str, expected_mime_type: str) -> Tuple[bool, Optional[str]]:
         """
@@ -479,44 +463,76 @@ class DocumentProcessor:
             logger.error("[DocumentProcessor] Failed to extract text from %s: %s", file_path, e)
             raise
 
+    # Below this many extracted characters per page, treat the PDF as scanned
+    # (image-only) and fall back to rasterized-page OCR.
+    MIN_PDF_CHARS_PER_PAGE = 8
+    # Bound OCR cost/latency for very large scanned PDFs.
+    MAX_PDF_OCR_PAGES = 50
+    # Rasterization DPI for scanned-page OCR (higher = sharper but slower).
+    PDF_OCR_DPI = 200
+
     def _extract_pdf(self, file_path: str) -> str:
-        """Extract text from PDF."""
+        """Extract text from PDF, falling back to OCR for scanned (image-only) PDFs."""
+        text, page_count = self._extract_pdf_text_layer(file_path)
+        if not self._pdf_text_is_sparse(text, page_count):
+            return text
+
+        logger.info(
+            "[DocumentProcessor] PDF text layer sparse (%d chars, %d pages); attempting OCR: %s",
+            len(text.strip()),
+            page_count,
+            file_path,
+        )
+        ocr_text, _ = self._ocr_pdf_pages(file_path)
+        return ocr_text if len(ocr_text.strip()) > len(text.strip()) else text
+
+    def _pdf_text_is_sparse(self, text: str, page_count: int) -> bool:
+        """True when a PDF yields too little text to be anything but scanned images."""
+        threshold = max(self.MIN_PDF_CHARS_PER_PAGE * max(page_count, 1), self.MIN_PDF_CHARS_PER_PAGE)
+        return len(text.strip()) < threshold
+
+    def _extract_pdf_text_layer(self, file_path: str) -> Tuple[str, int]:
+        """Extract the embedded text layer from a PDF; returns (text, page_count)."""
         if not _pypdf_available and (not _pdfplumber_available or _pdfplumber_mod is None):
             raise ImportError("pypdf or pdfplumber required for PDF extraction")
 
-        # Try pypdf first if available
         if _pypdf_available and _pypdf_mod is not None:
             try:
                 text_parts = []
                 with open(file_path, "rb") as file:
                     pdf_reader = _pypdf_mod.PdfReader(file)
+                    page_count = len(pdf_reader.pages)
                     for page in pdf_reader.pages:
                         text = page.extract_text()
                         if text:
                             text_parts.append(text)
-                return "\n\n".join(text_parts)
+                return "\n\n".join(text_parts), page_count
             except FILE_IO_ERRORS as e:
                 logger.warning("[DocumentProcessor] pypdf failed, trying pdfplumber: %s", e)
                 if _pdfplumber_available and _pdfplumber_mod is not None:
-                    with _pdfplumber_mod.open(file_path) as pdf:
-                        text_parts = []
-                        for page in pdf.pages:
-                            text = page.extract_text()
-                            if text:
-                                text_parts.append(text)
-                        return "\n\n".join(text_parts)
+                    return self._pdfplumber_text_layer(file_path)
                 raise
 
         if _pdfplumber_available and _pdfplumber_mod is not None:
-            with _pdfplumber_mod.open(file_path) as pdf:
-                text_parts = []
-                for page in pdf.pages:
-                    text = page.extract_text()
-                    if text:
-                        text_parts.append(text)
-                return "\n\n".join(text_parts)
+            return self._pdfplumber_text_layer(file_path)
 
         raise ImportError("pypdf or pdfplumber required for PDF extraction")
+
+    def _pdfplumber_text_layer(self, file_path: str) -> Tuple[str, int]:
+        """Extract text + page count via pdfplumber."""
+        if not _pdfplumber_available or _pdfplumber_mod is None:
+            raise ImportError("pdfplumber required for PDF extraction")
+        with _pdfplumber_mod.open(file_path) as pdf:
+            text_parts = []
+            for page in pdf.pages:
+                text = page.extract_text()
+                if text:
+                    text_parts.append(text)
+            return "\n\n".join(text_parts), len(pdf.pages)
+
+    def _ocr_pdf_pages(self, file_path: str) -> Tuple[str, List[Dict[str, Any]]]:
+        """Rasterize and OCR a scanned PDF via the shared OCR module."""
+        return document_ocr.ocr_pdf_pages(file_path, self.MAX_PDF_OCR_PAGES, self.PDF_OCR_DPI)
 
     def extract_text_with_pages(self, file_path: str, file_type: str) -> tuple[str, List[Dict[str, Any]]]:
         """
@@ -539,6 +555,7 @@ class DocumentProcessor:
                     text_parts = []
                     page_info = []
                     current_pos = 0
+                    page_total = len(pdf.pages)
                     for page_num, page in enumerate(pdf.pages, 1):
                         text = page.extract_text()
                         if text:
@@ -552,7 +569,19 @@ class DocumentProcessor:
                                     "end": current_pos,
                                 }
                             )
-                    return "\n\n".join(text_parts), page_info
+                    joined = "\n\n".join(text_parts)
+                # Scanned PDF: text layer is sparse → OCR rasterized pages.
+                if self._pdf_text_is_sparse(joined, page_total):
+                    logger.info(
+                        "[DocumentProcessor] PDF text layer sparse (%d chars, %d pages); attempting OCR: %s",
+                        len(joined.strip()),
+                        page_total,
+                        file_path,
+                    )
+                    ocr_text, ocr_pages = self._ocr_pdf_pages(file_path)
+                    if len(ocr_text.strip()) > len(joined.strip()):
+                        return ocr_text, ocr_pages
+                return joined, page_info
             except ImportError:
                 # Fallback: extract text without page info
                 text = self._extract_pdf(file_path)
@@ -595,7 +624,7 @@ class DocumentProcessor:
         # Try DashScope OCR first
         try:
             return self._extract_image_dashscope(file_path)
-        except FILE_IO_ERRORS as e:
+        except document_ocr.OCR_CALL_ERRORS as e:
             logger.warning("[DocumentProcessor] DashScope OCR failed: %s", e)
             # Fallback to pytesseract
             try:
@@ -604,76 +633,20 @@ class DocumentProcessor:
                 raise ValueError(f"OCR failed with both DashScope and Tesseract: {e2}") from e2
 
     def _extract_image_dashscope(self, file_path: str) -> str:
-        """Extract text using DashScope OCR API."""
-        if not _httpx_available or not _config_available or _httpx_mod is None or _settings_config is None:
-            raise ValueError("httpx and config required for DashScope OCR")
-
-        api_key = _settings_config.QWEN_API_KEY
-        if not api_key:
-            raise ValueError("DashScope API key required for OCR")
-
-        # Read image and encode
+        """Extract text from an image file using the DashScope vision model."""
         with open(file_path, "rb") as f:
             image_data = f.read()
-
-        image_base64 = base64.b64encode(image_data).decode("utf-8")
-
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
-
-        payload = {
-            "model": "qwen-vl-plus",
-            "input": {
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": [
-                            {"image": f"data:image/jpeg;base64,{image_base64}"},
-                            {"text": "请提取图片中的所有文字，保持原有格式。"},
-                        ],
-                    }
-                ]
-            },
-            "parameters": {},
-        }
-
-        base_url = _settings_config.DASHSCOPE_API_URL or "https://dashscope.aliyuncs.com/api/v1/"
-        ocr_url = f"{base_url}services/aigc/multimodal-generation/generation"
-
-        with _httpx_mod.Client(timeout=60.0) as client:
-            response = client.post(ocr_url, headers=headers, json=payload)
-            response.raise_for_status()
-            result = response.json()
-
-            if "output" in result and "choices" in result["output"]:
-                choices = result["output"]["choices"]
-                if choices and len(choices) > 0:
-                    content = choices[0].get("message", {}).get("content", "")
-                    # Handle case where content might be a list (multimodal response)
-                    if isinstance(content, list):
-                        # Extract text from list of content blocks
-                        text_parts = []
-                        for item in content:
-                            if isinstance(item, dict):
-                                # Content block with type and text
-                                if item.get("type") == "text":
-                                    text_parts.append(item.get("text", ""))
-                                elif "text" in item:
-                                    text_parts.append(str(item["text"]))
-                            elif isinstance(item, str):
-                                text_parts.append(item)
-                        text = "".join(text_parts)
-                    elif isinstance(content, str):
-                        text = content
-                    else:
-                        text = str(content) if content else ""
-
-                    if text and text.strip():
-                        return text.strip()
-
+        mime_type = self.get_file_type(file_path)
+        if not mime_type.startswith("image/"):
+            mime_type = "image/jpeg"
+        text = document_ocr.dashscope_vision_ocr(image_data, mime_type)
+        if text and text.strip():
+            return text.strip()
         raise ValueError("No text extracted from OCR response")
+
+    def _extract_audio(self, file_path: str) -> str:
+        """Transcribe an audio source to text via DashScope recording-file ASR."""
+        return transcribe_audio_file(file_path)
 
     def _extract_image_tesseract(self, file_path: str) -> str:
         """Extract text using pytesseract OCR."""
@@ -750,10 +723,16 @@ class DocumentProcessor:
         Returns:
             MIME type string
         """
+        ext = Path(file_path).suffix.lower()
+        # Canonicalize audio extensions first: mimetypes is inconsistent across
+        # platforms (e.g. .wav → audio/x-wav, .m4a/.opus → None) and must match
+        # the supported_types keys derived from AUDIO_EXTENSIONS.
+        if ext in AUDIO_EXTENSIONS:
+            return AUDIO_EXTENSIONS[ext]
+
         mime_type, _ = mimetypes.guess_type(file_path)
         if not mime_type:
             # Fallback based on extension
-            ext = Path(file_path).suffix.lower()
             ext_to_mime = {
                 ".pdf": "application/pdf",
                 ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",

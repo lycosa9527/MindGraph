@@ -196,14 +196,18 @@ class AlertDispatcher:
             if config.webhook_url:
                 await AlertDispatcher._send_webhook(record, rule, event_id)
                 sent_any = True
-        except (httpx.HTTPError, BACKGROUND_INFRA_ERRORS) as webhook_error:
+        except httpx.HTTPError as webhook_error:
+            logger.warning("[ErrorAlert] Webhook delivery failed: %s", webhook_error)
+        except BACKGROUND_INFRA_ERRORS as webhook_error:
             logger.warning("[ErrorAlert] Webhook delivery failed: %s", webhook_error)
 
         try:
             if config.dingtalk_webhook_url:
                 await AlertDispatcher._send_dingtalk(record, rule)
                 sent_any = True
-        except (httpx.HTTPError, BACKGROUND_INFRA_ERRORS) as dingtalk_error:
+        except httpx.HTTPError as dingtalk_error:
+            logger.warning("[ErrorAlert] DingTalk delivery failed: %s", dingtalk_error)
+        except BACKGROUND_INFRA_ERRORS as dingtalk_error:
             logger.warning("[ErrorAlert] DingTalk delivery failed: %s", dingtalk_error)
 
         if sent_any:

@@ -68,17 +68,15 @@ Based on user intent and content analysis, select the most appropriate diagram t
 9. mind_map (Mind Map) - divergent thinking, brainstorming
 
 Edge Cases and Decision Logic:
-- If user intent is unclear or ambiguous, prefer mind_map (most versatile)
+- If user intent is unclear or ambiguous, return mind_map (most versatile)
 - If multiple types could fit, choose the most specific one
 - If user mentions "chart", "graph", or "diagram" without specifics, analyze the content intent
 - If user wants to compare/contrast two things, use double_bubble_map
 - If user wants to show causes and effects, use multi_flow_map
 - If user wants to show steps or processes, use flow_map
+- If user names a diagram type explicitly (e.g. "flow map", "tree map"), honor that type
 
-IMPORTANT: Only return one of the valid diagram types listed above. If the prompt is too vague,
-too complex, or you cannot determine the user's intent, return "unclear" instead.
-
-Return only the diagram type name (e.g., bubble_map) or "unclear", no other content."""
+IMPORTANT: Return only one diagram type name from the list above (e.g. bubble_map). Never return prose or explanations."""
 
 CLASSIFICATION_ZH = """分析以下用户输入，判断用户想要创建的图表类型。
 
@@ -109,17 +107,15 @@ CLASSIFICATION_ZH = """分析以下用户输入，判断用户想要创建的图
 9. mind_map (思维导图) - 发散思维、头脑风暴
 
 边缘情况和决策逻辑：
-- 如果用户意图不明确或模糊，优先选择 mind_map（最通用）
+- 如果用户意图不明确或模糊，返回 mind_map（最通用）
 - 如果多个类型都适用，选择最具体的那个
 - 如果用户提到"图表"、"图形"或"图"但没有具体说明，分析内容意图
 - 如果用户想要对比两个事物，使用 double_bubble_map
 - 如果用户想要显示因果关系，使用 multi_flow_map
 - 如果用户想要显示步骤或流程，使用 flow_map
+- 如果用户明确说出图示类型（如"流程图"、"树形图"），必须使用该类型
 
-重要提示：只能返回上述列出的有效图表类型之一。如果提示过于模糊、过于复杂或无法确定用户意图，
-请返回"unclear"而不是猜测。
-
-请只返回图表类型的英文名称（如：bubble_map）或"unclear"，不要返回其他内容。"""
+重要提示：只返回上述类型之一的英文名称（如 bubble_map）。不要返回解释或其他文字。"""
 
 # Topic extraction prompts
 TOPIC_EXTRACTION_EN = """Extract ONLY the main topic/subject from this user input.

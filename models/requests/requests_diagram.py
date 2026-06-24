@@ -66,6 +66,10 @@ class GenerateRequest(BaseModel):
         description=("Whether to use RAG (Knowledge Space) context for enhanced diagram generation"),
     )
     rag_top_k: Optional[int] = Field(5, ge=1, le=10, description="Number of RAG context chunks to retrieve (1-10)")
+    rag_document_ids: Optional[List[int]] = Field(
+        None,
+        description="Explicit document ids to scope RAG retrieval (overrides package resolution)",
+    )
     # Bridge map specific: existing analogy pairs for auto-complete
     # (preserve user's pairs, only identify relationship)
     existing_analogies: Optional[List[Dict[str, str]]] = Field(

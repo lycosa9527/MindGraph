@@ -13,10 +13,11 @@ import traceback
 from typing import Any, Dict, List, Optional, Tuple
 
 from config.settings import config
+from llm_chunking.ingest_context import ingest_attribution
 from models.domain.knowledge_space import KnowledgeDocument
 from services.knowledge.chunking_service import ChunkingService
 from services.llm.embedding_cache import get_embedding_cache
-from services.utils.error_types import QDRANT_ERRORS
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, QDRANT_ERRORS
 from utils.dashscope_error_handler import DashScopeError
 
 logger = logging.getLogger(__name__)
@@ -101,6 +102,7 @@ async def chunk_text_with_mode(
     processing_rules: Optional[dict],
     page_info: Optional[List[Dict[str, Any]]],
     document_id: int,
+    user_id: Optional[int] = None,
 ) -> List[Any]:
     """
     Chunk text based on processing mode and rules.
@@ -112,6 +114,7 @@ async def chunk_text_with_mode(
         processing_rules: Optional processing rules
         page_info: Optional page information
         document_id: Document ID for logging
+        user_id: Owner user id, for MindChunk LLM token attribution
 
     Returns:
         List of chunks
@@ -149,7 +152,7 @@ async def chunk_text_with_mode(
     )
     if chunking_method == "mindchunk":
         logger.info(
-            "[RAG] 🧠 MindChunk enabled: LLM semantic chunking (Qwen classification model) doc_id=%s",
+            "[RAG] 🧠 MindChunk enabled: LLM semantic chunking (qwen-turbo classification model) doc_id=%s",
             document_id,
         )
 
@@ -158,6 +161,38 @@ async def chunk_text_with_mode(
         if hasattr(service, "chunk_text_async"):
             return await service.chunk_text_async(**kwargs)
         return service.chunk_text(**kwargs)
+
+    async def _chunk_with_fallback(**kwargs) -> List[Any]:
+        """Chunk via the configured engine; on MindChunk failure/empty, fall back to semchunk.
+
+        Keeps a single bad source from failing the whole package: MindChunk
+        (LLM-based) can raise or return nothing, so we retry once with semchunk.
+        """
+        result: Optional[List[Any]] = None
+        with ingest_attribution(user_id):
+            try:
+                result = await _call_chunker(chunking_service, **kwargs)
+            except BACKGROUND_INFRA_ERRORS as mindchunk_error:
+                if chunking_engine != "mindchunk":
+                    raise
+                logger.warning(
+                    "[RAG] MindChunk failed for doc_id=%s (%s); falling back to semchunk",
+                    document_id,
+                    mindchunk_error,
+                )
+        if not result and chunking_engine == "mindchunk":
+            if result is not None:
+                logger.warning(
+                    "[RAG] MindChunk returned no chunks for doc_id=%s; falling back to semchunk",
+                    document_id,
+                )
+            fallback_service = ChunkingService(
+                chunk_size=chunk_size or 500,
+                overlap=chunk_overlap or 50,
+                mode="automatic",
+            )
+            result = fallback_service.chunk_text(**kwargs)
+        return result or []
 
     # Use appropriate chunking service based on mode
     try:
@@ -182,8 +217,7 @@ async def chunk_text_with_mode(
                     "falling back to default automatic chunking for doc_id=%s",
                     document_id,
                 )
-                chunks = await _call_chunker(
-                    chunking_service,
+                chunks = await _chunk_with_fallback(
                     text=cleaned_text,
                     metadata={"document_id": document.id},
                     separator=separator,
@@ -212,8 +246,7 @@ async def chunk_text_with_mode(
                     "falling back to default automatic chunking for doc_id=%s",
                     document_id,
                 )
-                chunks = await _call_chunker(
-                    chunking_service,
+                chunks = await _chunk_with_fallback(
                     text=cleaned_text,
                     metadata={"document_id": document.id},
                     separator=separator,
@@ -247,8 +280,7 @@ async def chunk_text_with_mode(
                     chunking_engine,
                     type(chunking_service).__name__,
                 )
-                chunks = await _call_chunker(
-                    chunking_service,
+                chunks = await _chunk_with_fallback(
                     text=cleaned_text,
                     metadata={"document_id": document.id},
                     separator=separator,

@@ -11,9 +11,12 @@ Proprietary License
 
 import json
 import logging
+from contextlib import nullcontext
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
+
+from routers.api.diagram_generation import assert_collab_blocks_canvas_ai
 
 from agents.inline_recommendations import get_inline_recommendations_generator
 from models.domain.auth import User
@@ -28,6 +31,8 @@ from services.infrastructure.http.error_handler import (
     LLMServiceError,
     LLMTimeoutError,
 )
+from services.knowledge.package_rag_context import resolve_package_context_block
+from services.llm.rag_context_state import suppress_implicit_rag
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user
 from utils.chinese_language_policy import (
@@ -40,8 +45,40 @@ router = APIRouter(tags=["thinking"])
 logger = logging.getLogger(__name__)
 
 
+def _build_rag_query(req) -> str:
+    """Derive a retrieval query from the edited node, the topic, and the stage."""
+    nodes = getattr(req, "nodes", None) or []
+    node_id = getattr(req, "node_id", None)
+    current = ""
+    topic = ""
+    for node in nodes:
+        if not isinstance(node, dict):
+            continue
+        text = (node.get("text") or "").strip()
+        if node.get("id") == node_id:
+            current = text
+        if node.get("id") in ("topic", "root") and not topic:
+            topic = text
+    if not topic and nodes and isinstance(nodes[0], dict):
+        topic = (nodes[0].get("text") or "").strip()
+    stage = getattr(req, "stage", "") or ""
+    return " ".join(part for part in (topic, current, stage) if part).strip()
+
+
 async def _stream_recommendations(req, user: User | None, is_next: bool):
     """Async generator yielding SSE chunks from inline recommendations generator."""
+    diagram_id = getattr(req, "diagram_id", None)
+    try:
+        await assert_collab_blocks_canvas_ai(diagram_id, user)
+    except HTTPException as exc:
+        msg = (
+            "AI generation is unavailable during live collaboration"
+            if exc.status_code == 403
+            else str(exc.detail)
+        )
+        yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
+        return
+
     generator = get_inline_recommendations_generator()
     user_id = user.id if user and hasattr(user, "id") else None
     org_id = getattr(user, "organization_id", None) if user else None
@@ -54,36 +91,45 @@ async def _stream_recommendations(req, user: User | None, is_next: bool):
     raw_lang = (getattr(req, "language", None) or "en").strip().lower()
     text_blobs = collect_inline_recommendation_text_blobs(req)
     effective_lang = effective_language_for_thinking_user(user, raw_lang, *text_blobs)
+
+    # File Center: when the diagram links a package with indexed sources, scope
+    # retrieval to those documents and suppress whole-library RAG.
+    package_ctx = await resolve_package_context_block(
+        user_id, getattr(req, "diagram_id", None), _build_rag_query(req), effective_lang
+    )
     try:
         options = {
             "user_id": user_id,
             "organization_id": org_id,
             "endpoint_path": endpoint,
             "educational_context": getattr(req, "educational_context", None),
+            "rag_context": package_ctx.context_block or None,
         }
         models = getattr(req, "models", None)
         rec_count = 0
-        async for chunk in generator.generate_batch(
-            session_id=req.session_id,
-            diagram_type=req.diagram_type,
-            stage=req.stage,
-            nodes=req.nodes or [],
-            connections=req.connections,
-            current_node_id=req.node_id,
-            language=effective_lang,
-            count=getattr(req, "count", 15),
-            models=models,
-            options=options,
-        ):
-            chunk_count += 1
-            if chunk.get("event") == "recommendation_generated":
-                rec_count += 1
-                logger.debug(
-                    "[InlineRec] SSE yield #%d: %r",
-                    rec_count,
-                    chunk.get("text", "")[:60],
-                )
-            yield f"data: {json.dumps(chunk)}\n\n"
+        rag_guard = suppress_implicit_rag() if package_ctx.package_active else nullcontext()
+        with rag_guard:
+            async for chunk in generator.generate_batch(
+                session_id=req.session_id,
+                diagram_type=req.diagram_type,
+                stage=req.stage,
+                nodes=req.nodes or [],
+                connections=req.connections,
+                current_node_id=req.node_id,
+                language=effective_lang,
+                count=getattr(req, "count", 15),
+                models=models,
+                options=options,
+            ):
+                chunk_count += 1
+                if chunk.get("event") == "recommendation_generated":
+                    rec_count += 1
+                    logger.debug(
+                        "[InlineRec] SSE yield #%d: %r",
+                        rec_count,
+                        chunk.get("text", "")[:60],
+                    )
+                yield f"data: {json.dumps(chunk)}\n\n"
     except LLMContentFilterError as e:
         error_yielded = True
         msg = getattr(e, "user_message", None) or (

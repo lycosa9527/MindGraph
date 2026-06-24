@@ -445,6 +445,17 @@ class MindChunkAdapter(BaseChunkingService):
             )
         )
 
+    def invalidate_structure(self, document_id: Any) -> None:
+        """Drop any cached structure for a document (e.g. on reindex/replace).
+
+        Without this, re-uploading the same document id reuses a stale 7-day
+        cached structure and ignores the new content.
+        """
+        cache_manager = getattr(self.chunker, "cache_manager", None)
+        if cache_manager and hasattr(cache_manager, "delete_structure"):
+            cache_manager.delete_structure(str(document_id))
+            logger.info("[MindChunkAdapter] Invalidated structure cache for doc_id=%s", document_id)
+
     async def chunk_text_async(
         self,
         text: str,
@@ -554,6 +565,7 @@ class MindChunkAdapter(BaseChunkingService):
                 )
                 for parent_item in llm_chunks:
                     parent = cast(Any, parent_item)
+                    parent_title = (parent.metadata or {}).get("title") or (parent.text or "")[:80]
                     for child in parent.children:
                         chunk = Chunk(
                             text=child.text,
@@ -565,6 +577,9 @@ class MindChunkAdapter(BaseChunkingService):
                                 **(child.metadata or {}),
                                 "parent_text": parent.text,
                                 "parent_index": parent.chunk_index,
+                                # section_title mirrors semchunk hierarchical output so
+                                # "Chapter 5" style branch retrieval works either engine.
+                                "section_title": parent_title,
                                 "structure_type": "parent_child",
                             },
                         )

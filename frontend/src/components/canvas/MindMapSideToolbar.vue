@@ -2,7 +2,8 @@
 /**
  * Collapsible mind-map side toolbar — blue handle sits outside the card.
  */
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { ElTooltip } from 'element-plus'
 
@@ -16,16 +17,24 @@ import {
   Sparkles,
 } from '@lucide/vue'
 
+import { useLanguage } from '@/composables'
 import {
   type MindMapSideToolId,
   useMindMapSideToolbarState,
 } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
-import { useLanguage } from '@/composables'
 import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
 
 const { t } = useLanguage()
-const { activeTool, handleToolSelect, sidebarExpanded } = useMindMapSideToolbarState()
+const route = useRoute()
+const { activeTool, handleToolSelect, openTool, sidebarExpanded } = useMindMapSideToolbarState()
 const { isPickActive, isLearningSheetActive } = useLearningSheetCustomMode()
+
+// Deep link from extension / Knowledge Space: open File Center on load.
+onMounted(() => {
+  if (route.query.openFileCenter === '1' && activeTool.value === null) {
+    openTool('document_summary')
+  }
+})
 
 const isExpanded = computed(() => sidebarExpanded.value)
 
@@ -57,9 +66,7 @@ const tools = computed(
       icon: Package,
       accent: 'amber',
       active:
-        activeTool.value === 'learning_sheet' ||
-        isPickActive.value ||
-        isLearningSheetActive.value,
+        activeTool.value === 'learning_sheet' || isPickActive.value || isLearningSheetActive.value,
     },
     {
       id: 'one_sentence',
@@ -79,9 +86,7 @@ const tools = computed(
 )
 
 const toggleLabel = computed(() =>
-  isExpanded.value
-    ? t('canvas.mindMapSideToolbar.collapse')
-    : t('canvas.mindMapSideToolbar.expand')
+  isExpanded.value ? t('canvas.mindMapSideToolbar.collapse') : t('canvas.mindMapSideToolbar.expand')
 )
 
 function onToggleClick(): void {
@@ -119,10 +124,7 @@ function onToolClick(toolId: MindMapSideToolId): void {
           <button
             type="button"
             class="mind-map-side-toolbar__item"
-            :class="[
-              tool.active ? 'is-active' : '',
-              `mind-map-side-toolbar__item--${tool.accent}`,
-            ]"
+            :class="[tool.active ? 'is-active' : '', `mind-map-side-toolbar__item--${tool.accent}`]"
             :aria-pressed="tool.active ? 'true' : 'false'"
             :tabindex="isExpanded ? 0 : -1"
             @click="onToolClick(tool.id)"

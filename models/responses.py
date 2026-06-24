@@ -46,6 +46,9 @@ class GenerateResponse(BaseModel):
     is_learning_sheet: Optional[bool] = Field(False, description="Whether this is a learning sheet")
     hidden_node_percentage: Optional[float] = Field(0.0, description="Percentage of nodes hidden for learning")
     error: Optional[str] = Field(None, description="Error message if failed")
+    error_type: Optional[str] = Field(None, description="Machine-readable error category")
+    show_guidance: Optional[bool] = Field(None, description="Whether UI should show prompt guidance")
+    structure_mode: Optional[str] = Field(None, description="free or fixed structure from requirements extraction")
     warning: Optional[str] = Field(None, description="Warning message if partial recovery occurred")
     recovery_warnings: Optional[List[str]] = Field(None, description="Detailed recovery warnings")
     use_default_template: Optional[bool] = Field(
@@ -276,6 +279,8 @@ class DocumentResponse(BaseModel):
     error_message: Optional[str] = None
     processing_progress: Optional[str] = None
     processing_progress_percent: int = 0
+    chunking_engine: Optional[str] = None
+    chunking_mode: Optional[str] = None
     created_at: str
     updated_at: str
 
@@ -352,6 +357,34 @@ class BatchResponse(BaseModel):
     failed_count: int
     created_at: str
     updated_at: str
+
+
+class PackageResponse(BaseModel):
+    """Response model for a File Center package (named DocumentBatch)."""
+
+    id: int
+    name: Optional[str] = None
+    diagram_id: Optional[str] = None
+    source: Optional[str] = None
+    status: str
+    document_count: int = 0
+    completed_count: int = 0
+    created_at: str
+    updated_at: str
+
+
+class PackageListResponse(BaseModel):
+    """Response model for a list of packages."""
+
+    packages: List[PackageResponse]
+    total: int
+
+
+class PackageDetailResponse(BaseModel):
+    """Response model for a package and its sources."""
+
+    package: PackageResponse
+    documents: List[DocumentResponse]
 
 
 class VersionResponse(BaseModel):

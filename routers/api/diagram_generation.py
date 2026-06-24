@@ -19,6 +19,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
+from agents.core.generate_events import GenerateGraphEvent
+from agents.core.generate_pipeline import run_generate_pipeline
+from agents.core.utils import normalize_generate_graph_failure
 from agents.core.workflow import agent_graph_workflow_with_styles
 from models import GenerateRequest, GenerateResponse, Messages, get_request_language
 from models.domain.auth import User
@@ -55,6 +58,18 @@ async def _query_diagram_ownership(diagram_id):
         return None, None
 
 
+async def assert_collab_blocks_canvas_ai(diagram_id: Optional[str], user: Optional[User]) -> None:
+    """Block AI generation for all users when the diagram is in a live workshop session."""
+    if not diagram_id or not user:
+        return
+    workshop_code, _ = await _query_diagram_ownership(diagram_id)
+    if workshop_code and not is_superadmin(user):
+        raise HTTPException(
+            status_code=403,
+            detail="AI generation is unavailable during live collaboration",
+        )
+
+
 def _build_workflow_kwargs(req: GenerateRequest, prepared: dict[str, Any]) -> dict[str, Any]:
     """Build kwargs for agent_graph_workflow_with_styles from request + prepared context."""
     return {
@@ -79,6 +94,8 @@ def _build_workflow_kwargs(req: GenerateRequest, prepared: dict[str, Any]) -> di
         "link_direction": req.link_direction if hasattr(req, "link_direction") else None,
         "use_rag": req.use_rag if req.use_rag else False,
         "rag_top_k": req.rag_top_k if req.rag_top_k else 5,
+        "diagram_id": req.diagram_id,
+        "rag_document_ids": req.rag_document_ids,
     }
 
 
@@ -94,14 +111,7 @@ async def _prepare_generate_graph(
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("generate_graph", identifier, max_requests=100, window_seconds=60)
 
-    if req.diagram_id and current_user:
-        workshop_code, diagram_user_id = await _query_diagram_ownership(req.diagram_id)
-        if workshop_code:
-            if not is_superadmin(current_user) and diagram_user_id != current_user.id:
-                raise HTTPException(
-                    status_code=403,
-                    detail=("Only the diagram owner can use AI generation during collaboration"),
-                )
+    await assert_collab_blocks_canvas_ai(req.diagram_id, current_user)
 
     accept_language = request.headers.get("Accept-Language", "")
     lang = get_request_language(x_language, accept_language)
@@ -177,6 +187,7 @@ async def _prepare_generate_graph(
         "endpoint_path": endpoint_path,
         "req": req,
         "current_user": current_user,
+        "http_request": request,
     }
     prepared["workflow_kwargs"] = _build_workflow_kwargs(req, prepared)
     return prepared
@@ -184,6 +195,7 @@ async def _prepare_generate_graph(
 
 async def _finalize_generate_graph_result(result: dict[str, Any], prepared: dict[str, Any]) -> dict[str, Any]:
     """Post-process workflow result: logging, activity broadcast, metadata."""
+    result = normalize_generate_graph_failure(result)
     req = prepared["req"]
     prompt = prepared["prompt"]
     user_id = prepared["user_id"]
@@ -273,6 +285,8 @@ async def _stream_generate_graph_events(prepared: dict[str, Any]):
     """Async generator yielding SSE chunks for auto-complete phase UI."""
     queue: asyncio.Queue = asyncio.Queue()
     lang = prepared["lang"]
+    cancel_event = asyncio.Event()
+    http_request = prepared.get("http_request")
 
     async def phase_emit(event: str) -> None:
         payload: dict[str, Any] = {"event": event}
@@ -280,14 +294,24 @@ async def _stream_generate_graph_events(prepared: dict[str, Any]):
             payload["model"] = prepared["llm_model"]
         await queue.put(payload)
 
+    async def event_emit(event: GenerateGraphEvent) -> None:
+        payload = event.to_sse_dict()
+        if event.event == "streaming" and "model" not in payload:
+            payload["model"] = prepared["llm_model"]
+        await queue.put(payload)
+
     async def run_workflow() -> None:
         try:
-            result = await agent_graph_workflow_with_styles(
+            result = await run_generate_pipeline(
                 **prepared["workflow_kwargs"],
                 phase_emit=phase_emit,
+                event_emit=event_emit,
+                cancel_event=cancel_event,
             )
             final = await _finalize_generate_graph_result(result, prepared)
             await queue.put({"event": "complete", **final})
+        except asyncio.CancelledError:
+            logger.debug("[%s] Stream workflow cancelled", prepared["request_id"])
         except ThinkingCoinInsufficientError as coin_exc:
             await queue.put(
                 {
@@ -300,26 +324,40 @@ async def _stream_generate_graph_events(prepared: dict[str, Any]):
             )
         except LLMContentFilterError as e:
             msg = getattr(e, "user_message", None) or Messages.error("internal_error", lang)
-            await queue.put({"event": "error", "message": msg})
+            await queue.put({"event": "error", "message": msg, "error_type": "content_filter"})
         except LLMRateLimitError as e:
             msg = getattr(e, "user_message", None) or Messages.error("internal_error", lang)
-            await queue.put({"event": "error", "message": msg})
+            await queue.put({"event": "error", "message": msg, "error_type": "rate_limit"})
         except LLMTimeoutError as e:
             msg = getattr(e, "user_message", None) or Messages.error("internal_error", lang)
-            await queue.put({"event": "error", "message": msg})
+            await queue.put({"event": "error", "message": msg, "error_type": "timeout"})
         except LLMServiceError as e:
             msg = getattr(e, "user_message", None) or Messages.error("internal_error", lang)
-            await queue.put({"event": "error", "message": msg})
+            await queue.put({"event": "error", "message": msg, "error_type": "service_error"})
         except BACKGROUND_INFRA_ERRORS as e:
             logger.error("[%s] Stream generate_graph error: %s", prepared["request_id"], e, exc_info=True)
-            await queue.put({"event": "error", "message": Messages.error("internal_error", lang)})
+            await queue.put(
+                {"event": "error", "message": Messages.error("internal_error", lang), "error_type": "internal"}
+            )
         except HTTPException as exc:
-            await queue.put({"event": "error", "message": str(exc.detail)})
+            await queue.put({"event": "error", "message": str(exc.detail), "error_type": "http"})
         finally:
             await queue.put(None)
 
     await queue.put({"event": "accepted"})
     task = asyncio.create_task(run_workflow())
+
+    async def monitor_disconnect() -> None:
+        if http_request is None:
+            return
+        while not task.done():
+            if await http_request.is_disconnected():
+                cancel_event.set()
+                task.cancel()
+                return
+            await asyncio.sleep(0.25)
+
+    monitor_task = asyncio.create_task(monitor_disconnect())
     try:
         while True:
             item = await queue.get()
@@ -327,12 +365,18 @@ async def _stream_generate_graph_events(prepared: dict[str, Any]):
                 break
             yield f"data: {json.dumps(item, default=str)}\n\n"
     finally:
+        monitor_task.cancel()
         if not task.done():
+            cancel_event.set()
             task.cancel()
             try:
                 await task
             except asyncio.CancelledError:
                 pass
+        try:
+            await monitor_task
+        except asyncio.CancelledError:
+            pass
 
 
 @router.post("/generate_graph", response_model=GenerateResponse)
@@ -376,9 +420,10 @@ async def generate_graph_stream(
     current_user: Optional[User] = Depends(get_current_user_or_api_key),
 ):
     """
-    SSE stream for auto-complete: phase events (accepted/waiting/streaming) + final complete payload.
+    SSE stream: phase events (accepted/waiting/streaming) + final complete payload.
 
-    JSON ``POST /api/generate_graph`` is unchanged for landing, subgraph, and other callers.
+    Used by canvas auto-complete and landing prompt generation.
+    JSON ``POST /api/generate_graph`` remains for callers that do not need streaming.
     """
     try:
         prepared = await _prepare_generate_graph(
@@ -388,11 +433,6 @@ async def generate_graph_stream(
             x_language,
             endpoint_path="/api/generate_graph/stream",
         )
-        if prepared["request_type"] != "autocomplete":
-            raise HTTPException(
-                status_code=400,
-                detail="Stream endpoint supports autocomplete requests only",
-            )
         return StreamingResponse(
             _stream_generate_graph_events(prepared),
             media_type="text/event-stream",

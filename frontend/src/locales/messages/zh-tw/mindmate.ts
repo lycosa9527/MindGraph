@@ -8,6 +8,7 @@ export default {
   'aiModel.enableAi': '啟用AI',
   'aiModel.inlineRecTooltip': '編輯節點後按Tab獲取AI推薦',
   'aiModel.label': 'AI模型',
+  'aiModel.cancelGeneration': '取消生成',
   'aiModel.readyCount': '{count}個就緒',
   'aiModel.relationshipsBadge': '關係',
   'aiModel.relationshipsTooltip': '拖拽概念連線即可生成關係',

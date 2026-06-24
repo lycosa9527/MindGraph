@@ -26,6 +26,11 @@ class KnowledgeConfigMixin:
             """Type stub: method provided by BaseConfig."""
             raise NotImplementedError
 
+        @property
+        def server_url(self) -> str:
+            """Type stub: property provided by BaseConfig."""
+            raise NotImplementedError
+
     @property
     def QDRANT_COLLECTION_PREFIX(self) -> str:
         """Qdrant collection name prefix"""
@@ -137,6 +142,40 @@ class KnowledgeConfigMixin:
         return self._get_cached_value("DASHSCOPE_MULTIMODAL_MODEL", "tongyi-embedding-vision-plus")
 
     @property
+    def DASHSCOPE_VISION_MODEL(self) -> str:
+        """DashScope multimodal model for image OCR / understanding (document ingestion).
+
+        Native vision-language model used by the document processor to read image
+        sources and OCR rasterized scanned-PDF pages. Defaults to ``qwen3.6-flash``;
+        override with ``DASHSCOPE_VISION_MODEL`` (e.g. ``qwen3.6-plus``).
+        """
+        return self._get_cached_value("DASHSCOPE_VISION_MODEL", "qwen3.6-flash")
+
+    @property
+    def DASHSCOPE_ASR_FILETRANS_MODEL(self) -> str:
+        """DashScope async recording-file transcription model for audio sources.
+
+        Used for batch (submit/poll) transcription of uploaded audio files up to
+        ~12h. Defaults to ``fun-asr``; override with ``DASHSCOPE_ASR_FILETRANS_MODEL``
+        (e.g. ``qwen3-asr-flash-filetrans``).
+        """
+        return self._get_cached_value("DASHSCOPE_ASR_FILETRANS_MODEL", "fun-asr")
+
+    @property
+    def KNOWLEDGE_AUDIO_PUBLIC_BASE(self) -> str:
+        """Public base URL DashScope uses to fetch hosted audio for transcription.
+
+        The async ASR API only accepts publicly reachable URLs. When the server
+        sits behind a reverse proxy / HTTPS, set ``KNOWLEDGE_AUDIO_PUBLIC_BASE``
+        (e.g. ``https://app.example.com``); otherwise the server's external URL
+        (``EXTERNAL_HOST`` + port) is used. Must be reachable from Alibaba Cloud.
+        """
+        override = self._get_cached_value("KNOWLEDGE_AUDIO_PUBLIC_BASE", "")
+        if isinstance(override, str) and override.strip():
+            return override.strip().rstrip("/")
+        return self.server_url.rstrip("/")
+
+    @property
     def RERANK_SCORE_THRESHOLD(self) -> float:
         """Minimum score threshold for reranked results"""
         return float(self._get_cached_value("RERANK_SCORE_THRESHOLD", "0.5"))
@@ -180,3 +219,8 @@ class KnowledgeConfigMixin:
     def KNOWLEDGE_STORAGE_DIR(self) -> str:
         """Directory for storing knowledge documents"""
         return self._get_cached_value("KNOWLEDGE_STORAGE_DIR", "./storage/knowledge_documents")
+
+    @property
+    def FILE_CENTER_WIKI_COMPILE(self) -> bool:
+        """Compile a per-package wiki (markdown on disk) after chunk indexing (v2a, opt-in)."""
+        return self._get_cached_value("FILE_CENTER_WIKI_COMPILE", "false").lower() == "true"

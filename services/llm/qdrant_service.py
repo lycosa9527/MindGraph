@@ -38,12 +38,20 @@ def _append_metadata_filter_conditions(
     """Append Qdrant FieldConditions derived from metadata_filter."""
     for key, value in metadata_filter.items():
         if key == "document_id":
-            filter_conditions.append(
-                rest.FieldCondition(
-                    key="document_id",
-                    match=rest.MatchValue(value=str(value)),
+            if isinstance(value, (list, tuple)):
+                filter_conditions.append(
+                    rest.FieldCondition(
+                        key="document_id",
+                        match=rest.MatchAny(any=[str(v) for v in value]),
+                    )
                 )
-            )
+            else:
+                filter_conditions.append(
+                    rest.FieldCondition(
+                        key="document_id",
+                        match=rest.MatchValue(value=str(value)),
+                    )
+                )
         elif key == "document_type":
             filter_conditions.append(
                 rest.FieldCondition(

@@ -12,6 +12,7 @@ Proprietary License
 import logging
 from typing import Any, Dict, List, Optional
 
+from services.llm.rag_context_state import is_implicit_rag_suppressed
 from services.llm.rag_service import get_rag_service
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.db.session_open import user_rls_session
@@ -109,6 +110,11 @@ class LLMMessageBuilder:
             Modified messages list with RAG context injected
         """
         if not use_knowledge_base or not user_id or not query:
+            return messages
+
+        # The diagram workflow may have already injected package-scoped context;
+        # skip implicit whole-library RAG to avoid a double-dip / scope leak.
+        if is_implicit_rag_suppressed():
             return messages
 
         try:
@@ -209,6 +215,9 @@ class LLMMessageBuilder:
             Enhanced prompt string with RAG context (if enabled)
         """
         if not use_knowledge_base or not user_id or not prompt:
+            return prompt
+
+        if is_implicit_rag_suppressed():
             return prompt
 
         try:

@@ -50,7 +50,7 @@ const props = withDefaults(
 )
 
 const { t } = useLanguage()
-const { switchToModel } = useAutoComplete()
+const { switchToModel, cancelGeneration } = useAutoComplete()
 const diagramStore = useDiagramStore()
 const llmResultsStore = useLLMResultsStore()
 const inlineRecStore = useInlineRecommendationsStore()
@@ -536,6 +536,16 @@ function getButtonStyle(modelKey: string) {
           {{ t('aiModel.readyCount', { count: llmResultsStore.successCount }) }}
         </span>
       </div>
+
+      <button
+        v-if="!isConceptMap && llmResultsStore.isGenerating"
+        type="button"
+        class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+        :aria-label="t('aiModel.cancelGeneration')"
+        @click="cancelGeneration"
+      >
+        <X class="h-3.5 w-3.5" />
+      </button>
     </div>
   </div>
 </template>

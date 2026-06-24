@@ -13,6 +13,7 @@ from sqlalchemy import func, select, update
 from config.db_sessions import open_async_session
 from models.domain.error_event import ErrorEvent, ErrorGroup
 from routers.auth.dependencies import require_settings_errors
+from services.utils.typing_helpers import result_rowcount
 from services.monitoring.alert_dispatcher import AlertDispatcher
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth.admin_scope import AdminScope
@@ -336,7 +337,7 @@ async def mute_error_group(
                 update(ErrorGroup).where(ErrorGroup.id == group_id).values(muted=body.muted)
             )
             await session.commit()
-        if result.rowcount == 0:
+        if result_rowcount(result) == 0:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Error group not found")
         logger.info("Admin %s set group %s muted=%s", scope.actor.phone, group_id, body.muted)
         return {"group_id": group_id, "muted": body.muted}

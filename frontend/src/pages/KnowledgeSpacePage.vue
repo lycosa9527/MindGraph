@@ -15,6 +15,7 @@ import ChunkPreviewModal from '@/components/knowledge-space/ChunkPreviewModal.vu
 import DocumentTable from '@/components/knowledge-space/DocumentTable.vue'
 import DocumentUpload from '@/components/knowledge-space/DocumentUpload.vue'
 import KnowledgeSpaceHeader from '@/components/knowledge-space/KnowledgeSpaceHeader.vue'
+import KnowledgeSpacePackageGroups from '@/components/knowledge-space/KnowledgeSpacePackageGroups.vue'
 import KnowledgeSpaceSettings from '@/components/knowledge-space/KnowledgeSpaceSettings.vue'
 import ProcessingProgressBar from '@/components/knowledge-space/ProcessingProgressBar.vue'
 import RetrievalTest from '@/components/knowledge-space/RetrievalTest.vue'
@@ -140,7 +141,8 @@ const handleProcessSelected = () => {
     <ProcessingProgressBar :documents="documents" />
 
     <!-- Document Table -->
-    <div class="flex-1 overflow-hidden p-6">
+    <div class="flex-1 overflow-y-auto p-6">
+      <KnowledgeSpacePackageGroups />
       <DocumentTable
         :documents="documents"
         :loading="loading"

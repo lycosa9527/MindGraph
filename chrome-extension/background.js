@@ -606,6 +606,131 @@ async function runGenerateMindmap(tabId, options) {
   }
 }
 
+/**
+ * Read stored credentials and resolve the API origin.
+ * @returns {Promise<{ baseUrl: string, account: string, token: string } | null>}
+ */
+async function getApiCredentials() {
+  const settings = await chrome.storage.local.get(["baseUrl", "account", "token"]);
+  const baseUrl = normalizeBaseUrl(settings.baseUrl || MindGraphShared.DEFAULT_MINDGRAPH_BASE_URL);
+  const account = (settings.account || "").trim();
+  const token = (settings.token || "").trim();
+  if (!baseUrl || !account || !token) {
+    return null;
+  }
+  return { baseUrl, account, token };
+}
+
+/**
+ * @param {{ account: string, token: string }} creds
+ * @returns {Record<string, string>}
+ */
+function buildAuthHeaders(creds) {
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${creds.token}`,
+    "X-MG-Account": creds.account,
+    "X-MG-Client": "chrome-extension",
+    "X-Request-Id": newRequestId(),
+  };
+}
+
+/**
+ * List the user's File Center packages for the popup picker.
+ * @returns {Promise<{ ok: true, packages: Array<object> } | { ok: false, error: string }>}
+ */
+async function fetchPackages() {
+  const creds = await getApiCredentials();
+  if (!creds) {
+    return { ok: false, error: chrome.i18n.getMessage("errSettingsIncomplete") };
+  }
+  const url = `${creds.baseUrl}/api/knowledge-space/packages`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      signal: controller.signal,
+      headers: buildAuthHeaders(creds),
+    });
+    clearTimeout(timeoutId);
+    if (!res.ok) {
+      const detail = await MindGraphShared.parseErrorDetailFromResponse(res);
+      return { ok: false, error: chrome.i18n.getMessage("errApi", [String(res.status), detail]) };
+    }
+    const data = await res.json();
+    return { ok: true, packages: Array.isArray(data.packages) ? data.packages : [] };
+  } catch (e) {
+    clearTimeout(timeoutId);
+    return { ok: false, error: e?.message || String(e) };
+  }
+}
+
+/**
+ * Capture the active tab's content and ingest it into a File Center package.
+ * @param {number} tabId
+ * @param {number} packageId
+ * @returns {Promise<{ ok: true, document: object } | { ok: false, error: string }>}
+ */
+async function runSaveToFileCenter(tabId, packageId) {
+  const creds = await getApiCredentials();
+  if (!creds) {
+    return { ok: false, error: chrome.i18n.getMessage("errSettingsIncomplete") };
+  }
+
+  const tab = await chrome.tabs.get(tabId);
+  if (MindGraphShared.isRestrictedTabUrl(tab.url)) {
+    return { ok: false, error: chrome.i18n.getMessage("errRestrictedPage") };
+  }
+
+  const resolvedLang = await getResolvedLanguageForCapture();
+  let results;
+  try {
+    results = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: capturePageContent,
+      args: [MAX_CHARS, PROMPT_OUTPUT_LANGUAGE_CODES, resolvedLang],
+    });
+  } catch (scriptErr) {
+    return { ok: false, error: scriptErr?.message || String(scriptErr) };
+  }
+
+  const payload = results?.[0]?.result;
+  if (!payload || typeof payload.page_content !== "string" || !payload.page_content.trim()) {
+    return { ok: false, error: chrome.i18n.getMessage("errNoPageText") };
+  }
+
+  const url = `${creds.baseUrl}/api/knowledge-space/packages/${packageId}/documents/ingest-web`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      signal: controller.signal,
+      headers: buildAuthHeaders(creds),
+      body: JSON.stringify({
+        page_content: payload.page_content,
+        page_url: payload.page_url,
+        page_title: payload.page_title,
+        language: payload.language,
+      }),
+    });
+    clearTimeout(timeoutId);
+    if (!res.ok) {
+      const detail = await MindGraphShared.parseErrorDetailFromResponse(res);
+      return { ok: false, error: chrome.i18n.getMessage("errApi", [String(res.status), detail]) };
+    }
+    const document = await res.json();
+    return { ok: true, document };
+  } catch (e) {
+    clearTimeout(timeoutId);
+    if (e && e.name === "AbortError") {
+      return { ok: false, error: chrome.i18n.getMessage("errFetchTimeout") };
+    }
+    return { ok: false, error: e?.message || String(e) };
+  }
+}
+
 function ensureContextMenu() {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
@@ -632,6 +757,14 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         /* sendResponse may throw if channel already closed */
       }
     }, 0);
+    return true;
+  }
+  if (msg && msg.type === "LIST_PACKAGES") {
+    fetchPackages().then(sendResponse);
+    return true;
+  }
+  if (msg && msg.type === "SAVE_TO_FILE_CENTER" && typeof msg.tabId === "number") {
+    runSaveToFileCenter(msg.tabId, msg.packageId).then(sendResponse);
     return true;
   }
   return false;

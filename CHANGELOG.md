@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Mind map v2 canvas (opt-in)** — New side-toolbar chrome, File Center (knowledge packages with package-scoped RAG), subgraph preview bar, and orthogonal edges when users select the new canvas in Language settings; classic canvas remains the default.
+- **File Center API** — Knowledge packages CRUD, source ingest (file, text, web), and wiki endpoints under `/api/knowledge-space/packages`; Alembic migration `rev_0070` adds package fields.
+- **Landing generate_graph SSE** — Stream now emits `detecting`, `requirements`, and `progress` (with resolved topic and diagram type) in addition to `accepted`, `waiting`, and `streaming`.
+- **Generate pipeline** — Typed event contract (`GenerateGraphEvent`) and `run_generate_pipeline` entry point with cooperative cancellation when the client disconnects.
+- **Canvas autocomplete** — Cancel control on the 3-LLM model selector while generation is in flight.
+
+### Changed
+
+- **Classic mind map default** — `mindMapCanvasMode` defaults to `legacy`; v2 layout and orthogonal edges apply only when explicitly opted in.
+- **Collab AI policy** — `generate_graph` and inline recommendations return 403 for all users (except superadmin) when the diagram is in a live workshop session.
+
+### Fixed
+
+- **Fixed-structure templates (tree/brace/flow)** — Fixed label lists (`children`, `parts`, `steps`) are enforced even when a dimension or dimension preference is also present; structure kwargs are passed on every agent route.
+- **Landing error UX** — Validation and generation failures include `error_type` and optional `show_guidance`; stream HTTP 5xx responses no longer fall through to a duplicate JSON retry.
+- **File Center** — Web ingest requires page content; RAG UI and auto-expand require a saved diagram linked to the package.
+
 ## [5.119.0] - 2026-06-21
 
 > **Thinking coins (思维币) — trial-teacher wallet, earn tasks, AI spend metering, and admin economy tab; PostgreSQL-only database stack.**

@@ -84,6 +84,26 @@ def test_list_present_forces_fixed_even_when_llm_says_free() -> None:
     assert parsed.fixed_nodes["children"] == ["衣", "食", "住", "行"]
 
 
+def test_merge_agent_params_skips_dimension_pref_when_fixed_lists_present() -> None:
+    extracted = map_to_agent_params(
+        "tree_map",
+        parse_requirements_for_type(
+            "tree_map",
+            {
+                "topic": "动物",
+                "structure_mode": "fixed",
+                "children": ["鱼类", "哺乳类"],
+                "dimension": "栖息地",
+            },
+            "",
+        ),
+    )
+    merged = merge_agent_params({"dimension_preference": "分类方式"}, extracted)
+    assert merged.fixed_dimension is None
+    assert merged.structure_mode == "fixed"
+    assert merged.fixed_nodes["children"] == ["鱼类", "哺乳类"]
+
+
 def test_merge_agent_params_api_fixed_dimension_wins() -> None:
     extracted = map_to_agent_params(
         "tree_map",

@@ -443,6 +443,17 @@ class DocumentBatch(Base):
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
+    # File Center: a batch doubles as a named "package" of sources scoped to one diagram.
+    # Legacy batches (anonymous bulk uploads) leave these NULL.
+    name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    diagram_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("diagrams.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    source: Mapped[str | None] = mapped_column(String(32), nullable=True)
+
     status: Mapped[str] = mapped_column(
         Enum("pending", "processing", "completed", "failed", name="batch_status"),
         default="pending",

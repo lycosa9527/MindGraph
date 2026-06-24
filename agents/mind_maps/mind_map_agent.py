@@ -14,6 +14,7 @@ from typing import Dict, List, Optional, Tuple, Any
 import logging
 
 from agents.core.base_agent import BaseAgent
+from agents.core.agent_result import agent_validation_failure
 from agents.core.agent_utils import extract_json_from_response
 from agents.core.llm_spec_stream import dispatch_llm_chat
 from config.settings import Config
@@ -100,7 +101,7 @@ class MindMapAgent(BaseAgent):
                     )
                 else:
                     error_msg = f"Generated invalid specification: {validation_msg}"
-                return {"success": False, "error": error_msg}
+                return agent_validation_failure(error_msg)
 
             enhanced_spec = await self.enhance_spec(spec)
 

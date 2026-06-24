@@ -24,7 +24,7 @@ async def test_workflow_extracts_requirements_and_passes_structure_mode() -> Non
 
     async def fake_generate(*args: Any, **kwargs: Any) -> dict[str, Any]:
         captured.update(kwargs)
-        return {"topic": "北京三日游计划", "children": [{"text": "衣", "children": []}]}
+        return {"spec": {"topic": "北京三日游计划", "children": [{"text": "衣", "children": []}]}}
 
     with patch(
         "agents.core.workflow.extract_prompt_requirements",
@@ -62,7 +62,7 @@ async def test_workflow_requirements_phase_emitted_when_streaming() -> None:
     )
 
     async def fake_generate(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
-        return {"topic": "光合作用", "children": [{"text": "光", "children": []}]}
+        return {"spec": {"topic": "光合作用", "children": [{"text": "光", "children": []}]}}
 
     async def fake_extract(*_args: Any, **kwargs: Any) -> ParsedRequirements:
         emit = kwargs.get("phase_emit")

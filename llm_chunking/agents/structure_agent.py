@@ -8,15 +8,15 @@ All Rights Reserved
 Proprietary License
 """
 
-from services.utils.error_types import JSON_PARSE_ERRORS
-
-from typing import Dict, Any, Optional, List
 import json
 import logging
 import traceback
+from typing import Any, Dict, List, Optional
 
+from llm_chunking.ingest_context import ingest_chat_kwargs
 from llm_chunking.models import DocumentStructure
 from llm_chunking.patterns.toc_detector import TOCDetector
+from services.utils.error_types import JSON_PARSE_ERRORS
 
 try:
     from services.llm import llm_service as default_llm_service
@@ -181,7 +181,9 @@ Return JSON:
 """
 
         try:
-            response = await self.llm_service.chat(prompt=prompt, model="qwen", temperature=0.3, max_tokens=500)
+            response = await self.llm_service.chat(
+                prompt=prompt, temperature=0.3, max_tokens=500, **ingest_chat_kwargs()
+            )
 
             # Parse JSON response
             # Try to extract JSON from response

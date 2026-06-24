@@ -20,9 +20,16 @@ Proprietary License
 """
 
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
+from agents.core.agent_result import agent_validation_failure
 from agents.core.agent_utils import extract_json_from_response
+from agents.core.fixed_structure import (
+    append_fixed_labels_user_note,
+    fixed_labels_from_nodes,
+    node_display_text,
+    validate_fixed_labels,
+)
 from agents.core.llm_spec_stream import dispatch_llm_chat, llm_dispatch_kwargs
 from agents.core.base_agent import BaseAgent
 from agents.thinking_maps.tree_map_helpers import (
@@ -63,6 +70,13 @@ class TreeMapAgent(BaseAgent):
             "endpoint_path": kwargs.get("endpoint_path"),
             "phase_emit": kwargs.get("phase_emit"),
         }
+        structure_mode = kwargs.get("structure_mode", "free")
+        fixed_nodes = kwargs.get("fixed_nodes") or {}
+        fixed_category_labels = (
+            fixed_labels_from_nodes(fixed_nodes, "children")
+            if structure_mode == "fixed"
+            else None
+        )
         try:
             # Three-scenario system (similar to bridge_map):
             # Scenario 1: Topic only → standard generation
@@ -86,6 +100,8 @@ class TreeMapAgent(BaseAgent):
                     language,
                     dimension_preference,
                     fixed_dimension=fixed_dimension,
+                    structure_mode=structure_mode,
+                    fixed_nodes=fixed_nodes,
                     **llm_kwargs,
                 )
             if not spec:
@@ -95,13 +111,15 @@ class TreeMapAgent(BaseAgent):
                 }
 
             # Validate the generated spec
-            is_valid, validation_msg = self.validate_output(spec)
+            is_valid, validation_msg = self.validate_output(
+                spec,
+                fixed_category_labels=fixed_category_labels,
+            )
             if not is_valid:
                 logger.warning("TreeMapAgent: Validation failed: %s", validation_msg)
-                return {
-                    "success": False,
-                    "error": f"Generated invalid specification: {validation_msg}",
-                }
+                return agent_validation_failure(
+                    f"Generated invalid specification: {validation_msg}"
+                )
 
             # Enhance the spec with layout and dimensions
             enhanced_result = await self.enhance_spec(spec)
@@ -129,11 +147,62 @@ class TreeMapAgent(BaseAgent):
         language: str,
         dimension_preference: Optional[str],
         fixed_dimension: Optional[str],
+        structure_mode: str = "free",
+        fixed_nodes: Optional[Dict[str, Any]] = None,
     ) -> Optional[Tuple[str, str]]:
         """Build (system_prompt, user_prompt) or None if generation prompt missing."""
-        if fixed_dimension:
+        fixed_nodes = fixed_nodes or {}
+        fixed_children = (
+            structure_mode == "fixed"
+            and fixed_labels_from_nodes(fixed_nodes, "children")
+        )
+        if fixed_dimension and not fixed_children:
             return self._build_fixed_dim_prompts(prompt, language, fixed_dimension)
+        if fixed_children:
+            return self._build_fixed_children_prompts(
+                prompt,
+                language,
+                fixed_nodes,
+                dimension_preference,
+            )
         return self._build_standard_prompts(prompt, language, dimension_preference)
+
+    def _build_fixed_children_prompts(
+        self,
+        prompt: str,
+        language: str,
+        fixed_nodes: Dict[str, Any],
+        dimension_preference: Optional[str],
+    ) -> Tuple[str, str]:
+        """Build prompts when user specified exact top-level category labels."""
+        labels = fixed_labels_from_nodes(fixed_nodes, "children") or []
+        logger.debug("TreeMapAgent: Using FIXED children mode with %s labels", len(labels))
+        system_prompt = get_prompt("tree_map_agent", language, "fixed_children")
+        if not system_prompt:
+            logger.warning("TreeMapAgent: No fixed_children prompt found, using generation fallback")
+            system_prompt = get_prompt("tree_map_agent", language, "generation") or ""
+        if system_prompt:
+            system_prompt = system_prompt.format(topic=prompt)
+        base_user = (
+            f"请为以下描述创建一个树形图：{prompt}"
+            if is_chinese_prompt_shell_language(language)
+            else f"Please create a tree map for the following description: {prompt}"
+        )
+        user_prompt = append_fixed_labels_user_note(
+            base_user,
+            language,
+            zh_intro="用户指定的顶层分类（必须原样使用）：",
+            en_intro="User-specified top-level categories (use EXACT labels): ",
+            labels=labels,
+        )
+        dimension = fixed_nodes.get("dimension") or dimension_preference
+        if isinstance(dimension, str) and dimension.strip():
+            dim_text = dimension.strip()
+            if is_chinese_prompt_shell_language(language):
+                user_prompt = f"{user_prompt}\n\n分类维度：{dim_text}"
+            else:
+                user_prompt = f"{user_prompt}\n\nClassification dimension: {dim_text}"
+        return system_prompt, user_prompt
 
     def _build_fixed_dim_prompts(self, prompt: str, language: str, fixed_dimension: str) -> Tuple[str, str]:
         """Build prompts for fixed-dimension mode."""
@@ -234,7 +303,15 @@ class TreeMapAgent(BaseAgent):
             "make reasonable assumptions and generate the JSON specification directly."
         )
         retry_response = await dispatch_llm_chat(
-            **llm_dispatch_kwargs(llm_kwargs, prompt=retry_prompt, model=self.model, system_message=system_prompt, max_tokens=1000, temperature=config.LLM_TEMPERATURE, diagram_type="tree_map"),
+            **llm_dispatch_kwargs(
+                llm_kwargs,
+                prompt=retry_prompt,
+                model=self.model,
+                system_message=system_prompt,
+                max_tokens=1000,
+                temperature=config.LLM_TEMPERATURE,
+                diagram_type="tree_map",
+            ),
         )
         if isinstance(retry_response, dict):
             return retry_response
@@ -250,11 +327,20 @@ class TreeMapAgent(BaseAgent):
         language: str,
         dimension_preference: Optional[str] = None,
         fixed_dimension: Optional[str] = None,
+        structure_mode: str = "free",
+        fixed_nodes: Optional[Dict[str, Any]] = None,
         **llm_kwargs: Any,
     ) -> Optional[Dict]:
         """Generate the tree map specification using LLM."""
         try:
-            prompts_result = self._build_tree_map_prompts(prompt, language, dimension_preference, fixed_dimension)
+            prompts_result = self._build_tree_map_prompts(
+                prompt,
+                language,
+                dimension_preference,
+                fixed_dimension,
+                structure_mode=structure_mode,
+                fixed_nodes=fixed_nodes,
+            )
             if not prompts_result:
                 return None
             system_prompt, user_prompt = prompts_result
@@ -349,7 +435,8 @@ class TreeMapAgent(BaseAgent):
                     diagram_type="tree_map",
                 ),
             )
-            response_preview = response_str[:500] + "..." if response and len(response_str) > 500 else response_str
+            response_str = str(response) if response else ""
+            response_preview = response_str[:500] + "..." if len(response_str) > 500 else response_str
             logger.debug("LLM response: %s", response_preview)
 
             # Extract JSON from response
@@ -412,11 +499,32 @@ class TreeMapAgent(BaseAgent):
                 return msg
         return None
 
-    def validate_output(self, output: Dict[str, Any]) -> Tuple[bool, str]:
+    def validate_output(
+        self,
+        output: Dict[str, Any],
+        fixed_category_labels: Optional[List[str]] = None,
+    ) -> Tuple[bool, str]:
         """Validate a tree map specification."""
         try:
             err = self._get_validation_error(output)
-            return (True, "Valid tree map specification") if err is None else (False, err)
+            if err is not None:
+                return False, err
+            if fixed_category_labels:
+                expected = [
+                    str(label).strip()
+                    for label in fixed_category_labels
+                    if str(label).strip()
+                ]
+                children = output.get("children", [])
+                actual = [
+                    node_display_text(child)
+                    for child in children
+                    if isinstance(child, dict)
+                ]
+                ok, msg = validate_fixed_labels(actual, expected, "categories")
+                if not ok:
+                    return False, msg
+            return True, "Valid tree map specification"
         except LLM_PIPELINE_ERRORS as e:
             return False, f"Validation error: {str(e)}"
 

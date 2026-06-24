@@ -16,8 +16,15 @@ from prompts import get_prompt
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
+from ..core.agent_result import agent_validation_failure
 from ..core.agent_utils import extract_json_from_response
 from ..core.base_agent import BaseAgent
+from ..core.fixed_structure import (
+    append_fixed_labels_user_note,
+    extract_part_names,
+    fixed_labels_from_nodes,
+    validate_fixed_labels,
+)
 from .brace_map_helpers import (
     CollisionDetector,
     ContextAwareAlgorithmSelector,
@@ -81,6 +88,13 @@ class BraceMapAgent(BaseAgent):
         request_type = kwargs.get("request_type", "diagram_generation")
         endpoint_path = kwargs.get("endpoint_path")
         phase_emit = kwargs.get("phase_emit")
+        structure_mode = kwargs.get("structure_mode", "free")
+        fixed_nodes = kwargs.get("fixed_nodes") or {}
+        fixed_part_labels = (
+            fixed_labels_from_nodes(fixed_nodes, "parts")
+            if structure_mode == "fixed"
+            else None
+        )
         try:
             # Three-scenario system (similar to bridge_map):
             # Scenario 1: Topic only 鈫?standard generation
@@ -112,6 +126,8 @@ class BraceMapAgent(BaseAgent):
                     request_type=request_type,
                     endpoint_path=endpoint_path,
                     fixed_dimension=fixed_dimension,
+                    structure_mode=structure_mode,
+                    fixed_nodes=fixed_nodes,
                     phase_emit=phase_emit,
                 )
             if not spec:
@@ -121,13 +137,15 @@ class BraceMapAgent(BaseAgent):
                 }
 
             # Validate the generated spec
-            is_valid, validation_msg = self.validate_output(spec)
+            is_valid, validation_msg = self.validate_output(
+                spec,
+                fixed_part_labels=fixed_part_labels,
+            )
             if not is_valid:
                 logger.warning("BraceMapAgent: Validation failed: %s", validation_msg)
-                return {
-                    "success": False,
-                    "error": f"Generated invalid specification: {validation_msg}",
-                }
+                return agent_validation_failure(
+                    f"Generated invalid specification: {validation_msg}"
+                )
 
             # Enhance the spec with layout and dimensions
             enhanced_result = await self.enhance_spec(spec)
@@ -159,12 +177,19 @@ class BraceMapAgent(BaseAgent):
         endpoint_path: Optional[str] = None,
         # Fixed dimension: user has already specified this, do NOT change it
         fixed_dimension: Optional[str] = None,
+        structure_mode: str = "free",
+        fixed_nodes: Optional[Dict[str, Any]] = None,
         phase_emit=None,
     ) -> Optional[Dict]:
         """Generate the brace map specification using LLM."""
+        fixed_nodes = fixed_nodes or {}
+        fixed_parts = (
+            structure_mode == "fixed"
+            and fixed_labels_from_nodes(fixed_nodes, "parts")
+        )
         try:
-            # Choose prompt based on whether user has specified a fixed dimension
-            if fixed_dimension:
+            # Choose prompt based on fixed parts, fixed dimension, or standard generation
+            if fixed_dimension and not fixed_parts:
                 logger.debug(
                     "BraceMapAgent: Using FIXED dimension mode with '%s'",
                     fixed_dimension,
@@ -208,6 +233,36 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                         f"Topic: {prompt}\n\nGenerate a brace map using the "
                         f'EXACT decomposition dimension "{fixed_dimension}".'
                     )
+            elif fixed_parts:
+                logger.debug(
+                    "BraceMapAgent: Using FIXED parts mode with %s labels",
+                    len(fixed_parts),
+                )
+                system_prompt = get_prompt("brace_map_agent", language, "fixed_parts")
+                if not system_prompt:
+                    logger.warning("BraceMapAgent: No fixed_parts prompt found, using generation fallback")
+                    system_prompt = get_prompt("brace_map_agent", language, "generation") or ""
+                if system_prompt:
+                    system_prompt = system_prompt.format(topic=prompt)
+                base_user = (
+                    f"请为以下描述创建一个括号图：{prompt}"
+                    if is_chinese_prompt_shell_language(language)
+                    else f"Please create a brace map for the following description: {prompt}"
+                )
+                user_prompt = append_fixed_labels_user_note(
+                    base_user,
+                    language,
+                    zh_intro="用户指定的部分名称（必须原样使用）：",
+                    en_intro="User-specified part names (use EXACT labels): ",
+                    labels=fixed_parts,
+                )
+                dimension = fixed_nodes.get("dimension") or dimension_preference
+                if isinstance(dimension, str) and dimension.strip():
+                    dim_text = dimension.strip()
+                    if is_chinese_prompt_shell_language(language):
+                        user_prompt = f"{user_prompt}\n\n拆解维度：{dim_text}"
+                    else:
+                        user_prompt = f"{user_prompt}\n\nDecomposition dimension: {dim_text}"
             else:
                 # No fixed dimension - use standard generation prompt
                 system_prompt = get_prompt("brace_map_agent", language, "generation")
@@ -505,7 +560,11 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
             logger.error("BraceMapAgent: Error in dimension-only mode: %s", e)
             return None
 
-    def validate_output(self, output: Dict) -> Tuple[bool, str]:
+    def validate_output(
+        self,
+        output: Dict,
+        fixed_part_labels: Optional[List[str]] = None,
+    ) -> Tuple[bool, str]:
         """Validate a brace map specification."""
         try:
             if not output or not isinstance(output, dict):
@@ -519,6 +578,18 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
 
             if not output["parts"]:
                 return False, "Must have at least one part"
+
+            if fixed_part_labels:
+                normalized = self._normalize_field_names(output)
+                expected = [
+                    str(label).strip()
+                    for label in fixed_part_labels
+                    if str(label).strip()
+                ]
+                actual = extract_part_names(normalized.get("parts"))
+                ok, msg = validate_fixed_labels(actual, expected, "parts")
+                if not ok:
+                    return False, msg
 
             return True, "Valid brace map specification"
         except LLM_PIPELINE_ERRORS as e:

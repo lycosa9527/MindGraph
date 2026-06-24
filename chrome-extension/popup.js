@@ -500,6 +500,80 @@ async function startPopup() {
     });
   }
 
+  const fileCenterSection = document.getElementById("file-center-section");
+  const fieldPackage = document.getElementById("field-package");
+  const btnSaveFileCenter = document.getElementById("btn-save-file-center");
+
+  /**
+   * Populate the package picker from the backend. Hides the section when no
+   * package exists or credentials are missing.
+   * @returns {Promise<void>}
+   */
+  async function loadPackages() {
+    if (!fileCenterSection || !fieldPackage || !btnSaveFileCenter) {
+      return;
+    }
+    const response = await new Promise((resolve) => {
+      chrome.runtime.sendMessage({ type: "LIST_PACKAGES" }, (res) => {
+        void chrome.runtime.lastError;
+        resolve(res || { ok: false, error: "no_response" });
+      });
+    });
+    if (!response.ok || !Array.isArray(response.packages) || response.packages.length === 0) {
+      fileCenterSection.hidden = true;
+      return;
+    }
+    fieldPackage.textContent = "";
+    response.packages.forEach((pkg) => {
+      const opt = document.createElement("option");
+      opt.value = String(pkg.id);
+      opt.textContent = pkg.name || t("fileCenterUntitled");
+      fieldPackage.appendChild(opt);
+    });
+    fileCenterSection.hidden = false;
+  }
+
+  void loadPackages();
+
+  if (btnSaveFileCenter && fieldPackage) {
+    btnSaveFileCenter.addEventListener("click", () => {
+      void (async () => {
+        const packageId = parseInt(fieldPackage.value, 10);
+        if (!Number.isFinite(packageId)) {
+          return;
+        }
+        setStatus(statusEl, t("statusWorking"), "loading");
+        btnSaveFileCenter.disabled = true;
+        try {
+          const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+          if (!tab?.id) {
+            setStatus(statusEl, t("errNoTab"), "err");
+            return;
+          }
+          const response = await new Promise((resolve) => {
+            chrome.runtime.sendMessage(
+              { type: "SAVE_TO_FILE_CENTER", tabId: tab.id, packageId },
+              (res) => {
+                void chrome.runtime.lastError;
+                resolve(res || { ok: false, error: t("errFailed") });
+              },
+            );
+          });
+          if (response.ok) {
+            setStatus(statusEl, t("statusSavedToFileCenter"), "ok");
+          } else {
+            console.error("[MindGraph] save to file center failed", response.error);
+            setStatus(statusEl, response.error || t("errFailed"), "err");
+          }
+        } catch (e) {
+          setStatus(statusEl, e?.message || String(e), "err");
+        } finally {
+          btnSaveFileCenter.disabled = false;
+        }
+      })();
+    });
+  }
+
   btnGenerate.addEventListener("click", () => {
     void (async () => {
       setStatus(statusEl, "", "");

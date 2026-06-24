@@ -44,6 +44,7 @@ from models import (
     Messages,
     get_request_language,
 )
+from models.domain.messages import Language
 from models.domain.auth import User
 from prompts import get_prompt
 from services.llm import llm_service
@@ -96,7 +97,7 @@ def _resolve_prompt_to_diagram_payload(
     result: Any,
     *,
     endpoint_label: str,
-    lang: str,
+    lang: Language,
 ) -> Tuple[dict, str]:
     """Normalize LLM JSON and return (spec, diagram_type) or raise HTTPException."""
     if isinstance(result, dict) and result.get("_error") == "non_json_response":

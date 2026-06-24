@@ -19,7 +19,14 @@ Proprietary License
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
+from agents.core.agent_result import agent_validation_failure
 from agents.core.agent_utils import extract_json_from_response
+from agents.core.fixed_structure import (
+    append_fixed_labels_user_note,
+    extract_part_names,
+    fixed_labels_from_nodes,
+    validate_fixed_labels,
+)
 from agents.core.llm_spec_stream import dispatch_llm_chat
 from agents.core.base_agent import BaseAgent
 from config.settings import config
@@ -56,10 +63,19 @@ class FlowMapAgent(BaseAgent):
             "endpoint_path": kwargs.get("endpoint_path"),
             "phase_emit": kwargs.get("phase_emit"),
         }
+        structure_mode = kwargs.get("structure_mode", "free")
+        fixed_nodes = kwargs.get("fixed_nodes") or {}
+        fixed_step_labels = (
+            fixed_labels_from_nodes(fixed_nodes, "steps")
+            if structure_mode == "fixed"
+            else None
+        )
         try:
             spec = await self._generate_flow_map_spec(
                 user_prompt,
                 language,
+                structure_mode=structure_mode,
+                fixed_nodes=fixed_nodes,
                 user_id=token_kwargs["user_id"],
                 organization_id=token_kwargs["organization_id"],
                 request_type=token_kwargs["request_type"],
@@ -73,13 +89,15 @@ class FlowMapAgent(BaseAgent):
                 }
 
             # Validate the generated spec
-            is_valid, validation_msg = self.validate_output(spec)
+            is_valid, validation_msg = self.validate_output(
+                spec,
+                fixed_step_labels=fixed_step_labels,
+            )
             if not is_valid:
                 logger.warning("FlowMapAgent: Validation failed: %s", validation_msg)
-                return {
-                    "success": False,
-                    "error": f"Generated invalid specification: {validation_msg}",
-                }
+                return agent_validation_failure(
+                    f"Generated invalid specification: {validation_msg}"
+                )
 
             # Enhance the spec with layout and dimensions
             enhanced_result = await self.enhance_spec(spec)
@@ -105,6 +123,8 @@ class FlowMapAgent(BaseAgent):
         self,
         prompt: str,
         language: str,
+        structure_mode: str = "free",
+        fixed_nodes: Optional[Dict[str, Any]] = None,
         # Token tracking parameters
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
@@ -113,20 +133,39 @@ class FlowMapAgent(BaseAgent):
         phase_emit=None,
     ) -> Optional[Dict]:
         """Generate the flow map specification using LLM."""
+        fixed_nodes = fixed_nodes or {}
+        fixed_steps = (
+            structure_mode == "fixed"
+            and fixed_labels_from_nodes(fixed_nodes, "steps")
+        )
         try:
-            # Get prompt from centralized system - use agent-specific format
-            system_prompt = get_prompt("flow_map_agent", language, "generation")
+            prompt_type = "fixed_steps" if fixed_steps else "generation"
+            system_prompt = get_prompt("flow_map_agent", language, prompt_type)
 
             if not system_prompt:
-                logger.error("FlowMapAgent: No prompt found for language %s", language)
+                logger.error("FlowMapAgent: No prompt found for language %s type %s", language, prompt_type)
                 return None
             system_prompt = system_prompt.format(topic=prompt)
 
-            user_prompt = (
+            base_user = (
                 f"请为以下描述创建一个流程图：{prompt}"
                 if is_chinese_prompt_shell_language(language)
                 else f"Please create a flow map for the following description: {prompt}"
             )
+            if fixed_steps:
+                logger.debug(
+                    "FlowMapAgent: Using FIXED steps mode with %s labels",
+                    len(fixed_steps),
+                )
+                user_prompt = append_fixed_labels_user_note(
+                    base_user,
+                    language,
+                    zh_intro="用户指定的步骤（必须原样按顺序使用）：",
+                    en_intro="User-specified steps (use EXACT labels in order): ",
+                    labels=fixed_steps,
+                )
+            else:
+                user_prompt = base_user
 
             # Call middleware directly - clean and efficient!
             response = await dispatch_llm_chat(
@@ -221,7 +260,11 @@ class FlowMapAgent(BaseAgent):
             logger.error("FlowMapAgent: Error in spec generation: %s", e)
             return None
 
-    def validate_output(self, output: Dict[str, Any]) -> Tuple[bool, str]:
+    def validate_output(
+        self,
+        output: Dict[str, Any],
+        fixed_step_labels: Optional[List[str]] = None,
+    ) -> Tuple[bool, str]:
         """Validate a flow map specification."""
         try:
             if not isinstance(output, dict):
@@ -235,6 +278,17 @@ class FlowMapAgent(BaseAgent):
                 return False, "Missing or invalid title/topic"
             if not steps or not isinstance(steps, list):
                 return False, "Missing or invalid steps"
+
+            if fixed_step_labels:
+                expected = [
+                    str(label).strip()
+                    for label in fixed_step_labels
+                    if str(label).strip()
+                ]
+                actual = extract_part_names(steps)
+                ok, msg = validate_fixed_labels(actual, expected, "steps")
+                if not ok:
+                    return False, msg
 
             return True, "Valid flow map specification"
         except LLM_PIPELINE_ERRORS as e:
