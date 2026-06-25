@@ -7,8 +7,6 @@ import shutil
 import zipfile
 from pathlib import Path
 
-import pytest
-
 import main as _main_app
 
 assert _main_app.app.title
@@ -83,7 +81,7 @@ def test_resolve_dump_store_prefers_library(tmp_path: Path) -> None:
     assert summary["per_label"]["dify"] == "library"
 
 
-def test_import_zip_updates_library(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_import_zip_updates_library(tmp_path: Path) -> None:
     """Zip import merges into library automatically."""
     manifest = json.loads((FIXTURE_MINIMAL / "manifest.json").read_text(encoding="utf-8"))
     incoming = tmp_path / "incoming"

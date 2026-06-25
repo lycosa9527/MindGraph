@@ -7,6 +7,8 @@
 #   2. pip install -r requirements.txt
 #   3. playwright install chromium  # Install Playwright browser binaries
 #   4. Copy .env.example to .env and configure settings
+#   5. DingTalk MindBot QR account bind: sudo apt-get install -y libzbar0
+#      (Ubuntu 24.04+ may resolve libzbar0 → libzbar0t64; either is fine)
 #
 # PRODUCTION DEPLOYMENT NOTES:
 #   - Review and configure all environment variables in .env
@@ -14,6 +16,7 @@
 #   - Configure database URL for your environment
 #   - Set DEBUG=False for production
 #   - Optional: Configure Sentry DSN for error tracking
+#   - DingTalk MindBot QR bind: apt install libzbar0 + pip Pillow/pyzbar (see IMAGE PROCESSING)
 #
 # LAST UPDATED: 2026-06-02 - PyPI sweep (latest stable floors; pydantic <3; qdrant 1.18.x)
 
@@ -73,10 +76,10 @@ anyio>=4.13.0
 # BROWSER AUTOMATION & IMAGE PROCESSING
 # ============================================================================
 playwright>=1.60.0
-Pillow>=12.2.0  # Image processing (also used for OCR in Personal Knowledge Space)
+Pillow>=12.2.0  # Image I/O; required by pyzbar bind decode, qrcode generation, OCR, avatars
 PyMuPDF>=1.27.2  # PDF rendering for library cover extraction (fitz module)
-qrcode[pil]>=8.2  # QR code generation (requires Pillow)
-pyzbar>=0.1.9  # QR decode for DingTalk bind (requires system libzbar0)
+qrcode[pil]>=8.2  # Bind QR generation on web (requires Pillow)
+pyzbar>=0.1.9  # Bind QR decode in MindBot — requires system libzbar0: apt install libzbar0
 
 # ============================================================================
 # SYSTEM MONITORING & UTILITIES

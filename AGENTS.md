@@ -102,7 +102,7 @@ Starting `python main.py` requires secrets and services configured in the Cursor
 | `REDIS_URL` | Sessions, collab, cache |
 | `DATABASE_URL` | PostgreSQL |
 | `QDRANT_HOST` | Knowledge Space RAG |
-| `USER_DAILY_TOKEN_CAP` | Per-user daily LLM token limit (default `1000000`; `0` disables) |
+| `USER_DAILY_TOKEN_CAP` | Per-user daily LLM token limit (default `5000000`; `0` disables) |
 
 Default port: **9527**. Alembic migrations run on startup.
 

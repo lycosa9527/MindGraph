@@ -22,6 +22,7 @@ FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "dify_raw_dump" / "
 
 
 def test_peek_manifest_from_zip(tmp_path: Path) -> None:
+    """peek_manifest_from_zip reads manifest metadata from a zip archive."""
     manifest = json.loads((FIXTURE_DIR / "manifest.json").read_text(encoding="utf-8"))
     zip_path = tmp_path / "dify-dump_dify_test.zip"
     with zipfile.ZipFile(zip_path, "w") as archive:

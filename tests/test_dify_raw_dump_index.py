@@ -15,12 +15,14 @@ FIXTURE_ROOT = Path(__file__).resolve().parent / "fixtures" / "dify_raw_dump" / 
 
 
 def test_dump_index_maps_token_to_app_id() -> None:
+    """DumpIndex maps API token to app id."""
     snapshot = snapshot_from_dir(FIXTURE_ROOT)
     index = DumpIndex(snapshot)
     assert index.token_to_app_id()["tok1"] == "app1"
 
 
 def test_dump_index_lists_conversations_for_user() -> None:
+    """DumpIndex lists conversations filtered by user and app ids."""
     snapshot = snapshot_from_dir(FIXTURE_ROOT)
     index = DumpIndex(snapshot)
     convs = index.list_conversations_for_user("mg_user_1", {"app1"})
@@ -29,6 +31,7 @@ def test_dump_index_lists_conversations_for_user() -> None:
 
 
 def test_dump_index_fetches_messages_with_files_and_feedback() -> None:
+    """DumpIndex loads messages with attached files and feedback."""
     snapshot = snapshot_from_dir(FIXTURE_ROOT)
     index = DumpIndex(snapshot)
     messages = index.fetch_messages_for_conversation("c1")
@@ -41,6 +44,7 @@ def test_dump_index_fetches_messages_with_files_and_feedback() -> None:
 
 
 def test_multi_server_store_loads_fixture_when_pointed() -> None:
+    """MultiServerDumpStore loads per-slot index from fixture tree."""
     base = FIXTURE_ROOT.parent.parent
     store = MultiServerDumpStore.load(base)
     index = store.index_for_slot(1)

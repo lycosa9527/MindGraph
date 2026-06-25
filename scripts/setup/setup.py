@@ -280,6 +280,7 @@ CORE_DEPENDENCIES = {
     # Browser automation and image processing
     "playwright": "playwright",
     "PIL": "Pillow",
+    "pyzbar": "pyzbar",
     # Database and authentication
     "sqlalchemy": "SQLAlchemy",
     "alembic": "alembic",
@@ -2005,6 +2006,10 @@ def copy_playwright_chromium_to_offline(project_root: str) -> bool:
 
 def _dependency_import_statement(module_name: str) -> str:
     """Return the import target used to verify a dependency."""
+    if module_name == "PIL":
+        return "PIL.Image"
+    if module_name == "pyzbar":
+        return "pyzbar.pyzbar"
     if module_name == "Crypto":
         return "Crypto.Cipher"
     if module_name == "jose":
@@ -2096,8 +2101,13 @@ def verify_dependencies(project_root: str) -> bool:
 
             # Handle special cases for packages with different import names
             if module_name == "PIL":
-                importlib.import_module("PIL")
+                pil_image_mod = importlib.import_module("PIL.Image")
+                if not callable(getattr(pil_image_mod, "open", None)):
+                    raise ImportError("PIL.Image.open unavailable")
                 version = get_package_version("Pillow")
+            elif module_name == "pyzbar":
+                importlib.import_module("pyzbar.pyzbar")
+                version = get_package_version("pyzbar")
             elif module_name == "multipart":
                 importlib.import_module("multipart")
                 version = get_package_version("python-multipart")

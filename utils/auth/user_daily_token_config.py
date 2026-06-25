@@ -7,7 +7,7 @@ import os
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_USER_DAILY_TOKEN_CAP = 1_000_000
+DEFAULT_USER_DAILY_TOKEN_CAP = 5_000_000
 
 
 def daily_token_cap() -> int:

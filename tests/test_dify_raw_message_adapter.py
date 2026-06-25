@@ -10,6 +10,7 @@ from services.dify.export.raw_message_adapter import row_to_api_message
 
 
 def test_row_to_api_message_maps_fields() -> None:
+    """Dump row dict is mapped to API message shape with files and feedback."""
     row = {
         "id": "m1",
         "conversation_id": "c1",

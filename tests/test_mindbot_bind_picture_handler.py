@@ -96,6 +96,39 @@ async def test_openapi_disabled_returns_bind_unavailable() -> None:
 
 
 @pytest.mark.asyncio
+async def test_pyzbar_not_ready_returns_bind_unavailable() -> None:
+    """Missing pyzbar/Pillow stack must reply BIND_UNAVAILABLE, not fall through to Dify."""
+    record_usage = AsyncMock()
+    hdr_for_code = MagicMock(return_value={})
+
+    with (
+        patch(
+            "services.mindbot.bind.picture_handler.pyzbar_backend_ready",
+            return_value=False,
+        ),
+        patch(
+            "services.mindbot.bind.picture_handler.send_full_reply",
+            new_callable=AsyncMock,
+            return_value=(True, False),
+        ),
+    ):
+        result = await try_handle_bind_picture(
+            cfg=_cfg(),
+            body=_picture_body(),
+            inbound_msg_type="picture",
+            sender_staff_id="staff42",
+            session_webhook_valid="https://example.com/hook",
+            session_webhook_pinned_ip="",
+            pipeline_ctx="test",
+            record_usage=record_usage,
+            hdr_for_code=hdr_for_code,
+        )
+
+    assert result is not None
+    assert _record_usage_outcome(record_usage) == MindbotErrorCode.BIND_UNAVAILABLE
+
+
+@pytest.mark.asyncio
 async def test_non_bind_picture_passthrough() -> None:
     """Regular pictures without bind QR continue the MindBot pipeline."""
     with (

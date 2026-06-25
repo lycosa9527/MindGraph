@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Per-user daily token cap** — Default `USER_DAILY_TOKEN_CAP` raised from **1,000,000** to **5,000,000** tokens per Beijing calendar day.
 - **MindMate export data source** — Search, sync download, and background jobs read the merged **library** per server label (falls back to latest snapshot only when no library exists).
 - **Library staleness** — Merged libraries are never marked stale; age limits apply to raw snapshot archives only.
 

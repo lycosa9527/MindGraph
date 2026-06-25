@@ -20,6 +20,7 @@ FIXTURE_BASE = Path(__file__).resolve().parent / "fixtures" / "dify_raw_dump"
 
 @pytest.mark.asyncio
 async def test_router_uses_dump_for_conversations() -> None:
+    """Router serves conversations from dump when a snapshot is available."""
     store = MultiServerDumpStore.load(FIXTURE_BASE)
     router = ExportSourceRouter(store)
     endpoint = ExportDifyEndpoint(
@@ -47,6 +48,7 @@ async def test_router_uses_dump_for_conversations() -> None:
 
 @pytest.mark.asyncio
 async def test_router_skips_when_dump_missing_for_slot() -> None:
+    """Router returns empty items when dump snapshot is missing for the slot."""
     router = ExportSourceRouter(MultiServerDumpStore.load(FIXTURE_BASE))
     endpoint = ExportDifyEndpoint(
         organization_id=1,

@@ -231,6 +231,7 @@ def test_update_notifications_preserve_pk_skips_conflicts(
 
 
 def test_backfill_org_from_user_sets_org_when_missing() -> None:
+    """backfill_org_from_user copies org from cache when organization_id is missing."""
     values = {"user_id": 5, "organization_id": None}
     config = {"backfill_org_from_user": True}
     cache = {5: 99}
@@ -239,6 +240,7 @@ def test_backfill_org_from_user_sets_org_when_missing() -> None:
 
 
 def test_backfill_org_from_user_leaves_existing_org() -> None:
+    """backfill_org_from_user does not overwrite an existing organization_id."""
     values = {"user_id": 5, "organization_id": 12}
     config = {"backfill_org_from_user": True}
     _backfill_org_from_user(values, config, {5: 99})
