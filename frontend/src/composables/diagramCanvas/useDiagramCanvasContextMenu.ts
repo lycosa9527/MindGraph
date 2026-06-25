@@ -17,7 +17,7 @@ export function useDiagramCanvasContextMenu(options: {
   vueFlowWrapper: Ref<HTMLElement | null>
   getNodes: () => Array<{ id: string }>
   screenToFlowCoordinate: (pos: { x: number; y: number }) => { x: number; y: number }
-  presentationRailOpen: Ref<boolean>
+  presentationDiagramEditLocked: Ref<boolean>
   emitPaneClick: () => void
   diagramStore: DiagramCanvasContextMenuStore
   t: (key: string) => string
@@ -27,7 +27,7 @@ export function useDiagramCanvasContextMenu(options: {
     vueFlowWrapper,
     getNodes,
     screenToFlowCoordinate,
-    presentationRailOpen,
+    presentationDiagramEditLocked,
     emitPaneClick,
     diagramStore,
     t,
@@ -143,7 +143,7 @@ export function useDiagramCanvasContextMenu(options: {
 
   function handleContextMenuEvent(event: Event): void {
     event.preventDefault()
-    if (presentationRailOpen.value) {
+    if (presentationDiagramEditLocked.value) {
       return
     }
     applyContextMenuFromEvent(event as MouseEvent)

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * LearningSheetOverlay - Draws dashed line and answer chips below diagram (半成品图示 mode)
- * Same style as bridge map alternative dimensions: dashed line, then blue chips
+ * LearningSheetOverlay — dashed separator and answer chips below diagram.
+ * Show/hide is controlled from the learning-sheet side panel.
  */
 import { computed } from 'vue'
 
@@ -32,7 +32,14 @@ const blankedAnswers = computed(() => {
   return answers
 })
 
-const isLearningSheet = computed(() => blankedAnswers.value.length > 0)
+const showReferenceAnswers = computed(() => diagramStore.learningSheetShowAnswers)
+
+const isLearningSheet = computed(
+  () =>
+    diagramStore.isLearningSheet &&
+    blankedAnswers.value.length > 0 &&
+    showReferenceAnswers.value
+)
 
 interface NodeWithDimensions {
   position?: { x: number; y: number }
@@ -126,7 +133,6 @@ const answerChips = computed(() => {
     style="z-index: 100"
   >
     <g :transform="`translate(${viewport.x}, ${viewport.y}) scale(${viewport.zoom})`">
-      <!-- Dashed separator line below diagram -->
       <line
         :x1="separatorLine.x1"
         :y1="separatorLine.y1"
@@ -139,7 +145,6 @@ const answerChips = computed(() => {
         stroke-linecap="round"
       />
 
-      <!-- Answers label + chips (same style as bridge map alternative dimensions) -->
       <g v-if="answerSectionPosition">
         <text
           :x="answerSectionPosition.centerX"

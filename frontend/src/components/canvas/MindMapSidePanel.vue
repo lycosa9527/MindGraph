@@ -4,13 +4,13 @@
  */
 import { computed } from 'vue'
 
-import { Hammer, Package, Shuffle, X } from '@lucide/vue'
+import { Hammer, RotateCcw, Shuffle, X } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { type MindMapSideToolId } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
 
-import FileCenterPanel from './FileCenterPanel.vue'
+import MindMapDocumentSummaryPanel from './MindMapDocumentSummaryPanel.vue'
 import MindMapOneSentencePanel from './MindMapOneSentencePanel.vue'
 import MindMapWaterfallPanel from './MindMapWaterfallPanel.vue'
 import SidebarOutline from './SidebarOutline.vue'
@@ -24,8 +24,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
+
 const {
-  blankCount,
   isPickActive,
   isLearningSheetActive,
   activatePick,
@@ -81,7 +81,7 @@ function handleExitLearningSheet(): void {
     @close="handleClose"
   />
 
-  <FileCenterPanel
+  <MindMapDocumentSummaryPanel
     v-else-if="tool === 'document_summary'"
     @close="handleClose"
   />
@@ -115,19 +115,6 @@ function handleExitLearningSheet(): void {
       v-if="tool === 'learning_sheet'"
       class="flex min-h-0 flex-1 flex-col overflow-y-auto"
     >
-      <div
-        v-if="isLearningSheetActive || isPickActive"
-        class="mx-4 mt-4 rounded-xl border border-amber-200/80 bg-amber-50/90 px-3 py-2.5"
-      >
-        <p class="text-xs font-semibold text-amber-900">
-          {{
-            isPickActive
-              ? t('canvas.mindMapSideToolbar.learningSheetPickActiveInPanel')
-              : t('canvas.mindMapSideToolbar.learningSheetActiveStatus', { count: blankCount })
-          }}
-        </p>
-      </div>
-
       <div class="flex flex-col gap-3 px-4 py-5">
         <p class="text-xs leading-relaxed text-gray-500">
           {{ t('canvas.mindMapSideToolbar.learningSheetIntro') }}
@@ -179,14 +166,14 @@ function handleExitLearningSheet(): void {
         <button
           v-if="isLearningSheetActive"
           type="button"
-          class="mt-1 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50"
+          class="learning-sheet-restore-btn mt-1 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors"
           @click="handleExitLearningSheet"
         >
-          <Package
-            class="h-4 w-4 text-slate-400"
-            :stroke-width="2"
+          <RotateCcw
+            class="h-4 w-4"
+            :stroke-width="2.25"
           />
-          {{ t('canvas.mindMapSideToolbar.exitLearningSheet') }}
+          {{ t('canvas.mindMapSideToolbar.restoreFullDiagram') }}
         </button>
       </div>
     </div>
@@ -253,5 +240,14 @@ function handleExitLearningSheet(): void {
   border-color: rgb(59 130 246);
   background: rgb(239 246 255);
   box-shadow: 0 0 0 1px rgb(59 130 246 / 0.25);
+}
+
+.learning-sheet-restore-btn {
+  background: linear-gradient(180deg, rgb(245 158 11) 0%, rgb(217 119 6) 100%);
+  border: 1px solid rgb(180 83 9 / 0.35);
+}
+
+.learning-sheet-restore-btn:hover {
+  background: linear-gradient(180deg, rgb(251 191 36) 0%, rgb(245 158 11) 100%);
 }
 </style>

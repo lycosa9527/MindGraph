@@ -10,6 +10,7 @@
 import { nextTick, ref, watch } from 'vue'
 
 import { eventBus } from '../core/useEventBus'
+import { resolveInlineNodeTextForSave } from '@/utils/nodeEditableText'
 
 export interface InlineEditOptions {
   /** Initial text value */
@@ -82,18 +83,16 @@ export function useInlineEdit(options: InlineEditOptions = {}) {
   function saveEdit(): void {
     if (!isEditing.value) return
 
-    const trimmedText = editText.value.trim()
+    const resolved = resolveInlineNodeTextForSave(editText.value, minLength, maxLength)
 
-    // Validate text length
-    if (trimmedText.length < minLength) {
+    if (resolved === null) {
       // Revert to original if too short
       editText.value = originalText.value
       cancelEdit()
       return
     }
 
-    // Truncate if too long
-    const finalText = trimmedText.slice(0, maxLength)
+    const finalText = resolved
     editText.value = finalText
 
     isEditing.value = false

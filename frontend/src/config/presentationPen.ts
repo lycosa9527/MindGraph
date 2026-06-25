@@ -32,14 +32,17 @@ export const PRESENTATION_BOARD_COLORS = [
   },
 ] as const
 
+/** Subset shown on the presentation rail (red / blue / green). */
+export const PRESENTATION_BOARD_COLORS_TOOLBAR = PRESENTATION_BOARD_COLORS.slice(0, 3)
+
 export type PresentationBoardColorId = (typeof PRESENTATION_BOARD_COLORS)[number]['id']
 
 export type PresentationBoardThickness = 'thin' | 'medium' | 'thick'
 
 export const PRESENTATION_BOARD_THICKNESS_SCALE: Record<PresentationBoardThickness, number> = {
-  thin: 0.55,
+  thin: 0.35,
   medium: 0.85,
-  thick: 1.25,
+  thick: 1.75,
 }
 
 export function presentationBoardColorStroke(id: PresentationBoardColorId): string {

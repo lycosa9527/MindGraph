@@ -25,6 +25,8 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
 
+import { ElMessageBox } from 'element-plus'
+
 import {
   AIModelSelector,
   CanvasChrome,
@@ -38,10 +40,13 @@ import {
   MindMapSidePanel,
   MindMapSideToolbar,
   MindMapSlideOverlay,
+  PresentationTimerHud,
+  PresentationTimerOverlay,
   ZoomControls,
 } from '@/components/canvas'
 import CanvasCollabOverlay from '@/components/canvas/CanvasCollabOverlay.vue'
 import CanvasTranslateProgressBanner from '@/components/canvas/CanvasTranslateProgressBanner.vue'
+import LearningSheetExportNudge from '@/components/canvas/LearningSheetExportNudge.vue'
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
 import KittyCanvasAnchor from '@/components/kitty/KittyCanvasAnchor.vue'
 import KittyDesktopVoiceCommandLog from '@/components/kitty/KittyDesktopVoiceCommandLog.vue'
@@ -110,7 +115,23 @@ import { useKittyDiagramReviewAnnotationBus } from '@/composables/kitty/useKitty
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
 import { useMindMapSlidePresentation } from '@/composables/mindMap/useMindMapSlidePresentation'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import {
+  learningSheetNeedsPresentationConfirm,
+  resumeLearningSheetAfterPresentation,
+  suspendLearningSheetForPresentation,
+} from '@/composables/mindMap/useLearningSheetCustomMode'
+import {
+  setPresentationDiagramEditLocked,
+  setPresentationFullscreenRoot,
+} from '@/composables/presentation/presentationDiagramEdit'
 import { IMPORT_SPEC_KEY, SAVE } from '@/config'
+import {
+  PRESENTATION_HIGHLIGHTER_PALETTE_TOOLBAR,
+} from '@/config/presentationHighlighter'
+import {
+  PRESENTATION_LASER_SIZE_SCALE,
+  type PresentationLaserSize,
+} from '@/config/presentationLaser'
 import {
   PRESENTATION_BOARD_THICKNESS_SCALE,
   type PresentationBoardColorId,
@@ -139,6 +160,7 @@ import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import type { MindMapPresentationToolId } from '@/types/diagram'
+import { MIND_MAP_PRESENTATION_EXPANDABLE_TOOLS } from '@/types/diagram'
 import { isMindMapDiagramType } from '@/utils/conceptMapDesktopViewport'
 
 const route = useRoute()
@@ -171,9 +193,12 @@ const {
   timerTotalSeconds,
   timerRemainingSeconds,
   timerRunning,
+  timerHudVisible,
   onTimerToggleRun,
   onTimerReset,
   onTimerPresetMinutes,
+  onTimerStartPresenting,
+  onTimerCloseHud,
   onTimerExit,
   onTimerSetMinutes,
   laserCursorStyle,
@@ -183,6 +208,8 @@ const {
   handleZoomOut,
   handleFitToScreen,
   handleHandToolToggle,
+  suspendHandToolForPresentation,
+  resumeHandToolAfterPresentation,
   handleStartPresentation,
   handleModelChange,
   resetPresentationStateOnLeave,
@@ -237,10 +264,26 @@ function handleOpenCollab(mode: 'organization' | 'network' | 'stop') {
   collabOverlayRef.value?.openCollab(mode)
 }
 
-function handleStartPresentationWithTier() {
+async function handleStartPresentationWithTier(): Promise<void> {
   if (!canUsePresentationTools.value) {
     notify.warning(t('auth.schoolTierFeatureUnavailable'))
     return
+  }
+  const opening = !presentationRailOpen.value
+  if (opening && learningSheetNeedsPresentationConfirm()) {
+    try {
+      await ElMessageBox.confirm(
+        t('canvas.presentation.learningSheetConfirmBody'),
+        t('canvas.presentation.learningSheetConfirmTitle'),
+        {
+          confirmButtonText: t('canvas.presentation.learningSheetConfirmProceed'),
+          cancelButtonText: t('common.cancel'),
+          type: 'warning',
+        }
+      )
+    } catch {
+      return
+    }
   }
   handleStartPresentation()
 }
@@ -277,8 +320,64 @@ function applyPenColor(id: PresentationBoardColorId): void {
   presentationPenColor.value = presentationBoardColorStroke(id)
 }
 
+function applyLaserSize(size: PresentationLaserSize): void {
+  presentationPointerStore.setScaleForTool('laser', PRESENTATION_LASER_SIZE_SCALE[size])
+}
+
+function applyHighlighterColor(index: number): void {
+  highlighterColorIndex.value = index
+  const entry = PRESENTATION_HIGHLIGHTER_PALETTE_TOOLBAR[index]
+  if (entry) {
+    presentationHighlighterColor.value = entry.stroke
+  }
+}
+
+function applyHighlighterScale(scale: number): void {
+  presentationPointerStore.setScaleForTool('highlighter', scale)
+}
+
+function toggleStrokeEraser(): void {
+  presentationStrokeEraserActive.value = !presentationStrokeEraserActive.value
+}
+
 function handleMindMapPresentationToolSelect(tool: MindMapPresentationToolId): void {
+  const current = mindMapPresentationTool.value
+  if (tool === current) {
+    if (
+      (MIND_MAP_PRESENTATION_EXPANDABLE_TOOLS as readonly MindMapPresentationToolId[]).includes(
+        tool
+      ) ||
+      tool === 'hand'
+    ) {
+      presentationStrokeEraserActive.value = false
+      mindMapPresentationTool.value = 'pointer'
+      return
+    }
+  }
+  if (tool !== current) {
+    presentationStrokeEraserActive.value = false
+  }
   mindMapPresentationTool.value = tool
+}
+
+function handleMindMapPresentationExit(): void {
+  handleStartPresentationWithTier()
+}
+
+function handleMindMapTimerExit(): void {
+  onTimerExit()
+  mindMapPresentationTool.value = 'pointer'
+  handToolActive.value = false
+}
+
+function handleMindMapTimerStartPresenting(): void {
+  onTimerStartPresenting()
+  mindMapPresentationTool.value = 'pointer'
+  handToolActive.value = false
+}
+
+function handleMindMapTimerCloseHud(): void {
+  onTimerCloseHud()
 }
 
 function handlePresentationEscape(event: KeyboardEvent): void {
@@ -360,23 +459,45 @@ const showSimplifiedPresentationRail = computed(
   () => presentationRailOpen.value && canUsePresentationTools.value
 )
 
-const mindMapPresentationTool = ref<MindMapPresentationToolId>('hand')
+const mindMapPresentationTool = ref<MindMapPresentationToolId>('pointer')
 const penColorId = ref<PresentationBoardColorId>('red')
 const penThickness = ref<PresentationBoardThickness>('medium')
 const presentationPenColor = ref(presentationBoardColorStroke('red'))
+const highlighterColorIndex = ref(0)
+const presentationStrokeEraserActive = ref(false)
 const presentationPointerStore = usePresentationPointerStore()
+const { laserScale, highlighterScale } = storeToRefs(presentationPointerStore)
 
 const slidePresentation = useMindMapSlidePresentation({
   active: () => isMindMapPresentationMode.value && mindMapPresentationTool.value === 'slides',
   onExitPresentation: () => handleStartPresentationWithTier(),
 })
 
-const effectiveHandToolActive = computed(() => {
-  if (showSimplifiedPresentationRail.value) {
-    return mindMapPresentationTool.value === 'hand'
-  }
-  return handToolActive.value
-})
+const presentationPointerEditMode = computed(
+  () => showSimplifiedPresentationRail.value && mindMapPresentationTool.value === 'pointer'
+)
+
+const presentationHandPanMode = computed(
+  () => showSimplifiedPresentationRail.value && mindMapPresentationTool.value === 'hand'
+)
+
+watch(
+  [showSimplifiedPresentationRail, mindMapPresentationTool, presentationRailOpen],
+  () => {
+    setPresentationDiagramEditLocked(
+      showSimplifiedPresentationRail.value && mindMapPresentationTool.value !== 'pointer'
+    )
+  },
+  { immediate: true }
+)
+
+watch(
+  canvasPageRef,
+  (el) => {
+    setPresentationFullscreenRoot(el)
+  },
+  { immediate: true }
+)
 
 const showMindMapSlideOverlay = computed(
   () =>
@@ -397,6 +518,10 @@ const showMindMapSideToolbar = computed(
     !presentationRailOpen.value &&
     Boolean(diagramStore.data) &&
     !isViewer.value
+)
+
+const showLearningSheetExportNudge = computed(
+  () => useMindMapV2.value && !isMindMapPresentationMode.value && !isViewer.value
 )
 
 const { activeTool, sidebarVisible, closeActiveTool } = useMindMapSideToolbarState()
@@ -699,10 +824,16 @@ watch(
     if (open && panelsStore.mindmatePanel.isOpen) {
       panelsStore.closeMindmate()
     }
+    if (open) {
+      suspendHandToolForPresentation()
+      suspendLearningSheetForPresentation()
+    } else {
+      resumeHandToolAfterPresentation()
+      resumeLearningSheetAfterPresentation()
+    }
     if (open && useMindMapV2.value) {
       closeActiveTool()
-      mindMapPresentationTool.value = 'hand'
-      handToolActive.value = true
+      mindMapPresentationTool.value = 'pointer'
       void enterPresentationFullscreen()
       void nextTick(() => {
         eventBus.emit('view:fit_to_canvas_requested', { animate: true, userInitiated: true })
@@ -710,11 +841,9 @@ watch(
     } else if (open) {
       mindMapPresentationTool.value = 'laser'
       presentationTool.value = 'laser'
-      handToolActive.value = false
     } else {
-      mindMapPresentationTool.value = 'hand'
+      mindMapPresentationTool.value = 'pointer'
       slidePresentation.reset()
-      handToolActive.value = false
       if (useMindMapV2.value) {
         void exitPresentationFullscreen()
       }
@@ -735,6 +864,18 @@ watch(mindMapPresentationTool, (tool) => {
     slidePresentation.stopSlideShow()
     return
   }
+  if (tool === 'highlighter') {
+    presentationTool.value = 'highlighter'
+    handToolActive.value = false
+    slidePresentation.stopSlideShow()
+    return
+  }
+  if (tool === 'timer') {
+    presentationTool.value = 'timer'
+    handToolActive.value = false
+    slidePresentation.stopSlideShow()
+    return
+  }
   if (tool === 'laser') {
     presentationTool.value = 'laser'
     handToolActive.value = false
@@ -743,7 +884,13 @@ watch(mindMapPresentationTool, (tool) => {
   }
   if (tool === 'hand') {
     presentationTool.value = 'laser'
-    handToolActive.value = true
+    handToolActive.value = false
+    slidePresentation.stopSlideShow()
+    return
+  }
+  if (tool === 'pointer') {
+    presentationTool.value = 'laser'
+    handToolActive.value = false
     slidePresentation.stopSlideShow()
     return
   }
@@ -1031,6 +1178,8 @@ onUnmounted(() => {
   uiStore.setSelectedChartType('选择具体图示')
   uiStore.setFreeInputValue('')
   resetPresentationStateOnLeave()
+  setPresentationDiagramEditLocked(false)
+  setPresentationFullscreenRoot(null)
   void exitPresentationFullscreen()
   resetPreviousDiagramTracking()
 })
@@ -1043,14 +1192,23 @@ onUnmounted(() => {
     :class="{
       'presentation-active': canUsePresentationTools && presentationRailOpen,
       'mind-map-presentation-active': isMindMapPresentationMode,
+      'presentation-pointer-mode':
+        showSimplifiedPresentationRail && mindMapPresentationTool === 'pointer',
       'presentation-hand-mode':
         showSimplifiedPresentationRail && mindMapPresentationTool === 'hand',
       'presentation-slides-mode':
         showSimplifiedPresentationRail && mindMapPresentationTool === 'slides',
-      'presentation-highlighter-mode': false,
+      'presentation-highlighter-mode':
+        showSimplifiedPresentationRail && mindMapPresentationTool === 'highlighter',
       'presentation-pen-mode':
         canUsePresentationTools && presentationRailOpen && mindMapPresentationTool === 'pen',
-      'presentation-timer-mode': false,
+      'presentation-eraser-mode':
+        canUsePresentationTools &&
+        presentationRailOpen &&
+        presentationStrokeEraserActive &&
+        (mindMapPresentationTool === 'pen' || mindMapPresentationTool === 'highlighter'),
+      'presentation-timer-mode':
+        showSimplifiedPresentationRail && mindMapPresentationTool === 'timer',
     }"
   >
     <!-- Laser pointer cursor (presentation mode, laser tool) -->
@@ -1073,10 +1231,41 @@ onUnmounted(() => {
       :active-tool="mindMapPresentationTool"
       :color-id="penColorId"
       :thickness="penThickness"
+      :laser-scale="laserScale"
+      :highlighter-scale="highlighterScale"
+      :highlighter-color-index="highlighterColorIndex"
+      :stroke-eraser-active="presentationStrokeEraserActive"
       :show-slides-tool="useMindMapV2"
       @select-tool="handleMindMapPresentationToolSelect"
       @select-color="applyPenColor"
       @select-thickness="applyPenThickness"
+      @select-laser-size="applyLaserSize"
+      @select-highlighter-color="applyHighlighterColor"
+      @select-highlighter-scale="applyHighlighterScale"
+      @toggle-stroke-eraser="toggleStrokeEraser"
+      @exit="handleMindMapPresentationExit"
+    />
+
+    <PresentationTimerOverlay
+      v-if="showSimplifiedPresentationRail && mindMapPresentationTool === 'timer'"
+      :remaining-seconds="timerRemainingSeconds"
+      :total-seconds="timerTotalSeconds"
+      :running="timerRunning"
+      @toggle-run="onTimerToggleRun"
+      @reset="onTimerReset"
+      @exit="handleMindMapTimerExit"
+      @preset-minutes="onTimerPresetMinutes"
+      @set-minutes="onTimerSetMinutes"
+      @start-presenting="handleMindMapTimerStartPresenting"
+    />
+
+    <PresentationTimerHud
+      v-if="showSimplifiedPresentationRail && timerHudVisible"
+      :remaining-seconds="timerRemainingSeconds"
+      :running="timerRunning"
+      @toggle-run="onTimerToggleRun"
+      @reset="onTimerReset"
+      @close="handleMindMapTimerCloseHud"
     />
 
     <MindMapSlideOverlay
@@ -1108,6 +1297,8 @@ onUnmounted(() => {
         @snapshot-delete="handleSnapshotDelete"
       />
     </CanvasChrome>
+
+    <LearningSheetExportNudge v-if="showLearningSheetExportNudge" />
 
     <!-- Collab UI: participant rail, session modal, active-session banner -->
     <CanvasCollabOverlay
@@ -1180,12 +1371,15 @@ onUnmounted(() => {
           v-model:presentation-tool="presentationTool"
           v-model:presentation-highlighter-color="presentationHighlighterColor"
           v-model:presentation-pen-color="presentationPenColor"
+          v-model:presentation-stroke-eraser-active="presentationStrokeEraserActive"
           class="w-full flex-1 min-h-0"
           :show-background="true"
           :show-minimap="false"
           :fit-view-on-init="fitViewOnInit"
           :concept-map-initial-topic-fit="false"
-          :hand-tool-active="effectiveHandToolActive || isViewer"
+          :hand-tool-active="showSimplifiedPresentationRail ? presentationHandPanMode : handToolActive"
+          :presentation-pointer-edit-mode="presentationPointerEditMode"
+          :presentation-hand-pan-mode="presentationHandPanMode"
           :collab-locked-node-ids="collabLockedNodeIds"
           :presentation-rail-open="presentationRailOpen"
           @node-double-click="handleNodeDoubleClick"
@@ -1274,6 +1468,7 @@ onUnmounted(() => {
           >
             <ZoomControls
               :zoom="canvasZoom"
+              :hand-tool-active="handToolActive"
               :presentation-rail-open="presentationRailOpen"
               :workshop-code="workshopCode"
               :is-collab-guest="isCollabGuest"

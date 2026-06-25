@@ -12,6 +12,7 @@ import { useDiagramStore } from '@/stores/diagram'
 
 const props = defineProps<{
   containerRef: HTMLElement | null
+  teleportTarget?: HTMLElement | string
 }>()
 
 const diagramStore = useDiagramStore()
@@ -103,7 +104,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport :to="props.teleportTarget ?? 'body'">
     <div
       v-if="visible && overlayEnabled && handles.length"
       class="mind-map-add-overlay"

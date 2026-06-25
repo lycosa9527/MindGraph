@@ -1,3 +1,15 @@
+import {
+  getMindMapDiagramStyleById,
+  mindMapDiagramStyleUsesLayeredBranchColors,
+  mindMapNodeShapeFromPreset,
+  resolveMindMapDiagramStyleId,
+} from '@/config/mindMapDiagramStyles'
+import {
+  isRainbowMindMapTheme,
+  mindMapRainbowColorsForNode,
+  MIND_MAP_RAINBOW_TOPIC_COLORS,
+  syncRainbowMindMapConnectionColors,
+} from '@/config/mindMapVibrantThemes'
 import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
 import {
   getMindMapThemeById,
@@ -124,7 +136,7 @@ function resolveParentNodeShape(
   return undefined
 }
 
-/** Inherit shape from an earlier underline sibling on the same parent row. */
+/** Inherit shape from an earlier sibling on the same parent row (e.g. new child matches siblings). */
 function resolvePriorSiblingNodeShape(
   pathKey: string,
   stylesByPath: Map<string, NodeStyle>
@@ -140,38 +152,107 @@ function resolvePriorSiblingNodeShape(
   return undefined
 }
 
+/**
+ * Resolve nodeShape after a tree reload.
+ * Never inherit the parent's shape — L1 rounded must not overwrite L2 underline in classic.
+ * Also heals shapes that were wrongly parent-inherited on a prior reload.
+ */
+function resolveMindMapRestoredNodeShape(
+  node: DiagramNode,
+  pathKey: string,
+  preserved: NodeStyle | undefined,
+  stylesByPath: Map<string, NodeStyle>,
+  nodes: DiagramNode[],
+  connections: Connection[],
+  diagramStyle: ReturnType<typeof getMindMapDiagramStyleById>
+): NodeStyle['nodeShape'] {
+  const presetShape = mindMapNodeShapeFromPreset(node, diagramStyle)
+  const fromPreserved = preserved?.nodeShape
+  if (!fromPreserved) {
+    return (
+      resolvePriorSiblingNodeShape(pathKey, stylesByPath) ??
+      presetShape
+    )
+  }
+
+  const parentShape = resolveParentNodeShape(pathKey, stylesByPath, nodes, connections)
+  if (parentShape && fromPreserved === parentShape && fromPreserved !== presetShape) {
+    return presetShape
+  }
+  return fromPreserved
+}
+
 export function applyMindMapStylesByPath(
   nodes: DiagramNode[],
   connections: Connection[],
   stylesByPath: Map<string, NodeStyle>,
-  themeId?: MindMapThemeId | string | null
+  themeId?: MindMapThemeId | string | null,
+  diagramStyleId?: string | null
 ): Record<string, NodeStyle> {
   const defaultTheme = getMindMapThemeById(resolveMindMapThemeId(themeId))
+  const diagramStyle = getMindMapDiagramStyleById(resolveMindMapDiagramStyleId(diagramStyleId))
   const nodeStyles: Record<string, NodeStyle> = {}
   for (const node of nodes) {
     const key = mindMapNodePathKey(node.id, connections)
     if (!key) continue
     const preserved = stylesByPath.get(key)
+    const nodeShape = resolveMindMapRestoredNodeShape(
+      node,
+      key,
+      preserved,
+      stylesByPath,
+      nodes,
+      connections,
+      diagramStyle
+    )
+
     if (preserved) {
-      node.style = { ...(node.style || {}), ...preserved }
-      nodeStyles[node.id] = { ...preserved }
+      const merged = { ...preserved, nodeShape }
+      node.style = { ...(node.style || {}), ...merged }
+      nodeStyles[node.id] = { ...merged }
     } else {
-      const inheritedShape =
-        resolveParentNodeShape(key, stylesByPath, nodes, connections) ??
-        resolvePriorSiblingNodeShape(key, stylesByPath)
-      const themeDefaults = {
-        ...mindMapStyleFromTheme(node, defaultTheme),
-        ...(inheritedShape ? { nodeShape: inheritedShape } : {}),
+      let themeDefaults = {
+        ...mindMapStyleFromTheme(node, defaultTheme, diagramStyleId),
+        nodeShape,
+      }
+      if (isRainbowMindMapTheme(themeId)) {
+        if (node.id === 'topic' || node.type === 'topic' || node.type === 'center') {
+          themeDefaults = {
+            ...themeDefaults,
+            backgroundColor: MIND_MAP_RAINBOW_TOPIC_COLORS.topicBackgroundColor,
+            textColor: MIND_MAP_RAINBOW_TOPIC_COLORS.topicTextColor,
+            borderColor: MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor,
+          }
+        } else {
+          const branchColors = mindMapRainbowColorsForNode(node.id, connections)
+          if (branchColors) {
+            themeDefaults = {
+              ...themeDefaults,
+              backgroundColor: branchColors.backgroundColor,
+              textColor: branchColors.textColor,
+              borderColor: branchColors.borderColor,
+            }
+          }
+        }
       }
       node.style = { ...themeDefaults, ...(node.style || {}) }
       nodeStyles[node.id] = { ...node.style }
     }
   }
-  const topicBorder =
-    nodes.find((n) => n.id === 'topic')?.style?.borderColor ??
-    stylesByPath.get('topic')?.borderColor
-  if (topicBorder) {
-    syncMindMapConnectionStrokeColors(connections, topicBorder)
+  if (isRainbowMindMapTheme(themeId)) {
+    syncRainbowMindMapConnectionColors(connections, nodes)
+  } else {
+    const layered = mindMapDiagramStyleUsesLayeredBranchColors(diagramStyleId)
+    const topicBorder =
+      nodes.find((n) => n.id === 'topic')?.style?.borderColor ??
+      stylesByPath.get('topic')?.borderColor
+    const branchAccent =
+      defaultTheme.borderColor ??
+      nodes.find((n) => n.id.startsWith('branch-'))?.style?.borderColor
+    const strokeColor = layered && branchAccent ? branchAccent : topicBorder
+    if (strokeColor) {
+      syncMindMapConnectionStrokeColors(connections, strokeColor)
+    }
   }
   return nodeStyles
 }
@@ -183,12 +264,19 @@ export function mergeMindMapReloadStyles(
   newNodes: DiagramNode[],
   newConnections: Connection[],
   existingNodeStyles?: Record<string, NodeStyle>,
-  themeId?: MindMapThemeId | string | null
+  themeId?: MindMapThemeId | string | null,
+  diagramStyleId?: string | null
 ): Record<string, NodeStyle> {
   const stylesByPath = collectMindMapStylesByPath(
     oldNodes,
     oldConnections,
     existingNodeStyles
   )
-  return applyMindMapStylesByPath(newNodes, newConnections, stylesByPath, themeId)
+  return applyMindMapStylesByPath(
+    newNodes,
+    newConnections,
+    stylesByPath,
+    themeId,
+    diagramStyleId
+  )
 }

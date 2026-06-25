@@ -18,13 +18,19 @@ import { eventBus } from '@/composables/core/useEventBus'
 import {
   isLearningSheetCustomPickActive,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
+import { isMindMapDiagramType } from '@/composables/mindMap/mindMapArrowNavigation'
 import { useDiagramNodeMarkdownDisplay } from '@/composables/diagram/useDiagramNodeMarkdownDisplay'
 import { useDiagramStore } from '@/stores'
 import {
+  isNodeDisplayPlaceholderLabel,
   shouldReplaceLabelWithMathInsert,
   stripConceptMapFocusQuestionPrefix,
 } from '@/stores/diagram/diagramDefaultLabels'
 import { shouldPreferSingleLineNoWrap } from '@/stores/specLoader/textMeasurement'
+import {
+  isWhitespaceOnlyNodeText,
+  resolveInlineNodeTextForSave,
+} from '@/utils/nodeEditableText'
 
 const props = withDefaults(
   defineProps<{
@@ -79,9 +85,8 @@ const props = withDefaults(
      */
     renderMarkdown?: boolean
     /**
-     * When true, always use CSS-driven wrapping (text-wrap: balance) instead of the
-     * JS-based shouldPreferSingleLineNoWrap heuristic. The browser handles line
-     * breaking natively; maxWidth acts as a safety cap only.
+     * When true, use normal CSS wrapping at maxWidth instead of the
+     * JS-based shouldPreferSingleLineNoWrap heuristic.
      */
     autoWrap?: boolean
   }>(),
@@ -145,11 +150,13 @@ const inputRef = ref<HTMLInputElement | HTMLTextAreaElement | null>(null)
 const displayRef = ref<HTMLElement | null>(null)
 const wrapperRef = ref<HTMLDivElement | null>(null)
 const inputWidth = ref<string | undefined>(undefined)
-/** When autoWrap: lock edit box to display size so balance-wrapped labels don't expand to single-line width. */
+/** When autoWrap: lock edit box to display size so wrapped labels don't expand to single-line width. */
 const editLockedWidthPx = ref<number | null>(null)
 const editLockedMinHeightPx = ref<number | null>(null)
 /** autoWrap: textarea only when display already wraps; single-line labels use input. */
 const editUsesMultilineControl = ref(false)
+/** When user inserts a manual line break on a single-line input control. */
+const forceMultilineEdit = ref(false)
 const measureRef = ref<HTMLSpanElement | null>(null) // Hidden span for measuring text width
 
 /** Matches computed font on display/edit for measureTextWidth (multiscript stack). */
@@ -218,6 +225,32 @@ function clearEditLock(): void {
   editLockedWidthPx.value = null
   editLockedMinHeightPx.value = null
   editUsesMultilineControl.value = false
+  forceMultilineEdit.value = false
+}
+
+function usesMultilineEditControl(): boolean {
+  return (
+    props.multiline ||
+    (props.autoWrap && editUsesMultilineControl.value) ||
+    forceMultilineEdit.value
+  )
+}
+
+function ensureMultilineEditControl(): void {
+  if (props.focusQuestionEditableSplit) return
+  if (props.multiline) return
+
+  if (props.autoWrap && !editUsesMultilineControl.value) {
+    editUsesMultilineControl.value = true
+    const baseH =
+      editLockedMinHeightPx.value ??
+      inputRef.value?.offsetHeight ??
+      displayRef.value?.offsetHeight ??
+      20
+    editLockedMinHeightPx.value = Math.max(baseH, 28)
+  } else if (!props.autoWrap) {
+    forceMultilineEdit.value = true
+  }
 }
 
 function isDisplaySingleLine(el: HTMLElement): boolean {
@@ -235,7 +268,7 @@ function isDisplaySingleLine(el: HTMLElement): boolean {
 function updateInputWidth(): void {
   if (!localIsEditing.value) return
 
-  // autoWrap display uses text-wrap: balance (multi-line, often narrower than one line).
+  // autoWrap display uses normal pre-wrap at maxWidth (no balanced line lengths).
   // Keep the edit box at the display width — do not re-measure as a single line.
   if (props.autoWrap) {
     if (editLockedWidthPx.value != null) {
@@ -281,6 +314,14 @@ watch(
 onMounted(() => {
   nextTick(() => {
     syncFontMetrics()
+    if (
+      diagramStore.mindMapPendingEditNodeId === props.nodeId &&
+      !props.readonly &&
+      !localIsEditing.value
+    ) {
+      startEditing()
+      diagramStore.mindMapPendingEditNodeId = null
+    }
     requestAnimationFrame(() => {
       syncFontMetrics()
     })
@@ -318,6 +359,12 @@ const rootAlignClass = computed(() => {
 const displayDecorationStyle = computed(() => ({
   textDecoration: props.textDecoration || 'none',
 }))
+
+const isDisplayPlaceholder = computed(
+  () =>
+    isWhitespaceOnlyNodeText(props.text) ||
+    isNodeDisplayPlaceholderLabel(diagramStore.type, props.nodeId, props.text)
+)
 
 const showMutedTailSplit = computed(() => {
   if (isFocusQuestionSplitMode.value) return false
@@ -405,6 +452,10 @@ function startEditing(): void {
 
   localIsEditing.value = true
 
+  if (diagramStore.mindMapPendingEditNodeId === props.nodeId) {
+    diagramStore.mindMapPendingEditNodeId = null
+  }
+
   // Emit event for tracking
   eventBus.emit('node_editor:opening', { nodeId: props.nodeId })
   emit('editStart')
@@ -451,10 +502,14 @@ function saveEdit(): void {
     return
   }
 
-  const trimmedText = editText.value.trim()
+  const resolved = resolveInlineNodeTextForSave(
+    editText.value,
+    props.minLength,
+    props.maxLength
+  )
 
   // Validate text length - revert if invalid
-  if (trimmedText.length < props.minLength) {
+  if (resolved === null) {
     editText.value = originalText.value
     localIsEditing.value = false
     clearEditLock()
@@ -463,8 +518,7 @@ function saveEdit(): void {
     return
   }
 
-  // Truncate if too long
-  const finalText = trimmedText.slice(0, props.maxLength)
+  const finalText = resolved
   editText.value = finalText
   localIsEditing.value = false
   clearEditLock()
@@ -498,6 +552,10 @@ function cancelEdit(): void {
   emit('cancel')
 }
 
+function isMindMapInlineEditContext(): boolean {
+  return isMindMapDiagramType(diagramStore.type)
+}
+
 /**
  * Handle keyboard events
  */
@@ -505,14 +563,36 @@ function handleKeydown(event: KeyboardEvent): void {
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
     event.stopPropagation()
+    if (isMindMapInlineEditContext() && props.nodeId !== 'topic') {
+      saveEdit()
+      nextTick(() => {
+        eventBus.emit('diagram:add_sibling_requested', {})
+      })
+      return
+    }
     saveEdit()
   } else if (event.key === 'Escape') {
     event.preventDefault()
     event.stopPropagation()
     cancelEdit()
+  } else if (
+    event.key === 'Enter' &&
+    event.shiftKey &&
+    (event.ctrlKey || event.metaKey)
+  ) {
+    event.preventDefault()
+    event.stopPropagation()
+    insertLineBreakAtCaret()
   } else if (event.key === 'Tab') {
     event.preventDefault()
     event.stopPropagation()
+    if (isMindMapInlineEditContext()) {
+      saveEdit()
+      nextTick(() => {
+        eventBus.emit('diagram:add_child_requested', {})
+      })
+      return
+    }
     if (props.focusQuestionEditableSplit) {
       const s = props.focusQuestionEditableSplit
       const t = editBody.value.trim()
@@ -682,6 +762,48 @@ function insertSnippetAtCaret(snippet: string): boolean {
   return true
 }
 
+function insertLineBreakAtCaret(): boolean {
+  if (props.readonly || !localIsEditing.value || props.focusQuestionEditableSplit) return false
+
+  const wasMultiline = usesMultilineEditControl()
+  ensureMultilineEditControl()
+
+  const apply = (): boolean => insertSnippetAtCaret('\n')
+
+  if (!wasMultiline) {
+    nextTick(() => {
+      nextTick(() => apply())
+    })
+    return true
+  }
+  return apply()
+}
+
+const INSERT_LINE_BREAK_AFTER_EDIT_MS = 80
+
+function handleInsertLineBreak(payload: { nodeId?: string }): void {
+  if (payload?.nodeId !== props.nodeId || props.readonly) return
+  if (props.focusQuestionEditableSplit) return
+
+  if (!localIsEditing.value) {
+    startEditing()
+    nextTick(() => {
+      setTimeout(() => {
+        const el = inputRef.value
+        if (el) {
+          const len = props.focusQuestionEditableSplit
+            ? editBody.value.length
+            : editText.value.length
+          el.setSelectionRange(len, len)
+        }
+        insertLineBreakAtCaret()
+      }, INSERT_LINE_BREAK_AFTER_EDIT_MS)
+    })
+    return
+  }
+  insertLineBreakAtCaret()
+}
+
 function handleNodeEditorInsertText(payload: { nodeId?: string; snippet?: string }): void {
   if (payload?.nodeId !== props.nodeId || !payload.snippet) return
   if (!localIsEditing.value) return
@@ -693,6 +815,7 @@ function handleNodeEditorInsertText(payload: { nodeId?: string; snippet?: string
 }
 
 const unsubInsertText = eventBus.on('node_editor:insert_text', handleNodeEditorInsertText)
+const unsubInsertLineBreak = eventBus.on('node_editor:insert_line_break', handleInsertLineBreak)
 
 function handleNodeEditDenied(payload: { nodeId: string; heldByUsername: string }): void {
   if (payload.nodeId !== props.nodeId || !localIsEditing.value) return
@@ -707,6 +830,7 @@ onUnmounted(() => {
   unsubEditRequested()
   unsubRecommendationApplied()
   unsubInsertText()
+  unsubInsertLineBreak()
   unsubNodeEditDenied()
 })
 </script>
@@ -786,7 +910,7 @@ onUnmounted(() => {
         class="inline-edit-container"
       >
         <textarea
-          v-if="multiline || (autoWrap && editUsesMultilineControl)"
+          v-if="usesMultilineEditControl()"
           :id="fieldHtmlId"
           ref="inputRef"
           v-model="editText"
@@ -840,6 +964,7 @@ onUnmounted(() => {
       class="inline-edit-display"
       :class="[
         textClass,
+        isDisplayPlaceholder ? 'inline-edit-placeholder-display' : '',
         fullWidth && textAlign === 'center' ? 'inline-edit-display--center-block' : '',
         centerBlockInCircle ? 'inline-edit-display--center-in-circle' : '',
         noWrap
@@ -849,7 +974,6 @@ onUnmounted(() => {
             : shouldPreventWrap
               ? 'whitespace-nowrap'
               : 'inline-edit-display--wrap',
-        autoWrap ? 'inline-edit-display--auto-wrap' : '',
       ]"
       :style="{
         maxWidth: maxWidth,
@@ -888,6 +1012,7 @@ onUnmounted(() => {
       <template v-else>
         <span
           class="inline-edit-plain"
+          :class="{ 'inline-edit-plain--whitespace': isWhitespaceOnlyNodeText(text) }"
           :style="displayDecorationStyle"
         >{{ text }}</span>
       </template>
@@ -1012,12 +1137,30 @@ onUnmounted(() => {
   text-decoration: inherit;
 }
 
+.inline-edit-plain--whitespace {
+  white-space: pre;
+}
+
 .inline-edit-muted-suffix {
   color: rgb(163 163 163);
 }
 
+.inline-edit-placeholder-display,
+.inline-edit-placeholder-display .inline-edit-plain,
+.inline-edit-placeholder-display.diagram-node-md,
+.inline-edit-placeholder-display.diagram-node-md :deep(*) {
+  color: rgb(107 114 128 / 0.55);
+}
+
 :root.dark .inline-edit-muted-suffix {
   color: rgb(115 115 115);
+}
+
+:root.dark .inline-edit-placeholder-display,
+:root.dark .inline-edit-placeholder-display .inline-edit-plain,
+:root.dark .inline-edit-placeholder-display.diagram-node-md,
+:root.dark .inline-edit-placeholder-display.diagram-node-md :deep(*) {
+  color: rgb(156 163 175 / 0.5);
 }
 
 /* Center text in full width (circle/bubble topic) so text is visually centered in the circle */
@@ -1047,12 +1190,6 @@ onUnmounted(() => {
   word-break: normal;
   overflow-wrap: break-word;
   line-break: auto;
-}
-
-/* Auto-wrap mode: browser-native balanced wrapping (CSS text-wrap: balance).
-   No JS width heuristic — the browser decides optimal line breaks. */
-.inline-edit-display--auto-wrap {
-  text-wrap: balance;
 }
 
 /* Truncate mode: single line with ellipsis */

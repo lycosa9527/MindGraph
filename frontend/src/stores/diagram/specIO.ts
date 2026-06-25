@@ -4,6 +4,7 @@ import {
   DEFAULT_NODE_WIDTH,
   MULTI_FLOW_MAP_TOPIC_WIDTH,
 } from '@/composables/diagrams/layoutConfig'
+import { mindMapDiagramStyleUsesLayeredBranchColors } from '@/config/mindMapDiagramStyles'
 import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
 import {
   getMindMapThemeForDiagram,
@@ -85,14 +86,23 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       const themeFromSpec = getMindMapThemeForDiagram(
         spec as { _mindmap_theme?: string | null }
       )
+      const diagramStyleId = (spec as { _mindmap_diagram_style?: string | null })
+        ._mindmap_diagram_style
       nodesToStore = nodesToStore.map((node) => {
         if (node.type === 'boundary' || nodeHasMindMapThemeColors(node.style)) return node
         return {
           ...node,
-          style: { ...mindMapStyleFromTheme(node, themeFromSpec), ...(node.style || {}) },
+          style: {
+            ...mindMapStyleFromTheme(node, themeFromSpec, diagramStyleId),
+            ...(node.style || {}),
+          },
         }
       })
-      syncMindMapConnectionStrokeColors(result.connections, themeFromSpec.topicBorderColor)
+      const layered = mindMapDiagramStyleUsesLayeredBranchColors(diagramStyleId)
+      syncMindMapConnectionStrokeColors(
+        result.connections,
+        layered ? themeFromSpec.borderColor : themeFromSpec.topicBorderColor
+      )
 
       if (nodesToStore.length > 0) {
         const topicNode = nodesToStore.find(
@@ -345,9 +355,17 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     const d = ctx.data.value as {
       isLearningSheet?: boolean
       is_learning_sheet?: boolean
+      learningSheetShowAnswers?: boolean
+      learning_sheet_show_answers?: boolean
     }
     const isLS = d?.isLearningSheet === true || d?.is_learning_sheet === true
     if (isLS) spec.is_learning_sheet = true
+    if (
+      isLS &&
+      (d?.learningSheetShowAnswers === false || d?.learning_sheet_show_answers === false)
+    ) {
+      spec.learning_sheet_show_answers = false
+    }
     if (hiddenAnswers?.length) spec.hiddenAnswers = hiddenAnswers
     if (ctx.type.value === 'concept_map') {
       const fq = dataRecord.focus_question

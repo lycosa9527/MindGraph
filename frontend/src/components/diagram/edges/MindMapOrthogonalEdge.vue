@@ -18,7 +18,7 @@ import {
   resolveMindMapEdgeEndpoint,
   resolveMindMapNodeStyle,
 } from '@/utils/mindMapEdgeEndpoints'
-import { resolveNodeShape } from '@/utils/nodeShapeStyle'
+import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
 
@@ -31,14 +31,46 @@ const preservedNodeStyles = computed(
   () => (diagramStore.data?._node_styles ?? {}) as Record<string, NodeStyle>
 )
 
-/** Shared Pinia DOM measurements — the single source of truth the layout also uses. */
-const measuredDimensions = computed(
+/** Mind-map layout measurements — same source as recalculateMindMapV2ColumnPositions. */
+const mindMapWidths = computed(
+  () => diagramStore.mindMapNodeWidths as Record<string, number>
+)
+const mindMapHeights = computed(
+  () => diagramStore.mindMapNodeHeights as Record<string, number>
+)
+const fallbackDimensions = computed(
   () => diagramStore.nodeDimensions as Record<string, { width: number; height: number }>
 )
 
 function measuredSize(nodeId: string | undefined): { width: number; height: number } | undefined {
   if (!nodeId) return undefined
-  return measuredDimensions.value[nodeId]
+  const w = mindMapWidths.value[nodeId]
+  const h = mindMapHeights.value[nodeId]
+  const fallback = fallbackDimensions.value[nodeId]
+  if (w === undefined && h === undefined && !fallback) return undefined
+  return {
+    width: w ?? fallback?.width,
+    height: h ?? fallback?.height,
+  }
+}
+
+const diagramStyleId = computed(
+  () => diagramStore.data?._mindmap_diagram_style as string | undefined
+)
+
+function nodeShape(
+  node: (typeof vueFlowNodes.value)[number] | undefined,
+  style: NodeStyle | undefined
+) {
+  if (!node) return 'rounded' as const
+  return resolveMindMapNodeShape(
+    {
+      id: node.id,
+      type: node.id === 'topic' ? 'topic' : 'branch',
+      style,
+    },
+    diagramStyleId.value
+  )
 }
 
 function edgeEndpoint(
@@ -47,7 +79,14 @@ function edgeEndpoint(
   fallback: { x: number; y: number }
 ) {
   const style = resolveMindMapNodeStyle(node?.id, node?.data as MindGraphNodeData | undefined, preservedNodeStyles.value)
-  return resolveMindMapEdgeEndpoint(node, role, fallback, style, measuredSize(node?.id))
+  return resolveMindMapEdgeEndpoint(
+    node,
+    role,
+    fallback,
+    style,
+    measuredSize(node?.id),
+    diagramStyleId.value
+  )
 }
 
 const isFromTopic = computed(() => props.source === 'topic')
@@ -90,7 +129,7 @@ const topicAnchor = computed(() => {
     topicNode.data as MindGraphNodeData | undefined,
     preservedNodeStyles.value
   )
-  const shape = resolveNodeShape(topicStyle, true)
+  const shape = nodeShape(topicNode, topicStyle)
   const side = branchSide(props.target)
   const baseX = side === 'left' ? topicNode.position.x : topicNode.position.x + w
 
@@ -159,6 +198,24 @@ const sharedTrunkX = computed(() => {
   return computeMindMapSharedTrunkX(anchorPoint.value.x, siblingTargetXs.value, targetPoint.value.x)
 })
 
+const targetNodeStyle = computed(() =>
+  resolveMindMapNodeStyle(
+    targetNode.value?.id,
+    targetNode.value?.data as MindGraphNodeData | undefined,
+    preservedNodeStyles.value
+  )
+)
+
+const targetShape = computed(() => nodeShape(targetNode.value, targetNodeStyle.value))
+
+const isSingleUnderlineChild = computed(
+  () => siblingTargetYs.value.length === 1 && targetShape.value === 'underline'
+)
+
+const isSingleTopicSideChild = computed(
+  () => isFromTopic.value && siblingEdges.value.length === 1
+)
+
 const path = computed(() => {
   const from = anchorPoint.value
   const to = targetPoint.value
@@ -175,6 +232,8 @@ const path = computed(() => {
     {
       drawSpine: drawsBusSpine.value,
       siblingToXs: siblingTargetXs.value,
+      singleUnderlineChild: isSingleUnderlineChild.value,
+      singleTopicSideChild: isSingleTopicSideChild.value,
     }
   )
 
@@ -192,6 +251,7 @@ const topicBorderColor = computed(() => {
 })
 
 const edgeStyle = computed(() => ({
+  fill: 'none',
   stroke: topicBorderColor.value,
   strokeWidth: isHovered.value
     ? MIND_MAP_GEOMETRY.edgeStrokeWidthHover
@@ -209,6 +269,7 @@ const edgeStyle = computed(() => ({
     :id="id"
     class="vue-flow__edge-path mindmap-orthogonal-edge"
     :d="path.edgePath"
+    fill="none"
     :style="edgeStyle"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"

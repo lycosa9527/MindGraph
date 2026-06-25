@@ -125,8 +125,10 @@ export interface DiagramData {
   }
   /** Per-node custom style overrides (persisted across sessions) */
   _node_styles?: Record<string, NodeStyle>
-  /** Active mind-map color theme (new nodes inherit this instead of default nordicBlue) */
+  /** Active mind-map color theme (new nodes inherit this instead of default vibrantBlue) */
   _mindmap_theme?: string
+  /** Mind map node shape combo preset (topic + branch depth shapes) */
+  _mindmap_diagram_style?: string
   /** Mind map: stable path keys of branches with collapsed subtrees */
   _collapsed_paths?: string[]
   /** Custom positions set by user dragging (distinct from auto-layout) */
@@ -159,7 +161,21 @@ export type DiagramSpec = DiagramData
 export type PresentationToolId = 'laser' | 'spotlight' | 'highlighter' | 'pen' | 'timer'
 
 /** Mind map presentation rail tools */
-export type MindMapPresentationToolId = 'hand' | 'laser' | 'pen' | 'slides'
+export type MindMapPresentationToolId =
+  | 'pointer'
+  | 'hand'
+  | 'laser'
+  | 'highlighter'
+  | 'pen'
+  | 'timer'
+  | 'slides'
+
+/** Tools with an inline parameter panel; clicking again returns to pointer. */
+export const MIND_MAP_PRESENTATION_EXPANDABLE_TOOLS = [
+  'laser',
+  'highlighter',
+  'pen',
+] as const satisfies readonly MindMapPresentationToolId[]
 
 /** Freehand strokes in presentation highlighter mode (Vue Flow coordinates). */
 export interface PresentationHighlightStroke {

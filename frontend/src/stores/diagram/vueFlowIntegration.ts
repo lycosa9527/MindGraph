@@ -140,17 +140,23 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
             collapsedPaths
           )
         : new Set<string>()
-      const recalculate = useV2Layout
-        ? recalculateMindMapV2ColumnPositions
-        : recalculateMindMapLegacyColumnPositions
-      const { nodes: correctedNodes, gaps } = recalculate(
-        ctx.data.value.nodes,
-        ctx.mindMapTopicActualWidth.value,
-        ctx.mindMapNodeWidths.value,
-        ctx.mindMapNodeHeights.value,
-        connections,
-        collapsedNodeIds
-      )
+      const { nodes: correctedNodes, gaps } = useV2Layout
+        ? recalculateMindMapV2ColumnPositions(
+            ctx.data.value.nodes,
+            ctx.mindMapTopicActualWidth.value,
+            ctx.mindMapNodeWidths.value,
+            ctx.mindMapNodeHeights.value,
+            connections,
+            collapsedNodeIds,
+            ctx.data.value._mindmap_diagram_style as string | undefined
+          )
+        : recalculateMindMapLegacyColumnPositions(
+            ctx.data.value.nodes,
+            ctx.mindMapTopicActualWidth.value,
+            ctx.mindMapNodeWidths.value,
+            ctx.mindMapNodeHeights.value,
+            connections
+          )
       ctx.mindMapTopicBranchGaps.value = gaps
       const firstLevelBranchCount = connections.filter((c) => c.source === 'topic').length
 

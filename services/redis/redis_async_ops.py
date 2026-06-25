@@ -194,9 +194,19 @@ class AsyncRedisOperations:
     @staticmethod
     @_with_async_retry("GETDEL", default_return=None)
     async def get_and_delete(key: str) -> Optional[str]:
-        """GETDEL key (Redis >= 6.2) — atomic get + delete in one round-trip."""
+        """GETDEL key (Redis >= 6.2) with GET+DEL fallback for older servers."""
 
-        return redis_decode(await _client().getdel(key))
+        client = _client()
+        try:
+            return redis_decode(await client.getdel(key))
+        except RedisResponseError as exc:
+            if "GETDEL" not in str(exc).upper():
+                raise
+            async with client.pipeline(transaction=True) as pipe:
+                pipe.get(key)
+                pipe.delete(key)
+                results = await pipe.execute()
+            return redis_decode(results[0])
 
     @staticmethod
     @_with_async_retry("INCR", default_return=None)

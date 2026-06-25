@@ -1,4 +1,11 @@
 import type { StylePresetColors } from '@/config/colorPalette'
+import { mindMapDiagramStyleUsesLayeredBranchColors } from '@/config/mindMapDiagramStyles'
+import { mindMapLayeredBranchColorsForNode, mindMapLayeredCenterTopicColors } from '@/config/mindMapVibrantThemes'
+import {
+  MIND_MAP_RAINBOW_THEME_ID,
+  MIND_MAP_RAINBOW_TOPIC_COLORS,
+  mindMapColorsFromVibrantAccent,
+} from '@/config/mindMapVibrantThemes'
 import { MIND_MAP_GEOMETRY, mindMapBranchFontSize } from '@/config/mindMapGeometry'
 import {
   mindMapColorsFromNord,
@@ -19,6 +26,13 @@ import {
 import type { DiagramNode, NodeStyle } from '@/types'
 
 export type MindMapThemeId =
+  | 'vibrantBlue'
+  | 'vibrantOrange'
+  | 'vibrantYellow'
+  | 'vibrantGreen'
+  | 'vibrantTeal'
+  | 'vibrantRose'
+  | 'rainbow'
   | 'nordicBlue'
   | 'nordFrostTeal'
   | 'nordFrostSlate'
@@ -42,6 +56,68 @@ export interface MindMapThemePreset extends StylePresetColors {
   previewClass: string
   /** Verifiable palette reference (URL or Nord scale ids). */
   sourceNote: string
+}
+
+const VIBRANT_BLUE: MindMapThemePreset = {
+  id: 'vibrantBlue',
+  nameKey: 'canvas.toolbar.mindMapThemeVibrantBlue',
+  previewClass: 'bg-[#eef2fb] border-[#4A72D4]',
+  sourceNote: 'Curated vibrant blue accent',
+  ...mindMapColorsFromVibrantAccent('#4A72D4'),
+}
+
+const VIBRANT_ORANGE: MindMapThemePreset = {
+  id: 'vibrantOrange',
+  nameKey: 'canvas.toolbar.mindMapThemeVibrantOrange',
+  previewClass: 'bg-[#fef0eb] border-[#FA8055]',
+  sourceNote: 'Curated vibrant coral accent rgb(250,128,85)',
+  ...mindMapColorsFromVibrantAccent('#FA8055'),
+}
+
+const VIBRANT_YELLOW: MindMapThemePreset = {
+  id: 'vibrantYellow',
+  nameKey: 'canvas.toolbar.mindMapThemeVibrantYellow',
+  previewClass: 'bg-[#fff8ef] border-[#FFAD36]',
+  sourceNote: 'Curated vibrant amber accent rgb(255,173,54)',
+  ...mindMapColorsFromVibrantAccent('#FFAD36'),
+}
+
+const VIBRANT_GREEN: MindMapThemePreset = {
+  id: 'vibrantGreen',
+  nameKey: 'canvas.toolbar.mindMapThemeVibrantGreen',
+  previewClass: 'bg-[#f7f9eb] border-[#B5C62A]',
+  sourceNote: 'Curated vibrant lime accent rgb(181,198,42)',
+  ...mindMapColorsFromVibrantAccent('#B5C62A'),
+}
+
+const VIBRANT_TEAL: MindMapThemePreset = {
+  id: 'vibrantTeal',
+  nameKey: 'canvas.toolbar.mindMapThemeVibrantTeal',
+  previewClass: 'bg-[#ebf7fa] border-[#0098B9]',
+  sourceNote: 'Curated vibrant cyan accent rgb(0,152,185)',
+  ...mindMapColorsFromVibrantAccent('#0098B9'),
+}
+
+const VIBRANT_ROSE: MindMapThemePreset = {
+  id: 'vibrantRose',
+  nameKey: 'canvas.toolbar.mindMapThemeVibrantRose',
+  previewClass: 'bg-[#f2f1fa] border-[#7574BC]',
+  sourceNote: 'Curated vibrant purple accent rgb(117,116,188)',
+  ...mindMapColorsFromVibrantAccent('#7574BC'),
+}
+
+/** Rainbow branches — topic neutral; each L1 branch cycles vibrant accents. */
+const RAINBOW_THEME: MindMapThemePreset = {
+  id: MIND_MAP_RAINBOW_THEME_ID,
+  nameKey: 'canvas.toolbar.mindMapThemeRainbow',
+  previewClass: 'bg-gradient-to-r from-[#FA8055] via-[#B5C62A] to-[#FF7DC1]',
+  sourceNote: 'Rainbow branch mode — per-L1 vibrant accent families',
+  backgroundColor: mindMapColorsFromVibrantAccent('#4A72D4').backgroundColor,
+  textColor: mindMapColorsFromVibrantAccent('#4A72D4').textColor,
+  borderColor: mindMapColorsFromVibrantAccent('#4A72D4').borderColor,
+  topicBackgroundColor: MIND_MAP_RAINBOW_TOPIC_COLORS.topicBackgroundColor,
+  topicTextColor: MIND_MAP_RAINBOW_TOPIC_COLORS.topicTextColor,
+  topicBorderColor: MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor,
 }
 
 /**
@@ -216,6 +292,13 @@ function themeFromRadix(
 }
 
 export const MIND_MAP_THEMES: MindMapThemePreset[] = [
+  VIBRANT_BLUE,
+  VIBRANT_ORANGE,
+  VIBRANT_YELLOW,
+  VIBRANT_GREEN,
+  VIBRANT_TEAL,
+  VIBRANT_ROSE,
+  RAINBOW_THEME,
   NORD_THEME_NORDIC_BLUE,
   NORD_THEME_FROST_TEAL,
   NORD_THEME_FROST_SLATE,
@@ -273,7 +356,21 @@ export const MIND_MAP_THEMES: MindMapThemePreset[] = [
   ),
 ]
 
-export const DEFAULT_MIND_MAP_THEME_ID: MindMapThemeId = 'nordicBlue'
+export const DEFAULT_MIND_MAP_THEME_ID: MindMapThemeId = 'vibrantBlue'
+
+/** Curated palettes in the appearance picker (vibrant classroom choices). */
+export const MIND_MAP_COMMON_THEME_IDS: MindMapThemeId[] = [
+  'vibrantBlue',
+  'vibrantOrange',
+  'vibrantYellow',
+  'vibrantGreen',
+  'vibrantTeal',
+  'vibrantRose',
+]
+
+export function getMindMapCommonThemes(): MindMapThemePreset[] {
+  return MIND_MAP_COMMON_THEME_IDS.map((id) => getMindMapThemeById(id))
+}
 
 export function getMindMapThemeById(id: MindMapThemeId = DEFAULT_MIND_MAP_THEME_ID): MindMapThemePreset {
   return MIND_MAP_THEMES.find((item) => item.id === id) ?? MIND_MAP_THEMES[0]
@@ -333,20 +430,55 @@ function isMindMapTopicNode(node: Pick<DiagramNode, 'type'>): boolean {
 /** Default node colors from a mind-map theme preset (geometry typography included). */
 export function mindMapStyleFromTheme(
   node: Pick<DiagramNode, 'type' | 'id'>,
-  theme: MindMapThemePreset = getDefaultMindMapTheme()
+  theme: MindMapThemePreset = getDefaultMindMapTheme(),
+  diagramStyleId?: string | null
 ): Partial<NodeStyle> {
   const useTopic = isMindMapTopicNode(node)
   const fontSize = useTopic
     ? MIND_MAP_GEOMETRY.topicFontSize
     : mindMapBranchFontSize(node.id)
-  return {
-    backgroundColor: useTopic ? theme.topicBackgroundColor : theme.backgroundColor,
-    textColor: useTopic ? theme.topicTextColor : theme.textColor,
-    borderColor: useTopic ? theme.topicBorderColor : theme.borderColor,
+  const geometry: Partial<NodeStyle> = {
     fontFamily: MIND_MAP_GEOMETRY.fontFamily,
     fontSize,
     fontWeight: useTopic ? 'bold' : 'normal',
     borderWidth: MIND_MAP_GEOMETRY.borderWidth,
+  }
+
+  if (useTopic) {
+    if (mindMapDiagramStyleUsesLayeredBranchColors(diagramStyleId)) {
+      const center = mindMapLayeredCenterTopicColors(theme)
+      return {
+        ...geometry,
+        backgroundColor: center.topicBackgroundColor,
+        textColor: center.topicTextColor,
+        borderColor: center.topicBorderColor,
+      }
+    }
+    return {
+      ...geometry,
+      backgroundColor: theme.topicBackgroundColor,
+      textColor: theme.topicTextColor,
+      borderColor: theme.topicBorderColor,
+    }
+  }
+
+  if (mindMapDiagramStyleUsesLayeredBranchColors(diagramStyleId)) {
+    const layered = mindMapLayeredBranchColorsForNode(node.id, theme.borderColor)
+    if (layered) {
+      return {
+        ...geometry,
+        backgroundColor: layered.backgroundColor,
+        textColor: layered.textColor,
+        borderColor: layered.borderColor,
+      }
+    }
+  }
+
+  return {
+    ...geometry,
+    backgroundColor: theme.backgroundColor,
+    textColor: theme.textColor,
+    borderColor: theme.borderColor,
   }
 }
 

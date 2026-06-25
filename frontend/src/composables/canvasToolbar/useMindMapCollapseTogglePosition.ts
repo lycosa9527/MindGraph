@@ -4,9 +4,9 @@ import { DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { DEFAULT_MINDMAP_RANK_SEPARATION } from '@/composables/diagrams/layoutConfig'
 import { MINDMAP_UNDERLINE_STROKE_WIDTH } from '@/config/mindMapGeometry'
 import { mindMapConnectionAnchorY } from '@/config/mindMapGeometry'
+import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import type { Connection, DiagramNode, NodeStyle } from '@/types'
 import { getMindMapVisibleCollapsedNodeIds } from '@/stores/diagram/mindMapCollapse'
-import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 
 /** Match `.mind-map-collapse-overlay__btn--collapse` */
 const COLLAPSE_HANDLE_HALF = 9
@@ -102,14 +102,18 @@ function resolveToggleFlowPoint(
   connections: Connection[],
   widths: Record<string, number>,
   heights: Record<string, number>,
-  nodeStyles?: Record<string, NodeStyle>
+  nodeStyles?: Record<string, NodeStyle>,
+  diagramStyleId?: string | null
 ): { toggleX: number; anchorY: number; parentOutX: number } | null {
   const parent = nodes.find((n) => n.id === parentId)
   if (!parent?.position) return null
 
   const isLeftBranch = parentId.startsWith('branch-l-')
   const parentStyle = resolveNodeMergedStyle(parent, nodeStyles)
-  const parentShape = resolveNodeShape(parentStyle, true)
+  const parentShape = resolveMindMapNodeShape(
+    { id: parentId, type: parent.type ?? 'branch', style: parentStyle },
+    diagramStyleId
+  )
   const { w: pw, h: ph } = nodeFlowSize(parentId, parent, widths, heights)
   const anchorY = mindMapConnectionAnchorY(parent.position.y, ph, parentShape)
   const parentOutX = isLeftBranch ? parent.position.x : parent.position.x + pw
@@ -159,9 +163,18 @@ function resolveToggleHandle(
   nodeStyles: Record<string, NodeStyle> | undefined,
   strokeColor: string,
   mode: 'collapse' | 'expand',
-  count?: number
+  count?: number,
+  diagramStyleId?: string | null
 ): CollapseOverlayHandle | null {
-  const flow = resolveToggleFlowPoint(nodeId, nodes, connections, widths, heights, nodeStyles)
+  const flow = resolveToggleFlowPoint(
+    nodeId,
+    nodes,
+    connections,
+    widths,
+    heights,
+    nodeStyles,
+    diagramStyleId
+  )
   if (!flow) return null
 
   const isLeftBranch = nodeId.startsWith('branch-l-')
@@ -229,13 +242,14 @@ function resolveToggleHandle(
 
 export function useMindMapCollapseOverlayPositions(options: {
   containerRef: Ref<HTMLElement | null>
-  selectedNodeId: Ref<string | null>
+  hoveredNodeId: Ref<string | null>
   collapsedPaths: Ref<string[]>
   nodes: Ref<DiagramNode[] | undefined>
   connections: Ref<Connection[] | undefined>
   nodeWidths: Ref<Record<string, number>>
   nodeHeights: Ref<Record<string, number>>
   nodeStyles: Ref<Record<string, NodeStyle> | undefined>
+  diagramStyleId?: Ref<string | undefined>
   strokeColor: Ref<string>
   enabled: Ref<boolean>
   editingNodeId: Ref<string | null>
@@ -261,6 +275,7 @@ export function useMindMapCollapseOverlayPositions(options: {
     const heights = options.nodeHeights.value
     const styles = options.nodeStyles.value
     const stroke = options.strokeColor.value
+    const styleId = options.diagramStyleId?.value
     const next: CollapseOverlayHandle[] = []
     const collapsedNodeIds = getMindMapVisibleCollapsedNodeIds(
       nodes,
@@ -268,7 +283,7 @@ export function useMindMapCollapseOverlayPositions(options: {
       options.collapsedPaths.value,
       options.getDescendantIds
     )
-    const selectedId = options.selectedNodeId.value
+    const hoveredId = options.hoveredNodeId.value
     const editingId = options.editingNodeId.value
 
     for (const nodeId of collapsedNodeIds) {
@@ -285,28 +300,31 @@ export function useMindMapCollapseOverlayPositions(options: {
         styles,
         stroke,
         'expand',
-        count
+        count,
+        styleId
       )
       if (handle) next.push(handle)
     }
 
     if (
-      selectedId &&
-      selectedId !== 'topic' &&
-      editingId !== selectedId &&
-      !collapsedNodeIds.has(selectedId) &&
-      connections.some((c) => c.source === selectedId)
+      hoveredId &&
+      hoveredId !== 'topic' &&
+      editingId !== hoveredId &&
+      !collapsedNodeIds.has(hoveredId) &&
+      connections.some((c) => c.source === hoveredId)
     ) {
       const handle = resolveToggleHandle(
         container,
-        selectedId,
+        hoveredId,
         nodes,
         connections,
         widths,
         heights,
         styles,
         stroke,
-        'collapse'
+        'collapse',
+        undefined,
+        styleId
       )
       if (handle) next.push(handle)
     }
@@ -325,12 +343,16 @@ export function useMindMapCollapseOverlayPositions(options: {
   watch(
     () =>
       [
-        options.selectedNodeId.value,
+        options.hoveredNodeId.value,
         options.enabled.value,
         options.collapsedPaths.value.join('|'),
         options.nodes.value?.length,
         options.editingNodeId.value,
         options.strokeColor.value,
+        options.diagramStyleId?.value,
+        Object.keys(options.nodeWidths.value).length,
+        Object.values(options.nodeWidths.value).join(','),
+        Object.values(options.nodeHeights.value).join(','),
       ] as const,
     scheduleMeasure,
     { immediate: true }

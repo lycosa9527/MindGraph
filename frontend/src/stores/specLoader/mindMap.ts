@@ -31,6 +31,45 @@ import {
 } from './textMeasurement'
 import { computeScriptAwareMaxWidth } from './textMeasurementFallback'
 import type { SpecLoaderResult } from './types'
+import type { NodeStyle } from '@/types'
+
+export type MindMapMeasureTypography = Pick<NodeStyle, 'fontSize' | 'fontWeight' | 'fontFamily'>
+
+function resolveBranchFontSize(
+  nodeId: string | undefined,
+  typography?: MindMapMeasureTypography
+): number {
+  const custom = typography?.fontSize
+  if (custom != null) {
+    const n = typeof custom === 'number' ? custom : parseFloat(String(custom))
+    if (Number.isFinite(n) && n > 0) return n
+  }
+  return mindMapBranchFontSize(nodeId)
+}
+
+function resolveTopicFontSize(typography?: MindMapMeasureTypography): number {
+  const custom = typography?.fontSize
+  if (custom != null) {
+    const n = typeof custom === 'number' ? custom : parseFloat(String(custom))
+    if (Number.isFinite(n) && n > 0) return n
+  }
+  return MIND_MAP_GEOMETRY.topicFontSize
+}
+
+function resolveMeasureFontWeight(
+  typography: MindMapMeasureTypography | undefined,
+  fallback: string
+): string {
+  if (typography?.fontWeight != null) return String(typography.fontWeight)
+  return fallback
+}
+
+function measureOpts(typography?: MindMapMeasureTypography, fontWeight = 'normal') {
+  return {
+    fontWeight: resolveMeasureFontWeight(typography, fontWeight),
+    fontFamily: typography?.fontFamily,
+  }
+}
 
 interface MindMapBranch {
   text: string
@@ -43,9 +82,9 @@ function getBranchText(branch: { text?: string; label?: string }): string {
 }
 
 const BRANCH_BASE_MAX_TEXT_WIDTH = 200
-const BALANCE_PADDING = 5
 
-function computeBalancedMaxWidth(
+/** Max text column width: single-line threshold when short, fixed cap when wrapping. */
+function computeWrapMaxWidth(
   text: string,
   wrapThreshold: number,
   baseCap: number,
@@ -55,34 +94,33 @@ function computeBalancedMaxWidth(
   if (typeof document === 'undefined') return wrapThreshold
   const tw = measureTextWidth(text, fontSize, { fontWeight })
   if (tw <= wrapThreshold) return wrapThreshold
-  const numLines = Math.ceil(tw / baseCap)
-  return Math.min(Math.ceil(tw / numLines) + BALANCE_PADDING, baseCap)
+  return baseCap
 }
 
 /**
  * Estimate rendered BranchNode width from text content.
- * Uses DOM-based measureTextWidth for accuracy, with balanced-width
- * approximation matching CSS text-wrap: balance in BranchNode.vue.
+ * Uses DOM-based measureTextWidth; wraps at a fixed cap when text exceeds threshold.
  */
-export function estimateNodeWidth(text: string, nodeId?: string): number {
+export function estimateNodeWidth(
+  text: string,
+  nodeId?: string,
+  typography?: MindMapMeasureTypography
+): number {
   if (!text) return MIND_MAP_GEOMETRY.minWidth
-  const branchFontSize = mindMapBranchFontSize(nodeId)
+  const branchFontSize = resolveBranchFontSize(nodeId, typography)
   const shape = 'rounded' as const
   const nodeHorizontalExtra = mindMapNodeHorizontalExtra(shape)
   const minNodeWidth = MIND_MAP_GEOMETRY.minWidth
+  const weight = resolveMeasureFontWeight(typography, 'normal')
 
   if (typeof document === 'undefined') {
     return Math.max(minNodeWidth, text.length * 8 + nodeHorizontalExtra)
   }
 
-  const fullWidth = measureTextWidth(text, branchFontSize)
+  const fullWidth = measureTextWidth(text, branchFontSize, measureOpts(typography, weight))
   const wrapThreshold = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
-  let effectiveTextWidth = fullWidth
-  if (fullWidth > wrapThreshold) {
-    const numLines = Math.ceil(fullWidth / BRANCH_BASE_MAX_TEXT_WIDTH)
-    effectiveTextWidth = Math.ceil(fullWidth / numLines) + BALANCE_PADDING
-    effectiveTextWidth = Math.min(effectiveTextWidth, BRANCH_BASE_MAX_TEXT_WIDTH)
-  }
+  const effectiveTextWidth =
+    fullWidth > wrapThreshold ? BRANCH_BASE_MAX_TEXT_WIDTH : fullWidth
 
   void nodeId
   return Math.max(minNodeWidth, effectiveTextWidth + nodeHorizontalExtra)
@@ -95,19 +133,28 @@ const BRANCH_PADDING_Y = MIND_MAP_GEOMETRY.paddingY * 2
  * Measure rendered BranchNode height using DOM measurement.
  * Font 14px, padding/border from MIND_MAP_GEOMETRY; min-height 34px.
  */
-export function measureBranchNodeHeight(text: string, nodeId?: string): number {
+export function measureBranchNodeHeight(
+  text: string,
+  nodeId?: string,
+  typography?: MindMapMeasureTypography
+): number {
   if (!text) return BRANCH_NODE_HEIGHT
-  const branchFontSize = mindMapBranchFontSize(nodeId)
+  const branchFontSize = resolveBranchFontSize(nodeId, typography)
+  const fontWeight = resolveMeasureFontWeight(typography, 'normal')
   const wrapThreshold = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
-  const maxTextWidth = computeBalancedMaxWidth(
+  const maxTextWidth = computeWrapMaxWidth(
     text,
     wrapThreshold,
     BRANCH_BASE_MAX_TEXT_WIDTH,
-    branchFontSize
+    branchFontSize,
+    fontWeight
   )
 
   if (diagramLabelLikelyNeedsRenderedMeasure(text)) {
-    const contentH = measureRenderedDiagramLabelHeight(text, branchFontSize, maxTextWidth)
+    const contentH = measureRenderedDiagramLabelHeight(text, branchFontSize, maxTextWidth, {
+      fontWeight,
+      fontFamily: typography?.fontFamily,
+    })
     return Math.max(BRANCH_NODE_HEIGHT, Math.ceil(contentH + BRANCH_PADDING_Y + BRANCH_BORDER_Y))
   }
 
@@ -115,6 +162,8 @@ export function measureBranchNodeHeight(text: string, nodeId?: string): number {
     maxWidth: maxTextWidth,
     paddingX: 0,
     paddingY: 0,
+    fontWeight,
+    fontFamily: typography?.fontFamily,
   })
   return Math.max(BRANCH_NODE_HEIGHT, textHeight + BRANCH_PADDING_Y + BRANCH_BORDER_Y)
 }
@@ -122,21 +171,30 @@ export function measureBranchNodeHeight(text: string, nodeId?: string): number {
 /**
  * Height for underline-shaped branch nodes: text above the line, no box padding.
  */
-export function measureBranchNodeUnderlineHeight(text: string, nodeId?: string): number {
+export function measureBranchNodeUnderlineHeight(
+  text: string,
+  nodeId?: string,
+  typography?: MindMapMeasureTypography
+): number {
   const extra = mindMapUnderlineVerticalExtra()
-  const branchFontSize = mindMapBranchFontSize(nodeId)
+  const branchFontSize = resolveBranchFontSize(nodeId, typography)
+  const fontWeight = resolveMeasureFontWeight(typography, 'normal')
   const minHeight = branchFontSize + extra
   if (!text) return minHeight
   const wrapThreshold = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
-  const maxTextWidth = computeBalancedMaxWidth(
+  const maxTextWidth = computeWrapMaxWidth(
     text,
     wrapThreshold,
     BRANCH_BASE_MAX_TEXT_WIDTH,
-    branchFontSize
+    branchFontSize,
+    fontWeight
   )
 
   if (diagramLabelLikelyNeedsRenderedMeasure(text)) {
-    const contentH = measureRenderedDiagramLabelHeight(text, branchFontSize, maxTextWidth)
+    const contentH = measureRenderedDiagramLabelHeight(text, branchFontSize, maxTextWidth, {
+      fontWeight,
+      fontFamily: typography?.fontFamily,
+    })
     return Math.max(minHeight, Math.ceil(contentH + extra))
   }
 
@@ -144,6 +202,8 @@ export function measureBranchNodeUnderlineHeight(text: string, nodeId?: string):
     maxWidth: maxTextWidth,
     paddingX: 0,
     paddingY: 0,
+    fontWeight,
+    fontFamily: typography?.fontFamily,
   })
   return Math.max(minHeight, textHeight + extra)
 }
@@ -155,15 +215,18 @@ const TOPIC_BASE_MAX_TEXT_WIDTH = 300
 
 /**
  * Estimate rendered TopicNode width from text content.
- * Uses DOM-based measureTextWidth with balanced-width approximation
- * matching CSS text-wrap: balance in TopicNode.vue (cap=300px).
+ * Single-line width up to cap; fixed 300px column when wrapping.
  */
-export function estimateTopicNodeWidth(text: string): number {
+export function estimateTopicNodeWidth(
+  text: string,
+  typography?: MindMapMeasureTypography
+): number {
   if (!text) return MIND_MAP_GEOMETRY.minWidth
-  const topicFontSize = MIND_MAP_GEOMETRY.topicFontSize
+  const topicFontSize = resolveTopicFontSize(typography)
   const topicPaddingX = MIND_MAP_GEOMETRY.paddingX * 2
   const topicBorderX = MIND_MAP_GEOMETRY.borderWidth * 2
   const minTopicWidth = MIND_MAP_GEOMETRY.minWidth
+  const fontWeight = resolveMeasureFontWeight(typography, 'bold')
 
   if (typeof document === 'undefined') {
     const cjkMatches = text.match(TOPIC_CJK_REGEX)
@@ -176,49 +239,50 @@ export function estimateTopicNodeWidth(text: string): number {
     )
   }
 
-  const fullWidth = measureTextWidth(text, topicFontSize, { fontWeight: 'bold' })
-  let effectiveTextWidth = fullWidth
-  if (fullWidth > TOPIC_BASE_MAX_TEXT_WIDTH) {
-    const numLines = Math.ceil(fullWidth / TOPIC_BASE_MAX_TEXT_WIDTH)
-    effectiveTextWidth = Math.ceil(fullWidth / numLines) + BALANCE_PADDING
-    effectiveTextWidth = Math.min(effectiveTextWidth, TOPIC_BASE_MAX_TEXT_WIDTH)
-  }
+  const fullWidth = measureTextWidth(text, topicFontSize, measureOpts(typography, fontWeight))
+  const effectiveTextWidth =
+    fullWidth > TOPIC_BASE_MAX_TEXT_WIDTH ? TOPIC_BASE_MAX_TEXT_WIDTH : fullWidth
 
   return Math.max(minTopicWidth, effectiveTextWidth + topicPaddingX + topicBorderX)
 }
 
 /**
  * Estimate rendered TopicNode height from text content.
- * Uses balanced max-width matching CSS text-wrap: balance in TopicNode.vue.
- * For KaTeX labels the rendered DOM height is measured directly.
+ * Uses fixed max-width column; height from wrapped line count.
  */
-export function estimateTopicNodeHeight(text: string): number {
+export function estimateTopicNodeHeight(
+  text: string,
+  typography?: MindMapMeasureTypography
+): number {
   if (!text) return MIND_MAP_GEOMETRY.minHeight
-  const topicFontSize = MIND_MAP_GEOMETRY.topicFontSize
-  const maxTextWidth = computeBalancedMaxWidth(
+  const topicFontSize = resolveTopicFontSize(typography)
+  const fontWeight = resolveMeasureFontWeight(typography, 'bold')
+  const maxTextWidth = computeWrapMaxWidth(
     text,
     TOPIC_BASE_MAX_TEXT_WIDTH,
     TOPIC_BASE_MAX_TEXT_WIDTH,
     topicFontSize,
-    'bold'
+    fontWeight
   )
   const paddingY = MIND_MAP_GEOMETRY.paddingY * 2
   const borderY = MIND_MAP_GEOMETRY.borderWidth * 2
 
   if (diagramLabelLikelyNeedsRenderedMeasure(text)) {
     const contentH = measureRenderedDiagramLabelHeight(text, topicFontSize, maxTextWidth, {
-      fontWeight: 'bold',
+      fontWeight,
+      fontFamily: typography?.fontFamily,
     })
     return Math.max(MIND_MAP_GEOMETRY.minHeight, Math.ceil(contentH + paddingY + borderY))
   }
 
   const { height: textHeight } = measureTextDimensions(text, topicFontSize, {
-    fontWeight: 'bold',
+    fontWeight,
+    fontFamily: typography?.fontFamily,
     maxWidth: maxTextWidth,
     paddingX: 0,
     paddingY: 0,
   })
-  const lineHeight = 20
+  const lineHeight = Math.ceil(topicFontSize * 1.25)
   const numLines = Math.max(1, Math.ceil(textHeight / lineHeight))
   return Math.max(MIND_MAP_GEOMETRY.minHeight, numLines * lineHeight + paddingY + borderY)
 }

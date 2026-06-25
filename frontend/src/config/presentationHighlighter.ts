@@ -24,3 +24,6 @@ export const PRESENTATION_HIGHLIGHTER_PALETTE: PresentationHighlighterPaletteEnt
   { swatch: '#facc15', stroke: 'rgba(250, 204, 21, 0.5)' },
   { swatch: '#94a3b8', stroke: 'rgba(148, 163, 184, 0.55)' },
 ]
+
+/** Subset shown on the presentation rail (yellow / green / pink). */
+export const PRESENTATION_HIGHLIGHTER_PALETTE_TOOLBAR = PRESENTATION_HIGHLIGHTER_PALETTE.slice(0, 3)

@@ -16,6 +16,7 @@ import {
   computeTopicRadiusForCircleMap,
   measureTextWidth,
 } from './textMeasurement'
+import { estimateNodeWidth, measureBranchNodeHeight } from './mindMap'
 import type { SpecLoaderResult } from './types'
 
 /** Placeholder text for knocked-out nodes in learning sheet mode */
@@ -118,17 +119,32 @@ export function applyLearningSheetHiddenNodes(
   const indicesToHide = new Set(shuffled.slice(0, countToHide))
 
   const hiddenAnswers: string[] = []
+  const isMindMap = diagramType === 'mindmap' || diagramType === 'mind_map'
   const nodes = result.nodes.map((node, idx) => {
     if (!indicesToHide.has(idx)) {
       return node
     }
     const originalText = String(node.text || '').trim()
     hiddenAnswers.push(originalText)
+    const nodeData = node.data as { estimatedWidth?: number; estimatedHeight?: number } | undefined
+    const layoutEstimates = isMindMap
+      ? {
+          estimatedWidth:
+            typeof nodeData?.estimatedWidth === 'number' && nodeData.estimatedWidth > 0
+              ? nodeData.estimatedWidth
+              : estimateNodeWidth(originalText, node.id, node.style),
+          estimatedHeight:
+            typeof nodeData?.estimatedHeight === 'number' && nodeData.estimatedHeight > 0
+              ? nodeData.estimatedHeight
+              : measureBranchNodeHeight(originalText, node.id, node.style),
+        }
+      : {}
     return {
       ...node,
       text: LEARNING_SHEET_PLACEHOLDER,
       data: {
         ...node.data,
+        ...layoutEstimates,
         hidden: true,
         hiddenAnswer: originalText,
       },

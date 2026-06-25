@@ -63,6 +63,8 @@ export interface DiagramContext {
   mindMapNodeHeights: Ref<Record<string, number>>
   mindMapRecalcTrigger: Ref<number>
   mindMapTopicBranchGaps: Ref<{ left: number; right: number } | null>
+  /** Node id that should enter inline edit after the next mount (mind-map add flows). */
+  mindMapPendingEditNodeId: Ref<string | null>
 
   // Generic node dimension tracking (actual DOM-measured sizes)
   nodeDimensions: Ref<Record<string, { width: number; height: number }>>
@@ -101,4 +103,6 @@ export interface DiagramContext {
   getMindMapDescendantIds: (rootNodeId: string) => Set<string>
   getTreeMapDescendantIds: (nodeId: string) => Set<string>
   setExpectedNodeCount: (count: number) => void
+  /** Coalesce mind-map layout invalidations to one recalc per animation frame. */
+  scheduleMindMapRecalc: () => void
 }

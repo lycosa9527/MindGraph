@@ -18,6 +18,7 @@ export { default as PresentationSideToolbar } from './PresentationSideToolbar.vu
 export { default as MindMapPresentationSideToolbar } from './MindMapPresentationSideToolbar.vue'
 export { default as MindMapSlideOverlay } from './MindMapSlideOverlay.vue'
 export { default as PresentationTimerOverlay } from './PresentationTimerOverlay.vue'
+export { default as PresentationTimerHud } from './PresentationTimerHud.vue'
 export { default as CanvasCollabOverlay } from './CanvasCollabOverlay.vue'
 export { default as CanvasMindMapShortcutGuide } from './CanvasMindMapShortcutGuide.vue'
 export { default as MindMapSideToolbar } from './MindMapSideToolbar.vue'

@@ -329,6 +329,8 @@ export type EventTypes = {
   'node_editor:insert_text': { nodeId: string; snippet: string }
   /** Fired when InlineEditableText applied insert at caret (toolbar skips store append) */
   'node_editor:insert_text_consumed': { nodeId: string }
+  /** Insert a manual line break at the caret in the active label editor */
+  'node_editor:insert_line_break': { nodeId: string }
 
   // Workshop Events
   'workshop:code-changed': {

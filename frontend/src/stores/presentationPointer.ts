@@ -13,6 +13,7 @@ const STORAGE_KEY = 'mindgraph_presentation_pointer_scales'
 export const PRESENTATION_POINTER_SCALE_MIN = 0.5
 export const PRESENTATION_POINTER_SCALE_MAX = 2.5
 export const PRESENTATION_POINTER_SCALE_STEP = 0.1
+export const PRESENTATION_LASER_DEFAULT_SCALE = 0.75
 
 interface PersistedScales {
   laser: number
@@ -37,7 +38,7 @@ function readPersisted(): PersistedScales | null {
     }
     const o = JSON.parse(raw) as Partial<PersistedScales>
     return {
-      laser: typeof o.laser === 'number' ? clampScale(o.laser) : 1,
+      laser: typeof o.laser === 'number' ? clampScale(o.laser) : PRESENTATION_LASER_DEFAULT_SCALE,
       spotlight: typeof o.spotlight === 'number' ? clampScale(o.spotlight) : 1,
       highlighter: typeof o.highlighter === 'number' ? clampScale(o.highlighter) : 1,
       pen: typeof o.pen === 'number' ? clampScale(o.pen) : 1,
@@ -55,7 +56,7 @@ function writePersisted(s: PersistedScales): void {
 }
 
 export const usePresentationPointerStore = defineStore('presentationPointer', () => {
-  const laserScale = ref(1)
+  const laserScale = ref(PRESENTATION_LASER_DEFAULT_SCALE)
   const spotlightScale = ref(1)
   const highlighterScale = ref(1)
   const penScale = ref(1)
@@ -101,6 +102,22 @@ export const usePresentationPointerStore = defineStore('presentationPointer', ()
     persist()
   }
 
+  function setScaleForTool(tool: PresentationToolId, scale: number): void {
+    const clamped = clampScale(scale)
+    if (tool === 'laser') {
+      laserScale.value = clamped
+    } else if (tool === 'spotlight') {
+      spotlightScale.value = clamped
+    } else if (tool === 'highlighter') {
+      highlighterScale.value = clamped
+    } else if (tool === 'pen') {
+      penScale.value = clamped
+    } else {
+      return
+    }
+    persist()
+  }
+
   hydrate()
 
   return {
@@ -109,5 +126,6 @@ export const usePresentationPointerStore = defineStore('presentationPointer', ()
     highlighterScale,
     penScale,
     adjustScaleForTool,
+    setScaleForTool,
   }
 })

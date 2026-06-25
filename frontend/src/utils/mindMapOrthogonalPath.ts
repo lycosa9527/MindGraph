@@ -26,6 +26,15 @@ export type MindMapBracketBusOptions = {
   drawSpine?: boolean
   /** Parallel to siblingYs — used to trim the spine to rounded tee join points. */
   siblingToXs?: number[]
+  /**
+   * Only child with an underline target: flat horizontal at the underline midline
+   * (parent side → child), no vertical bus or rounded tee.
+   */
+  singleUnderlineChild?: boolean
+  /**
+   * Sole L1 branch on one side of the topic: straight connector (no rounded tee).
+   */
+  singleTopicSideChild?: boolean
 }
 
 function clampRadius(maxRadius: number, legA: number, legB: number): number {
@@ -141,12 +150,25 @@ export function buildMindMapBracketBusPath(
   const drawSpine = options.drawSpine ?? false
   const branchYs = siblingYs.length > 0 ? siblingYs : [toY]
 
+  // Sole underline child: flat horizontal at the shared connection anchor Y.
+  if (options.singleUnderlineChild && branchYs.length === 1) {
+    return `M ${fromX} ${fromY} L ${toX} ${fromY}`
+  }
+
+  // Sole topic-side L1 branch: orthogonal segments only (no Q-rounded tee).
+  if (options.singleTopicSideChild && branchYs.length === 1) {
+    if (Math.abs(toY - fromY) < flatThreshold) {
+      return `M ${fromX} ${fromY} L ${toX} ${fromY}`
+    }
+    return `M ${fromX} ${fromY} L ${trunkX} ${fromY} L ${trunkX} ${toY} L ${toX} ${toY}`
+  }
+
   const allFlat = branchYs.every((y) => Math.abs(y - fromY) < flatThreshold)
   if (allFlat) {
     if (!drawSpine) {
-      return `M ${trunkX} ${fromY} L ${toX} ${fromY}`
+      return `M ${trunkX} ${toY} L ${toX} ${toY}`
     }
-    return `M ${fromX} ${fromY} L ${trunkX} ${fromY} L ${toX} ${fromY}`
+    return `M ${fromX} ${fromY} L ${trunkX} ${fromY} L ${toX} ${toY}`
   }
 
   const branchToXs =
@@ -173,7 +195,7 @@ export function buildMindMapBracketBusPath(
     const vLeg = Math.abs(toY - fromY)
     const r = clampRadius(maxR, hLen, Math.max(vLeg, hLen * 0.35))
     if (Math.abs(toY - fromY) < flatThreshold) {
-      return `M ${fromX} ${fromY} L ${trunkX} ${fromY} L ${toX} ${fromY}`
+      return `M ${fromX} ${fromY} L ${trunkX} ${fromY} L ${toX} ${toY}`
     }
     const approachY = toY < fromY ? toY + r : toY - r
     return [

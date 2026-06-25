@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import type { NodeStyle } from '@/types'
 import {
   estimateNodeWidth as estimateMindMapBranchWidth,
   measureBranchNodeHeight as measureMindMapBranchHeight,
@@ -16,17 +17,45 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     return ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map'
   }
 
-  function mindMapEstimatedData(
+  /** Layout size from answer text; keeps pre-blank estimates when already set. */
+  function mindMapLayoutEstimates(
     existingData: Record<string, unknown> | undefined,
-    text: string,
-    nodeId?: string
+    layoutText: string,
+    nodeId?: string,
+    nodeStyle?: NodeStyle
   ): Record<string, unknown> | undefined {
     if (!isMindMap()) return existingData
+    const existing = existingData as { estimatedWidth?: number; estimatedHeight?: number } | undefined
+    const fromText = {
+      estimatedWidth: estimateMindMapBranchWidth(layoutText, nodeId, nodeStyle),
+      estimatedHeight: measureMindMapBranchHeight(layoutText, nodeId, nodeStyle),
+    }
     return {
       ...existingData,
-      estimatedWidth: estimateMindMapBranchWidth(text, nodeId),
-      estimatedHeight: measureMindMapBranchHeight(text, nodeId),
+      estimatedWidth:
+        typeof existing?.estimatedWidth === 'number' && existing.estimatedWidth > 0
+          ? Math.max(existing.estimatedWidth, fromText.estimatedWidth)
+          : fromText.estimatedWidth,
+      estimatedHeight:
+        typeof existing?.estimatedHeight === 'number' && existing.estimatedHeight > 0
+          ? Math.max(existing.estimatedHeight, fromText.estimatedHeight)
+          : fromText.estimatedHeight,
     }
+  }
+
+  function preserveMindMapBlankedLayoutSize(
+    nodeId: string,
+    layoutWidth: number,
+    layoutHeight: number
+  ): void {
+    if (!isMindMap()) return
+    const prevW = ctx.mindMapNodeWidths.value[nodeId]
+    const prevH = ctx.mindMapNodeHeights.value[nodeId]
+    const width = Math.max(prevW ?? 0, layoutWidth)
+    const height = Math.max(prevH ?? 0, layoutHeight)
+    if (width > 0) ctx.mindMapNodeWidths.value[nodeId] = width
+    if (height > 0) ctx.mindMapNodeHeights.value[nodeId] = height
+    ctx.scheduleMindMapRecalc()
   }
 
   const isLearningSheet = computed(() => {
@@ -37,6 +66,28 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
   const hiddenAnswers = computed(
     () => (data.value as { hiddenAnswers?: string[] } | null)?.hiddenAnswers ?? []
   )
+
+  const learningSheetShowAnswers = computed(() => {
+    const d = data.value as {
+      learningSheetShowAnswers?: boolean
+      learning_sheet_show_answers?: boolean
+    } | null
+    if (d?.learningSheetShowAnswers === false || d?.learning_sheet_show_answers === false) {
+      return false
+    }
+    return true
+  })
+
+  function setLearningSheetShowAnswers(show: boolean): void {
+    if (!data.value) return
+    const d = data.value as Record<string, unknown>
+    d.learningSheetShowAnswers = show
+    if (show) {
+      delete d.learning_sheet_show_answers
+    } else {
+      d.learning_sheet_show_answers = false
+    }
+  }
 
   function syncLearningSheetFlags(d: Record<string, unknown>, enabled: boolean): void {
     d.isLearningSheet = enabled
@@ -73,11 +124,19 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     const originalText = nodeHiddenAnswer(node)
     if (!originalText) return false
 
+    delete ctx.mindMapNodeWidths.value[nodeId]
+    delete ctx.mindMapNodeHeights.value[nodeId]
+
     data.value.nodes[nodeIndex] = {
       ...node,
       text: originalText,
       data: {
-        ...mindMapEstimatedData(node.data as Record<string, unknown>, originalText, nodeId),
+        ...mindMapLayoutEstimates(
+          node.data as Record<string, unknown>,
+          originalText,
+          nodeId,
+          node.style
+        ),
         hidden: false,
         hiddenAnswer: originalText,
       },
@@ -101,14 +160,29 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     const originalText = String(node.text ?? nodeData?.label ?? '').trim()
     if (!originalText || originalText === LEARNING_SHEET_PLACEHOLDER || nodeData?.hidden) return false
 
+    const layoutData = mindMapLayoutEstimates(
+      node.data as Record<string, unknown>,
+      originalText,
+      nodeId,
+      node.style
+    ) as { estimatedWidth?: number; estimatedHeight?: number }
+
     data.value.nodes[nodeIndex] = {
       ...node,
       text: LEARNING_SHEET_PLACEHOLDER,
       data: {
-        ...mindMapEstimatedData(node.data as Record<string, unknown>, LEARNING_SHEET_PLACEHOLDER, nodeId),
+        ...layoutData,
         hidden: true,
         hiddenAnswer: originalText,
       },
+    }
+
+    if (layoutData.estimatedWidth && layoutData.estimatedHeight) {
+      preserveMindMapBlankedLayoutSize(
+        nodeId,
+        layoutData.estimatedWidth,
+        layoutData.estimatedHeight
+      )
     }
 
     reconcileHiddenAnswersFromBlankedNodes()
@@ -164,11 +238,18 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
         ...node,
         text: originalText,
         data: {
-          ...mindMapEstimatedData(node.data as Record<string, unknown>, originalText, node.id),
+          ...mindMapLayoutEstimates(
+            node.data as Record<string, unknown>,
+            originalText,
+            node.id,
+            node.style
+          ),
           hidden: false,
           hiddenAnswer: originalText,
         },
       }
+      delete ctx.mindMapNodeWidths.value[node.id]
+      delete ctx.mindMapNodeHeights.value[node.id]
       emitEvent('diagram:node_updated', { nodeId: node.id, updates: { text: originalText } })
     })
 
@@ -185,18 +266,28 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     dv.nodes.forEach((node, idx) => {
       const originalText = nodeHiddenAnswer(node)
       if (!originalText) return
+      const layoutData = mindMapLayoutEstimates(
+        node.data as Record<string, unknown>,
+        originalText,
+        node.id,
+        node.style
+      ) as { estimatedWidth?: number; estimatedHeight?: number }
+
       dv.nodes[idx] = {
         ...node,
         text: LEARNING_SHEET_PLACEHOLDER,
         data: {
-          ...mindMapEstimatedData(
-            node.data as Record<string, unknown>,
-            LEARNING_SHEET_PLACEHOLDER,
-            node.id
-          ),
+          ...layoutData,
           hidden: true,
           hiddenAnswer: originalText,
         },
+      }
+      if (layoutData.estimatedWidth && layoutData.estimatedHeight) {
+        preserveMindMapBlankedLayoutSize(
+          node.id,
+          layoutData.estimatedWidth,
+          layoutData.estimatedHeight
+        )
       }
       emitEvent('diagram:node_updated', {
         nodeId: node.id,
@@ -235,6 +326,8 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
   return {
     isLearningSheet,
     hiddenAnswers,
+    learningSheetShowAnswers,
+    setLearningSheetShowAnswers,
     isNodeBlankedForLearningSheet,
     emptyNodeForLearningSheet,
     restoreNodeFromLearningSheet,

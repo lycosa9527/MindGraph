@@ -7,6 +7,7 @@ import type { LocaleCode } from '@/i18n/locales'
 import { UI_LOCALE_CODES } from '@/i18n/locales'
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import type { DiagramType } from '@/types'
+import { isWhitespaceOnlyNodeText } from '@/utils/nodeEditableText'
 
 function localesForLabelCache(): LocaleCode[] {
   return UI_LOCALE_CODES.filter((loc) => isLocaleLoaded(loc))
@@ -299,6 +300,43 @@ export function isMindmapDefaultNodeLabel(nodeId: string, text: string): boolean
   return false
 }
 
+/** "Enter text" / "输入文本" labels for newly inserted nodes (all UI locales). */
+let cachedEditablePlaceholderLabels: readonly string[] | null = null
+
+export function getAllEditablePlaceholderLabels(): readonly string[] {
+  if (cachedEditablePlaceholderLabels === null) {
+    const labels = new Set<string>()
+    for (const loc of UI_LOCALE_CODES) {
+      const full = defaultsT('diagram.editable.placeholder', loc)
+      labels.add(full)
+      labels.add(full.replace(/[….]{1,3}$/u, ''))
+    }
+    cachedEditablePlaceholderLabels = [...labels]
+  }
+  return cachedEditablePlaceholderLabels
+}
+
+export function isEditablePlaceholderLabel(text: string): boolean {
+  const trimmed = text.trim()
+  if (!trimmed) return false
+  return getAllEditablePlaceholderLabels().includes(trimmed)
+}
+
+/**
+ * True when node label text is still a template / new-node placeholder (display as muted).
+ */
+export function isNodeDisplayPlaceholderLabel(
+  diagramType: DiagramType | null | undefined,
+  nodeId: string,
+  text: string
+): boolean {
+  if (isWhitespaceOnlyNodeText(text)) return true
+  const trimmed = text.trim()
+  if (!trimmed) return false
+  if (isEditablePlaceholderLabel(trimmed)) return true
+  return shouldReplaceLabelWithMathInsert(diagramType, nodeId, text)
+}
+
 function conceptT(key: string, lang: LocaleCode): string {
   return translateForUiLocale(key, lang)
 }
@@ -362,6 +400,7 @@ function invalidateDiagramDefaultLabelCaches(): void {
   cachedTopicRootRelationshipLabels = null
   cachedRootConceptNodeTexts = null
   cachedFocusQuestionDefaults = null
+  cachedEditablePlaceholderLabels = null
 }
 
 registerLocaleLabelCacheInvalidator(invalidateDiagramDefaultLabelCaches)

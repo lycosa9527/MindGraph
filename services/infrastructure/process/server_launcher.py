@@ -336,6 +336,15 @@ def run_server() -> None:
                         ", ".join(removed_loops),
                     )
 
+            loop_setting: str | None = None
+            if sys.platform == "win32" and os.getenv("WINDOWS_PROACTOR_EVENT_LOOP", "").strip().lower() not in (
+                "1",
+                "true",
+                "yes",
+                "on",
+            ):
+                loop_setting = "services.infrastructure.process.uvicorn_selector_loop:windows_loop_factory"
+
             uvicorn.run(
                 "main:app",
                 host=host,
@@ -359,6 +368,7 @@ def run_server() -> None:
                     "COLLAB_UVICORN_WS_PING_TIMEOUT_SEC",
                     40.0,
                 ),
+                **({"loop": loop_setting} if loop_setting else {}),
             )
         except OSError as e:
             if (

@@ -34,6 +34,32 @@ const diagramStore = useDiagramStore()
 const { t } = useLanguage()
 const { edges: vueFlowEdges } = useVueFlow()
 
+const isMindMap = computed(() => {
+  const dt = props.data?.diagramType as DiagramType | undefined
+  return dt === 'mindmap' || dt === 'mind_map'
+})
+
+function mindMapBranchSide(nodeId: string | undefined): 'left' | 'right' | null {
+  if (!nodeId) return null
+  if (nodeId.startsWith('branch-l-')) return 'left'
+  if (nodeId.startsWith('branch-r-')) return 'right'
+  return null
+}
+
+const topicSideSiblingEdges = computed(() => {
+  if (!isMindMap.value || props.source !== 'topic') return []
+  const mySide = mindMapBranchSide(props.target)
+  if (!mySide) return []
+  return vueFlowEdges.value.filter((edge) => {
+    if (edge.source !== 'topic') return false
+    return mindMapBranchSide(edge.target) === mySide
+  })
+})
+
+const useStraightTopicSideLine = computed(
+  () => isMindMap.value && props.source === 'topic' && topicSideSiblingEdges.value.length === 1
+)
+
 const isEdgeSelected = computed(() => diagramStore.selectedConnectionId === props.id)
 
 const relationshipPlaceholder = computed(() => t('diagram.relationshipPlaceholder', '输入关系...'))
@@ -189,6 +215,15 @@ const linkedSourcePos = computed(() => {
 
 // Calculate bezier path
 const path = computed(() => {
+  if (useStraightTopicSideLine.value) {
+    const edgePath = `M ${props.sourceX} ${props.sourceY} L ${props.targetX} ${props.sourceY}`
+    return {
+      edgePath,
+      labelX: (props.sourceX + props.targetX) / 2,
+      labelY: props.sourceY,
+    }
+  }
+
   const linked = linkedSourcePos.value
   let effectiveSrcX = props.sourceX
   let effectiveSrcY = props.sourceY

@@ -23,6 +23,10 @@ import { storeToRefs } from 'pinia'
 
 import { ExportToCommunityModal, CanvasNodeFloatingToolbar, MindMapSubgraphPreviewBar } from '@/components/canvas'
 import { useBranchMoveDrag, useLanguage } from '@/composables'
+import {
+  presentationDiagramEditLockedRef,
+  resolvePresentationTeleportTarget,
+} from '@/composables/presentation/presentationDiagramEdit'
 import { useNodeFloatingToolbarPosition } from '@/composables/canvasToolbar'
 import { useMindMapSubgraphSuggest } from '@/composables/editor/useMindMapSubgraphSuggest'
 import {
@@ -65,7 +69,7 @@ import MindMapDirectionalAddOverlay from './MindMapDirectionalAddOverlay.vue'
 import ContextMenu from './ContextMenu.vue'
 import DiagramCanvasZoomPaneOverlays from './DiagramCanvasZoomPaneOverlays.vue'
 import LearningSheetOverlay from './LearningSheetOverlay.vue'
-import LearningSheetPickBanner from '@/components/canvas/LearningSheetPickBanner.vue'
+import LearningSheetFloatBar from '@/components/canvas/LearningSheetFloatBar.vue'
 import PresentationHighlightOverlay from './PresentationHighlightOverlay.vue'
 import TreeMapOverlay from './TreeMapOverlay.vue'
 import './diagramCanvas.css'
@@ -82,6 +86,8 @@ interface Props {
    */
   conceptMapInitialTopicFit?: boolean
   handToolActive?: boolean
+  presentationPointerEditMode?: boolean
+  presentationHandPanMode?: boolean
   collabLockedNodeIds?: string[]
   panOnDragButtons?: number[] | null
   presentationRailOpen?: boolean
@@ -93,6 +99,8 @@ const props = withDefaults(defineProps<Props>(), {
   fitViewOnInit: true,
   conceptMapInitialTopicFit: false,
   handToolActive: false,
+  presentationPointerEditMode: false,
+  presentationHandPanMode: false,
   collabLockedNodeIds: () => [],
   panOnDragButtons: null,
   presentationRailOpen: false,
@@ -113,6 +121,10 @@ const presentationHighlighterColor = defineModel<string>('presentationHighlighte
 
 const presentationPenColor = defineModel<string>('presentationPenColor', {
   default: 'rgba(239, 68, 68, 0.92)',
+})
+
+const presentationStrokeEraserActive = defineModel<boolean>('presentationStrokeEraserActive', {
+  default: false,
 })
 
 const emit = defineEmits<{
@@ -166,7 +178,9 @@ function getVueFlowNodesForOverlays(): GraphNode[] {
 }
 
 const branchMove = useBranchMoveDrag({
-  allowNodeMove: () => !props.handToolActive && !props.presentationRailOpen,
+  allowNodeMove: () =>
+    (!props.presentationRailOpen && !props.handToolActive) ||
+    (props.presentationRailOpen && props.presentationPointerEditMode),
 })
 provide('branchMove', branchMove)
 
@@ -202,11 +216,28 @@ const {
   diagramStore,
   presentationRailOpen: toRef(props, 'presentationRailOpen'),
   handToolActive: toRef(props, 'handToolActive'),
+  presentationPointerEditMode: toRef(props, 'presentationPointerEditMode'),
+  presentationHandPanMode: toRef(props, 'presentationHandPanMode'),
   panOnDragButtons: toRef(props, 'panOnDragButtons'),
   presentationTool,
   presentationHighlighterColor,
   presentationPenColor,
 })
+
+const presentationDiagramEditLocked = presentationDiagramEditLockedRef
+
+const presentationStrokeOverlayMode = computed((): 'pen' | 'highlighter' | 'eraser' => {
+  if (presentationStrokeEraserActive.value) return 'eraser'
+  return presentationTool.value === 'pen' ? 'pen' : 'highlighter'
+})
+
+/** Zoom-bar hand or presentation hand: grab-pan the canvas. */
+const useHandToolPanClass = computed(
+  () =>
+    props.presentationHandPanMode || (props.handToolActive && !props.presentationRailOpen)
+)
+
+const presentationTeleportTarget = computed(() => resolvePresentationTeleportTarget())
 
 const { nodes, edges, nodesLength } = useDiagramCanvasNodesEdges({
   diagramStore,
@@ -350,10 +381,15 @@ const {
 } = conceptMapLink
 
 const mindMapPaletteDrop = useDiagramCanvasMindMapPaletteDrop({ diagramStore })
+const paletteDragPreview = computed(() => mindMapPaletteDrop.paletteDragPreview.value)
 
 function handleCanvasDragOver(event: DragEvent): void {
   handleConceptMapDragOver(event)
   mindMapPaletteDrop.handleMindMapPaletteDragOver(event)
+}
+
+function handleCanvasDragLeave(event: DragEvent): void {
+  mindMapPaletteDrop.handleMindMapPaletteDragLeave(event)
 }
 
 function handleCanvasDrop(event: DragEvent): void {
@@ -371,7 +407,7 @@ const contextMenu = useDiagramCanvasContextMenu({
   vueFlowWrapper,
   getNodes: () => unref(getVueFlowNodes),
   screenToFlowCoordinate,
-  presentationRailOpen: toRef(props, 'presentationRailOpen'),
+  presentationDiagramEditLocked: presentationDiagramEditLockedRef,
   emitPaneClick: () => emit('paneClick'),
   diagramStore,
   t,
@@ -470,18 +506,19 @@ defineExpose({
     class="diagram-canvas relative w-full h-full"
     :class="{
       'mind-map-canvas': useMindMapV2,
-      'diagram-canvas--hand-tool': props.handToolActive,
+      'diagram-canvas--hand-tool': useHandToolPanClass,
       'diagram-canvas--learning-sheet-pick': isLearningSheetPickActive,
     }"
     @contextmenu.capture="handleContextMenuEvent"
     @paste.capture="onCanvasPaste"
   >
-    <LearningSheetPickBanner v-if="useMindMapV2" />
+    <LearningSheetFloatBar v-if="useMindMapV2" />
     <div
       ref="vueFlowWrapper"
       class="vue-flow-wrapper w-full h-full"
       :class="{ 'wireframe-mode': uiStore.wireframeMode }"
       @dragover="handleCanvasDragOver"
+      @dragleave="handleCanvasDragLeave"
       @drop="handleCanvasDrop"
     >
       <VueFlow
@@ -536,12 +573,13 @@ defineExpose({
           :current-color="presentationStrokeColor"
           :pointer-size-scale="presentationStrokePointerScale"
           :stroke-width-role-scale="presentationHighlighterStrokeScale"
-          :mode="presentationTool === 'pen' ? 'pen' : 'highlighter'"
+          :mode="presentationStrokeOverlayMode"
         />
 
         <template #zoom-pane>
           <DiagramCanvasZoomPaneOverlays
             :branch-move="branchMove"
+            :palette-drag-preview="paletteDragPreview"
             :get-vue-flow-nodes="getVueFlowNodesForOverlays"
             :link-preview-path="linkPreviewPath"
             :link-drag-cursor="linkDragCursor"
@@ -554,7 +592,7 @@ defineExpose({
     </div>
 
     <CanvasNodeFloatingToolbar
-      v-if="useMindMapV2"
+      v-if="useMindMapV2 && !presentationDiagramEditLocked"
       :position="floatingToolbarPosition"
       :node-id="floatingToolbarAnchorId"
       :ai-generating="subgraphGenerating"
@@ -573,12 +611,14 @@ defineExpose({
     />
 
     <MindMapDirectionalAddOverlay
-      v-if="useMindMapV2"
+      v-if="useMindMapV2 && !presentationDiagramEditLocked"
       :container-ref="canvasContainer"
+      :teleport-target="presentationTeleportTarget"
     />
     <MindMapCollapseToggleOverlay
-      v-if="useMindMapV2"
+      v-if="useMindMapV2 && !presentationDiagramEditLocked"
       :container-ref="canvasContainer"
+      :teleport-target="presentationTeleportTarget"
     />
 
     <ContextMenu

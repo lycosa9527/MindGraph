@@ -6,12 +6,8 @@ import {
   DEFAULT_NODE_WIDTH,
   MINDMAP_SIBLING_GAP,
 } from '@/composables/diagrams/layoutConfig'
-import {
-  estimateNodeWidth as estimateBranchWidth,
-  estimateTopicNodeWidth,
-  measureBranchNodeHeight,
-} from '@/stores/specLoader/mindMap'
 import type { Connection, DiagramNode } from '@/types'
+import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 
 // ---------------------------------------------------------------------------
 // Pure helper: recalculate X positions from measured widths (classic / main)
@@ -30,10 +26,8 @@ function parseNodeId(id: string): ParsedNodeId | null {
 
 function getNodeWidth(node: DiagramNode, nodeWidths: Record<string, number>): number {
   const measured = nodeWidths[node.id]
-  const freshEstimate = estimateBranchWidth(node.text ?? '')
-  const stored = (node.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
-  const estimated = Math.max(stored, freshEstimate)
-  return measured !== undefined ? Math.max(measured, estimated) : estimated
+  if (measured !== undefined) return measured
+  return (node.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
 }
 
 function getNodeHeight(
@@ -42,11 +36,9 @@ function getNodeHeight(
   nodeHeights: Record<string, number>
 ): number {
   const measured = nodeHeights[nodeId]
+  if (measured !== undefined) return measured
   const node = nodeMap.get(nodeId)
-  const freshEstimate = node?.text ? measureBranchNodeHeight(node.text) : DEFAULT_NODE_HEIGHT
-  const stored = (node?.data?.estimatedHeight as number | undefined) ?? DEFAULT_NODE_HEIGHT
-  const estimated = Math.max(stored, freshEstimate)
-  return measured !== undefined ? Math.max(measured, estimated) : estimated
+  return (node?.data?.estimatedHeight as number | undefined) ?? DEFAULT_NODE_HEIGHT
 }
 
 export interface MindMapColumnResult {
@@ -77,11 +69,10 @@ export function recalculateMindMapLegacyColumnPositions(
 
   const storedEstimate =
     (topicNode.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
-  const freshEstimate = estimateTopicNodeWidth(topicNode.text ?? '')
-  const bestEstimate = Math.max(storedEstimate, freshEstimate)
+  const measuredTopicWidth = topicWidth ?? 0
 
   const effectiveTopicWidth =
-    topicWidth != null ? Math.max(topicWidth, freshEstimate) : bestEstimate
+    measuredTopicWidth > 0 ? Math.max(measuredTopicWidth, storedEstimate) : storedEstimate
   const gap = DEFAULT_MINDMAP_RANK_SEPARATION
 
   const centerX = topicNode.position.x + effectiveTopicWidth / 2
@@ -303,6 +294,24 @@ function correctYPositions(
       newY.set('topic', branchesCenter - topicH / 2)
     }
   }
+
+  function alignSingleSideRootToTopic(roots: string[]): void {
+    if (roots.length !== 1) return
+    const rootId = roots[0]
+    if (!rootId) return
+    const topicY = newY.get('topic')
+    if (topicY == null) return
+    const topicH =
+      nodeHeights['topic'] ??
+      (nodeMap.get('topic')?.data?.estimatedHeight as number | undefined) ??
+      DEFAULT_NODE_HEIGHT
+    const topicCenter = topicY + topicH / 2
+    const rootH = getNodeHeight(rootId, nodeMap, nodeHeights)
+    newY.set(rootId, topicCenter - rootH / 2)
+  }
+
+  alignSingleSideRootToTopic(rightRoots)
+  alignSingleSideRootToTopic(leftRoots)
 
   if (newY.size === 0) return nodes
 

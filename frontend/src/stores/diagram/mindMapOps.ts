@@ -56,7 +56,7 @@ function retainMeasuredDimensions(ctx: DiagramContext, newNodes: DiagramNode[]):
     if (!surviving.has(id)) delete heights[id]
   }
 
-  ctx.mindMapRecalcTrigger.value++
+  ctx.scheduleMindMapRecalc()
 }
 
 function getMindMapParentId(connections: Connection[], nodeId: string): string | null {
@@ -78,6 +78,45 @@ function computeSiblingPathKey(
   return `${parentPath}/${insertIndex}`
 }
 
+const MIND_MAP_INLINE_EDIT_MAX_ATTEMPTS = 80
+const MIND_MAP_INLINE_EDIT_RETRY_MS = 40
+
+function requestMindMapNodeInlineEdit(ctx: DiagramContext, nodeId: string): void {
+  ctx.mindMapPendingEditNodeId.value = nodeId
+  let attempts = 0
+
+  const tryFocus = (): void => {
+    attempts += 1
+    const host = document.querySelector(
+      `.vue-flow__node[data-id="${CSS.escape(nodeId)}"] .inline-editable-text`
+    )
+
+    if (host) {
+      eventBus.emit('node:edit_requested', { nodeId })
+      const input = host.querySelector('.inline-edit-input') as HTMLInputElement | null
+      if (input && document.activeElement === input) {
+        ctx.mindMapPendingEditNodeId.value = null
+        return
+      }
+      if (attempts < MIND_MAP_INLINE_EDIT_MAX_ATTEMPTS) {
+        setTimeout(tryFocus, MIND_MAP_INLINE_EDIT_RETRY_MS)
+        return
+      }
+      ctx.mindMapPendingEditNodeId.value = null
+      return
+    }
+
+    if (attempts >= MIND_MAP_INLINE_EDIT_MAX_ATTEMPTS) {
+      eventBus.emit('node:edit_requested', { nodeId })
+      ctx.mindMapPendingEditNodeId.value = null
+      return
+    }
+    requestAnimationFrame(tryFocus)
+  }
+
+  requestAnimationFrame(() => requestAnimationFrame(tryFocus))
+}
+
 function selectAndEditByPathKey(
   ctx: DiagramContext,
   nodes: DiagramNode[],
@@ -88,12 +127,8 @@ function selectAndEditByPathKey(
   const nodeId = findNodeIdByPathKey(nodes, connections, pathKey)
   if (!nodeId) return
   ctx.selectedNodes.value = [nodeId]
-  ctx.mindMapRecalcTrigger.value++
-  // Wait for Vue Flow to mount the new node before opening inline editor
-  const EDIT_FOCUS_DELAY_MS = 120
-  setTimeout(() => {
-    eventBus.emit('node:edit_requested', { nodeId })
-  }, EDIT_FOCUS_DELAY_MS)
+  ctx.scheduleMindMapRecalc()
+  requestMindMapNodeInlineEdit(ctx, nodeId)
 }
 
 function commitMindMapReloadWithSelect(
@@ -124,7 +159,8 @@ function commitMindMapReload(ctx: DiagramContext, result: SpecLoaderResult): voi
     result.nodes,
     result.connections,
     ctx.data.value._node_styles,
-    resolveActiveMindMapThemeId(ctx.data.value)
+    resolveActiveMindMapThemeId(ctx.data.value),
+    ctx.data.value._mindmap_diagram_style
   )
 
   retainMeasuredDimensions(ctx, result.nodes)
@@ -604,14 +640,14 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
     if (!changed) return false
     setMindMapCollapsedPaths(data.value as Record<string, unknown>, paths)
-    ctx.mindMapRecalcTrigger.value++
+    ctx.scheduleMindMapRecalc()
     return true
   }
 
   function applyMindMapSubgraphPreview(result: SpecLoaderResult): void {
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return
     commitMindMapReload(ctx, result)
-    ctx.mindMapRecalcTrigger.value++
+    ctx.scheduleMindMapRecalc()
     emitEvent('diagram:operation_completed', { operation: 'subgraph_preview' })
   }
 
@@ -627,7 +663,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     data.value.connections = snapshot.connections
     data.value._node_styles = snapshot.nodeStyles
     setMindMapCollapsedPaths(data.value as Record<string, unknown>, snapshot.collapsedPaths ?? [])
-    ctx.mindMapRecalcTrigger.value++
+    ctx.scheduleMindMapRecalc()
   }
 
   function clearMindMapSubgraphPreviewTags(): void {
@@ -657,7 +693,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       : [...current, pathKey]
 
     setMindMapCollapsedPaths(data.value as Record<string, unknown>, next)
-    ctx.mindMapRecalcTrigger.value++
+    ctx.scheduleMindMapRecalc()
     ctx.pushHistory(collapsed ? 'Expand branch' : 'Collapse branch')
     emitEvent('diagram:operation_completed', { operation: collapsed ? 'expand_branch' : 'collapse_branch' })
     return true

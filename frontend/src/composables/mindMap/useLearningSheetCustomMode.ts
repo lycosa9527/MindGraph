@@ -8,6 +8,12 @@ import { claimThinkingCoinEvent } from '@/utils/claimThinkingCoinEvent'
 /** Hammer pick mode — survives panel close so user can focus on canvas. */
 export const learningSheetPickActive = ref(false)
 
+/** Top float bar (custom pick or random blank session). */
+export const learningSheetFloatBarOpen = ref(false)
+
+/** Float bar visibility before presentation; restored when leaving presentation. */
+const learningSheetFloatBarBeforePresentation = ref(false)
+
 const customPickActive = learningSheetPickActive
 
 const PROTECTED_NODE_IDS = new Set([
@@ -62,6 +68,42 @@ export function handleLearningSheetPickNodeClick(nodeId: string): boolean {
   return true
 }
 
+export function learningSheetNeedsPresentationConfirm(): boolean {
+  return learningSheetPickActive.value || learningSheetFloatBarOpen.value
+}
+
+function dismissLearningSheetFloatBar(): void {
+  learningSheetPickActive.value = false
+  learningSheetFloatBarOpen.value = false
+}
+
+/**
+ * Entering presentation: end hammer pick / hide float bar but keep blanked nodes
+ * (teacher presents the worksheet as-is).
+ */
+export function suspendLearningSheetForPresentation(): void {
+  const diagramStore = useDiagramStore()
+  if (!diagramStore.isLearningSheet && !learningSheetFloatBarOpen.value) {
+    learningSheetFloatBarBeforePresentation.value = false
+    return
+  }
+  learningSheetFloatBarBeforePresentation.value = learningSheetFloatBarOpen.value
+  dismissLearningSheetFloatBar()
+}
+
+/** Leaving presentation: restore float bar if still in learning-sheet mode. */
+export function resumeLearningSheetAfterPresentation(): void {
+  const diagramStore = useDiagramStore()
+  if (
+    learningSheetFloatBarBeforePresentation.value &&
+    diagramStore.isLearningSheet &&
+    !learningSheetFloatBarOpen.value
+  ) {
+    learningSheetFloatBarOpen.value = true
+  }
+  learningSheetFloatBarBeforePresentation.value = false
+}
+
 export function useLearningSheetCustomMode() {
   const diagramStore = useDiagramStore()
 
@@ -73,8 +115,8 @@ export function useLearningSheetCustomMode() {
   })
   const isLearningSheetActive = computed(() => diagramStore.isLearningSheet)
 
-  function deactivatePick(): void {
-    customPickActive.value = false
+  function dismissFloatBar(): void {
+    dismissLearningSheetFloatBar()
   }
 
   function activatePick(): void {
@@ -82,9 +124,9 @@ export function useLearningSheetCustomMode() {
       notify.warning(t('canvas.toolbar.createDiagramFirst'))
       return
     }
-    // Always sync flags + rebuild answers from actually blanked nodes (clears stale metadata).
     diagramStore.setLearningSheetMode(true)
     customPickActive.value = true
+    learningSheetFloatBarOpen.value = true
     void claimThinkingCoinEvent('learning_sheet_enable')
   }
 
@@ -93,7 +135,7 @@ export function useLearningSheetCustomMode() {
       notify.warning(t('canvas.toolbar.createDiagramFirst'))
       return
     }
-    deactivatePick()
+    customPickActive.value = false
     const spec = diagramStore.getSpecForSave()
     if (spec && diagramStore.type) {
       diagramStore.loadFromSpec(
@@ -104,13 +146,15 @@ export function useLearningSheetCustomMode() {
         },
         diagramStore.type
       )
+      learningSheetFloatBarOpen.value = true
       notify.success(t('canvas.toolbar.switchedLearningSheetMode'))
       void claimThinkingCoinEvent('learning_sheet_enable')
     }
   }
 
   function exitLearningSheet(): void {
-    deactivatePick()
+    dismissFloatBar()
+    learningSheetFloatBarBeforePresentation.value = false
     if (diagramStore.isLearningSheet) {
       diagramStore.restoreFromLearningSheetMode()
       notify.success(t('canvas.toolbar.switchedToRegular'))
@@ -124,18 +168,18 @@ export function useLearningSheetCustomMode() {
     isPickActive,
     blankCount,
     isLearningSheetActive,
+    isFloatBarOpen: computed(() => learningSheetFloatBarOpen.value),
     activatePick,
-    deactivatePick,
+    dismissFloatBar,
+    deactivatePick: dismissFloatBar,
     startRandomLearningSheet,
     exitLearningSheet,
   }
 }
 
 export function useLearningSheetPickKeyboard(): void {
-  const { deactivatePick, isPickActive } = useLearningSheetCustomMode()
-
   function onKeydown(event: KeyboardEvent): void {
-    if (event.key !== 'Escape' || !isPickActive.value) return
+    if (event.key !== 'Escape' || !learningSheetFloatBarOpen.value) return
     const target = event.target as HTMLElement | null
     if (
       target?.tagName === 'INPUT' ||
@@ -145,7 +189,8 @@ export function useLearningSheetPickKeyboard(): void {
       return
     }
     event.preventDefault()
-    deactivatePick()
+    customPickActive.value = false
+    learningSheetFloatBarOpen.value = false
   }
 
   onMounted(() => {

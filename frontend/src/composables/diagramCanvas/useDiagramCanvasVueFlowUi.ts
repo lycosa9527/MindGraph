@@ -8,6 +8,8 @@ export interface UseDiagramCanvasVueFlowUiOptions {
   diagramStore: ReturnType<typeof useDiagramStore>
   presentationRailOpen: Ref<boolean>
   handToolActive: Ref<boolean>
+  presentationPointerEditMode: Ref<boolean>
+  presentationHandPanMode: Ref<boolean>
   panOnDragButtons: Ref<number[] | null | undefined>
   presentationTool: Ref<PresentationToolId>
   presentationHighlighterColor: Ref<string>
@@ -17,6 +19,7 @@ export interface UseDiagramCanvasVueFlowUiOptions {
 export interface UseDiagramCanvasVueFlowUiResult {
   presentationStrokeToolActive: ComputedRef<boolean>
   presentationStrokeColor: ComputedRef<string>
+  presentationDiagramEditLocked: ComputedRef<boolean>
   effectivePanOnDrag: ComputedRef<number[] | boolean>
   presentationToolIsNotTimer: ComputedRef<boolean>
   nodesDraggable: ComputedRef<boolean>
@@ -33,6 +36,8 @@ export function useDiagramCanvasVueFlowUi(
     diagramStore,
     presentationRailOpen,
     handToolActive,
+    presentationPointerEditMode,
+    presentationHandPanMode,
     panOnDragButtons,
     presentationTool,
     presentationHighlighterColor,
@@ -45,6 +50,11 @@ export function useDiagramCanvasVueFlowUi(
       (presentationTool.value === 'highlighter' || presentationTool.value === 'pen')
   )
 
+  /** Block diagram edits unless presentation pointer (default edit) mode is active. */
+  const presentationDiagramEditLocked = computed(
+    () => presentationRailOpen.value && !presentationPointerEditMode.value
+  )
+
   const presentationStrokeColor = computed(() =>
     presentationTool.value === 'pen'
       ? presentationPenColor.value
@@ -52,13 +62,18 @@ export function useDiagramCanvasVueFlowUi(
   )
 
   const effectivePanOnDrag = computed((): number[] | boolean => {
+    if (presentationHandPanMode.value) {
+      return panOnDragButtons.value ?? [0, 1, 2]
+    }
+    if (presentationPointerEditMode.value) {
+      return [1]
+    }
     if (handToolActive.value) {
       return panOnDragButtons.value ?? [0, 1, 2]
     }
     if (presentationStrokeToolActive.value) {
       return false
     }
-    // Pointer mode: left-drag box-select; middle mouse pans the canvas.
     return [1]
   })
 
@@ -66,28 +81,33 @@ export function useDiagramCanvasVueFlowUi(
 
   const nodesDraggable = computed(
     () =>
+      !presentationDiagramEditLocked.value &&
       !handToolActive.value &&
+      !presentationHandPanMode.value &&
       !presentationStrokeToolActive.value &&
       diagramStore.type !== 'mindmap' &&
       diagramStore.type !== 'mind_map' &&
       diagramStore.type !== 'tree_map'
   )
 
-  const elementsSelectable = computed(
-    () =>
-      !handToolActive.value &&
-      !presentationStrokeToolActive.value &&
-      !learningSheetPickActive.value
-  )
+  const elementsSelectable = computed(() => {
+    if (learningSheetPickActive.value) return false
+    if (presentationStrokeToolActive.value) return false
+    if (presentationPointerEditMode.value) return true
+    if (presentationDiagramEditLocked.value) return false
+    if (handToolActive.value || presentationHandPanMode.value) return false
+    return true
+  })
 
-  const selectNodesOnDrag = computed(
-    () =>
-      !handToolActive.value &&
-      !presentationStrokeToolActive.value &&
-      !learningSheetPickActive.value
-  )
+  const selectNodesOnDrag = computed(() => {
+    if (learningSheetPickActive.value) return false
+    if (presentationStrokeToolActive.value) return false
+    if (presentationPointerEditMode.value) return true
+    if (presentationDiagramEditLocked.value) return false
+    if (handToolActive.value || presentationHandPanMode.value) return false
+    return true
+  })
 
-  /** `true` = box-select on left drag without holding Shift (Vue Flow API). */
   const selectionKeyCode = computed<boolean | 'Shift'>(() =>
     selectNodesOnDrag.value ? true : 'Shift'
   )
@@ -107,6 +127,7 @@ export function useDiagramCanvasVueFlowUi(
   return {
     presentationStrokeToolActive,
     presentationStrokeColor,
+    presentationDiagramEditLocked,
     effectivePanOnDrag,
     presentationToolIsNotTimer,
     nodesDraggable,

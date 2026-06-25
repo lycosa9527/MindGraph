@@ -8,6 +8,11 @@ import { Loader2, RefreshCw, X } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { PALETTE_MINDMAP_DRAG_MIME } from '@/composables/nodePalette/constants'
+import {
+  beginMindMapPaletteDrag,
+  endMindMapPaletteDrag,
+  setEmptyNativeDragImage,
+} from '@/composables/nodePalette/mindMapPaletteDragSession'
 import { getNodePalette } from '@/composables/nodePalette/useNodePalette'
 import { getLLMColor } from '@/config/llmModelColors'
 import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
@@ -95,6 +100,12 @@ function handleDragStart(event: DragEvent, suggestion: NodeSuggestion): void {
   }
   event.dataTransfer.setData(PALETTE_MINDMAP_DRAG_MIME, JSON.stringify(payload))
   event.dataTransfer.effectAllowed = 'copy'
+  setEmptyNativeDragImage(event)
+  beginMindMapPaletteDrag({ items: payload.items })
+}
+
+function handleDragEnd(): void {
+  endMindMapPaletteDrag()
 }
 
 const skipSelectionWatch = ref(true)
@@ -224,6 +235,7 @@ watch(
           :style="getNodeCardStyle(suggestion, selectedIds.includes(suggestion.id))"
           @click="toggleSelection(suggestion.id)"
           @dragstart="handleDragStart($event, suggestion)"
+          @dragend="handleDragEnd"
         >
           <span
             dir="auto"

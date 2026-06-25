@@ -2,6 +2,8 @@
  * Default diagram specs for new / blank canvas — fully i18n-driven.
  * All node labels resolve through vue-i18n so every UI locale gets native text.
  */
+import { DEFAULT_MIND_MAP_DIAGRAM_STYLE_ID } from '@/config/mindMapDiagramStyles'
+import { DEFAULT_MIND_MAP_THEME_ID } from '@/config/mindMapThemes'
 import type { LocaleCode } from '@/i18n/locales'
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import { getConceptMapFocusQuestionDefault } from '@/stores/diagram/diagramDefaultLabels'
@@ -81,6 +83,8 @@ function templatesForLocale(lang: LocaleCode): Record<string, Record<string, unk
       alternative_dimensions: [],
     },
     mindmap: {
+      _mindmap_theme: DEFAULT_MIND_MAP_THEME_ID,
+      _mindmap_diagram_style: DEFAULT_MIND_MAP_DIAGRAM_STYLE_ID,
       topic: lt('diagram.defaults.centralTopic', lang),
       children: Array.from({ length: 4 }, (_, bi) => ({
         id: `branch_${bi}`,

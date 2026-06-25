@@ -521,13 +521,22 @@ class RedisOperations:
     @staticmethod
     @_with_retry("GETDEL", default_return=None)
     def get_and_delete(key: str) -> Optional[str]:
-        """Atomically get and delete a key using GETDEL (single round-trip, Redis >= 6.2)."""
+        """Atomically get and delete a key (GETDEL on Redis >= 6.2, else GET+DEL)."""
         redis_client = _RedisState.get_client()
         if not _RedisState.is_available() or not redis_client:
             logger.debug("[Redis] get_and_delete: Redis unavailable for key: %s", key)
             return None
         try:
             return redis_client.getdel(key)
+        except RedisPyResponseError as exc:
+            if "GETDEL" not in str(exc).upper():
+                logger.warning("[Redis] get_and_delete failed for key %s: %s", key, exc)
+                return None
+            pipe = redis_client.pipeline(transaction=True)
+            pipe.get(key)
+            pipe.delete(key)
+            results = pipe.execute()
+            return results[0]
         except REDIS_ERRORS as exc:
             logger.warning("[Redis] get_and_delete failed for key %s: %s", key, exc)
             return None

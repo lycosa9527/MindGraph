@@ -1,7 +1,31 @@
-import type { MindMapThemeId } from '@/config/mindMapThemes'
+import type { MindMapDiagramStyleId } from '@/config/mindMapDiagramStyles'
+import {
+  getMindMapDiagramStyleById,
+  mindMapDiagramStyleUsesLayeredBranchColors,
+  mindMapNodeShapeFromPreset,
+} from '@/config/mindMapDiagramStyles'
+import {
+  applyRainbowMindMapColors,
+  isRainbowMindMapTheme,
+  mindMapLayeredBranchColorsForNode,
+  mindMapLayeredCenterTopicColors,
+  syncRainbowMindMapConnectionColors,
+} from '@/config/mindMapVibrantThemes'
 import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
+import {
+  getMindMapThemeById,
+  type MindMapThemeId,
+} from '@/config/mindMapThemes'
 import type { DiagramNode, NodeStyle } from '@/types'
+import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 
+import {
+  estimateNodeWidth as estimateMindMapBranchWidth,
+  estimateTopicNodeHeight,
+  estimateTopicNodeWidth,
+  measureBranchNodeHeight as measureMindMapBranchHeight,
+  measureBranchNodeUnderlineHeight as measureMindMapBranchUnderlineHeight,
+} from '../specLoader/mindMap'
 import { emitEvent } from './events'
 import type { DiagramContext } from './types'
 
@@ -41,6 +65,74 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
     }
   }
 
+  function isTopicNode(node: DiagramNode): boolean {
+    return node.type === 'topic' || node.type === 'center'
+  }
+
+  function refreshMindMapNodeEstimatesAfterShapeChange(node: DiagramNode, nodeIndex: number): void {
+    if (!data.value?.nodes) return
+    const text = node.text ?? ''
+    const mergedStyle = node.style
+
+    if (node.id === 'topic') {
+      data.value.nodes[nodeIndex] = {
+        ...node,
+        data: {
+          ...node.data,
+          estimatedWidth: estimateTopicNodeWidth(text, mergedStyle),
+          estimatedHeight: estimateTopicNodeHeight(text, mergedStyle),
+        },
+      }
+      ctx.mindMapTopicActualWidth.value = null
+    } else {
+      const newShape = resolveNodeShape(mergedStyle, true)
+      const freshHeight =
+        newShape === 'underline'
+          ? measureMindMapBranchUnderlineHeight(text, node.id, mergedStyle)
+          : measureMindMapBranchHeight(text, node.id, mergedStyle)
+      data.value.nodes[nodeIndex] = {
+        ...node,
+        data: {
+          ...node.data,
+          estimatedWidth: estimateMindMapBranchWidth(text, node.id, mergedStyle),
+          estimatedHeight: freshHeight,
+        },
+      }
+    }
+
+    delete ctx.nodeDimensions.value[node.id]
+    delete ctx.mindMapNodeWidths.value[node.id]
+    delete ctx.mindMapNodeHeights.value[node.id]
+  }
+
+  function applyMindMapDiagramStyleShapes(diagramStyleId: MindMapDiagramStyleId): void {
+    const nodes = data.value?.nodes
+    if (!nodes?.length) return
+
+    const preset = getMindMapDiagramStyleById(diagramStyleId)
+    let shapeChanged = false
+
+    nodes.forEach((node, nodeIndex) => {
+      if (node.type === 'boundary') return
+      const shape = mindMapNodeShapeFromPreset(node, preset)
+      const currentShape = node.style?.nodeShape
+      if (currentShape === shape) return
+
+      shapeChanged = true
+      const mergedStyle: Partial<NodeStyle> = {
+        ...(node.style || {}),
+        nodeShape: shape,
+      }
+      const updated = { ...node, style: mergedStyle }
+      nodes[nodeIndex] = updated
+      refreshMindMapNodeEstimatesAfterShapeChange(updated, nodeIndex)
+    })
+
+    if (shapeChanged) {
+      ctx.scheduleMindMapRecalc()
+    }
+  }
+
   function applyStylePreset(
     preset: {
       backgroundColor: string
@@ -50,22 +142,40 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
       topicTextColor: string
       topicBorderColor: string
     },
-    options?: { mindMapThemeId?: MindMapThemeId }
+    options?: {
+      mindMapThemeId?: MindMapThemeId
+      diagramStyleId?: MindMapDiagramStyleId
+      skipHistory?: boolean
+    }
   ): void {
     const nodes = data.value?.nodes
     if (!nodes) return
 
-    const isTopic = (node: DiagramNode) => node.type === 'topic' || node.type === 'center'
+    const layeredBranches = mindMapDiagramStyleUsesLayeredBranchColors(
+      options?.diagramStyleId ?? data.value?._mindmap_diagram_style
+    )
 
     nodes.forEach((node) => {
       if (node.type === 'boundary') return
 
-      const useTopic = isTopic(node)
+      const useTopic = isTopicNode(node)
+      let branchColors: Partial<NodeStyle> | null = null
+      if (!useTopic && layeredBranches) {
+        branchColors = mindMapLayeredBranchColorsForNode(node.id, preset.borderColor)
+      }
+      const centerTopic = layeredBranches && useTopic ? mindMapLayeredCenterTopicColors(preset) : null
+
       const mergedStyle: Partial<NodeStyle> = {
         ...(node.style || {}),
-        backgroundColor: useTopic ? preset.topicBackgroundColor : preset.backgroundColor,
-        textColor: useTopic ? preset.topicTextColor : preset.textColor,
-        borderColor: useTopic ? preset.topicBorderColor : preset.borderColor,
+        backgroundColor: useTopic
+          ? centerTopic?.topicBackgroundColor ?? preset.topicBackgroundColor
+          : branchColors?.backgroundColor ?? preset.backgroundColor,
+        textColor: useTopic
+          ? centerTopic?.topicTextColor ?? preset.topicTextColor
+          : branchColors?.textColor ?? preset.textColor,
+        borderColor: useTopic
+          ? centerTopic?.topicBorderColor ?? preset.topicBorderColor
+          : branchColors?.borderColor ?? preset.borderColor,
       }
       const nodeIndex = nodes.findIndex((n) => n.id === node.id)
       if (nodeIndex !== -1) {
@@ -81,13 +191,49 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
       data.value?.connections &&
       (diagramType === 'mindmap' || diagramType === 'mind_map')
     ) {
-      syncMindMapConnectionStrokeColors(data.value.connections, preset.topicBorderColor)
+      if (options?.mindMapThemeId && isRainbowMindMapTheme(options.mindMapThemeId)) {
+        syncRainbowMindMapConnectionColors(data.value.connections, nodes)
+      } else {
+        const strokeColor = layeredBranches ? preset.borderColor : preset.topicBorderColor
+        syncMindMapConnectionStrokeColors(data.value.connections, strokeColor)
+      }
       if (options?.mindMapThemeId) {
         data.value._mindmap_theme = options.mindMapThemeId
       }
     }
-    ctx.pushHistory('Apply style preset')
+    if (!options?.skipHistory) {
+      ctx.pushHistory('Apply style preset')
+    }
     emitEvent('diagram:style_changed', { preset: true })
+  }
+
+  function applyMindMapAppearance(options: {
+    themeId: MindMapThemeId
+    diagramStyleId: MindMapDiagramStyleId
+  }): void {
+    const nodes = data.value?.nodes
+    const connections = data.value?.connections
+    if (!nodes?.length) return
+
+    if (data.value) {
+      data.value._mindmap_diagram_style = options.diagramStyleId
+      data.value._mindmap_theme = options.themeId
+    }
+
+    if (isRainbowMindMapTheme(options.themeId)) {
+      applyRainbowMindMapColors(nodes, connections ?? [])
+    } else {
+      const theme = getMindMapThemeById(options.themeId)
+      applyStylePreset(theme, {
+        mindMapThemeId: options.themeId,
+        diagramStyleId: options.diagramStyleId,
+        skipHistory: true,
+      })
+    }
+
+    applyMindMapDiagramStyleShapes(options.diagramStyleId)
+    ctx.pushHistory('Apply mind map appearance')
+    emitEvent('diagram:style_changed', { preset: true, diagramStyleId: options.diagramStyleId })
   }
 
   return {
@@ -96,5 +242,6 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
     clearNodeStyle,
     clearAllNodeStyles,
     applyStylePreset,
+    applyMindMapAppearance,
   }
 }

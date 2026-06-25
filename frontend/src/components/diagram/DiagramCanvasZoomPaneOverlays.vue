@@ -11,12 +11,14 @@ import {
 import { getDropTargetShapeClass } from '@/composables/diagramCanvas/diagramCanvasZoomPaneStyles'
 import type { DropTarget } from '@/composables/editor/useBranchMoveDrag'
 import type { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
+import type { MindMapPaletteDragPreviewState } from '@/composables/diagramCanvas/useDiagramCanvasMindMapPaletteDrop'
 import type { MindGraphNode } from '@/types/vueflow'
 
 type BranchMove = ReturnType<typeof useBranchMoveDrag>
 
 const props = defineProps<{
   branchMove: BranchMove
+  paletteDragPreview?: MindMapPaletteDragPreviewState | null
   /** Returns current Vue Flow nodes (for branch-move drop target sizing). */
   getVueFlowNodes: () => GraphNode[]
   linkPreviewPath: string | null
@@ -27,6 +29,24 @@ const props = defineProps<{
 }>()
 
 const dragState = computed(() => toValue(props.branchMove.state))
+
+const paletteDrag = computed(() => props.paletteDragPreview ?? null)
+
+const paletteGhostLayoutStyle = computed(() =>
+  getBranchMoveGhostStyle({
+    cursorPos: paletteDrag.value?.cursorPos ?? null,
+    ghost: paletteDrag.value?.draggedGhost ?? null,
+  })
+)
+
+const paletteDropTargetShapeClass = computed((): string => {
+  const target = paletteDrag.value?.dropTarget
+  if (!target) return ''
+  const node = props.getVueFlowNodes().find((n) => n.id === target.nodeId) as
+    | MindGraphNode
+    | undefined
+  return node ? getDropTargetShapeClass(node) : ''
+})
 
 const ghostLayoutStyle = computed(() =>
   getBranchMoveGhostStyle({
@@ -87,6 +107,44 @@ const dropTargetShapeClass = computed((): string => {
       class="branch-move-drop-preview"
       :class="dropTargetShapeClass"
       :style="getDropTargetStyle(getVueFlowNodes, dragState.dropTarget as DropTarget)"
+    />
+  </div>
+  <div
+    v-if="paletteDrag?.active && paletteDrag.cursorPos"
+    class="branch-move-overlay pointer-events-none"
+    style="position: absolute; inset: 0; z-index: 1000"
+  >
+    <div
+      v-if="paletteDrag.draggedGhost && paletteGhostLayoutStyle"
+      class="branch-move-ghost"
+      :class="[
+        paletteDrag.draggedGhost.shapeClass,
+        paletteDrag.draggedGhost.variant === 'underline'
+          ? 'branch-move-ghost--underline'
+          : 'branch-move-ghost--standard',
+      ]"
+      :style="{
+        ...paletteGhostLayoutStyle,
+        backgroundColor: paletteDrag.draggedGhost.backgroundColor,
+        color: paletteDrag.draggedGhost.textColor,
+        borderColor: paletteDrag.draggedGhost.borderColor,
+        fontSize: paletteDrag.draggedGhost.fontSize,
+        fontWeight: paletteDrag.draggedGhost.fontWeight,
+        borderRadius: paletteDrag.draggedGhost.borderRadius,
+      }"
+    >
+      <span class="branch-move-ghost__label">{{ paletteDrag.draggedGhost.label }}</span>
+      <span
+        v-if="paletteDrag.draggedGhost.variant === 'underline'"
+        class="branch-move-ghost__underline"
+        :style="{ backgroundColor: paletteDrag.draggedGhost.borderColor }"
+      />
+    </div>
+    <div
+      v-if="paletteDrag.dropTarget"
+      class="branch-move-drop-preview"
+      :class="paletteDropTargetShapeClass"
+      :style="getDropTargetStyle(getVueFlowNodes, paletteDrag.dropTarget as DropTarget)"
     />
   </div>
   <svg

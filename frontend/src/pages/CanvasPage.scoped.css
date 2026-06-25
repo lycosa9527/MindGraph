@@ -71,6 +71,12 @@
   cursor: none !important;
 }
 
+/* Toolbar always shows pointer + CSS tooltips */
+.presentation-active .mind-map-presentation-toolbar,
+.presentation-active .mind-map-presentation-toolbar * {
+  cursor: auto !important;
+}
+
 /* Highlighter tool: wide marker-style cursor (overrides cursor: none above) */
 .presentation-active.presentation-highlighter-mode,
 .presentation-active.presentation-highlighter-mode * {
@@ -89,9 +95,23 @@
     crosshair !important;
 }
 
-/* Timer tool: restore normal cursor (presentation-active hides it by default) */
+/* Timer setup overlay: restore normal cursor */
 .presentation-active.presentation-timer-mode,
 .presentation-active.presentation-timer-mode * {
+  cursor: auto !important;
+}
+
+.presentation-active.presentation-eraser-mode,
+.presentation-active.presentation-eraser-mode * {
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Ccircle cx='14' cy='14' r='10' fill='%23f8fafc' stroke='%2394a3b8' stroke-width='1.5'/%3E%3C/svg%3E")
+      14 14,
+    crosshair !important;
+}
+
+/* Timer HUD: restore cursor */
+.presentation-timer-hud,
+.presentation-timer-hud * {
   cursor: auto !important;
 }
 
@@ -103,15 +123,36 @@
   cursor: auto !important;
 }
 
-/* Mind map presentation: hand / grab on canvas */
-.presentation-active.presentation-hand-mode,
-.presentation-active.presentation-hand-mode * {
+/* Mind map presentation pointer: restore edit cursor on diagram */
+.presentation-active.presentation-pointer-mode :deep(.diagram-canvas),
+.presentation-active.presentation-pointer-mode :deep(.diagram-canvas *) {
+  cursor: auto !important;
+}
+
+/* Mind map presentation hand: grab-pan the canvas (entire diagram area including nodes) */
+.presentation-active.presentation-hand-mode :deep(.diagram-canvas),
+.presentation-active.presentation-hand-mode :deep(.diagram-canvas *) {
   cursor: grab !important;
 }
 
-.presentation-active.presentation-hand-mode:active,
-.presentation-active.presentation-hand-mode:active * {
+.presentation-active.presentation-hand-mode :deep(.diagram-canvas .vue-flow__pane.dragging),
+.presentation-active.presentation-hand-mode :deep(.diagram-canvas .vue-flow__pane.dragging *) {
   cursor: grabbing !important;
+}
+
+/* Toolbar: always interactive + visible cursor */
+.presentation-active .mind-map-presentation-toolbar {
+  pointer-events: auto !important;
+}
+
+.presentation-active .mind-map-presentation-toolbar,
+.presentation-active .mind-map-presentation-toolbar * {
+  cursor: auto !important;
+}
+
+.presentation-rail-floating-tip {
+  pointer-events: none !important;
+  cursor: auto !important;
 }
 
 /* Slide show: restore visible cursor (presentation-active hides it by default) */

@@ -16,7 +16,7 @@ const props = withDefaults(
     pointerSizeScale?: number
     strokeWidthRoleScale?: number
     /** Pen uses tighter sampling + smooth curves for handwriting */
-    mode?: 'pen' | 'highlighter'
+    mode?: 'pen' | 'highlighter' | 'eraser'
   }>(),
   {
     mode: 'highlighter',
@@ -34,6 +34,65 @@ const transform = computed(
 )
 
 const isPen = computed(() => props.mode === 'pen')
+const isEraser = computed(() => props.mode === 'eraser')
+
+function distancePointToSegmentSq(
+  p: { x: number; y: number },
+  a: { x: number; y: number },
+  b: { x: number; y: number }
+): number {
+  const dx = b.x - a.x
+  const dy = b.y - a.y
+  const lenSq = dx * dx + dy * dy
+  if (lenSq === 0) {
+    const ex = p.x - a.x
+    const ey = p.y - a.y
+    return ex * ex + ey * ey
+  }
+  let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq
+  t = Math.max(0, Math.min(1, t))
+  const cx = a.x + t * dx
+  const cy = a.y + t * dy
+  const ex = p.x - cx
+  const ey = p.y - cy
+  return ex * ex + ey * ey
+}
+
+function eraserRadiusFlow(): number {
+  const z = Math.max(viewport.value.zoom, 0.08)
+  const s = props.pointerSizeScale ?? 1
+  const screenPx = 22 * s
+  return screenPx / z
+}
+
+function strokeHitByEraser(
+  stroke: PresentationHighlightStroke,
+  p: { x: number; y: number },
+  radiusFlow: number
+): boolean {
+  const pts = stroke.points
+  if (pts.length === 0) return false
+  const radiusSq = radiusFlow * radiusFlow
+  if (pts.length === 1) {
+    const dx = pts[0].x - p.x
+    const dy = pts[0].y - p.y
+    return dx * dx + dy * dy <= radiusSq
+  }
+  for (let i = 0; i < pts.length - 1; i++) {
+    if (distancePointToSegmentSq(p, pts[i], pts[i + 1]) <= radiusSq) {
+      return true
+    }
+  }
+  return false
+}
+
+function eraseAtPoint(p: { x: number; y: number }): void {
+  const radiusFlow = eraserRadiusFlow()
+  const next = strokes.value.filter((stroke) => !strokeHitByEraser(stroke, p, radiusFlow))
+  if (next.length !== strokes.value.length) {
+    strokes.value = next
+  }
+}
 
 function resolveStrokeTool(stroke: PresentationHighlightStroke): 'pen' | 'highlighter' {
   if (stroke.strokeTool) return stroke.strokeTool
@@ -145,6 +204,14 @@ function onPointerDown(e: PointerEvent) {
   e.preventDefault()
   e.stopPropagation()
   const p = screenToFlowCoordinate({ x: e.clientX, y: e.clientY })
+
+  if (isEraser.value) {
+    isDrawing.value = true
+    eraseAtPoint(p)
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    return
+  }
+
   isDrawing.value = true
   pendingPoints.length = 0
   const pointerScale = props.pointerSizeScale ?? 1
@@ -156,7 +223,7 @@ function onPointerDown(e: PointerEvent) {
       color: props.currentColor,
       pointerScale,
       strokeRoleScale,
-      strokeTool: props.mode,
+      strokeTool: props.mode === 'pen' ? 'pen' : 'highlighter',
     },
   ]
   ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
@@ -165,12 +232,25 @@ function onPointerDown(e: PointerEvent) {
 function onPointerMove(e: PointerEvent) {
   if (!props.active || !isDrawing.value) return
   e.preventDefault()
+  if (isEraser.value) {
+    const p = screenToFlowCoordinate({ x: e.clientX, y: e.clientY })
+    eraseAtPoint(p)
+    return
+  }
   ingestPointerEvents(e)
 }
 
 function onPointerUp(e: PointerEvent) {
   if (!isDrawing.value) return
   isDrawing.value = false
+  if (isEraser.value) {
+    try {
+      ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+    } catch {
+      /* already released */
+    }
+    return
+  }
   ingestPointerEvents(e)
   if (rafId !== null) {
     cancelAnimationFrame(rafId)

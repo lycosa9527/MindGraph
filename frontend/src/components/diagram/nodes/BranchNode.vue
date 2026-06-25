@@ -10,6 +10,7 @@ import type { CSSProperties } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { presentationDiagramEditLockedRef } from '@/composables/presentation/presentationDiagramEdit'
 import { eventBus } from '@/composables/core/useEventBus'
 import {
   handleLearningSheetPickNodeClick,
@@ -32,6 +33,7 @@ import { useDiagramStore } from '@/stores/diagram'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
 import type { MindGraphNodeProps } from '@/types'
+import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { applyNodeShapeToStyle, mindMapUnderlineHandleStyle, resolveNodeShape } from '@/utils/nodeShapeStyle'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -41,6 +43,11 @@ import InlineEditableText from './InlineEditableText.vue'
 const props = defineProps<MindGraphNodeProps>()
 
 const diagramStore = useDiagramStore()
+const isTextReadonly = computed(
+  () =>
+    (props.data.hidden === true && diagramStore.isLearningSheet) ||
+    presentationDiagramEditLockedRef.value
+)
 const branchNodeRef = ref<HTMLDivElement | null>(null)
 
 // Get theme defaults matching old StyleManager
@@ -74,7 +81,6 @@ const defaultStyle = computed(() => getNodeStyle(themeNodeType.value))
 const isTreeMap = computed(() => props.data.diagramType === 'tree_map')
 
 const BRANCH_MAX_TEXT_WIDTH = 200
-const BALANCE_PADDING = 5
 
 const textMaxWidth = computed(() => {
   const label = ((props.data.label as string) || '').trim()
@@ -99,9 +105,7 @@ const textMaxWidth = computed(() => {
     return `${wrapThreshold}px`
   }
 
-  const numLines = Math.ceil(textWidth / BRANCH_MAX_TEXT_WIDTH)
-  const balancedWidth = Math.ceil(textWidth / numLines) + BALANCE_PADDING
-  return `${Math.min(balancedWidth, BRANCH_MAX_TEXT_WIDTH)}px`
+  return `${BRANCH_MAX_TEXT_WIDTH}px`
 })
 
 const useAutoWrap = computed(() => !isTreeMap.value && !isBridgeMap.value)
@@ -109,7 +113,15 @@ const useAutoWrap = computed(() => !isTreeMap.value && !isBridgeMap.value)
 // Check if this is a bridge map node (should be text-only, including first pair)
 const isBridgeMap = computed(() => props.data.diagramType === 'bridge_map')
 
-const nodeShape = computed(() => resolveNodeShape(resolvedStyle.value, isMindMap.value))
+const nodeShape = computed(() => {
+  if (isMindMap.value) {
+    return resolveMindMapNodeShape(
+      { id: props.id, type: 'branch', style: resolvedStyle.value },
+      diagramStore.data?._mindmap_diagram_style as string | undefined
+    )
+  }
+  return resolveNodeShape(resolvedStyle.value, false)
+})
 const isUnderlineShape = computed(() => isMindMap.value && nodeShape.value === 'underline')
 
 const defaultMindMapTheme = computed(() => getMindMapThemeForDiagram(diagramStore.data))
@@ -241,6 +253,10 @@ const nodeStyle = computed((): CSSProperties => {
 
   if (isMindMap.value) {
     const padX = mindMapHorizontalPadding(shape)
+    const isBlankedForSheet =
+      diagramStore.isLearningSheet && diagramStore.isNodeBlankedForLearningSheet(props.id)
+    const layoutWidth = props.data?.estimatedWidth as number | undefined
+    const layoutHeight = props.data?.estimatedHeight as number | undefined
     if (isUnderlineShape.value) {
       const { top } = mindMapUnderlineContentPadding()
       result.padding = `${top}px 0 0`
@@ -252,6 +268,14 @@ const nodeStyle = computed((): CSSProperties => {
       result.minWidth = `${MIND_MAP_GEOMETRY.minWidth}px`
       result.minHeight = `${MIND_MAP_GEOMETRY.minHeight}px`
       result.boxShadow = shouldHaveShadow ? '0 1px 3px rgba(15, 23, 42, 0.06)' : 'none'
+    }
+    if (isBlankedForSheet && layoutWidth && layoutWidth > 0) {
+      const widthPx = Math.max(layoutWidth, MIND_MAP_GEOMETRY.minWidth)
+      result.width = `${widthPx}px`
+      result.minWidth = `${widthPx}px`
+    }
+    if (isBlankedForSheet && layoutHeight && layoutHeight > 0) {
+      result.minHeight = `${Math.max(layoutHeight, MIND_MAP_GEOMETRY.minHeight)}px`
     }
   }
 
@@ -331,6 +355,12 @@ function handleBranchMovePointerUp(): void {
 useNodeDimensions(branchNodeRef, props.id, {
   onResize(w, h) {
     if (!isMindMap.value || isEditing.value) return
+    if (
+      diagramStore.isLearningSheet &&
+      diagramStore.isNodeBlankedForLearningSheet(props.id)
+    ) {
+      return
+    }
     diagramStore.setMindMapNodeDimensions(props.id, w, h)
   },
 })
@@ -349,6 +379,7 @@ function handleEditCancel() {
 
 function handleBranchNodeDoubleClick(): void {
   if (isLearningSheetCustomPickActive()) return
+  if (presentationDiagramEditLockedRef.value) return
   if ((props.data.hidden === true && diagramStore.isLearningSheet) || isEditing.value) return
   if (collabCanvas?.isNodeLockedByOther?.(props.id)) {
     notifyCollab.warning(t('collab.nodeLocked'))
@@ -404,7 +435,7 @@ function handleBranchNodeClick(event: MouseEvent): void {
           :text="data.label || ''"
           :node-id="id"
           :is-editing="isEditing"
-          :readonly="data.hidden === true && diagramStore.isLearningSheet"
+          :readonly="isTextReadonly"
           :max-width="textMaxWidth"
           :text-align="resolvedStyle.textAlign || 'center'"
           :text-decoration="resolvedStyle.textDecoration || 'none'"
@@ -425,7 +456,7 @@ function handleBranchNodeClick(event: MouseEvent): void {
       :text="data.label || ''"
       :node-id="id"
       :is-editing="isEditing"
-      :readonly="data.hidden === true && diagramStore.isLearningSheet"
+      :readonly="isTextReadonly"
       :max-width="textMaxWidth"
       :text-align="resolvedStyle.textAlign || 'center'"
       :text-decoration="resolvedStyle.textDecoration || 'none'"
@@ -498,8 +529,14 @@ function handleBranchNodeClick(event: MouseEvent): void {
 </template>
 
 <style scoped>
-.branch-node.mind-map-underline-node {
+.branch-node.mind-map-node.mind-map-underline-node {
+  min-width: unset;
   min-height: unset;
+  width: fit-content;
+  box-shadow: none !important;
+}
+
+.branch-node.mind-map-underline-node {
   width: fit-content;
   box-shadow: none !important;
 }

@@ -760,6 +760,13 @@ function onShapePick(shape: NodeShape) {
 .node-floating-toolbar-popper .nft-dropdown-menu {
   padding: 0 !important;
   min-width: 0 !important;
+  list-style: none !important;
+}
+
+.node-floating-toolbar-popper .el-dropdown-menu {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 .node-floating-toolbar-popper .nft-dropdown-menu--wide {
@@ -772,6 +779,13 @@ function onShapePick(shape: NodeShape) {
   line-height: 1.4;
   color: #334155;
   justify-content: flex-start !important;
+  list-style: none !important;
+}
+
+.node-floating-toolbar-popper .el-dropdown-menu__item.nft-dropdown-item::before,
+.node-floating-toolbar-popper .el-dropdown-menu__item.nft-dropdown-item::marker {
+  content: none !important;
+  display: none !important;
 }
 
 .node-floating-toolbar-popper .el-dropdown-menu__item.nft-dropdown-item:hover {

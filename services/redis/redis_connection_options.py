@@ -20,6 +20,7 @@ Proprietary License
 from __future__ import annotations
 
 import inspect
+import os
 from typing import Any
 
 from redis.asyncio.connection import AbstractConnection as AsyncAbstractConnection
@@ -37,9 +38,19 @@ def async_maint_notifications_supported() -> bool:
     return _ASYNC_MAINT_NOTIFICATIONS_SUPPORTED
 
 
+def enable_resp3_default() -> bool:
+    """RESP3 is on unless explicitly disabled (Redis 6+ required for HELLO)."""
+    return os.getenv("REDIS_RESP3", "true").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def redis_connection_options() -> dict[str, Any]:
     """Return kwargs for sync ``Redis()`` / ``from_url()`` that skip SCH probing."""
-    return {"maint_notifications_config": _DISABLED_MAINT_NOTIFICATIONS}
+    opts: dict[str, Any] = {"maint_notifications_config": _DISABLED_MAINT_NOTIFICATIONS}
+    if enable_resp3_default():
+        opts["protocol"] = 3
+    else:
+        opts["protocol"] = 2
+    return opts
 
 
 def redis_async_connection_options() -> dict[str, Any]:

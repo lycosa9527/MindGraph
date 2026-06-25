@@ -22,6 +22,7 @@ import { useFlowMapOpsSlice } from './diagram/flowMapOps'
 import { useHistorySlice } from './diagram/history'
 import { useLearningSheetSlice } from './diagram/learningSheet'
 import { useMindMapLayoutSlice } from './diagram/mindMapLayout'
+import { createMindMapRecalcScheduler } from './diagram/mindMapRecalcScheduler'
 import { useMindMapOpsSlice } from './diagram/mindMapOps'
 import { useMultiFlowLayoutSlice } from './diagram/multiFlowLayout'
 import { useNodeDimensionSlice } from './diagram/nodeDimensionSlice'
@@ -64,6 +65,7 @@ export const useDiagramStore = defineStore('diagram', () => {
   const mindMapNodeHeights = ref<Record<string, number>>({})
   const mindMapRecalcTrigger = ref(0)
   const mindMapTopicBranchGaps = ref<{ left: number; right: number } | null>(null)
+  const mindMapPendingEditNodeId = ref<string | null>(null)
   const nodeDimensions = ref<Record<string, { width: number; height: number }>>({})
   const layoutRecalcTrigger = ref(0)
   const sessionEditCount = ref(0)
@@ -106,6 +108,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     mindMapNodeHeights,
     mindMapRecalcTrigger,
     mindMapTopicBranchGaps,
+    mindMapPendingEditNodeId,
     nodeDimensions,
     layoutRecalcTrigger,
     sessionEditCount,
@@ -113,6 +116,8 @@ export const useDiagramStore = defineStore('diagram', () => {
     collabForeignLockedNodeIds,
     kittyReviewByNodeId,
   } as DiagramContext
+
+  ctx.scheduleMindMapRecalc = createMindMapRecalcScheduler(type, mindMapRecalcTrigger)
 
   // ?? Phase 2 slices ??
   const historySlice = useHistorySlice(ctx)
@@ -141,11 +146,13 @@ export const useDiagramStore = defineStore('diagram', () => {
     clearCustomPosition,
     resetToAutoLayout,
   } = customPositionsSlice
-  const { saveNodeStyle, getNodeStyle, clearNodeStyle, clearAllNodeStyles, applyStylePreset } =
+  const { saveNodeStyle, getNodeStyle, clearNodeStyle, clearAllNodeStyles, applyStylePreset, applyMindMapAppearance } =
     nodeStylesSlice
   const {
     isLearningSheet,
     hiddenAnswers,
+    learningSheetShowAnswers,
+    setLearningSheetShowAnswers,
     isNodeBlankedForLearningSheet,
     emptyNodeForLearningSheet,
     restoreNodeFromLearningSheet,
@@ -247,6 +254,7 @@ export const useDiagramStore = defineStore('diagram', () => {
   const mindMapLayoutSlice = useMindMapLayoutSlice(ctx)
   const {
     setMindMapTopicWidth,
+    setMindMapTopicMeasured,
     setMindMapNodeWidth: setMindMapNodeWidthSlice,
     setMindMapNodeDimensions,
     clearMindMapNodeWidths,
@@ -417,6 +425,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     selectedNodeData,
     isLearningSheet,
     hiddenAnswers,
+    learningSheetShowAnswers,
     effectiveTitle,
     vueFlowNodes,
     vueFlowEdges,
@@ -447,6 +456,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     toggleLearningSheetNodeBlank,
     emptyNode,
     setLearningSheetMode,
+    setLearningSheetShowAnswers,
     reconcileHiddenAnswersFromBlankedNodes,
     restoreFromLearningSheetMode,
     applyLearningSheetView,
@@ -494,6 +504,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     clearNodeStyle,
     clearAllNodeStyles,
     applyStylePreset,
+    applyMindMapAppearance,
     loadFromSpec,
     loadDefaultTemplate,
     mergeGranularUpdate,
@@ -521,10 +532,14 @@ export const useDiagramStore = defineStore('diagram', () => {
     setNodeWidth,
     setConceptMapFocusQuestion,
     setMindMapTopicWidth,
+    setMindMapTopicMeasured,
     setMindMapNodeWidth: setMindMapNodeWidthSlice,
     setMindMapNodeDimensions,
     clearMindMapNodeWidths,
+    mindMapNodeWidths,
+    mindMapNodeHeights,
     mindMapTopicBranchGaps,
+    mindMapPendingEditNodeId,
     nodeDimensions,
     layoutRecalcTrigger,
     setNodeDimensions: setNodeDimensionsSlice,

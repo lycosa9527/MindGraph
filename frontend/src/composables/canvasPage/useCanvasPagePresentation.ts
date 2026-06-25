@@ -29,12 +29,14 @@ const PRESENTATION_RAIL_TOOL_SHORTCUT_ORDER: readonly PresentationToolId[] = [
 const TIMER_DEFAULT_SECONDS = 300
 const SPOTLIGHT_INNER_RADIUS_PX = 150
 const SPOTLIGHT_OUTER_RADIUS_PX = 195
-const LASER_CURSOR_BASE_PX = 22
+const LASER_CURSOR_BASE_PX = 12
 
 export function useCanvasPagePresentation() {
   const diagramStore = useDiagramStore()
   const canvasZoom = ref<number | null>(null)
   const handToolActive = ref(false)
+  /** Bottom-bar hand state saved while the presentation rail owns pan (zoom hand is hidden). */
+  const handToolBeforePresentation = ref(false)
   /** When true, the right vertical presentation tools rail is visible. */
   const presentationRailOpen = ref(false)
   const presentationTool = ref<PresentationToolId>('laser')
@@ -52,6 +54,8 @@ export function useCanvasPagePresentation() {
   const timerTotalSeconds = ref(TIMER_DEFAULT_SECONDS)
   const timerRemainingSeconds = ref(TIMER_DEFAULT_SECONDS)
   const timerRunning = ref(false)
+  /** True after the presenter confirms timer setup and returns to the canvas. */
+  const timerHudVisible = ref(false)
   let timerTickId: ReturnType<typeof setInterval> | null = null
 
   function clearPresentationTimerTick(): void {
@@ -84,12 +88,6 @@ export function useCanvasPagePresentation() {
     }
   })
 
-  watch(presentationTool, (tool) => {
-    if (tool !== 'timer') {
-      timerRunning.value = false
-    }
-  })
-
   function onTimerToggleRun(): void {
     if (timerRemainingSeconds.value <= 0 && !timerRunning.value) {
       timerRemainingSeconds.value = timerTotalSeconds.value
@@ -106,17 +104,33 @@ export function useCanvasPagePresentation() {
     const s = Math.max(60, minutes * 60)
     timerTotalSeconds.value = s
     timerRemainingSeconds.value = s
+    timerRunning.value = false
+  }
+
+  function onTimerStartPresenting(): void {
+    if (timerRemainingSeconds.value <= 0) {
+      timerRemainingSeconds.value = timerTotalSeconds.value
+    }
     timerRunning.value = true
+    timerHudVisible.value = true
+  }
+
+  function onTimerCloseHud(): void {
+    timerRunning.value = false
+    timerHudVisible.value = false
+    timerRemainingSeconds.value = timerTotalSeconds.value
   }
 
   function onTimerExit(): void {
-    timerRunning.value = false
-    presentationTool.value = 'laser'
+    onTimerCloseHud()
   }
 
   function onTimerSetMinutes(minutes: number): void {
     const m = Math.min(180, Math.max(1, Math.round(minutes)))
-    onTimerPresetMinutes(m)
+    const s = m * 60
+    timerTotalSeconds.value = s
+    timerRemainingSeconds.value = s
+    timerRunning.value = false
   }
 
   const laserX = ref(0)
@@ -149,11 +163,10 @@ export function useCanvasPagePresentation() {
       marginLeft: `-${half}px`,
       marginTop: `-${half}px`,
       boxShadow: [
-        `0 0 ${4 * s}px ${2 * s}px rgba(255, 255, 255, 0.9)`,
-        `0 0 ${10 * s}px ${4 * s}px rgba(255, 60, 60, 1)`,
-        `0 0 ${22 * s}px ${8 * s}px rgba(220, 20, 20, 0.85)`,
-        `0 0 ${45 * s}px ${18 * s}px rgba(180, 0, 0, 0.55)`,
-        `0 0 ${80 * s}px ${35 * s}px rgba(140, 0, 0, 0.25)`,
+        `0 0 ${3 * s}px ${1.5 * s}px rgba(255, 255, 255, 0.85)`,
+        `0 0 ${6 * s}px ${2.5 * s}px rgba(255, 60, 60, 0.95)`,
+        `0 0 ${12 * s}px ${4 * s}px rgba(220, 20, 20, 0.7)`,
+        `0 0 ${22 * s}px ${8 * s}px rgba(180, 0, 0, 0.35)`,
       ].join(', '),
     }
   })
@@ -214,6 +227,7 @@ export function useCanvasPagePresentation() {
       window.addEventListener('keydown', handlePresentationKeyboardShortcuts, true)
       presentationTool.value = 'laser'
       timerRunning.value = false
+      timerHudVisible.value = false
       clearPresentationTimerTick()
       timerTotalSeconds.value = TIMER_DEFAULT_SECONDS
       timerRemainingSeconds.value = TIMER_DEFAULT_SECONDS
@@ -224,6 +238,7 @@ export function useCanvasPagePresentation() {
       presentationTool.value = 'laser'
       presentationHighlighterColor.value = DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR
       timerRunning.value = false
+      timerHudVisible.value = false
       clearPresentationTimerTick()
       timerTotalSeconds.value = TIMER_DEFAULT_SECONDS
       timerRemainingSeconds.value = TIMER_DEFAULT_SECONDS
@@ -255,6 +270,17 @@ export function useCanvasPagePresentation() {
     handToolActive.value = active
   }
 
+  /** Suspend zoom-bar hand before presentation; rail hand is a separate tool. */
+  function suspendHandToolForPresentation(): void {
+    handToolBeforePresentation.value = handToolActive.value
+    handToolActive.value = false
+  }
+
+  /** Restore zoom-bar hand after leaving presentation. */
+  function resumeHandToolAfterPresentation(): void {
+    handToolActive.value = handToolBeforePresentation.value
+  }
+
   function handleStartPresentation() {
     const wasOpen = presentationRailOpen.value
     presentationRailOpen.value = !presentationRailOpen.value
@@ -274,11 +300,14 @@ export function useCanvasPagePresentation() {
   })
 
   function resetPresentationStateOnLeave(): void {
+    handToolBeforePresentation.value = false
     handToolActive.value = false
     presentationRailOpen.value = false
     presentationHighlightStrokes.value = []
     presentationTool.value = 'laser'
     presentationHighlighterColor.value = DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR
+    timerHudVisible.value = false
+    timerRunning.value = false
   }
 
   return {
@@ -293,9 +322,12 @@ export function useCanvasPagePresentation() {
     timerTotalSeconds,
     timerRemainingSeconds,
     timerRunning,
+    timerHudVisible,
     onTimerToggleRun,
     onTimerReset,
     onTimerPresetMinutes,
+    onTimerStartPresenting,
+    onTimerCloseHud,
     onTimerExit,
     onTimerSetMinutes,
     laserCursorStyle,
@@ -305,6 +337,8 @@ export function useCanvasPagePresentation() {
     handleZoomOut,
     handleFitToScreen,
     handleHandToolToggle,
+    suspendHandToolForPresentation,
+    resumeHandToolAfterPresentation,
     handleStartPresentation,
     handleModelChange,
     clearPresentationTimerTick,

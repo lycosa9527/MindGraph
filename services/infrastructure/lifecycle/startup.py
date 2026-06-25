@@ -361,26 +361,30 @@ def setup_early_configuration():
     # Print banner (handles its own worker detection)
     _print_startup_banner()
 
-    # Fix for Windows: Set event loop policy to support subprocesses (required for Playwright)
+    # Windows event loop: psycopg async requires SelectorEventLoop; Proactor is only
+    # needed for Playwright subprocesses (set WINDOWS_PROACTOR_EVENT_LOOP=1 if PNG export fails).
     # MUST be set before any event loop is created (before Uvicorn starts)
     if sys.platform == "win32":
+        use_proactor = os.getenv("WINDOWS_PROACTOR_EVENT_LOOP", "").strip().lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
         try:
-            current_policy = asyncio.get_event_loop_policy()
-            if not isinstance(current_policy, asyncio.WindowsProactorEventLoopPolicy):
-                asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+            if use_proactor:
+                policy: asyncio.AbstractEventLoopPolicy = asyncio.WindowsProactorEventLoopPolicy()
+                policy_name = "WindowsProactorEventLoopPolicy"
+            else:
+                policy = asyncio.WindowsSelectorEventLoopPolicy()
+                policy_name = "WindowsSelectorEventLoopPolicy"
+            if not isinstance(asyncio.get_event_loop_policy(), type(policy)):
+                asyncio.set_event_loop_policy(policy)
                 if should_log_startup:
-                    logging.debug(
-                        "Windows: Set event loop policy to WindowsProactorEventLoopPolicy for Playwright support"
-                    )
-        except BACKGROUND_INFRA_ERRORS:
-            # If we can't check/set, try to set it anyway
-            try:
-                asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-                if should_log_startup:
-                    logging.debug("Windows: Set event loop policy to WindowsProactorEventLoopPolicy (unconditional)")
-            except BACKGROUND_INFRA_ERRORS as e2:
-                if should_log_startup:
-                    logging.warning("Windows: Could not set event loop policy: %s", e2)
+                    logging.debug("Windows: Set event loop policy to %s", policy_name)
+        except BACKGROUND_INFRA_ERRORS as e:
+            if should_log_startup:
+                logging.warning("Windows: Could not set event loop policy: %s", e)
 
     # Ensure .env file is UTF-8 encoded before loading
     ensure_utf8_env_file()

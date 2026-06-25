@@ -28,9 +28,9 @@ export const MIND_MAP_GEOMETRY = {
   minWidth: 90,
   minHeight: 34,
   /** Horizontal padding per side (rounded / rectangle) */
-  paddingX: 18,
+  paddingX: 12,
   /** Horizontal padding per side (oval) */
-  paddingXOval: 26,
+  paddingXOval: 18,
   /** Vertical padding per side (18px total ≈ 9px × 2 with 14px text → min-height 34) */
   paddingY: 9,
   edgeStrokeWidth: 2,

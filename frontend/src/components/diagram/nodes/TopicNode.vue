@@ -11,6 +11,7 @@ import type { CSSProperties } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { presentationDiagramEditLockedRef } from '@/composables/presentation/presentationDiagramEdit'
 import {
   handleLearningSheetPickNodeClick,
   isLearningSheetCustomPickActive,
@@ -18,10 +19,15 @@ import {
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { useDiagramStore } from '@/stores'
-import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
-import { applyNodeShapeToStyle, mindMapUnderlineHandleStyle, resolveNodeShape, type NodeShape } from '@/utils/nodeShapeStyle'
+import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
+import {
+  applyNodeShapeToStyle,
+  mindMapUnderlineHandleStyle,
+  resolveNodeShape,
+  type NodeShape,
+} from '@/utils/nodeShapeStyle'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import {
   MIND_MAP_GEOMETRY,
@@ -36,6 +42,9 @@ import InlineEditableText from './InlineEditableText.vue'
 const props = defineProps<MindGraphNodeProps>()
 
 const diagramStore = useDiagramStore()
+const isTextReadonly = computed(
+  () => props.data.hidden === true || presentationDiagramEditLockedRef.value
+)
 
 // Get theme defaults matching old StyleManager
 const { getNodeStyle } = useTheme({
@@ -72,8 +81,13 @@ const isMindMap = computed(
 
 const topicNodeShape = computed((): NodeShape => {
   const style = resolvedStyle.value
-  const defaultMindMapShape: NodeShape = 'rectangle'
-  return style.nodeShape ?? (isMindMap.value ? defaultMindMapShape : resolveNodeShape(style, false))
+  if (isMindMap.value) {
+    return resolveMindMapNodeShape(
+      { id: props.id, type: 'topic', style },
+      diagramStore.data?._mindmap_diagram_style as string | undefined
+    )
+  }
+  return style.nodeShape ?? resolveNodeShape(style, false)
 })
 
 const isUnderlineTopic = computed(
@@ -318,22 +332,8 @@ const nodeStyle = computed(() => {
 })
 
 const TOPIC_MAX_TEXT_WIDTH = 300
-const BALANCE_PADDING = 5
 
-const topicMaxWidth = computed(() => {
-  const label = ((props.data.label as string) || '').trim()
-  if (!label) return `${TOPIC_MAX_TEXT_WIDTH}px`
-
-  const fontSize = parseFloat(nodeStyle.value.fontSize as string) || 18
-  const fontWeight = String(nodeStyle.value.fontWeight || 'bold')
-  const textWidth = measureTextWidth(label, fontSize, { fontWeight })
-
-  if (textWidth <= TOPIC_MAX_TEXT_WIDTH) return `${TOPIC_MAX_TEXT_WIDTH}px`
-
-  const numLines = Math.ceil(textWidth / TOPIC_MAX_TEXT_WIDTH)
-  const balancedWidth = Math.ceil(textWidth / numLines) + BALANCE_PADDING
-  return `${Math.min(balancedWidth, TOPIC_MAX_TEXT_WIDTH)}px`
-})
+const topicMaxWidth = computed(() => `${TOPIC_MAX_TEXT_WIDTH}px`)
 
 // Inline editing state
 const isEditing = ref(false)
@@ -345,8 +345,7 @@ const topicNodeRef = ref<HTMLDivElement | null>(null)
 const { reportDimensions } = useNodeDimensions(topicNodeRef, props.id, {
   onResize(w, h) {
     if (!isMindMap.value || isEditing.value) return
-    diagramStore.setMindMapTopicWidth(w)
-    diagramStore.setMindMapNodeDimensions(props.id, null, h)
+    diagramStore.setMindMapTopicMeasured(w, h)
   },
 })
 
@@ -464,7 +463,7 @@ function handleWidthChange(width: number) {
           :text="data.label || ''"
           :node-id="id"
           :is-editing="isEditing"
-          :readonly="data.hidden === true"
+          :readonly="isTextReadonly"
           :max-width="topicMaxWidth"
           :text-align="resolvedStyle.textAlign || 'center'"
           :text-decoration="resolvedStyle.textDecoration || 'none'"
@@ -486,7 +485,7 @@ function handleWidthChange(width: number) {
       :text="data.label || ''"
       :node-id="id"
       :is-editing="isEditing"
-      :readonly="data.hidden === true"
+      :readonly="isTextReadonly"
       :max-width="topicMaxWidth"
       :text-align="resolvedStyle.textAlign || 'center'"
       :text-decoration="resolvedStyle.textDecoration || 'none'"
@@ -645,6 +644,15 @@ function handleWidthChange(width: number) {
 .topic-node.mind-map-topic-node {
   width: fit-content;
   max-width: 400px;
+}
+
+/* Placeholder label ("中心主题") keeps topic text color — not muted gray. */
+.topic-node :deep(.inline-edit-placeholder-display),
+.topic-node :deep(.inline-edit-placeholder-display .inline-edit-plain),
+.topic-node :deep(.inline-edit-placeholder-display.diagram-node-md),
+.topic-node :deep(.inline-edit-placeholder-display.diagram-node-md *) {
+  color: inherit;
+  opacity: 1;
 }
 
 /* Tree map pill shape adjustments */

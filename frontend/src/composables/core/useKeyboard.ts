@@ -23,8 +23,17 @@ export interface KeyboardShortcut {
 }
 
 export function useKeyboard(shortcuts: KeyboardShortcut[]) {
+  function isTypingInInput(): boolean {
+    const active = document.activeElement as HTMLElement | null
+    if (!active) return false
+    const tag = active.tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
+    return active.isContentEditable
+  }
+
   function handleKeydown(event: KeyboardEvent): void {
     if (!event.key) return
+    const typing = isTypingInInput()
     for (const shortcut of shortcuts) {
       const keyMatch = event.key.toLowerCase() === shortcut.key.toLowerCase()
       const ctrlMatch = !!shortcut.ctrl === (event.ctrlKey || event.metaKey)
@@ -32,7 +41,9 @@ export function useKeyboard(shortcuts: KeyboardShortcut[]) {
       const altMatch = !!shortcut.alt === event.altKey
 
       if (keyMatch && ctrlMatch && shiftMatch && altMatch) {
-        if (shortcut.preventDefault !== false) {
+        const hasChordModifier = !!(shortcut.ctrl || shortcut.alt || shortcut.meta)
+        const allowDefaultWhileTyping = typing && !hasChordModifier
+        if (shortcut.preventDefault !== false && !allowDefaultWhileTyping) {
           event.preventDefault()
         }
         shortcut.handler(event)

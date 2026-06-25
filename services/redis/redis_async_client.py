@@ -51,7 +51,7 @@ from redis.backoff import ExponentialBackoff
 from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
-from services.redis.redis_connection_options import redis_async_connection_options
+from services.redis.redis_connection_options import enable_resp3_default, redis_async_connection_options
 from services.utils.error_types import REDIS_ERRORS
 from utils.env_helpers import env_int
 
@@ -72,17 +72,6 @@ _DEFAULT_MAX_CONNECTIONS = 256
 _DEFAULT_HEALTH_CHECK_INTERVAL = 30  # seconds
 _DEFAULT_SOCKET_TIMEOUT = 5.0
 _DEFAULT_SOCKET_CONNECT_TIMEOUT = 5.0
-
-
-def _enable_resp3_default() -> bool:
-    """RESP3 is on unless explicitly disabled.
-
-    Redis 7+ servers all speak RESP3; older servers gracefully downgrade
-    during the HELLO handshake.  We give operators an opt-out for the
-    rare case where a managed proxy strips the new framing.
-    """
-
-    return os.getenv("REDIS_RESP3", "true").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _enable_keepalive_default() -> bool:
@@ -157,8 +146,10 @@ def _build_async_client() -> aioredis.Redis:
     }
     if keepalive_options:
         kwargs["socket_keepalive_options"] = keepalive_options
-    if _enable_resp3_default():
+    if enable_resp3_default():
         kwargs["protocol"] = 3
+    else:
+        kwargs["protocol"] = 2
     async_sch_opts = redis_async_connection_options()
     kwargs.update(async_sch_opts)
     sch_label = "disabled" if async_sch_opts else "redis-py-default"

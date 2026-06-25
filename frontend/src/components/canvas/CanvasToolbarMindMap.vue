@@ -2,7 +2,7 @@
 /**
  * Mind-map dedicated toolbar — single-row horizontal flow, lightweight UI.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
 import { ElDropdown, ElTooltip } from 'element-plus'
 
@@ -10,7 +10,6 @@ import {
   ChevronDown,
   Download,
   GitBranchPlus,
-  Palette,
   Plus,
   RotateCcw,
   RotateCw,
@@ -18,6 +17,8 @@ import {
   Upload,
   Wand2,
 } from '@lucide/vue'
+
+import MindMapAppearanceDropdown from '@/components/canvas/MindMapAppearanceDropdown.vue'
 
 import {
   tryCollabGuardedRedo,
@@ -31,7 +32,6 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
-import { MIND_MAP_THEMES, resolveMindMapThemeId, type MindMapThemeId } from '@/config/mindMapThemes'
 import { CANVAS_STANDARD_EXPORT_MENU_ITEMS, CANVAS_COMMUNITY_EXPORT_MENU_ITEM } from '@/config/canvasExportMenu'
 import { useAuthStore, useDiagramStore } from '@/stores'
 
@@ -57,18 +57,7 @@ const { handleAddChild, handleAddSibling, handleDeleteNode, handleAddBranch } = 
 const { isAIGenerating, handleAIGenerate } = useCanvasToolbarApps()
 const { resetToDefaultTemplate } = useCanvasReset()
 
-const activeThemeId = ref<MindMapThemeId>(
-  resolveMindMapThemeId(diagramStore.data?._mindmap_theme as string | undefined)
-)
-
-watch(
-  () => diagramStore.data?._mindmap_theme,
-  (themeId) => {
-    activeThemeId.value = resolveMindMapThemeId(themeId as string | undefined)
-  }
-)
 const structureDropdownOpen = ref(false)
-const themeDropdownOpen = ref(false)
 const exportDropdownOpen = ref(false)
 
 const structureMode = computed(() => {
@@ -83,12 +72,6 @@ const structureLabel = computed(() =>
     : t('canvas.toolbar.mindMapStructureBalanced')
 )
 
-const activeTheme = computed(
-  () => MIND_MAP_THEMES.find((theme) => theme.id === activeThemeId.value) ?? MIND_MAP_THEMES[0]
-)
-
-const themeShortLabel = computed(() => t(activeTheme.value.nameKey))
-
 function handleUndo() {
   tryCollabGuardedUndo()
 }
@@ -102,19 +85,6 @@ function handleStructurePick(mode: 'balanced' | 'right') {
   if (diagramStore.setMindMapStructureMode(mode)) {
     notify.success(t('canvas.toolbar.mindMapStructureApplied'))
   }
-}
-
-function handleApplyTheme(themeId: MindMapThemeId) {
-  themeDropdownOpen.value = false
-  const theme = MIND_MAP_THEMES.find((item) => item.id === themeId)
-  if (!theme) return
-  if (!diagramStore.data?.nodes?.length) {
-    notify.warning(t('canvas.toolbar.createDiagramFirst'))
-    return
-  }
-  diagramStore.applyStylePreset(theme, { mindMapThemeId: themeId })
-  activeThemeId.value = themeId
-  notify.success(t('canvas.toolbar.styleApplied'))
 }
 
 function handleExportCommand(format: string) {
@@ -138,7 +108,9 @@ function handleAddChildClick() {
       <!-- Structure mode -->
       <ElDropdown
         v-model:visible="structureDropdownOpen"
-        trigger="click"
+        trigger="hover"
+        :show-timeout="150"
+        :hide-timeout="200"
         placement="bottom-start"
         popper-class="mm-toolbar-popper mm-toolbar-popper--structure"
       >
@@ -185,47 +157,67 @@ function handleAddChildClick() {
 
       <span class="mm-sep" />
 
-      <!-- Undo / Redo — icon only -->
-      <div class="mm-btn-group">
-        <ElTooltip
-          :content="t('canvas.toolbar.undo')"
-          placement="bottom"
+      <!-- Undo / Redo — combined control; reset as text button -->
+      <div class="mm-history-wrap">
+        <div
+          class="mm-history-group"
+          role="group"
+          :aria-label="t('canvas.toolbar.historyGroup')"
         >
-          <button
-            type="button"
-            class="mm-btn mm-btn--icon"
-            :disabled="!diagramStore.canUndo"
-            :aria-label="t('canvas.toolbar.undo')"
-            @click="handleUndo"
+          <ElTooltip
+            placement="bottom"
+            :show-arrow="true"
+            popper-class="mm-shortcut-tooltip"
           >
-            <RotateCcw class="w-4 h-4" />
-          </button>
-        </ElTooltip>
-        <ElTooltip
-          :content="t('canvas.toolbar.redo')"
-          placement="bottom"
-        >
-          <button
-            type="button"
-            class="mm-btn mm-btn--icon"
-            :disabled="!diagramStore.canRedo"
-            :aria-label="t('canvas.toolbar.redo')"
-            @click="handleRedo"
+            <template #content>
+              <div class="mm-shortcut-tooltip__row">
+                <span>{{ t('canvas.toolbar.undo') }}</span>
+                <kbd class="mm-shortcut-tooltip__kbd">{{ t('canvas.toolbar.undoShortcut') }}</kbd>
+              </div>
+            </template>
+            <button
+              type="button"
+              class="mm-history-btn"
+              :disabled="!diagramStore.canUndo"
+              :aria-label="t('canvas.toolbar.undo')"
+              @click="handleUndo"
+            >
+              <RotateCcw class="mm-history-btn__icon" />
+            </button>
+          </ElTooltip>
+          <ElTooltip
+            placement="bottom"
+            :show-arrow="true"
+            popper-class="mm-shortcut-tooltip"
           >
-            <RotateCw class="w-4 h-4" />
-          </button>
-        </ElTooltip>
+            <template #content>
+              <div class="mm-shortcut-tooltip__row">
+                <span>{{ t('canvas.toolbar.redo') }}</span>
+                <kbd class="mm-shortcut-tooltip__kbd">{{ t('canvas.toolbar.redoShortcut') }}</kbd>
+              </div>
+            </template>
+            <button
+              type="button"
+              class="mm-history-btn"
+              :disabled="!diagramStore.canRedo"
+              :aria-label="t('canvas.toolbar.redo')"
+              @click="handleRedo"
+            >
+              <RotateCw class="mm-history-btn__icon" />
+            </button>
+          </ElTooltip>
+        </div>
         <ElTooltip
           :content="t('canvas.topBar.resetTemplate')"
           placement="bottom"
         >
           <button
             type="button"
-            class="mm-btn mm-btn--icon"
+            class="mm-btn mm-btn--reset"
             :aria-label="t('canvas.topBar.reset')"
             @click="resetToDefaultTemplate"
           >
-            <RotateCcw class="w-4 h-4" />
+            {{ t('canvas.topBar.reset') }}
           </button>
         </ElTooltip>
       </div>
@@ -277,41 +269,8 @@ function handleAddChildClick() {
 
       <span class="mm-sep" />
 
-      <!-- Theme -->
-      <ElDropdown
-        v-model:visible="themeDropdownOpen"
-        trigger="click"
-        placement="bottom"
-        popper-class="mm-toolbar-popper"
-      >
-        <button
-          type="button"
-          class="mm-btn mm-btn--select"
-          :aria-label="themeShortLabel"
-        >
-          <Palette class="w-4 h-4 text-gray-500 shrink-0" />
-          <span class="mm-btn__label mm-btn__label--truncate">{{ themeShortLabel }}</span>
-          <ChevronDown class="mm-btn__chevron" />
-        </button>
-        <template #dropdown>
-          <div class="mm-panel mm-panel--list mm-panel--scrollable">
-            <button
-              v-for="theme in MIND_MAP_THEMES"
-              :key="theme.id"
-              type="button"
-              class="mm-list-item"
-              :class="{ 'is-active': theme.id === activeThemeId }"
-              @click="handleApplyTheme(theme.id)"
-            >
-              <span
-                class="mm-theme-swatch"
-                :class="theme.previewClass"
-              />
-              <span class="mm-list-item__label">{{ t(theme.nameKey) }}</span>
-            </button>
-          </div>
-        </template>
-      </ElDropdown>
+      <!-- Appearance: diagram style + theme color -->
+      <MindMapAppearanceDropdown />
 
       <span class="mm-sep" />
 
@@ -359,44 +318,48 @@ function handleAddChildClick() {
           </button>
         </ElTooltip>
 
-        <ElDropdown
-          v-model:visible="exportDropdownOpen"
-          trigger="click"
-          placement="bottom-end"
-          popper-class="mm-toolbar-popper"
-        >
-          <button
-            type="button"
-            class="mm-btn mm-btn--export"
+        <div class="mm-export-anchor">
+          <ElDropdown
+            v-model:visible="exportDropdownOpen"
+            trigger="click"
+            placement="bottom-end"
+            popper-class="mm-toolbar-popper"
           >
-            <Download class="w-4 h-4 text-amber-300" />
-            <span class="mm-btn__label">{{ t('canvas.toolbar.export') }}</span>
-            <ChevronDown class="mm-btn__chevron mm-btn__chevron--on-dark" />
-          </button>
-          <template #dropdown>
-            <div class="mm-panel mm-panel--list">
-              <button
-                v-for="item in CANVAS_STANDARD_EXPORT_MENU_ITEMS"
-                :key="item.command"
-                type="button"
-                class="mm-list-item"
-                :class="{ 'mm-list-item--divided': item.divided }"
-                @click="handleExportCommand(item.command)"
-              >
-                {{ t(item.labelKey) }}
-              </button>
-              <button
-                v-if="showCommunityExport"
-                type="button"
-                class="mm-list-item"
-                :class="{ 'mm-list-item--divided': CANVAS_COMMUNITY_EXPORT_MENU_ITEM.divided }"
-                @click="handleExportCommand(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.command)"
-              >
-                {{ t(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.labelKey) }}
-              </button>
-            </div>
-          </template>
-        </ElDropdown>
+            <button
+              type="button"
+              class="mm-btn mm-btn--export"
+              data-learning-sheet-export-anchor
+              data-canvas-export-anchor
+            >
+              <Download class="w-4 h-4 text-amber-300" />
+              <span class="mm-btn__label">{{ t('canvas.toolbar.export') }}</span>
+              <ChevronDown class="mm-btn__chevron mm-btn__chevron--on-dark" />
+            </button>
+            <template #dropdown>
+              <div class="mm-panel mm-panel--list">
+                <button
+                  v-for="item in CANVAS_STANDARD_EXPORT_MENU_ITEMS"
+                  :key="item.command"
+                  type="button"
+                  class="mm-list-item"
+                  :class="{ 'mm-list-item--divided': item.divided }"
+                  @click="handleExportCommand(item.command)"
+                >
+                  {{ t(item.labelKey) }}
+                </button>
+                <button
+                  v-if="showCommunityExport"
+                  type="button"
+                  class="mm-list-item"
+                  :class="{ 'mm-list-item--divided': CANVAS_COMMUNITY_EXPORT_MENU_ITEM.divided }"
+                  @click="handleExportCommand(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.command)"
+                >
+                  {{ t(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.labelKey) }}
+                </button>
+              </div>
+            </template>
+          </ElDropdown>
+        </div>
       </div>
     </div>
   </div>
@@ -448,6 +411,107 @@ function handleAddChildClick() {
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+}
+
+.mm-export-anchor {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.mm-history-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.mm-history-group {
+  display: inline-flex;
+  align-items: stretch;
+  height: 32px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+:global(.dark) .mm-history-group {
+  background: #1f2937;
+  border-color: #374151;
+  box-shadow: none;
+}
+
+.mm-history-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.mm-history-btn + .mm-history-btn {
+  border-left: 1px solid #e5e7eb;
+}
+
+:global(.dark) .mm-history-btn + .mm-history-btn {
+  border-left-color: #374151;
+}
+
+.mm-history-btn:hover:not(:disabled) {
+  background: #f9fafb;
+  color: #6b7280;
+}
+
+:global(.dark) .mm-history-btn:hover:not(:disabled) {
+  background: #374151;
+  color: #d1d5db;
+}
+
+.mm-history-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mm-history-btn__icon {
+  width: 16px;
+  height: 16px;
+}
+
+.mm-btn--reset {
+  min-width: 52px;
+  padding: 0 12px;
+  font-weight: 500;
+  color: #6b7280;
+  background: #fff;
+  border-color: #e5e7eb;
+}
+
+.mm-btn--reset:hover:not(:disabled) {
+  color: #374151;
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+:global(.dark) .mm-btn--reset {
+  color: #9ca3af;
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:global(.dark) .mm-btn--reset:hover:not(:disabled) {
+  color: #e5e7eb;
+  background: #374151;
+  border-color: #4b5563;
 }
 
 .mm-btn {
@@ -832,5 +896,43 @@ function handleAddChildClick() {
 
 .dark .mm-app-item__desc {
   color: #9ca3af;
+}
+
+.mm-shortcut-tooltip.el-popper {
+  padding: 6px 10px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  background: #1e1e20 !important;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.28) !important;
+}
+
+.mm-shortcut-tooltip.el-popper .el-popper__arrow::before {
+  border-color: #1e1e20 !important;
+  background: #1e1e20 !important;
+}
+
+.mm-shortcut-tooltip__row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.mm-shortcut-tooltip__kbd {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: none;
+  border-radius: 6px;
+  background: #3e3e42;
+  color: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
 }
 </style>

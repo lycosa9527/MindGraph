@@ -6,8 +6,11 @@ import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import { recalculateBubbleMapLayout, recalculateMultiFlowMapLayout } from '../specLoader'
+import { LEARNING_SHEET_PLACEHOLDER } from '../specLoader/utils'
 import {
   estimateNodeWidth as estimateMindMapBranchWidth,
+  estimateTopicNodeHeight,
+  estimateTopicNodeWidth,
   measureBranchNodeHeight as measureMindMapBranchHeight,
   measureBranchNodeUnderlineHeight as measureMindMapBranchUnderlineHeight,
 } from '../specLoader/mindMap'
@@ -153,16 +156,33 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       updates.text !== undefined &&
       nodeId !== 'topic'
     ) {
+      const currentNode = ctx.data.value.nodes[nodeIndex]
+      const nodeData = currentNode.data as { hiddenAnswer?: string } | undefined
       const newText = updates.text ?? ''
-      const freshWidth = estimateMindMapBranchWidth(newText, nodeId)
-      const freshHeight = measureMindMapBranchHeight(newText, nodeId)
-      ctx.data.value.nodes[nodeIndex] = {
-        ...ctx.data.value.nodes[nodeIndex],
-        data: {
-          ...ctx.data.value.nodes[nodeIndex].data,
-          estimatedWidth: freshWidth,
-          estimatedHeight: freshHeight,
-        },
+      const diagramData = ctx.data.value as {
+        isLearningSheet?: boolean
+        is_learning_sheet?: boolean
+      }
+      const isLearningSheetActive =
+        diagramData.isLearningSheet === true || diagramData.is_learning_sheet === true
+      const isLearningSheetBlankUpdate =
+        isLearningSheetActive &&
+        newText === LEARNING_SHEET_PLACEHOLDER &&
+        typeof nodeData?.hiddenAnswer === 'string' &&
+        nodeData.hiddenAnswer.trim().length > 0
+
+      if (!isLearningSheetBlankUpdate) {
+        const nodeStyle = currentNode.style
+        const freshWidth = estimateMindMapBranchWidth(newText, nodeId, nodeStyle)
+        const freshHeight = measureMindMapBranchHeight(newText, nodeId, nodeStyle)
+        ctx.data.value.nodes[nodeIndex] = {
+          ...ctx.data.value.nodes[nodeIndex],
+          data: {
+            ...ctx.data.value.nodes[nodeIndex].data,
+            estimatedWidth: freshWidth,
+            estimatedHeight: freshHeight,
+          },
+        }
       }
     }
 
@@ -241,25 +261,42 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
         updates.style.textColor !== undefined ||
         updates.style.nodeShape !== undefined)
     ) {
-      // A shape switch changes the measured box (e.g. underline ≈ 10px shorter than
-      // rounded). Refresh the shape-aware estimate so the pre-measurement layout pass
-      // and connector anchors use the new shape's height instead of the stale one,
-      // avoiding a misaligned frame before the ResizeObserver re-measures.
-      if (updates.style.nodeShape !== undefined && nodeId !== 'topic') {
+      // Shape or typography changes alter the measured box. Refresh estimates so the
+      // layout pass uses the new size before ResizeObserver reports DOM dimensions.
+      const typographyChanged =
+        updates.style.fontSize !== undefined ||
+        updates.style.fontWeight !== undefined ||
+        updates.style.fontFamily !== undefined
+      const shapeChanged = updates.style.nodeShape !== undefined
+
+      if (typographyChanged || shapeChanged) {
         const refreshed = ctx.data.value.nodes[nodeIndex]
         const text = refreshed.text ?? ''
-        const newShape = resolveNodeShape(refreshed.style, true)
-        const freshHeight =
-          newShape === 'underline'
-            ? measureMindMapBranchUnderlineHeight(text, nodeId)
-            : measureMindMapBranchHeight(text, nodeId)
-        ctx.data.value.nodes[nodeIndex] = {
-          ...refreshed,
-          data: {
-            ...refreshed.data,
-            estimatedWidth: estimateMindMapBranchWidth(text, nodeId),
-            estimatedHeight: freshHeight,
-          },
+        const mergedStyle = refreshed.style
+
+        if (nodeId === 'topic') {
+          ctx.data.value.nodes[nodeIndex] = {
+            ...refreshed,
+            data: {
+              ...refreshed.data,
+              estimatedWidth: estimateTopicNodeWidth(text, mergedStyle),
+              estimatedHeight: estimateTopicNodeHeight(text, mergedStyle),
+            },
+          }
+        } else {
+          const newShape = resolveNodeShape(mergedStyle, true)
+          const freshHeight =
+            newShape === 'underline'
+              ? measureMindMapBranchUnderlineHeight(text, nodeId, mergedStyle)
+              : measureMindMapBranchHeight(text, nodeId, mergedStyle)
+          ctx.data.value.nodes[nodeIndex] = {
+            ...refreshed,
+            data: {
+              ...refreshed.data,
+              estimatedWidth: estimateMindMapBranchWidth(text, nodeId, mergedStyle),
+              estimatedHeight: freshHeight,
+            },
+          }
         }
       }
       delete ctx.nodeDimensions.value[nodeId]
@@ -268,7 +305,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       if (nodeId === 'topic') {
         ctx.mindMapTopicActualWidth.value = null
       }
-      ctx.mindMapRecalcTrigger.value++
+      ctx.scheduleMindMapRecalc()
     }
 
     emitEvent('diagram:node_updated', { nodeId, updates })

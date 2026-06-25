@@ -17,21 +17,72 @@ import { useDiagramStore } from '@/stores/diagram'
 
 const props = defineProps<{
   containerRef: HTMLElement | null
+  teleportTarget?: HTMLElement | string
 }>()
 
 const diagramStore = useDiagramStore()
 const { t } = useLanguage()
 
 const editingNodeId = ref<string | null>(null)
+const hoveredNodeId = ref<string | null>(null)
+
+let hoverClearTimer: ReturnType<typeof setTimeout> | null = null
+
+function setHoveredNodeId(id: string | null, immediate = false): void {
+  if (hoverClearTimer) {
+    clearTimeout(hoverClearTimer)
+    hoverClearTimer = null
+  }
+  if (id) {
+    hoveredNodeId.value = id
+    return
+  }
+  if (immediate) {
+    hoveredNodeId.value = null
+    return
+  }
+  hoverClearTimer = setTimeout(() => {
+    hoveredNodeId.value = null
+    hoverClearTimer = null
+  }, 150)
+}
+
+function isCollapseOverlayTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && Boolean(target.closest('.mind-map-collapse-overlay'))
+}
+
+function onContainerMouseOver(event: MouseEvent): void {
+  const nodeEl = (event.target as Element).closest('.vue-flow__node')
+  const id = nodeEl?.getAttribute('data-id')
+  if (id) {
+    setHoveredNodeId(id)
+    return
+  }
+  setHoveredNodeId(null)
+}
+
+function onContainerMouseLeave(event: MouseEvent): void {
+  if (isCollapseOverlayTarget(event.relatedTarget)) return
+  setHoveredNodeId(null)
+}
+
+function onCollapseButtonEnter(nodeId: string): void {
+  setHoveredNodeId(nodeId)
+}
+
+function onCollapseButtonLeave(nodeId: string, event: PointerEvent): void {
+  const related = event.relatedTarget
+  if (related instanceof Element) {
+    const relatedNodeId = related.closest('.vue-flow__node')?.getAttribute('data-id')
+    if (relatedNodeId === nodeId) return
+    if (related.closest('.mind-map-collapse-overlay__btn')) return
+  }
+  setHoveredNodeId(null)
+}
 
 const isMindMap = computed(
   () => diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map'
 )
-
-const selectedNodeId = computed(() => {
-  const ids = diagramStore.selectedNodes
-  return isMindMap.value && ids.length === 1 ? ids[0] : null
-})
 
 const overlayEnabled = computed(() => isMindMap.value)
 
@@ -45,28 +96,22 @@ const strokeColor = computed(() =>
   resolveMindMapTopicBorderColor(nodes.value?.find((n) => n.id === 'topic'))
 )
 
-const nodeWidths = computed(() => {
-  const dims = diagramStore.nodeDimensions ?? {}
-  return Object.fromEntries(
-    Object.entries(dims).map(([id, d]) => [id, d.width])
-  )
-})
-const nodeHeights = computed(() => {
-  const dims = diagramStore.nodeDimensions ?? {}
-  return Object.fromEntries(
-    Object.entries(dims).map(([id, d]) => [id, d.height])
-  )
-})
+const nodeWidths = computed(() => diagramStore.mindMapNodeWidths ?? {})
+const nodeHeights = computed(() => diagramStore.mindMapNodeHeights ?? {})
+const diagramStyleId = computed(
+  () => diagramStore.data?._mindmap_diagram_style as string | undefined
+)
 
 const { handles, visible, scheduleMeasure } = useMindMapCollapseOverlayPositions({
   containerRef,
-  selectedNodeId,
+  hoveredNodeId,
   collapsedPaths,
   nodes,
   connections,
   nodeWidths,
   nodeHeights,
   nodeStyles,
+  diagramStyleId,
   strokeColor,
   enabled: overlayEnabled,
   editingNodeId,
@@ -124,6 +169,21 @@ function buttonStyle(handle: { strokeColor: string }): Record<string, string> {
 
 let unsubOpen: (() => void) | undefined
 let unsubClose: (() => void) | undefined
+let containerHoverEl: HTMLElement | null = null
+
+function bindContainerHoverListeners(el: HTMLElement | null): void {
+  if (containerHoverEl === el) return
+  if (containerHoverEl) {
+    containerHoverEl.removeEventListener('mouseover', onContainerMouseOver)
+    containerHoverEl.removeEventListener('mouseleave', onContainerMouseLeave)
+  }
+  containerHoverEl = el
+  if (!el) return
+  el.addEventListener('mouseover', onContainerMouseOver)
+  el.addEventListener('mouseleave', onContainerMouseLeave)
+}
+
+watch(containerRef, bindContainerHoverListeners, { immediate: true })
 
 onMounted(() => {
   unsubOpen = eventBus.on('node_editor:opening', ({ nodeId }) => {
@@ -143,13 +203,15 @@ onMounted(() => {
 onUnmounted(() => {
   unsubOpen?.()
   unsubClose?.()
+  bindContainerHoverListeners(null)
+  if (hoverClearTimer) clearTimeout(hoverClearTimer)
   window.removeEventListener('scroll', scheduleMeasure, true)
   window.removeEventListener('resize', scheduleMeasure)
 })
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport :to="props.teleportTarget ?? 'body'">
     <div
       v-if="visible && overlayEnabled && handles.length"
       class="mind-map-collapse-overlay"
@@ -187,6 +249,8 @@ onUnmounted(() => {
         :title="tooltipFor(handle)"
         :aria-label="tooltipFor(handle)"
         @click="handleClick(handle, $event)"
+        @pointerenter="onCollapseButtonEnter(handle.nodeId)"
+        @pointerleave="onCollapseButtonLeave(handle.nodeId, $event)"
         @mousedown.stop
         @pointerdown.stop
       >

@@ -3,8 +3,8 @@ import {
   MINDMAP_UNDERLINE_STROKE_WIDTH,
   mindMapConnectionAnchorY,
 } from '@/config/mindMapGeometry'
+import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import type { MindGraphNodeData, NodeStyle } from '@/types'
-import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 
 export function mindMapBranchSide(nodeId: string | undefined): 'left' | 'right' | null {
   if (!nodeId) return null
@@ -76,11 +76,19 @@ export function resolveMindMapEdgeEndpoint(
   role: 'source' | 'target',
   fallback: { x: number; y: number },
   mergedStyle?: NodeStyle,
-  measured?: MeasuredNodeSize
+  measured?: MeasuredNodeSize,
+  diagramStyleId?: string | null
 ): { x: number; y: number } {
   if (!node?.position) return fallback
 
-  const shape = resolveNodeShape(mergedStyle ?? node.data?.style, true)
+  const shape = resolveMindMapNodeShape(
+    {
+      id: node.id,
+      type: node.id === 'topic' ? 'topic' : 'branch',
+      style: mergedStyle ?? node.data?.style,
+    },
+    diagramStyleId
+  )
   if (shape !== 'underline') return fallback
 
   const { w, h } = nodeBoxSize(node, measured)

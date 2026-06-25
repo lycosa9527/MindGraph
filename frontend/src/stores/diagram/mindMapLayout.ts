@@ -6,12 +6,8 @@ import {
   DEFAULT_NODE_WIDTH,
   MINDMAP_SIBLING_GAP,
 } from '@/composables/diagrams/layoutConfig'
-import {
-  estimateNodeWidth as estimateBranchWidth,
-  estimateTopicNodeWidth,
-} from '@/stores/specLoader/mindMap'
 import { computeSymmetricRootStartYs } from '@/utils/mindMapSideStacking'
-import { resolveNodeShape } from '@/utils/nodeShapeStyle'
+import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { mindMapConnectionAnchorY, mindMapNodeTopYForAnchorY } from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode } from '@/types'
 
@@ -24,20 +20,30 @@ import type { DiagramContext } from './types'
  */
 export function useMindMapLayoutSlice(ctx: DiagramContext) {
   function setMindMapTopicWidth(width: number): void {
+    const prev = ctx.mindMapTopicActualWidth.value
+    if (prev != null && Math.abs(prev - width) < 1) return
     ctx.mindMapTopicActualWidth.value = width
     if (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') {
-      ctx.mindMapRecalcTrigger.value++
+      ctx.scheduleMindMapRecalc()
     }
   }
 
   function setMindMapNodeWidth(nodeId: string, width: number | null): void {
+    let changed = false
     if (width === null) {
-      delete ctx.mindMapNodeWidths.value[nodeId]
+      if (nodeId in ctx.mindMapNodeWidths.value) {
+        delete ctx.mindMapNodeWidths.value[nodeId]
+        changed = true
+      }
     } else {
-      ctx.mindMapNodeWidths.value[nodeId] = width
+      const prev = ctx.mindMapNodeWidths.value[nodeId]
+      if (prev === undefined || Math.abs(prev - width) >= 1) {
+        ctx.mindMapNodeWidths.value[nodeId] = width
+        changed = true
+      }
     }
-    if (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') {
-      ctx.mindMapRecalcTrigger.value++
+    if (changed && (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map')) {
+      ctx.scheduleMindMapRecalc()
     }
   }
 
@@ -46,18 +52,56 @@ export function useMindMapLayoutSlice(ctx: DiagramContext) {
     width: number | null,
     height: number | null
   ): void {
+    let changed = false
+
     if (width === null) {
-      delete ctx.mindMapNodeWidths.value[nodeId]
+      if (nodeId in ctx.mindMapNodeWidths.value) {
+        delete ctx.mindMapNodeWidths.value[nodeId]
+        changed = true
+      }
     } else {
-      ctx.mindMapNodeWidths.value[nodeId] = width
+      const prev = ctx.mindMapNodeWidths.value[nodeId]
+      if (prev === undefined || Math.abs(prev - width) >= 1) {
+        ctx.mindMapNodeWidths.value[nodeId] = width
+        changed = true
+      }
     }
+
     if (height === null) {
-      delete ctx.mindMapNodeHeights.value[nodeId]
+      if (nodeId in ctx.mindMapNodeHeights.value) {
+        delete ctx.mindMapNodeHeights.value[nodeId]
+        changed = true
+      }
     } else {
-      ctx.mindMapNodeHeights.value[nodeId] = height
+      const prev = ctx.mindMapNodeHeights.value[nodeId]
+      if (prev === undefined || Math.abs(prev - height) >= 1) {
+        ctx.mindMapNodeHeights.value[nodeId] = height
+        changed = true
+      }
     }
-    if (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') {
-      ctx.mindMapRecalcTrigger.value++
+
+    if (changed && (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map')) {
+      ctx.scheduleMindMapRecalc()
+    }
+  }
+
+  function setMindMapTopicMeasured(width: number, height: number): void {
+    let changed = false
+
+    const prevW = ctx.mindMapTopicActualWidth.value
+    if (prevW === null || Math.abs(prevW - width) >= 1) {
+      ctx.mindMapTopicActualWidth.value = width
+      changed = true
+    }
+
+    const prevH = ctx.mindMapNodeHeights.value.topic
+    if (prevH === undefined || Math.abs(prevH - height) >= 1) {
+      ctx.mindMapNodeHeights.value.topic = height
+      changed = true
+    }
+
+    if (changed && (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map')) {
+      ctx.scheduleMindMapRecalc()
     }
   }
 
@@ -68,6 +112,7 @@ export function useMindMapLayoutSlice(ctx: DiagramContext) {
 
   return {
     setMindMapTopicWidth,
+    setMindMapTopicMeasured,
     setMindMapNodeWidth,
     setMindMapNodeDimensions,
     clearMindMapNodeWidths,
@@ -91,10 +136,8 @@ function parseNodeId(id: string): ParsedNodeId | null {
 
 function getNodeWidth(node: DiagramNode, nodeWidths: Record<string, number>): number {
   const measured = nodeWidths[node.id]
-  const freshEstimate = estimateBranchWidth(node.text ?? '')
-  const stored = (node.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
-  const estimated = Math.max(stored, freshEstimate)
-  return measured !== undefined ? Math.max(measured, estimated) : estimated
+  if (measured !== undefined) return measured
+  return (node.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
 }
 
 /**
@@ -121,11 +164,15 @@ function getNodeAnchorY(
   nodeId: string,
   nodeTopY: number,
   nodeMap: Map<string, DiagramNode>,
-  nodeHeights: Record<string, number>
+  nodeHeights: Record<string, number>,
+  diagramStyleId?: string | null
 ): number {
   const node = nodeMap.get(nodeId)
   const h = getNodeHeight(nodeId, nodeMap, nodeHeights)
-  const shape = resolveNodeShape(node?.style, true)
+  const shape = resolveMindMapNodeShape(
+    { id: nodeId, type: node?.type ?? 'branch', style: node?.style },
+    diagramStyleId
+  )
   return mindMapConnectionAnchorY(nodeTopY, h, shape)
 }
 
@@ -134,12 +181,31 @@ function getNodeTopYForAnchor(
   nodeId: string,
   anchorY: number,
   nodeMap: Map<string, DiagramNode>,
-  nodeHeights: Record<string, number>
+  nodeHeights: Record<string, number>,
+  diagramStyleId?: string | null
 ): number {
   const node = nodeMap.get(nodeId)
   const h = getNodeHeight(nodeId, nodeMap, nodeHeights)
-  const shape = resolveNodeShape(node?.style, true)
+  const shape = resolveMindMapNodeShape(
+    { id: nodeId, type: node?.type ?? 'branch', style: node?.style },
+    diagramStyleId
+  )
   return mindMapNodeTopYForAnchorY(anchorY, h, shape)
+}
+
+function isUnderlineMindMapNode(
+  nodeId: string,
+  nodeMap: Map<string, DiagramNode>,
+  diagramStyleId?: string | null
+): boolean {
+  const node = nodeMap.get(nodeId)
+  if (!node) return false
+  return (
+    resolveMindMapNodeShape(
+      { id: nodeId, type: node.type ?? 'branch', style: node.style },
+      diagramStyleId
+    ) === 'underline'
+  )
 }
 
 export interface MindMapColumnResult {
@@ -160,18 +226,18 @@ export function recalculateMindMapV2ColumnPositions(
   nodeWidths: Record<string, number>,
   nodeHeights: Record<string, number> = {},
   connections: Connection[] = [],
-  collapsedNodeIds: ReadonlySet<string> = new Set<string>()
+  collapsedNodeIds: ReadonlySet<string> = new Set<string>(),
+  diagramStyleId?: string | null
 ): MindMapColumnResult {
   const topicNode = nodes.find((n) => n.id === 'topic')
   if (!topicNode?.position) return { nodes, gaps: { left: 0, right: 0 } }
 
   const storedEstimate =
     (topicNode.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
-  const freshEstimate = estimateTopicNodeWidth(topicNode.text ?? '')
-  const bestEstimate = Math.max(storedEstimate, freshEstimate)
+  const measuredTopicWidth = topicWidth ?? 0
 
   const effectiveTopicWidth =
-    topicWidth != null ? Math.max(topicWidth, freshEstimate) : bestEstimate
+    measuredTopicWidth > 0 ? Math.max(measuredTopicWidth, storedEstimate) : storedEstimate
   const gap = DEFAULT_MINDMAP_RANK_SEPARATION
 
   const centerX = topicNode.position.x + effectiveTopicWidth / 2
@@ -251,7 +317,13 @@ export function recalculateMindMapV2ColumnPositions(
 
   // --- Y-position correction using actual measured heights ---
   if (connections.length > 0) {
-    correctedNodes = correctYPositions(correctedNodes, nodeHeights, connections, collapsedNodeIds)
+    correctedNodes = correctYPositions(
+      correctedNodes,
+      nodeHeights,
+      connections,
+      collapsedNodeIds,
+      diagramStyleId
+    )
   }
 
   return { nodes: correctedNodes, gaps: { left: leftGap, right: rightGap } }
@@ -265,7 +337,8 @@ function correctYPositions(
   nodes: DiagramNode[],
   nodeHeights: Record<string, number>,
   connections: Connection[],
-  collapsedNodeIds: ReadonlySet<string> = new Set<string>()
+  collapsedNodeIds: ReadonlySet<string> = new Set<string>(),
+  diagramStyleId?: string | null
 ): DiagramNode[] {
   const nodeMap = new Map<string, DiagramNode>()
   for (const n of nodes) nodeMap.set(n.id, n)
@@ -337,6 +410,29 @@ function correctYPositions(
     const childrenTotalSpan =
       childSpans.reduce((a, b) => a + b, 0) + (kids.length - 1) * MINDMAP_SIBLING_GAP
 
+    // Sole underline leaf: align its underline anchor to the parent's connection anchor
+    // so the edge is a flat horizontal (no diagonal when parent is taller than the child).
+    const soleChildId = kids.length === 1 ? kids[0]! : null
+    const soleChildKids = soleChildId ? childrenMap.get(soleChildId) : undefined
+    if (
+      soleChildId &&
+      !collapsedNodeIds.has(nodeId) &&
+      isUnderlineMindMapNode(soleChildId, nodeMap, diagramStyleId) &&
+      (!soleChildKids || soleChildKids.length === 0)
+    ) {
+      newY.set(nodeId, startY)
+      const parentAnchorY = getNodeAnchorY(nodeId, startY, nodeMap, nodeHeights, diagramStyleId)
+      const childTopY = getNodeTopYForAnchor(
+        soleChildId,
+        parentAnchorY,
+        nodeMap,
+        nodeHeights,
+        diagramStyleId
+      )
+      newY.set(soleChildId, childTopY)
+      return Math.max(startY + h, childTopY + getNodeHeight(soleChildId, nodeMap, nodeHeights))
+    }
+
     if (childrenTotalSpan >= h) {
       let y = startY
       for (let i = 0; i < kids.length; i++) {
@@ -347,10 +443,10 @@ function correctYPositions(
       const lastKid = kids[kids.length - 1]
       const firstKidTopY = newY.get(firstKid) ?? startY
       const lastKidTopY = newY.get(lastKid) ?? startY
-      const firstAnchorY = getNodeAnchorY(firstKid, firstKidTopY, nodeMap, nodeHeights)
-      const lastAnchorY = getNodeAnchorY(lastKid, lastKidTopY, nodeMap, nodeHeights)
+      const firstAnchorY = getNodeAnchorY(firstKid, firstKidTopY, nodeMap, nodeHeights, diagramStyleId)
+      const lastAnchorY = getNodeAnchorY(lastKid, lastKidTopY, nodeMap, nodeHeights, diagramStyleId)
       const anchorCenter = (firstAnchorY + lastAnchorY) / 2
-      newY.set(nodeId, getNodeTopYForAnchor(nodeId, anchorCenter, nodeMap, nodeHeights))
+      newY.set(nodeId, getNodeTopYForAnchor(nodeId, anchorCenter, nodeMap, nodeHeights, diagramStyleId))
       return y
     }
 
@@ -387,10 +483,47 @@ function correctYPositions(
   }
 
   const topicTopY = nodeMap.get('topic')?.position?.y ?? 0
-  const topicCenterY = getNodeAnchorY('topic', topicTopY, nodeMap, nodeHeights)
+  const topicCenterY = getNodeAnchorY('topic', topicTopY, nodeMap, nodeHeights, diagramStyleId)
 
   stackBranches(rightRoots, topicCenterY)
   stackBranches(leftRoots, topicCenterY)
+
+  // Subtree re-centering moves L1 nodes after the initial stack; re-align topic so its
+  // connection anchor sits at the midpoint of all L1 branch anchors (both sides).
+  const allRoots = [...rightRoots, ...leftRoots]
+  if (allRoots.length > 0) {
+    let minAnchor = Infinity
+    let maxAnchor = -Infinity
+    for (const rootId of allRoots) {
+      const topY = newY.get(rootId)
+      if (topY == null) continue
+      const anchor = getNodeAnchorY(rootId, topY, nodeMap, nodeHeights, diagramStyleId)
+      minAnchor = Math.min(minAnchor, anchor)
+      maxAnchor = Math.max(maxAnchor, anchor)
+    }
+    if (Number.isFinite(minAnchor) && Number.isFinite(maxAnchor)) {
+      const targetAnchorY = (minAnchor + maxAnchor) / 2
+      newY.set(
+        'topic',
+        getNodeTopYForAnchor('topic', targetAnchorY, nodeMap, nodeHeights, diagramStyleId)
+      )
+    }
+  }
+
+  function alignSingleSideRootToTopic(roots: string[]): void {
+    if (roots.length !== 1) return
+    const rootId = roots[0]
+    if (!rootId) return
+    const topicTopY = newY.get('topic') ?? nodeMap.get('topic')?.position?.y ?? 0
+    const topicAnchorY = getNodeAnchorY('topic', topicTopY, nodeMap, nodeHeights, diagramStyleId)
+    newY.set(
+      rootId,
+      getNodeTopYForAnchor(rootId, topicAnchorY, nodeMap, nodeHeights, diagramStyleId)
+    )
+  }
+
+  alignSingleSideRootToTopic(rightRoots)
+  alignSingleSideRootToTopic(leftRoots)
 
   if (newY.size === 0) return nodes
 

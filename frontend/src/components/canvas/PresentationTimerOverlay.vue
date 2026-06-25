@@ -27,6 +27,7 @@ const emit = defineEmits<{
   (e: 'exit'): void
   (e: 'presetMinutes', minutes: number): void
   (e: 'setMinutes', minutes: number): void
+  (e: 'startPresenting'): void
 }>()
 
 const { t, currentLanguage } = useLanguage()
@@ -88,9 +89,8 @@ const overlayStyle = {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      class="presentation-timer-overlay pointer-events-auto fixed inset-0 box-border overflow-x-hidden overflow-y-auto overscroll-y-contain bg-black/75"
+  <div
+    class="presentation-timer-overlay pointer-events-auto fixed inset-0 box-border overflow-x-hidden overflow-y-auto overscroll-y-contain bg-black/75"
       role="dialog"
       :style="overlayStyle"
       :aria-label="t('canvas.presentationTimer.title')"
@@ -143,6 +143,15 @@ const overlayStyle = {
             type="primary"
             size="large"
             round
+            @click.stop="emit('startPresenting')"
+          >
+            <Play class="mr-1 h-5 w-5" />
+            {{ t('canvas.presentationTimer.startPresenting') }}
+          </ElButton>
+          <ElButton
+            native-type="button"
+            size="large"
+            round
             @click.stop="emit('toggleRun')"
           >
             <Play
@@ -186,7 +195,6 @@ const overlayStyle = {
         </div>
       </div>
     </div>
-  </Teleport>
 </template>
 
 <style scoped>

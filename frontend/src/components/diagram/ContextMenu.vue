@@ -79,6 +79,15 @@ const menuItems = computed<MenuItem[]>(() => {
       },
     })
 
+    items.push({
+      label: t('diagram.contextMenu.lineBreak'),
+      disabled: isBoundaryNode,
+      action: () => {
+        emit('close')
+        eventBus.emit('node_editor:insert_line_break', { nodeId: node.id })
+      },
+    })
+
     items.push({ divider: true })
 
     items.push({

@@ -14,10 +14,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Landing generate_graph SSE** — Stream now emits `detecting`, `requirements`, and `progress` (with resolved topic and diagram type) in addition to `accepted`, `waiting`, and `streaming`.
 - **Generate pipeline** — Typed event contract (`GenerateGraphEvent`) and `run_generate_pipeline` entry point with cooperative cancellation when the client disconnects.
 - **Canvas autocomplete** — Cancel control on the 3-LLM model selector while generation is in flight.
+- **Mind map appearance** — Five diagram styles (`classic`, `formal`, `bubble`, `underline`, `soft`) plus curated vibrant classroom color themes (blue, orange, yellow, green, teal, rose) and a rainbow preset; toolbar appearance dropdown persists `_mindmap_theme` and `_mindmap_diagram_style` on the diagram ([`mindMapDiagramStyles.ts`](frontend/src/config/mindMapDiagramStyles.ts), [`mindMapThemes.ts`](frontend/src/config/mindMapThemes.ts), [`MindMapAppearanceDropdown.vue`](frontend/src/components/canvas/MindMapAppearanceDropdown.vue)).
+- **Mind map post-add inline edit** — `mindMapPendingEditNodeId` plus mount/retry focus so Tab, Enter, toolbar +, and directional **+** overlays open the inline editor on the newly added node ([`mindMapOps.ts`](frontend/src/stores/diagram/mindMapOps.ts), [`InlineEditableText.vue`](frontend/src/components/diagram/nodes/InlineEditableText.vue)).
 
 ### Changed
 
 - **Classic mind map default** — `mindMapCanvasMode` defaults to `legacy`; v2 layout and orthogonal edges apply only when explicitly opted in.
+- **New mind map defaults** — Blank templates initialize with **vibrant blue** theme and **classic** diagram style (`DEFAULT_MIND_MAP_THEME_ID`, [`defaultTemplates.ts`](frontend/src/stores/specLoader/defaultTemplates.ts)).
+- **Mind map editing shortcuts** — While inline-editing a branch, **Tab** saves and adds a child; **Enter** saves and adds a sibling (topic excluded); matches keyboard routing when not in an input.
+- **Formal & soft diagram styles** — Depth-layered branch fills (center / L1 / L2 / L3+) from the active theme accent; soft style uses rounded center, oval L1/L2, underline L3+ ([`mindMapVibrantThemes.ts`](frontend/src/config/mindMapVibrantThemes.ts)).
+- **Mind map topic vertical alignment** — After subtree Y correction, topic anchor recenters on the midpoint of all L1 branch anchors on both sides ([`mindMapLayout.ts`](frontend/src/stores/diagram/mindMapLayout.ts)).
 - **Collab AI policy** — `generate_graph` and inline recommendations return 403 for all users (except superadmin) when the diagram is in a live workshop session.
 
 ### Fixed
@@ -25,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fixed-structure templates (tree/brace/flow)** — Fixed label lists (`children`, `parts`, `steps`) are enforced even when a dimension or dimension preference is also present; structure kwargs are passed on every agent route.
 - **Landing error UX** — Validation and generation failures include `error_type` and optional `show_guidance`; stream HTTP 5xx responses no longer fall through to a duplicate JSON retry.
 - **File Center** — Web ingest requires page content; RAG UI and auto-expand require a saved diagram linked to the package.
+- **Mind map style preservation** — Adding a child no longer inherits the parent’s `nodeShape` onto unrelated siblings; `resolveMindMapRestoredNodeShape` heals wrongly inherited shapes after tree reload ([`mindMapStylePreservation.ts`](frontend/src/stores/diagram/mindMapStylePreservation.ts)).
+- **Mind map underline connectors** — Single underline leaf: flat horizontal at the shared anchor Y (no diagonal); multi-sibling underline keeps rounded T-junction bus; sole underline child height aligns to parent anchor ([`mindMapLayout.ts`](frontend/src/stores/diagram/mindMapLayout.ts), [`mindMapOrthogonalPath.ts`](frontend/src/utils/mindMapOrthogonalPath.ts), [`MindMapOrthogonalEdge.vue`](frontend/src/components/diagram/edges/MindMapOrthogonalEdge.vue)).
+- **Mind map single-side L1 branch** — When the topic has only one branch on a side, layout aligns that branch to the topic anchor and connectors render straight (orthogonal H–V–H or horizontal bezier replacement) instead of a curved tee ([`mindMapLayoutLegacy.ts`](frontend/src/stores/diagram/mindMapLayoutLegacy.ts), [`CurvedEdge.vue`](frontend/src/components/diagram/edges/CurvedEdge.vue)).
+- **Mind map collapse toggles** — Overlay positions use mind-map measured widths/heights and resolved node shape ([`useMindMapCollapseTogglePosition.ts`](frontend/src/composables/canvasToolbar/useMindMapCollapseTogglePosition.ts)).
 
 ## [5.119.0] - 2026-06-21
 

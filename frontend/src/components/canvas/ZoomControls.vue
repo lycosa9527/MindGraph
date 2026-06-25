@@ -40,10 +40,13 @@ const props = withDefaults(
     allowPresentationTools?: boolean
     /** School tier allows starting/joining online collaboration */
     allowOnlineCollab?: boolean
+    /** Synced with canvas hand-tool state (owned by CanvasPage). */
+    handToolActive?: boolean
   }>(),
   {
     zoom: null,
     presentationRailOpen: false,
+    handToolActive: false,
     workshopCode: null,
     isCollabGuest: false,
     allowPresentationTools: true,
@@ -89,6 +92,14 @@ watch(
     if (z != null) {
       zoomLevel.value = Math.round(z * 100)
     }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => props.handToolActive,
+  (active) => {
+    isHandToolActive.value = active
   },
   { immediate: true }
 )
@@ -143,7 +154,7 @@ defineExpose({
 <template>
   <div class="zoom-controls z-20 flex items-center">
     <div class="rounded-xl p-1 flex items-center gap-0.5 shrink-0">
-      <!-- Hand tool (hidden during presentation — use right rail hand) -->
+      <!-- Hand tool (hidden during presentation — use right-rail hand / pointer there) -->
       <ElTooltip
         v-if="!props.presentationRailOpen"
         :content="t('canvas.zoomControls.hand')"
