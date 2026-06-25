@@ -244,10 +244,12 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
   const vueFlowEdges = computed<MindGraphEdge[]>(() => {
     if (ctx.type.value === 'circle_map') return []
 
-    if (!ctx.data.value?.connections) return []
+    const diagramData = ctx.data.value
+    if (!diagramData?.connections) return []
     const defaultEdgeType = getEdgeTypeForDiagram(ctx.type.value, effectiveMindMapMode.value)
     const diagramType = ctx.type.value
-    const nodes = ctx.data.value.nodes ?? []
+    const nodes = diagramData.nodes ?? []
+    const connections = diagramData.connections
 
     const isLegacyMindMap =
       (diagramType === 'mindmap' || diagramType === 'mind_map') &&
@@ -256,16 +258,12 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       (diagramType === 'mindmap' || diagramType === 'mind_map') &&
       effectiveMindMapMode.value === 'v2'
 
-    const edges = ctx.data.value.connections.map((conn) => {
+    const edges = connections.map((conn) => {
       let effectiveConn =
         diagramType === 'concept_map' ? augmentConnectionWithOptimalHandles(conn, nodes) : conn
 
       if (isLegacyMindMap) {
-        effectiveConn = withClassicMindMapTopicSourceHandle(
-          effectiveConn,
-          ctx.data.value.connections,
-          nodes
-        )
+        effectiveConn = withClassicMindMapTopicSourceHandle(effectiveConn, connections, nodes)
         effectiveConn = {
           ...effectiveConn,
           style: {
@@ -273,7 +271,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
             strokeColor: resolveLegacyMindMapConnectionStrokeColor(
               effectiveConn,
               nodes,
-              ctx.data.value?.connections
+              connections
             ),
           },
         }
