@@ -2,251 +2,63 @@
  * Mind Map Loader
  */
 import {
-  BRANCH_NODE_HEIGHT,
   DEFAULT_CENTER_X,
   DEFAULT_CENTER_Y,
-  DEFAULT_MINDMAP_BRANCH_GAP,
   DEFAULT_MINDMAP_RANK_SEPARATION,
-  DEFAULT_NODE_HEIGHT,
   DEFAULT_NODE_WIDTH,
-  MINDMAP_SIBLING_GAP,
   MINDMAP_TARGET_EXTENT,
 } from '@/composables/diagrams/layoutConfig'
-import { getMindmapBranchColor } from '@/config/mindmapColors'
-import {
-  MIND_MAP_GEOMETRY,
-  mindMapBranchFontSize,
-  mindMapHorizontalPadding,
-  mindMapNodeHorizontalExtra,
-  mindMapUnderlineVerticalExtra,
-  resolveMindMapTopicBorderColor,
-} from '@/config/mindMapGeometry'
-import { computeSymmetricRootStartYs } from '@/utils/mindMapSideStacking'
+import { resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import type { Connection, DiagramNode } from '@/types'
 
+import { layoutMindMapSideLegacy } from './mindMapLegacyLayout'
+import type { MindMapBranchSpec } from './mindMapLegacyLayout'
 import {
-  diagramLabelLikelyNeedsRenderedMeasure,
-  measureRenderedDiagramLabelHeight,
-  measureTextDimensions,
-  measureTextWidth,
-} from './textMeasurement'
-import { computeScriptAwareMaxWidth } from './textMeasurementFallback'
+  estimateNodeWidthForCanvasMode,
+  estimateTopicNodeHeightForCanvasMode,
+  estimateTopicNodeWidthForCanvasMode,
+  measureBranchNodeHeightForCanvasMode,
+  measureBranchNodeUnderlineHeight,
+} from './mindMapMeasurements'
+import { layoutMindMapSideV2 } from './mindMapV2Layout'
 import type { SpecLoaderResult } from './types'
 
-interface MindMapBranch {
-  text: string
-  children?: MindMapBranch[]
+export type MindMapBranch = MindMapBranchSpec
+
+function activeCanvasMode(): 'legacy' | 'v2' {
+  return readMindMapV2VisualDesignActive() ? 'v2' : 'legacy'
 }
 
-/** Canonical field is text; accept label for backward compatibility with older specs */
-function getBranchText(branch: { text?: string; label?: string }): string {
-  return (branch.text ?? branch.label ?? '') as string
-}
-
-const BRANCH_BASE_MAX_TEXT_WIDTH = 200
-const BALANCE_PADDING = 5
-
-function computeBalancedMaxWidth(
-  text: string,
-  wrapThreshold: number,
-  baseCap: number,
-  fontSize: number,
-  fontWeight = 'normal'
-): number {
-  if (typeof document === 'undefined') return wrapThreshold
-  const tw = measureTextWidth(text, fontSize, { fontWeight })
-  if (tw <= wrapThreshold) return wrapThreshold
-  const numLines = Math.ceil(tw / baseCap)
-  return Math.min(Math.ceil(tw / numLines) + BALANCE_PADDING, baseCap)
-}
-
-/**
- * Estimate rendered BranchNode width from text content.
- * Uses DOM-based measureTextWidth for accuracy, with balanced-width
- * approximation matching CSS text-wrap: balance in BranchNode.vue.
- */
 export function estimateNodeWidth(text: string, nodeId?: string): number {
-  if (!text) return MIND_MAP_GEOMETRY.minWidth
-  const branchFontSize = mindMapBranchFontSize(nodeId)
-  const shape = 'rounded' as const
-  const nodeHorizontalExtra = mindMapNodeHorizontalExtra(shape)
-  const minNodeWidth = MIND_MAP_GEOMETRY.minWidth
-
-  if (typeof document === 'undefined') {
-    return Math.max(minNodeWidth, text.length * 8 + nodeHorizontalExtra)
-  }
-
-  const fullWidth = measureTextWidth(text, branchFontSize)
-  const wrapThreshold = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
-  let effectiveTextWidth = fullWidth
-  if (fullWidth > wrapThreshold) {
-    const numLines = Math.ceil(fullWidth / BRANCH_BASE_MAX_TEXT_WIDTH)
-    effectiveTextWidth = Math.ceil(fullWidth / numLines) + BALANCE_PADDING
-    effectiveTextWidth = Math.min(effectiveTextWidth, BRANCH_BASE_MAX_TEXT_WIDTH)
-  }
-
-  void nodeId
-  return Math.max(minNodeWidth, effectiveTextWidth + nodeHorizontalExtra)
+  return estimateNodeWidthForCanvasMode(text, nodeId, activeCanvasMode())
 }
 
-const BRANCH_BORDER_Y = MIND_MAP_GEOMETRY.borderWidth * 2
-const BRANCH_PADDING_Y = MIND_MAP_GEOMETRY.paddingY * 2
-
-/**
- * Measure rendered BranchNode height using DOM measurement.
- * Font 14px, padding/border from MIND_MAP_GEOMETRY; min-height 34px.
- */
 export function measureBranchNodeHeight(text: string, nodeId?: string): number {
-  if (!text) return BRANCH_NODE_HEIGHT
-  const branchFontSize = mindMapBranchFontSize(nodeId)
-  const wrapThreshold = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
-  const maxTextWidth = computeBalancedMaxWidth(
-    text,
-    wrapThreshold,
-    BRANCH_BASE_MAX_TEXT_WIDTH,
-    branchFontSize
-  )
-
-  if (diagramLabelLikelyNeedsRenderedMeasure(text)) {
-    const contentH = measureRenderedDiagramLabelHeight(text, branchFontSize, maxTextWidth)
-    return Math.max(BRANCH_NODE_HEIGHT, Math.ceil(contentH + BRANCH_PADDING_Y + BRANCH_BORDER_Y))
-  }
-
-  const { height: textHeight } = measureTextDimensions(text, branchFontSize, {
-    maxWidth: maxTextWidth,
-    paddingX: 0,
-    paddingY: 0,
-  })
-  return Math.max(BRANCH_NODE_HEIGHT, textHeight + BRANCH_PADDING_Y + BRANCH_BORDER_Y)
+  return measureBranchNodeHeightForCanvasMode(text, nodeId, activeCanvasMode())
 }
 
-/**
- * Height for underline-shaped branch nodes: text above the line, no box padding.
- */
-export function measureBranchNodeUnderlineHeight(text: string, nodeId?: string): number {
-  const extra = mindMapUnderlineVerticalExtra()
-  const branchFontSize = mindMapBranchFontSize(nodeId)
-  const minHeight = branchFontSize + extra
-  if (!text) return minHeight
-  const wrapThreshold = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
-  const maxTextWidth = computeBalancedMaxWidth(
-    text,
-    wrapThreshold,
-    BRANCH_BASE_MAX_TEXT_WIDTH,
-    branchFontSize
-  )
+export { measureBranchNodeUnderlineHeight }
 
-  if (diagramLabelLikelyNeedsRenderedMeasure(text)) {
-    const contentH = measureRenderedDiagramLabelHeight(text, branchFontSize, maxTextWidth)
-    return Math.max(minHeight, Math.ceil(contentH + extra))
-  }
-
-  const { height: textHeight } = measureTextDimensions(text, branchFontSize, {
-    maxWidth: maxTextWidth,
-    paddingX: 0,
-    paddingY: 0,
-  })
-  return Math.max(minHeight, textHeight + extra)
-}
-
-const TOPIC_CJK_REGEX =
-  /[\u4E00-\u9FFF\u3400-\u4DBF\uF900-\uFAFF\u3040-\u309F\u30A0-\u30FF\uAC00-\uD7AF]/g
-
-const TOPIC_BASE_MAX_TEXT_WIDTH = 300
-
-/**
- * Estimate rendered TopicNode width from text content.
- * Uses DOM-based measureTextWidth with balanced-width approximation
- * matching CSS text-wrap: balance in TopicNode.vue (cap=300px).
- */
 export function estimateTopicNodeWidth(text: string): number {
-  if (!text) return MIND_MAP_GEOMETRY.minWidth
-  const topicFontSize = MIND_MAP_GEOMETRY.topicFontSize
-  const topicPaddingX = MIND_MAP_GEOMETRY.paddingX * 2
-  const topicBorderX = MIND_MAP_GEOMETRY.borderWidth * 2
-  const minTopicWidth = MIND_MAP_GEOMETRY.minWidth
-
-  if (typeof document === 'undefined') {
-    const cjkMatches = text.match(TOPIC_CJK_REGEX)
-    const cjkCount = cjkMatches ? cjkMatches.length : 0
-    const otherCount = text.length - cjkCount
-    const rawWidth = cjkCount * 19 + otherCount * 11
-    return Math.max(
-      minTopicWidth,
-      Math.min(rawWidth, TOPIC_BASE_MAX_TEXT_WIDTH) + topicPaddingX + topicBorderX
-    )
-  }
-
-  const fullWidth = measureTextWidth(text, topicFontSize, { fontWeight: 'bold' })
-  let effectiveTextWidth = fullWidth
-  if (fullWidth > TOPIC_BASE_MAX_TEXT_WIDTH) {
-    const numLines = Math.ceil(fullWidth / TOPIC_BASE_MAX_TEXT_WIDTH)
-    effectiveTextWidth = Math.ceil(fullWidth / numLines) + BALANCE_PADDING
-    effectiveTextWidth = Math.min(effectiveTextWidth, TOPIC_BASE_MAX_TEXT_WIDTH)
-  }
-
-  return Math.max(minTopicWidth, effectiveTextWidth + topicPaddingX + topicBorderX)
+  return estimateTopicNodeWidthForCanvasMode(text, activeCanvasMode())
 }
 
-/**
- * Estimate rendered TopicNode height from text content.
- * Uses balanced max-width matching CSS text-wrap: balance in TopicNode.vue.
- * For KaTeX labels the rendered DOM height is measured directly.
- */
 export function estimateTopicNodeHeight(text: string): number {
-  if (!text) return MIND_MAP_GEOMETRY.minHeight
-  const topicFontSize = MIND_MAP_GEOMETRY.topicFontSize
-  const maxTextWidth = computeBalancedMaxWidth(
-    text,
-    TOPIC_BASE_MAX_TEXT_WIDTH,
-    TOPIC_BASE_MAX_TEXT_WIDTH,
-    topicFontSize,
-    'bold'
-  )
-  const paddingY = MIND_MAP_GEOMETRY.paddingY * 2
-  const borderY = MIND_MAP_GEOMETRY.borderWidth * 2
-
-  if (diagramLabelLikelyNeedsRenderedMeasure(text)) {
-    const contentH = measureRenderedDiagramLabelHeight(text, topicFontSize, maxTextWidth, {
-      fontWeight: 'bold',
-    })
-    return Math.max(MIND_MAP_GEOMETRY.minHeight, Math.ceil(contentH + paddingY + borderY))
-  }
-
-  const { height: textHeight } = measureTextDimensions(text, topicFontSize, {
-    fontWeight: 'bold',
-    maxWidth: maxTextWidth,
-    paddingX: 0,
-    paddingY: 0,
-  })
-  const lineHeight = 20
-  const numLines = Math.max(1, Math.ceil(textHeight / lineHeight))
-  return Math.max(MIND_MAP_GEOMETRY.minHeight, numLines * lineHeight + paddingY + borderY)
+  return estimateTopicNodeHeightForCanvasMode(text, activeCanvasMode())
 }
 
 /**
- * Distribute branches clockwise matching Python agent logic:
- * - First half → RIGHT side (top to bottom: Branch 1 top-right, Branch 2 bottom-right, etc.)
- * - Second half → LEFT side (reversed for clockwise: Branch 3 bottom-left, Branch 4 top-left, etc.)
- *
- * For 4 branches:
- * - Right: Branch 1 (top), Branch 2 (bottom)
- * - Left: Branch 3 (bottom), Branch 4 (top) - reversed order
- *
- * Returns branches organized by side and position
+ * Distribute branches clockwise matching Python agent logic.
  */
 export function distributeBranchesClockwise(branches: MindMapBranch[]): {
   rightBranches: MindMapBranch[]
   leftBranches: MindMapBranch[]
 } {
   const total = branches.length
-  const midPoint = Math.ceil(total / 2) // For odd numbers, right gets more
+  const midPoint = Math.ceil(total / 2)
 
-  // First half → RIGHT side (keep original order)
   const rightBranches = branches.slice(0, midPoint)
-
-  // Second half → LEFT side (reverse for clockwise)
   const leftBranches = branches.slice(midPoint).reverse()
 
   return { rightBranches, leftBranches }
@@ -254,9 +66,6 @@ export function distributeBranchesClockwise(branches: MindMapBranch[]): {
 
 /**
  * Normalize horizontal extent so left and right sides have equal curve length from center.
- * Shrinks the side with greater extent to match the shorter side (avoids over-extending).
- * Expands the shorter side when below minExtent (fixes short curves after branch move).
- * Exported for use when loading saved mindmap diagrams (loadGenericSpec path).
  */
 export function normalizeMindMapHorizontalSymmetry(
   nodes: DiagramNode[],
@@ -274,23 +83,22 @@ export function normalizeMindMapHorizontalSymmetry(
 
   function scaleNodeX(
     node: DiagramNode,
-    centerX: number,
+    topicCenterX: number,
     scale: number,
     side: 'left' | 'right'
   ): void {
     if (!node.position) return
     const nodeWidth = getNodeWidth(node)
     const center = getCenterX(node)
-    const distFromCenter = side === 'left' ? centerX - center : center - centerX
+    const distFromCenter = side === 'left' ? topicCenterX - center : center - topicCenterX
     const newCenter =
-      side === 'left' ? centerX - distFromCenter * scale : centerX + distFromCenter * scale
+      side === 'left' ? topicCenterX - distFromCenter * scale : topicCenterX + distFromCenter * scale
     node.position.x = newCenter - nodeWidth / 2
   }
 
   let leftExtent = leftNodes.length > 0 ? centerX - Math.min(...leftNodes.map(getCenterX)) : 0
   let rightExtent = rightNodes.length > 0 ? Math.max(...rightNodes.map(getCenterX)) - centerX : 0
 
-  // Scale both sides up when extent is below target (e.g. after branch move)
   const currentExtent = Math.min(leftExtent, rightExtent) || Math.max(leftExtent, rightExtent)
   if (currentExtent > 0 && currentExtent < MINDMAP_TARGET_EXTENT) {
     const scale = MINDMAP_TARGET_EXTENT / currentExtent
@@ -302,7 +110,6 @@ export function normalizeMindMapHorizontalSymmetry(
 
   const leftExpanded = leftExtent > 0 && leftExtent < minExtent
   const rightExpanded = rightExtent > 0 && rightExtent < minExtent
-  // Expand shorter side when below minimum (e.g. after branch move leaves one side sparse)
   if (leftExpanded) {
     const scale = minExtent / leftExtent
     leftNodes.forEach((node) => scaleNodeX(node, centerX, scale, 'left'))
@@ -314,7 +121,6 @@ export function normalizeMindMapHorizontalSymmetry(
     rightExtent = minExtent
   }
 
-  // Expand smaller to match larger (never shrink) - same behavior as manual add
   const targetExtent = Math.max(leftExtent, rightExtent) || Math.min(leftExtent, rightExtent)
   if (targetExtent <= 0) return
 
@@ -329,10 +135,6 @@ export function normalizeMindMapHorizontalSymmetry(
   }
 }
 
-/**
- * Convert diagram nodes and connections back to mindmap spec.
- * Used when adding/removing nodes to rebuild and reload layout.
- */
 export function nodesAndConnectionsToMindMapSpec(
   nodes: DiagramNode[],
   connections: Connection[]
@@ -353,7 +155,6 @@ export function nodesAndConnectionsToMindMapSpec(
 
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
 
-  // ID format: branch-{side}-{depth}-{globalIndex}; sort by globalIndex to preserve layout order
   const sortByGlobalIndex = (a: string, b: string): number => {
     const aIdx = parseInt(a.split('-')[3] ?? '0', 10)
     const bIdx = parseInt(b.split('-')[3] ?? '0', 10)
@@ -393,9 +194,6 @@ export interface FindBranchResult {
   indexInParent: number
 }
 
-/**
- * Find a branch in the spec tree by node ID (matches layout ID generation order).
- */
 export function findBranchByNodeId(
   rightBranches: MindMapBranch[],
   leftBranches: MindMapBranch[],
@@ -433,229 +231,6 @@ export function findBranchByNodeId(
   return null
 }
 
-/**
- * Simple stacking layout for one side of a mindmap.
- * Y: vertical stacking with parent centered on children.
- * X: each node is placed relative to its parent (subtree-balanced, no global depth columns).
- */
-function layoutMindMapSideSimple(
-  branches: MindMapBranch[],
-  side: 'left' | 'right',
-  topicCenterX: number,
-  topicCenterY: number,
-  topicWidth: number,
-  rankSeparation: number,
-  nodes: DiagramNode[],
-  connections: Connection[],
-  startHandleIndex: number,
-  _totalBranches: number,
-  topicBorderColor: string,
-  v2Visuals: boolean
-): void {
-  if (branches.length === 0) return
-
-  const sideChar = side === 'right' ? 'r' : 'l'
-
-  interface LayoutNode {
-    id: string
-    text: string
-    depth: number
-    estimatedWidth: number
-    estimatedHeight: number
-    children: LayoutNode[]
-    branchIndex: number
-  }
-
-  const globalCounter = { value: 0 }
-
-  function buildTree(b: MindMapBranch, depth: number, branchIndex: number): LayoutNode {
-    const idx = globalCounter.value++
-    const id = `branch-${sideChar}-${depth}-${idx}`
-    const text = getBranchText(b)
-    const estimatedWidth = estimateNodeWidth(text, id)
-    const estimatedHeight = measureBranchNodeHeight(text, id)
-    const children = (b.children ?? []).map((c) => buildTree(c, depth + 1, branchIndex))
-    return { id, text, depth, estimatedWidth, estimatedHeight, children, branchIndex }
-  }
-
-  const topLevel = branches.map((b, i) => {
-    const branchIndex = side === 'right' ? i : startHandleIndex + i
-    return buildTree(b, 1, branchIndex)
-  })
-
-  function subtreeHeight(node: LayoutNode): number {
-    if (node.children.length === 0) return node.estimatedHeight
-    const heights = node.children.map((c) => subtreeHeight(c))
-    const childrenSpan =
-      heights.reduce((a, b) => a + b, 0) + (node.children.length - 1) * MINDMAP_SIBLING_GAP
-    return Math.max(node.estimatedHeight, childrenSpan)
-  }
-
-  const yPos = new Map<string, number>()
-
-  function shiftDescendantPositions(node: LayoutNode, delta: number): void {
-    for (const child of node.children) {
-      const cur = yPos.get(child.id)
-      if (cur !== undefined) yPos.set(child.id, cur + delta)
-      shiftDescendantPositions(child, delta)
-    }
-  }
-
-  function assignChildrenY(siblings: LayoutNode[], startY: number): number {
-    let y = startY
-    siblings.forEach((node, i) => {
-      if (i > 0) y += MINDMAP_SIBLING_GAP
-      if (node.children.length === 0) {
-        yPos.set(node.id, y)
-        y += node.estimatedHeight
-      } else {
-        const childEnd = assignChildrenY(node.children, y)
-        const childrenSpan = childEnd - y
-
-        if (childrenSpan >= node.estimatedHeight) {
-          const firstChild = node.children[0]
-          const lastChild = node.children[node.children.length - 1]
-          const childTop = yPos.get(firstChild.id) ?? y
-          const childBottom = (yPos.get(lastChild.id) ?? y) + lastChild.estimatedHeight
-          const childCenter = (childTop + childBottom) / 2
-          yPos.set(node.id, childCenter - node.estimatedHeight / 2)
-          y = childEnd
-        } else {
-          const shift = (node.estimatedHeight - childrenSpan) / 2
-          shiftDescendantPositions(node, shift)
-          yPos.set(node.id, y)
-          y += node.estimatedHeight
-        }
-      }
-    })
-    return y
-  }
-
-  const crossBranchGap = DEFAULT_MINDMAP_BRANCH_GAP
-
-  function layoutSubtreeFromTop(node: LayoutNode, startY: number): number {
-    if (node.children.length === 0) {
-      yPos.set(node.id, startY)
-      return startY + node.estimatedHeight
-    }
-
-    const childEnd = assignChildrenY(node.children, startY)
-    const childrenSpan = childEnd - startY
-
-    if (childrenSpan >= node.estimatedHeight) {
-      const firstChild = node.children[0]
-      const lastChild = node.children[node.children.length - 1]
-      const childTop = yPos.get(firstChild.id) ?? startY
-      const childBottom = (yPos.get(lastChild.id) ?? startY) + lastChild.estimatedHeight
-      const childCenter = (childTop + childBottom) / 2
-      yPos.set(node.id, childCenter - node.estimatedHeight / 2)
-      return childEnd
-    }
-
-    const shift = (node.estimatedHeight - childrenSpan) / 2
-    shiftDescendantPositions(node, shift)
-    yPos.set(node.id, startY)
-    return startY + node.estimatedHeight
-  }
-
-  const topLevelSpans = topLevel.map((node) => subtreeHeight(node))
-
-  if (topLevel.length === 2) {
-    const rootStartYs = computeSymmetricRootStartYs(topLevelSpans, topicCenterY, crossBranchGap)
-    topLevel.forEach((node, i) => {
-      layoutSubtreeFromTop(node, rootStartYs[i] ?? topicCenterY)
-    })
-  } else {
-    const totalHeight =
-      topLevelSpans.reduce((a, b) => a + b, 0) +
-      Math.max(0, topLevel.length - 1) * crossBranchGap
-    let y = topicCenterY - totalHeight / 2
-    for (let i = 0; i < topLevel.length; i++) {
-      y = layoutSubtreeFromTop(topLevel[i], y)
-      if (i < topLevel.length - 1) y += crossBranchGap
-    }
-  }
-
-  const topicOuterEdge =
-    side === 'right' ? topicCenterX + topicWidth / 2 : topicCenterX - topicWidth / 2
-
-  function createNodes(node: LayoutNode, parentOuterEdge: number): void {
-    const y = yPos.get(node.id) ?? 0
-    const x =
-      side === 'right'
-        ? parentOuterEdge + rankSeparation
-        : parentOuterEdge - rankSeparation - node.estimatedWidth
-
-    nodes.push({
-      id: node.id,
-      text: node.text,
-      type: 'branch',
-      position: { x, y },
-      data: {
-        branchIndex: node.branchIndex,
-        estimatedWidth: node.estimatedWidth,
-        estimatedHeight: node.estimatedHeight,
-      },
-    })
-
-    const outerEdge = side === 'right' ? x + node.estimatedWidth : x
-    node.children.forEach((c) => createNodes(c, outerEdge))
-  }
-  topLevel.forEach((n) => createNodes(n, topicOuterEdge))
-
-  let handleIndex = 0
-
-  function createConnections(node: LayoutNode, parentId: string): void {
-    if (parentId === 'topic') {
-      const sourceHandle = v2Visuals
-        ? side === 'right'
-          ? 'mindmap-right'
-          : 'mindmap-left'
-        : side === 'right'
-          ? `mindmap-right-${handleIndex}`
-          : `mindmap-left-${handleIndex}`
-      const targetHandle = side === 'left' ? 'right-target' : 'left'
-      const strokeColor = v2Visuals
-        ? topicBorderColor
-        : getMindmapBranchColor(node.branchIndex).border
-
-      connections.push({
-        id: `edge-topic-${node.id}`,
-        source: 'topic',
-        target: node.id,
-        sourceHandle,
-        targetHandle,
-        style: { strokeColor },
-      })
-      if (!v2Visuals) {
-        handleIndex++
-      }
-    } else {
-      const isLeftSide = side === 'left'
-      const strokeColor = v2Visuals
-        ? topicBorderColor
-        : getMindmapBranchColor(node.branchIndex).border
-
-      connections.push({
-        id: `edge-${parentId}-${node.id}`,
-        source: parentId,
-        target: node.id,
-        sourceHandle: isLeftSide ? 'left-source' : 'right',
-        targetHandle: isLeftSide ? 'right-target' : 'left',
-        style: { strokeColor },
-      })
-    }
-    node.children.forEach((c) => createConnections(c, node.id))
-  }
-  topLevel.forEach((n) => createConnections(n, 'topic'))
-}
-
-/**
- * Load mind map spec into diagram nodes and connections
- *
- * @param spec - Mind map spec with topic and branches
- * @returns SpecLoaderResult with nodes and connections
- */
 export function loadMindMapSpec(spec: Record<string, unknown>): SpecLoaderResult {
   const topic = (spec.topic as string) || (spec.central_topic as string) || ''
 
@@ -683,21 +258,19 @@ export function loadMindMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   }
 
   const allBranches = [...rightBranches, ...leftBranches]
+  const v2Visuals = readMindMapV2VisualDesignActive()
+  const canvasMode = v2Visuals ? 'v2' : 'legacy'
 
-  // Layout constants from layoutConfig
   const centerX = DEFAULT_CENTER_X
   const centerY = DEFAULT_CENTER_Y
-  // Same rankSeparation for auto-complete and manual add so layout is identical
   const rankSeparation = DEFAULT_MINDMAP_RANK_SEPARATION
 
-  const topicWidth = estimateTopicNodeWidth(topic)
+  const topicWidth = estimateTopicNodeWidthForCanvasMode(topic, canvasMode)
+  const topicEstimatedHeight = estimateTopicNodeHeightForCanvasMode(topic, canvasMode)
 
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
 
-  const topicEstimatedHeight = estimateTopicNodeHeight(topic)
-
-  // Topic node at center - position will be adjusted after branches are laid out
   const topicNode: DiagramNode = {
     id: 'topic',
     text: topic,
@@ -714,42 +287,61 @@ export function loadMindMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   }
   nodes.push(topicNode)
 
-  const topicBorderColor = resolveMindMapTopicBorderColor(topicNode)
-  const v2Visuals = readMindMapV2VisualDesignActive()
+  if (v2Visuals) {
+    const topicBorderColor = resolveMindMapTopicBorderColor(topicNode)
+    layoutMindMapSideV2(
+      rightBranches,
+      'right',
+      centerX,
+      centerY,
+      topicWidth,
+      rankSeparation,
+      nodes,
+      connections,
+      0,
+      allBranches.length,
+      topicBorderColor
+    )
+    layoutMindMapSideV2(
+      leftBranches,
+      'left',
+      centerX,
+      centerY,
+      topicWidth,
+      rankSeparation,
+      nodes,
+      connections,
+      rightBranches.length,
+      allBranches.length,
+      topicBorderColor
+    )
+  } else {
+    layoutMindMapSideLegacy(
+      rightBranches,
+      'right',
+      centerX,
+      centerY,
+      topicWidth,
+      rankSeparation,
+      nodes,
+      connections,
+      0,
+      allBranches.length
+    )
+    layoutMindMapSideLegacy(
+      leftBranches,
+      'left',
+      centerX,
+      centerY,
+      topicWidth,
+      rankSeparation,
+      nodes,
+      connections,
+      rightBranches.length,
+      allBranches.length
+    )
+  }
 
-  // Layout right side branches
-  layoutMindMapSideSimple(
-    rightBranches,
-    'right',
-    centerX,
-    centerY,
-    topicWidth,
-    rankSeparation,
-    nodes,
-    connections,
-    0,
-    allBranches.length,
-    topicBorderColor,
-    v2Visuals
-  )
-
-  // Layout left side branches
-  layoutMindMapSideSimple(
-    leftBranches,
-    'left',
-    centerX,
-    centerY,
-    topicWidth,
-    rankSeparation,
-    nodes,
-    connections,
-    rightBranches.length,
-    allBranches.length,
-    topicBorderColor,
-    v2Visuals
-  )
-
-  // Step 4: Center entire layout so topic node is at canvas center
   if (topicNode.position) {
     const topicCurrentCenterX = topicNode.position.x + topicWidth / 2
     const topicCurrentCenterY = topicNode.position.y + topicEstimatedHeight / 2

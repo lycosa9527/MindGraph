@@ -11,7 +11,7 @@ import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vu
 import AdminSwissServiceCard from '@/components/admin/swiss/AdminSwissServiceCard.vue'
 import AdminTokenOverviewRow from '@/components/admin/AdminTokenOverviewRow.vue'
 import AdminTokenUsageByServicePanel from '@/components/admin/AdminTokenUsageByServicePanel.vue'
-import AdminOrgTokenTrendDialog from '@/components/admin/AdminOrgTokenTrendDialog.vue'
+import AdminTrendChartModal from '@/components/admin/AdminTrendChartModal.vue'
 import { Connection, Document, Loading, TrendCharts, User } from '@element-plus/icons-vue'
 
 import type { Chart as ChartInstance } from 'chart.js'
@@ -28,7 +28,6 @@ import { intlLocaleForUiCode } from '@/i18n/locales'
 import { useUIStore } from '@/stores/ui'
 import {
   fetchAdminStatsTrends,
-  fetchAdminStatsTrendsUser,
   fetchAdminTokenStats,
   useAdminStats,
   useAdminTokenStats,
@@ -199,15 +198,22 @@ const periodCards = ref({
   total: '-',
 })
 const trendContext = ref<{
-  type: 'metric' | 'org' | 'user' | 'service'
+  type: 'metric' | 'service'
   metric?: MetricKey
   service?: TokenTrendService
-  orgName?: string
-  orgId?: number
-  userName?: string
-  userId?: number
   period: 'today' | 'week' | 'month' | 'total'
 }>({ type: 'metric', period: 'week' })
+
+const userTrendModalVisible = ref(false)
+const userTrendUserId = ref<number>()
+const userTrendUserName = ref<string>()
+const userTrendInitialPeriod = ref<RankingPeriod>('today')
+
+const orgTrendModalVisible = ref(false)
+const orgTrendOrgId = ref<number>()
+const orgTrendOrgName = ref<string>()
+const orgTrendInitialPeriod = ref<RankingPeriod>('today')
+const orgTrendService = ref<TokenTrendService>(null)
 
 function formatNumber(num: number): string {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
@@ -424,29 +430,27 @@ async function showTrendChart(
   }
 }
 
-const orgTrendDialogRef = ref<InstanceType<typeof AdminOrgTokenTrendDialog> | null>(null)
-
 function showOrganizationTrendChart(
   orgName: string,
   orgId?: number,
-  period: 'today' | 'week' | 'month' | 'total' = 'week',
+  period: RankingPeriod = schoolRankingPeriod.value,
   service: TokenTrendService = null
-) {
-  orgTrendDialogRef.value?.openTrend({
-    orgName,
-    orgId,
-    period,
-    service,
-  })
+): void {
+  const trimmedName = orgName.trim()
+  if (!trimmedName) {
+    return
+  }
+  orgTrendOrgId.value =
+    orgId != null && Number.isFinite(orgId) && orgId > 0 ? orgId : undefined
+  orgTrendOrgName.value = trimmedName
+  orgTrendInitialPeriod.value = period
+  orgTrendService.value = service
+  orgTrendModalVisible.value = true
 }
 
 function switchTrendPeriod(period: 'today' | 'week' | 'month' | 'total') {
   const ctx = trendContext.value
-  if (ctx.type === 'org' && ctx.orgName) {
-    showOrganizationTrendChart(ctx.orgName, ctx.orgId, period, ctx.service ?? null)
-  } else if (ctx.type === 'user' && ctx.userId != null) {
-    showUserTokenTrend(ctx.userName ?? '', ctx.userId, period)
-  } else if (ctx.type === 'service') {
+  if (ctx.type === 'service') {
     showServiceTokenTrendChart(ctx.service ?? null, period)
   } else if (ctx.type === 'metric' && ctx.metric) {
     showTrendChart(ctx.metric, period)
@@ -526,52 +530,19 @@ async function showServiceTokenTrendChart(
   }
 }
 
-async function showUserTokenTrend(
+function showUserTokenTrend(
   userName: string,
   userId: number,
-  period: 'today' | 'week' | 'month' | 'total' = 'week'
-) {
+  period: RankingPeriod = userRankingPeriod.value
+): void {
   if (!Number.isFinite(userId) || userId <= 0) {
+    notify.warning(t('admin.userTrendRequiresId'))
     return
   }
-  trendContext.value = { type: 'user', userName, userId, period }
-  trendChartTitle.value = `${t('admin.trendUserTokens')}: ${userName}`
-  trendModalVisible.value = true
-  trendChartLoading.value = true
-
-  const daysMap = { today: 1, week: 7, month: 30, total: 0 }
-  const days = daysMap[period]
-  const daysParam = days === 0 ? 0 : days
-  const hourly = period === 'today'
-  const signal = beginTrendRequest()
-  try {
-    const data = await fetchAdminStatsTrendsUser(
-      {
-        user_id: userId,
-        days: daysParam,
-        hourly,
-      },
-      signal
-    )
-    trendChartLoading.value = false
-    await nextTick()
-    await new Promise((r) => setTimeout(r, 50))
-    await renderTrendChart(data as { data: Array<{ date: string; value: number; input?: number; output?: number }> }, 'tokens')
-    const cardsData = await fetchAdminStatsTrendsUser({ user_id: userId, days: 0 }, signal)
-    const arr = (cardsData as { data?: Array<{ value?: number }> }).data ?? []
-    const sum = (n: number) =>
-      arr.slice(-n).reduce((a: number, b: { value?: number }) => a + (b.value ?? 0), 0)
-    periodCards.value = {
-      today: formatNumber(sum(1) || 0),
-      week: formatNumber(sum(7) || 0),
-      month: formatNumber(sum(30) || 0),
-      total: formatNumber(
-        arr.reduce((a: number, b: { value?: number }) => a + (b.value ?? 0), 0)
-      ),
-    }
-  } catch (err) {
-    notifyTrendFetchError(err)
-  }
+  userTrendUserId.value = userId
+  userTrendUserName.value = userName
+  userTrendInitialPeriod.value = period
+  userTrendModalVisible.value = true
 }
 
 async function renderTrendChart(
@@ -1137,7 +1108,26 @@ onBeforeUnmount(() => {
       </template>
     </el-dialog>
 
-    <AdminOrgTokenTrendDialog ref="orgTrendDialogRef" />
+    <AdminTrendChartModal
+      v-if="orgTrendOrgName"
+      v-model:visible="orgTrendModalVisible"
+      type="org"
+      school-dialog-mode="insights"
+      :org-id="orgTrendOrgId"
+      :org-name="orgTrendOrgName"
+      :org-service="orgTrendService"
+      :initial-trend-period="orgTrendInitialPeriod"
+      read-only
+    />
+
+    <AdminTrendChartModal
+      v-if="userTrendUserId != null"
+      v-model:visible="userTrendModalVisible"
+      type="user"
+      :user-id="userTrendUserId"
+      :user-name="userTrendUserName"
+      :initial-trend-period="userTrendInitialPeriod"
+    />
   </div>
 </template>
 

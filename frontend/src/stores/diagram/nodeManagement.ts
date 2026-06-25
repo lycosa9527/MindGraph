@@ -3,6 +3,7 @@ import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { i18n } from '@/i18n'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
 import { resolveNodeShape } from '@/utils/nodeShapeStyle'
+import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import { recalculateBubbleMapLayout, recalculateMultiFlowMapLayout } from '../specLoader'
@@ -232,6 +233,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
     if (
       (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') &&
       updates.style &&
+      readMindMapV2VisualDesignActive() &&
       (updates.style.textAlign !== undefined ||
         updates.style.textDecoration !== undefined ||
         updates.style.fontSize !== undefined ||

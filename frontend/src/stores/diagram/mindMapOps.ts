@@ -36,6 +36,43 @@ function defaultNewNodeText(): string {
   return String(i18n.global.t('diagram.editable.placeholder')).replace(/[….]{1,3}$/u, '')
 }
 
+function defaultNewChildText(): string {
+  return String(i18n.global.t('diagram.newChild'))
+}
+
+function defaultLegacyBranchWithChildren(
+  text: string,
+  childText = defaultNewChildText()
+): { text: string; children: { text: string }[] } {
+  return {
+    text,
+    children: [{ text: `${childText} 1` }, { text: `${childText} 2` }],
+  }
+}
+
+/** Legacy canvas: new top-level branches include two default children; v2: text only. */
+function newTopLevelMindMapBranchSpec(
+  text: string,
+  childText = defaultNewChildText()
+): { text: string; children?: { text: string }[] } {
+  if (readMindMapV2VisualDesignActive()) {
+    return { text }
+  }
+  return defaultLegacyBranchWithChildren(text, childText)
+}
+
+function resolvePathKeyForBranchSpec(
+  branchSpec: { text: string; children?: { text: string }[] },
+  rightBranches: ReturnType<typeof nodesAndConnectionsToMindMapSpec>['rightBranches'],
+  leftBranches: ReturnType<typeof nodesAndConnectionsToMindMapSpec>['leftBranches']
+): string | null {
+  const rightIdx = rightBranches.indexOf(branchSpec)
+  if (rightIdx >= 0) return `r/${rightIdx}`
+  const leftIdx = leftBranches.indexOf(branchSpec)
+  if (leftIdx >= 0) return `l/${leftIdx}`
+  return null
+}
+
 /**
  * Retain DOM-measured widths/heights for node IDs that still exist after a
  * tree rebuild.  Nodes whose IDs survived the rebuild kept the same text, so
@@ -159,9 +196,36 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
   function addMindMapBranch(
     side: 'left' | 'right',
     text = defaultNewNodeText(),
-    _childText?: string
+    childText = defaultNewChildText()
   ): boolean {
-    return addMindMapBranchOnSide(side, text)
+    if (readMindMapV2VisualDesignActive()) {
+      return addMindMapBranchOnSide(side, text)
+    }
+    return addMindMapBranchClockwise(text, childText)
+  }
+
+  function addMindMapBranchClockwise(
+    text = defaultNewNodeText(),
+    childText = defaultNewChildText()
+  ): boolean {
+    if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
+    if (!data.value?.nodes || !data.value?.connections) return false
+
+    const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, data.value.connections)
+    const newBranch = newTopLevelMindMapBranchSpec(text, childText)
+
+    const allBranches = [...spec.rightBranches, ...spec.leftBranches.slice().reverse()]
+    allBranches.push(newBranch)
+    const { rightBranches, leftBranches } = distributeBranchesClockwise(allBranches)
+    const pathKey = resolvePathKeyForBranchSpec(newBranch, rightBranches, leftBranches)
+
+    const result = loadMindMapSpec({
+      topic: spec.topic,
+      leftBranches,
+      rightBranches,
+      preserveLeftRight: true,
+    })
+    return commitMindMapReloadWithSelect(ctx, result, pathKey, 'Add branch')
   }
 
   function addMindMapBranchOnSide(
@@ -466,7 +530,12 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
     const insertIndex =
       position === 'above' ? found.indexInParent : found.indexInParent + 1
-    found.parentArray.splice(insertIndex, 0, { text })
+    const parentId = getMindMapParentId(connections, nodeId)
+    const newSibling =
+      parentId === 'topic'
+        ? newTopLevelMindMapBranchSpec(text)
+        : { text }
+    found.parentArray.splice(insertIndex, 0, newSibling)
     const pathKey = computeSiblingPathKey(nodeId, insertIndex, connections)
 
     return applyMindMapSpecReload(
@@ -562,6 +631,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     nodeId: string,
     direction: 'top' | 'bottom' | 'left' | 'right'
   ): boolean {
+    if (!readMindMapV2VisualDesignActive()) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
 
     if (nodeId === 'topic') {
@@ -582,6 +652,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
   }
 
   function expandMindMapPathToNode(nodeId: string): boolean {
+    if (!readMindMapV2VisualDesignActive()) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
     if (!nodeId || nodeId === 'topic') return false
@@ -614,6 +685,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
   }
 
   function applyMindMapSubgraphPreview(result: SpecLoaderResult): void {
+    if (!readMindMapV2VisualDesignActive()) return
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return
     commitMindMapReload(ctx, result)
     ctx.mindMapRecalcTrigger.value++
@@ -626,6 +698,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     nodeStyles?: Record<string, NodeStyle>
     collapsedPaths?: string[]
   }): void {
+    if (!readMindMapV2VisualDesignActive()) return
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return
     if (!data.value) return
     data.value.nodes = snapshot.nodes
@@ -636,6 +709,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
   }
 
   function clearMindMapSubgraphPreviewTags(): void {
+    if (!readMindMapV2VisualDesignActive()) return
     if (!data.value?.nodes) return
     for (const node of data.value.nodes) {
       if (node.data && (node.data as Record<string, unknown>).subgraphPreview) {
@@ -647,6 +721,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
   }
 
   function toggleMindMapCollapse(nodeId: string): boolean {
+    if (!readMindMapV2VisualDesignActive()) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
     if (nodeId === 'topic') return false

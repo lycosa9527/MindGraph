@@ -199,11 +199,11 @@ export function resolveLegacyMindMapConnectionStrokeColor(
   const nodeById = new Map(nodes.map((node) => [node.id, node]))
   const targetIndex = branchIndexFromNode(nodeById.get(connection.target))
   if (targetIndex != null) {
-    return getMindmapBranchColor(targetIndex).border
+    return getMindmapBranchColor(targetIndex, 'legacy').border
   }
   const sourceIndex = branchIndexFromNode(nodeById.get(connection.source))
   if (sourceIndex != null) {
-    return getMindmapBranchColor(sourceIndex).border
+    return getMindmapBranchColor(sourceIndex, 'legacy').border
   }
 
   if (allConnections?.length) {
@@ -215,11 +215,11 @@ export function resolveLegacyMindMapConnectionStrokeColor(
       branchIndexFromConnectionTree(connection.target, nodeById, parentByTarget) ??
       branchIndexFromConnectionTree(connection.source, nodeById, parentByTarget)
     if (fromTree != null) {
-      return getMindmapBranchColor(fromTree).border
+      return getMindmapBranchColor(fromTree, 'legacy').border
     }
   }
 
-  return getMindmapBranchColor(0).border
+  return getMindmapBranchColor(0, 'legacy').border
 }
 
 /** Classic canvas: restore per-branch stroke colors on all connections. */

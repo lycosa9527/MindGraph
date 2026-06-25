@@ -116,6 +116,9 @@ const isBridgeMap = computed(() => props.data.diagramType === 'bridge_map')
 
 const mindmapBranchColors = computed(() => {
   const index = (props.data.branchIndex as number) ?? 0
+  if (isMindMap.value && !useMindMapV2Visuals.value) {
+    return getMindmapBranchColor(index, 'legacy')
+  }
   return getMindmapBranchColor(index)
 })
 
@@ -202,18 +205,8 @@ const nodeStyle = computed((): CSSProperties => {
 
   // Classic canvas: pill nodes with per-branch palette colors (pre-v2 design).
   if (isMindMap.value && !useMindMapV2Visuals.value) {
-    const bgColor = shouldHaveBackground
-      ? mindmapBranchColors.value.fill ||
-        style.backgroundColor ||
-        defaultStyle.value.backgroundColor ||
-        '#e3f2fd'
-      : 'transparent'
-    const borderColor = shouldHaveBorder
-      ? mindmapBranchColors.value.border ||
-        style.borderColor ||
-        defaultStyle.value.borderColor ||
-        '#4e79a7'
-      : 'transparent'
+    const bgColor = shouldHaveBackground ? mindmapBranchColors.value.fill : 'transparent'
+    const borderColor = shouldHaveBorder ? mindmapBranchColors.value.border : 'transparent'
     const borderWidth = shouldHaveBorder
       ? (style.borderWidth ?? defaultStyle.value.borderWidth ?? 3)
       : 0

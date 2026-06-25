@@ -31,6 +31,7 @@ import {
   mindMapUnderlineContentPadding,
 } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
+import { buildClassicMindMapTopicHandlePositions } from '@/utils/classicMindMapTopicHandles'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -163,71 +164,75 @@ const rightHandlePositions = computed(() => {
   return positions
 })
 
-// For mindmaps: get total branch count for left/right handle distribution
-const totalBranchCount = computed(() => {
-  if (!isMindMap.value) return 0
-  return (props.data.totalBranchCount as number) || 0
-})
-
-// Mindmap handles: v2 uses one trunk exit per side; classic distributes along each edge.
+// Mindmap handles: v2 uses one trunk exit per side; classic uses per-branch handles on each edge.
 const mindMapHandlePositions = computed(() => {
-  if (totalBranchCount.value === 0) {
+  if (!isMindMap.value) {
     return { right: [], left: [] }
   }
 
-  const total = totalBranchCount.value
-  const midPoint = Math.ceil(total / 2)
-  const rightCount = midPoint
-  const leftCount = total - midPoint
+  void diagramStore.layoutRecalcTrigger
 
-  if (!useMindMapV2Visuals.value) {
-    const generateHandles = (count: number, prefix: string) => {
-      const handles: Array<{ id: string; top: string; transform: string }> = []
-      for (let i = 0; i < count; i++) {
-        const topPercent = ((i + 1) / (count + 1)) * 100
-        handles.push({
-          id: `${prefix}-${i}`,
-          top: `${topPercent}%`,
-          transform: 'translateY(-50%)',
-        })
-      }
-      return handles
+  const connections = diagramStore.data?.connections ?? []
+  const classicTopicHeightPx =
+    diagramStore.getNodeDimension(props.id)?.height ??
+    topicNodeRef.value?.offsetHeight ??
+    null
+
+  if (useMindMapV2Visuals.value) {
+    const total = connections.filter((c) => c.source === 'topic').length
+    if (total === 0) {
+      return { right: [], left: [] }
     }
+    const midPoint = Math.ceil(total / 2)
+    const rightCount = midPoint
+    const leftCount = total - midPoint
+
+    const rightHandleStyle = isUnderlineTopic.value
+      ? mindMapUnderlineHandleStyle('right')
+      : { top: '50%', transform: 'translate(50%, -50%)' }
+    const leftHandleStyle = isUnderlineTopic.value
+      ? mindMapUnderlineHandleStyle('left')
+      : { top: '50%', transform: 'translate(-50%, -50%)' }
+
     return {
-      right: generateHandles(rightCount, 'mindmap-right'),
-      left: generateHandles(leftCount, 'mindmap-left'),
+      right:
+        rightCount > 0
+          ? [{ id: 'mindmap-right', ...rightHandleStyle }]
+          : [],
+      left:
+        leftCount > 0
+          ? [{ id: 'mindmap-left', ...leftHandleStyle }]
+          : [],
     }
   }
 
-  const rightHandleStyle = isUnderlineTopic.value
-    ? mindMapUnderlineHandleStyle('right')
-    : { top: '50%', transform: 'translate(50%, -50%)' }
-  const leftHandleStyle = isUnderlineTopic.value
-    ? mindMapUnderlineHandleStyle('left')
-    : { top: '50%', transform: 'translate(-50%, -50%)' }
-
   return {
-    right:
-      rightCount > 0
-        ? [{ id: 'mindmap-right', ...rightHandleStyle }]
-        : [],
-    left:
-      leftCount > 0
-        ? [{ id: 'mindmap-left', ...leftHandleStyle }]
-        : [],
+    right: buildClassicMindMapTopicHandlePositions(
+      connections,
+      'r',
+      'mindmap-right',
+      diagramStore.data?.nodes ?? [],
+      classicTopicHeightPx
+    ),
+    left: buildClassicMindMapTopicHandlePositions(
+      connections,
+      'l',
+      'mindmap-left',
+      diagramStore.data?.nodes ?? [],
+      classicTopicHeightPx
+    ),
   }
 })
 
 const nodeStyle = computed(() => {
   const style = resolvedStyle.value
 
-  // Classic canvas: pill topic with pre-v2 defaults (ignore v2 theme presets in _node_styles).
+  // Classic canvas: pill topic with pre-v2 defaults (ignore persisted v2 theme colors).
   if (isMindMap.value && !useMindMapV2Visuals.value) {
-    const borderColor = style.borderColor || defaultStyle.value.borderColor || '#0d47a1'
-    const borderWidth = style.borderWidth ?? defaultStyle.value.borderWidth ?? 3
-    const borderStyle = style.borderStyle || 'solid'
-    const backgroundColor =
-      style.backgroundColor || defaultStyle.value.backgroundColor || '#1976d2'
+    const borderColor = defaultStyle.value.borderColor || '#0d47a1'
+    const borderWidth = defaultStyle.value.borderWidth ?? 3
+    const borderStyle = 'solid'
+    const backgroundColor = defaultStyle.value.backgroundColor || '#1976d2'
 
     const classicStyle = {
       backgroundColor,
@@ -610,7 +615,7 @@ function handleWidthChange(width: number) {
       <Handle
         v-for="handle in leftHandlePositions"
         :id="handle.id"
-        :key="handle.id"
+        :key="`${handle.id}-${handle.top}`"
         type="target"
         :position="Position.Left"
         :style="{ top: handle.top }"
@@ -622,7 +627,7 @@ function handleWidthChange(width: number) {
       <Handle
         v-for="handle in rightHandlePositions"
         :id="handle.id"
-        :key="handle.id"
+        :key="`${handle.id}-${handle.top}`"
         type="source"
         :position="Position.Right"
         :style="{ top: handle.top }"
@@ -653,7 +658,7 @@ function handleWidthChange(width: number) {
       <Handle
         v-for="handle in mindMapHandlePositions.right"
         :id="handle.id"
-        :key="handle.id"
+        :key="`${handle.id}-${handle.top}`"
         type="source"
         :position="Position.Right"
         :style="{ top: handle.top, transform: handle.transform }"
@@ -664,7 +669,7 @@ function handleWidthChange(width: number) {
       <Handle
         v-for="handle in mindMapHandlePositions.left"
         :id="handle.id"
-        :key="handle.id"
+        :key="`${handle.id}-${handle.top}`"
         type="source"
         :position="Position.Left"
         :style="{ top: handle.top, transform: handle.transform }"

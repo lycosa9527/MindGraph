@@ -3,13 +3,19 @@
  *
  * Radix UI Colors light scales (MIT, https://www.radix-ui.com/colors):
  * step 3 fills on canvas, step 8 borders for readable contrast.
+ *
+ * Classic mind-map canvas uses LEGACY_MINDMAP_BRANCH_COLORS via getMindmapBranchColor(..., 'legacy').
  */
+import type { MindMapCanvasMode } from '@/stores/ui'
+
+import { getLegacyMindmapBranchColor } from './mindMapLegacyColors'
+
 export interface MindmapBranchColor {
   fill: string
   border: string
 }
 
-/** Twelve Radix accent scales — one hue per primary branch family. */
+/** Twelve Radix accent scales — tree map, flow map, and other diagram types. */
 export const MINDMAP_BRANCH_COLORS: MindmapBranchColor[] = [
   { fill: '#e6f4fe', border: '#5eb1ef' }, // blue
   { fill: '#def7f9', border: '#3db9cf' }, // cyan
@@ -25,6 +31,12 @@ export const MINDMAP_BRANCH_COLORS: MindmapBranchColor[] = [
   { fill: '#edf2fe', border: '#8da4ef' }, // indigo
 ]
 
-export function getMindmapBranchColor(branchIndex: number): MindmapBranchColor {
+export function getMindmapBranchColor(
+  branchIndex: number,
+  canvasMode?: MindMapCanvasMode
+): MindmapBranchColor {
+  if (canvasMode === 'legacy') {
+    return getLegacyMindmapBranchColor(branchIndex)
+  }
   return MINDMAP_BRANCH_COLORS[branchIndex % MINDMAP_BRANCH_COLORS.length]
 }

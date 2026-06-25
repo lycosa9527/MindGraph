@@ -77,6 +77,8 @@ const MIND_BOT_SCHOOL_TABS = new Set<SchoolDialogTab>([
   'mindbot_monitor',
 ])
 
+const INSIGHTS_SCHOOL_TABS = new Set<SchoolDialogTab>(['usage', 'teachers', 'activity'])
+
 const props = defineProps<{
   visible: boolean
   type: 'org' | 'user'
@@ -105,6 +107,8 @@ const props = defineProps<{
   readOnly?: boolean
   initialTrendPeriod?: 'today' | 'week' | 'month' | 'total'
   orgService?: 'mindgraph' | 'mindmate' | null
+  /** Data center rankings: usage / teachers / activity only (no settings tabs). */
+  schoolDialogMode?: 'manage' | 'insights'
 }>()
 
 const emit = defineEmits<{
@@ -128,13 +132,33 @@ const removeManagerMutation = useRemoveAdminOrganizationManager()
 
 const panelReadOnly = computed(() => props.readOnly === true)
 
+const isInsightsMode = computed(() => props.schoolDialogMode === 'insights')
+
+const showSchoolSettingsTabs = computed(() => !isInsightsMode.value)
+
+const schoolModalHeaderTitle = computed(() =>
+  isInsightsMode.value ? t('admin.trendOrgTokens') : t('admin.editSchool')
+)
+
 const canEditOrgGeneral = computed(() => can('tab.organizations.edit'))
 
 const orgGeneralReadOnly = computed(() => !canEditOrgGeneral.value)
 
 const showMindbotSchoolTabs = computed(
-  () => !panelReadOnly.value && can('tab.settings.mindbot') && featureMindbot.value
+  () =>
+    showSchoolSettingsTabs.value &&
+    !panelReadOnly.value &&
+    can('tab.settings.mindbot') &&
+    featureMindbot.value
 )
+
+function resolveInitialSchoolTab(): SchoolDialogTab {
+  const requested = props.initialSchoolTab ?? 'usage'
+  if (isInsightsMode.value) {
+    return INSIGHTS_SCHOOL_TABS.has(requested) ? requested : 'usage'
+  }
+  return requested
+}
 
 function isMindbotSchoolTab(tab: SchoolDialogTab): boolean {
   return MIND_BOT_SCHOOL_TABS.has(tab)
@@ -668,7 +692,7 @@ watch(
     if (v) {
       period.value = props.initialTrendPeriod ?? 'week'
       if (props.type === 'org') {
-        schoolDialogTab.value = props.initialSchoolTab ?? 'usage'
+        schoolDialogTab.value = resolveInitialSchoolTab()
       } else {
         userDialogTab.value = 'usage'
       }
@@ -678,7 +702,7 @@ watch(
       ) {
         void load()
       }
-      if (props.type === 'org' && props.orgId) {
+      if (props.type === 'org' && props.orgId && showSchoolSettingsTabs.value) {
         displayNameEdit.value = props.orgDisplayName ?? ''
         orgActiveState.value = props.orgIsActive ?? true
         expiresAtEdit.value = parseExpiresAtToDate(props.orgExpiresAt)
@@ -784,7 +808,7 @@ onBeforeUnmount(() => {
     <template #header>
       <div class="mindbot-swiss-header mindbot-config-header">
         <span class="mindbot-swiss-header__glyph">◇</span>
-        <span class="mindbot-swiss-header__title">{{ t('admin.editSchool') }}</span>
+        <span class="mindbot-swiss-header__title">{{ schoolModalHeaderTitle }}</span>
         <span
           class="mindbot-swiss-header__divider"
           aria-hidden="true"
@@ -838,6 +862,7 @@ onBeforeUnmount(() => {
             />
           </el-tab-pane>
           <el-tab-pane
+            v-if="showSchoolSettingsTabs"
             name="dify"
             :label="t('admin.schoolModal.tabMindmate')"
             lazy
@@ -901,6 +926,7 @@ onBeforeUnmount(() => {
             />
           </el-tab-pane>
           <el-tab-pane
+            v-if="showSchoolSettingsTabs"
             name="general"
             :label="t('admin.schoolModal.tabGeneral')"
             lazy
@@ -931,6 +957,18 @@ onBeforeUnmount(() => {
     </div>
     <template #footer>
       <div
+        v-if="isInsightsMode"
+        class="flex justify-end"
+      >
+        <el-button
+          class="mindbot-pill mindbot-pill--footer-cancel"
+          @click="close"
+        >
+          {{ t('common.close') }}
+        </el-button>
+      </div>
+      <div
+        v-else
         class="mindbot-dialog-footer flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
       >
         <div

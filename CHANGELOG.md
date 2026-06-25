@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.122.0] - 2026-06-26
+
+> **Classic mind map canvas — restore pre-v2 layout and connectors; even topic handles; Enter adds branches with default children.**
+
+### Added
+
+- **Classic / v2 mind map separation** — Legacy layout, geometry, and Material branch palette extracted into dedicated modules (`mindMapLegacyLayout`, `mindMapV2Layout`, `mindMapMeasurements`, `mindMapLegacyGeometry`, `mindMapLegacyColors`); spec loader branches on canvas mode ([`mindmap_v2_separation.md`](docs/architecture/mindmap_v2_separation.md)).
+- **Classic topic handles** — Per-side evenly spaced exit points with sequential handle ids and runtime `sourceHandle` normalization ([`classicMindMapTopicHandles.ts`](frontend/src/utils/classicMindMapTopicHandles.ts)).
+- **Pill boundary handles** — Topic handle positions inset onto the semicircle so curved connectors meet the node border at high zoom.
+- **Mind map separation tests** — Regression coverage for legacy palette, layout, clockwise add-branch, handle spread, and v2 gating ([`mindMapSeparation.spec.ts`](frontend/tests/mindMapSeparation.spec.ts)).
+
+### Changed
+
+- **Add branch (legacy)** — Toolbar and clockwise redistribution seed two default child nodes; **Enter** (sibling on a top-level branch) now matches that behavior in legacy mode.
+- **Admin dashboard trends** — Org/user token trend charts use shared [`AdminTrendChartModal.vue`](frontend/src/components/admin/AdminTrendChartModal.vue) instead of separate dialog wiring.
+
+### Fixed
+
+- **Classic topic→branch lines** — Handles no longer fall back to bottom/center when sides are uneven; stale `sourceHandle` ids remapped at render time.
+- **Curved edge gaps** — Mind map curved edges use round line caps; pill-aware handle inset removes sub-pixel gaps when zoomed in.
+- **Legacy canvas bleed** — TopicNode, BranchNode, node management, and canvas-mode switch no longer apply v2-only shapes, themes, or estimators on the classic canvas.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.122.0).
+
 ## [5.121.0] - 2026-06-25
 
 > **MindMate active thread — instant chat restore after canvas navigation, with silent background sync from Dify.**
