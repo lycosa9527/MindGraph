@@ -124,6 +124,11 @@ def reconcile_collection(
     for target_result in collect_result.target_results:
         _check_target_result(target_result, gaps)
 
+    for warning in warnings:
+        if warning.startswith("dump_"):
+            code = warning.split(":", 1)[0]
+            gaps.append(VerificationGap(code=code, detail=warning))
+
     if messages_complete:
         for conv_key, complete in messages_complete.items():
             if not complete:

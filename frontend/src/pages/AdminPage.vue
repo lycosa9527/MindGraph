@@ -16,6 +16,7 @@ import AdminSchoolsTab from '@/components/admin/AdminSchoolsTab.vue'
 import AdminFeatureDevTab from '@/components/admin/AdminFeatureDevTab.vue'
 import AdminSystemSettingsTab from '@/components/admin/AdminSystemSettingsTab.vue'
 import AdminFeaturesHeaderToolbar from '@/components/admin/AdminFeaturesHeaderToolbar.vue'
+import AdminMindMateExportHeaderToolbar from '@/components/admin/AdminMindMateExportHeaderToolbar.vue'
 import AdminRolesHeaderToolbar from '@/components/admin/AdminRolesHeaderToolbar.vue'
 import AdminUsersHeaderToolbar from '@/components/admin/AdminUsersHeaderToolbar.vue'
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel.vue'
@@ -80,6 +81,10 @@ const showRolesHeaderToolbar = computed(
   () => activeTab.value === 'settings' && route.query.subtab === 'roles' && can('tab.settings.roles')
 )
 
+const showMindMateExportHeaderToolbar = computed(
+  () => activeTab.value === 'feature_dev' && route.query.subtab === 'mindmate_export'
+)
+
 const showTabReadOnlyBadge = computed(() => isTabReadOnly(activeTab.value))
 
 function onHeaderCreateSchool(): void {
@@ -141,6 +146,7 @@ onMounted(async () => {
       <div class="admin-header-actions flex flex-1 items-center justify-end gap-3 min-w-0">
         <AdminFeaturesHeaderToolbar v-if="showFeaturesApplyButton" />
         <AdminRolesHeaderToolbar v-if="showRolesHeaderToolbar" />
+        <AdminMindMateExportHeaderToolbar v-if="showMindMateExportHeaderToolbar" />
         <AdminUsersHeaderToolbar v-if="activeTab === 'users'" />
         <SchoolDashboardOrgPicker
           v-if="showSchoolDashboardPicker"

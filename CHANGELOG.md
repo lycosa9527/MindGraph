@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.123.0] - 2026-06-26
+
+> **MindMate export — Dify raw dump library: upload snapshots, merge into a cumulative store, search and export from the library.**
+
+### Added
+
+- **Dify raw dump host script** — [`dump_raw.sh`](scripts/dify/dump_raw.sh) on each Dify/NeoDify server (PostgreSQL COPY, manifest, zip); optional [`import_dump_zip.sh`](scripts/dify/import_dump_zip.sh) CLI on MindGraph.
+- **Cumulative dump library** — Each import merges CSVs into `library/{dify|neodify}/`; conversations/messages upsert by id; snapshot archives kept under `{label}/{timestamp}/`; deleting an archive rebuilds the library from remaining snapshots ([`raw_dump_library.py`](services/dify/export/raw_dump_library.py)).
+- **Admin Dump files tab** — Upload zips, import pending, library stats (merged count, messages, last merged), snapshot archive tables; Swiss segmented control in the admin header toggles **Search & filters** vs **Dump files**.
+- **Backend dump modules** — Import with zip-slip/sha256 guards, `MultiServerDumpStore`, dump-only export router (no live Dify API fallback), admin API under `/api/admin/mindmate-export/dumps/*`.
+- **Tests** — Library merge, dump index, import, collect backend, admin helpers ([`test_dify_raw_library.py`](tests/test_dify_raw_library.py) and related).
+
+### Changed
+
+- **MindMate export data source** — Search, sync download, and background jobs read the merged **library** per server label (falls back to latest snapshot only when no library exists).
+- **Library staleness** — Merged libraries are never marked stale; age limits apply to raw snapshot archives only.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.123.0).
+
 ## [5.122.0] - 2026-06-26
 
 > **Classic mind map canvas — restore pre-v2 layout and connectors; even topic handles; Enter adds branches with default children.**

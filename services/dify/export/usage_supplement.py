@@ -19,6 +19,7 @@ from typing import Dict, List, Optional, Set, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from repositories.mindbot_usage_repo import MindbotExportThread, MindbotUsageRepository
+from services.dify.export.raw_dump_index import MultiServerDumpStore
 from services.dify.export.transcript import ExportConversationSummary
 from services.dify.export.types import UserTarget
 from utils.dify_user_key import parse_mindbot_dify_key
@@ -68,13 +69,15 @@ def _staff_ids_for_org(targets: List[UserTarget], org_id: int) -> Set[str]:
 def _summary_from_thread(
     thread: MindbotExportThread,
     target: UserTarget,
+    *,
+    server: int = 1,
 ) -> ExportConversationSummary:
     created = _datetime_to_epoch(thread.first_event_at)
     updated = _datetime_to_epoch(thread.last_event_at)
     return ExportConversationSummary(
         conversation_id=thread.dify_conversation_id,
         name=_thread_display_name(thread),
-        server=1,
+        server=server,
         organization_id=int(thread.organization_id),
         dify_user=thread.dify_user_key,
         user_id=target.user_id,
@@ -155,6 +158,7 @@ async def supplement_mindbot_summaries_from_usage(
     *,
     start: Optional[int] = None,
     end: Optional[int] = None,
+    dump_store: Optional[MultiServerDumpStore] = None,
 ) -> Tuple[List[ExportConversationSummary], List[str]]:
     """
     Merge usage-telemetry MindBot threads missing from Dify list collection.
@@ -220,7 +224,12 @@ async def supplement_mindbot_summaries_from_usage(
             target = _target_for_thread(thread, targets_by_dify)
             if target is None:
                 continue
-            existing[key] = _summary_from_thread(thread, target)
+            server = 1
+            if dump_store is not None:
+                found = dump_store.find_conversation_server(thread.dify_conversation_id)
+                if found is not None:
+                    server = found
+            existing[key] = _summary_from_thread(thread, target, server=server)
             added += 1
 
     warnings: List[str] = []

@@ -8,6 +8,8 @@
  */
 import { computed, ref, watch } from 'vue'
 
+import AdminMindMateExportDumpsTab from '@/components/admin/AdminMindMateExportDumpsTab.vue'
+import { useMindMateExportPanelTab } from '@/composables/admin/useMindMateExportPanelTab'
 import { useLanguage, useNotifications } from '@/composables'
 import { useMindMateExportJobStream } from '@/composables/admin/useMindMateExportJobStream'
 import {
@@ -42,6 +44,7 @@ const dateRange = ref<[Date, Date] | null>(null)
 const activeDatePreset = ref<DatePreset | null>(null)
 const datePickerKey = ref(0)
 const exportFormat = ref<ExportFormat>('html')
+const { panelTab } = useMindMateExportPanelTab()
 
 const dateTimeDefaultRange: [Date, Date] = [
   new Date(2000, 0, 1, 0, 0, 0),
@@ -440,6 +443,19 @@ const jobCanDownload = computed(() => {
   return status === 'completed' || status === 'completed_with_gaps'
 })
 
+const exportDataSourceSummary = computed((): string | null => {
+  const report = activeJob.value?.verification_report as {
+    actual?: { data_source?: { per_label?: Record<string, string> } }
+  } | null
+  const perLabel = report?.actual?.data_source?.per_label
+  if (!perLabel || Object.keys(perLabel).length === 0) {
+    return null
+  }
+  return Object.entries(perLabel)
+    .map(([label, mode]) => `${label}: ${mode}`)
+    .join(' · ')
+})
+
 function verificationBadgeLabel(status: string | null | undefined): string {
   if (status === 'pass' || status === 'completed') {
     return t('admin.mindmateExport.verifyPass')
@@ -599,6 +615,7 @@ async function download(): Promise<void> {
 
 <template>
   <div class="mindmate-export-page">
+    <template v-if="panelTab === 'export'">
     <p class="mindmate-export-privacy">
       {{ t('admin.mindmateExport.privacyNotice') }}
     </p>
@@ -795,6 +812,12 @@ async function download(): Promise<void> {
         :show-text="false"
         class="mindmate-export-job-bar"
       />
+      <p
+        v-if="exportDataSourceSummary"
+        class="mindmate-export-meta-line"
+      >
+        {{ t('admin.mindmateExport.dataSource', { summary: exportDataSourceSummary }) }}
+      </p>
       <p
         v-if="activeJob?.error_message"
         class="mindmate-export-truncated"
@@ -1016,6 +1039,8 @@ async function download(): Promise<void> {
         </div>
       </div>
     </section>
+    </template>
+    <AdminMindMateExportDumpsTab v-else-if="panelTab === 'dumps'" />
   </div>
 </template>
 

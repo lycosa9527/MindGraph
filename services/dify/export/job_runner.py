@@ -23,6 +23,7 @@ from services.dify.export.collect_service import (
     collect_conversation_summaries_batch,
     collect_messages_for_summaries,
 )
+from services.dify.export.raw_collect_backend import ExportSourceRouter
 from services.dify.export.export_config import USER_BATCH_SIZE
 from services.dify.export.job_events import (
     ExportJobControlState,
@@ -190,6 +191,14 @@ async def _run_export_job_inner(job_id: int, user_id: int) -> None:
             all_collect.partial_failures = int(checkpoint.get("partial_failures") or 0)
             all_collect.skipped_targets = int(checkpoint.get("skipped_targets") or 0)
             messages_complete: dict[str, bool] = {}
+            users_done_at_start = int(checkpoint.get("users_done") or 0)
+            if users_done_at_start == 0:
+                source_router = ExportSourceRouter.bootstrap()
+                if source_router.warnings:
+                    all_collect.warnings.extend(source_router.warnings)
+                    await append_warnings_jsonl(job_id, source_router.warnings)
+            else:
+                source_router = ExportSourceRouter.from_store()
 
             while users_done < users_total:
                 if await _should_stop(db, job_id, control):
@@ -236,7 +245,7 @@ async def _run_export_job_inner(job_id: int, user_id: int) -> None:
                 async def _control() -> bool:
                     return not await _should_stop(db, job_id, control)
 
-                options = CollectOptions(control=_control)
+                options = CollectOptions(control=_control, source_router=source_router)
                 batch_collect = await collect_conversation_summaries_batch(
                     db,
                     target_result.targets,
@@ -306,7 +315,7 @@ async def _run_export_job_inner(job_id: int, user_id: int) -> None:
                     db,
                     chunk,
                     strict_org=scope != "all",
-                    options=CollectOptions(control=_control_msg),
+                    options=CollectOptions(control=_control_msg, source_router=source_router),
                 )
                 messages_complete.update(chunk_complete)
                 all_collect.warnings.extend(msg_warnings)
@@ -339,6 +348,8 @@ async def _run_export_job_inner(job_id: int, user_id: int) -> None:
                 messages_complete=messages_complete,
             )
             report.actual["messages"] = sum(len(conv.bubbles) for conv in loaded_conversations)
+            if source_router.store is not None:
+                report.actual["data_source"] = source_router.store.data_source_summary()
 
             job.current_stage = "building_artifact"
             await db.commit()

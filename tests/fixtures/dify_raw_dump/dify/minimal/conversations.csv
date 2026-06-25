@@ -1,0 +1,2 @@
+id,app_id,from_end_user_id,name,status,is_deleted,created_at,updated_at
+c1,app1,eu1,Hello,normal,false,2024-01-01 00:00:00,2024-01-02 00:00:00
