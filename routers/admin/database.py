@@ -95,12 +95,12 @@ async def list_dumps(
 
 
 @router.get("/orphans")
-def detect_orphans(
+async def detect_orphans(
     _scope: AdminScope = Depends(require_settings_database),
 ) -> Dict[str, int]:
     """Detect orphaned FK references in the current PostgreSQL database."""
     try:
-        return detect_pg_orphans(engine)
+        return await asyncio.to_thread(detect_pg_orphans, engine)
     except BACKGROUND_INFRA_ERRORS as exc:
         logger.error("[AdminDB] orphan detect failed: %s", exc)
         raise HTTPException(
@@ -110,12 +110,12 @@ def detect_orphans(
 
 
 @router.post("/cleanup-orphans")
-def cleanup_orphans(
+async def cleanup_orphans(
     _scope: AdminScope = Depends(require_settings_database),
 ) -> Dict[str, int]:
     """Clean up orphaned FK references in the PostgreSQL database."""
     try:
-        return cleanup_pg_orphans(engine)
+        return await asyncio.to_thread(cleanup_pg_orphans, engine)
     except BACKGROUND_INFRA_ERRORS as exc:
         logger.error("[AdminDB] orphan cleanup failed: %s", exc)
         raise HTTPException(
@@ -125,12 +125,16 @@ def cleanup_orphans(
 
 
 @router.post("/export")
-def export_dump(
+async def export_dump(
     _scope: AdminScope = Depends(require_settings_database),
 ) -> Dict[str, Any]:
     """Run pg_dump and save the file to backup/."""
     try:
-        result = export_postgres_dump(_pg_tools_connection_uri(), BACKUP_DIR)
+        result = await asyncio.to_thread(
+            export_postgres_dump,
+            _pg_tools_connection_uri(),
+            BACKUP_DIR,
+        )
         if not result["success"]:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -146,7 +150,7 @@ def export_dump(
 
 
 @router.post("/import-dump")
-def import_dump(
+async def import_dump(
     body: FilenameBody,
     _scope: AdminScope = Depends(require_settings_database),
 ) -> Dict[str, Any]:
@@ -161,7 +165,8 @@ def import_dump(
         )
 
     try:
-        result = import_postgres_dump(
+        result = await asyncio.to_thread(
+            import_postgres_dump,
             _pg_tools_connection_uri(),
             BACKUP_DIR,
             body.filename,
@@ -181,7 +186,7 @@ def import_dump(
 
 
 @router.post("/analyze-dump")
-def analyze_dump_file(
+async def analyze_dump_file(
     body: FilenameBody,
     _scope: AdminScope = Depends(require_settings_database),
 ) -> Dict[str, Any]:
@@ -196,7 +201,7 @@ def analyze_dump_file(
         )
 
     try:
-        result = analyze_pg_dump(dump_path)
+        result = await asyncio.to_thread(analyze_pg_dump, dump_path)
         if not result.get("success"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -212,7 +217,7 @@ def analyze_dump_file(
 
 
 @router.post("/merge-dump")
-def merge_dump_file(
+async def merge_dump_file(
     body: FilenameBody,
     _scope: AdminScope = Depends(require_settings_database),
 ) -> Dict[str, Any]:
@@ -227,7 +232,7 @@ def merge_dump_file(
         )
 
     try:
-        result = merge_pg_dump(dump_path)
+        result = await asyncio.to_thread(merge_pg_dump, dump_path)
         if not result.get("success"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

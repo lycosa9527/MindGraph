@@ -35,6 +35,7 @@ from services.dify.export.job_events import (
 from services.dify.export.job_storage import get_job
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.db.session_open import release_open_transaction
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +141,7 @@ async def mindmate_export_job_stream_response(
         {"type": "progress", "job": export_job_to_dict(job)},
         ensure_ascii=False,
     )
+    await release_open_transaction(db)
 
     increment_sse_connection(user_id)
     logger.debug(
