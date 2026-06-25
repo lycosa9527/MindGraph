@@ -18,6 +18,7 @@ from services.auth.dingtalk_bind_constants import (
     BIND_TOKEN_TTL_SECONDS,
 )
 from services.redis.redis_async_client import get_async_redis
+from services.utils.error_types import REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -293,7 +294,7 @@ async def is_bind_code_guess_blocked(staff_id: str, token: str) -> bool:
     """True when rotating-code guess limits are exceeded for staff/token pair."""
     redis = get_async_redis()
     if redis is None:
-        return False
+        return True
     staff = (staff_id or "").strip()
     if not staff:
         return False
@@ -301,9 +302,9 @@ async def is_bind_code_guess_blocked(staff_id: str, token: str) -> bool:
     tkey = _guess_token_key(staff, token)
     try:
         raw_staff, raw_token = await redis.mget(skey, tkey)
-    except RedisError as exc:
+    except REDIS_ERRORS as exc:
         logger.warning("[DingtalkBind] bind code guess mget failed: %s", exc)
-        return False
+        return True
     n_staff = _redis_count_from_raw(raw_staff)
     n_token = _redis_count_from_raw(raw_token)
     return n_staff >= _BIND_CODE_GUESS_MAX_PER_STAFF or n_token >= _BIND_CODE_GUESS_MAX_PER_TOKEN

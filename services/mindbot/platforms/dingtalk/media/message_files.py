@@ -146,12 +146,23 @@ async def fetch_message_media_bytes(
     app_secret: str,
     robot_code: str,
     download_code: str,
+    *,
+    alternate_download_codes: tuple[str, ...] = (),
 ) -> Optional[bytes]:
     """Resolve OAuth token, get temporary URL, download bytes (capped)."""
     token = await get_access_token(organization_id, app_key, app_secret)
     if not token:
         return None
-    dl_url = await get_message_file_download_url(token, robot_code, download_code)
-    if not dl_url:
-        return None
-    return await download_url_bytes(dl_url)
+    seen: set[str] = set()
+    for code in (download_code, *alternate_download_codes):
+        dl_code = (code or "").strip()
+        if not dl_code or dl_code in seen:
+            continue
+        seen.add(dl_code)
+        dl_url = await get_message_file_download_url(token, robot_code, dl_code)
+        if not dl_url:
+            continue
+        data = await download_url_bytes(dl_url)
+        if data:
+            return data
+    return None

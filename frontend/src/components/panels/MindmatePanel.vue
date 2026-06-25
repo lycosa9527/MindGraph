@@ -131,14 +131,9 @@ function refreshBrandingFromServer() {
   void authStore.checkAuth(true)
 }
 
-/** Remount restores empty local state (`useMindMate` destroy()); reload thread from Pinia. */
+/** Branding refresh on mount; thread restore is handled in useMindMate init. */
 onMounted(() => {
   refreshBrandingFromServer()
-  const convId = mindMateStore.currentConversationId
-  if (!convId || mindMate.hasMessages.value) {
-    return
-  }
-  void mindMate.loadConversation(convId)
 })
 
 onActivated(() => {

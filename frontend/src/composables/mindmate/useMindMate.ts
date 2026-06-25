@@ -19,6 +19,16 @@ import { useQueryClient } from '@tanstack/vue-query'
 
 import { useAuthStore, useMindMateStore } from '@/stores'
 import type { ModelLoadPhase } from '@/stores/llmResults'
+import type {
+  DifyHistoryMessage,
+  FeedbackRating,
+  MindMateFile,
+  MindMateMessage,
+} from '@/stores/mindmateActiveThread'
+import {
+  mapDifyMessagesToMindMate,
+  threadsContentEqual,
+} from '@/stores/mindmateActiveThread'
 import { consumeSseDataLines } from '@/utils/mindMateSseStream'
 import { mindmateDifyUserIdFromSession } from '@/utils/mindmateDifyUserId'
 
@@ -37,28 +47,7 @@ import {
 // Types
 // ============================================================================
 
-export type FeedbackRating = 'like' | 'dislike' | null
-
-export interface MindMateMessage {
-  id: string
-  role: 'user' | 'assistant' | 'system'
-  content: string
-  timestamp: number
-  isStreaming?: boolean
-  files?: MindMateFile[]
-  difyMessageId?: string // Dify's message ID for feedback API
-  feedback?: FeedbackRating // Current feedback status
-}
-
-export interface MindMateFile {
-  id: string
-  name: string
-  type: 'image' | 'document' | 'audio' | 'video' | 'custom'
-  size: number
-  extension: string
-  mime_type: string
-  preview_url?: string
-}
+export type { FeedbackRating, MindMateFile, MindMateMessage } from '@/stores/mindmateActiveThread'
 
 export interface MindMateConversation {
   id: string
@@ -97,16 +86,7 @@ interface SSEData {
   data?: Record<string, unknown>
 }
 
-interface DifyMessage {
-  id: string
-  query?: string
-  answer?: string
-  created_at: number
-}
-
-// ============================================================================
-// Composable
-// ============================================================================
+interface DifyMessage extends DifyHistoryMessage {}
 
 export function useMindMate(options: MindMateOptions = {}) {
   const {
@@ -157,6 +137,9 @@ export function useMindMate(options: MindMateOptions = {}) {
 
   // History loading state (distinct from isLoading which is for AI response)
   const isLoadingHistory = ref(false)
+
+  const isRestoringThread = ref(false)
+  const isLoadingFromServer = ref(false)
 
   // User ID - derived from authenticated user
   const userId = shallowRef(getDifyUserId())
@@ -269,6 +252,40 @@ export function useMindMate(options: MindMateOptions = {}) {
   function generateMessageId(): string {
     return `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
   }
+
+  function syncActiveThreadToStore(): void {
+    if (isRestoringThread.value || isLoadingFromServer.value) {
+      return
+    }
+    const convId = conversationId.value ?? mindMateStore.currentConversationId
+    if (!convId) {
+      if (messages.value.length === 0) {
+        mindMateStore.clearActiveThread()
+      }
+      return
+    }
+    mindMateStore.setActiveThread(convId, messages.value, hasGreeted.value)
+  }
+
+  function restoreActiveThread(): boolean {
+    const convId = mindMateStore.currentConversationId
+    if (!convId) {
+      return false
+    }
+    const snapshot = mindMateStore.getActiveThread(convId)
+    if (!snapshot) {
+      return false
+    }
+
+    isRestoringThread.value = true
+    messages.value = structuredClone(snapshot.messages)
+    conversationId.value = convId
+    hasGreeted.value = snapshot.hasGreeted
+    isRestoringThread.value = false
+    return true
+  }
+
+  watch(messages, () => syncActiveThreadToStore(), { deep: true })
 
   function addMessage(role: MindMateMessage['role'], content: string, isStreaming = false): string {
     const id = generateMessageId()
@@ -803,6 +820,7 @@ export function useMindMate(options: MindMateOptions = {}) {
       conversationId.value = null
       hasGreeted.value = false
       messages.value = []
+      mindMateStore.clearActiveThread()
     }
   }
 
@@ -832,60 +850,98 @@ export function useMindMate(options: MindMateOptions = {}) {
   }
 
   /**
+   * Fetch messages for a conversation (shared by blocking load and background revalidate).
+   */
+  async function fetchDifyConversationMessages(convId: string): Promise<DifyHistoryMessage[]> {
+    const difyUser = mindMateStore.getConversationDifyUser(convId)
+    return queryClient.fetchQuery({
+      queryKey: difyKeys.messages(convId, difyUser),
+      queryFn: async () => {
+        const query = difyUser
+          ? `?limit=100&dify_user=${encodeURIComponent(difyUser)}`
+          : '?limit=100'
+        const response = await fetch(`/api/dify/conversations/${convId}/messages${query}`, {
+          credentials: 'same-origin',
+        })
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            authStore.handleTokenExpired('您的登录已过期，请重新登录后查看对话历史')
+            throw new Error('Session expired')
+          }
+          throw new Error('Failed to fetch conversation messages')
+        }
+
+        const result = await response.json()
+        const rows: DifyMessage[] = result.data || []
+        return rows.sort((a, b) => a.created_at - b.created_at)
+      },
+    })
+  }
+
+  function applyMappedMessages(convId: string, mapped: MindMateMessage[]): void {
+    isRestoringThread.value = true
+    messages.value = mapped
+    conversationId.value = convId
+    hasGreeted.value = true
+    isRestoringThread.value = false
+    mindMateStore.setActiveThread(convId, mapped, true)
+  }
+
+  async function revalidateConversationInBackground(convId: string): Promise<void> {
+    if (isGenerating.value) {
+      return
+    }
+
+    try {
+      const difyMessages = await fetchDifyConversationMessages(convId)
+      const mapped = mapDifyMessagesToMindMate(difyMessages)
+
+      if (conversationId.value !== convId) {
+        return
+      }
+      if (threadsContentEqual(messages.value, mapped)) {
+        return
+      }
+
+      applyMappedMessages(convId, mapped)
+    } catch {
+      // User already sees cached thread; ignore background failures.
+    }
+  }
+
+  /**
    * Load a specific conversation's messages
    */
   async function loadConversation(convId: string): Promise<void> {
     stopGeneration()
 
+    const cached = mindMateStore.getActiveThread(convId)
+    if (cached) {
+      isRestoringThread.value = true
+      messages.value = structuredClone(cached.messages)
+      conversationId.value = convId
+      hasGreeted.value = cached.hasGreeted
+      isRestoringThread.value = false
+      mindMateStore.setCurrentConversation(convId)
+      void revalidateConversationInBackground(convId)
+      return
+    }
+
     state.value = 'loading'
     isLoadingHistory.value = true
+    isLoadingFromServer.value = true
     clearMessages()
 
-    const difyUser = mindMateStore.getConversationDifyUser(convId)
-
     try {
-      // Use Vue Query to fetch messages (will use cache if available)
-      const difyMessages = await queryClient.fetchQuery({
-        queryKey: difyKeys.messages(convId, difyUser),
-        queryFn: async () => {
-          const query = difyUser
-            ? `?limit=100&dify_user=${encodeURIComponent(difyUser)}`
-            : '?limit=100'
-          // Use fetch with credentials (token in httpOnly cookie)
-          const response = await fetch(`/api/dify/conversations/${convId}/messages${query}`, {
-            credentials: 'same-origin',
-          })
-
-          if (!response.ok) {
-            // Handle token expiration - show login modal
-            if (response.status === 401) {
-              authStore.handleTokenExpired('您的登录已过期，请重新登录后查看对话历史')
-              throw new Error('Session expired')
-            }
-            throw new Error('Failed to fetch conversation messages')
-          }
-
-          const result = await response.json()
-          const messages: DifyMessage[] = result.data || []
-          return messages.sort((a, b) => a.created_at - b.created_at)
-        },
-      })
-
-      // Load messages into UI
-      for (const msg of difyMessages) {
-        if (msg.query) {
-          addMessage('user', msg.query)
-        }
-        if (msg.answer) {
-          addMessage('assistant', msg.answer)
-        }
-      }
-
-      conversationId.value = convId
-      hasGreeted.value = true
+      const difyMessages = await fetchDifyConversationMessages(convId)
+      const mapped = mapDifyMessagesToMindMate(difyMessages)
+      applyMappedMessages(convId, mapped)
+      mindMateStore.setCurrentConversation(convId)
     } catch {
       onError?.('Failed to load conversation')
     } finally {
+      isLoadingFromServer.value = false
       state.value = 'idle'
       applyLoadPhase(mindMateLoadPhaseOnComplete())
       isLoadingHistory.value = false
@@ -1008,21 +1064,16 @@ export function useMindMate(options: MindMateOptions = {}) {
 
   function destroy(): void {
     stopGeneration()
+    syncActiveThreadToStore()
 
-    // Revoke blob URLs for pending files
     pendingFiles.value.forEach((f) => {
       if (f.preview_url) URL.revokeObjectURL(f.preview_url)
     })
     pendingFiles.value = []
 
-    // 3. Remove event listeners
     eventBus.removeAllListenersForOwner(ownerId)
 
-    // 4. Clear state
-    conversationId.value = null
     diagramSessionId.value = null
-    hasGreeted.value = false
-    messages.value = []
     streamingBuffer.value = ''
     currentStreamingId.value = null
     state.value = 'idle'
@@ -1032,6 +1083,22 @@ export function useMindMate(options: MindMateOptions = {}) {
   onUnmounted(() => {
     destroy()
   })
+
+  function tryInitialConversationLoad(): void {
+    if (restoreActiveThread()) {
+      const convId = mindMateStore.currentConversationId
+      if (convId) {
+        void revalidateConversationInBackground(convId)
+      }
+      return
+    }
+    const convId = mindMateStore.currentConversationId
+    if (convId && !hasMessages.value) {
+      void loadConversation(convId)
+    }
+  }
+
+  tryInitialConversationLoad()
 
   // =========================================================================
   // Return

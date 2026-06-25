@@ -24,7 +24,11 @@ describe('useMindMateStore loadPhase', () => {
     setActivePinia(createPinia())
     const store = useMindMateStore()
     store.setLoadPhase('streaming')
+    store.setActiveThread('conv-1', [
+      { id: 'm1', role: 'user', content: 'hi', timestamp: 1 },
+    ], true)
     store.reset()
     expect(store.loadPhase).toBe('idle')
+    expect(store.activeThreadMessages).toHaveLength(0)
   })
 })

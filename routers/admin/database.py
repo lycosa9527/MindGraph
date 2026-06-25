@@ -196,10 +196,10 @@ def analyze_dump_file(
         )
 
     try:
-        result = analyze_pg_dump(dump_path, live_engine=engine)
+        result = analyze_pg_dump(dump_path)
         if not result.get("success"):
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail=result.get("error", "Analysis failed"),
             )
         return result
@@ -227,10 +227,10 @@ def merge_dump_file(
         )
 
     try:
-        result = merge_pg_dump(dump_path, live_engine=engine)
+        result = merge_pg_dump(dump_path)
         if not result.get("success"):
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail=result.get("error", "Merge failed"),
             )
         return result

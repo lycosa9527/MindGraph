@@ -55,11 +55,12 @@ from services.mindbot.pipeline.dify_paths import (
     run_blocking_send_branch,
     run_streaming_dify_branch,
 )
-from services.mindbot.platforms.dingtalk import (
+from services.mindbot.platforms.dingtalk.inbound.parser import (
+    extract_download_code_candidates,
     extract_download_code_for_openapi,
-    fetch_message_media_bytes,
     media_filename_and_types,
 )
+from services.mindbot.platforms.dingtalk.media.message_files import fetch_message_media_bytes
 from services.mindbot.session.webhook_url import validate_session_webhook_url
 from services.mindbot.telemetry.metrics import mindbot_metrics
 from services.mindbot.telemetry.pipeline_log import format_pipeline_ctx, get_pipeline_logger
@@ -373,6 +374,9 @@ async def _maybe_dify_files_for_media(
     if not code:
         return []
     robot_code = cfg.dingtalk_robot_code.strip()
+    alt_codes = tuple(
+        c for c in extract_download_code_candidates(body, inbound_msg_type) if c != code
+    )
     try:
         raw = await fetch_message_media_bytes(
             cfg.organization_id,
@@ -380,6 +384,7 @@ async def _maybe_dify_files_for_media(
             cfg.dingtalk_app_secret.strip(),
             robot_code,
             code,
+            alternate_download_codes=alt_codes,
         )
     except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning("[MindBot] OpenAPI media fetch failed: %s", exc)

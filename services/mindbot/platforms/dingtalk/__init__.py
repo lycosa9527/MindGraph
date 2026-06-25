@@ -14,6 +14,7 @@ from services.mindbot.platforms.dingtalk.auth.verify import (
 from services.mindbot.platforms.dingtalk.inbound.parser import (
     DingTalkInboundMessage,
     extract_dingtalk_sender_profile,
+    extract_download_code_candidates,
     extract_download_code_for_openapi,
     extract_inbound_prompt,
     media_filename_and_types,
@@ -80,6 +81,7 @@ __all__ = [
     "extract_dingtalk_robot_auth_headers",
     "download_url_bytes",
     "extract_dingtalk_sender_profile",
+    "extract_download_code_candidates",
     "extract_download_code_for_openapi",
     "extract_inbound_prompt",
     "fetch_message_media_bytes",

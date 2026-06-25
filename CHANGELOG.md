@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.121.0] - 2026-06-25
+
+> **MindMate active thread — instant chat restore after canvas navigation, with silent background sync from Dify.**
+
+### Added
+
+- **MindMate active thread (Pinia)** — Current conversation messages persist in `useMindMateStore` across route unmounts (MindMate → canvas → back); [`mindmateActiveThread.ts`](frontend/src/stores/mindmateActiveThread.ts) sanitizes stored messages and maps Dify history rows with `difyMessageId` / feedback metadata.
+- **Stale-while-revalidate** — Warm-thread restore shows the chat immediately; a silent background fetch reconciles with Dify when the server copy differs (e.g. MindBot updates elsewhere).
+
+### Changed
+
+- **`useMindMate` lifecycle** — Composable restores from Pinia on init, syncs mutations via a deep watch, and `destroy()` no longer clears the store thread on unmount ([`useMindMate.ts`](frontend/src/composables/mindmate/useMindMate.ts)).
+- **`loadConversation`** — Uses in-memory thread when available (no loading overlay); blocking Dify fetch only for cold start or sidebar conversation switches.
+
+### Fixed
+
+- **MindMate remount delay** — Returning from the canvas editor no longer blanks the chat and waits for a full Dify history reload on every navigation.
+- **Mobile MindMate** — Same instant restore path as desktop (handled in composable init, not panel-only `onMounted` logic).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.121.0).
+
 ## [5.120.0] - 2026-06-25
 
 > **Mind map v2 canvas (dev flag), File Center, generate pipeline hardening, classic/v2 separation, Dify multi-slot health failover, and admin school activity tabs.**

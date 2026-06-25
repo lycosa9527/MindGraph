@@ -10,7 +10,11 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.pool import StaticPool
 
 from services.admin import pg_merge_table_ops
-from services.admin.pg_merge_table_ops import merge_table, preview_table
+from services.admin.pg_merge_table_ops import (
+    _backfill_org_from_user,
+    merge_table,
+    preview_table,
+)
 
 _TS = datetime(2026, 1, 15, 12, 0, 0)
 _TS2 = datetime(2026, 1, 16, 12, 0, 0)
@@ -36,6 +40,7 @@ def _create_merge_tables(engine: Engine) -> None:
     CREATE TABLE users (
         id INTEGER PRIMARY KEY,
         phone VARCHAR(64) UNIQUE,
+        organization_id INTEGER,
         password_hash VARCHAR(255) NOT NULL,
         role VARCHAR(30) NOT NULL DEFAULT 'teacher'
     );
@@ -223,3 +228,18 @@ def test_update_notifications_preserve_pk_skips_conflicts(
     with live_engine.connect() as conn:
         rows = conn.execute(text("SELECT id, title FROM update_notifications ORDER BY id")).fetchall()
     assert rows == [(1, "Live"), (2, "Staging new")]
+
+
+def test_backfill_org_from_user_sets_org_when_missing() -> None:
+    values = {"user_id": 5, "organization_id": None}
+    config = {"backfill_org_from_user": True}
+    cache = {5: 99}
+    _backfill_org_from_user(values, config, cache)
+    assert values["organization_id"] == 99
+
+
+def test_backfill_org_from_user_leaves_existing_org() -> None:
+    values = {"user_id": 5, "organization_id": 12}
+    config = {"backfill_org_from_user": True}
+    _backfill_org_from_user(values, config, {5: 99})
+    assert values["organization_id"] == 12
