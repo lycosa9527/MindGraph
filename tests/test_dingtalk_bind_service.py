@@ -34,22 +34,27 @@ async def test_org_mismatch_does_not_consume_token() -> None:
         "bind_code_secret": secret,
     }
 
-    with patch(
-        "services.auth.dingtalk_bind_service.get_bind_token_consumed",
-        new_callable=AsyncMock,
-        return_value=False,
-    ), patch(
-        "services.auth.dingtalk_bind_service.get_bind_token_data",
-        new_callable=AsyncMock,
-        return_value=payload,
-    ), patch(
-        "services.auth.dingtalk_bind_service.is_bind_code_guess_blocked",
-        new_callable=AsyncMock,
-        return_value=False,
-    ), patch(
-        "services.auth.dingtalk_bind_service.consume_bind_token",
-        new_callable=AsyncMock,
-    ) as mock_consume:
+    with (
+        patch(
+            "services.auth.dingtalk_bind_service.get_bind_token_consumed",
+            new_callable=AsyncMock,
+            return_value=False,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.get_bind_token_data",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.is_bind_code_guess_blocked",
+            new_callable=AsyncMock,
+            return_value=False,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.consume_bind_token",
+            new_callable=AsyncMock,
+        ) as mock_consume,
+    ):
         ok, err = await claim_dingtalk_qr_bind(
             token=token,
             bind_code=bind_code,
@@ -81,27 +86,34 @@ async def test_staff_taken_precheck_does_not_consume_token() -> None:
     mock_repo.get_by_staff = AsyncMock(return_value=taken_row)
     mock_repo.claim_staff_link = AsyncMock()
 
-    with patch(
-        "services.auth.dingtalk_bind_service.get_bind_token_consumed",
-        new_callable=AsyncMock,
-        return_value=False,
-    ), patch(
-        "services.auth.dingtalk_bind_service.get_bind_token_data",
-        new_callable=AsyncMock,
-        return_value=payload,
-    ), patch(
-        "services.auth.dingtalk_bind_service.is_bind_code_guess_blocked",
-        new_callable=AsyncMock,
-        return_value=False,
-    ), patch(
-        "services.auth.dingtalk_bind_service.rls_async_session",
-    ) as mock_rls, patch(
-        "services.auth.dingtalk_bind_service.DingtalkStaffLinkRepository",
-        return_value=mock_repo,
-    ), patch(
-        "services.auth.dingtalk_bind_service.consume_bind_token",
-        new_callable=AsyncMock,
-    ) as mock_consume:
+    with (
+        patch(
+            "services.auth.dingtalk_bind_service.get_bind_token_consumed",
+            new_callable=AsyncMock,
+            return_value=False,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.get_bind_token_data",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.is_bind_code_guess_blocked",
+            new_callable=AsyncMock,
+            return_value=False,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.rls_async_session",
+        ) as mock_rls,
+        patch(
+            "services.auth.dingtalk_bind_service.DingtalkStaffLinkRepository",
+            return_value=mock_repo,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.consume_bind_token",
+            new_callable=AsyncMock,
+        ) as mock_consume,
+    ):
         mock_rls.return_value.__aenter__ = AsyncMock(return_value=mock_db)
         mock_rls.return_value.__aexit__ = AsyncMock(return_value=False)
 
@@ -135,30 +147,38 @@ async def test_success_consumes_after_commit() -> None:
     mock_repo.get_by_staff = AsyncMock(return_value=None)
     mock_repo.claim_staff_link = AsyncMock(return_value=StaffLinkClaimResult(ok=True))
 
-    with patch(
-        "services.auth.dingtalk_bind_service.get_bind_token_consumed",
-        new_callable=AsyncMock,
-        return_value=False,
-    ), patch(
-        "services.auth.dingtalk_bind_service.get_bind_token_data",
-        new_callable=AsyncMock,
-        return_value=payload,
-    ), patch(
-        "services.auth.dingtalk_bind_service.is_bind_code_guess_blocked",
-        new_callable=AsyncMock,
-        return_value=False,
-    ), patch(
-        "services.auth.dingtalk_bind_service.rls_async_session",
-    ) as mock_rls, patch(
-        "services.auth.dingtalk_bind_service.DingtalkStaffLinkRepository",
-        return_value=mock_repo,
-    ), patch(
-        "services.auth.dingtalk_bind_service.consume_bind_token",
-        new_callable=AsyncMock,
-        return_value=payload,
-    ) as mock_consume, patch(
-        "services.auth.dingtalk_bind_service.clear_bind_code_guess_failures",
-        new_callable=AsyncMock,
+    with (
+        patch(
+            "services.auth.dingtalk_bind_service.get_bind_token_consumed",
+            new_callable=AsyncMock,
+            return_value=False,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.get_bind_token_data",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.is_bind_code_guess_blocked",
+            new_callable=AsyncMock,
+            return_value=False,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.rls_async_session",
+        ) as mock_rls,
+        patch(
+            "services.auth.dingtalk_bind_service.DingtalkStaffLinkRepository",
+            return_value=mock_repo,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.consume_bind_token",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ) as mock_consume,
+        patch(
+            "services.auth.dingtalk_bind_service.clear_bind_code_guess_failures",
+            new_callable=AsyncMock,
+        ),
     ):
         mock_rls.return_value.__aenter__ = AsyncMock(return_value=mock_db)
         mock_rls.return_value.__aexit__ = AsyncMock(return_value=False)
@@ -194,27 +214,34 @@ async def test_integrity_error_maps_to_staff_taken() -> None:
     mock_repo.get_by_staff = AsyncMock(return_value=None)
     mock_repo.claim_staff_link = AsyncMock(return_value=StaffLinkClaimResult(ok=True))
 
-    with patch(
-        "services.auth.dingtalk_bind_service.get_bind_token_consumed",
-        new_callable=AsyncMock,
-        return_value=False,
-    ), patch(
-        "services.auth.dingtalk_bind_service.get_bind_token_data",
-        new_callable=AsyncMock,
-        return_value=payload,
-    ), patch(
-        "services.auth.dingtalk_bind_service.is_bind_code_guess_blocked",
-        new_callable=AsyncMock,
-        return_value=False,
-    ), patch(
-        "services.auth.dingtalk_bind_service.rls_async_session",
-    ) as mock_rls, patch(
-        "services.auth.dingtalk_bind_service.DingtalkStaffLinkRepository",
-        return_value=mock_repo,
-    ), patch(
-        "services.auth.dingtalk_bind_service.consume_bind_token",
-        new_callable=AsyncMock,
-    ) as mock_consume:
+    with (
+        patch(
+            "services.auth.dingtalk_bind_service.get_bind_token_consumed",
+            new_callable=AsyncMock,
+            return_value=False,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.get_bind_token_data",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.is_bind_code_guess_blocked",
+            new_callable=AsyncMock,
+            return_value=False,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.rls_async_session",
+        ) as mock_rls,
+        patch(
+            "services.auth.dingtalk_bind_service.DingtalkStaffLinkRepository",
+            return_value=mock_repo,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.consume_bind_token",
+            new_callable=AsyncMock,
+        ) as mock_consume,
+    ):
         mock_rls.return_value.__aenter__ = AsyncMock(return_value=mock_db)
         mock_rls.return_value.__aexit__ = AsyncMock(return_value=False)
 
@@ -233,14 +260,17 @@ async def test_integrity_error_maps_to_staff_taken() -> None:
 @pytest.mark.asyncio
 async def test_consumed_token_returns_without_consume_retry() -> None:
     """Already-consumed tokens short-circuit before claim."""
-    with patch(
-        "services.auth.dingtalk_bind_service.get_bind_token_consumed",
-        new_callable=AsyncMock,
-        return_value=True,
-    ), patch(
-        "services.auth.dingtalk_bind_service.consume_bind_token",
-        new_callable=AsyncMock,
-    ) as mock_consume:
+    with (
+        patch(
+            "services.auth.dingtalk_bind_service.get_bind_token_consumed",
+            new_callable=AsyncMock,
+            return_value=True,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.consume_bind_token",
+            new_callable=AsyncMock,
+        ) as mock_consume,
+    ):
         ok, err = await claim_dingtalk_qr_bind(
             token="used-token",
             bind_code="123456",

@@ -46,9 +46,7 @@ DUMP_TABLES: tuple[str, ...] = (
     "workflow_app_logs",
 )
 
-CORE_DUMP_TABLES: frozenset[str] = frozenset(
-    {"messages", "conversations", "end_users", "apps", "api_tokens"}
-)
+CORE_DUMP_TABLES: frozenset[str] = frozenset({"messages", "conversations", "end_users", "apps", "api_tokens"})
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _DEFAULT_DUMP_REL = "data/dify-dumps"

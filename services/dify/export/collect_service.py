@@ -384,11 +384,7 @@ async def collect_conversation_summaries_batch(
             skipped_targets += 1
             continue
         for endpoint in endpoints:
-            tasks.append(
-                _summaries_for_target_endpoint(
-                    target, endpoint, start, end, semaphore, source_router
-                )
-            )
+            tasks.append(_summaries_for_target_endpoint(target, endpoint, start, end, semaphore, source_router))
 
     if not tasks:
         return CollectResult(

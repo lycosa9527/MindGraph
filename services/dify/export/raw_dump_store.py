@@ -31,9 +31,8 @@ def resolve_dump_store(
         if snapshot is None:
             continue
         state.snapshots[label] = snapshot
-        if (
-            str(snapshot.manifest.get("store_kind") or "").strip().lower() != "library"
-            and snapshot.is_stale(max_age_seconds)
+        if str(snapshot.manifest.get("store_kind") or "").strip().lower() != "library" and snapshot.is_stale(
+            max_age_seconds
         ):
             state.warnings.append(f"dump_stale: label={label} path={snapshot.path}")
     return state

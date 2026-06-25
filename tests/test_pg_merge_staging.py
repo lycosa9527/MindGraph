@@ -19,19 +19,21 @@ def test_skip_public_schema_bootstrap_lines() -> None:
 
 
 def test_skip_extension_and_global_lines() -> None:
-    assert _skip_restore_line(
-        "CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;\n"
-    ) is True
-    assert _skip_restore_line(
-        "COMMENT ON EXTENSION pg_stat_statements IS 'track planning and execution statistics';\n"
-    ) is True
+    assert _skip_restore_line("CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;\n") is True
+    assert (
+        _skip_restore_line("COMMENT ON EXTENSION pg_stat_statements IS 'track planning and execution statistics';\n")
+        is True
+    )
     assert _skip_restore_line("ALTER DATABASE mindgraph SET timezone TO 'UTC';\n") is True
     assert _skip_restore_line("GRANT CONNECT ON DATABASE mindgraph TO mindgraph_app;\n") is True
     assert _skip_restore_line("ALTER DEFAULT PRIVILEGES FOR ROLE postgres GRANT SELECT ON TABLES TO public;\n") is True
-    assert _rewrite_restore_line(
-        "COMMENT ON EXTENSION pg_stat_statements IS 'track';\n",
-        "mindgraph_merge_staging_ab12cd34",
-    ) is None
+    assert (
+        _rewrite_restore_line(
+            "COMMENT ON EXTENSION pg_stat_statements IS 'track';\n",
+            "mindgraph_merge_staging_ab12cd34",
+        )
+        is None
+    )
 
 
 def test_rewrite_restore_line_maps_public_to_staging_schema() -> None:

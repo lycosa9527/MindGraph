@@ -103,9 +103,7 @@ def _fetch_nullable_fk_cols(
 def _load_user_org_cache(live_engine: Engine) -> Dict[int, int]:
     """Map live user id → organization_id for org backfill on merge."""
     with live_engine.connect() as conn:
-        rows = conn.execute(
-            text('SELECT id, organization_id FROM users WHERE organization_id IS NOT NULL')
-        )
+        rows = conn.execute(text("SELECT id, organization_id FROM users WHERE organization_id IS NOT NULL"))
         return {row[0]: row[1] for row in rows}
 
 

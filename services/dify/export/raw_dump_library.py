@@ -201,9 +201,7 @@ def merge_snapshot_into_library(base_dir: Path, snapshot_dir: Path) -> Path:
     library_dir.mkdir(parents=True, exist_ok=True)
     prior = _load_library_manifest(library_dir)
 
-    tables_present = [
-        table for table in DUMP_TABLES if (snapshot_dir / f"{table}.csv").is_file()
-    ]
+    tables_present = [table for table in DUMP_TABLES if (snapshot_dir / f"{table}.csv").is_file()]
     for table in tables_present:
         merge_csv_table(library_dir, snapshot_dir, table)
 
@@ -250,11 +248,7 @@ def rebuild_library_from_snapshots(base_dir: Path, label: str) -> Optional[Path]
     library_dir.mkdir(parents=True, exist_ok=True)
 
     candidates = sorted(
-        [
-            child
-            for child in label_dir.iterdir()
-            if child.is_dir() and (child / "manifest.json").is_file()
-        ],
+        [child for child in label_dir.iterdir() if child.is_dir() and (child / "manifest.json").is_file()],
         key=snapshot_finished_epoch,
     )
     merged_any = False

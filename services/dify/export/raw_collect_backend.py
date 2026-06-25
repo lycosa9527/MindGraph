@@ -119,9 +119,7 @@ class ExportSourceRouter:
             return self._missing_dump_result(endpoint)
         items = index.fetch_messages_for_conversation(conversation_id)
         if not items:
-            self.warnings.append(
-                f"dump_unusable: messages conv={conversation_id} server={endpoint.server}"
-            )
+            self.warnings.append(f"dump_unusable: messages conv={conversation_id} server={endpoint.server}")
             return BackendPageResult(
                 items=[],
                 pagination_complete=False,
