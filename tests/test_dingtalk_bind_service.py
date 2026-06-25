@@ -114,8 +114,10 @@ async def test_staff_taken_precheck_does_not_consume_token() -> None:
             new_callable=AsyncMock,
         ) as mock_consume,
     ):
-        mock_rls.return_value.__aenter__ = AsyncMock(return_value=mock_db)
-        mock_rls.return_value.__aexit__ = AsyncMock(return_value=False)
+        mock_cm = AsyncMock()
+        mock_cm.__aenter__ = AsyncMock(return_value=mock_db)
+        mock_cm.__aexit__ = AsyncMock(return_value=False)
+        mock_rls.return_value = mock_cm
 
         ok, err = await claim_dingtalk_qr_bind(
             token=token,
@@ -180,8 +182,10 @@ async def test_success_consumes_after_commit() -> None:
             new_callable=AsyncMock,
         ),
     ):
-        mock_rls.return_value.__aenter__ = AsyncMock(return_value=mock_db)
-        mock_rls.return_value.__aexit__ = AsyncMock(return_value=False)
+        mock_cm = AsyncMock()
+        mock_cm.__aenter__ = AsyncMock(return_value=mock_db)
+        mock_cm.__aexit__ = AsyncMock(return_value=False)
+        mock_rls.return_value = mock_cm
 
         ok, err = await claim_dingtalk_qr_bind(
             token=token,
@@ -242,8 +246,10 @@ async def test_integrity_error_maps_to_staff_taken() -> None:
             new_callable=AsyncMock,
         ) as mock_consume,
     ):
-        mock_rls.return_value.__aenter__ = AsyncMock(return_value=mock_db)
-        mock_rls.return_value.__aexit__ = AsyncMock(return_value=False)
+        mock_cm = AsyncMock()
+        mock_cm.__aenter__ = AsyncMock(return_value=mock_db)
+        mock_cm.__aexit__ = AsyncMock(return_value=False)
+        mock_rls.return_value = mock_cm
 
         ok, err = await claim_dingtalk_qr_bind(
             token=token,
