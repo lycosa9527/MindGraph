@@ -69,7 +69,7 @@ Deploy **backend and frontend build together**. CSRF double-submit is enforced o
 
 1. Apply `.env` + proxy headers.
 2. Deploy backend (Python).
-3. Deploy frontend production build (includes `/pwa-install-early.js`, CSRF interceptor, CSP meta without `unsafe-eval`).
+3. Deploy frontend production build (includes `/pwa-install-early.js`, CSRF interceptor, CSP meta without `unsafe-eval` or `frame-ancestors` — framing is enforced via the HTTP `Content-Security-Policy` header from the backend).
 4. Run post-deploy verification (below).
 
 ## Post-deploy verification
@@ -80,6 +80,9 @@ curl -sI https://mg.mindspringedu.com/ | grep -iE 'strict-transport|content-secu
 
 # External PWA bootstrap (must not 404)
 curl -sI https://mg.mindspringedu.com/pwa-install-early.js | head -5
+
+# Meta CSP must not include frame-ancestors (browsers ignore it in <meta>; avoids console warning)
+curl -s https://mg.mindspringedu.com/ | grep frame-ancestors && echo "FAIL: redeploy frontend" || echo "OK"
 
 # Backend smoke (from app host / CI)
 python -m pytest tests/test_csrf_protection.py tests/test_security_production_hardening.py -q
@@ -117,3 +120,32 @@ This moves the current secret to `jwt:secret:previous` and generates a new activ
 - Reduce CSRF bootstrap allow-once path once `[Security] CSRF_BOOTSTRAP` logs are near zero.
 - Migrate legacy pickle embedding blobs to JSON in Knowledge Space.
 - Record security release notes in `CHANGELOG.md`.
+
+## Pre-production hardening (before mg prod)
+
+These are **optional hygiene** items for a public production cutover. They are **not required** on test/dev hosts during active development (`DEBUG=true` local dev and informational endpoints on test are acceptable).
+
+| Item | File | Change | Dev impact |
+|------|------|--------|------------|
+| Minimal public `/status` | `routers/core/health.py` | Return `{"status":"ok"}` only; drop version, uptime, memory | None — rich metrics remain on authenticated `/health/*` routes |
+| Anonymous preview org IDs | `routers/api/config.py` | Return `workshop_chat_preview_org_ids=[]` when `current_user is None` | None — server-side workshop access unchanged; list only needed after login |
+| Prod CSP `img-src` | `services/infrastructure/http/middleware.py` | In non-debug branch only: use `https:` instead of `http: https:` in `img-src` | None when gated on `config.debug` — local dev keeps `http:` for localhost temp images |
+| API docs | `docs/API_REFERENCE.md` | Update `/status` response shape if trimmed | — |
+
+Suggested tests when implementing the above in one PR:
+
+```bash
+python -m pytest tests/routers/test_health_status.py \
+  tests/routers/test_config_features_anonymous.py \
+  tests/test_security_production_hardening.py -q
+```
+
+Post-hardening verification:
+
+```bash
+curl -s https://mg.mindspringedu.com/status
+curl -s https://mg.mindspringedu.com/api/config/features | grep workshop_chat_preview
+curl -sI https://mg.mindspringedu.com/ | grep -i content-security
+```
+
+**Explicitly deferred** (separate epics, not blockers for prod): CSP nonces to replace `'unsafe-inline'`, `Cross-Origin-Opener-Policy`, `/.well-known/security.txt`, hiding `server: openresty` at the proxy.
