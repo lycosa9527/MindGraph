@@ -116,6 +116,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'save', newText: string): void
   (e: 'cancel'): void
+  (e: 'close'): void
   (e: 'editStart'): void
   (e: 'widthChange', width: number): void
 }>()
@@ -141,6 +142,7 @@ const fieldAriaLabel = computed(() => resolvedPlaceholder.value)
 
 // Local editing state
 const localIsEditing = ref(false)
+const rootRef = ref<HTMLElement | null>(null)
 const editText = ref(props.text)
 const originalText = ref(props.text)
 /** Concept map focus-question: editable segment only; full snapshot at edit start is originalComposed */
@@ -498,6 +500,8 @@ function saveEdit(): void {
     eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
     if (finalText !== originalComposed.value) {
       emit('save', finalText)
+    } else {
+      emit('close')
     }
     return
   }
@@ -529,6 +533,8 @@ function saveEdit(): void {
   // Only emit save if text actually changed
   if (finalText !== originalText.value) {
     emit('save', finalText)
+  } else {
+    emit('close')
   }
 }
 
@@ -618,16 +624,42 @@ function handleKeydown(event: KeyboardEvent): void {
 }
 
 /**
- * Handle blur (click outside)
+ * Handle blur (click outside) — pointerdown on the document also commits (see below).
  */
 function handleBlur(): void {
-  // Small delay to allow click events to process
   setTimeout(() => {
     if (localIsEditing.value) {
       saveEdit()
     }
   }, 150)
 }
+
+function isEventInsideEditor(event: Event): boolean {
+  const root = rootRef.value
+  const target = event.target
+  if (!root || !(target instanceof Node)) return false
+  return root.contains(target)
+}
+
+function commitEditOnOutsidePointer(event?: Event): void {
+  if (!localIsEditing.value) return
+  if (event != null && isEventInsideEditor(event)) return
+  saveEdit()
+}
+
+function syncDocumentOutsideEditListeners(editing: boolean): void {
+  if (editing) {
+    document.addEventListener('pointerdown', commitEditOnOutsidePointer, true)
+    eventBus.on('canvas:pane_clicked', commitEditOnOutsidePointer)
+  } else {
+    document.removeEventListener('pointerdown', commitEditOnOutsidePointer, true)
+    eventBus.off('canvas:pane_clicked', commitEditOnOutsidePointer)
+  }
+}
+
+watch(localIsEditing, (editing) => {
+  syncDocumentOutsideEditListeners(editing)
+})
 
 /**
  * Handle double-click to start editing
@@ -827,6 +859,7 @@ const unsubNodeEditDenied = eventBus.on('workshop:node-edit-denied', handleNodeE
 
 // Cleanup on unmount
 onUnmounted(() => {
+  syncDocumentOutsideEditListeners(false)
   unsubEditRequested()
   unsubRecommendationApplied()
   unsubInsertText()
@@ -837,6 +870,7 @@ onUnmounted(() => {
 
 <template>
   <div
+    ref="rootRef"
     class="inline-editable-text"
     :class="[
       rootAlignClass,

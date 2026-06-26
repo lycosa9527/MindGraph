@@ -237,7 +237,6 @@ declare module 'vue' {
     LearningSheetExportNudge: typeof import('./components/canvas/LearningSheetExportNudge.vue')['default']
     LearningSheetFloatBar: typeof import('./components/canvas/LearningSheetFloatBar.vue')['default']
     LearningSheetOverlay: typeof import('./components/diagram/LearningSheetOverlay.vue')['default']
-    LearningSheetPickBanner: typeof import('./components/canvas/LearningSheetPickBanner.vue')['default']
     LibraryCommentsHistory: typeof import('./components/sidebar/LibraryCommentsHistory.vue')['default']
     LlmPhaseRing: typeof import('./components/shared/LlmPhaseRing.vue')['default']
     LoginModal: typeof import('./components/auth/LoginModal.vue')['default']

@@ -538,6 +538,7 @@ function handleWidthChange(width: number) {
           render-markdown
           @save="handleTextSave"
           @cancel="handleEditCancel"
+          @close="handleEditCancel"
           @edit-start="isEditing = true"
           @width-change="handleWidthChange"
         />
@@ -560,6 +561,7 @@ function handleWidthChange(width: number) {
       render-markdown
       @save="handleTextSave"
       @cancel="handleEditCancel"
+      @close="handleEditCancel"
       @edit-start="isEditing = true"
       @width-change="handleWidthChange"
     />

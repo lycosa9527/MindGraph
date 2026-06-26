@@ -492,6 +492,7 @@ function handleBranchNodeClick(event: MouseEvent): void {
           render-markdown
           @save="handleTextSave"
           @cancel="handleEditCancel"
+          @close="handleEditCancel"
           @edit-start="isEditing = true"
         />
       </div>
@@ -513,6 +514,7 @@ function handleBranchNodeClick(event: MouseEvent): void {
       render-markdown
       @save="handleTextSave"
       @cancel="handleEditCancel"
+      @close="handleEditCancel"
       @edit-start="isEditing = true"
     />
 
