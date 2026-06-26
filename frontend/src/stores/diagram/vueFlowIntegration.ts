@@ -16,6 +16,7 @@ import {
 import { useUIStore } from '@/stores/ui'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { resolveLegacyMindMapConnectionStrokeColor } from '@/config/mindMapGeometry'
+import { withClassicMindMapTopicSourceHandle } from '@/utils/classicMindMapTopicHandles'
 import { effectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 
 import {
@@ -32,8 +33,7 @@ import {
   getMindMapCollapsedNodeIds,
   getMindMapCollapsedPaths,
 } from './mindMapCollapse'
-import { recalculateMindMapLegacyColumnPositions } from './mindMapLayoutLegacy'
-import { recalculateMindMapV2ColumnPositions } from './mindMapLayout'
+import { computeMindMapDisplayLayout } from './mindMapDisplayLayout'
 import type { DiagramContext } from './types'
 
 export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
@@ -150,23 +150,16 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
             collapsedPaths
           )
         : new Set<string>()
-      const { nodes: correctedNodes, gaps } = useV2Layout
-        ? recalculateMindMapV2ColumnPositions(
-            ctx.data.value.nodes,
-            ctx.mindMapTopicActualWidth.value,
-            ctx.mindMapNodeWidths.value,
-            ctx.mindMapNodeHeights.value,
-            connections,
-            collapsedNodeIds,
-            ctx.data.value._mindmap_diagram_style as string | undefined
-          )
-        : recalculateMindMapLegacyColumnPositions(
-            ctx.data.value.nodes,
-            ctx.mindMapTopicActualWidth.value,
-            ctx.mindMapNodeWidths.value,
-            ctx.mindMapNodeHeights.value,
-            connections
-          )
+      const { nodes: correctedNodes, gaps } = computeMindMapDisplayLayout(
+        useV2Layout ? 'v2' : 'legacy',
+        ctx.data.value.nodes,
+        connections,
+        ctx.mindMapTopicActualWidth.value,
+        ctx.mindMapNodeWidths.value,
+        ctx.mindMapNodeHeights.value,
+        collapsedNodeIds,
+        ctx.data.value._mindmap_diagram_style as string | undefined
+      )
       ctx.mindMapTopicBranchGaps.value = gaps
       const firstLevelBranchCount = connections.filter((c) => c.source === 'topic').length
 
@@ -252,10 +245,12 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
   const vueFlowEdges = computed<MindGraphEdge[]>(() => {
     if (ctx.type.value === 'circle_map') return []
 
-    if (!ctx.data.value?.connections) return []
+    const diagramData = ctx.data.value
+    if (!diagramData?.connections) return []
     const defaultEdgeType = getEdgeTypeForDiagram(ctx.type.value, effectiveMindMapMode.value)
     const diagramType = ctx.type.value
-    const nodes = ctx.data.value.nodes ?? []
+    const nodes = diagramData.nodes ?? []
+    const connections = diagramData.connections
 
     const isLegacyMindMap =
       (diagramType === 'mindmap' || diagramType === 'mind_map') &&
@@ -264,11 +259,12 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       (diagramType === 'mindmap' || diagramType === 'mind_map') &&
       effectiveMindMapMode.value === 'v2'
 
-    const edges = ctx.data.value.connections.map((conn) => {
+    const edges = connections.map((conn) => {
       let effectiveConn =
         diagramType === 'concept_map' ? augmentConnectionWithOptimalHandles(conn, nodes) : conn
 
       if (isLegacyMindMap) {
+        effectiveConn = withClassicMindMapTopicSourceHandle(effectiveConn, connections, nodes)
         effectiveConn = {
           ...effectiveConn,
           style: {
@@ -276,7 +272,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
             strokeColor: resolveLegacyMindMapConnectionStrokeColor(
               effectiveConn,
               nodes,
-              ctx.data.value?.connections
+              connections
             ),
           },
         }

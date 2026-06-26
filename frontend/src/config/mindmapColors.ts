@@ -25,6 +25,9 @@ export const MINDMAP_BRANCH_COLORS: MindmapBranchColor[] = [
   { fill: '#edf2fe', border: '#8da4ef' }, // indigo
 ]
 
-export function getMindmapBranchColor(branchIndex: number): MindmapBranchColor {
+export function getMindmapBranchColor(
+  branchIndex: number,
+  _canvasMode?: string
+): MindmapBranchColor {
   return MINDMAP_BRANCH_COLORS[branchIndex % MINDMAP_BRANCH_COLORS.length]
 }
