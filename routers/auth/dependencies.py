@@ -52,6 +52,11 @@ When product says …                    Use on API routes …
 RLS: declare auth deps **before** ``get_async_db`` / use
 ``get_async_db_with_request_rls`` with ``get_admin_scope``.
 
+Long requests that do **not** use ``Depends(get_async_db)`` in the handler
+(PG dump merge, admin log/realtime SSE, etc.) must use
+``require_panel_capability_short_lived`` (or call ``release_open_transaction`` before
+slow I/O when the handler still needs a session afterward).
+
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
@@ -400,6 +405,29 @@ async def get_admin_scope(
     return scope
 
 
+async def get_admin_scope_short_lived(
+    request: Request,
+    organization_id: Optional[int] = Query(None),
+    current_user: User = Depends(require_management_panel),
+    lang: Language = Depends(get_language_dependency),
+) -> AdminScope:
+    """
+    Resolve AdminScope without a request-scoped DB session.
+
+    Use for handlers that run pg_dump/merge/import or other work that keeps the
+    HTTP request open past ``idle_in_transaction_session_timeout`` while not
+    using the FastAPI ``get_async_db`` session.
+    """
+    scope = await build_admin_scope_async(
+        current_user,
+        organization_id=organization_id,
+        lang=lang,
+    )
+    ctx = RlsContext.from_admin_scope(scope)
+    request.state.rls_context = ctx
+    return scope
+
+
 def require_panel_capability(capability: str):
     """
     Factory: require one capability key from ``admin_panel_permissions``.
@@ -410,6 +438,23 @@ def require_panel_capability(capability: str):
 
     def _dependency(
         scope: AdminScope = Depends(get_admin_scope),
+        lang: Language = Depends(get_language_dependency),
+    ) -> AdminScope:
+        scope.assert_capability(capability, lang)
+        return scope
+
+    return _dependency
+
+
+def require_panel_capability_short_lived(capability: str):
+    """
+    Like ``require_panel_capability`` but uses ``get_admin_scope_short_lived``.
+
+    Auth-only gate for long-running routes that do not use ``Depends(get_async_db)``.
+    """
+
+    def _dependency(
+        scope: AdminScope = Depends(get_admin_scope_short_lived),
         lang: Language = Depends(get_language_dependency),
     ) -> AdminScope:
         scope.assert_capability(capability, lang)
@@ -516,8 +561,8 @@ require_settings_features = require_panel_capability(CAP_SETTINGS_FEATURES)
 require_settings_roles = require_panel_capability(CAP_SETTINGS_ROLES)
 require_settings_tokens = require_panel_capability(CAP_SETTINGS_TOKENS)
 require_settings_library = require_panel_capability(CAP_SETTINGS_LIBRARY)
-require_settings_database = require_panel_capability(CAP_SETTINGS_DATABASE)
-require_settings_performance = require_panel_capability(CAP_SETTINGS_PERFORMANCE)
+require_settings_database = require_panel_capability_short_lived(CAP_SETTINGS_DATABASE)
+require_settings_performance = require_panel_capability_short_lived(CAP_SETTINGS_PERFORMANCE)
 require_settings_errors = require_panel_capability(CAP_SETTINGS_ERRORS)
 require_settings_thinking_coins = require_panel_capability(CAP_SETTINGS_THINKING_COINS)
 require_settings_gewe = require_panel_capability(CAP_SETTINGS_GEWE)

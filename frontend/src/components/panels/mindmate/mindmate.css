@@ -936,7 +936,7 @@
   font-style: italic;
 }
 
-/* Canvas entry — Swiss stone pill below generated diagram images */
+/* Canvas entry — Swiss stone pill in message action bar */
 .mindmate-canvas-btn.el-button {
   --el-button-bg-color: #fafaf9;
   --el-button-border-color: #d6d3d1;
@@ -964,6 +964,11 @@
   --el-button-hover-text-color: #fafaf9;
   --el-button-active-bg-color: #1c1917;
   --el-button-active-border-color: #a8a29e;
+}
+
+.action-bar .action-bar-canvas-btn {
+  align-self: center;
+  margin-left: 4px;
 }
 
 .mindmate-library-save-hint {

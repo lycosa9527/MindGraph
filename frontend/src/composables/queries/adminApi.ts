@@ -96,6 +96,15 @@ export interface AdminStatsResponse {
   token_stats_by_org_mindgraph?: Record<string, unknown>
   token_stats_by_org_mindmate?: Record<string, unknown>
   top_users_by_tokens_today?: Array<Record<string, unknown>>
+  token_rankings?: Record<
+    string,
+    {
+      by_org?: Record<string, unknown>
+      by_org_mindgraph?: Record<string, unknown>
+      by_org_mindmate?: Record<string, unknown>
+      top_users?: Array<Record<string, unknown>>
+    }
+  >
 }
 
 export interface AdminServicePeriodStats {
@@ -137,6 +146,8 @@ export interface AdminApiKeyRow {
   description: string | null
   quota_limit: number | null
   usage_count: number
+  /** Successful POST /api/generate_dingtalk calls (TokenUsage; same source as dingtalk card). */
+  dingtalk_request_count?: number
   is_active: boolean
   created_at: string | null
   last_used_at: string | null
@@ -532,6 +543,30 @@ export async function fetchAdminUserActivity(
 ): Promise<AdminUserActivityResponse> {
   return adminFetchJson(
     `/api/auth/admin/users/${userId}/activity${buildQuery(params ?? {})}`,
+    { signal }
+  )
+}
+
+export interface AdminOrgActivityItem extends AdminUserActivityItem {
+  userName?: string | null
+}
+
+export interface AdminOrgActivityResponse {
+  items: AdminOrgActivityItem[]
+  hasMore: boolean
+}
+
+export async function fetchAdminOrgActivity(
+  orgId: number,
+  params?: {
+    source?: string
+    limit?: number
+    before_id?: number
+  },
+  signal?: AbortSignal
+): Promise<AdminOrgActivityResponse> {
+  return adminFetchJson(
+    `/api/auth/admin/organizations/${orgId}/activity${buildQuery(params ?? {})}`,
     { signal }
   )
 }

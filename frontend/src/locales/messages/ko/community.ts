@@ -1,5 +1,5 @@
 /**
- * ko UI �?community
+ * ko UI � community
  */
 
 export default {

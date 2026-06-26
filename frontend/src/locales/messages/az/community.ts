@@ -1,5 +1,5 @@
 /**
- * az UI �?community
+ * az UI � community
  */
 
 export default {

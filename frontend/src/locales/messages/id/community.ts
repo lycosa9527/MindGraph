@@ -1,5 +1,5 @@
 /**
- * id UI �?community
+ * id UI � community
  */
 
 export default {

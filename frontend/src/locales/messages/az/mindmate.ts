@@ -1,5 +1,5 @@
 /**
- * az UI �?mindmate
+ * az UI � mindmate
  */
 
 export default {
@@ -8,6 +8,7 @@ export default {
   'aiModel.enableAi': 'AI aktiv et',
   'aiModel.inlineRecTooltip': 'Düyünü redaktə edərkən tövsiyə üçün Tab basın',
   'aiModel.label': 'AI modeli',
+  'aiModel.cancelGeneration': 'Cancel generation',
   'aiModel.readyCount': '{count} hazırdır',
   'aiModel.relationshipsBadge': 'Əlaqələr',
   'aiModel.relationshipsTooltip': 'Konseptləri birləşdirin — AI əlaqə yaradır',
@@ -35,6 +36,7 @@ export default {
   'autoComplete.enterTopicFirst': 'Əvvəlcə mövzu mətnini daxil edin',
   'autoComplete.generationFailedRetry': 'Yaradılma uğursuz oldu, yenidən cəhd edin',
   'autoComplete.generationInProgress': 'Yaradılır, gözləyin',
+  'autoComplete.generationInstructionsLabel': 'User requirements:',
   'autoComplete.modelsReadyCount': '{success}/{total} model hazırdır',
   'autoComplete.noDiagramData': 'Diaqram məlumatı yoxdur',
   'autoComplete.selectDiagramType': 'Diaqram növünü seçin',
@@ -86,6 +88,12 @@ export default {
   'mindmate.noHistory': 'Tarix yoxdur',
   'mindmate.noHistoryPanel': 'Söhbət tarixçəsi yoxdur',
   'mindmate.suggestionLabel': 'Məndən soruşmağa çalış:',
+  'mindmate.openInCanvas': 'Edit in canvas',
+  'mindmate.openCanvasFailed': 'Could not open diagram in canvas.',
+  'mindmate.openCanvasLoginRequired': 'Sign in to open this diagram in the canvas.',
+  'mindmate.openCanvasNoLibraryId': 'Diagram was not saved to your library. Sign in and try again.',
+  'mindmate.openCanvasSaveRetry': 'Could not save this diagram to your library automatically. Regenerate; contact your administrator if it persists.',
+  'mindmate.diagramLibraryFull': 'Diagram library is full. Delete old diagrams and try again.',
   'mindmate.tooltip.copy': 'Kopyala',
   'mindmate.tooltip.dislike': 'Bəyənmə',
   'mindmate.tooltip.edit': 'Redaktə et',

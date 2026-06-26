@@ -48,6 +48,24 @@ class UserUsageActivityRepository:
         result = await self._session.execute(q)
         return list(result.scalars().all())
 
+    async def list_for_organization(
+        self,
+        *,
+        organization_id: int,
+        limit: int,
+        before_id: Optional[int],
+        source: Optional[str],
+    ) -> list[UserUsageActivity]:
+        """Newest-first cursor pagination for one organization."""
+        q = select(UserUsageActivity).where(UserUsageActivity.organization_id == int(organization_id))
+        if source is not None and source.strip() in _VALID_SOURCES:
+            q = q.where(UserUsageActivity.source == source.strip())
+        if before_id is not None:
+            q = q.where(UserUsageActivity.id < int(before_id))
+        q = q.order_by(UserUsageActivity.id.desc()).limit(min(max(limit, 1), 100))
+        result = await self._session.execute(q)
+        return list(result.scalars().all())
+
     async def exists_diagram_action(
         self,
         *,

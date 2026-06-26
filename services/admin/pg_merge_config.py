@@ -193,6 +193,7 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
         "order": 3,
         "pk_type": "serial",
         "dedup_columns": ("user_id", "session_id", "created_at"),
+        "backfill_org_from_user": True,
         "fk_remaps": {
             "user_id": "users",
             "organization_id": "organizations",
@@ -223,6 +224,7 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
         "order": 3,
         "pk_type": "serial",
         "dedup_fingerprint": "mindbot_usage_event",
+        "backfill_org_from_user": True,
         "fk_remaps": {
             "organization_id": "organizations",
             "mindbot_config_id": "organization_mindbot_configs",

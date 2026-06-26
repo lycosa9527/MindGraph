@@ -11,9 +11,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_async_db
 from models.domain.thinking_coin import ThinkingCoinEarnTask, ThinkingCoinSetting
-from routers.auth.dependencies import require_settings_thinking_coins
+from routers.auth.dependencies import get_async_db_with_request_rls, require_settings_thinking_coins
 from services.auth.thinking_coin.task_registry import (
     invalidate_task_cache,
     load_all_tasks,
@@ -120,7 +119,7 @@ def _validate_handler(handler_key: str, *, allow_referral: bool = False) -> None
 @router.get("/tasks")
 async def list_tasks(
     _scope: AdminScope = Depends(require_settings_thinking_coins),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> dict[str, Any]:
     """List all earn tasks including inactive rows."""
     tasks = await load_all_tasks(db)
@@ -131,7 +130,7 @@ async def list_tasks(
 async def create_task(
     body: EarnTaskBody,
     _scope: AdminScope = Depends(require_settings_thinking_coins),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> dict[str, Any]:
     """Create a non-system earn task."""
     if not _SLUG_RE.match(body.slug):
@@ -170,7 +169,7 @@ async def update_task(
     task_id: int,
     body: EarnTaskUpdateBody,
     _scope: AdminScope = Depends(require_settings_thinking_coins),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> dict[str, Any]:
     """Update reward, copy, or active flag for an earn task."""
     task = (
@@ -214,7 +213,7 @@ async def update_task(
 async def delete_task(
     task_id: int,
     _scope: AdminScope = Depends(require_settings_thinking_coins),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> dict[str, bool]:
     """Delete a non-system earn task."""
     task = (
@@ -234,7 +233,7 @@ async def delete_task(
 @router.get("/settings")
 async def get_settings(
     _scope: AdminScope = Depends(require_settings_thinking_coins),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> dict[str, int]:
     """Return merged global settings with code defaults."""
     stored = await load_settings_map(db)
@@ -245,7 +244,7 @@ async def get_settings(
 async def put_settings(
     body: SettingsBody,
     _scope: AdminScope = Depends(require_settings_thinking_coins),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> dict[str, int]:
     """Persist global signup grant and AI spend costs."""
     mapping = {
@@ -256,9 +255,7 @@ async def put_settings(
         "cost_canvas_assist": body.cost_canvas_assist,
     }
     for key, value in mapping.items():
-        row = (
-            await db.execute(select(ThinkingCoinSetting).where(ThinkingCoinSetting.key == key))
-        ).scalar_one_or_none()
+        row = (await db.execute(select(ThinkingCoinSetting).where(ThinkingCoinSetting.key == key))).scalar_one_or_none()
         if row is None:
             db.add(ThinkingCoinSetting(key=key, value_int=value))
         else:

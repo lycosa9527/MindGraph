@@ -1,5 +1,5 @@
 /**
- * az UI �?auth
+ * az UI � auth
  */
 
 export default {
@@ -9,6 +9,9 @@ export default {
   'auth.updateLogMaintainerNote': 'Bəli — bu platforma Roy ✨ tərəfindən fəal şəkildə qorunur',
   'auth.updateLogLoadError': 'Buraxılış qeydlərini yükləmək mümkün olmadı. Daha sonra yenidən cəhd edin.',
   'auth.updateLogEmpty': 'Buraxılış qeydləri mövcud deyil.',
+  'auth.softwareAgreementConsentPrefix': 'Using this platform means you agree to the ',
+  'auth.softwareAgreementLink': 'Terms & Privacy Policy',
+  'auth.softwareAgreementUpdated': 'Last updated: {date}',
   'auth.downloadDesktopShortcut': 'Add to desktop',
   'auth.pwaIosInstallHint': 'Tap the Share button in Safari, then choose “Add to Home Screen”.',
   'auth.pwaAndroidInstallHint': 'Open the browser menu (⋮) and tap Install app or Add to Home screen.',
@@ -39,6 +42,7 @@ export default {
   'auth.forgotPassword': 'Şifrəni unutdum',
   'auth.invitationCode': 'Dəvət kodu',
   'auth.login': 'Daxil ol',
+  'auth.loginAgreeTerms': 'Agree and sign in',
   'auth.loginFailed': 'Giriş alınmadı',
   'auth.loginRegister': 'Giriş / Qeydiyyat',
   'auth.loginSuccess': 'Giriş uğurlu',
@@ -166,4 +170,25 @@ export default {
   'auth.accountNameSave': 'Adı yadda saxla',
   'auth.accountNameSaveSuccess': 'Ad yeniləndi',
   'auth.accountNameSaveError': 'Saxlamaq mümkün olmadı. Yenidən cəhd edin.',
+  'auth.dingtalkBindSection': 'DingTalk MindBot',
+  'auth.dingtalkBindButton': 'Link DingTalk',
+  'auth.dingtalkBindLinkedButton': 'DingTalk linked',
+  'auth.dingtalkBindUnbind': 'Unlink DingTalk',
+  'auth.dingtalkBindUnbindSuccess': 'DingTalk unlinked',
+  'auth.dingtalkBindUnbindError': 'Could not unlink. Please try again.',
+  'auth.dingtalkBindRebind': 'Link again',
+  'auth.dingtalkBindTitle': 'Link DingTalk account',
+  'auth.dingtalkBindInstructions': 'Send this QR code as an image (only the image) in your school DingTalk MindBot chat.',
+  'auth.dingtalkBindQrAlt': 'DingTalk bind QR code',
+  'auth.dingtalkBindCountdown': 'QR expires in {s}s',
+  'auth.dingtalkBindQrRefreshIn': 'QR refreshes in {s}s',
+  'auth.dingtalkBindExpiredHint': 'QR expired. Generate a new one.',
+  'auth.dingtalkBindRegenerate': 'Generate new QR',
+  'auth.dingtalkBindSuccess': 'DingTalk linked successfully',
+  'auth.dingtalkBindMintError': 'Could not start bind. Please try again.',
+  'auth.dingtalkBindPollRateLimited': 'Too many requests. Please wait.',
+  'auth.dingtalkBindNoOrg': 'Join a school before linking DingTalk.',
+  'auth.dingtalkBindNoMindbot': 'MindBot is not enabled for your school.',
+  'auth.dingtalkBindLinkedLabel': 'Linked ({staff})',
+  'auth.dingtalkBindAlreadyLinked': 'Currently linked: {staff}',
 } as const

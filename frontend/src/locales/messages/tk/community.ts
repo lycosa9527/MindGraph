@@ -1,5 +1,5 @@
 /**
- * tk UI �?community
+ * tk UI � community
  */
 
 export default {

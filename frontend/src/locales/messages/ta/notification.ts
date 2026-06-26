@@ -1,5 +1,5 @@
 /**
- * ta UI �?notification
+ * ta UI � notification
  */
 
 export default {

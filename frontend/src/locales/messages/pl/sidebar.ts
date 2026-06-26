@@ -1,5 +1,5 @@
 /**
- * pl UI �?sidebar
+ * pl UI � sidebar
  */
 
 export default {

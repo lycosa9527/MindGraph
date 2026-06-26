@@ -222,7 +222,8 @@ async function analyzeDump(filename: string) {
     pgDumpAnalysis.value = (await analyzeDatabaseDump.mutateAsync({ filename })) as unknown as PgDumpAnalysis
   } catch (err: unknown) {
     console.error('[AdminDB] PG dump analyze error:', err)
-    notify.error(t('admin.database.pgAnalyzeError'))
+    const message = err instanceof Error ? err.message : ''
+    notify.error(message || t('admin.database.pgAnalyzeError'))
   } finally {
     isAnalyzingDump.value = false
   }
@@ -255,7 +256,8 @@ async function executePgMerge() {
     loadStats()
   } catch (err: unknown) {
     console.error('[AdminDB] PG dump merge error:', err)
-    notify.error(t('admin.database.pgMergeError'))
+    const message = err instanceof Error ? err.message : ''
+    notify.error(message || t('admin.database.pgMergeError'))
   } finally {
     isMergingDump.value = false
   }

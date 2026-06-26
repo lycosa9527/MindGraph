@@ -45,9 +45,7 @@ _FIXED_NODE_KEYS_BY_TYPE: Dict[str, frozenset[str]] = {
     "mind_map": frozenset({"children"}),
     "bubble_map": frozenset({"attributes"}),
     "circle_map": frozenset({"context"}),
-    "double_bubble_map": frozenset(
-        {"left", "right", "similarities", "left_differences", "right_differences"}
-    ),
+    "double_bubble_map": frozenset({"left", "right", "similarities", "left_differences", "right_differences"}),
     "tree_map": frozenset({"children", "dimension"}),
     "brace_map": frozenset({"parts", "dimension"}),
     "flow_map": frozenset({"steps"}),
@@ -252,10 +250,10 @@ def parse_requirements_for_type(
     structure_mode: StructureMode = "fixed" if mode_raw == "fixed" else "free"
     fixed_nodes = _collect_fixed_nodes(data, dtype)
 
-    if structure_mode == "fixed" and not fixed_nodes and not (
-        dtype == "double_bubble_map"
-        and data.get("left")
-        and data.get("right")
+    if (
+        structure_mode == "fixed"
+        and not fixed_nodes
+        and not (dtype == "double_bubble_map" and data.get("left") and data.get("right"))
     ):
         structure_mode = "free"
         fixed_nodes = {}
@@ -357,16 +355,8 @@ def merge_agent_params(
         merged.structure_mode = "fixed"
 
     api_dim_pref = api_kwargs.get("dimension_preference")
-    has_lists = (
-        merged.structure_mode == "fixed"
-        and _has_fixed_structure_lists(merged.fixed_nodes)
-    )
-    if (
-        not merged.fixed_dimension
-        and not has_lists
-        and isinstance(api_dim_pref, str)
-        and api_dim_pref.strip()
-    ):
+    has_lists = merged.structure_mode == "fixed" and _has_fixed_structure_lists(merged.fixed_nodes)
+    if not merged.fixed_dimension and not has_lists and isinstance(api_dim_pref, str) and api_dim_pref.strip():
         merged.fixed_dimension = api_dim_pref.strip()
 
     return merged

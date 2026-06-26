@@ -1,5 +1,5 @@
 /**
- * sq UI �?community
+ * sq UI � community
  */
 
 export default {

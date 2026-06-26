@@ -1,5 +1,5 @@
 /**
- * tl UI �?workshop
+ * tl UI � workshop
  */
 
 export default {

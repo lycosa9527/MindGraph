@@ -10,14 +10,19 @@ import {
   MIND_MAP_RAINBOW_TOPIC_COLORS,
   syncRainbowMindMapConnectionColors,
 } from '@/config/mindMapVibrantThemes'
-import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
+import {
+  syncLegacyMindMapConnectionStrokeColors,
+  syncMindMapConnectionStrokeColors,
+  syncMindMapConnectionStrokeColorsForCanvasMode,
+} from '@/config/mindMapGeometry'
 import {
   getMindMapThemeById,
   mindMapStyleFromTheme,
   resolveMindMapThemeId,
   type MindMapThemeId,
 } from '@/config/mindMapThemes'
-import type { Connection, DiagramNode, NodeStyle } from '@/types'
+import type { Connection, DiagramNode, DiagramType, NodeStyle } from '@/types'
+import { readEffectiveMindMapCanvasMode, readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 
 function branchGlobalIndex(nodeId: string): number {
   return parseInt(nodeId.split('-')[3] ?? '0', 10)
@@ -189,6 +194,7 @@ export function applyMindMapStylesByPath(
   themeId?: MindMapThemeId | string | null,
   diagramStyleId?: string | null
 ): Record<string, NodeStyle> {
+  const v2Visuals = readMindMapV2VisualDesignActive()
   const defaultTheme = getMindMapThemeById(resolveMindMapThemeId(themeId))
   const diagramStyle = getMindMapDiagramStyleById(resolveMindMapDiagramStyleId(diagramStyleId))
   const nodeStyles: Record<string, NodeStyle> = {}
@@ -241,7 +247,7 @@ export function applyMindMapStylesByPath(
   }
   if (isRainbowMindMapTheme(themeId)) {
     syncRainbowMindMapConnectionColors(connections, nodes)
-  } else {
+  } else if (v2Visuals) {
     const layered = mindMapDiagramStyleUsesLayeredBranchColors(diagramStyleId)
     const topicBorder =
       nodes.find((n) => n.id === 'topic')?.style?.borderColor ??
@@ -253,8 +259,26 @@ export function applyMindMapStylesByPath(
     if (strokeColor) {
       syncMindMapConnectionStrokeColors(connections, strokeColor)
     }
+  } else {
+    syncLegacyMindMapConnectionStrokeColors(connections, nodes)
   }
   return nodeStyles
+}
+
+/** Reconcile persisted connection stroke colors when canvas mode changes or diagram reloads. */
+export function resyncMindMapConnectionStrokeColorsForActiveMode(
+  diagramType: DiagramType | null,
+  nodes: DiagramNode[] | undefined,
+  connections: Connection[] | undefined
+): boolean {
+  if (!nodes?.length || !connections?.length) return false
+  if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return false
+  syncMindMapConnectionStrokeColorsForCanvasMode(
+    connections,
+    nodes,
+    readEffectiveMindMapCanvasMode()
+  )
+  return true
 }
 
 /** Preserve visual styles when mind-map tree is rebuilt (add/remove/reload). */

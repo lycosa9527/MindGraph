@@ -129,7 +129,5 @@ def test_render_html_shows_dingtalk_chat_scope_badge() -> None:
 
 def test_render_html_empty_bundle() -> None:
     """An empty bundle still renders a valid page with an empty notice."""
-    page = render_html(
-        ExportBundle(organization_id=1, organization_name="Empty", scope="whole-org")
-    )
+    page = render_html(ExportBundle(organization_id=1, organization_name="Empty", scope="whole-org"))
     assert "No conversations" in page

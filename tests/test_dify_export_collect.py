@@ -2,23 +2,25 @@
 
 from __future__ import annotations
 
-import main as _main_app
-
-assert _main_app.app.title
-
 from typing import Dict, List, Optional
 from unittest.mock import MagicMock
 
 import pytest
 
+import main as _main_app
+
+assert _main_app.app.title
+
 from clients.dify import AsyncDifyClient
 import services.dify.export.collect_service as collect
 from services.dify.export.collect_service import (
+    _conversation_in_export_range,
     _dedupe_summaries,
     _fetch_all_messages,
     _within_range,
     collect_conversation_summaries,
 )
+from services.dify.export.time_range import activity_overlaps_range
 from services.dify.export.types import UserTarget
 from services.dify.export.endpoints import ExportDifyEndpoint
 from services.dify.export.transcript import ExportConversationSummary
@@ -38,7 +40,7 @@ class FakeDifyClient:
         self._message_pages = message_pages or {}
         self._raise = raise_on_conversations
         self._conv_call = 0
-        self._message_calls: dict[str, list[Optional[str]]] = {}
+        self.message_calls: dict[str, list[Optional[str]]] = {}
 
     async def get_conversations(self, _user: str, last_id: Optional[str] = None, limit: int = 100):
         """Return the next prepared conversation page (mirrors the Dify client API)."""
@@ -51,11 +53,10 @@ class FakeDifyClient:
             return {"data": [], "has_more": False}
         return self._conversation_pages[idx]
 
-    async def get_messages(
-        self, conversation_id: str, _user: str, first_id: Optional[str] = None, limit: int = 100
-    ):
+    async def get_messages(self, conversation_id: str, _user: str, first_id: Optional[str] = None, limit: int = 100):
         """Return the prepared message page for a conversation id."""
-        self._message_calls.setdefault(conversation_id, []).append(first_id)
+        del limit
+        self.message_calls.setdefault(conversation_id, []).append(first_id)
         pages = self._message_pages.get(conversation_id, [])
         if not pages:
             return {"data": [], "has_more": False}
@@ -80,8 +81,6 @@ def _endpoint(server: int = 1, url: str = "u1") -> ExportDifyEndpoint:
 
 def test_conversation_in_export_range_uses_activity_overlap() -> None:
     """Export window includes conversations with any activity in the period."""
-    from services.dify.export.collect_service import _conversation_in_export_range
-
     # Last update inside window
     assert _conversation_in_export_range(100, 500, 400, 600) is True
     # Long thread: created before window, updated after — still active in window
@@ -95,8 +94,6 @@ def test_conversation_in_export_range_uses_activity_overlap() -> None:
 
 def test_activity_overlaps_range() -> None:
     """Shared overlap helper treats bounds as inclusive."""
-    from services.dify.export.time_range import activity_overlaps_range
-
     assert activity_overlaps_range(100, 900, 400, 600) is True
     assert activity_overlaps_range(500, 500, 500, 500) is True
     assert activity_overlaps_range(100, 200, 400, 600) is False
@@ -145,7 +142,7 @@ async def test_fetch_all_messages_uses_oldest_id_for_pagination() -> None:
     page = await _fetch_all_messages(as_type(client, AsyncDifyClient), "conv1", "mg_user_1")
     assert [message["id"] for message in page.items] == ["m0", "m1", "m2"]
     assert page.pagination_complete is True
-    assert client._message_calls["conv1"] == [None, "m1"]
+    assert client.message_calls["conv1"] == [None, "m1"]
 
 
 @pytest.mark.asyncio
@@ -184,9 +181,7 @@ async def test_collect_summaries_merges_across_servers(monkeypatch: pytest.Monke
     monkeypatch.setattr(collect, "endpoints_for_target", fake_endpoints)
     monkeypatch.setattr(collect, "_client_for", lambda endpoint: clients[endpoint.api_url])
 
-    targets = [
-        UserTarget(organization_id=42, user_id=7, dify_user="mg_user_7", label="Alice", channel="web")
-    ]
+    targets = [UserTarget(organization_id=42, user_id=7, dify_user="mg_user_7", label="Alice", channel="web")]
     db = MagicMock()
     db.in_transaction.return_value = False
     result = await collect_conversation_summaries(db, targets)
@@ -222,9 +217,7 @@ async def test_collect_summaries_tolerates_server_failure(monkeypatch: pytest.Mo
     monkeypatch.setattr(collect, "endpoints_for_target", fake_endpoints)
     monkeypatch.setattr(collect, "_client_for", lambda endpoint: clients[endpoint.api_url])
 
-    targets = [
-        UserTarget(organization_id=42, user_id=7, dify_user="mg_user_7", label="Alice", channel="web")
-    ]
+    targets = [UserTarget(organization_id=42, user_id=7, dify_user="mg_user_7", label="Alice", channel="web")]
     db = MagicMock()
     db.in_transaction.return_value = False
     result = await collect_conversation_summaries(db, targets)

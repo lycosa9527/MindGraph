@@ -1,5 +1,5 @@
 /**
- * af UI �?notification
+ * af UI � notification
  */
 
 export default {

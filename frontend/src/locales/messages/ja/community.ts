@@ -1,5 +1,5 @@
 /**
- * ja UI �?community
+ * ja UI � community
  */
 
 export default {

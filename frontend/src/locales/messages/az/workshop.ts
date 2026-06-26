@@ -1,5 +1,5 @@
 /**
- * az UI �?workshop
+ * az UI � workshop
  */
 
 export default {

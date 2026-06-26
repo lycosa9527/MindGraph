@@ -1,3 +1,7 @@
+/**
+ * en UI � thinkingCoins
+ */
+
 export const thinkingCoinsMessages = {
   'thinkingCoins.title': 'My Thinking Tokens',
   'thinkingCoins.balanceUnit': 'tokens',
@@ -44,8 +48,6 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.signupGrant': 'Signup grant',
   'thinkingCoins.admin.dailyEarnCap': 'Daily earn cap',
   'thinkingCoins.admin.dailyEarnCapHint': '0 = unlimited; default 135 matches all daily tasks',
-  'thinkingCoins.admin.handlerClientEvent': 'Client event',
-  'thinkingCoins.admin.eventKey': 'Event key',
   'thinkingCoins.admin.costMindmate': 'MindMate cost',
   'thinkingCoins.admin.costDiagram': 'Diagram gen cost',
   'thinkingCoins.admin.costCanvas': 'Canvas assist cost',
@@ -63,6 +65,8 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.handlerUsageDaily': 'Daily usage',
   'thinkingCoins.admin.handlerNavigate': 'Navigate',
   'thinkingCoins.admin.handlerCustomCta': 'Display only',
+  'thinkingCoins.admin.handlerClientEvent': 'Client event',
+  'thinkingCoins.admin.eventKey': 'Event key',
   'thinkingCoins.admin.requestType': 'Request type',
   'thinkingCoins.admin.route': 'Route',
   'thinkingCoins.admin.createTaskTitle': 'New task',

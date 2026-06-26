@@ -1,5 +1,5 @@
 /**
- * az UI �?notification
+ * az UI � notification
  */
 
 export default {

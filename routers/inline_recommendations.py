@@ -71,11 +71,7 @@ async def _stream_recommendations(req, user: User | None, is_next: bool):
     try:
         await assert_collab_blocks_canvas_ai(diagram_id, user)
     except HTTPException as exc:
-        msg = (
-            "AI generation is unavailable during live collaboration"
-            if exc.status_code == 403
-            else str(exc.detail)
-        )
+        msg = "AI generation is unavailable during live collaboration" if exc.status_code == 403 else str(exc.detail)
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
         return
 

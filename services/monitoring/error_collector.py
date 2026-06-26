@@ -111,9 +111,7 @@ def _normalize_record(record: ErrorRecord) -> ErrorRecord:
 async def _persist_record(record: ErrorRecord) -> int | None:
     now = datetime.now(UTC)
     async with open_async_session() as session:
-        group_result = await session.execute(
-            select(ErrorGroup).where(ErrorGroup.fingerprint == record.fingerprint)
-        )
+        group_result = await session.execute(select(ErrorGroup).where(ErrorGroup.fingerprint == record.fingerprint))
         group = group_result.scalar_one_or_none()
         if group is None:
             group = ErrorGroup(

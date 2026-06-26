@@ -35,6 +35,7 @@ def _record_ses_provider_failure(message: str, *, exception_type: str = "SESServ
         exception_type=exception_type,
     )
 
+
 _DEFAULT_TEMPLATE_ID = "123456"
 
 TENCENT_SES_SECRET_ID = os.getenv("TENCENT_SES_SECRET_ID", "").strip() or os.getenv("TENCENT_SMS_SECRET_ID", "").strip()

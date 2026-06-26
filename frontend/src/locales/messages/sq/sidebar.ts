@@ -1,5 +1,5 @@
 /**
- * sq UI �?sidebar
+ * sq UI � sidebar
  */
 
 export default {

@@ -135,13 +135,10 @@ class MindbotUsageRepository:
         staff = _clip(dingtalk_staff_id, 128)
         if not staff:
             return set()
-        stmt = (
-            select(distinct(MindbotUsageEvent.mindbot_config_id))
-            .where(
-                MindbotUsageEvent.organization_id == int(organization_id),
-                MindbotUsageEvent.dingtalk_staff_id == staff,
-                MindbotUsageEvent.mindbot_config_id.is_not(None),
-            )
+        stmt = select(distinct(MindbotUsageEvent.mindbot_config_id)).where(
+            MindbotUsageEvent.organization_id == int(organization_id),
+            MindbotUsageEvent.dingtalk_staff_id == staff,
+            MindbotUsageEvent.mindbot_config_id.is_not(None),
         )
         rows = (await self._session.execute(stmt)).scalars().all()
         return {int(value) for value in rows if value is not None}
@@ -270,9 +267,7 @@ class MindbotUsageRepository:
         if end is not None:
             base = base.where(MindbotUsageEvent.created_at <= end)
         stmt = (
-            base.group_by(MindbotUsageEvent.dingtalk_staff_id)
-            .order_by(last_col.desc())
-            .limit(min(max(1, limit), 500))
+            base.group_by(MindbotUsageEvent.dingtalk_staff_id).order_by(last_col.desc()).limit(min(max(1, limit), 500))
         )
         rows = (await self._session.execute(stmt)).all()
         out: list[tuple[str, str | None]] = []
@@ -307,12 +302,8 @@ class MindbotUsageRepository:
         nick_col = func.max(MindbotUsageEvent.sender_nick).label("sender_nick")
         linked_col = func.max(MindbotUsageEvent.linked_user_id).label("linked_user_id")
         config_col = func.max(MindbotUsageEvent.mindbot_config_id).label("mindbot_config_id")
-        dt_conv_col = func.max(MindbotUsageEvent.dingtalk_conversation_id).label(
-            "dingtalk_conversation_id"
-        )
-        chat_scope_col = func.max(MindbotUsageEvent.dingtalk_chat_scope).label(
-            "dingtalk_chat_scope"
-        )
+        dt_conv_col = func.max(MindbotUsageEvent.dingtalk_conversation_id).label("dingtalk_conversation_id")
+        chat_scope_col = func.max(MindbotUsageEvent.dingtalk_chat_scope).label("dingtalk_chat_scope")
         first_col = func.min(MindbotUsageEvent.created_at).label("first_event_at")
         last_col = func.max(MindbotUsageEvent.created_at).label("last_event_at")
 
@@ -352,9 +343,7 @@ class MindbotUsageRepository:
                 return []
 
         if chat_scopes:
-            scope_list = [
-                _clip(scope, 16) for scope in chat_scopes if (scope or "").strip()
-            ]
+            scope_list = [_clip(scope, 16) for scope in chat_scopes if (scope or "").strip()]
             if not scope_list:
                 return []
             base = base.where(MindbotUsageEvent.dingtalk_chat_scope.in_(scope_list))
@@ -364,10 +353,7 @@ class MindbotUsageRepository:
         if end is not None:
             base = base.where(MindbotUsageEvent.created_at <= end)
 
-        stmt = (
-            base.order_by(last_col.desc())
-            .limit(min(max(1, limit), 5000))
-        )
+        stmt = base.order_by(last_col.desc()).limit(min(max(1, limit), 5000))
         rows = (await self._session.execute(stmt)).all()
         out: list[MindbotExportThread] = []
         for row in rows:

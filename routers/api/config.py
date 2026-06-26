@@ -74,6 +74,7 @@ class FeatureFlagsResponse(BaseModel):
     feature_school_zone: bool
     feature_debateverse: bool
     feature_knowledge_space: bool
+    feature_mindmap_v2_canvas: bool
     feature_library: bool
     feature_gewe: bool
     feature_smart_response: bool
@@ -119,6 +120,7 @@ async def get_feature_flags(
         feature_school_zone=config.FEATURE_SCHOOL_ZONE,
         feature_debateverse=config.FEATURE_DEBATEVERSE,
         feature_knowledge_space=config.FEATURE_KNOWLEDGE_SPACE,
+        feature_mindmap_v2_canvas=config.FEATURE_MINDMAP_V2_CANVAS,
         feature_library=config.FEATURE_LIBRARY,
         feature_gewe=config.FEATURE_GEWE,
         feature_smart_response=config.FEATURE_SMART_RESPONSE,

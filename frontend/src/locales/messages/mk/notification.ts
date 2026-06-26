@@ -1,5 +1,5 @@
 /**
- * mk UI �?notification
+ * mk UI � notification
  */
 
 export default {

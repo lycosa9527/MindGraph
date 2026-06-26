@@ -16,6 +16,7 @@ import {
   handleLearningSheetPickNodeClick,
   isLearningSheetCustomPickActive,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { useDiagramStore } from '@/stores'
@@ -42,6 +43,7 @@ import InlineEditableText from './InlineEditableText.vue'
 const props = defineProps<MindGraphNodeProps>()
 
 const diagramStore = useDiagramStore()
+const useMindMapV2Visuals = useMindMapV2Chrome()
 const isTextReadonly = computed(
   () => props.data.hidden === true || presentationDiagramEditLockedRef.value
 )
@@ -80,6 +82,9 @@ const isMindMap = computed(
 )
 
 const topicNodeShape = computed((): NodeShape => {
+  if (isMindMap.value && !useMindMapV2Visuals.value) {
+    return 'oval'
+  }
   const style = resolvedStyle.value
   if (isMindMap.value) {
     return resolveMindMapNodeShape(
@@ -91,10 +96,12 @@ const topicNodeShape = computed((): NodeShape => {
 })
 
 const isUnderlineTopic = computed(
-  () => isMindMap.value && topicNodeShape.value === 'underline'
+  () => useMindMapV2Visuals.value && isMindMap.value && topicNodeShape.value === 'underline'
 )
 
-const defaultMindMapTheme = computed(() => getMindMapThemeForDiagram(diagramStore.data))
+const defaultMindMapTheme = computed(() =>
+  useMindMapV2Visuals.value ? getMindMapThemeForDiagram(diagramStore.data) : null
+)
 
 const resolvedStyle = computed(() => ({
   ...(diagramStore.data?._node_styles?.[props.id] || {}),
@@ -113,10 +120,12 @@ const underlineTextStyle = computed((): CSSProperties => {
 
 const underlineLineStyle = computed((): CSSProperties => {
   const style = resolvedStyle.value
+  const theme = defaultMindMapTheme.value
   const lineColor =
     style.borderColor ||
     defaultStyle.value.borderColor ||
-    defaultMindMapTheme.value.topicBorderColor
+    theme?.topicBorderColor ||
+    '#0d47a1'
   const { textGap } = mindMapUnderlineContentPadding()
   return {
     backgroundColor: lineColor,
@@ -174,7 +183,7 @@ const totalBranchCount = computed(() => {
   return (props.data.totalBranchCount as number) || 0
 })
 
-// Mindmap handles: one trunk exit per side (center of edge) — branches split on shared bus
+// Mindmap handles: v2 uses one trunk exit per side; classic distributes along each edge.
 const mindMapHandlePositions = computed(() => {
   if (totalBranchCount.value === 0) {
     return { right: [], left: [] }
@@ -184,6 +193,25 @@ const mindMapHandlePositions = computed(() => {
   const midPoint = Math.ceil(total / 2)
   const rightCount = midPoint
   const leftCount = total - midPoint
+
+  if (!useMindMapV2Visuals.value) {
+    const generateHandles = (count: number, prefix: string) => {
+      const handles: Array<{ id: string; top: string; transform: string }> = []
+      for (let i = 0; i < count; i++) {
+        const topPercent = ((i + 1) / (count + 1)) * 100
+        handles.push({
+          id: `${prefix}-${i}`,
+          top: `${topPercent}%`,
+          transform: 'translateY(-50%)',
+        })
+      }
+      return handles
+    }
+    return {
+      right: generateHandles(rightCount, 'mindmap-right'),
+      left: generateHandles(leftCount, 'mindmap-left'),
+    }
+  }
 
   const rightHandleStyle = isUnderlineTopic.value
     ? mindMapUnderlineHandleStyle('right')
@@ -206,30 +234,61 @@ const mindMapHandlePositions = computed(() => {
 
 const nodeStyle = computed(() => {
   const style = resolvedStyle.value
+
+  // Classic canvas: pill topic with pre-v2 defaults (ignore v2 theme presets in _node_styles).
+  if (isMindMap.value && !useMindMapV2Visuals.value) {
+    const borderColor = style.borderColor || defaultStyle.value.borderColor || '#0d47a1'
+    const borderWidth = style.borderWidth ?? defaultStyle.value.borderWidth ?? 3
+    const borderStyle = style.borderStyle || 'solid'
+    const backgroundColor =
+      style.backgroundColor || defaultStyle.value.backgroundColor || '#1976d2'
+
+    const classicStyle = {
+      backgroundColor,
+      color: style.textColor || defaultStyle.value.textColor || '#ffffff',
+      fontFamily: style.fontFamily || DIAGRAM_NODE_FONT_STACK,
+      fontSize: `${style.fontSize || defaultStyle.value.fontSize || 18}px`,
+      fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'bold',
+      fontStyle: style.fontStyle || 'normal',
+      textDecoration: style.textDecoration || 'none',
+      ...getBorderStyleProps(borderColor, borderWidth, borderStyle, {
+        backgroundColor,
+      }),
+      borderRadius: '9999px',
+      width: 'fit-content',
+      maxWidth: '400px',
+    }
+
+    return classicStyle
+  }
+
+  const theme = defaultMindMapTheme.value
   const borderColor =
     style.borderColor ||
     defaultStyle.value.borderColor ||
-    (isMindMap.value ? defaultMindMapTheme.value.topicBorderColor : '#0d47a1')
+    (isMindMap.value && theme ? theme.topicBorderColor : '#0d47a1')
   const borderWidth =
     style.borderWidth ??
     defaultStyle.value.borderWidth ??
-    (isMindMap.value ? MIND_MAP_GEOMETRY.borderWidth : 3)
+    (isMindMap.value && useMindMapV2Visuals.value ? MIND_MAP_GEOMETRY.borderWidth : 3)
   const borderStyle = style.borderStyle || 'solid'
   const backgroundColor =
     style.backgroundColor ||
     defaultStyle.value.backgroundColor ||
-    (isMindMap.value ? defaultMindMapTheme.value.topicBackgroundColor : '#1976d2')
+    (isMindMap.value && theme ? theme.topicBackgroundColor : '#1976d2')
 
   const baseStyle = {
     backgroundColor,
     color:
       style.textColor ||
       defaultStyle.value.textColor ||
-      (isMindMap.value ? defaultMindMapTheme.value.topicTextColor : '#ffffff'),
+      (isMindMap.value && theme ? theme.topicTextColor : '#ffffff'),
     fontFamily:
       style.fontFamily ||
-      (isMindMap.value ? MIND_MAP_GEOMETRY.fontFamily : DIAGRAM_NODE_FONT_STACK),
-    fontSize: `${style.fontSize || defaultStyle.value.fontSize || (isMindMap.value ? MIND_MAP_GEOMETRY.topicFontSize : 18)}px`,
+      (isMindMap.value && useMindMapV2Visuals.value
+        ? MIND_MAP_GEOMETRY.fontFamily
+        : DIAGRAM_NODE_FONT_STACK),
+    fontSize: `${style.fontSize || defaultStyle.value.fontSize || (isMindMap.value && useMindMapV2Visuals.value ? MIND_MAP_GEOMETRY.topicFontSize : 18)}px`,
     fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'bold',
     fontStyle: style.fontStyle || 'normal',
     textDecoration: style.textDecoration || 'none',
@@ -240,38 +299,41 @@ const nodeStyle = computed(() => {
 
   const shape = topicNodeShape.value
   const shapedStyle =
-    isMindMap.value || style.nodeShape
-      ? applyNodeShapeToStyle(baseStyle, shape, borderColor, isMindMap.value)
-      : {
-          ...baseStyle,
-          borderRadius: isPillShape.value
-            ? '9999px'
-            : isRoundedRectangle.value
-              ? `${style.borderRadius || 8}px`
-              : `${style.borderRadius || 50}%`,
-        }
+    isMindMap.value && useMindMapV2Visuals.value
+      ? applyNodeShapeToStyle(baseStyle, shape, borderColor, true)
+      : isMindMap.value || style.nodeShape
+        ? applyNodeShapeToStyle(baseStyle, shape, borderColor, isMindMap.value)
+        : {
+            ...baseStyle,
+            borderRadius: isPillShape.value
+              ? '9999px'
+              : isRoundedRectangle.value
+                ? `${style.borderRadius || 8}px`
+                : `${style.borderRadius || 50}%`,
+          }
 
-  const withMindMapBox = isMindMap.value
-    ? {
-        ...shapedStyle,
-        ...(isUnderlineTopic.value
-          ? (() => {
-              const { top } = mindMapUnderlineContentPadding()
-              return {
-                padding: `${top}px 0 0`,
+  const withMindMapBox =
+    isMindMap.value && useMindMapV2Visuals.value
+      ? {
+          ...shapedStyle,
+          ...(isUnderlineTopic.value
+            ? (() => {
+                const { top } = mindMapUnderlineContentPadding()
+                return {
+                  padding: `${top}px 0 0`,
+                  minWidth: `${MIND_MAP_GEOMETRY.minWidth}px`,
+                  minHeight: 'auto',
+                  boxShadow: 'none',
+                }
+              })()
+            : {
+                padding: `${MIND_MAP_GEOMETRY.paddingY}px ${mindMapHorizontalPadding(shape)}px`,
                 minWidth: `${MIND_MAP_GEOMETRY.minWidth}px`,
-                minHeight: 'auto',
-                boxShadow: 'none',
-              }
-            })()
-          : {
-              padding: `${MIND_MAP_GEOMETRY.paddingY}px ${mindMapHorizontalPadding(shape)}px`,
-              minWidth: `${MIND_MAP_GEOMETRY.minWidth}px`,
-              minHeight: `${MIND_MAP_GEOMETRY.minHeight}px`,
-              boxShadow: '0 1px 4px rgba(15, 23, 42, 0.12)',
-            }),
-      }
-    : shapedStyle
+                minHeight: `${MIND_MAP_GEOMETRY.minHeight}px`,
+                boxShadow: '0 1px 4px rgba(15, 23, 42, 0.12)',
+              }),
+        }
+      : shapedStyle
 
   // Add dynamic width when editing (only for multi-flow map)
   if (isMultiFlowMap.value && dynamicWidth.value !== null) {
@@ -440,15 +502,15 @@ function handleWidthChange(width: number) {
       isUnderlineTopic ? 'flex-col items-stretch' : 'items-center',
       contentJustifyClass,
       {
-        'pill-shape': isPillShape && !isMindMap,
+        'pill-shape': isPillShape && (!isMindMap || !useMindMapV2Visuals),
         'rounded-rectangle': isRoundedRectangle,
         'multi-flow-map-node': isMultiFlowMap,
         'flow-map-topic-node': isFlowMap,
-        'mind-map-topic-node': isMindMap,
+        'mind-map-topic-node': isMindMap && useMindMapV2Visuals,
         'mind-map-underline-node': isUnderlineTopic,
         'py-3': isFlowMap,
-        'py-4': !isFlowMap && !isMindMap,
-        'px-6': !isMindMap,
+        'py-4': !isFlowMap && (!isMindMap || !useMindMapV2Visuals),
+        'px-6': !isMindMap || !useMindMapV2Visuals,
       },
     ]"
     :style="nodeStyle"

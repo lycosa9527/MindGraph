@@ -21,11 +21,14 @@ from utils.dify_user_key import resolve_user_and_org_from_dify_key
 
 def test_library_save_skip_reason_success() -> None:
     """Saved diagram id yields no skip reason."""
-    assert library_save_skip_reason(
-        user_id=7,
-        saved_id="550e8400-e29b-41d4-a716-446655440000",
-        dify_user_key="",
-    ) is None
+    assert (
+        library_save_skip_reason(
+            user_id=7,
+            saved_id="550e8400-e29b-41d4-a716-446655440000",
+            dify_user_key="",
+        )
+        is None
+    )
 
 
 def test_library_save_skip_reason_limit_reached() -> None:

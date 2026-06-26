@@ -53,12 +53,16 @@ import { useUIStore } from '@/stores/ui'
 import AdminSchoolDifySettings from './AdminSchoolDifySettings.vue'
 import AdminSchoolMindBotTab from './AdminSchoolMindBotTab.vue'
 import AdminSchoolOrgGeneralTab from './AdminSchoolOrgGeneralTab.vue'
+import AdminSchoolTeachersTab from './AdminSchoolTeachersTab.vue'
 import AdminSchoolTokenUsageTab from './AdminSchoolTokenUsageTab.vue'
+import AdminOrgActivityTab from './AdminOrgActivityTab.vue'
 import AdminUserActivityTab from './AdminUserActivityTab.vue'
 import AdminUserTokenUsageTab from './AdminUserTokenUsageTab.vue'
 
 type SchoolDialogTab =
   | 'usage'
+  | 'teachers'
+  | 'activity'
   | 'dify'
   | 'mindbot_dingtalk'
   | 'mindbot_log'
@@ -402,6 +406,7 @@ async function renderChart(data: {
     inputLabel: t('admin.inputTokens'),
     outputLabel: t('admin.outputTokens'),
     existingInstance: chartInstance,
+    colorScheme: props.type === 'org' ? 'dark' : 'light',
   })
   chartInstance = result.instance
   chartHasData.value = result.hasData
@@ -667,7 +672,10 @@ watch(
       } else {
         userDialogTab.value = 'usage'
       }
-      if (props.type !== 'user' || userDialogTab.value === 'usage') {
+      if (
+        (props.type === 'org' && schoolDialogTab.value === 'usage') ||
+        (props.type === 'user' && userDialogTab.value === 'usage')
+      ) {
         void load()
       }
       if (props.type === 'org' && props.orgId) {
@@ -734,7 +742,12 @@ watch(
     if (!props.visible) {
       return
     }
-    void load()
+    if (
+      (props.type === 'org' && schoolDialogTab.value === 'usage') ||
+      (props.type === 'user' && userDialogTab.value === 'usage')
+    ) {
+      void load()
+    }
     if (props.type === 'org' && props.orgId) {
       displayNameEdit.value = props.orgDisplayName ?? ''
       orgActiveState.value = props.orgIsActive ?? true
@@ -800,6 +813,28 @@ onBeforeUnmount(() => {
               :period="period"
               :period-cards="periodCards"
               @switchPeriod="switchPeriod"
+            />
+          </el-tab-pane>
+          <el-tab-pane
+            name="teachers"
+            :label="t('admin.schoolModal.tabTeachers')"
+            lazy
+          >
+            <AdminSchoolTeachersTab
+              v-if="orgId"
+              :org-id="orgId"
+              :can-load="visible && schoolDialogTab === 'teachers'"
+            />
+          </el-tab-pane>
+          <el-tab-pane
+            name="activity"
+            :label="t('admin.schoolModal.tabActivity')"
+            lazy
+          >
+            <AdminOrgActivityTab
+              v-if="orgId"
+              :org-id="orgId"
+              :can-load="visible && schoolDialogTab === 'activity'"
             />
           </el-tab-pane>
           <el-tab-pane
@@ -1049,6 +1084,7 @@ onBeforeUnmount(() => {
 
 <style>
 @import '@/styles/admin-mindbot-swiss-dialog-chrome.css';
+@import '@/styles/admin-school-modal-content.css';
 @import '@/styles/admin-user-trend-swiss.css';
 </style>
 

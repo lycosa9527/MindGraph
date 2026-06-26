@@ -1,5 +1,5 @@
 /**
- * ig UI �?workshop
+ * ig UI � workshop
  */
 
 export default {

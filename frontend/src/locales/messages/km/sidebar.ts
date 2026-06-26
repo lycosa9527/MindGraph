@@ -1,5 +1,5 @@
 /**
- * km UI �?sidebar
+ * km UI � sidebar
  */
 
 export default {

@@ -1,5 +1,5 @@
 /**
- * km UI �?notification
+ * km UI � notification
  */
 
 export default {

@@ -17,7 +17,7 @@ import logging
 import time
 from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
-from services.infrastructure.http.error_handler import LLMServiceError, UserDailyTokenCapExceededError
+from services.infrastructure.http.error_handler import LLMServiceError
 from services.monitoring.error_reporting import record_failure
 from services.infrastructure.utils.client_manager import client_manager
 from services.llm.llm_health import LLMHealthChecker
@@ -147,9 +147,7 @@ class LLMService:
         """Debit thinking coins and sync-insert token_usage when eligible."""
         coins_user = await thinking_coins_apply_to_user(user_id, organization_id)
         usage_snapshot = (
-            build_token_usage_snapshot(usage_data, metadata, model, duration)
-            if coins_user and usage_data
-            else None
+            build_token_usage_snapshot(usage_data, metadata, model, duration) if coins_user and usage_data else None
         )
         await thinking_coin_post_llm_success(
             user_id,

@@ -1,5 +1,5 @@
 /**
- * ko UI �?sidebar
+ * ko UI � sidebar
  */
 
 export default {

@@ -24,7 +24,7 @@ from services.redis import keys as _keys
 from services.redis.cache.redis_api_key_cache import api_key_cache
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
-from services.utils.error_types import REDIS_ERRORS
+from services.utils.error_types import DATABASE_ERRORS, REDIS_ERRORS
 from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ async def apply_api_key_usage_delta(key_id: int, delta: int) -> bool:
         )
         try:
             await db.commit()
-        except REDIS_ERRORS:
+        except DATABASE_ERRORS:
             await db.rollback()
             raise
 
@@ -98,6 +98,8 @@ async def flush_api_key_usage_to_db() -> int:
 
         if await apply_api_key_usage_delta(key_id, delta):
             flushed += 1
+        else:
+            await api_key_cache.restore_usage_delta(key_id, delta)
 
     return flushed
 

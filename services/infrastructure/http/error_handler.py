@@ -36,9 +36,7 @@ class UserDailyTokenCapExceededError(LLMServiceError):
         """Initialize with cap, current usage, and optional localized message."""
         self.cap = cap
         self.used = used
-        self.user_message = user_message or (
-            f"Daily token usage limit reached ({cap:,} tokens per day)."
-        )
+        self.user_message = user_message or (f"Daily token usage limit reached ({cap:,} tokens per day).")
         super().__init__(self.user_message)
 
 
@@ -53,9 +51,7 @@ class ThinkingCoinInsufficientError(LLMServiceError):
     ):
         self.balance = balance
         self.cost = cost
-        self.user_message = user_message or (
-            f"Insufficient thinking coins (balance {balance}, need {cost})."
-        )
+        self.user_message = user_message or (f"Insufficient thinking coins (balance {balance}, need {cost}).")
         super().__init__(self.user_message)
 
 

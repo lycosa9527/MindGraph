@@ -1,5 +1,5 @@
 /**
- * uk UI �?notification
+ * uk UI � notification
  */
 
 export default {

@@ -1,5 +1,5 @@
 /**
- * fa UI �?sidebar
+ * fa UI � sidebar
  */
 
 export default {

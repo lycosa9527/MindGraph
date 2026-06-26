@@ -72,11 +72,7 @@ class TreeMapAgent(BaseAgent):
         }
         structure_mode = kwargs.get("structure_mode", "free")
         fixed_nodes = kwargs.get("fixed_nodes") or {}
-        fixed_category_labels = (
-            fixed_labels_from_nodes(fixed_nodes, "children")
-            if structure_mode == "fixed"
-            else None
-        )
+        fixed_category_labels = fixed_labels_from_nodes(fixed_nodes, "children") if structure_mode == "fixed" else None
         try:
             # Three-scenario system (similar to bridge_map):
             # Scenario 1: Topic only → standard generation
@@ -117,9 +113,7 @@ class TreeMapAgent(BaseAgent):
             )
             if not is_valid:
                 logger.warning("TreeMapAgent: Validation failed: %s", validation_msg)
-                return agent_validation_failure(
-                    f"Generated invalid specification: {validation_msg}"
-                )
+                return agent_validation_failure(f"Generated invalid specification: {validation_msg}")
 
             # Enhance the spec with layout and dimensions
             enhanced_result = await self.enhance_spec(spec)
@@ -152,10 +146,7 @@ class TreeMapAgent(BaseAgent):
     ) -> Optional[Tuple[str, str]]:
         """Build (system_prompt, user_prompt) or None if generation prompt missing."""
         fixed_nodes = fixed_nodes or {}
-        fixed_children = (
-            structure_mode == "fixed"
-            and fixed_labels_from_nodes(fixed_nodes, "children")
-        )
+        fixed_children = structure_mode == "fixed" and fixed_labels_from_nodes(fixed_nodes, "children")
         if fixed_dimension and not fixed_children:
             return self._build_fixed_dim_prompts(prompt, language, fixed_dimension)
         if fixed_children:
@@ -510,17 +501,9 @@ class TreeMapAgent(BaseAgent):
             if err is not None:
                 return False, err
             if fixed_category_labels:
-                expected = [
-                    str(label).strip()
-                    for label in fixed_category_labels
-                    if str(label).strip()
-                ]
+                expected = [str(label).strip() for label in fixed_category_labels if str(label).strip()]
                 children = output.get("children", [])
-                actual = [
-                    node_display_text(child)
-                    for child in children
-                    if isinstance(child, dict)
-                ]
+                actual = [node_display_text(child) for child in children if isinstance(child, dict)]
                 ok, msg = validate_fixed_labels(actual, expected, "categories")
                 if not ok:
                     return False, msg

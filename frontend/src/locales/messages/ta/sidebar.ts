@@ -1,5 +1,5 @@
 /**
- * ta UI �?sidebar
+ * ta UI � sidebar
  */
 
 export default {

@@ -5,26 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [5.121.0] - 2026-06-25
+
+> **MindMate active thread — instant chat restore after canvas navigation, with silent background sync from Dify.**
 
 ### Added
 
-- **Mind map v2 canvas (opt-in)** — New side-toolbar chrome, File Center (knowledge packages with package-scoped RAG), subgraph preview bar, and orthogonal edges when users select the new canvas in Language settings; classic canvas remains the default.
+- **MindMate active thread (Pinia)** — Current conversation messages persist in `useMindMateStore` across route unmounts (MindMate → canvas → back); [`mindmateActiveThread.ts`](frontend/src/stores/mindmateActiveThread.ts) sanitizes stored messages and maps Dify history rows with `difyMessageId` / feedback metadata.
+- **Stale-while-revalidate** — Warm-thread restore shows the chat immediately; a silent background fetch reconciles with Dify when the server copy differs (e.g. MindBot updates elsewhere).
+
+### Changed
+
+- **`useMindMate` lifecycle** — Composable restores from Pinia on init, syncs mutations via a deep watch, and `destroy()` no longer clears the store thread on unmount ([`useMindMate.ts`](frontend/src/composables/mindmate/useMindMate.ts)).
+- **`loadConversation`** — Uses in-memory thread when available (no loading overlay); blocking Dify fetch only for cold start or sidebar conversation switches.
+
+### Fixed
+
+- **MindMate remount delay** — Returning from the canvas editor no longer blanks the chat and waits for a full Dify history reload on every navigation.
+- **Mobile MindMate** — Same instant restore path as desktop (handled in composable init, not panel-only `onMounted` logic).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.121.0).
+
+## [5.120.0] - 2026-06-25
+
+> **Mind map v2 canvas (dev flag), File Center, generate pipeline hardening, classic/v2 separation, Dify multi-slot health failover, and admin school activity tabs.**
+
+### Added
+
+- **Mind map v2 canvas (dev flag)** — Side-toolbar chrome, File Center, subgraph preview bar, and orthogonal edges when `FEATURE_MINDMAP_V2_CANVAS=True` and the user opts in via Language settings; classic canvas remains the default.
+- **Mind map v2 visual design** — Theme presets (`mindMapThemes`), node shapes (rectangle / oval / underline), unified connection stroke in v2; dual `_mindmap_canvas.legacy` / `.v2` style buckets with mode-switch reconciliation ([`mindmap_v2_separation.md`](docs/architecture/mindmap_v2_separation.md)).
 - **File Center API** — Knowledge packages CRUD, source ingest (file, text, web), and wiki endpoints under `/api/knowledge-space/packages`; Alembic migration `rev_0070` adds package fields.
 - **Landing generate_graph SSE** — Stream now emits `detecting`, `requirements`, and `progress` (with resolved topic and diagram type) in addition to `accepted`, `waiting`, and `streaming`.
 - **Generate pipeline** — Typed event contract (`GenerateGraphEvent`) and `run_generate_pipeline` entry point with cooperative cancellation when the client disconnects.
 - **Canvas autocomplete** — Cancel control on the 3-LLM model selector while generation is in flight.
 - **Mind map appearance** — Five diagram styles (`classic`, `formal`, `bubble`, `underline`, `soft`) plus curated vibrant classroom color themes (blue, orange, yellow, green, teal, rose) and a rainbow preset; toolbar appearance dropdown persists `_mindmap_theme` and `_mindmap_diagram_style` on the diagram ([`mindMapDiagramStyles.ts`](frontend/src/config/mindMapDiagramStyles.ts), [`mindMapThemes.ts`](frontend/src/config/mindMapThemes.ts), [`MindMapAppearanceDropdown.vue`](frontend/src/components/canvas/MindMapAppearanceDropdown.vue)).
 - **Mind map post-add inline edit** — `mindMapPendingEditNodeId` plus mount/retry focus so Tab, Enter, toolbar +, and directional **+** overlays open the inline editor on the newly added node ([`mindMapOps.ts`](frontend/src/stores/diagram/mindMapOps.ts), [`InlineEditableText.vue`](frontend/src/components/diagram/nodes/InlineEditableText.vue)).
+- **Admin org activity tab** — School modal activity timeline with cursor pagination and source filter (MindGraph / MindMate / DingTalk); `GET /admin/organizations/{org_id}/activity` ([`AdminOrgActivityTab.vue`](frontend/src/components/admin/AdminOrgActivityTab.vue)).
+- **Admin school teachers tab** — School modal members list sorted by all-time token usage with role pills ([`AdminSchoolTeachersTab.vue`](frontend/src/components/admin/AdminSchoolTeachersTab.vue)).
+- **Dify multi-slot health poller** — Schema-driven server slots, deduped probe plan, Redis health cache with failure threshold, and configurable poll interval / max age / concurrency; MindMate routing uses stale-aware failover partner selection ([`dify_health_poller.py`](services/dify/dify_health_poller.py)).
 
 ### Changed
 
+- **Mind map v2 canvas (dev flag)** — Classic canvas remains the default; v2 chrome is gated behind `FEATURE_MINDMAP_V2_CANVAS` (off by default). The classic/new toggle in Language settings is hidden unless the flag is enabled.
 - **Classic mind map default** — `mindMapCanvasMode` defaults to `legacy`; v2 layout and orthogonal edges apply only when explicitly opted in.
 - **New mind map defaults** — Blank templates initialize with **vibrant blue** theme and **classic** diagram style (`DEFAULT_MIND_MAP_THEME_ID`, [`defaultTemplates.ts`](frontend/src/stores/specLoader/defaultTemplates.ts)).
 - **Mind map editing shortcuts** — While inline-editing a branch, **Tab** saves and adds a child; **Enter** saves and adds a sibling (topic excluded); matches keyboard routing when not in an input.
 - **Formal & soft diagram styles** — Depth-layered branch fills (center / L1 / L2 / L3+) from the active theme accent; soft style uses rounded center, oval L1/L2, underline L3+ ([`mindMapVibrantThemes.ts`](frontend/src/config/mindMapVibrantThemes.ts)).
 - **Mind map topic vertical alignment** — After subtree Y correction, topic anchor recenters on the midpoint of all L1 branch anchors on both sides ([`mindMapLayout.ts`](frontend/src/stores/diagram/mindMapLayout.ts)).
 - **Collab AI policy** — `generate_graph` and inline recommendations return 403 for all users (except superadmin) when the diagram is in a live workshop session.
+- **Dify server helpers** — Generalized from hard-coded slots 1+2 to ORM schema-driven slots with `failover_partner_server` for arbitrary two-slot pairs ([`dify_servers.py`](services/dify/dify_servers.py)).
+- **i18n** — `thinkingCoins` message namespace synced across all locale bundles.
 
 ### Fixed
 
@@ -35,6 +67,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Mind map underline connectors** — Single underline leaf: flat horizontal at the shared anchor Y (no diagonal); multi-sibling underline keeps rounded T-junction bus; sole underline child height aligns to parent anchor ([`mindMapLayout.ts`](frontend/src/stores/diagram/mindMapLayout.ts), [`mindMapOrthogonalPath.ts`](frontend/src/utils/mindMapOrthogonalPath.ts), [`MindMapOrthogonalEdge.vue`](frontend/src/components/diagram/edges/MindMapOrthogonalEdge.vue)).
 - **Mind map single-side L1 branch** — When the topic has only one branch on a side, layout aligns that branch to the topic anchor and connectors render straight (orthogonal H–V–H or horizontal bezier replacement) instead of a curved tee ([`mindMapLayoutLegacy.ts`](frontend/src/stores/diagram/mindMapLayoutLegacy.ts), [`CurvedEdge.vue`](frontend/src/components/diagram/edges/CurvedEdge.vue)).
 - **Mind map collapse toggles** — Overlay positions use mind-map measured widths/heights and resolved node shape ([`useMindMapCollapseTogglePosition.ts`](frontend/src/composables/canvasToolbar/useMindMapCollapseTogglePosition.ts)).
+- **Generation library claim** — Preview outcomes record owner user/org; claim rejects mismatched authenticated users as not-found to avoid leaking preview existence ([`generation_library_claim.py`](services/diagram/generation_library_claim.py)).
+- **MindMate library card metadata** — Library skip lookup uses authenticated fetch so metadata loads for signed-in users ([`MessageBubble.vue`](frontend/src/components/panels/mindmate/MessageBubble.vue)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.120.0).
 
 ## [5.119.0] - 2026-06-21
 

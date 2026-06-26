@@ -34,6 +34,9 @@ import { useSpecIOSlice } from './diagram/specIO'
 import { useTitleSlice } from './diagram/titleManagement'
 import { useTreeMapOpsSlice } from './diagram/treeMapOps'
 import type { DiagramContext, MindMapCurveExtents } from './diagram/types'
+import { reconcileMindMapCanvasModeSwitch } from './diagram/mindMapCanvasModeSwitch'
+import { resyncMindMapConnectionStrokeColorsForActiveMode } from './diagram/mindMapStylePreservation'
+import type { MindMapCanvasMode } from './ui'
 import { useVueFlowIntegrationSlice } from './diagram/vueFlowIntegration'
 
 export { subscribeToDiagramEvents } from './diagram/events'
@@ -331,6 +334,26 @@ export const useDiagramStore = defineStore('diagram', () => {
 
   const nodeCount = computed(() => data.value?.nodes?.length ?? 0)
 
+  function resyncMindMapConnectionStrokeColors(): void {
+    if (
+      !resyncMindMapConnectionStrokeColorsForActiveMode(
+        type.value,
+        data.value?.nodes,
+        data.value?.connections
+      )
+    ) {
+      return
+    }
+    mindMapRecalcTrigger.value += 1
+  }
+
+  function reconcileMindMapCanvasMode(
+    previousMode: MindMapCanvasMode,
+    newMode: MindMapCanvasMode
+  ): boolean {
+    return reconcileMindMapCanvasModeSwitch(ctx, previousMode, newMode)
+  }
+
   function setSessionId(id: string): boolean {
     if (!id || typeof id !== 'string' || id.trim() === '') {
       console.error('Invalid session ID')
@@ -488,6 +511,8 @@ export const useDiagramStore = defineStore('diagram', () => {
     restoreMindMapSubgraphSnapshot,
     clearMindMapSubgraphPreviewTags,
     getMindMapDescendantIds,
+    resyncMindMapConnectionStrokeColors,
+    reconcileMindMapCanvasMode,
     copySelectedNodes,
     pasteNodesAt,
     reset,

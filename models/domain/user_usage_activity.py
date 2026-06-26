@@ -58,7 +58,4 @@ class UserUsageActivity(Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<UserUsageActivity user={self.user_id} source={self.source!r} "
-            f"action={self.action!r} id={self.id}>"
-        )
+        return f"<UserUsageActivity user={self.user_id} source={self.source!r} action={self.action!r} id={self.id}>"

@@ -42,7 +42,7 @@ def test_invalid_database_name_sanitized_before_offline_probe(
     cluster = _init_cluster(tmp_path / "mindgraph", 5432)
     captured: dict[str, str] = {}
 
-    def _capture(path: Path, database: str) -> bool:
+    def _capture(_path: Path, database: str) -> bool:
         captured["database"] = database
         return False
 

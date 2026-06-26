@@ -15,20 +15,12 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Add client_event exploration tasks; daily cap 100 (60 core + 35 explore)."""
     conn = op.get_bind()
-    conn.execute(
-        sa.text(
-            "UPDATE thinking_coin_settings SET value_int = 100 "
-            "WHERE key = 'daily_earn_cap'"
-        )
-    )
-    missing = conn.execute(
-        sa.text("SELECT 1 FROM thinking_coin_settings WHERE key = 'daily_earn_cap'")
-    ).scalar()
+    conn.execute(sa.text("UPDATE thinking_coin_settings SET value_int = 100 WHERE key = 'daily_earn_cap'"))
+    missing = conn.execute(sa.text("SELECT 1 FROM thinking_coin_settings WHERE key = 'daily_earn_cap'")).scalar()
     if missing is None:
         conn.execute(
             sa.text(
-                "INSERT INTO thinking_coin_settings (key, value_int, value_text) "
-                "VALUES ('daily_earn_cap', 100, NULL)"
+                "INSERT INTO thinking_coin_settings (key, value_int, value_text) VALUES ('daily_earn_cap', 100, NULL)"
             )
         )
 

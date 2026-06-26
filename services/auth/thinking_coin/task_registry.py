@@ -50,13 +50,17 @@ async def load_all_tasks(db: AsyncSession) -> list[ThinkingCoinEarnTask]:
         if now - cached_at < _CACHE_TTL_SEC:
             return list(cached_rows)
     rows = (
-        await db.execute(
-            select(ThinkingCoinEarnTask).order_by(
-                ThinkingCoinEarnTask.sort_order.asc(),
-                ThinkingCoinEarnTask.id.asc(),
+        (
+            await db.execute(
+                select(ThinkingCoinEarnTask).order_by(
+                    ThinkingCoinEarnTask.sort_order.asc(),
+                    ThinkingCoinEarnTask.id.asc(),
+                )
             )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     tasks = list(rows)
     _TaskRegistryCacheHolder.tasks = (now, tasks)
     return tasks

@@ -1,5 +1,5 @@
 /**
- * am UI �?sidebar
+ * am UI � sidebar
  */
 
 export default {

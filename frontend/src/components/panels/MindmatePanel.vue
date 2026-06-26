@@ -21,6 +21,7 @@ import { useConversations, usePinnedConversations } from '@/composables/queries'
 import { useAuthStore, useMindMateStore } from '@/stores'
 import { useUIStore } from '@/stores/ui'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
+import { copyMindmateAssistantMessage } from '@/utils/copyMindmateMessage'
 
 import ShareExportModal from './ShareExportModal.vue'
 import MindmateHeader from './mindmate/MindmateHeader.vue'
@@ -130,14 +131,9 @@ function refreshBrandingFromServer() {
   void authStore.checkAuth(true)
 }
 
-/** Remount restores empty local state (`useMindMate` destroy()); reload thread from Pinia. */
+/** Branding refresh on mount; thread restore is handled in useMindMate init. */
 onMounted(() => {
   refreshBrandingFromServer()
-  const convId = mindMateStore.currentConversationId
-  if (!convId || mindMate.hasMessages.value) {
-    return
-  }
-  void mindMate.loadConversation(convId)
 })
 
 onActivated(() => {
@@ -236,10 +232,13 @@ function stopGeneration() {
   mindMate.stopGeneration()
 }
 
-// Copy message to clipboard
+// Copy message to clipboard (diagram answers copy the PNG)
 async function copyMessage(content: string) {
   try {
-    await navigator.clipboard.writeText(content)
+    await copyMindmateAssistantMessage(
+      content,
+      typeof window !== 'undefined' ? window.location.host : undefined
+    )
     notify.success(t('notification.copied'))
   } catch {
     notify.error(t('notification.copyFailed'))

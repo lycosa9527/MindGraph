@@ -29,6 +29,7 @@ FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures" / "prompt_requiremen
     ],
 )
 def test_parse_requirements_case2_per_type(diagram_type: str, fixture_name: str) -> None:
+    """Fixed-structure fixtures parse to structure_mode fixed with nodes."""
     raw = json.loads((FIXTURES_DIR / fixture_name).read_text(encoding="utf-8"))
     parsed = parse_requirements_for_type(diagram_type, raw, fallback_prompt="fallback")
     assert parsed.structure_mode == "fixed"
@@ -37,6 +38,7 @@ def test_parse_requirements_case2_per_type(diagram_type: str, fixture_name: str)
 
 
 def test_parse_requirements_case1_free() -> None:
+    """Free-mode requirements keep central topic without fixed nodes."""
     raw = {"topic": "人工智能", "structure_mode": "free", "clarity": "clear"}
     parsed = parse_requirements_for_type("mind_map", raw, fallback_prompt="raw prompt")
     assert parsed.structure_mode == "free"
@@ -45,6 +47,7 @@ def test_parse_requirements_case1_free() -> None:
 
 
 def test_alias_normalization() -> None:
+    """Double bubble left/right topic aliases normalize to fixed nodes."""
     raw = {
         "left_topic": "苹果",
         "right_topic": "橙子",
@@ -58,6 +61,7 @@ def test_alias_normalization() -> None:
 
 
 def test_flow_map_title_alias_from_topic() -> None:
+    """Flow map topic alias maps to central title and fixed steps."""
     raw = {"topic": "制作咖啡", "steps": ["磨豆", "萃取"], "structure_mode": "fixed"}
     parsed = parse_requirements_for_type("flow_map", raw, fallback_prompt="")
     assert parsed.central == "制作咖啡"
@@ -65,6 +69,7 @@ def test_flow_map_title_alias_from_topic() -> None:
 
 
 def test_brace_map_whole_alias_from_topic() -> None:
+    """Brace map topic alias maps to whole and fixed parts."""
     raw = {"topic": "汽车", "parts": ["引擎", "底盘"], "structure_mode": "fixed"}
     parsed = parse_requirements_for_type("brace_map", raw, fallback_prompt="")
     assert parsed.central == "汽车"
@@ -72,12 +77,14 @@ def test_brace_map_whole_alias_from_topic() -> None:
 
 
 def test_empty_fixed_list_downgrades_to_free() -> None:
+    """Empty fixed children list downgrades structure_mode to free."""
     raw = {"topic": "主题", "structure_mode": "fixed", "children": []}
     parsed = parse_requirements_for_type("mind_map", raw, fallback_prompt="主题")
     assert parsed.structure_mode == "free"
 
 
 def test_list_present_forces_fixed_even_when_llm_says_free() -> None:
+    """Non-empty fixed lists force fixed mode even when LLM says free."""
     raw = {"topic": "北京三日游", "structure_mode": "free", "children": ["衣", "食", "住", "行"]}
     parsed = parse_requirements_for_type("mind_map", raw, fallback_prompt="")
     assert parsed.structure_mode == "fixed"
@@ -85,6 +92,7 @@ def test_list_present_forces_fixed_even_when_llm_says_free() -> None:
 
 
 def test_merge_agent_params_skips_dimension_pref_when_fixed_lists_present() -> None:
+    """Fixed lists suppress dimension preference in merged agent params."""
     extracted = map_to_agent_params(
         "tree_map",
         parse_requirements_for_type(
@@ -105,6 +113,7 @@ def test_merge_agent_params_skips_dimension_pref_when_fixed_lists_present() -> N
 
 
 def test_merge_agent_params_api_fixed_dimension_wins() -> None:
+    """API fixed_dimension overrides extracted dimension for free mode."""
     extracted = map_to_agent_params(
         "tree_map",
         parse_requirements_for_type(
@@ -118,6 +127,7 @@ def test_merge_agent_params_api_fixed_dimension_wins() -> None:
 
 
 def test_merge_agent_params_api_analogies_win() -> None:
+    """API existing_analogies override extracted bridge map analogies."""
     extracted = map_to_agent_params(
         "bridge_map",
         parse_requirements_for_type(
@@ -138,6 +148,7 @@ def test_merge_agent_params_api_analogies_win() -> None:
 
 
 def test_build_agent_context_empty_for_free_mode() -> None:
+    """Free mode context omits fixed-structure block but keeps constraints."""
     parsed = parse_requirements_for_type(
         "mind_map",
         {"topic": "AI", "structure_mode": "free", "constraints": "简洁"},
@@ -149,6 +160,7 @@ def test_build_agent_context_empty_for_free_mode() -> None:
 
 
 def test_mind_map_fixed_children_prompt_registered() -> None:
+    """Mind map fixed_children prompt template is registered for zh."""
     prompt = get_prompt("mind_map", "zh", "fixed_children")
     assert prompt
     assert "分支" in prompt or "branch" in prompt.lower()

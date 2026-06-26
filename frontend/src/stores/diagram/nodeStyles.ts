@@ -18,6 +18,7 @@ import {
 } from '@/config/mindMapThemes'
 import type { DiagramNode, NodeStyle } from '@/types'
 import { resolveNodeShape } from '@/utils/nodeShapeStyle'
+import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 
 import {
   estimateNodeWidth as estimateMindMapBranchWidth,
@@ -188,6 +189,7 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
     })
     const diagramType = data.value?.type
     if (
+      readMindMapV2VisualDesignActive() &&
       data.value?.connections &&
       (diagramType === 'mindmap' || diagramType === 'mind_map')
     ) {

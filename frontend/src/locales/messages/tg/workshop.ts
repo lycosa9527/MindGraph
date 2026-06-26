@@ -1,5 +1,5 @@
 /**
- * tg UI �?workshop
+ * tg UI � workshop
  */
 
 export default {

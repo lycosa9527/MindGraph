@@ -49,7 +49,7 @@
 
 - `pg_dump` uses `--no-policies` (policies come from Alembic, not dumps).
 - Restore as `mindgraph_migrate`, then `alembic upgrade head`.
-- Admin PG merge (`services/admin/pg_merge_service.py`) restores into staging as migrate; never rely on dumped policies.
+- Admin PG merge (`services/admin/pg_merge_service.py`, `services/admin/pg_merge_staging.py`) restores into a temporary schema and writes to live via `mindgraph_migrate` (BYPASSRLS); never rely on dumped policies or extensions.
 
 ## Staging smoke (manual, before prod)
 

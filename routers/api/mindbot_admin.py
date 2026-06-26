@@ -48,6 +48,7 @@ from routers.auth.dependencies import (
     get_async_db_with_request_rls,
     require_mindbot_admin_access,
 )
+from services.dify.dify_health_logging import probe_failure_reason
 from services.mindbot.dify.service_health import check_dify_app_api_reachable
 from services.mindbot.errors import MindbotErrorCode
 from services.mindbot.platforms.dingtalk.cards.ai_card import probe_ai_card_streaming_update_api
@@ -55,6 +56,7 @@ from services.mindbot.session.callback_token import new_public_callback_token
 from services.mindbot.telemetry.metrics import mindbot_long_lived_maps_snapshot
 from services.mindbot.telemetry.usage import mindbot_usage_tracking_enabled
 from services.utils.typing_helpers import mapping_int
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -536,13 +538,12 @@ async def admin_org_dify_health(
         row.dify_api_key.strip(),
     )
     err_out = _dify_probe_error_for_user(err, is_platform_admin=True)
+    status_text = "online" if online else f"offline ({probe_failure_reason(http_status, err)})"
     logger.info(
-        "[MindBot] org_dify_health_probe config_id=%s organization_id=%s user_id=%s online=%s http_status=%s",
+        "[MindBot] Admin Dify health check for bot config %s (org %s): %s",
         config_id,
         row.organization_id,
-        user.id,
-        online,
-        http_status,
+        status_text,
     )
     return DifyServiceStatusResponse(
         online=online,

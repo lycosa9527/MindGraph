@@ -1,5 +1,5 @@
 /**
- * ky UI �?notification
+ * ky UI � notification
  */
 
 export default {

@@ -13,6 +13,7 @@ import {
 } from '@/config/mindMapThemes'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
+import { readEffectiveMindMapCanvasMode, readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import {
@@ -23,6 +24,8 @@ import {
 } from '../specLoader'
 import { useUIStore } from '../ui'
 import { getMindMapCurveExtents } from './events'
+import { snapshotMindMapCanvasBucket, hydrateMindMapCanvasStylesOnLoad } from './mindMapCanvasModeSwitch'
+import { resyncMindMapConnectionStrokeColorsForActiveMode } from './mindMapStylePreservation'
 import type { DiagramContext, LoadFromSpecOptions } from './types'
 
 export function useSpecIOSlice(ctx: DiagramContext) {
@@ -174,6 +177,17 @@ export function useSpecIOSlice(ctx: DiagramContext) {
         )
       ),
       ...(result.metadata || {}),
+    }
+
+    if (diagramTypeValue === 'mindmap' || diagramTypeValue === 'mind_map') {
+      if (ctx.data.value) {
+        hydrateMindMapCanvasStylesOnLoad(ctx.data.value, readEffectiveMindMapCanvasMode())
+        resyncMindMapConnectionStrokeColorsForActiveMode(
+          diagramTypeValue,
+          ctx.data.value.nodes,
+          ctx.data.value.connections
+        )
+      }
     }
 
     if (diagramTypeValue === 'concept_map' && ctx.data.value?.connections && ctx.data.value.nodes) {
@@ -374,9 +388,17 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       }
     }
     if (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') {
+      snapshotMindMapCanvasBucket(ctx.data.value, readEffectiveMindMapCanvasMode())
+      const canvasBuckets = ctx.data.value._mindmap_canvas
+      if (canvasBuckets) {
+        spec._mindmap_canvas = canvasBuckets
+      }
       const collapsed = dataRecord._collapsed_paths
       if (Array.isArray(collapsed) && collapsed.length > 0) {
         spec._collapsed_paths = collapsed
+      }
+      if (ctx.data.value._mindmap_theme) {
+        spec._mindmap_theme = ctx.data.value._mindmap_theme
       }
     }
     return spec

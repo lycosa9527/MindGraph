@@ -13,6 +13,7 @@ from typing import Optional
 
 import aiohttp
 
+from services.dify.dify_health_logging import LOG_PREFIX
 from services.mindbot.infra.http_client import get_outbound_session
 
 logger = logging.getLogger(__name__)
@@ -47,12 +48,16 @@ async def check_dify_app_api_reachable(
                 await resp.read()
                 return True, status, None
             body_preview = (await resp.text())[:200]
-            err = f"http_{status}"
             if body_preview:
-                err = f"{err}: {body_preview}"
-            return False, status, err
+                logger.debug(
+                    "%s Dify health probe HTTP %s body preview: %s",
+                    LOG_PREFIX,
+                    status,
+                    body_preview,
+                )
+            return False, status, f"http_{status}"
     except asyncio.TimeoutError:
         return False, None, "timeout"
     except aiohttp.ClientError as exc:
-        logger.warning("Dify health probe client error: %s", exc)
+        logger.warning("%s Could not reach Dify API during health check: %s", LOG_PREFIX, exc)
         return False, None, str(exc)[:200]

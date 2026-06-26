@@ -75,9 +75,7 @@ def expires_at_from_now() -> datetime:
 
 async def get_job(db: AsyncSession, job_id: int) -> Optional[MindmateExportJob]:
     """Load one export job row by id."""
-    return (
-        await db.execute(select(MindmateExportJob).where(MindmateExportJob.id == int(job_id)))
-    ).scalar_one_or_none()
+    return (await db.execute(select(MindmateExportJob).where(MindmateExportJob.id == int(job_id)))).scalar_one_or_none()
 
 
 def _append_conversations_jsonl_blocking(job_id: int, conversations: List[ExportConversation]) -> None:
@@ -167,10 +165,7 @@ def _target_result_from_dict(raw: dict) -> TargetFetchResult:
         conversations_fetched=int(raw.get("conversations_fetched") or 0),
         pagination_complete=bool(raw.get("pagination_complete", True)),
         fetch_errors=[str(item) for item in (raw.get("fetch_errors") or []) if item],
-        messages_by_conv_id={
-            str(key): bool(value)
-            for key, value in (raw.get("messages_by_conv_id") or {}).items()
-        },
+        messages_by_conv_id={str(key): bool(value) for key, value in (raw.get("messages_by_conv_id") or {}).items()},
     )
 
 

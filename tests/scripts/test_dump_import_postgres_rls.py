@@ -7,12 +7,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import config.database as cfg
+
 from services.utils.pg_backup_manifest import (
     StatsEngineResolutionError,
     build_pg_dump_manifest,
     collect_db_stats,
     resolve_stats_engine,
 )
+
 
 def test_build_pg_dump_manifest_includes_size_bytes_and_tables(tmp_path: Path) -> None:
     """Manifest matches shared contract: size_bytes, tables, totals."""
@@ -22,7 +25,9 @@ def test_build_pg_dump_manifest_includes_size_bytes_and_tables(tmp_path: Path) -
     mock_engine = MagicMock()
     mock_inspector = MagicMock()
     mock_inspector.get_table_names.return_value = ["diagrams", "users"]
-    mock_inspector.get_columns.side_effect = lambda name: [{"name": "id"}] if name == "diagrams" else [{"name": "id"}, {"name": "phone"}]
+    mock_inspector.get_columns.side_effect = lambda name: (
+        [{"name": "id"}] if name == "diagrams" else [{"name": "id"}, {"name": "phone"}]
+    )
 
     mock_conn = MagicMock()
     mock_result = MagicMock()
@@ -82,8 +87,6 @@ def test_resolve_stats_engine_uses_migration_url(monkeypatch) -> None:
     """resolve_stats_engine configures env and builds engine from DATABASE_MIGRATION_URL."""
     migrate = "postgresql+psycopg://mindgraph_migrate:secret@localhost:5432/mindgraph"
     mock_engine = MagicMock()
-
-    import config.database as cfg
 
     monkeypatch.setattr(cfg, "DATABASE_MIGRATION_URL", migrate)
 

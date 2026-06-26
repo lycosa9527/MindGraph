@@ -1,5 +1,5 @@
 /**
- * sv UI �?notification
+ * sv UI � notification
  */
 
 export default {

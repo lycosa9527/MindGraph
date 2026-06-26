@@ -1,5 +1,5 @@
 /**
- * ms UI �?sidebar
+ * ms UI � sidebar
  */
 
 export default {

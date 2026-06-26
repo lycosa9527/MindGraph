@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 import pytest
 
 from services.infrastructure.http.error_handler import UserDailyTokenCapExceededError
+from services.redis.cache import redis_user_daily_token
 from utils.auth import user_daily_token_config as quota_config_mod
 from utils.auth import user_daily_token_quota as quota_mod
 from utils.auth.token_stats_queries import BEIJING_TIMEZONE, beijing_date_key
@@ -31,8 +34,6 @@ def test_daily_token_cap_zero_disables(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_beijing_date_key_format() -> None:
     """Beijing date key is YYYYMMDD."""
-    from datetime import datetime
-
     dt = datetime(2026, 6, 19, 15, 30, tzinfo=BEIJING_TIMEZONE)
     assert beijing_date_key(dt) == "20260619"
 
@@ -103,8 +104,6 @@ async def test_record_skips_when_cap_disabled(monkeypatch: pytest.MonkeyPatch) -
 
     async def fail_if_called(_user_id: int, _tokens: int) -> int:
         raise AssertionError("should not increment when cap disabled")
-
-    from services.redis.cache import redis_user_daily_token
 
     monkeypatch.setattr(redis_user_daily_token, "add_daily_usage", fail_if_called)
     await record_user_daily_tokens(7, 500)

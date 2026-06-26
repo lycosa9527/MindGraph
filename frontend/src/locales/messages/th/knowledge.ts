@@ -1,8 +1,14 @@
 /**
- * th UI �?knowledge
+ * th UI � knowledge
  */
 
 export default {
+  'fileCenterLibrary.title': 'Packages',
+  'fileCenterLibrary.subtitle': 'Source collections grouped by diagram (File Center).',
+  'fileCenterLibrary.openDiagram': 'Open diagram',
+  'fileCenterLibrary.badgeCanvas': 'Canvas',
+  'fileCenterLibrary.badgeExtension': 'Extension',
+  'fileCenterLibrary.badgeUpload': 'Upload',
   'chunkTest.history.confirmDeleteBody': 'คุณแน่ใจหรือไม่ที่จะลบการทดสอบนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
   'chunkTest.history.confirmDeleteTitle': 'ลบการทดสอบ',
   'chunkTest.history.delete': 'ลบ',

@@ -44,9 +44,7 @@ def test_apply_page_actions_writes_files_and_manifest():
         {"slug": "overview", "title": "Overview", "body_md": "Big picture", "links": []},
         {"slug": "chapter-5", "title": "Chapter 5", "body_md": "CNNs", "links": []},
     ]
-    written = _apply_page_actions(
-        user_id=1, package_id=9, document_id=42, existing_index=[], pages=pages
-    )
+    written = _apply_page_actions(user_id=1, package_id=9, document_id=42, existing_index=[], pages=pages)
     assert written == 2
 
     index = store.list_pages(1, 9)
@@ -66,15 +64,23 @@ def test_apply_page_actions_writes_files_and_manifest():
 def test_apply_page_actions_merges_source_ids_on_update():
     """Updating an existing slug accumulates source document IDs."""
     _apply_page_actions(
-        user_id=1, package_id=9, document_id=42, existing_index=[], pages=[
+        user_id=1,
+        package_id=9,
+        document_id=42,
+        existing_index=[],
+        pages=[
             {"slug": "overview", "title": "Overview", "body_md": "v1", "links": []},
-        ]
+        ],
     )
     existing = store.list_pages(1, 9)
     _apply_page_actions(
-        user_id=1, package_id=9, document_id=43, existing_index=existing, pages=[
+        user_id=1,
+        package_id=9,
+        document_id=43,
+        existing_index=existing,
+        pages=[
             {"slug": "overview", "title": "Overview", "body_md": "v2", "links": []},
-        ]
+        ],
     )
     overview = next(page for page in store.list_pages(1, 9) if page["slug"] == "overview")
     assert overview["source_document_ids"] == [42, 43]
@@ -83,10 +89,14 @@ def test_apply_page_actions_merges_source_ids_on_update():
 def test_find_relevant_pages_matches_title_and_keeps_overview():
     """Relevant-page lookup matches titles and always retains the overview."""
     _apply_page_actions(
-        user_id=1, package_id=9, document_id=42, existing_index=[], pages=[
+        user_id=1,
+        package_id=9,
+        document_id=42,
+        existing_index=[],
+        pages=[
             {"slug": "overview", "title": "Overview", "body_md": "x", "links": []},
             {"slug": "chapter-5", "title": "Convolutional Networks", "body_md": "x", "links": []},
-        ]
+        ],
     )
     relevant = store.find_relevant_pages(1, 9, "convolutional networks chapter")
     slugs = {page["slug"] for page in relevant}
@@ -97,9 +107,13 @@ def test_find_relevant_pages_matches_title_and_keeps_overview():
 def test_delete_wiki_removes_folder():
     """Deleting the wiki removes all pages for the package."""
     _apply_page_actions(
-        user_id=1, package_id=9, document_id=42, existing_index=[], pages=[
+        user_id=1,
+        package_id=9,
+        document_id=42,
+        existing_index=[],
+        pages=[
             {"slug": "overview", "title": "Overview", "body_md": "x", "links": []},
-        ]
+        ],
     )
     assert store.list_pages(1, 9)
     store.delete_wiki(1, 9)
@@ -155,9 +169,7 @@ class _FakeSession:
 async def test_compile_package_wiki_end_to_end(monkeypatch):
     """A full compile pass writes pages from a stubbed LLM response."""
     package = SimpleNamespace(id=9, name="Deep Learning", user_id=1)
-    document = SimpleNamespace(
-        id=42, language="en", file_name="book.pdf", doc_metadata={"page_title": "Book"}
-    )
+    document = SimpleNamespace(id=42, language="en", file_name="book.pdf", doc_metadata={"page_title": "Book"})
     session = _FakeSession(package, document, chunk_texts=["Intro to CNNs.", "More CNNs."])
 
     async def _fake_chat(*_args, **_kwargs):

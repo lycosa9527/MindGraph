@@ -1,10 +1,10 @@
 /**
- * Align every locale Ã— namespace (except zh) with zh slices: add missing from en; drop extras.
+ * Align every locale × namespace (except zh) with zh slices: add missing from en; drop extras.
  * Run from frontend/: node scripts/sync-messages-keys-from-reference.ts [--dry-run]
  *
  * Interface picker only: `--tier27-only` (matches INTERFACE_LANGUAGE_PICKER_CODES minus zh reference).
  */
-import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -22,6 +22,7 @@ const NS_ORDER = [
   'sidebar',
   'auth',
   'notification',
+  'thinkingCoins',
 ] as const
 
 const TIER_27_EXCEPT_ZH = [
@@ -64,13 +65,20 @@ function formatRecord(keysInOrder: string[], out: Record<string, string>): strin
 }
 
 function banner(locale: string, ns: string): string {
-  return `/**\n * ${locale} UI â€?${ns}\n */\n`
+  return `/**\n * ${locale} UI — ${ns}\n */\n`
 }
 
 async function loadMod(locale: string, ns: string): Promise<Record<string, string>> {
   const abs = join(ROOT, locale, `${ns}.ts`)
+  if (!existsSync(abs)) {
+    return {}
+  }
   const url = `${pathToFileURL(abs).href}?import=${Date.now()}`
   const mod = await import(url)
+  if (ns === 'thinkingCoins') {
+    const d = mod.thinkingCoinsMessages as Record<string, string>
+    return typeof d === 'object' && d !== null ? d : {}
+  }
   const d = mod.default as Record<string, string>
   return typeof d === 'object' && d !== null ? d : {}
 }
@@ -94,12 +102,45 @@ function localeDirsAll(): string[] {
     .sort()
 }
 
+function formatNamespaceExport(ns: string, keysInOrder: string[], out: Record<string, string>): string {
+  const formatted = formatRecord(keysInOrder, out)
+  if (ns === 'thinkingCoins') {
+    return `export const thinkingCoinsMessages = ${formatted} as const\n`
+  }
+  return `export default ${formatted} as const\n`
+}
+
+function patchIndexThinkingCoins(locale: string, dry: boolean): boolean {
+  const indexPath = join(ROOT, locale, 'index.ts')
+  if (!existsSync(indexPath)) {
+    return false
+  }
+  const rawPrev = readFileSync(indexPath, 'utf8')
+  if (rawPrev.includes('thinkingCoins')) {
+    return false
+  }
+  const next = rawPrev
+    .replace(
+      "import workshop from './workshop.ts'",
+      "import { thinkingCoinsMessages as thinkingCoins } from './thinkingCoins.ts'\nimport workshop from './workshop.ts'"
+    )
+    .replace('  ...notification,\n} as const', '  ...notification,\n  ...thinkingCoins,\n} as const')
+  if (next === rawPrev) {
+    throw new Error(`Failed to patch index.ts for ${locale}`)
+  }
+  if (!dry) {
+    writeFileSync(indexPath, next, 'utf8')
+  }
+  return true
+}
+
 async function main(): Promise<void> {
   const dry = process.argv.includes('--dry-run')
   const tier27 = process.argv.includes('--tier27-only')
   const locales = tier27 ? localeDirsTier27() : localeDirsAll()
 
   let changed = 0
+  let indexChanged = 0
   for (const loc of locales) {
     for (const ns of NS_ORDER) {
       const zhMod = await loadMod('zh', ns)
@@ -114,17 +155,22 @@ async function main(): Promise<void> {
         else out[k] = (enMod[k] ?? zhMod[k]) as string
       }
 
-      const bodyNew = `export default ${formatRecord(zhKeysOrdered, out)} as const\n`
+      const bodyNew = formatNamespaceExport(ns, zhKeysOrdered, out)
       const next = `${banner(loc, ns)}\n${bodyNew}`
-      const rawPrev = readFileSync(curPath, 'utf8').trim()
+      const rawPrev = existsSync(curPath) ? readFileSync(curPath, 'utf8').trim() : ''
       if (next.trim() !== rawPrev) {
         if (!dry) writeFileSync(curPath, next, 'utf8')
         changed += 1
       }
     }
+    if (patchIndexThinkingCoins(loc, dry)) {
+      indexChanged += 1
+    }
   }
 
-  console.log(`${dry ? 'DRY ' : ''}locales=${locales.length} files written: ${changed}`)
+  console.log(
+    `${dry ? 'DRY ' : ''}locales=${locales.length} namespace files written: ${changed}, index patches: ${indexChanged}`
+  )
 }
 
 main().catch((e) => {

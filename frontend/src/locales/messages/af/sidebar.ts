@@ -1,5 +1,5 @@
 /**
- * af UI �?sidebar
+ * af UI � sidebar
  */
 
 export default {

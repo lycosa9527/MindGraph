@@ -1,5 +1,5 @@
 /**
- * id UI �?notification
+ * id UI � notification
  */
 
 export default {

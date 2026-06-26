@@ -111,6 +111,25 @@ export interface Connection {
   linkedFromConnectionId?: string
 }
 
+/** Styles keyed by stable mind-map path (`topic`, `r/0`, `l/1/2`, …). */
+export type MindMapCanvasStylesByPath = Record<string, NodeStyle>
+
+export interface MindMapCanvasLegacyBucket {
+  node_styles_by_path?: MindMapCanvasStylesByPath
+}
+
+export interface MindMapCanvasV2Bucket {
+  node_styles_by_path?: MindMapCanvasStylesByPath
+  theme?: string
+  collapsed_paths?: string[]
+}
+
+/** Independent visual state for classic vs new mind-map canvas. */
+export interface MindMapCanvasStyleBuckets {
+  legacy?: MindMapCanvasLegacyBucket
+  v2?: MindMapCanvasV2Bucket
+}
+
 export interface DiagramData {
   type: DiagramType
   nodes: DiagramNode[]
@@ -131,6 +150,8 @@ export interface DiagramData {
   _mindmap_diagram_style?: string
   /** Mind map: stable path keys of branches with collapsed subtrees */
   _collapsed_paths?: string[]
+  /** Mind map: per-canvas-mode style snapshots (classic vs new canvas) */
+  _mindmap_canvas?: MindMapCanvasStyleBuckets
   /** Custom positions set by user dragging (distinct from auto-layout) */
   _customPositions?: Record<string, Position>
   /** Index signature for dynamic property access (e.g., 'attributes', 'steps', etc.) */

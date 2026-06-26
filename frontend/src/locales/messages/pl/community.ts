@@ -1,5 +1,5 @@
 /**
- * pl UI �?community
+ * pl UI � community
  */
 
 export default {

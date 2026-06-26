@@ -1,5 +1,5 @@
 /**
- * fr UI �?mindmate
+ * fr UI � mindmate
  */
 
 export default {
@@ -8,6 +8,7 @@ export default {
   'aiModel.enableAi': 'Activer l\'IA',
   'aiModel.inlineRecTooltip': 'Appuyez sur Tab pendant la modification d\'un nœud pour obtenir des recommandations IA',
   'aiModel.label': 'Modèle IA',
+  'aiModel.cancelGeneration': 'Cancel generation',
   'aiModel.readyCount': '{count} prêt',
   'aiModel.relationshipsBadge': 'Relations',
   'aiModel.relationshipsTooltip': 'Faites glisser pour relier des concepts — l\'IA générera les relations',
@@ -35,6 +36,7 @@ export default {
   'autoComplete.enterTopicFirst': 'Veuillez d’abord saisir le contenu du sujet',
   'autoComplete.generationFailedRetry': 'Échec de la génération, veuillez réessayer',
   'autoComplete.generationInProgress': 'Génération en cours, veuillez patienter',
+  'autoComplete.generationInstructionsLabel': 'User requirements:',
   'autoComplete.modelsReadyCount': 'Modèles {success}/{total} prêts',
   'autoComplete.noDiagramData': 'Aucune donnée de diagramme',
   'autoComplete.selectDiagramType': 'Veuillez sélectionner le type de diagramme',
@@ -86,6 +88,12 @@ export default {
   'mindmate.noHistory': 'Aucun historique',
   'mindmate.noHistoryPanel': 'Aucun historique de conversation',
   'mindmate.suggestionLabel': 'Essayez de me demander :',
+  'mindmate.openInCanvas': 'Edit in canvas',
+  'mindmate.openCanvasFailed': 'Could not open diagram in canvas.',
+  'mindmate.openCanvasLoginRequired': 'Sign in to open this diagram in the canvas.',
+  'mindmate.openCanvasNoLibraryId': 'Diagram was not saved to your library. Sign in and try again.',
+  'mindmate.openCanvasSaveRetry': 'Could not save this diagram to your library automatically. Regenerate; contact your administrator if it persists.',
+  'mindmate.diagramLibraryFull': 'Diagram library is full. Delete old diagrams and try again.',
   'mindmate.tooltip.copy': 'Copier',
   'mindmate.tooltip.dislike': 'Pas utile',
   'mindmate.tooltip.edit': 'Modifier',

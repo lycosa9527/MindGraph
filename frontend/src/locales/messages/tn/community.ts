@@ -1,5 +1,5 @@
 /**
- * tn UI �?community
+ * tn UI � community
  */
 
 export default {

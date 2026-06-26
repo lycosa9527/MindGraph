@@ -1,5 +1,5 @@
 /**
- * ig UI �?notification
+ * ig UI � notification
  */
 
 export default {

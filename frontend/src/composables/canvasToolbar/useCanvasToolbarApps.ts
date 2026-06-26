@@ -15,10 +15,10 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useDiagramStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
-import { isMindMapDiagramType } from '@/utils/conceptMapDesktopViewport'
 import { useDiagramTranslateUiStore } from '@/stores/diagramTranslateUi'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { useUIStore } from '@/stores/ui'
@@ -78,6 +78,7 @@ export function useCanvasToolbarApps() {
   const diagramTranslateInFlight = ref(false)
 
   const isConceptMap = computed(() => diagramStore.type === 'concept_map')
+  const useMindMapV2 = useMindMapV2Chrome()
 
   const moreApps = computed((): MoreAppItem[] => {
     const conceptMapModesRow: MoreAppItem = {
@@ -341,7 +342,7 @@ export function useCanvasToolbarApps() {
         notify.warning(t('canvas.toolbar.createDiagramFirst'))
         return
       }
-      if (isMindMapDiagramType(diagramStore.type) && uiStore.mindMapCanvasMode === 'v2') {
+      if (useMindMapV2.value) {
         useMindMapSideToolbarState().openTool('waterfall')
       } else {
         eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'toolbar' })

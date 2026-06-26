@@ -125,25 +125,29 @@ def test_activity_response_shape(client: TestClient) -> None:
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     app.dependency_overrides[get_async_db] = override_db
 
-    with patch(
-        "routers.auth.admin.user_activity.assert_panel_user_readable",
-        new=AsyncMock(),
-    ), patch(
-        "routers.auth.admin.user_activity.list_user_usage_activities",
-        new=AsyncMock(return_value=[activity_row]),
-    ), patch(
-        "routers.auth.admin.user_activity.activity_to_admin_dict",
-        return_value={
-            "id": 10,
-            "userId": 1,
-            "source": "mindmate",
-            "action": "chat_turn",
-            "promptPreview": "Hello",
-            "replyPreview": "Hi",
-            "totalTokens": 12,
-            "success": True,
-            "createdAt": "2026-06-19T12:00:00+00:00",
-        },
+    with (
+        patch(
+            "routers.auth.admin.user_activity.assert_panel_user_readable",
+            new=AsyncMock(),
+        ),
+        patch(
+            "routers.auth.admin.user_activity.list_user_usage_activities",
+            new=AsyncMock(return_value=[activity_row]),
+        ),
+        patch(
+            "routers.auth.admin.user_activity.activity_to_admin_dict",
+            return_value={
+                "id": 10,
+                "userId": 1,
+                "source": "mindmate",
+                "action": "chat_turn",
+                "promptPreview": "Hello",
+                "replyPreview": "Hi",
+                "totalTokens": 12,
+                "success": True,
+                "createdAt": "2026-06-19T12:00:00+00:00",
+            },
+        ),
     ):
         response = client.get("/api/auth/admin/users/1/activity")
 

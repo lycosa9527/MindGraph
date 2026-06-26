@@ -1,15 +1,23 @@
 """Write-path tests for user usage activity recording."""
 
+from contextlib import asynccontextmanager
+from typing import AsyncIterator
 from unittest.mock import AsyncMock, patch
 
-import models.domain.registry  # noqa: F401 — register ORM mappers for tests
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.admin.user_usage_activity import record_user_usage_activity
 
 
+@asynccontextmanager
+async def _mock_rls_session(session: AsyncSession) -> AsyncIterator[AsyncSession]:
+    yield session
+
+
 @pytest.mark.asyncio
 async def test_record_skips_invalid_user() -> None:
+    """Invalid user ids skip persistence entirely."""
     with patch("services.admin.user_usage_activity.system_rls_session") as mock_session:
         await record_user_usage_activity(
             user_id=0,
@@ -23,15 +31,13 @@ async def test_record_skips_invalid_user() -> None:
 
 @pytest.mark.asyncio
 async def test_record_persists_row() -> None:
+    """Valid activity rows are inserted and committed."""
     insert_mock = AsyncMock()
     with patch("services.admin.user_usage_activity.system_rls_session") as mock_session:
         session = AsyncMock()
         session.commit = AsyncMock()
-        mock_session.return_value.__aenter__ = AsyncMock(return_value=session)
-        mock_session.return_value.__aexit__ = AsyncMock(return_value=False)
-        with patch(
-            "services.admin.user_usage_activity.UserUsageActivityRepository"
-        ) as repo_cls:
+        mock_session.return_value = _mock_rls_session(session)
+        with patch("services.admin.user_usage_activity.UserUsageActivityRepository") as repo_cls:
             repo_cls.return_value.insert = insert_mock
             await record_user_usage_activity(
                 user_id=7,
@@ -48,6 +54,7 @@ async def test_record_persists_row() -> None:
 
 @pytest.mark.asyncio
 async def test_record_skips_empty_content() -> None:
+    """Rows without title or preview text are not persisted."""
     with patch("services.admin.user_usage_activity.system_rls_session") as mock_session:
         await record_user_usage_activity(
             user_id=1,

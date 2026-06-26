@@ -20,20 +20,20 @@ async def fetch_ledger_page(
     safe_limit = min(max(1, limit), 100)
     offset = (safe_page - 1) * safe_limit
 
-    count_stmt = (
-        select(func.count())
-        .select_from(ThinkingCoinLedger)
-        .where(ThinkingCoinLedger.user_id == user_id)
-    )
+    count_stmt = select(func.count()).select_from(ThinkingCoinLedger).where(ThinkingCoinLedger.user_id == user_id)
     total = int((await db.execute(count_stmt)).scalar_one())
 
     rows = (
-        await db.execute(
-            select(ThinkingCoinLedger)
-            .where(ThinkingCoinLedger.user_id == user_id)
-            .order_by(desc(ThinkingCoinLedger.created_at), desc(ThinkingCoinLedger.id))
-            .offset(offset)
-            .limit(safe_limit)
+        (
+            await db.execute(
+                select(ThinkingCoinLedger)
+                .where(ThinkingCoinLedger.user_id == user_id)
+                .order_by(desc(ThinkingCoinLedger.created_at), desc(ThinkingCoinLedger.id))
+                .offset(offset)
+                .limit(safe_limit)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return list(rows), total

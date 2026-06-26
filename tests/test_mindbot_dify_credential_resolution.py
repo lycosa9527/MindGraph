@@ -106,10 +106,12 @@ async def test_distinct_mindbot_endpoints_dedupes_same_app(
 
     class _Repo:
         async def list_by_organization_id(self, _org_id: int):
+            """Return all MindBot configs for the organization."""
             return [cfg_a, cfg_b]
 
     class _Usage:
         async def distinct_config_ids_for_staff(self, _org_id: int, _staff: str):
+            """Return config ids used by the staff member (empty here)."""
             return set()
 
     monkeypatch.setattr(

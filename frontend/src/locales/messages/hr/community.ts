@@ -1,5 +1,5 @@
 /**
- * hr UI �?community
+ * hr UI � community
  */
 
 export default {

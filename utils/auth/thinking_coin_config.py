@@ -61,9 +61,7 @@ SLUG_DAILY_DIAGRAM: Final[str] = "daily_diagram_ai"
 SLUG_PUBLISH_CASE: Final[str] = "publish_case"
 SLUG_REFERRAL: Final[str] = "referral_register"
 
-CANVAS_ASSIST_REQUEST_TYPES: Final[frozenset[str]] = frozenset(
-    {"autocomplete", "node_palette"}
-)
+CANVAS_ASSIST_REQUEST_TYPES: Final[frozenset[str]] = frozenset({"autocomplete", "node_palette"})
 
 
 def feature_thinking_coins_enabled() -> bool:

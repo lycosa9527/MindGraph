@@ -76,9 +76,7 @@ def _parse_scope(raw: str) -> ExportScope:
 
 
 async def _refresh_job(db, job_id: int) -> Optional[MindmateExportJob]:
-    return (
-        await db.execute(select(MindmateExportJob).where(MindmateExportJob.id == int(job_id)))
-    ).scalar_one_or_none()
+    return (await db.execute(select(MindmateExportJob).where(MindmateExportJob.id == int(job_id)))).scalar_one_or_none()
 
 
 async def _should_stop(
@@ -196,9 +194,7 @@ async def _run_export_job_inner(job_id: int, user_id: int) -> None:
             while users_done < users_total:
                 if await _should_stop(db, job_id, control):
                     refreshed = await _refresh_job(db, job_id)
-                    if refreshed and (
-                        refreshed.cancel_requested_at is not None or control.cancel_requested
-                    ):
+                    if refreshed and (refreshed.cancel_requested_at is not None or control.cancel_requested):
                         refreshed.status = "cancelled"
                         await db.commit()
                         await publish_export_job_progress(job_id, export_job_to_dict(refreshed))
@@ -384,8 +380,7 @@ async def _run_export_job_inner(job_id: int, user_id: int) -> None:
             await db.commit()
             await publish_export_job_progress(job_id, export_job_to_dict(job))
             logger.info(
-                "[MindMateExportJob] job=%s finished status=%s conversations=%s "
-                "artifact_bytes=%s partial_failures=%s",
+                "[MindMateExportJob] job=%s finished status=%s conversations=%s artifact_bytes=%s partial_failures=%s",
                 job_id,
                 job.status,
                 len(bundle.conversations),

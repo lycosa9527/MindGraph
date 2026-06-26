@@ -13,6 +13,7 @@ from agents.core.workflow import agent_graph_workflow_with_styles
 
 @pytest.mark.asyncio
 async def test_workflow_extracts_requirements_and_passes_structure_mode() -> None:
+    """Workflow forwards extracted fixed structure to the generation agent."""
     parsed = ParsedRequirements(
         structure_mode="fixed",
         central="北京三日游计划",
@@ -22,7 +23,7 @@ async def test_workflow_extracts_requirements_and_passes_structure_mode() -> Non
 
     captured: dict[str, Any] = {}
 
-    async def fake_generate(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    async def fake_generate(*_args: Any, **kwargs: Any) -> dict[str, Any]:
         captured.update(kwargs)
         return {"spec": {"topic": "北京三日游计划", "children": [{"text": "衣", "children": []}]}}
 
@@ -50,6 +51,7 @@ async def test_workflow_extracts_requirements_and_passes_structure_mode() -> Non
 
 @pytest.mark.asyncio
 async def test_workflow_requirements_phase_emitted_when_streaming() -> None:
+    """Requirements phase event is emitted when phase_emit is provided."""
     phases: list[str] = []
 
     async def phase_emit(event: str) -> None:

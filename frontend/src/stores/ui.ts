@@ -16,6 +16,7 @@ import {
   matchedPromptLanguageForUiLocale,
 } from '@/i18n/locales'
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
+import { eventBus } from '@/composables/core/useEventBus'
 import { computeIsMobileClient } from '@/utils/isMobileClient'
 
 export type Theme = 'light' | 'dark' | 'system'
@@ -33,7 +34,7 @@ const MATCH_PROMPT_TO_UI_KEY = 'mindgraph_match_prompt_to_ui'
 const UI_LANGUAGE_EXPLICIT_KEY = 'mindgraph_ui_language_explicit'
 const BROWSER_LOCALE_HINT_KEY = 'mindgraph_browser_locale_hint_dismissed'
 const UI_VERSION_KEY = 'mindgraph_ui_version'
-const MINDMAP_CANVAS_MODE_KEY = 'mindgraph_mindmap_canvas_mode'
+export const MINDMAP_CANVAS_MODE_KEY = 'mindgraph_mindmap_canvas_mode'
 
 const VALID_MINDMAP_CANVAS_MODES: ReadonlySet<string> = new Set(['legacy', 'v2'])
 
@@ -240,8 +241,9 @@ export const useUIStore = defineStore('ui', () => {
     }
 
     const storedMindMapCanvasMode = localStorage.getItem(MINDMAP_CANVAS_MODE_KEY)
-    if (isValidMindMapCanvasMode(storedMindMapCanvasMode)) {
-      mindMapCanvasMode.value = storedMindMapCanvasMode
+    // Default off: v2 is restored only after FEATURE_MINDMAP_V2_CANVAS is confirmed.
+    if (storedMindMapCanvasMode === 'legacy') {
+      mindMapCanvasMode.value = 'legacy'
     }
 
     if (isValidLanguage(storedLanguage)) {
@@ -375,8 +377,11 @@ export const useUIStore = defineStore('ui', () => {
   }
 
   function setMindMapCanvasMode(mode: MindMapCanvasMode): void {
+    const previousMode = mindMapCanvasMode.value
+    if (previousMode === mode) return
     mindMapCanvasMode.value = mode
     localStorage.setItem(MINDMAP_CANVAS_MODE_KEY, mode)
+    eventBus.emit('mindmap:canvas_mode_changed', { previousMode, newMode: mode })
   }
 
   function applyUiVersionFromServerProfile(version: string | null | undefined): void {

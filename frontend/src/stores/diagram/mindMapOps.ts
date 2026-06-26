@@ -6,6 +6,7 @@ import {
 } from '@/config/mindMapThemes'
 import { i18n } from '@/i18n'
 import type { Connection, DiagramNode, NodeStyle } from '@/types'
+import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 
 import { useInlineRecommendationsStore } from '../inlineRecommendations'
 import {
@@ -148,7 +149,9 @@ function commitMindMapReloadWithSelect(
 function commitMindMapReload(ctx: DiagramContext, result: SpecLoaderResult): void {
   if (!ctx.data.value?.nodes || !ctx.data.value?.connections) return
 
-  if (!ctx.data.value._mindmap_theme) {
+  const v2Visuals = readMindMapV2VisualDesignActive()
+
+  if (v2Visuals && !ctx.data.value._mindmap_theme) {
     const inferred = inferMindMapThemeIdFromNodes(ctx.data.value.nodes)
     if (inferred) ctx.data.value._mindmap_theme = inferred
   }
@@ -167,21 +170,23 @@ function commitMindMapReload(ctx: DiagramContext, result: SpecLoaderResult): voi
 
   const oldNodes = ctx.data.value.nodes
   const oldConnections = ctx.data.value.connections
-  const collapsedBefore = ctx.data.value._collapsed_paths ?? []
 
   ctx.data.value.nodes = result.nodes
   ctx.data.value.connections = result.connections
   ctx.data.value._node_styles = mergedNodeStyles
 
-  const remapped = remapMindMapCollapsedPathsAfterReload(
-    oldNodes,
-    oldConnections,
-    result.nodes,
-    result.connections,
-    collapsedBefore
-  )
-  const pruned = pruneMindMapCollapsedPaths(result.nodes, result.connections, remapped)
-  setMindMapCollapsedPaths(ctx.data.value as Record<string, unknown>, pruned)
+  if (v2Visuals) {
+    const collapsedBefore = ctx.data.value._collapsed_paths ?? []
+    const remapped = remapMindMapCollapsedPathsAfterReload(
+      oldNodes,
+      oldConnections,
+      result.nodes,
+      result.connections,
+      collapsedBefore
+    )
+    const pruned = pruneMindMapCollapsedPaths(result.nodes, result.connections, remapped)
+    setMindMapCollapsedPaths(ctx.data.value as Record<string, unknown>, pruned)
+  }
 }
 
 export function useMindMapOpsSlice(ctx: DiagramContext) {

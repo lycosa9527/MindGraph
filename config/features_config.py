@@ -125,6 +125,15 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_KNOWLEDGE_SPACE", "False").lower() == "true"
 
     @property
+    def FEATURE_MINDMAP_V2_CANVAS(self):
+        """Expose Classic/New mind map canvas choice in Language settings.
+
+        Disabled by default: all users stay on classic canvas; the segmented control is hidden.
+        Set FEATURE_MINDMAP_V2_CANVAS=True in .env to show the opt-in and allow new canvas.
+        """
+        return self._get_cached_value("FEATURE_MINDMAP_V2_CANVAS", "False").lower() == "true"
+
+    @property
     def FEATURE_DEBATEVERSE(self):
         """Enable DebateVerse (论境) debate system feature.
 

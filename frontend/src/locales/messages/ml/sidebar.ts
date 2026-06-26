@@ -1,5 +1,5 @@
 /**
- * ml UI �?sidebar
+ * ml UI � sidebar
  */
 
 export default {

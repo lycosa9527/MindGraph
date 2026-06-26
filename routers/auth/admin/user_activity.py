@@ -39,10 +39,15 @@ async def list_user_activity_admin(
 
     await assert_panel_user_readable(scope, user.organization_id, db, lang)
 
-    if source is not None and source.strip() and source.strip() not in (
-        "mindgraph",
-        "mindmate",
-        "dingtalk",
+    if (
+        source is not None
+        and source.strip()
+        and source.strip()
+        not in (
+            "mindgraph",
+            "mindmate",
+            "dingtalk",
+        )
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

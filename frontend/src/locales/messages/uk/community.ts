@@ -1,5 +1,5 @@
 /**
- * uk UI �?community
+ * uk UI � community
  */
 
 export default {

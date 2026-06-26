@@ -280,9 +280,7 @@ def _chat_scope_badge(scope: Optional[str]) -> str:
     }
     label = labels.get(normalized, scope)
     css_class = css.get(normalized, "scope-group")
-    return (
-        f'<span class="badge {css_class}">{html.escape(label)}</span>'
-    )
+    return f'<span class="badge {css_class}">{html.escape(label)}</span>'
 
 
 def _render_conversation(conv: ExportConversation) -> str:
@@ -290,9 +288,7 @@ def _render_conversation(conv: ExportConversation) -> str:
     server_badge = f'<span class="badge s{conv.server}">Server {conv.server}</span>'
     scope_badge = _chat_scope_badge(conv.dingtalk_chat_scope)
     title = html.escape(conv.name or conv.conversation_id)
-    sub = html.escape(
-        f"{conv.user_label} · {_fmt_ts(conv.created_at)}"
-    )
+    sub = html.escape(f"{conv.user_label} · {_fmt_ts(conv.created_at)}")
     bubbles_html = "".join(_render_bubble(b) for b in conv.bubbles)
     if not bubbles_html:
         bubbles_html = '<div class="empty">No messages</div>'
@@ -319,7 +315,7 @@ def render_html(bundle: ExportBundle) -> str:
         body_parts.extend(_render_conversation(c) for c in bundle.conversations)
     body = "".join(body_parts)
     return (
-        "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+        '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         f"<title>MindMate Export · {org_name}</title>"
         f"<style>{_HTML_CSS}</style></head><body>"

@@ -1,5 +1,5 @@
 /**
- * vi UI �?community
+ * vi UI � community
  */
 
 export default {

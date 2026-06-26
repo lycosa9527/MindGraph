@@ -1,5 +1,5 @@
 /**
- * lv UI �?sidebar
+ * lv UI � sidebar
  */
 
 export default {

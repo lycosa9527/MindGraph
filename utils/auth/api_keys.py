@@ -143,13 +143,40 @@ async def get_api_key_record(api_key: str, db: AsyncSession) -> Optional[APIKey]
     return result.scalar_one_or_none()
 
 
+async def _persist_api_key_usage_to_db(api_key: str, db: AsyncSession) -> bool:
+    """Increment usage_count in Postgres (quota / flush baseline). Returns True on success."""
+    try:
+        result = await db.execute(select(APIKey).where(APIKey.key == api_key))
+        key_record = result.scalar_one_or_none()
+        if not key_record:
+            logger.warning("[Auth] API key usage tracking failed: key record not found")
+            return False
+        key_record.usage_count += 1
+        key_record.last_used_at = datetime.now(UTC)
+        try:
+            await db.commit()
+        except BACKGROUND_INFRA_ERRORS:
+            await db.rollback()
+            raise
+        logger.debug(
+            "[Auth] API key used: %s (usage: %s/%s)",
+            key_record.name,
+            key_record.usage_count,
+            key_record.quota_limit or "unlimited",
+        )
+        return True
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.error("[Auth] Failed to track API key usage: %s", exc, exc_info=True)
+        return False
+
+
 async def track_api_key_usage(api_key: str, db: AsyncSession) -> None:
     """
     Increment usage counter for API key.
 
     Uses Redis INCR (O(1), non-blocking) when available so the hot path never
     blocks on a DB write.  Falls back to a direct Postgres update if Redis is
-    unavailable or the cache module is not installed.
+    unavailable, the cache module is not installed, or INCR fails.
 
     Args:
         api_key: API key string
@@ -159,32 +186,16 @@ async def track_api_key_usage(api_key: str, db: AsyncSession) -> None:
         cached = await _api_key_cache.get(api_key)
         if cached is not None:
             key_id = cached["id"]
-            await _api_key_cache.incr_usage(key_id)
-            logger.debug("[Auth] API key usage tracked via Redis INCR: id=%s", key_id)
-            return
-
-    # Redis unavailable or cache miss: fall back to direct DB update.
-    try:
-        result = await db.execute(select(APIKey).where(APIKey.key == api_key))
-        key_record = result.scalar_one_or_none()
-        if key_record:
-            key_record.usage_count += 1
-            key_record.last_used_at = datetime.now(UTC)
-            try:
-                await db.commit()
-            except BACKGROUND_INFRA_ERRORS:
-                await db.rollback()
-                raise
-            logger.debug(
-                "[Auth] API key used: %s (usage: %s/%s)",
-                key_record.name,
-                key_record.usage_count,
-                key_record.quota_limit or "unlimited",
+            new_count = await _api_key_cache.incr_usage(key_id)
+            if new_count > 0:
+                logger.debug("[Auth] API key usage tracked via Redis INCR: id=%s", key_id)
+                return
+            logger.warning(
+                "[Auth] Redis INCR failed for API key id=%s, falling back to Postgres",
+                key_id,
             )
-        else:
-            logger.warning("[Auth] API key usage tracking failed: key record not found")
-    except BACKGROUND_INFRA_ERRORS as exc:
-        logger.error("[Auth] Failed to track API key usage: %s", exc, exc_info=True)
+
+    await _persist_api_key_usage_to_db(api_key, db)
 
 
 async def generate_api_key(name: str, description: str, quota_limit: Optional[int], db: AsyncSession) -> str:

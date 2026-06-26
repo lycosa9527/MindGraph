@@ -127,7 +127,9 @@
 
 /* Mind map: allow four-directional + handles to extend outside node bounds */
 .vue-flow__node-branch:has(.mind-map-node),
-.vue-flow__node-topic:has(.mind-map-topic-node) {
+.vue-flow__node-branch:has(.mind-map-legacy-node),
+.vue-flow__node-topic:has(.mind-map-topic-node),
+.vue-flow__node-topic:has(.topic-node.pill-shape) {
   overflow: visible !important;
 }
 

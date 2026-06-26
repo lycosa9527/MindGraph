@@ -46,6 +46,10 @@ def _parse_outcome(raw: str) -> Optional[dict[str, Any]]:
     title = title_raw.strip() if isinstance(title_raw, str) else ""
     spec = data.get("spec")
     spec_dict = spec if isinstance(spec, dict) else None
+    user_raw = data.get("user_id")
+    user_id = int(user_raw) if isinstance(user_raw, int) and user_raw > 0 else None
+    org_raw = data.get("organization_id")
+    organization_id = int(org_raw) if isinstance(org_raw, int) and org_raw > 0 else None
     return {
         "reason": reason,
         "language": language,
@@ -53,12 +57,16 @@ def _parse_outcome(raw: str) -> Optional[dict[str, Any]]:
         "diagram_type": diagram_type,
         "title": title,
         "spec": spec_dict,
+        "user_id": user_id,
+        "organization_id": organization_id,
     }
 
 
 def _outcome_from_link_row(row: GenerationPreviewLink) -> dict[str, Any]:
     diagram_raw = row.diagram_id
     diagram_id = diagram_raw.strip() if isinstance(diagram_raw, str) and diagram_raw.strip() else ""
+    user_id = int(row.user_id) if isinstance(row.user_id, int) and row.user_id > 0 else None
+    org_id = int(row.organization_id) if isinstance(row.organization_id, int) and row.organization_id > 0 else None
     return {
         "reason": (row.skip_reason or "").strip(),
         "language": (row.language or "zh").strip() or "zh",
@@ -66,6 +74,8 @@ def _outcome_from_link_row(row: GenerationPreviewLink) -> dict[str, Any]:
         "diagram_type": (row.diagram_type or "").strip(),
         "title": (row.title or "").strip(),
         "spec": row.spec if isinstance(row.spec, dict) else None,
+        "user_id": user_id,
+        "organization_id": org_id,
     }
 
 
@@ -140,6 +150,10 @@ async def store_generation_preview_outcome(
         "diagram_type": (diagram_type or "").strip()[:64],
         "title": (title or "").strip()[:200],
     }
+    if user_id is not None and user_id > 0:
+        payload_obj["user_id"] = int(user_id)
+    if organization_id is not None and organization_id > 0:
+        payload_obj["organization_id"] = int(organization_id)
     if spec is not None:
         payload_obj["spec"] = spec
     payload = json.dumps(payload_obj, separators=(",", ":"))
@@ -266,6 +280,8 @@ async def update_generation_preview_diagram_id(unique_id: str, diagram_id: str) 
             exc,
         )
 
+    existing_user = existing.get("user_id")
+    existing_org = existing.get("organization_id")
     redis_ok = await store_generation_preview_outcome(
         uid,
         reason="",
@@ -273,5 +289,7 @@ async def update_generation_preview_diagram_id(unique_id: str, diagram_id: str) 
         diagram_id=did,
         diagram_type=str(existing.get("diagram_type") or ""),
         title=str(existing.get("title") or ""),
+        user_id=existing_user if isinstance(existing_user, int) else None,
+        organization_id=existing_org if isinstance(existing_org, int) else None,
     )
     return redis_ok or db_ok

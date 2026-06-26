@@ -1,5 +1,5 @@
 /**
- * da UI �?notification
+ * da UI � notification
  */
 
 export default {

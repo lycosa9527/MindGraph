@@ -1,5 +1,5 @@
 /**
- * en UI �?auth
+ * en UI � auth
  */
 
 export default {
@@ -178,8 +178,7 @@ export default {
   'auth.dingtalkBindUnbindError': 'Could not unlink. Please try again.',
   'auth.dingtalkBindRebind': 'Link again',
   'auth.dingtalkBindTitle': 'Link DingTalk account',
-  'auth.dingtalkBindInstructions':
-    'Send this QR code as an image (only the image) in your school DingTalk MindBot chat.',
+  'auth.dingtalkBindInstructions': 'Send this QR code as an image (only the image) in your school DingTalk MindBot chat.',
   'auth.dingtalkBindQrAlt': 'DingTalk bind QR code',
   'auth.dingtalkBindCountdown': 'QR expires in {s}s',
   'auth.dingtalkBindQrRefreshIn': 'QR refreshes in {s}s',

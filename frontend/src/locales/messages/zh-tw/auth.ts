@@ -1,5 +1,5 @@
 /**
- * zh-tw UI �?auth
+ * zh-tw UI � auth
  */
 
 export default {

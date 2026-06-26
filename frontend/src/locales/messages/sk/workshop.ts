@@ -1,5 +1,5 @@
 /**
- * sk UI �?workshop
+ * sk UI � workshop
  */
 
 export default {

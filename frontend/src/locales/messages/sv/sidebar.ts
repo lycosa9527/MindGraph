@@ -1,5 +1,5 @@
 /**
- * sv UI �?sidebar
+ * sv UI � sidebar
  */
 
 export default {

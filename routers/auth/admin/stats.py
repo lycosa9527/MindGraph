@@ -38,9 +38,10 @@ from utils.auth.mindbot_token_stats import (
     add_service_period,
     add_token_period,
     aggregate_mindbot_token_totals,
-    aggregate_mindbot_tokens_by_org_today,
+    aggregate_mindbot_tokens_by_org,
     merge_org_token_stats,
 )
+from utils.auth.api_key_usage_stats import GENERATE_DINGTALK_ENDPOINT
 from utils.auth.school_tier import school_dashboard_quotas_payload
 
 from ..dependencies import (
@@ -50,6 +51,7 @@ from ..dependencies import (
 )
 from ..helpers import get_beijing_now, get_beijing_today_start_utc
 from .school_scope import resolve_school_dashboard_org_id_scoped
+from .stats_helpers import build_admin_token_rankings as _build_admin_token_rankings
 from .stats_helpers import sql_count_column as _sql_count
 from .stats_helpers import token_stats_by_org_today as _token_stats_by_org_today
 from .stats_helpers import (
@@ -122,6 +124,7 @@ async def get_stats_admin(
     # Calculate week_ago from today start (00:00:00) to match token-stats endpoint behavior
     beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = (beijing_today_start - timedelta(days=7)).astimezone(timezone.utc).replace(tzinfo=None)
+    month_ago = (beijing_today_start - timedelta(days=30)).astimezone(timezone.utc).replace(tzinfo=None)
     recent_registrations = (
         await db.execute(select(_sql_count(User.id)).where(User.created_at >= today_start))
     ).scalar_one()
@@ -134,6 +137,7 @@ async def get_stats_admin(
     token_stats_by_org_mindgraph: Dict[str, Dict[str, Any]] = {}
     token_stats_by_org_mindmate: Dict[str, Dict[str, Any]] = {}
     top_users_by_tokens_today: list[Dict[str, Any]] = []
+    token_rankings: Dict[str, Dict[str, Any]] = {}
 
     try:
         # Global token stats for past week
@@ -160,7 +164,7 @@ async def get_stats_admin(
         token_stats_by_org = await _token_stats_by_org_today(db, today_start)
         token_stats_by_org_mindgraph = await _token_stats_by_org_today(db, today_start, "mindgraph")
         token_stats_by_org_mindmate = await _token_stats_by_org_today(db, today_start, "mindmate")
-        mindbot_orgs_today = await aggregate_mindbot_tokens_by_org_today(db, today_start)
+        mindbot_orgs_today = await aggregate_mindbot_tokens_by_org(db, today_start)
         token_stats_by_org = merge_org_token_stats(token_stats_by_org, mindbot_orgs_today)
         token_stats_by_org_mindmate = merge_org_token_stats(
             token_stats_by_org_mindmate,
@@ -172,6 +176,13 @@ async def get_stats_admin(
             today_start,
             mask_phone=True,
             include_org_name=True,
+        )
+
+        token_rankings = await _build_admin_token_rankings(
+            db,
+            today_start=today_start,
+            week_ago=week_ago,
+            month_ago=month_ago,
         )
 
     except DATABASE_ERRORS as e:
@@ -186,6 +197,7 @@ async def get_stats_admin(
         "token_stats_by_org_mindgraph": token_stats_by_org_mindgraph,
         "token_stats_by_org_mindmate": token_stats_by_org_mindmate,
         "top_users_by_tokens_today": top_users_by_tokens_today,
+        "token_rankings": token_rankings,
     }
 
 
@@ -628,7 +640,7 @@ async def get_token_stats_admin(
             )
 
         _dingtalk_path = and_(
-            TokenUsage.endpoint_path == "/api/generate_dingtalk",
+            TokenUsage.endpoint_path == GENERATE_DINGTALK_ENDPOINT,
             TokenUsage.success,
         )
         for d_key, d_since in (

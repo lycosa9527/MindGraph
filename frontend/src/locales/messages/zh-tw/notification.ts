@@ -1,5 +1,5 @@
 /**
- * zh-tw UI �?notification
+ * zh-tw UI � notification
  */
 
 export default {

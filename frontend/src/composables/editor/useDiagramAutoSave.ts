@@ -235,7 +235,10 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
         })
         if (result.action === 'saved' && result.diagramId) {
           const canvasPath = canvasEditorPathForRoute(route.path)
-          router.replace({ path: canvasPath, query: { diagramId: result.diagramId } })
+          const currentId = route.query.diagramId
+          if (String(currentId ?? '') !== String(result.diagramId)) {
+            router.replace({ path: canvasPath, query: { diagramId: result.diagramId } })
+          }
         }
         return { saved: true, reason: 'success' }
       }

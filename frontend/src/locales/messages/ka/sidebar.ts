@@ -1,5 +1,5 @@
 /**
- * ka UI �?sidebar
+ * ka UI � sidebar
  */
 
 export default {

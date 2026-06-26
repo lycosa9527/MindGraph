@@ -9,6 +9,7 @@ import pytest
 from services.diagram.generation_skip_registry import (
     GEN_LIB_SKIP_PREFIX,
     get_generation_library_skip,
+    get_generation_preview_outcome,
     store_generation_library_skip,
 )
 
@@ -109,8 +110,6 @@ async def test_get_generation_preview_outcome_db_fallback() -> None:
             return_value=repo,
         ),
     ):
-        from services.diagram.generation_skip_registry import get_generation_preview_outcome
-
         data = await get_generation_preview_outcome("deadbeef")
     assert data is not None
     assert data["diagram_id"] == "550e8400-e29b-41d4-a716-446655440000"

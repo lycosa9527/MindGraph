@@ -1,5 +1,5 @@
 /**
- * km UI �?workshop
+ * km UI � workshop
  */
 
 export default {

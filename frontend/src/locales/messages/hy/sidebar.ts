@@ -1,5 +1,5 @@
 /**
- * hy UI �?sidebar
+ * hy UI � sidebar
  */
 
 export default {

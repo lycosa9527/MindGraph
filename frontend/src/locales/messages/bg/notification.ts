@@ -1,5 +1,5 @@
 /**
- * bg UI �?notification
+ * bg UI � notification
  */
 
 export default {

@@ -100,6 +100,30 @@ def _fetch_nullable_fk_cols(
         return {r[0] for r in rows}
 
 
+def _load_user_org_cache(live_engine: Engine) -> Dict[int, int]:
+    """Map live user id → organization_id for org backfill on merge."""
+    with live_engine.connect() as conn:
+        rows = conn.execute(
+            text('SELECT id, organization_id FROM users WHERE organization_id IS NOT NULL')
+        )
+        return {row[0]: row[1] for row in rows}
+
+
+def _backfill_org_from_user(
+    values: Dict[str, Any],
+    config: Dict[str, Any],
+    user_org_cache: Dict[int, int],
+) -> None:
+    """Set organization_id from the mapped user when the dump row omitted it."""
+    if not config.get("backfill_org_from_user"):
+        return
+    if values.get("organization_id") is not None:
+        return
+    user_id = values.get("user_id")
+    if isinstance(user_id, int) and user_id in user_org_cache:
+        values["organization_id"] = user_org_cache[user_id]
+
+
 def _remap_fk_values(
     values: Dict[str, Any],
     fk_remaps: Dict[str, str],
@@ -253,6 +277,10 @@ def _classify_row(
     if watermark_col:
         live_watermark = _fetch_live_watermark(live_engine, table_name, watermark_col)
 
+    user_org_cache: Dict[int, int] = {}
+    if config.get("backfill_org_from_user"):
+        user_org_cache = _load_user_org_cache(live_engine)
+
     new_rows = 0
     duplicate_rows = 0
     orphaned_rows = 0
@@ -266,6 +294,8 @@ def _classify_row(
         if broken:
             orphaned_rows += 1
             continue
+
+        _backfill_org_from_user(values, config, user_org_cache)
 
         if singleton:
             live_uid = values.get("user_id")
@@ -359,6 +389,10 @@ def _simulate_new_row_ids(
     if watermark_col:
         live_watermark = _fetch_live_watermark(live_engine, table_name, watermark_col)
 
+    user_org_cache: Dict[int, int] = {}
+    if config.get("backfill_org_from_user"):
+        user_org_cache = _load_user_org_cache(live_engine)
+
     table_id_map: Dict[Any, Any] = dict(id_maps.get(table_name, {}))
     synthetic = 900_000_000
 
@@ -368,6 +402,8 @@ def _simulate_new_row_ids(
 
         if _remap_fk_values(values, fk_remaps, id_maps, nullable_fk_cols):
             continue
+
+        _backfill_org_from_user(values, config, user_org_cache)
 
         if singleton:
             live_uid = values.get("user_id")
@@ -476,6 +512,10 @@ def merge_table(
     if watermark_col:
         live_watermark = _fetch_live_watermark(live_engine, table_name, watermark_col)
 
+    user_org_cache: Dict[int, int] = {}
+    if config.get("backfill_org_from_user"):
+        user_org_cache = _load_user_org_cache(live_engine)
+
     table_id_map: Dict[Any, Any] = {}
     inserted = 0
     skipped = 0
@@ -492,6 +532,8 @@ def merge_table(
         if broken:
             orphaned += 1
             continue
+
+        _backfill_org_from_user(values, config, user_org_cache)
 
         if singleton:
             live_uid = values.get("user_id")
@@ -654,9 +696,7 @@ def reset_all_sequences(live_engine: Engine) -> None:
                         sp.rollback()
                         continue
                     conn.execute(
-                        text(
-                            f'SELECT setval(:seq, COALESCE((SELECT MAX("{pk_col}") FROM "{table_name}"), 1))'
-                        ),
+                        text(f'SELECT setval(:seq, COALESCE((SELECT MAX("{pk_col}") FROM "{table_name}"), 1))'),
                         {"seq": seq_name},
                     )
                     sp.commit()

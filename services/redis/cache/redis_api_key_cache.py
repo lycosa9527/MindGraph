@@ -137,10 +137,10 @@ class _APIKeyCache:
             return 0
 
     async def get_usage_delta(self, key_id: int) -> int:
-        """Read and reset the pending usage delta for ``key_id``.
+        """Claim the pending usage delta for ``key_id`` (GETDEL, with GET+DEL fallback).
 
-        Used by the background flush job to drain the Redis counter into
-        Postgres atomically (GETDEL).  Returns 0 on any failure.
+        Used by the background flush job before persisting to Postgres. Call
+        :meth:`restore_usage_delta` if the DB write fails so counts are not lost.
         """
         if not is_redis_available():
             return 0
@@ -150,10 +150,38 @@ class _APIKeyCache:
         usage_key = _keys.API_KEY_USAGE_INCR.format(key_id=key_id)
         try:
             raw = await redis.getdel(usage_key)
+            if raw is not None:
+                return int(raw)
+        except REDIS_ERRORS as exc:
+            logger.debug("[APIKeyCache] get_usage_delta GETDEL failed: %s", exc)
+        try:
+            async with redis.pipeline(transaction=True) as pipe:
+                pipe.get(usage_key)
+                pipe.delete(usage_key)
+                results = await pipe.execute()
+            raw = results[0]
             return int(raw) if raw else 0
         except REDIS_ERRORS as exc:
-            logger.debug("[APIKeyCache] get_usage_delta failed: %s", exc)
+            logger.debug("[APIKeyCache] get_usage_delta GET+DEL failed: %s", exc)
             return 0
+
+    async def restore_usage_delta(self, key_id: int, delta: int) -> None:
+        """Restore a claimed delta when Postgres persist fails."""
+        if delta <= 0:
+            return
+        if not is_redis_available():
+            return
+        redis = get_async_redis()
+        if not redis:
+            return
+        usage_key = _keys.API_KEY_USAGE_INCR.format(key_id=key_id)
+        try:
+            async with redis.pipeline(transaction=False) as pipe:
+                pipe.incrby(usage_key, delta)
+                pipe.expire(usage_key, _keys.TTL_API_KEY * 12, nx=True)
+                await pipe.execute()
+        except REDIS_ERRORS as exc:
+            logger.warning("[APIKeyCache] restore_usage_delta failed key_id=%s: %s", key_id, exc)
 
     @staticmethod
     def is_expired(cached: Dict) -> bool:

@@ -1,5 +1,5 @@
 /**
- * dv UI �?notification
+ * dv UI � notification
  */
 
 export default {

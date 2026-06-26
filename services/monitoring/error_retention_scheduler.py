@@ -88,9 +88,7 @@ async def purge_expired_error_events() -> int:
             delete(ErrorEvent).where(ErrorEvent.created_at < cutoff).returning(ErrorEvent.id)
         )
         deleted = len(result.fetchall())
-        await session.execute(
-            delete(ErrorGroup).where(~ErrorGroup.id.in_(select(ErrorEvent.group_id)))
-        )
+        await session.execute(delete(ErrorGroup).where(~ErrorGroup.id.in_(select(ErrorEvent.group_id))))
         await session.commit()
     if deleted:
         logger.info("[ErrorRetention] Purged %s error events older than %s days", deleted, error_retention_days())

@@ -25,11 +25,13 @@ from agents.core.workflow import agent_graph_workflow_with_styles
     ],
 )
 def test_extract_diagram_type_from_llm_response(raw: str, expected: str | None) -> None:
+    """Parse diagram type tokens from raw LLM detection output."""
     assert _extract_diagram_type_from_llm_response(raw) == expected
 
 
 @pytest.mark.asyncio
 async def test_workflow_unclear_detection_still_generates_mind_map() -> None:
+    """Unclear detection clarity still proceeds with the detected mind map type."""
     detection = {
         "diagram_type": "mind_map",
         "clarity": "unclear",
@@ -65,6 +67,7 @@ async def test_workflow_unclear_detection_still_generates_mind_map() -> None:
 
 @pytest.mark.asyncio
 async def test_workflow_forced_type_skips_detection() -> None:
+    """Forced diagram type bypasses LLM detection entirely."""
     detect_mock = AsyncMock()
     parsed = ParsedRequirements(
         structure_mode="fixed",

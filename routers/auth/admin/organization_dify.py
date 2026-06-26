@@ -30,6 +30,25 @@ MIN_CHAIN_OF_THOUGHT_MAX_CHARS = 0
 MAX_CHAIN_OF_THOUGHT_MAX_CHARS = 32000
 
 
+def _coerce_int(raw: object, default: int) -> int:
+    """Parse an int from JSON/request body values."""
+    if isinstance(raw, bool):
+        return default
+    if isinstance(raw, int):
+        return raw
+    if isinstance(raw, float) and raw.is_integer():
+        return int(raw)
+    if isinstance(raw, str):
+        stripped = raw.strip()
+        if not stripped:
+            return default
+        try:
+            return int(stripped)
+        except ValueError:
+            return default
+    return default
+
+
 def org_dify_behavior_fields(org: Organization) -> dict[str, Any]:
     """Shared MindBot/MindMate Dify behavior settings stored on the organization."""
     return {
@@ -89,10 +108,7 @@ def _probe_server_from_body(body: Optional[dict]) -> Optional[int]:
     if not body:
         return None
     raw = body.get("server")
-    try:
-        value = int(raw)  # type: ignore[arg-type]
-    except (TypeError, ValueError):
-        return None
+    value = _coerce_int(raw, 0)
     return value if value in (1, 2) else None
 
 
@@ -207,10 +223,7 @@ def _apply_dify_server_selection(org: Organization, request: dict) -> None:
     """Apply active-server selector and failover toggle from a request payload."""
     if "dify_active_server" in request:
         raw = request.get("dify_active_server")
-        try:
-            value = int(raw)  # type: ignore[arg-type]
-        except (TypeError, ValueError):
-            value = 1
+        value = _coerce_int(raw, 1)
         setattr(org, "dify_active_server", value if value in (1, 2) else 1)
     if "dify_failover_enabled" in request:
         setattr(org, "dify_failover_enabled", bool(request.get("dify_failover_enabled")))
@@ -251,6 +264,30 @@ def _apply_dify_pair_on_update(
     key_raw = (cast(Optional[str], getattr(org, key_field, None)) or "").strip()
     if base_url or key_raw:
         _validate_dify_pair(base_url, key_raw, lang, url_field, key_field)
+
+
+ORG_DIFY_UPDATE_REQUEST_KEYS = frozenset(
+    {
+        "dify_api_base_url",
+        "dify_api_key",
+        "dify_api_base_url_2",
+        "dify_api_key_2",
+        "dify_active_server",
+        "dify_failover_enabled",
+        "dify_timeout_seconds",
+        "show_chain_of_thought",
+        "show_chain_of_thought_oto",
+        "show_chain_of_thought_internal_group",
+        "show_chain_of_thought_cross_org_group",
+        "chain_of_thought_max_chars",
+        "dingtalk_ai_card_streaming_max_chars",
+    }
+)
+
+
+def request_updates_dify_settings(request: dict) -> bool:
+    """Return True when the org update body touches MindMate Dify fields."""
+    return bool(ORG_DIFY_UPDATE_REQUEST_KEYS.intersection(request))
 
 
 def apply_dify_on_update(org: Organization, request: dict, lang: Language) -> None:

@@ -1,5 +1,5 @@
 /**
- * ne UI �?sidebar
+ * ne UI � sidebar
  */
 
 export default {

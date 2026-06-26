@@ -1,5 +1,5 @@
 /**
- * sw UI �?notification
+ * sw UI � notification
  */
 
 export default {

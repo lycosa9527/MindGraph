@@ -1,8 +1,14 @@
 /**
- * tn UI �?knowledge
+ * tn UI � knowledge
  */
 
 export default {
+  'fileCenterLibrary.title': 'Packages',
+  'fileCenterLibrary.subtitle': 'Source collections grouped by diagram (File Center).',
+  'fileCenterLibrary.openDiagram': 'Open diagram',
+  'fileCenterLibrary.badgeCanvas': 'Canvas',
+  'fileCenterLibrary.badgeExtension': 'Extension',
+  'fileCenterLibrary.badgeUpload': 'Upload',
   'chunkTest.history.confirmDeleteBody': 'Are you sure you want to delete this test? This cannot be undone.',
   'chunkTest.history.confirmDeleteTitle': 'Delete Test',
   'chunkTest.history.delete': 'Delete',

@@ -1,5 +1,5 @@
 /**
- * tg UI �?sidebar
+ * tg UI � sidebar
  */
 
 export default {

@@ -135,10 +135,7 @@ class MindMapAgent(BaseAgent):
         if isinstance(children, list) and children:
             labels = ", ".join(str(c) for c in children if str(c).strip())
             if is_chinese_prompt_shell_language(language):
-                return (
-                    f"请为以下描述创建思维导图：{prompt}\n\n"
-                    f"用户指定的主分支（必须原样使用）：{labels}"
-                )
+                return f"请为以下描述创建思维导图：{prompt}\n\n用户指定的主分支（必须原样使用）：{labels}"
             return (
                 f"Please create a mind map for the following description: {prompt}\n\n"
                 f"User-specified main branches (use EXACT labels): {labels}"

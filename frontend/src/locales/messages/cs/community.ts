@@ -1,5 +1,5 @@
 /**
- * cs UI �?community
+ * cs UI � community
  */
 
 export default {

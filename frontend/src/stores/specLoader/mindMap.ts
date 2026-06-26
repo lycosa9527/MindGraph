@@ -12,6 +12,7 @@ import {
   MINDMAP_SIBLING_GAP,
   MINDMAP_TARGET_EXTENT,
 } from '@/composables/diagrams/layoutConfig'
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import {
   MIND_MAP_GEOMETRY,
   mindMapBranchFontSize,
@@ -21,6 +22,7 @@ import {
   resolveMindMapTopicBorderColor,
 } from '@/config/mindMapGeometry'
 import { computeSymmetricRootStartYs } from '@/utils/mindMapSideStacking'
+import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import type { Connection, DiagramNode } from '@/types'
 
 import {
@@ -511,7 +513,8 @@ function layoutMindMapSideSimple(
   connections: Connection[],
   startHandleIndex: number,
   _totalBranches: number,
-  topicBorderColor: string
+  topicBorderColor: string,
+  v2Visuals: boolean
 ): void {
   if (branches.length === 0) return
 
@@ -664,11 +667,21 @@ function layoutMindMapSideSimple(
   }
   topLevel.forEach((n) => createNodes(n, topicOuterEdge))
 
+  let handleIndex = 0
+
   function createConnections(node: LayoutNode, parentId: string): void {
     if (parentId === 'topic') {
-      const sourceHandle = side === 'right' ? 'mindmap-right' : 'mindmap-left'
+      const sourceHandle = v2Visuals
+        ? side === 'right'
+          ? 'mindmap-right'
+          : 'mindmap-left'
+        : side === 'right'
+          ? `mindmap-right-${handleIndex}`
+          : `mindmap-left-${handleIndex}`
       const targetHandle = side === 'left' ? 'right-target' : 'left'
-      const strokeColor = topicBorderColor
+      const strokeColor = v2Visuals
+        ? topicBorderColor
+        : getMindmapBranchColor(node.branchIndex).border
 
       connections.push({
         id: `edge-topic-${node.id}`,
@@ -678,9 +691,14 @@ function layoutMindMapSideSimple(
         targetHandle,
         style: { strokeColor },
       })
+      if (!v2Visuals) {
+        handleIndex++
+      }
     } else {
       const isLeftSide = side === 'left'
-      const strokeColor = topicBorderColor
+      const strokeColor = v2Visuals
+        ? topicBorderColor
+        : getMindmapBranchColor(node.branchIndex).border
 
       connections.push({
         id: `edge-${parentId}-${node.id}`,
@@ -761,6 +779,7 @@ export function loadMindMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   nodes.push(topicNode)
 
   const topicBorderColor = resolveMindMapTopicBorderColor(topicNode)
+  const v2Visuals = readMindMapV2VisualDesignActive()
 
   // Layout right side branches
   layoutMindMapSideSimple(
@@ -774,7 +793,8 @@ export function loadMindMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     connections,
     0,
     allBranches.length,
-    topicBorderColor
+    topicBorderColor,
+    v2Visuals
   )
 
   // Layout left side branches
@@ -789,7 +809,8 @@ export function loadMindMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     connections,
     rightBranches.length,
     allBranches.length,
-    topicBorderColor
+    topicBorderColor,
+    v2Visuals
   )
 
   // Step 4: Center entire layout so topic node is at canvas center

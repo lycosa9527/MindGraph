@@ -10,6 +10,11 @@ import { defineStore } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import type { ModelLoadPhase } from '@/stores/llmResults'
+import {
+  cloneMindMateMessages,
+  type ActiveThreadSnapshot,
+  type MindMateMessage,
+} from '@/stores/mindmateActiveThread'
 import { isLlmGenerating } from '@/utils/llmLoadPhase'
 
 // ============================================================================
@@ -62,9 +67,16 @@ export const useMindMateStore = defineStore('mindmate', () => {
   /** Avatar / status ring phase (sending → waiting → streaming → idle). */
   const loadPhase = ref<ModelLoadPhase>('idle')
 
-  // Message cache for prefetched conversations (convId -> messages)
+  // Message cache for prefetched conversations (convId -> messages).
+  // Legacy prefetch path; navigation restore uses activeThread* below.
   const messageCache = ref<Map<string, CachedDifyMessage[]>>(new Map())
   const prefetchingConversations = ref<Set<string>>(new Set())
+
+  /** In-memory active conversation thread (survives route unmount). */
+  const activeThreadConversationId = ref<string | null>(null)
+  const activeThreadMessages = ref<MindMateMessage[]>([])
+  const activeThreadHasGreeted = ref(false)
+  const activeThreadUpdatedAt = ref(0)
 
   // =========================================================================
   // Computed
@@ -284,6 +296,35 @@ export const useMindMateStore = defineStore('mindmate', () => {
     clearMessagesFromStorage(convId)
   }
 
+  function setActiveThread(convId: string, messages: MindMateMessage[], hasGreeted: boolean): void {
+    activeThreadConversationId.value = convId
+    activeThreadMessages.value = cloneMindMateMessages(messages)
+    activeThreadHasGreeted.value = hasGreeted
+    activeThreadUpdatedAt.value = Date.now()
+  }
+
+  function clearActiveThread(): void {
+    activeThreadConversationId.value = null
+    activeThreadMessages.value = []
+    activeThreadHasGreeted.value = false
+    activeThreadUpdatedAt.value = 0
+  }
+
+  function getActiveThread(convId: string): ActiveThreadSnapshot | null {
+    if (activeThreadConversationId.value !== convId) {
+      return null
+    }
+    if (activeThreadMessages.value.length === 0) {
+      return null
+    }
+    return {
+      conversationId: convId,
+      messages: cloneMindMateMessages(activeThreadMessages.value),
+      hasGreeted: activeThreadHasGreeted.value,
+      updatedAt: activeThreadUpdatedAt.value,
+    }
+  }
+
   /**
    * Set the current conversation (when loading from history)
    */
@@ -332,6 +373,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
       currentConversationId.value = null
       conversationTitle.value = 'MindMate'
       messageCount.value = 0
+      clearActiveThread()
       eventBus.emit('mindmate:start_new_conversation', {})
     }
 
@@ -367,6 +409,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
     currentConversationId.value = null
     conversationTitle.value = 'MindMate'
     messageCount.value = 0
+    clearActiveThread()
     eventBus.emit('mindmate:start_new_conversation', {})
   }
 
@@ -451,6 +494,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
     messageCache.value.clear()
     prefetchingConversations.value.clear()
     clearAllMessagesFromStorage()
+    clearActiveThread()
   }
 
   // =========================================================================
@@ -465,6 +509,10 @@ export const useMindMateStore = defineStore('mindmate', () => {
     conversationTitle,
     isLoadingConversations,
     messageCount,
+    activeThreadConversationId,
+    activeThreadMessages,
+    activeThreadHasGreeted,
+    activeThreadUpdatedAt,
 
     // LLM load phase (avatar ring)
     loadPhase,
@@ -493,5 +541,10 @@ export const useMindMateStore = defineStore('mindmate', () => {
     getCachedMessages,
     clearMessageCache,
     getConversationDifyUser,
+    setActiveThread,
+    clearActiveThread,
+    getActiveThread,
   }
 })
+
+export type { MindMateMessage, MindMateFile, FeedbackRating } from '@/stores/mindmateActiveThread'

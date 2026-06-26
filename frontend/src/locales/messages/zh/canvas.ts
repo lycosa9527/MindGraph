@@ -107,6 +107,7 @@ export default {
   'canvas.toolbar.mindMapThemeRoseWarm': '暖调玫瑰',
   'canvas.toolbar.selectBranchForSibling': '请先选中一个分支或子节点',
   'canvas.toolbar.siblingAdded': '已添加同级节点',
+  'canvas.toolbar.addCause': '添加原因',
   'canvas.toolbar.addCauseHistory': '添加原因',
   'canvas.toolbar.addEffect': '添加结果',
   'canvas.toolbar.addEffectHistory': '添加结果',

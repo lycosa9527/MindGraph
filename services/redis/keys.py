@@ -75,7 +75,7 @@ TTL_FEATURE_ACCESS = 86_400
 DIFY_SERVER_HEALTH = "dify:health:{org_id}:{server}"
 DIFY_HEALTH_POLLER_LOCK = "dify:health:poller:lock"
 TTL_DIFY_SERVER_HEALTH = 300  # safety net; poller refreshes every ~30 s
-TTL_DIFY_HEALTH_POLLER_LOCK = 90
+TTL_DIFY_HEALTH_POLLER_LOCK = 300  # must exceed worst-case probe cycle duration
 
 # ---------------------------------------------------------------------------
 # Cache loader lock  (redis_cache_loader.py)

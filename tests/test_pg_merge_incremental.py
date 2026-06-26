@@ -10,7 +10,11 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.pool import StaticPool
 
 from services.admin import pg_merge_table_ops
-from services.admin.pg_merge_table_ops import merge_table, preview_table
+from services.admin.pg_merge_table_ops import (
+    _backfill_org_from_user,
+    merge_table,
+    preview_table,
+)
 
 _TS = datetime(2026, 1, 15, 12, 0, 0)
 _TS2 = datetime(2026, 1, 16, 12, 0, 0)
@@ -36,6 +40,7 @@ def _create_merge_tables(engine: Engine) -> None:
     CREATE TABLE users (
         id INTEGER PRIMARY KEY,
         phone VARCHAR(64) UNIQUE,
+        organization_id INTEGER,
         password_hash VARCHAR(255) NOT NULL,
         role VARCHAR(30) NOT NULL DEFAULT 'teacher'
     );
@@ -90,14 +95,9 @@ def _live_engine() -> Engine:
     )
     _create_merge_tables(engine)
     with engine.begin() as conn:
+        conn.execute(text("INSERT INTO organizations (id, code, name) VALUES (1, 'org-a', 'Org A')"))
         conn.execute(
-            text("INSERT INTO organizations (id, code, name) VALUES (1, 'org-a', 'Org A')")
-        )
-        conn.execute(
-            text(
-                "INSERT INTO users (id, phone, password_hash, role) "
-                "VALUES (1, '10000000001', 'hash', 'teacher')"
-            )
+            text("INSERT INTO users (id, phone, password_hash, role) VALUES (1, '10000000001', 'hash', 'teacher')")
         )
         conn.execute(
             text(
@@ -127,14 +127,9 @@ def _staging_engine() -> Engine:
     )
     _create_merge_tables(engine)
     with engine.begin() as conn:
+        conn.execute(text("INSERT INTO organizations (id, code, name) VALUES (1, 'org-a', 'Org A')"))
         conn.execute(
-            text("INSERT INTO organizations (id, code, name) VALUES (1, 'org-a', 'Org A')")
-        )
-        conn.execute(
-            text(
-                "INSERT INTO users (id, phone, password_hash, role) "
-                "VALUES (1, '10000000001', 'hash', 'teacher')"
-            )
+            text("INSERT INTO users (id, phone, password_hash, role) VALUES (1, '10000000001', 'hash', 'teacher')")
         )
         conn.execute(
             text(
@@ -164,11 +159,12 @@ def _base_id_maps() -> dict[str, dict[int, int]]:
     }
 
 
+@pytest.mark.usefixtures("nullable_fk_patch")
 def test_token_usage_preview_counts(
-    nullable_fk_patch: None,
     live_engine: Engine,
     staging_engine: Engine,
 ) -> None:
+    """Preview counts new, duplicate, and orphaned token_usage rows."""
     id_maps = _base_id_maps()
     preview = preview_table("token_usage", staging_engine, live_engine, id_maps)
     assert preview == {"new_rows": 1, "duplicate_rows": 1, "orphaned_rows": 0}
@@ -177,7 +173,7 @@ def test_token_usage_preview_counts(
 @pytest.fixture(name="orm_row_patch")
 def _orm_row_patch(monkeypatch: pytest.MonkeyPatch) -> None:
     """SQLite returns DATETIME as str; PostgreSQL staging restores real datetimes."""
-    original = pg_merge_table_ops._row_for_orm_table
+    original = getattr(pg_merge_table_ops, "_row_for_orm_table")
 
     def _coerce_datetimes(table, values):
         row = original(table, values)
@@ -192,12 +188,12 @@ def _orm_row_patch(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(pg_merge_table_ops, "_row_for_orm_table", _coerce_datetimes)
 
 
+@pytest.mark.usefixtures("nullable_fk_patch", "orm_row_patch")
 def test_token_usage_merge_is_idempotent(
-    nullable_fk_patch: None,
-    orm_row_patch: None,
     live_engine: Engine,
     staging_engine: Engine,
 ) -> None:
+    """Second merge pass skips rows already inserted from staging."""
     id_maps = _base_id_maps()
     first = merge_table("token_usage", staging_engine, live_engine, id_maps)
     assert first["inserted"] == 1
@@ -218,18 +214,32 @@ def test_token_usage_merge_is_idempotent(
     assert count == 2
 
 
+@pytest.mark.usefixtures("nullable_fk_patch")
 def test_update_notifications_preserve_pk_skips_conflicts(
-    nullable_fk_patch: None,
     live_engine: Engine,
     staging_engine: Engine,
 ) -> None:
+    """Conflicting update_notifications primary keys are skipped, not overwritten."""
     id_maps = _base_id_maps()
     result = merge_table("update_notifications", staging_engine, live_engine, id_maps)
     assert result["inserted"] == 1
     assert result["skipped"] == 1
 
     with live_engine.connect() as conn:
-        rows = conn.execute(
-            text("SELECT id, title FROM update_notifications ORDER BY id")
-        ).fetchall()
+        rows = conn.execute(text("SELECT id, title FROM update_notifications ORDER BY id")).fetchall()
     assert rows == [(1, "Live"), (2, "Staging new")]
+
+
+def test_backfill_org_from_user_sets_org_when_missing() -> None:
+    values = {"user_id": 5, "organization_id": None}
+    config = {"backfill_org_from_user": True}
+    cache = {5: 99}
+    _backfill_org_from_user(values, config, cache)
+    assert values["organization_id"] == 99
+
+
+def test_backfill_org_from_user_leaves_existing_org() -> None:
+    values = {"user_id": 5, "organization_id": 12}
+    config = {"backfill_org_from_user": True}
+    _backfill_org_from_user(values, config, {5: 99})
+    assert values["organization_id"] == 12

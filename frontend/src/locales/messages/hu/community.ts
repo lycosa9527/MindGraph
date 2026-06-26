@@ -1,5 +1,5 @@
 /**
- * hu UI �?community
+ * hu UI � community
  */
 
 export default {

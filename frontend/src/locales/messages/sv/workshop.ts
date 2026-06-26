@@ -1,5 +1,5 @@
 /**
- * sv UI �?workshop
+ * sv UI � workshop
  */
 
 export default {

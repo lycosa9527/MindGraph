@@ -14,6 +14,57 @@ export const ADMIN_TREND_DAYS_MAP = {
 
 export type AdminTrendPeriod = keyof typeof ADMIN_TREND_DAYS_MAP
 
+export type AdminTrendChartColorScheme = 'light' | 'dark'
+
+interface AdminTrendChartPalette {
+  primaryLine: string
+  primaryFill: string
+  inputLine: string
+  inputFill: string
+  outputLine: string
+  outputFill: string
+  tick: string
+  grid: string
+  legend: string
+  tooltipBg: string
+  tooltipTitle: string
+  tooltipBody: string
+  tooltipBorder: string
+}
+
+const ADMIN_TREND_CHART_PALETTES: Record<AdminTrendChartColorScheme, AdminTrendChartPalette> = {
+  light: {
+    primaryLine: '#667eea',
+    primaryFill: 'rgba(102, 126, 234, 0.1)',
+    inputLine: '#10b981',
+    inputFill: 'rgba(16, 185, 129, 0.1)',
+    outputLine: '#f59e0b',
+    outputFill: 'rgba(245, 158, 11, 0.1)',
+    tick: '#78716c',
+    grid: 'rgba(168, 162, 158, 0.35)',
+    legend: '#44403c',
+    tooltipBg: 'rgba(255, 255, 255, 0.96)',
+    tooltipTitle: '#1c1917',
+    tooltipBody: '#44403c',
+    tooltipBorder: '#e7e5e4',
+  },
+  dark: {
+    primaryLine: '#22d3ee',
+    primaryFill: 'rgba(34, 211, 238, 0.14)',
+    inputLine: '#34d399',
+    inputFill: 'rgba(52, 211, 153, 0.12)',
+    outputLine: '#fbbf24',
+    outputFill: 'rgba(251, 191, 36, 0.12)',
+    tick: '#cbd5e1',
+    grid: 'rgba(34, 211, 238, 0.14)',
+    legend: '#e2e8f0',
+    tooltipBg: 'rgba(15, 23, 42, 0.96)',
+    tooltipTitle: '#f8fafc',
+    tooltipBody: '#e2e8f0',
+    tooltipBorder: 'rgba(34, 211, 238, 0.35)',
+  },
+}
+
 export interface AdminTrendChartPoint {
   date: string
   value: number
@@ -67,8 +118,19 @@ export async function renderAdminTrendLineChart(options: {
   inputLabel: string
   outputLabel: string
   existingInstance: ChartInstance<'line'> | null
+  colorScheme?: AdminTrendChartColorScheme
 }): Promise<{ instance: ChartInstance<'line'> | null; hasData: boolean }> {
-  const { canvas, title, rawData, intlLocale, inputLabel, outputLabel, existingInstance } = options
+  const {
+    canvas,
+    title,
+    rawData,
+    intlLocale,
+    inputLabel,
+    outputLabel,
+    existingInstance,
+    colorScheme = 'light',
+  } = options
+  const palette = ADMIN_TREND_CHART_PALETTES[colorScheme]
   if (rawData.length === 0) {
     existingInstance?.destroy()
     return { instance: null, hasData: false }
@@ -88,17 +150,22 @@ export async function renderAdminTrendLineChart(options: {
   const hasInputOutput =
     rawData[0] && (rawData[0].input !== undefined || rawData[0].output !== undefined)
 
+  const pointBorder = colorScheme === 'dark' ? '#0f172a' : '#ffffff'
+
   const datasets: ChartConfiguration<'line'>['data']['datasets'] = [
     {
       label: title,
       data: values,
-      borderColor: '#667eea',
-      backgroundColor: 'rgba(102, 126, 234, 0.1)',
-      borderWidth: 2,
+      borderColor: palette.primaryLine,
+      backgroundColor: palette.primaryFill,
+      borderWidth: 2.5,
       fill: true,
       tension: 0.4,
       pointRadius: 3,
-      pointHoverRadius: 5,
+      pointHoverRadius: 6,
+      pointBackgroundColor: palette.primaryLine,
+      pointBorderColor: pointBorder,
+      pointBorderWidth: 1.5,
     },
   ]
 
@@ -106,24 +173,30 @@ export async function renderAdminTrendLineChart(options: {
     datasets.push({
       label: inputLabel,
       data: rawData.map((item) => item.input ?? 0),
-      borderColor: '#10b981',
-      backgroundColor: 'rgba(16, 185, 129, 0.1)',
+      borderColor: palette.inputLine,
+      backgroundColor: palette.inputFill,
       borderWidth: 2,
       fill: false,
       tension: 0.4,
       pointRadius: 2,
-      pointHoverRadius: 4,
+      pointHoverRadius: 5,
+      pointBackgroundColor: palette.inputLine,
+      pointBorderColor: pointBorder,
+      pointBorderWidth: 1.5,
     })
     datasets.push({
       label: outputLabel,
       data: rawData.map((item) => item.output ?? 0),
-      borderColor: '#f59e0b',
-      backgroundColor: 'rgba(245, 158, 11, 0.1)',
+      borderColor: palette.outputLine,
+      backgroundColor: palette.outputFill,
       borderWidth: 2,
       fill: false,
       tension: 0.4,
       pointRadius: 2,
-      pointHoverRadius: 4,
+      pointHoverRadius: 5,
+      pointBackgroundColor: palette.outputLine,
+      pointBorderColor: pointBorder,
+      pointBorderWidth: 1.5,
     })
   }
 
@@ -134,8 +207,24 @@ export async function renderAdminTrendLineChart(options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: hasInputOutput, position: 'top' },
+        legend: {
+          display: hasInputOutput,
+          position: 'top',
+          labels: {
+            color: palette.legend,
+            font: { size: 12, weight: 600 },
+            boxWidth: 14,
+            boxHeight: 2,
+            padding: 14,
+          },
+        },
         tooltip: {
+          backgroundColor: palette.tooltipBg,
+          titleColor: palette.tooltipTitle,
+          bodyColor: palette.tooltipBody,
+          borderColor: palette.tooltipBorder,
+          borderWidth: 1,
+          padding: 10,
           callbacks: {
             label: (ctx: TooltipItem<'line'>) =>
               `${ctx.dataset.label}: ${formatAdminTrendChartLabel(Number(ctx.raw))}`,
@@ -148,13 +237,29 @@ export async function renderAdminTrendLineChart(options: {
           min: yMin,
           max: yMax,
           ticks: {
+            color: palette.tick,
+            font: { size: 11 },
             callback: (val: string | number) => formatAdminTrendChartLabel(Number(val)),
+          },
+          grid: {
+            color: palette.grid,
+          },
+          border: {
+            color: palette.grid,
           },
         },
         x: {
           ticks: {
+            color: palette.tick,
+            font: { size: 11 },
             maxRotation: 45,
             minRotation: 45,
+          },
+          grid: {
+            color: palette.grid,
+          },
+          border: {
+            color: palette.grid,
           },
         },
       },

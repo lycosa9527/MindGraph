@@ -1,5 +1,5 @@
 /**
- * ps UI �?sidebar
+ * ps UI � sidebar
  */
 
 export default {

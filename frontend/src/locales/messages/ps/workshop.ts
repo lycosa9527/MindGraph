@@ -1,5 +1,5 @@
 /**
- * ps UI �?workshop
+ * ps UI � workshop
  */
 
 export default {

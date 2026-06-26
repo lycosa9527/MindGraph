@@ -1,5 +1,5 @@
 /**
- * ky UI �?sidebar
+ * ky UI � sidebar
  */
 
 export default {

@@ -1,5 +1,5 @@
 /**
- * sw UI �?community
+ * sw UI � community
  */
 
 export default {

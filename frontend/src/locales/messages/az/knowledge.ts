@@ -1,8 +1,14 @@
 /**
- * az UI �?knowledge
+ * az UI � knowledge
  */
 
 export default {
+  'fileCenterLibrary.title': 'Packages',
+  'fileCenterLibrary.subtitle': 'Source collections grouped by diagram (File Center).',
+  'fileCenterLibrary.openDiagram': 'Open diagram',
+  'fileCenterLibrary.badgeCanvas': 'Canvas',
+  'fileCenterLibrary.badgeExtension': 'Extension',
+  'fileCenterLibrary.badgeUpload': 'Upload',
   'chunkTest.history.confirmDeleteBody': 'Bu test qeydini silmək istədiyinizə əminsiniz? Bu geri qaytarıla bilməz.',
   'chunkTest.history.confirmDeleteTitle': 'Testi sil',
   'chunkTest.history.delete': 'Sil',

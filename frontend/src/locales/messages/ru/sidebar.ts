@@ -1,5 +1,5 @@
 /**
- * ru UI �?sidebar
+ * ru UI � sidebar
  */
 
 export default {

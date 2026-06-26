@@ -381,40 +381,56 @@ def _extract_unknown(mt: str, body: dict[str, Any]) -> str:
     return f"[DingTalk message msgtype={mt}]\nStructured summary (truncated):\n{_json_snippet(copied)}"
 
 
+def extract_download_code_candidates(body: dict[str, Any], normalized_msg_type: str) -> list[str]:
+    """
+    Return unique download codes for ``/v1.0/robot/messageFiles/download``, best first.
+
+    DingTalk picture callbacks document ``content.downloadCode`` for OpenAPI download.
+    Some payloads also include ``pictureDownloadCode``; try both when they differ.
+    """
+    cd = _content_dict(body)
+    ordered: list[str] = []
+    if normalized_msg_type == "picture":
+        ordered.extend(
+            [
+                _as_str(cd.get("downloadCode") or cd.get("download_code")),
+                _as_str(body.get("downloadCode")),
+                _as_str(cd.get("pictureDownloadCode") or cd.get("picture_download_code")),
+                _as_str(body.get("pictureDownloadCode") or body.get("picture_download_code")),
+            ],
+        )
+    else:
+        ordered.append(
+            _as_str(cd.get("downloadCode") or cd.get("download_code") or body.get("downloadCode")),
+        )
+    vid = body.get("video")
+    if isinstance(vid, dict):
+        ordered.append(_as_str(vid.get("downloadCode") or vid.get("download_code")))
+    aud = body.get("audio") or body.get("voice")
+    if isinstance(aud, dict):
+        ordered.append(_as_str(aud.get("downloadCode") or aud.get("download_code")))
+    fi = body.get("file")
+    if isinstance(fi, dict):
+        ordered.append(_as_str(fi.get("downloadCode") or fi.get("download_code")))
+    seen: set[str] = set()
+    out: list[str] = []
+    for code in ordered:
+        if code and code not in seen:
+            seen.add(code)
+            out.append(code)
+    return out
+
+
 def extract_download_code_for_openapi(body: dict[str, Any], normalized_msg_type: str) -> str:
     """
     Return a single ``downloadCode`` for ``/v1.0/robot/messageFiles/download``.
 
-    Prefer ``pictureDownloadCode`` for images when present.
+    Prefer documented ``content.downloadCode`` for images; fall back to legacy aliases.
     """
-    cd = _content_dict(body)
-    if normalized_msg_type == "picture":
-        pic = _as_str(
-            cd.get("pictureDownloadCode")
-            or cd.get("picture_download_code")
-            or cd.get("downloadCode")
-            or cd.get("download_code"),
-        )
-        if pic:
-            return pic
-    vid = body.get("video")
-    if isinstance(vid, dict):
-        c = _as_str(vid.get("downloadCode") or vid.get("download_code"))
-        if c:
-            return c
-    aud = body.get("audio") or body.get("voice")
-    if isinstance(aud, dict):
-        c = _as_str(aud.get("downloadCode") or aud.get("download_code"))
-        if c:
-            return c
-    fi = body.get("file")
-    if isinstance(fi, dict):
-        c = _as_str(fi.get("downloadCode") or fi.get("download_code"))
-        if c:
-            return c
-    return _as_str(
-        cd.get("downloadCode") or cd.get("download_code") or body.get("downloadCode"),
-    )
+    candidates = extract_download_code_candidates(body, normalized_msg_type)
+    if candidates:
+        return candidates[0]
+    return ""
 
 
 def media_filename_and_types(

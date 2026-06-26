@@ -205,9 +205,7 @@ async def dingtalk_bind_qr_code(
         )
 
     raw_user_id = token_payload.get("user_id")
-    if not isinstance(raw_user_id, int) and not (
-        isinstance(raw_user_id, str) and str(raw_user_id).isdigit()
-    ):
+    if not isinstance(raw_user_id, int) and not (isinstance(raw_user_id, str) and str(raw_user_id).isdigit()):
         raise _bind_http_error(
             status.HTTP_400_BAD_REQUEST,
             "DINGTALK_BIND_NO_PENDING",
@@ -229,9 +227,7 @@ async def dingtalk_bind_qr_code(
         )
 
     code, _step, next_start, _now = current_room_code_from_room_secret(bind_secret, channel_key)
-    qr_query = (
-        f"{BIND_QUERY_PARAM}={channel_key}&{BIND_QUERY_CODE_PARAM}={code}"
-    )
+    qr_query = f"{BIND_QUERY_PARAM}={channel_key}&{BIND_QUERY_CODE_PARAM}={code}"
     return DingtalkBindQrCodeResponse(
         code=code,
         period_seconds=ROOM_CODE_PERIOD_SECONDS,

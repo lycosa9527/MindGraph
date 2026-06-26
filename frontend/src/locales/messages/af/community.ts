@@ -1,5 +1,5 @@
 /**
- * af UI �?community
+ * af UI � community
  */
 
 export default {

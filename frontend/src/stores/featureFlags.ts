@@ -8,6 +8,23 @@ import { defineStore } from 'pinia'
 
 import { apiRequest } from '@/utils/apiClient'
 
+function syncMindMapCanvasModeForFlags(data: FeatureFlagsResponse): void {
+  // Lazy import avoids a Pinia init cycle with the UI store.
+  void import('@/stores/ui').then(({ MINDMAP_CANVAS_MODE_KEY, useUIStore }) => {
+    const uiStore = useUIStore()
+    if (!data.feature_mindmap_v2_canvas) {
+      if (uiStore.mindMapCanvasMode === 'v2') {
+        uiStore.setMindMapCanvasMode('legacy')
+      }
+      return
+    }
+    const stored = localStorage.getItem(MINDMAP_CANVAS_MODE_KEY)
+    if (stored === 'v2') {
+      uiStore.setMindMapCanvasMode('v2')
+    }
+  })
+}
+
 export interface FeatureOrgAccessEntry {
   restrict: boolean
   organization_ids: number[]
@@ -24,6 +41,7 @@ interface FeatureFlagsResponse {
   feature_school_zone: boolean
   feature_debateverse: boolean
   feature_knowledge_space: boolean
+  feature_mindmap_v2_canvas: boolean
   feature_library: boolean
   feature_gewe: boolean
   feature_smart_response: boolean
@@ -55,6 +73,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
 
     // Return cached flags if still fresh
     if (flags.value && now - lastFetchTime.value < CACHE_DURATION) {
+      syncMindMapCanvasModeForFlags(flags.value)
       return flags.value
     }
 
@@ -74,6 +93,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_school_zone: false,
           feature_debateverse: false,
           feature_knowledge_space: false,
+          feature_mindmap_v2_canvas: false,
           feature_library: false,
           feature_gewe: false,
           feature_smart_response: false,
@@ -90,6 +110,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         }
         flags.value = defaultFlags
         lastFetchTime.value = now
+        syncMindMapCanvasModeForFlags(defaultFlags)
         return defaultFlags
       }
 
@@ -103,9 +124,11 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_kitty_agent: raw.feature_kitty_agent ?? false,
         feature_auth_pixel_battle: raw.feature_auth_pixel_battle ?? false,
         feature_thinking_coins: raw.feature_thinking_coins ?? false,
+        feature_mindmap_v2_canvas: raw.feature_mindmap_v2_canvas ?? false,
       }
       flags.value = data
       lastFetchTime.value = now
+      syncMindMapCanvasModeForFlags(data)
       return data
     } catch (error) {
       console.error('[FeatureFlags] Fetch error:', error)
@@ -123,6 +146,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_school_zone: false,
         feature_debateverse: false,
         feature_knowledge_space: false,
+        feature_mindmap_v2_canvas: false,
         feature_library: false,
         feature_gewe: false,
         feature_smart_response: false,
@@ -178,6 +202,10 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
 
   function getFeatureKnowledgeSpace(): boolean {
     return flags.value?.feature_knowledge_space ?? false
+  }
+
+  function getFeatureMindmapV2Canvas(): boolean {
+    return flags.value?.feature_mindmap_v2_canvas ?? false
   }
 
   function getFeatureLibrary(): boolean {
@@ -245,6 +273,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     getFeatureSchoolZone,
     getFeatureDebateverse,
     getFeatureKnowledgeSpace,
+    getFeatureMindmapV2Canvas,
     getFeatureLibrary,
     getFeatureGewe,
     getFeatureSmartResponse,
