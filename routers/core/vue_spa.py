@@ -19,7 +19,11 @@ from services.infrastructure.utils.pwa_manifest import (
     public_site_origin_from_request,
 )
 from services.infrastructure.utils.spa_handler import (
+    CSP_NONCE_STATE_ATTR,
     VUE_DIST_DIR,
+    apply_no_cache_headers,
+    generate_csp_nonce,
+    inject_csp_nonce,
     media_type_for_vue_dist_relpath,
 )
 
@@ -62,46 +66,46 @@ async def vue_favicon():
 
 
 @router.get("/", response_class=HTMLResponse)
-async def vue_index():
+async def vue_index(request: Request):
     """Serve Vue SPA index for root path."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/editor", response_class=HTMLResponse)
-async def vue_editor():
+async def vue_editor(request: Request):
     """Serve Vue SPA for editor route."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/admin", response_class=HTMLResponse)
-async def vue_admin():
+async def vue_admin(request: Request):
     """Serve Vue SPA for admin route."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/admin/{path:path}", response_class=HTMLResponse)
-async def vue_admin_sub(path: str):
+async def vue_admin_sub(request: Request, path: str):
     """Serve Vue SPA for admin sub-routes."""
     _ = path  # Path parameter required by FastAPI but not used
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/login", response_class=HTMLResponse)
-async def vue_login():
+async def vue_login(request: Request):
     """Serve Vue SPA for login route."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/auth", response_class=HTMLResponse)
-async def vue_auth():
+async def vue_auth(request: Request):
     """Serve Vue SPA for auth route."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/bayi/passkey", response_class=HTMLResponse)
-async def vue_bayi_passkey():
+async def vue_bayi_passkey(request: Request):
     """Serve Vue SPA for Bayi passkey login route."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/demo", response_class=HTMLResponse)
@@ -111,107 +115,107 @@ async def vue_demo_redirect():
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
-async def vue_dashboard():
+async def vue_dashboard(request: Request):
     """Serve Vue SPA for dashboard route."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/dashboard/login", response_class=HTMLResponse)
-async def vue_dashboard_login():
+async def vue_dashboard_login(request: Request):
     """Serve Vue SPA for dashboard login route."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/pub-dash", response_class=HTMLResponse)
-async def vue_pub_dash():
+async def vue_pub_dash(request: Request):
     """Serve Vue SPA for public dashboard route."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/debug", response_class=HTMLResponse)
-async def vue_debug():
+async def vue_debug(request: Request):
     """Serve Vue SPA for debug route."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/mindmate", response_class=HTMLResponse)
-async def vue_mindmate():
+async def vue_mindmate(request: Request):
     """Serve Vue SPA for mindmate route."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/mindgraph", response_class=HTMLResponse)
-async def vue_mindgraph():
+async def vue_mindgraph(request: Request):
     """Serve Vue SPA for mindgraph route."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/canvas", response_class=HTMLResponse)
-async def vue_canvas():
+async def vue_canvas(request: Request):
     """Serve Vue SPA for canvas route."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/export-render", response_class=HTMLResponse)
-async def vue_export_render():
+async def vue_export_render(request: Request):
     """Serve Vue SPA for headless export-render route (Playwright screenshot)."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/template", response_class=HTMLResponse)
-async def vue_template():
+async def vue_template(request: Request):
     """Serve Vue SPA for template route."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/course", response_class=HTMLResponse)
-async def vue_course():
+async def vue_course(request: Request):
     """Serve Vue SPA for course route."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/community", response_class=HTMLResponse)
-async def vue_community():
+async def vue_community(request: Request):
     """Serve Vue SPA for community route."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/school-zone", response_class=HTMLResponse)
-async def vue_school_zone():
+async def vue_school_zone(request: Request):
     """Serve Vue SPA for school-zone route."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/school-zone/{path:path}", response_class=HTMLResponse)
-async def vue_school_zone_sub(path: str):
+async def vue_school_zone_sub(request: Request, path: str):
     """Serve Vue SPA for school-zone sub-routes."""
     _ = path  # Path parameter required by FastAPI but not used
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/knowledge-space", response_class=HTMLResponse)
-async def vue_knowledge_space():
+async def vue_knowledge_space(request: Request):
     """Serve Vue SPA for knowledge-space route."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/knowledge-space/{path:path}", response_class=HTMLResponse)
-async def vue_knowledge_space_sub(path: str):
+async def vue_knowledge_space_sub(request: Request, path: str):
     """Serve Vue SPA for knowledge-space sub-routes."""
     _ = path  # Path parameter required by FastAPI but not used
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/askonce", response_class=HTMLResponse)
-async def vue_askonce():
+async def vue_askonce(request: Request):
     """Serve Vue SPA for askonce route."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/debateverse", response_class=HTMLResponse)
-async def vue_debateverse():
+async def vue_debateverse(request: Request):
     """Serve Vue SPA for debateverse route."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/manifest.webmanifest")
@@ -225,13 +229,13 @@ async def vue_pwa_manifest(request: Request):
 
 
 @router.get("/index.html", response_class=HTMLResponse)
-async def vue_index_html():
+async def vue_index_html(request: Request):
     """Serve SPA shell for Workbox navigateFallback and direct /index.html requests."""
-    return await _serve_index()
+    return await _serve_index(request)
 
 
 @router.get("/{path:path}")
-async def vue_catch_all(path: str):
+async def vue_catch_all(request: Request, path: str):
     """Catch-all route for Vue SPA client-side routing.
 
     This handles any route that isn't matched by API endpoints or static files.
@@ -264,41 +268,57 @@ async def vue_catch_all(path: str):
         raise HTTPException(status_code=404, detail=f"File not found: {path}")
 
     # No file extension - this is an SPA route, serve index.html
-    return await _serve_index()
+    return await _serve_index(request)
 
 
-async def _serve_index() -> FileResponse | HTMLResponse:
-    """Serve Vue SPA index.html."""
+def _frontend_not_built_response() -> HTMLResponse:
+    """Return the 503 shell shown when the Vue build is missing."""
     index_path = VUE_DIST_DIR / "index.html"
-    logger.debug("Serving Vue SPA index - checking path: %s", index_path)
-    logger.debug("VUE_DIST_DIR exists: %s", VUE_DIST_DIR.exists())
-    logger.debug("index.html exists: %s", index_path.exists())
-
-    if not index_path.exists():
-        logger.error("Vue SPA index.html not found at: %s", index_path)
-        logger.error("VUE_DIST_DIR: %s", VUE_DIST_DIR)
-        logger.error("VUE_DIST_DIR absolute: %s", VUE_DIST_DIR.resolve())
-        return HTMLResponse(
-            content=f"""
-            <!DOCTYPE html>
-            <html>
-            <head><title>Frontend Not Built</title></head>
-            <body>
-                <h1>Frontend Not Built</h1>
-                <p>The Vue frontend has not been built yet.</p>
-                <p>Expected path: {index_path}</p>
-                <p>VUE_DIST_DIR: {VUE_DIST_DIR}</p>
-                <p>Run the following commands:</p>
-                <pre>
+    logger.error("Vue SPA index.html not found at: %s", index_path)
+    logger.error("VUE_DIST_DIR: %s", VUE_DIST_DIR)
+    logger.error("VUE_DIST_DIR absolute: %s", VUE_DIST_DIR.resolve())
+    return HTMLResponse(
+        content=f"""
+        <!DOCTYPE html>
+        <html>
+        <head><title>Frontend Not Built</title></head>
+        <body>
+            <h1>Frontend Not Built</h1>
+            <p>The Vue frontend has not been built yet.</p>
+            <p>Expected path: {index_path}</p>
+            <p>VUE_DIST_DIR: {VUE_DIST_DIR}</p>
+            <p>Run the following commands:</p>
+            <pre>
 cd frontend
 npm install
 npm run build
-                </pre>
-            </body>
-            </html>
-            """,
-            status_code=503,
-        )
+            </pre>
+        </body>
+        </html>
+        """,
+        status_code=503,
+    )
+
+
+async def _serve_index(request: Request) -> HTMLResponse:
+    """Serve the Vue SPA shell with a per-request CSP nonce.
+
+    The shell HTML is read fresh, stamped with a single-use nonce on its inline
+    scripts and in-document CSP meta tag, and returned as ``no-store`` so the
+    nonce never goes stale against the matching ``Content-Security-Policy`` header
+    emitted by ``add_security_headers``.
+    """
+    index_path = VUE_DIST_DIR / "index.html"
+    logger.debug("Serving Vue SPA index - checking path: %s", index_path)
+
+    if not index_path.exists():
+        return _frontend_not_built_response()
 
     logger.info("Serving Vue SPA index.html from: %s", index_path)
-    return FileResponse(path=str(index_path), media_type="text/html")
+    nonce = generate_csp_nonce()
+    setattr(request.state, CSP_NONCE_STATE_ATTR, nonce)
+    html = inject_csp_nonce(index_path.read_text(encoding="utf-8"), nonce)
+
+    response = HTMLResponse(content=html)
+    apply_no_cache_headers(response)
+    return response

@@ -17,6 +17,7 @@ Proprietary License
 
 import json
 import logging
+import os
 import time
 from urllib.parse import urlparse
 
@@ -24,6 +25,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.gzip import GZipResponder
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from config.settings import config
@@ -215,7 +217,12 @@ async def add_security_headers(request: Request, call_next):
     - Information leakage (Referrer-Policy)
 
     CSP Policy Notes:
-    - 'unsafe-inline' scripts: Required for config bootstrap and admin onclick handlers
+    - script-src: Vue SPA shell responses carry a per-request nonce (set by the SPA
+      handler on request.state) so 'unsafe-inline' is dropped for the app shell.
+      Legacy template responses without a nonce keep 'unsafe-inline' for their
+      inline onclick handlers / config bootstrap.
+    - style-src: keeps 'unsafe-inline' — Vue/Element Plus inject styles at runtime
+      via JS, which a nonce cannot cover.
     - ws:/wss:: Required for Kitty Agent WebSocket connections
     - data: URIs: Required for canvas-to-image conversions
     - DEBUG mode: Allows Swagger UI CDN (cdn.jsdelivr.net) for /docs endpoint
@@ -230,8 +237,9 @@ async def add_security_headers(request: Request, call_next):
     # Prevent MIME sniffing (stops browser from guessing content types)
     response.headers["X-Content-Type-Options"] = "nosniff"
 
-    # XSS Protection (blocks reflected XSS attacks)
-    response.headers["X-XSS-Protection"] = "1; mode=block"
+    # Note: X-XSS-Protection is intentionally omitted. The header is deprecated,
+    # ignored by modern browsers, and can introduce vulnerabilities in legacy
+    # ones; CSP (below) is the correct XSS control.
 
     # Content Security Policy (controls what resources can load)
     # Tailored specifically for MindGraph's architecture
@@ -250,10 +258,15 @@ async def add_security_headers(request: Request, call_next):
             "form-action 'self';"
         )
     else:
-        # Production: Strict CSP without external CDN access
+        # Production: Strict CSP without external CDN access.
+        # SPA shell responses set request.state.csp_nonce, letting us drop
+        # 'unsafe-inline' from script-src for the app shell. Other responses
+        # (legacy templates with inline handlers) keep the permissive fallback.
+        csp_nonce = getattr(request.state, "csp_nonce", None)
+        script_src = f"script-src 'self' 'nonce-{csp_nonce}'; " if csp_nonce else "script-src 'self' 'unsafe-inline'; "
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline'; "
+            f"{script_src}"
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: http: https: blob:; "
             "font-src 'self' data:; "
@@ -554,12 +567,38 @@ async def log_requests(request: Request, call_next):
     return response
 
 
+def _allowed_hosts() -> list[str]:
+    """Host allowlist for ``TrustedHostMiddleware``.
+
+    Reads ``ALLOWED_HOSTS`` (comma-separated). When unset, defaults to ``["*"]``
+    (permissive) so existing dev/deployments are unaffected; set it in
+    production to the public hostname(s) to mitigate Host-header injection and
+    cache poisoning. ``localhost``/``127.0.0.1`` are always permitted for
+    health checks and local probes.
+    """
+    raw = os.getenv("ALLOWED_HOSTS", "").strip()
+    if not raw:
+        return ["*"]
+    hosts = [h.strip() for h in raw.split(",") if h.strip()]
+    if not hosts:
+        return ["*"]
+    for local in ("localhost", "127.0.0.1"):
+        if local not in hosts:
+            hosts.append(local)
+    return hosts
+
+
 def setup_middleware(app: FastAPI):
     """
     Register all middleware with the FastAPI application.
 
     Order matters - middleware is executed in reverse order of registration.
     """
+    # Host header validation (mitigates Host-header injection / cache poisoning).
+    # Rejects requests whose Host is not in ALLOWED_HOSTS before they reach
+    # route handlers. Permissive by default; enforced when ALLOWED_HOSTS is set.
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=_allowed_hosts())
+
     # CORS Middleware
     # Extract server URL once to avoid linter warnings about constant access
     base_server_url = config.server_url

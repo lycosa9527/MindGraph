@@ -13,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import secrets
 from typing import Any, Dict, Optional
 
@@ -38,6 +39,23 @@ from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
+
+_FANOUT_ORIGIN_SECRET: str = os.getenv("COLLAB_FANOUT_ORIGIN_SECRET", "")
+
+
+def stamp_chat_fanout_origin(envelope: Dict[str, Any]) -> Dict[str, Any]:
+    """Return a copy of ``envelope`` stamped with the fan-out origin secret.
+
+    Mirrors the workshop fan-out origin stamping so a Redis/PG-write-capable
+    attacker cannot forge chat channel, DM, or presence frames. When no secret
+    is configured (dev), the envelope is returned unchanged and consumers do
+    not enforce origin.
+    """
+    if not _FANOUT_ORIGIN_SECRET:
+        return dict(envelope)
+    out = dict(envelope)
+    out["origin"] = _FANOUT_ORIGIN_SECRET
+    return out
 
 
 def _envelope_with_workshop_msg_id(envelope: Dict[str, Any]) -> Dict[str, Any]:
@@ -102,8 +120,9 @@ async def publish_chat_fanout_async(envelope: Dict[str, Any]) -> None:
     """Publish a chat fan-out envelope using the native async Redis client."""
     if not is_ws_fanout_enabled():
         return
+    out = stamp_chat_fanout_origin(envelope)
     try:
-        body = json.dumps(envelope, ensure_ascii=False)
+        body = json.dumps(out, ensure_ascii=False)
     except (TypeError, ValueError):
         logger.warning("[WSFanout] Chat publish skipped: invalid envelope")
         return

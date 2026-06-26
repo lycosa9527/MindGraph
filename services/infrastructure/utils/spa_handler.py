@@ -21,6 +21,8 @@ Proprietary License
 import logging
 import mimetypes
 import os
+import re
+import secrets
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -32,6 +34,50 @@ logger = logging.getLogger(__name__)
 # Vue SPA dist directory
 # Path: services/infrastructure/utils/spa_handler.py -> go up 4 levels to project root
 VUE_DIST_DIR = Path(__file__).parent.parent.parent.parent / "frontend" / "dist"
+
+# Per-request CSP nonce wiring (see add_security_headers + _serve_index).
+# Stored on request.state so the security-headers middleware can emit a matching
+# ``script-src 'self' 'nonce-<value>'`` header for the same response that carries
+# the nonce-stamped HTML shell.
+CSP_NONCE_STATE_ATTR = "csp_nonce"
+
+# Opening <script ...> tags (inline or external). [^>]* never crosses '>', which is
+# safe for the script tags Vite emits (no '>' inside their attribute values).
+_SCRIPT_OPEN_RE = re.compile(r"<script\b([^>]*)>", re.IGNORECASE)
+_SCRIPT_HAS_NONCE_RE = re.compile(r"\bnonce\s*=", re.IGNORECASE)
+
+# In-document CSP meta tag emitted by frontend/index.html. We rewrite its script-src
+# from the dev-friendly 'unsafe-inline' to the per-request nonce so the enforced
+# document policy matches the HTTP header in production.
+_META_SCRIPT_SRC_UNSAFE_INLINE = "script-src 'self' 'unsafe-inline'"
+
+
+def generate_csp_nonce() -> str:
+    """Return a fresh, URL-safe CSP nonce for a single response."""
+    return secrets.token_urlsafe(16)
+
+
+def inject_csp_nonce(html: str, nonce: str) -> str:
+    """Stamp ``nonce`` onto inline scripts and the in-document CSP meta tag.
+
+    Adds ``nonce="<value>"`` to every ``<script>`` opening tag that lacks one and
+    rewrites the meta CSP ``script-src`` directive to use the nonce instead of
+    ``'unsafe-inline'``. External (``src``) scripts stay allowed by ``'self'``; the
+    nonce on them is harmless. Inline scripts now require the nonce, so injected
+    (XSS) inline scripts are blocked.
+    """
+
+    def _add_nonce(match: re.Match[str]) -> str:
+        attrs = match.group(1)
+        if _SCRIPT_HAS_NONCE_RE.search(attrs):
+            return match.group(0)
+        return f'<script nonce="{nonce}"{attrs}>'
+
+    stamped = _SCRIPT_OPEN_RE.sub(_add_nonce, html)
+    return stamped.replace(
+        _META_SCRIPT_SRC_UNSAFE_INLINE,
+        f"script-src 'self' 'nonce-{nonce}'",
+    )
 
 
 def media_type_for_vue_dist_relpath(relpath: str) -> str:

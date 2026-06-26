@@ -112,23 +112,73 @@ async def test_add_security_headers_includes_hsts_on_https() -> None:
     assert "includeSubDomains" in result.headers["Strict-Transport-Security"]
 
 
+@pytest.mark.asyncio
+async def test_production_csp_uses_nonce_when_request_state_has_nonce() -> None:
+    """SPA shell responses with a nonce must drop 'unsafe-inline' from script-src."""
+    request = MagicMock()
+    request.url.scheme = "https"
+    request.state = SimpleNamespace(csp_nonce="testnonce123")
+    response = MagicMock()
+    response.headers = {}
+
+    async def _call_next(_req):
+        return response
+
+    with patch.object(middleware_module, "is_https", return_value=False):
+        with patch.object(middleware_module, "config") as mock_config:
+            mock_config.debug = False
+            result = await middleware_module.add_security_headers(request, _call_next)
+
+    csp = result.headers["Content-Security-Policy"]
+    assert "script-src 'self' 'nonce-testnonce123'" in csp
+    assert "script-src 'self' 'unsafe-inline'" not in csp
+    # Styles intentionally keep 'unsafe-inline' for runtime-injected Vue/Element Plus styles.
+    assert "style-src 'self' 'unsafe-inline'" in csp
+
+
+@pytest.mark.asyncio
+async def test_production_csp_falls_back_to_unsafe_inline_without_nonce() -> None:
+    """Non-SPA responses (no nonce on request.state) keep the permissive fallback."""
+    request = MagicMock()
+    request.url.scheme = "https"
+    request.state = SimpleNamespace()
+    response = MagicMock()
+    response.headers = {}
+
+    async def _call_next(_req):
+        return response
+
+    with patch.object(middleware_module, "is_https", return_value=False):
+        with patch.object(middleware_module, "config") as mock_config:
+            mock_config.debug = False
+            result = await middleware_module.add_security_headers(request, _call_next)
+
+    csp = result.headers["Content-Security-Policy"]
+    assert "script-src 'self' 'unsafe-inline'" in csp
+    assert "nonce-" not in csp
+
+
 def test_production_guard_rejects_placeholder_dashboard_passkey() -> None:
     """Startup guard must reject env.example-style placeholder passkeys when dashboard is enabled."""
     guard = production_secrets_guard_module
     with patch.object(guard, "_require_non_debug", return_value=True):
-        with patch.object(guard, "AUTH_MODE", "standard"):
-            with patch.object(guard, "PUBLIC_DASHBOARD_PASSKEY", "CHANGE-ME-before-production"):
-                with pytest.raises(RuntimeError, match="PUBLIC_DASHBOARD_PASSKEY"):
-                    guard.enforce_production_security_guards()
+        with patch.object(guard, "_guard_database_url", return_value=None):
+            with patch.object(guard, "_guard_redis_url", return_value=None):
+                with patch.object(guard, "AUTH_MODE", "standard"):
+                    with patch.object(guard, "PUBLIC_DASHBOARD_PASSKEY", "CHANGE-ME-before-production"):
+                        with pytest.raises(RuntimeError, match="PUBLIC_DASHBOARD_PASSKEY"):
+                            guard.enforce_production_security_guards()
 
 
 def test_production_guard_allows_unset_dashboard_passkey() -> None:
     """Startup guard must not require PUBLIC_DASHBOARD_PASSKEY when dashboard is disabled."""
     guard = production_secrets_guard_module
     with patch.object(guard, "_require_non_debug", return_value=True):
-        with patch.object(guard, "AUTH_MODE", "standard"):
-            with patch.object(guard, "PUBLIC_DASHBOARD_PASSKEY", ""):
-                guard.enforce_production_security_guards()
+        with patch.object(guard, "_guard_database_url", return_value=None):
+            with patch.object(guard, "_guard_redis_url", return_value=None):
+                with patch.object(guard, "AUTH_MODE", "standard"):
+                    with patch.object(guard, "PUBLIC_DASHBOARD_PASSKEY", ""):
+                        guard.enforce_production_security_guards()
 
 
 def test_verify_dashboard_passkey_rejects_when_disabled() -> None:
@@ -136,3 +186,30 @@ def test_verify_dashboard_passkey_rejects_when_disabled() -> None:
     with patch("utils.auth.passkey_utils.config.PUBLIC_DASHBOARD_PASSKEY", ""):
         assert verify_dashboard_passkey("") is False
         assert verify_dashboard_passkey("123456") is False
+
+
+def test_production_guard_rejects_default_db_password() -> None:
+    """Startup guard must block the well-known dev DB password in production."""
+    guard = production_secrets_guard_module
+    default_url = "postgresql://mindgraph_user:mindgraph_password@localhost:5432/mindgraph"
+    with patch.object(guard, "_require_non_debug", return_value=True):
+        with patch.dict("os.environ", {"DATABASE_URL": default_url}):
+            with pytest.raises(RuntimeError, match="default development password"):
+                guard.enforce_production_security_guards()
+
+
+def test_production_guard_rejects_unauthenticated_redis_when_required() -> None:
+    """REQUIRE_REDIS_AUTH=true must block an unauthenticated REDIS_URL in production."""
+    guard = production_secrets_guard_module
+    safe_db = "postgresql://app:Str0ng-Secret@db.internal:5432/mindgraph"
+    with patch.object(guard, "_require_non_debug", return_value=True):
+        with patch.dict(
+            "os.environ",
+            {
+                "DATABASE_URL": safe_db,
+                "REDIS_URL": "redis://localhost:6379/0",
+                "REQUIRE_REDIS_AUTH": "true",
+            },
+        ):
+            with pytest.raises(RuntimeError, match="REDIS_URL"):
+                guard.enforce_production_security_guards()

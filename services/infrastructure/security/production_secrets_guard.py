@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import os
+from urllib.parse import urlparse
 
 from config.settings import config
 from utils.auth.config import (
@@ -25,6 +26,43 @@ _KNOWN_WEAK_DASHBOARD_PASSKEYS = frozenset({"123456", "000000", "888888"})
 _KNOWN_WEAK_BAYI_KEYS = frozenset({"v8IT7XujLPsM7FYuDPRhPtZk"})
 _PLACEHOLDER_SUBSTRINGS = ("change-me", "changeme", "replace-me", "example", "placeholder")
 _ENTERPRISE_ACK = "I_UNDERSTAND_PUBLIC_EXPOSURE_RISK"
+# Well-known development DB credentials that must never reach production.
+_DEFAULT_DB_PASSWORD = "mindgraph_password"
+
+
+def _env_truthy(name: str) -> bool:
+    """True when an env flag is set to a truthy value."""
+    return os.getenv(name, "").strip().lower() in ("true", "1", "yes")
+
+
+def _guard_database_url() -> None:
+    """Block startup when the insecure default DB credentials are in use."""
+    db_url = os.getenv("DATABASE_URL", "").strip()
+    if not db_url:
+        _fail("DATABASE_URL must be set explicitly in production (no insecure default)")
+    if _DEFAULT_DB_PASSWORD in db_url:
+        _fail("DATABASE_URL uses the default development password — set a strong, unique password")
+
+
+def _guard_redis_url() -> None:
+    """Warn (or fail when REQUIRE_REDIS_AUTH=true) on an unauthenticated REDIS_URL."""
+    redis_url = os.getenv("REDIS_URL", "").strip()
+    if not redis_url:
+        return
+    try:
+        parsed = urlparse(redis_url)
+    except ValueError:
+        return
+    has_auth = bool(parsed.password)
+    uses_tls = parsed.scheme == "rediss"
+    if has_auth or uses_tls:
+        return
+    if _env_truthy("REQUIRE_REDIS_AUTH"):
+        _fail("REDIS_URL has no password/TLS and REQUIRE_REDIS_AUTH=true — configure authentication")
+    logger.warning(
+        "[SECURITY] REDIS_URL appears unauthenticated (no password/TLS). "
+        "Ensure Redis is network-isolated, or set a password and REQUIRE_REDIS_AUTH=true."
+    )
 
 
 def _is_placeholder_secret(value: str) -> bool:
@@ -53,6 +91,9 @@ def enforce_production_security_guards() -> None:
     """Raise RuntimeError when production configuration is unsafe."""
     if not _require_non_debug():
         return
+
+    _guard_database_url()
+    _guard_redis_url()
 
     if AUTH_MODE == "enterprise":
         ack = os.getenv("ENTERPRISE_MODE_PUBLIC_ACK", "").strip()

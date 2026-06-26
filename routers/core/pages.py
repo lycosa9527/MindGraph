@@ -25,11 +25,11 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from models.domain.auth import Organization, User
-from routers.auth.helpers import issue_access_token_with_vpn_geo
+from routers.auth.helpers import issue_access_token_with_vpn_geo, set_auth_cookies
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
 from services.redis.redis_bayi_token import get_bayi_token_tracker
-from services.redis.session.redis_session_manager import get_session_manager
+from services.redis.session.redis_session_manager import get_refresh_token_manager, get_session_manager
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS, REDIS_ERRORS
 from utils.auth import (
     AUTH_MODE,
@@ -38,10 +38,10 @@ from utils.auth import (
     BAYI_DEFAULT_ORG_ID,
     BAYI_SSO_DEFAULT_DISPLAY_NAME,
     compute_device_hash,
+    create_refresh_token,
     decrypt_bayi_token,
     get_client_ip,
     hash_password,
-    is_https,
     validate_bayi_token_body,
 )
 from utils.auth.org_subscription import ensure_org_subscription_current
@@ -313,27 +313,24 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
             device_hash = compute_device_hash(request)
             await session_manager.store_session(bayi_user.id, jwt_token, device_hash=device_hash)
 
+            # Issue a path-scoped refresh token so the SSO session uses the same
+            # short-lived-access + refresh lifecycle as the standard auth flow
+            # (no long-lived bare access cookie).
+            refresh_token_value, refresh_token_hash = create_refresh_token(bayi_user.id)
+            await get_refresh_token_manager().store_refresh_token(
+                user_id=bayi_user.id,
+                token_hash=refresh_token_hash,
+                ip_address=client_ip,
+                user_agent=request.headers.get("User-Agent", ""),
+                device_hash=device_hash,
+            )
+
             logger.info("Bayi mode authentication successful: %s", user_phone)
 
-        # Valid token: redirect to app home with cookie set on redirect response
+        # Valid token: redirect to app home with the standard auth cookie set
+        # (access + refresh + CSRF seed via set_auth_cookies).
         redirect_response = RedirectResponse(url="/", status_code=303)
-        redirect_response.set_cookie(
-            key="access_token",
-            value=jwt_token,
-            httponly=True,
-            secure=is_https(request),  # SECURITY: Auto-detect HTTPS
-            samesite="lax",
-            max_age=7 * 24 * 60 * 60,  # 7 days
-        )
-        # Set flag cookie to indicate new login session (for AI disclaimer notification)
-        redirect_response.set_cookie(
-            key="show_ai_disclaimer",
-            value="true",
-            httponly=False,  # Allow JavaScript to read it
-            secure=is_https(request),
-            samesite="lax",
-            max_age=60 * 60,  # 1 hour (should be cleared after showing notification)
-        )
+        set_auth_cookies(redirect_response, jwt_token, refresh_token_value, request)
         return redirect_response
 
     except BACKGROUND_INFRA_ERRORS as e:

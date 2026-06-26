@@ -136,6 +136,12 @@ async def _handle_chat_raw(payload: str) -> None:
         return
     if env.get("v") != ENVELOPE_VERSION:
         return
+    # Reject chat envelopes lacking the expected origin secret when enforcement
+    # is active. Prevents a Redis/PG-write-capable attacker from forging chat
+    # channel, DM, or presence frames into the local delivery pipe.
+    if _FANOUT_ORIGIN_SECRET and env.get("origin") != _FANOUT_ORIGIN_SECRET:
+        logger.warning("[WSFanout] rejected chat envelope with invalid origin")
+        return
     kind = env.get("k")
     data_str = env.get("d")
     if not isinstance(data_str, str):

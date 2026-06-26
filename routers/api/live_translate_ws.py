@@ -28,6 +28,7 @@ from services.features.live_translate_bridge import run_translate_relay, transla
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth.roles import is_admin
 from utils.auth_ws import authenticate_websocket_user
+from utils.collab_ws_origin import close_ws_if_origin_disallowed
 from utils.ws_context import ws_managed_session
 from utils.ws_limits import (
     DEFAULT_MAX_WS_MESSAGES_PER_SECOND,
@@ -66,6 +67,9 @@ async def canvas_translate_websocket(websocket: WebSocket) -> None:
     if not is_admin(user):
         logger.warning("[CanvasTranslate] Non-admin access denied for user_id=%s", user.id)
         await websocket.close(code=4003, reason="Admin access required")
+        return
+
+    if await close_ws_if_origin_disallowed(websocket, "CanvasTranslate"):
         return
 
     if await maybe_close_websocket_for_vpn_cn_geo(websocket):

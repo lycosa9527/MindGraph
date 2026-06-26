@@ -11,6 +11,7 @@ Proprietary License
 """
 
 import logging
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
@@ -19,12 +20,82 @@ from models import Messages, get_request_language
 from models.domain.auth import User
 from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short_lived
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from services.utils.safe_upload import UnsafeUploadPathError, safe_upload_basename
 from utils.auth import get_current_user_or_api_key
 from utils.dify_mindmate_user_id import mindmate_dify_user_id
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["api"])
+
+# Extensions accepted for Dify upload (mirrors the documented supported set).
+_ALLOWED_DIFY_EXTENSIONS = frozenset(
+    {
+        "jpg",
+        "jpeg",
+        "png",
+        "gif",
+        "webp",
+        "svg",
+        "txt",
+        "md",
+        "markdown",
+        "pdf",
+        "html",
+        "htm",
+        "xlsx",
+        "xls",
+        "doc",
+        "docx",
+        "csv",
+        "xml",
+        "epub",
+        "ppt",
+        "pptx",
+        "mp3",
+        "m4a",
+        "wav",
+        "webm",
+        "mpga",
+        "amr",
+        "aac",
+        "mp4",
+        "mov",
+        "mpeg",
+        "mpg",
+    }
+)
+
+# Magic-byte signatures for the most spoofable (image) types.
+_IMAGE_MAGIC_PREFIXES = {
+    "jpg": (b"\xff\xd8\xff",),
+    "jpeg": (b"\xff\xd8\xff",),
+    "png": (b"\x89PNG\r\n\x1a\n",),
+    "gif": (b"GIF87a", b"GIF89a"),
+}
+
+
+def _validate_dify_upload(filename: str, content: bytes) -> None:
+    """Validate extension allowlist and image magic bytes (anti content spoofing).
+
+    Raises HTTPException(400) when the filename is unsafe, the extension is not
+    allowed, or image bytes do not match the declared image extension.
+    """
+    try:
+        base = safe_upload_basename(filename)
+    except UnsafeUploadPathError as exc:
+        raise HTTPException(status_code=400, detail="Invalid filename") from exc
+
+    ext = Path(base).suffix.lower().lstrip(".")
+    if ext not in _ALLOWED_DIFY_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: .{ext}")
+
+    if ext in _IMAGE_MAGIC_PREFIXES:
+        if not any(content.startswith(sig) for sig in _IMAGE_MAGIC_PREFIXES[ext]):
+            raise HTTPException(status_code=400, detail=f"File content does not match .{ext}")
+    elif ext == "webp":
+        if not content.startswith(b"RIFF") or b"WEBP" not in content[:16]:
+            raise HTTPException(status_code=400, detail="File content does not match .webp")
 
 
 def _organization_id_for_user(user: Optional[User]) -> Optional[int]:
@@ -86,6 +157,8 @@ async def upload_file_to_dify(
             status_code=413,
             detail=f"File too large. Maximum size is 15MB, got {file_size / 1024 / 1024:.1f}MB",
         )
+
+    _validate_dify_upload(file.filename, content)
 
     logger.info(
         "Uploading file to Dify: %s (%s bytes) for user %s",

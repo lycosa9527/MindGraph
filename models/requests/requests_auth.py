@@ -12,13 +12,52 @@ Proprietary License
 
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Annotated, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from services.auth.quick_register_redis import WORKSHOP_MAX_USES_CAP
 from utils.prompt_output_languages import is_prompt_output_language
 from utils.ui_languages import UI_LANGUAGE_CODES
+
+# Common/breached passwords rejected outright (NIST SP 800-63B recommends a
+# blocklist check rather than forced composition rules).
+_COMMON_WEAK_PASSWORDS = frozenset(
+    {
+        "password",
+        "password1",
+        "password123",
+        "12345678",
+        "123456789",
+        "1234567890",
+        "11111111",
+        "00000000",
+        "qwerty123",
+        "abcd1234",
+        "iloveyou",
+        "admin123",
+        "passw0rd",
+        "welcome1",
+        "1q2w3e4r",
+    }
+)
+
+
+def validate_password_strength(value: str) -> str:
+    """Reject trivially weak passwords (length is enforced separately by Field).
+
+    NIST 800-63B aligned: length + common-password blocklist, no composition
+    requirements. Avoids overly aggressive rules that harm usability.
+    """
+    candidate = value or ""
+    if candidate.lower() in _COMMON_WEAK_PASSWORDS:
+        raise ValueError("Password is too common. Choose a less predictable password.")
+    if len(set(candidate)) == 1:
+        raise ValueError("Password must not be a single repeated character.")
+    return value
+
+
+StrongPassword = Annotated[str, AfterValidator(validate_password_strength)]
 
 
 # ============================================================================
@@ -30,7 +69,7 @@ class RegisterRequest(BaseModel):
     """Request model for user registration"""
 
     phone: str = Field(..., min_length=11, max_length=11, description="11-digit Chinese mobile number")
-    password: str = Field(..., min_length=8, description="Password (min 8 characters)")
+    password: StrongPassword = Field(..., min_length=8, description="Password (min 8 characters)")
     name: str = Field(
         ...,
         min_length=2,
@@ -89,7 +128,7 @@ class RegisterOverseasRequest(BaseModel):
     """Email registration outside mainland China (GeoIP not CN)."""
 
     email: str = Field(..., max_length=254, description="Email address for overseas registration")
-    password: str = Field(..., min_length=8, description="Password (min 8 characters)")
+    password: StrongPassword = Field(..., min_length=8, description="Password (min 8 characters)")
     name: str = Field(
         ...,
         min_length=2,
@@ -106,11 +145,13 @@ class RegisterOverseasRequest(BaseModel):
     @field_validator("email")
     @classmethod
     def strip_email(cls, value: str) -> str:
+        """Trim surrounding whitespace from the email."""
         return value.strip()
 
     @field_validator("name")
     @classmethod
     def validate_name(cls, value: str) -> str:
+        """Reject names shorter than two characters or containing digits."""
         if len(value) < 2:
             raise ValueError("Name must be at least 2 characters.")
         if any(char.isdigit() for char in value):
@@ -120,6 +161,7 @@ class RegisterOverseasRequest(BaseModel):
     @field_validator("email_code")
     @classmethod
     def validate_email_code(cls, value: str) -> str:
+        """Ensure the email verification code is exactly 6 digits."""
         value = value.strip()
         if len(value) != 6 or not value.isdigit():
             raise ValueError("Email verification code must be 6 digits.")
@@ -137,6 +179,7 @@ class LoginRequest(BaseModel):
 
     @model_validator(mode="after")
     def exactly_one_login_identifier(self) -> LoginRequest:
+        """Require exactly one of phone or email to be provided."""
         data = self.model_dump()
         phone_val = data.get("phone")
         email_val = data.get("email")
@@ -328,11 +371,13 @@ class SendEmailCodeRequest(BaseModel):
     @field_validator("email")
     @classmethod
     def strip_email(cls, v: str) -> str:
+        """Trim surrounding whitespace from the email."""
         return v.strip()
 
     @field_validator("purpose")
     @classmethod
     def validate_purpose(cls, v: str) -> str:
+        """Restrict purpose to register/reset_password/login."""
         valid = ["register", "reset_password", "login"]
         if v not in valid:
             raise ValueError(f"Purpose must be one of: {', '.join(valid)}")
@@ -360,16 +405,19 @@ class VerifyEmailCodeRequest(BaseModel):
     @field_validator("email")
     @classmethod
     def strip_email(cls, v: str) -> str:
+        """Trim surrounding whitespace from the email."""
         return v.strip()
 
     @field_validator("code")
     @classmethod
     def strip_code(cls, v: str) -> str:
+        """Trim surrounding whitespace from the code."""
         return v.strip()
 
     @field_validator("purpose")
     @classmethod
     def validate_purpose(cls, v: str) -> str:
+        """Restrict purpose to register/reset_password/login."""
         valid = ["register", "reset_password", "login"]
         if v not in valid:
             raise ValueError(f"Purpose must be one of: {', '.join(valid)}")
@@ -385,16 +433,18 @@ class ResetPasswordWithEmailRequest(BaseModel):
 
     email: str = Field(..., max_length=254, description="Account email address")
     email_code: str = Field(..., min_length=6, max_length=6, description="6-digit email verification code")
-    new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
+    new_password: StrongPassword = Field(..., min_length=8, description="New password (min 8 characters)")
 
     @field_validator("email")
     @classmethod
     def strip_email(cls, v: str) -> str:
+        """Trim surrounding whitespace from the email."""
         return v.strip()
 
     @field_validator("email_code")
     @classmethod
     def validate_email_code(cls, v: str) -> str:
+        """Ensure the email verification code is exactly 6 digits."""
         v = v.strip()
         if len(v) != 6 or not v.isdigit():
             raise ValueError("Email verification code must be exactly 6 digits.")
@@ -415,7 +465,7 @@ class RegisterWithSMSRequest(BaseModel):
     """Request model for registration with SMS verification"""
 
     phone: str = Field(..., min_length=11, max_length=11, description="11-digit Chinese mobile number")
-    password: str = Field(..., min_length=8, description="Password (min 8 characters)")
+    password: StrongPassword = Field(..., min_length=8, description="Password (min 8 characters)")
     name: str = Field(
         ...,
         min_length=2,
@@ -506,11 +556,13 @@ class RegisterQuickRequest(BaseModel):
     @field_validator("quick_reg_token")
     @classmethod
     def validate_token_strip(cls, v: str) -> str:
+        """Trim surrounding whitespace from the quick-registration token."""
         return v.strip()
 
     @field_validator("room_code")
     @classmethod
     def validate_room_code_field(cls, v: str) -> str:
+        """Ensure the room code is exactly 6 digits."""
         v = v.strip()
         if not v.isdigit():
             raise ValueError("Room code must be 6 digits, matching the code on the quick registration screen.")
@@ -555,6 +607,7 @@ class QuickRegisterCloseRequest(BaseModel):
     @field_validator("token")
     @classmethod
     def validate_token(cls, v: str) -> str:
+        """Trim surrounding whitespace from the token."""
         return v.strip()
 
 
@@ -566,6 +619,7 @@ class UpdateProfileNameRequest(BaseModel):
     @field_validator("name")
     @classmethod
     def validate_name_no_digits(cls, v: str) -> str:
+        """Reject names shorter than two characters or containing digits."""
         t = v.strip()
         if len(t) < 2:
             raise ValueError("Name must be at least 2 characters.")
@@ -577,12 +631,13 @@ class UpdateProfileNameRequest(BaseModel):
 class SetPasswordWithSMSLoggedInRequest(BaseModel):
     """Set or replace password using SMS to the current user's phone (stays logged in; no full session revoke)."""
 
-    new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
+    new_password: StrongPassword = Field(..., min_length=8, description="New password (min 8 characters)")
     sms_code: str = Field(..., min_length=6, max_length=6, description="6-digit SMS verification code")
 
     @field_validator("sms_code")
     @classmethod
     def validate_sms_code(cls, v: str) -> str:
+        """Ensure the SMS verification code is exactly 6 digits."""
         if not v.isdigit():
             raise ValueError("SMS verification code must be exactly 6 digits.")
         if len(v) != 6:
@@ -638,11 +693,13 @@ class LoginWithEmailRequest(BaseModel):
     @field_validator("email")
     @classmethod
     def strip_email(cls, v: str) -> str:
+        """Trim surrounding whitespace from the email."""
         return v.strip()
 
     @field_validator("email_code")
     @classmethod
     def validate_email_code(cls, v: str) -> str:
+        """Ensure the email verification code is exactly 6 digits."""
         v = v.strip()
         if len(v) != 6 or not v.isdigit():
             raise ValueError("Email verification code must be exactly 6 digits.")
@@ -659,7 +716,7 @@ class ChangePasswordRequest(BaseModel):
     """Request model for /api/auth/change-password endpoint"""
 
     current_password: str = Field(..., min_length=4, description="Current password")
-    new_password: str = Field(..., min_length=8, description="New password (minimum 8 characters)")
+    new_password: StrongPassword = Field(..., min_length=8, description="New password (minimum 8 characters)")
     captcha: str = Field(..., min_length=4, max_length=4, description="4-character captcha code")
     captcha_id: str = Field(..., description="Captcha session ID")
 
@@ -669,7 +726,7 @@ class ResetPasswordWithSMSRequest(BaseModel):
 
     phone: str = Field(..., min_length=11, max_length=11, description="11-digit Chinese mobile number")
     sms_code: str = Field(..., min_length=6, max_length=6, description="6-digit SMS verification code")
-    new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
+    new_password: StrongPassword = Field(..., min_length=8, description="New password (min 8 characters)")
 
     @field_validator("phone")
     @classmethod

@@ -84,19 +84,43 @@ class _HTMLTextExtractor(HTMLParser):
         return re.sub(r"\n{3,}", "\n\n", "\n".join(self._chunks)).strip()
 
 
+def _ip_is_blocked(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    """True when an IP must not be reached (SSRF guard)."""
+    candidate = ip
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
+        candidate = ip.ipv4_mapped
+    return (
+        candidate.is_private
+        or candidate.is_loopback
+        or candidate.is_link_local
+        or candidate.is_reserved
+        or candidate.is_multicast
+        or candidate.is_unspecified
+    )
+
+
 def _is_blocked_fetch_host(host: str) -> bool:
-    """Reject localhost and private/reserved IPs to reduce SSRF risk."""
+    """Reject localhost and private/reserved IPs to reduce SSRF risk.
+
+    Blocks the host if *any* resolved address is non-public, defeating
+    split-horizon DNS that returns a mix of public and private records.
+    """
     lowered = (host or "").strip().lower()
-    if lowered in {"localhost", "127.0.0.1", "::1"}:
+    if lowered in {"localhost", "127.0.0.1", "::1"} or not lowered:
         return True
     try:
-        for info in socket.getaddrinfo(host, None):
-            ip_str = info[4][0]
-            ip = ipaddress.ip_address(ip_str)
-            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
-                return True
+        infos = socket.getaddrinfo(host, None)
     except OSError:
         return True
+    if not infos:
+        return True
+    for info in infos:
+        try:
+            ip = ipaddress.ip_address(info[4][0])
+        except ValueError:
+            return True
+        if _ip_is_blocked(ip):
+            return True
     return False
 
 
@@ -115,9 +139,17 @@ async def _fetch_url_page_text(url: str) -> Tuple[str, Optional[str]]:
         "Accept": "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8",
     }
 
+    # Re-validate immediately before connecting to shrink the DNS-rebind /
+    # TOCTOU window between the initial check and the actual request.
+    if _is_blocked_fetch_host(host):
+        raise HTTPException(status_code=400, detail="URL host is not allowed")
+
     try:
         async with httpx.AsyncClient(timeout=30.0, follow_redirects=False, headers=headers) as client:
             response = await client.get(url.strip())
+            # Never follow redirects: a 3xx could point at an internal host.
+            if 300 <= response.status_code < 400:
+                raise HTTPException(status_code=400, detail="Redirects are not allowed")
             if response.status_code >= 400:
                 raise HTTPException(status_code=502, detail="Failed to fetch page")
             if len(response.content) > _MAX_FETCH_BYTES:

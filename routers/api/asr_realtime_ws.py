@@ -31,6 +31,7 @@ from services.auth.vpn_geo_enforcement import maybe_close_websocket_for_vpn_cn_g
 from services.features.asr_realtime_bridge import bridge_error_json, run_asr_relay
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth_ws import authenticate_websocket_user
+from utils.collab_ws_origin import close_ws_if_origin_disallowed
 from utils.ws_context import ws_managed_session
 from utils.ws_limits import (
     DEFAULT_MAX_WS_MESSAGES_PER_SECOND,
@@ -77,6 +78,9 @@ async def canvas_asr_websocket(websocket: WebSocket) -> None:
     if auth_error or user is None:
         logger.warning("[CanvasASR] Auth rejected: %s", auth_error)
         await websocket.close(code=4001, reason=auth_error or "Authentication failed")
+        return
+
+    if await close_ws_if_origin_disallowed(websocket, "CanvasASR"):
         return
 
     if await maybe_close_websocket_for_vpn_cn_geo(websocket):

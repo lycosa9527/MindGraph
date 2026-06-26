@@ -44,6 +44,7 @@ from services.infrastructure.monitoring.ws_metrics import (
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, JSON_PARSE_ERRORS
 from utils.auth import can_access_workshop_chat
 from utils.auth_ws import authenticate_websocket_user
+from utils.collab_ws_origin import close_ws_if_origin_disallowed
 from utils.db.session_open import actor_rls_session
 from utils.ws_context import ws_managed_session
 from utils.ws_limits import (
@@ -152,6 +153,9 @@ async def chat_websocket(websocket: WebSocket):
             logger.debug("Failed to record auth failure metric: %s", exc)
         await websocket.close(code=4001, reason=error or "Auth failed")
         logger.warning("[ChatWS] Auth rejected: %s", error)
+        return
+
+    if await close_ws_if_origin_disallowed(websocket, "ChatWS"):
         return
 
     if await _close_ws_if_vpn_cn_geo(websocket):

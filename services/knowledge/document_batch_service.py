@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.knowledge_space import DocumentBatch, KnowledgeDocument
 from services.utils.error_types import DATABASE_ERRORS
+from services.utils.safe_upload import ensure_within_directory, safe_upload_basename
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +91,7 @@ async def batch_upload_documents(
 
     documents = []
     for file_info in files:
-        file_name = file_info["file_name"]
+        file_name = safe_upload_basename(file_info["file_name"])
         file_path = file_info["file_path"]
         file_type = file_info["file_type"]
         file_size = file_info["file_size"]
@@ -107,8 +108,8 @@ async def batch_upload_documents(
         db.add(document)
         await db.flush()
 
-        final_path = user_dir / f"{document.id}_{file_name}"
-        shutil.move(file_path, final_path)
+        final_path = ensure_within_directory(user_dir / f"{document.id}_{file_name}", user_dir)
+        shutil.move(file_path, str(final_path))
         document.file_path = str(final_path)
         documents.append(document)
 

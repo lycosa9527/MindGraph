@@ -41,7 +41,7 @@ API密钥通过管理面板 `/admin` 生成（需要管理员账户）。
 # Production server
 curl -X POST https://mg.mindspringedu.com/api/generate_png \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: mg_wX864RN8F7ZQtuDQU3zfjozR_R45i_-eQp9hYYq6JlQ" \
+  -H "X-API-Key: mg_example_REPLACE_WITH_YOUR_OWN_API_KEY" \
   -d '{"prompt": "Compare cats and dogs", "language": "en"}'
 
 # Local development (localhost:9527)
@@ -442,7 +442,7 @@ URL: https://mg.mindspringedu.com/api/generate_png
 Method: POST
 Headers:
   Content-Type: application/json
-  X-API-Key: mg_wX864RN8F7ZQtuDQU3zfjozR_R45i_-eQp9hYYq6JlQ
+  X-API-Key: mg_example_REPLACE_WITH_YOUR_OWN_API_KEY
 Body:
   {
     "prompt": "{{user_input}}",
@@ -752,7 +752,7 @@ URL: https://mg.mindspringedu.com/api/generate_png
 Method: POST
 Headers:
   Content-Type: application/json
-  X-API-Key: mg_wX864RN8F7ZQtuDQU3zfjozR_R45i_-eQp9hYYq6JlQ
+  X-API-Key: mg_example_REPLACE_WITH_YOUR_OWN_API_KEY
 Body:
   {
     "prompt": "{{user_input}}",
@@ -849,7 +849,7 @@ def generate_png(prompt, api_key, language="zh", style=None):
         raise Exception(f"API Error: {error['error']}")
 
 # Usage
-api_key = "mg_wX864RN8F7ZQtuDQU3zfjozR_R45i_-eQp9hYYq6JlQ"  # Your generated API key
+api_key = "mg_example_REPLACE_WITH_YOUR_OWN_API_KEY"  # Your generated API key
 filename = generate_png("Compare cats and dogs", api_key, "zh", {"theme": "modern"})
 print(f"Graph saved as: {filename}")
 ```
@@ -880,7 +880,7 @@ async function generatePNG(prompt, apiKey, language = 'zh', style = null) {
 }
 
 // Usage
-const apiKey = 'mg_wX864RN8F7ZQtuDQU3zfjozR_R45i_-eQp9hYYq6JlQ';  // Your generated API key
+const apiKey = 'mg_example_REPLACE_WITH_YOUR_OWN_API_KEY';  // Your generated API key
 generatePNG('Compare cats and dogs', apiKey, 'en', { theme: 'modern' })
     .then(filename => console.log(`Graph saved as: ${filename}`))
     .catch(error => console.error('Error:', error));

@@ -128,8 +128,10 @@ async def reset_password_with_sms(
     result = await db.execute(select(User).where(User.phone == request.phone))
     user = result.scalar_one_or_none()
     if not user:
-        error_msg = Messages.error("phone_not_registered_reset", lang)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+        # Anti-enumeration: a non-existent account must be indistinguishable
+        # from a wrong/expired code, so return the same generic 400 response.
+        error_msg = Messages.error("sms_code_invalid", lang)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
     await _verify_and_consume_sms_code(request.phone, request.sms_code, "reset_password", db, lang)
 
@@ -188,8 +190,10 @@ async def reset_password_with_email(
     result = await db.execute(select(User).where(User.email == email_norm))
     user = result.scalar_one_or_none()
     if not user:
-        error_msg = Messages.error("email_not_registered_reset", lang)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+        # Anti-enumeration: mirror the invalid-code response so a missing
+        # account cannot be distinguished from a wrong/expired code.
+        error_msg = Messages.error("email_code_invalid", lang)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
     blocked = _geo_guard_reset_password_email(http_request, lang)
     if blocked is not None:

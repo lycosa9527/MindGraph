@@ -191,6 +191,13 @@ async def _complete_login_after_otp_verified(
     session_manager = get_session_manager()
     client_ip = get_client_ip(http_request) if http_request else "unknown"
 
+    # Successful OTP login clears the shared brute-force counters so legitimate
+    # users are not locked out by their own verification attempts.
+    login_key = (user.email or "") if method == "email_otp" else (user.phone or "")
+    if login_key:
+        await clear_login_attempts(login_key)
+    await clear_ip_attempts(client_ip)
+
     token = create_access_token(user)
 
     refresh_token_value, refresh_token_hash = create_refresh_token(user.id)
@@ -542,9 +549,25 @@ async def login_with_sms(
 
     Benefits:
     - No password required
-    - Bypasses account lockout
     - Quick verification
+
+    Brute-force protection: per-IP and per-identifier rate limits are applied
+    to the OTP verification attempt (same window as password login) so the
+    6-digit code cannot be exhaustively guessed within its TTL.
     """
+    client_ip = get_client_ip(http_request) if http_request else "unknown"
+    ip_allowed, _ip_error = await check_ip_rate_limit(client_ip)
+    if not ip_allowed:
+        logger.warning("IP rate limit exceeded for SMS login from %s", client_ip)
+        error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
+
+    key_allowed, _ = await check_login_rate_limit((request.phone or "").strip())
+    if not key_allowed:
+        logger.warning("Rate limit exceeded for SMS login key %s***", (request.phone or "")[:8])
+        error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
+
     user_row = await db.execute(select(User).where(User.phone == request.phone))
     user = user_row.scalar_one_or_none()
 
@@ -595,10 +618,27 @@ async def login_with_email(
     Login with email verification code (SES).
 
     Same guarantees as SMS login: no password, org checks, code consumed once.
+
+    Brute-force protection: per-IP and per-identifier rate limits are applied
+    to the OTP verification attempt (same window as password login).
     """
     email_validated = validate_email_for_api(request.email, lang)
     raise_if_mainland_china_email_for_email_login(email_validated, lang)
     email_key = normalize_verification_email(email_validated)
+
+    client_ip = get_client_ip(http_request) if http_request else "unknown"
+    ip_allowed, _ip_error = await check_ip_rate_limit(client_ip)
+    if not ip_allowed:
+        logger.warning("IP rate limit exceeded for email login from %s", client_ip)
+        error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
+
+    key_allowed, _ = await check_login_rate_limit(email_key)
+    if not key_allowed:
+        logger.warning("Rate limit exceeded for email login key %s***", email_key[:8])
+        error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
+
     user_row = await db.execute(select(User).where(User.email == email_key))
     user = user_row.scalar_one_or_none()
 

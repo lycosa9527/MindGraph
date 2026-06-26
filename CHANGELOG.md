@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.125.0] - 2026-06-27
+
+> **Security audit hardening — CSP script nonce, upload path-traversal containment, OTP brute-force rate limits, signed chat fan-out, SSRF/CSWSH/host-header defenses, and production startup guards.**
+
+### Security
+
+- **CSP script nonce** — The Vue SPA shell is served with a per-request nonce stamped onto its inline scripts and in-document CSP meta tag, and `add_security_headers` emits a matching `script-src 'self' 'nonce-…'` header (no `'unsafe-inline'` for scripts) for the same response. Shell responses are `no-store` so the nonce never goes stale. `style-src` keeps `'unsafe-inline'` (Vue/Element Plus inject styles at runtime via JS). Legacy template responses without a nonce keep the permissive fallback ([`vue_spa.py`](routers/core/vue_spa.py), [`spa_handler.py`](services/infrastructure/utils/spa_handler.py), [`middleware.py`](services/infrastructure/http/middleware.py)). **Takes effect after `npm run build`.**
+- **Upload path traversal (CWE-22)** — New [`safe_upload.py`](services/utils/safe_upload.py) centralizes `safe_upload_basename` (strips directory components) and `ensure_within_directory` (resolves + asserts containment before write). Applied to Knowledge Space upload, chunk-test upload, and batch upload, plus announcement image upload ([`knowledge_space_service.py`](services/knowledge/knowledge_space_service.py), [`chunk_test_document_service.py`](services/knowledge/chunk_test_document_service.py), [`document_batch_service.py`](services/knowledge/document_batch_service.py), [`update_notification.py`](routers/core/update_notification.py)).
+- **OTP brute-force** — SMS and email OTP login now enforce per-identifier and per-IP rate limits before verify-and-consume; counters clear on success ([`routers/auth/login.py`](routers/auth/login.py)).
+- **Signed chat WS fan-out** — Chat envelopes are stamped with `COLLAB_FANOUT_ORIGIN_SECRET` on publish (Redis + PG-NOTIFY paths) and rejected on receipt when the origin is missing/invalid, mirroring workshop fan-out. Prevents a Redis/PG-write-capable attacker from forging channel/DM/presence frames ([`ws_redis_fanout_publish_core.py`](services/features/ws_redis_fanout_publish_core.py), [`ws_redis_fanout_publish.py`](services/features/ws_redis_fanout_publish.py), [`ws_redis_fanout_listener.py`](services/features/ws_redis_fanout_listener.py)).
+- **SSRF hardening** — URL fetch now blocks all non-public resolved IPs (private, loopback, link-local, multicast, unspecified, IPv4-mapped), re-validates the host immediately before the request to shrink the DNS-rebind window, and rejects 3xx redirects ([`web_content_generation.py`](routers/api/web_content_generation.py)).
+- **Cross-site WebSocket hijacking (CSWSH)** — Origin validation added to the ASR, live-translate, and workshop-chat WebSocket endpoints via shared [`close_ws_if_origin_disallowed`](utils/collab_ws_origin.py) ([`asr_realtime_ws.py`](routers/api/asr_realtime_ws.py), [`live_translate_ws.py`](routers/api/live_translate_ws.py), [`workshop_chat_ws.py`](routers/features/workshop_chat_ws.py)).
+- **Host-header injection** — `TrustedHostMiddleware` rejects requests whose `Host` is not in `ALLOWED_HOSTS` (permissive `*` by default; `localhost`/`127.0.0.1` always allowed) ([`middleware.py`](services/infrastructure/http/middleware.py)).
+- **Upload content-type spoofing** — Dify file upload enforces an extension allowlist + magic-byte validation for images; announcement image extension is derived from the validated content-type only ([`dify_files.py`](routers/api/dify_files.py), [`update_notification.py`](routers/core/update_notification.py)).
+- **Account enumeration** — Password reset (SMS/email) returns a generic `400` for unknown accounts instead of `404` ([`routers/auth/password.py`](routers/auth/password.py)).
+- **Production startup guards** — Non-debug boot is blocked when `DATABASE_URL` is unset or uses the default development password; unauthenticated `REDIS_URL` warns (or fails when `REQUIRE_REDIS_AUTH=true`) ([`production_secrets_guard.py`](services/infrastructure/security/production_secrets_guard.py)).
+- **Constant-time secrets** — Bayi/dashboard passkey checks use `hmac.compare_digest`; captcha codes use `secrets.choice` ([`passkey_utils.py`](utils/auth/passkey_utils.py), [`routers/auth/captcha.py`](routers/auth/captcha.py)).
+- **Password policy** — Registration/reset/change validators reject common passwords and single-character repeats beyond length-only checks ([`requests_auth.py`](models/requests/requests_auth.py)).
+- **Session cleanup** — `csrf_token` cookie is cleared on logout ([`routers/auth/session.py`](routers/auth/session.py)).
+- **Deprecated header** — Removed `X-XSS-Protection` (obsolete; CSP is the correct control) ([`middleware.py`](services/infrastructure/http/middleware.py)).
+
+### Changed
+
+- **Bayi SSO cookies** — The SSO flow issues a standard rotating refresh token and sets access/refresh/CSRF cookies via `set_auth_cookies`, aligning lifetimes with the core auth flow ([`routers/core/pages.py`](routers/core/pages.py)).
+
+### Added
+
+- **Security audit report** — [`docs/security/SECURITY_AUDIT_2026-06.md`](docs/security/SECURITY_AUDIT_2026-06.md): findings mapped to OWASP/ASVS, remediation, positive controls, and a deployment hardening checklist.
+- **Security regression tests** — CSP nonce vs. `'unsafe-inline'` fallback, DB/Redis startup guards, and existing hardening checks ([`tests/test_security_production_hardening.py`](tests/test_security_production_hardening.py)).
+
+### Deployment notes (operator action)
+
+- **`DATABASE_URL` now required** — Non-debug deployments must set `DATABASE_URL` to a non-default, strong-password value, or startup fails by design.
+- **`COLLAB_FANOUT_ORIGIN_SECRET`** — Set explicitly and **share the same value across all workers**; chat fan-out now enforces it (previously workshop-only).
+- **`ALLOWED_HOSTS`** (new, optional) — Set to the production hostname(s) to enforce host-header validation.
+- **`REQUIRE_REDIS_AUTH`** (new, optional) — Set `true` to fail startup on an unauthenticated `REDIS_URL`.
+- Rotate any API key that previously appeared in committed docs ([`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) placeholder).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): syncs with root **`VERSION`** (5.125.0) on next `npm run build` (`prebuild` → `sync-version`).
+
 ## [5.124.0] - 2026-06-26
 
 > **DingTalk pair-code binding — rotating 6-digit codes replace QR; MindBot tool ingress; production security hardening (CSRF, fail-closed auth).**

@@ -24,6 +24,7 @@ from services.features.ws_redis_fanout_publish_core import (
 )
 from services.features.ws_redis_fanout_publish_core import (
     _envelope_with_workshop_msg_id,
+    stamp_chat_fanout_origin,
 )
 from services.infrastructure.monitoring.ws_metrics import record_ws_fanout_publish_failure
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -33,13 +34,14 @@ logger = logging.getLogger(__name__)
 
 async def publish_chat_fanout_async(envelope: Dict[str, Any]) -> None:
     """Publish chat fan-out; fall back to PG NOTIFY when Redis publish fails."""
+    stamped = stamp_chat_fanout_origin(envelope)
     try:
-        body = json.dumps(envelope, ensure_ascii=False)
+        body = json.dumps(stamped, ensure_ascii=False)
     except (TypeError, ValueError):
         logger.warning("[WSFanout] Chat publish skipped: invalid envelope")
         return
     try:
-        await _publish_chat_fanout_core(envelope)
+        await _publish_chat_fanout_core(stamped)
     except RedisError:
         try:
             record_ws_fanout_publish_failure()

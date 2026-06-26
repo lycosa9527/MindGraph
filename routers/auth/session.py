@@ -52,6 +52,7 @@ from utils.auth import (
     hash_refresh_token,
     is_https,
 )
+from utils.auth.request_helpers import CSRF_COOKIE_NAME
 from utils.auth.thinking_coin_config import feature_thinking_coins_enabled
 from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 
@@ -526,6 +527,14 @@ async def logout(
     response.delete_cookie(
         key="refresh_token",
         path="/api/auth",
+        samesite="strict",
+        secure=is_https(request),
+    )
+
+    # Clear the double-submit CSRF cookie so no stale token lingers post-logout
+    response.delete_cookie(
+        key=CSRF_COOKIE_NAME,
+        path="/",
         samesite="strict",
         secure=is_https(request),
     )
