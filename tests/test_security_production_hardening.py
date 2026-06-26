@@ -188,13 +188,13 @@ def test_verify_dashboard_passkey_rejects_when_disabled() -> None:
         assert verify_dashboard_passkey("123456") is False
 
 
-def test_production_guard_rejects_default_db_password() -> None:
-    """Startup guard must block the well-known dev DB password in production."""
+def test_production_guard_allows_default_db_password() -> None:
+    """Startup guard must not block the well-known dev DB password when DATABASE_URL is set."""
     guard = production_secrets_guard_module
     default_url = "postgresql://mindgraph_user:mindgraph_password@localhost:5432/mindgraph"
     with patch.object(guard, "_require_non_debug", return_value=True):
-        with patch.dict("os.environ", {"DATABASE_URL": default_url}):
-            with pytest.raises(RuntimeError, match="default development password"):
+        with patch.object(guard, "_guard_redis_url", return_value=None):
+            with patch.dict("os.environ", {"DATABASE_URL": default_url}, clear=False):
                 guard.enforce_production_security_guards()
 
 

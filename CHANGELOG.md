@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Host-header injection** — `TrustedHostMiddleware` rejects requests whose `Host` is not in `ALLOWED_HOSTS` (permissive `*` by default; `localhost`/`127.0.0.1` always allowed) ([`middleware.py`](services/infrastructure/http/middleware.py)).
 - **Upload content-type spoofing** — Dify file upload enforces an extension allowlist + magic-byte validation for images; announcement image extension is derived from the validated content-type only ([`dify_files.py`](routers/api/dify_files.py), [`update_notification.py`](routers/core/update_notification.py)).
 - **Account enumeration** — Password reset (SMS/email) returns a generic `400` for unknown accounts instead of `404` ([`routers/auth/password.py`](routers/auth/password.py)).
-- **Production startup guards** — Non-debug boot is blocked when `DATABASE_URL` is unset or uses the default development password; unauthenticated `REDIS_URL` warns (or fails when `REQUIRE_REDIS_AUTH=true`) ([`production_secrets_guard.py`](services/infrastructure/security/production_secrets_guard.py)).
+- **Production startup guards** — Non-debug boot is blocked when `DATABASE_URL` is unset; unauthenticated `REDIS_URL` warns (or fails when `REQUIRE_REDIS_AUTH=true`) ([`production_secrets_guard.py`](services/infrastructure/security/production_secrets_guard.py)).
 - **Constant-time secrets** — Bayi/dashboard passkey checks use `hmac.compare_digest`; captcha codes use `secrets.choice` ([`passkey_utils.py`](utils/auth/passkey_utils.py), [`routers/auth/captcha.py`](routers/auth/captcha.py)).
 - **Password policy** — Registration/reset/change validators reject common passwords and single-character repeats beyond length-only checks ([`requests_auth.py`](models/requests/requests_auth.py)).
 - **Session cleanup** — `csrf_token` cookie is cleared on logout ([`routers/auth/session.py`](routers/auth/session.py)).
@@ -37,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deployment notes (operator action)
 
-- **`DATABASE_URL` now required** — Non-debug deployments must set `DATABASE_URL` to a non-default, strong-password value, or startup fails by design.
+- **`DATABASE_URL` now required** — Non-debug deployments must set `DATABASE_URL` explicitly, or startup fails by design.
 - **`COLLAB_FANOUT_ORIGIN_SECRET`** — Set explicitly and **share the same value across all workers**; chat fan-out now enforces it (previously workshop-only).
 - **`ALLOWED_HOSTS`** (new, optional) — Set to the production hostname(s) to enforce host-header validation.
 - **`REQUIRE_REDIS_AUTH`** (new, optional) — Set `true` to fail startup on an unauthenticated `REDIS_URL`.

@@ -26,8 +26,6 @@ _KNOWN_WEAK_DASHBOARD_PASSKEYS = frozenset({"123456", "000000", "888888"})
 _KNOWN_WEAK_BAYI_KEYS = frozenset({"v8IT7XujLPsM7FYuDPRhPtZk"})
 _PLACEHOLDER_SUBSTRINGS = ("change-me", "changeme", "replace-me", "example", "placeholder")
 _ENTERPRISE_ACK = "I_UNDERSTAND_PUBLIC_EXPOSURE_RISK"
-# Well-known development DB credentials that must never reach production.
-_DEFAULT_DB_PASSWORD = "mindgraph_password"
 
 
 def _env_truthy(name: str) -> bool:
@@ -36,12 +34,10 @@ def _env_truthy(name: str) -> bool:
 
 
 def _guard_database_url() -> None:
-    """Block startup when the insecure default DB credentials are in use."""
+    """Block startup when DATABASE_URL is unset in non-debug deployments."""
     db_url = os.getenv("DATABASE_URL", "").strip()
     if not db_url:
         _fail("DATABASE_URL must be set explicitly in production (no insecure default)")
-    if _DEFAULT_DB_PASSWORD in db_url:
-        _fail("DATABASE_URL uses the default development password — set a strong, unique password")
 
 
 def _guard_redis_url() -> None:
