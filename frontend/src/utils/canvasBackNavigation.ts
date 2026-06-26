@@ -14,6 +14,15 @@ export function isMindGraphLandingPath(path: string): boolean {
   return path === '/mindgraph' || path === '/m/mindgraph'
 }
 
+/** Routes canvas "back" may return to in one step (stored entry path). */
+export function isCanvasBackTargetPath(path: string): boolean {
+  return (
+    isMindGraphLandingPath(path) ||
+    path === '/mindmate' ||
+    path === '/m/mindmate'
+  )
+}
+
 /** Use when replacing/pushing the editor URL so mobile stays on /m/canvas. */
 export function canvasEditorPathForRoute(routePath: string): '/canvas' | '/m/canvas' {
   return routePath === CANVAS_EDITOR_PATH_MOBILE
@@ -43,7 +52,7 @@ export function defaultMindGraphLandingPath(routePath: string): '/mindgraph' | '
  */
 export function navigateBackFromCanvas(router: Router, currentRoutePath: string): void {
   const entry = sessionStorage.getItem(CANVAS_ENTRY_PATH_KEY)
-  if (entry && isMindGraphLandingPath(entry)) {
+  if (entry && isCanvasBackTargetPath(entry)) {
     void router.replace({ path: entry })
     return
   }

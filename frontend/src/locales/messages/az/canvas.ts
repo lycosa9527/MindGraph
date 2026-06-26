@@ -410,6 +410,7 @@ export default {
   'canvas.topBar.exportSvg': 'SVG kimi ixrac',
   'canvas.topBar.reset': 'Sıfırla',
   'canvas.topBar.resetTemplate': 'Defolt şablona sıfırla',
+  'canvas.topBar.resetCanvas': 'Reset canvas',
   'canvas.topBar.schoolCollab': 'Məktəb əməkdaşlığı',
   'canvas.topBar.shareCommunity': 'İcma ilə paylaş',
   'canvas.topBar.sharedCollab': 'Ümumi əməkdaşlıq',

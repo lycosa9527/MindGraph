@@ -4,6 +4,8 @@ import { ref, watch } from 'vue'
 import { useVueFlow } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { ANIMATION, CANVAS, FIT_PADDING, PANEL, ZOOM } from '@/config/uiConfig'
 import { animateViewportTransition, cancelViewportTransition } from '@/utils/viewportTransition'
 import type { useDiagramStore } from '@/stores/diagram'
@@ -13,6 +15,10 @@ import {
   isDesktopConceptMapManualViewport,
   isMindMapDiagramType,
 } from '@/utils/conceptMapDesktopViewport'
+import {
+  parseFitPaddingPx,
+  resolveMindMapSideToolbarLeftReservePx,
+} from '@/utils/mindMapSideToolbarFitReserve'
 
 type DiagramStore = ReturnType<typeof useDiagramStore>
 type PanelsStore = ReturnType<typeof usePanelsStore>
@@ -71,6 +77,8 @@ export function useDiagramCanvasFit(options: {
   } = options
 
   const uiStore = useUIStore()
+  const useMindMapV2 = useMindMapV2Chrome()
+  const { sidebarExpanded, sidebarVisible } = useMindMapSideToolbarState()
   const isFittedForPanel = ref(false)
   const hasInitialFitDoneForDiagram = ref(false)
   let fitFromNodesChangeTimeoutId: ReturnType<typeof setTimeout> | null = null
@@ -127,6 +135,22 @@ export function useDiagramCanvasFit(options: {
       : FIT_PADDING.BOTTOM_UI_HEIGHT_PX
   }
 
+  function isMindMapSideToolbarAffectingFit(): boolean {
+    return (
+      isMindMapDiagramType(diagramStore.type) &&
+      useMindMapV2.value &&
+      !presentationRailOpen.value &&
+      sidebarVisible.value
+    )
+  }
+
+  function getFitViewLeftPx(): string {
+    return `${resolveMindMapSideToolbarLeftReservePx({
+      active: isMindMapSideToolbarAffectingFit(),
+      expanded: sidebarExpanded.value,
+    })}px`
+  }
+
   function getFitViewRightPx(): string {
     const railVisible = presentationRailOpen.value && presentationToolIsNotTimer.value
     const px = railVisible
@@ -146,7 +170,7 @@ export function useDiagramCanvasFit(options: {
         top: `${getFitViewTopPx()}px`,
         bottom: `${getFitViewBottomPx()}px`,
         right: getFitViewRightPx(),
-        left: `${FIT_PADDING.STANDARD_PX}px`,
+        left: getFitViewLeftPx(),
       },
       duration: animate ? ANIMATION.DURATION_NORMAL : 0,
     } as Parameters<FitViewFn>[0])
@@ -179,7 +203,7 @@ export function useDiagramCanvasFit(options: {
           top: `${getFitViewTopPx()}px`,
           bottom: `${getFitViewBottomPx()}px`,
           right: getFitViewRightPx(),
-          left: `${FIT_PADDING.STANDARD_PX}px`,
+          left: getFitViewLeftPx(),
         },
         duration: animate ? ANIMATION.DURATION_NORMAL : 0,
       } as Parameters<FitViewFn>[0])
@@ -196,7 +220,7 @@ export function useDiagramCanvasFit(options: {
         top: `${getFitViewTopPx()}px`,
         right: presentationRailOpen.value ? getFitViewRightPx() : adjustedPadding,
         bottom: `${getFitViewBottomPx()}px`,
-        left: adjustedPadding,
+        left: isMindMapSideToolbarAffectingFit() ? getFitViewLeftPx() : adjustedPadding,
       },
       duration: animate ? ANIMATION.DURATION_NORMAL : 0,
     } as Parameters<FitViewFn>[0])
@@ -326,7 +350,9 @@ export function useDiagramCanvasFit(options: {
     const viewH = container?.clientHeight ?? CANVAS.DEFAULT_HEIGHT
     const topPad = getFitViewTopPx()
     const bottomPad = getFitViewBottomPx()
-    const visibleCenterX = viewW / 2
+    const leftPad = parseFitPaddingPx(getFitViewLeftPx())
+    const rightPad = parseFitPaddingPx(getFitViewRightPx())
+    const visibleCenterX = leftPad + (viewW - leftPad - rightPad) / 2
     const visibleCenterY = topPad + (viewH - topPad - bottomPad) / 2
 
     setViewport(
@@ -360,8 +386,12 @@ export function useDiagramCanvasFit(options: {
       if (isMindMapDiagramType(diagramStore.type)) {
         hasInitialFitDoneForDiagram.value = true
         setTimeout(() => {
-          centerDiagramAtDefaultZoom(false)
-          eventBus.emit('view:fit_completed', { mode: 'mind_map_centered', animate: false })
+          if (useMindMapV2.value) {
+            fitToFullCanvas(true)
+          } else {
+            centerDiagramAtDefaultZoom(false)
+            eventBus.emit('view:fit_completed', { mode: 'mind_map_centered', animate: false })
+          }
         }, Math.max(ANIMATION.FIT_VIEWPORT_DELAY, 450))
         return
       }
@@ -494,6 +524,22 @@ export function useDiagramCanvasFit(options: {
       if (diagramStore.type === 'concept_map') return
       if (!presentationRailOpen.value || getNodes().length === 0) return
       setTimeout(() => fitDiagram(true), ANIMATION.FIT_VIEWPORT_DELAY)
+    }
+  )
+
+  watch(
+    () => useMindMapV2.value,
+    (isV2, wasV2) => {
+      if (wasV2 === undefined) return
+      if (!isMindMapDiagramType(diagramStore.type)) return
+      if (getNodes().length === 0) return
+      setTimeout(() => {
+        if (isV2) {
+          fitToFullCanvas(true)
+          return
+        }
+        eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+      }, ANIMATION.FIT_VIEWPORT_DELAY)
     }
   )
 

@@ -410,6 +410,7 @@ export default {
   'canvas.topBar.exportSvg': '導出為 SVG',
   'canvas.topBar.reset': '重置',
   'canvas.topBar.resetTemplate': '重置為默認模板',
+  'canvas.topBar.resetCanvas': '重置畫布',
   'canvas.topBar.schoolCollab': '校內協同',
   'canvas.topBar.shareCommunity': '分享到社區',
   'canvas.topBar.sharedCollab': '共同協同',

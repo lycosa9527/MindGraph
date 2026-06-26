@@ -2,7 +2,7 @@
 /**
  * Mind map presentation — single vertical capsule; pen params expand downward in-column.
  */
-import { Hand, MonitorPlay, MousePointer2, PenLine } from '@lucide/vue'
+import { Hand, MonitorPlay, MousePointer2, PenLine, Sun, Timer } from '@lucide/vue'
 
 import { ElButton, ElTooltip } from 'element-plus'
 
@@ -165,6 +165,40 @@ function thicknessLabel(value: PresentationBoardThickness): string {
                 {{ thicknessLabel(option) }}
               </button>
             </div>
+          </div>
+        </template>
+
+        <template v-if="props.showSlidesTool !== false">
+          <div class="presentation-tool-slot flex h-10 w-full items-center justify-center">
+            <ElTooltip
+              :content="t('canvas.presentationSideToolbar.spotlight')"
+              placement="left"
+            >
+              <ElButton
+                text
+                size="small"
+                :class="[toolClass('spotlight'), 'presentation-tool-btn--spotlight']"
+                @click="emit('selectTool', 'spotlight')"
+              >
+                <Sun class="h-5 w-5 shrink-0" />
+              </ElButton>
+            </ElTooltip>
+          </div>
+
+          <div class="presentation-tool-slot flex h-10 w-full items-center justify-center">
+            <ElTooltip
+              :content="t('canvas.presentationSideToolbar.timer')"
+              placement="left"
+            >
+              <ElButton
+                text
+                size="small"
+                :class="[toolClass('timer'), 'presentation-tool-btn--timer']"
+                @click="emit('selectTool', 'timer')"
+              >
+                <Timer class="h-5 w-5 shrink-0" />
+              </ElButton>
+            </ElTooltip>
           </div>
         </template>
 
@@ -333,6 +367,18 @@ function thicknessLabel(value: PresentationBoardThickness): string {
   box-shadow: inset 0 0 0 1px rgb(134 239 172 / 0.65);
 }
 
+.presentation-tool-btn--spotlight.is-active {
+  background-color: rgb(254 243 199);
+  color: rgb(217 119 6);
+  box-shadow: inset 0 0 0 1px rgb(252 211 77 / 0.65);
+}
+
+.presentation-tool-btn--timer.is-active {
+  background-color: rgb(219 234 254);
+  color: rgb(37 99 235);
+  box-shadow: inset 0 0 0 1px rgb(147 197 253 / 0.65);
+}
+
 .presentation-tool-btn:hover {
   background-color: #f3f4f6;
 }
@@ -349,6 +395,16 @@ function thicknessLabel(value: PresentationBoardThickness): string {
 .dark .presentation-tool-btn--pen.is-active {
   background-color: rgb(6 78 59 / 0.55);
   color: rgb(110 231 183);
+}
+
+.dark .presentation-tool-btn--spotlight.is-active {
+  background-color: rgb(120 53 15 / 0.45);
+  color: rgb(252 211 77);
+}
+
+.dark .presentation-tool-btn--timer.is-active {
+  background-color: rgb(30 58 95);
+  color: rgb(96 165 250);
 }
 
 .dark .presentation-tool-btn:hover {

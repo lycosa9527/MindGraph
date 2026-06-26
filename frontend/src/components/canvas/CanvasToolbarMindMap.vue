@@ -23,7 +23,6 @@ import {
   tryCollabGuardedRedo,
   tryCollabGuardedUndo,
 } from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
-import { useCanvasReset } from '@/composables/canvasPage/useCanvasReset'
 import { useCanvasToolbarApps } from '@/composables/canvasToolbar'
 import { useFeatureFlags } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
@@ -55,7 +54,6 @@ const { handleAddChild, handleAddSibling, handleDeleteNode, handleAddBranch } = 
 })
 
 const { isAIGenerating, handleAIGenerate } = useCanvasToolbarApps()
-const { resetToDefaultTemplate } = useCanvasReset()
 
 const activeThemeId = ref<MindMapThemeId>(
   resolveMindMapThemeId(diagramStore.data?._mindmap_theme as string | undefined)
@@ -213,19 +211,6 @@ function handleAddChildClick() {
             @click="handleRedo"
           >
             <RotateCw class="w-4 h-4" />
-          </button>
-        </ElTooltip>
-        <ElTooltip
-          :content="t('canvas.topBar.resetTemplate')"
-          placement="bottom"
-        >
-          <button
-            type="button"
-            class="mm-btn mm-btn--icon"
-            :aria-label="t('canvas.topBar.reset')"
-            @click="resetToDefaultTemplate"
-          >
-            <RotateCcw class="w-4 h-4" />
           </button>
         </ElTooltip>
       </div>
@@ -402,6 +387,8 @@ function handleAddChildClick() {
   </div>
 </template>
 
+<style src="./mindMapToolbarButtons.css"></style>
+
 <style scoped>
 .mm-toolbar {
   width: 100%;
@@ -448,51 +435,6 @@ function handleAddChildClick() {
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
-}
-
-.mm-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  height: 32px;
-  padding: 0 10px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #fff;
-  color: #374151;
-  font-size: 12px;
-  line-height: 1;
-  white-space: nowrap;
-  flex-shrink: 0;
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
-}
-
-:global(.dark) .mm-btn {
-  background: #1f2937;
-  border-color: #374151;
-  color: #e5e7eb;
-  box-shadow: none;
-}
-
-.mm-btn:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: #d1d5db;
-}
-
-.mm-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.mm-btn--icon {
-  width: 32px;
-  padding: 0;
 }
 
 .mm-btn--select {
@@ -550,10 +492,6 @@ function handleAddChildClick() {
 .mm-btn--export:hover:not(:disabled) {
   background: #0f172a;
   border-color: #0f172a;
-}
-
-.mm-btn__label {
-  font-weight: 500;
 }
 
 .mm-btn__label--truncate {

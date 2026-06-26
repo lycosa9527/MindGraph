@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.126.0] - 2026-06-27
+
+> **MindMate ↔ canvas navigation, diagram preview cache, presentation spotlight/timer, and mind map fit/toolbar polish.**
+
+### Added
+
+- **MindMate diagram preview cache** — IndexedDB persists DingTalk-generated preview PNGs (30-day TTL) so chat bubbles and share/export keep thumbnails after server `temp_images` cleanup ([`mindmateDiagramPreviewCache.ts`](frontend/src/utils/mindmateDiagramPreviewCache.ts), [`useMindmateDiagramPreviewImage.ts`](frontend/src/composables/mindmate/useMindmateDiagramPreviewImage.ts), [`ShareExportModal.vue`](frontend/src/components/panels/ShareExportModal.vue)).
+- **Presentation spotlight and timer** — Mind map presentation rail restores spotlight overlay and countdown timer tools ([`MindMapPresentationSideToolbar.vue`](frontend/src/components/canvas/MindMapPresentationSideToolbar.vue), [`CanvasPage.vue`](frontend/src/pages/CanvasPage.vue)).
+- **Mind map side-toolbar fit reserve** — Fit-view padding accounts for the v2 floating side toolbar width/expand state so nodes are not hidden under the handle ([`mindMapSideToolbarFitReserve.ts`](frontend/src/utils/mindMapSideToolbarFitReserve.ts), [`uiConfig.ts`](frontend/src/config/uiConfig.ts)).
+- **Sidebar personal edition label** — Compact brand header for users without a paid org tier; paid schools keep org edition subtitle ([`useAppSidebar.ts`](frontend/src/composables/sidebar/useAppSidebar.ts), [`AppSidebar.vue`](frontend/src/components/sidebar/AppSidebar.vue)).
+- **Tests** — Active-thread restore guards, canvas back to MindMate, side-toolbar fit reserve, and diagram preview cache ([`mindMateActiveThread.spec.ts`](frontend/tests/mindMateActiveThread.spec.ts), [`canvasBackNavigation.spec.ts`](frontend/tests/canvasBackNavigation.spec.ts), [`mindMapSideToolbarFitReserve.spec.ts`](frontend/tests/mindMapSideToolbarFitReserve.spec.ts), [`mindmateDiagramPreviewCache.spec.ts`](frontend/tests/mindmateDiagramPreviewCache.spec.ts)).
+
+### Changed
+
+- **MindMate thread persistence** — Active chat thread survives canvas navigation; Dify history revalidation rejects empty/partial server copies that lag behind Pinia; `onActivated` restores thread when returning from canvas ([`useMindMate.ts`](frontend/src/composables/mindmate/useMindMate.ts), [`mindmateActiveThread.ts`](frontend/src/stores/mindmateActiveThread.ts)).
+- **Canvas back navigation** — Back from editor returns to `/mindmate` when that was the entry route, not only `/mindgraph` ([`canvasBackNavigation.ts`](frontend/src/utils/canvasBackNavigation.ts)).
+- **Mind map v2 fit behavior** — One-shot fit on enter; no auto-refit while editing (manual zoom only) ([`DiagramCanvas.vue`](frontend/src/components/diagram/DiagramCanvas.vue), [`useDiagramCanvasFit.ts`](frontend/src/composables/diagramCanvas/useDiagramCanvasFit.ts)).
+- **Mind map reset control** — Reset-to-template moved from editing toolbar to canvas top bar for mind maps ([`CanvasToolbarMindMap.vue`](frontend/src/components/canvas/CanvasToolbarMindMap.vue), [`CanvasTopBar.vue`](frontend/src/components/canvas/CanvasTopBar.vue)).
+- **Toolbar button styles** — Shared [`mindMapToolbarButtons.css`](frontend/src/components/canvas/mindMapToolbarButtons.css) for top bar and mind map toolbar.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): syncs with root **`VERSION`** (5.126.0) on next `npm run build` (`prebuild` → `sync-version`).
+
 ## [5.125.0] - 2026-06-27
 
 > **Security audit hardening — CSP script nonce, upload path-traversal containment, OTP brute-force rate limits, signed chat fan-out, SSRF/CSWSH/host-header defenses, and production startup guards.**

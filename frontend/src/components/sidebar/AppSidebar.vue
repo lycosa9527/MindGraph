@@ -35,6 +35,7 @@ const {
   showUpdateLogModal,
   authStore,
   isAuthenticated,
+  brandHeaderLayout,
   orgEditionLabel,
   orgEditionTooltip,
 } = sidebar
@@ -131,21 +132,39 @@ onBeforeUnmount(() => {
     :aria-hidden="isCollapsed"
   >
     <!-- Header: brand + collapse (expand when hidden is on the active page) -->
-    <div class="sidebar-header px-4 py-2.5 flex items-center justify-between gap-2 border-b border-stone-200 min-w-0">
+    <div
+      class="sidebar-header flex items-center justify-between gap-2 border-b border-stone-200 min-w-0"
+      :class="brandHeaderLayout === 'compact' ? 'px-4 py-3' : 'px-4 py-2.5'"
+    >
       <div class="brand-block min-w-0 flex-1">
         <div
-          class="logo-link flex items-center gap-2.5 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
+          class="logo-link flex items-center min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
+          :class="brandHeaderLayout === 'compact' ? 'gap-2' : 'gap-2.5'"
           @pointerenter="onLogoPointerEnter"
           @pointerleave="onLogoPointerLeave"
           @click="onLogoClick"
         >
           <div
-            class="brand-logo w-10 h-10 bg-stone-900 rounded-xl flex items-center justify-center text-white font-semibold text-lg shrink-0"
+            class="brand-logo bg-stone-900 flex items-center justify-center text-white font-semibold shrink-0"
+            :class="
+              brandHeaderLayout === 'compact'
+                ? 'w-7 h-7 rounded-lg text-sm'
+                : 'w-10 h-10 rounded-xl text-lg'
+            "
             aria-hidden="true"
           >
             M
           </div>
-          <div class="brand-text flex flex-col items-start justify-center min-w-0 flex-1 text-left leading-none gap-0">
+          <span
+            v-if="brandHeaderLayout === 'compact'"
+            class="brand-title font-semibold text-lg text-stone-900 tracking-tight truncate max-w-full"
+          >
+            {{ sidebar.t('sidebar.brandTitle') }}
+          </span>
+          <div
+            v-else
+            class="brand-text flex flex-col items-start justify-center min-w-0 flex-1 text-left leading-none gap-0"
+          >
             <span class="brand-title font-semibold text-lg text-stone-900 tracking-tight truncate max-w-full">{{
               sidebar.t('sidebar.brandTitle')
             }}</span>

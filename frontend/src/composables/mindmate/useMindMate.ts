@@ -13,7 +13,7 @@
  *
  * Migrated from archive/static/js/managers/mindmate-manager.js
  */
-import { computed, onUnmounted, ref, shallowRef, watch } from 'vue'
+import { computed, onActivated, onUnmounted, ref, shallowRef, watch } from 'vue'
 
 import { useQueryClient } from '@tanstack/vue-query'
 
@@ -27,7 +27,7 @@ import type {
 } from '@/stores/mindmateActiveThread'
 import {
   mapDifyMessagesToMindMate,
-  threadsContentEqual,
+  shouldApplyDifyHistory,
 } from '@/stores/mindmateActiveThread'
 import { consumeSseDataLines } from '@/utils/mindMateSseStream'
 import { mindmateDifyUserIdFromSession } from '@/utils/mindmateDifyUserId'
@@ -140,6 +140,7 @@ export function useMindMate(options: MindMateOptions = {}) {
 
   const isRestoringThread = ref(false)
   const isLoadingFromServer = ref(false)
+  const disposed = ref(false)
 
   // User ID - derived from authenticated user
   const userId = shallowRef(getDifyUserId())
@@ -253,11 +254,21 @@ export function useMindMate(options: MindMateOptions = {}) {
     return `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
   }
 
-  function syncActiveThreadToStore(): void {
-    if (isRestoringThread.value || isLoadingFromServer.value) {
-      return
+  function resolveThreadConversationId(): string | null {
+    return (
+      conversationId.value ??
+      mindMateStore.currentConversationId ??
+      mindMateStore.activeThreadConversationId
+    )
+  }
+
+  function syncActiveThreadToStore(options: { force?: boolean } = {}): void {
+    if (!options.force) {
+      if (isRestoringThread.value || isLoadingFromServer.value) {
+        return
+      }
     }
-    const convId = conversationId.value ?? mindMateStore.currentConversationId
+    const convId = resolveThreadConversationId()
     if (!convId) {
       if (messages.value.length === 0) {
         mindMateStore.clearActiveThread()
@@ -267,21 +278,30 @@ export function useMindMate(options: MindMateOptions = {}) {
     mindMateStore.setActiveThread(convId, messages.value, hasGreeted.value)
   }
 
+  function resolveActiveThreadSnapshot(preferredConvId?: string | null) {
+    return (
+      (preferredConvId ? mindMateStore.getActiveThread(preferredConvId) : null) ??
+      mindMateStore.getActiveThread()
+    )
+  }
+
   function restoreActiveThread(): boolean {
-    const convId = mindMateStore.currentConversationId
-    if (!convId) {
-      return false
-    }
-    const snapshot = mindMateStore.getActiveThread(convId)
+    const preferredConvId =
+      mindMateStore.currentConversationId ?? mindMateStore.activeThreadConversationId
+    const snapshot = resolveActiveThreadSnapshot(preferredConvId)
     if (!snapshot) {
       return false
     }
 
     isRestoringThread.value = true
     messages.value = structuredClone(snapshot.messages)
-    conversationId.value = convId
+    conversationId.value = snapshot.conversationId
     hasGreeted.value = snapshot.hasGreeted
     isRestoringThread.value = false
+
+    if (mindMateStore.currentConversationId !== snapshot.conversationId) {
+      mindMateStore.setCurrentConversation(snapshot.conversationId)
+    }
     return true
   }
 
@@ -813,14 +833,10 @@ export function useMindMate(options: MindMateOptions = {}) {
   }
 
   function startNewSession(sessionId: string): void {
-    // Check if new session
+    // Diagram canvas session id only — do not clear Pinia chat thread (MindMate ↔ canvas nav).
     if (diagramSessionId.value !== sessionId) {
       stopGeneration()
       diagramSessionId.value = sessionId
-      conversationId.value = null
-      hasGreeted.value = false
-      messages.value = []
-      mindMateStore.clearActiveThread()
     }
   }
 
@@ -880,6 +896,9 @@ export function useMindMate(options: MindMateOptions = {}) {
   }
 
   function applyMappedMessages(convId: string, mapped: MindMateMessage[]): void {
+    if (disposed.value) {
+      return
+    }
     isRestoringThread.value = true
     messages.value = mapped
     conversationId.value = convId
@@ -889,18 +908,21 @@ export function useMindMate(options: MindMateOptions = {}) {
   }
 
   async function revalidateConversationInBackground(convId: string): Promise<void> {
-    if (isGenerating.value) {
+    if (isGenerating.value || disposed.value) {
       return
     }
 
     try {
       const difyMessages = await fetchDifyConversationMessages(convId)
+      if (disposed.value) {
+        return
+      }
       const mapped = mapDifyMessagesToMindMate(difyMessages)
 
       if (conversationId.value !== convId) {
         return
       }
-      if (threadsContentEqual(messages.value, mapped)) {
+      if (!shouldApplyDifyHistory(messages.value, mapped)) {
         return
       }
 
@@ -916,8 +938,8 @@ export function useMindMate(options: MindMateOptions = {}) {
   async function loadConversation(convId: string): Promise<void> {
     stopGeneration()
 
-    const cached = mindMateStore.getActiveThread(convId)
-    if (cached) {
+    const cached = resolveActiveThreadSnapshot(convId)
+    if (cached && cached.conversationId === convId) {
       isRestoringThread.value = true
       messages.value = structuredClone(cached.messages)
       conversationId.value = convId
@@ -935,12 +957,30 @@ export function useMindMate(options: MindMateOptions = {}) {
 
     try {
       const difyMessages = await fetchDifyConversationMessages(convId)
+      if (disposed.value) {
+        return
+      }
       const mapped = mapDifyMessagesToMindMate(difyMessages)
-      applyMappedMessages(convId, mapped)
+      const piniaFallback = resolveActiveThreadSnapshot(convId)
+      if (
+        mapped.length === 0 &&
+        piniaFallback &&
+        piniaFallback.conversationId === convId &&
+        piniaFallback.messages.length > 0
+      ) {
+        applyMappedMessages(convId, piniaFallback.messages)
+      } else {
+        applyMappedMessages(convId, mapped)
+      }
       mindMateStore.setCurrentConversation(convId)
     } catch {
-      onError?.('Failed to load conversation')
+      if (!disposed.value) {
+        onError?.('Failed to load conversation')
+      }
     } finally {
+      if (disposed.value) {
+        return
+      }
       isLoadingFromServer.value = false
       state.value = 'idle'
       applyLoadPhase(mindMateLoadPhaseOnComplete())
@@ -1064,7 +1104,8 @@ export function useMindMate(options: MindMateOptions = {}) {
 
   function destroy(): void {
     stopGeneration()
-    syncActiveThreadToStore()
+    syncActiveThreadToStore({ force: true })
+    disposed.value = true
 
     pendingFiles.value.forEach((f) => {
       if (f.preview_url) URL.revokeObjectURL(f.preview_url)
@@ -1086,19 +1127,36 @@ export function useMindMate(options: MindMateOptions = {}) {
 
   function tryInitialConversationLoad(): void {
     if (restoreActiveThread()) {
-      const convId = mindMateStore.currentConversationId
+      const convId = conversationId.value
       if (convId) {
         void revalidateConversationInBackground(convId)
       }
       return
     }
-    const convId = mindMateStore.currentConversationId
+    const convId =
+      mindMateStore.currentConversationId ?? mindMateStore.activeThreadConversationId
     if (convId && !hasMessages.value) {
       void loadConversation(convId)
     }
   }
 
+  function ensureThreadRestored(): void {
+    if (hasMessages.value || isLoadingFromServer.value || isGenerating.value) {
+      return
+    }
+    if (restoreActiveThread()) {
+      const convId = conversationId.value
+      if (convId) {
+        void revalidateConversationInBackground(convId)
+      }
+    }
+  }
+
   tryInitialConversationLoad()
+
+  onActivated(() => {
+    ensureThreadRestored()
+  })
 
   // =========================================================================
   // Return
@@ -1156,6 +1214,7 @@ export function useMindMate(options: MindMateOptions = {}) {
 
     // Cleanup
     destroy,
+    ensureThreadRestored,
   }
 }
 

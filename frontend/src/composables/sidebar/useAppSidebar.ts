@@ -30,6 +30,7 @@ import { apiRequestJson } from '@/utils/apiClient'
 import { userCanAccessMindbotAdmin } from '@/utils/mindbotAccess'
 import { getRolePillStyle } from '@/utils/userRoleDisplay'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
+import { isPaidSchoolTier } from '@/constants/schoolTier'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 /** Max graphemes for org name in sidebar header (total label ≈ 10 incl. 专属版). */
@@ -211,15 +212,42 @@ export function useAppSidebar() {
       borderClass: style.borderClass,
     }
   })
-  const orgEditionLabel = computed(() => {
+  type BrandSubtitleKind = 'none' | 'org_edition' | 'personal_edition'
+
+  const brandSubtitleKind = computed((): BrandSubtitleKind => {
+    if (!isAuthenticated.value) {
+      return 'none'
+    }
     const schoolName = authStore.user?.schoolName?.trim()
-    if (schoolName) {
+    if (schoolName && isPaidSchoolTier(authStore.user?.schoolTier)) {
+      return 'org_edition'
+    }
+    if (!authStore.user?.schoolId) {
+      return 'personal_edition'
+    }
+    return 'none'
+  })
+  const brandHeaderLayout = computed(() =>
+    brandSubtitleKind.value === 'none' ? 'compact' : 'edition'
+  )
+  const orgEditionLabel = computed(() => {
+    if (brandSubtitleKind.value === 'org_edition') {
+      const schoolName = authStore.user?.schoolName?.trim()
+      if (!schoolName) {
+        return ''
+      }
       const org = truncateGraphemes(schoolName, ORG_EDITION_MAX_ORG_NAME_LENGTH)
       return t('sidebar.orgEdition', { org })
     }
-    return t('sidebar.userSubtitleDefault')
+    if (brandSubtitleKind.value === 'personal_edition') {
+      return t('sidebar.personalEdition')
+    }
+    return ''
   })
   const orgEditionTooltip = computed(() => {
+    if (brandSubtitleKind.value !== 'org_edition') {
+      return ''
+    }
     const schoolName = authStore.user?.schoolName?.trim()
     if (!schoolName) {
       return ''
@@ -621,6 +649,7 @@ export function useAppSidebar() {
     mindMateNavLabel,
     userName,
     userRolePill,
+    brandHeaderLayout,
     orgEditionLabel,
     orgEditionTooltip,
     userAvatar,

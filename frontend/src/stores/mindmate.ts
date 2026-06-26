@@ -16,6 +16,7 @@ import {
   type MindMateMessage,
 } from '@/stores/mindmateActiveThread'
 import { isLlmGenerating } from '@/utils/llmLoadPhase'
+import { clearMindmateDiagramPreviewCache } from '@/utils/mindmateDiagramPreviewCache'
 
 // ============================================================================
 // Types
@@ -326,15 +327,16 @@ export const useMindMateStore = defineStore('mindmate', () => {
     activeThreadUpdatedAt.value = 0
   }
 
-  function getActiveThread(convId: string): ActiveThreadSnapshot | null {
-    if (activeThreadConversationId.value !== convId) {
+  function getActiveThread(convId?: string | null): ActiveThreadSnapshot | null {
+    const storedId = activeThreadConversationId.value
+    if (!storedId || activeThreadMessages.value.length === 0) {
       return null
     }
-    if (activeThreadMessages.value.length === 0) {
+    if (convId != null && convId !== storedId) {
       return null
     }
     return {
-      conversationId: convId,
+      conversationId: storedId,
       messages: cloneMindMateMessages(activeThreadMessages.value),
       hasGreeted: activeThreadHasGreeted.value,
       updatedAt: activeThreadUpdatedAt.value,
@@ -511,6 +513,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
     prefetchingConversations.value.clear()
     clearAllMessagesFromStorage()
     clearActiveThread()
+    void clearMindmateDiagramPreviewCache()
   }
 
   // =========================================================================

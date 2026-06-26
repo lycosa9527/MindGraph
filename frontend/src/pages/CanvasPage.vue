@@ -38,6 +38,7 @@ import {
   MindMapSidePanel,
   MindMapSideToolbar,
   MindMapSlideOverlay,
+  PresentationTimerOverlay,
   ZoomControls,
 } from '@/components/canvas'
 import CanvasCollabOverlay from '@/components/canvas/CanvasCollabOverlay.vue'
@@ -281,6 +282,13 @@ function handleMindMapPresentationToolSelect(tool: MindMapPresentationToolId): v
   mindMapPresentationTool.value = tool
 }
 
+function handleMindMapTimerExit(): void {
+  onTimerExit()
+  if (useMindMapV2.value) {
+    mindMapPresentationTool.value = 'hand'
+  }
+}
+
 function handlePresentationEscape(event: KeyboardEvent): void {
   if (!showSimplifiedPresentationRail.value) return
   if (useMindMapV2.value && mindMapPresentationTool.value === 'slides') return
@@ -347,6 +355,8 @@ eventBus.onWithOwner(
 const fitViewOnInit = computed(() => {
   const type = diagramStore.type
   if (type === 'concept_map') return false
+  // V2 mind maps: one-shot fit on enter via useDiagramCanvasFit.handleNodesInitialized;
+  // keep false here so node/panel watches do not auto-refit while editing.
   if (useMindMapV2.value) return false
   return true
 })
@@ -762,6 +772,18 @@ watch(mindMapPresentationTool, (tool) => {
     presentationTool.value = 'laser'
     handToolActive.value = false
     slidePresentation.startSlideShow()
+    return
+  }
+  if (tool === 'spotlight') {
+    presentationTool.value = 'spotlight'
+    handToolActive.value = false
+    slidePresentation.stopSlideShow()
+    return
+  }
+  if (tool === 'timer') {
+    presentationTool.value = 'timer'
+    handToolActive.value = false
+    slidePresentation.stopSlideShow()
   }
 })
 
@@ -1061,7 +1083,8 @@ onUnmounted(() => {
       'presentation-highlighter-mode': false,
       'presentation-pen-mode':
         canUsePresentationTools && presentationRailOpen && mindMapPresentationTool === 'pen',
-      'presentation-timer-mode': false,
+      'presentation-timer-mode':
+        isMindMapPresentationMode && mindMapPresentationTool === 'timer',
     }"
   >
     <!-- Laser pointer cursor (presentation mode, laser tool) -->
@@ -1076,11 +1099,34 @@ onUnmounted(() => {
       />
     </Transition>
 
-    <!-- Spotlight / timer removed — simplified presentation rail only -->
+    <!-- Spotlight overlay (new canvas presentation rail) -->
+    <Transition name="spotlight-fade">
+      <div
+        v-if="
+          isMindMapPresentationMode && mindMapPresentationTool === 'spotlight'
+        "
+        class="spotlight-overlay"
+        :style="spotlightStyle"
+        aria-hidden="true"
+      />
+    </Transition>
 
-    <!-- Simplified presentation rail: hand · laser · pen · slides (mind map) -->
+    <!-- Presentation timer (new canvas presentation rail) -->
+    <PresentationTimerOverlay
+      v-if="isMindMapPresentationMode && mindMapPresentationTool === 'timer'"
+      :remaining-seconds="timerRemainingSeconds"
+      :total-seconds="timerTotalSeconds"
+      :running="timerRunning"
+      @toggle-run="onTimerToggleRun"
+      @reset="onTimerReset"
+      @preset-minutes="onTimerPresetMinutes"
+      @set-minutes="onTimerSetMinutes"
+      @exit="handleMindMapTimerExit"
+    />
+
+    <!-- Simplified presentation rail: hand · laser · pen · spotlight · timer · slides (mind map) -->
     <MindMapPresentationSideToolbar
-      v-if="showSimplifiedPresentationRail"
+      v-if="showSimplifiedPresentationRail && mindMapPresentationTool !== 'timer'"
       :active-tool="mindMapPresentationTool"
       :color-id="penColorId"
       :thickness="penThickness"

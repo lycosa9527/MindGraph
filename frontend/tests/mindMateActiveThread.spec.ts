@@ -5,6 +5,7 @@ import {
   cloneMindMateMessages,
   mapDifyMessagesToMindMate,
   sanitizeMessagesForStore,
+  shouldApplyDifyHistory,
   threadsContentEqual,
   type MindMateMessage,
 } from '@/stores/mindmateActiveThread'
@@ -61,6 +62,18 @@ describe('mindMateActiveThread helpers', () => {
     expect(snapshot?.hasGreeted).toBe(true)
   })
 
+  it('getActiveThread without convId returns stored thread', () => {
+    setActivePinia(createPinia())
+    const store = useMindMateStore()
+    store.setActiveThread('conv-a', [
+      { id: 'm1', role: 'user', content: 'x', timestamp: 1 },
+    ], true)
+
+    const snapshot = store.getActiveThread()
+    expect(snapshot?.conversationId).toBe('conv-a')
+    expect(snapshot?.messages).toHaveLength(1)
+  })
+
   it('mapDifyMessagesToMindMate preserves difyMessageId on assistant rows', () => {
     const mapped = mapDifyMessagesToMindMate([
       {
@@ -89,6 +102,25 @@ describe('mindMateActiveThread helpers', () => {
       { id: 'd', role: 'assistant', content: 'a', timestamp: 10 },
     ]
     expect(threadsContentEqual(a, b)).toBe(true)
+  })
+
+  it('shouldApplyDifyHistory rejects empty or partial Dify copies', () => {
+    const local: MindMateMessage[] = [
+      { id: 'u', role: 'user', content: 'make diagram', timestamp: 1 },
+      { id: 'a', role: 'assistant', content: 'here is the diagram', timestamp: 2 },
+    ]
+
+    expect(shouldApplyDifyHistory(local, [])).toBe(false)
+    expect(shouldApplyDifyHistory(local, [{ id: 'u2', role: 'user', content: 'make diagram', timestamp: 3 }])).toBe(
+      false
+    )
+    expect(
+      shouldApplyDifyHistory(local, [
+        { id: 'u3', role: 'user', content: 'make diagram', timestamp: 4 },
+        { id: 'a3', role: 'assistant', content: 'updated answer', timestamp: 5 },
+      ])
+    ).toBe(true)
+    expect(shouldApplyDifyHistory(local, [...local])).toBe(false)
   })
 })
 
@@ -121,5 +153,18 @@ describe('useMindMateStore active thread lifecycle', () => {
     expect(store.activeThreadMessages).toHaveLength(0)
     expect(store.activeThreadConversationId).toBeNull()
     expect(store.activeThreadHasGreeted).toBe(false)
+  })
+
+  it('restore path works when only activeThreadConversationId is set', () => {
+    setActivePinia(createPinia())
+    const store = useMindMateStore()
+    store.setActiveThread('conv-only-thread', [
+      { id: 'm1', role: 'assistant', content: 'diagram ready', timestamp: 1 },
+    ], true)
+
+    expect(store.currentConversationId).toBeNull()
+    const snapshot = store.getActiveThread()
+    expect(snapshot?.conversationId).toBe('conv-only-thread')
+    expect(snapshot?.messages[0].content).toBe('diagram ready')
   })
 })

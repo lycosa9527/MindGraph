@@ -180,7 +180,7 @@ export type DiagramSpec = DiagramData
 export type PresentationToolId = 'laser' | 'spotlight' | 'highlighter' | 'pen' | 'timer'
 
 /** Mind map presentation rail tools */
-export type MindMapPresentationToolId = 'hand' | 'laser' | 'pen' | 'slides'
+export type MindMapPresentationToolId = 'hand' | 'laser' | 'pen' | 'spotlight' | 'timer' | 'slides'
 
 /** Freehand strokes in presentation highlighter mode (Vue Flow coordinates). */
 export interface PresentationHighlightStroke {

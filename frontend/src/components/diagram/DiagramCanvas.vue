@@ -6,7 +6,8 @@
  * Two-View Zoom System:
  * - fitToFullCanvas(): Fits diagram to full canvas (no panel space reserved)
  * - fitWithPanel(): Fits diagram with space reserved for right-side panels
- * - Mind maps: manual zoom only; initial view centers diagram at 100% (no scale-to-fit).
+ * - Mind map v2: fit-to-canvas on enter; no auto-refit while editing (manual zoom).
+ * - Legacy mind maps: assistive fit on enter and when node count changes.
  * - Desktop concept maps: manual zoom; IHMC cmap imports trigger one-shot fit on init.
  *
  * SVG text / RTL: primary labels use InlineEditableText (HTML, dir=auto). Decorative

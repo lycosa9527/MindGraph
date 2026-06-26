@@ -123,6 +123,20 @@ export const FIT_PADDING = {
    */
   PRESENTATION_SIDE_TOOLBAR_RIGHT_PX: 50,
   /**
+   * Mind map v2 vertical side toolbar (MindMapSideToolbar): `left-3` + handle + optional card + buffer.
+   * Keeps fit-view / initial center from placing nodes under the floating toolbar.
+   */
+  MIND_MAP_SIDE_TOOLBAR: {
+    /** Tailwind `left-3` */
+    OFFSET_LEFT_PX: 12,
+    /** `.mind-map-side-toolbar__handle` width (1.125rem) */
+    HANDLE_WIDTH_PX: 18,
+    /** `.mind-map-side-toolbar__card.is-expanded` width (5.75rem) */
+    CARD_WIDTH_PX: 92,
+    /** Gap between toolbar edge and diagram content */
+    BUFFER_PX: 20,
+  },
+  /**
    * Top padding in pixels — clears merged canvas chrome only (CanvasTopBar `min-h-12` = 48px).
    * Previously 64px when header and editing toolbar were separate rows; reclaimed for fit/zoom area.
    */

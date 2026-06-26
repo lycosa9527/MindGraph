@@ -126,3 +126,20 @@ export function threadsContentEqual(a: MindMateMessage[], b: MindMateMessage[]):
   }
   return true
 }
+
+/**
+ * Whether a Dify history fetch should replace the in-memory thread.
+ * Rejects empty/partial server copies that lag behind the local Pinia thread.
+ */
+export function shouldApplyDifyHistory(
+  local: MindMateMessage[],
+  mapped: MindMateMessage[]
+): boolean {
+  if (mapped.length === 0 && local.length > 0) {
+    return false
+  }
+  if (mapped.length < local.length) {
+    return false
+  }
+  return !threadsContentEqual(local, mapped)
+}

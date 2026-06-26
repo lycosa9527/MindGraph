@@ -417,6 +417,7 @@ export default {
   'canvas.topBar.exportSvg': '导出为 SVG',
   'canvas.topBar.reset': '重置',
   'canvas.topBar.resetTemplate': '重置为默认模板',
+  'canvas.topBar.resetCanvas': '重置画布',
   'canvas.topBar.schoolCollab': '校内协同',
   'canvas.topBar.shareCommunity': '分享到社区',
   'canvas.topBar.sharedCollab': '共同协同',
