@@ -278,10 +278,16 @@ const path = computed(() => {
   return { edgePath, labelX, labelY }
 })
 
+const isMindMapEdge = computed(() => {
+  const dt = props.data?.diagramType as DiagramType | undefined
+  return dt === 'mindmap' || dt === 'mind_map'
+})
+
 const edgeStyle = computed(() => ({
   stroke: props.data?.style?.strokeColor || '#94a3b8',
   strokeWidth: props.data?.style?.strokeWidth || 2,
   strokeDasharray: props.data?.style?.strokeDasharray || 'none',
+  ...(isMindMapEdge.value ? { strokeLinecap: 'round' as const } : {}),
 }))
 
 const HIT_AREA_STROKE = 16

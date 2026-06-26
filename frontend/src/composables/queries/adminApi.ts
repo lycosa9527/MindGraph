@@ -1367,3 +1367,99 @@ export async function downloadMindMateExportJob(
   const blob = await res.blob()
   return { blob, filename, verification }
 }
+
+// ============================================================================
+// MindMate export — Dify raw dumps
+// ============================================================================
+
+export interface MindMateExportIncomingDumpRow {
+  name: string
+  bytes: number
+  modified_at: string
+  server_label: string | null
+  manifest_status: string | null
+  peek_error: string | null
+}
+
+export interface MindMateExportDumpSnapshotRow {
+  label: string
+  mindgraph_server_slot: number
+  timestamp: string
+  status: string
+  usable: boolean
+  stale: boolean
+  finished_at: string | null
+  duration_seconds: number | null
+  message_rows: number
+}
+
+export interface MindMateExportDumpLibraryRow {
+  label: string
+  mindgraph_server_slot: number
+  merged_snapshot_count: number
+  last_merged_at: string | null
+  message_rows: number
+  conversation_rows: number
+  usable: boolean
+}
+
+export interface MindMateExportDumpLabelBlock {
+  library: MindMateExportDumpLibraryRow | null
+  active_snapshot: MindMateExportDumpSnapshotRow | null
+  snapshots: MindMateExportDumpSnapshotRow[]
+}
+
+export interface MindMateExportDumpInventory {
+  dump_root: string
+  max_upload_bytes: number
+  max_age_seconds: number
+  incoming: MindMateExportIncomingDumpRow[]
+  labels: {
+    dify: MindMateExportDumpLabelBlock
+    neodify: MindMateExportDumpLabelBlock
+  }
+  data_source_summary: { per_label: Record<string, string> }
+}
+
+export async function fetchMindMateExportDumpInventory(): Promise<MindMateExportDumpInventory> {
+  return adminFetchJson('/api/admin/mindmate-export/dumps')
+}
+
+export async function uploadMindMateExportDumpZip(
+  formData: FormData
+): Promise<{ name: string; bytes: number; server_label: string | null; inventory: MindMateExportDumpInventory }> {
+  const res = await apiUpload('/api/admin/mindmate-export/dumps/upload', formData)
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(httpErrorDetail(data) || 'Dump upload failed')
+  }
+  return res.json()
+}
+
+export async function importMindMateExportDumps(
+  filenames?: string[]
+): Promise<{ imported: unknown[]; errors?: string[]; inventory: MindMateExportDumpInventory }> {
+  return adminFetchJson('/api/admin/mindmate-export/dumps/import', {
+    method: 'POST',
+    body: JSON.stringify(filenames?.length ? { filenames } : {}),
+  })
+}
+
+export async function deleteMindMateExportDumpIncoming(
+  filename: string
+): Promise<{ ok: boolean; inventory: MindMateExportDumpInventory }> {
+  return adminFetchJson(
+    `/api/admin/mindmate-export/dumps/incoming/${encodeURIComponent(filename)}`,
+    { method: 'DELETE' }
+  )
+}
+
+export async function deleteMindMateExportDumpSnapshot(
+  label: string,
+  timestamp: string
+): Promise<{ ok: boolean; inventory: MindMateExportDumpInventory }> {
+  return adminFetchJson(
+    `/api/admin/mindmate-export/dumps/snapshots/${encodeURIComponent(label)}/${encodeURIComponent(timestamp)}`,
+    { method: 'DELETE' }
+  )
+}

@@ -1,47 +1,71 @@
 # Mind map canvas — classic vs v2 separation
 
 Classic mind map canvas remains the **default** (`mindMapCanvasMode: legacy`). V2 chrome
-(side toolbar, File Center, orthogonal edges, column layout v2) is **opt-in** when
+(side toolbar, File Center, orthogonal edges, subtree layout) is **opt-in** when
 `FEATURE_MINDMAP_V2_CANVAS=True` and the user selects the new canvas in Language settings.
 
 ## Central gate
 
-`useMindMapV2Chrome()` — `isMindMapDiagramType(type) && effectiveMindMapCanvasMode(mode, flag) === 'v2'`
+- `useMindMapV2Chrome()` — UI chrome only
+- `readMindMapV2VisualDesignActive()` — layout, geometry, themes, stroke sync in stores/spec loader
+- `effectiveMindMapCanvasMode(mode, flag)` — runtime mode with flag forcing legacy when off
 
-## V2-only surfaces (safe to evolve independently)
+## Layout split (baseline c2611060e for classic)
 
-- **Visual design**: unified connection stroke (topic border color), `mindMapThemes` presets,
-  node shapes (rectangle / oval / underline), `MIND_MAP_GEOMETRY` typography and padding
-- Components: `canvas/MindMapSideToolbar.vue`, `MindMapSidePanel.vue`, `FileCenterPanel.vue`,
-  `MindMapOneSentencePanel.vue`, `MindMapWaterfallPanel.vue`, `diagram/MindMap*` overlays
-- Composables: `composables/mindMap/*`, `composables/fileCenter/*`,
-  `useMindMapRagBranchExpand`, `useMindMapSubgraphSuggest` (UI gated in `DiagramCanvas`)
-- Store branches: `recalculateMindMapV2ColumnPositions`, `mindmapOrthogonal` edges when mode is v2
+| Mode | Initial loader | Reactive recalc |
+|------|----------------|-----------------|
+| Legacy | [`mindMapLegacyLayout.ts`](../../frontend/src/stores/specLoader/mindMapLegacyLayout.ts) — column X per depth, top-down Y | [`mindMapLayoutLegacy.ts`](../../frontend/src/stores/diagram/mindMapLayoutLegacy.ts) |
+| V2 | [`mindMapV2Layout.ts`](../../frontend/src/stores/specLoader/mindMapV2Layout.ts) — subtree-relative X, symmetric root stacking | [`mindMapLayout.ts`](../../frontend/src/stores/diagram/mindMapLayout.ts) |
+
+Size estimates: [`mindMapMeasurements.ts`](../../frontend/src/stores/specLoader/mindMapMeasurements.ts) branches on mode. Legacy uses [`mindMapLegacyGeometry.ts`](../../frontend/src/config/mindMapLegacyGeometry.ts); v2 uses `MIND_MAP_GEOMETRY`.
+
+## Color split
+
+| Mode | Branches | Topic | Connections |
+|------|----------|-------|-------------|
+| Legacy | 20 Material hues — `getMindmapBranchColor(i, 'legacy')` / `LEGACY_MINDMAP_BRANCH_COLORS` | Blue pill via `LEGACY_MINDMAP_THEME` (render ignores persisted v2 theme colors) | Per-branch palette, curved edges; topic handles indexed per side, **evenly spaced on the pill** (`classicMindMapTopicHandles.ts`); **Add branch** redistributes clockwise and seeds two children |
+| V2 | Unified `mindMapThemes` presets | Theme accent | Unified topic border, orthogonal edges |
+
+Other diagram types (tree map, flow map, …) keep the shared 12 Radix hues in `MINDMAP_BRANCH_COLORS`.
+
+## V2-only surfaces
+
+- **Visual design**: unified connection stroke, `mindMapThemes`, node shapes, `MIND_MAP_GEOMETRY`
+- Components: `MindMapSideToolbar`, `FileCenterPanel`, `MindMapDirectionalAddOverlay`, subgraph/collapse overlays
+- Store ops (gated): `toggleMindMapCollapse`, `performMindMapDirectionalAdd`, subgraph preview restore/apply
 
 ## Shared paths (both modes)
 
-- `useAutoComplete`, `generateGraphStream`, backend `workflow.py` / `generate_pipeline.py`
-- Inline recommendations on classic thinking-map toolbars (skipped for v2 mind maps in toolbar apps)
-- Classic layout: `recalculateMindMapLegacyColumnPositions`, curved edges when mode is legacy
-- Classic visuals: pill-shaped nodes, per-branch palette colors (`getMindmapBranchColor`), indexed topic handles
+- Tree mutations: `addMindMapBranch`, `moveMindMapBranch`, spec round-trip via `nodesAndConnectionsToMindMapSpec`
+- `useAutoComplete`, `generateGraphStream`, backend agents
+- Inline recommendations on classic thinking-map toolbars (skipped for v2 in toolbar apps)
 
 ## Persisted data (dual buckets)
 
 `_mindmap_canvas.legacy` and `_mindmap_canvas.v2` store independent path-keyed node styles.
-Mode switch runs `reconcileMindMapCanvasModeSwitch`: snapshot outgoing mode, reload spec for
-handles/layout, restore target bucket, sync connection colors. Saved via `getSpecForSave`.
+Legacy bucket strips `nodeShape`, `backgroundColor`, and `borderColor` (classic render uses palette/theme defaults).
+On legacy load, `_mindmap_theme` is cleared.
 
-On load, `hydrateMindMapCanvasStylesOnLoad` applies the bucket for the active UI mode after
-`loadFromSpec` assigns diagram data (fixes stale `_node_styles` when mode differs from save time).
+Mode switch: `reconcileMindMapCanvasModeSwitch` — snapshot outgoing mode, reload spec, restore target bucket, sync strokes.
 
 ## Runtime gates checklist
 
 | Behavior | Gate |
 |----------|------|
 | Side toolbar + File Center | `useMindMapV2Chrome` |
-| Connection stroke colors | Legacy: per-branch palette via `syncLegacyMindMapConnectionStrokeColors` / `resolveLegacyMindMapConnectionStrokeColor`. V2: unified topic border via `syncMindMapConnectionStrokeColors`. Mode switch: `diagramStore.resyncMindMapConnectionStrokeColors()` |
-| RAG auto branch expand | v2 + `FEATURE_KNOWLEDGE_SPACE` + saved diagram |
-| Orthogonal edges | `getEdgeTypeForDiagram(..., mindMapCanvasMode)` |
-| Column layout | `vueFlowIntegration` branches on canvas mode |
-| Node shapes, theme presets | `readMindMapV2VisualDesignActive` / `useMindMapV2Chrome` |
-| Connection stroke colors | Legacy: per-branch palette. V2: unified topic border. Resync on mode change via `resyncMindMapConnectionStrokeColorsForActiveMode` |
+| Initial layout loader | `readMindMapV2VisualDesignActive` → legacy vs v2 layout file |
+| Connection stroke colors | Legacy: `syncLegacyMindMapConnectionStrokeColors`. V2: `syncMindMapConnectionStrokeColors` |
+| Orthogonal edges | `getEdgeTypeForDiagram(..., mode)` |
+| Column vs subtree recalc | `vueFlowIntegration` + `effectiveMindMapCanvasMode` |
+| Node shapes, theme presets | v2 only |
+| Collapse / directional add / subgraph | v2 only (`mindMapOps`) |
+
+## Maintainer grep (regression check)
+
+```bash
+rg "readMindMapV2VisualDesignActive|useMindMapV2Chrome|MIND_MAP_GEOMETRY|getMindMapThemeForDiagram" \
+  frontend/src/stores/specLoader/mindMap.ts \
+  frontend/src/stores/diagram/nodeManagement.ts
+```
+
+Classic paths in those files should gate v2 imports/calls. Tests: `frontend/tests/mindMapSeparation.spec.ts`, `mindMapColorPalettes.spec.ts`.

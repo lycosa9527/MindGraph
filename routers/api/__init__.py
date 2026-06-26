@@ -39,6 +39,7 @@ from . import (
     live_translate_ws,
     llm_operations,
     mindmate_export,
+    mindmate_export_dumps,
     mindmate_export_jobs,
     png_export,
     sse_streaming,
@@ -87,6 +88,7 @@ router.include_router(dify_files.router)
 router.include_router(dify_conversations.router)
 router.include_router(image_proxy.router)
 router.include_router(mindmate_export.router)
+router.include_router(mindmate_export_dumps.router)
 router.include_router(mindmate_export_jobs.router)
 router.include_router(diagrams.router)
 router.include_router(diagram_node_ops.router)

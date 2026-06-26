@@ -1,0 +1,17 @@
+{
+  "status": "complete",
+  "started_at": "2026-06-26T12:00:00Z",
+  "finished_at": "2026-06-26T12:00:01Z",
+  "duration_seconds": 1,
+  "server_label": "dify",
+  "mindgraph_server_slot": 1,
+  "staging_dir": "/tmp/staging/2026-06-26_120000Z",
+  "tables": {
+    "messages": {"status": "done", "rows": 1, "bytes": 100},
+    "conversations": {"status": "done", "rows": 1, "bytes": 100},
+    "end_users": {"status": "done", "rows": 1, "bytes": 100},
+    "apps": {"status": "done", "rows": 1, "bytes": 100},
+    "api_tokens": {"status": "done", "rows": 1, "bytes": 100}
+  },
+  "errors": []
+}

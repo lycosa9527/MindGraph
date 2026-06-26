@@ -134,16 +134,13 @@ def cleanup_orphan_staging_schemas(db_url: str) -> int:
         with psycopg.connect(db_url, autocommit=True) as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT schema_name FROM information_schema.schemata "
-                    "WHERE schema_name LIKE %s",
+                    "SELECT schema_name FROM information_schema.schemata WHERE schema_name LIKE %s",
                     (pattern,),
                 )
                 orphan_names = [row[0] for row in cur.fetchall()]
                 for schema_name in orphan_names:
                     cur.execute(
-                        psycopg_sql.SQL("DROP SCHEMA IF EXISTS {} CASCADE").format(
-                            psycopg_sql.Identifier(schema_name)
-                        )
+                        psycopg_sql.SQL("DROP SCHEMA IF EXISTS {} CASCADE").format(psycopg_sql.Identifier(schema_name))
                     )
                     dropped += 1
     except PG_CONNECT_ERRORS as exc:
@@ -210,9 +207,7 @@ def create_staging_area(db_url: str) -> StagingArea:
     schema_name = _STAGING_PREFIX + uuid_mod.uuid4().hex[:8]
     with psycopg.connect(db_url, autocommit=True) as conn:
         with conn.cursor() as cur:
-            cur.execute(
-                psycopg_sql.SQL("CREATE SCHEMA {}").format(psycopg_sql.Identifier(schema_name))
-            )
+            cur.execute(psycopg_sql.SQL("CREATE SCHEMA {}").format(psycopg_sql.Identifier(schema_name)))
     logger.info("[PGMerge] Created staging schema: %s", schema_name)
     return StagingArea(db_url=db_url, schema_name=schema_name)
 
@@ -293,9 +288,7 @@ def drop_staging_area(area: StagingArea) -> None:
         with psycopg.connect(area.db_url, autocommit=True) as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    psycopg_sql.SQL("DROP SCHEMA IF EXISTS {} CASCADE").format(
-                        psycopg_sql.Identifier(area.schema_name)
-                    )
+                    psycopg_sql.SQL("DROP SCHEMA IF EXISTS {} CASCADE").format(psycopg_sql.Identifier(area.schema_name))
                 )
         logger.info("[PGMerge] Dropped staging schema: %s", area.schema_name)
     except PG_CONNECT_ERRORS as exc:
@@ -313,11 +306,7 @@ def staging_engine(area: StagingArea) -> Engine:
     @event.listens_for(engine, "connect")
     def _set_search_path(dbapi_connection, _connection_record) -> None:
         with dbapi_connection.cursor() as cursor:
-            cursor.execute(
-                psycopg_sql.SQL("SET search_path TO {}").format(
-                    psycopg_sql.Identifier(area.schema_name)
-                )
-            )
+            cursor.execute(psycopg_sql.SQL("SET search_path TO {}").format(psycopg_sql.Identifier(area.schema_name)))
 
     return engine
 

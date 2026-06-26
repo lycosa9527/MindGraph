@@ -261,7 +261,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     const theme = getMindMapThemeForDiagram(diagramStore.data)
     const v2Visuals = readMindMapV2VisualDesignActive()
     const branchIndex = (node.data?.branchIndex as number | undefined) ?? 0
-    const branchPalette = getMindmapBranchColor(branchIndex)
+    const branchPalette = getMindmapBranchColor(branchIndex, v2Visuals ? undefined : 'legacy')
     const nodeShape = v2Visuals ? resolveNodeShape(dataStyle as never, true) : 'oval'
     const isUnderline = v2Visuals && nodeShape === 'underline'
     const fontSizePx = dataStyle.fontSize ?? (v2Visuals ? mindMapBranchFontSize(nodeId) : 16)
@@ -576,7 +576,11 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
       (node?.data?.groupIndex as number) ??
       (node?.data?.pairIndex as number) ??
       0
-    capturedBranchColor.value = getMindmapBranchColor(idx)
+    const diagramType = node?.data?.diagramType as string | undefined
+    const isMindMapNode = diagramType === 'mindmap' || diagramType === 'mind_map'
+    const paletteMode =
+      isMindMapNode && !readMindMapV2VisualDesignActive() ? ('legacy' as const) : undefined
+    capturedBranchColor.value = getMindmapBranchColor(idx, paletteMode)
     const pos = node?.position ?? { x: 0, y: 0 }
     const { w, h } = node
       ? getNodeDimensions(node, nodeId)

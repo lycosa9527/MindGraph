@@ -25,11 +25,13 @@ from models.domain.messages import Language, Messages
 from routers.auth.dependencies import get_language_dependency, require_mindmate_export_access
 from services.auth.security_logger import security_log
 from services.dify.export.collect_service import (
+    CollectOptions,
     collect_conversation_summaries,
     collect_messages_for_summaries,
     fetch_conversation_bubbles,
     paginate_summaries,
 )
+from services.dify.export.raw_collect_backend import ExportSourceRouter
 from services.dify.export.endpoints import resolve_endpoint_for_message_fetch
 from services.dify.export.export_config import LIST_PAGE_DEFAULT, LIST_PAGE_MAX
 from services.dify.export.export_routing import should_use_background_job
@@ -405,17 +407,21 @@ async def download_export(
         targets_total=len(target_result.targets),
         generated_at=int(time.time()),
     )
+    source_router = ExportSourceRouter.bootstrap()
+    collect_options = CollectOptions(source_router=source_router)
     collected = await collect_conversation_summaries(
         db,
         target_result.targets,
         start=start,
         end=end,
         strict_org=strict_org,
+        options=collect_options,
     )
     conversations, msg_warnings, messages_complete = await collect_messages_for_summaries(
         db,
         collected.summaries,
         strict_org=strict_org,
+        options=collect_options,
     )
     report = reconcile_collection(
         manifest,
@@ -425,6 +431,8 @@ async def download_export(
         messages_complete=messages_complete,
     )
     report.actual["messages"] = sum(len(conv.bubbles) for conv in conversations)
+    if source_router.store is not None:
+        report.actual["data_source"] = source_router.store.data_source_summary()
 
     bundle = ExportBundle(
         organization_id=resolved_org,

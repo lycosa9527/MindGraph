@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { MINDMAP_BRANCH_COLORS } from '@/config/mindmapColors'
+import { LEGACY_MINDMAP_BRANCH_COLORS } from '@/config/mindMapLegacyColors'
 import { MIND_MAP_THEMES } from '@/config/mindMapThemes'
 
 describe('mind map color palettes', () => {
@@ -27,5 +28,11 @@ describe('mind map color palettes', () => {
     const borders = MINDMAP_BRANCH_COLORS.map((c) => c.border.toLowerCase())
     const unique = new Set(borders)
     expect(unique.size).toBe(borders.length)
+  })
+
+  it('defines twenty material legacy mind-map branch hues for classic canvas', () => {
+    expect(LEGACY_MINDMAP_BRANCH_COLORS.length).toBe(20)
+    expect(LEGACY_MINDMAP_BRANCH_COLORS[0]?.fill).toBe('#e3f2fd')
+    expect(LEGACY_MINDMAP_BRANCH_COLORS[0]?.border).toBe('#0d47a1')
   })
 })

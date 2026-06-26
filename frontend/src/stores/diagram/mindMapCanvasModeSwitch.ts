@@ -45,6 +45,8 @@ function stylesRecordToMap(record: MindMapCanvasStylesByPath | undefined): Map<s
 export function sanitizeLegacyNodeStyle(style: NodeStyle): NodeStyle {
   const cleaned = { ...style }
   delete cleaned.nodeShape
+  delete cleaned.backgroundColor
+  delete cleaned.borderColor
   return cleaned
 }
 
@@ -180,6 +182,7 @@ export function hydrateMindMapCanvasStylesOnLoad(
       setMindMapCollapsedPaths(data as Record<string, unknown>, collapsed)
     }
   } else {
+    delete data._mindmap_theme
     setMindMapCollapsedPaths(data as Record<string, unknown>, [])
   }
 

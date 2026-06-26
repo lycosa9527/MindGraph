@@ -29,6 +29,7 @@ from services.dify.export.transcript import (
     conversation_created_at,
     split_message_to_bubbles,
 )
+from services.dify.export.raw_collect_backend import ExportSourceRouter
 from services.dify.export.types import ControlCallback, ProgressCallback, TargetFetchResult, UserTarget
 from services.dify.export.usage_supplement import supplement_mindbot_summaries_from_usage
 from services.utils.error_types import DIFY_API_ERRORS
@@ -68,6 +69,7 @@ class CollectOptions:
 
     control: Optional[ControlCallback] = None
     progress: Optional[ProgressCallback] = None
+    source_router: Optional[ExportSourceRouter] = None
 
 
 def _client_for(endpoint: ExportDifyEndpoint) -> AsyncDifyClient:
@@ -185,6 +187,7 @@ async def _summaries_for_target_endpoint(
     start: Optional[int],
     end: Optional[int],
     semaphore: asyncio.Semaphore,
+    source_router: ExportSourceRouter,
 ) -> Tuple[List[ExportConversationSummary], TargetFetchResult]:
     """Conversation summaries for one user on one endpoint (failure-tolerant)."""
     fetch_result = TargetFetchResult(
@@ -197,7 +200,12 @@ async def _summaries_for_target_endpoint(
     async with semaphore:
         client = _client_for(endpoint)
         try:
-            page = await _fetch_all_conversations(client, target.dify_user)
+            page_result = await source_router.fetch_conversations(
+                client,
+                endpoint,
+                target.dify_user,
+                lambda client: _fetch_all_conversations(client, target.dify_user),
+            )
         except DIFY_API_ERRORS as exc:
             logger.warning(
                 "[MindMateExport] conversations fetch failed user=%s endpoint=%s/%s: %s",
@@ -210,12 +218,12 @@ async def _summaries_for_target_endpoint(
             fetch_result.pagination_complete = False
             return [], fetch_result
 
-    fetch_result.pagination_complete = page.pagination_complete
-    if page.warning:
-        fetch_result.fetch_errors.append(page.warning)
+    fetch_result.pagination_complete = page_result.pagination_complete
+    if page_result.warning:
+        fetch_result.fetch_errors.append(page_result.warning)
 
     out: List[ExportConversationSummary] = []
-    for conv in page.items:
+    for conv in page_result.items:
         created = conversation_created_at(conv)
         updated = int(conv.get("updated_at") or created)
         if not _conversation_in_export_range(created, updated, start, end):
@@ -241,6 +249,10 @@ async def _summaries_for_target_endpoint(
     return out, fetch_result
 
 
+def _summary_dedupe_key(summary: ExportConversationSummary) -> str:
+    return f"{summary.server}:{summary.dify_user}:{summary.conversation_id}"
+
+
 def _dedupe_summaries(
     summaries: List[ExportConversationSummary],
 ) -> List[ExportConversationSummary]:
@@ -248,7 +260,7 @@ def _dedupe_summaries(
     for summary in summaries:
         if not summary.conversation_id:
             continue
-        key = f"{summary.dify_user}:{summary.conversation_id}"
+        key = _summary_dedupe_key(summary)
         existing = merged.get(key)
         if existing is None or summary.updated_at >= existing.updated_at:
             merged[key] = summary
@@ -333,6 +345,9 @@ async def collect_conversation_summaries_batch(
     if not targets:
         return CollectResult()
 
+    source_router = options.source_router if options and options.source_router else ExportSourceRouter.bootstrap()
+    warnings: List[str] = list(source_router.warnings)
+
     org_by_id: Dict[int, Organization] = {}
     for org_id in {target.organization_id for target in targets}:
         org = await _load_org(org_id)
@@ -340,7 +355,6 @@ async def collect_conversation_summaries_batch(
             org_by_id[org_id] = org
 
     endpoint_cache: Dict[tuple[int, str, str], List[ExportDifyEndpoint]] = {}
-    warnings: List[str] = []
     target_results: List[TargetFetchResult] = []
     partial_failures = 0
     skipped_targets = 0
@@ -370,7 +384,7 @@ async def collect_conversation_summaries_batch(
             skipped_targets += 1
             continue
         for endpoint in endpoints:
-            tasks.append(_summaries_for_target_endpoint(target, endpoint, start, end, semaphore))
+            tasks.append(_summaries_for_target_endpoint(target, endpoint, start, end, semaphore, source_router))
 
     if not tasks:
         return CollectResult(
@@ -396,6 +410,7 @@ async def collect_conversation_summaries_batch(
         deduped,
         start=start,
         end=end,
+        dump_store=source_router.store,
     )
     if usage_warnings:
         warnings.extend(usage_warnings)
@@ -414,11 +429,19 @@ async def fetch_conversation_bubbles(
     endpoint: ExportDifyEndpoint,
     conversation_id: str,
     dify_user: str,
+    source_router: Optional[ExportSourceRouter] = None,
 ) -> Tuple[List[ExportBubble], bool, Optional[str]]:
     """Bubbles for one conversation; returns (bubbles, pagination_complete, warning)."""
+    router = source_router or ExportSourceRouter.bootstrap()
     client = _client_for(endpoint)
     try:
-        page = await _fetch_all_messages(client, conversation_id, dify_user)
+        page_result = await router.fetch_messages(
+            client,
+            endpoint,
+            conversation_id,
+            dify_user,
+            lambda client: _fetch_all_messages(client, conversation_id, dify_user),
+        )
     except DIFY_API_ERRORS as exc:
         logger.warning(
             "[MindMateExport] messages fetch failed conv=%s endpoint=%s/%s: %s",
@@ -429,15 +452,16 @@ async def fetch_conversation_bubbles(
         )
         return [], False, str(exc)
     bubbles: List[ExportBubble] = []
-    for message in page.items:
+    for message in page_result.items:
         bubbles.extend(split_message_to_bubbles(message, endpoint.server))
-    return bubbles, page.pagination_complete, page.warning
+    return bubbles, page_result.pagination_complete, page_result.warning
 
 
 async def _conversation_with_bubbles(
     summary: ExportConversationSummary,
     endpoint: ExportDifyEndpoint,
     semaphore: asyncio.Semaphore,
+    source_router: ExportSourceRouter,
 ) -> Tuple[Optional[ExportConversation], bool, Optional[str]]:
     """Build a full conversation (with bubbles) from a summary."""
     async with semaphore:
@@ -445,6 +469,7 @@ async def _conversation_with_bubbles(
             endpoint,
             summary.conversation_id,
             summary.dify_user,
+            source_router=source_router,
         )
     conv = ExportConversation(
         conversation_id=summary.conversation_id,
@@ -506,6 +531,7 @@ async def collect_messages_for_summaries(
     options: Optional[CollectOptions] = None,
 ) -> Tuple[List[ExportConversation], List[str], Dict[str, bool]]:
     """Fetch full message bodies for conversation summaries."""
+    source_router = options.source_router if options and options.source_router else ExportSourceRouter.bootstrap()
     org_by_id: Dict[int, Organization] = {}
     for org_id in {summary.organization_id for summary in summaries}:
         org = await _load_org(org_id)
@@ -527,9 +553,9 @@ async def collect_messages_for_summaries(
         )
         if endpoint is None:
             continue
-        tasks.append(_conversation_with_bubbles(summary, endpoint, semaphore))
+        tasks.append(_conversation_with_bubbles(summary, endpoint, semaphore, source_router))
 
-    warnings: List[str] = []
+    warnings: List[str] = list(source_router.warnings)
     messages_complete: Dict[str, bool] = {}
     if tasks:
         await release_open_transaction(db)
@@ -540,7 +566,7 @@ async def collect_messages_for_summaries(
             continue
         conv, complete, warning = item
         conversations.append(conv)
-        key = f"{conv.dify_user}:{conv.conversation_id}"
+        key = _summary_dedupe_key(conv)
         messages_complete[key] = complete
         if warning:
             warnings.append(warning)
@@ -562,6 +588,13 @@ async def collect_bundle(
     verification_report: Optional[dict] = None,
 ) -> ExportBundle:
     """Full export bundle (conversations + bubbles) for download."""
+    router = ExportSourceRouter.bootstrap()
+    merged_options = options or CollectOptions()
+    batch_options = CollectOptions(
+        control=merged_options.control,
+        progress=merged_options.progress,
+        source_router=router,
+    )
     collected = await collect_conversation_summaries_batch(
         db,
         targets,
@@ -569,14 +602,19 @@ async def collect_bundle(
         end=end,
         concurrency=concurrency,
         strict_org=strict_org,
-        options=options,
+        options=batch_options,
+    )
+    msg_options = CollectOptions(
+        control=merged_options.control,
+        progress=merged_options.progress,
+        source_router=router,
     )
     conversations, msg_warnings, _messages_complete = await collect_messages_for_summaries(
         db,
         collected.summaries,
         concurrency=concurrency,
         strict_org=strict_org,
-        options=options,
+        options=msg_options,
     )
     all_warnings = list(collected.warnings) + msg_warnings
     return ExportBundle(

@@ -10,6 +10,11 @@ from __future__ import annotations
 
 import os
 
+from services.dify.export.raw_dump_config import (
+    get_export_source,
+    resolve_raw_dump_dir,
+)
+
 
 def _env_int(name: str, default: int) -> int:
     raw = os.getenv(name)
@@ -30,3 +35,6 @@ BLOCK_ON_GAPS = os.getenv("MINDMATE_EXPORT_BLOCK_ON_GAPS", "false").lower() in (
 SPOT_CHECK_N = _env_int("MINDMATE_EXPORT_VERIFY_SPOT_CHECK_N", 0)
 ARTIFACT_TTL_SECONDS = _env_int("MINDMATE_EXPORT_ARTIFACT_TTL_SECONDS", 86400)
 STUCK_JOB_SECONDS = _env_int("MINDMATE_EXPORT_STUCK_SECONDS", 1800)
+
+RAW_DUMP_DIR = str(resolve_raw_dump_dir())
+EXPORT_SOURCE = get_export_source()

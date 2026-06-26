@@ -68,13 +68,49 @@ async def test_openapi_disabled_returns_bind_unavailable() -> None:
     record_usage = AsyncMock()
     hdr_for_code = MagicMock(return_value={})
 
-    with patch(
-        "services.mindbot.bind.picture_handler.env_bool",
-        return_value=False,
-    ), patch(
-        "services.mindbot.bind.picture_handler.send_full_reply",
-        new_callable=AsyncMock,
-        return_value=(True, False),
+    with (
+        patch(
+            "services.mindbot.bind.picture_handler.env_bool",
+            return_value=False,
+        ),
+        patch(
+            "services.mindbot.bind.picture_handler.send_full_reply",
+            new_callable=AsyncMock,
+            return_value=(True, False),
+        ),
+    ):
+        result = await try_handle_bind_picture(
+            cfg=_cfg(),
+            body=_picture_body(),
+            inbound_msg_type="picture",
+            sender_staff_id="staff42",
+            session_webhook_valid="https://example.com/hook",
+            session_webhook_pinned_ip="",
+            pipeline_ctx="test",
+            record_usage=record_usage,
+            hdr_for_code=hdr_for_code,
+        )
+
+    assert result is not None
+    assert _record_usage_outcome(record_usage) == MindbotErrorCode.BIND_UNAVAILABLE
+
+
+@pytest.mark.asyncio
+async def test_pyzbar_not_ready_returns_bind_unavailable() -> None:
+    """Missing pyzbar/Pillow stack must reply BIND_UNAVAILABLE, not fall through to Dify."""
+    record_usage = AsyncMock()
+    hdr_for_code = MagicMock(return_value={})
+
+    with (
+        patch(
+            "services.mindbot.bind.picture_handler.pyzbar_backend_ready",
+            return_value=False,
+        ),
+        patch(
+            "services.mindbot.bind.picture_handler.send_full_reply",
+            new_callable=AsyncMock,
+            return_value=(True, False),
+        ),
     ):
         result = await try_handle_bind_picture(
             cfg=_cfg(),
@@ -95,16 +131,20 @@ async def test_openapi_disabled_returns_bind_unavailable() -> None:
 @pytest.mark.asyncio
 async def test_non_bind_picture_passthrough() -> None:
     """Regular pictures without bind QR continue the MindBot pipeline."""
-    with patch(
-        "services.mindbot.bind.picture_handler.pyzbar_backend_ready",
-        return_value=True,
-    ), patch(
-        "services.mindbot.bind.picture_handler.fetch_message_media_bytes",
-        new_callable=AsyncMock,
-        return_value=b"\xff\xd8\xff",
-    ), patch(
-        "services.mindbot.bind.picture_handler.decode_bind_token_from_image",
-        return_value=(None, None, False),
+    with (
+        patch(
+            "services.mindbot.bind.picture_handler.pyzbar_backend_ready",
+            return_value=True,
+        ),
+        patch(
+            "services.mindbot.bind.picture_handler.fetch_message_media_bytes",
+            new_callable=AsyncMock,
+            return_value=b"\xff\xd8\xff",
+        ),
+        patch(
+            "services.mindbot.bind.picture_handler.decode_bind_token_from_image",
+            return_value=(None, None, False),
+        ),
     ):
         result = await try_handle_bind_picture(
             cfg=_cfg(),
@@ -126,31 +166,39 @@ async def test_org_mismatch_preclaim_without_consume() -> None:
     """Handler can reject wrong-org QR before calling claim."""
     record_usage = AsyncMock()
 
-    with patch(
-        "services.mindbot.bind.picture_handler.pyzbar_backend_ready",
-        return_value=True,
-    ), patch(
-        "services.mindbot.bind.picture_handler.fetch_message_media_bytes",
-        new_callable=AsyncMock,
-        return_value=b"img",
-    ), patch(
-        "services.mindbot.bind.picture_handler.decode_bind_token_from_image",
-        return_value=("tok123", "123456", True),
-    ), patch(
-        "services.mindbot.bind.picture_handler.get_bind_token_consumed",
-        new_callable=AsyncMock,
-        return_value=False,
-    ), patch(
-        "services.mindbot.bind.picture_handler.get_bind_token_data",
-        new_callable=AsyncMock,
-        return_value={"user_id": 1, "organization_id": 99},
-    ), patch(
-        "services.mindbot.bind.picture_handler.claim_bind_token_for_staff",
-        new_callable=AsyncMock,
-    ) as mock_claim, patch(
-        "services.mindbot.bind.picture_handler.send_full_reply",
-        new_callable=AsyncMock,
-        return_value=(True, False),
+    with (
+        patch(
+            "services.mindbot.bind.picture_handler.pyzbar_backend_ready",
+            return_value=True,
+        ),
+        patch(
+            "services.mindbot.bind.picture_handler.fetch_message_media_bytes",
+            new_callable=AsyncMock,
+            return_value=b"img",
+        ),
+        patch(
+            "services.mindbot.bind.picture_handler.decode_bind_token_from_image",
+            return_value=("tok123", "123456", True),
+        ),
+        patch(
+            "services.mindbot.bind.picture_handler.get_bind_token_consumed",
+            new_callable=AsyncMock,
+            return_value=False,
+        ),
+        patch(
+            "services.mindbot.bind.picture_handler.get_bind_token_data",
+            new_callable=AsyncMock,
+            return_value={"user_id": 1, "organization_id": 99},
+        ),
+        patch(
+            "services.mindbot.bind.picture_handler.claim_bind_token_for_staff",
+            new_callable=AsyncMock,
+        ) as mock_claim,
+        patch(
+            "services.mindbot.bind.picture_handler.send_full_reply",
+            new_callable=AsyncMock,
+            return_value=(True, False),
+        ),
     ):
         result = await try_handle_bind_picture(
             cfg=_cfg(),

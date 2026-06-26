@@ -374,9 +374,7 @@ async def _maybe_dify_files_for_media(
     if not code:
         return []
     robot_code = cfg.dingtalk_robot_code.strip()
-    alt_codes = tuple(
-        c for c in extract_download_code_candidates(body, inbound_msg_type) if c != code
-    )
+    alt_codes = tuple(c for c in extract_download_code_candidates(body, inbound_msg_type) if c != code)
     try:
         raw = await fetch_message_media_bytes(
             cfg.organization_id,

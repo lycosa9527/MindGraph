@@ -1,0 +1,2 @@
+id,app_id,conversation_id,from_end_user_id,query,answer,status,created_at
+m1,app1,c1,eu1,hi there,hello back,normal,2024-01-01 00:00:00
