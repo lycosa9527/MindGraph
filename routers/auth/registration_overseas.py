@@ -31,7 +31,6 @@ from services.redis.session.redis_session_manager import (
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 from utils.auth import (
-    ACCESS_TOKEN_EXPIRY_MINUTES,
     compute_device_hash,
     create_access_token,
     create_refresh_token,
@@ -47,7 +46,7 @@ from utils.email_validation import validate_email_for_api
 from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
 from .email import verify_and_consume_email_code
-from .helpers import commit_user_with_retry, set_auth_cookies, track_user_activity
+from .helpers import auth_session_json_metadata, commit_user_with_retry, set_auth_cookies, track_user_activity
 
 logger = logging.getLogger(__name__)
 
@@ -208,9 +207,7 @@ async def register_overseas(
     )
 
     return {
-        "access_token": token,
-        "token_type": "bearer",
-        "expires_in": ACCESS_TOKEN_EXPIRY_MINUTES * 60,
+        **auth_session_json_metadata(),
         "user": {
             "id": new_user.id,
             "phone": new_user.phone,

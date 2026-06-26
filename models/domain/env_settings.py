@@ -272,7 +272,14 @@ class AuthSettings(BaseModel):
         default=24,
         gt=0,
         le=168,  # Max 7 days
-        description="JWT token expiry in hours",
+        description="Deprecated alias for access token lifetime in hours. Prefer ACCESS_TOKEN_EXPIRY_MINUTES.",
+        json_schema_extra={"deprecated": True},
+    )
+    ACCESS_TOKEN_EXPIRY_MINUTES: int = Field(
+        default=60,
+        gt=0,
+        le=10080,  # Max 7 days
+        description="Access token lifetime in minutes (httpOnly cookie JWT). Canonical setting.",
     )
     AUTH_MODE: AuthMode = Field(
         default=AuthMode.STANDARD,
@@ -302,14 +309,14 @@ class AuthSettings(BaseModel):
         description="Default user identity for enterprise mode (no JWT; network perimeter must enforce access)",
     )
     BAYI_PASSKEY: Optional[str] = Field(
-        default="888888",
+        default="",
         min_length=6,
         max_length=6,
-        description="Bayi mode 6-digit passkey (AUTH_MODE=bayi); admin via ADMIN_PHONES / ADMIN_USER_IDS.",
+        description="Bayi mode 6-digit passkey (AUTH_MODE=bayi); required in production.",
     )
     BAYI_DECRYPTION_KEY: Optional[str] = Field(
-        default="v8IT7XujLPsM7FYuDPRhPtZk",
-        description="Decryption key for bayi mode token authentication",
+        default="",
+        description="Decryption key for bayi mode token authentication; required in production.",
     )
     BAYI_DEFAULT_ORG_CODE: Optional[str] = Field(
         default="BAYI-001", description="Default organization code for bayi mode"

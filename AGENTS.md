@@ -18,7 +18,9 @@ python -m pylint path/to/module.py
 python -m basedpyright .
 ```
 
-**DingTalk QR bind:** `pyzbar` requires system `libzbar0` (`sudo apt-get install -y libzbar0` on Debian/Ubuntu). All bind ingress channels must use `services.auth.dingtalk_bind_service.claim_dingtalk_qr_bind`; one MindGraph user ↔ one DingTalk staff per org — see [`docs/architecture/dingtalk_account_binding.md`](docs/architecture/dingtalk_account_binding.md).
+**DingTalk bind:** MindBot pair-code ingress (`services/mindbot/tools/`); bind/unbind via rotating codes — see [`docs/architecture/dingtalk_account_binding.md`](docs/architecture/dingtalk_account_binding.md) and [`docs/architecture/mindbot_tool_ingress.md`](docs/architecture/mindbot_tool_ingress.md).
+
+**Production security deploy:** env/proxy checklist, paired rollout, ESP32 headers — see [`docs/architecture/production_security_deploy.md`](docs/architecture/production_security_deploy.md).
 
 ## Cursor Cloud specific instructions
 

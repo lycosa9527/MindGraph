@@ -1,5 +1,5 @@
 /**
- * Persist workshop channel list and per-channel topic lists in localStorage
+ * Persist workshop channel list and per-channel topic lists in sessionStorage
  * to avoid refetching on every navigation (TTL-based, user/org scoped).
  * Stores optional ETag for conditional GET revalidation after TTL.
  */
@@ -98,7 +98,7 @@ function parseTopicsRow(raw: string): WorkshopTopicsCacheRow | null {
 
 export function readCachedChannelsRow(scope: WorkshopCacheScope): WorkshopChannelsCacheRow | null {
   try {
-    const raw = localStorage.getItem(channelsKey(scope))
+    const raw = sessionStorage.getItem(channelsKey(scope))
     if (!raw) {
       return null
     }
@@ -119,7 +119,7 @@ export function writeCachedChannels(
       data: channels,
       etag,
     }
-    localStorage.setItem(channelsKey(scope), JSON.stringify(payload))
+    sessionStorage.setItem(channelsKey(scope), JSON.stringify(payload))
   } catch {
     /* quota / private mode */
   }
@@ -138,7 +138,7 @@ export function readCachedTopicsRow(
   channelId: number
 ): WorkshopTopicsCacheRow | null {
   try {
-    const raw = localStorage.getItem(topicsKey(scope, channelId))
+    const raw = sessionStorage.getItem(topicsKey(scope, channelId))
     if (!raw) {
       return null
     }
@@ -163,7 +163,7 @@ export function writeCachedTopics(
       })),
       etag,
     }
-    localStorage.setItem(topicsKey(scope, channelId), JSON.stringify(payload))
+    sessionStorage.setItem(topicsKey(scope, channelId), JSON.stringify(payload))
   } catch {
     /* quota / private mode */
   }
@@ -179,7 +179,7 @@ export function touchCachedTopics(scope: WorkshopCacheScope, channelId: number):
 
 export function clearCachedTopics(scope: WorkshopCacheScope, channelId: number): void {
   try {
-    localStorage.removeItem(topicsKey(scope, channelId))
+    sessionStorage.removeItem(topicsKey(scope, channelId))
   } catch {
     /* ignore */
   }
@@ -187,19 +187,24 @@ export function clearCachedTopics(scope: WorkshopCacheScope, channelId: number):
 
 /** Remove all workshop cache entries for this user (logout / reset). */
 export function clearWorkshopChatCachesForUser(userId: string): void {
-  try {
-    const chPrefix = `${PREFIX}_ch_${userId}_`
-    const tpPrefix = `${PREFIX}_tp_${userId}_`
+  const purgeKeys = (storage: Storage, prefixCh: string, prefixTp: string): void => {
     const toRemove: string[] = []
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i)
-      if (k && (k.startsWith(chPrefix) || k.startsWith(tpPrefix))) {
+    for (let i = 0; i < storage.length; i++) {
+      const k = storage.key(i)
+      if (k && (k.startsWith(prefixCh) || k.startsWith(prefixTp))) {
         toRemove.push(k)
       }
     }
     for (const k of toRemove) {
-      localStorage.removeItem(k)
+      storage.removeItem(k)
     }
+  }
+
+  try {
+    const chPrefix = `${PREFIX}_ch_${userId}_`
+    const tpPrefix = `${PREFIX}_tp_${userId}_`
+    purgeKeys(sessionStorage, chPrefix, tpPrefix)
+    purgeKeys(localStorage, chPrefix, tpPrefix)
   } catch {
     /* ignore */
   }

@@ -109,75 +109,13 @@ export const useMindMateStore = defineStore('mindmate', () => {
   // =========================================================================
 
   /**
-   * localStorage key for message cache
+   * sessionStorage key for message cache (cleared when browser session ends)
    */
   function getCacheKey(convId: string): string {
     return `mindmate_msg_cache_${convId}`
   }
 
-  /**
-   * Save messages to localStorage with timestamp for TTL
-   */
-  function _saveMessagesToStorage(convId: string, messages: CachedDifyMessage[]): void {
-    try {
-      const key = getCacheKey(convId)
-      const entry: CacheEntry = {
-        messages,
-        cachedAt: Date.now(),
-      }
-      localStorage.setItem(key, JSON.stringify(entry))
-    } catch {
-      // localStorage might be full or disabled - continue without error
-    }
-  }
-
-  /**
-   * Load messages from localStorage (with TTL check)
-   */
-  function loadMessagesFromStorage(convId: string): CachedDifyMessage[] | null {
-    try {
-      const key = getCacheKey(convId)
-      const stored = localStorage.getItem(key)
-      if (!stored) return null
-
-      const parsed = JSON.parse(stored)
-
-      // Handle legacy format (direct array) vs new format (CacheEntry)
-      if (Array.isArray(parsed)) {
-        // Legacy format without TTL - treat as valid but migrate on next save
-        return parsed as CachedDifyMessage[]
-      }
-
-      const entry = parsed as CacheEntry
-
-      // Check TTL - if cache is stale, remove it and return null
-      if (Date.now() - entry.cachedAt > CACHE_TTL_MS) {
-        localStorage.removeItem(key)
-        return null
-      }
-
-      return entry.messages
-    } catch {
-      return null
-    }
-  }
-
-  /**
-   * Clear messages from localStorage
-   */
-  function clearMessagesFromStorage(convId: string): void {
-    try {
-      const key = getCacheKey(convId)
-      localStorage.removeItem(key)
-    } catch {
-      void 0
-    }
-  }
-
-  /**
-   * Clear all message caches from localStorage
-   */
-  function clearAllMessagesFromStorage(): void {
+  function purgeLegacyMindmateLocalStorage(): void {
     try {
       const keysToRemove: string[] = []
       for (let i = 0; i < localStorage.length; i++) {
@@ -192,17 +130,95 @@ export const useMindMateStore = defineStore('mindmate', () => {
     }
   }
 
+  purgeLegacyMindmateLocalStorage()
+
   /**
-   * Prune old localStorage entries that are not in top 3 conversations
-   * Keeps localStorage clean and within size limits
+   * Save messages to sessionStorage with timestamp for TTL
+   */
+  function _saveMessagesToStorage(convId: string, messages: CachedDifyMessage[]): void {
+    try {
+      const key = getCacheKey(convId)
+      const entry: CacheEntry = {
+        messages,
+        cachedAt: Date.now(),
+      }
+      sessionStorage.setItem(key, JSON.stringify(entry))
+    } catch {
+      // sessionStorage might be full or disabled - continue without error
+    }
+  }
+
+  /**
+   * Load messages from sessionStorage (with TTL check)
+   */
+  function loadMessagesFromStorage(convId: string): CachedDifyMessage[] | null {
+    try {
+      const key = getCacheKey(convId)
+      const stored = sessionStorage.getItem(key)
+      if (!stored) return null
+
+      const parsed = JSON.parse(stored)
+
+      // Handle legacy format (direct array) vs new format (CacheEntry)
+      if (Array.isArray(parsed)) {
+        // Legacy format without TTL - treat as valid but migrate on next save
+        return parsed as CachedDifyMessage[]
+      }
+
+      const entry = parsed as CacheEntry
+
+      // Check TTL - if cache is stale, remove it and return null
+      if (Date.now() - entry.cachedAt > CACHE_TTL_MS) {
+        sessionStorage.removeItem(key)
+        return null
+      }
+
+      return entry.messages
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * Clear messages from sessionStorage
+   */
+  function clearMessagesFromStorage(convId: string): void {
+    try {
+      const key = getCacheKey(convId)
+      sessionStorage.removeItem(key)
+    } catch {
+      void 0
+    }
+  }
+
+  /**
+   * Clear all message caches from sessionStorage
+   */
+  function clearAllMessagesFromStorage(): void {
+    try {
+      const keysToRemove: string[] = []
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i)
+        if (key && key.startsWith('mindmate_msg_cache_')) {
+          keysToRemove.push(key)
+        }
+      }
+      keysToRemove.forEach((key) => sessionStorage.removeItem(key))
+    } catch {
+      void 0
+    }
+  }
+
+  /**
+   * Prune old sessionStorage entries that are not in top 3 conversations
    */
   function _pruneOldCacheEntries(): void {
     try {
       const top3Ids = new Set(conversations.value.slice(0, 3).map((c) => c.id))
       const keysToRemove: string[] = []
 
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i)
         if (key && key.startsWith('mindmate_msg_cache_')) {
           const convId = key.replace('mindmate_msg_cache_', '')
           if (!top3Ids.has(convId)) {
@@ -211,7 +227,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
         }
       }
 
-      keysToRemove.forEach((key) => localStorage.removeItem(key))
+      keysToRemove.forEach((key) => sessionStorage.removeItem(key))
     } catch {
       void 0
     }

@@ -76,7 +76,7 @@ export interface WorkshopUpdate {
   /** True while a participant's write is in progress; false when the lock is released. */
   locked?: boolean
   events?: NodeEditingEvent[]
-  /** Short-lived reconnect bypass for Redis join sliding windows (`?resume=`). */
+  /** Short-lived reconnect token in join payload (bypasses Redis join sliding windows). */
   resume_token?: string
   /** Correlation id for ``update`` / ``update_ack`` tracing (server-generated). */
   ws_msg_id?: string

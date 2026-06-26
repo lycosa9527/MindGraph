@@ -3,10 +3,10 @@
  */
 import { createApp } from 'vue'
 
-import { registerSW } from 'virtual:pwa-register'
 import { createPinia } from 'pinia'
 
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
+import { registerSW } from 'virtual:pwa-register'
 
 import { ensureElementPlusProgrammaticStyles } from '@/composables/core/notifications'
 import { preloadMarkdownRendererForRoute } from '@/composables/core/useMarkdown'
@@ -19,11 +19,15 @@ import type { LocaleCode } from './i18n/locales'
 import { isUiLocale } from './i18n/locales'
 import router from './router'
 import { useUIStore } from './stores/ui'
-import { isGuestAuthPath } from './utils/authRedirect'
-import { bindPwaInstallListeners } from './utils/pwaInstall'
-import { installFrontendErrorReporting } from './utils/installFrontendErrorReporting'
 // Styles
 import './styles/index.css'
+import { isGuestAuthPath } from './utils/authRedirect'
+import { installCsrfFetchInterceptor } from './utils/installCsrfFetchInterceptor'
+import { installFrontendErrorReporting } from './utils/installFrontendErrorReporting'
+import { bindPwaInstallListeners } from './utils/pwaInstall'
+
+// Attach X-CSRF-Token to same-origin mutations before any request is made.
+installCsrfFetchInterceptor()
 
 const pwaDevEnabled = import.meta.env.VITE_PWA_DEV === '1'
 

@@ -41,7 +41,6 @@ from services.redis.session.redis_session_manager import (
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 from utils.auth import (
-    ACCESS_TOKEN_EXPIRY_MINUTES,
     JWT_ALGORITHM,
     compute_device_hash,
     create_access_token,
@@ -57,7 +56,7 @@ from utils.auth.thinking_coin_config import feature_thinking_coins_enabled
 from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 
 from .dependencies import get_language_dependency
-from .helpers import set_auth_cookies
+from .helpers import auth_session_json_metadata, set_auth_cookies
 from .org_profile import organization_session_payload
 
 _record_vpn_refresh_last_ip = record_vpn_refresh_last_ip
@@ -119,34 +118,22 @@ async def refresh_token(request: Request, response: Response):
     refresh_manager = get_refresh_token_manager()
     old_token_hash = hash_refresh_token(refresh_token_value)
 
-    # Get user_id from access token cookie (even if expired, we need to know who the user is)
-    # The access token may be expired, but it still contains the user ID
-    # If access token cookie is missing, try to find user_id from refresh token hash (reverse lookup)
-    access_token = request.cookies.get("access_token")
-    user_id = None
+    # Prefer reverse lookup from refresh token (authoritative for reuse detection)
+    user_id = await refresh_manager.find_user_id_from_token(old_token_hash)
     token_exp = 0
 
-    if access_token:
-        # Try to decode access token without verifying expiration
+    access_token = request.cookies.get("access_token")
+    if not user_id and access_token:
         try:
-            # Decode without verifying expiration
             payload = jwt.decode(
                 access_token,
                 get_jwt_secret(),
                 algorithms=[JWT_ALGORITHM],
                 options={"verify_exp": False},
             )
-            user_id = int(payload.get("sub", 0))
+            user_id = int(payload.get("sub", 0)) or None
             token_exp = payload.get("exp", 0)
-
-            if not user_id:
-                logger.info(
-                    "[TokenAudit] Refresh - no user_id in token payload, will try reverse lookup: ip=%s",
-                    client_ip,
-                )
-                user_id = None
-            else:
-                # DEBUG: Log token expiry info
+            if user_id:
                 now = int(time.time())
                 expired_ago = now - token_exp if token_exp > 0 else -1
                 logger.info(
@@ -156,34 +143,22 @@ async def refresh_token(request: Request, response: Response):
                     expired_ago,
                     client_ip,
                 )
-
         except JWTError as jwt_error:
             logger.info(
-                "[TokenAudit] Refresh - invalid access token, will try reverse lookup: ip=%s, error=%s",
+                "[TokenAudit] Refresh - invalid access token: ip=%s, error=%s",
                 client_ip,
                 jwt_error,
             )
             user_id = None
 
-    # If we don't have user_id from access token, try reverse lookup from refresh token hash
     if not user_id:
-        user_id = await refresh_manager.find_user_id_from_token(old_token_hash)
-
-        if not user_id:
-            logger.info(
-                "[TokenAudit] Refresh FAILED - cannot determine user_id "
-                "(no access token and refresh token not found): ip=%s",
-                client_ip,
-            )
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Cannot determine user identity. Please log in again.",
-            )
-
         logger.info(
-            "[TokenAudit] Found user_id from refresh token reverse lookup: user=%s, ip=%s",
-            user_id,
+            "[TokenAudit] Refresh FAILED - cannot determine user_id (refresh token not found): ip=%s",
             client_ip,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Cannot determine user identity. Please log in again.",
         )
 
     # DEBUG: Log device fingerprint headers used for hash
@@ -288,9 +263,7 @@ async def refresh_token(request: Request, response: Response):
     logger.info("[TokenAudit] Token refreshed: user=%s, ip=%s", user_id, client_ip)
 
     return {
-        "access_token": new_access_token,
-        "token_type": "bearer",
-        "expires_in": ACCESS_TOKEN_EXPIRY_MINUTES * 60,
+        **auth_session_json_metadata(),
     }
 
 
@@ -471,8 +444,10 @@ async def get_session_status(
         return {"status": "active"}
     except BACKGROUND_INFRA_ERRORS as status_error:
         logger.error("Error checking session status: %s", status_error, exc_info=True)
-        # On error, assume session is active (fail-open)
-        return {"status": "active"}
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Session status unavailable",
+        ) from status_error
 
 
 @router.post("/logout")

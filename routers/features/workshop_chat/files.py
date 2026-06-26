@@ -4,8 +4,6 @@ File Upload Endpoints
 
 Upload and retrieve file attachments for chat messages.
 
-Follows the existing ``UploadFile`` pattern used by the community module.
-
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
@@ -14,6 +12,7 @@ Proprietary License
 import logging
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
@@ -60,10 +59,28 @@ async def upload_file(
 async def get_attachment(
     attachment_id: int,
     db: AsyncSession = Depends(get_async_db),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    """Get attachment metadata by ID."""
-    att = await file_service.get_attachment(db, attachment_id)
+    """Get attachment metadata by ID (channel/DM membership required)."""
+    att = await file_service.get_attachment(db, attachment_id, user_id=current_user.id)
     if not att:
         raise HTTPException(status_code=404, detail="Attachment not found")
     return att
+
+
+@router.get("/attachments/{attachment_id}/download")
+async def download_attachment(
+    attachment_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Stream attachment bytes after access check."""
+    resolved = await file_service.resolve_download(db, attachment_id, current_user.id)
+    if resolved is None:
+        raise HTTPException(status_code=404, detail="Attachment not found")
+    disk_path, content_type, filename = resolved
+    return FileResponse(
+        path=str(disk_path),
+        media_type=content_type,
+        filename=filename,
+    )

@@ -16,7 +16,7 @@
 #   - Configure database URL for your environment
 #   - Set DEBUG=False for production
 #   - Optional: Configure Sentry DSN for error tracking
-#   - DingTalk MindBot QR bind: apt install libzbar0 + pip Pillow/pyzbar (see IMAGE PROCESSING)
+#   - Image I/O: Pillow for qrcode generation, OCR, avatars
 #
 # LAST UPDATED: 2026-06-02 - PyPI sweep (latest stable floors; pydantic <3; qdrant 1.18.x)
 
@@ -76,10 +76,10 @@ anyio>=4.13.0
 # BROWSER AUTOMATION & IMAGE PROCESSING
 # ============================================================================
 playwright>=1.60.0
-Pillow>=12.2.0  # Image I/O; required by pyzbar bind decode, qrcode generation, OCR, avatars
+Pillow>=12.2.0  # Image I/O; qrcode generation, OCR, avatars
 PyMuPDF>=1.27.2  # PDF rendering for library cover extraction (fitz module)
 qrcode[pil]>=8.2  # Bind QR generation on web (requires Pillow)
-pyzbar>=0.1.9  # Bind QR decode in MindBot — requires system libzbar0: apt install libzbar0
+pyzbar>=0.1.9  # Optional QR decode utilities — requires system libzbar0: apt install libzbar0
 
 # ============================================================================
 # SYSTEM MONITORING & UTILITIES

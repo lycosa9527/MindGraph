@@ -92,6 +92,7 @@ SESSION_INVALIDATED = "session_invalidated:{user_id}:{token_hash}"
 REFRESH_TOKEN = "refresh:{user_id}:{token_hash}"
 REFRESH_USER_SET = "refresh:user:{user_id}"
 REFRESH_LOOKUP = "refresh:lookup:{token_hash}"
+REFRESH_REUSE_MARKER = "refresh:reuse:{token_hash}"
 TTL_ACCESS_SESSION = int(os.getenv("ACCESS_TOKEN_EXPIRY_MINUTES", "60")) * 60  # default 3600 s
 TTL_REFRESH_TOKEN = int(os.getenv("REFRESH_TOKEN_EXPIRY_DAYS", "7")) * 86_400  # default 604800 s
 

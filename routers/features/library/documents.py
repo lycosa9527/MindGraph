@@ -366,7 +366,7 @@ async def register_book(
             folder_path=folder_path, title=data.title, description=data.description
         )
 
-        return serialize_document(document)
+        return serialize_document(document, include_pages_dir_path=True)
 
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e

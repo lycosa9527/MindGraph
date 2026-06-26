@@ -20,6 +20,17 @@ from .config import BCRYPT_ROUNDS
 
 logger = logging.getLogger(__name__)
 
+# Precomputed bcrypt hash used for constant-time verification when the account is unknown.
+_DUMMY_BCRYPT_HASH = "$2b$12$k80S0SZ/HYeUSXbaluKpiOvGxptX/S0kOINDY.kiuQWOY2kYMCZ4u"
+
+
+def verify_password_timing_dummy(plain_password: str) -> None:
+    """
+    Run bcrypt verify against a fixed dummy hash so unknown-user login attempts
+    take similar time as failed password checks (enumeration timing mitigation).
+    """
+    verify_password(plain_password, _DUMMY_BCRYPT_HASH)
+
 
 def hash_password(password: str) -> str:
     """

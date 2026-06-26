@@ -17,5 +17,7 @@ def verify_bayi_passkey(passkey: str) -> bool:
 
 def verify_dashboard_passkey(passkey: str) -> bool:
     """Return True if ``passkey`` matches the public dashboard passkey."""
+    if not config.is_public_dashboard_enabled():
+        return False
     normalized = passkey.strip() if passkey else ""
     return normalized == config.PUBLIC_DASHBOARD_PASSKEY

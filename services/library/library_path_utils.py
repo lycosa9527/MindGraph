@@ -73,6 +73,14 @@ def normalize_library_path(file_path: Path, storage_dir: Path, project_root: Opt
     return file_path.name
 
 
+def _resolved_within_storage(resolved: Path, storage_dir: Path) -> bool:
+    """True when resolved path is inside storage_dir."""
+    try:
+        return resolved.resolve().is_relative_to(storage_dir.resolve())
+    except ValueError:
+        return False
+
+
 def resolve_library_path(stored_path: str, storage_dir: Path, project_root: Optional[Path] = None) -> Optional[Path]:
     """
     Resolve a stored library path back to an actual file path.
@@ -100,7 +108,9 @@ def resolve_library_path(stored_path: str, storage_dir: Path, project_root: Opti
         try:
             resolved = project_root / stored_path.replace("\\", "/")
             if resolved.exists():
-                return resolved.resolve()
+                candidate = resolved.resolve()
+                if _resolved_within_storage(candidate, storage_dir):
+                    return candidate
         except FILE_IO_ERRORS as exc:
             logger.debug("Library path resolve from project root failed: %s", exc)
 
@@ -109,7 +119,9 @@ def resolve_library_path(stored_path: str, storage_dir: Path, project_root: Opti
         try:
             resolved = storage_dir / stored_path
             if resolved.exists():
-                return resolved.resolve()
+                candidate = resolved.resolve()
+                if _resolved_within_storage(candidate, storage_dir):
+                    return candidate
         except FILE_IO_ERRORS as exc:
             logger.debug("Library path resolve from storage dir failed: %s", exc)
 
@@ -117,7 +129,9 @@ def resolve_library_path(stored_path: str, storage_dir: Path, project_root: Opti
     if stored_path_obj.is_absolute():
         try:
             if stored_path_obj.exists():
-                return stored_path_obj.resolve()
+                candidate = stored_path_obj.resolve()
+                if _resolved_within_storage(candidate, storage_dir):
+                    return candidate
         except FILE_IO_ERRORS as exc:
             logger.debug("Library absolute path resolve failed: %s", exc)
 
@@ -125,7 +139,9 @@ def resolve_library_path(stored_path: str, storage_dir: Path, project_root: Opti
     try:
         resolved = Path.cwd() / stored_path.replace("\\", "/")
         if resolved.exists():
-            return resolved.resolve()
+            candidate = resolved.resolve()
+            if _resolved_within_storage(candidate, storage_dir):
+                return candidate
     except FILE_IO_ERRORS as exc:
         logger.debug("Library path resolve from cwd failed: %s", exc)
 
@@ -136,7 +152,9 @@ def resolve_library_path(stored_path: str, storage_dir: Path, project_root: Opti
         try:
             resolved = storage_dir / folder_name
             if resolved.exists() and resolved.is_dir():
-                return resolved.resolve()
+                candidate = resolved.resolve()
+                if _resolved_within_storage(candidate, storage_dir):
+                    return candidate
         except FILE_IO_ERRORS as exc:
             logger.debug("Library folder name resolve failed: %s", exc)
 

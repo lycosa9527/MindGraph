@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.124.0] - 2026-06-26
+
+> **DingTalk pair-code binding — rotating 6-digit codes replace QR; MindBot tool ingress; production security hardening (CSRF, fail-closed auth).**
+
+### Added
+
+- **DingTalk pair-code binding** — Rotating 6-digit HMAC codes displayed as `000-000` on web; teachers send the code to MindBot; universal bind/unbind claim pipeline with org+code Redis index, claim lock, and guess-rate limits ([`dingtalk_account_binding.md`](docs/architecture/dingtalk_account_binding.md)).
+- **DingTalkPairModal** — Bluetooth-style pairing UI (bind and unbind) with countdown ring, status polling, and client audit logging ([`DingTalkPairModal.vue`](frontend/src/components/auth/DingTalkPairModal.vue), [`dingtalkPairAuditLog.ts`](frontend/src/utils/dingtalkPairAuditLog.ts)).
+- **MindBot tool ingress** — Pre-Dify handler framework for admin tools that must skip the LLM; pair-code handler registered in [`services/mindbot/tools/`](services/mindbot/tools/) ([`mindbot_tool_ingress.md`](docs/architecture/mindbot_tool_ingress.md)).
+- **Bind/unbind audit logging** — Distinct `[MindBotTool]`, `[DingtalkBind:web]`, `[DingtalkBind:claim]`, and `[DingtalkPair:client]` prefixes; client events POST to `/api/frontend_log` with `source=dingtalk_pair`.
+- **Production security deploy guide** — Pre-deploy env, openresty `X-Forwarded-Proto`, paired backend/frontend rollout, ESP32 header requirement, and post-deploy curl checks ([`production_security_deploy.md`](docs/architecture/production_security_deploy.md)).
+- **JWT rotation CLI** — [`scripts/ops/rotate_jwt_secret.py`](scripts/ops/rotate_jwt_secret.py) moves the active Redis JWT secret to `jwt:secret:previous` and issues a new signing key.
+- **CSRF hardening** — Migration-safe double-submit CSRF middleware, `csrf_token` cookie at login/refresh, global fetch interceptor ([`installCsrfFetchInterceptor.ts`](frontend/src/utils/installCsrfFetchInterceptor.ts)), and [`tests/test_csrf_protection.py`](tests/test_csrf_protection.py).
+- **Security regression tests** — Fail-closed session, HSTS, API key masking, SSRF redirect block ([`tests/test_security_production_hardening.py`](tests/test_security_production_hardening.py)).
+- **Gewe webhook auth** — HMAC signature verification and optional IP allowlist when `FEATURE_GEWE=True` ([`gewe_webhook_auth.py`](services/infrastructure/security/gewe_webhook_auth.py)).
+- **Session refresh mutex** — Shared [`sessionRefresh.ts`](frontend/src/utils/sessionRefresh.ts) prevents duplicate `/auth/refresh` races between Pinia and `apiClient`.
+- **Saved login identifier** — Remember-me prefills username only; password never stored ([`savedLoginCredentials.ts`](frontend/src/utils/savedLoginCredentials.ts)).
+- **PWA install early capture** — [`pwa-install-early.js`](frontend/public/pwa-install-early.js) retains `beforeinstallprompt` before the SPA bundle loads.
+- **PDF worker version check** — CI script verifies committed worker version matches `pdfjs-dist` ([`check-pdf-worker-version.ts`](frontend/scripts/check-pdf-worker-version.ts)).
+- **Tests** — Pair-code parse/handler, bind org resolve, unbind pair, code index, audit log, CSRF, Gewe webhook, refresh-token reuse, workshop chat file service, and frontend interceptor specs.
+
+### Security
+
+- **Fail-closed auth** — Session validation and `/session-status` deny on Redis errors; weak/placeholder secrets blocked at startup via [`production_secrets_guard.py`](services/infrastructure/security/production_secrets_guard.py).
+- **CSRF** — Cookie + `X-CSRF-Token` on authenticated mutations; one-request bootstrap for legacy sessions (logged as `[Security] CSRF_BOOTSTRAP`).
+- **Headers** — Production CSP drops `unsafe-eval`; HSTS when HTTPS is detected (`FORCE_SECURE_COOKIES` / `X-Forwarded-Proto` behind reverse proxy).
+- **Trusted proxy client IP** — Forwarded `X-Forwarded-For` / `X-Real-IP` are honored only from peers matching `TRUSTED_PROXY_IPS`, which now accepts exact IPs, CIDR ranges, and the `private` / `loopback` keywords so Docker / Nginx Proxy Manager deployments trust the proxy without pinning a container IP; resolution is logged once at startup ([`request_helpers.py`](utils/auth/request_helpers.py)). Accurate IPs are required for rate limits and AbuseIPDB / CrowdSec blocking.
+- **IDOR / exposure** — Device status requires registration secret; admin API keys masked in list; workshop chat static uploads blocked; SSRF fetch disables redirects.
+- **Frontend** — DOMPurify link hook on live markdown path; sensitive caches moved to `sessionStorage`; remember-me stores identifier only.
+
+### Changed
+
+- **DingTalk bind ingress** — QR picture decode removed; teachers confirm bind/unbind by sending the rotating code to MindBot (text tool ingress, no Dify round-trip).
+- **Direct unbind disabled** — `POST /dingtalk-bind/unbind` returns **410 Gone**; unbind requires MindBot pair-code confirmation via `POST /dingtalk-bind/unbind/start`.
+- **BindDingTalkAccountModal** — Simplified to launch [`DingTalkPairModal`](frontend/src/components/auth/DingTalkPairModal.vue); QR upload/decode UI removed.
+- **i18n** — DingTalk pair strings synced across all locale bundles ([`sync-dingtalk-pair-locale-keys.py`](frontend/scripts/sync-dingtalk-pair-locale-keys.py)).
+
+### Removed
+
+- **QR bind backend** — [`picture_handler.py`](services/mindbot/bind/picture_handler.py), [`qr_backend.py`](services/mindbot/bind/qr_backend.py), and [`qr_decode.py`](services/mindbot/bind/qr_decode.py) deleted; pair-code text replaces QR image ingress.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.124.0).
+
 ## [5.123.0] - 2026-06-26
 
 > **MindMate export — Dify raw dump library: upload snapshots, merge into a cumulative store, search and export from the library.**

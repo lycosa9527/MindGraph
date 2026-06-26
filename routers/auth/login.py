@@ -43,7 +43,9 @@ from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
 from services.redis.rate_limiting.redis_rate_limiter import (
     RedisRateLimiter,
+    check_ip_rate_limit,
     check_login_rate_limit,
+    clear_ip_attempts,
     clear_login_attempts,
     get_login_attempts_remaining,
 )
@@ -54,7 +56,6 @@ from services.redis.session.redis_session_manager import (
 )
 from services.utils.error_types import DATABASE_ERRORS, REDIS_ERRORS
 from utils.auth import (
-    ACCESS_TOKEN_EXPIRY_MINUTES,
     AUTH_MODE,
     EMAIL_LOGIN_CN_BLOCK_ENABLED,
     LOCKOUT_DURATION_MINUTES,
@@ -74,6 +75,7 @@ from utils.auth import (
     verify_bayi_passkey,
     verify_dashboard_passkey,
     verify_password,
+    verify_password_timing_dummy,
 )
 from utils.auth.config import BAYI_DEFAULT_ORG_CODE, BAYI_DEFAULT_ORG_ID, BAYI_PASSKEY
 from utils.auth.org_subscription import enforce_org_accessible_or_raise, ensure_org_subscription_current
@@ -85,7 +87,7 @@ from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
 from .email import verify_and_consume_email_code
-from .helpers import set_auth_cookies, track_user_activity
+from .helpers import auth_session_json_metadata, set_auth_cookies, track_user_activity
 from .sms import _verify_and_consume_sms_code
 
 _bg_tasks: set[asyncio.Task] = set()
@@ -102,6 +104,31 @@ def _fire_and_forget(coro: CoroutineType) -> None:
             logger.debug("[bg_task] background task raised: %s", t.exception())
 
     task.add_done_callback(_on_done)
+
+
+def _generic_login_failed_message(lang: Language, attempts_left: int) -> str:
+    """Uniform login failure text (unknown account vs bad password)."""
+    return Messages.error("login_failed_phone_not_found", lang, attempts_left)
+
+
+def _raise_if_session_persistence_failed(
+    session_ok: bool,
+    refresh_ok: bool,
+    lang: Language,
+    user_id: int,
+    method: str,
+) -> None:
+    if session_ok and refresh_ok:
+        return
+    logger.error(
+        "[TokenAudit] Session persistence failed: user=%s, method=%s, session=%s, refresh=%s",
+        user_id,
+        method,
+        session_ok,
+        refresh_ok,
+    )
+    error_msg = Messages.error("database_temporarily_unavailable", lang)
+    raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=error_msg)
 
 
 def _preload_user_diagrams(user_id: int):
@@ -133,6 +160,7 @@ async def _complete_login_after_otp_verified(
     response: Response,
     db: AsyncSession,
     method: str,
+    lang: Language,
 ) -> dict:
     """
     Shared session/cookie issuance after SMS or email OTP has been verified and consumed.
@@ -183,16 +211,17 @@ async def _complete_login_after_otp_verified(
         sec_ch_mobile,
     )
 
-    await session_manager.store_session(user.id, token, device_hash=device_hash)
+    session_ok = await session_manager.store_session(user.id, token, device_hash=device_hash)
 
     refresh_manager = get_refresh_token_manager()
-    await refresh_manager.store_refresh_token(
+    refresh_ok = await refresh_manager.store_refresh_token(
         user_id=user.id,
         token_hash=refresh_token_hash,
         ip_address=client_ip,
         user_agent=user_agent,
         device_hash=device_hash,
     )
+    _raise_if_session_persistence_failed(session_ok, refresh_ok, lang, user.id, method)
 
     set_auth_cookies(response, token, refresh_token_value, http_request)
 
@@ -224,9 +253,7 @@ async def _complete_login_after_otp_verified(
     _preload_user_diagrams(user.id)
 
     return {
-        "access_token": token,
-        "token_type": "bearer",
-        "expires_in": ACCESS_TOKEN_EXPIRY_MINUTES * 60,
+        **auth_session_json_metadata(),
         "user": {
             "id": user.id,
             "phone": user.phone,
@@ -280,6 +307,13 @@ async def login(
             user_row = await db.execute(select(User).where(User.phone == login_key))
             cached_user = user_row.scalar_one_or_none()
 
+    client_ip = get_client_ip(http_request) if http_request else "unknown"
+    ip_allowed, _ip_error = await check_ip_rate_limit(client_ip)
+    if not ip_allowed:
+        logger.warning("IP rate limit exceeded for login from %s", client_ip)
+        error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
+
     is_allowed, _ = await check_login_rate_limit(login_key)
     if not is_allowed:
         logger.warning("Rate limit exceeded for login key %s", login_key[:8] + "***")
@@ -287,9 +321,10 @@ async def login(
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
 
     if not cached_user:
+        verify_password_timing_dummy(request.password)
         attempts_left = await get_login_attempts_remaining(login_key)
         if attempts_left > 0:
-            error_msg = Messages.error("login_failed_identifier_not_found", lang, attempts_left)
+            error_msg = _generic_login_failed_message(lang, attempts_left)
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_msg)
         error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
@@ -371,7 +406,7 @@ async def login(
         else:
             attempts_left = MAX_LOGIN_ATTEMPTS - cached_user.failed_login_attempts
         if attempts_left > 0:
-            error_msg = Messages.error("invalid_password", lang, attempts_left)
+            error_msg = _generic_login_failed_message(lang, attempts_left)
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_msg)
         minutes_left = LOCKOUT_DURATION_MINUTES
         error_msg = Messages.error("account_locked", lang, MAX_LOGIN_ATTEMPTS, minutes_left)
@@ -380,6 +415,7 @@ async def login(
 
     # Successful login - clear rate limit attempts in Redis
     await clear_login_attempts(login_key)
+    await clear_ip_attempts(client_ip)
     # Need user attached to session for modification - reload from DB
     result = await db.execute(select(User).where(User.id == cached_user.id))
     db_user = result.scalar_one_or_none()
@@ -411,7 +447,6 @@ async def login(
 
     # Session management: Allow multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS)
     session_manager = get_session_manager()
-    client_ip = get_client_ip(http_request) if http_request else "unknown"
 
     # Generate JWT access token
     token = create_access_token(user)
@@ -437,18 +472,18 @@ async def login(
         sec_ch_mobile,
     )
 
-    # Store access token session in Redis (automatically limits concurrent sessions)
-    await session_manager.store_session(user.id, token, device_hash=device_hash)
+    session_ok = await session_manager.store_session(user.id, token, device_hash=device_hash)
 
     # Store refresh token with device binding
     refresh_manager = get_refresh_token_manager()
-    await refresh_manager.store_refresh_token(
+    refresh_ok = await refresh_manager.store_refresh_token(
         user_id=user.id,
         token_hash=refresh_token_hash,
         ip_address=client_ip,
         user_agent=user_agent,
         device_hash=device_hash,
     )
+    _raise_if_session_persistence_failed(session_ok, refresh_ok, lang, user.id, "captcha")
 
     # Set cookies (both access and refresh tokens)
     set_auth_cookies(response, token, refresh_token_value, http_request)
@@ -473,9 +508,7 @@ async def login(
     _preload_user_diagrams(user.id)
 
     return {
-        "access_token": token,
-        "token_type": "bearer",
-        "expires_in": ACCESS_TOKEN_EXPIRY_MINUTES * 60,
+        **auth_session_json_metadata(),
         "user": {
             "id": user.id,
             "phone": user.phone,
@@ -516,8 +549,18 @@ async def login_with_sms(
     user = user_row.scalar_one_or_none()
 
     if not user:
-        error_msg = Messages.error("phone_not_registered_login", lang)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+        attempts_left = await get_login_attempts_remaining(request.phone)
+        if attempts_left > 0:
+            error_msg = _generic_login_failed_message(lang, attempts_left)
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_msg)
+        error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
+
+    is_locked, _ = check_account_lockout(user)
+    if is_locked:
+        minutes_left = LOCKOUT_DURATION_MINUTES
+        error_msg = Messages.error("account_locked", lang, MAX_LOGIN_ATTEMPTS, minutes_left)
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail=error_msg)
 
     # Get organization and check status BEFORE consuming code (use cache)
     org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None
@@ -535,6 +578,7 @@ async def login_with_sms(
         response,
         db,
         "sms",
+        lang,
     )
 
 
@@ -559,8 +603,12 @@ async def login_with_email(
     user = user_row.scalar_one_or_none()
 
     if not user:
-        error_msg = Messages.error("email_not_registered_login", lang)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+        attempts_left = await get_login_attempts_remaining(email_key)
+        if attempts_left > 0:
+            error_msg = _generic_login_failed_message(lang, attempts_left)
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_msg)
+        error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
 
     org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None
 
@@ -590,6 +638,7 @@ async def login_with_email(
         response,
         db,
         "email_otp",
+        lang,
     )
 
 
@@ -615,6 +664,25 @@ async def verify_bayi_passkey_login(
                 "Bayi passkey login is disabled: set AUTH_MODE=bayi to use this endpoint. "
                 f"(current mode is {AUTH_MODE!r})"
             ),
+        )
+
+    client_ip = get_client_ip(request)
+    rate_limiter = RedisRateLimiter()
+    is_allowed, attempt_count, error_msg = await rate_limiter.check_and_record(
+        category="bayi_passkey",
+        identifier=client_ip,
+        max_attempts=5,
+        window_seconds=15 * 60,
+    )
+    if not is_allowed:
+        logger.warning(
+            "Bayi passkey rate limit exceeded for IP %s (%s attempts)",
+            client_ip,
+            attempt_count,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=error_msg or Messages.error("too_many_login_attempts", lang, 15),
         )
 
     received_length = len(passkey_request.passkey) if passkey_request.passkey else 0
@@ -769,9 +837,7 @@ async def verify_bayi_passkey_login(
     _preload_user_diagrams(auth_user.id)
 
     return {
-        "access_token": token,
-        "token_type": "bearer",
-        "expires_in": ACCESS_TOKEN_EXPIRY_MINUTES * 60,
+        **auth_session_json_metadata(),
         "user": {
             "id": auth_user.id,
             "phone": auth_user.phone,
@@ -797,6 +863,12 @@ async def verify_public_dashboard(
     Public dashboard allows access with a 6-digit passkey.
     Creates a simple dashboard session (not a full user account).
     """
+    if not PUBLIC_DASHBOARD_PASSKEY:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Public dashboard is not enabled (set PUBLIC_DASHBOARD_PASSKEY)",
+        )
+
     client_ip = get_client_ip(request)
 
     # Rate limiting: 5 attempts per IP per 15 minutes
@@ -852,5 +924,4 @@ async def verify_public_dashboard(
     return {
         "success": True,
         "message": "Access granted",
-        "dashboard_token": dashboard_token,
     }

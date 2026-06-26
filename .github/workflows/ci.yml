@@ -51,11 +51,16 @@ jobs:
             tests/test_workshop_editor_redis_merge.py tests/test_ws_fanout.py \
             tests/test_collab_synthetic_probe.py tests/test_workshop_join_resume_tokens.py \
             tests/test_organization_mindmate_avatar.py tests/test_org_subscription.py \
-            tests/test_school_tier.py tests/test_dify_user_key.py tests/test_dingtalk_bind_qr.py \
+            tests/test_school_tier.py tests/test_dify_user_key.py \
             tests/test_mindbot_bind_messages.py tests/test_dingtalk_bind_imports.py \
+            tests/test_mindbot_pair_code_handler.py tests/test_bind_code_parse.py \
             tests/test_generate_dingtalk_identity.py tests/test_library_save_user_notices.py \
             tests/test_generation_skip_registry.py tests/test_mindbot_library_save_reply.py \
-            tests/test_user_daily_token_quota.py tests/test_llm_daily_token_cap.py
+            tests/test_user_daily_token_quota.py tests/test_llm_daily_token_cap.py \
+            tests/test_get_client_ip.py tests/test_gewe_webhook_auth.py \
+            tests/test_refresh_token_reuse.py tests/test_security_production_hardening.py \
+            tests/test_csrf_protection.py \
+            tests/test_workshop_chat_file_service.py tests/test_dingtalk_bind_service.py
 
   frontend:
     runs-on: ubuntu-latest
@@ -76,5 +81,7 @@ jobs:
         run: npm run check:dep0205
       - name: CLI script smoke (native Node type stripping)
         run: npm run check:scripts
+      - name: npm audit (high severity)
+        run: npm audit --audit-level=high
       - name: Vitest (workshop reconnect + diagram meta)
         run: npx vitest run tests/useWorkshopReconnect.spec.ts tests/mindmateDiagramMeta.spec.ts

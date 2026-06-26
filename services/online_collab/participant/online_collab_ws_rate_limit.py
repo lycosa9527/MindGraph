@@ -27,6 +27,7 @@ from services.online_collab.redis.online_collab_redis_scripts import (
     evalsha_with_reload,
 )
 from services.redis.redis_async_client import get_async_redis
+from utils.auth.request_helpers import get_client_ip
 
 logger = logging.getLogger(__name__)
 
@@ -45,19 +46,6 @@ _FAIL_OPEN: bool = os.environ.get("COLLAB_JOIN_RL_FAIL_OPEN", "false").lower() i
 )
 
 
-def _client_ip_from_websocket(websocket: WebSocket) -> str:
-    """Best-effort client IP (matches HTTP proxy header priority)."""
-    headers = websocket.headers
-    fwd = headers.get("x-forwarded-for") or headers.get("X-Forwarded-For")
-    if fwd:
-        return fwd.split(",")[0].strip() or "unknown"
-    real = headers.get("x-real-ip") or headers.get("X-Real-IP")
-    if real:
-        return real.strip() or "unknown"
-    peer = websocket.client
-    return peer.host if peer else "unknown"
-
-
 async def check_canvas_collab_join_rate_limits(
     user_id: int,
     websocket: WebSocket,
@@ -71,7 +59,7 @@ async def check_canvas_collab_join_rate_limits(
     Returns:
         Human-readable refusal message when limited, otherwise None.
     """
-    ip = _client_ip_from_websocket(websocket)
+    ip = get_client_ip(websocket)
     redis = get_async_redis()
     if not redis:
         if _FAIL_OPEN:

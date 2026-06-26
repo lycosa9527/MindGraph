@@ -116,7 +116,7 @@ async def _fetch_url_page_text(url: str) -> Tuple[str, Optional[str]]:
     }
 
     try:
-        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True, headers=headers) as client:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=False, headers=headers) as client:
             response = await client.get(url.strip())
             if response.status_code >= 400:
                 raise HTTPException(status_code=502, detail="Failed to fetch page")

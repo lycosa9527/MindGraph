@@ -14,7 +14,9 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
+import json
 import pickle
+import struct
 import uuid
 
 from sqlalchemy import (
@@ -277,12 +279,46 @@ class Embedding(Base):
     )
 
     def set_embedding(self, embedding_data: list[float]) -> None:
-        """Store embedding vector (pickled)."""
-        self.embedding = pickle.dumps(embedding_data, protocol=pickle.HIGHEST_PROTOCOL)
+        """Store embedding vector as JSON UTF-8 bytes."""
+        self.embedding = json.dumps(embedding_data).encode("utf-8")
 
     def get_embedding(self) -> list[float]:
-        """Retrieve embedding vector (unpickled)."""
-        return pickle.loads(self.embedding)
+        """Retrieve embedding vector (JSON with legacy pickle fallback)."""
+        raw = self.embedding
+        if raw is None:
+            return []
+        if isinstance(raw, memoryview):
+            raw = raw.tobytes()
+        if not isinstance(raw, (bytes, bytearray)):
+            return []
+
+        # JSON format (current)
+        if raw[:1] in (b"[", b"{", b'"'):
+            try:
+                parsed = json.loads(raw.decode("utf-8"))
+                if isinstance(parsed, list):
+                    return [float(x) for x in parsed]
+            except (UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError):
+                pass
+
+        # Legacy pickle blobs
+        if raw[:1] == b"\x80":
+            try:
+                legacy = pickle.loads(raw)
+                if isinstance(legacy, list):
+                    return [float(x) for x in legacy]
+            except (TypeError, ValueError, struct.error, pickle.UnpicklingError):
+                pass
+
+        # Legacy struct-packed float32 array (no pickle header)
+        try:
+            count = len(raw) // 4
+            if count > 0 and len(raw) == count * 4:
+                return list(struct.unpack(f"<{count}f", raw))
+        except struct.error:
+            pass
+
+        return []
 
     def __repr__(self) -> str:
         return f"<Embedding model={self.model_name} provider={self.provider_name} hash={self.hash[:8]}...>"

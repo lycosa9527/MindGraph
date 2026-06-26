@@ -578,12 +578,11 @@ class RedisSessionManager:
                 e,
                 exc_info=True,
             )
-            # Fail-open: allow authentication on error (backward compatibility)
-            logger.info(
-                "[Session] Error occurred, allowing authentication (fail-open): user=%s",
+            logger.warning(
+                "[Session] Fail-closed: denying authentication due to Redis error: user=%s",
                 user_id,
             )
-            return True
+            return False
 
     async def invalidate_user_sessions(
         self,
@@ -789,6 +788,7 @@ class RefreshTokenManager:
     - refresh:{user_id}:{token_hash} -> JSON{created_at, ip_address, user_agent, device_hash}
     - refresh:user:{user_id} -> SET of token_hashes (for revoke-all)
     - refresh:lookup:{token_hash} -> user_id (reverse lookup for refresh without access token)
+    - refresh:reuse:{token_hash} -> user_id (revoked token marker for reuse detection)
 
     All tokens auto-expire via Redis TTL.
     """
@@ -811,6 +811,16 @@ class RefreshTokenManager:
     def _get_lookup_key(self, token_hash: bytes | str) -> str:
         """Get lookup key."""
         return _keys.REFRESH_LOOKUP.format(token_hash=redis_decode_required(token_hash))
+
+    def _get_reuse_marker_key(self, token_hash: bytes | str) -> str:
+        """Redis key marking a revoked refresh token (reuse detection)."""
+        return _keys.REFRESH_REUSE_MARKER.format(token_hash=redis_decode_required(token_hash))
+
+    async def _handle_refresh_token_reuse(self, user_id: int) -> None:
+        """Revoke all sessions when a rotated refresh token is presented again."""
+        logger.warning("[TokenAudit] Refresh token reuse detected: user=%s", user_id)
+        await get_session_manager().delete_session(user_id, token=None)
+        await self.revoke_all_refresh_tokens(user_id, reason="refresh_token_reuse")
 
     async def find_user_id_from_token(self, token_hash: str) -> Optional[int]:
         """
@@ -1012,6 +1022,15 @@ class RefreshTokenManager:
             token_json = await AsyncRedisOps.get(token_key)
 
             if not token_json:
+                reuse_key = self._get_reuse_marker_key(token_hash)
+                reuse_user_raw = await AsyncRedisOps.get(reuse_key)
+                if reuse_user_raw:
+                    try:
+                        reuse_user_id = int(reuse_user_raw)
+                    except ValueError:
+                        reuse_user_id = user_id
+                    await self._handle_refresh_token_reuse(reuse_user_id)
+                    return False, None, "Session invalidated due to token reuse"
                 token_preview = token_hash[:8]
                 logger.info(
                     "[RefreshToken] INVALID - token not found in Redis: user=%s, token=%s...",
@@ -1086,6 +1105,10 @@ class RefreshTokenManager:
             token_key = self._get_token_key(user_id, token_hash)
             user_tokens_key = self._get_user_tokens_key(user_id)
             lookup_key = self._get_lookup_key(token_hash)
+            reuse_key = self._get_reuse_marker_key(token_hash)
+
+            if reason != "refresh_token_reuse":
+                await AsyncRedisOps.set_with_ttl(reuse_key, str(user_id), _keys.TTL_REFRESH_TOKEN)
 
             # Delete the token
             deleted = await AsyncRedisOps.delete(token_key)

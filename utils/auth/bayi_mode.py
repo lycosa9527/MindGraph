@@ -36,6 +36,82 @@ from .config import BAYI_CLOCK_SKEW_TOLERANCE
 
 logger = logging.getLogger(__name__)
 
+# Versioned AES-GCM tokens use this prefix (legacy ECB tokens have no prefix).
+_BAYI_GCM_PREFIX = "gcm1."
+
+
+def _derive_bayi_secret_key(key: str) -> bytes:
+    """Generate secret key using SHA256 (same as CryptoJS)."""
+    return hashlib.sha256(key.encode("utf-8")).digest()
+
+
+def _decrypt_bayi_token_ecb(token: str, secret_key: bytes) -> dict:
+    """Decrypt legacy AES-ECB bayi token (CryptoJS compatible)."""
+    if AES is None or unpad is None:
+        raise ValueError(
+            "pycryptodome is required for bayi token decryption. Install with: pip install pycryptodome",
+        )
+
+    try:
+        encrypted_bytes = base64.b64decode(token, validate=True)
+        logger.debug(
+            "Base64 decoded successfully - encrypted bytes length: %d",
+            len(encrypted_bytes),
+        )
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.error("Base64 decode failed: %s, token preview: %s", exc, token[:50])
+        raise ValueError(f"Invalid base64 token: {str(exc)}") from exc
+
+    cipher = AES.new(secret_key, AES.MODE_ECB)
+    decrypted_bytes = cipher.decrypt(encrypted_bytes)
+    logger.debug("Decryption successful - decrypted bytes length: %d", len(decrypted_bytes))
+
+    try:
+        decrypted_text = unpad(decrypted_bytes, AES.block_size).decode("utf-8")
+        logger.debug("Unpadded successfully - decrypted text length: %d", len(decrypted_text))
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.error("Unpad failed: %s, decrypted bytes preview: %s", exc, decrypted_bytes[:50])
+        raise ValueError(f"Padding removal failed: {str(exc)}") from exc
+
+    try:
+        result = json.loads(decrypted_text)
+        logger.debug("JSON parsed successfully - keys: %s", list(result.keys()))
+        return result
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.error("JSON parse failed: %s, decrypted text: %s", exc, decrypted_text[:200])
+        raise ValueError(f"Invalid JSON in token: {str(exc)}") from exc
+
+
+def _decrypt_bayi_token_gcm(token: str, secret_key: bytes) -> dict:
+    """Decrypt versioned AES-GCM bayi token (nonce || ciphertext+tag, base64)."""
+    if AES is None:
+        raise ValueError(
+            "pycryptodome is required for bayi token decryption. Install with: pip install pycryptodome",
+        )
+
+    try:
+        raw = base64.b64decode(token, validate=True)
+    except BACKGROUND_INFRA_ERRORS as exc:
+        raise ValueError(f"Invalid base64 token: {str(exc)}") from exc
+
+    nonce_size = 12
+    if len(raw) <= nonce_size + 16:
+        raise ValueError("GCM token too short")
+
+    nonce = raw[:nonce_size]
+    tag = raw[-16:]
+    encrypted = raw[nonce_size:-16]
+    cipher = AES.new(secret_key, AES.MODE_GCM, nonce=nonce)
+    try:
+        decrypted_text = cipher.decrypt_and_verify(encrypted, tag).decode("utf-8")
+    except BACKGROUND_INFRA_ERRORS as exc:
+        raise ValueError(f"GCM decryption failed: {str(exc)}") from exc
+
+    try:
+        return json.loads(decrypted_text)
+    except BACKGROUND_INFRA_ERRORS as exc:
+        raise ValueError(f"Invalid JSON in token: {str(exc)}") from exc
+
 
 def decrypt_bayi_token(encrypted_token: str, key: str) -> dict:
     """
@@ -51,7 +127,7 @@ def decrypt_bayi_token(encrypted_token: str, key: str) -> dict:
     Raises:
         ValueError: If decryption fails or token is invalid
     """
-    if AES is None or unpad is None:
+    if AES is None:
         raise ValueError(
             "pycryptodome is required for bayi token decryption. Install with: pip install pycryptodome",
         )
@@ -65,46 +141,17 @@ def decrypt_bayi_token(encrypted_token: str, key: str) -> dict:
             token.endswith("=="),
         )
 
-        # Generate secret key using SHA256 (same as CryptoJS)
-        secret_key = hashlib.sha256(key.encode("utf-8")).digest()
+        secret_key = _derive_bayi_secret_key(key)
 
-        # Decode base64 token (CryptoJS uses base64 encoding)
-        try:
-            encrypted_bytes = base64.b64decode(token, validate=True)
-            logger.debug(
-                "Base64 decoded successfully - encrypted bytes length: %d",
-                len(encrypted_bytes),
-            )
-        except BACKGROUND_INFRA_ERRORS as e:
-            logger.error("Base64 decode failed: %s, token preview: %s", e, token[:50])
-            raise ValueError(f"Invalid base64 token: {str(e)}") from e
+        if token.startswith(_BAYI_GCM_PREFIX):
+            return _decrypt_bayi_token_gcm(token[len(_BAYI_GCM_PREFIX) :], secret_key)
 
-        # Decrypt using AES-ECB mode
-        cipher = AES.new(secret_key, AES.MODE_ECB)
-        decrypted_bytes = cipher.decrypt(encrypted_bytes)
-        logger.debug("Decryption successful - decrypted bytes length: %d", len(decrypted_bytes))
-
-        # Remove PKCS7 padding
-        try:
-            decrypted_text = unpad(decrypted_bytes, AES.block_size).decode("utf-8")
-            logger.debug("Unpadded successfully - decrypted text length: %d", len(decrypted_text))
-        except BACKGROUND_INFRA_ERRORS as e:
-            logger.error("Unpad failed: %s, decrypted bytes preview: %s", e, decrypted_bytes[:50])
-            raise ValueError(f"Padding removal failed: {str(e)}") from e
-
-        # Parse JSON
-        try:
-            result = json.loads(decrypted_text)
-            logger.debug("JSON parsed successfully - keys: %s", list(result.keys()))
-            return result
-        except BACKGROUND_INFRA_ERRORS as e:
-            logger.error("JSON parse failed: %s, decrypted text: %s", e, decrypted_text[:200])
-            raise ValueError(f"Invalid JSON in token: {str(e)}") from e
+        return _decrypt_bayi_token_ecb(token, secret_key)
     except ValueError as value_error:
         raise value_error
-    except BACKGROUND_INFRA_ERRORS as e:
-        logger.error("Bayi token decryption failed: %s", e, exc_info=True)
-        raise ValueError(f"Invalid token: {str(e)}") from e
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.error("Bayi token decryption failed: %s", exc, exc_info=True)
+        raise ValueError(f"Invalid token: {str(exc)}") from exc
 
 
 def validate_bayi_token_body(body: dict) -> bool:

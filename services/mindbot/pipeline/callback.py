@@ -25,7 +25,7 @@ from services.mindbot.core.conv_gate import (
     redis_acquire_conv_gate_async,
     redis_release_conv_gate_async,
 )
-from services.mindbot.bind.picture_handler import try_handle_bind_picture
+from services.mindbot.tools.dispatch import try_handle_mindbot_tools
 from services.mindbot.core.dify_reply import mindbot_dify_chat_blocking
 from services.mindbot.dify.usage_parse import parse_dify_usage_from_blocking_response
 from services.mindbot.education.metrics import (
@@ -580,10 +580,11 @@ async def execute_mindbot_pipeline(
         msg_id=msg_id_for_usage or "",
     )
 
-    bind_result = await try_handle_bind_picture(
+    bind_result = await try_handle_mindbot_tools(
         cfg=cfg,
         body=body,
         inbound_msg_type=inbound_msg_type,
+        text_in=text_in,
         sender_staff_id=sender_staff,
         session_webhook_valid=session_webhook_valid,
         session_webhook_pinned_ip=session_webhook_pinned_ip,

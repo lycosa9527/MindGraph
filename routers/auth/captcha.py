@@ -216,10 +216,9 @@ async def generate_captcha(
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=error_msg)
 
         logger.debug(
-            "Generated captcha: %s for session: %s... (code: %s)",
+            "Generated captcha: %s for session: %s...",
             session_id,
             session_token[:8],
-            code,
         )
 
         return {

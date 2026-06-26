@@ -265,7 +265,8 @@ async def set_password_with_sms(
             detail=Messages.error("password_change_failed", lang),
         ) from exc
 
-    await invalidate_user_cache_after_password_write(user, "Set password (SMS, logged in, no session revoke)")
+    await invalidate_user_cache_after_password_write(user, "Set password (SMS, logged in)")
+    await revoke_refresh_tokens_and_sessions(user.id, "password_set_sms")
     client_ip = get_client_ip(http_request) if http_request else "unknown"
     logger.info(
         "[TokenAudit] set-password-with-sms: user=%s, ip=%s",

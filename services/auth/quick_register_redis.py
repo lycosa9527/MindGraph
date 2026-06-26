@@ -21,6 +21,8 @@ from typing import Any, Awaitable, Optional, Tuple, cast
 
 from redis.exceptions import RedisError
 
+from config.settings import config
+
 from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
@@ -447,6 +449,8 @@ async def is_room_code_guess_blocked(client_ip: str, token: str) -> bool:
         raw_ip, raw_bind = await redis.mget(ikey, bkey)
     except RedisError as exc:
         logger.warning("[QuickReg] room guess mget: %s", exc)
+        if not config.debug:
+            return True
         return False
     n_ip = _redis_count_from_raw(raw_ip)
     n_b = _redis_count_from_raw(raw_bind)

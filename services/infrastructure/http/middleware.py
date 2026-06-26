@@ -17,7 +17,6 @@ Proprietary License
 
 import json
 import logging
-import secrets
 import time
 from urllib.parse import urlparse
 
@@ -39,6 +38,13 @@ from services.infrastructure.utils.spa_handler import (
     should_apply_no_cache,
 )
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR, resolve_authenticated_user_optional
+from utils.auth.request_helpers import (
+    CSRF_COOKIE_NAME,
+    CSRF_HEADER_NAME,
+    get_client_ip,
+    is_https as request_is_https,
+    set_csrf_cookie,
+)
 from utils.db.rls_context import RlsContext, reset_rls_context, set_rls_context
 
 logger = logging.getLogger(__name__)
@@ -48,13 +54,21 @@ MAX_REQUEST_BODY_SIZE = 5 * 1024 * 1024  # 5MB
 
 
 def is_https(request: Request) -> bool:
-    """Check if request is over HTTPS."""
-    forwarded_proto = request.headers.get("X-Forwarded-Proto", "").lower()
-    if forwarded_proto == "https":
-        return True
-    if hasattr(request.url, "scheme") and request.url.scheme == "https":
-        return True
-    return False
+    """Check if request is over HTTPS (shared with auth cookie helpers)."""
+    return request_is_https(request)
+
+
+async def block_chat_static_uploads(request: Request, call_next):
+    """
+    Block direct HTTP access to workshop chat uploads on disk.
+
+    Chat attachments must be fetched via authenticated
+    ``/api/chat/attachments/{id}/download`` instead of world-readable
+    ``/static/chat/`` URLs.
+    """
+    if request.url.path.startswith("/static/chat/"):
+        return JSONResponse(status_code=404, content={"detail": "Not found"})
+    return await call_next(request)
 
 
 async def limit_request_body_size(request: Request, call_next):
@@ -144,9 +158,8 @@ async def csrf_protection(request: Request, call_next):
                 if origin_host == request_host:
                     pass  # Same origin, allow
                 else:
-                    # Cross-origin: Check if origin is allowed
-                    # In production, you might want to maintain a whitelist
-                    # For now, we rely on SameSite cookies which provide good protection
+                    # Cross-origin: logged only — intentional SameSite-cookie CSRF tradeoff.
+                    # Tighten with Origin allowlist or mandatory X-CSRF-Token if policy changes.
                     logger.warning(
                         "Cross-origin request detected: Origin=%s, Host=%s",
                         origin_host,
@@ -156,29 +169,37 @@ async def csrf_protection(request: Request, call_next):
             except (ValueError, AttributeError) as e:
                 logger.debug("Origin validation error (non-critical): %s", e)
 
-        # Check for CSRF token in header (optional - for additional protection)
-        csrf_token = request.headers.get("X-CSRF-Token")
-        if csrf_token:
-            # Validate CSRF token from cookie
-            csrf_cookie = request.cookies.get("csrf_token")
-            if csrf_cookie and csrf_token != csrf_cookie:
+        # Require double-submit CSRF token for cookie-authenticated mutations.
+        # Migration-safe: when the access_token cookie exists but no csrf_token
+        # cookie has been issued yet (e.g. sessions created before this rollout),
+        # allow the request once and let the response below bootstrap the cookie.
+        # Strict match is enforced as soon as the csrf_token cookie is present.
+        csrf_cookie = request.cookies.get(CSRF_COOKIE_NAME)
+        if request.cookies.get("access_token"):
+            if csrf_cookie:
+                csrf_header = request.headers.get(CSRF_HEADER_NAME)
+                if not csrf_header or csrf_header != csrf_cookie:
+                    logger.warning("CSRF token missing or invalid for %s", request.url.path)
+                    return JSONResponse(
+                        status_code=403,
+                        content={"detail": "Invalid or missing CSRF token"},
+                    )
+            else:
+                logger.info("CSRF bootstrap: issuing csrf_token cookie for %s", request.url.path)
+                security_log.csrf_bootstrap(request.url.path, ip=get_client_ip(request))
+        elif request.headers.get(CSRF_HEADER_NAME):
+            csrf_header = request.headers.get(CSRF_HEADER_NAME)
+            if csrf_cookie and csrf_header != csrf_cookie:
                 logger.warning("CSRF token mismatch for %s", request.url.path)
                 return JSONResponse(status_code=403, content={"detail": "Invalid CSRF token"})
 
     response = await call_next(request)
 
-    # Set CSRF token cookie for authenticated users (if not already set)
-    # This enables double-submit cookie pattern
-    if request.cookies.get("access_token") and not request.cookies.get("csrf_token"):
-        csrf_token = secrets.token_urlsafe(32)
-        response.set_cookie(
-            key="csrf_token",
-            value=csrf_token,
-            httponly=False,  # JavaScript needs to read it for X-CSRF-Token header
-            secure=is_https(request) if hasattr(request, "url") else False,
-            samesite="strict",  # Strict SameSite for CSRF token
-            max_age=7 * 24 * 60 * 60,  # 7 days
-        )
+    # Bootstrap the double-submit cookie for authenticated users that don't have
+    # one yet (new logins are seeded in set_auth_cookies; this covers pre-existing
+    # sessions and any safe-method request that arrives first).
+    if request.cookies.get("access_token") and not request.cookies.get(CSRF_COOKIE_NAME):
+        set_csrf_cookie(response, request)
 
     return response
 
@@ -195,7 +216,6 @@ async def add_security_headers(request: Request, call_next):
 
     CSP Policy Notes:
     - 'unsafe-inline' scripts: Required for config bootstrap and admin onclick handlers
-    - 'unsafe-eval': Required for D3.js library (data transformations)
     - ws:/wss:: Required for Kitty Agent WebSocket connections
     - data: URIs: Required for canvas-to-image conversions
     - DEBUG mode: Allows Swagger UI CDN (cdn.jsdelivr.net) for /docs endpoint
@@ -233,7 +253,7 @@ async def add_security_headers(request: Request, call_next):
         # Production: Strict CSP without external CDN access
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            "script-src 'self' 'unsafe-inline'; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: http: https: blob:; "
             "font-src 'self' data:; "
@@ -249,6 +269,9 @@ async def add_security_headers(request: Request, call_next):
     # Permissions Policy (restrict access to browser features)
     # Only allow microphone (for Kitty Agent), disable everything else
     response.headers["Permissions-Policy"] = "microphone=(self), camera=(), geolocation=(), payment=()"
+
+    if is_https(request):
+        response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
 
     return response
 
@@ -278,6 +301,36 @@ async def add_cache_control_headers(request: Request, call_next):
         apply_no_cache_headers(response)
 
     return response
+
+
+async def enforce_streaming_body_limit(request: Request, call_next):
+    """
+    Enforce body size when Content-Length is absent (chunked uploads).
+
+    Complements ``limit_request_body_size`` which only inspects Content-Length.
+    """
+    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        content_length = request.headers.get("content-length")
+        if not content_length:
+            body = await request.body()
+            if len(body) > MAX_REQUEST_BODY_SIZE:
+                client_ip = get_client_ip(request)
+                security_log.input_validation_failed(
+                    field="request_body",
+                    reason=(
+                        f"streamed size {len(body) / 1024 / 1024:.1f}MB exceeds "
+                        f"{MAX_REQUEST_BODY_SIZE / 1024 / 1024:.0f}MB limit"
+                    ),
+                    ip=client_ip,
+                    value_size=len(body),
+                )
+                return JSONResponse(
+                    status_code=413,
+                    content={
+                        "detail": (f"Request body too large. Maximum size is {MAX_REQUEST_BODY_SIZE // 1024 // 1024}MB")
+                    },
+                )
+    return await call_next(request)
 
 
 class SelectiveGZipMiddleware:
@@ -437,7 +490,7 @@ async def log_requests(request: Request, call_next):
             "Request: %s %s from %s Response: %s in %.3fs",
             request.method,
             log_path,
-            request.client.host if request.client else "unknown",
+            get_client_ip(request),
             response.status_code,
             response_time,
         )
@@ -545,6 +598,8 @@ def setup_middleware(app: FastAPI):
     # Custom middleware (registered as decorators, executed in order)
     # Note: Middleware executes in reverse order of registration
     # So log_requests runs first, then add_cache_control_headers, etc.
+    app.middleware("http")(block_chat_static_uploads)
+    app.middleware("http")(enforce_streaming_body_limit)
     app.middleware("http")(limit_request_body_size)
     app.middleware("http")(abuseipdb_middleware)
     app.middleware("http")(csrf_protection)

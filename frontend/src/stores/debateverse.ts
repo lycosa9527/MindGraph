@@ -148,8 +148,19 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
   // Abort controllers for cancelling streams
   const abortControllers = ref<Record<number, AbortController | null>>({})
 
-  // Recent debates for localStorage
+  // Recent debates for sessionStorage
   const recentDebates = ref<RecentDebate[]>([])
+
+  function purgeLegacyDebateverseLocalStorage(): void {
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+      localStorage.removeItem(CURRENT_SESSION_KEY)
+    } catch {
+      void 0
+    }
+  }
+
+  purgeLegacyDebateverseLocalStorage()
 
   // =========================================================================
   // Computed
@@ -203,15 +214,15 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
         recentDebates: recentDebates.value,
         savedAt: Date.now(),
       }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data))
     } catch (error) {
-      console.warn('[DebateVerseStore] Failed to save to localStorage:', error)
+      console.warn('[DebateVerseStore] Failed to save to sessionStorage:', error)
     }
   }
 
   function loadFromStorage(): boolean {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY)
+      const raw = sessionStorage.getItem(STORAGE_KEY)
       if (!raw) return false
 
       const data: LocalStorageData = JSON.parse(raw)
@@ -227,9 +238,9 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
       return true
     } catch (error) {
       if (import.meta.env.DEV) {
-        console.warn('[DebateVerseStore] Failed to load from localStorage:', error)
+        console.warn('[DebateVerseStore] Failed to load from sessionStorage:', error)
       }
-      localStorage.removeItem(STORAGE_KEY)
+      sessionStorage.removeItem(STORAGE_KEY)
       return false
     }
   }
@@ -311,15 +322,15 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
         userPosition: userPosition.value,
         savedAt: Date.now(),
       }
-      localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify(data))
+      sessionStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify(data))
     } catch (error) {
-      console.warn('[DebateVerseStore] Failed to save current session to localStorage:', error)
+      console.warn('[DebateVerseStore] Failed to save current session to sessionStorage:', error)
     }
   }
 
   function loadCurrentSessionFromStorage(): void {
     try {
-      const raw = localStorage.getItem(CURRENT_SESSION_KEY)
+      const raw = sessionStorage.getItem(CURRENT_SESSION_KEY)
       if (!raw) return
 
       const data: CurrentSessionStorage = JSON.parse(raw)
@@ -327,7 +338,7 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
       // Check TTL - restore if less than 24 hours old
       const age = Date.now() - data.savedAt
       if (age > 24 * 60 * 60 * 1000) {
-        localStorage.removeItem(CURRENT_SESSION_KEY)
+        sessionStorage.removeItem(CURRENT_SESSION_KEY)
         return
       }
 
@@ -343,17 +354,17 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
           console.warn('[DebateVerseStore] Failed to reload session from storage:', error)
           // Clear invalid session
           currentSessionId.value = null
-          localStorage.removeItem(CURRENT_SESSION_KEY)
+          sessionStorage.removeItem(CURRENT_SESSION_KEY)
         })
       }
     } catch (error) {
-      console.warn('[DebateVerseStore] Failed to load current session from localStorage:', error)
-      localStorage.removeItem(CURRENT_SESSION_KEY)
+      console.warn('[DebateVerseStore] Failed to load current session from sessionStorage:', error)
+      sessionStorage.removeItem(CURRENT_SESSION_KEY)
     }
   }
 
   function clearCurrentSessionStorage(): void {
-    localStorage.removeItem(CURRENT_SESSION_KEY)
+    sessionStorage.removeItem(CURRENT_SESSION_KEY)
   }
 
   // Auto-save current session on changes

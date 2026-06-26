@@ -66,6 +66,7 @@ from services.infrastructure.security.crowdsec_blocklist_service import (
 from services.infrastructure.security.fail2ban_integration.startup_gate import (
     enforce_fail2ban_startup_or_exit,
 )
+from services.infrastructure.security.production_secrets_guard import enforce_production_security_guards
 from services.infrastructure.utils.browser import log_browser_diagnostics
 from services.infrastructure.utils.launch_commands import lines_playwright_startup_critical
 from services.llm import llm_service
@@ -82,7 +83,8 @@ from services.monitoring.error_retention_scheduler import start_error_retention_
 from services.utils.temp_image_cleaner import start_cleanup_scheduler
 from services.utils.temp_export_cleaner import start_export_cleanup_scheduler
 from utils.auth import AUTH_MODE, warmup_jwt_secret_async
-from utils.auth.config import ADMIN_PHONES
+from utils.auth.config import ADMIN_PHONES, TRUSTED_PROXY_IPS
+from utils.auth.request_helpers import describe_trusted_proxy_config
 from utils.dependency_checker import DependencyError, check_system_dependencies
 
 _log_geolite_country_mmdb_startup_status = log_geolite_country_mmdb_startup_status
@@ -105,12 +107,29 @@ def _log_security_startup_posture() -> None:
         openapi_schema,
     )
     logger.info("[SECURITY] AUTH_MODE=%s", AUTH_MODE)
+    proxy_summary = describe_trusted_proxy_config()
+    if not config.debug and not any(ip.strip() for ip in TRUSTED_PROXY_IPS):
+        logger.warning("[SECURITY] %s", proxy_summary)
+    else:
+        logger.info("[SECURITY] %s", proxy_summary)
     if AUTH_MODE == "enterprise":
         logger.warning(
             "[SECURITY] AUTH_MODE=enterprise: JWT validation is disabled for all requests. "
             "Use only on isolated networks (VPN, private LAN). "
             "Never expose this deployment directly to the public Internet."
         )
+    if not config.debug:
+        if any(phone.strip() for phone in ADMIN_PHONES):
+            logger.warning(
+                "[SECURITY] ADMIN_PHONES is set: matching users receive env-granted superadmin. "
+                "Leave empty on internet-facing production unless intentional."
+            )
+        admin_user_ids_raw = os.getenv("ADMIN_USER_IDS", "").strip()
+        if admin_user_ids_raw:
+            logger.warning(
+                "[SECURITY] ADMIN_USER_IDS is set: listed user IDs receive env-granted superadmin. "
+                "Leave empty on internet-facing production unless intentional."
+            )
     if not config.debug and config.log_level == "DEBUG":
         logger.warning(
             "[SECURITY] LOG_LEVEL=DEBUG while DEBUG=False: verbose logs (including prompts in some code paths) "
@@ -201,6 +220,7 @@ async def lifespan(fastapi_app: FastAPI):
         logger.debug("[LIFESPAN] Starting lifespan initialization...")
         logger.debug("[LIFESPAN] Signal handlers registered")
         _log_security_startup_posture()
+        enforce_production_security_guards()
         _log_geolite_country_mmdb_startup_status()
         enforce_fail2ban_startup_or_exit()
 

@@ -7,11 +7,13 @@ All Rights Reserved
 Proprietary License
 """
 
+import hmac
 import logging
+import os
 from datetime import UTC, datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -58,13 +60,34 @@ class DeviceResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+def _require_device_registration_secret(
+    x_device_registration_secret: Optional[str] = Header(None, alias="X-Device-Registration-Secret"),
+) -> None:
+    """Reject device registration when provisioning secret is missing or wrong."""
+    expected = os.getenv("DEVICE_REGISTRATION_SECRET", "").strip()
+    if not expected:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Device registration is not configured (set DEVICE_REGISTRATION_SECRET)",
+        )
+    if not x_device_registration_secret or not hmac.compare_digest(
+        x_device_registration_secret.strip(),
+        expected,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid device registration secret",
+        )
+
+
 @router.post("/register", response_model=DeviceResponse)
 async def register_device(
     body: DeviceRegisterRequest,
+    _secret: None = Depends(_require_device_registration_secret),
     _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """Register a new ESP32 watch device (system RLS — unauthenticated)."""
+    """Register a new ESP32 watch device (requires ``X-Device-Registration-Secret``)."""
     result = await db.execute(select(Device).where(Device.watch_id == body.watch_id))
     existing = result.scalar_one_or_none()
     if existing:
@@ -199,22 +222,32 @@ async def unassign_device(
     return {"success": True}
 
 
-@router.get("/{watch_id}/status", response_model=DeviceResponse)
+class DeviceStatusResponse(BaseModel):
+    """Device status for ESP32 polling (no student PII)."""
+
+    id: int
+    watch_id: str
+    student_id: Optional[int] = None
+    status: str
+    last_seen: Optional[datetime] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+@router.get("/{watch_id}/status", response_model=DeviceStatusResponse)
 async def get_device_status(
     watch_id: str,
+    _secret: None = Depends(_require_device_registration_secret),
     _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """Get device status (public endpoint for watch polling; system RLS)."""
-    result = await db.execute(select(Device).options(selectinload(Device.student)).where(Device.watch_id == watch_id))
+    """Get device status for watch polling (requires ``X-Device-Registration-Secret``)."""
+    result = await db.execute(select(Device).where(Device.watch_id == watch_id))
     device = result.scalar_one_or_none()
     if not device:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Device not found",
         )
-
-    data = DeviceResponse.model_validate(device).model_dump()
-    if device.student:
-        data["student_name"] = device.student.name
-    return data
+    return DeviceStatusResponse.model_validate(device)

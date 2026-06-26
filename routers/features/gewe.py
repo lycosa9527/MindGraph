@@ -34,8 +34,10 @@ from models.domain.gewe_responses import (
 )
 from routers.auth.dependencies import require_settings_gewe
 from services.gewe import GeweService
+from services.infrastructure.security.gewe_webhook_auth import verify_gewe_webhook_request
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth.admin_scope import AdminScope
+from utils.auth.request_helpers import get_client_ip
 from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 
 logger = logging.getLogger(__name__)
@@ -46,16 +48,6 @@ router = APIRouter(prefix="/api/gewe", tags=["Gewe WeChat"])
 # =============================================================================
 # Helper Functions
 # =============================================================================
-
-
-def _extract_client_ip(request: Request) -> str:
-    """Extract client IP from request, handling reverse proxy scenarios."""
-    return (
-        request.headers.get("X-Real-IP")
-        or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-        or (request.client.host if request.client else None)
-        or "unknown"
-    )
 
 
 # =============================================================================
@@ -565,34 +557,31 @@ async def gewe_webhook(
     For group chats, only responds when bot is @mentioned.
     For private chats, responds to all messages.
 
-    Note: Gewe does not send token in webhook requests; validation relies on
-    required Appid/Wxid fields.
+    Note: Requires ``GEWE_WEBHOOK_SECRET`` (HMAC via ``X-Gewe-Signature`` header).
+    Optional ``GEWE_WEBHOOK_ALLOWED_IPS`` restricts caller IPs.
 
     Request body follows GeweWebhookMessage structure.
     """
-    # Extract client IP for logging
-    client_ip = _extract_client_ip(request)
+    client_ip = get_client_ip(request)
 
-    # Parse request body
+    raw_body = await request.body()
+    verify_gewe_webhook_request(request, raw_body)
+
     try:
-        message_data = await request.json()
+        message_data = json.loads(raw_body)
     except (ValueError, json.JSONDecodeError) as e:
         logger.error("Failed to parse webhook JSON from IP %s: %s", client_ip, e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid JSON payload") from e
 
-    # Log full payload for debugging Gewe's feedback
-    payload_str = json.dumps(message_data, ensure_ascii=False, indent=2)
-    if len(payload_str) > 2000:
-        logger.info(
-            "📄 Full payload (truncated):\n%s\n... (truncated, total length: %d chars)",
-            payload_str[:2000],
+    payload_str = raw_body.decode("utf-8", errors="replace")
+    if len(payload_str) > 500:
+        logger.debug(
+            "Gewe webhook payload (truncated, %d chars): %s...",
             len(payload_str),
+            payload_str[:500],
         )
     else:
-        logger.info("📄 Full payload:\n%s", payload_str)
-
-    # Token verification: Gewe does not send token in webhook requests.
-    # Rely on URL obscurity and required Appid/Wxid validation instead.
+        logger.debug("Gewe webhook payload: %s", payload_str)
 
     # Handle test messages
     if "testMsg" in message_data:

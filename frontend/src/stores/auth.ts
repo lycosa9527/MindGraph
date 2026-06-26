@@ -38,12 +38,16 @@ import {
   normalizeSchoolTier,
 } from '@/constants/schoolTier'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
+import { getSafePostAuthPath } from '@/utils/authRedirect'
+import { refreshSessionAccessToken } from '@/utils/sessionRefresh'
+import { clearSavedLoginCredentials } from '@/utils/savedLoginCredentials'
 import {
   type AdminCapabilitiesPayload,
   hasSuperadminPanelAccess,
   roleHasPanelAccess,
 } from '@/utils/adminCapabilities'
 import { clearWorkshopChatCachesForUser } from '@/utils/workshopChatLocalCache'
+import { useMindMateStore } from '@/stores/mindmate'
 import { normalizeUserRole } from '@/utils/userRoleDisplay'
 import { DEFAULT_USER_AVATAR_EMOJI } from '@/utils/userAvatarEmoji'
 import {
@@ -453,6 +457,8 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem(USER_KEY)
     localStorage.removeItem(MODE_KEY)
     localStorage.removeItem('access_token')
+    clearSavedLoginCredentials()
+    useMindMateStore().reset()
     stopSessionMonitoring()
     useUIStore().setLanguagePolicyAllowZh(true)
   }
@@ -483,9 +489,8 @@ export const useAuthStore = defineStore('auth', () => {
         const normalizedUser = normalizeUser(data.user)
         setUser(normalizedUser)
         hasVerifiedAuthThisSession.value = true // Login is verification
-        if (data.access_token || data.token) setToken(data.access_token || data.token)
         startSessionMonitoring()
-        return { success: true, user: normalizedUser, token: data.access_token || data.token }
+        return { success: true, user: normalizedUser }
       }
 
       return { success: false, message: data.detail || data.message || 'Login failed' }
@@ -518,12 +523,8 @@ export const useAuthStore = defineStore('auth', () => {
         const normalizedUser = normalizeUser(userPayload)
         setUser(normalizedUser)
         hasVerifiedAuthThisSession.value = true
-        const accessToken = data.access_token as string | undefined
-        if (accessToken) {
-          setToken(accessToken)
-        }
         startSessionMonitoring()
-        return { success: true, user: normalizedUser, token: accessToken }
+        return { success: true, user: normalizedUser }
       }
 
       const detail = data.detail as string | undefined
@@ -660,27 +661,11 @@ export const useAuthStore = defineStore('auth', () => {
         }
       }
 
-      // If 401, try to refresh the token silently
+      // If 401, try to refresh the access token silently (refresh cookie may still be valid)
       if (response.status === 401) {
-        const refreshed = await refreshAccessToken()
-        if (refreshed) {
-          // Retry the auth check
-          const retryResponse = await fetch(`${API_BASE}/me`, {
-            credentials: 'same-origin',
-          })
-          if (retryResponse.ok) {
-            const data = await retryResponse.json()
-            if (data.user || data.id) {
-              setUser(data.user || data)
-              hasVerifiedAuthThisSession.value = true // Mark as verified
-              void loadAdminCapabilities()
-              // Only start monitoring if not already started
-              if (!sessionMonitorInterval.value) {
-                startSessionMonitoring()
-              }
-              return true
-            }
-          }
+        const recovered = await tryRecoverSessionFromRefresh()
+        if (recovered) {
+          return true
         }
       }
 
@@ -709,19 +694,9 @@ export const useAuthStore = defineStore('auth', () => {
       return { success: false, errorMessage: 'Headless export session' }
     }
     try {
-      const response = await fetch(`${API_BASE}/refresh`, {
-        method: 'POST',
-        credentials: 'same-origin',
-      })
-      if (!response.ok) {
-        let errorMessage: string | undefined
-        try {
-          const errorData = await response.json()
-          errorMessage = errorData.detail || errorData.message || undefined
-        } catch {
-          /* non-JSON error body */
-        }
-        return { success: false, errorMessage }
+      const ok = await refreshSessionAccessToken()
+      if (!ok) {
+        return { success: false, errorMessage: 'Token refresh failed' }
       }
       return { success: true }
     } catch (error) {
@@ -749,6 +724,39 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Refresh access token via httpOnly cookie, then load /me. Used when access JWT
+   * expired but the refresh session is still valid (common after idle tab time).
+   */
+  async function tryRecoverSessionFromRefresh(): Promise<boolean> {
+    const refreshResult = await refreshAccessToken()
+    if (!refreshResult.success) {
+      return false
+    }
+    try {
+      const response = await fetch(`${API_BASE}/me`, {
+        method: 'GET',
+        credentials: 'same-origin',
+      })
+      if (!response.ok) {
+        return false
+      }
+      const data = await response.json()
+      if (!(data.user || data.id)) {
+        return false
+      }
+      setUser(data.user || data)
+      hasVerifiedAuthThisSession.value = true
+      void loadAdminCapabilities()
+      if (!sessionMonitorInterval.value) {
+        startSessionMonitoring()
+      }
+      return true
+    } catch {
+      return false
+    }
+  }
+
   async function refreshUserProfile(options?: { bypassThrottle?: boolean }): Promise<boolean> {
     if (isMindgraphHeadlessExportSession() || !user.value) {
       return false
@@ -759,11 +767,15 @@ export const useAuthStore = defineStore('auth', () => {
     }
     lastProfileRefreshTime.value = now
     try {
-      const response = await fetch(`${API_BASE}/me`, {
+      let response = await fetch(`${API_BASE}/me`, {
         method: 'GET',
         credentials: 'same-origin',
       })
       if (response.status === 401) {
+        const recovered = await tryRecoverSessionFromRefresh()
+        if (recovered) {
+          return true
+        }
         handleTokenExpired('您的登录已过期，请重新登录')
         return false
       }
@@ -937,26 +949,31 @@ export const useAuthStore = defineStore('auth', () => {
       return
     }
 
-    stopSessionMonitoring()
-
-    // Clear auth state without redirect (unlike logout)
-    user.value = null
-    token.value = null
-    languagePrefsSeededForUserId.value = null
-    languagePrefsSeedInFlight = false
-    authVerificationBlockedByNetwork.value = false
-    sessionStorage.removeItem(USER_KEY)
-    // Clear any legacy localStorage
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('auth_user')
-
-    // Clear Vue Query cache
-    const queryClient = getQueryClient()
-    if (queryClient) {
-      queryClient.clear()
-    }
-
     void (async (): Promise<void> => {
+      const recovered = await tryRecoverSessionFromRefresh()
+      if (recovered || showSessionExpiredModal.value) {
+        return
+      }
+
+      stopSessionMonitoring()
+
+      // Clear auth state without redirect (unlike logout)
+      user.value = null
+      token.value = null
+      languagePrefsSeededForUserId.value = null
+      languagePrefsSeedInFlight = false
+      authVerificationBlockedByNetwork.value = false
+      sessionStorage.removeItem(USER_KEY)
+      // Clear any legacy localStorage
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('auth_user')
+
+      // Clear Vue Query cache
+      const queryClient = getQueryClient()
+      if (queryClient) {
+        queryClient.clear()
+      }
+
       let effectiveMode: typeof mode.value
       try {
         effectiveMode = await detectMode()
@@ -964,15 +981,13 @@ export const useAuthStore = defineStore('auth', () => {
         effectiveMode = mode.value
       }
       if (effectiveMode === 'bayi') {
-        const qp =
-          redirectPath !== undefined && redirectPath !== null && redirectPath !== ''
-            ? `?redirect=${encodeURIComponent(redirectPath)}`
-            : ''
+        const safeRedirect = redirectPath ? getSafePostAuthPath(redirectPath, '/auth') : ''
+        const qp = safeRedirect ? `?redirect=${encodeURIComponent(safeRedirect)}` : ''
         window.location.assign(`/auth${qp}`)
         return
       }
       if (redirectPath) {
-        setPendingRedirect(redirectPath)
+        setPendingRedirect(getSafePostAuthPath(redirectPath, '/auth'))
       }
       notify.warning(message || getTranslatedMessage('auth.sessionExpired'), 4000)
       showSessionExpiredModal.value = true
@@ -1021,7 +1036,9 @@ export const useAuthStore = defineStore('auth', () => {
   async function requireAuth(redirectUrl?: string): Promise<boolean> {
     const authenticated = await checkAuth()
     if (!authenticated) {
-      window.location.href = redirectUrl || '/auth'
+      window.location.href = redirectUrl
+        ? getSafePostAuthPath(redirectUrl, '/auth')
+        : '/auth'
       return false
     }
     return true

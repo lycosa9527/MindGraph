@@ -35,11 +35,29 @@ logger = logging.getLogger(__name__)
 
 
 def _resume_token_from_query(websocket: WebSocket) -> str:
-    """Return the reconnect resume token from either supported query name."""
+    """Return the reconnect resume token from query params (legacy; prefer subprotocol)."""
     resume_raw = (websocket.query_params.get("resume") or "").strip()
     if not resume_raw:
         resume_raw = (websocket.query_params.get("resume_token") or "").strip()
     return resume_raw
+
+
+def _resume_token_from_subprotocol(websocket: WebSocket) -> str:
+    """Return resume token from ``Sec-WebSocket-Protocol: mg-resume.<token>`` (not logged in URL)."""
+    for proto in websocket.scope.get("subprotocols") or []:
+        if isinstance(proto, str) and proto.startswith("mg-resume."):
+            token = proto[len("mg-resume.") :].strip()
+            if token:
+                return token
+    return ""
+
+
+def _resume_token_from_websocket(websocket: WebSocket) -> str:
+    """Prefer subprotocol resume token; fall back to query string for older clients."""
+    token = _resume_token_from_subprotocol(websocket)
+    if token:
+        return token
+    return _resume_token_from_query(websocket)
 
 
 async def _has_verified_resume_for_rate_limit(
@@ -53,7 +71,7 @@ async def _has_verified_resume_for_rate_limit(
     The token is not consumed here; the post-join path consumes it atomically
     only after the server has resolved the actual diagram id.
     """
-    resume_raw = _resume_token_from_query(websocket)
+    resume_raw = _resume_token_from_websocket(websocket)
     if not resume_raw:
         return False
     claims = await peek_join_resume_claims_async(resume_raw)
@@ -163,7 +181,7 @@ async def resolve_canvas_collab_join(
 
     diagram_id = workshop_info["diagram_id"]
 
-    resume_raw = _resume_token_from_query(websocket)
+    resume_raw = _resume_token_from_websocket(websocket)
 
     if resume_raw:
         logger.debug(

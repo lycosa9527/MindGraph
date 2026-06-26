@@ -44,6 +44,7 @@ from utils.auth import (
     get_client_ip,
     is_https,
 )
+from utils.auth.request_helpers import set_csrf_cookie
 from utils.auth.role_constants import normalize_role
 from utils.db.session_open import user_rls_session
 
@@ -478,3 +479,15 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str, 
         samesite="lax",
         max_age=60 * 60,  # 1 hour (should be cleared after showing notification)
     )
+
+    # Seed the double-submit CSRF cookie so the first authenticated mutation
+    # (including POST /api/auth/refresh and logout) carries a matching token.
+    set_csrf_cookie(response, http_request)
+
+
+def auth_session_json_metadata() -> dict[str, int | str]:
+    """Non-sensitive auth fields for login/register/refresh JSON (JWT is httpOnly cookie only)."""
+    return {
+        "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRY_MINUTES * 60,
+    }

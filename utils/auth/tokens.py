@@ -15,13 +15,14 @@ import logging
 import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Optional
 
 from fastapi import HTTPException, Request, status
 from fastapi.security import APIKeyHeader, HTTPBearer
 from jose import JWTError, jwt
 
 from .config import ACCESS_TOKEN_EXPIRY_MINUTES, JWT_ALGORITHM
-from .jwt_secret import get_jwt_secret
+from .jwt_secret import get_jwt_secret, get_jwt_secret_previous
 
 logger = logging.getLogger(__name__)
 
@@ -150,15 +151,34 @@ def decode_access_token(token: str) -> dict:
     Raises:
         HTTPException: If token is invalid or expired
     """
-    try:
-        payload = jwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
+    secrets_to_try = [get_jwt_secret()]
+    previous_secret = get_jwt_secret_previous()
+    if previous_secret and previous_secret not in secrets_to_try:
+        secrets_to_try.append(previous_secret)
+
+    last_error: Optional[JWTError] = None
+    for secret in secrets_to_try:
+        try:
+            payload = jwt.decode(token, secret, algorithms=[JWT_ALGORITHM])
+        except JWTError as decode_error:
+            last_error = decode_error
+            continue
+
+        if payload.get("type") != "access":
+            logger.warning("Invalid token type in access token: %s", payload.get("type"))
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token",
+            )
         return payload
-    except JWTError as e:
-        # Token expiration is expected behavior when users are inactive
-        # Log at DEBUG level to reduce noise, but still log invalid tokens as WARNING
-        error_msg = str(e)
-        if "expired" in error_msg.lower() or "exp" in error_msg.lower():
-            logger.debug("Token expired: %s (expected when user inactive)", e)
-        else:
-            logger.warning("Invalid token: %s", e)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token") from e
+
+    error = last_error if last_error is not None else JWTError("Invalid token")
+    error_msg = str(error)
+    if "expired" in error_msg.lower() or "exp" in error_msg.lower():
+        logger.debug("Token expired: %s (expected when user inactive)", error)
+    else:
+        logger.warning("Invalid token: %s", error)
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid or expired token",
+    ) from error

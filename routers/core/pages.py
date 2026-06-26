@@ -121,8 +121,8 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                 )
                 return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
         except BACKGROUND_INFRA_ERRORS as e:
-            logger.warning("Rate limit check failed (allowing request): %s", e)
-            # Fail-open: if rate limiting fails, allow request (backward compatibility)
+            logger.warning("Rate limit check failed (denying request): %s", e)
+            return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
 
         # Replay attack prevention: Check if token was already used
         try:
@@ -134,8 +134,8 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                 )
                 return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
         except BACKGROUND_INFRA_ERRORS as e:
-            logger.debug("Token usage check failed (allowing request): %s", e)
-            # Fail-open: if check fails, allow request (backward compatibility)
+            logger.warning("Token usage check failed (denying request): %s", e)
+            return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
 
         # Decrypt token (no DB needed for this)
         try:
@@ -148,7 +148,6 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                 "Bayi token decrypted successfully - body keys: %s",
                 list(body.keys()),
             )
-            logger.debug("Bayi token decrypted payload: %s", body)
         except ValueError as e:
             logger.error(
                 "Bayi token decryption failed: %s - redirecting to %s",

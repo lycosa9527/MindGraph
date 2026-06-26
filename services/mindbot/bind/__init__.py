@@ -1,1 +1,1 @@
-"""DingTalk QR account binding pre-flight for MindBot picture messages."""
+"""DingTalk rotating bind code ingress for MindBot text messages."""

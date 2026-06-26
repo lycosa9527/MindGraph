@@ -129,8 +129,8 @@ async def send_sms_code(
     if purpose in ("login", "reset_password"):
         if await any_user_id_with_phone(phone) is None:
             if purpose == "login":
-                error_msg = Messages.error("phone_not_registered_login", lang)
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+                error_msg = Messages.error("login_failed_phone_not_found", lang, 1)
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_msg)
             error_msg = Messages.error("phone_not_registered_reset", lang)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
@@ -361,8 +361,8 @@ async def _send_sms_code_with_purpose(
     if purpose in ("login", "reset_password"):
         if await any_user_id_with_phone(phone) is None:
             if purpose == "login":
-                error_msg = Messages.error("phone_not_registered_login", lang)
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+                error_msg = Messages.error("login_failed_phone_not_found", lang, 1)
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_msg)
             error_msg = Messages.error("phone_not_registered_reset", lang)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 

@@ -1,7 +1,3 @@
-/**
- * zh-tw UI � auth
- */
-
 export default {
   'auth.accountInfo': '賬戶信息',
   'auth.updateLog': '更新日誌',
@@ -178,12 +174,11 @@ export default {
   'auth.dingtalkBindUnbindError': '解綁失敗，請稍後重試',
   'auth.dingtalkBindRebind': '重新綁定',
   'auth.dingtalkBindTitle': '綁定釘釘賬戶',
-  'auth.dingtalkBindInstructions': '請在釘釘 MindBot 中發送此二維碼圖片（僅發送圖片即可）。',
-  'auth.dingtalkBindQrAlt': '釘釘綁定二維碼',
-  'auth.dingtalkBindCountdown': '二維碼將在 {s} 秒後過期',
-  'auth.dingtalkBindQrRefreshIn': '二維碼將在 {s} 秒後刷新',
-  'auth.dingtalkBindExpiredHint': '二維碼已過期，請重新生成。',
-  'auth.dingtalkBindRegenerate': '重新生成',
+  'auth.dingtalkBindInstructions':
+    'Send the 6-digit code shown below (for example 123-456) as a text message to your school DingTalk MindBot.',
+  'auth.dingtalkBindCountdown': 'Session expires in {s}s',
+  'auth.dingtalkBindExpiredHint': 'Bind session expired. Generate a new code.',
+  'auth.dingtalkBindRegenerate': 'Generate new code',
   'auth.dingtalkBindSuccess': '釘釘綁定成功',
   'auth.dingtalkBindMintError': '無法開始綁定，請稍後重試。',
   'auth.dingtalkBindPollRateLimited': '操作過於頻繁，請稍後再試。',
@@ -191,4 +186,15 @@ export default {
   'auth.dingtalkBindNoMindbot': '您的學校尚未啟用 MindBot。',
   'auth.dingtalkBindLinkedLabel': '已綁定（{staff}）',
   'auth.dingtalkBindAlreadyLinked': '當前已綁定：{staff}',
+  'auth.dingtalkBindPairWaiting': 'Waiting for MindBot to receive your code…',
+  'auth.dingtalkBindCodeHint': 'Send this code only — no extra text.',
+  'auth.dingtalkBindCodeRefreshIn': 'Code refreshes in {s}s',
+  'auth.dingtalkUnbindTitle': 'Unlink DingTalk account',
+  'auth.dingtalkUnbindInstructions':
+    'Send the code below from your linked DingTalk account to MindBot to confirm unlinking.',
+  'auth.dingtalkUnbindPairWaiting': 'Waiting for your linked DingTalk account to confirm…',
+  'auth.dingtalkUnbindCodeHint': 'Send this code only from your linked DingTalk account.',
+  'auth.dingtalkUnbindExpiredHint': 'Unlink session expired. Start again.',
+  'auth.dingtalkUnbindRegenerate': 'Start again',
+  'auth.dingtalkUnbindNotLinked': 'No DingTalk account is linked.',
 } as const

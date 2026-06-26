@@ -153,6 +153,7 @@ declare module 'vue' {
     DiagramSlotFullModal: typeof import('./components/canvas/DiagramSlotFullModal.vue')['default']
     DiagramTemplateInput: typeof import('./components/mindgraph/DiagramTemplateInput.vue')['default']
     DiagramTypeGrid: typeof import('./components/mindgraph/DiagramTypeGrid.vue')['default']
+    DingTalkPairModal: typeof import('./components/auth/DingTalkPairModal.vue')['default']
     DiscoveryGallery: typeof import('./components/mindgraph/DiscoveryGallery.vue')['default']
     DocumentCard: typeof import('./components/knowledge-space/DocumentCard.vue')['default']
     DocumentList: typeof import('./components/knowledge-space/DocumentList.vue')['default']

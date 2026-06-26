@@ -12,7 +12,7 @@ import {
   normalizeKatexDelimitersForMarkdownIt,
   replaceMathLivePlaceholdersForKatex,
 } from '@/composables/core/markdownKatexDelimiter'
-import { markdownKatexDomPurifyConfig } from '@/composables/core/markdownKatexSanitize'
+import { markdownKatexDomPurifyConfig, installMarkdownLinkSanitizeHook } from '@/composables/core/markdownKatexSanitize'
 
 type MarkdownItInstance = InstanceType<typeof MarkdownIt>
 
@@ -65,5 +65,6 @@ export function renderRichMarkdownHtmlImpl(content: string): string {
     replaceMathLivePlaceholdersForKatex(content)
   )
   const raw = md.render(prepared)
+  installMarkdownLinkSanitizeHook()
   return DOMPurify.sanitize(raw, markdownKatexDomPurifyConfig)
 }
