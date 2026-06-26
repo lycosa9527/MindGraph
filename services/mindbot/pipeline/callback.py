@@ -17,6 +17,7 @@ from typing import Any, Optional
 from clients.dify import AsyncDifyClient, DifyFile
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.diagram.generation_session_registry import register_generation_session
+from services.mindbot.diagram.generation_session_bind import resolve_mindbot_linked_user_id
 from services.mindbot.core.conv_gate import (
     conv_gate_enabled,
     conv_gate_poll_total_ms,
@@ -556,11 +557,18 @@ async def execute_mindbot_pipeline(
     if dify_conv:
         dify_inputs["mg_conversation_id"] = dify_conv
 
+    linked_user_id = await resolve_mindbot_linked_user_id(
+        cfg.organization_id,
+        sender_staff,
+        callback_token=getattr(cfg, "public_callback_token", None),
+    )
+
     await register_generation_session(
         channel="mindbot",
         dify_user_id=dify_user_id,
         organization_id=cfg.organization_id,
         conversation_id=dify_conv,
+        user_id=linked_user_id,
     )
 
     def _hdr(code: MindbotErrorCode) -> dict[str, str]:
@@ -578,6 +586,7 @@ async def execute_mindbot_pipeline(
         redis_bind_dify_conversation=_redis_bind_dify_conversation_async,
         pipeline_ctx=pipeline_ctx,
         msg_id=msg_id_for_usage or "",
+        linked_user_id=linked_user_id,
     )
 
     bind_result = await try_handle_mindbot_tools(

@@ -11,7 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.domain.auth import User
 from models.requests.requests_diagram import GenerateDingTalkRequest
 from services.diagram.generation_library_save import SAVE_LIMIT_REACHED
-from services.diagram.generation_session_registry import lookup_generation_session
+from services.diagram.generation_session_registry import (
+    lookup_generation_session,
+    lookup_solo_recent_mindbot_session,
+)
 from services.diagram.library_save_user_notices import (
     library_save_limit_notice,
     library_save_skip_user_notice,
@@ -59,9 +62,10 @@ def _dify_user_key_from_request(
 def _conversation_id_from_request(req: Optional[GenerateDingTalkRequest]) -> Optional[str]:
     if req is None:
         return None
-    conv = getattr(req, "conversation_id", None)
-    if isinstance(conv, str) and conv.strip():
-        return conv.strip()[:100]
+    for field_name in ("conversation_id", "mg_conversation_id"):
+        conv = getattr(req, field_name, None)
+        if isinstance(conv, str) and conv.strip():
+            return conv.strip()[:100]
     return None
 
 
@@ -163,6 +167,11 @@ async def resolve_diagram_save_identity(
     )
     if session is not None:
         return await _identity_from_session(db, session, dify_user_key=dify_key)
+
+    if not dify_key and not conversation_id:
+        solo_session = await lookup_solo_recent_mindbot_session()
+        if solo_session is not None:
+            return await _identity_from_session(db, solo_session, dify_user_key=dify_key)
 
     if dify_key:
         user_id, org_id = await resolve_user_and_org_from_dify_key(db, dify_key)

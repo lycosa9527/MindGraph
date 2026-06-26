@@ -151,6 +151,7 @@ async def mindbot_consume_dify_stream_batched(
     on_media: Optional[Callable[[str, dict[str, Any]], Awaitable[tuple[bool, bool]]]] = None,
     on_message_replace: Optional[Callable[[], Awaitable[None]]] = None,
     on_stream_started: Optional[Callable[[], None]] = None,
+    on_conversation_id: Optional[Callable[[str], Awaitable[None]]] = None,
 ) -> tuple[str, Optional[str], Optional[str], Optional[dict[str, int]], str]:
     """
     Consume Dify ``stream_chat`` SSE (ChunkChatCompletionResponse), batch ``answer`` deltas.
@@ -195,6 +196,7 @@ async def mindbot_consume_dify_stream_batched(
     outbound_count = 0
     media_sent = 0
     conv_id: Optional[str] = None
+    registered_conv_ids: set[str] = set()
     saw_answer = False
     wf_fallback_text: Optional[str] = None
     wf_file_hints: list[dict[str, Any]] = []
@@ -304,6 +306,9 @@ async def mindbot_consume_dify_stream_batched(
         cid = ev.get("conversation_id")
         if isinstance(cid, str) and cid.strip():
             conv_id = cid.strip()
+            if on_conversation_id is not None and conv_id not in registered_conv_ids:
+                registered_conv_ids.add(conv_id)
+                await on_conversation_id(conv_id)
 
         if evt == "error":
             err = ev.get("message") or ev.get("error") or "dify stream error"
@@ -331,6 +336,7 @@ async def mindbot_consume_dify_stream_batched(
                     on_media=on_media,
                     on_message_replace=on_message_replace,
                     on_stream_started=None,
+                    on_conversation_id=on_conversation_id,
                 )
             logger.warning(
                 "[MindBot] dify_sse_error_event %s err=%s code=%s status=%s",

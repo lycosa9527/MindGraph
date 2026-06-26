@@ -48,3 +48,4 @@ class DifyReplyContext:
     pipeline_ctx: str = ""
     session_webhook_pinned_ip: str = ""
     msg_id: str = ""
+    linked_user_id: Optional[int] = None

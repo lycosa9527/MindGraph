@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.127.0] - 2026-06-27
+
+> **DingTalk MindBot ↔ MindMate identity bridge — unified conversation history, generation-session registry, diagram preview outbound, and Dify HTTP error mapping.**
+
+### Added
+
+- **Generation session registry** — Redis links `conversation_id` / Dify `user` strings to MindGraph callers when MindMate or MindBot opens a chat; `/api/generate_dingtalk` resolves library-save identity without browser cookies ([`generation_session_registry.py`](services/diagram/generation_session_registry.py), [`dify_user_resolve.py`](services/diagram/dify_user_resolve.py)).
+- **MindBot linked-user resolution** — Staff bind lookup for generation-session registration when Dify omits the MindGraph user id ([`generation_session_bind.py`](services/mindbot/diagram/generation_session_bind.py)).
+- **DingTalk diagram preview outbound** — Preview PNGs from `temp_images` URLs are sent via DingTalk OpenAPI `sampleImageMsg`; card markdown strips inline image lines that AI-card templates fail to render ([`preview_image_outbound.py`](services/mindbot/diagram/preview_image_outbound.py), [`dify_paths.py`](services/mindbot/pipeline/dify_paths.py)).
+- **`mg_conversation_id` on generate_dingtalk** — Optional body field (same as `conversation_id`) for Dify HTTP tool inputs ([`requests_diagram.py`](models/requests/requests_diagram.py)).
+- **Dify conversation HTTP error mapping** — `DifyConversationNotFoundError` and related API errors map to proper HTTP status on conversation routes ([`dify_http_errors.py`](clients/dify_http_errors.py), [`dify_conversations.py`](routers/api/dify_conversations.py)).
+- **Tests** — Unified conversation merge, identity resolution, generation-session registry, preview outbound, and Dify conversation HTTP 404 ([`test_unified_conversations.py`](tests/test_unified_conversations.py), [`test_generation_session_registry.py`](tests/test_generation_session_registry.py), [`test_generate_dingtalk_identity.py`](tests/test_generate_dingtalk_identity.py), [`test_mindbot_diagram_preview_outbound.py`](tests/test_mindbot_diagram_preview_outbound.py), [`test_dify_conversations_http.py`](tests/test_dify_conversations_http.py)).
+
+### Changed
+
+- **Unified MindMate conversation list** — Web MindMate and bound DingTalk MindBot threads merge into one history; Dify user resolution probes MindBot keys before defaulting to web ([`unified_conversations.py`](services/dify/unified_conversations.py)).
+- **MindBot Dify stream** — Registers generation sessions on stream start and passes `conversation_id` through the pipeline ([`dify_stream.py`](services/mindbot/core/dify_stream.py), [`callback.py`](services/mindbot/pipeline/callback.py), [`context.py`](services/mindbot/pipeline/context.py)).
+- **MindBot reply delivery** — Text/card replies omit inline preview markdown; preview PNG is delivered separately after the answer ([`dify_paths.py`](services/mindbot/pipeline/dify_paths.py), [`media.py`](services/mindbot/outbound/media.py)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): syncs with root **`VERSION`** (5.127.0) on next `npm run build` (`prebuild` → `sync-version`).
+
 ## [5.126.0] - 2026-06-27
 
 > **MindMate ↔ canvas navigation, diagram preview cache, presentation spotlight/timer, and mind map fit/toolbar polish.**

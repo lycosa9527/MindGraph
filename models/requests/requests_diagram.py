@@ -270,6 +270,11 @@ class GenerateDingTalkRequest(BaseModel):
         max_length=100,
         description="Optional Dify sys.conversation_id for logging and correlation",
     )
+    mg_conversation_id: Optional[str] = Field(
+        None,
+        max_length=100,
+        description="Same as conversation_id; use {{inputs.mg_conversation_id}} from MindBot/MindMate inputs",
+    )
 
     @field_validator("language")
     @classmethod
