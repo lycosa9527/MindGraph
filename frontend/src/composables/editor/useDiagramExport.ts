@@ -4,10 +4,11 @@
  */
 import { ref } from 'vue'
 
+import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import { useNotifications } from '@/composables'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useUIStore } from '@/stores/ui'
-import { apiRequest } from '@/utils/apiClient'
+import { apiRequestJson } from '@/utils/apiClient'
 import { getDiagramCanvasHtmlToImageOptions } from '@/utils/diagramHtmlToImage'
 import {
   prepareDiagramCanvasForRasterCapture,
@@ -36,12 +37,16 @@ function triggerDownloadBlob(blob: Blob, filename: string): void {
 }
 
 function logDiagramExport(format: string): void {
-  apiRequest('/api/activity/diagram_export', {
+  apiRequestJson<Record<string, unknown>>('/api/activity/diagram_export', {
     method: 'POST',
     body: JSON.stringify({ format }),
-  }).catch(() => {
-    /* Fire-and-forget; do not fail export if log fails */
   })
+    .then((body) => {
+      applyThinkingCoinMutation(extractThinkingCoinsFooter(body))
+    })
+    .catch(() => {
+      /* Fire-and-forget; do not fail export if log fails */
+    })
 }
 
 export interface UseDiagramExportOptions {

@@ -14,10 +14,18 @@ import logging
 import time
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
+from services.auth.thinking_coin.token_usage_link import build_token_usage_snapshot, merge_usage_dicts
+from services.auth.thinking_coin.event_hub import mutation_to_footer
+from services.auth.thinking_coin.usage_wire import (
+    assert_llm_usage_budget,
+    thinking_coin_post_llm_success_mutation,
+    thinking_coins_apply_to_user,
+)
 from services.infrastructure.http.error_handler import LLMServiceError
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.monitoring.error_reporting import record_failure
 from services.utils.error_types import LLM_PIPELINE_ERRORS
+from utils.auth.thinking_coin_config import THINKING_COIN_MODE_BATCH_INNER
 
 logger = logging.getLogger(__name__)
 
@@ -265,15 +273,25 @@ class LLMMultiService:
             len(physical_models),
         )
 
+        if user_id is not None:
+            await assert_llm_usage_budget(
+                user_id,
+                organization_id,
+                request_type,
+                estimated_tokens=max_tokens,
+            )
+
         queue = asyncio.Queue()
+        batch_usage_parts: list[dict[str, int]] = []
 
         async def stream_single(physical_model: str):
             """Stream from one LLM, put chunks in queue."""
             start_time = time.time()
             token_count = 0
+            stream_usage: dict[str, int] = {}
 
             try:
-                async for token in self.llm_service.chat_stream(
+                async for chunk in self.llm_service.chat_stream(
                     prompt=prompt,
                     model=physical_model,
                     temperature=temperature,
@@ -288,22 +306,44 @@ class LLMMultiService:
                     session_id=session_id,
                     conversation_id=conversation_id,
                     skip_load_balancing=True,
+                    yield_structured=True,
+                    thinking_coin_mode=THINKING_COIN_MODE_BATCH_INNER,
                     **kwargs,
                 ):
-                    token_count += 1
                     logical_model = physical_to_logical.get(physical_model, physical_model)
-                    await queue.put(
-                        {
-                            "event": "token",
-                            "llm": logical_model,
-                            "token": token,
-                            "timestamp": time.time(),
-                        }
-                    )
+                    if isinstance(chunk, dict):
+                        chunk_type = chunk.get("type")
+                        if chunk_type == "usage":
+                            usage_raw = chunk.get("usage")
+                            if isinstance(usage_raw, dict):
+                                stream_usage = merge_usage_dicts([stream_usage, usage_raw])
+                        elif chunk_type == "token":
+                            token_text = str(chunk.get("content") or "")
+                            if token_text:
+                                token_count += 1
+                                await queue.put(
+                                    {
+                                        "event": "token",
+                                        "llm": logical_model,
+                                        "token": token_text,
+                                        "timestamp": time.time(),
+                                    }
+                                )
+                    elif chunk:
+                        token_count += 1
+                        await queue.put(
+                            {
+                                "event": "token",
+                                "llm": logical_model,
+                                "token": str(chunk),
+                                "timestamp": time.time(),
+                            }
+                        )
 
-                # LLM completed successfully
                 duration = time.time() - start_time
                 logical_model = physical_to_logical.get(physical_model, physical_model)
+                if stream_usage:
+                    batch_usage_parts.append(stream_usage)
                 await queue.put(
                     {
                         "event": "complete",
@@ -366,6 +406,35 @@ class LLMMultiService:
             len(physical_models),
             total_duration,
         )
+
+        if success_count > 0 and user_id is not None and await thinking_coins_apply_to_user(user_id, organization_id):
+            merged_usage = merge_usage_dicts(batch_usage_parts)
+            metadata = {
+                "user_id": user_id,
+                "organization_id": organization_id,
+                "request_type": request_type,
+                "diagram_type": diagram_type,
+                "endpoint_path": endpoint_path,
+                "session_id": session_id,
+                "conversation_id": conversation_id,
+            }
+            snapshot = build_token_usage_snapshot(
+                merged_usage,
+                metadata,
+                physical_models[0] if physical_models else "qwen",
+                total_duration,
+            )
+            coin_mutation = await thinking_coin_post_llm_success_mutation(
+                user_id,
+                organization_id,
+                request_type,
+                snapshot,
+            )
+            if coin_mutation.eligible:
+                yield {
+                    "event": "thinking_coins",
+                    "thinking_coins": mutation_to_footer(coin_mutation),
+                }
 
     async def generate_race(
         self,

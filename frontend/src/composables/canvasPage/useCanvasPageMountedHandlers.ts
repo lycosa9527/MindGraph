@@ -138,15 +138,9 @@ export function useCanvasPageMountedHandlers(options: {
           !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
         )
           return
-        if (!inlineRecStore.isReady) return
         if (diagramStore.type === 'concept_map') {
           if (!llmResultsStore.selectedModel) {
-            notify.warning(
-              t(
-                'notification.conceptMapTabNeedsAi',
-                'Please enable AI in the bar before Tab recommendations.'
-              )
-            )
+            notify.warning(t('notification.conceptMapTabNeedsAi'))
             return
           }
           if (!authStore.isAuthenticated) {

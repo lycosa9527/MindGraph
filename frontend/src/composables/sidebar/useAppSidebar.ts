@@ -2,10 +2,12 @@
  * AppSidebar navigation state, feature gates, and handlers.
  */
 import type { InjectionKey } from 'vue'
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { formatThinkingCoinBalance } from '@/composables/auth/useThinkingCoins'
+import { patchEarnTasksFromMutation } from '@/composables/auth/useThinkingCoinSync'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAdminPanelTabs } from '@/composables/admin/useAdminPanelTabs'
@@ -590,6 +592,14 @@ export function useAppSidebar() {
     },
     { immediate: true }
   )
+
+  const offThinkingCoinMutation = eventBus.on('thinking_coins:mutation', (payload) => {
+    if (!thinkingCoinsEligible.value) {
+      return
+    }
+    thinkingCoinEarnTasks.value = patchEarnTasksFromMutation(thinkingCoinEarnTasks.value, payload)
+  })
+  onScopeDispose(offThinkingCoinMutation)
 
   return {
     t,

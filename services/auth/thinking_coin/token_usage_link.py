@@ -99,6 +99,22 @@ def build_mindmate_usage_snapshot(
     )
 
 
+def merge_usage_dicts(parts: list[dict[str, Any]]) -> dict[str, int]:
+    """Sum token fields across partial usage payloads."""
+    input_total = 0
+    output_total = 0
+    for part in parts:
+        if not part:
+            continue
+        input_total += int(part.get("prompt_tokens") or part.get("input_tokens") or 0)
+        output_total += int(part.get("completion_tokens") or part.get("output_tokens") or 0)
+    return {
+        "prompt_tokens": input_total,
+        "completion_tokens": output_total,
+        "total_tokens": input_total + output_total,
+    }
+
+
 async def insert_token_usage_row(db: AsyncSession, snapshot: TokenUsageSnapshot) -> int:
     """Insert one token_usage row and return its primary key."""
     tracker = get_token_tracker()

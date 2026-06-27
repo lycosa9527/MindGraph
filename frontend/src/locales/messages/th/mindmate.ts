@@ -29,7 +29,6 @@ export default {
   'aiModel.tooltip.showingResult': 'กำลังแสดงผลลัพธ์ {name}',
   'aiModel.hostPickBadgeTooltip': 'โฮสต์กำลังแก้ไขเวอร์ชันไดอะแกรมของโมเดลนี้ (มุมมองหลายโมเดล)',
   'aiModel.hostPickBadgeAria': 'โฮสต์กำลังแก้ไขด้วย {name}',
-  'autoComplete.collabOwnerOnly': 'เฉพาะเจ้าของไดอะแกรมเท่านั้นที่สามารถใช้การสร้าง AI ระหว่างการร่วมมือ',
   'autoComplete.conceptMapRealtime': 'แผนภูมิแนวคิดใช้คำแนะนำความสัมพันธ์แบบเรียลไทม์ สร้างลิงก์เพื่อสร้าง',
   'autoComplete.doubleBubbleNeedBothTopics': 'กรุณากรอกหัวข้อทั้งซ้ายและขวาก่อนสร้าง',
   'autoComplete.doubleBubbleTopicPair': '{left} เทียบกับ {right}',

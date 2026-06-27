@@ -46,4 +46,7 @@ export default {
   'notification.sessionInvalidated': 'U is uitgeteken omdat u die maksimum aantal toestelle oorskry het',
   'notification.signInToUse': 'Teken in om hierdie te gebruik',
   'notification.signInToValidateFocus': 'Teken in om die fokusvraag te valideer',
+  'notification.conceptMapTabNeedsAi': 'Please enable AI in the bar before Tab recommendations.',
+  'notification.inlineRecEmpty': 'No recommendations were generated. Try again or edit the topic.',
+  'notification.nodeNotEligible': 'This node does not support Tab recommendations.',
 } as const

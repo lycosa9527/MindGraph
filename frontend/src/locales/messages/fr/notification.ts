@@ -46,4 +46,7 @@ export default {
   'notification.sessionInvalidated': 'Vous avez été déconnecté car vous avez dépassé le nombre maximal d’appareils autorisés',
   'notification.signInToUse': 'Connectez-vous pour utiliser cette fonctionnalité',
   'notification.signInToValidateFocus': 'Connectez-vous pour valider la question cible',
+  'notification.conceptMapTabNeedsAi': 'Please enable AI in the bar before Tab recommendations.',
+  'notification.inlineRecEmpty': 'No recommendations were generated. Try again or edit the topic.',
+  'notification.nodeNotEligible': 'This node does not support Tab recommendations.',
 } as const

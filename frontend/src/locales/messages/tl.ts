@@ -1,4 +1,4 @@
 /**
- * tl UI messages — re-export merged bundles.
+ * tl UI messages �?re-export merged bundles.
  */
 export { default } from './tl/index.ts'

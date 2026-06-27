@@ -1060,6 +1060,54 @@ export async function recomputeAdminTeacherUsage(): Promise<{ recomputed?: numbe
 }
 
 // ============================================================================
+// OAuth QR login (per-school)
+// ============================================================================
+
+export interface AdminOrganizationOauthConfig {
+  organization_id: number
+  wechat_login_enabled: boolean
+  dingtalk_login_enabled: boolean
+  dingtalk_login_app_key: string
+  dingtalk_login_app_secret_set: boolean
+  dingtalk_corp_id: string
+  wechat_app_id: string
+  feature_oauth_login: boolean
+  wechat_callback_url: string
+  dingtalk_callback_url: string
+  site_base_url: string
+}
+
+export async function fetchAdminOrganizationOauthConfig(
+  orgId: number
+): Promise<AdminOrganizationOauthConfig> {
+  return adminFetchJson(`/api/auth/admin/organizations/${orgId}/oauth-config`)
+}
+
+export async function updateAdminOrganizationOauthConfig(
+  orgId: number,
+  body: {
+    wechatLoginEnabled?: boolean
+    dingtalkLoginEnabled?: boolean
+    dingtalkLoginAppKey?: string
+    dingtalkLoginAppSecret?: string
+    dingtalkCorpId?: string
+    clearDingtalkSecret?: boolean
+  }
+): Promise<AdminOrganizationOauthConfig> {
+  return adminFetchJson(`/api/auth/admin/organizations/${orgId}/oauth-config`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      wechat_login_enabled: body.wechatLoginEnabled,
+      dingtalk_login_enabled: body.dingtalkLoginEnabled,
+      dingtalkLoginAppKey: body.dingtalkLoginAppKey,
+      dingtalkLoginAppSecret: body.dingtalkLoginAppSecret,
+      dingtalkCorpId: body.dingtalkCorpId,
+      clearDingtalkSecret: body.clearDingtalkSecret,
+    }),
+  })
+}
+
+// ============================================================================
 // Library (admin library tab)
 // ============================================================================
 

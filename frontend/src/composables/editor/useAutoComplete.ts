@@ -24,6 +24,10 @@
 import { computed } from 'vue'
 
 import { eventBus, useLanguage, useNotifications } from '@/composables'
+import {
+  AUTO_COMPLETE_VALIDATION_I18N,
+  validateAutoCompleteRules,
+} from '@/composables/editor/autoCompleteValidation'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useDiagramStore, useLLMResultsStore, type ModelLoadPhase } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -333,80 +337,31 @@ export function useAutoComplete() {
   function validateForAutoComplete(options?: {
     generationInstructions?: string
   }): { valid: boolean; error?: string } {
-    if (llmResultsStore.isGenerating) {
-      return {
-        valid: false,
-        error: t('autoComplete.generationInProgress'),
-      }
-    }
+    const spec = diagramStore.data as Record<string, unknown> | null
+    const nodes = (spec?.nodes as NodeWithText[] | undefined) ?? []
+    const leftNode = nodes.find((n) => n.id === 'left-topic')
+    const rightNode = nodes.find((n) => n.id === 'right-topic')
+    const left = getNodeText(leftNode)
+    const right = getNodeText(rightNode)
 
-    if (!diagramStore.type) {
-      return { valid: false, error: t('autoComplete.selectDiagramType') }
-    }
+    const result = validateAutoCompleteRules({
+      isGenerating: llmResultsStore.isGenerating,
+      diagramType: diagramStore.type,
+      hasDiagramData: Boolean(diagramStore.data),
+      bridgeAnalogiesCount: extractBridgeMapAnalogies().length,
+      fixedDimension: extractFixedDimension(),
+      generationInstructions: (options?.generationInstructions ?? '').trim(),
+      mainTopic: extractMainTopic(),
+      doubleBubbleLeftValid: Boolean(left && !isPlaceholderText(left)),
+      doubleBubbleRightValid: Boolean(right && !isPlaceholderText(right)),
+    })
 
-    if (!diagramStore.data) {
-      return { valid: false, error: t('autoComplete.noDiagramData') }
-    }
-
-    // Concept map uses real-time relationship generation only (no multi-stage AI Generate)
-    if (diagramStore.type === 'concept_map') {
-      return {
-        valid: false,
-        error: t('autoComplete.conceptMapRealtime'),
-      }
-    }
-
-    // Double bubble map requires BOTH left and right topics
-    if (diagramStore.type === 'double_bubble_map') {
-      const spec = diagramStore.data as Record<string, unknown> | null
-      const nodes = (spec?.nodes as NodeWithText[] | undefined) ?? []
-      const leftNode = nodes.find((n) => n.id === 'left-topic')
-      const rightNode = nodes.find((n) => n.id === 'right-topic')
-      const left = getNodeText(leftNode)
-      const right = getNodeText(rightNode)
-      const leftValid = left && !isPlaceholderText(left)
-      const rightValid = right && !isPlaceholderText(right)
-      if (!leftValid || !rightValid) {
-        return {
-          valid: false,
-          error: t('autoComplete.doubleBubbleNeedBothTopics'),
-        }
-      }
-    }
-
-    // Bridge map can work with dimension only (no topic needed)
-    if (diagramStore.type === 'bridge_map') {
-      const analogies = extractBridgeMapAnalogies()
-      const dimension = extractFixedDimension()
-      if (analogies.length > 0 || dimension) {
-        return { valid: true }
-      }
-    }
-
-    // Tree/brace map can work with dimension only
-    if (diagramStore.type === 'tree_map' || diagramStore.type === 'brace_map') {
-      const dimension = extractFixedDimension()
-      if (dimension) {
-        return { valid: true }
-      }
-    }
-
-    // One-sentence / mind-map side panel: requirements alone can drive generation
-    const instructions = (options?.generationInstructions ?? '').trim()
-    if (instructions) {
+    if (result.valid) {
       return { valid: true }
     }
 
-    // All other cases need a valid topic
-    const mainTopic = extractMainTopic()
-    if (!mainTopic) {
-      return {
-        valid: false,
-        error: t('autoComplete.enterTopicFirst'),
-      }
-    }
-
-    return { valid: true }
+    const i18nKey = AUTO_COMPLETE_VALIDATION_I18N[result.reason]
+    return { valid: false, error: t(i18nKey) }
   }
 
   /**
@@ -541,6 +496,7 @@ export function useAutoComplete() {
 
       if (streamResponse.ok) {
         let streamError: string | undefined
+        let streamErrorType: string | undefined
         let completePayload: GenerateGraphCompletePayload | undefined
 
         const { usedStream } = await consumeGenerateGraphStream(
@@ -552,8 +508,9 @@ export function useAutoComplete() {
             onComplete: (payload) => {
               completePayload = payload
             },
-            onError: (message) => {
+            onError: (message, errorType) => {
               streamError = message
+              streamErrorType = errorType
             },
           },
           signal
@@ -563,7 +520,13 @@ export function useAutoComplete() {
           const elapsed = (Date.now() - startTime) / 1000
           if (streamError) {
             llmResultsStore.setModelPhase(model, 'error')
-            return { model, success: false, error: streamError, elapsed }
+            return {
+              model,
+              success: false,
+              error: streamError,
+              errorType: streamErrorType,
+              elapsed,
+            }
           }
           if (completePayload) {
             const parsed = parseGenerateResponse(completePayload, model, requestBody, elapsed)
@@ -779,7 +742,12 @@ export function useAutoComplete() {
               result.error || 'Unknown error',
               result.errorType
             )
-            llmResultsStore.handleModelError(model, displayError, result.elapsed)
+            llmResultsStore.handleModelError(
+              model,
+              displayError,
+              result.elapsed,
+              result.errorType
+            )
             eventBus.emit('llm:model_completed', { model, success: false })
             if (
               import.meta.env.DEV &&
@@ -819,14 +787,16 @@ export function useAutoComplete() {
         const failedModel = modelsToRun.find(
           (model) => llmResultsStore.results[model]?.success === false
         )
-        const firstModelError = failedModel
-          ? llmResultsStore.results[failedModel]?.error
-          : undefined
+        const failedResult = failedModel ? llmResultsStore.results[failedModel] : undefined
+        const firstModelError = failedResult?.error
+        const firstModelErrorType = failedResult?.errorType
         const errorMsg =
           typeof firstModelError === 'string' && firstModelError.trim()
             ? firstModelError
             : t('autoComplete.generationFailedRetry')
-        notify.error(errorMsg)
+        if (shouldNotifyGenerateGraphError('', firstModelErrorType)) {
+          notify.error(errorMsg)
+        }
         options.onError?.(errorMsg)
         return { success: false, error: firstModelError || 'All models failed' }
       } else {

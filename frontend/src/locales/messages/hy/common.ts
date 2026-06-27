@@ -1,5 +1,5 @@
 /**
- * hy UI � common
+ * en UI � common
  */
 
 export default {
@@ -139,7 +139,7 @@ export default {
   'mobile.kittyKeyboardToggle': 'Text input',
   'mobile.kittyEnd': 'End',
   'mobile.kittyWelcomeLine': 'Share your ideas',
-  'mobile.kittyWelcomeSub': 'Your microphone talks to the same MindGraph you edit. Open a saved diagram on your phone or desktop so Kitty stays in sync.',
+  'mobile.kittyWelcomeSub': 'Ask by voice with photo support. Open a saved diagram on your phone or desktop so Kitty stays in sync with MindGraph.',
   'mobile.kittyConnecting': 'Connecting…',
   'mobile.kittyInputPlaceholder': 'Type a message…',
   'mobile.kittySend': 'Send',
@@ -169,8 +169,8 @@ export default {
   'mobile.kittyHubSourceEmpty': 'Hub: empty',
   'mobile.kittyMicPttTitle': 'Hold the mic to speak; release to send. Hold Space when not typing in a field.',
   'mobile.kittyMicPttAria': 'Push to talk: hold the microphone button to speak, release to stop. Hold Space when not typing in the message field.',
-  'mobile.kittyMicToggleTitle': 'Tap to toggle the mic: tap once to speak, tap again when done. Press Space to toggle when not typing in a field.',
-  'mobile.kittyMicToggleAria': 'Toggle microphone: tap once to start voice, tap again to stop. Press Space to toggle when not typing in the message field.',
+  'mobile.kittyMicToggleTitle': 'Hold the mic to speak; release to send. Hold Space when not typing in a field.',
+  'mobile.kittyMicToggleAria': 'Push to talk: hold the microphone button to speak, release to stop.',
   'mobile.kittyClickWheelAria': 'Spin the wheel to select a node',
   'mobile.kittyClickWheelHint': 'Drag around the outer ring to switch nodes',
   'mobile.kittyClickWheelEmptyLabel': 'Untitled node',
@@ -200,7 +200,7 @@ export default {
   'settings.version.chinese': 'Professional mode',
   'settings.version.international': 'Simplified mode',
   'landing.international.subtitle': 'The Most Powerful AI Thinking Diagram Software in the Universe',
-  'landing.international.promptPlaceholder': 'Enter a topic or short description—or pick a diagram type below…',
+  'landing.international.promptPlaceholder': 'Describe a topic and diagram type—e.g. “Use a flow map for density lab steps”…',
   'landing.international.examplesTitle': 'Inspiration',
   'landing.international.example1': 'Create a mind map about photosynthesis',
   'landing.international.example2': 'Use a tree map to classify vertebrates: fish, amphibians, reptiles, mammals',

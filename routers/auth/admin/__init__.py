@@ -18,6 +18,7 @@ from . import (
     geolite,
     invites,
     kitty_llmops,
+    organization_oauth,
     organizations,
     performance,
     roles,
@@ -36,6 +37,7 @@ admin_router = APIRouter()
 
 # Include all admin sub-routers
 admin_router.include_router(organizations.router)
+admin_router.include_router(organization_oauth.router)
 admin_router.include_router(invites.router)
 admin_router.include_router(roles.router)
 admin_router.include_router(users.router)

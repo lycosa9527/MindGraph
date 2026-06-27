@@ -110,6 +110,9 @@ export function taskIcon(slug: string): Component {
 }
 
 export function taskIsActionable(task: ThinkingCoinEarnTask): boolean {
+  if (task.coming_soon || task.slug === 'publish_case') {
+    return false
+  }
   if (task.handler_key === 'navigate') {
     return true
   }

@@ -12,7 +12,7 @@ export type DiagramTranslateStreamItem = {
 type StreamHandlers = {
   onStart?: (totalItems: number) => void
   onItem: (row: DiagramTranslateStreamItem) => void
-  onDone?: () => void
+  onDone?: (payload: Record<string, unknown>) => void
   onError: (message: string) => void
 }
 
@@ -77,7 +77,7 @@ export async function consumeDiagramTranslateNdjsonStream(
       handlers.onItem(row)
     } else if (ev === 'done') {
       sawDone = true
-      handlers.onDone?.()
+      handlers.onDone?.(msg)
     } else if (ev === 'error') {
       const detail = msg.detail
       handlers.onError(typeof detail === 'string' ? detail : 'Translation failed')

@@ -32,7 +32,6 @@ export default {
   'aiModel.tooltip.showingResult': '当前显示 {name} 结果',
   'aiModel.hostPickBadgeTooltip': '房主正在编辑该模型的图示版本（多模型视图）',
   'aiModel.hostPickBadgeAria': '房主正在使用 {name} 编辑',
-  'autoComplete.collabOwnerOnly': '协作模式下仅图示所有者可以使用 AI 生成',
   'autoComplete.conceptMapRealtime': '概念图使用实时关系建议，请通过创建链接来生成关系',
   'autoComplete.doubleBubbleNeedBothTopics': '请填写左右两个主题后再生成',
   'autoComplete.doubleBubbleTopicPair': '{left} 和 {right}',

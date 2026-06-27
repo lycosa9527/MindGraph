@@ -1,5 +1,5 @@
 /**
- * hi UI � mindmate
+ * en UI � mindmate
  */
 
 export default {
@@ -29,7 +29,6 @@ export default {
   'aiModel.tooltip.showingResult': 'Currently showing {name} result',
   'aiModel.hostPickBadgeTooltip': 'Host is editing this model’s version of the diagram (multi-model view)',
   'aiModel.hostPickBadgeAria': 'Host is editing using {name}',
-  'autoComplete.collabOwnerOnly': 'Only the diagram owner can use AI generation during collaboration',
   'autoComplete.conceptMapRealtime': 'Concept maps use real-time relationship suggestions; create links to generate',
   'autoComplete.doubleBubbleNeedBothTopics': 'Please fill in both left and right topics before generating',
   'autoComplete.doubleBubbleTopicPair': '{left} vs {right}',
@@ -101,7 +100,7 @@ export default {
   'mindmate.tooltip.regenerate': 'Regenerate',
   'mindmate.tooltip.share': 'Share',
   'mindmate.untitled': 'Untitled',
-  'mindmate.welcome': 'Hello {username}, I\'m {agentName}, your virtual teaching partner',
+  'mindmate.welcome': 'Hello {username}, I\'m {agentName}, your thinking teaching partner',
   'mindmate.welcomeSubtitle': 'AI virtual teaching research platform — think anywhere, anytime',
   'nodePalette.bridgeAnalogy': 'Analogy',
   'nodePalette.bridgeSource': 'Source',
@@ -125,7 +124,7 @@ export default {
   'nodePalette.history.replaceAddNodes': 'Replace/add nodes',
   'nodePalette.loadMore': 'Load more',
   'nodePalette.next': 'Next',
-  'nodePalette.panelTitle': 'Node Palette',
+  'nodePalette.panelTitle': 'Concept parking lot',
   'nodePalette.refresh': 'Refresh',
   'nodePalette.selected': 'selected',
   'nodePalette.similarities': 'Similarities',

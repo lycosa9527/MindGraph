@@ -1,4 +1,4 @@
 /**
- * he UI messages — re-export merged bundles.
+ * he UI messages �?re-export merged bundles.
  */
 export { default } from './he/index.ts'

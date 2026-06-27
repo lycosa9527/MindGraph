@@ -1,5 +1,5 @@
 /**
- * ro UI � notification
+ * en UI � notification
  */
 
 export default {
@@ -26,6 +26,7 @@ export default {
   'notification.geoLiteMissingTitle': 'GeoLite2 Country database missing',
   'notification.fullscreenFailed': 'Could not enter fullscreen',
   'notification.generationCancelled': 'Generation cancelled',
+  'notification.conceptMapTabNeedsAi': 'Please enable AI in the bar before Tab recommendations.',
   'notification.historyClearNodes': 'Clear node text',
   'notification.historyEmptyLearning': 'Empty node and add answer',
   'notification.importInvalidData': 'Import failed: invalid diagram data',
@@ -34,8 +35,10 @@ export default {
   'notification.importSlotsFull': 'Library full; diagram imported but not saved to library',
   'notification.importSuccess': 'Diagram imported and saved to library',
   'notification.importUnsupportedType': 'Import failed: unsupported diagram type',
+  'notification.inlineRecEmpty': 'No recommendations were generated. Try again or edit the topic.',
   'notification.loadMoreFailed': 'Could not load more',
   'notification.networkError': 'Network error',
+  'notification.nodeNotEligible': 'This node does not support Tab recommendations.',
   'notification.newVersionAvailable': 'New version available. Click to refresh.',
   'notification.recommendationFailed': 'Recommendation failed: {msg}',
   'notification.relationshipGenerationFailed': 'Relationship generation failed',

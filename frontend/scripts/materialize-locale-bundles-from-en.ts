@@ -31,6 +31,7 @@ const NS_FILES = [
   'mindmate.ts',
   'notification.ts',
   'sidebar.ts',
+  'thinkingCoins.ts',
   'workshop.ts',
 ] as const
 

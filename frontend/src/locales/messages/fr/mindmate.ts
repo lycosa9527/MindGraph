@@ -29,7 +29,6 @@ export default {
   'aiModel.tooltip.showingResult': 'Résultat {name} actuellement affiché',
   'aiModel.hostPickBadgeTooltip': 'L’hôte modifie la version du diagramme pour ce modèle (vue multi-modèles).',
   'aiModel.hostPickBadgeAria': 'L’hôte modifie le diagramme avec {name}',
-  'autoComplete.collabOwnerOnly': 'Seul le propriétaire du diagramme peut utiliser la génération IA pendant la collaboration',
   'autoComplete.conceptMapRealtime': 'Les cartes conceptuelles utilisent des suggestions de relations en temps réel ; créez des liens pour générer',
   'autoComplete.doubleBubbleNeedBothTopics': 'Veuillez remplir les deux sujets, gauche et droit, avant de générer',
   'autoComplete.doubleBubbleTopicPair': '{left} contre {right}',

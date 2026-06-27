@@ -12,13 +12,18 @@
  * - Reference: Linear, Vercel, Stripe aesthetics
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { Close } from '@element-plus/icons-vue'
 
 import { ArrowLeft, Eye, EyeOff, Loader2, RefreshCw } from '@lucide/vue'
 
+import OAuthQrLoginModal from '@/components/auth/OAuthQrLoginModal.vue'
+import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLoginModal } from '@/composables/auth/useLoginModal'
+import { useNotifications } from '@/composables'
 import { initCatWalk } from '@/utils/mascot/catWalk'
+import { resolveOAuthInviteCode, shouldShowQrLoginLink } from '@/utils/oauthLoginUi'
 
 const props = defineProps<{
   visible: boolean
@@ -94,6 +99,29 @@ const {
   handleResetPassword,
   handleBackdropClick,
 } = useLoginModal(props, emit)
+
+const route = useRoute()
+const notify = useNotifications()
+const { featureOauthLogin } = useFeatureFlags()
+
+const showQrLoginModal = ref(false)
+
+const oauthInviteCode = computed(() =>
+  resolveOAuthInviteCode(route.query.invite, registerForm.value.invitationCode)
+)
+
+function openQrLoginModal(): void {
+  if (!oauthInviteCode.value.trim()) {
+    notify.warning(t('auth.qrLoginInviteRequired'))
+    return
+  }
+  showQrLoginModal.value = true
+}
+
+function onQrLoginSuccess(): void {
+  showQrLoginModal.value = false
+  emit('success')
+}
 
 const loginModalOverlayRef = ref<HTMLElement | null>(null)
 const loginModalCardRef = ref<HTMLElement | null>(null)
@@ -404,6 +432,16 @@ const passThroughFooterClicks = computed(() => Boolean(props.lightBackdrop && pr
                   >
                     {{ t('auth.smsLogin') }}
                   </el-button>
+                  <template v-if="featureOauthLogin">
+                    <span class="text-stone-300 select-none">|</span>
+                    <el-button
+                      type="primary"
+                      link
+                      @click="openQrLoginModal"
+                    >
+                      {{ t('auth.qrLogin') }}
+                    </el-button>
+                  </template>
                 </div>
               </form>
 
@@ -1048,6 +1086,12 @@ const passThroughFooterClicks = computed(() => Boolean(props.lightBackdrop && pr
       </div>
     </Transition>
   </Teleport>
+
+  <OAuthQrLoginModal
+    v-model:visible="showQrLoginModal"
+    :invite-code="oauthInviteCode"
+    @success="onQrLoginSuccess"
+  />
 </template>
 
 <style scoped>

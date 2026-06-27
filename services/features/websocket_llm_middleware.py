@@ -25,7 +25,12 @@ from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, Callable, Dict, Optional
 
 from config.settings import config
-from services.auth.thinking_coin.usage_wire import assert_llm_usage_budget
+from services.auth.thinking_coin.token_usage_link import build_token_usage_snapshot, merge_usage_dicts
+from services.auth.thinking_coin.usage_wire import (
+    assert_llm_usage_budget,
+    thinking_coin_post_llm_success_mutation,
+    thinking_coins_apply_to_user,
+)
 from services.infrastructure.http.error_handler import LLMServiceError
 from services.infrastructure.rate_limiting.rate_limiter import DashscopeRateLimiter, get_rate_limiter
 from services.monitoring.performance_tracker import performance_tracker
@@ -153,22 +158,20 @@ class WebSocketLLMMiddleware:
 
         async with _optional_rate_limit(self.rate_limiter if self.enable_rate_limiting else None):
             await assert_llm_usage_budget(user_id, organization_id, request_type)
+            ctx: Dict[str, Any] = {
+                "connection_id": connection_id,
+                "model_alias": self.model_alias,
+                "user_id": user_id,
+                "organization_id": organization_id,
+                "session_id": session_id,
+                "request_type": request_type,
+                "endpoint_path": endpoint_path,
+                "start_time": connection_start_time,
+                "omni_usage_parts": [],
+            }
             try:
-                # Prepare context for connection
-                ctx = {
-                    "connection_id": connection_id,
-                    "model_alias": self.model_alias,
-                    "user_id": user_id,
-                    "organization_id": organization_id,
-                    "session_id": session_id,
-                    "request_type": request_type,
-                    "endpoint_path": endpoint_path,
-                    "start_time": connection_start_time,
-                }
-
                 yield ctx
 
-                # Track successful connection
                 duration = time.time() - connection_start_time
                 if self.enable_performance_tracking:
                     self._track_performance(duration=duration, success=True, error=None)
@@ -200,7 +203,7 @@ class WebSocketLLMMiddleware:
                 raise
 
             finally:
-                # Decrement active connections
+                await self._settle_thinking_coins_if_usage(ctx)
                 async with self._connection_lock:
                     self._active_connections -= 1
                     logger.debug(
@@ -325,9 +328,56 @@ class WebSocketLLMMiddleware:
                 output_tokens,
                 total,
             )
+            parts = ctx.get("omni_usage_parts")
+            if isinstance(parts, list):
+                parts.append(
+                    {
+                        "prompt_tokens": int(input_tokens),
+                        "completion_tokens": int(output_tokens),
+                        "total_tokens": int(total),
+                    }
+                )
 
         except BACKGROUND_INFRA_ERRORS as e:
             logger.debug("[WebSocketLLMMiddleware] Token tracking failed (non-critical): %s", e)
+
+    async def _settle_thinking_coins_if_usage(self, ctx: Dict[str, Any]) -> None:
+        """Debit thinking coins once per voice session when tokens were consumed."""
+        user_id = ctx.get("user_id")
+        if user_id is None:
+            return
+        parts_raw = ctx.get("omni_usage_parts")
+        if not isinstance(parts_raw, list) or not parts_raw:
+            return
+        organization_id = ctx.get("organization_id")
+        if not await thinking_coins_apply_to_user(user_id, organization_id):
+            return
+        merged = merge_usage_dicts(parts_raw)
+        if int(merged.get("total_tokens") or 0) <= 0:
+            return
+        duration = time.time() - float(ctx.get("start_time") or time.time())
+        metadata = {
+            "user_id": user_id,
+            "organization_id": organization_id,
+            "request_type": ctx.get("request_type", "voice_omni"),
+            "endpoint_path": ctx.get("endpoint_path"),
+            "session_id": ctx.get("session_id"),
+        }
+        snapshot = build_token_usage_snapshot(
+            merged,
+            metadata,
+            str(ctx.get("model_alias") or self.model_alias),
+            duration,
+        )
+        try:
+            await thinking_coin_post_llm_success_mutation(
+                int(user_id),
+                organization_id,
+                str(ctx.get("request_type") or "voice_omni"),
+                snapshot,
+            )
+        except BACKGROUND_INFRA_ERRORS as exc:
+            logger.debug("[WebSocketLLMMiddleware] Thinking coin settle failed: %s", exc)
 
     def _track_performance(self, duration: float, success: bool, error: Optional[str] = None):
         """Track performance metrics."""

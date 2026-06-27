@@ -7,6 +7,7 @@
  */
 import { ref } from 'vue'
 
+import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import { authFetch } from '@/utils/api'
 
 export interface SnapshotMetadata {
@@ -105,6 +106,7 @@ async function takeSnapshot(
       return { ok: false, status: res.status, message }
     }
     const snapshot: SnapshotMetadata = await res.json()
+    applyThinkingCoinMutation(extractThinkingCoinsFooter(snapshot as unknown as Record<string, unknown>))
     await loadSnapshots(diagramId)
     return { ok: true, snapshot }
   } catch (err) {

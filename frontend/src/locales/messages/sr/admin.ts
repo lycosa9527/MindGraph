@@ -1,5 +1,5 @@
 /**
- * sr UI � admin
+ * en UI � admin
  */
 
 export default {
@@ -85,9 +85,9 @@ export default {
   'admin.featureLoadFailed': 'Could not load feature flags',
   'admin.featureSaveFailed': 'Could not save settings',
   'admin.featuresIntro': 'Toggle module flags. Values are written to .env and reloaded into the running server so the UI and most API checks update immediately. If a module was never loaded at process start, you may still need a full restart to register its routes.',
-  'admin.featuresReloadFailed': 'Saved to .env but runtime reload failed. Restart the server.',
-  'admin.featuresSave': 'Save and reload runtime',
-  'admin.featuresSaved': 'Settings saved and runtime configuration reloaded.',
+  'admin.featuresReloadFailed': 'Could not apply changes. Restart the server.',
+  'admin.featuresSave': 'Apply',
+  'admin.featuresSaved': 'Changes applied.',
   'admin.featuresTab': 'Features',
   'admin.featureDevTab': 'Feature development',
   'admin.newFeaturesTab': 'New features',
@@ -225,6 +225,32 @@ export default {
   'admin.mindbot.deleteError': 'Could not remove',
   'admin.mindbot.managerNoOrg': 'Your account has no organization assigned.',
   'admin.mindbot.tabDingtalk': 'DingTalk API auth',
+  'admin.oauth.sectionTitle': 'QR sign-in',
+  'admin.oauth.intro':
+    'Enable WeChat or DingTalk QR login for this school. WeChat AppID/Secret are in server .env; DingTalk requires school IT credentials.',
+  'admin.oauth.officialDocsHint':
+    'Matches official docs: WeChat WxLogin + code exchange; DingTalk OAuth 2.0 DTFrameLogin + immediate authCode exchange (not legacy oapi.dingtalk.com).',
+  'admin.oauth.wechatToggle': 'Enable WeChat QR login',
+  'admin.oauth.wechatHint':
+    'Teachers must link WeChat under Account linking first. Platform AppID/Secret are set in server .env.',
+  'admin.oauth.dingtalkToggle': 'Enable DingTalk QR login',
+  'admin.oauth.dingtalkAppKey': 'DingTalk AppKey (client_id)',
+  'admin.oauth.dingtalkAppSecret': 'DingTalk AppSecret',
+  'admin.oauth.dingtalkCorpId': 'DingTalk CorpId (optional)',
+  'admin.oauth.dingtalkCorpIdPlaceholder': 'When set, validates corpId; scope becomes openid corpid',
+  'admin.oauth.secretSet': 'AppSecret saved',
+  'admin.oauth.replaceSecret': 'Replace',
+  'admin.oauth.clearSecret': 'Clear',
+  'admin.oauth.clearSecretPending': 'Saving will clear the stored AppSecret',
+  'admin.oauth.callbackUrls': 'Callback URLs (for school IT)',
+  'admin.oauth.wechatCallback': 'WeChat',
+  'admin.oauth.dingtalkCallback': 'DingTalk',
+  'admin.oauth.schoolItChecklistTitle': 'DingTalk IT checklist',
+  'admin.oauth.schoolItChecklist':
+    'DingTalk IT checklist:\n1. Enable third-party website / QR login\n2. Set the DingTalk callback URL above in DingTalk console (exact match)\n3. Request scopes: permission-open_app_api_base, Contact.User.Read\n4. Provide AppKey, AppSecret, optional CorpId to MindGraph admin',
+  'admin.oauth.loadError': 'Could not load QR login settings',
+  'admin.oauth.saveSuccess': 'QR login settings saved',
+  'admin.oauth.saveError': 'Could not save. Please try again.',
   'admin.mindbot.tabDify': 'Dify API auth',
   'admin.mindbot.standaloneDifySchoolHint': 'For most schools, set Dify on the school edit modal under MindMate auth. Saving the school copies those settings to all bots. Per-bot Dify here is only for special cases and may be overwritten when the school is saved.',
   'admin.mindbot.tabLog': 'Log',
@@ -345,7 +371,7 @@ export default {
   'admin.logs': 'Logs',
   'admin.managementInterface': 'management interface',
   'admin.managerRoleRemoved': 'Manager role removed',
-  'admin.managers': 'Managers',
+  'admin.managers': 'School admins',
   'admin.addSchoolManagers': 'Select users (multiple)',
   'admin.addSchoolManagersButton': 'Add',
   'admin.noUsersToAddAsManager': 'All users in this school are already admins',
@@ -580,10 +606,10 @@ export default {
   'admin.revokeRole': 'Remove role',
   'admin.revokeRoleConfirm': 'Remove role from',
   'admin.roleControl': 'Role Control',
-  'admin.roleControlDesc': 'Manage admin access. Users with admin role can access the management panel.',
+  'admin.roleControlDesc': 'Manage superadmin access. Users with this role can access the full management panel.',
   'admin.roleControlDescPlatformBd': 'Manage teaching researcher access. Teaching researchers can view global data and school invite management.',
   'admin.roleControlDescExpert': 'Manage expert access. Experts can create schools and manage organizations in their invite scope.',
-  'admin.roleControlDescManagers': 'Manage school managers. Managers can access the school dashboard for their organization.',
+  'admin.roleControlDescManagers': 'Manage school admins. They can access the school dashboard for their organization. Users must already belong to a school before being granted this role.',
   'admin.roleAssignmentTab': 'Role assignment',
   'admin.roleAssignmentDesc': 'Assign one of seven roles to a user. Platform, B2B, and C2C roles have different permissions.',
   'admin.roleTierPlatform': 'Platform',
@@ -718,7 +744,7 @@ export default {
   'admin.schoolMindmateAgentAvatar': 'Agent avatar',
   'admin.schoolMindmateAgentAvatarUpload': 'Upload avatar',
   'admin.schoolMindmateAgentAvatarRemove': 'Remove avatar',
-  'admin.schoolMindmateAgentAvatarHint': 'PNG, JPG, GIF, or WebP; max 1MB; cropped to a 256×256 square automatically.',
+  'admin.schoolMindmateAgentAvatarHint': 'PNG, JPG, GIF, or WebP; max 1MB; min 64×64; animated GIFs allowed (max 120 frames); cropped to a 256×256 square.',
   'admin.schoolMindmateAvatarUploaded': 'Avatar uploaded and processed.',
   'admin.schoolMindmateAvatarRemoved': 'Avatar removed.',
   'admin.schoolMindmateAvatarUploadFailed': 'Avatar upload failed. Please try again.',
@@ -829,7 +855,7 @@ export default {
   'admin.mindmateExport.jobDownload': 'Download export',
   'admin.mindmateExport.requiresJobNotice': 'This scope is large; use a background export job instead of a direct download.',
   'admin.mindmateExport.loadMore': 'Load more',
-'admin.mindmateExport.dumps.intro':
+  'admin.mindmateExport.dumps.intro':
     'Upload dify-dump_*.zip from each Dify host and import. Each import merges into the cumulative library used by Search & filters. Snapshot archives are kept for audit.',
   'admin.mindmateExport.dumps.libraryDify': 'Dify library (Server 1)',
   'admin.mindmateExport.dumps.libraryNeodify': 'NeoDify library (Server 2)',

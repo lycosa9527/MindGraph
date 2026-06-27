@@ -29,7 +29,6 @@ export default {
   'aiModel.tooltip.showingResult': 'Tans word die {name}-resultaat getoon',
   'aiModel.hostPickBadgeTooltip': 'Gasheer wysig hierdie model se weergawe van die diagram (multi-modelaansig)',
   'aiModel.hostPickBadgeAria': 'Gasheer wysig met {name}',
-  'autoComplete.collabOwnerOnly': 'Slegs die eienaar van die diagram kan tydens samewerking AI-generering gebruik',
   'autoComplete.conceptMapRealtime': 'Konsepkaarte gebruik real-time verwantskapsvoorstelle; skep skakels om te genereer',
   'autoComplete.doubleBubbleNeedBothTopics': 'Vul asseblief beide die linkerkantse en regterkantse onderwerpe in voordat u genereer',
   'autoComplete.doubleBubbleTopicPair': '{left} teenoor {right}',

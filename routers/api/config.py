@@ -82,6 +82,7 @@ class FeatureFlagsResponse(BaseModel):
     feature_workshop_chat: bool
     feature_markets: bool
     feature_mindbot: bool
+    feature_oauth_login: bool
     feature_mindmate_export: bool
     feature_thinking_coins: bool
     feature_kitty_agent: bool
@@ -128,6 +129,7 @@ async def get_feature_flags(
         feature_workshop_chat=config.FEATURE_WORKSHOP_CHAT,
         feature_markets=config.FEATURE_MARKETS,
         feature_mindbot=config.FEATURE_MINDBOT,
+        feature_oauth_login=config.FEATURE_OAUTH_LOGIN,
         feature_mindmate_export=config.FEATURE_MINDMATE_EXPORT,
         feature_thinking_coins=config.FEATURE_THINKING_COINS,
         feature_kitty_agent=kitty_agent_flag,

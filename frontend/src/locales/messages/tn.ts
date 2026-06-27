@@ -1,4 +1,4 @@
 /**
- * tn UI messages — re-export merged bundles.
+ * tn UI messages �?re-export merged bundles.
  */
 export { default } from './tn/index.ts'

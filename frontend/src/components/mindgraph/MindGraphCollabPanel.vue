@@ -21,6 +21,7 @@ import {
 import { ArrowLeft, ChevronDown, Loader2, RefreshCw, Users } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { authFetch } from '@/utils/api'
 
@@ -112,6 +113,7 @@ async function joinWorkshop() {
     const response = await authFetch(`/api/workshop/join?code=${code}`, { method: 'POST' })
     if (response.ok) {
       const data = await response.json()
+      applyThinkingCoinMutation(extractThinkingCoinsFooter(data as Record<string, unknown>))
       notify.success(t('mindgraphLanding.joinedPresentation', { title: data.workshop.title }))
       const enc = encodeURIComponent(code)
       window.location.href = `/canvas?diagramId=${encodeURIComponent(data.workshop.diagram_id)}&join_workshop=${enc}`
@@ -170,6 +172,7 @@ async function joinOrgSession(session: { diagram_id: string }) {
     })
     if (response.ok) {
       const data = await response.json()
+      applyThinkingCoinMutation(extractThinkingCoinsFooter(data as Record<string, unknown>))
       const code = data.workshop.code as string
       const enc = encodeURIComponent(code)
       notify.success(t('mindgraphLanding.joinedCollab', { title: data.workshop.title }))

@@ -196,6 +196,10 @@ class BasePaletteGenerator(ABC):
             use_knowledge_base=False,
         ):
             event = chunk["event"]
+            if event == "thinking_coins":
+                yield chunk
+                continue
+
             llm_name = chunk["llm"]
 
             if event == "token":

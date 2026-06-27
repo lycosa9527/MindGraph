@@ -14,7 +14,7 @@ class _FakeDbSession:
     """Minimal async session stub for usage_wire unit tests."""
 
     async def __aenter__(self):
-        return object()
+        return AsyncMock()
 
     async def __aexit__(self, *_exc):
         return False
@@ -36,10 +36,12 @@ async def test_assert_raises_when_balance_too_low(monkeypatch: pytest.MonkeyPatc
     async def always_apply(*_args, **_kwargs) -> bool:
         return True
 
+    async def locked_assert_fail(*_args, **_kwargs) -> int:
+        raise ThinkingCoinInsufficientError(balance=2, cost=6, user_message="low")
+
     monkeypatch.setattr(usage_wire_mod, "thinking_coins_apply_to_user", always_apply)
     monkeypatch.setattr(usage_wire_mod, "open_async_session", _FakeDbSession)
-    monkeypatch.setattr(usage_wire_mod, "get_cost_for_request_type", AsyncMock(return_value=6))
-    monkeypatch.setattr(usage_wire_mod, "get_balance", AsyncMock(return_value=2))
+    monkeypatch.setattr(usage_wire_mod, "_assert_balance_with_lock", locked_assert_fail)
 
     with pytest.raises(ThinkingCoinInsufficientError) as exc_info:
         await usage_wire_mod.assert_thinking_coin_llm_budget(99, 1, "mindmate", lang="zh")
@@ -58,8 +60,7 @@ async def test_assert_passes_when_balance_covers_cost(monkeypatch: pytest.Monkey
 
     monkeypatch.setattr(usage_wire_mod, "thinking_coins_apply_to_user", always_apply)
     monkeypatch.setattr(usage_wire_mod, "open_async_session", _FakeDbSession)
-    monkeypatch.setattr(usage_wire_mod, "get_cost_for_request_type", AsyncMock(return_value=6))
-    monkeypatch.setattr(usage_wire_mod, "get_balance", AsyncMock(return_value=100))
+    monkeypatch.setattr(usage_wire_mod, "_assert_balance_with_lock", AsyncMock(return_value=6))
 
     result = await usage_wire_mod.assert_thinking_coin_llm_budget(99, 1, "mindmate")
     assert result is True

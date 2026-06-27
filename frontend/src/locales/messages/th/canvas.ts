@@ -853,4 +853,6 @@ export default {
   'editor.saveBlockedCollabGuest': 'Only the host can save during a collaboration session',
   'editor.saveNothingToSave': 'Nothing to save yet',
   'editor.saveFailed': 'Save failed. Please try again',
+  'canvas.inlineRecPicker.prevPage': 'Previous page',
+  'canvas.inlineRecPicker.nextPage': 'Next page',
 } as const

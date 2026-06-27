@@ -1,4 +1,4 @@
 /**
- * hr UI messages — re-export merged bundles.
+ * hr UI messages �?re-export merged bundles.
  */
 export { default } from './hr/index.ts'

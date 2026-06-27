@@ -118,3 +118,12 @@ def enforce_production_security_guards() -> None:
     if os.getenv("FEATURE_GEWE", "False").strip().lower() in ("true", "1", "yes"):
         if not gewe_secret:
             _fail("GEWE_WEBHOOK_SECRET is required when FEATURE_GEWE=True")
+
+    if os.getenv("FEATURE_OAUTH_LOGIN", "False").strip().lower() in ("true", "1", "yes"):
+        wechat_id = os.getenv("WECHAT_OAUTH_APP_ID", "").strip()
+        wechat_secret = os.getenv("WECHAT_OAUTH_APP_SECRET", "").strip()
+        if not wechat_id or not wechat_secret:
+            _fail("WECHAT_OAUTH_APP_ID and WECHAT_OAUTH_APP_SECRET are required when FEATURE_OAUTH_LOGIN=True")
+        base = os.getenv("EXTERNAL_BASE_URL", "").strip()
+        if not base:
+            logger.warning("FEATURE_OAUTH_LOGIN=True but EXTERNAL_BASE_URL is unset; OAuth redirect URIs may fail")

@@ -73,8 +73,8 @@ function taskStatusHint(task: ThinkingCoinEarnTask): string {
   if (task.completed_today) {
     return t('thinkingCoins.usageDoneToday')
   }
-  if (task.slug === 'publish_case') {
-    return t('thinkingCoins.casePendingHint')
+  if (task.coming_soon || task.slug === 'publish_case') {
+    return t('thinkingCoins.comingSoon')
   }
   return task.status_hint ?? ''
 }

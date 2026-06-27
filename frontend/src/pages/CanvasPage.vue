@@ -670,14 +670,11 @@ eventBus.onWithOwner(
       !node ||
       !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
     ) {
-      notify.warning(t('notification.nodeNotEligible', '该节点不支持推荐'))
+      notify.warning(t('notification.nodeNotEligible'))
       return
     }
-    if (!inlineRecStore.isReady) return
     if (diagramStore.type === 'concept_map' && !llmResultsStore.selectedModel) {
-      notify.warning(
-        t('notification.conceptMapTabNeedsAi', '请先在顶栏启用「启动 AI」再使用 Tab 推荐')
-      )
+      notify.warning(t('notification.conceptMapTabNeedsAi'))
       return
     }
     if (!authStore.isAuthenticated) {

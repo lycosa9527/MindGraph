@@ -190,6 +190,24 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_LIBRARY", "False").lower() == "true"
 
     @property
+    def FEATURE_OAUTH_LOGIN(self):
+        """Enable WeChat / DingTalk OAuth QR login for end users.
+
+        Disabled by default. Set FEATURE_OAUTH_LOGIN=True in .env to enable.
+        """
+        return self._get_cached_value("FEATURE_OAUTH_LOGIN", "False").lower() == "true"
+
+    @property
+    def WECHAT_OAUTH_APP_ID(self) -> str:
+        """WeChat Open Platform 网站应用 AppID for OAuth QR login."""
+        return (self._get_cached_value("WECHAT_OAUTH_APP_ID", "") or "").strip()
+
+    @property
+    def WECHAT_OAUTH_APP_SECRET(self) -> str:
+        """WeChat Open Platform 网站应用 AppSecret for OAuth QR login."""
+        return (self._get_cached_value("WECHAT_OAUTH_APP_SECRET", "") or "").strip()
+
+    @property
     def FEATURE_GEWE(self):
         """Enable Gewe WeChat integration (admin only).
 

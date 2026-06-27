@@ -64,7 +64,8 @@ from services.online_collab.spec.online_collab_live_spec import (
 from services.redis.cache._redis_diagram_cache_helpers import MAX_SPEC_SIZE_KB
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.admin.user_usage_activity import schedule_user_usage_activity
-from services.auth.thinking_coin.client_event_service import claim_client_event_for_user
+from services.auth.thinking_coin.client_event_service import load_user_org
+from services.auth.thinking_coin.event_hub import mutation_to_footer, track_client_event
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 from utils.auth import get_current_user
@@ -261,9 +262,11 @@ async def create_diagram(
     )
 
     async with open_async_session() as db:
-        await claim_client_event_for_user(db, current_user, EVENT_DIAGRAM_SAVE)
+        org = await load_user_org(current_user)
+        save_mutation = await track_client_event(db, current_user, org, EVENT_DIAGRAM_SAVE)
+        coins_footer = mutation_to_footer(save_mutation)
 
-    return DiagramResponse(
+    response = DiagramResponse(
         id=diagram["id"],
         title=diagram["title"],
         diagram_type=diagram["diagram_type"],
@@ -273,6 +276,9 @@ async def create_diagram(
         created_at=datetime.fromisoformat(diagram["created_at"]) if diagram.get("created_at") else datetime.now(UTC),
         updated_at=datetime.fromisoformat(diagram["updated_at"]) if diagram.get("updated_at") else datetime.now(UTC),
     )
+    if coins_footer.get("eligible"):
+        return {**response.model_dump(), "thinking_coins": coins_footer}
+    return response
 
 
 @router.get("/diagrams", response_model=DiagramListResponse)
@@ -760,12 +766,17 @@ async def take_snapshot(
         new_version,
         diagram_id,
     )
-    await claim_client_event_for_user(db, current_user, EVENT_DIAGRAM_SNAPSHOT)
-    return SnapshotMetadata(
+    org = await load_user_org(current_user)
+    snapshot_mutation = await track_client_event(db, current_user, org, EVENT_DIAGRAM_SNAPSHOT)
+    coins_footer = mutation_to_footer(snapshot_mutation)
+    snapshot_meta = SnapshotMetadata(
         id=snapshot.id,
         version_number=snapshot.version_number,
         created_at=snapshot.created_at,
     )
+    if coins_footer.get("eligible"):
+        return {**snapshot_meta.model_dump(), "thinking_coins": coins_footer}
+    return snapshot_meta
 
 
 @router.get("/diagrams/{diagram_id}/snapshots", response_model=SnapshotListResponse)

@@ -46,4 +46,7 @@ export default {
   'notification.sessionInvalidated': 'Cihazların maksimum sayını keçdiyiniz üçün sistemdən çıxdınız',
   'notification.signInToUse': 'İstifadə üçün daxil olun',
   'notification.signInToValidateFocus': 'Fokus sualını yoxlamaq üçün daxil olun',
+  'notification.conceptMapTabNeedsAi': 'Please enable AI in the bar before Tab recommendations.',
+  'notification.inlineRecEmpty': 'No recommendations were generated. Try again or edit the topic.',
+  'notification.nodeNotEligible': 'This node does not support Tab recommendations.',
 } as const

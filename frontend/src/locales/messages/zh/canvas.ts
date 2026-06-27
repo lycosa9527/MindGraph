@@ -327,6 +327,8 @@ export default {
   'canvas.subgraphPreview.mergeFailed': '无法将子图合并到当前节点',
   'canvas.subgraphPreview.enterNodeTextFirst': '请先为节点输入有效主题文本',
   'canvas.subgraphPreview.historyLabel': '智能生成子图',
+  'canvas.inlineRecPicker.prevPage': '上一页',
+  'canvas.inlineRecPicker.nextPage': '下一页',
   'canvas.toolbar.formatBrushActivated': '样式已复制，选中目标节点后再次点击格式刷以应用',
   'canvas.toolbar.formatBrushApplied': '格式已应用到 {count} 个节点',
   'canvas.toolbar.formatBrushCancelled': '已取消格式刷',

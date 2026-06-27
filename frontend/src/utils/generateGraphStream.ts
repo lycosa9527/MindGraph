@@ -1,6 +1,7 @@
 /**
  * SSE consumer for POST /api/generate_graph/stream (auto-complete phase colors).
  */
+import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import { eventBus } from '@/composables/core/useEventBus'
 
 export type GenerateGraphStreamPhase =
@@ -114,6 +115,7 @@ export async function consumeGenerateGraphStream(
           callbacks.onPhase?.(event)
         } else if (event === 'complete') {
           completePayload = data as GenerateGraphCompletePayload
+          applyThinkingCoinMutation(extractThinkingCoinsFooter(data as Record<string, unknown>))
           callbacks.onComplete?.(completePayload)
         } else if (event === 'error') {
           const message =

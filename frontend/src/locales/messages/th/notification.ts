@@ -46,4 +46,7 @@ export default {
   'notification.sessionInvalidated': 'คุณถูกออกจากระบบเนื่องจากเกินจำนวนอุปกรณ์สูงสุด',
   'notification.signInToUse': 'เข้าสู่ระบบเพื่อใช้งาน',
   'notification.signInToValidateFocus': 'เข้าสู่ระบบเพื่อตรวจสอบคำถามโฟกัส',
+  'notification.conceptMapTabNeedsAi': 'Please enable AI in the bar before Tab recommendations.',
+  'notification.inlineRecEmpty': 'No recommendations were generated. Try again or edit the topic.',
+  'notification.nodeNotEligible': 'This node does not support Tab recommendations.',
 } as const

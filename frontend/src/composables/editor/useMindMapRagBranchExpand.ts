@@ -7,7 +7,7 @@
  * side via the diagram's linked package). The user still confirms the AI
  * children through the existing subgraph preview bar.
  *
- * Cost guards: once per branch node id, debounced, skipped during collab.
+ * Cost guards: once per branch node id on success, debounced, skipped during collab.
  */
 import { type Ref, computed, onUnmounted, ref, watch } from 'vue'
 
@@ -33,7 +33,7 @@ export function useMindMapRagBranchExpand(enabled: Ref<boolean>) {
     () => (detailQuery.data.value?.documents ?? []).filter((d) => d.status === 'completed').length
   )
 
-  // Branch node ids we have already auto-expanded (or attempted) this session.
+  // Branch node ids we have already auto-expanded successfully this session.
   const attempted = ref<Set<string>>(new Set())
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -83,8 +83,11 @@ export function useMindMapRagBranchExpand(enabled: Ref<boolean>) {
       debounceTimer = null
       // Re-check guards after the debounce in case state changed.
       if (!shouldAutoExpand(targetId, payload.text)) return
-      attempted.value.add(targetId)
-      void generateSubgraph(targetId)
+      void generateSubgraph(targetId).then((ok) => {
+        if (ok) {
+          attempted.value.add(targetId)
+        }
+      })
     }, DEBOUNCE_MS)
   }
 

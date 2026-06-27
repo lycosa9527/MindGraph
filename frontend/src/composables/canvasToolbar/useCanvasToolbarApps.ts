@@ -11,6 +11,7 @@ import {
 } from '@lucide/vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
@@ -318,8 +319,9 @@ export function useCanvasToolbarApps() {
           }
           diagramTranslateUi.bumpApplied()
         },
-        onDone() {
+        onDone(donePayload) {
           streamFinishedOk = true
+          applyThinkingCoinMutation(extractThinkingCoinsFooter(donePayload))
         },
         onError(message) {
           notify.warning(message || t('canvas.toolbar.translateLabelFailed'))

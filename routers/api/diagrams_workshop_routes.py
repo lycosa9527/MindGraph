@@ -21,7 +21,8 @@ from models.requests.requests_diagram import (
     WorkshopStartRequest,
 )
 from routers.auth.dependencies import get_language_dependency
-from services.auth.thinking_coin.client_event_service import claim_client_event_for_user
+from services.auth.thinking_coin.client_event_service import load_user_org
+from services.auth.thinking_coin.event_hub import mutation_to_footer, track_client_event
 from services.online_collab.core.online_collab_manager import get_online_collab_manager
 from utils.auth import get_current_user
 from utils.auth.school_tier import (
@@ -217,12 +218,17 @@ async def join_workshop(
     )
 
     async with open_async_session() as db:
-        await claim_client_event_for_user(db, current_user, EVENT_WORKSHOP_JOIN)
+        org = await load_user_org(current_user)
+        join_mutation = await track_client_event(db, current_user, org, EVENT_WORKSHOP_JOIN)
+        coins_footer = mutation_to_footer(join_mutation)
 
-    return {
+    payload = {
         "success": True,
         "workshop": workshop_info,
     }
+    if coins_footer.get("eligible"):
+        payload["thinking_coins"] = coins_footer
+    return payload
 
 
 @router.get("/workshop/organization/sessions")
@@ -271,9 +277,14 @@ async def join_workshop_organization(
     )
 
     async with open_async_session() as db:
-        await claim_client_event_for_user(db, current_user, EVENT_WORKSHOP_JOIN)
+        org = await load_user_org(current_user)
+        join_mutation = await track_client_event(db, current_user, org, EVENT_WORKSHOP_JOIN)
+        coins_footer = mutation_to_footer(join_mutation)
 
-    return {
+    payload = {
         "success": True,
         "workshop": workshop_info,
     }
+    if coins_footer.get("eligible"):
+        payload["thinking_coins"] = coins_footer
+    return payload

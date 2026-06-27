@@ -34,9 +34,10 @@ from services.infrastructure.http.error_handler import (
 from services.auth.thinking_coin.token_usage_link import build_mindmate_usage_snapshot
 from services.auth.thinking_coin.usage_wire import (
     assert_llm_usage_budget,
-    thinking_coin_post_llm_success,
+    thinking_coin_post_llm_success_mutation,
     thinking_coins_apply_to_user,
 )
+from services.auth.thinking_coin.event_hub import mutation_to_footer
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.redis_token_buffer import get_token_tracker
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -315,12 +316,14 @@ async def ai_assistant_stream(
 
             if user_id_for_tracking is not None:
                 try:
-                    await thinking_coin_post_llm_success(
+                    coin_mutation = await thinking_coin_post_llm_success_mutation(
                         user_id_for_tracking,
                         organization_id_for_tracking,
                         "mindmate",
                         usage_snapshot,
                     )
+                    if coin_mutation.eligible:
+                        yield f"data: {json.dumps({'event': 'thinking_coins', 'thinking_coins': mutation_to_footer(coin_mutation)})}\n\n"
                 except BACKGROUND_INFRA_ERRORS as coin_error:
                     logger.warning("[STREAM] Thinking coin settle failed: %s", coin_error)
 

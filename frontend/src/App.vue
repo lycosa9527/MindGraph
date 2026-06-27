@@ -13,6 +13,7 @@ import type { Language } from 'element-plus/es/locale'
 
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useKittyDesktopActionPoll, useLanguage, useNotifications } from '@/composables'
+import { useOAuthRouteFeedback } from '@/composables/auth/useOAuthRouteFeedback'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { loadElementPlusLocale } from '@/i18n/elementPlusLocale'
 import { isRtlUiLocale } from '@/i18n/locales'
@@ -23,6 +24,7 @@ import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
 const notify = useNotifications()
 
+useOAuthRouteFeedback()
 useKittyDesktopActionPoll()
 
 const LoginModal = defineAsyncComponent(() => import('@/components/auth/LoginModal.vue'))

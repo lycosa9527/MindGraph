@@ -29,6 +29,7 @@ import {
   mapDifyMessagesToMindMate,
   shouldApplyDifyHistory,
 } from '@/stores/mindmateActiveThread'
+import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import { consumeSseDataLines } from '@/utils/mindMateSseStream'
 import { mindmateDifyUserIdFromSession } from '@/utils/mindmateDifyUserId'
 
@@ -719,6 +720,12 @@ export function useMindMate(options: MindMateOptions = {}) {
             })
           }, 1000)
         }
+        break
+
+      case 'thinking_coins':
+        applyThinkingCoinMutation(
+          extractThinkingCoinsFooter(data as unknown as Record<string, unknown>)
+        )
         break
 
       case 'message_replace':

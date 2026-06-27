@@ -11,12 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
-from services.auth.thinking_coin.checkin_service import ensure_wallet_bootstrap, try_daily_checkin
-from services.auth.thinking_coin.client_event_service import claim_client_event
+from services.auth.thinking_coin.checkin_service import ensure_wallet_bootstrap
+from services.auth.thinking_coin.event_hub import mutation_to_footer, track_checkin, track_client_event
 from services.auth.thinking_coin.eligibility import user_eligible_for_thinking_coins
 from services.auth.thinking_coin.ledger_queries import fetch_ledger_page
 from services.auth.thinking_coin.wallet_payload import build_wallet_payload
-from services.auth.thinking_coin.wallet_service import get_balance, safe_commit
 from services.redis.cache.redis_org_cache import org_cache
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user
@@ -107,6 +106,7 @@ class CheckInResponse(BaseModel):
 
     credited: int = Field(description="Coins credited this call (0 if already checked in)")
     balance: int
+    thinking_coins: Optional[dict[str, Any]] = None
 
 
 class ClaimEventBody(BaseModel):
@@ -121,6 +121,7 @@ class ClaimEventResponse(BaseModel):
     credited: int
     balance: int
     slug: Optional[str] = None
+    thinking_coins: Optional[dict[str, Any]] = None
 
 
 @router.post("/check-in", response_model=CheckInResponse)
@@ -133,10 +134,13 @@ async def post_check_in(
     if not user_eligible_for_thinking_coins(current_user, org):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not eligible")
 
-    credited = await try_daily_checkin(db, current_user, org)
-    balance = await get_balance(db, int(current_user.id))
-    await safe_commit(db)
-    return CheckInResponse(credited=credited, balance=balance)
+    mutation = await track_checkin(db, current_user, org)
+    footer = mutation_to_footer(mutation)
+    return CheckInResponse(
+        credited=mutation.credited,
+        balance=mutation.balance,
+        thinking_coins=footer if mutation.eligible else None,
+    )
 
 
 @router.post("/claim-event", response_model=ClaimEventResponse)
@@ -153,5 +157,11 @@ async def post_claim_event(
     if not user_eligible_for_thinking_coins(current_user, org):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not eligible")
 
-    credited, balance, slug = await claim_client_event(db, current_user, org, body.event_key)
-    return ClaimEventResponse(credited=credited, balance=balance, slug=slug)
+    mutation = await track_client_event(db, current_user, org, body.event_key)
+    footer = mutation_to_footer(mutation)
+    return ClaimEventResponse(
+        credited=mutation.credited,
+        balance=mutation.balance,
+        slug=mutation.task_slug,
+        thinking_coins=footer if mutation.eligible else None,
+    )

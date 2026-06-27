@@ -41,9 +41,24 @@ _PHASE1_HANDLERS = frozenset(
         HANDLER_USAGE_DAILY,
         HANDLER_CLIENT_EVENT,
         HANDLER_NAVIGATE,
-        HANDLER_CUSTOM_CTA,
     }
 )
+
+
+def _validate_handler(handler_key: str, *, allow_referral: bool = False) -> None:
+    if handler_key == HANDLER_CUSTOM_CTA:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="custom_cta tasks are not supported until a runtime handler exists",
+        )
+    allowed = set(_PHASE1_HANDLERS)
+    if allow_referral:
+        allowed.add(HANDLER_REFERRAL)
+    if handler_key not in allowed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported handler_key: {handler_key}",
+        )
 
 
 class EarnTaskBody(BaseModel):

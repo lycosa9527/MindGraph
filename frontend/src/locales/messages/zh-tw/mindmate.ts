@@ -1,5 +1,5 @@
 /**
- * zh-tw UI � mindmate
+ * zh UI — mindmate
  */
 
 export default {
@@ -15,12 +15,15 @@ export default {
   'aiModel.tabFocusBadge': 'Tab焦點',
   'aiModel.tabFocusTooltip': '編輯焦點問題時按 Tab 檢驗；之後在底部用數字鍵與 − / = 備選',
   'aiModel.tabFocusQuestionBadge': 'Tab焦點問題',
-  'aiModel.conceptMapFocusQuestionTabTooltip': '选中或编辑焦点问题时：按 Tab 进行 AI 检验（须先写有实质内容的焦点问题，并需登录）。',
+  'aiModel.conceptMapFocusQuestionTabTooltip':
+    '选中或编辑焦点问题时：按 Tab 进行 AI 检验（须先写有实质内容的焦点问题，并需登录）。',
   'aiModel.tabRecBadge': 'Tab推薦',
   'aiModel.tabContentRecBadge': 'Tab內容推薦',
   'aiModel.tabRelationshipRecBadge': 'Tab關係推薦',
-  'aiModel.conceptMapConceptTabTooltip': '编辑模式（独立概念）：按 Tab 获取备选措辞（须已写好主题）。',
-  'aiModel.conceptMapRelationshipTabTooltip': '编辑模式或选中已连线概念（选择模式）：按 Tab 获取关系标签备选。',
+  'aiModel.conceptMapConceptTabTooltip':
+    '编辑模式（独立概念）：按 Tab 获取备选措辞（须已写好主题）。',
+  'aiModel.conceptMapRelationshipTabTooltip':
+    '编辑模式或选中已连线概念（选择模式）：按 Tab 获取关系标签备选。',
   'aiModel.tooltip.clickDeselect': '點擊取消選擇 {name}',
   'aiModel.tooltip.clickSelect': '點擊選擇 {name}',
   'aiModel.tooltip.clickSwitch': '點擊切換到 {name} 結果',
@@ -29,14 +32,13 @@ export default {
   'aiModel.tooltip.showingResult': '當前顯示 {name} 結果',
   'aiModel.hostPickBadgeTooltip': '房主正在編輯該模型的圖示版本（多模型視圖）',
   'aiModel.hostPickBadgeAria': '房主正在使用 {name} 編輯',
-  'autoComplete.collabOwnerOnly': '協作模式下僅圖示所有者可以使用 AI 生成',
   'autoComplete.conceptMapRealtime': '概念圖使用實時關係建議，請通過創建鏈接來生成關係',
   'autoComplete.doubleBubbleNeedBothTopics': '請填寫左右兩個主題後再生成',
   'autoComplete.doubleBubbleTopicPair': '{left} 和 {right}',
   'autoComplete.enterTopicFirst': '請先輸入主題內容',
   'autoComplete.generationFailedRetry': '生成失敗，請重試',
   'autoComplete.generationInProgress': '正在生成中，請稍候',
-  'autoComplete.generationInstructionsLabel': 'User requirements:',
+  'autoComplete.generationInstructionsLabel': '【用戶要求】',
   'autoComplete.modelsReadyCount': '{success}/{total} 個模型就緒',
   'autoComplete.noDiagramData': '沒有圖表數據',
   'autoComplete.selectDiagramType': '請選擇圖表類型',
@@ -49,9 +51,11 @@ export default {
   'focusQuestion.cannotReadStream': '無法讀取建議流',
   'focusQuestion.confirm': '確認並進入畫布',
   'focusQuestion.emptyOwn': '（尚未輸入）',
-  'focusQuestion.help': '焦点问题是概念图试图解决或回答的具体问题。它界定了概念图的领域和范围，例如如果构建一个关于「水」的概念图，焦点问题可以是「水在地球上的循环过程是怎样的？」或者「水的物理性质有哪些？」',
+  'focusQuestion.help':
+    '焦点问题是概念图试图解决或回答的具体问题。它界定了概念图的领域和范围，例如如果构建一个关于「水」的概念图，焦点问题可以是「水在地球上的循环过程是怎样的？」或者「水的物理性质有哪些？」',
   'focusQuestion.loadMoreFailed': '加載更多失敗',
-  'focusQuestion.loginHint': '登录后可使用 AI 检验焦点问题并获取建议。您仍可先输入问题并直接进入画布。',
+  'focusQuestion.loginHint':
+    '登录后可使用 AI 检验焦点问题并获取建议。您仍可先输入问题并直接进入画布。',
   'focusQuestion.needValidate': '請先完成檢驗或選擇跳過 AI',
   'focusQuestion.networkError': '網絡錯誤',
   'focusQuestion.noResult': '無結果',
@@ -90,8 +94,8 @@ export default {
   'mindmate.suggestionLabel': '可以試著問我：',
   'mindmate.openInCanvas': '在畫布中編輯',
   'mindmate.openCanvasFailed': '無法在畫布中打開導圖。',
-  'mindmate.openCanvasLoginRequired': '請先登入後再在畫布中打開導圖。',
-  'mindmate.openCanvasNoLibraryId': '導圖未保存到圖庫。請先登入後再試。',
+  'mindmate.openCanvasLoginRequired': '請先登錄後再在畫布中打開導圖。',
+  'mindmate.openCanvasNoLibraryId': '導圖未保存到圖庫。請先登錄後再試。',
   'mindmate.openCanvasSaveRetry': '導圖未能自動保存到圖庫。請重新生成；若仍失敗請聯繫管理員。',
   'mindmate.diagramLibraryFull': '圖庫已滿，請刪除舊圖後再試。',
   'mindmate.tooltip.copy': '複製',
@@ -102,7 +106,7 @@ export default {
   'mindmate.tooltip.share': '分享',
   'mindmate.untitled': '未命名會話',
   'mindmate.welcome': '{username}你好，我是{agentName}，你的思維教研夥伴',
-  'mindmate.welcomeSubtitle': 'AI virtual teaching research platform — think anywhere, anytime',
+  'mindmate.welcomeSubtitle': 'AI虛擬教研助手平臺，隨時隨地激發思維',
   'nodePalette.bridgeAnalogy': '類比詞',
   'nodePalette.bridgeSource': '原詞',
   'nodePalette.cancel': '取消',
@@ -159,9 +163,10 @@ export default {
   'panels.share.title': '分享對話',
   'rootConceptModal.addBranchAria': '添加分支',
   'rootConceptModal.addBranchTooltip': '添加知識分支（不重複已有）',
-  'rootConceptModal.helpFooter': '每个标签页对应一个知识分支；概念可在图中与根概念及其他分支交叉连接。拖拽到画布会自动连到根概念。',
+  'rootConceptModal.helpFooter':
+    '每个标签页对应一个知识分支；概念可在图中与根概念及其他分支交叉连接。拖拽到画布会自动连到根概念。',
   'rootConceptModal.splittingLoading': '正在劃分知識分支並生成概念…',
   'rootConceptModal.tabTitleRoot': '根概念：{text}',
   'rootConceptModal.title': '根概念',
   'rootConceptModal.titleConceptList': '概念列表',
-} as const
+}

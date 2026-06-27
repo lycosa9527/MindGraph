@@ -7,9 +7,8 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import Organization, User
-from services.auth.thinking_coin.client_event_earn import try_client_event_earn
 from services.auth.thinking_coin.eligibility import user_eligible_for_thinking_coins
-from services.auth.thinking_coin.wallet_service import get_balance, safe_commit
+from services.auth.thinking_coin.event_hub import track_client_event
 from services.redis.cache.redis_org_cache import org_cache
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth.thinking_coin_config import feature_thinking_coins_enabled
@@ -37,15 +36,10 @@ async def claim_client_event(
 ) -> tuple[int, int, str | None]:
     """Credit a client event when eligible; returns (credited, balance, slug)."""
     if not feature_thinking_coins_enabled() or not user_eligible_for_thinking_coins(user, org):
-        balance = 0
-        return 0, balance, None
+        return 0, 0, None
 
-    user_id = int(user.id)
-    credited, slug = await try_client_event_earn(db, user_id, event_key)
-    balance = await get_balance(db, user_id)
-    if credited > 0:
-        await safe_commit(db)
-    return credited, balance, slug
+    mutation = await track_client_event(db, user, org, event_key)
+    return mutation.credited, mutation.balance, mutation.task_slug
 
 
 async def claim_client_event_for_user(

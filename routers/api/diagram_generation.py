@@ -27,7 +27,8 @@ from models import GenerateRequest, GenerateResponse, Messages, get_request_lang
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
 from services.admin.user_usage_activity import schedule_user_usage_activity
-from services.auth.thinking_coin.usage_wire import thinking_coin_post_diagram_generation
+from services.auth.thinking_coin.event_hub import mutation_to_footer
+from services.auth.thinking_coin.usage_wire import thinking_coin_post_diagram_generation_mutation
 from services.infrastructure.http.error_handler import (
     LLMContentFilterError,
     LLMRateLimitError,
@@ -268,11 +269,13 @@ async def _finalize_generate_graph_result(result: dict[str, Any], prepared: dict
         )
 
         try:
-            await thinking_coin_post_diagram_generation(
+            earn_mutation = await thinking_coin_post_diagram_generation_mutation(
                 int(user_id),
                 organization_id,
                 result,
             )
+            if earn_mutation.eligible:
+                result["thinking_coins"] = mutation_to_footer(earn_mutation)
         except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("Failed to credit learning sheet diagram earn: %s", exc)
 

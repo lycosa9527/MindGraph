@@ -10,7 +10,6 @@ import { useNotifications } from '@/composables/core/useNotifications'
 import {
   useAuthStore,
   useDiagramStore,
-  useInlineRecommendationsStore,
   useLLMResultsStore,
 } from '@/stores'
 import {
@@ -38,7 +37,6 @@ export function useConceptMapRelationshipTabFromSelection(options: {
   startRecommendations: (nodeId: string) => void | Promise<unknown>
 }): void {
   const diagramStore = useDiagramStore()
-  const inlineRecStore = useInlineRecommendationsStore()
   const llmResultsStore = useLLMResultsStore()
   const authStore = useAuthStore()
   const notify = useNotifications()
@@ -70,15 +68,8 @@ export function useConceptMapRelationshipTabFromSelection(options: {
     )
       return
 
-    if (!inlineRecStore.isReady) return
-
     if (!llmResultsStore.selectedModel) {
-      notify.warning(
-        t(
-          'notification.conceptMapTabNeedsAi',
-          'Please enable 「启动 AI」 in the bar before Tab recommendations'
-        )
-      )
+      notify.warning(t('notification.conceptMapTabNeedsAi'))
       e.preventDefault()
       e.stopPropagation()
       return

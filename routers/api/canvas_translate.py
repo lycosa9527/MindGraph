@@ -9,8 +9,9 @@ Proprietary License
 import json
 import logging
 import re
+import time
 from collections.abc import AsyncIterator
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -20,17 +21,25 @@ from models.requests.requests_canvas_translate import (
     CANVAS_TRANSLATE_LANGUAGE_NAMES_EN,
     TranslateDiagramLabelResult,
     TranslateDiagramLabelsRequest,
-    TranslateDiagramLabelsResponse,
     TranslateNodeLabelRequest,
-    TranslateNodeLabelResponse,
 )
 from config.db_sessions import open_async_session
-from services.auth.thinking_coin.client_event_service import claim_client_event_for_user
-from services.infrastructure.http.error_handler import LLMServiceError
+from services.auth.thinking_coin.client_event_service import load_user_org
+from services.auth.thinking_coin.event_hub import (
+    merge_mutation_footers,
+    mutation_to_footer,
+    track_client_event,
+)
+from services.auth.thinking_coin.token_usage_link import build_token_usage_snapshot
+from services.auth.thinking_coin.usage_wire import (
+    assert_llm_usage_budget,
+    thinking_coin_post_llm_success_mutation,
+)
+from services.infrastructure.http.error_handler import LLMServiceError, ThinkingCoinInsufficientError
 from services.llm import llm_service
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, JSON_PARSE_ERRORS
 from utils.auth import get_current_user_or_api_key, is_superadmin
-from utils.auth.thinking_coin_config import EVENT_DIAGRAM_TRANSLATE
+from utils.auth.thinking_coin_config import EVENT_DIAGRAM_TRANSLATE, THINKING_COIN_MODE_BATCH_INNER
 
 from .diagram_generation import _query_diagram_ownership
 from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
@@ -105,6 +114,9 @@ def _parse_translations_json(llm_text: str, expected_len: int) -> list[str]:
     return out
 
 
+_CANVAS_TRANSLATE_REQUEST_TYPE = "canvas_translate"
+
+
 async def _translate_unique_texts_chunk(
     texts: list[str],
     lang_name: str,
@@ -114,6 +126,7 @@ async def _translate_unique_texts_chunk(
     diagram_type: Optional[str],
     extra_rules: str = "",
     endpoint_path: str = "/api/canvas/translate_diagram_labels",
+    batch_billing: bool = False,
 ) -> list[str]:
     """Translate unique texts chunk."""
     payload = json.dumps(texts, ensure_ascii=False)
@@ -130,6 +143,9 @@ async def _translate_unique_texts_chunk(
     )
     user_message = f"Translate each string in this JSON array (same order):\n{payload}"
     max_tokens = min(8192, max(384, 64 * len(texts) + 400))
+    llm_kwargs: dict[str, Any] = {}
+    if batch_billing:
+        llm_kwargs["thinking_coin_mode"] = THINKING_COIN_MODE_BATCH_INNER
     raw = await llm_service.chat(
         prompt=user_message,
         system_message=system_message,
@@ -140,9 +156,10 @@ async def _translate_unique_texts_chunk(
         skip_load_balancing=False,
         user_id=user_id,
         organization_id=organization_id,
-        request_type="canvas_translate",
+        request_type=_CANVAS_TRANSLATE_REQUEST_TYPE,
         diagram_type=diagram_type,
         endpoint_path=endpoint_path,
+        **llm_kwargs,
     )
     return _parse_translations_json(_coerce_llm_text(raw), len(texts))
 
@@ -164,15 +181,49 @@ def _ndjson_line(obj: dict) -> bytes:
     return json.dumps(obj, ensure_ascii=False).encode("utf-8") + b"\n"
 
 
-async def _claim_diagram_translate_earn(current_user: Optional[User]) -> None:
-    """Credit once-per-day translate exploration reward."""
+async def _claim_diagram_translate_earn(current_user: Optional[User]) -> dict[str, Any]:
+    """Credit once-per-day translate exploration reward; returns thinking_coins footer."""
     if current_user is None:
-        return
+        return {}
     try:
         async with open_async_session() as db:
-            await claim_client_event_for_user(db, current_user, EVENT_DIAGRAM_TRANSLATE)
+            org = await load_user_org(current_user)
+            mutation = await track_client_event(db, current_user, org, EVENT_DIAGRAM_TRANSLATE)
+            return mutation_to_footer(mutation)
     except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("Failed to claim diagram_translate thinking coins: %s", exc)
+        return {}
+
+
+async def _settle_batch_translate_coins(
+    *,
+    user_id: Optional[int],
+    organization_id: Optional[int],
+    endpoint_path: str,
+    duration: float,
+) -> dict[str, Any]:
+    """Single debit after a multi-chunk translate action."""
+    if user_id is None:
+        return {}
+    metadata = {
+        "user_id": user_id,
+        "organization_id": organization_id,
+        "request_type": _CANVAS_TRANSLATE_REQUEST_TYPE,
+        "endpoint_path": endpoint_path,
+    }
+    snapshot = build_token_usage_snapshot({}, metadata, "qwen-turbo", duration)
+    mutation = await thinking_coin_post_llm_success_mutation(
+        user_id,
+        organization_id,
+        _CANVAS_TRANSLATE_REQUEST_TYPE,
+        snapshot,
+    )
+    return mutation_to_footer(mutation)
+
+
+def _merge_thinking_footers(*footers: dict[str, Any]) -> dict[str, Any]:
+    """Prefer last non-empty footer (earn after spend)."""
+    return merge_mutation_footers(*footers)
 
 
 async def _translate_diagram_labels_ndjson(
@@ -190,7 +241,10 @@ async def _translate_diagram_labels_ndjson(
     yield _ndjson_line({"event": "start", "total_items": len(req.items)})
     ordered_texts = _diagram_ordered_unique_texts(req)
     translation_for_text: dict[str, str] = {}
+    batch_started = time.time()
     try:
+        if user_id is not None:
+            await assert_llm_usage_budget(user_id, organization_id, _CANVAS_TRANSLATE_REQUEST_TYPE)
         for start in range(0, len(ordered_texts), _STREAM_CHUNK_SIZE):
             chunk = ordered_texts[start : start + _STREAM_CHUNK_SIZE]
             translated_part = await _translate_unique_texts_chunk(
@@ -201,6 +255,7 @@ async def _translate_diagram_labels_ndjson(
                 diagram_type=req.diagram_type,
                 extra_rules=script_rules,
                 endpoint_path="/api/canvas/translate_diagram_labels_stream",
+                batch_billing=True,
             )
             for original, translated in zip(chunk, translated_part, strict=True):
                 translation_for_text[original] = translated
@@ -221,8 +276,20 @@ async def _translate_diagram_labels_ndjson(
                         "translated_text": translated,
                     }
                 )
-        await _claim_diagram_translate_earn(current_user)
-        yield _ndjson_line({"event": "done"})
+        spend_footer = await _settle_batch_translate_coins(
+            user_id=user_id,
+            organization_id=organization_id,
+            endpoint_path="/api/canvas/translate_diagram_labels_stream",
+            duration=time.time() - batch_started,
+        )
+        earn_footer = await _claim_diagram_translate_earn(current_user)
+        done_payload: dict[str, Any] = {"event": "done"}
+        coins_footer = _merge_thinking_footers(spend_footer, earn_footer)
+        if coins_footer:
+            done_payload["thinking_coins"] = coins_footer
+        yield _ndjson_line(done_payload)
+    except ThinkingCoinInsufficientError:
+        raise
     except LLMServiceError as exc:
         logger.warning("canvas_translate stream LLM error: %s", exc)
         yield _ndjson_line({"event": "error", "detail": "Translation service temporarily unavailable"})
@@ -249,7 +316,7 @@ async def _ownership_check_diagram_translate(
                 )
 
 
-@router.post("/canvas/translate_node_label", response_model=TranslateNodeLabelResponse)
+@router.post("/canvas/translate_node_label")
 async def translate_node_label(
     req: TranslateNodeLabelRequest,
     request: Request,
@@ -317,10 +384,14 @@ async def translate_node_label(
     if not normalized:
         raise HTTPException(status_code=502, detail="Translation produced an empty result")
 
-    return TranslateNodeLabelResponse(translated_text=normalized)
+    earn_footer = await _claim_diagram_translate_earn(current_user)
+    response_payload: dict[str, Any] = {"translated_text": normalized}
+    if earn_footer:
+        response_payload["thinking_coins"] = earn_footer
+    return response_payload
 
 
-@router.post("/canvas/translate_diagram_labels", response_model=TranslateDiagramLabelsResponse)
+@router.post("/canvas/translate_diagram_labels")
 async def translate_diagram_labels(
     req: TranslateDiagramLabelsRequest,
     request: Request,
@@ -351,6 +422,9 @@ async def translate_diagram_labels(
     )
 
     try:
+        batch_started = time.time()
+        if user_id is not None:
+            await assert_llm_usage_budget(user_id, organization_id, _CANVAS_TRANSLATE_REQUEST_TYPE)
         for start in range(0, len(ordered_texts), _BATCH_CHUNK_SIZE):
             chunk = ordered_texts[start : start + _BATCH_CHUNK_SIZE]
             translated_part = await _translate_unique_texts_chunk(
@@ -360,6 +434,7 @@ async def translate_diagram_labels(
                 organization_id=organization_id,
                 diagram_type=req.diagram_type,
                 extra_rules=script_rules,
+                batch_billing=True,
             )
             for original, translated in zip(chunk, translated_part, strict=True):
                 translation_for_text[original] = translated
@@ -393,8 +468,20 @@ async def translate_diagram_labels(
             )
         )
 
-    await _claim_diagram_translate_earn(current_user)
-    return TranslateDiagramLabelsResponse(translations=results)
+    spend_footer = await _settle_batch_translate_coins(
+        user_id=user_id,
+        organization_id=organization_id,
+        endpoint_path="/api/canvas/translate_diagram_labels",
+        duration=time.time() - batch_started,
+    )
+    earn_footer = await _claim_diagram_translate_earn(current_user)
+    response_payload: dict[str, Any] = {
+        "translations": [item.model_dump() for item in results],
+    }
+    coins_footer = _merge_thinking_footers(spend_footer, earn_footer)
+    if coins_footer:
+        response_payload["thinking_coins"] = coins_footer
+    return response_payload
 
 
 @router.post("/canvas/translate_diagram_labels_stream")

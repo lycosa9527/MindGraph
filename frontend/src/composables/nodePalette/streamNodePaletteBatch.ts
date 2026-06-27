@@ -5,6 +5,7 @@ import type { Ref } from 'vue'
 
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { eventBus } from '@/composables/core/useEventBus'
+import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import type { usePanelsStore } from '@/stores'
 import { authFetch } from '@/utils/api'
 
@@ -208,6 +209,10 @@ export async function streamNodePaletteBatch(
               }
             } else if (data.event === 'batch_complete') {
               // Stream finished for this batch
+            } else if (data.event === 'thinking_coins') {
+              applyThinkingCoinMutation(
+                extractThinkingCoinsFooter(data as Record<string, unknown>)
+              )
             }
           } catch {
             // Skip malformed lines

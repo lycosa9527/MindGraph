@@ -1,4 +1,4 @@
 /**
- * ps UI messages — re-export merged bundles.
+ * ps UI messages �?re-export merged bundles.
  */
 export { default } from './ps/index.ts'

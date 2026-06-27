@@ -1,5 +1,5 @@
 /**
- * ca UI � sidebar
+ * en UI � sidebar
  */
 
 export default {
@@ -77,8 +77,8 @@ export default {
   'sidebar.smartResponse': 'Smart Response',
   'sidebar.teacherUsage': 'Teacher usage',
   'sidebar.templateResources': 'Templates',
-  'sidebar.orgEdition': '{org} Exclusiva',
-  'sidebar.personalEdition': 'Personal Exclusiva',
+  'sidebar.orgEdition': '{org} Exclusive',
+  'sidebar.personalEdition': 'Personal Exclusive',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': 'Account',
   'sidebar.roleSuperAdmin': 'Super Admin',

@@ -19,7 +19,7 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.insufficientBody': '完成下方任务或稍后再试',
   'thinkingCoins.checkedInToday': '今日已签到',
   'thinkingCoins.usageDoneToday': '今日已完成',
-  'thinkingCoins.casePendingHint': '审核通过后发放',
+  'thinkingCoins.casePendingHint': '即将开放',
   'thinkingCoins.schoolInfo': '请联系学校管理员了解学校版方案',
   'thinkingCoins.tier.trial': '体验版',
   'thinkingCoins.tier.monthly': '超级会员·单月',

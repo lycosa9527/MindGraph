@@ -1,4 +1,4 @@
 /**
- * nl UI messages — re-export merged bundles.
+ * nl UI messages �?re-export merged bundles.
  */
 export { default } from './nl/index.ts'

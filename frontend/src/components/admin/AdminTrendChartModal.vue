@@ -152,6 +152,8 @@ const showMindbotSchoolTabs = computed(
     featureMindbot.value
 )
 
+const orgGeneralTabRef = ref<InstanceType<typeof AdminSchoolOrgGeneralTab> | null>(null)
+
 function resolveInitialSchoolTab(): SchoolDialogTab {
   const requested = props.initialSchoolTab ?? 'usage'
   if (isInsightsMode.value) {
@@ -603,6 +605,12 @@ async function saveGeneralSettings() {
     if (typeof savedExtra === 'number' && Number.isFinite(savedExtra)) {
       extraMemberSeatsEdit.value = Math.max(0, Math.trunc(savedExtra))
     }
+    if (orgGeneralTabRef.value) {
+      const oauthOk = await orgGeneralTabRef.value.saveOauthSettings()
+      if (!oauthOk) {
+        return
+      }
+    }
     notify.success(t('notification.saved'))
     emit('refresh')
     emitAdminEvent('admin:mutation_completed', {
@@ -933,11 +941,13 @@ onBeforeUnmount(() => {
           >
             <AdminSchoolOrgGeneralTab
               v-if="orgId"
+              ref="orgGeneralTabRef"
               v-model:display-name-edit="displayNameEdit"
               v-model:expires-at-edit="expiresAtEdit"
               v-model:school-tier-edit="schoolTierEdit"
               v-model:extra-member-seats-edit="extraMemberSeatsEdit"
               v-model:pending-manager-ids="pendingManagerIds"
+              :org-id="orgId"
               :org-name="orgName"
               :org-active-state="orgActiveState"
               :org-user-count="orgUserCount"
@@ -947,6 +957,7 @@ onBeforeUnmount(() => {
               :add-managers-loading="addManagersLoading"
               :lock-loading="lockLoading"
               :read-only="orgGeneralReadOnly"
+              :general-tab-active="schoolDialogTab === 'general'"
               @toggleLock="toggleLock"
               @addManagers="addManagers"
               @removeManager="removeManager"

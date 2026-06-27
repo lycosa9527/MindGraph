@@ -29,7 +29,6 @@ export default {
   'aiModel.tooltip.showingResult': 'Hazırda {name} nəticəsi göstərilir',
   'aiModel.hostPickBadgeTooltip': 'Ev sahibi bu modelin diaqram versiyasını tərtib edir (çox-model görünüşü)',
   'aiModel.hostPickBadgeAria': 'Ev sahibi {name} ilə düzəliş edir',
-  'autoComplete.collabOwnerOnly': 'Əməkdaşlıqda yalnız diaqram sahibi AI yaradıcısından istifadə edə bilər',
   'autoComplete.conceptMapRealtime': 'Konsept xəritələri real vaxtda əlaqə təkliflərindən istifadə edir; əlaqə yaradın',
   'autoComplete.doubleBubbleNeedBothTopics': 'Yaratmazdan əvvəl hər iki mövzunu doldurun',
   'autoComplete.doubleBubbleTopicPair': '{left} və {right}',

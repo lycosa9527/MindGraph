@@ -108,6 +108,8 @@ from models.domain.markets import (
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from models.domain.mindbot_usage import MindbotUsageEvent
 from models.domain.dingtalk_staff_link import DingtalkStaffLink
+from models.domain.organization_oauth_config import OrganizationOauthConfig
+from models.domain.oauth_user_link import OauthUserLink
 from models.domain.generation_preview_link import GenerationPreviewLink
 from models.domain.mindmate_export_job import MindmateExportJob
 from models.domain.error_event import ErrorEvent, ErrorGroup
@@ -191,6 +193,8 @@ __all__ = [
     "OrganizationMindbotConfig",
     "MindbotUsageEvent",
     "DingtalkStaffLink",
+    "OrganizationOauthConfig",
+    "OauthUserLink",
     "GenerationPreviewLink",
     "MindmateExportJob",
     "ErrorEvent",

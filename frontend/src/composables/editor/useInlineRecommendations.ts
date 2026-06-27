@@ -377,6 +377,11 @@ export function useInlineRecommendations() {
       return { success: false, error: 'Collab active' }
     }
 
+    if (!store.isReady) {
+      notify.warning(t('autoComplete.enterTopicFirst'))
+      return { success: false, error: 'Not ready' }
+    }
+
     const dt = diagramStore.type
     const normalizedDt = dt === 'mind_map' ? 'mindmap' : dt
     if (
@@ -457,6 +462,7 @@ export function useInlineRecommendations() {
       if (count > 0) {
         return { success: true }
       }
+      notify.warning(t('notification.inlineRecEmpty'))
       return { success: false, error: 'No recommendations generated' }
     } catch (error) {
       const isAbort = error instanceof Error && error.name === 'AbortError'

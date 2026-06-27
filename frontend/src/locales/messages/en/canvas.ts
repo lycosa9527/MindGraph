@@ -324,6 +324,8 @@ export default {
   'canvas.subgraphPreview.mergeFailed': 'Could not merge subgraph into this node',
   'canvas.subgraphPreview.enterNodeTextFirst': 'Enter valid topic text for this node first',
   'canvas.subgraphPreview.historyLabel': 'AI subgraph',
+  'canvas.inlineRecPicker.prevPage': 'Previous page',
+  'canvas.inlineRecPicker.nextPage': 'Next page',
   'canvas.toolbar.formatBrushActivated': 'Style copied — select target nodes and click again to apply',
   'canvas.toolbar.formatBrushApplied': 'Format applied to {count} node(s)',
   'canvas.toolbar.formatBrushCancelled': 'Format painter cancelled',

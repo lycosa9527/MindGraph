@@ -61,7 +61,14 @@ SLUG_DAILY_DIAGRAM: Final[str] = "daily_diagram_ai"
 SLUG_PUBLISH_CASE: Final[str] = "publish_case"
 SLUG_REFERRAL: Final[str] = "referral_register"
 
-CANVAS_ASSIST_REQUEST_TYPES: Final[frozenset[str]] = frozenset({"autocomplete", "node_palette"})
+CANVAS_ASSIST_REQUEST_TYPES: Final[frozenset[str]] = frozenset(
+    {"autocomplete", "node_palette", "canvas_translate", "voice_omni"}
+)
+
+THINKING_COIN_MODE_NORMAL: Final[str] = "normal"
+THINKING_COIN_MODE_BATCH_INNER: Final[str] = "batch_inner"
+
+VOICE_OMNI_REQUEST_TYPE: Final[str] = "voice_omni"
 
 
 def feature_thinking_coins_enabled() -> bool:

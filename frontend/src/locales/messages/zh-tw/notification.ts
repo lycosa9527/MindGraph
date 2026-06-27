@@ -1,5 +1,5 @@
 /**
- * zh-tw UI � notification
+ * zh UI — notification
  */
 
 export default {
@@ -20,12 +20,14 @@ export default {
   'notification.feedbackThanks': '感謝您的反饋',
   'notification.feedbackThanksDislike': '感謝您的反饋，我們會努力改進',
   'notification.focusQuestionTooShort': '請先輸入更長的焦點問題',
-  'notification.geoLiteMissingIntro': '请从 MaxMind 下载 GeoLite2 Country，解压后把 GeoLite2-Country.mmdb 复制到服务器 data 目录：',
+  'notification.geoLiteMissingIntro':
+    '请从 MaxMind 下载 GeoLite2 Country，解压后把 GeoLite2-Country.mmdb 复制到服务器 data 目录：',
   'notification.geoLiteMissingLink': '打開 MaxMind GeoLite 下載頁',
   'notification.geoLiteMissingPathLabel': '期望路徑：',
   'notification.geoLiteMissingTitle': '缺少 GeoLite2 Country 數據庫',
   'notification.fullscreenFailed': '無法進入全屏模式',
   'notification.generationCancelled': '已取消生成',
+  'notification.conceptMapTabNeedsAi': '請先在頂欄啟用「啟動 AI」再使用 Tab 推薦',
   'notification.historyClearNodes': '清空節點文字',
   'notification.historyEmptyLearning': '留空節點並添加答案',
   'notification.importInvalidData': '導入失敗，圖示數據無效',
@@ -34,8 +36,10 @@ export default {
   'notification.importSlotsFull': '圖庫已滿，已導入圖示但未保存到圖庫',
   'notification.importSuccess': '圖示已導入並保存到圖庫',
   'notification.importUnsupportedType': '導入失敗，不支持的圖示類型',
+  'notification.inlineRecEmpty': '未生成推薦內容，請重試或調整主題後再試',
   'notification.loadMoreFailed': '加載更多失敗',
   'notification.networkError': '網絡錯誤',
+  'notification.nodeNotEligible': '該節點不支持 Tab 推薦',
   'notification.newVersionAvailable': '新版本已發佈，點擊刷新。',
   'notification.recommendationFailed': '推薦生成失敗: {msg}',
   'notification.relationshipGenerationFailed': '關係生成失敗',
@@ -46,4 +50,4 @@ export default {
   'notification.sessionInvalidated': '您已被登出，因為登錄設備數量超過上限',
   'notification.signInToUse': '請登錄後使用',
   'notification.signInToValidateFocus': '請登錄後檢驗焦點問題',
-} as const
+}

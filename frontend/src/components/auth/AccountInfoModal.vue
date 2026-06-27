@@ -17,11 +17,13 @@ import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
+import { shouldShowAccountBindingsSection } from '@/utils/oauthLoginUi'
 
 import ApiTokenModal from './ApiTokenModal.vue'
 import AvatarSelectModal from './AvatarSelectModal.vue'
 import BindDingTalkAccountModal from './BindDingTalkAccountModal.vue'
 import DingTalkPairModal from './DingTalkPairModal.vue'
+import OAuthQrLoginModal from './OAuthQrLoginModal.vue'
 import ChangePasswordModal from './ChangePasswordModal.vue'
 import ChangePhoneModal from './ChangePhoneModal.vue'
 import SetPasswordWithSmsModal from './SetPasswordWithSmsModal.vue'
@@ -39,7 +41,7 @@ const emit = defineEmits<{
 }>()
 
 const authStore = useAuthStore()
-const { featureMindbot } = useFeatureFlags()
+const { featureMindbot, featureOauthLogin } = useFeatureFlags()
 const { canUseApiToken, canUseChromeExtension, showAccountPlugins } = useSchoolTierFeatures()
 
 const isVisible = computed({
@@ -54,6 +56,8 @@ const showSetPasswordSmsModal = ref(false)
 const showApiTokenModal = ref(false)
 const showBindDingTalkModal = ref(false)
 const showUnbindPairModal = ref(false)
+const showOAuthBindModal = ref(false)
+const oauthBindProvider = ref<'wechat' | 'dingtalk'>('wechat')
 const dingtalkBindStatus = ref<{
   linked: boolean
   mindbot_available: boolean
@@ -61,6 +65,13 @@ const dingtalkBindStatus = ref<{
   rate_limited?: boolean
 } | null>(null)
 const dingtalkBindLoading = ref(false)
+const oauthLinksLoading = ref(false)
+const oauthLinks = ref<{
+  wechat?: { nickname?: string | null; external_id_masked?: string }
+  dingtalk?: { nickname?: string | null; external_id_masked?: string }
+  wechat_login_enabled?: boolean
+  dingtalk_login_enabled?: boolean
+} | null>(null)
 const nameEdit = ref('')
 const nameSaving = ref(false)
 
@@ -79,9 +90,30 @@ const userPhone = computed(() => {
 })
 const userOrg = computed(() => authStore.user?.schoolName || '')
 
-const showDingtalkBindSection = computed(
-  () => !!authStore.user?.schoolId && featureMindbot.value
+const showMindbotBindRow = computed(
+  () => featureMindbot.value && !!authStore.user?.schoolId
 )
+
+const showAccountBindingsSection = computed(() =>
+  shouldShowAccountBindingsSection({
+    schoolId: authStore.user?.schoolId,
+    featureMindbot: featureMindbot.value,
+    featureOauthLogin: featureOauthLogin.value,
+    wechatLoginEnabled: oauthLinks.value?.wechat_login_enabled === true,
+    dingtalkLoginEnabled: oauthLinks.value?.dingtalk_login_enabled === true,
+  })
+)
+
+const showWechatOAuthRow = computed(
+  () => featureOauthLogin.value && oauthLinks.value?.wechat_login_enabled === true
+)
+
+const showDingtalkOAuthRow = computed(
+  () => featureOauthLogin.value && oauthLinks.value?.dingtalk_login_enabled === true
+)
+
+const wechatOAuthLinked = computed(() => oauthLinks.value?.wechat != null)
+const dingtalkOAuthLinked = computed(() => oauthLinks.value?.dingtalk != null)
 
 const canMintDingtalkBind = computed(
   () => dingtalkBindStatus.value?.mindbot_available === true
@@ -92,6 +124,32 @@ const dingtalkLinked = computed(() => dingtalkBindStatus.value?.linked === true)
 const dingtalkStaffMasked = computed(
   () => dingtalkBindStatus.value?.dingtalk_staff_id || ''
 )
+
+async function fetchOauthLinks() {
+  if (!authStore.user?.schoolId || !featureOauthLogin.value) {
+    oauthLinks.value = null
+    return
+  }
+  oauthLinksLoading.value = true
+  try {
+    const res = await apiRequest('/api/auth/oauth/links', { method: 'GET' })
+    if (res.ok) {
+      oauthLinks.value = (await res.json()) as typeof oauthLinks.value
+    } else {
+      oauthLinks.value = {
+        wechat_login_enabled: false,
+        dingtalk_login_enabled: false,
+      }
+    }
+  } catch {
+    oauthLinks.value = {
+      wechat_login_enabled: false,
+      dingtalk_login_enabled: false,
+    }
+  } finally {
+    oauthLinksLoading.value = false
+  }
+}
 
 async function fetchDingtalkBindStatus() {
   if (!authStore.user?.schoolId || !featureMindbot.value) {
@@ -124,6 +182,33 @@ async function fetchDingtalkBindStatus() {
   } finally {
     dingtalkBindLoading.value = false
   }
+}
+
+function openOAuthBindModal(provider: 'wechat' | 'dingtalk') {
+  oauthBindProvider.value = provider
+  showOAuthBindModal.value = true
+}
+
+async function unbindOAuthProvider(provider: 'wechat' | 'dingtalk') {
+  try {
+    const res = await apiRequest(`/api/auth/oauth/links/${provider}`, { method: 'DELETE' })
+    if (res.ok) {
+      notify.success(
+        provider === 'wechat' ? t('auth.unbindWechatSuccess') : t('auth.unbindDingtalkOAuthSuccess')
+      )
+      await fetchOauthLinks()
+      emit('success')
+    } else {
+      notify.error(t('auth.oauthUnbindError'))
+    }
+  } catch {
+    notify.error(t('auth.oauthUnbindError'))
+  }
+}
+
+function handleOAuthBindSuccess() {
+  void fetchOauthLinks()
+  emit('success')
 }
 
 function openBindDingTalkModal() {
@@ -172,6 +257,7 @@ const needsSetLoginPassword = computed(() => authStore.user?.loginPasswordSet ==
 function closeModal() {
   showBindDingTalkModal.value = false
   showUnbindPairModal.value = false
+  showOAuthBindModal.value = false
   isVisible.value = false
 }
 
@@ -229,8 +315,8 @@ async function saveDisplayName() {
 }
 
 watch(
-  () => [props.visible, featureMindbot.value] as const,
-  ([visible, mindbotEnabled]) => {
+  () => [props.visible, featureMindbot.value, featureOauthLogin.value] as const,
+  ([visible, mindbotEnabled, oauthEnabled]) => {
     if (visible) {
       const u = (authStore.user?.username || '').trim()
       const looksLikeName =
@@ -238,6 +324,9 @@ watch(
       nameEdit.value = looksLikeName ? u : ''
       if (mindbotEnabled && authStore.user?.schoolId) {
         void fetchDingtalkBindStatus()
+      }
+      if (oauthEnabled && authStore.user?.schoolId) {
+        void fetchOauthLinks()
       }
     }
   }
@@ -389,54 +478,130 @@ watch(
                   />
                 </div>
 
-                <div v-if="showDingtalkBindSection">
+                <div v-if="showAccountBindingsSection">
                   <label class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2">
-                    {{ t('auth.dingtalkBindSection') }}
+                    {{ t('auth.accountBindingsSection') }}
                   </label>
-                  <div class="flex flex-col gap-2">
-                    <div class="flex flex-wrap items-center gap-2">
-                      <el-button
-                        v-if="dingtalkLinked"
-                        round
-                        size="small"
-                        class="account-action-btn account-action-btn--linked shrink-0"
-                        disabled
+                  <p class="text-xs text-stone-500 mb-3 m-0">
+                    {{ t('auth.accountBindingsHint') }}
+                  </p>
+                  <div class="flex flex-col gap-3">
+                    <div
+                      v-if="showMindbotBindRow"
+                      class="flex flex-col gap-1"
+                    >
+                      <div class="flex flex-wrap items-center gap-2">
+                        <el-button
+                          v-if="dingtalkLinked"
+                          round
+                          size="small"
+                          class="account-action-btn account-action-btn--unbind shrink-0"
+                          :loading="dingtalkBindLoading"
+                          @click="unbindDingtalk"
+                        >
+                          {{ t('auth.unbindMindbot') }}
+                        </el-button>
+                        <el-button
+                          v-else
+                          round
+                          size="small"
+                          class="account-action-btn shrink-0"
+                          :loading="dingtalkBindLoading"
+                          :disabled="!canMintDingtalkBind"
+                          @click="openBindDingTalkModal"
+                        >
+                          {{ t('auth.bindMindbot') }}
+                        </el-button>
+                      </div>
+                      <p
+                        v-if="dingtalkLinked && dingtalkStaffMasked"
+                        class="text-xs text-stone-500 m-0"
                       >
-                        {{ t('auth.dingtalkBindLinkedButton') }}
-                      </el-button>
-                      <el-button
-                        v-else
-                        round
-                        size="small"
-                        class="account-action-btn shrink-0"
-                        :loading="dingtalkBindLoading"
-                        :disabled="!canMintDingtalkBind"
-                        @click="openBindDingTalkModal"
+                        {{ t('auth.dingtalkBindLinkedLabel', { staff: dingtalkStaffMasked }) }}
+                      </p>
+                      <p
+                        v-else-if="!dingtalkBindLoading && !canMintDingtalkBind && !dingtalkLinked"
+                        class="text-xs text-stone-500 m-0"
                       >
-                        {{ t('auth.dingtalkBindButton') }}
-                      </el-button>
-                      <el-button
-                        v-if="dingtalkLinked"
-                        round
-                        size="small"
-                        class="account-action-btn account-action-btn--unbind shrink-0"
-                        @click="unbindDingtalk"
-                      >
-                        {{ t('auth.dingtalkBindUnbind') }}
-                      </el-button>
+                        {{ t('auth.dingtalkBindNoMindbot') }}
+                      </p>
                     </div>
-                    <p
-                      v-if="dingtalkLinked && dingtalkStaffMasked"
-                      class="text-xs text-stone-500 m-0"
+
+                    <div
+                      v-if="showWechatOAuthRow"
+                      class="flex flex-col gap-1"
                     >
-                      {{ t('auth.dingtalkBindLinkedLabel', { staff: dingtalkStaffMasked }) }}
-                    </p>
-                    <p
-                      v-else-if="!dingtalkBindLoading && !canMintDingtalkBind && !dingtalkLinked"
-                      class="text-xs text-stone-500 m-0"
+                      <div class="flex flex-wrap items-center gap-2">
+                        <el-button
+                          v-if="wechatOAuthLinked"
+                          round
+                          size="small"
+                          class="account-action-btn account-action-btn--unbind shrink-0"
+                          :loading="oauthLinksLoading"
+                          @click="unbindOAuthProvider('wechat')"
+                        >
+                          {{ t('auth.unbindWechat') }}
+                        </el-button>
+                        <el-button
+                          v-else
+                          round
+                          size="small"
+                          class="account-action-btn shrink-0"
+                          :loading="oauthLinksLoading"
+                          @click="openOAuthBindModal('wechat')"
+                        >
+                          {{ t('auth.bindWechat') }}
+                        </el-button>
+                      </div>
+                      <p
+                        v-if="wechatOAuthLinked"
+                        class="text-xs text-stone-500 m-0"
+                      >
+                        {{
+                          oauthLinks?.wechat?.nickname ||
+                          oauthLinks?.wechat?.external_id_masked ||
+                          t('auth.oauthLinkedFallback')
+                        }}
+                      </p>
+                    </div>
+
+                    <div
+                      v-if="showDingtalkOAuthRow"
+                      class="flex flex-col gap-1"
                     >
-                      {{ t('auth.dingtalkBindNoMindbot') }}
-                    </p>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <el-button
+                          v-if="dingtalkOAuthLinked"
+                          round
+                          size="small"
+                          class="account-action-btn account-action-btn--unbind shrink-0"
+                          :loading="oauthLinksLoading"
+                          @click="unbindOAuthProvider('dingtalk')"
+                        >
+                          {{ t('auth.unbindDingtalkOAuth') }}
+                        </el-button>
+                        <el-button
+                          v-else
+                          round
+                          size="small"
+                          class="account-action-btn shrink-0"
+                          :loading="oauthLinksLoading"
+                          @click="openOAuthBindModal('dingtalk')"
+                        >
+                          {{ t('auth.bindDingtalkOAuth') }}
+                        </el-button>
+                      </div>
+                      <p
+                        v-if="dingtalkOAuthLinked"
+                        class="text-xs text-stone-500 m-0"
+                      >
+                        {{
+                          oauthLinks?.dingtalk?.nickname ||
+                          oauthLinks?.dingtalk?.external_id_masked ||
+                          t('auth.oauthLinkedFallback')
+                        }}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -525,6 +690,14 @@ watch(
       mode="unbind"
       :linked-staff-id="dingtalkStaffMasked"
       @completed="handleDingtalkUnbindCompleted"
+    />
+
+    <OAuthQrLoginModal
+      v-model:visible="showOAuthBindModal"
+      invite-code=""
+      mode="bind"
+      :initial-provider="oauthBindProvider"
+      @success="handleOAuthBindSuccess"
     />
   </Teleport>
 </template>

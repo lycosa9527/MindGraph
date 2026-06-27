@@ -33,6 +33,8 @@ from services.utils.error_types import LLM_PIPELINE_ERRORS
 from services.utils.prompt_manager import prompt_manager
 from services.auth.thinking_coin.usage_wire import (
     assert_llm_usage_budget,
+    is_batch_inner_thinking_coin_mode,
+    pop_thinking_coin_mode,
     thinking_coin_post_llm_success,
     thinking_coins_apply_to_user,
 )
@@ -260,13 +262,15 @@ class LLMService:
         """
         start_time = time.time()
         provider: str | None = None
+        thinking_coin_mode = pop_thinking_coin_mode(kwargs)
 
-        await assert_llm_usage_budget(
-            user_id,
-            organization_id,
-            request_type,
-            estimated_tokens=max_tokens,
-        )
+        if not is_batch_inner_thinking_coin_mode(thinking_coin_mode):
+            await assert_llm_usage_budget(
+                user_id,
+                organization_id,
+                request_type,
+                estimated_tokens=max_tokens,
+            )
 
         # Build messages with RAG context injection
         chat_messages = await self.message_builder.build_with_rag(
@@ -357,15 +361,16 @@ class LLMService:
                 duration=duration,
                 skip_token_buffer=coins_user,
             )
-            await self._settle_thinking_coins_after_success(
-                user_id,
-                organization_id,
-                request_type,
-                usage_data if isinstance(usage_data, dict) else {},
-                metadata,
-                model,
-                duration,
-            )
+            if not is_batch_inner_thinking_coin_mode(thinking_coin_mode):
+                await self._settle_thinking_coins_after_success(
+                    user_id,
+                    organization_id,
+                    request_type,
+                    usage_data if isinstance(usage_data, dict) else {},
+                    metadata,
+                    model,
+                    duration,
+                )
 
             return content
 
@@ -450,16 +455,18 @@ class LLMService:
         """
         start_time = time.time()
         provider: str | None = None
+        thinking_coin_mode = pop_thinking_coin_mode(kwargs)
 
         req_type = str(kwargs.get("request_type", "diagram_generation"))
         req_user_id = kwargs.get("user_id")
         req_org_id = kwargs.get("organization_id")
-        await assert_llm_usage_budget(
-            req_user_id,
-            req_org_id,
-            req_type,
-            estimated_tokens=max_tokens,
-        )
+        if not is_batch_inner_thinking_coin_mode(thinking_coin_mode):
+            await assert_llm_usage_budget(
+                req_user_id,
+                req_org_id,
+                req_type,
+                estimated_tokens=max_tokens,
+            )
 
         # Build messages (no RAG for chat_with_usage - caller handles tracking)
         chat_messages = self.message_builder.build_chat_messages(
@@ -539,15 +546,16 @@ class LLMService:
                 "request_type": req_type,
             }
             usage_dict = usage_data if isinstance(usage_data, dict) else {}
-            await self._settle_thinking_coins_after_success(
-                req_user_id,
-                req_org_id,
-                req_type,
-                usage_dict,
-                coin_metadata,
-                model,
-                duration,
-            )
+            if not is_batch_inner_thinking_coin_mode(thinking_coin_mode):
+                await self._settle_thinking_coins_after_success(
+                    req_user_id,
+                    req_org_id,
+                    req_type,
+                    usage_dict,
+                    coin_metadata,
+                    model,
+                    duration,
+                )
 
             return content, usage_data
 
@@ -652,13 +660,15 @@ class LLMService:
         """
         start_time = time.time()
         provider: str | None = None
+        thinking_coin_mode = pop_thinking_coin_mode(kwargs)
 
-        await assert_llm_usage_budget(
-            user_id,
-            organization_id,
-            request_type,
-            estimated_tokens=max_tokens,
-        )
+        if not is_batch_inner_thinking_coin_mode(thinking_coin_mode):
+            await assert_llm_usage_budget(
+                user_id,
+                organization_id,
+                request_type,
+                estimated_tokens=max_tokens,
+            )
 
         # Enhance prompt with RAG for streaming (if enabled)
         if use_knowledge_base and user_id and messages is None:
@@ -768,15 +778,16 @@ class LLMService:
                 duration=duration,
                 skip_token_buffer=coins_user,
             )
-            await self._settle_thinking_coins_after_success(
-                user_id,
-                organization_id,
-                request_type,
-                usage_data if isinstance(usage_data, dict) else {},
-                metadata,
-                model,
-                duration,
-            )
+            if not is_batch_inner_thinking_coin_mode(thinking_coin_mode):
+                await self._settle_thinking_coins_after_success(
+                    user_id,
+                    organization_id,
+                    request_type,
+                    usage_data if isinstance(usage_data, dict) else {},
+                    metadata,
+                    model,
+                    duration,
+                )
 
         except ValueError as value_error:
             raise value_error

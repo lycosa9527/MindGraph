@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   UPGRADE_PAGE_INVITE_REWARD_DEFAULT,
   buildUpgradePageTaskCards,
+  taskIsActionable,
 } from '@/composables/auth/thinkingCoinsUpgradeUi'
 import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
 
@@ -47,5 +48,21 @@ describe('buildUpgradePageTaskCards', () => {
 
     expect(cards.every((card) => card.kind === 'task')).toBe(true)
     expect(cards).toHaveLength(3)
+  })
+})
+
+describe('taskIsActionable', () => {
+  it('blocks publish_case while coming soon', () => {
+    expect(
+      taskIsActionable(
+        task({
+          id: 1,
+          slug: 'publish_case',
+          title: '发布案例',
+          handler_key: 'navigate',
+          coming_soon: true,
+        })
+      )
+    ).toBe(false)
   })
 })

@@ -43,6 +43,7 @@ export interface LLMResult {
   spec?: Record<string, unknown>
   diagramType?: string
   error?: string
+  errorType?: string
   elapsed?: number
   timestamp: number
 }
@@ -320,10 +321,16 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   }
 
   // Handle model error
-  function handleModelError(model: string, error: string, elapsed: number): void {
+  function handleModelError(
+    model: string,
+    error: string,
+    elapsed: number,
+    errorType?: string
+  ): void {
     storeResult(model, {
       success: false,
       error,
+      errorType,
       elapsed,
     })
   }

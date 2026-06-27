@@ -1,4 +1,4 @@
 /**
- * fi UI messages — re-export merged bundles.
+ * fi UI messages �?re-export merged bundles.
  */
 export { default } from './fi/index.ts'

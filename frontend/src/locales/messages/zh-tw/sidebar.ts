@@ -1,6 +1,4 @@
-/**
- * zh-tw UI � sidebar
- */
+/** zh-tw UI — sidebar */
 
 export default {
   'sidebar.actions.delete': '刪除',
@@ -67,7 +65,7 @@ export default {
   'sidebar.history.pinned': '置頂',
   'sidebar.history.untitled': '未命名',
   'sidebar.knowledgeSpace': '個人知識庫',
-  'sidebar.languageSettings': '語言設置',
+  'sidebar.languageSettings': '界面UI設置',
   'sidebar.library': '圖書館',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

@@ -10,6 +10,7 @@ import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { useInlineRecommendations } from '@/composables/editor/useInlineRecommendations'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramStore, useInlineRecommendationsStore } from '@/stores'
 import type { DiagramNode } from '@/types'
 import {
@@ -18,6 +19,7 @@ import {
 } from '@/utils/conceptMapInlineRec'
 
 const diagramStore = useDiagramStore()
+const { t } = useLanguage()
 const store = useInlineRecommendationsStore()
 const { activeEntry, activePage, activeTotalPages, canPrevPage, canNextPage } = storeToRefs(store)
 const { selectOption, prevPage, nextPage, isLoadingMoreFor } = useInlineRecommendations()
@@ -233,7 +235,7 @@ onUnmounted(() => {
         v-if="canPrevPage"
         type="button"
         class="px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
-        aria-label="Previous page"
+        :aria-label="t('canvas.inlineRecPicker.prevPage')"
         @click="activeEntry && prevPage(activeEntry[0])"
       >
         -
@@ -248,7 +250,7 @@ onUnmounted(() => {
         v-if="canNextPage || isLoadingMore"
         type="button"
         class="px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
-        aria-label="Next page"
+        :aria-label="t('canvas.inlineRecPicker.nextPage')"
         :disabled="isLoadingMore"
         @click="activeEntry && nextPage(activeEntry[0])"
       >

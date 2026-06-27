@@ -10,6 +10,7 @@ Proprietary License
 
 import logging
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -18,7 +19,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.user_activity_log import UserActivityLog
-from services.auth.thinking_coin.client_event_service import claim_client_event_for_user
+from services.auth.thinking_coin.client_event_service import load_user_org
+from services.auth.thinking_coin.event_hub import mutation_to_footer, track_client_event
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_current_user, is_teacher
 from utils.auth.thinking_coin_config import EVENT_DIAGRAM_EXPORT
@@ -39,7 +41,7 @@ async def log_diagram_export(
     _req: DiagramExportLogRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
-):
+) -> dict[str, Any]:
     """
     Log diagram export event for teacher usage analytics.
 
@@ -68,18 +70,19 @@ async def log_diagram_export(
     else:
         reason = "not_teacher"
 
+    thinking_coins: dict[str, Any] = {}
     try:
-        credited, _balance, _slug = await claim_client_event_for_user(
-            db,
-            current_user,
-            EVENT_DIAGRAM_EXPORT,
-        )
-        if credited > 0 and status == "skipped":
+        org = await load_user_org(current_user)
+        mutation = await track_client_event(db, current_user, org, EVENT_DIAGRAM_EXPORT)
+        thinking_coins = mutation_to_footer(mutation)
+        if mutation.credited > 0 and status == "skipped":
             status = "rewarded"
     except DATABASE_ERRORS as exc:
         logger.debug("Failed to claim diagram_export thinking coins: %s", exc)
 
-    payload: dict[str, str] = {"status": status}
+    payload: dict[str, Any] = {"status": status}
     if reason is not None:
         payload["reason"] = reason
+    if thinking_coins.get("eligible"):
+        payload["thinking_coins"] = thinking_coins
     return payload

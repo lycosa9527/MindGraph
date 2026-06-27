@@ -136,7 +136,6 @@ export function useMobileCanvasInlineRecBar(options: UseMobileCanvasInlineRecBar
       notifyWarning(translate('notification.signInToUse'))
       return
     }
-    if (!inlineRecStore.isReady) return
 
     const selectedId = diagramStore.selectedNodes[0]
     if (!selectedId) {
@@ -156,9 +155,7 @@ export function useMobileCanvasInlineRecBar(options: UseMobileCanvasInlineRecBar
       }
     }
     if (isConceptMap.value && !llmResultsStore.selectedModel) {
-      notifyWarning(
-        translate('notification.conceptMapTabNeedsAi', '请先在顶栏启用「启动 AI」再使用 Tab 推荐')
-      )
+      notifyWarning(translate('notification.conceptMapTabNeedsAi'))
       return
     }
 
@@ -168,7 +165,7 @@ export function useMobileCanvasInlineRecBar(options: UseMobileCanvasInlineRecBar
       !node ||
       !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
     ) {
-      notifyWarning(translate('notification.nodeNotEligible', '该节点不支持推荐'))
+      notifyWarning(translate('notification.nodeNotEligible'))
       return
     }
     void startRecommendations(selectedId)

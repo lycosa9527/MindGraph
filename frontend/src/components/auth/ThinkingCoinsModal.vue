@@ -172,13 +172,16 @@ function taskStatusHint(task: ThinkingCoinEarnTask): string {
   if (task.completed_today && task.handler_key === 'client_event') {
     return t('thinkingCoins.usageDoneToday')
   }
-  if (task.slug === 'publish_case') {
-    return t('thinkingCoins.casePendingHint')
+  if (task.coming_soon || task.slug === 'publish_case') {
+    return t('thinkingCoins.comingSoon')
   }
   return task.status_hint ?? ''
 }
 
 function taskIsActionable(task: ThinkingCoinEarnTask): boolean {
+  if (task.coming_soon || task.slug === 'publish_case') {
+    return false
+  }
   if (task.handler_key === 'navigate') {
     return true
   }

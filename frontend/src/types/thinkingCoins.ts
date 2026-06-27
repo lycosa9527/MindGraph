@@ -15,6 +15,17 @@ export interface ThinkingCoinEarnTask {
   action_config: Record<string, unknown>
   completed_today?: boolean
   status_hint?: string | null
+  coming_soon?: boolean
+}
+
+export interface ThinkingCoinMutationPayload {
+  eligible: boolean
+  balance: number
+  credited?: number
+  debited?: number
+  task_slug?: string | null
+  earn_events?: Array<{ slug: string; amount: number }>
+  completed_slugs_today?: string[]
 }
 
 export interface ThinkingCoinsWallet {

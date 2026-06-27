@@ -28,6 +28,7 @@ _PATH_FLAG_ATTRS: tuple[tuple[str, str], ...] = (
     ("/api/gewe", "FEATURE_GEWE"),
     ("/api/chat", "FEATURE_WORKSHOP_CHAT"),
     ("/api/mindbot", "FEATURE_MINDBOT"),
+    ("/api/auth/oauth", "FEATURE_OAUTH_LOGIN"),
 )
 
 

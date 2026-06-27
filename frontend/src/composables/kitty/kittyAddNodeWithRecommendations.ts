@@ -306,22 +306,11 @@ export async function handleKittyAddNodeWithRecommendationsRequest(
       options.diagramStore.data?.connections
     )
   ) {
-    options.notifyWarning(
-      options.translate(
-        'notification.nodeNotEligible',
-        'This node does not support recommendations'
-      )
-    )
+    options.notifyWarning(options.translate('notification.nodeNotEligible'))
     return
   }
-  if (!options.inlineRecReady) return
   if (options.diagramStore.type === 'concept_map' && !options.conceptMapAiEnabled) {
-    options.notifyWarning(
-      options.translate(
-        'notification.conceptMapTabNeedsAi',
-        'Enable AI in the toolbar before using Tab recommendations'
-      )
-    )
+    options.notifyWarning(options.translate('notification.conceptMapTabNeedsAi'))
     return
   }
   if (!options.isAuthenticated) {

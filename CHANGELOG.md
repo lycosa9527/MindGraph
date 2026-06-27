@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [5.129.0] - 2026-06-27
+
+> **OAuth QR login, thinking coins production hardening, and canvas AI UX fixes.**
+
+### Added
+
+- **OAuth QR login (WeChat + DingTalk)** — `FEATURE_OAUTH_LOGIN=False` by default; per-school DingTalk keys in **组织管理 → 其他设置**; login modal **二维码登录**; account **账户绑定** ([`docs/architecture/oauth_qr_login.md`](docs/architecture/oauth_qr_login.md)).
+- **Thinking coins — production hardening** — Central `event_hub` for earn/spend mutations, single-debit multi-LLM billing, canvas translate and Omni settlement fixes, API/SSE `thinking_coins` footers, and frontend `useThinkingCoinSync` ([`docs/architecture/thinking_coins.md`](docs/architecture/thinking_coins.md)).
+
+### Fixed
+
+- **OAuth QR login — bind redirect feedback** — Bind failures redirect to `/?error=…` (not `/auth`) so signed-in users see toasts; WeChat/DingTalk bind success uses `/?oauth_bind=` with global handling in `App.vue` ([`useOAuthRouteFeedback.ts`](frontend/src/composables/auth/useOAuthRouteFeedback.ts)).
+- **Account bindings UI — TypeScript** — `shouldShowAccountBindingsSection` accepts string `schoolId` to match auth store types ([`oauthLoginUi.ts`](frontend/src/utils/oauthLoginUi.ts)).
+- **Canvas auto-complete — thinking coins** — When all three parallel models fail with insufficient balance, only the wallet modal is shown (no duplicate error toast); `LLMResult` retains `errorType` for aggregate failure handling ([`llmResults.ts`](frontend/src/stores/llmResults.ts), [`useAutoComplete.ts`](frontend/src/composables/editor/useAutoComplete.ts)).
+- **Tab inline recommendations** — Warn when the topic is not ready or the API returns zero labels (`startRecommendations` centralizes UX) ([`useInlineRecommendations.ts`](frontend/src/composables/editor/useInlineRecommendations.ts)).
+- **Mind map RAG branch expand** — Auto-expand marks a branch as attempted only after a successful subgraph preview, so transient failures can be retried ([`useMindMapRagBranchExpand.ts`](frontend/src/composables/editor/useMindMapRagBranchExpand.ts)).
+- **Mind map subgraph / RAG expand** — Suppress duplicate error toast when thinking coins are insufficient (wallet modal only), matching full auto-complete ([`useMindMapSubgraphSuggest.ts`](frontend/src/composables/editor/useMindMapSubgraphSuggest.ts)).
+- **Tab inline rec entry points** — Removed redundant `!isReady` early returns so `startRecommendations` always shows the centralized topic warning ([`useCanvasPageMountedHandlers.ts`](frontend/src/composables/canvasPage/useCanvasPageMountedHandlers.ts), mobile/kitty callers).
+
+### Changed
+
+- **Canvas auto-complete validation** — Pure `validateAutoCompleteRules` extracted for unit tests ([`autoCompleteValidation.ts`](frontend/src/composables/editor/autoCompleteValidation.ts)).
+- **i18n** — Added `notification.conceptMapTabNeedsAi`, `notification.nodeNotEligible`, `notification.inlineRecEmpty`, and inline-rec picker aria keys; removed unused `autoComplete.collabOwnerOnly`.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): syncs with root **`VERSION`** (5.129.0) on next `npm run build` (`prebuild` → `sync-version`).
+
 ## [5.128.0] - 2026-06-27
 
 > **Mind map appearance presets, layout connectors, presentation tools, learning sheet UX, and post-add inline edit.**

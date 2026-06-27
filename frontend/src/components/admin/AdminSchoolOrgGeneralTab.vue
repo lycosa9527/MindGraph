@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /**
- * School modal — General tab: display name, status, expiry, managers, school version.
+ * School modal — General tab: display name, status, expiry, managers, school version, OAuth.
  */
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
+import AdminSchoolOauthSettings from '@/components/admin/AdminSchoolOauthSettings.vue'
 import { useLanguage } from '@/composables'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import {
@@ -22,6 +23,7 @@ const schoolTierEdit = defineModel<SchoolTier>('schoolTierEdit', { required: tru
 const extraMemberSeatsEdit = defineModel<number>('extraMemberSeatsEdit', { required: true })
 
 const props = defineProps<{
+  orgId: number
   orgName?: string
   orgActiveState: boolean
   orgUserCount?: number
@@ -31,6 +33,7 @@ const props = defineProps<{
   addManagersLoading: boolean
   lockLoading: boolean
   readOnly?: boolean
+  generalTabActive?: boolean
 }>()
 
 const pendingManagerIds = defineModel<number[]>('pendingManagerIds', { required: true })
@@ -131,6 +134,17 @@ function tierOptionLabel(tier: SchoolTier): string {
     storage: limits.diagramStorageGbPerMember,
   })
 }
+
+const oauthSettingsRef = ref<InstanceType<typeof AdminSchoolOauthSettings> | null>(null)
+
+async function saveOauthSettings(): Promise<boolean> {
+  if (!oauthSettingsRef.value) {
+    return true
+  }
+  return oauthSettingsRef.value.saveConfig()
+}
+
+defineExpose({ saveOauthSettings })
 </script>
 
 <template>
@@ -334,5 +348,12 @@ function tierOptionLabel(tier: SchoolTier): string {
         </div>
       </div>
     </div>
+
+    <AdminSchoolOauthSettings
+      ref="oauthSettingsRef"
+      :org-id="orgId"
+      :read-only="props.readOnly"
+      :active="props.generalTabActive !== false"
+    />
   </div>
 </template>

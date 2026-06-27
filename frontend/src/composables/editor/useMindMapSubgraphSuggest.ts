@@ -15,6 +15,7 @@ import { authFetch } from '@/utils/api'
 import {
   extractFailureFromPayload,
   resolveGenerateGraphErrorMessage,
+  shouldNotifyGenerateGraphError,
 } from '@/utils/generateGraphErrors'
 import {
   buildMindMapSpecFromDiagram,
@@ -41,6 +42,18 @@ function formatSubgraphErrorMessage(
   return `${t('canvas.subgraphPreview.generationFailed')}：${message}`
 }
 
+function notifySubgraphError(
+  rawError: string,
+  errorType: string | undefined,
+  t: (key: string) => string,
+  notify: ReturnType<typeof useNotifications>
+): void {
+  if (!shouldNotifyGenerateGraphError(rawError, errorType)) {
+    return
+  }
+  notify.error(formatSubgraphErrorMessage(rawError, errorType, t))
+}
+
 export function useMindMapSubgraphSuggest() {
   const diagramStore = useDiagramStore()
   const savedDiagramsStore = useSavedDiagramsStore()
@@ -65,24 +78,24 @@ export function useMindMapSubgraphSuggest() {
     }
   }
 
-  async function generateSubgraph(nodeId: string | null): Promise<void> {
-    if (!nodeId || !isMindMap.value) return
-    if (previewStore.isGenerating) return
+  async function generateSubgraph(nodeId: string | null): Promise<boolean> {
+    if (!nodeId || !isMindMap.value) return false
+    if (previewStore.isGenerating) return false
 
     if (!authStore.isAuthenticated) {
       notify.warning(t('notification.signInToUse'))
-      return
+      return false
     }
     if (diagramStore.collabSessionActive) {
       notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
-      return
+      return false
     }
 
     const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
     const nodeText = (node?.text ?? '').trim()
     if (!nodeText || isPlaceholderText(nodeText)) {
       notify.warning(t('canvas.subgraphPreview.enterNodeTextFirst'))
-      return
+      return false
     }
 
     if (previewStore.hasPreview) {
@@ -112,30 +125,29 @@ export function useMindMapSubgraphSuggest() {
       if (!response.ok) {
         if (signal?.aborted) {
           previewStore.finishGenerationWithoutPreview()
-          return
+          return false
         }
         const errorData = await response.json().catch(() => ({ detail: 'Request failed' }))
         const failure = extractFailureFromPayload(errorData)
-        const message = failure
-          ? formatSubgraphErrorMessage(failure.error, failure.errorType, t)
-          : formatSubgraphErrorMessage(`HTTP ${response.status}`, undefined, t)
-        notify.error(message)
+        if (failure) {
+          notifySubgraphError(failure.error, failure.errorType, t, notify)
+        } else {
+          notifySubgraphError(`HTTP ${response.status}`, undefined, t, notify)
+        }
         previewStore.finishGenerationWithoutPreview()
-        return
+        return false
       }
 
       const result = await response.json()
       if (signal?.aborted) {
         previewStore.finishGenerationWithoutPreview()
-        return
+        return false
       }
       const payloadFailure = extractFailureFromPayload(result)
       if (payloadFailure) {
-        notify.error(
-          formatSubgraphErrorMessage(payloadFailure.error, payloadFailure.errorType, t)
-        )
+        notifySubgraphError(payloadFailure.error, payloadFailure.errorType, t, notify)
         previewStore.finishGenerationWithoutPreview()
-        return
+        return false
       }
 
       const generatedBranches = extractBranchesFromGeneratedSpec(
@@ -144,19 +156,19 @@ export function useMindMapSubgraphSuggest() {
       if (generatedBranches.length === 0) {
         notify.warning(t('canvas.subgraphPreview.emptyResult'))
         previewStore.finishGenerationWithoutPreview()
-        return
+        return false
       }
 
       const data = diagramStore.data
       if (!data?.nodes || !data?.connections) {
         previewStore.finishGenerationWithoutPreview()
-        return
+        return false
       }
 
       const beforeSnapshot = snapshotCurrentState()
       if (!beforeSnapshot) {
         previewStore.finishGenerationWithoutPreview()
-        return
+        return false
       }
 
       diagramStore.expandMindMapPathToNode(nodeId)
@@ -171,7 +183,7 @@ export function useMindMapSubgraphSuggest() {
         diagramStore.restoreMindMapSubgraphSnapshot(beforeSnapshot)
         notify.error(t('canvas.subgraphPreview.mergeFailed'))
         previewStore.finishGenerationWithoutPreview()
-        return
+        return false
       }
 
       const reloadResult = loadMindMapSpec({
@@ -186,7 +198,7 @@ export function useMindMapSubgraphSuggest() {
         diagramStore.restoreMindMapSubgraphSnapshot(beforeSnapshot)
         notify.warning(t('canvas.subgraphPreview.emptyResult'))
         previewStore.finishGenerationWithoutPreview()
-        return
+        return false
       }
 
       for (const id of newNodeIds) {
@@ -199,15 +211,17 @@ export function useMindMapSubgraphSuggest() {
       diagramStore.applyMindMapSubgraphPreview(reloadResult)
       previewStore.setPreview(nodeId, newNodeIds, beforeSnapshot)
       notify.info(t('canvas.subgraphPreview.previewReady'))
+      return true
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         previewStore.finishGenerationWithoutPreview()
-        return
+        return false
       }
       const message =
         error instanceof Error ? error.message : t('canvas.subgraphPreview.generationFailed')
       notify.error(message)
       previewStore.finishGenerationWithoutPreview()
+      return false
     }
   }
 

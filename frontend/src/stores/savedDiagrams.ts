@@ -16,6 +16,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { notify } from '@/composables/core/notifications'
+import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import { getDefaultDiagramName } from '@/composables'
 import { SAVE } from '@/config'
 import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
@@ -378,6 +379,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       }
 
       const saved: SavedDiagramFull = await response.json()
+      applyThinkingCoinMutation(extractThinkingCoinsFooter(saved as unknown as Record<string, unknown>))
 
       // Add to local list
       diagrams.value.unshift({
@@ -449,6 +451,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       }
 
       const updated: SavedDiagramFull = await response.json()
+      applyThinkingCoinMutation(extractThinkingCoinsFooter(updated as unknown as Record<string, unknown>))
 
       // Update local list
       const index = diagrams.value.findIndex((d) => d.id === diagramId)
