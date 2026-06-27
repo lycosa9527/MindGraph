@@ -23,23 +23,36 @@ logger = logging.getLogger(__name__)
 JWT_ALGORITHM = "HS256"
 # Redis key for JWT secret storage
 JWT_SECRET_REDIS_KEY = "jwt:secret"
+# Previous secret kept during rotation so in-flight access tokens remain valid.
+JWT_SECRET_PREVIOUS_REDIS_KEY = "jwt:secret:previous"
 # File path for JWT secret backup (for recovery after Redis flush)
 JWT_SECRET_BACKUP_FILE = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", ".jwt_secret"
 )
 
-# Access token: Short-lived (1 hour default), refreshed automatically
-ACCESS_TOKEN_EXPIRY_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRY_MINUTES", "60"))
+# Access token: Short-lived (1 hour default), refreshed automatically.
+# ``ACCESS_TOKEN_EXPIRY_MINUTES`` is canonical; ``JWT_EXPIRY_HOURS`` in .env is a legacy alias.
+_raw_access_minutes = os.getenv("ACCESS_TOKEN_EXPIRY_MINUTES", "").strip()
+_raw_jwt_hours = os.getenv("JWT_EXPIRY_HOURS", "").strip()
+if _raw_access_minutes:
+    ACCESS_TOKEN_EXPIRY_MINUTES = int(_raw_access_minutes)
+elif _raw_jwt_hours:
+    ACCESS_TOKEN_EXPIRY_MINUTES = int(_raw_jwt_hours) * 60
+else:
+    ACCESS_TOKEN_EXPIRY_MINUTES = 60
 # Refresh token: Long-lived (7 days default), stored in httpOnly cookie
 REFRESH_TOKEN_EXPIRY_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRY_DAYS", "7"))
-# Legacy - kept for backward compatibility during transition
-JWT_EXPIRY_HOURS = ACCESS_TOKEN_EXPIRY_MINUTES // 60 if ACCESS_TOKEN_EXPIRY_MINUTES >= 60 else 1
+JWT_EXPIRY_HOURS = max(1, ACCESS_TOKEN_EXPIRY_MINUTES // 60) if ACCESS_TOKEN_EXPIRY_MINUTES >= 60 else 1
 
 # ============================================================================
 # Reverse Proxy Configuration
 # ============================================================================
 
-TRUSTED_PROXY_IPS = os.getenv("TRUSTED_PROXY_IPS", "").split(",") if os.getenv("TRUSTED_PROXY_IPS") else []
+TRUSTED_PROXY_IPS = [
+    ip.strip()
+    for ip in (os.getenv("TRUSTED_PROXY_IPS", "").split(",") if os.getenv("TRUSTED_PROXY_IPS") else [])
+    if ip.strip()
+]
 
 # ============================================================================
 # Authentication Mode Configuration
@@ -91,16 +104,22 @@ ENTERPRISE_DEFAULT_USER_PHONE = os.getenv("ENTERPRISE_DEFAULT_USER_PHONE", "ente
 
 # Bayi 6-digit passkey (AUTH_MODE=bayi only; separate from vendor SSO /loginByXz).
 # Elevated access: include the Bayi login identity (default bayi@system.com) in ADMIN_PHONES.
-BAYI_PASSKEY = os.getenv("BAYI_PASSKEY", "888888").strip()
+BAYI_PASSKEY = os.getenv("BAYI_PASSKEY", "").strip()
 
-# Public Dashboard Configuration
-PUBLIC_DASHBOARD_PASSKEY = os.getenv("PUBLIC_DASHBOARD_PASSKEY", "123456").strip()
+# Public Dashboard Configuration (unset/empty disables passkey login and /api/public/*)
+PUBLIC_DASHBOARD_PASSKEY = os.getenv("PUBLIC_DASHBOARD_PASSKEY", "").strip()
+
+
+def is_public_dashboard_enabled() -> bool:
+    """True when a non-empty passkey is configured for the public stats dashboard."""
+    return bool(PUBLIC_DASHBOARD_PASSKEY)
+
 
 # ============================================================================
 # Bayi Mode Configuration
 # ============================================================================
 
-BAYI_DECRYPTION_KEY = os.getenv("BAYI_DECRYPTION_KEY", "v8IT7XujLPsM7FYuDPRhPtZk").strip()
+BAYI_DECRYPTION_KEY = os.getenv("BAYI_DECRYPTION_KEY", "").strip()
 BAYI_DEFAULT_ORG_CODE = os.getenv("BAYI_DEFAULT_ORG_CODE", "BAYI-001").strip()
 # Allow 10 seconds clock skew tolerance
 BAYI_CLOCK_SKEW_TOLERANCE = int(os.getenv("BAYI_CLOCK_SKEW_TOLERANCE", "10"))

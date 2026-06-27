@@ -11,23 +11,41 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Type
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.dify import AsyncDifyClient
+from clients.dify_exceptions import DifyAPIError, DifyConversationNotFoundError
 from models.domain.auth import Organization, User
 from services.dify.export.endpoints import endpoints_for_target
 from services.dify.export.target_resolution import build_user_dify_targets
 from services.dify.export.types import UserTarget
 from services.dify.org_mindmate_client import resolve_mindmate_dify_client
-from services.utils.error_types import DIFY_API_ERRORS
 from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_LIST_TIMEOUT = int(os.getenv("DIFY_TIMEOUT", "300"))
+
+dify_client_errors: Tuple[Type[Exception], ...] = (
+    DifyAPIError,
+    ConnectionError,
+    TimeoutError,
+    OSError,
+    RuntimeError,
+    ValueError,
+    TypeError,
+    KeyError,
+)
+
+try:
+    from aiohttp import ClientError as _aiohttp_client_error
+except ImportError:
+    pass
+else:
+    dify_client_errors = dify_client_errors + (_aiohttp_client_error,)
 
 
 @dataclass(frozen=True)
@@ -135,7 +153,7 @@ async def list_unified_conversations(
                 limit=page_size,
                 sort_by="-updated_at",
             )
-        except DIFY_API_ERRORS as exc:
+        except dify_client_errors as exc:
             logger.warning(
                 "[UnifiedConversations] list failed user=%s channel=%s: %s",
                 target.dify_user,
@@ -164,6 +182,11 @@ async def list_unified_conversations(
     return page, has_more
 
 
+def _ordered_dify_targets(targets: List[UserTarget]) -> List[UserTarget]:
+    """Probe web identities before MindBot keys (common case, stable ordering)."""
+    return sorted(targets, key=lambda target: (0 if target.channel == "web" else 1, target.dify_user))
+
+
 async def resolve_dify_user_for_conversation(
     db: AsyncSession,
     user: User,
@@ -173,30 +196,38 @@ async def resolve_dify_user_for_conversation(
 ) -> str:
     """Pick the Dify ``user`` string that owns ``conversation_id``."""
     targets = await build_user_dify_targets(db, user)
+    if not targets:
+        raise DifyConversationNotFoundError()
+
     if dify_user_hint:
         hint = dify_user_hint.strip()
-        for target in targets:
-            if target.dify_user == hint:
-                return hint
+        if hint:
+            hinted = next((target for target in targets if target.dify_user == hint), None)
+            if hinted is not None:
+                try:
+                    client = await client_for_target(db, hinted)
+                    await client.get_messages(
+                        conversation_id=conversation_id,
+                        user_id=hint,
+                        limit=1,
+                    )
+                    return hint
+                except dify_client_errors:
+                    pass
 
-    web_targets = [target for target in targets if target.channel == "web"]
-    if web_targets:
-        return web_targets[0].dify_user
-
-    for target in targets:
+    for target in _ordered_dify_targets(targets):
         try:
             client = await client_for_target(db, target)
-            result = await client.get_messages(
+            await client.get_messages(
                 conversation_id=conversation_id,
                 user_id=target.dify_user,
                 limit=1,
             )
-            if result.get("data"):
-                return target.dify_user
-        except DIFY_API_ERRORS:
+            return target.dify_user
+        except dify_client_errors:
             continue
 
-    return targets[0].dify_user if targets else ""
+    raise DifyConversationNotFoundError(f"Conversation {conversation_id} not found for any bound Dify identity")
 
 
 async def resolve_client_and_dify_user(

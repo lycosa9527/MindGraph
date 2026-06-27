@@ -12,6 +12,7 @@ import { Close } from '@element-plus/icons-vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
+import { logPairAudit } from '@/utils/dingtalkPairAuditLog'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
@@ -20,6 +21,7 @@ import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 import ApiTokenModal from './ApiTokenModal.vue'
 import AvatarSelectModal from './AvatarSelectModal.vue'
 import BindDingTalkAccountModal from './BindDingTalkAccountModal.vue'
+import DingTalkPairModal from './DingTalkPairModal.vue'
 import ChangePasswordModal from './ChangePasswordModal.vue'
 import ChangePhoneModal from './ChangePhoneModal.vue'
 import SetPasswordWithSmsModal from './SetPasswordWithSmsModal.vue'
@@ -51,13 +53,14 @@ const showChangePasswordModal = ref(false)
 const showSetPasswordSmsModal = ref(false)
 const showApiTokenModal = ref(false)
 const showBindDingTalkModal = ref(false)
+const showUnbindPairModal = ref(false)
 const dingtalkBindStatus = ref<{
   linked: boolean
   mindbot_available: boolean
   dingtalk_staff_id?: string | null
+  rate_limited?: boolean
 } | null>(null)
 const dingtalkBindLoading = ref(false)
-const dingtalkUnbindLoading = ref(false)
 const nameEdit = ref('')
 const nameSaving = ref(false)
 
@@ -96,14 +99,27 @@ async function fetchDingtalkBindStatus() {
     return
   }
   dingtalkBindLoading.value = true
+  const previous = dingtalkBindStatus.value
   try {
     const res = await apiRequest('/api/auth/dingtalk-bind/status', { method: 'GET' })
     if (res.ok) {
       dingtalkBindStatus.value = (await res.json()) as typeof dingtalkBindStatus.value
-    } else {
-      dingtalkBindStatus.value = { linked: false, mindbot_available: false }
+      return
+    }
+    if (res.status === 429 && previous) {
+      dingtalkBindStatus.value = { ...previous, rate_limited: true }
+      return
+    }
+    dingtalkBindStatus.value = {
+      linked: previous?.linked ?? false,
+      mindbot_available: previous?.mindbot_available ?? false,
+      dingtalk_staff_id: previous?.dingtalk_staff_id,
     }
   } catch {
+    if (previous) {
+      dingtalkBindStatus.value = previous
+      return
+    }
     dingtalkBindStatus.value = { linked: false, mindbot_available: false }
   } finally {
     dingtalkBindLoading.value = false
@@ -115,7 +131,12 @@ function openBindDingTalkModal() {
     notify.warning(t('auth.dingtalkBindNoMindbot'))
     return
   }
-  showBindDingTalkModal.value = true
+  logPairAudit('account_open_bind', { purpose: 'bind' }, { reportToServer: false })
+  void fetchDingtalkBindStatus().then(() => {
+    if (canMintDingtalkBind.value) {
+      showBindDingTalkModal.value = true
+    }
+  })
 }
 
 function handleDingtalkBindLinked() {
@@ -123,29 +144,25 @@ function handleDingtalkBindLinked() {
   emit('success')
 }
 
-async function unbindDingtalk() {
-  if (!dingtalkLinked.value || dingtalkUnbindLoading.value) {
+function openUnbindPairModal() {
+  if (!dingtalkLinked.value) {
     return
   }
-  dingtalkUnbindLoading.value = true
-  try {
-    const res = await apiRequest('/api/auth/dingtalk-bind/unbind', { method: 'POST' })
-    if (res.ok) {
-      notify.success(t('auth.dingtalkBindUnbindSuccess'))
-      await fetchDingtalkBindStatus()
-      emit('success')
-      return
+  logPairAudit('account_open_unbind', { purpose: 'unbind' }, { reportToServer: false })
+  void fetchDingtalkBindStatus().then(() => {
+    if (dingtalkLinked.value) {
+      showUnbindPairModal.value = true
     }
-    if (res.status === 429) {
-      notify.warning(t('auth.dingtalkBindPollRateLimited'))
-      return
-    }
-    notify.error(t('auth.dingtalkBindUnbindError'))
-  } catch {
-    notify.error(t('auth.dingtalkBindUnbindError'))
-  } finally {
-    dingtalkUnbindLoading.value = false
-  }
+  })
+}
+
+function handleDingtalkUnbindCompleted() {
+  void fetchDingtalkBindStatus()
+  emit('success')
+}
+
+async function unbindDingtalk() {
+  openUnbindPairModal()
 }
 const currentAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
 
@@ -153,6 +170,8 @@ const currentAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avat
 const needsSetLoginPassword = computed(() => authStore.user?.loginPasswordSet === false)
 
 function closeModal() {
+  showBindDingTalkModal.value = false
+  showUnbindPairModal.value = false
   isVisible.value = false
 }
 
@@ -401,7 +420,6 @@ watch(
                         round
                         size="small"
                         class="account-action-btn account-action-btn--unbind shrink-0"
-                        :loading="dingtalkUnbindLoading"
                         @click="unbindDingtalk"
                       >
                         {{ t('auth.dingtalkBindUnbind') }}
@@ -500,6 +518,13 @@ watch(
       v-model="showBindDingTalkModal"
       :linked-staff-id="dingtalkStaffMasked"
       @linked="handleDingtalkBindLinked"
+    />
+
+    <DingTalkPairModal
+      v-model="showUnbindPairModal"
+      mode="unbind"
+      :linked-staff-id="dingtalkStaffMasked"
+      @completed="handleDingtalkUnbindCompleted"
     />
   </Teleport>
 </template>

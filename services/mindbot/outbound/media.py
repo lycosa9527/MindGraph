@@ -44,11 +44,12 @@ async def send_openapi_image_by_url(
     photo_url: str,
     *,
     pipeline_ctx: str = "",
+    skip_fallback_gate: bool = False,
 ) -> tuple[bool, bool]:
     """Send ``sampleImageMsg``. Returns ``(success, token_failed)``."""
     if not env_bool("MINDBOT_OPENAPI_ENABLED", True):
         return False, False
-    if not env_bool("MINDBOT_FALLBACK_OPENAPI_SEND", True):
+    if not skip_fallback_gate and not env_bool("MINDBOT_FALLBACK_OPENAPI_SEND", True):
         return False, False
     app_key = (cfg.dingtalk_client_id or "").strip()
     if not app_key:

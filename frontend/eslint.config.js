@@ -64,14 +64,28 @@ export default tseslint.config(
   },
 
   {
+    files: [
+      'src/components/panels/mindmate/MessageBubble.vue',
+      'src/components/debateverse/DebateMessage.vue',
+      'src/components/workshop-chat/ChatMessageItem.vue',
+      'src/components/askonce/AskOncePanel.vue',
+      'src/components/panels/ShareExportModal.vue',
+      'src/components/auth/UpdateLogModal.vue',
+      'src/components/diagram/nodes/InlineEditableText.vue',
+    ],
+    rules: {
+      'vue/no-v-html': 'off',
+    },
+  },
+
+  {
     files: ['**/*.ts', '**/*.tsx', '**/*.vue'],
     rules: {
       // Vue rules
       'vue/multi-word-component-names': 'off',
       // camelCase emits (custom-event-name-casing) conflict with hyphenated v-on in templates
       'vue/v-on-event-hyphenation': 'off',
-      // Markdown / rich content; sanitize at render or trust server content
-      'vue/no-v-html': 'off',
+      'vue/no-v-html': 'error',
       'vue/require-default-prop': 'off',
       'vue/require-explicit-emits': 'error',
       'vue/component-definition-name-casing': ['error', 'PascalCase'],

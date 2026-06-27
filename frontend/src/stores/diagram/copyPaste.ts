@@ -35,5 +35,9 @@ export function useCopyPasteSlice(ctx: DiagramContext) {
     ctx.pushHistory('粘贴节点')
   }
 
-  return { canPaste, copySelectedNodes, pasteNodesAt }
+  function clearCopiedNodes(): void {
+    copiedNodes.value = []
+  }
+
+  return { canPaste, copySelectedNodes, pasteNodesAt, clearCopiedNodes }
 }

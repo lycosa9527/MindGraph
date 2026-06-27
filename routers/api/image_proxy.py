@@ -43,11 +43,6 @@ def _is_loopback_hostname(hostname: str) -> bool:
     return False
 
 
-def _is_non_production_env() -> bool:
-    env = (os.getenv("ENVIRONMENT") or "production").strip().lower()
-    return config.debug or env in ("development", "test")
-
-
 def allowed_image_proxy_domains() -> frozenset[str]:
     """Domains permitted for /api/proxy-image (static list + EXTERNAL_BASE_URL host)."""
     domains = set(_STATIC_ALLOWED_DOMAINS)
@@ -60,8 +55,8 @@ def allowed_image_proxy_domains() -> frozenset[str]:
 
 
 def _dev_local_temp_image_url_allowed(parsed: ParseResult) -> bool:
-    """DEBUG/test: allow proxying loopback /temp_images/dingtalk_*.png (local dev UI)."""
-    if not _is_non_production_env():
+    """DEBUG only: allow proxying loopback /temp_images/dingtalk_*.png (local dev UI)."""
+    if not config.debug:
         return False
     if not _is_loopback_hostname(parsed.hostname or ""):
         return False

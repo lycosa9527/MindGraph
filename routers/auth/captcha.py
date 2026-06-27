@@ -15,6 +15,7 @@ import asyncio
 import base64
 import logging
 import random
+import secrets
 import uuid
 from typing import Optional, Tuple
 
@@ -184,9 +185,10 @@ async def generate_captcha(
             max_age=RATE_LIMIT_WINDOW_MINUTES * 60,  # 15 minutes
         )
 
-        # Generate 4-character code
+        # Generate 4-character code (cryptographically secure; visual noise
+        # below may use non-crypto random, but the secret itself must not).
         chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-        code = "".join(random.choices(chars, k=4))
+        code = "".join(secrets.choice(chars) for _ in range(4))
 
         # Generate SVG captcha image (same as MindLLMCross)
         svg = _generate_captcha_svg(code)
@@ -216,10 +218,9 @@ async def generate_captcha(
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=error_msg)
 
         logger.debug(
-            "Generated captcha: %s for session: %s... (code: %s)",
+            "Generated captcha: %s for session: %s...",
             session_id,
             session_token[:8],
-            code,
         )
 
         return {

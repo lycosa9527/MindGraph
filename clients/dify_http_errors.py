@@ -82,6 +82,9 @@ def raise_for_dify_http_error(
         if "file" in ep:
             raise DifyFileNotFoundError(message)
 
+    if "conversation not exist" in message.lower():
+        raise DifyConversationNotFoundError(message)
+
     if status == 403 and ec == "file_access_denied":
         raise DifyFileAccessDeniedError(message)
 

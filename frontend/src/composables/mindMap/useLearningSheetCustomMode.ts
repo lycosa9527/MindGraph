@@ -77,6 +77,13 @@ function dismissLearningSheetFloatBar(): void {
   learningSheetFloatBarOpen.value = false
 }
 
+/** Clear module-level learning-sheet UI when leaving canvas or resetting session. */
+export function resetLearningSheetCustomModeUi(): void {
+  learningSheetPickActive.value = false
+  learningSheetFloatBarOpen.value = false
+  learningSheetFloatBarBeforePresentation.value = false
+}
+
 /**
  * Entering presentation: end hammer pick / hide float bar but keep blanked nodes
  * (teacher presents the worksheet as-is).

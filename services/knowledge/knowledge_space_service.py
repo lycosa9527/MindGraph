@@ -41,6 +41,7 @@ from services.knowledge.document_processing import (
     prepare_qdrant_metadata,
 )
 from services.knowledge.document_processor import get_document_processor
+from services.utils.safe_upload import ensure_within_directory, safe_upload_basename
 from services.knowledge.document_reindexing import (
     chunk_text_for_reindexing,
     compare_chunks,
@@ -165,6 +166,8 @@ class KnowledgeSpaceService:
         Returns:
             KnowledgeDocument instance
         """
+        file_name = safe_upload_basename(file_name)
+
         count = await self.get_document_count()
         if count >= self.max_documents:
             raise ValueError(f"Maximum {self.max_documents} documents allowed. Please delete a document first.")
@@ -206,8 +209,8 @@ class KnowledgeSpaceService:
         await self.db.commit()
         await self.db.refresh(document)
 
-        final_path = user_dir / f"{document.id}_{file_name}"
-        shutil.move(file_path, final_path)
+        final_path = ensure_within_directory(user_dir / f"{document.id}_{file_name}", user_dir)
+        shutil.move(file_path, str(final_path))
         document.file_path = str(final_path)
         await self.db.commit()
 

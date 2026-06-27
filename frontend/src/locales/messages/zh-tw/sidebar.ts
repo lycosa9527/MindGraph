@@ -78,6 +78,7 @@ export default {
   'sidebar.teacherUsage': '教師使用度',
   'sidebar.templateResources': '模板資源',
   'sidebar.orgEdition': '{org}專屬版',
+  'sidebar.personalEdition': '個人專屬版',
   'sidebar.userSubtitleDefault': 'MindGraph專業版',
   'sidebar.account': '賬號設置',
   'sidebar.roleSuperAdmin': '超級管理員',

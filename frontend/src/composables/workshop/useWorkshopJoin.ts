@@ -25,16 +25,20 @@ interface UseWorkshopJoinOptions {
 export function useWorkshopJoin(options: UseWorkshopJoinOptions) {
   let authRefreshReconnectTimeout: ReturnType<typeof setTimeout> | null = null
 
-  function getWebSocketUrl(code: string): string {
+  function getWebSocketConnectOptions(code: string): { url: string; protocols?: string[] } {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const host = window.location.host
-    let base = `${protocol}//${host}/api/ws/canvas-collab/${code}`
+    const url = `${protocol}//${host}/api/ws/canvas-collab/${code}`
     const resume = options.joinResumeToken.value?.trim()
     if (resume) {
-      const sep = base.includes('?') ? '&' : '?'
-      base += `${sep}resume=${encodeURIComponent(resume)}`
+      return { url, protocols: [`mg-resume.${resume}`] }
     }
-    return base
+    return { url }
+  }
+
+  /** @deprecated Use getWebSocketConnectOptions — kept for callers that only need the URL string. */
+  function getWebSocketUrl(code: string): string {
+    return getWebSocketConnectOptions(code).url
   }
 
   function clearAuthRefreshReconnect(): void {
@@ -69,6 +73,7 @@ export function useWorkshopJoin(options: UseWorkshopJoinOptions) {
 
   return {
     getWebSocketUrl,
+    getWebSocketConnectOptions,
     clearAuthRefreshReconnect,
     scheduleAuthRefreshReconnect,
   }

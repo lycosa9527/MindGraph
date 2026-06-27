@@ -122,6 +122,34 @@ export const markdownKatexDomPurifyConfig: { ADD_TAGS: string[]; ADD_ATTR: strin
   ADD_ATTR: [...MARKDOWN_KATEX_ATTR],
 }
 
+let markdownLinkSanitizeHookInstalled = false
+
+/** Install once; safe to call from every sanitize entry point. */
+export function installMarkdownLinkSanitizeHook(): void {
+  if (markdownLinkSanitizeHookInstalled) {
+    return
+  }
+  markdownLinkSanitizeHookInstalled = true
+  DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+    if (node.tagName !== 'A') {
+      return
+    }
+    const href = node.getAttribute('href')
+    if (!href) {
+      return
+    }
+    const lowered = href.trim().toLowerCase()
+    if (lowered.startsWith('javascript:') || lowered.startsWith('data:')) {
+      node.removeAttribute('href')
+      return
+    }
+    node.setAttribute('rel', 'noopener noreferrer')
+    if (lowered.startsWith('http://') || lowered.startsWith('https://')) {
+      node.setAttribute('target', '_blank')
+    }
+  })
+}
+
 /**
  * Sanitize HTML from markdown-it before assigning to v-html.
  * Prefer `renderRichMarkdownHtml` from `@/composables/core/useMarkdown` so math and fenced code run
@@ -131,5 +159,6 @@ export function sanitizeMarkdownItHtml(html: string): string {
   if (!html) {
     return ''
   }
+  installMarkdownLinkSanitizeHook()
   return DOMPurify.sanitize(html, markdownKatexDomPurifyConfig)
 }

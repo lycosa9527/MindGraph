@@ -88,6 +88,15 @@ async def test_staff_taken_precheck_does_not_consume_token() -> None:
 
     with (
         patch(
+            "services.auth.dingtalk_bind_service.try_acquire_pair_claim_lock",
+            new_callable=AsyncMock,
+            return_value=True,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.release_pair_claim_lock",
+            new_callable=AsyncMock,
+        ),
+        patch(
             "services.auth.dingtalk_bind_service.get_bind_token_consumed",
             new_callable=AsyncMock,
             return_value=False,
@@ -151,6 +160,15 @@ async def test_success_consumes_after_commit() -> None:
 
     with (
         patch(
+            "services.auth.dingtalk_bind_service.try_acquire_pair_claim_lock",
+            new_callable=AsyncMock,
+            return_value=True,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.release_pair_claim_lock",
+            new_callable=AsyncMock,
+        ),
+        patch(
             "services.auth.dingtalk_bind_service.get_bind_token_consumed",
             new_callable=AsyncMock,
             return_value=False,
@@ -180,6 +198,11 @@ async def test_success_consumes_after_commit() -> None:
         patch(
             "services.auth.dingtalk_bind_service.clear_bind_code_guess_failures",
             new_callable=AsyncMock,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.force_burn_bind_token",
+            new_callable=AsyncMock,
+            return_value=False,
         ),
     ):
         mock_cm = AsyncMock()
@@ -219,6 +242,15 @@ async def test_integrity_error_maps_to_staff_taken() -> None:
     mock_repo.claim_staff_link = AsyncMock(return_value=StaffLinkClaimResult(ok=True))
 
     with (
+        patch(
+            "services.auth.dingtalk_bind_service.try_acquire_pair_claim_lock",
+            new_callable=AsyncMock,
+            return_value=True,
+        ),
+        patch(
+            "services.auth.dingtalk_bind_service.release_pair_claim_lock",
+            new_callable=AsyncMock,
+        ),
         patch(
             "services.auth.dingtalk_bind_service.get_bind_token_consumed",
             new_callable=AsyncMock,

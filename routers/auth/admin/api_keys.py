@@ -39,6 +39,13 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def mask_api_key_for_display(raw_key: str) -> str:
+    """Return a display-safe API key (last four characters only)."""
+    if len(raw_key) <= 4:
+        return "****"
+    return f"{'*' * (len(raw_key) - 4)}{raw_key[-4:]}"
+
+
 @router.get("/admin/api_keys", dependencies=[Depends(require_settings_tokens)])
 async def list_api_keys_admin(
     _request: Request,
@@ -98,7 +105,7 @@ async def list_api_keys_admin(
         result.append(
             {
                 "id": key.id,
-                "key": key.key,
+                "key": mask_api_key_for_display(key.key),
                 "name": key.name,
                 "description": key.description,
                 "quota_limit": key.quota_limit,

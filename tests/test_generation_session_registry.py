@@ -11,6 +11,7 @@ import pytest
 from services.diagram.generation_session_registry import (
     SESSION_PREFIX,
     lookup_generation_session,
+    lookup_solo_recent_mindbot_session,
     register_generation_session,
 )
 
@@ -59,3 +60,40 @@ async def test_lookup_generation_session_by_conversation() -> None:
     assert ctx is not None
     assert ctx["user_id"] == 3
     assert ctx["dify_user_id"] == "mg_user_3"
+
+
+@pytest.mark.asyncio
+async def test_lookup_solo_recent_mindbot_session() -> None:
+    """Single active MindBot session resolves by dify key."""
+    payload = json.dumps(
+        {
+            "channel": "mindbot",
+            "dify_user_id": "mindbot_5_staff42",
+            "organization_id": 5,
+            "user_id": 3,
+            "registered_at": time.time(),
+        }
+    )
+    redis = MagicMock()
+    redis.zrangebyscore = AsyncMock(return_value=[b"mindbot_5_staff42"])
+    redis.get = AsyncMock(return_value=payload)
+    with patch(
+        "services.diagram.generation_session_registry.get_async_redis",
+        return_value=redis,
+    ):
+        ctx = await lookup_solo_recent_mindbot_session()
+    assert ctx is not None
+    assert ctx["user_id"] == 3
+
+
+@pytest.mark.asyncio
+async def test_lookup_solo_recent_mindbot_session_ambiguous() -> None:
+    """Multiple active MindBot sessions return None."""
+    redis = MagicMock()
+    redis.zrangebyscore = AsyncMock(return_value=[b"mindbot_5_a", b"mindbot_5_b"])
+    with patch(
+        "services.diagram.generation_session_registry.get_async_redis",
+        return_value=redis,
+    ):
+        ctx = await lookup_solo_recent_mindbot_session()
+    assert ctx is None

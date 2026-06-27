@@ -226,7 +226,7 @@ export function useWorkshop(
     return String(diagramOwnerId.value) === String(authStore.user?.id ?? '')
   })
 
-  const { getWebSocketUrl, clearAuthRefreshReconnect, scheduleAuthRefreshReconnect } =
+  const { getWebSocketConnectOptions, clearAuthRefreshReconnect, scheduleAuthRefreshReconnect } =
     useWorkshopJoin({
       workshopCode,
       joinResumeToken,
@@ -380,8 +380,8 @@ export function useWorkshop(
     }
 
     try {
-      const url = getWebSocketUrl(workshopCode.value)
-      const socket = new WebSocket(url)
+      const { url, protocols } = getWebSocketConnectOptions(workshopCode.value)
+      const socket = protocols ? new WebSocket(url, protocols) : new WebSocket(url)
       socket.binaryType = 'arraybuffer'
       let errorNotified = false
 

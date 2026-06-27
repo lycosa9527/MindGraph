@@ -410,6 +410,7 @@ export default {
   'canvas.topBar.exportSvg': 'ส่งออกเป็น SVG',
   'canvas.topBar.reset': 'รีเซ็ต',
   'canvas.topBar.resetTemplate': 'รีเซ็ตเป็นเทมเพลตเริ่มต้น',
+  'canvas.topBar.resetCanvas': 'Reset canvas',
   'canvas.topBar.schoolCollab': 'ร่วมมือกับโรงเรียน',
   'canvas.topBar.shareCommunity': 'แชร์ไปยังชุมชน',
   'canvas.topBar.sharedCollab': 'ร่วมมือแบบแชร์',

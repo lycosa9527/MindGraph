@@ -1,0 +1,54 @@
+/* Shared mind-map toolbar button chrome (CanvasToolbarMindMap + CanvasTopBar). */
+.mm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #374151;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+.dark .mm-btn {
+  background: #1f2937;
+  border-color: #374151;
+  color: #e5e7eb;
+  box-shadow: none;
+}
+
+.mm-btn:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.dark .mm-btn:hover:not(:disabled) {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+.mm-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mm-btn--icon {
+  width: 32px;
+  padding: 0;
+}
+
+.mm-btn__label {
+  font-weight: 500;
+}

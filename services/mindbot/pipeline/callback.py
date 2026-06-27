@@ -17,6 +17,7 @@ from typing import Any, Optional
 from clients.dify import AsyncDifyClient, DifyFile
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.diagram.generation_session_registry import register_generation_session
+from services.mindbot.diagram.generation_session_bind import resolve_mindbot_linked_user_id
 from services.mindbot.core.conv_gate import (
     conv_gate_enabled,
     conv_gate_poll_total_ms,
@@ -25,7 +26,7 @@ from services.mindbot.core.conv_gate import (
     redis_acquire_conv_gate_async,
     redis_release_conv_gate_async,
 )
-from services.mindbot.bind.picture_handler import try_handle_bind_picture
+from services.mindbot.tools.dispatch import try_handle_mindbot_tools
 from services.mindbot.core.dify_reply import mindbot_dify_chat_blocking
 from services.mindbot.dify.usage_parse import parse_dify_usage_from_blocking_response
 from services.mindbot.education.metrics import (
@@ -556,11 +557,18 @@ async def execute_mindbot_pipeline(
     if dify_conv:
         dify_inputs["mg_conversation_id"] = dify_conv
 
+    linked_user_id = await resolve_mindbot_linked_user_id(
+        cfg.organization_id,
+        sender_staff,
+        callback_token=getattr(cfg, "public_callback_token", None),
+    )
+
     await register_generation_session(
         channel="mindbot",
         dify_user_id=dify_user_id,
         organization_id=cfg.organization_id,
         conversation_id=dify_conv,
+        user_id=linked_user_id,
     )
 
     def _hdr(code: MindbotErrorCode) -> dict[str, str]:
@@ -578,12 +586,14 @@ async def execute_mindbot_pipeline(
         redis_bind_dify_conversation=_redis_bind_dify_conversation_async,
         pipeline_ctx=pipeline_ctx,
         msg_id=msg_id_for_usage or "",
+        linked_user_id=linked_user_id,
     )
 
-    bind_result = await try_handle_bind_picture(
+    bind_result = await try_handle_mindbot_tools(
         cfg=cfg,
         body=body,
         inbound_msg_type=inbound_msg_type,
+        text_in=text_in,
         sender_staff_id=sender_staff,
         session_webhook_valid=session_webhook_valid,
         session_webhook_pinned_ip=session_webhook_pinned_ip,

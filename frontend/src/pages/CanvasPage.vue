@@ -7,6 +7,9 @@
  * focus/root review streams, snapshot history, presentation state, and partial
  * ui reset — avoids stale state and lingering SSE on re-entry.
  *
+ * In-session reset (top-bar Reset): applyCanvasSessionReset + diagram:reset_requested
+ * mirrors the same teardown without leaving the page.
+ *
  * Users access this page via:
  * 1. DiagramTemplateInput - Generates on landing, then navigates here with pre-loaded diagram
  * 2. DiagramTypeGrid - "在画布中创建" → navigates here with diagram type
@@ -16,8 +19,8 @@
  *
  * Auto-save functionality (event + state driven):
  * - User edits: debounced auto-save on diagram changes (2 second delay)
- * - LLM generating: skip auto-save; wait for llm:generation_completed
- * - LLM completed: flush and save once
+ * - LLM generating: skip routine auto-save; persist after each model on llm:model_completed
+ * - LLM all done: final flush on llm:generation_completed
  * - Auto-updates if diagram is already in library; auto-saves new if slots available
  */
 import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
@@ -54,7 +57,6 @@ import KittyDesktopWorkflowDebugLog from '@/components/kitty/KittyDesktopWorkflo
 import { MindmatePanel, NodePalettePanel, RootConceptModal } from '@/components/panels'
 import {
   eventBus,
-  getDefaultDiagramName,
   getDiagramOperations,
   getNodePalette,
   getPanelCoordinator,
@@ -80,6 +82,7 @@ import {
 } from '@/composables/canvasPage/diagramTypeMaps'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { registerCanvasPageDiagramEventBus } from '@/composables/canvasPage/registerCanvasPageDiagramEventBus'
+import { registerCanvasPageResetHandler } from '@/composables/canvasPage/registerCanvasPageResetHandler'
 import { useCanvasPageEditorShortcuts } from '@/composables/canvasPage/useCanvasPageEditorShortcuts'
 import { useCanvasPageLibrarySnapshots } from '@/composables/canvasPage/useCanvasPageLibrarySnapshots'
 import { useCanvasPageMountedHandlers } from '@/composables/canvasPage/useCanvasPageMountedHandlers'
@@ -117,6 +120,7 @@ import { useMindMapSlidePresentation } from '@/composables/mindMap/useMindMapSli
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import {
   learningSheetNeedsPresentationConfirm,
+  resetLearningSheetCustomModeUi,
   resumeLearningSheetAfterPresentation,
   suspendLearningSheetForPresentation,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
@@ -162,6 +166,7 @@ import type { DiagramType } from '@/types'
 import type { MindMapPresentationToolId } from '@/types/diagram'
 import { MIND_MAP_PRESENTATION_EXPANDABLE_TOOLS } from '@/types/diagram'
 import { isMindMapDiagramType } from '@/utils/conceptMapDesktopViewport'
+import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 
 const route = useRoute()
 const router = useRouter()
@@ -366,7 +371,7 @@ function handleMindMapPresentationExit(): void {
 
 function handleMindMapTimerExit(): void {
   onTimerExit()
-  mindMapPresentationTool.value = 'pointer'
+  mindMapPresentationTool.value = useMindMapV2.value ? 'hand' : 'pointer'
   handToolActive.value = false
 }
 
@@ -446,6 +451,8 @@ eventBus.onWithOwner(
 const fitViewOnInit = computed(() => {
   const type = diagramStore.type
   if (type === 'concept_map') return false
+  // V2 mind maps: one-shot fit on enter via useDiagramCanvasFit.handleNodesInitialized;
+  // keep false here so node/panel watches do not auto-refit while editing.
   if (useMindMapV2.value) return false
   return true
 })
@@ -817,6 +824,17 @@ watch(
 
 registerCanvasPageDiagramEventBus({ canvasZoom })
 
+registerCanvasPageResetHandler({
+  snapshotHistory,
+  diagramAutoSave,
+  resetPresentationStateOnLeave,
+  exitPresentationFullscreen,
+  presentationRailOpen,
+  mindMapPresentationTool,
+  slidePresentation,
+  canvasZoom,
+})
+
 /** MindMate panel and presentation rail cannot both be active: opening one closes the other. */
 watch(
   () => panelsStore.mindmatePanel.isOpen,
@@ -909,6 +927,18 @@ watch(mindMapPresentationTool, (tool) => {
     presentationTool.value = 'laser'
     handToolActive.value = false
     slidePresentation.startSlideShow()
+    return
+  }
+  if (tool === 'spotlight') {
+    presentationTool.value = 'spotlight'
+    handToolActive.value = false
+    slidePresentation.stopSlideShow()
+    return
+  }
+  if (tool === 'timer') {
+    presentationTool.value = 'timer'
+    handToolActive.value = false
+    slidePresentation.stopSlideShow()
   }
 })
 
@@ -938,6 +968,7 @@ const { handleSaveKey } = useCanvasPageEditorShortcuts({
   activeEditors,
   relationshipActiveEntry,
   diagramAutoSave,
+  isCollabGuest,
 })
 
 // LLM generation completed + cancel on start: handled by useDiagramAutoSave
@@ -1091,11 +1122,11 @@ onMounted(async () => {
             router.replace({ path: '/canvas' })
 
             // Save imported diagram to user's library
-            const topicText = diagramStore.getTopicNodeText()
-            const importTitle =
-              topicText ||
-              diagramStore.effectiveTitle ||
-              getDefaultDiagramName(diagramType, currentLanguage.value)
+            const importTitle = resolveDiagramTitleForSave(
+              diagramStore.effectiveTitle,
+              diagramType,
+              currentLanguage.value
+            )
             diagramStore.initTitle(importTitle)
             const getDiagramSpec = useDiagramSpecForSave()
             const specToSave = getDiagramSpec()
@@ -1168,8 +1199,9 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  diagramAutoSave.flush()
-  diagramAutoSave.teardown()
+  void diagramAutoSave.flush().finally(() => {
+    diagramAutoSave.teardown()
+  })
   inlineRecCoordinator.teardown()
   eventBus.removeAllListenersForOwner('CanvasPage')
 
@@ -1189,6 +1221,7 @@ onUnmounted(() => {
   uiStore.setSelectedChartType('选择具体图示')
   uiStore.setFreeInputValue('')
   resetPresentationStateOnLeave()
+  resetLearningSheetCustomModeUi()
   setPresentationDiagramEditLocked(false)
   setPresentationFullscreenRoot(null)
   void exitPresentationFullscreen()
@@ -1234,11 +1267,34 @@ onUnmounted(() => {
       />
     </Transition>
 
-    <!-- Spotlight / timer removed — simplified presentation rail only -->
+    <!-- Spotlight overlay (new canvas presentation rail) -->
+    <Transition name="spotlight-fade">
+      <div
+        v-if="
+          isMindMapPresentationMode && mindMapPresentationTool === 'spotlight'
+        "
+        class="spotlight-overlay"
+        :style="spotlightStyle"
+        aria-hidden="true"
+      />
+    </Transition>
 
-    <!-- Simplified presentation rail: hand · laser · pen · slides (mind map) -->
+    <!-- Presentation timer (new canvas presentation rail) -->
+    <PresentationTimerOverlay
+      v-if="isMindMapPresentationMode && mindMapPresentationTool === 'timer'"
+      :remaining-seconds="timerRemainingSeconds"
+      :total-seconds="timerTotalSeconds"
+      :running="timerRunning"
+      @toggle-run="onTimerToggleRun"
+      @reset="onTimerReset"
+      @preset-minutes="onTimerPresetMinutes"
+      @set-minutes="onTimerSetMinutes"
+      @exit="handleMindMapTimerExit"
+    />
+
+    <!-- Simplified presentation rail: hand · laser · pen · spotlight · timer · slides (mind map) -->
     <MindMapPresentationSideToolbar
-      v-if="showSimplifiedPresentationRail"
+      v-if="showSimplifiedPresentationRail && mindMapPresentationTool !== 'timer'"
       :active-tool="mindMapPresentationTool"
       :color-id="penColorId"
       :thickness="penThickness"

@@ -12,6 +12,10 @@ import { useRegisterRegionDetection } from '@/composables/auth/useRegisterRegion
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import { useAuthStore, useUIStore } from '@/stores'
 import { isBrowserLanguageSimplifiedChinese } from '@/utils/clientRegion'
+import {
+  loadSavedLoginIdentifier,
+  saveLoginIdentifier,
+} from '@/utils/savedLoginCredentials'
 
 export type LoginModalViewState = 'login' | 'register' | 'sms-login' | 'forgot-password'
 
@@ -32,11 +36,33 @@ export function useLoginModal(
   const currentView = ref<LoginModalViewState>('login')
   const activeTab = ref<string>('login')
 
-  const loginForm = ref({
-    phone: '',
-    password: '',
-    captcha: '',
-  })
+  function createEmptyLoginForm() {
+    const savedIdentifier = loadSavedLoginIdentifier()
+    return {
+      phone: savedIdentifier ?? '',
+      password: '',
+      captcha: '',
+    }
+  }
+
+  /** Prefill login identifier from localStorage (remember-me on by default). */
+  function restoreSavedLoginFields() {
+    const savedIdentifier = loadSavedLoginIdentifier()
+    if (!savedIdentifier) {
+      return
+    }
+    if (currentView.value === 'login') {
+      loginForm.value.phone = savedIdentifier
+    }
+    if (currentView.value === 'sms-login' && !smsLoginForm.value.phone.trim()) {
+      smsLoginForm.value.phone = savedIdentifier
+    }
+    if (currentView.value === 'forgot-password' && !forgotForm.value.phone.trim()) {
+      forgotForm.value.phone = savedIdentifier
+    }
+  }
+
+  const loginForm = ref(createEmptyLoginForm())
 
   const registerForm = ref({
     registrationEmail: '',
@@ -183,7 +209,7 @@ export function useLoginModal(
   }
 
   function resetAllForms() {
-    loginForm.value = { phone: '', password: '', captcha: '' }
+    loginForm.value = createEmptyLoginForm()
     registerForm.value = {
       registrationEmail: '',
       phone: '',
@@ -233,6 +259,9 @@ export function useLoginModal(
     }
     activeTab.value = tab
     currentView.value = tab
+    if (tab === 'login') {
+      restoreSavedLoginFields()
+    }
     void refreshCaptcha()
   }
 
@@ -254,6 +283,7 @@ export function useLoginModal(
       clearInterval(smsCountdownTimer.value)
       smsCountdownTimer.value = null
     }
+    restoreSavedLoginFields()
     void refreshCaptcha()
   }
 
@@ -279,6 +309,7 @@ export function useLoginModal(
     () => props.visible,
     (newValue) => {
       if (newValue) {
+        restoreSavedLoginFields()
         if (!authStore.isAuthenticated && !props.persistent) {
           uiStore.syncGuestLocaleFromBrowser()
         }
@@ -341,6 +372,7 @@ export function useLoginModal(
       )
 
       if (result.success) {
+        saveLoginIdentifier(id)
         const userName = result.user?.username || ''
         notify.success(
           userName
@@ -494,6 +526,8 @@ export function useLoginModal(
           notify.success(t('auth.modal.registerSuccess'))
           switchLoginRegisterTab('login')
           loginForm.value.phone = email
+          loginForm.value.password = registerForm.value.password
+          saveLoginIdentifier(email)
         } else {
           notify.error(
             typeof data.detail === 'string' ? data.detail : t('auth.modal.registerFailed')
@@ -543,6 +577,8 @@ export function useLoginModal(
         notify.success(t('auth.modal.registerSuccess'))
         switchLoginRegisterTab('login')
         loginForm.value.phone = registerForm.value.phone
+        loginForm.value.password = registerForm.value.password
+        saveLoginIdentifier(registerForm.value.phone)
       } else {
         notify.error(data.detail || t('auth.modal.registerFailed'))
         registerForm.value.captcha = ''
@@ -710,8 +746,6 @@ export function useLoginModal(
 
       if (response.ok && data.user) {
         authStore.setUser(data.user)
-        const token = data.access_token || data.token
-        if (token) authStore.setToken(token)
         const userName = data.user?.name || ''
         notify.success(
           userName
@@ -793,8 +827,10 @@ export function useLoginModal(
 
       if (response.ok) {
         notify.success(t('auth.modal.resetSuccess'))
+        saveLoginIdentifier(trimmed)
         backToLogin()
         loginForm.value.phone = trimmed
+        loginForm.value.password = forgotForm.value.newPassword
       } else {
         notify.error(data.detail || t('auth.modal.resetFailed'))
       }

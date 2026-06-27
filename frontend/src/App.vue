@@ -18,7 +18,7 @@ import { loadElementPlusLocale } from '@/i18n/elementPlusLocale'
 import { isRtlUiLocale } from '@/i18n/locales'
 import { useAuthStore, useUIStore } from '@/stores'
 import { useLiveTranslationStore } from '@/stores/liveTranslation'
-import { isGuestAuthPath } from '@/utils/authRedirect'
+import { isGuestAuthPath, getSafePostAuthPath } from '@/utils/authRedirect'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
 const notify = useNotifications()
@@ -151,9 +151,10 @@ function handleSessionExpiredLoginSuccess() {
 
   authStore.closeSessionExpiredModal()
 
-  const redirectPath = authStore.getAndClearPendingRedirect()
+  const rawRedirect = authStore.getAndClearPendingRedirect()
 
-  if (redirectPath) {
+  if (rawRedirect) {
+    const redirectPath = getSafePostAuthPath(rawRedirect, '/mindmate')
     router.push(redirectPath).catch(() => {
       router.replace(redirectPath).catch(() => {
         window.location.href = redirectPath

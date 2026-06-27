@@ -16,6 +16,7 @@ from fastapi import APIRouter, HTTPException, Request
 from models import FrontendLogBatchRequest, FrontendLogRequest
 from services.monitoring.error_reporting import record_failure
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
+from utils.auth.request_helpers import get_client_ip
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ async def frontend_log(req: FrontendLogRequest, request: Request):
     # Rate limiting: 100 requests per minute per IP
     rate_limiter = RedisRateLimiter()
 
-    client_ip = request.client.host if request.client else "unknown"
+    client_ip = get_client_ip(request)
     is_allowed, count, error_msg = await rate_limiter.check_and_record(
         category="frontend_log",
         identifier=client_ip,
@@ -96,7 +97,7 @@ async def frontend_log_batch(req: FrontendLogBatchRequest, request: Request):
     # Rate limiting: 10 batches per minute per IP, max 50 logs per batch
     rate_limiter = RedisRateLimiter()
 
-    client_ip = request.client.host if request.client else "unknown"
+    client_ip = get_client_ip(request)
     is_allowed, count, error_msg = await rate_limiter.check_and_record(
         category="frontend_log_batch",
         identifier=client_ip,

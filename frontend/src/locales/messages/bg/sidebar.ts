@@ -78,6 +78,7 @@ export default {
   'sidebar.teacherUsage': 'Teacher usage',
   'sidebar.templateResources': 'Templates',
   'sidebar.orgEdition': '{org} Ексклузивна',
+  'sidebar.personalEdition': 'Лична Ексклузивна',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': 'Account',
   'sidebar.roleSuperAdmin': 'Super Admin',

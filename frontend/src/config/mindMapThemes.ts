@@ -22,6 +22,7 @@ import {
   RADIX_LIGHT_MAUVE,
   RADIX_LIGHT_TEAL,
   RADIX_LIGHT_VIOLET,
+  RADIX_COLORS_URL,
 } from '@/config/radixMindMapPresets'
 import type { DiagramNode, NodeStyle } from '@/types'
 
@@ -58,11 +59,13 @@ export interface MindMapThemePreset extends StylePresetColors {
   sourceNote: string
 }
 
+const VIBRANT_THEME_SOURCE = `MindGraph classroom palette (Radix-inspired accents — ${RADIX_COLORS_URL})`
+
 const VIBRANT_BLUE: MindMapThemePreset = {
   id: 'vibrantBlue',
   nameKey: 'canvas.toolbar.mindMapThemeVibrantBlue',
   previewClass: 'bg-[#eef2fb] border-[#4A72D4]',
-  sourceNote: 'Curated vibrant blue accent',
+  sourceNote: `${VIBRANT_THEME_SOURCE}; blue accent #4A72D4`,
   ...mindMapColorsFromVibrantAccent('#4A72D4'),
 }
 
@@ -70,7 +73,7 @@ const VIBRANT_ORANGE: MindMapThemePreset = {
   id: 'vibrantOrange',
   nameKey: 'canvas.toolbar.mindMapThemeVibrantOrange',
   previewClass: 'bg-[#fef0eb] border-[#FA8055]',
-  sourceNote: 'Curated vibrant coral accent rgb(250,128,85)',
+  sourceNote: `${VIBRANT_THEME_SOURCE}; coral accent rgb(250,128,85)`,
   ...mindMapColorsFromVibrantAccent('#FA8055'),
 }
 
@@ -78,7 +81,7 @@ const VIBRANT_YELLOW: MindMapThemePreset = {
   id: 'vibrantYellow',
   nameKey: 'canvas.toolbar.mindMapThemeVibrantYellow',
   previewClass: 'bg-[#fff8ef] border-[#FFAD36]',
-  sourceNote: 'Curated vibrant amber accent rgb(255,173,54)',
+  sourceNote: `${VIBRANT_THEME_SOURCE}; amber accent rgb(255,173,54)`,
   ...mindMapColorsFromVibrantAccent('#FFAD36'),
 }
 
@@ -86,7 +89,7 @@ const VIBRANT_GREEN: MindMapThemePreset = {
   id: 'vibrantGreen',
   nameKey: 'canvas.toolbar.mindMapThemeVibrantGreen',
   previewClass: 'bg-[#f7f9eb] border-[#B5C62A]',
-  sourceNote: 'Curated vibrant lime accent rgb(181,198,42)',
+  sourceNote: `${VIBRANT_THEME_SOURCE}; lime accent rgb(181,198,42)`,
   ...mindMapColorsFromVibrantAccent('#B5C62A'),
 }
 
@@ -94,7 +97,7 @@ const VIBRANT_TEAL: MindMapThemePreset = {
   id: 'vibrantTeal',
   nameKey: 'canvas.toolbar.mindMapThemeVibrantTeal',
   previewClass: 'bg-[#ebf7fa] border-[#0098B9]',
-  sourceNote: 'Curated vibrant cyan accent rgb(0,152,185)',
+  sourceNote: `${VIBRANT_THEME_SOURCE}; cyan accent rgb(0,152,185)`,
   ...mindMapColorsFromVibrantAccent('#0098B9'),
 }
 
@@ -102,7 +105,7 @@ const VIBRANT_ROSE: MindMapThemePreset = {
   id: 'vibrantRose',
   nameKey: 'canvas.toolbar.mindMapThemeVibrantRose',
   previewClass: 'bg-[#f2f1fa] border-[#7574BC]',
-  sourceNote: 'Curated vibrant purple accent rgb(117,116,188)',
+  sourceNote: `${VIBRANT_THEME_SOURCE}; purple accent rgb(117,116,188)`,
   ...mindMapColorsFromVibrantAccent('#7574BC'),
 }
 
@@ -111,7 +114,7 @@ const RAINBOW_THEME: MindMapThemePreset = {
   id: MIND_MAP_RAINBOW_THEME_ID,
   nameKey: 'canvas.toolbar.mindMapThemeRainbow',
   previewClass: 'bg-gradient-to-r from-[#FA8055] via-[#B5C62A] to-[#FF7DC1]',
-  sourceNote: 'Rainbow branch mode — per-L1 vibrant accent families',
+  sourceNote: `${VIBRANT_THEME_SOURCE}; per-L1 rainbow branch accents`,
   backgroundColor: mindMapColorsFromVibrantAccent('#4A72D4').backgroundColor,
   textColor: mindMapColorsFromVibrantAccent('#4A72D4').textColor,
   borderColor: mindMapColorsFromVibrantAccent('#4A72D4').borderColor,

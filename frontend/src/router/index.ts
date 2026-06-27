@@ -384,6 +384,15 @@ router.beforeEach(async (to, from) => {
     }
   }
 
+  const needsAdminCapabilities =
+    Boolean(to.meta.requiresManagementPanel) ||
+    Boolean(to.meta.requiresAdmin) ||
+    Boolean(to.meta.requiresAdminOrManager)
+
+  if (needsAdminCapabilities && authStore.isAuthenticated) {
+    await authStore.loadAdminCapabilities()
+  }
+
   // Check management panel access
   if (to.meta.requiresManagementPanel && !authStore.isManagementPanelUser) {
     return { name: 'MindMate' }

@@ -16,6 +16,7 @@ import type { LocaleCode } from '@/i18n/locales'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
+import { refreshSessionAccessToken } from '@/utils/sessionRefresh'
 
 const API_BASE = '/api'
 
@@ -30,63 +31,40 @@ function currentUiLocaleCodeForHeaders(): string {
   return useUIStore().language as LocaleCode
 }
 
+/** Read double-submit CSRF token from cookie (set by backend on authenticated responses). */
+function readCsrfTokenFromCookie(): string | null {
+  if (typeof document === 'undefined') {
+    return null
+  }
+  const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/)
+  return match ? decodeURIComponent(match[1]) : null
+}
+
 function mergeApiHeaders(
   base: Record<string, string>,
   options?: RequestInit
 ): Record<string, string> {
   const fromCaller = (options?.headers as Record<string, string>) ?? {}
-  return {
+  const csrfToken = readCsrfTokenFromCookie()
+  const merged: Record<string, string> = {
     'X-Language': currentUiLocaleCodeForHeaders(),
     ...base,
     ...fromCaller,
   }
+  if (csrfToken && !merged['X-CSRF-Token']) {
+    merged['X-CSRF-Token'] = csrfToken
+  }
+  return merged
 }
 
-// Track if a refresh is in progress to prevent multiple simultaneous refreshes
-let isRefreshing = false
-let refreshPromise: Promise<boolean> | null = null
+// Refresh mutex lives in sessionRefresh.ts (shared with auth store).
 
 /**
  * Attempt to refresh the access token using the refresh token cookie
  * Returns true if refresh successful, false otherwise
  */
 async function refreshAccessToken(): Promise<boolean> {
-  if (isMindgraphHeadlessExportSession()) {
-    return false
-  }
-  // If already refreshing, wait for the existing refresh to complete
-  if (isRefreshing && refreshPromise) {
-    return refreshPromise
-  }
-
-  isRefreshing = true
-  refreshPromise = (async () => {
-    try {
-      const response = await fetch(`${API_BASE}/auth/refresh`, {
-        method: 'POST',
-        credentials: 'same-origin', // Include cookies
-        headers: mergeApiHeaders({
-          'Content-Type': 'application/json',
-        }),
-      })
-
-      if (response.ok) {
-        return true
-      }
-
-      return false
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('[ApiClient] Token refresh error:', error)
-      }
-      return false
-    } finally {
-      isRefreshing = false
-      refreshPromise = null
-    }
-  })()
-
-  return refreshPromise
+  return refreshSessionAccessToken()
 }
 
 /**
@@ -130,9 +108,15 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
     const refreshed = await refreshAccessToken()
 
     if (refreshed) {
+      const retryHeaders = mergeApiHeaders(
+        {
+          'Content-Type': 'application/json',
+        },
+        options
+      )
       response = await fetch(url, {
         ...options,
-        headers,
+        headers: retryHeaders,
         credentials: 'same-origin',
       })
     } else {

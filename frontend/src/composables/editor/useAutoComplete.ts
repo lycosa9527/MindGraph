@@ -768,12 +768,19 @@ export function useAutoComplete() {
                 elapsedTime: result.elapsed,
               })
             }
+
+            eventBus.emit('llm:model_completed', {
+              model,
+              success: true,
+              rendered,
+            })
           } else {
             const displayError = formatModelFailureMessage(
               result.error || 'Unknown error',
               result.errorType
             )
             llmResultsStore.handleModelError(model, displayError, result.elapsed)
+            eventBus.emit('llm:model_completed', { model, success: false })
             if (
               import.meta.env.DEV &&
               shouldNotifyGenerateGraphError(result.error || '', result.errorType)
@@ -784,6 +791,7 @@ export function useAutoComplete() {
         } catch (err) {
           const reason = err instanceof Error ? err.message : 'Request failed'
           llmResultsStore.handleModelError(model, reason, 0)
+          eventBus.emit('llm:model_completed', { model, success: false })
           if (import.meta.env.DEV) {
             console.warn(`[AutoComplete] ${model} rejected:`, err)
           }

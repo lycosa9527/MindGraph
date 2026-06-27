@@ -106,7 +106,7 @@ export default {
   'mindmate.tooltip.regenerate': '重新生成',
   'mindmate.tooltip.share': '分享',
   'mindmate.untitled': '未命名会话',
-  'mindmate.welcome': '{username}你好，我是 {agentName}，你的思维教研伙伴',
+  'mindmate.welcome': '{username}你好，我是{agentName}，你的思维教研伙伴',
   'mindmate.welcomeSubtitle': 'AI虚拟教研助手平台，随时随地激发思维',
   'nodePalette.bridgeAnalogy': '类比词',
   'nodePalette.bridgeSource': '原词',

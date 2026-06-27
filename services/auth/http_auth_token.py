@@ -69,6 +69,9 @@ def extract_bearer_token_from_websocket(websocket: WebSocket) -> Optional[str]:
     Session token for WebSocket: same policy as ``extract_bearer_token`` (Bearer
     header, then cookie, then ?token= only if JWT- or mgat_-shaped). Ignores
     opaque query ?token= so channel secrets are not sent to the JWT decoder.
+
+    ``?token=`` for JWT/mgat_ is an intentional fallback when cookies are unavailable
+    on WebSocket handshakes; it may appear in proxy logs — prefer cookies when possible.
     """
     auth = websocket.headers.get("Authorization", "")
     if auth.startswith("Bearer "):

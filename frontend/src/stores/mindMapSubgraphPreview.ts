@@ -17,12 +17,27 @@ export const useMindMapSubgraphPreviewStore = defineStore('mindMapSubgraphPrevie
   const previewNodeIds = ref<string[]>([])
   const isGenerating = ref(false)
   const snapshot = ref<MindMapSubgraphSnapshot | null>(null)
+  const streamAbortController = ref<AbortController | null>(null)
 
   const hasPreview = computed(() => active.value && previewNodeIds.value.length > 0)
 
+  function abortGeneration(): void {
+    if (streamAbortController.value) {
+      streamAbortController.value.abort()
+      streamAbortController.value = null
+    }
+    isGenerating.value = false
+  }
+
   function beginGeneration(nodeId: string) {
+    abortGeneration()
+    streamAbortController.value = new AbortController()
     isGenerating.value = true
     anchorNodeId.value = nodeId
+  }
+
+  function generationSignal(): AbortSignal | undefined {
+    return streamAbortController.value?.signal
   }
 
   function setPreview(
@@ -35,18 +50,20 @@ export const useMindMapSubgraphPreviewStore = defineStore('mindMapSubgraphPrevie
     previewNodeIds.value = nodeIds
     snapshot.value = stateSnapshot
     isGenerating.value = false
+    streamAbortController.value = null
   }
 
   function clear() {
+    abortGeneration()
     active.value = false
     anchorNodeId.value = null
     previewNodeIds.value = []
     snapshot.value = null
-    isGenerating.value = false
   }
 
   function finishGenerationWithoutPreview() {
     isGenerating.value = false
+    streamAbortController.value = null
   }
 
   return {
@@ -57,6 +74,7 @@ export const useMindMapSubgraphPreviewStore = defineStore('mindMapSubgraphPrevie
     snapshot,
     hasPreview,
     beginGeneration,
+    generationSignal,
     setPreview,
     clear,
     finishGenerationWithoutPreview,

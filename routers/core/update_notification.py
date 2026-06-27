@@ -31,6 +31,7 @@ from pydantic import BaseModel
 from models.domain.auth import User
 from routers.auth.dependencies import require_tab_settings_edit
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, FILE_IO_ERRORS
+from services.utils.safe_upload import ensure_within_directory
 from services.utils.update_notifier import update_notifier
 from utils.auth import get_current_user
 from utils.auth.admin_scope import AdminScope
@@ -285,9 +286,18 @@ async def upload_announcement_image(
     Supports PNG, JPG, GIF images up to 5MB.
     Returns the URL to embed in the announcement.
     """
-    # Validate file type
-    allowed_types = ["image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp"]
-    if file.content_type not in allowed_types:
+    # Validate file type. The stored extension is derived from the validated
+    # content-type (never from the client filename) so no path characters can
+    # leak into the on-disk name.
+    content_type_to_ext = {
+        "image/png": "png",
+        "image/jpeg": "jpg",
+        "image/jpg": "jpg",
+        "image/gif": "gif",
+        "image/webp": "webp",
+    }
+    ext = content_type_to_ext.get(file.content_type or "")
+    if ext is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="只支持 PNG, JPG, GIF, WebP 图片格式",
@@ -299,11 +309,9 @@ async def upload_announcement_image(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="图片大小不能超过 5MB")
 
     try:
-        # Generate unique filename
-        upload_name = file.filename or ""
-        ext = upload_name.split(".")[-1] if "." in upload_name else "png"
+        # Generate unique filename (extension from validated content-type only)
         filename = f"announcement_{uuid.uuid4().hex[:8]}.{ext}"
-        filepath = ANNOUNCEMENT_IMAGES_DIR / filename
+        filepath = ensure_within_directory(ANNOUNCEMENT_IMAGES_DIR / filename, ANNOUNCEMENT_IMAGES_DIR)
 
         # Save file
         with open(filepath, "wb") as f:

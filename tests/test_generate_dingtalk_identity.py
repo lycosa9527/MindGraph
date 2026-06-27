@@ -198,7 +198,12 @@ async def test_resolve_diagram_save_identity_no_key() -> None:
     request = MagicMock()
     request.headers.get.return_value = ""
 
-    identity = await resolve_diagram_save_identity(db, request, None, None)
+    with patch(
+        "services.diagram.dify_user_resolve.lookup_solo_recent_mindbot_session",
+        new_callable=AsyncMock,
+        return_value=None,
+    ):
+        identity = await resolve_diagram_save_identity(db, request, None, None)
     assert identity == DiagramSaveIdentity(user_id=None, organization_id=None, dify_user_key="")
 
 
@@ -212,6 +217,7 @@ async def test_resolve_diagram_save_identity_from_mindmate_session() -> None:
     req.dify_user_id = None
     req.mg_dify_user = None
     req.conversation_id = "conv-abc"
+    req.mg_conversation_id = None
 
     with patch(
         "services.diagram.dify_user_resolve.lookup_generation_session",
@@ -229,4 +235,70 @@ async def test_resolve_diagram_save_identity_from_mindmate_session() -> None:
         user_id=3,
         organization_id=9,
         dify_user_key="mg_user_3",
+    )
+
+
+@pytest.mark.asyncio
+async def test_resolve_diagram_save_identity_from_mg_conversation_id() -> None:
+    """mg_conversation_id body field bridges to session registry."""
+    db = AsyncMock()
+    request = MagicMock()
+    request.headers.get.return_value = ""
+    req = MagicMock()
+    req.dify_user_id = None
+    req.mg_dify_user = None
+    req.conversation_id = None
+    req.mg_conversation_id = "conv-mg"
+
+    with patch(
+        "services.diagram.dify_user_resolve.lookup_generation_session",
+        new_callable=AsyncMock,
+    ) as lookup_mock:
+        lookup_mock.return_value = {
+            "channel": "mindbot",
+            "user_id": 3,
+            "organization_id": 5,
+            "dify_user_id": "mindbot_5_staff42",
+        }
+        identity = await resolve_diagram_save_identity(db, request, None, req)
+
+    lookup_mock.assert_awaited_once_with(conversation_id="conv-mg", dify_user_key=None)
+    assert identity.user_id == 3
+
+
+@pytest.mark.asyncio
+async def test_resolve_diagram_save_identity_from_solo_mindbot_session() -> None:
+    """Solo recent MindBot session fallback when Dify tool omits identity."""
+    db = AsyncMock()
+    request = MagicMock()
+    request.headers.get.return_value = ""
+    req = MagicMock()
+    req.dify_user_id = None
+    req.mg_dify_user = None
+    req.conversation_id = None
+    req.mg_conversation_id = None
+
+    with (
+        patch(
+            "services.diagram.dify_user_resolve.lookup_generation_session",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        patch(
+            "services.diagram.dify_user_resolve.lookup_solo_recent_mindbot_session",
+            new_callable=AsyncMock,
+        ) as solo_mock,
+    ):
+        solo_mock.return_value = {
+            "channel": "mindbot",
+            "user_id": 3,
+            "organization_id": 5,
+            "dify_user_id": "mindbot_5_staff42",
+        }
+        identity = await resolve_diagram_save_identity(db, request, None, req)
+
+    assert identity == DiagramSaveIdentity(
+        user_id=3,
+        organization_id=5,
+        dify_user_key="mindbot_5_staff42",
     )

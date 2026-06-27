@@ -78,6 +78,7 @@ export default {
   'sidebar.teacherUsage': 'Onderwysergebruik',
   'sidebar.templateResources': 'Sjablone',
   'sidebar.orgEdition': '{org} Eksklusief',
+  'sidebar.personalEdition': 'Persoonlik Eksklusief',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': 'Rekening',
   'sidebar.roleSuperAdmin': 'Super Admin',

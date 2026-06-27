@@ -61,6 +61,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+_ADMIN_USER_ALLOWED_BODY_KEYS = frozenset(
+    {"phone", "email", "name", "email_login_whitelisted_from_cn", "organization_id"}
+)
+
 
 @router.get("/admin/users")
 async def list_users_admin(
@@ -210,6 +214,19 @@ async def update_user_admin(
     if not user:
         error_msg = Messages.error("user_not_found", lang, user_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+
+    if not isinstance(request, dict):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=Messages.error("invalid_request", lang=lang),
+        )
+
+    extra_keys = set(request.keys()) - _ADMIN_USER_ALLOWED_BODY_KEYS
+    if extra_keys:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=Messages.error("school_user_update_invalid_fields", lang=lang),
+        )
 
     old_phone = user.phone
     old_org_id = user.organization_id

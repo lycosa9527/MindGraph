@@ -35,6 +35,7 @@ from services.knowledge.progress_tracking import (
 from services.knowledge.rag_chunk_test.chunk_comparator import ChunkComparator
 from services.llm.qdrant_service import get_qdrant_service
 from services.utils.error_types import QDRANT_ERRORS
+from services.utils.safe_upload import ensure_within_directory, safe_upload_basename
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +103,8 @@ class ChunkTestDocumentService:
         Returns:
             ChunkTestDocument instance
         """
+        file_name = safe_upload_basename(file_name)
+
         count = await self.get_document_count()
         if count >= self.max_documents:
             raise ValueError(f"Maximum {self.max_documents} documents allowed. Please delete a document first.")
@@ -140,8 +143,8 @@ class ChunkTestDocumentService:
         await self.db.commit()
         await self.db.refresh(document)
 
-        final_path = user_dir / f"{document.id}_{file_name}"
-        shutil.move(file_path, final_path)
+        final_path = ensure_within_directory(user_dir / f"{document.id}_{file_name}", user_dir)
+        shutil.move(file_path, str(final_path))
         document.file_path = str(final_path)
         await self.db.commit()
 

@@ -37,15 +37,17 @@ from services.mindbot.diagram.library_save_reply import (
     enrich_dingtalk_reply_with_library_save_notice,
     extract_prepended_library_save_notice,
 )
+from services.mindbot.diagram.dingtalk_diagram_display import (
+    dingtalk_answer_contains_diagram_preview,
+    should_skip_ai_card_for_dingtalk_diagram,
+)
 from services.mindbot.errors import MindbotErrorCode
 from services.mindbot.outbound.media import (
     send_blocking_response_attachments,
     send_dify_native_segment,
 )
 from services.mindbot.outbound.text import (
-    post_session_webhook,
-    reply_via_openapi,
-    send_full_reply,
+    send_dingtalk_formatted_reply,
     send_one_reply_chunk,
 )
 from services.mindbot.pipeline.ai_card_state import init_card_stream_state
@@ -79,7 +81,7 @@ logger = logging.getLogger(__name__)
 
 
 def _tracker_detail_for_full_send_fail(route: str, token_failed: bool) -> str:
-    """Redis tracker ``err_detail`` when ``send_full_reply`` returns failure."""
+    """Redis tracker ``err_detail`` when formatted full-reply send returns failure."""
     if token_failed:
         return f"{route}_dingtalk_token_failed"
     return f"{route}_send_failed"
@@ -109,6 +111,16 @@ async def run_streaming_dify_branch(
     redis_bind_dify_conversation = ctx.redis_bind_dify_conversation
     pipeline_ctx = ctx.pipeline_ctx
     msg_id = ctx.msg_id
+    linked_user_id = ctx.linked_user_id
+
+    async def _register_generation_session_for_conv(conversation_id: str) -> None:
+        await register_generation_session(
+            channel="mindbot",
+            dify_user_id=user_id,
+            organization_id=cfg.organization_id,
+            conversation_id=conversation_id,
+            user_id=linked_user_id,
+        )
 
     min_c, flush_s, max_p = mindbot_stream_batch_params()
     eff_show_cot = effective_show_chain_of_thought(cfg, body)
@@ -134,12 +146,23 @@ async def run_streaming_dify_branch(
             card_state.cum += visible
             return True, False
         if card_state.plain_fallback_pending:
-            # AI card error or QPS: accumulate silently; one full message at end.
             card_state.cum += visible
             return True, False
+        card_state.cum += visible
+        wire_cum = card_state.hidden_reply_from_cum(cfg) if not eff_show_cot else card_state.cum
+        if should_skip_ai_card_for_dingtalk_diagram(wire_cum):
+            if not card_state.diagram_markdown_pending:
+                logger.info(
+                    "[MindBot] ai_card_skipped %s reason=diagram_markdown",
+                    pipeline_ctx,
+                )
+            card_state.diagram_markdown_pending = True
+            card_state.use_card = False
+            return True, False
+        if card_state.diagram_markdown_pending:
+            return True, False
         if card_state.use_card:
-            card_state.cum += visible
-            wire_cum = card_state.hidden_reply_from_cum(cfg) if not eff_show_cot else card_state.cum
+            wire_for_card = wire_cum
             if card_state.token is None:
                 card_state.token = await prefetch_ai_card_access_token(cfg)
             tok = card_state.token
@@ -185,7 +208,7 @@ async def run_streaming_dify_branch(
                     cfg,
                     access_token=tok,
                     out_track_id=out_tid,
-                    markdown_full=wire_cum,
+                    markdown_full=wire_for_card,
                     is_finalize=False,
                     pipeline_ctx=pipeline_ctx,
                 )
@@ -194,7 +217,7 @@ async def run_streaming_dify_branch(
                     cfg,
                     access_token=tok,
                     out_track_id=out_tid,
-                    markdown_full=wire_cum,
+                    markdown_full=wire_for_card,
                     is_finalize=False,
                     pipeline_ctx=pipeline_ctx,
                 )
@@ -241,7 +264,7 @@ async def run_streaming_dify_branch(
                         )
                     card_state.plain_fallback_pending = True
                 return True, False
-            card_state.card_chars_confirmed = len(wire_cum)
+            card_state.card_chars_confirmed = len(wire_for_card)
             return True, False
         return await send_one_reply_chunk(
             cfg,
@@ -301,6 +324,7 @@ async def run_streaming_dify_branch(
         on_media=on_media,
         on_message_replace=on_dify_message_replace,
         on_stream_started=release_semaphore_slot,
+        on_conversation_id=_register_generation_session_for_conv,
     )
     full_str = full if isinstance(full, str) else ""
     formatted_pre_enrich = format_mindbot_reply_for_dingtalk(
@@ -336,7 +360,7 @@ async def run_streaming_dify_branch(
             pipeline_ctx,
             len(reply_text),
         )
-        ok_cross, token_failed_cross = await send_full_reply(
+        ok_cross, token_failed_cross = await send_dingtalk_formatted_reply(
             cfg,
             body,
             session_webhook_valid,
@@ -360,7 +384,7 @@ async def run_streaming_dify_branch(
                 len(formatted_full),
             )
             await asyncio.sleep(5)
-            ok_fb, token_failed_fb = await send_full_reply(
+            ok_fb, token_failed_fb = await send_dingtalk_formatted_reply(
                 cfg,
                 body,
                 session_webhook_valid,
@@ -382,12 +406,30 @@ async def run_streaming_dify_branch(
             skip_terminal_mark_complete = True
     if (
         not err_tok
+        and card_state.created
+        and dingtalk_answer_contains_diagram_preview(reply_text)
+    ):
+        out_tid = card_state.out_track_id
+        tok = card_state.token
+        if isinstance(out_tid, str) and tok and card_state.update_mode != "receiver":
+            await mark_ai_card_stream_error(
+                cfg,
+                access_token=str(tok),
+                out_track_id=out_tid,
+                pipeline_ctx=pipeline_ctx,
+            )
+    if (
+        not err_tok
         and card_state.use_card
         and card_state.created
         and isinstance(card_state.out_track_id, str)
         and card_state.token
     ):
-        fin_ok = await card_state.finalize(cfg, reply_text, pipeline_ctx)
+        fin_ok = await card_state.finalize(
+            cfg,
+            reply_text,
+            pipeline_ctx,
+        )
         if fin_ok and env_bool("MINDBOT_AI_CARD_APPEND_OVERFLOW_REMAINDER", False):
             remainder = ai_card_overflow_remainder_for_markdown(
                 reply_text,
@@ -411,7 +453,7 @@ async def run_streaming_dify_branch(
                     len(reply_text),
                 )
                 await asyncio.sleep(5)
-                ok_fin_fb, token_failed_fin = await send_full_reply(
+                ok_fin_fb, token_failed_fin = await send_dingtalk_formatted_reply(
                     cfg,
                     body,
                     session_webhook_valid,
@@ -502,6 +544,7 @@ async def run_streaming_dify_branch(
             dify_user_id=user_id,
             organization_id=cfg.organization_id,
             conversation_id=new_conv.strip(),
+            user_id=linked_user_id,
         )
     _rp = reply_text[:80].replace("\n", " ")
     _re = "…" if len(reply_text) > 80 else ""
@@ -530,6 +573,28 @@ async def run_streaming_dify_branch(
             pipeline_ctx=pipeline_ctx,
             pinned_ip=session_webhook_pinned_ip,
         )
+    if (
+        not err_tok
+        and card_state.diagram_markdown_pending
+        and reply_text.strip()
+        and not card_state.buffer_only
+        and not card_state.plain_fallback_pending
+    ):
+        ok_dm, token_failed_dm = await send_dingtalk_formatted_reply(
+            cfg,
+            body,
+            session_webhook_valid,
+            reply_text,
+            pipeline_ctx=pipeline_ctx,
+            pinned_ip=session_webhook_pinned_ip,
+        )
+        if not ok_dm:
+            await mark_error(
+                msg_id,
+                _tracker_detail_for_full_send_fail("diagram_markdown", token_failed_dm),
+                pipeline_ctx,
+            )
+            skip_terminal_mark_complete = True
     await record_usage(
         MindbotErrorCode.OK,
         reply_text=reply_text,
@@ -560,6 +625,7 @@ async def run_blocking_send_branch(
     redis_bind_dify_conversation = ctx.redis_bind_dify_conversation
     pipeline_ctx = ctx.pipeline_ctx
     msg_id = ctx.msg_id
+    linked_user_id = ctx.linked_user_id
 
     answer = (resp or {}).get("answer", "")
     if not isinstance(answer, str):
@@ -589,6 +655,7 @@ async def run_blocking_send_branch(
                 dify_user_id=dify_user_id,
                 organization_id=cfg.organization_id,
                 conversation_id=new_conv.strip(),
+                user_id=linked_user_id,
             )
 
     async def attachments_after_answer_ok() -> None:
@@ -601,6 +668,12 @@ async def run_blocking_send_branch(
 
     async def try_ai_card_blocking() -> bool:
         if not answer.strip():
+            return False
+        if dingtalk_answer_contains_diagram_preview(answer):
+            logger.info(
+                "[MindBot] ai_card_skipped %s reason=diagram_markdown",
+                pipeline_ctx,
+            )
             return False
         if not mindbot_ai_card_wiring_enabled(cfg):
             return False
@@ -636,13 +709,14 @@ async def run_blocking_send_branch(
                 describe_ai_card_failure(cr_code, cr_detail),
             )
             return False
+        card_wire = answer
         use_receiver = cr_mode == "receiver"
         if use_receiver:
             ok_stream, st_code, st_detail, st_tok = await update_ai_card_receiver(
                 cfg,
                 access_token=tok,
                 out_track_id=out_id,
-                markdown_full=answer,
+                markdown_full=card_wire,
                 is_finalize=True,
                 pipeline_ctx=pipeline_ctx,
             )
@@ -651,7 +725,7 @@ async def run_blocking_send_branch(
                 cfg,
                 access_token=tok,
                 out_track_id=out_id,
-                markdown_full=answer,
+                markdown_full=card_wire,
                 is_finalize=True,
                 pipeline_ctx=pipeline_ctx,
             )
@@ -698,7 +772,13 @@ async def run_blocking_send_branch(
 
     if isinstance(raw_sw, str) and raw_sw.strip():
         if not session_webhook_valid:
-            openapi_ok, token_failed = await reply_via_openapi(cfg, body, answer, pipeline_ctx=pipeline_ctx)
+            openapi_ok, token_failed = await send_dingtalk_formatted_reply(
+                cfg,
+                body,
+                None,
+                answer,
+                pipeline_ctx=pipeline_ctx,
+            )
             if openapi_ok:
                 await attachments_after_answer_ok()
                 await record_usage(
@@ -730,24 +810,15 @@ async def run_blocking_send_branch(
             )
             return 200, hdr(MindbotErrorCode.SESSION_WEBHOOK_INVALID_URL)
 
-        if await post_session_webhook(
+        ok_block, token_failed = await send_dingtalk_formatted_reply(
+            cfg,
+            body,
             session_webhook_valid,
             answer,
             pipeline_ctx=pipeline_ctx,
             pinned_ip=session_webhook_pinned_ip,
-        ):
-            await attachments_after_answer_ok()
-            await record_usage(
-                MindbotErrorCode.OK,
-                reply_text=answer,
-                dify_conversation_id=dify_cid_block,
-                usage=usage_block,
-                streaming=False,
-            )
-            await mark_complete(msg_id, pipeline_ctx)
-            return 200, hdr(MindbotErrorCode.OK)
-        openapi_ok, token_failed = await reply_via_openapi(cfg, body, answer, pipeline_ctx=pipeline_ctx)
-        if openapi_ok:
+        )
+        if ok_block:
             await attachments_after_answer_ok()
             await record_usage(
                 MindbotErrorCode.OK,
@@ -778,7 +849,13 @@ async def run_blocking_send_branch(
         )
         return 200, hdr(MindbotErrorCode.SESSION_WEBHOOK_FAILED)
 
-    openapi_ok, token_failed = await reply_via_openapi(cfg, body, answer, pipeline_ctx=pipeline_ctx)
+    openapi_ok, token_failed = await send_dingtalk_formatted_reply(
+        cfg,
+        body,
+        None,
+        answer,
+        pipeline_ctx=pipeline_ctx,
+    )
     if openapi_ok:
         await attachments_after_answer_ok()
         await record_usage(

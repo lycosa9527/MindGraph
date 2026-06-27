@@ -62,6 +62,7 @@ from .config import (
     MAX_LOGIN_ATTEMPTS,
     PUBLIC_DASHBOARD_PASSKEY,
     RATE_LIMIT_WINDOW_MINUTES,
+    is_public_dashboard_enabled,
     REFRESH_TOKEN_EXPIRY_DAYS,
     TRUSTED_PROXY_IPS,
 )
@@ -82,7 +83,7 @@ from .passkey_utils import (
 )
 
 # Password exports
-from .password import hash_password, verify_password
+from .password import hash_password, verify_password, verify_password_timing_dummy
 
 # Request helper exports
 from .request_helpers import get_client_ip, is_https
@@ -149,6 +150,7 @@ __all__ = [
     "ENTERPRISE_DEFAULT_USER_PHONE",
     "BAYI_PASSKEY",
     "PUBLIC_DASHBOARD_PASSKEY",
+    "is_public_dashboard_enabled",
     "BAYI_DECRYPTION_KEY",
     "BAYI_DEFAULT_ORG_CODE",
     "BAYI_DEFAULT_ORG_ID",
@@ -168,6 +170,7 @@ __all__ = [
     # Password
     "hash_password",
     "verify_password",
+    "verify_password_timing_dummy",
     # Tokens
     "security",
     "api_key_header",

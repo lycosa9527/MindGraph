@@ -20,7 +20,10 @@ from services.redis.redis_async_client import get_async_redis
 logger = logging.getLogger(__name__)
 
 SESSION_PREFIX = "mg:gen_session:"
+MINDBOT_ACTIVE_ZSET = "mg:gen_session:mindbot_active"
 SESSION_TTL_SECONDS = 600
+MINDBOT_ACTIVE_ZSET_TTL_SECONDS = 180
+MINDBOT_SOLO_LOOKUP_MAX_AGE_SECONDS = 45.0
 
 
 def _conv_key(conversation_id: str) -> str:
@@ -94,6 +97,8 @@ async def register_generation_session(
     try:
         for key in keys:
             await redis.set(key, payload, ex=SESSION_TTL_SECONDS)
+        if (channel or "").strip() == "mindbot":
+            await _track_mindbot_active(redis, dify_clean)
         return True
     except RedisError as exc:
         logger.warning(
@@ -114,6 +119,64 @@ async def _fetch(redis: Any, key: str) -> Optional[dict[str, Any]]:
     if not isinstance(raw, str) or not raw.strip():
         return None
     return _parse_payload(raw)
+
+
+async def _track_mindbot_active(redis: Any, dify_user_id: str) -> None:
+    """Index active MindBot sessions for generate_dingtalk fallback lookup."""
+    now = time.time()
+    try:
+        await redis.zadd(MINDBOT_ACTIVE_ZSET, {dify_user_id: now})
+        cutoff = now - MINDBOT_ACTIVE_ZSET_TTL_SECONDS
+        await redis.zremrangebyscore(MINDBOT_ACTIVE_ZSET, 0, cutoff)
+        await redis.expire(MINDBOT_ACTIVE_ZSET, MINDBOT_ACTIVE_ZSET_TTL_SECONDS)
+    except RedisError as exc:
+        logger.warning(
+            "[GenSession] mindbot_active_track failed dify=%s: %s",
+            dify_user_id[:32],
+            exc,
+        )
+
+
+def _decode_redis_member(raw: Any) -> str:
+    if isinstance(raw, bytes):
+        return raw.decode("utf-8", errors="replace").strip()
+    if isinstance(raw, str):
+        return raw.strip()
+    return str(raw).strip()
+
+
+async def lookup_solo_recent_mindbot_session(
+    *,
+    max_age_seconds: float = MINDBOT_SOLO_LOOKUP_MAX_AGE_SECONDS,
+) -> Optional[dict[str, Any]]:
+    """
+    Return the sole recent MindBot session when Dify's HTTP tool omits identity fields.
+
+    Used only when exactly one MindBot stream registered within ``max_age_seconds``.
+    """
+    redis = get_async_redis()
+    if redis is None:
+        return None
+    now = time.time()
+    min_score = now - max(1.0, float(max_age_seconds))
+    try:
+        members = await redis.zrangebyscore(MINDBOT_ACTIVE_ZSET, min_score, now)
+    except RedisError as exc:
+        logger.warning("[GenSession] mindbot_active_lookup failed: %s", exc)
+        return None
+    if not members:
+        return None
+    if len(members) != 1:
+        logger.warning(
+            "[GenSession] mindbot_active_ambiguous count=%s max_age_s=%.0f",
+            len(members),
+            max_age_seconds,
+        )
+        return None
+    dify_key = _decode_redis_member(members[0])
+    if not dify_key:
+        return None
+    return await lookup_generation_session(dify_user_key=dify_key)
 
 
 async def lookup_generation_session(

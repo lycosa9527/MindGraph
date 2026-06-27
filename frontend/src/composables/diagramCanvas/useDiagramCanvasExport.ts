@@ -1,7 +1,6 @@
 import { type Ref, ref } from 'vue'
 
 import {
-  getDefaultDiagramName,
   useDiagramExport,
   useDiagramSpecForSave,
   useLanguage,
@@ -12,6 +11,7 @@ import {
   prepareDiagramCanvasForRasterCapture,
   waitForDiagramExportFonts,
 } from '@/utils/diagramExportPrep'
+import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 
 type CanvasViewport = { x: number; y: number; zoom: number }
 
@@ -37,10 +37,10 @@ export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
   }
 
   function getExportTitle(): string {
-    const topicText = diagramStore.getTopicNodeText()
-    if (topicText) return topicText
-    return (
-      diagramStore.effectiveTitle || getDefaultDiagramName(diagramStore.type, currentLanguage.value)
+    return resolveDiagramTitleForSave(
+      diagramStore.effectiveTitle,
+      diagramStore.type,
+      currentLanguage.value
     )
   }
 

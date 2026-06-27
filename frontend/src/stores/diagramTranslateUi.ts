@@ -9,6 +9,7 @@ export const useDiagramTranslateUiStore = defineStore('diagramTranslateUi', () =
   const bannerVisible = ref(false)
   const appliedCount = ref(0)
   const totalCount = ref(0)
+  const streamAbortController = ref<AbortController | null>(null)
 
   const progressLabel = computed(() => {
     const t = totalCount.value
@@ -18,6 +19,18 @@ export const useDiagramTranslateUiStore = defineStore('diagramTranslateUi', () =
     }
     return `${d} / ${t}`
   })
+
+  function beginStream(): AbortSignal {
+    streamAbortController.value?.abort()
+    streamAbortController.value = new AbortController()
+    return streamAbortController.value.signal
+  }
+
+  function abortTranslate(): void {
+    streamAbortController.value?.abort()
+    streamAbortController.value = null
+    closeBanner()
+  }
 
   function openBanner(): void {
     appliedCount.value = 0
@@ -44,6 +57,8 @@ export const useDiagramTranslateUiStore = defineStore('diagramTranslateUi', () =
     appliedCount,
     totalCount,
     progressLabel,
+    beginStream,
+    abortTranslate,
     openBanner,
     setTotal,
     bumpApplied,

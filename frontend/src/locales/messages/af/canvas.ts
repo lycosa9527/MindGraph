@@ -410,6 +410,7 @@ export default {
   'canvas.topBar.exportSvg': 'Voer uit as SVG',
   'canvas.topBar.reset': 'Herstel',
   'canvas.topBar.resetTemplate': 'Herstel na standaard-sjabloon',
+  'canvas.topBar.resetCanvas': 'Reset canvas',
   'canvas.topBar.schoolCollab': 'Skool-samewerking',
   'canvas.topBar.shareCommunity': 'Deel na Gemeenskap',
   'canvas.topBar.sharedCollab': 'Gedeelde samewerking',

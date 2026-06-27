@@ -78,6 +78,7 @@ export default {
   'sidebar.teacherUsage': 'Müəllim istifadəsi',
   'sidebar.templateResources': 'Şablonlar',
   'sidebar.orgEdition': '{org} Ekskluziv',
+  'sidebar.personalEdition': 'Şəxsi Ekskluziv',
   'sidebar.userSubtitleDefault': 'MindGraph Pro paketi',
   'sidebar.account': 'Hesab',
   'sidebar.roleSuperAdmin': 'Super Admin',

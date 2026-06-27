@@ -119,11 +119,22 @@ function computeSiblingPathKey(
 const MIND_MAP_INLINE_EDIT_MAX_ATTEMPTS = 80
 const MIND_MAP_INLINE_EDIT_RETRY_MS = 40
 
+let mindMapInlineEditRetryGeneration = 0
+
+/** Abort pending post-add inline-edit retries (navigation / store reset). */
+export function cancelMindMapPendingInlineEdit(ctx: DiagramContext): void {
+  mindMapInlineEditRetryGeneration += 1
+  ctx.mindMapPendingEditNodeId.value = null
+}
+
 function requestMindMapNodeInlineEdit(ctx: DiagramContext, nodeId: string): void {
+  mindMapInlineEditRetryGeneration += 1
+  const generation = mindMapInlineEditRetryGeneration
   ctx.mindMapPendingEditNodeId.value = nodeId
   let attempts = 0
 
   const tryFocus = (): void => {
+    if (generation !== mindMapInlineEditRetryGeneration) return
     attempts += 1
     const host = document.querySelector(
       `.vue-flow__node[data-id="${CSS.escape(nodeId)}"] .inline-editable-text`

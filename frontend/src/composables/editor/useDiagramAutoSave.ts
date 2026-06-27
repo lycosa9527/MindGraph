@@ -3,8 +3,10 @@
  *
  * Centralizes save logic with:
  * - Config-driven timing (no hardcoded values)
- * - Event-based coordination (diagram:loaded_from_library, llm:generation_completed)
- * - State-driven guards (auth, isGenerating, suppress window)
+ * - Event-based coordination (diagram:loaded_from_library, llm:model_completed,
+ *   llm:generation_completed)
+ * - State-driven guards (auth, isGenerating, suppress window); per-LLM-round saves
+ *   bypass the generating guard so each model persists without waiting for slow peers
  * - Content fingerprint computed + watch (Vue deep watch gives same ref for
  *   in-place mutations; computed fingerprint yields proper old/new on change)
  * - Periodic interval save to catch position/style-only edits
@@ -15,17 +17,24 @@
  *   // Composable sets up internal watch; no CanvasPage integration needed
  *   // On unmount: autoSave.teardown()
  */
+import { storeToRefs } from 'pinia'
 import { type ComputedRef, computed, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { eventBus, getDefaultDiagramName } from '@/composables'
+import { eventBus } from '@/composables'
 import { SAVE } from '@/config'
 import { useAuthStore } from '@/stores/auth'
 import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
+import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { canvasEditorPathForRoute } from '@/utils/canvasBackNavigation'
+import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 
+import {
+  canPerformDiagramSave,
+  shouldAutoSaveAfterLlmModelCompleted,
+} from './diagramSaveFeedback'
 import { useLanguage } from '../core/useLanguage'
 import { useDiagramSpecForSave } from './useDiagramSpecForSave'
 
@@ -131,6 +140,8 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
   const savedDiagramsStore = useSavedDiagramsStore()
   const llmResultsStore = useLLMResultsStore()
   const authStore = useAuthStore()
+  const previewStore = useMindMapSubgraphPreviewStore()
+  const { hasPreview, isGenerating: isSubgraphGenerating } = storeToRefs(previewStore)
   const getDiagramSpec = useDiagramSpecForSave()
 
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -144,6 +155,10 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
   let lastSavedFullFingerprint = ''
   let consecutiveSaveFailures = 0
   const MAX_CONSECUTIVE_SAVE_FAILURES = 3
+  let persistQueue: Promise<SaveFlushResult> = Promise.resolve({
+    saved: false,
+    reason: 'skipped_guards',
+  })
 
   const diagramTypeForName = computed(
     () => (diagramStore.type as string) || (route.query.type as string) || null
@@ -151,24 +166,28 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
 
   function getTitle(): string {
     if (options.getDiagramTitle) return options.getDiagramTitle()
-    const topicText = diagramStore.getTopicNodeText()
-    if (topicText) return topicText
-    return (
-      diagramStore.effectiveTitle ||
-      getDefaultDiagramName(diagramTypeForName.value, currentLanguage.value)
+    return resolveDiagramTitleForSave(
+      diagramStore.effectiveTitle,
+      diagramTypeForName.value,
+      currentLanguage.value
     )
   }
 
-  const canSave = computed(
-    () =>
-      authStore.isAuthenticated &&
-      !llmResultsStore.isGenerating &&
-      !isSuppressed.value &&
-      !options.isCollabGuest?.value &&
-      !options.isCollabActive?.value &&
-      !!diagramStore.type &&
-      !!diagramStore.data
-  )
+  function buildSaveEligibility(bypassGeneratingGuard = false) {
+    return {
+      authenticated: authStore.isAuthenticated,
+      llmGenerating: llmResultsStore.isGenerating,
+      subgraphPreviewActive: hasPreview.value,
+      subgraphGenerating: isSubgraphGenerating.value,
+      suppressed: isSuppressed.value,
+      isCollabGuest: Boolean(options.isCollabGuest?.value),
+      collabSessionActive: Boolean(options.isCollabActive?.value),
+      hasTypeAndData: Boolean(diagramStore.type && diagramStore.data),
+      bypassGeneratingGuard,
+    }
+  }
+
+  const canSave = computed(() => canPerformDiagramSave(buildSaveEligibility()))
 
   function cancelDebounce(): void {
     if (debounceTimer) {
@@ -186,7 +205,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
         isDirty.value = false
         return
       }
-      performSave()
+      void performSave()
     }, SAVE.MAX_SAVE_INTERVAL_MS)
   }
 
@@ -197,8 +216,12 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     }
   }
 
-  async function performSave(): Promise<SaveFlushResult> {
-    if (!canSave.value) return { saved: false, reason: 'skipped_guards' }
+  async function performSaveInternal(
+    saveOpts: { bypassGeneratingGuard?: boolean } = {}
+  ): Promise<SaveFlushResult> {
+    if (!canPerformDiagramSave(buildSaveEligibility(saveOpts.bypassGeneratingGuard))) {
+      return { saved: false, reason: 'skipped_guards' }
+    }
     if (consecutiveSaveFailures >= MAX_CONSECUTIVE_SAVE_FAILURES) {
       return { saved: false, reason: 'error' }
     }
@@ -263,11 +286,19 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     }
   }
 
+  function performSave(saveOpts: { bypassGeneratingGuard?: boolean } = {}): Promise<SaveFlushResult> {
+    const next = persistQueue.then(() => performSaveInternal(saveOpts))
+    persistQueue = next.catch((): SaveFlushResult => ({ saved: false, reason: 'error' }))
+    return next
+  }
+
   function trigger(): void {
     cancelDebounce()
     consecutiveSaveFailures = 0
     isDirty.value = true
-    debounceTimer = setTimeout(performSave, SAVE.AUTO_SAVE_DEBOUNCE_MS)
+    debounceTimer = setTimeout(() => {
+      void performSave()
+    }, SAVE.AUTO_SAVE_DEBOUNCE_MS)
   }
 
   async function flush(): Promise<SaveFlushResult> {
@@ -295,6 +326,16 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     if (!llmResultsStore.isGenerating && !isSuppressed.value) trigger()
   })
 
+  const stopTitleWatch = watch(
+    () => (diagramStore.isUserEditedTitle ? diagramStore.title : null),
+    (newTitle, oldTitle) => {
+      if (!diagramStore.isUserEditedTitle) return
+      if (oldTitle === undefined || newTitle === oldTitle) return
+      if (!newTitle?.trim() && !oldTitle?.trim()) return
+      trigger()
+    }
+  )
+
   function setSuppressWindow(ms: number): void {
     if (suppressTimer) clearTimeout(suppressTimer)
     isSuppressed.value = true
@@ -318,10 +359,21 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     }
   )
 
+  const stopLlmModelCompleted = eventBus.on(
+    'llm:model_completed',
+    (data: { success?: boolean }) => {
+      if (shouldAutoSaveAfterLlmModelCompleted(data.success)) {
+        void performSave({ bypassGeneratingGuard: true })
+      }
+    }
+  )
+
   const stopLlmComplete = eventBus.on(
     'llm:generation_completed',
     (data: { allFailed?: boolean }) => {
-      if (!data.allFailed) flush()
+      if (!data.allFailed) {
+        void flush()
+      }
     }
   )
 
@@ -358,7 +410,9 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
       suppressTimer = null
     }
     stopContentWatch()
+    stopTitleWatch()
     stopIsGenerating()
+    stopLlmModelCompleted()
     stopLlmComplete()
     stopLoadedFromLibrary()
     stopWorkshopSnapshot()

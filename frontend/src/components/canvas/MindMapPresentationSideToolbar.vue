@@ -4,7 +4,7 @@
  */
 import { computed, ref } from 'vue'
 
-import { Brush, Crosshair, Eraser, Hand, LogOut, MonitorPlay, MousePointer2, PenLine, Timer } from '@lucide/vue'
+import { Brush, Crosshair, Eraser, Hand, LogOut, MonitorPlay, MousePointer2, PenLine, Sun, Timer } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { resolvePresentationTeleportTarget } from '@/composables/presentation/presentationDiagramEdit'
@@ -374,7 +374,19 @@ function onHighlighterScaleInput(event: Event): void {
         <div class="presentation-tool-slot flex h-10 w-full items-center justify-center">
           <button
             type="button"
-            :class="toolClass('timer')"
+            :class="[toolClass('spotlight'), 'presentation-tool-btn--spotlight']"
+            :data-tip="t('canvas.presentationSideToolbar.spotlight')"
+            :title="t('canvas.presentationSideToolbar.spotlight')"
+            @click="emit('selectTool', 'spotlight')"
+          >
+            <Sun class="h-5 w-5 shrink-0" />
+          </button>
+        </div>
+
+        <div class="presentation-tool-slot flex h-10 w-full items-center justify-center">
+          <button
+            type="button"
+            :class="[toolClass('timer'), 'presentation-tool-btn--timer']"
             :data-tip="t('canvas.presentationSideToolbar.timer')"
             :title="t('canvas.presentationSideToolbar.timer')"
             @click="emit('selectTool', 'timer')"
@@ -597,6 +609,18 @@ function onHighlighterScaleInput(event: Event): void {
   color: rgb(185 28 28);
 }
 
+.presentation-tool-btn--spotlight.is-active {
+  background-color: rgb(254 243 199);
+  color: rgb(217 119 6);
+  box-shadow: inset 0 0 0 1px rgb(252 211 77 / 0.65);
+}
+
+.presentation-tool-btn--timer.is-active {
+  background-color: rgb(219 234 254);
+  color: rgb(37 99 235);
+  box-shadow: inset 0 0 0 1px rgb(147 197 253 / 0.65);
+}
+
 .presentation-tool-btn:hover {
   background-color: #f3f4f6;
 }
@@ -624,6 +648,16 @@ function onHighlighterScaleInput(event: Event): void {
 
 .dark .presentation-tool-btn--exit:hover {
   background-color: rgb(127 29 29 / 0.45);
+}
+
+.dark .presentation-tool-btn--spotlight.is-active {
+  background-color: rgb(120 53 15 / 0.45);
+  color: rgb(252 211 77);
+}
+
+.dark .presentation-tool-btn--timer.is-active {
+  background-color: rgb(30 58 95);
+  color: rgb(96 165 250);
 }
 
 .dark .presentation-tool-btn:hover,

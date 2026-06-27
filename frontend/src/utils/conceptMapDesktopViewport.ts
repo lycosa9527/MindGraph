@@ -18,7 +18,7 @@ export function isDesktopConceptMapManualViewport(
   return diagramStore.type === 'concept_map' && !uiStore.isMobile
 }
 
-/** Mind maps: no auto-fit in v2; legacy mind maps keep assistive fit on init. */
+/** Mind map v2: no assistive refit while editing; canvas enter and user-initiated fits still run. */
 export function isMindMapManualViewport(
   diagramStore: ReturnType<typeof useDiagramStore>,
   uiStore: ReturnType<typeof useUIStore>

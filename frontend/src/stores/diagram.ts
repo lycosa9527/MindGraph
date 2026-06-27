@@ -20,10 +20,11 @@ import { useCustomPositionsSlice } from './diagram/customPositions'
 import { useDoubleBubbleMapOpsSlice } from './diagram/doubleBubbleMapOps'
 import { useFlowMapOpsSlice } from './diagram/flowMapOps'
 import { useHistorySlice } from './diagram/history'
+import { reconcileAfterHistoryRestore as reconcileDiagramAfterHistoryRestore } from './diagram/historyRestore'
 import { useLearningSheetSlice } from './diagram/learningSheet'
 import { useMindMapLayoutSlice } from './diagram/mindMapLayout'
 import { createMindMapRecalcScheduler } from './diagram/mindMapRecalcScheduler'
-import { useMindMapOpsSlice } from './diagram/mindMapOps'
+import { cancelMindMapPendingInlineEdit, useMindMapOpsSlice } from './diagram/mindMapOps'
 import { useMultiFlowLayoutSlice } from './diagram/multiFlowLayout'
 import { useNodeDimensionSlice } from './diagram/nodeDimensionSlice'
 import { useNodeManagementSlice } from './diagram/nodeManagement'
@@ -132,7 +133,7 @@ export const useDiagramStore = defineStore('diagram', () => {
   const learningSheetSlice = useLearningSheetSlice(ctx)
   const titleSlice = useTitleSlice(ctx)
 
-  const { pushHistory, canUndo, canRedo, undo, redo, clearHistory, clearRedoStack } = historySlice
+  const { pushHistory, canUndo, canRedo, undo, redo, clearHistory, clearRedoStack, seedHistoryBaseline, seedHistoryBaselineIfEmpty } = historySlice
   const {
     selectNodes,
     selectConnection,
@@ -291,7 +292,7 @@ export const useDiagramStore = defineStore('diagram', () => {
   ctx.addNode = addNode
 
   const copyPasteSlice = useCopyPasteSlice(ctx)
-  const { canPaste, copySelectedNodes, pasteNodesAt } = copyPasteSlice
+  const { canPaste, copySelectedNodes, pasteNodesAt, clearCopiedNodes } = copyPasteSlice
 
   const vueFlowSlice = useVueFlowIntegrationSlice(ctx)
   const {
@@ -399,7 +400,12 @@ export const useDiagramStore = defineStore('diagram', () => {
     kittyReviewByNodeId.value = {}
   }
 
+  function reconcileAfterHistoryRestore(): void {
+    reconcileDiagramAfterHistoryRestore(ctx)
+  }
+
   function reset(): void {
+    cancelMindMapPendingInlineEdit(ctx)
     type.value = null
     sessionId.value = null
     data.value = null
@@ -461,10 +467,13 @@ export const useDiagramStore = defineStore('diagram', () => {
     addToSelection,
     removeFromSelection,
     pushHistory,
+    seedHistoryBaseline,
+    seedHistoryBaselineIfEmpty,
     undo,
     redo,
     clearHistory,
     clearRedoStack,
+    reconcileAfterHistoryRestore,
     collabSessionActive,
     setCollabSessionActive,
     collabForeignLockedNodeIds,
@@ -515,6 +524,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     reconcileMindMapCanvasMode,
     copySelectedNodes,
     pasteNodesAt,
+    clearCopiedNodes,
     reset,
     updateNodePosition,
     updateNodesFromVueFlow,

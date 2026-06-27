@@ -7,9 +7,11 @@ import { reportFrontendError } from '@/utils/frontendLog'
 
 export function installFrontendErrorReporting(app: App): void {
   app.config.errorHandler = (err, instance, info) => {
-    console.error('Vue Error:', err)
-    console.error('Component:', instance)
-    console.error('Info:', info)
+    if (import.meta.env.DEV) {
+      console.error('Vue Error:', err)
+      console.error('Component:', instance)
+      console.error('Info:', info)
+    }
     const componentName =
       instance && typeof instance === 'object' && '$options' in instance
         ? String((instance as { $options?: { name?: string } }).$options?.name ?? '')

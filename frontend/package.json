@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.123.0",
+  "version": "5.126.0",
   "type": "module",
   "engines": {
     "node": ">=26.0.0"
@@ -21,7 +21,7 @@
     "format:check": "prettier --check \"src/**/*.{vue,ts,js,json,css,scss}\"",
     "check": "node --max-old-space-size=4096 node_modules/vue-tsc/bin/vue-tsc.js --noEmit && npm run lint && npm run format:check",
     "check:fix": "npm run fix && npm run check",
-    "check:scripts": "node scripts/sync-version.ts && node scripts/check-i18n-keys.ts && npm run check:sidebar-quotes && npm run check:pwa-workbox",
+    "check:scripts": "node scripts/sync-version.ts && node scripts/check-i18n-keys.ts && npm run check:sidebar-quotes && npm run check:pwa-workbox && npm run check:pdf-worker",
     "check:dep0205": "node scripts/check-dep0205.mjs",
     "check:vueuse-pure": "node scripts/check-vueuse-pure-annotations.mjs",
     "postinstall": "patch-package && node scripts/ensure-cross-platform-native-deps.mjs",
@@ -38,6 +38,7 @@
     "import:sidebar-quotes": "node scripts/import-sidebar-quotes/index.ts",
     "check:sidebar-quotes": "node scripts/check-sidebar-quotes-shipped.ts",
     "check:pwa-workbox": "node scripts/check-pwa-workbox.ts",
+    "check:pdf-worker": "node scripts/check-pdf-worker-version.ts",
     "fix": "npm run lint:fix && npm run format",
     "test": "vitest run",
     "test:watch": "vitest"

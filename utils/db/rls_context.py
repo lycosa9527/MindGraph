@@ -23,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from config.db_sessions import open_async_session, open_sync_session
+from config.settings import config
 from utils.db.rls_context_from_actor import (
     build_from_admin_scope_kwargs,
     build_from_user_kwargs,
@@ -45,7 +46,10 @@ _rls_context_var: ContextVar[Optional["RlsContext"]] = ContextVar("rls_context",
 
 def _rls_strict_enabled() -> bool:
     """Rls strict enabled."""
-    return os.getenv("RLS_CONTEXT_STRICT", "0").lower() in ("1", "true", "yes")
+    raw = os.getenv("RLS_CONTEXT_STRICT")
+    if raw is not None:
+        return raw.strip().lower() in ("1", "true", "yes")
+    return not config.debug
 
 
 _APP_PREFIX = "app."

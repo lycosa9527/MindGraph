@@ -365,6 +365,8 @@ function handleAddChildClick() {
   </div>
 </template>
 
+<style src="./mindMapToolbarButtons.css"></style>
+
 <style scoped>
 .mm-toolbar {
   width: 100%;
@@ -614,10 +616,6 @@ function handleAddChildClick() {
 .mm-btn--export:hover:not(:disabled) {
   background: #0f172a;
   border-color: #0f172a;
-}
-
-.mm-btn__label {
-  font-weight: 500;
 }
 
 .mm-btn__label--truncate {

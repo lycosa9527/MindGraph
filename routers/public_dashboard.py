@@ -44,7 +44,7 @@ from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
-from utils.auth import get_client_ip
+from utils.auth import get_client_ip, is_public_dashboard_enabled
 from utils.db.rls_request import bind_dashboard_rls_dependency
 
 logger = logging.getLogger(__name__)
@@ -145,6 +145,12 @@ async def verify_dashboard_session(request: Request) -> bool:
 
     Returns True if valid, raises HTTPException if invalid.
     """
+    if not is_public_dashboard_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Public dashboard is not enabled (set PUBLIC_DASHBOARD_PASSKEY)",
+        )
+
     dashboard_token = request.cookies.get("dashboard_access_token")
 
     if not dashboard_token:

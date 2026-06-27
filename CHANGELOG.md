@@ -5,6 +5,174 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.128.0] - 2026-06-27
+
+> **Mind map appearance presets, layout connectors, presentation tools, learning sheet UX, and post-add inline edit.**
+
+### Added
+
+- **Mind map appearance** — Five diagram styles (`classic`, `formal`, `bubble`, `underline`, `soft`) plus curated vibrant classroom color themes and rainbow preset; toolbar dropdown persists `_mindmap_theme` and `_mindmap_diagram_style` ([`mindMapDiagramStyles.ts`](frontend/src/config/mindMapDiagramStyles.ts), [`MindMapAppearanceDropdown.vue`](frontend/src/components/canvas/MindMapAppearanceDropdown.vue)).
+- **Mind map post-add inline edit** — Tab, Enter, toolbar +, and directional **+** overlays open inline edit on the newly added node ([`mindMapOps.ts`](frontend/src/stores/diagram/mindMapOps.ts), [`InlineEditableText.vue`](frontend/src/components/diagram/nodes/InlineEditableText.vue)).
+- **Presentation tools (mind map v2)** — Pointer, hand, laser, highlighter, pen, spotlight, timer HUD, and slides in the simplified presentation rail ([`MindMapPresentationSideToolbar.vue`](frontend/src/components/canvas/MindMapPresentationSideToolbar.vue)).
+- **Learning sheet float bar** — Custom pick and random blank sessions with presentation suspend/resume ([`LearningSheetFloatBar.vue`](frontend/src/components/canvas/LearningSheetFloatBar.vue), [`useLearningSheetCustomMode.ts`](frontend/src/composables/mindMap/useLearningSheetCustomMode.ts)).
+
+### Changed
+
+- **New mind map defaults** — Blank templates initialize with vibrant blue theme and classic diagram style ([`defaultTemplates.ts`](frontend/src/stores/specLoader/defaultTemplates.ts)).
+- **Mind map editing shortcuts** — Tab saves and adds a child; Enter saves and adds a sibling (topic excluded).
+- **Windows event loop default** — Native Windows dev uses `WindowsSelectorEventLoopPolicy` for psycopg async; set `WINDOWS_PROACTOR_EVENT_LOOP=1` if Playwright PNG export fails ([`startup.py`](services/infrastructure/lifecycle/startup.py)).
+
+### Fixed
+
+- **Mind map style preservation** — Child add no longer inherits parent `nodeShape` onto unrelated siblings ([`mindMapStylePreservation.ts`](frontend/src/stores/diagram/mindMapStylePreservation.ts)).
+- **Mind map underline connectors** — Single underline leaf uses flat horizontal at shared anchor Y ([`mindMapLayout.ts`](frontend/src/stores/diagram/mindMapLayout.ts), [`MindMapOrthogonalEdge.vue`](frontend/src/components/diagram/edges/MindMapOrthogonalEdge.vue)).
+- **Mind map single-side L1 branch** — Sole branch on a side aligns to topic anchor with straight connectors ([`mindMapLayoutLegacy.ts`](frontend/src/stores/diagram/mindMapLayoutLegacy.ts)).
+- **Post-add inline edit lifecycle** — Cancel pending edit retries on diagram reset; clear `mindMapPendingEditNodeId` ([`mindMapOps.ts`](frontend/src/stores/diagram/mindMapOps.ts)).
+- **Learning sheet UI reset** — Module-level pick/float-bar state clears on canvas exit and session reset ([`useLearningSheetCustomMode.ts`](frontend/src/composables/mindMap/useLearningSheetCustomMode.ts)).
+- **Mind map toolbar reset** — Wire `useCanvasReset` for in-toolbar reset button ([`CanvasToolbarMindMap.vue`](frontend/src/components/canvas/CanvasToolbarMindMap.vue)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): syncs with root **`VERSION`** (5.128.0) on next `npm run build` (`prebuild` → `sync-version`).
+
+## [5.127.0] - 2026-06-27
+
+> **DingTalk MindBot ↔ MindMate identity bridge — unified conversation history, generation-session registry, diagram display adapter, and Dify HTTP error mapping.**
+
+### Added
+
+- **Generation session registry** — Redis links `conversation_id` / Dify `user` strings to MindGraph callers when MindMate or MindBot opens a chat; `/api/generate_dingtalk` resolves library-save identity without browser cookies ([`generation_session_registry.py`](services/diagram/generation_session_registry.py), [`dify_user_resolve.py`](services/diagram/dify_user_resolve.py)).
+- **MindBot linked-user resolution** — Staff bind lookup for generation-session registration when Dify omits the MindGraph user id ([`generation_session_bind.py`](services/mindbot/diagram/generation_session_bind.py)).
+- **DingTalk diagram display adapter** — MindBot post-processes canonical Dify markdown at send time only (`![mg:uuid](url)` → `![](url)`, hide HTML comments); one inline markdown bubble, AI card skipped for diagram replies ([`assistant_markdown.py`](services/diagram/assistant_markdown.py), [`dingtalk_diagram_display.py`](services/mindbot/diagram/dingtalk_diagram_display.py), [`dify_paths.py`](services/mindbot/pipeline/dify_paths.py)).
+- **`mg_conversation_id` on generate_dingtalk** — Optional body field (same as `conversation_id`) for Dify HTTP tool inputs ([`requests_diagram.py`](models/requests/requests_diagram.py)).
+- **Dify conversation HTTP error mapping** — `DifyConversationNotFoundError` and related API errors map to proper HTTP status on conversation routes ([`dify_http_errors.py`](clients/dify_http_errors.py), [`dify_conversations.py`](routers/api/dify_conversations.py)).
+- **Tests** — Unified conversation merge, identity resolution, generation-session registry, assistant markdown parse, DingTalk diagram display, and Dify conversation HTTP 404 ([`test_unified_conversations.py`](tests/test_unified_conversations.py), [`test_generation_session_registry.py`](tests/test_generation_session_registry.py), [`test_generate_dingtalk_identity.py`](tests/test_generate_dingtalk_identity.py), [`test_assistant_markdown.py`](tests/test_assistant_markdown.py), [`test_mindbot_dingtalk_diagram_display.py`](tests/test_mindbot_dingtalk_diagram_display.py), [`test_dify_conversations_http.py`](tests/test_dify_conversations_http.py)).
+- **Canvas history baseline** — Undo stack seeds index 0 on fresh diagram load/reset so the first edit is undoable; undo/redo reconciles layout caches and selection ([`history.ts`](frontend/src/stores/diagram/history.ts), [`historyRestore.ts`](frontend/src/stores/diagram/historyRestore.ts), [`applyCanvasHistoryNavigationSync.ts`](frontend/src/composables/canvasPage/applyCanvasHistoryNavigationSync.ts)).
+- **Diagram save guards** — Shared eligibility for autosave, flush, and per-LLM-round persistence (collab guest, subgraph preview, generating) ([`diagramSaveFeedback.ts`](frontend/src/composables/editor/diagramSaveFeedback.ts), [`useDiagramAutoSave.ts`](frontend/src/composables/editor/useDiagramAutoSave.ts)).
+- **Canvas session reset** — Central reset aborts AI streams, clears ephemeral Pinia, and emits `diagram:reset_requested` for page-local cleanup ([`applyCanvasSessionReset.ts`](frontend/src/composables/canvasPage/applyCanvasSessionReset.ts), [`registerCanvasPageResetHandler.ts`](frontend/src/composables/canvasPage/registerCanvasPageResetHandler.ts)).
+- **Tests** — Canvas history baseline, session reset, and diagram save flow ([`canvasHistoryBaseline.spec.ts`](frontend/tests/canvasHistoryBaseline.spec.ts), [`applyCanvasSessionReset.spec.ts`](frontend/tests/applyCanvasSessionReset.spec.ts), [`diagramSaveFlow.spec.ts`](frontend/tests/diagramSaveFlow.spec.ts)).
+
+### Changed
+
+- **Unified MindMate conversation list** — Web MindMate and bound DingTalk MindBot threads merge into one history; Dify user resolution probes MindBot keys before defaulting to web ([`unified_conversations.py`](services/dify/unified_conversations.py)).
+- **MindBot Dify stream** — Registers generation sessions on stream start and passes `conversation_id` through the pipeline ([`dify_stream.py`](services/mindbot/core/dify_stream.py), [`callback.py`](services/mindbot/pipeline/callback.py), [`context.py`](services/mindbot/pipeline/context.py)).
+- **MindBot reply delivery** — `send_dingtalk_formatted_reply()` applies display-only diagram formatting at outbound; Dify answer and usage logs keep canonical `mg` markers ([`text.py`](services/mindbot/outbound/text.py), [`dify_paths.py`](services/mindbot/pipeline/dify_paths.py)).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): syncs with root **`VERSION`** (5.127.0) on next `npm run build` (`prebuild` → `sync-version`).
+
+## [5.126.0] - 2026-06-27
+
+> **MindMate ↔ canvas navigation, diagram preview cache, presentation spotlight/timer, and mind map fit/toolbar polish.**
+
+### Added
+
+- **MindMate diagram preview cache** — IndexedDB persists DingTalk-generated preview PNGs (30-day TTL) so chat bubbles and share/export keep thumbnails after server `temp_images` cleanup ([`mindmateDiagramPreviewCache.ts`](frontend/src/utils/mindmateDiagramPreviewCache.ts), [`useMindmateDiagramPreviewImage.ts`](frontend/src/composables/mindmate/useMindmateDiagramPreviewImage.ts), [`ShareExportModal.vue`](frontend/src/components/panels/ShareExportModal.vue)).
+- **Presentation spotlight and timer** — Mind map presentation rail restores spotlight overlay and countdown timer tools ([`MindMapPresentationSideToolbar.vue`](frontend/src/components/canvas/MindMapPresentationSideToolbar.vue), [`CanvasPage.vue`](frontend/src/pages/CanvasPage.vue)).
+- **Mind map side-toolbar fit reserve** — Fit-view padding accounts for the v2 floating side toolbar width/expand state so nodes are not hidden under the handle ([`mindMapSideToolbarFitReserve.ts`](frontend/src/utils/mindMapSideToolbarFitReserve.ts), [`uiConfig.ts`](frontend/src/config/uiConfig.ts)).
+- **Sidebar personal edition label** — Compact brand header for users without a paid org tier; paid schools keep org edition subtitle ([`useAppSidebar.ts`](frontend/src/composables/sidebar/useAppSidebar.ts), [`AppSidebar.vue`](frontend/src/components/sidebar/AppSidebar.vue)).
+- **Tests** — Active-thread restore guards, canvas back to MindMate, side-toolbar fit reserve, and diagram preview cache ([`mindMateActiveThread.spec.ts`](frontend/tests/mindMateActiveThread.spec.ts), [`canvasBackNavigation.spec.ts`](frontend/tests/canvasBackNavigation.spec.ts), [`mindMapSideToolbarFitReserve.spec.ts`](frontend/tests/mindMapSideToolbarFitReserve.spec.ts), [`mindmateDiagramPreviewCache.spec.ts`](frontend/tests/mindmateDiagramPreviewCache.spec.ts)).
+
+### Changed
+
+- **MindMate thread persistence** — Active chat thread survives canvas navigation; Dify history revalidation rejects empty/partial server copies that lag behind Pinia; `onActivated` restores thread when returning from canvas ([`useMindMate.ts`](frontend/src/composables/mindmate/useMindMate.ts), [`mindmateActiveThread.ts`](frontend/src/stores/mindmateActiveThread.ts)).
+- **Canvas back navigation** — Back from editor returns to `/mindmate` when that was the entry route, not only `/mindgraph` ([`canvasBackNavigation.ts`](frontend/src/utils/canvasBackNavigation.ts)).
+- **Mind map v2 fit behavior** — One-shot fit on enter; no auto-refit while editing (manual zoom only) ([`DiagramCanvas.vue`](frontend/src/components/diagram/DiagramCanvas.vue), [`useDiagramCanvasFit.ts`](frontend/src/composables/diagramCanvas/useDiagramCanvasFit.ts)).
+- **Mind map reset control** — Reset-to-template moved from editing toolbar to canvas top bar for mind maps ([`CanvasToolbarMindMap.vue`](frontend/src/components/canvas/CanvasToolbarMindMap.vue), [`CanvasTopBar.vue`](frontend/src/components/canvas/CanvasTopBar.vue)).
+- **Toolbar button styles** — Shared [`mindMapToolbarButtons.css`](frontend/src/components/canvas/mindMapToolbarButtons.css) for top bar and mind map toolbar.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): syncs with root **`VERSION`** (5.126.0) on next `npm run build` (`prebuild` → `sync-version`).
+
+## [5.125.0] - 2026-06-27
+
+> **Security audit hardening — CSP script nonce, upload path-traversal containment, OTP brute-force rate limits, signed chat fan-out, SSRF/CSWSH/host-header defenses, and production startup guards.**
+
+### Security
+
+- **CSP script nonce** — The Vue SPA shell is served with a per-request nonce stamped onto its inline scripts and in-document CSP meta tag, and `add_security_headers` emits a matching `script-src 'self' 'nonce-…'` header (no `'unsafe-inline'` for scripts) for the same response. Shell responses are `no-store` so the nonce never goes stale. `style-src` keeps `'unsafe-inline'` (Vue/Element Plus inject styles at runtime via JS). Legacy template responses without a nonce keep the permissive fallback ([`vue_spa.py`](routers/core/vue_spa.py), [`spa_handler.py`](services/infrastructure/utils/spa_handler.py), [`middleware.py`](services/infrastructure/http/middleware.py)). **Takes effect after `npm run build`.**
+- **Upload path traversal (CWE-22)** — New [`safe_upload.py`](services/utils/safe_upload.py) centralizes `safe_upload_basename` (strips directory components) and `ensure_within_directory` (resolves + asserts containment before write). Applied to Knowledge Space upload, chunk-test upload, and batch upload, plus announcement image upload ([`knowledge_space_service.py`](services/knowledge/knowledge_space_service.py), [`chunk_test_document_service.py`](services/knowledge/chunk_test_document_service.py), [`document_batch_service.py`](services/knowledge/document_batch_service.py), [`update_notification.py`](routers/core/update_notification.py)).
+- **OTP brute-force** — SMS and email OTP login now enforce per-identifier and per-IP rate limits before verify-and-consume; counters clear on success ([`routers/auth/login.py`](routers/auth/login.py)).
+- **Signed chat WS fan-out** — Chat envelopes are stamped with `COLLAB_FANOUT_ORIGIN_SECRET` on publish (Redis + PG-NOTIFY paths) and rejected on receipt when the origin is missing/invalid, mirroring workshop fan-out. Prevents a Redis/PG-write-capable attacker from forging channel/DM/presence frames ([`ws_redis_fanout_publish_core.py`](services/features/ws_redis_fanout_publish_core.py), [`ws_redis_fanout_publish.py`](services/features/ws_redis_fanout_publish.py), [`ws_redis_fanout_listener.py`](services/features/ws_redis_fanout_listener.py)).
+- **SSRF hardening** — URL fetch now blocks all non-public resolved IPs (private, loopback, link-local, multicast, unspecified, IPv4-mapped), re-validates the host immediately before the request to shrink the DNS-rebind window, and rejects 3xx redirects ([`web_content_generation.py`](routers/api/web_content_generation.py)).
+- **Cross-site WebSocket hijacking (CSWSH)** — Origin validation added to the ASR, live-translate, and workshop-chat WebSocket endpoints via shared [`close_ws_if_origin_disallowed`](utils/collab_ws_origin.py) ([`asr_realtime_ws.py`](routers/api/asr_realtime_ws.py), [`live_translate_ws.py`](routers/api/live_translate_ws.py), [`workshop_chat_ws.py`](routers/features/workshop_chat_ws.py)).
+- **Host-header injection** — `TrustedHostMiddleware` rejects requests whose `Host` is not in `ALLOWED_HOSTS` (permissive `*` by default; `localhost`/`127.0.0.1` always allowed) ([`middleware.py`](services/infrastructure/http/middleware.py)).
+- **Upload content-type spoofing** — Dify file upload enforces an extension allowlist + magic-byte validation for images; announcement image extension is derived from the validated content-type only ([`dify_files.py`](routers/api/dify_files.py), [`update_notification.py`](routers/core/update_notification.py)).
+- **Account enumeration** — Password reset (SMS/email) returns a generic `400` for unknown accounts instead of `404` ([`routers/auth/password.py`](routers/auth/password.py)).
+- **Production startup guards** — Non-debug boot is blocked when `DATABASE_URL` is unset; unauthenticated `REDIS_URL` warns (or fails when `REQUIRE_REDIS_AUTH=true`) ([`production_secrets_guard.py`](services/infrastructure/security/production_secrets_guard.py)).
+- **Constant-time secrets** — Bayi/dashboard passkey checks use `hmac.compare_digest`; captcha codes use `secrets.choice` ([`passkey_utils.py`](utils/auth/passkey_utils.py), [`routers/auth/captcha.py`](routers/auth/captcha.py)).
+- **Password policy** — Registration/reset/change validators reject common passwords and single-character repeats beyond length-only checks ([`requests_auth.py`](models/requests/requests_auth.py)).
+- **Session cleanup** — `csrf_token` cookie is cleared on logout ([`routers/auth/session.py`](routers/auth/session.py)).
+- **Deprecated header** — Removed `X-XSS-Protection` (obsolete; CSP is the correct control) ([`middleware.py`](services/infrastructure/http/middleware.py)).
+
+### Changed
+
+- **Bayi SSO cookies** — The SSO flow issues a standard rotating refresh token and sets access/refresh/CSRF cookies via `set_auth_cookies`, aligning lifetimes with the core auth flow ([`routers/core/pages.py`](routers/core/pages.py)).
+
+### Added
+
+- **Security audit report** — [`docs/security/SECURITY_AUDIT_2026-06.md`](docs/security/SECURITY_AUDIT_2026-06.md): findings mapped to OWASP/ASVS, remediation, positive controls, and a deployment hardening checklist.
+- **Security regression tests** — CSP nonce vs. `'unsafe-inline'` fallback, DB/Redis startup guards, and existing hardening checks ([`tests/test_security_production_hardening.py`](tests/test_security_production_hardening.py)).
+
+### Deployment notes (operator action)
+
+- **`DATABASE_URL` now required** — Non-debug deployments must set `DATABASE_URL` explicitly, or startup fails by design.
+- **`COLLAB_FANOUT_ORIGIN_SECRET`** — Set explicitly and **share the same value across all workers**; chat fan-out now enforces it (previously workshop-only).
+- **`ALLOWED_HOSTS`** (new, optional) — Set to the production hostname(s) to enforce host-header validation.
+- **`REQUIRE_REDIS_AUTH`** (new, optional) — Set `true` to fail startup on an unauthenticated `REDIS_URL`.
+- Rotate any API key that previously appeared in committed docs ([`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) placeholder).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): syncs with root **`VERSION`** (5.125.0) on next `npm run build` (`prebuild` → `sync-version`).
+
+## [5.124.0] - 2026-06-26
+
+> **DingTalk pair-code binding — rotating 6-digit codes replace QR; MindBot tool ingress; production security hardening (CSRF, fail-closed auth).**
+
+### Added
+
+- **DingTalk pair-code binding** — Rotating 6-digit HMAC codes displayed as `000-000` on web; teachers send the code to MindBot; universal bind/unbind claim pipeline with org+code Redis index, claim lock, and guess-rate limits ([`dingtalk_account_binding.md`](docs/architecture/dingtalk_account_binding.md)).
+- **DingTalkPairModal** — Bluetooth-style pairing UI (bind and unbind) with countdown ring, status polling, and client audit logging ([`DingTalkPairModal.vue`](frontend/src/components/auth/DingTalkPairModal.vue), [`dingtalkPairAuditLog.ts`](frontend/src/utils/dingtalkPairAuditLog.ts)).
+- **MindBot tool ingress** — Pre-Dify handler framework for admin tools that must skip the LLM; pair-code handler registered in [`services/mindbot/tools/`](services/mindbot/tools/) ([`mindbot_tool_ingress.md`](docs/architecture/mindbot_tool_ingress.md)).
+- **Bind/unbind audit logging** — Distinct `[MindBotTool]`, `[DingtalkBind:web]`, `[DingtalkBind:claim]`, and `[DingtalkPair:client]` prefixes; client events POST to `/api/frontend_log` with `source=dingtalk_pair`.
+- **Production security deploy guide** — Pre-deploy env, openresty `X-Forwarded-Proto`, paired backend/frontend rollout, ESP32 header requirement, and post-deploy curl checks ([`production_security_deploy.md`](docs/architecture/production_security_deploy.md)).
+- **JWT rotation CLI** — [`scripts/ops/rotate_jwt_secret.py`](scripts/ops/rotate_jwt_secret.py) moves the active Redis JWT secret to `jwt:secret:previous` and issues a new signing key.
+- **CSRF hardening** — Migration-safe double-submit CSRF middleware, `csrf_token` cookie at login/refresh, global fetch interceptor ([`installCsrfFetchInterceptor.ts`](frontend/src/utils/installCsrfFetchInterceptor.ts)), and [`tests/test_csrf_protection.py`](tests/test_csrf_protection.py).
+- **Security regression tests** — Fail-closed session, HSTS, API key masking, SSRF redirect block ([`tests/test_security_production_hardening.py`](tests/test_security_production_hardening.py)).
+- **Gewe webhook auth** — HMAC signature verification and optional IP allowlist when `FEATURE_GEWE=True` ([`gewe_webhook_auth.py`](services/infrastructure/security/gewe_webhook_auth.py)).
+- **Session refresh mutex** — Shared [`sessionRefresh.ts`](frontend/src/utils/sessionRefresh.ts) prevents duplicate `/auth/refresh` races between Pinia and `apiClient`.
+- **Saved login identifier** — Remember-me prefills username only; password never stored ([`savedLoginCredentials.ts`](frontend/src/utils/savedLoginCredentials.ts)).
+- **PWA install early capture** — [`pwa-install-early.js`](frontend/public/pwa-install-early.js) retains `beforeinstallprompt` before the SPA bundle loads.
+- **PDF worker version check** — CI script verifies committed worker version matches `pdfjs-dist` ([`check-pdf-worker-version.ts`](frontend/scripts/check-pdf-worker-version.ts)).
+- **Tests** — Pair-code parse/handler, bind org resolve, unbind pair, code index, audit log, CSRF, Gewe webhook, refresh-token reuse, workshop chat file service, and frontend interceptor specs.
+
+### Security
+
+- **Fail-closed auth** — Session validation and `/session-status` deny on Redis errors; weak/placeholder secrets blocked at startup via [`production_secrets_guard.py`](services/infrastructure/security/production_secrets_guard.py).
+- **CSRF** — Cookie + `X-CSRF-Token` on authenticated mutations; one-request bootstrap for legacy sessions (logged as `[Security] CSRF_BOOTSTRAP`).
+- **Headers** — Production CSP drops `unsafe-eval`; HSTS when HTTPS is detected (`FORCE_SECURE_COOKIES` / `X-Forwarded-Proto` behind reverse proxy).
+- **Trusted proxy client IP** — Forwarded `X-Forwarded-For` / `X-Real-IP` are honored only from peers matching `TRUSTED_PROXY_IPS`, which now accepts exact IPs, CIDR ranges, and the `private` / `loopback` keywords so Docker / Nginx Proxy Manager deployments trust the proxy without pinning a container IP; resolution is logged once at startup ([`request_helpers.py`](utils/auth/request_helpers.py)). Accurate IPs are required for rate limits and AbuseIPDB / CrowdSec blocking.
+- **IDOR / exposure** — Device status requires registration secret; admin API keys masked in list; workshop chat static uploads blocked; SSRF fetch disables redirects.
+- **Frontend** — DOMPurify link hook on live markdown path; sensitive caches moved to `sessionStorage`; remember-me stores identifier only.
+
+### Changed
+
+- **DingTalk bind ingress** — QR picture decode removed; teachers confirm bind/unbind by sending the rotating code to MindBot (text tool ingress, no Dify round-trip).
+- **Direct unbind disabled** — `POST /dingtalk-bind/unbind` returns **410 Gone**; unbind requires MindBot pair-code confirmation via `POST /dingtalk-bind/unbind/start`.
+- **BindDingTalkAccountModal** — Simplified to launch [`DingTalkPairModal`](frontend/src/components/auth/DingTalkPairModal.vue); QR upload/decode UI removed.
+- **i18n** — DingTalk pair strings synced across all locale bundles ([`sync-dingtalk-pair-locale-keys.py`](frontend/scripts/sync-dingtalk-pair-locale-keys.py)).
+
+### Removed
+
+- **QR bind backend** — [`picture_handler.py`](services/mindbot/bind/picture_handler.py), [`qr_backend.py`](services/mindbot/bind/qr_backend.py), and [`qr_decode.py`](services/mindbot/bind/qr_decode.py) deleted; pair-code text replaces QR image ingress.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.124.0).
+
 ## [5.123.0] - 2026-06-26
 
 > **MindMate export — Dify raw dump library: upload snapshots, merge into a cumulative store, search and export from the library.**
@@ -88,8 +256,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Landing generate_graph SSE** — Stream now emits `detecting`, `requirements`, and `progress` (with resolved topic and diagram type) in addition to `accepted`, `waiting`, and `streaming`.
 - **Generate pipeline** — Typed event contract (`GenerateGraphEvent`) and `run_generate_pipeline` entry point with cooperative cancellation when the client disconnects.
 - **Canvas autocomplete** — Cancel control on the 3-LLM model selector while generation is in flight.
-- **Mind map appearance** — Five diagram styles (`classic`, `formal`, `bubble`, `underline`, `soft`) plus curated vibrant classroom color themes (blue, orange, yellow, green, teal, rose) and a rainbow preset; toolbar appearance dropdown persists `_mindmap_theme` and `_mindmap_diagram_style` on the diagram ([`mindMapDiagramStyles.ts`](frontend/src/config/mindMapDiagramStyles.ts), [`mindMapThemes.ts`](frontend/src/config/mindMapThemes.ts), [`MindMapAppearanceDropdown.vue`](frontend/src/components/canvas/MindMapAppearanceDropdown.vue)).
-- **Mind map post-add inline edit** — `mindMapPendingEditNodeId` plus mount/retry focus so Tab, Enter, toolbar +, and directional **+** overlays open the inline editor on the newly added node ([`mindMapOps.ts`](frontend/src/stores/diagram/mindMapOps.ts), [`InlineEditableText.vue`](frontend/src/components/diagram/nodes/InlineEditableText.vue)).
 - **Admin org activity tab** — School modal activity timeline with cursor pagination and source filter (MindGraph / MindMate / DingTalk); `GET /admin/organizations/{org_id}/activity` ([`AdminOrgActivityTab.vue`](frontend/src/components/admin/AdminOrgActivityTab.vue)).
 - **Admin school teachers tab** — School modal members list sorted by all-time token usage with role pills ([`AdminSchoolTeachersTab.vue`](frontend/src/components/admin/AdminSchoolTeachersTab.vue)).
 - **Dify multi-slot health poller** — Schema-driven server slots, deduped probe plan, Redis health cache with failure threshold, and configurable poll interval / max age / concurrency; MindMate routing uses stale-aware failover partner selection ([`dify_health_poller.py`](services/dify/dify_health_poller.py)).
@@ -98,10 +264,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Mind map v2 canvas (dev flag)** — Classic canvas remains the default; v2 chrome is gated behind `FEATURE_MINDMAP_V2_CANVAS` (off by default). The classic/new toggle in Language settings is hidden unless the flag is enabled.
 - **Classic mind map default** — `mindMapCanvasMode` defaults to `legacy`; v2 layout and orthogonal edges apply only when explicitly opted in.
-- **New mind map defaults** — Blank templates initialize with **vibrant blue** theme and **classic** diagram style (`DEFAULT_MIND_MAP_THEME_ID`, [`defaultTemplates.ts`](frontend/src/stores/specLoader/defaultTemplates.ts)).
-- **Mind map editing shortcuts** — While inline-editing a branch, **Tab** saves and adds a child; **Enter** saves and adds a sibling (topic excluded); matches keyboard routing when not in an input.
-- **Formal & soft diagram styles** — Depth-layered branch fills (center / L1 / L2 / L3+) from the active theme accent; soft style uses rounded center, oval L1/L2, underline L3+ ([`mindMapVibrantThemes.ts`](frontend/src/config/mindMapVibrantThemes.ts)).
-- **Mind map topic vertical alignment** — After subtree Y correction, topic anchor recenters on the midpoint of all L1 branch anchors on both sides ([`mindMapLayout.ts`](frontend/src/stores/diagram/mindMapLayout.ts)).
 - **Collab AI policy** — `generate_graph` and inline recommendations return 403 for all users (except superadmin) when the diagram is in a live workshop session.
 - **Dify server helpers** — Generalized from hard-coded slots 1+2 to ORM schema-driven slots with `failover_partner_server` for arbitrary two-slot pairs ([`dify_servers.py`](services/dify/dify_servers.py)).
 - **i18n** — `thinkingCoins` message namespace synced across all locale bundles.
@@ -111,10 +273,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fixed-structure templates (tree/brace/flow)** — Fixed label lists (`children`, `parts`, `steps`) are enforced even when a dimension or dimension preference is also present; structure kwargs are passed on every agent route.
 - **Landing error UX** — Validation and generation failures include `error_type` and optional `show_guidance`; stream HTTP 5xx responses no longer fall through to a duplicate JSON retry.
 - **File Center** — Web ingest requires page content; RAG UI and auto-expand require a saved diagram linked to the package.
-- **Mind map style preservation** — Adding a child no longer inherits the parent’s `nodeShape` onto unrelated siblings; `resolveMindMapRestoredNodeShape` heals wrongly inherited shapes after tree reload ([`mindMapStylePreservation.ts`](frontend/src/stores/diagram/mindMapStylePreservation.ts)).
-- **Mind map underline connectors** — Single underline leaf: flat horizontal at the shared anchor Y (no diagonal); multi-sibling underline keeps rounded T-junction bus; sole underline child height aligns to parent anchor ([`mindMapLayout.ts`](frontend/src/stores/diagram/mindMapLayout.ts), [`mindMapOrthogonalPath.ts`](frontend/src/utils/mindMapOrthogonalPath.ts), [`MindMapOrthogonalEdge.vue`](frontend/src/components/diagram/edges/MindMapOrthogonalEdge.vue)).
-- **Mind map single-side L1 branch** — When the topic has only one branch on a side, layout aligns that branch to the topic anchor and connectors render straight (orthogonal H–V–H or horizontal bezier replacement) instead of a curved tee ([`mindMapLayoutLegacy.ts`](frontend/src/stores/diagram/mindMapLayoutLegacy.ts), [`CurvedEdge.vue`](frontend/src/components/diagram/edges/CurvedEdge.vue)).
-- **Mind map collapse toggles** — Overlay positions use mind-map measured widths/heights and resolved node shape ([`useMindMapCollapseTogglePosition.ts`](frontend/src/composables/canvasToolbar/useMindMapCollapseTogglePosition.ts)).
 - **Generation library claim** — Preview outcomes record owner user/org; claim rejects mismatched authenticated users as not-found to avoid leaking preview existence ([`generation_library_claim.py`](services/diagram/generation_library_claim.py)).
 - **MindMate library card metadata** — Library skip lookup uses authenticated fetch so metadata loads for signed-in users ([`MessageBubble.vue`](frontend/src/components/panels/mindmate/MessageBubble.vue)).
 

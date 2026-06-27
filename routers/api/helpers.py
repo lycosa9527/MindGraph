@@ -23,6 +23,7 @@ from models.domain.user_activity_log import UserActivityLog
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_jwt_secret, is_teacher
+from utils.auth.request_helpers import get_client_ip
 
 _logger = logging.getLogger(__name__)
 
@@ -205,7 +206,7 @@ def get_rate_limit_identifier(current_user: Optional[User], request: Request) ->
     """
     if current_user and hasattr(current_user, "id"):
         return f"user:{current_user.id}"
-    client_ip = request.client.host if request.client else "unknown"
+    client_ip = get_client_ip(request)
     return f"ip:{client_ip}"
 
 

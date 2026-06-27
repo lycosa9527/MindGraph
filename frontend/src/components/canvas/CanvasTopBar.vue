@@ -140,16 +140,9 @@ function generateDefaultName(): string {
 const isFileNameEditing = ref(false)
 const fileNameInputRef = ref<InstanceType<typeof ElInput> | null>(null)
 
-// Use Pinia store for title (synced with diagram state)
-// Priority: topic > user-edited title > simple default (no timestamp)
+// Use Pinia store for title (synced with diagram state via effectiveTitle)
 const fileName = computed({
-  get: () => {
-    const topicText = diagramStore.getTopicNodeText()
-    if (topicText) {
-      return topicText
-    }
-    return diagramStore.effectiveTitle || generateDefaultName()
-  },
+  get: () => diagramStore.effectiveTitle || generateDefaultName(),
   set: (value: string) => diagramStore.setTitle(value, true),
 })
 
@@ -417,6 +410,27 @@ async function handleReset() {
 
       <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <ElTooltip
+          v-if="isMindMapEditor && !props.isViewer"
+          :content="t('canvas.topBar.resetTemplate')"
+          placement="bottom"
+          :disabled="!compactTopBarActions"
+        >
+          <button
+            type="button"
+            class="mm-btn"
+            :class="{ 'mm-btn--icon': compactTopBarActions }"
+            :aria-label="t('canvas.topBar.resetCanvas')"
+            @click="handleReset"
+          >
+            <RotateCcw class="w-4 h-4" />
+            <span
+              v-if="!compactTopBarActions"
+              class="mm-btn__label"
+            >{{ t('canvas.topBar.resetCanvas') }}</span>
+          </button>
+        </ElTooltip>
+
+        <ElTooltip
           v-if="!isMindMapEditor"
           :content="t('canvas.topBar.teachingDesign')"
           placement="bottom"
@@ -522,6 +536,8 @@ async function handleReset() {
     />
   </div>
 </template>
+
+<style src="./mindMapToolbarButtons.css"></style>
 
 <style scoped>
 .canvas-top-bar {

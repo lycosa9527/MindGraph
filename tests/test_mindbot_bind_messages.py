@@ -11,7 +11,9 @@ from services.mindbot.bind.messages import (
     bind_outcome_codes_with_messages,
     bind_reply_text,
     mindbot_code_from_claim_error,
+    pair_reply_text,
 )
+from services.auth.dingtalk_bind_constants import PAIR_PURPOSE_UNBIND, PAIR_PURPOSE_UNKNOWN
 from services.mindbot.errors import MindbotErrorCode
 
 
@@ -36,6 +38,9 @@ def test_every_bind_outcome_has_user_message() -> None:
         MindbotErrorCode.BIND_UNAVAILABLE,
         MindbotErrorCode.BIND_INVALID_STAFF,
         MindbotErrorCode.BIND_INTERNAL,
+        MindbotErrorCode.UNBIND_OK,
+        MindbotErrorCode.UNBIND_NOT_LINKED,
+        MindbotErrorCode.UNBIND_STAFF_MISMATCH,
     }
     assert bind_outcome_codes_with_messages() == expected
     for code in expected:
@@ -52,3 +57,19 @@ def test_claim_error_mapping_covers_all_constants() -> None:
     assert mindbot_code_from_claim_error(BIND_ERROR_STAFF_TAKEN) == MindbotErrorCode.BIND_STAFF_TAKEN
     assert mindbot_code_from_claim_error(BIND_ERROR_INTERNAL) == MindbotErrorCode.BIND_INTERNAL
     assert mindbot_code_from_claim_error("MINDBOT_BIND_UNKNOWN") == MindbotErrorCode.BIND_INTERNAL
+
+
+def test_unbind_replies_use_purpose_specific_copy() -> None:
+    """Unbind flow overrides shared error codes with clearer wording."""
+    expired = pair_reply_text(MindbotErrorCode.BIND_TOKEN_EXPIRED, PAIR_PURPOSE_UNBIND)
+    assert "解绑" in expired
+    assert expired != bind_reply_text(MindbotErrorCode.BIND_TOKEN_EXPIRED)
+
+    ok = pair_reply_text(MindbotErrorCode.UNBIND_OK, PAIR_PURPOSE_UNBIND)
+    assert "解绑成功" in ok
+
+
+def test_unknown_purpose_uses_neutral_copy() -> None:
+    """Early pair errors before purpose resolution use neutral wording."""
+    expired = pair_reply_text(MindbotErrorCode.BIND_TOKEN_EXPIRED, PAIR_PURPOSE_UNKNOWN)
+    assert "绑定或解绑" in expired

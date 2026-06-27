@@ -410,6 +410,7 @@ export default {
   'canvas.topBar.exportSvg': 'Export as SVG',
   'canvas.topBar.reset': 'Reset',
   'canvas.topBar.resetTemplate': 'Reset to default template',
+  'canvas.topBar.resetCanvas': 'Reset canvas',
   'canvas.topBar.schoolCollab': 'School collaboration',
   'canvas.topBar.shareCommunity': 'Share to Community',
   'canvas.topBar.sharedCollab': 'Shared collaboration',

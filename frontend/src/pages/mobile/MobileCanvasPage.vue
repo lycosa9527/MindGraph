@@ -71,6 +71,7 @@ import {
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import type { DiagramType } from '@/types'
 import {
   DEFAULT_CHART_TYPE_KEY,
@@ -101,6 +102,7 @@ const { startSession: startNodePaletteSession } = getNodePalette({
 
 const { handleAIGenerate, handleConceptGeneration, isAIGenerating } = useCanvasToolbarApps()
 const diagramAutoSave = useDiagramAutoSave()
+const previewStore = useMindMapSubgraphPreviewStore()
 const inlineRecCoordinator = useInlineRecommendationsCoordinator()
 useCanvasPageTabRecIndicator()
 useNodeActions()
@@ -148,6 +150,13 @@ const {
   llmResultsStore,
   panelsStore,
   diagramAutoSave,
+  saveGuardState: () => ({
+    llmGenerating: llmResultsStore.isGenerating,
+    subgraphPreviewActive: previewStore.hasPreview,
+    subgraphGenerating: previewStore.isGenerating,
+    collabSessionActive: diagramStore.collabSessionActive,
+    isCollabGuest: false,
+  }),
   isConceptMap,
   isAIGenerating,
   handleAIGenerate,
@@ -271,8 +280,9 @@ watch(
 onUnmounted(() => {
   inlineRecCoordinator.teardown()
   mobileCanvasEvents.teardown()
-  diagramAutoSave.flush()
-  diagramAutoSave.teardown()
+  void diagramAutoSave.flush().finally(() => {
+    diagramAutoSave.teardown()
+  })
   focusReviewStore.clear()
   rootConceptReviewStore.clear()
 

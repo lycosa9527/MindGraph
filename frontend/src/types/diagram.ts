@@ -188,6 +188,7 @@ export type MindMapPresentationToolId =
   | 'laser'
   | 'highlighter'
   | 'pen'
+  | 'spotlight'
   | 'timer'
   | 'slides'
 

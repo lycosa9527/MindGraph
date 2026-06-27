@@ -23,19 +23,18 @@ from utils.auth.tokens import security
 __all__ = ["serialize_document", "require_settings_library", "get_optional_user"]
 
 
-def serialize_document(document) -> dict:
+def serialize_document(document, *, include_pages_dir_path: bool = False) -> dict:
     """
     Serialize LibraryDocument to response dict.
 
     Reduces code duplication across endpoints.
     """
-    return {
+    payload = {
         "id": document.id,
         "title": document.title,
         "description": document.description,
         "cover_image_path": document.cover_image_path,
         "use_images": document.use_images or False,
-        "pages_dir_path": document.pages_dir_path,
         "total_pages": document.total_pages,
         "views_count": document.views_count,
         "likes_count": document.likes_count,
@@ -46,6 +45,9 @@ def serialize_document(document) -> dict:
             "name": document.uploader.name if document.uploader else None,
         },
     }
+    if include_pages_dir_path:
+        payload["pages_dir_path"] = document.pages_dir_path
+    return payload
 
 
 async def get_optional_user(

@@ -424,7 +424,7 @@ export type EventTypes = {
     allFailed?: boolean
   }
   'llm:generation_failed': { error: string }
-  'llm:model_completed': { model?: string }
+  'llm:model_completed': { model?: string; success?: boolean; rendered?: boolean }
   'llm:first_result_available': { model?: string; elapsedTime?: number }
   'llm:result_rendered': { model?: string; diagramType?: string | null; nodeCount?: number }
   'llm:topic_identified': { topic: string }
@@ -525,6 +525,7 @@ export type EventTypes = {
 
   // Diagram Reset
   'diagram:reset_requested': Record<string, never>
+  'diagram:history_restored': { diagramType?: string }
 
   // Learning Mode Events
   'learning_mode:validate': { mode?: string }

@@ -95,8 +95,10 @@ export function useMindMapSubgraphSuggest() {
       // When the diagram is linked to a File Center package, sending diagram_id
       // lets the backend scope RAG retrieval to that package's sources.
       const diagramId = savedDiagramsStore.activeDiagramId
+      const signal = previewStore.generationSignal()
       const response = await authFetch('/api/generate_graph', {
         method: 'POST',
+        signal,
         body: JSON.stringify({
           prompt: nodeText,
           diagram_type: 'mindmap',
@@ -108,6 +110,10 @@ export function useMindMapSubgraphSuggest() {
       })
 
       if (!response.ok) {
+        if (signal?.aborted) {
+          previewStore.finishGenerationWithoutPreview()
+          return
+        }
         const errorData = await response.json().catch(() => ({ detail: 'Request failed' }))
         const failure = extractFailureFromPayload(errorData)
         const message = failure
@@ -119,6 +125,10 @@ export function useMindMapSubgraphSuggest() {
       }
 
       const result = await response.json()
+      if (signal?.aborted) {
+        previewStore.finishGenerationWithoutPreview()
+        return
+      }
       const payloadFailure = extractFailureFromPayload(result)
       if (payloadFailure) {
         notify.error(

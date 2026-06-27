@@ -67,7 +67,9 @@ function makeMindMapCtx(data: DiagramData): DiagramContext {
     mindMapNodeHeights: ref({}),
     mindMapRecalcTrigger: ref(0),
     mindMapCurveExtentBaseline: ref(null),
+    mindMapPendingEditNodeId: ref(null),
     pushHistory: vi.fn(),
+    scheduleMindMapRecalc: vi.fn(),
   } as DiagramContext
 }
 

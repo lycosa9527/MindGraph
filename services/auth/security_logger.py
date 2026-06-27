@@ -49,6 +49,7 @@ class SecurityLogger:
     RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED"
     ACCESS_DENIED = "ACCESS_DENIED"
     INPUT_VALIDATION_FAILED = "INPUT_VALIDATION_FAILED"
+    CSRF_BOOTSTRAP = "CSRF_BOOTSTRAP"
     SUSPICIOUS_ACTIVITY = "SUSPICIOUS_ACTIVITY"
     DATA_EXPORT = "DATA_EXPORT"
     DATA_ACCESS = "DATA_ACCESS"
@@ -172,6 +173,15 @@ class SecurityLogger:
             self.INPUT_VALIDATION_FAILED,
             f"Input validation failed for {field}: {reason}",
             value_size=value_size,
+            ip=ip,
+        )
+
+    def csrf_bootstrap(self, path: str, ip: Optional[str] = None) -> None:
+        """Log one-time CSRF cookie seeding for pre-hardening sessions (monitor migration)."""
+        self._log(
+            logging.INFO,
+            self.CSRF_BOOTSTRAP,
+            f"CSRF cookie bootstrapped for authenticated session on {path}",
             ip=ip,
         )
 

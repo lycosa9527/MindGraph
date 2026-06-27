@@ -40,6 +40,14 @@ describe('canvasBackNavigation', () => {
     sessionStorage.removeItem(CANVAS_ENTRY_PATH_KEY)
   })
 
+  it('navigateBackFromCanvas replaces to stored MindMate entry in one step', () => {
+    sessionStorage.setItem(CANVAS_ENTRY_PATH_KEY, '/mindmate')
+    const replace = vi.fn()
+    navigateBackFromCanvas({ replace } as never, '/canvas')
+    expect(replace).toHaveBeenCalledWith({ path: '/mindmate' })
+    sessionStorage.removeItem(CANVAS_ENTRY_PATH_KEY)
+  })
+
   it('navigateBackFromCanvas falls back to landing when entry is missing', () => {
     sessionStorage.removeItem(CANVAS_ENTRY_PATH_KEY)
     const replace = vi.fn()

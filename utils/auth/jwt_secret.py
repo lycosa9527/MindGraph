@@ -17,7 +17,11 @@ from typing import Optional
 
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
-from .config import JWT_SECRET_BACKUP_FILE, JWT_SECRET_REDIS_KEY
+from .config import (
+    JWT_SECRET_BACKUP_FILE,
+    JWT_SECRET_PREVIOUS_REDIS_KEY,
+    JWT_SECRET_REDIS_KEY,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +33,13 @@ class _JwtSecretCache:
     """In-memory JWT secret holder (no global keyword)."""
 
     value: Optional[str] = None
+
+
+class _JwtPreviousSecretCache:
+    """In-memory previous JWT secret holder for rotation window."""
+
+    value: Optional[str] = None
+    loaded: bool = False
 
 
 _redis_available = False
@@ -114,6 +125,67 @@ def _load_jwt_secret_backup() -> Optional[str]:
     except BACKGROUND_INFRA_ERRORS as e:
         logger.warning("[Auth] Failed to load JWT secret backup: %s", e)
         return None
+
+
+def get_jwt_secret_previous() -> Optional[str]:
+    """
+    Return the previous JWT secret during a rotation window, if any.
+
+    Tokens signed with the previous secret remain valid until they expire.
+    """
+    if _JwtPreviousSecretCache.loaded:
+        return _JwtPreviousSecretCache.value
+
+    _JwtPreviousSecretCache.loaded = True
+    if not _redis_available or _get_redis is None or _is_redis_available is None:
+        return None
+    try:
+        if not _is_redis_available():
+            return None
+        redis = _get_redis()
+        if not redis:
+            return None
+        secret = redis.get(JWT_SECRET_PREVIOUS_REDIS_KEY)
+        if not secret:
+            return None
+        secret_str = secret.decode("utf-8") if isinstance(secret, bytes) else secret
+        if secret_str and len(secret_str) >= 32:
+            _JwtPreviousSecretCache.value = secret_str
+            return secret_str
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.warning("[Auth] Failed to load previous JWT secret: %s", exc)
+    return None
+
+
+def rotate_jwt_secret() -> str:
+    """
+    Rotate JWT secret: move current to previous, generate a new current secret.
+
+    Intended for operational rotation (manual/admin trigger). In-flight access
+    tokens signed with the old secret remain valid until expiry via
+    ``get_jwt_secret_previous()``.
+    """
+    if not _redis_available or _get_redis is None or _is_redis_available is None:
+        raise RuntimeError("Redis is required for JWT secret rotation.")
+    if not _is_redis_available():
+        raise RuntimeError("Redis is unavailable; cannot rotate JWT secret.")
+    redis = _get_redis()
+    if not redis:
+        raise RuntimeError("Failed to connect to Redis for JWT secret rotation.")
+
+    current = redis.get(JWT_SECRET_REDIS_KEY)
+    if current:
+        current_str = current.decode("utf-8") if isinstance(current, bytes) else current
+        redis.set(JWT_SECRET_PREVIOUS_REDIS_KEY, current_str)
+        _JwtPreviousSecretCache.value = current_str
+        _JwtPreviousSecretCache.loaded = True
+
+    new_secret = secrets.token_urlsafe(48)
+    redis.set(JWT_SECRET_REDIS_KEY, new_secret)
+    _JwtSecretCache.value = new_secret
+    _save_jwt_secret_backup(new_secret)
+    logger.info("[Auth] JWT secret rotated; previous secret retained for dual-verify window")
+    return new_secret
 
 
 def get_jwt_secret() -> str:

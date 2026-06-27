@@ -19,6 +19,17 @@ import type { MindMateMessage } from '@/composables/mindmate/useMindMate'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useAuthStore } from '@/stores'
 import { claimThinkingCoinEvent } from '@/utils/claimThinkingCoinEvent'
+import {
+  parseMindmateDiagramLibraryId,
+  rewriteMindmateTempImageUrls,
+  stripMindmateDiagramIdComments,
+} from '@/utils/mindmateDiagramMeta'
+import {
+  extractMindmatePreviewCacheKey,
+  readMindmateDiagramPreview,
+} from '@/utils/mindmateDiagramPreviewCache'
+import { replaceMindmatePreviewImageUrl } from '@/utils/mindmateDiagramPreviewDisplay'
+import { resolveMindmateDiagramPreviewBlob } from '@/utils/mindmateDiagramPreviewResolve'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 const props = defineProps<{
@@ -45,6 +56,8 @@ const notify = useNotifications()
 const selectedMessageIds = ref<Set<string>>(new Set())
 const isExporting = ref(false)
 const previewRef = ref<HTMLElement | null>(null)
+const diagramPreviewBlobUrls = ref<Map<string, string>>(new Map())
+let diagramPreviewBlobUrlsActive: string[] = []
 
 // Filter only user and assistant messages (exclude system)
 const selectableMessages = computed(() =>
@@ -56,6 +69,37 @@ const selectedMessages = computed(() =>
   selectableMessages.value.filter((m) => selectedMessageIds.value.has(m.id))
 )
 
+function clearDiagramPreviewBlobUrls(): void {
+  for (const url of diagramPreviewBlobUrlsActive) {
+    URL.revokeObjectURL(url)
+  }
+  diagramPreviewBlobUrlsActive = []
+  diagramPreviewBlobUrls.value = new Map()
+}
+
+async function preloadDiagramPreviewBlobUrls(): Promise<void> {
+  clearDiagramPreviewBlobUrls()
+  const pageHost = typeof window !== 'undefined' ? window.location.host : undefined
+  const nextMap = new Map<string, string>()
+  for (const message of selectableMessages.value) {
+    if (message.role !== 'assistant') {
+      continue
+    }
+    const blob = await resolveMindmateDiagramPreviewBlob({
+      content: message.content,
+      pageHost,
+      libraryDiagramId: parseMindmateDiagramLibraryId(message.content),
+    })
+    if (!blob) {
+      continue
+    }
+    const url = URL.createObjectURL(blob)
+    nextMap.set(message.id, url)
+    diagramPreviewBlobUrlsActive.push(url)
+  }
+  diagramPreviewBlobUrls.value = nextMap
+}
+
 // Watch for dialog open to reset selection
 watch(
   () => props.visible,
@@ -64,7 +108,10 @@ watch(
       void ensureMarkdownRenderer()
       // By default, select all messages
       selectedMessageIds.value = new Set(selectableMessages.value.map((m) => m.id))
+      void preloadDiagramPreviewBlobUrls()
+      return
     }
+    clearDiagramPreviewBlobUrls()
   }
 )
 
@@ -90,10 +137,36 @@ function deselectAll() {
   selectedMessageIds.value = new Set()
 }
 
-function renderMarkdown(content: string): string {
+function renderMarkdown(message: MindMateMessage): string {
   void markdownRendererReady.value
-  if (!content) return ''
+  if (!message.content) {
+    return ''
+  }
+  let content = rewriteMindmateTempImageUrls(
+    message.content,
+    typeof window !== 'undefined' ? window.location.host : undefined
+  )
+  const blobUrl = diagramPreviewBlobUrls.value.get(message.id)
+  if (blobUrl) {
+    content = replaceMindmatePreviewImageUrl(content, blobUrl)
+  }
+  content = stripMindmateDiagramIdComments(content)
   return renderRichMarkdownHtml(content)
+}
+
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result)
+        return
+      }
+      reject(new Error('Failed to read blob as data URL'))
+    }
+    reader.onerror = () => reject(reader.error ?? new Error('FileReader failed'))
+    reader.readAsDataURL(blob)
+  })
 }
 
 /**
@@ -108,6 +181,18 @@ function isExternalUrl(url: string): boolean {
  * Convert an external image URL to base64 data URL using a proxy to avoid CORS issues
  */
 async function imageToBase64(url: string): Promise<string> {
+  const cacheKey = extractMindmatePreviewCacheKey(url)
+  if (cacheKey) {
+    const cached = await readMindmateDiagramPreview(cacheKey)
+    if (cached) {
+      try {
+        return await blobToDataUrl(cached)
+      } catch {
+        /* fall through to network fetch */
+      }
+    }
+  }
+
   // Only proxy external URLs
   if (!isExternalUrl(url)) {
     // For local/bundled assets, fetch directly
@@ -351,7 +436,7 @@ async function exportAsPng() {
                   <div class="export-content">
                     <div
                       class="markdown-content"
-                      v-html="renderMarkdown(message.content)"
+                      v-html="renderMarkdown(message)"
                     />
                   </div>
                 </div>

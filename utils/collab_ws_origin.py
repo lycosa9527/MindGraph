@@ -8,10 +8,13 @@ Proprietary License
 
 from __future__ import annotations
 
+import logging
 import os
-from typing import FrozenSet
+from typing import Any, FrozenSet
 
 from starlette.datastructures import Headers
+
+logger = logging.getLogger(__name__)
 
 
 def normalize_origin_header(origin: str) -> str:
@@ -70,3 +73,22 @@ def canvas_collab_websocket_origin_is_allowed(
 
     cand = normalize_origin_header(raw)
     return cand in allowed_normalized
+
+
+async def close_ws_if_origin_disallowed(websocket: Any, context: str) -> bool:
+    """Close the WebSocket and return True when its ``Origin`` is not allowed.
+
+    Shares the ``COLLAB_WS_ALLOWED_ORIGINS`` allowlist so every
+    cookie-authenticated WS endpoint (collab, ASR, translate, chat) enforces
+    one CSWSH policy. Returns False (allowed) when policy is off or the Origin
+    matches. The caller must stop processing when this returns True.
+    """
+    allowed = load_collab_ws_allowed_origins_env()
+    if canvas_collab_websocket_origin_is_allowed(websocket.headers, allowed):
+        return False
+    logger.warning("[%s] WebSocket origin rejected (CSWSH guard)", context)
+    try:
+        await websocket.close(code=1008, reason="Cross-origin connection is not allowed")
+    except (RuntimeError, OSError, ConnectionError) as exc:
+        logger.debug("[%s] origin-reject close failed: %s", context, exc)
+    return True

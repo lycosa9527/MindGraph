@@ -11,6 +11,7 @@ import { ThumbsDown, ThumbsUp } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'
+import { useMindmateDiagramPreviewImage } from '@/composables/mindmate/useMindmateDiagramPreviewImage'
 import type { FeedbackRating, MindMateMessage } from '@/composables/mindmate/useMindMate'
 import { useAuthStore } from '@/stores/auth'
 import type { ModelLoadPhase } from '@/stores/llmResults'
@@ -22,8 +23,6 @@ import {
   needsLibraryFullHint,
   needsLibrarySaveHint,
   parseMindmateDiagramLibraryId,
-  rewriteMindmateTempImageUrls,
-  stripMindmateDiagramIdComments,
 } from '@/utils/mindmateDiagramMeta'
 
 import MindmateAgentAvatar from './MindmateAgentAvatar.vue'
@@ -232,16 +231,20 @@ async function openInCanvas() {
   }
 }
 
-const { html: renderedMarkdownHtml } = useRenderedMarkdown(
-  () =>
-    stripMindmateDiagramIdComments(
-      rewriteMindmateTempImageUrls(
-        props.message.content,
-        typeof window !== 'undefined' ? window.location.host : undefined
-      )
-    ),
-  { stripThinkBlocks: true }
+const pageHost = computed(() =>
+  typeof window !== 'undefined' ? window.location.host : undefined
 )
+
+const { displayContent: mindmateDisplayContent } = useMindmateDiagramPreviewImage({
+  content: () => props.message.content,
+  isStreaming: () => Boolean(props.message.isStreaming),
+  pageHost: () => pageHost.value,
+  libraryDiagramId: () => libraryDiagramId.value,
+})
+
+const { html: renderedMarkdownHtml } = useRenderedMarkdown(() => mindmateDisplayContent.value, {
+  stripThinkBlocks: true,
+})
 
 // Local editing state
 const localEditingContent = ref(props.editingContent || props.message.content)
