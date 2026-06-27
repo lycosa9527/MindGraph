@@ -60,6 +60,33 @@ class Config(
     for accessing configuration values throughout the application.
     """
 
+    def print_config_summary(self) -> None:
+        """Log application, LLM, language, and visualization settings."""
+        logger.info(
+            "Configuration: v%s | %s:%s | lang=%s | Qwen classification=%s | Qwen generation=%s",
+            self.version,
+            self.host,
+            self.port,
+            self.GRAPH_LANGUAGE,
+            self.QWEN_MODEL_CLASSIFICATION,
+            self.QWEN_MODEL_GENERATION,
+        )
+        logger.debug("Configuration Summary:")
+        logger.debug("   Version: %s", self.version)
+        logger.debug("   FastAPI: %s:%s (Debug: %s)", self.host, self.port, self.debug)
+        logger.debug("   Qwen: %s", self.QWEN_API_URL)
+        logger.debug("     - Classification: %s", self.QWEN_MODEL_CLASSIFICATION)
+        logger.debug("     - Generation: %s", self.QWEN_MODEL_GENERATION)
+
+        logger.debug("   Language: %s", self.GRAPH_LANGUAGE)
+        logger.debug(
+            "   Theme: %s / %s / %s",
+            self.D3_TOPIC_FILL,
+            self.D3_SIM_FILL,
+            self.D3_DIFF_FILL,
+        )
+        logger.debug("   Dimensions: %sx%spx", self.D3_BASE_WIDTH, self.D3_BASE_HEIGHT)
+
 
 # Create global configuration instance
 config = Config()

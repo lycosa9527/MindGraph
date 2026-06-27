@@ -8,12 +8,10 @@ from typing import Any, Optional
 
 import httpx
 
+from services.auth.oauth.oauth_constants import DINGTALK_CONTACT_ME_URL, DINGTALK_USER_TOKEN_URL
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
-
-_DINGTALK_USER_TOKEN_URL = "https://api.dingtalk.com/v1.0/oauth2/userAccessToken"
-_DINGTALK_CONTACT_ME_URL = "https://api.dingtalk.com/v1.0/contact/users/me"
 
 
 @dataclass(frozen=True)
@@ -65,7 +63,7 @@ class DingtalkOauthClient:
         }
         try:
             async with httpx.AsyncClient(timeout=self._timeout) as client:
-                resp = await client.post(_DINGTALK_USER_TOKEN_URL, json=body)
+                resp = await client.post(DINGTALK_USER_TOKEN_URL, json=body)
                 resp.raise_for_status()
                 data: dict[str, Any] = resp.json()
         except BACKGROUND_INFRA_ERRORS as exc:
@@ -93,7 +91,7 @@ class DingtalkOauthClient:
         headers = {"x-acs-dingtalk-access-token": token}
         try:
             async with httpx.AsyncClient(timeout=self._timeout) as client:
-                resp = await client.get(_DINGTALK_CONTACT_ME_URL, headers=headers)
+                resp = await client.get(DINGTALK_CONTACT_ME_URL, headers=headers)
                 resp.raise_for_status()
                 data: dict[str, Any] = resp.json()
         except BACKGROUND_INFRA_ERRORS as exc:

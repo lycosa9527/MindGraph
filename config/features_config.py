@@ -17,11 +17,7 @@ class FeaturesConfigMixin:
     """Mixin class for feature flags and other settings.
 
     This mixin expects the class to inherit from BaseConfig or provide
-    a _get_cached_value method, and to have access to properties from
-    other mixins (version, host, port, debug from BaseConfig,
-    QWEN_API_URL, QWEN_MODEL_CLASSIFICATION, QWEN_MODEL_GENERATION from
-    LLMConfigMixin, D3_TOPIC_FILL, D3_SIM_FILL, D3_DIFF_FILL,
-    D3_BASE_WIDTH, D3_BASE_HEIGHT from VisualizationConfigMixin).
+    a _get_cached_value method.
     """
 
     if TYPE_CHECKING:
@@ -29,66 +25,6 @@ class FeaturesConfigMixin:
         def _get_cached_value(self, _key: str, _default: Any = None) -> Any:
             """Type stub: method provided by BaseConfig."""
             return None
-
-        @property
-        def version(self) -> str:
-            """Type stub: property provided by BaseConfig."""
-            return ""
-
-        @property
-        def host(self) -> str:
-            """Type stub: property provided by BaseConfig."""
-            return ""
-
-        @property
-        def port(self) -> int:
-            """Type stub: property provided by BaseConfig."""
-            return 0
-
-        @property
-        def debug(self) -> bool:
-            """Type stub: property provided by BaseConfig."""
-            return False
-
-        @property
-        def QWEN_API_URL(self) -> str:
-            """Type stub: property provided by LLMConfigMixin."""
-            return ""
-
-        @property
-        def QWEN_MODEL_CLASSIFICATION(self) -> str:
-            """Type stub: property provided by LLMConfigMixin."""
-            return ""
-
-        @property
-        def QWEN_MODEL_GENERATION(self) -> str:
-            """Type stub: property provided by LLMConfigMixin."""
-            return ""
-
-        @property
-        def D3_TOPIC_FILL(self) -> str:
-            """Type stub: property provided by VisualizationConfigMixin."""
-            return ""
-
-        @property
-        def D3_SIM_FILL(self) -> str:
-            """Type stub: property provided by VisualizationConfigMixin."""
-            return ""
-
-        @property
-        def D3_DIFF_FILL(self) -> str:
-            """Type stub: property provided by VisualizationConfigMixin."""
-            return ""
-
-        @property
-        def D3_BASE_WIDTH(self) -> int:
-            """Type stub: property provided by VisualizationConfigMixin."""
-            return 0
-
-        @property
-        def D3_BASE_HEIGHT(self) -> int:
-            """Type stub: property provided by VisualizationConfigMixin."""
-            return 0
 
     @property
     def FEATURE_MINDMATE(self):
@@ -361,39 +297,3 @@ class FeaturesConfigMixin:
     def WATERMARK_TEXT(self):
         """Watermark text displayed on generated graphs."""
         return self._get_cached_value("WATERMARK_TEXT", "MindGraph")
-
-    def print_config_summary(self):
-        """
-        Print a comprehensive configuration summary.
-
-        Displays:
-        - Application version
-        - FastAPI application settings
-        - API configurations and availability
-        - D3.js visualization settings
-        - Theme and styling options
-        """
-        logger.info(
-            "Configuration: v%s | %s:%s | lang=%s | Qwen classification=%s | Qwen generation=%s",
-            self.version,
-            self.host,
-            self.port,
-            self.GRAPH_LANGUAGE,
-            self.QWEN_MODEL_CLASSIFICATION,
-            self.QWEN_MODEL_GENERATION,
-        )
-        logger.debug("Configuration Summary:")
-        logger.debug("   Version: %s", self.version)
-        logger.debug("   FastAPI: %s:%s (Debug: %s)", self.host, self.port, self.debug)
-        logger.debug("   Qwen: %s", self.QWEN_API_URL)
-        logger.debug("     - Classification: %s", self.QWEN_MODEL_CLASSIFICATION)
-        logger.debug("     - Generation: %s", self.QWEN_MODEL_GENERATION)
-
-        logger.debug("   Language: %s", self.GRAPH_LANGUAGE)
-        logger.debug(
-            "   Theme: %s / %s / %s",
-            self.D3_TOPIC_FILL,
-            self.D3_SIM_FILL,
-            self.D3_DIFF_FILL,
-        )
-        logger.debug("   Dimensions: %sx%spx", self.D3_BASE_WIDTH, self.D3_BASE_HEIGHT)

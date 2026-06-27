@@ -9,12 +9,10 @@ from urllib.parse import urlencode
 
 import httpx
 
+from services.auth.oauth.oauth_constants import WECHAT_ACCESS_TOKEN_URL, WECHAT_USERINFO_URL
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
-
-_WECHAT_ACCESS_TOKEN_URL = "https://api.weixin.qq.com/sns/oauth2/access_token"
-_WECHAT_USERINFO_URL = "https://api.weixin.qq.com/sns/userinfo"
 
 
 @dataclass(frozen=True)
@@ -59,7 +57,7 @@ class WechatOauthClient:
                 "grant_type": "authorization_code",
             }
         )
-        url = f"{_WECHAT_ACCESS_TOKEN_URL}?{params}"
+        url = f"{WECHAT_ACCESS_TOKEN_URL}?{params}"
         try:
             async with httpx.AsyncClient(timeout=self._timeout) as client:
                 resp = await client.get(url)
@@ -93,7 +91,7 @@ class WechatOauthClient:
                 "lang": "zh_CN",
             }
         )
-        url = f"{_WECHAT_USERINFO_URL}?{params}"
+        url = f"{WECHAT_USERINFO_URL}?{params}"
         try:
             async with httpx.AsyncClient(timeout=self._timeout) as client:
                 resp = await client.get(url)

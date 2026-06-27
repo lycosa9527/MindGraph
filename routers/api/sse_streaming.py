@@ -323,7 +323,13 @@ async def ai_assistant_stream(
                         usage_snapshot,
                     )
                     if coin_mutation.eligible:
-                        yield f"data: {json.dumps({'event': 'thinking_coins', 'thinking_coins': mutation_to_footer(coin_mutation)})}\n\n"
+                        coins_event = json.dumps(
+                            {
+                                "event": "thinking_coins",
+                                "thinking_coins": mutation_to_footer(coin_mutation),
+                            }
+                        )
+                        yield f"data: {coins_event}\n\n"
                 except BACKGROUND_INFRA_ERRORS as coin_error:
                     logger.warning("[STREAM] Thinking coin settle failed: %s", coin_error)
 

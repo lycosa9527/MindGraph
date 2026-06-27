@@ -39,3 +39,11 @@ def normalize_oauth_error_code(raw: str | ValueError) -> str:
 
 
 DINGTALK_SCOPE_OPENID = "openid"
+
+# Official WeChat Open Platform 网站应用 endpoints
+WECHAT_ACCESS_TOKEN_URL = "https://api.weixin.qq.com/sns/oauth2/access_token"
+WECHAT_USERINFO_URL = "https://api.weixin.qq.com/sns/userinfo"
+
+# Official DingTalk OAuth 2.0 v1.0 endpoints (not legacy oapi.dingtalk.com)
+DINGTALK_USER_TOKEN_URL = "https://api.dingtalk.com/v1.0/oauth2/userAccessToken"
+DINGTALK_CONTACT_ME_URL = "https://api.dingtalk.com/v1.0/contact/users/me"
