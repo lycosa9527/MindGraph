@@ -404,11 +404,7 @@ async def run_streaming_dify_branch(
                 skip_terminal_mark_complete = True
         else:
             skip_terminal_mark_complete = True
-    if (
-        not err_tok
-        and card_state.created
-        and dingtalk_answer_contains_diagram_preview(reply_text)
-    ):
+    if not err_tok and card_state.created and dingtalk_answer_contains_diagram_preview(reply_text):
         out_tid = card_state.out_track_id
         tok = card_state.token
         if isinstance(out_tid, str) and tok and card_state.update_mode != "receiver":

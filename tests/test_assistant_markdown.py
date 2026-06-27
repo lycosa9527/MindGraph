@@ -14,10 +14,7 @@ from services.diagram.assistant_markdown import (
 
 _URL = "https://mg.mindspringedu.com/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=abc"
 _UUID = "12eed5a2-6489-4c25-a4d3-f76e9f1aa9ef"
-_DIFY_ANSWER = (
-    f"![mg:{_UUID}]({_URL}&mgdid={_UUID})\n"
-    f"<!-- mg-diagram-id:{_UUID} -->"
-)
+_DIFY_ANSWER = f"![mg:{_UUID}]({_URL}&mgdid={_UUID})\n<!-- mg-diagram-id:{_UUID} -->"
 
 
 def test_parse_assistant_diagram_library_id_from_comment() -> None:

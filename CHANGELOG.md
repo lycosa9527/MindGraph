@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Post-add inline edit lifecycle** — Cancel pending edit retries on diagram reset; clear `mindMapPendingEditNodeId` ([`mindMapOps.ts`](frontend/src/stores/diagram/mindMapOps.ts)).
 - **Learning sheet UI reset** — Module-level pick/float-bar state clears on canvas exit and session reset ([`useLearningSheetCustomMode.ts`](frontend/src/composables/mindMap/useLearningSheetCustomMode.ts)).
 - **Mind map toolbar reset** — Wire `useCanvasReset` for in-toolbar reset button ([`CanvasToolbarMindMap.vue`](frontend/src/components/canvas/CanvasToolbarMindMap.vue)).
+- **CI / production hardening** — Ruff format on MindBot display modules; TypeScript fixes for mobile import loader, diagram title save, and inline-edit pane-click handler; i18n canvas key sync across 77 locales; frontend package version 5.128.0.
 
 ### Frontend package version
 

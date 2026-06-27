@@ -55,7 +55,8 @@ jobs:
             tests/test_mindbot_bind_messages.py tests/test_dingtalk_bind_imports.py \
             tests/test_mindbot_pair_code_handler.py tests/test_bind_code_parse.py \
             tests/test_generate_dingtalk_identity.py tests/test_library_save_user_notices.py \
-            tests/test_generation_skip_registry.py tests/test_mindbot_library_save_reply.py \
+            tests/test_generation_skip_registry.py             tests/test_mindbot_library_save_reply.py tests/test_assistant_markdown.py \
+            tests/test_mindbot_dingtalk_diagram_display.py \
             tests/test_user_daily_token_quota.py tests/test_llm_daily_token_cap.py \
             tests/test_get_client_ip.py tests/test_gewe_webhook_auth.py \
             tests/test_refresh_token_reuse.py tests/test_security_production_hardening.py \

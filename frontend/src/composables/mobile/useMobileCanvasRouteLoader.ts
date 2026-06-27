@@ -13,6 +13,7 @@ import {
   loadDiagramMarkdownPipeline,
 } from '@/composables/core/diagramMarkdownPipeline'
 import { replayKittyPendingCanvasAction } from '@/composables/kitty/useKittyMobileHubActionBridge'
+import { IMPORT_SPEC_KEY } from '@/config'
 import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import type { LLMResult } from '@/stores'

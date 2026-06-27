@@ -674,6 +674,7 @@ export default {
   'canvas.mindMapSideToolbar.collapseBranch': '收起分支',
   'canvas.mindMapSideToolbar.aiGenerateDesc': '基于当前主题，用一句话智能扩展思维导图结构。',
   'canvas.mindMapSideToolbar.enterLearningSheet': '开启半成品图示',
+  'canvas.mindMapSideToolbar.exitLearningSheet': '退出半成品图示',
   'canvas.mindMapSideToolbar.restoreFullDiagram': '还原为完整图示',
   'canvas.mindMapSideToolbar.learningSheetIntro':
     '选择一种方式创建半成品图示，适合课堂练习与复习。',

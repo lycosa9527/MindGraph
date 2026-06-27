@@ -641,19 +641,24 @@ function isEventInsideEditor(event: Event): boolean {
   return root.contains(target)
 }
 
-function commitEditOnOutsidePointer(event?: Event): void {
+function commitEditOnOutsidePointer(event: Event): void {
   if (!localIsEditing.value) return
-  if (event != null && isEventInsideEditor(event)) return
+  if (isEventInsideEditor(event)) return
+  saveEdit()
+}
+
+function commitEditOnCanvasPaneClick(): void {
+  if (!localIsEditing.value) return
   saveEdit()
 }
 
 function syncDocumentOutsideEditListeners(editing: boolean): void {
   if (editing) {
     document.addEventListener('pointerdown', commitEditOnOutsidePointer, true)
-    eventBus.on('canvas:pane_clicked', commitEditOnOutsidePointer)
+    eventBus.on('canvas:pane_clicked', commitEditOnCanvasPaneClick)
   } else {
     document.removeEventListener('pointerdown', commitEditOnOutsidePointer, true)
-    eventBus.off('canvas:pane_clicked', commitEditOnOutsidePointer)
+    eventBus.off('canvas:pane_clicked', commitEditOnCanvasPaneClick)
   }
 }
 
