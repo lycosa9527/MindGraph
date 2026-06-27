@@ -6,7 +6,6 @@ import { useRoute, useRouter } from 'vue-router'
 
 import {
   eventBus,
-  getDefaultDiagramName,
   useDiagramSpecForSave,
 } from '@/composables'
 import {
@@ -14,7 +13,7 @@ import {
   loadDiagramMarkdownPipeline,
 } from '@/composables/core/diagramMarkdownPipeline'
 import { replayKittyPendingCanvasAction } from '@/composables/kitty/useKittyMobileHubActionBridge'
-import { IMPORT_SPEC_KEY } from '@/config'
+import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import type { LLMResult } from '@/stores'
 import type { useAuthStore } from '@/stores/auth'
@@ -159,11 +158,11 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
               }
               await router.replace({ path: '/m/canvas' })
 
-              const topicText = diagramStore.getTopicNodeText()
-              const importTitle =
-                topicText ||
-                diagramStore.effectiveTitle ||
-                getDefaultDiagramName(loadedType, currentLanguage.value as LocaleCode)
+              const importTitle = resolveDiagramTitleForSave(
+                diagramStore.effectiveTitle,
+                loadedType,
+                currentLanguage.value as LocaleCode
+              )
               diagramStore.initTitle(importTitle)
               const getDiagramSpec = useDiagramSpecForSave()
               const specToSave = getDiagramSpec()

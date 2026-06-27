@@ -15,6 +15,7 @@ from typing import Any, Optional
 import aiohttp
 
 from models.domain.mindbot_config import OrganizationMindbotConfig
+from services.mindbot.diagram.dingtalk_diagram_display import format_dingtalk_outbound_markdown
 from services.mindbot.infra.http_client import (
     get_outbound_session,
     get_pinned_outbound_session,
@@ -239,6 +240,27 @@ async def post_session_webhook(
         )
     return await _do_post_session_webhook(
         get_outbound_session(), url, payload_str, timeout, host, stream_chunk, pipeline_ctx
+    )
+
+
+async def send_dingtalk_formatted_reply(
+    cfg: OrganizationMindbotConfig,
+    body: dict[str, Any],
+    session_webhook_valid: Optional[str],
+    raw_markdown: str,
+    *,
+    pipeline_ctx: str = "",
+    pinned_ip: str = "",
+) -> tuple[bool, bool]:
+    """Apply DingTalk diagram display rules, then send one final markdown reply."""
+    wire = format_dingtalk_outbound_markdown(raw_markdown)
+    return await send_full_reply(
+        cfg,
+        body,
+        session_webhook_valid,
+        wire,
+        pipeline_ctx=pipeline_ctx,
+        pinned_ip=pinned_ip,
     )
 
 

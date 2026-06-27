@@ -7,6 +7,9 @@
  * focus/root review streams, snapshot history, presentation state, and partial
  * ui reset — avoids stale state and lingering SSE on re-entry.
  *
+ * In-session reset (top-bar Reset): applyCanvasSessionReset + diagram:reset_requested
+ * mirrors the same teardown without leaving the page.
+ *
  * Users access this page via:
  * 1. DiagramTemplateInput - Generates on landing, then navigates here with pre-loaded diagram
  * 2. DiagramTypeGrid - "在画布中创建" → navigates here with diagram type
@@ -16,8 +19,8 @@
  *
  * Auto-save functionality (event + state driven):
  * - User edits: debounced auto-save on diagram changes (2 second delay)
- * - LLM generating: skip auto-save; wait for llm:generation_completed
- * - LLM completed: flush and save once
+ * - LLM generating: skip routine auto-save; persist after each model on llm:model_completed
+ * - LLM all done: final flush on llm:generation_completed
  * - Auto-updates if diagram is already in library; auto-saves new if slots available
  */
 import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
@@ -50,7 +53,6 @@ import KittyDesktopWorkflowDebugLog from '@/components/kitty/KittyDesktopWorkflo
 import { MindmatePanel, NodePalettePanel, RootConceptModal } from '@/components/panels'
 import {
   eventBus,
-  getDefaultDiagramName,
   getDiagramOperations,
   getNodePalette,
   getPanelCoordinator,
@@ -76,6 +78,7 @@ import {
 } from '@/composables/canvasPage/diagramTypeMaps'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { registerCanvasPageDiagramEventBus } from '@/composables/canvasPage/registerCanvasPageDiagramEventBus'
+import { registerCanvasPageResetHandler } from '@/composables/canvasPage/registerCanvasPageResetHandler'
 import { useCanvasPageEditorShortcuts } from '@/composables/canvasPage/useCanvasPageEditorShortcuts'
 import { useCanvasPageLibrarySnapshots } from '@/composables/canvasPage/useCanvasPageLibrarySnapshots'
 import { useCanvasPageMountedHandlers } from '@/composables/canvasPage/useCanvasPageMountedHandlers'
@@ -141,6 +144,7 @@ import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import type { MindMapPresentationToolId } from '@/types/diagram'
 import { isMindMapDiagramType } from '@/utils/conceptMapDesktopViewport'
+import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 
 const route = useRoute()
 const router = useRouter()
@@ -702,6 +706,17 @@ watch(
 
 registerCanvasPageDiagramEventBus({ canvasZoom })
 
+registerCanvasPageResetHandler({
+  snapshotHistory,
+  diagramAutoSave,
+  resetPresentationStateOnLeave,
+  exitPresentationFullscreen,
+  presentationRailOpen,
+  mindMapPresentationTool,
+  slidePresentation,
+  canvasZoom,
+})
+
 /** MindMate panel and presentation rail cannot both be active: opening one closes the other. */
 watch(
   () => panelsStore.mindmatePanel.isOpen,
@@ -813,6 +828,7 @@ const { handleSaveKey } = useCanvasPageEditorShortcuts({
   activeEditors,
   relationshipActiveEntry,
   diagramAutoSave,
+  isCollabGuest,
 })
 
 // LLM generation completed + cancel on start: handled by useDiagramAutoSave
@@ -966,11 +982,11 @@ onMounted(async () => {
             router.replace({ path: '/canvas' })
 
             // Save imported diagram to user's library
-            const topicText = diagramStore.getTopicNodeText()
-            const importTitle =
-              topicText ||
-              diagramStore.effectiveTitle ||
-              getDefaultDiagramName(diagramType, currentLanguage.value)
+            const importTitle = resolveDiagramTitleForSave(
+              diagramStore.effectiveTitle,
+              diagramType,
+              currentLanguage.value
+            )
             diagramStore.initTitle(importTitle)
             const getDiagramSpec = useDiagramSpecForSave()
             const specToSave = getDiagramSpec()
@@ -1043,8 +1059,9 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  diagramAutoSave.flush()
-  diagramAutoSave.teardown()
+  void diagramAutoSave.flush().finally(() => {
+    diagramAutoSave.teardown()
+  })
   inlineRecCoordinator.teardown()
   eventBus.removeAllListenersForOwner('CanvasPage')
 

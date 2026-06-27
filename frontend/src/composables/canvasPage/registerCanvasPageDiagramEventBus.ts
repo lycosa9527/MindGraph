@@ -32,7 +32,10 @@ export function registerCanvasPageDiagramEventBus(options: {
 
   eventBus.onWithOwner(
     'diagram:loaded',
-    () => panelsStore.clearNodePaletteState({ clearSessions: false }),
+    () => {
+      diagramStore.seedHistoryBaselineIfEmpty()
+      panelsStore.clearNodePaletteState({ clearSessions: false })
+    },
     'CanvasPage'
   )
   eventBus.onWithOwner(

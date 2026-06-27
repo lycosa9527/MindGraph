@@ -10,7 +10,6 @@ import { ElButton, ElDialog, ElPopover, ElRadioButton, ElRadioGroup, ElTag } fro
 import { Copy, Settings, Users } from '@lucide/vue'
 
 import {
-  getDefaultDiagramName,
   useDiagramSpecForSave,
   useLanguage,
   useNotifications,
@@ -21,6 +20,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { useUIStore } from '@/stores/ui'
 import { authFetch } from '@/utils/api'
+import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 
 function generateQRCodeUrl(text: string): string {
   const encodedText = encodeURIComponent(text)
@@ -162,14 +162,11 @@ function emitClearCollabSession() {
 const getDiagramSpec = useDiagramSpecForSave()
 
 function getDiagramTitle(): string {
-  const topicText = diagramStore.getTopicNodeText()
-  if (topicText) {
-    return topicText
-  }
-  if (diagramStore.effectiveTitle) {
-    return diagramStore.effectiveTitle
-  }
-  return getDefaultDiagramName(diagramStore.type, uiStore.language)
+  return resolveDiagramTitleForSave(
+    diagramStore.effectiveTitle,
+    diagramStore.type,
+    uiStore.language
+  )
 }
 
 async function ensureDiagramSaved(): Promise<string | null> {

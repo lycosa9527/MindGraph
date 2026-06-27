@@ -15,6 +15,10 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useEditorShortcuts, useKeyboard } from '@/composables/core/useKeyboard'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import {
+  buildDiagramSaveGuardState,
+  flushDiagramSaveWithFeedback,
+} from '@/composables/editor/diagramSaveFeedback'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import {
   buildMindMapNavRectsFromLayout,
@@ -23,7 +27,8 @@ import {
   mindMapArrowKeyToDirection,
   resolveMindMapNavStartId,
 } from '@/composables/mindMap/mindMapArrowNavigation'
-import { useAuthStore, useDiagramStore, usePanelsStore } from '@/stores'
+import { useAuthStore, useDiagramStore, useLLMResultsStore, usePanelsStore } from '@/stores'
+import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 
 type ActiveEditorEntry = { user_id: number }
 type DiagramAutoSaveApi = ReturnType<typeof useDiagramAutoSave>
@@ -33,10 +38,14 @@ export function useCanvasPageEditorShortcuts(options: {
   activeEditors: Ref<Map<string, ActiveEditorEntry>>
   relationshipActiveEntry: Ref<unknown>
   diagramAutoSave: DiagramAutoSaveApi
+  isCollabGuest: Ref<boolean>
 }): { handleSaveKey: () => Promise<void> } {
-  const { workshopCode, activeEditors, relationshipActiveEntry, diagramAutoSave } = options
+  const { workshopCode, activeEditors, relationshipActiveEntry, diagramAutoSave, isCollabGuest } =
+    options
   const diagramStore = useDiagramStore()
   const authStore = useAuthStore()
+  const llmResultsStore = useLLMResultsStore()
+  const previewStore = useMindMapSubgraphPreviewStore()
   const notify = useNotifications()
   const { t } = useLanguage()
 
@@ -240,12 +249,20 @@ export function useCanvasPageEditorShortcuts(options: {
       notify.warning(t('editor.saveNeedsLogin'))
       return
     }
-    const result = await diagramAutoSave.flush()
-    if (result.saved) {
-      notify.success(t('editor.savedSuccess'))
-    } else if (result.reason === 'skipped_slots_full') {
-      eventBus.emit('canvas:show_slot_full_modal', {} as never)
-    }
+    await flushDiagramSaveWithFeedback({
+      flush: () => diagramAutoSave.flush(),
+      guardState: buildDiagramSaveGuardState({
+        llmGenerating: llmResultsStore.isGenerating,
+        subgraphPreviewActive: previewStore.hasPreview,
+        subgraphGenerating: previewStore.isGenerating,
+        collabSessionActive: diagramStore.collabSessionActive,
+        isCollabGuest: isCollabGuest.value,
+      }),
+      t,
+      notifySuccess: (message) => notify.success(message),
+      notifyWarning: (message) => notify.warning(message),
+      onSlotsFull: () => eventBus.emit('canvas:show_slot_full_modal', {} as never),
+    })
   }
 
   useEditorShortcuts({

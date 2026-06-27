@@ -47,6 +47,7 @@ class CardStreamState:
     first_chunk: bool = False
     card_chars_confirmed: int = 0
     plain_fallback_pending: bool = False
+    diagram_markdown_pending: bool = False
 
     def hidden_reply_from_cum(self, cfg: OrganizationMindbotConfig) -> str:
         """Re-apply hide rules on accumulated visible text."""
@@ -66,6 +67,7 @@ class CardStreamState:
         self.update_mode = "stream"
         self.card_chars_confirmed = 0
         self.plain_fallback_pending = False
+        self.diagram_markdown_pending = False
         self.use_card = mindbot_ai_card_wiring_enabled(cfg) and not self.buffer_only
 
     async def finalize(

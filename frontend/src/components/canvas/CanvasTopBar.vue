@@ -140,16 +140,9 @@ function generateDefaultName(): string {
 const isFileNameEditing = ref(false)
 const fileNameInputRef = ref<InstanceType<typeof ElInput> | null>(null)
 
-// Use Pinia store for title (synced with diagram state)
-// Priority: topic > user-edited title > simple default (no timestamp)
+// Use Pinia store for title (synced with diagram state via effectiveTitle)
 const fileName = computed({
-  get: () => {
-    const topicText = diagramStore.getTopicNodeText()
-    if (topicText) {
-      return topicText
-    }
-    return diagramStore.effectiveTitle || generateDefaultName()
-  },
+  get: () => diagramStore.effectiveTitle || generateDefaultName(),
   set: (value: string) => diagramStore.setTitle(value, true),
 })
 

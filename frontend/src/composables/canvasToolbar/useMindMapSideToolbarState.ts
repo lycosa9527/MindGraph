@@ -135,3 +135,9 @@ export function bindMindMapExternalPanelClose(
     }
   })
 }
+
+/** Reset side-toolbar UI when the canvas returns to the default template. */
+export function resetMindMapSideToolbarState(): void {
+  activeTool.value = null
+  sidebarExpanded.value = false
+}

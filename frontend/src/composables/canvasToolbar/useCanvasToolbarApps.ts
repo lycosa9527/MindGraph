@@ -250,6 +250,7 @@ export function useCanvasToolbarApps() {
     }
     diagramTranslateInFlight.value = true
     diagramTranslateUi.openBanner()
+    const signal = diagramTranslateUi.beginStream()
     let streamFinishedOk = false
     try {
       const body: Record<string, unknown> = {
@@ -268,6 +269,7 @@ export function useCanvasToolbarApps() {
       }
       const response = await authFetch('/api/canvas/translate_diagram_labels_stream', {
         method: 'POST',
+        signal,
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/x-ndjson',
@@ -275,6 +277,9 @@ export function useCanvasToolbarApps() {
         body: JSON.stringify(body),
       })
       if (!response.ok) {
+        if (signal.aborted) {
+          return
+        }
         const errorPayload = (await response.json().catch(() => null)) as {
           detail?: unknown
         } | null
@@ -293,9 +298,15 @@ export function useCanvasToolbarApps() {
       }
       await consumeDiagramTranslateNdjsonStream(response, {
         onStart(totalItems: number) {
+          if (signal.aborted) {
+            return
+          }
           diagramTranslateUi.setTotal(totalItems)
         },
         onItem(row) {
+          if (signal.aborted) {
+            return
+          }
           const text = row.translated_text.trim()
           if (!text) {
             return
@@ -319,6 +330,9 @@ export function useCanvasToolbarApps() {
         notify.success(t('canvas.toolbar.translateLabelDone'))
       }
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        return
+      }
       console.error('Translate diagram failed:', error)
       notify.warning(t('canvas.toolbar.translateLabelFailed'))
     } finally {

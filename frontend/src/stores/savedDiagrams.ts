@@ -18,6 +18,7 @@ import { defineStore } from 'pinia'
 import { notify } from '@/composables/core/notifications'
 import { getDefaultDiagramName } from '@/composables'
 import { SAVE } from '@/config'
+import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 import { i18n } from '@/i18n'
 import type { DiagramId, DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
@@ -732,10 +733,11 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       spec = sizeKB <= SAVE.MAX_SPEC_SIZE_KB ? withLlm : spec
     }
 
-    const title =
-      diagramStore.getTopicNodeText() ||
-      diagramStore.effectiveTitle ||
-      getDefaultDiagramName(diagramStore.type, uiStore.language)
+    const title = resolveDiagramTitleForSave(
+      diagramStore.effectiveTitle,
+      diagramStore.type,
+      uiStore.language
+    )
 
     try {
       await autoSaveDiagram(

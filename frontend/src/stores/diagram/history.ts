@@ -33,6 +33,27 @@ export function useHistorySlice(ctx: DiagramContext) {
     }
   }
 
+  /** Capture the current diagram as index 0 so the next edit becomes undoable. */
+  function seedHistoryBaseline(action = 'initial'): void {
+    if (!data.value) return
+    history.value = [
+      {
+        data: JSON.parse(JSON.stringify(data.value)),
+        timestamp: Date.now(),
+        action,
+      },
+    ]
+    historyIndex.value = 0
+  }
+
+  /** Seed only when history is empty (fresh load / reset), not on in-place spec refresh. */
+  function seedHistoryBaselineIfEmpty(action = 'initial'): void {
+    if (history.value.length > 0) {
+      return
+    }
+    seedHistoryBaseline(action)
+  }
+
   function undo(): boolean {
     if (!canUndo.value) return false
 
@@ -69,5 +90,15 @@ export function useHistorySlice(ctx: DiagramContext) {
     }
   }
 
-  return { canUndo, canRedo, pushHistory, undo, redo, clearHistory, clearRedoStack }
+  return {
+    canUndo,
+    canRedo,
+    pushHistory,
+    seedHistoryBaseline,
+    seedHistoryBaselineIfEmpty,
+    undo,
+    redo,
+    clearHistory,
+    clearRedoStack,
+  }
 }

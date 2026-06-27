@@ -4,11 +4,16 @@
 import { ref } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import {
+  buildDiagramSaveGuardState,
+  flushDiagramSaveWithFeedback,
+  type DiagramSaveGuardState,
+} from '@/composables/editor/diagramSaveFeedback'
+import type { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import type { useAuthStore } from '@/stores/auth'
 import type { useDiagramStore } from '@/stores/diagram'
 import type { useLLMResultsStore } from '@/stores/llmResults'
 import type { usePanelsStore } from '@/stores/panels'
-import type { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 
 export interface UseMobileCanvasToolbarOptions {
   diagramStore: ReturnType<typeof useDiagramStore>
@@ -16,6 +21,7 @@ export interface UseMobileCanvasToolbarOptions {
   llmResultsStore: ReturnType<typeof useLLMResultsStore>
   panelsStore: ReturnType<typeof usePanelsStore>
   diagramAutoSave: ReturnType<typeof useDiagramAutoSave>
+  saveGuardState?: () => DiagramSaveGuardState
   isConceptMap: { value: boolean }
   isAIGenerating: { value: boolean }
   handleAIGenerate: () => void | Promise<void>
@@ -32,6 +38,7 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
     llmResultsStore,
     panelsStore,
     diagramAutoSave,
+    saveGuardState,
     isConceptMap,
     isAIGenerating,
     handleAIGenerate,
@@ -53,12 +60,21 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
     }
     isSaving.value = true
     try {
-      const result = await diagramAutoSave.flush()
-      if (result.saved) {
-        notifySuccess(translate('notification.saved', '已保存'))
-      } else if (result.reason === 'skipped_slots_full') {
-        notifyWarning(translate('notification.slotsFull', '图示槽位已满'))
-      }
+      await flushDiagramSaveWithFeedback({
+        flush: () => diagramAutoSave.flush(),
+        guardState: saveGuardState?.() ??
+          buildDiagramSaveGuardState({
+            llmGenerating: llmResultsStore.isGenerating,
+            subgraphPreviewActive: false,
+            subgraphGenerating: false,
+            collabSessionActive: diagramStore.collabSessionActive,
+            isCollabGuest: false,
+          }),
+        t: translate,
+        notifySuccess: (message) => notifySuccess(message),
+        notifyWarning: (message) => notifyWarning(message),
+        onSlotsFull: () => notifyWarning(translate('notification.slotsFull', '图示槽位已满')),
+      })
     } finally {
       isSaving.value = false
     }

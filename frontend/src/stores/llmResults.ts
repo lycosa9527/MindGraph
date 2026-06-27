@@ -184,8 +184,9 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
 
     const savedDiagramsStore = useSavedDiagramsStore()
 
-    // During auto-complete: skip save-before-replace. User edits already saved; we save once on llm:generation_completed.
-    // User-initiated switch (after generation): save current before replacing so user can revert.
+    // During auto-complete: per-model autosave runs on llm:model_completed; skip
+    // save-before-replace on programmatic first-result render. User-initiated switch
+    // (after generation): save current before replacing so user can revert.
     if (!isGenerating.value) {
       await savedDiagramsStore.saveCurrentDiagramBeforeReplace()
     }

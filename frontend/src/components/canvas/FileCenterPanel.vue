@@ -78,11 +78,7 @@ const ragActive = computed(
 const diagramSaved = computed(() => activeDiagramId.value !== null)
 
 function defaultPackageName(): string {
-  return (
-    diagramStore.getTopicNodeText?.() ||
-    diagramStore.effectiveTitle ||
-    t('fileCenter.defaultPackageName')
-  )
+  return diagramStore.effectiveTitle || t('fileCenter.defaultPackageName')
 }
 
 watch(

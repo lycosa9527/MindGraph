@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 
+import { applyCanvasHistoryNavigationSync } from '@/composables/canvasPage/applyCanvasHistoryNavigationSync'
 import { notify } from '@/composables/core/notifications'
 import { i18n } from '@/i18n'
 import { useAuthStore, useDiagramStore } from '@/stores'
@@ -102,8 +103,12 @@ export function tryCollabGuardedUndo(): boolean {
   if (isCollabHistoryBlocked('undo')) {
     return false
   }
-  diagramStore.undo()
-  return true
+  applyCanvasHistoryNavigationSync()
+  const restored = diagramStore.undo()
+  if (restored) {
+    diagramStore.reconcileAfterHistoryRestore()
+  }
+  return restored
 }
 
 /** Redo with workshop collab guard; returns whether redo ran. */
@@ -115,6 +120,10 @@ export function tryCollabGuardedRedo(): boolean {
   if (isCollabHistoryBlocked('redo')) {
     return false
   }
-  diagramStore.redo()
-  return true
+  applyCanvasHistoryNavigationSync()
+  const restored = diagramStore.redo()
+  if (restored) {
+    diagramStore.reconcileAfterHistoryRestore()
+  }
+  return restored
 }
