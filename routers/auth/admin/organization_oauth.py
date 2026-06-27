@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_async_db
 from config.settings import config
 from repositories.organization_oauth_config_repo import OrganizationOauthConfigRepository
-from routers.auth.dependencies import require_admin
+from routers.auth.dependencies import require_global_organizations_edit, require_global_organizations_read
 from services.auth.oauth.oauth_login_service import (
     dingtalk_callback_url,
     public_site_base_url,
@@ -76,27 +76,27 @@ def _to_response(org_id: int, row) -> OrganizationOauthConfigResponse:
     )
 
 
-@router.get("/{organization_id}/oauth-config", response_model=OrganizationOauthConfigResponse)
+@router.get("/{org_id}/oauth-config", response_model=OrganizationOauthConfigResponse)
 async def get_organization_oauth_config(
-    organization_id: int,
-    _scope: AdminScope = Depends(require_admin),
+    org_id: int,
+    _scope: AdminScope = Depends(require_global_organizations_read),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Get OAuth QR login settings for a school."""
     repo = OrganizationOauthConfigRepository(db)
     try:
-        row = await repo.get_by_org(organization_id)
-        return _to_response(organization_id, row)
+        row = await repo.get_by_org(org_id)
+        return _to_response(org_id, row)
     except DATABASE_ERRORS as exc:
         logger.error("Failed to load oauth config: %s", exc, exc_info=True)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="load_failed") from exc
 
 
-@router.put("/{organization_id}/oauth-config", response_model=OrganizationOauthConfigResponse)
+@router.put("/{org_id}/oauth-config", response_model=OrganizationOauthConfigResponse)
 async def update_organization_oauth_config(
-    organization_id: int,
+    org_id: int,
     body: OrganizationOauthConfigUpdate,
-    _scope: AdminScope = Depends(require_admin),
+    _scope: AdminScope = Depends(require_global_organizations_edit),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Update OAuth QR login settings for a school."""
@@ -105,7 +105,7 @@ async def update_organization_oauth_config(
     repo = OrganizationOauthConfigRepository(db)
     try:
         row = await repo.upsert(
-            organization_id=organization_id,
+            organization_id=org_id,
             wechat_login_enabled=body.wechat_login_enabled,
             dingtalk_login_enabled=body.dingtalk_login_enabled,
             dingtalk_login_app_key=body.dingtalk_login_app_key,
@@ -114,7 +114,7 @@ async def update_organization_oauth_config(
             clear_dingtalk_secret=body.clear_dingtalk_secret,
         )
         await db.commit()
-        return _to_response(organization_id, row)
+        return _to_response(org_id, row)
     except DATABASE_ERRORS as exc:
         await db.rollback()
         logger.error("Failed to save oauth config: %s", exc, exc_info=True)

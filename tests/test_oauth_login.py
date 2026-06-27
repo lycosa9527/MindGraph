@@ -20,6 +20,7 @@ from services.auth.oauth.oauth_login_service import (
     oauth_feature_enabled,
     OauthLoginService,
     resolve_provider_flags,
+    validate_dingtalk_corp_id,
     wechat_credentials_configured,
 )
 from services.auth.oauth.wechat_oauth_client import WechatOauthClient, WechatTokenResult, WechatUserInfo
@@ -131,12 +132,10 @@ def test_resolve_provider_flags_dingtalk_embed_scope_openid_only(
     assert flags.dingtalk_scope == "openid"
 
 
-@pytest.mark.asyncio
-async def test_validate_corp_id_skips_when_token_omits_corp_id() -> None:
+def test_validate_corp_id_skips_when_token_omits_corp_id() -> None:
     """openid iframe scope may not return corpId; do not fail when absent."""
-    service = OauthLoginService(db=cast(AsyncSession, SimpleNamespace()))
     row = _org_oauth_row(dingtalk_corp_id="expected-corp")
-    await service._validate_corp_id(row, None)  # pylint: disable=protected-access
+    validate_dingtalk_corp_id(row, None)
 
 
 @pytest.mark.asyncio

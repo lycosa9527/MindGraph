@@ -105,6 +105,22 @@ def _dingtalk_scope_for_config(row: OrganizationOauthConfig) -> str:
     return DINGTALK_SCOPE_OPENID
 
 
+def validate_dingtalk_corp_id(
+    row: OrganizationOauthConfig,
+    token_corp_id: Optional[str],
+) -> None:
+    """Reject token corpId when it conflicts with the school's configured corp."""
+    expected = (row.dingtalk_corp_id or "").strip()
+    if not expected:
+        return
+    actual = (token_corp_id or "").strip()
+    if not actual:
+        # openid-only iframe scope may omit corpId; per-school AppKey already scopes corp.
+        return
+    if actual != expected:
+        raise ValueError(AUTH_ERROR_CORP_MISMATCH)
+
+
 def resolve_provider_flags(row: Optional[OrganizationOauthConfig]) -> OauthProviderFlags:
     """Build provider availability for frontend."""
     wechat_on = bool(
@@ -157,15 +173,7 @@ class OauthLoginService:
         row: OrganizationOauthConfig,
         token_corp_id: Optional[str],
     ) -> None:
-        expected = (row.dingtalk_corp_id or "").strip()
-        if not expected:
-            return
-        actual = (token_corp_id or "").strip()
-        if not actual:
-            # openid-only iframe scope may omit corpId; per-school AppKey already scopes corp.
-            return
-        if actual != expected:
-            raise ValueError(AUTH_ERROR_CORP_MISMATCH)
+        validate_dingtalk_corp_id(row, token_corp_id)
 
     async def exchange_wechat_identity(
         self,

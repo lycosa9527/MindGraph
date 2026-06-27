@@ -59,12 +59,10 @@ class OauthStartResponse(BaseModel):
     """Parameters for embedded QR widgets."""
 
     state: str
-    app_id: str = Field("", alias="appId")
-    client_id: str = Field("", alias="clientId")
-    redirect_uri: str = Field("", alias="redirectUri")
+    app_id: str = Field(default="", serialization_alias="appId")
+    client_id: str = Field(default="", serialization_alias="clientId")
+    redirect_uri: str = Field(default="", serialization_alias="redirectUri")
     scope: str = ""
-
-    model_config = {"populate_by_name": True}
 
 
 class DingtalkCompleteRequest(BaseModel):
@@ -178,8 +176,8 @@ async def wechat_login_start(
     )
     return OauthStartResponse(
         state=state,
-        appId=flags.wechat_app_id,
-        redirectUri=encoded_callback_url(OAUTH_PROVIDER_WECHAT),
+        app_id=flags.wechat_app_id,
+        redirect_uri=encoded_callback_url(OAUTH_PROVIDER_WECHAT),
         scope="snsapi_login",
     )
 
@@ -203,8 +201,8 @@ async def wechat_bind_start(
     )
     return OauthStartResponse(
         state=state,
-        appId=flags.wechat_app_id,
-        redirectUri=encoded_callback_url(OAUTH_PROVIDER_WECHAT),
+        app_id=flags.wechat_app_id,
+        redirect_uri=encoded_callback_url(OAUTH_PROVIDER_WECHAT),
         scope="snsapi_login",
     )
 
@@ -278,8 +276,8 @@ async def dingtalk_login_start(
     )
     return OauthStartResponse(
         state=state,
-        clientId=flags.dingtalk_client_id,
-        redirectUri=encoded_callback_url(OAUTH_PROVIDER_DINGTALK),
+        client_id=flags.dingtalk_client_id,
+        redirect_uri=encoded_callback_url(OAUTH_PROVIDER_DINGTALK),
         scope=flags.dingtalk_scope,
     )
 
@@ -305,8 +303,8 @@ async def dingtalk_bind_start(
     )
     return OauthStartResponse(
         state=state,
-        clientId=flags.dingtalk_client_id,
-        redirectUri=encoded_callback_url(OAUTH_PROVIDER_DINGTALK),
+        client_id=flags.dingtalk_client_id,
+        redirect_uri=encoded_callback_url(OAUTH_PROVIDER_DINGTALK),
         scope=flags.dingtalk_scope,
     )
 

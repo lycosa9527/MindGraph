@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import inspect
+
 from services.auth.oauth import dingtalk_oauth_client as dd
 from services.auth.oauth import wechat_oauth_client as wx
 from services.auth.oauth.oauth_constants import (
@@ -34,8 +36,6 @@ def test_dingtalk_client_uses_oauth2_not_legacy_oapi() -> None:
 
 def test_dingtalk_token_request_body_field_names() -> None:
     """userAccessToken POST body uses official camelCase field names."""
-    import inspect
-
     source = inspect.getsource(dd.DingtalkOauthClient.exchange_auth_code)
     assert "clientId" in source
     assert "clientSecret" in source

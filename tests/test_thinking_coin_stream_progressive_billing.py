@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from services.auth.thinking_coin.event_hub import ThinkingCoinMutation
 from services.llm.llm_multi_service import LLMMultiService
 from utils.auth.thinking_coin_config import THINKING_COIN_MODE_BATCH_INNER
 
@@ -54,8 +55,6 @@ async def test_stream_progressive_yields_thinking_coins_footer(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """After batch settle, eligible users receive a thinking_coins SSE chunk."""
-    from services.auth.thinking_coin.event_hub import ThinkingCoinMutation
-
     llm_service = MagicMock()
     llm_service.load_balancer = None
 

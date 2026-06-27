@@ -120,17 +120,6 @@ def _task_to_dict(task: ThinkingCoinEarnTask) -> dict[str, Any]:
     }
 
 
-def _validate_handler(handler_key: str, *, allow_referral: bool = False) -> None:
-    allowed = set(_PHASE1_HANDLERS)
-    if allow_referral:
-        allowed.add(HANDLER_REFERRAL)
-    if handler_key not in allowed:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unsupported handler_key: {handler_key}",
-        )
-
-
 @router.get("/tasks")
 async def list_tasks(
     _scope: AdminScope = Depends(require_settings_thinking_coins),
