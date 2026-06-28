@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
-import { useDiagramStore, useLLMResultsStore } from '@/stores'
+import { useDiagramStore, useLLMResultsStore, useSavedDiagramsStore } from '@/stores'
 import { authFetch } from '@/utils/api'
 
 const MAX_CONTENT_LENGTH = 32000
@@ -22,9 +22,11 @@ export function useMindMapDocumentSummary() {
   const { promptLanguage, t } = useLanguage()
   const notify = useNotifications()
   const diagramStore = useDiagramStore()
+  const savedDiagramsStore = useSavedDiagramsStore()
   const llmResultsStore = useLLMResultsStore()
 
   const isGenerating = ref(false)
+  const isAdding = ref(false)
 
   async function applyMindMapResult(result: WebContentResult): Promise<boolean> {
     if (!result.success || !result.spec) {
@@ -45,62 +47,26 @@ export function useMindMapDocumentSummary() {
     return true
   }
 
-  async function generateFromDocumentFile(file: File): Promise<boolean> {
-    const ext = file.name.includes('.') ? `.${file.name.split('.').pop()?.toLowerCase()}` : ''
-    if (!ALLOWED_DOC_EXTENSIONS.has(ext)) {
-      notify.warning(t('canvas.mindMapDocumentSummary.invalidDocType'))
-      return false
-    }
-    if (file.size > MAX_DOC_BYTES) {
-      notify.warning(t('canvas.mindMapDocumentSummary.docTooLarge'))
-      return false
-    }
-
-    isGenerating.value = true
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('language', promptLanguage.value)
-
-      const response = await authFetch('/api/canvas/generate_mindmap_from_document_file', {
-        method: 'POST',
-        body: formData,
-      })
-
-      const result = (await response.json().catch(() => ({}))) as WebContentResult
-      if (!response.ok) {
-        notify.error(result.detail || result.error || t('canvas.mindMapDocumentSummary.generateFailed'))
-        return false
-      }
-
-      return applyMindMapResult(result)
-    } catch (error) {
-      console.error('[DocumentSummary] generate from document file failed:', error)
-      notify.error(t('canvas.mindMapDocumentSummary.generateFailed'))
-      return false
-    } finally {
-      isGenerating.value = false
-    }
-  }
-
-  async function generateFromDocumentContent(
-    pageContent: string,
-    options?: { pageTitle?: string; contentFormat?: 'text/plain' | 'text/markdown' }
-  ): Promise<boolean> {
-    const trimmed = pageContent.trim()
-    if (!trimmed) {
-      notify.warning(t('canvas.mindMapDocumentSummary.emptyDocument'))
+  async function generateFromPackage(options: {
+    packageId?: number | null
+    diagramId?: string | null
+    topicHint?: string
+  }): Promise<boolean> {
+    const packageId = options.packageId ?? undefined
+    const diagramId = options.diagramId ?? savedDiagramsStore.activeDiagramId ?? undefined
+    if (!packageId && !diagramId) {
+      notify.warning(t('canvas.mindMapDocumentSummary.generateNoCorpus'))
       return false
     }
 
     isGenerating.value = true
     try {
-      const response = await authFetch('/api/canvas/generate_mindmap_from_document', {
+      const response = await authFetch('/api/canvas/generate_mindmap_from_package', {
         method: 'POST',
         body: JSON.stringify({
-          page_content: trimmed.slice(0, MAX_CONTENT_LENGTH),
-          content_format: options?.contentFormat ?? 'text/plain',
-          page_title: options?.pageTitle,
+          package_id: packageId,
+          diagram_id: diagramId,
+          topic_hint: options.topicHint,
           language: promptLanguage.value,
         }),
       })
@@ -113,75 +79,7 @@ export function useMindMapDocumentSummary() {
 
       return applyMindMapResult(result)
     } catch (error) {
-      console.error('[DocumentSummary] generate from document failed:', error)
-      notify.error(t('canvas.mindMapDocumentSummary.generateFailed'))
-      return false
-    } finally {
-      isGenerating.value = false
-    }
-  }
-
-  async function generateFromWebUrl(pageUrl: string): Promise<boolean> {
-    const url = pageUrl.trim()
-    if (!url) {
-      notify.warning(t('canvas.mindMapDocumentSummary.emptyUrl'))
-      return false
-    }
-
-    isGenerating.value = true
-    try {
-      const response = await authFetch('/api/canvas/generate_mindmap_from_document', {
-        method: 'POST',
-        body: JSON.stringify({
-          page_content: '',
-          page_url: url,
-          content_format: 'text/plain',
-          language: promptLanguage.value,
-        }),
-      })
-
-      const result = (await response.json().catch(() => ({}))) as WebContentResult
-      if (!response.ok) {
-        notify.error(result.detail || result.error || t('canvas.mindMapDocumentSummary.generateFailed'))
-        return false
-      }
-
-      return applyMindMapResult(result)
-    } catch (error) {
-      console.error('[DocumentSummary] generate from URL failed:', error)
-      notify.error(t('canvas.mindMapDocumentSummary.generateFailed'))
-      return false
-    } finally {
-      isGenerating.value = false
-    }
-  }
-
-  async function generateFromImageFile(file: File): Promise<boolean> {
-    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-      notify.warning(t('canvas.mindMapDocumentSummary.invalidImageType'))
-      return false
-    }
-
-    isGenerating.value = true
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('language', promptLanguage.value)
-
-      const response = await authFetch('/api/canvas/generate_mindmap_from_image', {
-        method: 'POST',
-        body: formData,
-      })
-
-      const result = (await response.json().catch(() => ({}))) as WebContentResult
-      if (!response.ok) {
-        notify.error(result.detail || result.error || t('canvas.mindMapDocumentSummary.generateFailed'))
-        return false
-      }
-
-      return applyMindMapResult(result)
-    } catch (error) {
-      console.error('[DocumentSummary] generate from image failed:', error)
+      console.error('[DocumentSummary] generate from package failed:', error)
       notify.error(t('canvas.mindMapDocumentSummary.generateFailed'))
       return false
     } finally {
@@ -204,12 +102,11 @@ export function useMindMapDocumentSummary() {
 
   return {
     isGenerating,
-    generateFromDocumentContent,
-    generateFromDocumentFile,
-    generateFromWebUrl,
-    generateFromImageFile,
+    isAdding,
+    generateFromPackage,
     validateDocumentFile,
     ALLOWED_DOC_EXTENSIONS,
     ALLOWED_IMAGE_TYPES,
+    MAX_CONTENT_LENGTH,
   }
 }

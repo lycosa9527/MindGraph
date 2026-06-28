@@ -31,6 +31,8 @@ chunk_test_documents = importlib.import_module("routers.api.knowledge_space.chun
 chunk_test_evaluation = importlib.import_module("routers.api.knowledge_space.chunk_test_evaluation")
 chunk_test_utils = importlib.import_module("routers.api.knowledge_space.chunk_test_utils")
 debug = importlib.import_module("routers.api.knowledge_space.debug")
+doc_summary = importlib.import_module("routers.api.knowledge_space.doc_summary")
+chat_handoff = importlib.import_module("routers.api.knowledge_space.chat_handoff")
 
 
 router = APIRouter(prefix="/knowledge-space", tags=["knowledge-space"])
@@ -47,3 +49,5 @@ router.include_router(chunk_test_documents.router)
 router.include_router(chunk_test_evaluation.router)
 router.include_router(chunk_test_utils.router)
 router.include_router(debug.router)
+router.include_router(doc_summary.router)
+router.include_router(chat_handoff.router)

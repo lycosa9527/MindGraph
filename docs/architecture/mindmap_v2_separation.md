@@ -1,7 +1,7 @@
 # Mind map canvas — classic vs v2 separation
 
 Classic mind map canvas remains the **default** (`mindMapCanvasMode: legacy`). V2 chrome
-(side toolbar, File Center, orthogonal edges, subtree layout) is **opt-in** when
+(side toolbar, **Document Summary** (文档总结), orthogonal edges, subtree layout) is **opt-in** when
 `FEATURE_MINDMAP_V2_CANVAS=True` and the user selects the new canvas in Language settings.
 
 ## Central gate
@@ -31,7 +31,7 @@ Other diagram types (tree map, flow map, …) keep the shared 12 Radix hues in `
 ## V2-only surfaces
 
 - **Visual design**: unified connection stroke, `mindMapThemes`, node shapes, `MIND_MAP_GEOMETRY`
-- Components: `MindMapSideToolbar`, `FileCenterPanel`, `MindMapDirectionalAddOverlay`, subgraph/collapse overlays
+- Components: `MindMapSideToolbar`, `MindMapDocumentSummaryPanel` (Document Summary portal; replaces unmounted `FileCenterPanel`), `MindMapDirectionalAddOverlay`, subgraph/collapse overlays
 - Store ops (gated): `toggleMindMapCollapse`, `performMindMapDirectionalAdd`, subgraph preview restore/apply
 
 ## Shared paths (both modes)
@@ -52,7 +52,7 @@ Mode switch: `reconcileMindMapCanvasModeSwitch` — snapshot outgoing mode, relo
 
 | Behavior | Gate |
 |----------|------|
-| Side toolbar + File Center | `useMindMapV2Chrome` |
+| Side toolbar + Document Summary | `useMindMapV2Chrome` + `FEATURE_KNOWLEDGE_SPACE` |
 | Initial layout loader | `readMindMapV2VisualDesignActive` → legacy vs v2 layout file |
 | Connection stroke colors | Legacy: `syncLegacyMindMapConnectionStrokeColors`. V2: `syncMindMapConnectionStrokeColors` |
 | Orthogonal edges | `getEdgeTypeForDiagram(..., mode)` |

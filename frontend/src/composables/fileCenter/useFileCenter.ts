@@ -22,7 +22,7 @@ import { apiRequestJson, apiUpload } from '@/utils/apiClient'
 // Types
 // ============================================================================
 
-export type PackageSource = 'canvas' | 'knowledge_space' | 'chrome_extension'
+export type PackageSource = 'canvas' | 'knowledge_space' | 'chrome_extension' | 'doc_summary'
 
 export interface KnowledgePackage {
   id: number
@@ -62,6 +62,11 @@ export interface IngestWebPayload {
   page_content: string
   page_url?: string
   page_title?: string
+  language?: string
+}
+
+export interface IngestWebUrlPayload {
+  page_url: string
   language?: string
 }
 
@@ -201,6 +206,16 @@ export function useFileCenterMutations() {
     onError: (error: Error) => notify.error(error.message || t('fileCenter.ingestFailed')),
   })
 
+  const ingestWebUrl = useMutation({
+    mutationFn: (vars: { packageId: number; payload: IngestWebUrlPayload }) =>
+      apiRequestJson<KnowledgeDocument>(
+        `${PACKAGES_BASE}/${vars.packageId}/documents/ingest-web-url`,
+        { method: 'POST', body: JSON.stringify(vars.payload) }
+      ),
+    onSuccess: (_data, vars) => invalidatePackage(vars.packageId),
+    onError: (error: Error) => notify.error(error.message || t('fileCenter.ingestFailed')),
+  })
+
   const deleteSource = useMutation({
     mutationFn: (vars: { packageId: number; documentId: number }) =>
       apiRequestJson<{ message?: string }>(`/api/knowledge-space/documents/${vars.documentId}`, {
@@ -217,6 +232,7 @@ export function useFileCenterMutations() {
     uploadFile,
     ingestText,
     ingestWeb,
+    ingestWebUrl,
     deleteSource,
   }
 }

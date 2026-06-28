@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /**
- * File Center (文件中心) — Zotero-like package panel for the mind map canvas.
+ * @deprecated Superseded by MindMapDocumentSummaryPanel.vue (Document Summary portal).
+ * Kept for reference only — not mounted on CanvasPage.
  *
  * Manages the knowledge package bound to the current diagram: create/rename,
  * add sources (file upload, pasted text, web URL), watch indexing status, and

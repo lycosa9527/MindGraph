@@ -366,6 +366,26 @@ class CanvasDocumentMindmapRequest(BaseModel):
         return self
 
 
+class GenerateMindmapFromPackageRequest(BaseModel):
+    """Generate mind map from a Document Summary package corpus (RAG-backed)."""
+
+    diagram_id: Optional[str] = Field(default=None, max_length=36)
+    package_id: Optional[int] = Field(default=None, ge=1)
+    topic_hint: Optional[str] = Field(default=None, max_length=500)
+    language: str = Field(default="zh")
+
+    @field_validator("language")
+    @classmethod
+    def validate_package_generate_language(cls, value: str) -> str:
+        return _validate_prompt_output_language(value)
+
+    @model_validator(mode="after")
+    def require_scope(self) -> "GenerateMindmapFromPackageRequest":
+        if not self.diagram_id and not self.package_id:
+            raise ValueError("Either diagram_id or package_id is required")
+        return self
+
+
 class DiagramCreateRequest(BaseModel):
     """Request model for creating a new diagram"""
 

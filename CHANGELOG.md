@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.130.0] - 2026-06-28
+
+> **Document Summary portal, chat handoff pairing, and Windows file-reader helper.**
+
+### Added
+
+- **Document Summary (文档总结) Knowledge portal** — Canvas panel auto-provisions a session package (`POST /api/knowledge-space/doc-summary/session/start`), ingests documents/images/web URLs/chat transcripts into the package corpus, and generates RAG-backed mind maps via `POST /api/canvas/generate_mindmap_from_package`. Deep link: `?openDocSummary=1` (alias `?openFileCenter=1`).
+- **Chat handoff + Windows file-reader** — Pairing codes on the **聊天记录** tab; `POST /api/knowledge-space/chat-handoff/*` ingest with `mgat_` auth; `clients/file-reader/` tkinter helper and `/api/downloads/mindgraph-file-reader` build script.
+
+### Changed
+
+- **User-facing naming** — **Document Summary** / **文档总结** replaces "File Center" in toolbar, panel, Chrome extension save labels, and Knowledge Space library subtitle.
+
+### Fixed
+
+- **Document Summary production hardening** — RAG scope aligns with session package fallback; invalid session `package_id` rejected; chat pairing codes are single-use with rate limits; ingest validates package before URL fetch; file-reader download served via tier-gated `/api/downloads/mindgraph-file-reader`; frontend session/package race and pending-package link-on-first-save fixes.
+- **File-reader client type-checking** — basedpyright clean for `AppError` keyword construction, Windows `ctypes.windll` guards, typed status dock row frame, and `clients/file-reader` on pytest/basedpyright `extraPaths`.
+
 ## [5.129.0] - 2026-06-27
 
 > **OAuth QR login, thinking coins production hardening, and canvas AI UX fixes.**

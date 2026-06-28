@@ -25,6 +25,7 @@ pythonPlatform = "Linux"
 #   \\wsl.localhost\Ubuntu-24.04\home\<user>\miniconda3\envs\python313\bin\python
 extraPaths = [
     ".",
+    "clients/file-reader",
     "\\\\wsl.localhost\\Ubuntu-24.04\\home\\roywa\\miniconda3\\envs\\python313\\lib\\python3.13\\site-packages",
 ]
 
@@ -44,6 +45,9 @@ def _mindgraph_project_root() -> Path:
 _root = str(_mindgraph_project_root())
 if _root not in sys.path:
     sys.path.insert(0, _root)
+_file_reader = str(_mindgraph_project_root() / "clients" / "file-reader")
+if _file_reader not in sys.path:
+    sys.path.insert(0, _file_reader)
 """
 # Exclude patterns (numeric Alembic revision filenames are not snake_case module names)
 ignore-patterns = [
@@ -250,5 +254,5 @@ ignore = ["E402"]
 "models/domain/**/*.py" = ["F821"]
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = [".", "clients/file-reader"]
 testpaths = ["tests"]

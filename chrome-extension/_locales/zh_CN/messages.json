@@ -28,23 +28,23 @@
     "description": "主按钮"
   },
   "fileCenterSectionLabel": {
-    "message": "保存到文件中心",
-    "description": "文件中心区域标题"
+    "message": "保存到文档总结",
+    "description": "文档总结区域标题"
   },
   "fileCenterPackageLabel": {
     "message": "资料包",
     "description": "资料包选择标签"
   },
   "btnSaveToFileCenter": {
-    "message": "将网页保存到资料包",
-    "description": "将网页内容保存到文件中心资料包的按钮"
+    "message": "将网页保存到资料库",
+    "description": "将网页内容保存到文档总结资料包的按钮"
   },
   "fileCenterUntitled": {
     "message": "未命名资料包",
     "description": "资料包默认名称"
   },
   "statusSavedToFileCenter": {
-    "message": "已保存到文件中心，开始索引。",
+    "message": "已保存到文档总结，开始索引。",
     "description": "保存网页到资料包后的状态"
   },
   "btnSettings": {

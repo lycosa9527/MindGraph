@@ -357,6 +357,38 @@ class AsyncRedisOperations:
         result = await _client().hdel(key, *fields)
         return int(result or 0)
 
+    # ---------- Sets ----------
+    @staticmethod
+    @_with_async_retry("SADD", default_return=False)
+    async def set_add(key: str, member: str, ttl_seconds: Optional[int] = None) -> bool:
+        """SADD member; optionally refresh key TTL in the same round-trip."""
+
+        client = _client()
+        if ttl_seconds is not None:
+            async with client.pipeline(transaction=False) as pipe:
+                pipe.sadd(key, member)
+                pipe.expire(key, ttl_seconds)
+                await pipe.execute()
+        else:
+            await client.sadd(key, member)
+        return True
+
+    @staticmethod
+    @_with_async_retry("SREM", default_return=False)
+    async def set_remove(key: str, member: str) -> bool:
+        """SREM member from set."""
+
+        await _client().srem(key, member)
+        return True
+
+    @staticmethod
+    @_with_async_retry("SMEMBERS", default_return=[])
+    async def set_members(key: str) -> List[str]:
+        """SMEMBERS — decoded to str list."""
+
+        raw = await _client().smembers(key)
+        return redis_list_to_str(list(raw or []))
+
     # ---------- Atomic patterns ----------
     @staticmethod
     async def compare_and_delete(key: str, expected_value: str) -> bool:
@@ -408,6 +440,39 @@ class AsyncRedisOperations:
         except REDIS_ERRORS as exc:
             logger.warning(
                 "[RedisAsync] compare_and_delete fallback failed for %s: %s",
+                key[:20],
+                exc,
+            )
+            return False
+
+    @staticmethod
+    async def compare_and_set_with_ttl(
+        key: str,
+        expected_value: str,
+        new_value: str,
+        ttl_seconds: int,
+    ) -> bool:
+        """Atomic compare-and-set with TTL refresh.
+
+        Sets ``new_value`` with ``EX ttl_seconds`` only when the current value
+        equals ``expected_value`` (single Lua round-trip).
+        """
+
+        client = _client()
+        try:
+            result = await client.eval(
+                "if redis.call('get',KEYS[1])==ARGV[1] then "
+                "return redis.call('set',KEYS[1],ARGV[2],'EX',ARGV[3]) else return 0 end",
+                1,
+                key,
+                expected_value,
+                new_value,
+                str(ttl_seconds),
+            )
+            return bool(result)
+        except REDIS_ERRORS as exc:
+            logger.warning(
+                "[RedisAsync] compare_and_set_with_ttl failed for %s: %s",
                 key[:20],
                 exc,
             )

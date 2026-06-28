@@ -102,7 +102,7 @@ function statusLabel(status: string): string {
 
           <a
             v-if="pkg.diagram_id"
-            :href="`/canvas?diagramId=${pkg.diagram_id}&openFileCenter=1`"
+            :href="`/canvas?diagramId=${pkg.diagram_id}&openDocSummary=1`"
             class="shrink-0 text-slate-400 transition-colors hover:text-blue-600"
             :title="t('fileCenterLibrary.openDiagram')"
           >

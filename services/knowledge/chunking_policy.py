@@ -52,6 +52,7 @@ def resolve_chunking_engine() -> str:
 def resolve_chunking_policy(
     file_type: Optional[str],
     processing_rules: Optional[dict],
+    ingest_source: Optional[str] = None,
 ) -> ChunkingPolicy:
     """Resolve the chunking mode and engine for a File Center source.
 
@@ -64,6 +65,9 @@ def resolve_chunking_policy(
     explicit_mode = (processing_rules or {}).get("mode")
     if explicit_mode in EXPLICIT_MODES:
         return ChunkingPolicy(mode=explicit_mode, engine=engine)
+
+    if ingest_source in ("paste", "web", "wechat", "dingtalk"):
+        return ChunkingPolicy(mode="automatic", engine=engine)
 
     if file_type in HIERARCHICAL_FILE_TYPES:
         return ChunkingPolicy(mode="hierarchical", engine=engine)

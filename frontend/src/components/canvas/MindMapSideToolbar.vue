@@ -29,9 +29,11 @@ const route = useRoute()
 const { activeTool, handleToolSelect, openTool, sidebarExpanded } = useMindMapSideToolbarState()
 const { isPickActive, isLearningSheetActive } = useLearningSheetCustomMode()
 
-// Deep link from extension / Knowledge Space: open File Center on load.
+// Deep link from extension / Knowledge Space: open Document Summary on load.
 onMounted(() => {
-  if (route.query.openFileCenter === '1' && activeTool.value === null) {
+  const openDocSummary =
+    route.query.openDocSummary === '1' || route.query.openFileCenter === '1'
+  if (openDocSummary && activeTool.value === null) {
     openTool('document_summary')
   }
 })

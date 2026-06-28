@@ -9,6 +9,8 @@ develop-eggs/
 # Python distribution folder (not Vue frontend/dist)
 /dist/
 downloads/
+!frontend/public/downloads/
+!frontend/public/downloads/**
 eggs/
 .eggs/
 lib/

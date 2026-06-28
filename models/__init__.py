@@ -22,6 +22,7 @@ from .requests.requests_diagram import (
     WebContentGenerateRequest,
     WebContentMindmapPngRequest,
     CanvasDocumentMindmapRequest,
+    GenerateMindmapFromPackageRequest,
     DiagramCreateRequest,
     DiagramUpdateRequest,
 )
@@ -118,6 +119,7 @@ __all__ = [
     "WebContentGenerateRequest",
     "WebContentMindmapPngRequest",
     "CanvasDocumentMindmapRequest",
+    "GenerateMindmapFromPackageRequest",
     "AIAssistantRequest",
     "FrontendLogRequest",
     "FrontendLogBatchRequest",

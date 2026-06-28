@@ -243,7 +243,11 @@ class KnowledgeSpaceService:
         if not batch or not batch.name:
             return processing_rules
 
-        policy = resolve_chunking_policy(document.file_type, processing_rules)
+        policy = resolve_chunking_policy(
+            document.file_type,
+            processing_rules,
+            ingest_source=(document.doc_metadata or {}).get("ingest_source"),
+        )
         effective_rules = dict(processing_rules or {})
         effective_rules["mode"] = policy.mode
 

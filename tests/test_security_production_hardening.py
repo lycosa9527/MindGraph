@@ -87,7 +87,7 @@ def test_get_client_ip_websocket_ignores_spoofed_forwarded_without_trusted_proxy
 
 def test_web_content_fetch_disables_redirects() -> None:
     """SSRF guard must not follow redirects after host validation."""
-    source_path = Path(__file__).resolve().parents[1] / "routers" / "api" / "web_content_generation.py"
+    source_path = Path(__file__).resolve().parents[1] / "services" / "knowledge" / "url_page_fetch.py"
     source = source_path.read_text(encoding="utf-8")
     assert "follow_redirects=False" in source
 

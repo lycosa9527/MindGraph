@@ -4,7 +4,7 @@
 
 export default {
   'fileCenterLibrary.title': '资料包',
-  'fileCenterLibrary.subtitle': '按图表分组的来源集合（文件中心）。',
+  'fileCenterLibrary.subtitle': '按图表分组的来源集合（文档总结）。',
   'fileCenterLibrary.openDiagram': '打开图表',
   'fileCenterLibrary.badgeCanvas': '画布',
   'fileCenterLibrary.badgeExtension': '扩展',

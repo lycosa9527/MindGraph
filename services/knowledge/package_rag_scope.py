@@ -11,7 +11,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.diagrams import Diagram
-from models.domain.knowledge_space import KnowledgeDocument
+from models.domain.knowledge_space import DocumentBatch, KnowledgeDocument
 
 
 @dataclass
@@ -48,6 +48,48 @@ async def resolve_diagram_rag_scope(
     )
     package_id = result.scalar_one_or_none()
     if not package_id:
+        batch_result = await db.execute(
+            select(DocumentBatch.id)
+            .where(
+                and_(
+                    DocumentBatch.diagram_id == diagram_id,
+                    DocumentBatch.user_id == user_id,
+                )
+            )
+            .order_by(DocumentBatch.updated_at.desc())
+            .limit(1)
+        )
+        package_id = batch_result.scalar_one_or_none()
+    if not package_id:
+        return None
+
+    doc_result = await db.execute(
+        select(KnowledgeDocument.id).where(
+            and_(
+                KnowledgeDocument.batch_id == package_id,
+                KnowledgeDocument.status == "completed",
+            )
+        )
+    )
+    document_ids = list(doc_result.scalars().all())
+    return PackageRagScope(package_id=package_id, document_ids=document_ids)
+
+
+async def resolve_package_rag_scope_by_id(
+    db: AsyncSession,
+    user_id: int,
+    package_id: int,
+) -> Optional[PackageRagScope]:
+    """Resolve completed document IDs for an owned package (by id)."""
+    batch_result = await db.execute(
+        select(DocumentBatch.id).where(
+            and_(
+                DocumentBatch.id == package_id,
+                DocumentBatch.user_id == user_id,
+            )
+        )
+    )
+    if batch_result.scalar_one_or_none() is None:
         return None
 
     doc_result = await db.execute(

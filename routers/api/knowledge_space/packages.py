@@ -30,6 +30,7 @@ from models.requests.requests_knowledge_space import (
     PackageCreateRequest,
     PackageIngestTextRequest,
     PackageIngestWebRequest,
+    PackageIngestWebUrlRequest,
     PackageUpdateRequest,
 )
 from models.responses import (
@@ -42,6 +43,7 @@ from services.knowledge import package_wiki_store
 from services.knowledge.audio_hosting import resolve_audio_path
 from services.knowledge.knowledge_package_service import KnowledgePackageService
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
+from services.knowledge.url_page_fetch import fetch_url_page_text
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from tasks.knowledge_space_tasks import process_document_task
 from utils.auth import get_current_user
@@ -303,6 +305,44 @@ async def ingest_web(
         raise HTTPException(status_code=400, detail=str(e)) from e
     except DATABASE_ERRORS as e:
         logger.error("[FileCenter] Ingest web to package %s failed: %s", package_id, e)
+        raise HTTPException(status_code=500, detail="Ingest failed") from e
+
+
+@router.post("/packages/{package_id}/documents/ingest-web-url")
+async def ingest_web_url(
+    package_id: int,
+    request: PackageIngestWebUrlRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+):
+    """Fetch a public URL server-side and ingest as a web snapshot."""
+    service = KnowledgePackageService(db, current_user.id)
+    package = await service.get_package(package_id)
+    if not package:
+        raise HTTPException(status_code=404, detail="Package not found")
+    page_url = request.page_url.strip()
+    try:
+        existing = await service.find_document_by_url(package_id, page_url)
+        if existing:
+            return _document_to_response(existing)
+
+        page_content, page_title = await fetch_url_page_text(page_url)
+        document = await service.add_text_source(
+            package_id,
+            content=page_content,
+            title=page_title or page_url,
+            source_kind="web",
+            page_url=page_url,
+            language=request.language,
+        )
+        _enqueue_processing(db, document)
+        await db.commit()
+        process_document_task.delay(current_user.id, document.id)
+        return _document_to_response(document)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except DATABASE_ERRORS as e:
+        logger.error("[FileCenter] Ingest web URL to package %s failed: %s", package_id, e)
         raise HTTPException(status_code=500, detail="Ingest failed") from e
 
 

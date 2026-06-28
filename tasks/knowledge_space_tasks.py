@@ -22,6 +22,7 @@ from sqlalchemy import select
 from config.celery import celery_app
 from config.settings import config
 from models.domain.knowledge_space import DocumentBatch, KnowledgeDocument
+from services.knowledge.chat_handoff_service import finalize_handoff_for_document
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 from services.knowledge.package_wiki_compiler import compile_package_wiki
 from services.monitoring.error_reporting import record_exception_from_celery
@@ -63,6 +64,10 @@ async def _process_document_async(user_id: int, document_id: int) -> None:
             chunk_count,
             doc.status if doc else "unknown",
         )
+
+        if doc:
+            terminal = "done" if doc.status == "completed" else "failed"
+            await finalize_handoff_for_document(document_id, terminal)
 
         if chunk_count == 0:
             logger.error(
@@ -107,6 +112,7 @@ async def _mark_document_failed_async(document_id: int, error: Exception) -> Non
                 "[KnowledgeSpaceTask] Updated document %s status to 'failed'",
                 document_id,
             )
+    await finalize_handoff_for_document(document_id, "failed")
 
 
 async def _update_batch_progress_async(user_id: int, batch_id: int, completed: int, failed: int) -> None:

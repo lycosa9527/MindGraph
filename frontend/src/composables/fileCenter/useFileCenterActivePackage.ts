@@ -1,17 +1,21 @@
 /**
- * Resolves the File Center package bound to the diagram currently on canvas.
- *
- * A package may be created before the diagram is first saved (unsaved-diagram
- * session): in that case we remember the pending package id in sessionStorage
- * and link it to the diagram as soon as the first save assigns a diagram id.
+ * Document Summary session package — idempotent start/resume on panel open.
  */
 import { type InjectionKey, type Ref, computed, inject, ref, watch } from 'vue'
 
+import { useQueryClient } from '@tanstack/vue-query'
 import { storeToRefs } from 'pinia'
 
-import { useSavedDiagramsStore } from '@/stores'
+import { useSavedDiagramsStore, useDiagramStore } from '@/stores'
+import { apiRequestJson } from '@/utils/apiClient'
 
-import { type KnowledgePackage, useFileCenterMutations, usePackages } from './useFileCenter'
+import {
+  type KnowledgePackage,
+  type PackageListResponse,
+  fileCenterKeys,
+  useFileCenterMutations,
+  usePackages,
+} from './useFileCenter'
 
 const PENDING_PACKAGE_KEY = 'mindgraph.fileCenter.pendingPackageId'
 
@@ -37,15 +41,28 @@ export const FILE_CENTER_ACTIVE_PACKAGE_KEY: InjectionKey<FileCenterActivePackag
 
 export function createFileCenterActivePackage(enabled: Ref<boolean>) {
   const savedDiagramsStore = useSavedDiagramsStore()
+  const diagramStore = useDiagramStore()
+  const queryClient = useQueryClient()
   const { activeDiagramId } = storeToRefs(savedDiagramsStore)
   const { updatePackage } = useFileCenterMutations()
 
   const packagesQuery = usePackages({ enabled })
   const pendingPackageId = ref<number | null>(readPendingPackageId())
+  const sessionStarting = ref(false)
+  /** Immediately updated after session/start so ingest does not wait on query refetch. */
+  const sessionPackageId = ref<number | null>(null)
 
   const linkedPackage = computed<KnowledgePackage | null>(() => {
     const diagramId = activeDiagramId.value
     const packages = packagesQuery.data.value?.packages ?? []
+
+    if (sessionPackageId.value !== null) {
+      const sessionMatch = packages.find((pkg) => pkg.id === sessionPackageId.value)
+      if (sessionMatch) {
+        return sessionMatch
+      }
+    }
+
     if (diagramId) {
       const match = packages.find((pkg) => pkg.diagram_id === diagramId)
       if (match) return match
@@ -56,10 +73,13 @@ export function createFileCenterActivePackage(enabled: Ref<boolean>) {
     return null
   })
 
-  const activePackageId = computed<number | null>(() => linkedPackage.value?.id ?? null)
+  const activePackageId = computed<number | null>(
+    () => sessionPackageId.value ?? linkedPackage.value?.id ?? null
+  )
 
   function rememberPendingPackage(packageId: number): void {
     pendingPackageId.value = packageId
+    sessionPackageId.value = packageId
     writePendingPackageId(packageId)
   }
 
@@ -68,7 +88,21 @@ export function createFileCenterActivePackage(enabled: Ref<boolean>) {
     writePendingPackageId(null)
   }
 
-  /** Link the pending package to the diagram once it has a persisted id. */
+  function mergeSessionPackageIntoCache(pkg: KnowledgePackage): void {
+    queryClient.setQueryData<PackageListResponse>(fileCenterKeys.packages(), (existing) => {
+      const packages = existing?.packages ?? []
+      const found = packages.some((item) => item.id === pkg.id)
+      if (found) {
+        return {
+          packages: packages.map((item) => (item.id === pkg.id ? { ...item, ...pkg } : item)),
+          total: existing?.total ?? packages.length,
+        }
+      }
+      return { packages: [pkg, ...packages], total: (existing?.total ?? 0) + 1 }
+    })
+  }
+
+  /** Link the pending package to the diagram once it receives its first persisted id. */
   async function linkPendingPackage(diagramId: string): Promise<void> {
     const pkg = linkedPackage.value
     if (!pkg || pkg.diagram_id === diagramId) {
@@ -78,10 +112,46 @@ export function createFileCenterActivePackage(enabled: Ref<boolean>) {
     clearPendingPackage()
   }
 
+  /** Idempotently create or resume the Document Summary session package. */
+  async function ensureSession(): Promise<KnowledgePackage> {
+    if (!enabled.value) {
+      throw new Error('Document Summary is disabled')
+    }
+    if (sessionStarting.value && sessionPackageId.value !== null) {
+      const cached = linkedPackage.value
+      if (cached) {
+        return cached
+      }
+    }
+    sessionStarting.value = true
+    try {
+      const pkg = await apiRequestJson<KnowledgePackage>(
+        '/api/knowledge-space/doc-summary/session/start',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            diagram_id: activeDiagramId.value ?? undefined,
+            diagram_title: diagramStore.effectiveTitle || undefined,
+            package_id: pendingPackageId.value ?? linkedPackage.value?.id ?? undefined,
+          }),
+        }
+      )
+      sessionPackageId.value = pkg.id
+      mergeSessionPackageIntoCache(pkg)
+      if (!activeDiagramId.value) {
+        rememberPendingPackage(pkg.id)
+      }
+      void queryClient.invalidateQueries({ queryKey: fileCenterKeys.packages() })
+      return pkg
+    } finally {
+      sessionStarting.value = false
+    }
+  }
+
   watch(
     () => activeDiagramId.value,
-    (diagramId) => {
-      if (diagramId && pendingPackageId.value !== null) {
+    (diagramId, previousDiagramId) => {
+      if (diagramId && !previousDiagramId && pendingPackageId.value !== null) {
         void linkPendingPackage(diagramId)
       }
     }
@@ -92,8 +162,10 @@ export function createFileCenterActivePackage(enabled: Ref<boolean>) {
     linkedPackage,
     activePackageId,
     activeDiagramId,
+    sessionStarting,
     rememberPendingPackage,
     clearPendingPackage,
+    ensureSession,
   }
 }
 

@@ -35,6 +35,11 @@ router = APIRouter(tags=["api"])
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 _OPENCLAW_SKILL_DIR = _PROJECT_ROOT / "openclaw" / "skills" / "mindgraph"
 _CHROME_EXTENSION_DIR = _PROJECT_ROOT / "chrome-extension"
+_FILE_READER_DIR = _PROJECT_ROOT / "clients" / "file-reader"
+_FILE_READER_EXE = _FILE_READER_DIR / "dist" / "mindgraph-file-reader.exe"
+_FILE_READER_ZIP = _PROJECT_ROOT / "frontend" / "public" / "downloads" / "mindgraph-file-reader.zip"
+# Legacy names kept for backward-compatible download requests.
+_LEGACY_FILE_READER_ZIP = _PROJECT_ROOT / "frontend" / "public" / "downloads" / "mindgraph-chat-reader.zip"
 
 
 def _should_skip_path(relative: Path) -> bool:
@@ -117,3 +122,45 @@ async def download_chrome_extension_zip(
         logger.warning("[ClientBundles] Chrome extension dir missing: %s", _CHROME_EXTENSION_DIR)
         raise HTTPException(status_code=404, detail="Chrome extension bundle not available on this server") from None
     return _bundle_response(data, "mindgraph-chrome-extension.zip")
+
+
+@router.get("/downloads/mindgraph-file-reader")
+async def download_file_reader_zip(
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+) -> Response:
+    """Zip of the Windows file-reader helper for Document Summary chat ingest."""
+    async with actor_rls_session(current_user) as db:
+        await assert_user_has_school_tier_feature(
+            db,
+            current_user,
+            TIER_FEATURE_API_TOKEN,
+            lang,
+        )
+    if _FILE_READER_ZIP.is_file():
+        return _bundle_response(_FILE_READER_ZIP.read_bytes(), "mindgraph-file-reader.zip")
+    if _LEGACY_FILE_READER_ZIP.is_file():
+        return _bundle_response(_LEGACY_FILE_READER_ZIP.read_bytes(), "mindgraph-file-reader.zip")
+    if _FILE_READER_EXE.is_file():
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.write(_FILE_READER_EXE, arcname="mindgraph-file-reader.exe")
+            readme = _FILE_READER_DIR / "README.md"
+            if readme.is_file():
+                zf.write(readme, arcname="README.md")
+        return _bundle_response(buffer.getvalue(), "mindgraph-file-reader.zip")
+    try:
+        data = _zip_directory(_FILE_READER_DIR / "file_reader", "file_reader")
+    except FileNotFoundError:
+        logger.warning("[ClientBundles] File reader dir missing: %s", _FILE_READER_DIR)
+        raise HTTPException(status_code=404, detail="File reader bundle not available on this server") from None
+    return _bundle_response(data, "mindgraph-file-reader-source.zip")
+
+
+@router.get("/downloads/mindgraph-chat-reader")
+async def download_file_reader_zip_legacy(
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+) -> Response:
+    """Backward-compatible alias for mindgraph-file-reader download."""
+    return await download_file_reader_zip(current_user=current_user, lang=lang)

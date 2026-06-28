@@ -6,23 +6,19 @@ Proprietary License
 """
 
 import asyncio
-import ipaddress
 import logging
-import re
-import socket
 import tempfile
-from html.parser import HTMLParser
 from pathlib import Path
 from typing import Optional, Tuple
-from urllib.parse import urlparse
 
-import httpx
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 
 from agents.mind_maps.web_content_mind_map_agent import WebContentMindMapAgent
+from config.settings import config
 from models import (
     CanvasDocumentMindmapRequest,
+    GenerateMindmapFromPackageRequest,
     Messages,
     WebContentGenerateRequest,
     WebContentMindmapPngRequest,
@@ -32,9 +28,17 @@ from models.domain.auth import User
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.api.vueflow_screenshot import capture_diagram_screenshot
 from services.knowledge.document_processor import DocumentProcessor
+from services.knowledge.package_rag_context import (
+    resolve_package_context_for_scope,
+)
+from services.knowledge.package_rag_scope import (
+    resolve_diagram_rag_scope,
+    resolve_package_rag_scope_by_id,
+)
+from services.knowledge.url_page_fetch import fetch_url_page_text as _fetch_url_page_text
 from services.admin.user_usage_activity import schedule_user_usage_activity
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
-from services.utils.error_types import REDIS_ERRORS
+from services.utils.error_types import DATABASE_ERRORS, LLM_PIPELINE_ERRORS, REDIS_ERRORS
 from utils.auth import get_current_user, get_current_user_or_api_key
 from utils.auth.school_tier import (
     TIER_FEATURE_CHROME_EXTENSION,
@@ -47,7 +51,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["api"])
 
 _SAVE_LIMIT_REACHED = "__limit_reached__"
-_MAX_FETCH_BYTES = 2 * 1024 * 1024
 _MAX_IMAGE_BYTES = 10 * 1024 * 1024
 _MAX_DOC_BYTES = 20 * 1024 * 1024
 _ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/jpg"}
@@ -55,127 +58,6 @@ _ALLOWED_DOC_TYPES = {
     "application/pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 }
-
-
-class _HTMLTextExtractor(HTMLParser):
-    """Minimal HTML-to-text extractor for web page fetch."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._chunks: list[str] = []
-        self._skip_depth = 0
-
-    def handle_starttag(self, tag: str, attrs) -> None:
-        if tag in {"script", "style", "noscript"}:
-            self._skip_depth += 1
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag in {"script", "style", "noscript"} and self._skip_depth > 0:
-            self._skip_depth -= 1
-
-    def handle_data(self, data: str) -> None:
-        if self._skip_depth == 0:
-            text = data.strip()
-            if text:
-                self._chunks.append(text)
-
-    def get_text(self) -> str:
-        """Join extracted text chunks into a single plain-text document."""
-        return re.sub(r"\n{3,}", "\n\n", "\n".join(self._chunks)).strip()
-
-
-def _ip_is_blocked(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
-    """True when an IP must not be reached (SSRF guard)."""
-    candidate = ip
-    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
-        candidate = ip.ipv4_mapped
-    return (
-        candidate.is_private
-        or candidate.is_loopback
-        or candidate.is_link_local
-        or candidate.is_reserved
-        or candidate.is_multicast
-        or candidate.is_unspecified
-    )
-
-
-def _is_blocked_fetch_host(host: str) -> bool:
-    """Reject localhost and private/reserved IPs to reduce SSRF risk.
-
-    Blocks the host if *any* resolved address is non-public, defeating
-    split-horizon DNS that returns a mix of public and private records.
-    """
-    lowered = (host or "").strip().lower()
-    if lowered in {"localhost", "127.0.0.1", "::1"} or not lowered:
-        return True
-    try:
-        infos = socket.getaddrinfo(host, None)
-    except OSError:
-        return True
-    if not infos:
-        return True
-    for info in infos:
-        try:
-            ip = ipaddress.ip_address(info[4][0])
-        except ValueError:
-            return True
-        if _ip_is_blocked(ip):
-            return True
-    return False
-
-
-async def _fetch_url_page_text(url: str) -> Tuple[str, Optional[str]]:
-    """Fetch a public web page and return plain text plus document title."""
-    parsed = urlparse(url.strip())
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-        raise HTTPException(status_code=400, detail="Invalid URL")
-
-    host = parsed.hostname or ""
-    if _is_blocked_fetch_host(host):
-        raise HTTPException(status_code=400, detail="URL host is not allowed")
-
-    headers = {
-        "User-Agent": "MindGraphCanvas/1.0 (+https://mg.mindspringedu.com)",
-        "Accept": "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8",
-    }
-
-    # Re-validate immediately before connecting to shrink the DNS-rebind /
-    # TOCTOU window between the initial check and the actual request.
-    if _is_blocked_fetch_host(host):
-        raise HTTPException(status_code=400, detail="URL host is not allowed")
-
-    try:
-        async with httpx.AsyncClient(timeout=30.0, follow_redirects=False, headers=headers) as client:
-            response = await client.get(url.strip())
-            # Never follow redirects: a 3xx could point at an internal host.
-            if 300 <= response.status_code < 400:
-                raise HTTPException(status_code=400, detail="Redirects are not allowed")
-            if response.status_code >= 400:
-                raise HTTPException(status_code=502, detail="Failed to fetch page")
-            if len(response.content) > _MAX_FETCH_BYTES:
-                raise HTTPException(status_code=413, detail="Page too large")
-
-            content_type = (response.headers.get("content-type") or "").lower()
-            raw = response.text
-
-            if "text/plain" in content_type or "application/json" in content_type:
-                text = raw.strip()
-            else:
-                parser = _HTMLTextExtractor()
-                parser.feed(raw)
-                text = parser.get_text()
-
-            title_match = re.search(r"<title[^>]*>(.*?)</title>", raw, re.IGNORECASE | re.DOTALL)
-            title = re.sub(r"\s+", " ", title_match.group(1)).strip() if title_match else None
-
-            if not text:
-                raise HTTPException(status_code=422, detail="No readable text found on page")
-            return text[:32000], title
-    except httpx.TimeoutException as exc:
-        raise HTTPException(status_code=504, detail="Timeout fetching page") from exc
-    except httpx.RequestError as exc:
-        logger.warning("canvas document summary fetch failed: %s", exc)
-        raise HTTPException(status_code=502, detail="Failed to fetch page") from exc
 
 
 async def _resolve_canvas_page_content(req: CanvasDocumentMindmapRequest) -> Tuple[str, Optional[str], Optional[str]]:
@@ -471,6 +353,58 @@ async def canvas_generate_mindmap_from_image(
     finally:
         if temp_path and temp_path.exists():
             temp_path.unlink(missing_ok=True)
+
+
+@router.post("/canvas/generate_mindmap_from_package")
+async def canvas_generate_mindmap_from_package(
+    req: GenerateMindmapFromPackageRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    """Generate mind map from a Document Summary package corpus (RAG-backed)."""
+    if not config.FEATURE_KNOWLEDGE_SPACE:
+        raise HTTPException(status_code=403, detail="Knowledge Space is disabled")
+
+    user_id = current_user.id
+    query = (req.topic_hint or "").strip() or "key themes and structure"
+    language = req.language
+
+    try:
+        async with actor_rls_session(current_user) as db:
+            if req.package_id:
+                scope = await resolve_package_rag_scope_by_id(db, user_id, int(req.package_id))
+            else:
+                scope = await resolve_diagram_rag_scope(db, user_id, str(req.diagram_id))
+        pkg_result = await resolve_package_context_for_scope(
+            user_id,
+            scope,
+            query,
+            language,
+            stage="doc_summary_generate",
+        )
+    except (*LLM_PIPELINE_ERRORS, *DATABASE_ERRORS) as exc:
+        logger.error("[DocSummary] generate context failed user=%s: %s", user_id, exc)
+        raise HTTPException(status_code=500, detail="Failed to retrieve package context") from exc
+
+    if not pkg_result.package_active:
+        raise HTTPException(status_code=422, detail="No indexed sources in package yet")
+    if pkg_result.retrieval_failed:
+        raise HTTPException(status_code=503, detail="Retrieval service temporarily unavailable")
+    if not pkg_result.context_block.strip():
+        raise HTTPException(status_code=422, detail="No retrievable content from package corpus")
+
+    return await _generate_mindmap_from_resolved_content(
+        page_content=pkg_result.context_block,
+        language=language,
+        content_format="text/plain",
+        page_title=req.topic_hint or "Document Summary",
+        page_url=None,
+        request=request,
+        current_user=current_user,
+        endpoint_path="/api/canvas/generate_mindmap_from_package",
+        rate_limit_key="canvas_generate_mindmap_from_package",
+        require_chrome_tier=False,
+    )
 
 
 @router.post("/web_content_mindmap_png")

@@ -24,11 +24,12 @@ from models.domain.knowledge_space import DocumentBatch, KnowledgeDocument
 from services.knowledge import package_wiki_store
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 from services.knowledge.package_rag_scope import PackageRagScope, resolve_diagram_rag_scope
+from services.utils.safe_upload import ensure_within_directory
 
 logger = logging.getLogger(__name__)
 
 # Recognised ingest sources for a package (UI badges, lifecycle).
-PACKAGE_SOURCES = ("canvas", "knowledge_space", "chrome_extension")
+PACKAGE_SOURCES = ("canvas", "knowledge_space", "chrome_extension", "doc_summary")
 
 # Text-source MIME type stored on disk as markdown.
 TEXT_SOURCE_FILE_TYPE = "text/markdown"
@@ -111,6 +112,54 @@ class KnowledgePackageService:
             .order_by(DocumentBatch.created_at.desc())
         )
         return list(result.scalars().all())
+
+    async def find_package_for_diagram(self, diagram_id: str) -> Optional[DocumentBatch]:
+        """Return the package linked to a diagram, if any."""
+        diagram_result = await self.db.execute(
+            select(Diagram.knowledge_package_id).where(
+                and_(
+                    Diagram.id == diagram_id,
+                    Diagram.user_id == self.user_id,
+                    Diagram.is_deleted.is_(False),
+                )
+            )
+        )
+        package_id = diagram_result.scalar_one_or_none()
+        if package_id:
+            return await self.get_package(int(package_id))
+
+        batch_result = await self.db.execute(
+            select(DocumentBatch).where(
+                and_(
+                    DocumentBatch.user_id == self.user_id,
+                    DocumentBatch.diagram_id == diagram_id,
+                )
+            )
+        )
+        return batch_result.scalars().first()
+
+    async def ensure_doc_summary_session(
+        self,
+        diagram_id: Optional[str] = None,
+        diagram_title: Optional[str] = None,
+        package_id: Optional[int] = None,
+    ) -> DocumentBatch:
+        """Idempotently return the Document Summary package for a canvas session."""
+        if package_id is not None:
+            existing = await self.get_package(package_id)
+            if not existing:
+                raise ValueError(f"Package {package_id} not found or access denied")
+            if diagram_id and not existing.diagram_id:
+                return await self.update_package(existing.id, diagram_id=diagram_id)
+            return existing
+
+        if diagram_id:
+            linked = await self.find_package_for_diagram(diagram_id)
+            if linked:
+                return linked
+
+        name = (diagram_title or "").strip() or "Untitled package"
+        return await self.create_package(name=name, diagram_id=diagram_id, source="doc_summary")
 
     async def update_package(
         self,
@@ -229,6 +278,7 @@ class KnowledgePackageService:
         source_kind: str = "paste",
         page_url: Optional[str] = None,
         language: Optional[str] = None,
+        extra_metadata: Optional[Dict[str, Any]] = None,
     ) -> KnowledgeDocument:
         """Create a markdown source from pasted text or web content in a package.
 
@@ -259,7 +309,7 @@ class KnowledgePackageService:
             status="pending",
             batch_id=package_id,
             language=language,
-            doc_metadata=self._build_text_metadata(source_kind, title, page_url),
+            doc_metadata=self._build_text_metadata(source_kind, title, page_url, extra_metadata),
         )
         self.db.add(document)
         await self.db.commit()
@@ -267,7 +317,7 @@ class KnowledgePackageService:
 
         user_dir = self.ks.storage_dir / str(self.user_id)
         user_dir.mkdir(parents=True, exist_ok=True)
-        final_path = user_dir / f"{document.id}_{file_name}"
+        final_path = ensure_within_directory(user_dir / f"{document.id}_{file_name}", user_dir)
         final_path.write_bytes(encoded)
         document.file_path = str(final_path)
         await self.db.commit()
@@ -335,10 +385,19 @@ class KnowledgePackageService:
         return result.scalars().first() is not None
 
     @staticmethod
-    def _build_text_metadata(source_kind: str, title: str, page_url: Optional[str]) -> Dict[str, Any]:
+    def _build_text_metadata(
+        source_kind: str,
+        title: str,
+        page_url: Optional[str],
+        extra_metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         metadata: Dict[str, Any] = {"ingest_source": source_kind}
         if title:
             metadata["page_title"] = title
         if page_url:
             metadata["page_url"] = page_url
+        if extra_metadata:
+            for key, value in extra_metadata.items():
+                if value is not None:
+                    metadata[key] = value
         return metadata

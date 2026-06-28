@@ -1,0 +1,1 @@
+# MindGraph file-reader has no third-party runtime dependencies (stdlib + tkinter).

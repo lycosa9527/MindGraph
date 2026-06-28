@@ -28,23 +28,23 @@
     "description": "Primary button"
   },
   "fileCenterSectionLabel": {
-    "message": "Save to File Center",
-    "description": "File Center section label"
+    "message": "Save to Document Summary",
+    "description": "Document Summary section label"
   },
   "fileCenterPackageLabel": {
     "message": "Package",
     "description": "Package picker label"
   },
   "btnSaveToFileCenter": {
-    "message": "Save page to package",
-    "description": "Button to save page content into a File Center package"
+    "message": "Save page to corpus",
+    "description": "Button to save page content into a Document Summary package"
   },
   "fileCenterUntitled": {
     "message": "Untitled package",
     "description": "Fallback package name"
   },
   "statusSavedToFileCenter": {
-    "message": "Saved to File Center. Indexing started.",
+    "message": "Saved to Document Summary. Indexing started.",
     "description": "Status after saving page into a package"
   },
   "btnSettings": {

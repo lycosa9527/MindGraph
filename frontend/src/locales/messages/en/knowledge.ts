@@ -4,7 +4,7 @@
 
 export default {
   'fileCenterLibrary.title': 'Packages',
-  'fileCenterLibrary.subtitle': 'Source collections grouped by diagram (File Center).',
+  'fileCenterLibrary.subtitle': 'Source collections grouped by diagram (Document Summary).',
   'fileCenterLibrary.openDiagram': 'Open diagram',
   'fileCenterLibrary.badgeCanvas': 'Canvas',
   'fileCenterLibrary.badgeExtension': 'Extension',
