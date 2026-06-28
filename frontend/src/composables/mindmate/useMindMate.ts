@@ -32,6 +32,10 @@ import {
 import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import { consumeSseDataLines } from '@/utils/mindMateSseStream'
 import { mindmateDifyUserIdFromSession } from '@/utils/mindmateDifyUserId'
+import {
+  appendDifyConversationRouteQuery,
+  buildDifyConversationRouteSearchParams,
+} from '@/utils/difyConversationRoute'
 
 import { eventBus } from '../core/useEventBus'
 import { difyKeys, useAppParameters, useGenerateTitle } from '../queries'
@@ -615,13 +619,19 @@ export function useMindMate(options: MindMateOptions = {}) {
     }
 
     try {
-      // Use fetch with credentials (token in httpOnly cookie)
-      const response = await fetch(`/api/dify/messages/${msg.difyMessageId}/feedback`, {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rating }),
-      })
+      const route =
+        conversationId.value != null
+          ? mindMateStore.getConversationRoute(conversationId.value)
+          : {}
+      const response = await fetch(
+        appendDifyConversationRouteQuery(`/api/dify/messages/${msg.difyMessageId}/feedback`, route),
+        {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rating }),
+        }
+      )
 
       // Handle token expiration
       if (response.status === 401) {
@@ -674,11 +684,15 @@ export function useMindMate(options: MindMateOptions = {}) {
 
           // Optimistic update: Add new conversation to Vue Query cache
           const now = Math.floor(Date.now() / 1000) // Use seconds like Dify
+          const webDifyUser = mindmateDifyUserIdFromSession(authStore.user)
           const newConv = {
             id: data.conversation_id,
             name: mindMateStore.conversationTitle,
             created_at: now,
             updated_at: now,
+            channel: 'web' as const,
+            dify_user: webDifyUser,
+            server: 1,
           }
 
           // Update conversations cache optimistically
@@ -716,7 +730,7 @@ export function useMindMate(options: MindMateOptions = {}) {
           setTimeout(() => {
             generateTitle({
               convId,
-              difyUser: mindMateStore.getConversationDifyUser(convId),
+              ...mindMateStore.getConversationRoute(convId),
             })
           }, 1000)
         }
@@ -876,16 +890,22 @@ export function useMindMate(options: MindMateOptions = {}) {
    * Fetch messages for a conversation (shared by blocking load and background revalidate).
    */
   async function fetchDifyConversationMessages(convId: string): Promise<DifyHistoryMessage[]> {
-    const difyUser = mindMateStore.getConversationDifyUser(convId)
+    const route = mindMateStore.getConversationRoute(convId)
     return queryClient.fetchQuery({
-      queryKey: difyKeys.messages(convId, difyUser),
+      queryKey: difyKeys.messages(
+        convId,
+        route.difyUser,
+        route.server,
+        route.mindbotConfigId ?? undefined
+      ),
       queryFn: async () => {
-        const query = difyUser
-          ? `?limit=100&dify_user=${encodeURIComponent(difyUser)}`
-          : '?limit=100'
-        const response = await fetch(`/api/dify/conversations/${convId}/messages${query}`, {
-          credentials: 'same-origin',
-        })
+        const params = buildDifyConversationRouteSearchParams(route, new URLSearchParams({ limit: '100' }))
+        const response = await fetch(
+          `/api/dify/conversations/${convId}/messages?${params.toString()}`,
+          {
+            credentials: 'same-origin',
+          }
+        )
 
         if (!response.ok) {
           if (response.status === 401) {
@@ -996,9 +1016,39 @@ export function useMindMate(options: MindMateOptions = {}) {
   }
 
   /**
-   * Delete a conversation (delegates to store)
+   * Delete a conversation (server + local store)
    */
   async function deleteConversation(convId: string): Promise<boolean> {
+    const route = mindMateStore.getConversationRoute(convId)
+    try {
+      const response = await fetch(
+        appendDifyConversationRouteQuery(`/api/dify/conversations/${convId}`, route),
+        {
+          method: 'DELETE',
+          credentials: 'same-origin',
+        }
+      )
+      if (response.status === 401) {
+        authStore.handleTokenExpired('您的登录已过期，请重新登录')
+        return false
+      }
+      if (!response.ok) {
+        return false
+      }
+    } catch {
+      return false
+    }
+
+    await queryClient.invalidateQueries({ queryKey: difyKeys.conversations() })
+    queryClient.removeQueries({
+      queryKey: difyKeys.messages(
+        convId,
+        route.difyUser,
+        route.server,
+        route.mindbotConfigId ?? undefined
+      ),
+    })
+
     const result = await mindMateStore.deleteConversation(convId)
 
     // If deleted current conversation, reset local state

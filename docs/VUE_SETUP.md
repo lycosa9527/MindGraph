@@ -249,6 +249,10 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        # MindMate SSE: Dify vision can be silent 60–220s+ before first token (DIFY_TIMEOUT default 300s)
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_buffering off;
     }
 
     # WebSocket support

@@ -29,6 +29,7 @@ from sqlalchemy.sql.functions import count as sa_count
 from sqlalchemy.sql.functions import sum as sa_sum
 
 from config.database import get_async_db
+from routers.auth.dependencies import get_async_db_with_request_rls as _PANEL_MUTATE_DB
 from models.domain.auth import Organization, User
 from models.domain.messages import Language, Messages
 
@@ -292,7 +293,7 @@ async def create_organization_admin(
     request: dict,
     _http_request: Request,
     scope: AdminScope = Depends(require_invite_org_create),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(_PANEL_MUTATE_DB),
     lang: Language = Depends(get_language_dependency),
 ):
     """Create new organization (superadmin, teaching researcher, or expert invite tab)."""
@@ -354,7 +355,7 @@ async def create_organization_admin(
     try:
         await db.commit()
         await db.refresh(new_org)
-    except REDIS_ERRORS as e:
+    except DATABASE_ERRORS as e:
         await db.rollback()
         logger.error("[Auth] Failed to create org in database: %s", e)
         raise HTTPException(
@@ -385,7 +386,7 @@ async def update_organization_admin(
     request: dict,
     _http_request: Request,
     scope: AdminScope = Depends(require_global_organizations_edit),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(_PANEL_MUTATE_DB),
     lang: Language = Depends(get_language_dependency),
 ):
     """Update organization (superadmin only)."""
@@ -560,7 +561,7 @@ async def upload_organization_mindmate_avatar_admin(
     org_id: int,
     file: UploadFile = File(...),
     scope: AdminScope = Depends(require_global_organizations_edit),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(_PANEL_MUTATE_DB),
     lang: Language = Depends(get_language_dependency),
 ):
     """Upload MindMate agent avatar for one organization."""
@@ -606,7 +607,7 @@ async def refresh_organization_invitation_code(
     org_id: int,
     _request: Request,
     scope: AdminScope = Depends(require_invite_org_create),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(_PANEL_MUTATE_DB),
     lang: Language = Depends(get_language_dependency),
 ):
     """Generate a new invitation code for the organization."""
@@ -680,7 +681,7 @@ async def delete_organization_admin(
     org_id: int,
     _request: Request,
     scope: AdminScope = Depends(require_global_organizations_edit),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(_PANEL_MUTATE_DB),
     lang: Language = Depends(get_language_dependency),
     delete_users: bool = False,
 ):
@@ -954,7 +955,7 @@ async def set_organization_manager(
     user_id: int,
     _request: Request,
     scope: AdminScope = Depends(require_global_organizations_edit),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(_PANEL_MUTATE_DB),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -1021,7 +1022,7 @@ async def remove_organization_manager(
     user_id: int,
     _request: Request,
     scope: AdminScope = Depends(require_global_organizations_edit),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(_PANEL_MUTATE_DB),
     lang: Language = Depends(get_language_dependency),
 ):
     """

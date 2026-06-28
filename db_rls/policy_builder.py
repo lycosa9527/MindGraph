@@ -204,13 +204,16 @@ WORKSHOP_CHILD = [
     ("user_topic_preferences", "rls_user_visible(user_id)"),
 ]
 
-# Group C
-USERS_EXPR = "rls_user_visible(id)"
+# Group C — users: id is NULL on INSERT; panel school managers set organization_id on the new row.
+USERS_EXPR = (
+    "rls_user_visible(id) OR (rls_is_panel_mode() AND organization_id IS NOT NULL AND rls_org_visible(organization_id))"
+)
 ORGS_EXPR = (
     "(rls_mode() = 'public' AND rls_allow_public_org_list()) "
     "OR rls_org_visible(id) "
     "OR (rls_is_panel_mode() AND (rls_panel_global_read() OR rls_org_id_in_readable_list(id) "
-    "OR rls_panel_legacy_org_visible(id)))"
+    "OR rls_panel_legacy_org_visible(id))) "
+    "OR rls_panel_org_invited_by_actor(invited_by_user_id)"
 )
 
 # Group D

@@ -7,6 +7,8 @@ import { useQuery } from '@tanstack/vue-query'
 
 import { useAuthStore } from '@/stores'
 
+import { difyConversationRouteQuerySuffix } from '@/utils/difyConversationRoute'
+
 import { difyKeys } from './difyKeys'
 
 // ============================================================================
@@ -25,6 +27,8 @@ export interface DifyConversation {
   updated_at: number
   channel?: 'web' | 'mindbot'
   dify_user?: string
+  server?: number
+  mindbot_config_id?: number | null
 }
 
 export interface DifyMessage {
@@ -96,20 +100,16 @@ async function fetchPinnedConversations(): Promise<Set<string>> {
   return new Set(result.data || [])
 }
 
-function difyUserSearchParam(difyUser?: string): string {
-  const trimmed = difyUser?.trim()
-  if (!trimmed) {
-    return ''
-  }
-  return `&dify_user=${encodeURIComponent(trimmed)}`
-}
-
 async function fetchConversationMessages(
   convId: string,
-  difyUser?: string
+  options?: {
+    difyUser?: string
+    server?: number
+    mindbotConfigId?: number | null
+  }
 ): Promise<DifyMessage[]> {
   const response = await fetch(
-    `/api/dify/conversations/${convId}/messages?limit=100${difyUserSearchParam(difyUser)}`,
+    `/api/dify/conversations/${convId}/messages?limit=100${difyConversationRouteQuerySuffix(options)}`,
     {
       credentials: 'same-origin',
     }
@@ -183,17 +183,34 @@ export function usePinnedConversations() {
  * Fetch messages for a specific conversation
  * Stale time: 5 minutes
  */
-export function useConversationMessages(convId: string | null, difyUser?: string | null) {
+export function useConversationMessages(
+  convId: string | null,
+  options?: {
+    difyUser?: string | null
+    server?: number | null
+    mindbotConfigId?: number | null
+  }
+) {
   const authStore = useAuthStore()
-  const resolvedDifyUser = difyUser?.trim() || undefined
+  const resolvedDifyUser = options?.difyUser?.trim() || undefined
+  const resolvedServer =
+    typeof options?.server === 'number' && options.server >= 1 ? options.server : undefined
+  const resolvedMindbotConfigId =
+    typeof options?.mindbotConfigId === 'number' && options.mindbotConfigId >= 1
+      ? options.mindbotConfigId
+      : undefined
 
   return useQuery({
-    queryKey: difyKeys.messages(convId || '', resolvedDifyUser),
+    queryKey: difyKeys.messages(convId || '', resolvedDifyUser, resolvedServer, resolvedMindbotConfigId),
     queryFn: () => {
       if (!convId) {
         throw new Error('Conversation id is required')
       }
-      return fetchConversationMessages(convId, resolvedDifyUser)
+      return fetchConversationMessages(convId, {
+        difyUser: resolvedDifyUser,
+        server: resolvedServer,
+        mindbotConfigId: resolvedMindbotConfigId,
+      })
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     enabled: !!authStore.user && !!convId,

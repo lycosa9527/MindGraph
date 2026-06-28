@@ -10,6 +10,8 @@ import type { LocaleCode } from '@/i18n/locales'
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import { type MindMateConversation, useMindMateStore } from '@/stores'
 
+import MindMateDingtalkBadge from '@/components/sidebar/MindMateDingtalkBadge.vue'
+
 const props = defineProps<{
   visible: boolean
   conversations: MindMateConversation[]
@@ -61,6 +63,13 @@ function handleDelete(conversationId: string, event: Event) {
   event.stopPropagation()
   emit('delete', conversationId)
 }
+
+function isMindbotConversation(conv: MindMateConversation): boolean {
+  if (conv.channel === 'mindbot') {
+    return true
+  }
+  return (conv.dify_user || '').startsWith('mindbot_')
+}
 </script>
 
 <template>
@@ -111,8 +120,11 @@ function handleDelete(conversationId: string, event: Event) {
         >
           <div class="flex items-start justify-between gap-2">
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-gray-800 dark:text-white truncate">
-                {{ conv.name || t('mindmate.untitled') }}
+              <p class="text-sm font-medium text-gray-800 dark:text-white flex items-center gap-1.5 min-w-0">
+                <span class="truncate">
+                  {{ conv.name || t('mindmate.untitled') }}
+                </span>
+                <MindMateDingtalkBadge v-if="isMindbotConversation(conv)" />
               </p>
               <p class="text-xs text-gray-500 mt-0.5">
                 {{ formatConversationDate(conv.updated_at) }}

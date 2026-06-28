@@ -207,6 +207,18 @@ AS $$
         AND rls_lookup_org_invited_by_user_id(target_org_id) IS NULL
 $$;
 
+CREATE OR REPLACE FUNCTION rls_panel_org_invited_by_actor(invited_by bigint)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+PARALLEL SAFE
+AS $$
+    SELECT rls_is_panel_mode()
+        AND invited_by IS NOT NULL
+        AND rls_current_user_id() IS NOT NULL
+        AND invited_by = rls_current_user_id()
+$$;
+
 CREATE OR REPLACE FUNCTION rls_org_visible(target_org_id bigint)
 RETURNS boolean
 LANGUAGE sql
@@ -381,6 +393,7 @@ DROP FUNCTION IF EXISTS rls_knowledge_document_visible(integer);
 DROP FUNCTION IF EXISTS rls_knowledge_space_visible(integer);
 DROP FUNCTION IF EXISTS rls_diagram_visible(bigint);
 DROP FUNCTION IF EXISTS rls_user_visible(bigint);
+DROP FUNCTION IF EXISTS rls_panel_org_invited_by_actor(bigint);
 DROP FUNCTION IF EXISTS rls_lookup_org_invited_by_user_id(bigint);
 DROP FUNCTION IF EXISTS rls_lookup_user_organization_id(bigint);
 DROP FUNCTION IF EXISTS rls_same_org_users(bigint);

@@ -12,7 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_async_db
 from config.settings import config
 from repositories.organization_oauth_config_repo import OrganizationOauthConfigRepository
-from routers.auth.dependencies import require_global_organizations_edit, require_global_organizations_read
+from routers.auth.dependencies import (
+    get_async_db_with_request_rls as _panel_mutate_db,
+    require_global_organizations_edit,
+    require_global_organizations_read,
+)
 from services.auth.oauth.oauth_login_service import (
     dingtalk_callback_url,
     public_site_base_url,
@@ -97,7 +101,7 @@ async def update_organization_oauth_config(
     org_id: int,
     body: OrganizationOauthConfigUpdate,
     _scope: AdminScope = Depends(require_global_organizations_edit),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(_panel_mutate_db),
 ):
     """Update OAuth QR login settings for a school."""
     if not config.FEATURE_OAUTH_LOGIN:

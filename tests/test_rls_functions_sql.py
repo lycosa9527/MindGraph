@@ -11,6 +11,7 @@ def test_rls_functions_upgrade_includes_helpers():
     names = " ".join(rls_functions_upgrade_statements())
     assert "CREATE OR REPLACE FUNCTION rls_mode()" in names
     assert "CREATE OR REPLACE FUNCTION rls_org_visible(target_org_id bigint)" in names
+    assert "CREATE OR REPLACE FUNCTION rls_panel_org_invited_by_actor(invited_by bigint)" in names
 
 
 def test_grant_sql_targets_rls_helpers_only():

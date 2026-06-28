@@ -6,11 +6,14 @@
  */
 import { computed, ref, watch } from 'vue'
 
+import { useQueryClient } from '@tanstack/vue-query'
+
 import { ElButton } from 'element-plus'
 
 import { Close } from '@element-plus/icons-vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { difyKeys } from '@/composables/queries/difyKeys'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { logPairAudit } from '@/utils/dingtalkPairAuditLog'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
@@ -30,6 +33,7 @@ import SetPasswordWithSmsModal from './SetPasswordWithSmsModal.vue'
 
 const { t } = useLanguage()
 const notify = useNotifications()
+const queryClient = useQueryClient()
 
 const props = defineProps<{
   visible: boolean
@@ -226,6 +230,7 @@ function openBindDingTalkModal() {
 
 function handleDingtalkBindLinked() {
   void fetchDingtalkBindStatus()
+  void queryClient.invalidateQueries({ queryKey: difyKeys.conversations() })
   emit('success')
 }
 
@@ -243,6 +248,7 @@ function openUnbindPairModal() {
 
 function handleDingtalkUnbindCompleted() {
   void fetchDingtalkBindStatus()
+  void queryClient.invalidateQueries({ queryKey: difyKeys.conversations() })
   emit('success')
 }
 

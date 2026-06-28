@@ -27,7 +27,11 @@ from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.pinned_conversations import PinnedConversation
 from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short_lived
-from services.dify.unified_conversations import list_unified_conversations, resolve_client_and_dify_user
+from services.dify.unified_conversations import (
+    list_unified_conversations,
+    resolve_client_and_dify_user,
+    resolve_client_for_dify_user,
+)
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user
 from utils.dify_mindmate_user_id import mindmate_dify_user_id
@@ -118,6 +122,8 @@ async def list_conversations(
                 "updated_at": row.updated_at,
                 "channel": row.channel,
                 "dify_user": row.dify_user,
+                "server": row.server,
+                "mindbot_config_id": row.mindbot_config_id,
             }
             for row in rows
         ]
@@ -144,6 +150,12 @@ async def list_conversations(
 async def delete_conversation(
     conversation_id: str,
     dify_user: Optional[str] = Query(None, description="Dify user key from conversation list"),
+    server: Optional[int] = Query(None, ge=1, le=3, description="Dify server from conversation list"),
+    mindbot_config_id: Optional[int] = Query(
+        None,
+        ge=1,
+        description="MindBot config id from conversation list",
+    ),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
@@ -158,6 +170,8 @@ async def delete_conversation(
             current_user,
             conversation_id,
             dify_user_hint=dify_user,
+            server_hint=server,
+            mindbot_config_id_hint=mindbot_config_id,
         )
 
         await client.delete_conversation(conversation_id=conversation_id, user_id=dify_user_id)
@@ -179,6 +193,12 @@ async def rename_conversation(
     conversation_id: str,
     request: RenameRequest,
     dify_user: Optional[str] = Query(None, description="Dify user key from conversation list"),
+    server: Optional[int] = Query(None, ge=1, le=3, description="Dify server from conversation list"),
+    mindbot_config_id: Optional[int] = Query(
+        None,
+        ge=1,
+        description="MindBot config id from conversation list",
+    ),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
@@ -194,6 +214,8 @@ async def rename_conversation(
             current_user,
             conversation_id,
             dify_user_hint=dify_user,
+            server_hint=server,
+            mindbot_config_id_hint=mindbot_config_id,
         )
 
         result = await client.rename_conversation(
@@ -221,6 +243,12 @@ async def get_conversation_messages(
     first_id: Optional[str] = Query(None, description="First message ID for pagination"),
     limit: int = Query(20, ge=1, le=100, description="Number of messages to return"),
     dify_user: Optional[str] = Query(None, description="Dify user key from conversation list"),
+    server: Optional[int] = Query(None, ge=1, le=3, description="Dify server from conversation list"),
+    mindbot_config_id: Optional[int] = Query(
+        None,
+        ge=1,
+        description="MindBot config id from conversation list",
+    ),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
@@ -240,6 +268,8 @@ async def get_conversation_messages(
             current_user,
             conversation_id,
             dify_user_hint=dify_user,
+            server_hint=server,
+            mindbot_config_id_hint=mindbot_config_id,
         )
 
         result = await client.get_messages(
@@ -289,7 +319,15 @@ async def get_user_dify_id(current_user: User = Depends(get_current_user)):
 async def submit_message_feedback(
     message_id: str,
     request: FeedbackRequest,
+    dify_user: Optional[str] = Query(None, description="Dify user key from conversation list"),
+    server: Optional[int] = Query(None, ge=1, le=3, description="Dify server from conversation list"),
+    mindbot_config_id: Optional[int] = Query(
+        None,
+        ge=1,
+        description="MindBot config id from conversation list",
+    ),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Submit feedback (like/dislike) for a specific message.
@@ -302,8 +340,17 @@ async def submit_message_feedback(
         Success response with feedback result
     """
     try:
-        client = await _resolve_dify_client(current_user)
-        dify_user_id = get_dify_user_id(current_user)
+        if dify_user and dify_user.strip():
+            client, dify_user_id = await resolve_client_for_dify_user(
+                db,
+                current_user,
+                dify_user=dify_user,
+                server_hint=server,
+                mindbot_config_id_hint=mindbot_config_id,
+            )
+        else:
+            client = await _resolve_dify_client(current_user)
+            dify_user_id = get_dify_user_id(current_user)
 
         result = await client.message_feedback(
             message_id=message_id,

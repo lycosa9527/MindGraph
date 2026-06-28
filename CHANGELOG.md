@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.131.0] - 2026-06-28
+
+> **MindMate SSE keepalive, unified Dify conversation routing, DingTalk history badges, and panel RLS create fixes.**
+
+### Added
+
+- **MindMate SSE upstream keepalive** — `iter_upstream_with_keepalive` emits SSE comment keepalives every 25s during long Dify vision/workflow silence so reverse proxies do not close `/api/ai_assistant/stream` before the first token ([`sse_upstream_keepalive.py`](services/infrastructure/http/sse_upstream_keepalive.py), [`sse_streaming.py`](routers/api/sse_streaming.py)).
+- **Unified Dify conversation routing** — Conversation list rows carry `server` and `mindbot_config_id`; delete/rename/messages/feedback resolve the correct Dify endpoint across web MindMate and bound MindBot identities; usage telemetry supplements MindBot threads missing from Dify list APIs ([`unified_conversations.py`](services/dify/unified_conversations.py), [`difyConversationRoute.ts`](frontend/src/utils/difyConversationRoute.ts)).
+- **DingTalk MindBot history badge** — Sidebar and MindMate history show a DingTalk badge on MindBot-sourced threads ([`MindMateDingtalkBadge.vue`](frontend/src/components/sidebar/MindMateDingtalkBadge.vue), [`ChatHistoryConversationTitle.vue`](frontend/src/components/sidebar/ChatHistoryConversationTitle.vue)).
+- **Panel RLS create policies** — Alembic `0072`/`0073`: experts can INSERT organizations they invite; school managers can INSERT users with `organization_id` set before `id` is assigned ([`rev_0072_rls_expert_org_create.py`](alembic/versions/rev_0072_rls_expert_org_create.py), [`rev_0073_rls_panel_user_create.py`](alembic/versions/rev_0073_rls_panel_user_create.py)).
+
+### Changed
+
+- **DingTalk bind/unbind** — Invalidate Dify conversation queries after pair-code bind or unbind so MindBot threads appear immediately ([`AccountInfoModal.vue`](frontend/src/components/auth/AccountInfoModal.vue), [`DingTalkPairModal.vue`](frontend/src/components/auth/DingTalkPairModal.vue)).
+- **Production deploy docs** — Nginx/NPM `proxy_read_timeout` / `proxy_send_timeout` 300s and `proxy_buffering off` for MindMate SSE ([`production_security_deploy.md`](docs/architecture/production_security_deploy.md), [`VUE_SETUP.md`](docs/VUE_SETUP.md)).
+
+### Fixed
+
+- **SSE keepalive typing** — basedpyright-clean typed sentinel queue in `iter_upstream_with_keepalive`.
+- **Panel admin create flows** — RLS `rls_panel_org_invited_by_actor` and expanded `users`/`organizations` tenant policies unblock expert org invite and school user creation in panel mode.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): syncs with root **`VERSION`** (5.131.0) on next `npm run build` (`prebuild` → `sync-version`).
+
 ## [5.130.0] - 2026-06-28
 
 > **Document Summary portal, chat handoff pairing, and Windows file-reader helper.**

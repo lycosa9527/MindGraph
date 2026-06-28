@@ -30,6 +30,14 @@ export interface MindMateConversation {
   is_pinned?: boolean
   channel?: 'web' | 'mindbot'
   dify_user?: string
+  server?: number
+  mindbot_config_id?: number | null
+}
+
+export interface MindMateConversationRoute {
+  difyUser?: string
+  server?: number
+  mindbotConfigId?: number | null
 }
 
 // Cached message structure (raw Dify format)
@@ -255,8 +263,21 @@ export const useMindMateStore = defineStore('mindmate', () => {
    * Resolve Dify user key for a conversation (web or bound DingTalk MindBot).
    */
   function getConversationDifyUser(convId: string): string | undefined {
+    return getConversationRoute(convId).difyUser
+  }
+
+  /**
+   * Resolve Dify routing metadata saved on the merged conversation list row.
+   */
+  function getConversationRoute(convId: string): MindMateConversationRoute {
     const conv = conversations.value.find((item) => item.id === convId)
-    return conv?.dify_user?.trim() || undefined
+    const difyUser = conv?.dify_user?.trim() || undefined
+    const server = typeof conv?.server === 'number' && conv.server >= 1 ? conv.server : undefined
+    const mindbotConfigId =
+      typeof conv?.mindbot_config_id === 'number' && conv.mindbot_config_id >= 1
+        ? conv.mindbot_config_id
+        : undefined
+    return { difyUser, server, mindbotConfigId }
   }
 
   /**
@@ -560,6 +581,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
     getCachedMessages,
     clearMessageCache,
     getConversationDifyUser,
+    getConversationRoute,
     setActiveThread,
     clearActiveThread,
     getActiveThread,

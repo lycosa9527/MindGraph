@@ -4,11 +4,14 @@
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
+import { useQueryClient } from '@tanstack/vue-query'
+
 import { ElButton, ElDialog } from 'element-plus'
 
 import { Loader2 } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { difyKeys } from '@/composables/queries/difyKeys'
 import { authFetch } from '@/utils/api'
 import {
   logPairAudit,
@@ -35,6 +38,7 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const notify = useNotifications()
+const queryClient = useQueryClient()
 
 const token = ref('')
 const pairCode = ref('')
@@ -256,6 +260,7 @@ async function pollStatus() {
         token: pairTokenTail(token.value),
       })
       notify.success(t(successKey.value))
+      void queryClient.invalidateQueries({ queryKey: difyKeys.conversations() })
       emit('completed')
       stopTimers()
     }

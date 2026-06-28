@@ -7,6 +7,8 @@ import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
 import { useAuthStore } from '@/stores'
 
+import { appendDifyConversationRouteQuery } from '@/utils/difyConversationRoute'
+
 import { difyKeys } from './difyKeys'
 
 // ============================================================================
@@ -38,18 +40,23 @@ async function pinConversationAPI(convId: string): Promise<{ is_pinned: boolean 
   return await response.json()
 }
 
-function appendDifyUserQuery(url: string, difyUser?: string): string {
-  const trimmed = difyUser?.trim()
-  if (!trimmed) {
-    return url
+function appendConversationRouteQuery(
+  url: string,
+  route?: {
+    difyUser?: string
+    server?: number
+    mindbotConfigId?: number | null
   }
-  const separator = url.includes('?') ? '&' : '?'
-  return `${url}${separator}dify_user=${encodeURIComponent(trimmed)}`
+): string {
+  return appendDifyConversationRouteQuery(url, route)
 }
 
-async function deleteConversationAPI(convId: string, difyUser?: string): Promise<void> {
+async function deleteConversationAPI(
+  convId: string,
+  route?: { difyUser?: string; server?: number; mindbotConfigId?: number | null }
+): Promise<void> {
   const response = await fetch(
-    appendDifyUserQuery(`/api/dify/conversations/${convId}`, difyUser),
+    appendConversationRouteQuery(`/api/dify/conversations/${convId}`, route),
     {
       method: 'DELETE',
       credentials: 'same-origin',
@@ -67,10 +74,10 @@ async function deleteConversationAPI(convId: string, difyUser?: string): Promise
 async function renameConversationAPI(
   convId: string,
   name: string,
-  difyUser?: string
+  route?: { difyUser?: string; server?: number; mindbotConfigId?: number | null }
 ): Promise<{ name: string }> {
   const response = await fetch(
-    appendDifyUserQuery(`/api/dify/conversations/${convId}/name`, difyUser),
+    appendConversationRouteQuery(`/api/dify/conversations/${convId}/name`, route),
     {
       method: 'POST',
       credentials: 'same-origin',
@@ -90,9 +97,12 @@ async function renameConversationAPI(
   return result.data || { name }
 }
 
-async function generateTitleAPI(convId: string, difyUser?: string): Promise<{ name: string }> {
+async function generateTitleAPI(
+  convId: string,
+  route?: { difyUser?: string; server?: number; mindbotConfigId?: number | null }
+): Promise<{ name: string }> {
   const response = await fetch(
-    appendDifyUserQuery(`/api/dify/conversations/${convId}/name`, difyUser),
+    appendConversationRouteQuery(`/api/dify/conversations/${convId}/name`, route),
     {
       method: 'POST',
       credentials: 'same-origin',
@@ -133,6 +143,12 @@ export function usePinConversation() {
   })
 }
 
+export interface ConversationMutationRoute {
+  difyUser?: string
+  server?: number
+  mindbotConfigId?: number | null
+}
+
 /**
  * Delete a conversation
  * Invalidates: conversations, messages[convId]
@@ -141,13 +157,15 @@ export function useDeleteConversation() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ convId, difyUser }: { convId: string; difyUser?: string }) =>
-      deleteConversationAPI(convId, difyUser),
-    onSuccess: (_, { convId, difyUser }) => {
+    mutationFn: ({ convId, ...route }: { convId: string } & ConversationMutationRoute) =>
+      deleteConversationAPI(convId, route),
+    onSuccess: (_, { convId, difyUser, server, mindbotConfigId }) => {
       // Invalidate conversations list
       queryClient.invalidateQueries({ queryKey: difyKeys.conversations() })
       // Remove messages cache for this conversation
-      queryClient.removeQueries({ queryKey: difyKeys.messages(convId, difyUser) })
+      queryClient.removeQueries({
+        queryKey: difyKeys.messages(convId, difyUser, server, mindbotConfigId ?? undefined),
+      })
     },
   })
 }
@@ -160,8 +178,12 @@ export function useRenameConversation() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ convId, name, difyUser }: { convId: string; name: string; difyUser?: string }) =>
-      renameConversationAPI(convId, name, difyUser),
+    mutationFn: ({
+      convId,
+      name,
+      ...route
+    }: { convId: string; name: string } & ConversationMutationRoute) =>
+      renameConversationAPI(convId, name, route),
     onSuccess: () => {
       // Invalidate conversations list to get updated name
       queryClient.invalidateQueries({ queryKey: difyKeys.conversations() })
@@ -178,8 +200,8 @@ export function useGenerateTitle() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ convId, difyUser }: { convId: string; difyUser?: string }) =>
-      generateTitleAPI(convId, difyUser),
+    mutationFn: ({ convId, ...route }: { convId: string } & ConversationMutationRoute) =>
+      generateTitleAPI(convId, route),
     onSuccess: () => {
       // Invalidate conversations list to get generated title
       queryClient.invalidateQueries({ queryKey: difyKeys.conversations() })

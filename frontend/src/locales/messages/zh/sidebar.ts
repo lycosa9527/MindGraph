@@ -29,6 +29,8 @@ export default {
   'sidebar.chatHistory.renamePrompt': '请输入新的对话名称',
   'sidebar.chatHistory.renameTitle': '重命名对话',
   'sidebar.chatHistory.title': '历史对话',
+  'sidebar.chatHistory.dingtalkBadge': '钉钉',
+  'sidebar.chatHistory.dingtalkBadgeHint': '这条对话来自钉钉 MindBot',
   'sidebar.chunkTest': 'RAG分块测试',
   'sidebar.collapseSidebar': '收起侧边栏',
   'sidebar.community': '社区分享',

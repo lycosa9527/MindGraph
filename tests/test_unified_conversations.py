@@ -13,11 +13,22 @@ assert _main_app.app.title
 
 from clients.dify_exceptions import DifyConversationNotFoundError
 from clients.dify_http_errors import raise_for_dify_http_error
+from services.dify.export.endpoints import ExportDifyEndpoint
+from services.dify.export.transcript import ExportConversationSummary
 from services.dify.unified_conversations import (
     list_unified_conversations,
     resolve_dify_user_for_conversation,
 )
 from tests.typing_helpers import as_user
+
+_FAKE_ENDPOINT = ExportDifyEndpoint(
+    organization_id=5,
+    source="org_server",
+    server=1,
+    mindbot_config_id=None,
+    api_key="test-key",
+    api_url="https://dify.example/v1",
+)
 
 
 def _web_and_mindbot_targets(user_id: int = 7, org_id: int = 5):
@@ -38,60 +49,67 @@ def _web_and_mindbot_targets(user_id: int = 7, org_id: int = 5):
     return web_target, mindbot_target
 
 
+def _web_summary() -> ExportConversationSummary:
+    return ExportConversationSummary(
+        conversation_id="web-1",
+        name="Web chat",
+        server=1,
+        organization_id=5,
+        dify_user="mg_user_7",
+        user_id=7,
+        user_label="Alice",
+        channel="web",
+        created_at=100,
+        updated_at=200,
+    )
+
+
+def _mindbot_summary() -> ExportConversationSummary:
+    return ExportConversationSummary(
+        conversation_id="bot-1",
+        name="DingTalk chat",
+        server=1,
+        organization_id=5,
+        dify_user="mindbot_5_staff42",
+        user_id=7,
+        user_label="Alice · DingTalk",
+        channel="mindbot",
+        created_at=150,
+        updated_at=300,
+    )
+
+
 @pytest.mark.asyncio
 async def test_list_unified_conversations_merges_web_and_mindbot(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Bound users see DingTalk MindBot threads alongside web MindMate history."""
     user = SimpleNamespace(id=7, organization_id=5, name="Alice", phone="", email="")
-
     web_target, mindbot_target = _web_and_mindbot_targets()
 
     async def _fake_targets(_db, _user):
         return [web_target, mindbot_target]
 
-    class _FakeClient:
-        def __init__(self, dify_user: str) -> None:
-            self.dify_user = dify_user
+    async def _fake_fetch_page(_db, target, _org_by_id, *, limit):
+        del limit
+        if target.channel == "web":
+            return [_web_summary()]
+        return [_mindbot_summary()]
 
-        async def get_conversations(self, user_id: str, **kwargs):
-            """Return canned conversation pages keyed by dify user id."""
-            del kwargs
-            assert user_id == self.dify_user
-            if user_id == "mg_user_7":
-                return {
-                    "data": [
-                        {
-                            "id": "web-1",
-                            "name": "Web chat",
-                            "created_at": 100,
-                            "updated_at": 200,
-                        }
-                    ],
-                    "has_more": False,
-                }
-            return {
-                "data": [
-                    {
-                        "id": "bot-1",
-                        "name": "DingTalk chat",
-                        "created_at": 150,
-                        "updated_at": 300,
-                    }
-                ],
-                "has_more": False,
-            }
-
-    async def _fake_client_for_target(_db, target):
-        return _FakeClient(target.dify_user)
+    async def _fake_supplement(_db, _targets, summaries, **_kwargs):
+        return summaries, []
 
     monkeypatch.setattr(
         "services.dify.unified_conversations.build_user_dify_targets",
         _fake_targets,
     )
     monkeypatch.setattr(
-        "services.dify.unified_conversations.client_for_target",
-        _fake_client_for_target,
+        "services.dify.unified_conversations._fetch_target_summaries_page",
+        _fake_fetch_page,
+    )
+    monkeypatch.setattr(
+        "services.dify.unified_conversations.supplement_mindbot_summaries_from_usage",
+        _fake_supplement,
     )
 
     rows, has_more = await list_unified_conversations(MagicMock(), as_user(user), limit=10)
@@ -115,28 +133,19 @@ async def test_resolve_dify_user_probes_mindbot_when_web_has_no_match(
     async def _fake_targets(_db, _user):
         return [web_target, mindbot_target]
 
-    class _FakeClient:
-        async def get_messages(self, conversation_id: str, user_id: str, **kwargs):
-            """Simulate Dify message lookup for identity probing."""
-            del kwargs
-            assert conversation_id == "dingtalk-conv"
-            if user_id == "mg_user_7":
-                raise DifyConversationNotFoundError("Conversation Not Exists")
-            if user_id == "mindbot_5_staff42":
-                return {"data": [{"id": "msg-1"}]}
-            return {"data": []}
-
-    async def _fake_client_for_target(_db, target):
-        del target
-        return _FakeClient()
+    async def _fake_resolve(_db, target, conversation_id, dify_user, **_kwargs):
+        del _db, conversation_id, _kwargs
+        if target.channel == "mindbot" and dify_user == "mindbot_5_staff42":
+            return _FAKE_ENDPOINT
+        return None
 
     monkeypatch.setattr(
         "services.dify.unified_conversations.build_user_dify_targets",
         _fake_targets,
     )
     monkeypatch.setattr(
-        "services.dify.unified_conversations.client_for_target",
-        _fake_client_for_target,
+        "services.dify.unified_conversations._resolve_endpoint_for_conversation",
+        _fake_resolve,
     )
 
     dify_user = await resolve_dify_user_for_conversation(
@@ -159,28 +168,19 @@ async def test_resolve_dify_user_verifies_hint_before_trusting(
     async def _fake_targets(_db, _user):
         return [web_target, mindbot_target]
 
-    class _FakeClient:
-        async def get_messages(self, conversation_id: str, user_id: str, **kwargs):
-            """Simulate Dify message lookup for identity probing."""
-            del kwargs
-            assert conversation_id == "bot-conv"
-            if user_id == "mg_user_7":
-                raise DifyConversationNotFoundError("Conversation Not Exists")
-            if user_id == "mindbot_5_staff42":
-                return {"data": [{"id": "msg-1"}]}
-            return {"data": []}
-
-    async def _fake_client_for_target(_db, target):
-        del target
-        return _FakeClient()
+    async def _fake_resolve(_db, target, conversation_id, dify_user, **_kwargs):
+        del _db, conversation_id
+        if target.channel == "mindbot" and dify_user == "mindbot_5_staff42":
+            return _FAKE_ENDPOINT
+        return None
 
     monkeypatch.setattr(
         "services.dify.unified_conversations.build_user_dify_targets",
         _fake_targets,
     )
     monkeypatch.setattr(
-        "services.dify.unified_conversations.client_for_target",
-        _fake_client_for_target,
+        "services.dify.unified_conversations._resolve_endpoint_for_conversation",
+        _fake_resolve,
     )
 
     dify_user = await resolve_dify_user_for_conversation(
@@ -205,26 +205,20 @@ async def test_resolve_dify_user_uses_hint_when_verified(
     async def _fake_targets(_db, _user):
         return [web_target, mindbot_target]
 
-    class _FakeClient:
-        async def get_messages(self, conversation_id: str, user_id: str, **kwargs):
-            """Simulate Dify message lookup for identity probing."""
-            del kwargs, conversation_id
-            probe_calls["count"] += 1
-            if user_id == "mindbot_5_staff42":
-                return {"data": [{"id": "msg-1"}]}
-            raise DifyConversationNotFoundError("Conversation Not Exists")
-
-    async def _fake_client_for_target(_db, target):
-        del target
-        return _FakeClient()
+    async def _fake_resolve(_db, target, conversation_id, dify_user, **_kwargs):
+        del _db, conversation_id, _kwargs
+        probe_calls["count"] += 1
+        if target.channel == "mindbot" and dify_user == "mindbot_5_staff42":
+            return _FAKE_ENDPOINT
+        return None
 
     monkeypatch.setattr(
         "services.dify.unified_conversations.build_user_dify_targets",
         _fake_targets,
     )
     monkeypatch.setattr(
-        "services.dify.unified_conversations.client_for_target",
-        _fake_client_for_target,
+        "services.dify.unified_conversations._resolve_endpoint_for_conversation",
+        _fake_resolve,
     )
 
     dify_user = await resolve_dify_user_for_conversation(
@@ -249,28 +243,19 @@ async def test_resolve_dify_user_ignores_unknown_hint_and_probes(
     async def _fake_targets(_db, _user):
         return [web_target, mindbot_target]
 
-    class _FakeClient:
-        async def get_messages(self, conversation_id: str, user_id: str, **kwargs):
-            """Simulate Dify message lookup for identity probing."""
-            del kwargs
-            assert conversation_id == "dingtalk-conv"
-            if user_id == "mg_user_7":
-                raise DifyConversationNotFoundError("Conversation Not Exists")
-            if user_id == "mindbot_5_staff42":
-                return {"data": [{"id": "msg-1"}]}
-            return {"data": []}
-
-    async def _fake_client_for_target(_db, target):
-        del target
-        return _FakeClient()
+    async def _fake_resolve(_db, target, conversation_id, dify_user, **_kwargs):
+        del _db, conversation_id
+        if target.channel == "mindbot" and dify_user == "mindbot_5_staff42":
+            return _FAKE_ENDPOINT
+        return None
 
     monkeypatch.setattr(
         "services.dify.unified_conversations.build_user_dify_targets",
         _fake_targets,
     )
     monkeypatch.setattr(
-        "services.dify.unified_conversations.client_for_target",
-        _fake_client_for_target,
+        "services.dify.unified_conversations._resolve_endpoint_for_conversation",
+        _fake_resolve,
     )
 
     dify_user = await resolve_dify_user_for_conversation(
@@ -294,23 +279,17 @@ async def test_resolve_dify_user_raises_when_no_identity_matches(
     async def _fake_targets(_db, _user):
         return [web_target, mindbot_target]
 
-    class _FakeClient:
-        async def get_messages(self, conversation_id: str, user_id: str, **kwargs):
-            """Simulate Dify message lookup for identity probing."""
-            del conversation_id, user_id, kwargs
-            raise DifyConversationNotFoundError("Conversation Not Exists")
-
-    async def _fake_client_for_target(_db, target):
-        del target
-        return _FakeClient()
+    async def _fake_resolve(_db, target, conversation_id, dify_user, **_kwargs):
+        del _db, target, conversation_id, dify_user, _kwargs
+        return None
 
     monkeypatch.setattr(
         "services.dify.unified_conversations.build_user_dify_targets",
         _fake_targets,
     )
     monkeypatch.setattr(
-        "services.dify.unified_conversations.client_for_target",
-        _fake_client_for_target,
+        "services.dify.unified_conversations._resolve_endpoint_for_conversation",
+        _fake_resolve,
     )
 
     with pytest.raises(DifyConversationNotFoundError):

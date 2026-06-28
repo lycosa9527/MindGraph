@@ -10,6 +10,8 @@ import type { LocaleCode } from '@/i18n/locales'
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import type { MindMateConversation } from '@/stores'
 
+import MindMateDingtalkBadge from '@/components/sidebar/MindMateDingtalkBadge.vue'
+
 const props = withDefaults(
   defineProps<{
     mode?: 'panel' | 'fullpage'
@@ -70,6 +72,13 @@ function handleLoadHistory(convId: string) {
 function handleDeleteHistory(convId: string, event: Event) {
   event.stopPropagation()
   emit('deleteHistory', convId)
+}
+
+function isMindbotConversation(conv: MindMateConversation): boolean {
+  if (conv.channel === 'mindbot') {
+    return true
+  }
+  return (conv.dify_user || '').startsWith('mindbot_')
 }
 </script>
 
@@ -136,7 +145,10 @@ function handleDeleteHistory(convId: string, event: Event) {
                 >
                   <div class="history-item-content">
                     <p class="history-item-title">
-                      {{ conv.name || t('mindmate.untitled') }}
+                      <span class="history-item-title-text">
+                        {{ conv.name || t('mindmate.untitled') }}
+                      </span>
+                      <MindMateDingtalkBadge v-if="isMindbotConversation(conv)" />
                     </p>
                     <p class="history-item-date">
                       {{ formatConversationDate(conv.updated_at) }}
@@ -243,6 +255,15 @@ function handleDeleteHistory(convId: string, event: Event) {
   font-weight: 500;
   color: #1f2937;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.history-item-title-text {
+  flex: 1;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -31,6 +31,7 @@ from services.infrastructure.http.error_handler import (
     ThinkingCoinInsufficientError,
     UserDailyTokenCapExceededError,
 )
+from services.infrastructure.http.sse_upstream_keepalive import iter_upstream_with_keepalive
 from services.auth.thinking_coin.token_usage_link import build_mindmate_usage_snapshot
 from services.auth.thinking_coin.usage_wire import (
     assert_llm_usage_budget,
@@ -48,6 +49,10 @@ from utils.dify_mindmate_user_id import mindmate_dify_user_id
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["api"])
+
+# Keep proxy read timers alive during long Dify vision / workflow gaps (see deploy docs).
+_SSE_KEEPALIVE_INTERVAL_S = 25.0
+_SSE_KEEPALIVE_COMMENT = ": keepalive\n\n"
 
 
 @router.post("/ai_assistant/stream")
@@ -221,7 +226,7 @@ async def ai_assistant_stream(
 
             message_preview = message[:50] + "..."
             logger.debug("[STREAM] Starting async stream_chat for message: %s", message_preview)
-            async for chunk in client.stream_chat(
+            dify_stream = client.stream_chat(
                 message=message,
                 user_id=dify_user_id,
                 conversation_id=req.conversation_id,
@@ -230,7 +235,14 @@ async def ai_assistant_stream(
                 auto_generate_name=req.auto_generate_name,
                 workflow_id=req.workflow_id,
                 trace_id=req.trace_id,
+            )
+            async for chunk in iter_upstream_with_keepalive(
+                dify_stream,
+                interval_seconds=_SSE_KEEPALIVE_INTERVAL_S,
             ):
+                if chunk is None:
+                    yield _SSE_KEEPALIVE_COMMENT
+                    continue
                 chunk_count += 1
                 event_type = chunk.get("event", "unknown")
                 logger.debug("[STREAM] Received chunk %s: %s", chunk_count, event_type)

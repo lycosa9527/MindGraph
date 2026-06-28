@@ -63,6 +63,26 @@ peer instead, run a request and read `grep "Request:" logs/app.log` — the
 add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
 ```
 
+4. **MindMate / SSE upstream timeouts** — Dify image + long answers can stay silent for 60–220+ seconds before the first token. Default nginx/NPM `proxy_read_timeout` (60s) closes `/api/ai_assistant/stream` while Dify is still working. Match `DIFY_TIMEOUT` (default **300s**):
+
+```nginx
+location /api {
+    proxy_pass http://127.0.0.1:9527;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 300s;
+    proxy_send_timeout 300s;
+    proxy_buffering off;
+}
+```
+
+**Nginx Proxy Manager:** Proxy Host → **Edit** → **Advanced** → Custom Nginx Configuration, add the same `proxy_read_timeout` / `proxy_send_timeout` lines inside the generated `location /` block (or a dedicated `/api` custom location if you split routes).
+
+The backend also emits SSE comment keepalives every 25s during Dify silence ([`sse_streaming.py`](../../routers/api/sse_streaming.py)); raising the proxy timeout to 300s is still required for very long single gaps and aligns with Dify client `sock_read`.
+
 ## Deploy order (same maintenance window)
 
 Deploy **backend and frontend build together**. CSRF double-submit is enforced once the `csrf_token` cookie exists; the SPA must send `X-CSRF-Token` on mutations (global fetch interceptor in `frontend/src/utils/installCsrfFetchInterceptor.ts`).

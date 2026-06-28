@@ -29,6 +29,8 @@ import {
 } from '@/composables/queries'
 import { type MindMateConversation, useAuthStore, useMindMateStore } from '@/stores'
 
+import ChatHistoryConversationTitle from './ChatHistoryConversationTitle.vue'
+
 const props = withDefaults(
   defineProps<{
     isBlurred?: boolean
@@ -193,6 +195,8 @@ async function handleRenameConversation(convId: string): Promise<void> {
         convId,
         name: value.trim(),
         difyUser: conv?.dify_user,
+        server: conv?.server,
+        mindbotConfigId: conv?.mindbot_config_id,
       })
     }
   } catch {
@@ -217,7 +221,12 @@ async function handleDeleteConversation(convId: string): Promise<void> {
     mindMateStore.deleteConversation(convId)
     // Call mutation to update server and invalidate cache
     const conv = conversations.value.find((item) => item.id === convId)
-    deleteConv({ convId, difyUser: conv?.dify_user })
+    deleteConv({
+      convId,
+      difyUser: conv?.dify_user,
+      server: conv?.server,
+      mindbotConfigId: conv?.mindbot_config_id,
+    })
   } catch {
     // User cancelled
   }
@@ -288,10 +297,10 @@ function toggleShowAll(): void {
               :class="{ active: currentConversationId === conv.id }"
               @click="handleConversationClick(conv.id, conv.name)"
             >
-              <span class="conv-name">
-                <Pin class="w-3 h-3 inline-block mr-1 text-amber-500" />
-                {{ conv.name || t('sidebar.history.untitled') }}
-              </span>
+              <ChatHistoryConversationTitle
+                :conv="conv"
+                pinned
+              />
               <ElDropdown
                 trigger="click"
                 class="more-dropdown"
@@ -341,9 +350,7 @@ function toggleShowAll(): void {
               :class="{ active: currentConversationId === conv.id }"
               @click="handleConversationClick(conv.id, conv.name)"
             >
-              <span class="conv-name">
-                {{ conv.name || t('sidebar.history.untitled') }}
-              </span>
+              <ChatHistoryConversationTitle :conv="conv" />
               <ElDropdown
                 trigger="click"
                 class="more-dropdown"
@@ -393,9 +400,7 @@ function toggleShowAll(): void {
               :class="{ active: currentConversationId === conv.id }"
               @click="handleConversationClick(conv.id, conv.name)"
             >
-              <span class="conv-name">
-                {{ conv.name || t('sidebar.history.untitled') }}
-              </span>
+              <ChatHistoryConversationTitle :conv="conv" />
               <ElDropdown
                 trigger="click"
                 class="more-dropdown"
@@ -445,9 +450,7 @@ function toggleShowAll(): void {
               :class="{ active: currentConversationId === conv.id }"
               @click="handleConversationClick(conv.id, conv.name)"
             >
-              <span class="conv-name">
-                {{ conv.name || t('sidebar.history.untitled') }}
-              </span>
+              <ChatHistoryConversationTitle :conv="conv" />
               <ElDropdown
                 trigger="click"
                 class="more-dropdown"
@@ -497,9 +500,7 @@ function toggleShowAll(): void {
               :class="{ active: currentConversationId === conv.id }"
               @click="handleConversationClick(conv.id, conv.name)"
             >
-              <span class="conv-name">
-                {{ conv.name || t('sidebar.history.untitled') }}
-              </span>
+              <ChatHistoryConversationTitle :conv="conv" />
               <ElDropdown
                 trigger="click"
                 class="more-dropdown"
@@ -650,14 +651,6 @@ function toggleShowAll(): void {
 .conversation-item.active {
   background-color: #e7e5e4;
   color: #1c1917;
-}
-
-.conv-name {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
 }
 
 .more-btn {

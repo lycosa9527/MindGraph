@@ -22,7 +22,11 @@ from sqlalchemy.sql.functions import coalesce as sa_coalesce
 from sqlalchemy.sql.functions import count as sa_count
 from sqlalchemy.sql.functions import sum as sa_sum
 
-from config.database import get_async_db
+from routers.auth.dependencies import (
+    get_async_db_with_request_rls as _panel_mutate_db,
+    get_language_dependency,
+    require_panel_capability,
+)
 from models.domain.auth import Organization, User
 from models.domain.messages import Language, Messages
 from models.domain.token_usage import TokenUsage
@@ -48,7 +52,6 @@ from utils.auth.admin_panel_permissions import CAP_TAB_USERS_EDIT, CAP_TAB_USERS
 from utils.auth.user_daily_token_quota import resolve_daily_usage
 from utils.auth.admin_scope import AdminScope
 
-from ..dependencies import get_language_dependency, require_panel_capability
 from ..helpers import commit_user_with_retry
 from .school_scope import resolve_school_dashboard_org_id_scoped
 
@@ -86,7 +89,7 @@ async def list_school_users(
     page_size: int = Query(50, ge=1, le=100),
     search: str = Query(""),
     scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_VIEW)),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(_panel_mutate_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, Any]:
     """
@@ -177,7 +180,7 @@ async def create_school_user(
     request: dict,
     organization_id: Optional[int] = Query(None),
     scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_EDIT)),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(_panel_mutate_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, Any]:
     """Create school user."""
@@ -248,7 +251,7 @@ async def create_school_users_batch(
     request: dict,
     organization_id: Optional[int] = Query(None),
     scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_EDIT)),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(_panel_mutate_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, Any]:
     """Create school users batch."""
@@ -323,7 +326,7 @@ async def get_school_user(
     user_id: int,
     organization_id: Optional[int] = Query(None),
     scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_VIEW)),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(_panel_mutate_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, Any]:
     """Get school user."""
@@ -358,7 +361,7 @@ async def update_school_user(
     request: dict,
     organization_id: Optional[int] = Query(None),
     scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_EDIT)),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(_panel_mutate_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, Any]:
     """Update school user."""
@@ -497,7 +500,7 @@ async def delete_school_user(
     user_id: int,
     organization_id: Optional[int] = Query(None),
     scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_EDIT)),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(_panel_mutate_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, str]:
     """Delete school user."""
@@ -554,7 +557,7 @@ async def unlock_school_user(
     user_id: int,
     organization_id: Optional[int] = Query(None),
     scope: AdminScope = Depends(require_panel_capability(CAP_TAB_USERS_EDIT)),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(_panel_mutate_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, str]:
     """Unlock school user."""
