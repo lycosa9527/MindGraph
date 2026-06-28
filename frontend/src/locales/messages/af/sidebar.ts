@@ -31,6 +31,8 @@ export default {
   'sidebar.chatHistory.renamePrompt': 'Voer \'n nuwe naam vir hierdie gesprek in',
   'sidebar.chatHistory.renameTitle': 'Hernoem gesprek',
   'sidebar.chatHistory.title': 'Geskiedenis',
+  'sidebar.chatHistory.dingtalkBadge': 'DingTalk',
+  'sidebar.chatHistory.dingtalkBadgeHint': 'This chat came from DingTalk MindBot',
   'sidebar.chunkTest': 'RAG-stuk-toets',
   'sidebar.collapseSidebar': 'Vou sybalk saam',
   'sidebar.community': 'Gemeenskap',

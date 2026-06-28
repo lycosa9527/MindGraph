@@ -31,6 +31,8 @@ export default {
   'sidebar.chatHistory.renamePrompt': 'Entrez un nouveau nom pour cette conversation',
   'sidebar.chatHistory.renameTitle': 'Renommer la conversation',
   'sidebar.chatHistory.title': 'Historique',
+  'sidebar.chatHistory.dingtalkBadge': 'DingTalk',
+  'sidebar.chatHistory.dingtalkBadgeHint': 'Cette conversation provient de DingTalk MindBot',
   'sidebar.chunkTest': 'Test de fragment RAG',
   'sidebar.collapseSidebar': 'Réduire la barre latérale',
   'sidebar.community': 'Communauté',

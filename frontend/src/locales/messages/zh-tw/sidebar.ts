@@ -29,6 +29,8 @@ export default {
   'sidebar.chatHistory.renamePrompt': '請輸入新的對話名稱',
   'sidebar.chatHistory.renameTitle': '重命名對話',
   'sidebar.chatHistory.title': '歷史對話',
+  'sidebar.chatHistory.dingtalkBadge': '釘釘',
+  'sidebar.chatHistory.dingtalkBadgeHint': '這條對話來自釘釘 MindBot',
   'sidebar.chunkTest': 'RAG分塊測試',
   'sidebar.collapseSidebar': '收起側邊欄',
   'sidebar.community': '社區分享',

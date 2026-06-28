@@ -31,6 +31,8 @@ export default {
   'sidebar.chatHistory.renamePrompt': 'Bu söhbət üçün yeni ad daxil edin',
   'sidebar.chatHistory.renameTitle': 'Söhbətin adını dəyişdirin',
   'sidebar.chatHistory.title': 'Tarix',
+  'sidebar.chatHistory.dingtalkBadge': 'DingTalk',
+  'sidebar.chatHistory.dingtalkBadgeHint': 'This chat came from DingTalk MindBot',
   'sidebar.chunkTest': 'RAG blok testi',
   'sidebar.collapseSidebar': 'Yan paneli bağla',
   'sidebar.community': 'İcma',

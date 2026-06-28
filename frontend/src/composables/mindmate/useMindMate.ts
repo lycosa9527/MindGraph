@@ -684,7 +684,11 @@ export function useMindMate(options: MindMateOptions = {}) {
 
           // Optimistic update: Add new conversation to Vue Query cache
           const now = Math.floor(Date.now() / 1000) // Use seconds like Dify
-          const webDifyUser = mindmateDifyUserIdFromSession(authStore.user)
+          const webDifyUser = mindmateDifyUserIdFromSession(
+            authStore.mode,
+            authStore.user!.id,
+            authStore.user!.phone
+          )
           const newConv = {
             id: data.conversation_id,
             name: mindMateStore.conversationTitle,

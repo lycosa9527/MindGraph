@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **SSE keepalive typing** — basedpyright-clean typed sentinel queue in `iter_upstream_with_keepalive`.
+- **MindMate TypeScript / i18n CI** — Fix `mindmateDifyUserIdFromSession` call arity in optimistic conversation cache update; propagate `sidebar.chatHistory.dingtalkBadge*` keys across all locale bundles.
 - **Panel admin create flows** — RLS `rls_panel_org_invited_by_actor` and expanded `users`/`organizations` tenant policies unblock expert org invite and school user creation in panel mode.
 
 ### Frontend package version

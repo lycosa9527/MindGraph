@@ -31,6 +31,8 @@ export default {
   'sidebar.chatHistory.renamePrompt': 'ใส่ชื่อใหม่สำหรับบทสนทนานี้',
   'sidebar.chatHistory.renameTitle': 'เปลี่ยนชื่อบทสนทนา',
   'sidebar.chatHistory.title': 'ประวัติ',
+  'sidebar.chatHistory.dingtalkBadge': 'DingTalk',
+  'sidebar.chatHistory.dingtalkBadgeHint': 'แชทนี้มาจาก DingTalk MindBot',
   'sidebar.chunkTest': 'ทดสอบ RAG chunk',
   'sidebar.collapseSidebar': 'ย่อแถบด้านข้าง',
   'sidebar.community': 'ชุมชน',
